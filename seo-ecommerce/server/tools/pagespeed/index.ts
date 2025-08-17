@@ -2,6 +2,7 @@ import { z } from "zod";
 import { createTool } from "@deco/workers-runtime/mastra";
 import { buildPageSpeedKey, getOrSet, type CacheLayerEnv } from "../cache";
 import { getCacheConfig } from "../../config/cache";
+import { recordToolError, recordToolSuccess } from "../metrics";
 
 const InputSchema = z.object({
   url: z.string().url(),
@@ -53,34 +54,41 @@ export const createPageSpeedTool = (
     inputSchema: InputSchema,
     outputSchema: OutputSchema,
     execute: async ({ context }) => {
+      const start = Date.now();
       const { url, strategy, category } = context;
-      const cfg = getCacheConfig("pagespeed");
-      const key = buildPageSpeedKey(url, strategy);
-      const bypass = (context as any)?.noCache === true;
-      const res = await getOrSet(
-        env,
-        key,
-        async () => {
-          const params = new URLSearchParams({ url, strategy });
-          if (category && category.length)
-            category.forEach((c) => params.append("category", c));
-          const apiUrl = `https://www.googleapis.com/pagespeedonline/v5/runPagespeed?${params.toString()}`;
-          const resp = await fetch(apiUrl, {
-            headers: { Accept: "application/json" },
-          });
-          if (!resp.ok) throw new Error(`PageSpeed API ${resp.status}`);
-          const json = await resp.json();
-          return normalizePageSpeed(json, url, strategy);
-        },
-        {
-          ttlSeconds: cfg.fresh,
-          staleTtlSeconds: cfg.stale,
-          hardTtlSeconds: cfg.hard,
-          version: cfg.version,
-          bypass,
-        },
-      );
-      return { ...res.data, cache: res.cache, stale: res.stale };
+      try {
+        const cfg = getCacheConfig("pagespeed");
+        const key = buildPageSpeedKey(url, strategy);
+        const bypass = (context as any)?.noCache === true;
+        const res = await getOrSet(
+          env,
+          key,
+          async () => {
+            const params = new URLSearchParams({ url, strategy });
+            if (category && category.length)
+              category.forEach((c) => params.append("category", c));
+            const apiUrl = `https://www.googleapis.com/pagespeedonline/v5/runPagespeed?${params.toString()}`;
+            const resp = await fetch(apiUrl, {
+              headers: { Accept: "application/json" },
+            });
+            if (!resp.ok) throw new Error(`PageSpeed API ${resp.status}`);
+            const json = await resp.json();
+            return normalizePageSpeed(json, url, strategy);
+          },
+          {
+            ttlSeconds: cfg.fresh,
+            staleTtlSeconds: cfg.stale,
+            hardTtlSeconds: cfg.hard,
+            version: cfg.version,
+            bypass,
+          },
+        );
+        recordToolSuccess("PAGESPEED", Date.now() - start);
+        return { ...res.data, cache: res.cache, stale: res.stale };
+      } catch (e) {
+        recordToolError("PAGESPEED", Date.now() - start);
+        throw e;
+      }
     },
   });
 

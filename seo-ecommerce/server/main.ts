@@ -2,6 +2,7 @@
 import { withRuntime } from "@deco/workers-runtime";
 import { logSafe } from "@deco/workers-runtime/logSafe";
 import { cacheMetricsSnapshot } from "./tools/cache";
+import { toolMetricsSnapshot, recordToolError, recordToolSuccess } from "./tools/metrics";
 import { toolFactories } from "./tools";
 import { analyzeLinks } from "./tools/link-analyzer/analyze";
 import { createPageSpeedTool } from "./tools/pagespeed";
@@ -323,7 +324,8 @@ const runtime = {
     }
     if (url.pathname === "/__metrics") {
       const snapshot = cacheMetricsSnapshot();
-      return new Response(JSON.stringify({ cache: snapshot }), {
+      const tools = toolMetricsSnapshot();
+      return new Response(JSON.stringify({ cache: snapshot, tools }), {
         status: 200,
         headers: {
           "content-type": "application/json",
@@ -351,7 +353,7 @@ const runtime = {
         try {
           const body = await req.json().catch(() => ({}));
           const rawUrl = body.url || body.input?.url;
-          if (!rawUrl || typeof rawUrl !== "string") {
+            if (!rawUrl || typeof rawUrl !== "string") {
             return new Response(JSON.stringify({ error: "url requerida" }), {
               status: 400,
               headers: corsHeaders({ "content-type": "application/json" }),
@@ -481,6 +483,8 @@ const runtime = {
                   );
                 }
                 const result = await analyzeLinks((input as any).url);
+                const execMs = 0; // basic path already measured inside analyzeLinks if needed
+                try { recordToolSuccess("LINK_ANALYZER", execMs); } catch {}
                 return new Response(
                   JSON.stringify({ tool: "LINK_ANALYZER", input, result }),
                   {
@@ -495,6 +499,7 @@ const runtime = {
                 logSafe.error("[MCP] LINK_ANALYZER direct exec error", {
                   error: (e as Error).message,
                 });
+                try { recordToolError("LINK_ANALYZER", 0); } catch {}
                 return new Response(
                   JSON.stringify({ error: (e as Error).message }),
                   {
@@ -556,9 +561,9 @@ const runtime = {
                 },
               );
             }
-            const tool = (factory as any)(toolEnv);
-            try {
-              const execStart = Date.now();
+      const tool = (factory as any)(toolEnv);
+      let execStart = Date.now();
+      try {
               let execution: any;
               // Fast-path bypass for local dev to skip env-heavy validation for simple tools
               if (
@@ -571,10 +576,12 @@ const runtime = {
                   };
                 } else if (toolId === "LINK_ANALYZER") {
                   try {
+        const laStart = Date.now();
                     const { analyzeLinks } = await import(
                       "./tools/link-analyzer/analyze"
                     );
                     execution = await analyzeLinks((input as any).url);
+        recordToolSuccess("LINK_ANALYZER", Date.now() - laStart);
                   } catch (e) {
                     logSafe.error("[MCP] Bypass analyze error", {
                       error: (e as Error).message,
@@ -586,6 +593,9 @@ const runtime = {
                 execution = await tool.execute({ context: input });
               }
               const execMs = Date.now() - execStart;
+              try {
+                recordToolSuccess(tool.id, execMs);
+              } catch {}
               logSafe.info("[MCP] Tool OK", { tool: tool.id, ms: execMs });
               const result = {
                 ...execution,
@@ -601,6 +611,10 @@ const runtime = {
                 },
               );
             } catch (toolErr) {
+              try {
+                const execMs = Date.now() - execStart;
+                recordToolError(toolId, execMs);
+              } catch {}
               const isZod =
                 toolErr &&
                 typeof toolErr === "object" &&

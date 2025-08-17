@@ -111,4 +111,69 @@ Deterministic pure functions enable fast unit tests without Worker runtime:
 ### Safety
 If KV fails, system falls back to direct fetch; stale entries only used inside configured windows.
 
+## Metrics Endpoint (`/__metrics`)
+
+Exposes in-memory counters (per isolate) for cache + tool performance (não persistente).
+
+Example:
+```bash
+curl -s https://<your-worker>/__metrics | jq
+```
+Sample output:
+```json
+{
+	"cache": {
+		"lruHits": 120,
+		"kvHits": 340,
+		"misses": 58,
+		"staleServed": 7,
+		"revalidationsTriggered": 7,
+		"writes": 65,
+		"lruSize": 82,
+		"lruCap": 200
+	},
+	"tools": {
+		"PAGESPEED": {
+			"calls": 10,
+			"errors": 1,
+			"avgMs": 820.5,
+			"p95Ms": 1400,
+			"errorRate": 0.1
+		},
+		"LINK_ANALYZER": {
+			"calls": 25,
+			"errors": 0,
+			"avgMs": 110.2,
+			"p95Ms": 180,
+			"errorRate": 0
+		}
+	}
+}
+```
+Cache fields:
+- `lruHits`: Atendimentos servidos diretamente do cache em memória (fresco dentro do TTL).
+- `kvHits`: Atendimentos obtidos do KV (frescos ou stale) carregados para memória.
+- `misses`: Operações que precisaram executar fetch original (primeira escrita ou hard-expired).
+- `staleServed`: Respostas servidas dentro da janela stale (SWR) enquanto revalidação ocorre.
+- `revalidationsTriggered`: Número de revalidações em background disparadas (corresponde a staleServed quando SWR habilitado).
+- `writes`: Quantidade de gravações no KV (miss + revalidate concluída).
+- `lruSize`: Tamanho atual do LRU em memória.
+- `lruCap`: Capacidade máxima configurada do LRU.
+
+Tool fields (por ferramenta):
+- `calls`: Total de execuções (sucesso + erro).
+- `errors`: Quantidade que resultou em erro.
+- `avgMs`: Latência média (ms) incluindo erros.
+- `p95Ms`: Estimativa p95 usando janela deslizante (últimos 100 samples).
+- `errorRate`: `errors / calls` (0–1).
+
+Uso rápido de diagnóstico:
+1. Alta proporção `misses` / (`lruHits` + `kvHits`) indica possível TTL curto demais ou tráfego cold.
+2. `staleServed` crescendo sem aumento proporcional em `revalidationsTriggered` (não deveria acontecer) sugere inspeção.
+3. `lruSize` frequentemente próximo de `lruCap` pode justificar aumento de capacidade (ver impacto de memória primeiro).
+4. `errorRate` > 0.2 em qualquer ferramenta sugere instabilidade externa ou bug.
+5. `p95Ms` subindo enquanto média estável indica outliers (investigar dependências externas / rede).
+
+Futuro (planejado): export em formato Prometheus/OpenTelemetry + breakdown por categoria de erro.
+
 

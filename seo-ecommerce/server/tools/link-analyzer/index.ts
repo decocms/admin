@@ -1,14 +1,17 @@
 import { createTool } from "@deco/workers-runtime/mastra";
 import { z } from "zod";
 import { analyzeLinks } from "./analyze";
+import { analyzeLinksCached } from "./cached";
+import type { CacheLayerEnv } from "../cache";
 
 // Factory in the same style used by other deco tools (accept env even if unused)
-export const createLinkAnalyzerTool = (_env: unknown) =>
+export const createLinkAnalyzerTool = (env: CacheLayerEnv) =>
   createTool({
     id: "LINK_ANALYZER",
     description: "Analyze links for SEO purposes",
     inputSchema: z.object({
       url: z.string().url(),
+      noCache: z.boolean().optional().default(false),
     }),
     outputSchema: z.object({
       status: z.number(),
@@ -30,12 +33,12 @@ export const createLinkAnalyzerTool = (_env: unknown) =>
       notes: z.string().optional(),
     }),
     execute: async ({ context }) => {
-      const { url } = context;
-      const result = await analyzeLinks(url);
-      return result;
+      const { url, noCache } = context;
+      if (noCache) return analyzeLinks(url);
+      return analyzeLinksCached(env, url);
     },
   });
 
 // Backwards compatibility (in case it was already imported elsewhere during transition)
-export const linkAnalyzerTool = createLinkAnalyzerTool(undefined);
+export const linkAnalyzerTool = createLinkAnalyzerTool({});
 export * from "./analyze";

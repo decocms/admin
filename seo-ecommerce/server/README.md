@@ -85,6 +85,14 @@ Tracking params stripped: `utm_*`, `gclid`, `fbclid`, `yclid`, `_hs*`, `mc_*`, `
 ### Invalidation / Bypass
 - (Planned) CLI purge script by key prefix.
 - Future `noCache` context flag to skip storing/reading.
+ 
+### Purge Script
+Use:
+```bash
+npm run seo:cache:purge -- --key "pagespeed:v1:mobile:https://example.com/"  # exact key
+npm run seo:cache:purge -- --prefix pagespeed:v1:                                 # by prefix
+npm run seo:cache:purge -- --prefix links:v1: --dry-run                           # preview deletions
+```
 
 ## Pure Runners
 

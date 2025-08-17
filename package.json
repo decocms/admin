@@ -18,6 +18,7 @@
     "deploy:seo:fast": "cd seo-ecommerce/view && npm run build && cd ../server && npm run deploy",
     "deploy:seo:both": "cd seo-ecommerce/server && npm run gen && npm run build:assets && npx wrangler deploy && deco deploy --yes ./dist",
     "release:seo": "git add . && git commit -m 'chore: release new version' && git push && npm run deploy:seo",
+    "seo:cache:purge": "node seo-ecommerce/server/scripts/cache-purge.mjs",
     "docs:dev": "cd docs && npm run dev",
     "docs:deploy": "cd docs && npm run deploy",
     "test": "vitest run",

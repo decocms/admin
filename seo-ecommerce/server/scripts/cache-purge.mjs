@@ -35,6 +35,110 @@ function run(cmd) {
   });
 }
 
+function sleep(ms) {
+  return new Promise((res) => setTimeout(res, ms));
+}
+
+const MAX_RETRIES = 5;
+const BASE_DELAY = 300; // ms
+
+function isRetryableError(errMsg) {
+  if (!errMsg) return false;
+  const s = String(errMsg).toLowerCase();
+  return s.includes("429") || s.includes("rate limit") || s.includes("timeout") || s.includes("econnreset");
+}
+
+async function deleteWithRetries(keyName) {
+  let attempt = 0;
+  while (true) {
+    try {
+      run(`npx wrangler kv key delete --binding=SEO_CACHE "${keyName}"`);
+      return { ok: true };
+    } catch (e) {
+      attempt++;
+      const msg = e && e.message ? e.message : String(e);
+      if (attempt >= MAX_RETRIES || !isRetryableError(msg)) {
+        return { ok: false, error: msg };
+      }
+      const delay = BASE_DELAY * Math.pow(2, attempt - 1);
+      logSafe.warn('[cache-purge] transient delete error, retrying', { key: keyName, attempt, delay, error: msg });
+      // eslint-disable-next-line no-await-in-loop
+      await sleep(delay);
+    }
+  }
+}
+
+function safeJsonParse(raw) {
+  try {
+    return JSON.parse(raw);
+  } catch (_) {
+    return null;
+  }
+}
+
+async function listKeysPaged(prefix) {
+  const accumulated = [];
+  let cursor = undefined;
+  // Attempt to use --limit with cursor if supported by local wrangler
+  while (true) {
+    const cursorArg = cursor ? ` --cursor='${cursor}'` : '';
+    // Use double quotes around prefix so PowerShell handles it safely
+    const cmdWithLimit = `npx wrangler kv key list --binding=SEO_CACHE --prefix="${prefix}" --limit=1000${cursorArg}`;
+    let raw;
+    try {
+      raw = run(cmdWithLimit);
+    } catch (e) {
+      const msg = e && e.message ? e.message : String(e);
+      // Some wrangler versions don't support --limit. If that's the case, try without it.
+      if (msg.toLowerCase().includes('unknown argument') && msg.toLowerCase().includes('limit')) {
+        const cmdNoLimit = `npx wrangler kv key list --binding=SEO_CACHE --prefix="${prefix}"${cursorArg}`;
+        try {
+          raw = run(cmdNoLimit);
+        } catch (e2) {
+          const m2 = e2 && e2.message ? e2.message : String(e2);
+          throw new Error(`Failed to list keys: ${m2}`);
+        }
+      } else {
+        throw new Error(`Failed to list keys: ${msg}`);
+      }
+    }
+    const parsed = safeJsonParse(raw);
+    if (Array.isArray(parsed)) {
+      // Older wrangler returns an array of keys directly
+      accumulated.push(...parsed.map((k) => (k && k.name) || k));
+      // If array length is less than limit, we assume end
+      if (parsed.length < 1000) break;
+      // Otherwise try to continue — but if no cursor mechanism, break to avoid infinite loop
+      break;
+    }
+    if (parsed && Array.isArray(parsed.keys)) {
+      accumulated.push(...parsed.keys.map((k) => k.name));
+      // If the API returns a cursor token, continue
+      if (parsed.cursor) {
+        cursor = parsed.cursor;
+        continue;
+      }
+      // No cursor, stop
+      break;
+    }
+    // Fallback: try to parse newline-delimited output (some wrangler prints pretty output)
+    const lines = raw
+      .split('\n')
+      .map((l) => l.trim())
+      .filter(Boolean);
+    // Try to extract JSON-looking pieces
+    for (const l of lines) {
+      const p = safeJsonParse(l);
+      if (p && (Array.isArray(p) || p.keys)) {
+        if (Array.isArray(p)) accumulated.push(...p.map((k) => (k && k.name) || k));
+        else if (Array.isArray(p.keys)) accumulated.push(...p.keys.map((k) => k.name));
+      }
+    }
+    break;
+  }
+  return accumulated;
+}
+
 const summary = { mode: key ? 'single' : 'prefix', key: key || null, prefix: prefix || null, dry, deleted: [], count: 0 };
 
 try {
@@ -42,34 +146,36 @@ try {
     if (dry) {
       logSafe.info("[cache-purge] dry-run delete key", { key });
     } else {
-      run(`npx wrangler kv key delete --binding=SEO_CACHE "${key}"`);
+      const res = await deleteWithRetries(key);
+      if (!res.ok) throw new Error(`Failed to delete key ${key}: ${res.error}`);
       logSafe.info("[cache-purge] deleted key", { key });
       summary.deleted.push(key);
       summary.count = 1;
     }
   } else if (prefix) {
-    const listRaw = run(
-      `npx wrangler kv key list --binding=SEO_CACHE --prefix='${prefix}'`,
-    );
-    const list = JSON.parse(listRaw);
-    if (!Array.isArray(list)) throw new Error("Unexpected list output");
-    if (list.length === 0) {
+    const list = await listKeysPaged(prefix);
+    if (!Array.isArray(list) || list.length === 0) {
       logSafe.info("[cache-purge] no keys with prefix", { prefix });
     } else if (dry) {
       logSafe.info("[cache-purge] dry-run delete prefix", {
         prefix,
         count: list.length,
       });
-      list.forEach((k) =>
-        logSafe.info("[cache-purge] candidate", { key: k.name }),
-      );
-      summary.deleted = list.map(k => k.name);
+      list.forEach((k) => logSafe.info("[cache-purge] candidate", { key: k }));
+      summary.deleted = list.slice();
       summary.count = list.length;
     } else {
-      for (const k of list) {
-        run(`npx wrangler kv key delete --binding=SEO_CACHE "${k.name}"`);
-        logSafe.info("[cache-purge] deleted", { key: k.name });
-        summary.deleted.push(k.name);
+      for (const name of list) {
+        const res = await deleteWithRetries(name);
+        if (!res.ok) {
+          logSafe.error('[cache-purge] failed to delete key after retries', { key: name, error: res.error });
+          summary.error = summary.error || '';
+          summary.error += `delete ${name}: ${res.error}; `;
+          // continue with other keys
+          continue;
+        }
+        logSafe.info("[cache-purge] deleted", { key: name });
+        summary.deleted.push(name);
       }
       summary.count = summary.deleted.length;
     }

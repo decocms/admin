@@ -1,5 +1,6 @@
 import type { MCPClientStub, WorkspaceTools } from "@deco/sdk/mcp";
 import type { Message as AIMessage } from "ai";
+import { extractText } from "unpdf"; // Added to restore PDF text extraction feature
 
 const MIN_PDF_SUMMARIZATION_SIZE_BYTES = 100_000; // 100KB
 
@@ -26,6 +27,25 @@ function chunkText(text: string, maxChunkSize: number): string[] {
   }
 
   return chunks;
+}
+
+// Restored helper for extracting PDF text (was previously removed)
+async function extractPDFText(url: string): Promise<string> {
+  try {
+    const resp = await fetch(url);
+    if (!resp.ok) {
+      console.error(`[PDF Summarizer] Failed to fetch PDF: ${url} status=${resp.status}`);
+      return "";
+    }
+    const data = new Uint8Array(await resp.arrayBuffer());
+    const { text } = await extractText(data, { mergePages: true } as any);
+    if (Array.isArray(text)) return text.join(" ");
+    if (typeof text === "string") return text;
+    return "";
+  } catch (err) {
+    console.error("[PDF Summarizer] Error extracting PDF text", err);
+    return "";
+  }
 }
 
 async function summarizeChunk(
@@ -94,11 +114,11 @@ export function shouldSummarizePDFs(messages: AIMessage[]): {
   const totalPdfAttachmentsBytes = pdfMessages.reduce((acc, message) => {
     return (
       acc +
-      (message.experimental_attachments ?? []).reduce((acc, attachment) => {
+      (message.experimental_attachments ?? []).reduce((acc2, attachment) => {
         if ("size" in attachment && typeof attachment.size === "number") {
-          return acc + attachment.size;
+          return acc2 + attachment.size;
         }
-        return acc;
+        return acc2;
       }, 0)
     );
   }, 0);
@@ -106,11 +126,7 @@ export function shouldSummarizePDFs(messages: AIMessage[]): {
   const hasMinimumSizeForSummarization =
     totalPdfAttachmentsBytes > MIN_PDF_SUMMARIZATION_SIZE_BYTES;
 
-  return {
-    hasPdf,
-    totalPdfAttachmentsBytes,
-    hasMinimumSizeForSummarization,
-  };
+  return { hasPdf, totalPdfAttachmentsBytes, hasMinimumSizeForSummarization };
 }
 
 /**
@@ -124,12 +140,7 @@ export function shouldSummarizePDFs(messages: AIMessage[]): {
 export async function summarizePDFMessages(
   messages: AIMessage[],
   mcpClient: MCPClientStub<WorkspaceTools>,
-  options: {
-    model: string;
-    maxChunkSize: number;
-    maxSummaryTokens: number;
-    maxTotalTokens: number;
-  },
+  options: { model: string; maxChunkSize: number; maxSummaryTokens: number; maxTotalTokens: number },
 ): Promise<AIMessage[]> {
   const { model, maxChunkSize, maxSummaryTokens, maxTotalTokens } = options;
 

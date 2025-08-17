@@ -1,6 +1,6 @@
-import { extractPDFText } from 'unpdf';
+import { extractText } from 'unpdf';
 
-export function summarizePDF(filePath: string): string {
-  const text = extractPDFText(filePath);
-  return text;
-}
+// Re-export PDF summarization features for external usage
+export { shouldSummarizePDFs, summarizePDFMessages } from "./agent/summarize-pdf.ts";
+
+export default {};

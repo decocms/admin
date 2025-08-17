@@ -5,7 +5,7 @@ import type { Message as AIMessageOriginal } from "ai";
 import {
   summarizePDFMessages,
   shouldSummarizePDFs,
-} from "../src/agent/summarize-pdf.ts";
+} from "../src/summarize-pdf.ts";
 
 type AIMessage = AIMessageOriginal & {
   experimental_attachments?: AIMessageOriginal["experimental_attachments"] &

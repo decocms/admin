@@ -138,5 +138,32 @@ $env:BASE_URL='http://localhost:8799'; npm --prefix seo-ecommerce/server run smo
 - Sanitização extra logs /mcp/tools (remover tokens eventuals)
 - Cache persistente (KV/R2) opcional para PageSpeed (reduzir quota)
 
+## Secrets de Produção
+
+Requisitos obrigatórios para deploy (checados por `scripts/check-secrets.mjs` e em runtime `/mcp` / `/api`):
+
+| Variável | Uso |
+|----------|-----|
+| CF_ACCOUNT_ID | Deploy Cloudflare Workers |
+| CF_API_TOKEN | Auth API para publicar Worker (escopos: Workers Scripts, KV se usado) |
+| SUPABASE_URL | URL base do projeto Supabase (server) |
+| SUPABASE_SERVER_TOKEN | Service role key (NÃO expor publicamente) |
+
+Opcionais (habilitam recursos extras):
+| Variável | Uso |
+|----------|-----|
+| PUBLIC_SUPABASE_URL | Client-side init (fallback /__env se ausente) |
+| PUBLIC_SUPABASE_ANON_KEY | Client-side anon auth |
+| OPENROUTER_API_KEY | Geração de insights via LLM (AI_INSIGHTS) |
+
+Pré-deploy (CI) recomendado:
+```powershell
+node seo-ecommerce/server/scripts/check-secrets.mjs
+```
+Ou usar o script:
+```powershell
+npm --prefix seo-ecommerce/server run deploy:checked
+```
+
 ---
 Qualquer dúvida: ver `seo-ecommerce/server/scripts/smoke.mjs` para entender a sequência ou abrir issue interna.

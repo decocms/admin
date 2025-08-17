@@ -14,6 +14,20 @@ interface Env extends DecoEnv {
   PUBLIC_SUPABASE_ANON_KEY?: string;
 }
 
+// Validate critical secrets in production (non-localhost) once per instance
+function validateCoreSecrets(env: Env, host: string | null): string[] {
+  const missing: string[] = [];
+  const required = ['SUPABASE_URL','SUPABASE_SERVER_TOKEN','CF_API_TOKEN','CF_ACCOUNT_ID'];
+  const isLocal = host ? host.includes('localhost') : false;
+  if (isLocal) return missing; // allow local dev
+  for (const key of required) {
+    if (!(key in env) || (env as any)[key] === undefined || (env as any)[key] === '' ) {
+      missing.push(key);
+    }
+  }
+  return missing;
+}
+
 // Workflow wrapper for SEO_AUDIT tool (single step for now)
 const createSeoAuditWorkflow = (env: Env) => {
   const seoTool = createSeoAuditTool(env);
@@ -192,6 +206,15 @@ const runtime = {
   ...baseRuntime,
   fetch: (req: Request, env: Env, ctx: any) => {
     const url = new URL(req.url);
+    // Early secret validation (once per request path) for production clarity
+    const host = req.headers.get('host');
+    const missing = validateCoreSecrets(env, host);
+    if (missing.length) {
+      // Only block MCP/tool and API endpoints; allow static assets to still serve a maintenance page if desired
+      if (url.pathname.startsWith('/mcp') || url.pathname.startsWith('/api')) {
+        return new Response(JSON.stringify({ error: 'Missing required production secrets', missing }), { status: 500, headers: { 'content-type':'application/json','Cache-Control':'no-cache' } });
+      }
+    }
     // Minimal JSON endpoint to expose selected PUBLIC_ env vars to client when they were not inlined at build time.
     if (url.pathname === '/__env') {
       return new Response(

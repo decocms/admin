@@ -14,6 +14,7 @@ import {
   Navigate,
   RouterProvider,
   useLocation,
+  useParams,
   useRouteError,
 } from "react-router";
 import { EmptyState } from "./components/common/empty-state.tsx";
@@ -151,6 +152,14 @@ const ViewsList = lazy(() =>
   wrapWithUILoadingFallback(import("./components/views/list.tsx")),
 );
 
+const DiscoverPage = lazy(() =>
+  wrapWithUILoadingFallback(import("./components/discover/page.tsx")),
+);
+
+const WorkspaceSelection = lazy(() =>
+  import("./components/workspace-selection/index.tsx").then(mod => ({ default: mod.WorkspaceSelectionLayout })),
+);
+
 function NotFound(): null {
   throw new NotFoundError("The path was not found");
 }
@@ -158,13 +167,21 @@ function NotFound(): null {
 const DEFAULT_PATH = "/agents";
 
 /**
- * Home component that redirects to the default path while preserving team workspace context.
- * This replaces the previous loader-based approach to avoid double redirects while maintaining
- * proper team slug handling.
+ * Home component that either shows workspace selection or redirects to the default path.
+ * This handles the workspace selection flow for users who need to choose a workspace.
  */
 function Home() {
+  const { pathname } = useLocation();
+  const { teamSlug } = useParams();
   const workspaceLink = useWorkspaceLink();
-  return <Navigate to={workspaceLink(DEFAULT_PATH)} replace />;
+  
+  // If we're on a team route (/:teamSlug/), redirect to the default path within that team
+  if (teamSlug) {
+    return <Navigate to={workspaceLink(DEFAULT_PATH)} replace />;
+  }
+  
+  // For root path, redirect to workspace selection
+  return <Navigate to="/workspace-selection" replace />;
 }
 
 function ErrorFallback() {
@@ -295,6 +312,10 @@ const router = createBrowserRouter([
         Component: AppAuth,
       },
       {
+        path: "/workspace-selection",
+        Component: WorkspaceSelection,
+      },
+      {
         path: "/:teamSlug?",
         Component: RouteLayout,
         children: [
@@ -302,6 +323,10 @@ const router = createBrowserRouter([
             index: true,
             Component: Home,
           },
+          { path: "chat", Component: lazy(() => import("./components/chat/chat-page.tsx").then(m => ({ default: m.ChatPage }))) },
+          { path: "onboarding", Component: lazy(() => import("./components/onboarding/onboarding-page.tsx").then(m => ({ default: m.OnboardingPage }))) },
+          { path: "discover", Component: DiscoverPage },
+          { path: "discover/item/:itemId", Component: lazy(() => wrapWithUILoadingFallback(import("./components/discover/item-detail.tsx"))) },
           { path: "agents", Component: AgentList },
           { path: "agent/:id/:threadId", Component: AgentDetail },
           { path: "connections", Component: ConnectionsList },

@@ -66,6 +66,7 @@ export const KEYS = {
   ],
   TEAMS: () => ["teams"],
   TEAM: (slug: string) => ["team", slug],
+  TEAMS_AVAILABLE_FOR_DOMAIN: () => ["teams", "available-for-domain"],
   TEAM_THEME: (slug: string) => ["team-theme", slug],
   TEAM_VIEWS: (workspace: Workspace, integrationId: string) => [
     "team-views",

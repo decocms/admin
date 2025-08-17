@@ -59,6 +59,11 @@ export const updateTeam = (
   init?: RequestInit,
 ): Promise<Team> => MCPClient.TEAMS_UPDATE(input, init) as Promise<Team>;
 
+export const listAvailableTeamsForDomain = (init?: RequestInit) =>
+  MCPClient.TEAMS_LIST_AVAILABLE_FOR_DOMAIN({}, init) as Promise<{
+    items: (Team & { domainSharing?: any })[];
+  }>;
+
 export const deleteTeam = (
   teamId: number,
   init?: RequestInit,

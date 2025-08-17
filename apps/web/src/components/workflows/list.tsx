@@ -116,7 +116,7 @@ function WorkflowRunsTableView({
       render: (run) => (
         <div className="flex items-center gap-2">
           <Icon name="schedule" size={14} className="text-muted-foreground" />
-          <span className="text-sm font-mono text-xs">{run.runId}</span>
+          <span className="text-sm font-mono">{run.runId}</span>
         </div>
       ),
       sortable: true,

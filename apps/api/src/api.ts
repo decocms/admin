@@ -46,6 +46,9 @@ import {
 } from "@modelcontextprotocol/sdk/types.js";
 import { getIntegration } from "packages/sdk/src/mcp/integrations/api.ts";
 import { createPosthogServerClient } from "packages/sdk/src/posthog.ts";
+import { z as zod } from "zod";
+import { createExtractWebsiteColorsTool } from "./tools/extract-colors.ts";
+import { createOnboardingThemeWorkflow } from "./workflows/onboarding-theme-workflow.ts";
 
 export const app = new Hono<AppEnv>();
 export const honoCtxToAppCtx = (c: Context<AppEnv>): AppContext => {
@@ -354,6 +357,43 @@ app.post(
   "/:root/:slug/tools/call/:tool",
   createToolCallHandlerFor(WORKSPACE_TOOLS),
 );
+
+// Minimal endpoint to start the onboarding theme workflow via tools
+app.post("/:root/:slug/workflows/onboarding-theme/start", async (c) => {
+  const ctx = honoCtxToAppCtx(c);
+  const { domain } = await c.req.json<{ domain: string }>();
+  console.log("[HTTP] start onboarding theme workflow", { 
+    workspace: ctx.workspace?.value, 
+    domain,
+    timestamp: new Date().toISOString()
+  });
+  
+  try {
+    // Use the actual workflow instead of just the tool
+    using _ = ctx.resourceAccess.grant();
+    const workflow = createOnboardingThemeWorkflow(c.env);
+    const result = await State.run(ctx, () => workflow.execute({
+      domain,
+      teamId: ctx.workspace?.slug || "default",
+    }));
+    
+    console.log("[HTTP] onboarding theme workflow result", { 
+      domain,
+      result,
+      timestamp: new Date().toISOString()
+    });
+    
+    return c.json({ data: result });
+  } catch (error) {
+    console.error("[HTTP] onboarding theme workflow error", { 
+      domain,
+      error: error instanceof Error ? error.message : String(error),
+      stack: error instanceof Error ? error.stack : undefined,
+      timestamp: new Date().toISOString()
+    });
+    throw error;
+  }
+});
 
 app.post(
   `/:root/:slug/${WellKnownMcpGroups.Email}/mcp`,

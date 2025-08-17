@@ -12,6 +12,7 @@ import {
   deleteTeam,
   getTeam,
   getWorkspaceTheme,
+  listAvailableTeamsForDomain,
   listAvailableViewsForConnection,
   listTeams,
   removeView,
@@ -49,6 +50,21 @@ export const useTeam = (slug: string = "") => {
   });
 };
 
+export const useCurrentTeam = () => {
+  const { workspace } = useSDK();
+  const slug = workspace.split("/")[1] ?? "";
+  return useTeam(slug);
+};
+
+export const useAvailableTeamsForDomain = () => {
+  return useQuery({
+    queryKey: KEYS.TEAMS_AVAILABLE_FOR_DOMAIN(),
+    queryFn: ({ signal }) => listAvailableTeamsForDomain({ signal }),
+    retry: (failureCount, error) =>
+      error instanceof InternalServerError && failureCount < 2,
+  });
+};
+
 export function useCreateTeam() {
   const client = useQueryClient();
   return useMutation({
@@ -66,6 +82,25 @@ export function useUpdateTeam() {
     mutationFn: (input: UpdateTeamInput) => updateTeam(input),
     onSuccess: (result) => {
       client.invalidateQueries({ queryKey: KEYS.TEAMS() });
+      client.setQueryData(["team", result.slug], result);
+    },
+  });
+}
+
+export function useUpdateTeamTheme() {
+  const client = useQueryClient();
+  const { workspace } = useSDK();
+  const slug = workspace.split("/")[1] ?? "";
+  
+  return useMutation({
+    mutationFn: (input: { teamId: string; theme: any }) => 
+      updateTeam({
+        id: parseInt(input.teamId),
+        data: { theme: input.theme }
+      }),
+    onSuccess: (result) => {
+      client.invalidateQueries({ queryKey: KEYS.TEAMS() });
+      client.invalidateQueries({ queryKey: KEYS.TEAM_THEME(slug) });
       client.setQueryData(["team", result.slug], result);
     },
   });

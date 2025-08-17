@@ -6,10 +6,13 @@ import { ErrorBoundary } from "../../error-boundary.tsx";
 import { useFocusChat } from "../agents/hooks.ts";
 import { AgentAvatar } from "../common/avatar/agent.tsx";
 import { useAgent } from "../agent/provider.tsx";
+import { OnboardingEmptyState } from "./onboarding-empty-state.tsx";
 
 export function EmptyState() {
   const { agentId } = useAgent();
 
+  // Don't show onboarding empty state for teamAgent in chat page
+  // The chat page handles its own onboarding UI
   if (agentId === WELL_KNOWN_AGENT_IDS.teamAgent) {
     return (
       <div className="py-10">

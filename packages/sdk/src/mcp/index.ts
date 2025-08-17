@@ -41,6 +41,7 @@ import * as threadsAPI from "./threads/api.ts";
 import * as triggersAPI from "./triggers/api.ts";
 import * as walletAPI from "./wallet/api.ts";
 
+
 export const CONTRACTS_TOOLS = [
   contractAuthorize,
   contractSettle,

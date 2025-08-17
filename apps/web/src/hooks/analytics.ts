@@ -6,15 +6,24 @@ import {
 } from "../constants.ts";
 import { onUserChange } from "./use-user.ts";
 
-export const ANALYTICS = posthog.init(POSTHOG_PROJECT_API_KEY, {
-  api_host: POSTHOG_ORIGIN,
-  person_profiles: "always",
-  capture_pageview: false,
-  capture_exceptions: true,
-  defaults: "2025-05-24",
-  // Uncomment this if you want to test event tracking in development
-  // debug: import.meta.env.MODE === "development",
-});
+// Initialize PostHog only if API key is available
+export const ANALYTICS = POSTHOG_PROJECT_API_KEY 
+  ? posthog.init(POSTHOG_PROJECT_API_KEY, {
+      api_host: POSTHOG_ORIGIN,
+      person_profiles: "always",
+      capture_pageview: false,
+      capture_exceptions: true,
+      defaults: "2025-05-24",
+      // Uncomment this if you want to test event tracking in development
+      // debug: import.meta.env.MODE === "development",
+    })
+  : {
+      // Mock analytics object when no API key is provided
+      init: () => null,
+      identify: () => null,
+      capture: () => null,
+      captureException: () => null,
+    } as typeof posthog;
 
 let lastUserId: string | undefined = undefined;
 

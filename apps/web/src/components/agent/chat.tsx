@@ -68,6 +68,15 @@ const TABS = {
   },
 };
 
+// Simple tabs for team agent (onboarding) - no configuration UI
+const ONBOARDING_TABS = {
+  chat: {
+    Component: MainChat,
+    title: "Chat",
+    initialOpen: true,
+  },
+};
+
 function ActionsButtons() {
   const { agentId, chat } = useAgent();
   const focusChat = useFocusChat();
@@ -239,9 +248,9 @@ function Page(props: Props) {
       >
         <AgentMetadataUpdater />
         <PageLayout
-          tabs={TABS}
+          tabs={isTeamAgent ? ONBOARDING_TABS : TABS}
           key={agentId}
-          actionButtons={<ActionsButtons />}
+          actionButtons={!isTeamAgent ? <ActionsButtons /> : undefined}
           breadcrumb={
             agentId !== WELL_KNOWN_AGENT_IDS.teamAgent && (
               <Breadcrumb agentId={agentId} />

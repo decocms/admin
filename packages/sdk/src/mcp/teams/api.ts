@@ -1,5 +1,6 @@
 import { z } from "zod";
 import {
+  ForbiddenError,
   InternalServerError,
   NotFoundError,
   UserInputError,
@@ -167,6 +168,27 @@ const fontSchema = z.union([
   }),
 ]);
 
+// Workspace sharing settings schema
+const workspaceSettingsSchema = z
+  .object({
+    domainSharing: z
+      .object({
+        enabled: z.boolean().describe("Whether domain-based sharing is enabled"),
+        allowedDomains: z
+          .array(z.string())
+          .optional()
+          .describe("List of email domains that can auto-join this workspace"),
+        mode: z
+          .enum(["auto-join", "request", "invite-only"])
+          .optional()
+          .default("invite-only")
+          .describe("How users from allowed domains can join"),
+      })
+      .optional()
+      .describe("Settings for domain-based workspace sharing"),
+  })
+  .describe("Workspace access and sharing settings");
+
 const enhancedThemeSchema = z
   .object({
     variables: themeVariablesSchema
@@ -178,6 +200,9 @@ const enhancedThemeSchema = z
     font: fontSchema
       .optional()
       .describe("Font configuration for the workspace"),
+    settings: workspaceSettingsSchema
+      .optional()
+      .describe("Workspace sharing and access settings"),
   })
   .describe(
     "Theme configuration for the workspace. Only include the properties you want to change - existing values will be preserved.",
@@ -504,26 +529,38 @@ export const createTeam = createTool({
     c.resourceAccess.grant();
 
     assertPrincipalIsUser(c);
-    const { name, slug, stripe_subscription_id } = props;
+    const { name, slug: providedSlug, stripe_subscription_id } = props;
     const user = c.user;
 
-    // Enforce unique slug if provided
-    if (slug) {
-      const { data: existingTeam, error: slugError } = await c.db
-        .from("teams")
-        .select("id")
-        .eq("slug", slug)
-        .maybeSingle();
-      if (slugError) throw slugError;
-      if (existingTeam) {
-        throw new UserInputError("A team with this slug already exists.");
-      }
+    // Generate slug if not provided
+    let finalSlug = providedSlug;
+    if (!finalSlug) {
+      // Generate base slug from team name
+      const baseSlug = name.toLowerCase()
+        .replace(/[^a-z0-9]/g, '-')
+        .replace(/-+/g, '-')
+        .replace(/^-|-$/g, '');
+      
+      // Add timestamp to ensure uniqueness
+      const timestamp = Date.now().toString(36);
+      finalSlug = `${baseSlug}-${timestamp}`;
+    }
+
+    // Enforce unique slug
+    const { data: existingTeam, error: slugError } = await c.db
+      .from("teams")
+      .select("id")
+      .eq("slug", finalSlug)
+      .maybeSingle();
+    if (slugError) throw slugError;
+    if (existingTeam) {
+      throw new UserInputError("A team with this slug already exists.");
     }
 
     // Create the team
     const { data: team, error: createError } = await c.db
       .from("teams")
-      .insert([{ name: sanitizeTeamName(name), slug, stripe_subscription_id }])
+      .insert([{ name: sanitizeTeamName(name), slug: finalSlug, stripe_subscription_id }])
       .select()
       .single();
 
@@ -562,7 +599,17 @@ export const createTeam = createTool({
 
     if (roleError) throw roleError;
 
-    return team;
+    // Return team with avatar URL like other APIs
+    const workspace = `/shared/${team.slug}`;
+    const signedUrlCreator = buildSignedUrlCreator({
+      c,
+      existingBucketName: getWorkspaceBucketName(workspace),
+    });
+
+    return {
+      ...team,
+      avatar_url: await getAvatarFromTheme(team.theme, signedUrlCreator),
+    };
   },
 });
 
@@ -726,6 +773,180 @@ export const listTeams = createTool({
     );
 
     return { items: teamsWithAvatar };
+  },
+});
+
+export const listAvailableTeamsForDomain = createTool({
+  name: "TEAMS_LIST_AVAILABLE_FOR_DOMAIN",
+  description: "List teams that allow domain-based joining for the current user's email domain",
+  inputSchema: z.object({}),
+  outputSchema: z.object({
+    items: z.array(z.any()),
+  }),
+  handler: async (_, c) => {
+    c.resourceAccess.grant();
+
+    assertPrincipalIsUser(c);
+    const user = c.user;
+
+    if (!user.email) {
+      return { items: [] };
+    }
+
+    const userDomain = user.email.split('@')[1];
+    if (!userDomain) {
+      return { items: [] };
+    }
+
+    // Get all teams that have domain sharing enabled for this domain
+    const { data, error } = await c.db
+      .from("teams")
+      .select(`
+        id,
+        name,
+        slug,
+        theme,
+        created_at
+      `);
+
+    if (error) {
+      console.error(error);
+      throw error;
+    }
+
+    // Filter teams that allow the user's domain
+    const availableTeams = data.filter((team) => {
+      const theme = team.theme as any;
+      const domainSharing = theme?.settings?.domainSharing;
+      
+      return (
+        domainSharing?.enabled && 
+        domainSharing?.allowedDomains?.includes(userDomain)
+      );
+    });
+
+    // Add avatar URLs
+    const teamsWithAvatar = await Promise.all(
+      availableTeams.map(async (team) => {
+        const signedUrlCreator = buildSignedUrlCreator({
+          c,
+          existingBucketName: getWorkspaceBucketName(`/shared/${team.slug}`),
+        });
+        return {
+          ...team,
+          avatar_url: await getAvatarFromTheme(team.theme, signedUrlCreator),
+          domainSharing: (team.theme as any)?.settings?.domainSharing,
+        };
+      }),
+    );
+
+    return { items: teamsWithAvatar };
+  },
+});
+
+export const joinTeamByDomain = createTool({
+  name: "TEAMS_JOIN_BY_DOMAIN", 
+  description: "Join a team that allows domain-based joining",
+  inputSchema: z.object({
+    teamId: z.number().describe("The ID of the team to join"),
+  }),
+  handler: async (props, c) => {
+    c.resourceAccess.grant();
+
+    assertPrincipalIsUser(c);
+    const { teamId } = props;
+    const user = c.user;
+
+    if (!user.email) {
+      throw new UserInputError("User email is required");
+    }
+
+    const userDomain = user.email.split('@')[1];
+    if (!userDomain) {
+      throw new UserInputError("Invalid user email domain");
+    }
+
+    // Get team and check if domain sharing is allowed
+    const { data: team, error: teamError } = await c.db
+      .from("teams")
+      .select("id, name, slug, theme")
+      .eq("id", teamId)
+      .single();
+
+    if (teamError || !team) {
+      throw new NotFoundError("Team not found");
+    }
+
+    const theme = team.theme as any;
+    const domainSharing = theme?.settings?.domainSharing;
+
+    if (!domainSharing?.enabled || !domainSharing?.allowedDomains?.includes(userDomain)) {
+      throw new ForbiddenError("Domain joining not allowed for this team");
+    }
+
+    // Check if user is already a member
+    const { data: existingMember } = await c.db
+      .from("members")
+      .select("id")
+      .eq("team_id", teamId)
+      .eq("user_id", user.id)
+      .is("deleted_at", null)
+      .maybeSingle();
+
+    if (existingMember) {
+      return { message: "Already a member of this team", teamSlug: team.slug };
+    }
+
+    // Add user to team
+    const { error: memberError } = await c.db
+      .from("members")
+      .insert({
+        team_id: teamId,
+        user_id: user.id,
+        activity: [
+          {
+            action: "add_member",
+            timestamp: new Date().toISOString(),
+          },
+        ],
+      });
+
+    if (memberError) {
+      throw memberError;
+    }
+
+    // Set default role (member role = 2, or use a default from domain sharing settings)
+    const defaultRoleId = domainSharing.defaultRoleId || 2; // Default to member role
+    
+    // Get the member ID
+    const { data: memberData, error: getMemberError } = await c.db
+      .from("members")
+      .select("id")
+      .eq("team_id", teamId)
+      .eq("user_id", user.id)
+      .single();
+
+    if (getMemberError || !memberData) {
+      throw new InternalServerError("Failed to find member after insertion");
+    }
+
+    const { error: roleError } = await c.db
+      .from("member_roles")
+      .insert({
+        member_id: memberData.id,
+        role_id: defaultRoleId,
+      });
+
+    if (roleError) {
+      console.error("Error assigning default role:", roleError);
+      // Continue even if role assignment fails
+    }
+
+    return { 
+      message: "Successfully joined team",
+      teamSlug: team.slug,
+      teamName: team.name 
+    };
   },
 });
 

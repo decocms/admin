@@ -60,6 +60,7 @@ import { upgradeCommand } from "./commands/update/upgrade.js";
 import { updateCommand } from "./commands/update/update.js";
 import { addCommand } from "./commands/add/add.js";
 import { detectRuntime } from "./lib/runtime.js";
+import { createExtractThemeCommand } from "./commands/extract-theme.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -462,6 +463,7 @@ const program = new Command()
   .addCommand(update)
   .addCommand(linkCmd)
   .addCommand(gen)
-  .addCommand(create);
+  .addCommand(create)
+  .addCommand(createExtractThemeCommand());
 
 program.parse();

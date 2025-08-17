@@ -33,6 +33,7 @@ import {
 import { getGroups } from "../groups.ts";
 import {
   Binding,
+  createTool,
   createToolGroup,
   MCPClient,
   NotFoundError,
@@ -886,5 +887,156 @@ export const DECO_INTEGRATION_INSTALL = createIntegrationManagementTool({
     }
 
     return { installationId: created.id };
+  },
+});
+
+export const searchTools = createIntegrationManagementTool({
+  name: "SEARCH_TOOLS",
+  description: "Search across all available tools, workflows, agents, and integrations in the platform",
+  inputSchema: z.object({
+    query: z.string().describe("Search query to find tools by name or description").optional(),
+    category: z.enum(["tools", "workflows", "agents", "integrations"]).describe("Filter by category").optional(),
+    limit: z.number().min(1).max(50).default(20).describe("Maximum number of results to return"),
+  }),
+  outputSchema: z.object({
+    tools: z.array(z.object({
+      id: z.string(),
+      name: z.string(),
+      description: z.string().optional(),
+      category: z.string(),
+      integration_name: z.string().optional(),
+      input_schema: z.unknown().optional(),
+      output_schema: z.unknown().optional(),
+      app_name: z.string().optional(),
+      scope_name: z.string().optional(),
+    })),
+    total: z.number(),
+  }),
+  handler: async ({ query, category, limit }, c) => {
+    const searchLimit = limit ?? 20;
+    assertHasWorkspace(c);
+    c.resourceAccess.grant(); // Grant access immediately like checkAccess tool
+    
+    try {
+      // Build the query to search across multiple sources
+      let searchResults: Array<{
+        id: string;
+        name: string;
+        description?: string;
+        category: string;
+        integration_name?: string;
+        input_schema?: unknown;
+        output_schema?: unknown;
+        app_name?: string;
+        scope_name?: string;
+      }> = [];
+      
+      // Search in apps registry tools table
+      if (!category || category === "tools") {
+        const registryToolsQuery = c.db
+          .from("deco_chat_apps_registry_tools")
+          .select(`
+            id,
+            name,
+            description,
+            input_schema,
+            output_schema,
+            deco_chat_apps_registry!inner(
+              name,
+              deco_chat_registry_scopes!inner(scope_name)
+            )
+          `)
+          .limit(searchLimit);
+
+        if (query) {
+          registryToolsQuery.or(`name.ilike.%${query}%,description.ilike.%${query}%`);
+        }
+
+        const { data: registryTools, error: registryError } = await registryToolsQuery;
+        
+        if (!registryError && registryTools) {
+          searchResults.push(...registryTools.map((tool: any) => ({
+            id: tool.id,
+            name: tool.name,
+            description: tool.description,
+            category: "tools",
+            input_schema: tool.input_schema,
+            output_schema: tool.output_schema,
+            app_name: tool.deco_chat_apps_registry?.name,
+            scope_name: tool.deco_chat_apps_registry?.deco_chat_registry_scopes?.scope_name,
+          })));
+        }
+      }
+
+      // Search in agents table  
+      if (!category || category === "agents") {
+        const agentsQuery = c.db
+          .from("deco_chat_agents")
+          .select("id, name, description, instructions, tools")
+          .eq("workspace", c.workspace.value)
+          .limit(searchLimit);
+
+        if (query) {
+          agentsQuery.or(`name.ilike.%${query}%,description.ilike.%${query}%`);
+        }
+
+        const { data: agents, error: agentsError } = await agentsQuery;
+        
+        if (!agentsError && agents) {
+          searchResults.push(...agents.map((agent: any) => ({
+            id: agent.id,
+            name: agent.name,
+            description: agent.description,
+            category: "agents",
+            input_schema: { message: "string" },
+            output_schema: { response: "string" },
+          })));
+        }
+      }
+
+      // Search in integrations table
+      if (!category || category === "integrations") {
+        const integrationsQuery = c.db
+          .from("deco_chat_integrations")
+          .select("id, name, description, app_key")
+          .eq("workspace", c.workspace.value)
+          .limit(searchLimit);
+
+        if (query) {
+          integrationsQuery.or(`name.ilike.%${query}%,description.ilike.%${query}%`);
+        }
+
+        const { data: integrations, error: integrationsError } = await integrationsQuery;
+        
+        if (!integrationsError && integrations) {
+          searchResults.push(...integrations.map((integration: any) => ({
+            id: integration.id,
+            name: integration.name,
+            description: integration.description,
+            category: "integrations",
+            integration_name: integration.app_key,
+          })));
+        }
+      }
+
+      // Limit total results
+      searchResults = searchResults.slice(0, searchLimit);
+
+      console.log(`[SEARCH_TOOLS] Found ${searchResults.length} tools for query: "${query || 'all'}"`);
+      
+      return {
+        tools: searchResults,
+        total: searchResults.length,
+      };
+      
+    } catch (error) {
+      console.error("[SEARCH_TOOLS] Error:", error);
+      
+      // Return empty results on error
+      return {
+        tools: [],
+        total: 0,
+      };
+    }
   },
 });

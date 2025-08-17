@@ -10,43 +10,219 @@ import { trackEvent } from "../../hooks/analytics.ts";
 import { useWorkspaceLink } from "../../hooks/use-navigate-workspace.ts";
 import { marketplaceData, type MarketplaceItem } from "../../data/marketplace.ts";
 
-function ReviewCard({ rating, author, timeAgo, content }: {
-  rating: number;
-  author: string;
-  timeAgo: string;
-  content: string;
-}) {
+// Category-specific content components
+function ToolContent({ item }: { item: MarketplaceItem }) {
   return (
-    <Card className="mb-4">
-      <CardContent className="pt-4">
-        <div className="flex items-start justify-between mb-2">
-          <div className="flex items-center gap-2">
-            <div className="w-8 h-8 bg-gradient-to-br from-blue-400 to-purple-500 rounded-full flex items-center justify-center text-white text-sm font-medium">
-              {author[0].toUpperCase()}
+    <div className="space-y-6">
+      <div>
+        <h3 className="text-lg font-medium mb-3">Input Parameters</h3>
+        <div className="bg-muted/50 rounded-lg p-4">
+          <div className="space-y-3">
+            <div className="flex justify-between items-center">
+              <span className="font-mono text-sm">url</span>
+              <Badge variant="outline">string</Badge>
             </div>
-            <div>
-              <div className="font-medium text-sm">{author}</div>
-              <div className="flex items-center gap-1">
-                {Array.from({ length: 5 }).map((_, i) => (
-                  <Icon
-                    key={i}
-                    name="star"
-                    size={12}
-                    className={i < rating ? "text-yellow-500" : "text-gray-300"}
-                  />
-                ))}
-              </div>
+            <p className="text-sm text-muted-foreground">Website URL to analyze</p>
+            <Separator />
+            <div className="flex justify-between items-center">
+              <span className="font-mono text-sm">options</span>
+              <Badge variant="outline">object</Badge>
             </div>
+            <p className="text-sm text-muted-foreground">Optional configuration parameters</p>
           </div>
-          <span className="text-xs text-muted-foreground">{timeAgo}</span>
         </div>
-        <p className="text-sm text-muted-foreground">{content}</p>
-      </CardContent>
-    </Card>
+      </div>
+      
+      <div>
+        <h3 className="text-lg font-medium mb-3">Response Format</h3>
+        <div className="bg-muted/50 rounded-lg p-4">
+          <pre className="text-sm font-mono text-muted-foreground">
+{`{
+  "primary": "#ff6b35",
+  "secondary": "#004e89", 
+  "accent": "#ffa500",
+  "background": "#ffffff",
+  "foreground": "#333333"
+}`}
+          </pre>
+        </div>
+      </div>
+    </div>
   );
 }
 
-export default function ItemDetailPage() {
+function WorkflowContent({ item }: { item: MarketplaceItem }) {
+  return (
+    <div className="space-y-6">
+      <div>
+        <h3 className="text-lg font-medium mb-3">Workflow Steps</h3>
+        <div className="space-y-3">
+          {[
+            { step: 1, name: "Lead Capture", description: "Collect lead information from form submission" },
+            { step: 2, name: "Data Enrichment", description: "Enhance lead data with external APIs" },
+            { step: 3, name: "Scoring", description: "Apply scoring algorithm based on criteria" },
+            { step: 4, name: "Assignment", description: "Route to appropriate sales representative" },
+            { step: 5, name: "Notification", description: "Send alerts and create CRM records" }
+          ].map((step) => (
+            <div key={step.step} className="flex gap-3 p-3 bg-muted/30 rounded-lg">
+              <div className="w-8 h-8 bg-primary text-primary-foreground rounded-full flex items-center justify-center text-sm font-medium">
+                {step.step}
+              </div>
+              <div>
+                <h4 className="font-medium">{step.name}</h4>
+                <p className="text-sm text-muted-foreground">{step.description}</p>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+      
+      <div>
+        <h3 className="text-lg font-medium mb-3">Trigger Conditions</h3>
+        <div className="bg-muted/50 rounded-lg p-4">
+          <ul className="space-y-2 text-sm">
+            <li>• New form submission received</li>
+            <li>• Manual trigger via API call</li>
+            <li>• Scheduled batch processing</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function ViewContent({ item }: { item: MarketplaceItem }) {
+  return (
+    <div className="space-y-6">
+      <div>
+        <h3 className="text-lg font-medium mb-3">Components Included</h3>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {[
+            { name: "Sales Chart", description: "Interactive revenue visualization" },
+            { name: "Pipeline View", description: "Deal progression tracking" },
+            { name: "Team Metrics", description: "Individual performance stats" },
+            { name: "Goal Tracking", description: "Progress towards targets" }
+          ].map((component) => (
+            <div key={component.name} className="p-3 bg-muted/30 rounded-lg">
+              <h4 className="font-medium">{component.name}</h4>
+              <p className="text-sm text-muted-foreground">{component.description}</p>
+            </div>
+          ))}
+        </div>
+      </div>
+      
+      <div>
+        <h3 className="text-lg font-medium mb-3">Customization Options</h3>
+        <div className="bg-muted/50 rounded-lg p-4">
+          <ul className="space-y-2 text-sm">
+            <li>• Custom color themes and branding</li>
+            <li>• Configurable chart types and metrics</li>
+            <li>• Responsive design for all screen sizes</li>
+            <li>• Dark/light mode support</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function AgentContent({ item }: { item: MarketplaceItem }) {
+  return (
+    <div className="space-y-6">
+      <div>
+        <h3 className="text-lg font-medium mb-3">Agent Capabilities</h3>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {[
+            { name: "Natural Conversation", description: "Maintains context across interactions" },
+            { name: "Knowledge Base", description: "Access to domain-specific information" },
+            { name: "Task Automation", description: "Can perform actions on your behalf" },
+            { name: "Escalation Logic", description: "Knows when to involve humans" }
+          ].map((capability) => (
+            <div key={capability.name} className="p-3 bg-muted/30 rounded-lg">
+              <h4 className="font-medium">{capability.name}</h4>
+              <p className="text-sm text-muted-foreground">{capability.description}</p>
+            </div>
+          ))}
+        </div>
+      </div>
+      
+      <div>
+        <h3 className="text-lg font-medium mb-3">System Instructions</h3>
+        <div className="bg-muted/50 rounded-lg p-4">
+          <pre className="text-sm text-muted-foreground whitespace-pre-wrap">
+{`You are a helpful customer support agent for our company. 
+
+Your role is to:
+- Answer customer questions clearly and professionally
+- Help troubleshoot common issues
+- Collect necessary information for complex problems
+- Escalate to human agents when needed
+
+Always maintain a friendly, helpful tone and ask clarifying questions when needed.`}
+          </pre>
+        </div>
+      </div>
+
+      <div>
+        <h3 className="text-lg font-medium mb-3">Available Tools</h3>
+        <div className="space-y-2">
+          {[
+            "Search knowledge base",
+            "Create support tickets",
+            "Access customer information",
+            "Schedule follow-up reminders"
+          ].map((tool, index) => (
+            <div key={index} className="flex items-center gap-2 text-sm">
+              <Icon name="check_circle" size={16} className="text-green-600" />
+              <span>{tool}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function AppContent({ item }: { item: MarketplaceItem }) {
+  return (
+    <div className="space-y-6">
+      <div>
+        <h3 className="text-lg font-medium mb-3">What's Included</h3>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {item.subItems?.map((subItem) => (
+            <Card key={subItem.id}>
+              <CardContent className="p-4">
+                <div className="flex items-start gap-3">
+                  <Icon name={subItem.iconName || 'extension'} size={20} className="text-primary mt-1" />
+                  <div>
+                    <h4 className="font-medium">{subItem.name}</h4>
+                    <p className="text-sm text-muted-foreground mt-1">
+                      {subItem.shortDescription}
+                    </p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      </div>
+      
+      <div>
+        <h3 className="text-lg font-medium mb-3">Setup Requirements</h3>
+        <div className="bg-muted/50 rounded-lg p-4">
+          <ul className="space-y-2 text-sm">
+            <li>• Node.js 18+ and npm/yarn</li>
+            <li>• React 18+ with TypeScript support</li>
+            <li>• Tailwind CSS configuration</li>
+            <li>• Database connection (PostgreSQL recommended)</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+export function ItemDetailPage() {
   const { itemId } = useParams<{ itemId: string }>();
   const workspaceLink = useWorkspaceLink();
   
@@ -98,27 +274,30 @@ export default function ItemDetailPage() {
     alert(`Opening chat with ${item.name}... This will be implemented in the next step!`);
   };
 
-  // Mock reviews
-  const mockReviews = [
-    {
-      rating: 5,
-      author: "Sarah Johnson",
-      timeAgo: "2 days ago",
-      content: "This tool has completely transformed how we handle our workflow. The interface is intuitive and the results are consistently excellent."
-    },
-    {
-      rating: 4,
-      author: "Mike Chen",
-      timeAgo: "1 week ago",
-      content: "Great functionality overall. Had some minor setup issues initially but the support team was very helpful."
-    },
-    {
-      rating: 5,
-      author: "Emma Rodriguez",
-      timeAgo: "2 weeks ago",
-      content: "Exactly what we needed for our team. The automation features have saved us hours every week."
+  const formatPrice = (item: MarketplaceItem) => {
+    if (item.priceUnit === 'free') return 'Free';
+    if (item.priceUnit === 'per-1m-tokens') return `$${item.price}/1M tokens`;
+    if (item.priceUnit === 'monthly') return `$${item.price}/month`;
+    if (item.priceUnit === 'one-time') return `$${item.price}`;
+    return `$${item.price}`;
+  };
+
+  const renderCategoryContent = () => {
+    switch (item.category) {
+      case 'tools':
+        return <ToolContent item={item} />;
+      case 'agents':
+        return <AgentContent item={item} />;
+      case 'workflows':
+        return <WorkflowContent item={item} />;
+      case 'views':
+        return <ViewContent item={item} />;
+      case 'apps':
+        return <AppContent item={item} />;
+      default:
+        return <ToolContent item={item} />;
     }
-  ];
+  };
 
   return (
     <div className="container mx-auto px-6 py-8 max-w-6xl">
@@ -134,19 +313,23 @@ export default function ItemDetailPage() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-8">
         <div className="lg:col-span-2">
           <div className="flex items-start gap-4 mb-4">
-            <div className="text-4xl">{item.icon}</div>
+            <div className="w-16 h-16 rounded-xl bg-muted/50 flex items-center justify-center">
+              <Icon name={item.iconName} size={32} className="text-muted-foreground" />
+            </div>
             <div className="flex-1">
               <div className="flex items-start justify-between mb-2">
                 <h1 className="text-3xl font-bold">{item.name}</h1>
                 <div className="flex gap-2">
                   {item.featured && (
                     <Badge variant="outline" className="bg-gradient-to-r from-purple-50 to-pink-50 border-purple-200">
-                      ⭐ Featured
+                      <Icon name="star" size={12} className="mr-1" />
+                      Featured
                     </Badge>
                   )}
                   {item.trending && (
                     <Badge variant="outline" className="bg-gradient-to-r from-orange-50 to-red-50 border-orange-200">
-                      🔥 Trending
+                      <Icon name="trending_up" size={12} className="mr-1" />
+                      Trending
                     </Badge>
                   )}
                 </div>
@@ -155,17 +338,16 @@ export default function ItemDetailPage() {
               
               <div className="flex items-center gap-6 text-sm text-muted-foreground mb-4">
                 <div className="flex items-center gap-1">
-                  <Icon name="star" size={16} className="text-yellow-500" />
-                  <span className="font-medium">{item.rating}</span>
-                  <span>({item.reviewCount} reviews)</span>
-                </div>
-                <div className="flex items-center gap-1">
                   <Icon name="download" size={16} />
                   <span>{item.downloads.toLocaleString()} downloads</span>
                 </div>
                 <div className="flex items-center gap-1">
                   <Icon name="update" size={16} />
                   <span>Updated {item.lastUpdated}</span>
+                </div>
+                <div className="flex items-center gap-1">
+                  <Icon name="code" size={16} />
+                  <span>v{item.version}</span>
                 </div>
               </div>
 
@@ -186,17 +368,12 @@ export default function ItemDetailPage() {
             <CardContent className="p-6">
               <div className="text-center mb-4">
                 <div className="text-2xl font-bold mb-1">
-                  {item.price === 0 ? (
-                    <span className="text-green-600">Free</span>
-                  ) : (
-                    <div className="flex items-center justify-center gap-1">
-                      <Icon name="bolt" size={20} className="text-yellow-500" />
-                      <span>{item.price} credits</span>
-                    </div>
-                  )}
+                  <span className={item.priceUnit === 'free' ? 'text-green-600' : 'text-foreground'}>
+                    {formatPrice(item)}
+                  </span>
                 </div>
-                <p className="text-sm text-muted-foreground">
-                  {item.type === 'built-in' ? 'Built-in tool' : 'Community contribution'}
+                <p className="text-sm text-muted-foreground capitalize">
+                  {item.category} • {item.priceUnit === 'free' ? 'No cost' : 'Paid'}
                 </p>
               </div>
 
@@ -280,111 +457,66 @@ export default function ItemDetailPage() {
       <Tabs defaultValue="overview" className="w-full">
         <TabsList className="grid w-full grid-cols-4">
           <TabsTrigger value="overview">Overview</TabsTrigger>
-          <TabsTrigger value="reviews">Reviews ({item.reviewCount})</TabsTrigger>
+          <TabsTrigger value="pricing">Pricing</TabsTrigger>
           <TabsTrigger value="changelog">Changelog</TabsTrigger>
           <TabsTrigger value="support">Support</TabsTrigger>
         </TabsList>
         
         <TabsContent value="overview" className="mt-6">
-          <div className="prose max-w-none">
+          <div className="max-w-none">
             <h2 className="text-xl font-semibold mb-4">About {item.name}</h2>
             <p className="text-muted-foreground mb-6 leading-relaxed">
               {item.longDescription}
             </p>
 
-            {item.permissions && item.permissions.length > 0 && (
-              <div className="mb-6">
-                <h3 className="text-lg font-medium mb-3">Permissions Required</h3>
-                <div className="bg-muted/50 rounded-lg p-4">
-                  <ul className="space-y-2">
-                    {item.permissions.map((permission) => (
-                      <li key={permission} className="flex items-center gap-2 text-sm">
-                        <Icon name="security" size={16} className="text-muted-foreground" />
-                        <span className="capitalize">{permission.replace('-', ' ')}</span>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              </div>
-            )}
-
-            {item.subItems && item.subItems.length > 0 && (
-              <div className="mb-6">
-                <h3 className="text-lg font-medium mb-3">What's Included</h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {item.subItems.map((subItem) => (
-                    <Card key={subItem.id}>
-                      <CardContent className="p-4">
-                        <div className="flex items-start gap-3">
-                          <div className="text-xl">{subItem.icon || '📦'}</div>
-                          <div>
-                            <h4 className="font-medium">{subItem.name}</h4>
-                            <p className="text-sm text-muted-foreground mt-1">
-                              {subItem.shortDescription}
-                            </p>
-                          </div>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  ))}
-                </div>
-              </div>
-            )}
+            {renderCategoryContent()}
           </div>
         </TabsContent>
         
-        <TabsContent value="reviews" className="mt-6">
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-            <div className="lg:col-span-2">
-              <h2 className="text-xl font-semibold mb-4">User Reviews</h2>
-              <div className="space-y-4">
-                {mockReviews.map((review, index) => (
-                  <ReviewCard key={index} {...review} />
-                ))}
-              </div>
-            </div>
-            <div>
-              <Card>
-                <CardContent className="p-6">
-                  <h3 className="font-medium mb-4">Rating Overview</h3>
-                  <div className="text-center mb-4">
-                    <div className="text-3xl font-bold">{item.rating}</div>
-                    <div className="flex items-center justify-center gap-1 mb-1">
-                      {Array.from({ length: 5 }).map((_, i) => (
-                        <Icon
-                          key={i}
-                          name="star"
-                          size={16}
-                          className={i < Math.floor(item.rating) ? "text-yellow-500" : "text-gray-300"}
-                        />
-                      ))}
-                    </div>
-                    <div className="text-sm text-muted-foreground">
-                      Based on {item.reviewCount} reviews
-                    </div>
+        <TabsContent value="pricing" className="mt-6">
+          <div className="max-w-3xl">
+            <h2 className="text-xl font-semibold mb-4">Pricing Details</h2>
+            <Card>
+              <CardContent className="p-6">
+                <div className="flex items-center justify-between mb-4">
+                  <div>
+                    <h3 className="text-lg font-medium">{item.name}</h3>
+                    <p className="text-sm text-muted-foreground">{item.shortDescription}</p>
                   </div>
-                  
-                  <div className="space-y-2">
-                    {[5, 4, 3, 2, 1].map((stars) => (
-                      <div key={stars} className="flex items-center gap-2">
-                        <span className="text-sm w-8">{stars}★</span>
-                        <div className="flex-1 bg-muted rounded-full h-2">
-                          <div 
-                            className="bg-yellow-500 h-2 rounded-full" 
-                            style={{ width: `${stars === 5 ? 70 : stars === 4 ? 20 : 5}%` }}
-                          />
-                        </div>
-                        <span className="text-sm text-muted-foreground w-8">
-                          {stars === 5 ? '70%' : stars === 4 ? '20%' : '5%'}
-                        </span>
-                      </div>
-                    ))}
+                  <div className="text-right">
+                    <div className="text-2xl font-bold">
+                      <span className={item.priceUnit === 'free' ? 'text-green-600' : 'text-foreground'}>
+                        {formatPrice(item)}
+                      </span>
+                    </div>
+                    <p className="text-sm text-muted-foreground">
+                      {item.priceUnit === 'per-1m-tokens' && 'Pay per usage'}
+                      {item.priceUnit === 'monthly' && 'Recurring subscription'}
+                      {item.priceUnit === 'one-time' && 'One-time purchase'}
+                      {item.priceUnit === 'free' && 'No cost to use'}
+                    </p>
                   </div>
-                </CardContent>
-              </Card>
-            </div>
+                </div>
+                
+                <Separator className="my-4" />
+                
+                <div className="space-y-3">
+                  <h4 className="font-medium">What's included:</h4>
+                  <ul className="space-y-2 text-sm text-muted-foreground">
+                    <li>• Full access to {item.name}</li>
+                    <li>• Integration with {item.integrations?.join(', ') || 'external services'}</li>
+                    <li>• Documentation and support</li>
+                    {item.priceUnit === 'free' && <li>• No usage limits</li>}
+                    {item.priceUnit === 'per-1m-tokens' && <li>• Pay only for what you use</li>}
+                    {item.priceUnit === 'monthly' && <li>• Cancel anytime</li>}
+                  </ul>
+                </div>
+              </CardContent>
+            </Card>
           </div>
         </TabsContent>
+        
+
         
         <TabsContent value="changelog" className="mt-6">
           <div className="max-w-3xl">

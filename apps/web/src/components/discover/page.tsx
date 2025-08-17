@@ -10,6 +10,7 @@ import { useState, useMemo } from "react";
 import { Link } from "react-router";
 import { trackEvent } from "../../hooks/analytics.ts";
 import { useWorkspaceLink } from "../../hooks/use-navigate-workspace.ts";
+import { useInstalledApps } from "../../hooks/use-installed-apps.ts";
 import { 
   marketplaceData, 
   featuredItems, 
@@ -22,13 +23,23 @@ import {
 function ItemCard({ item, onInstall }: { item: MarketplaceItem; onInstall: (item: MarketplaceItem) => void }) {
   const workspaceLink = useWorkspaceLink();
   
+  const formatPrice = (item: MarketplaceItem) => {
+    if (item.priceUnit === 'free') return 'Free';
+    if (item.priceUnit === 'per-1m-tokens') return `$${item.price}/1M tokens`;
+    if (item.priceUnit === 'monthly') return `$${item.price}/month`;
+    if (item.priceUnit === 'one-time') return `$${item.price}`;
+    return `$${item.price}`;
+  };
+  
   return (
-    <Card className="group hover:shadow-lg transition-all duration-200 cursor-pointer">
+    <Card className="group hover:shadow-lg transition-all duration-200 p-4 cursor-pointer">
       <Link to={workspaceLink(`/discover/item/${item.id}`)}>
         <CardHeader className="pb-3">
           <div className="flex items-start justify-between">
             <div className="flex items-center gap-3">
-              <div className="text-2xl">{item.icon}</div>
+              <div className="w-10 h-10 rounded-lg bg-muted/50 flex items-center justify-center">
+                <Icon name={item.iconName} size={20} className="text-muted-foreground" />
+              </div>
               <div>
                 <CardTitle className="text-base leading-tight">{item.name}</CardTitle>
                 <CardDescription className="text-sm mt-1">
@@ -37,17 +48,16 @@ function ItemCard({ item, onInstall }: { item: MarketplaceItem; onInstall: (item
               </div>
             </div>
             <div className="flex flex-col items-end gap-1">
-              <Badge variant={item.type === 'built-in' ? 'default' : 'secondary'} className="text-xs">
-                {item.type === 'built-in' ? 'Built-in' : 'Community'}
-              </Badge>
               {item.featured && (
                 <Badge variant="outline" className="text-xs bg-gradient-to-r from-purple-50 to-pink-50 border-purple-200">
-                  ⭐ Featured
+                  <Icon name="star" size={12} className="mr-1" />
+                  Featured
                 </Badge>
               )}
               {item.trending && (
                 <Badge variant="outline" className="text-xs bg-gradient-to-r from-orange-50 to-red-50 border-orange-200">
-                  🔥 Trending
+                  <Icon name="trending_up" size={12} className="mr-1" />
+                  Trending
                 </Badge>
               )}
             </div>
@@ -57,26 +67,14 @@ function ItemCard({ item, onInstall }: { item: MarketplaceItem; onInstall: (item
       
       <CardContent className="pt-0">
         <div className="flex items-center justify-between text-sm text-muted-foreground mb-3">
-          <div className="flex items-center gap-4">
-            <div className="flex items-center gap-1">
-              <Icon name="star" size={14} className="text-yellow-500" />
-              <span>{item.rating}</span>
-              <span>({item.reviewCount})</span>
-            </div>
-            <div className="flex items-center gap-1">
-              <Icon name="download" size={14} />
-              <span>{item.downloads.toLocaleString()}</span>
-            </div>
+          <div className="flex items-center gap-1">
+            <Icon name="download" size={14} />
+            <span>{item.downloads.toLocaleString()} downloads</span>
           </div>
           <div className="flex items-center gap-1 font-medium">
-            {item.price === 0 ? (
-              <span className="text-green-600">Free</span>
-            ) : (
-              <>
-                <Icon name="bolt" size={14} className="text-yellow-500" />
-                <span>{item.price} credits</span>
-              </>
-            )}
+            <span className={item.priceUnit === 'free' ? 'text-green-600' : 'text-foreground'}>
+              {formatPrice(item)}
+            </span>
           </div>
         </div>
         
@@ -270,10 +268,10 @@ export function DiscoverPage() {
 
       {/* Category Tabs */}
       <Tabs value={selectedCategory} onValueChange={setSelectedCategory} className="mb-8">
-        <TabsList className="grid grid-cols-7 w-full max-w-3xl">
+        <TabsList className="grid grid-cols-6 w-full max-w-3xl">
           {categories.map((category) => (
             <TabsTrigger key={category.id} value={category.id} className="flex items-center gap-2">
-              <span>{category.icon}</span>
+              <Icon name={category.iconName} size={16} />
               <span className="hidden sm:inline">{category.name}</span>
             </TabsTrigger>
           ))}

@@ -1,21 +1,31 @@
-import { z } from "zod";
-import type { Bindings } from "../utils/context.ts";
+/**
+ * Theme Extractor - Extract colors from websites and generate complete themes
+ * 
+ * This module provides functionality to:
+ * 1. Extract prominent colors from any website URL
+ * 2. Analyze color contrast to determine dark/light preference
+ * 3. Generate complete shadcn/ui compatible theme palettes
+ * 4. Support both algorithmic and LLM-based theme generation
+ */
 
-// Color extraction result schema
-const ExtractedColorsSchema = z.object({
-  companyName: z.string().optional(),
-  favicon: z.string().optional(),
-  logo: z.string().optional(),
-  colors: z.record(z.string()),
-  isDark: z.boolean(),
-  dominantColors: z.array(z.string()),
-  brandColors: z.array(z.string()),
-});
+export interface ColorExtractionResult {
+  companyName?: string;
+  favicon?: string;
+  logo?: string;
+  colors: Record<string, string>;
+  isDark: boolean;
+  dominantColors: string[];
+  brandColors: string[];
+}
 
-export type ExtractedColors = z.infer<typeof ExtractedColorsSchema>;
+export interface ThemeGenerationOptions {
+  preferDark?: boolean;
+  primaryColor?: string;
+  useAlgorithmicOnly?: boolean;
+}
 
-// Helper functions for color analysis
-function hexToRgb(hex: string): { r: number; g: number; b: number } | null {
+// Color utility functions
+export function hexToRgb(hex: string): { r: number; g: number; b: number } | null {
   const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
   return result ? {
     r: parseInt(result[1], 16),
@@ -24,11 +34,11 @@ function hexToRgb(hex: string): { r: number; g: number; b: number } | null {
   } : null;
 }
 
-function rgbToHex(r: number, g: number, b: number): string {
+export function rgbToHex(r: number, g: number, b: number): string {
   return `#${((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1)}`;
 }
 
-function getLuminance(hex: string): number {
+export function getLuminance(hex: string): number {
   const rgb = hexToRgb(hex);
   if (!rgb) return 0.5;
   
@@ -41,7 +51,7 @@ function getLuminance(hex: string): number {
   return 0.2126 * rs + 0.7152 * gs + 0.0722 * bs;
 }
 
-function getContrastRatio(color1: string, color2: string): number {
+export function getContrastRatio(color1: string, color2: string): number {
   const lum1 = getLuminance(color1);
   const lum2 = getLuminance(color2);
   const lighter = Math.max(lum1, lum2);
@@ -49,15 +59,15 @@ function getContrastRatio(color1: string, color2: string): number {
   return (lighter + 0.05) / (darker + 0.05);
 }
 
-function isLightColor(hex: string): boolean {
+export function isLightColor(hex: string): boolean {
   return getLuminance(hex) > 0.5;
 }
 
-function getContrastColor(hex: string): string {
+export function getContrastColor(hex: string): string {
   return isLightColor(hex) ? "#000000" : "#ffffff";
 }
 
-function adjustColorBrightness(color: string, amount: number): string {
+export function adjustColorBrightness(color: string, amount: number): string {
   const hex = color.replace('#', '');
   const r = Math.min(255, Math.max(0, parseInt(hex.slice(0, 2), 16) + Math.round(255 * amount)));
   const g = Math.min(255, Math.max(0, parseInt(hex.slice(2, 4), 16) + Math.round(255 * amount)));
@@ -66,7 +76,7 @@ function adjustColorBrightness(color: string, amount: number): string {
   return rgbToHex(r, g, b);
 }
 
-function isVibrantColor(color: string): boolean {
+export function isVibrantColor(color: string): boolean {
   const hex = color.replace('#', '');
   if (hex.length !== 6) return false;
   
@@ -82,7 +92,7 @@ function isVibrantColor(color: string): boolean {
   return saturation > 0.3 && brightness > 0.2 && brightness < 0.9;
 }
 
-function generateDomainBasedColor(domain: string, companyName?: string): string {
+export function generateDomainBasedColor(domain: string, companyName?: string): string {
   const text = companyName || domain;
   
   let hash = 0;
@@ -119,7 +129,7 @@ function generateDomainBasedColor(domain: string, companyName?: string): string 
   return rgbToHex(r, g, b);
 }
 
-async function extractColorsFromWebsite(domain: string): Promise<{
+export async function extractColorsFromWebsite(domain: string): Promise<{
   dominantColors: string[];
   brandColors: string[];
   companyName?: string;
@@ -240,24 +250,6 @@ async function extractColorsFromWebsite(domain: string): Promise<{
   }
 }
 
-async function generateThemeWithLLM(
-  env: Bindings,
-  extractedData: {
-    dominantColors: string[];
-    brandColors: string[];
-    companyName?: string;
-    domain: string;
-  }
-): Promise<{ colors: Record<string, string>; isDark: boolean }> {
-  const primaryColor = extractedData.brandColors[0] || extractedData.dominantColors[0] || "#2563eb";
-  const isDark = !isLightColor(primaryColor);
-  
-  // For now, use algorithmic approach since AI binding is not available
-  // TODO: Add LLM integration when AI binding is properly configured
-  console.log("[EXTRACT_COLORS] Using algorithmic theme generation (LLM not available)");
-  return generateAlgorithmicTheme(primaryColor, isDark);
-}
-
 function generateFallbackColor(varName: string, primaryColor: string, isDark: boolean): string {
   const baseColors = isDark ? {
     background: "#0a0a0a",
@@ -318,7 +310,8 @@ function generateFallbackColor(varName: string, primaryColor: string, isDark: bo
   }
 }
 
-function generateAlgorithmicTheme(primaryColor: string, isDark: boolean): { colors: Record<string, string>; isDark: boolean } {
+export function generateAlgorithmicTheme(primaryColor: string, options: ThemeGenerationOptions = {}): { colors: Record<string, string>; isDark: boolean } {
+  const isDark = options.preferDark ?? !isLightColor(primaryColor);
   const colors: Record<string, string> = {};
   
   const requiredVars = [
@@ -337,44 +330,90 @@ function generateAlgorithmicTheme(primaryColor: string, isDark: boolean): { colo
   return { colors, isDark };
 }
 
-export function createExtractWebsiteColorsTool(env: Bindings) {
+/**
+ * Main function to extract colors and generate a complete theme from a website URL
+ */
+export async function extractThemeFromWebsite(
+  domain: string, 
+  options: ThemeGenerationOptions = {}
+): Promise<ColorExtractionResult> {
+  console.log(`[THEME_EXTRACTOR] Starting extraction for: ${domain}`);
+  
+  // Step 1: Extract colors from website
+  const extractedData = await extractColorsFromWebsite(domain);
+  
+  console.log(`[THEME_EXTRACTOR] Extracted colors:`, {
+    dominantColors: extractedData.dominantColors,
+    brandColors: extractedData.brandColors,
+    companyName: extractedData.companyName
+  });
+  
+  // Step 2: Generate complete theme
+  const primaryColor = options.primaryColor || extractedData.brandColors[0] || extractedData.dominantColors[0] || "#2563eb";
+  const themeResult = generateAlgorithmicTheme(primaryColor, options);
+  
+  console.log(`[THEME_EXTRACTOR] Generated ${themeResult.isDark ? 'dark' : 'light'} theme with ${Object.keys(themeResult.colors).length} variables`);
+  
   return {
-    async execute(input: { inputData: { domain: string } }): Promise<ExtractedColors> {
-      const { domain } = input.inputData;
-      
-      console.log("[EXTRACT_COLORS] Starting extraction for domain:", domain);
-      
-      // Step 1: Extract colors from website
-      const extractedData = await extractColorsFromWebsite(domain);
-      
-      console.log("[EXTRACT_COLORS] Raw extraction result:", {
-        dominantColors: extractedData.dominantColors,
-        brandColors: extractedData.brandColors,
-        companyName: extractedData.companyName
-      });
-      
-      // Step 2: Generate complete theme using LLM
-      const themeResult = await generateThemeWithLLM(env, {
-        ...extractedData,
-        domain
-      });
-      
-      console.log("[EXTRACT_COLORS] Generated theme:", {
-        isDark: themeResult.isDark,
-        colorCount: Object.keys(themeResult.colors).length
-      });
-      
-      const result: ExtractedColors = {
-        companyName: extractedData.companyName,
-        favicon: extractedData.favicon,
-        logo: extractedData.logo,
-        colors: themeResult.colors,
-        isDark: themeResult.isDark,
-        dominantColors: extractedData.dominantColors,
-        brandColors: extractedData.brandColors,
-      };
-      
-      return result;
+    companyName: extractedData.companyName,
+    favicon: extractedData.favicon,
+    logo: extractedData.logo,
+    colors: themeResult.colors,
+    isDark: themeResult.isDark,
+    dominantColors: extractedData.dominantColors,
+    brandColors: extractedData.brandColors,
+  };
+}
+
+/**
+ * Generate CSS variables string from theme colors
+ */
+export function generateCSSVariables(colors: Record<string, string>): string {
+  return Object.entries(colors)
+    .map(([variable, color]) => `  ${variable}: ${color};`)
+    .join('\n');
+}
+
+/**
+ * Generate complete CSS theme with :root selector
+ */
+export function generateThemeCSS(result: ColorExtractionResult): string {
+  return `:root {
+${generateCSSVariables(result.colors)}
+}`;
+}
+
+/**
+ * Validate theme colors for accessibility
+ */
+export function validateThemeAccessibility(colors: Record<string, string>): {
+  isValid: boolean;
+  issues: string[];
+} {
+  const issues: string[] = [];
+  
+  // Check primary contrast
+  const primary = colors["--primary"];
+  const primaryForeground = colors["--primary-foreground"];
+  if (primary && primaryForeground) {
+    const ratio = getContrastRatio(primary, primaryForeground);
+    if (ratio < 4.5) {
+      issues.push(`Primary color contrast ratio (${ratio.toFixed(2)}) is below WCAG AA standard (4.5:1)`);
     }
+  }
+  
+  // Check background contrast
+  const background = colors["--background"];
+  const foreground = colors["--foreground"];
+  if (background && foreground) {
+    const ratio = getContrastRatio(background, foreground);
+    if (ratio < 4.5) {
+      issues.push(`Background/foreground contrast ratio (${ratio.toFixed(2)}) is below WCAG AA standard (4.5:1)`);
+    }
+  }
+  
+  return {
+    isValid: issues.length === 0,
+    issues
   };
 }

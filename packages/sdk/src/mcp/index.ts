@@ -95,6 +95,7 @@ export const WORKSPACE_TOOLS = [
   integrationsAPI.DECO_INTEGRATION_OAUTH_START,
   integrationsAPI.DECO_INTEGRATION_INSTALL,
   integrationsAPI.DECO_INTEGRATIONS_SEARCH,
+  integrationsAPI.searchTools,
   threadsAPI.listThreads,
   threadsAPI.getThread,
   threadsAPI.getThreadMessages,

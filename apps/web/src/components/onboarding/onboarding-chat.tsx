@@ -40,6 +40,12 @@ interface OnboardingState {
   companyContext?: {
     industry?: string;
     description?: string;
+    taskSuggestions?: Array<{
+      id: string;
+      title: string;
+      description: string;
+      integration?: string;
+    }>;
   };
 }
 
@@ -58,7 +64,7 @@ interface TaskSuggestion {
 export function OnboardingChat() {
   const { teamSlug } = useParams();
   const { data: team } = useCurrentTeam();
-  const { mutateAsync: updateTeamTheme, isLoading: isUpdatingTheme } = useUpdateTeamTheme();
+  const { mutateAsync: updateTeamTheme, isPending: isUpdatingTheme } = useUpdateTeamTheme();
   
   const [state, setState] = useState<OnboardingState>({
     step: "theme",
@@ -74,8 +80,8 @@ export function OnboardingChat() {
   const domain = useMemo(() => {
     // For demo purposes, we'll use deco.cx
     // In production, this would come from team settings
-    return team?.domain || "deco.cx";
-  }, [team]);
+    return "deco.cx"; // team?.domain || "deco.cx";
+  }, []);
   
   // Fetch theme on mount
   useEffect(() => {
@@ -104,8 +110,8 @@ export function OnboardingChat() {
           return {} as any;
         });
         
-        const extracted = json?.data?.theme as ExtractedTheme | undefined;
-        const companyContext = json?.data?.companyContext;
+        const extracted = (json as any)?.data?.theme as ExtractedTheme | undefined;
+        const companyContext = (json as any)?.data?.companyContext;
         console.log("[ONBOARDING_CHAT] fetchTheme:extracted", { 
           theme: extracted, 
           isDark: extracted?.isDark,
@@ -144,9 +150,9 @@ export function OnboardingChat() {
           totalVariables: Object.keys(finalTheme.variables).length,
           variables: finalTheme.variables,
           isDark: finalTheme.isDark,
-          message: json.data.message,
-          companyName: json.data.companyName,
-          favicon: json.data.favicon
+          message: (json as any).data?.message,
+          companyName: (json as any).data?.companyName,
+          favicon: (json as any).data?.favicon
         });
         
         // Log each variable for easy inspection
@@ -160,7 +166,7 @@ export function OnboardingChat() {
           isLoadingTheme: false,
           extractedTheme: finalTheme,
           message: `I noticed you're with ${domain}! I created a custom ${finalTheme.isDark ? 'dark' : 'light'} theme matching your brand. What do you think?`,
-          companyName: json?.data?.companyName || domain,
+          companyName: (json as any)?.data?.companyName || domain,
           companyContext: companyContext || {
             industry: "Technology",
             description: "A modern company focused on digital innovation",
@@ -365,7 +371,7 @@ export function OnboardingChat() {
         transition={{ duration: 0.5 }}
       >
         <h1 className="text-3xl font-normal text-foreground">
-          Welcome, {team?.label || "there"}
+          Welcome, {team?.name || "there"}
         </h1>
       </motion.div>
       

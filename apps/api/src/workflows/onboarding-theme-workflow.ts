@@ -139,95 +139,25 @@ export const createOnboardingThemeWorkflow = (env: Bindings) => {
       });
       console.log("[ONBOARDING_THEME] extractColors:output", extractColorsResult);
       
-      // Step 2: Generate theme from extracted colors using intelligent analysis
-      console.log("[ONBOARDING_THEME] generating theme from extracted colors");
+      // Step 2: The new extractor returns a complete, consistent theme - use it directly!
+      console.log("[ONBOARDING_THEME] using generated theme from AI analysis");
       
-      // Use the dark mode detection from the color extraction tool instead of just background color
-      const isDark = extractColorsResult.isDark || false;
+      const isDark = extractColorsResult.isDark;
+      const extractedTheme = extractColorsResult.colors;
       
-      console.log("[ONBOARDING_THEME] color analysis", {
-        extractedColors: extractColorsResult.colors,
+      console.log("[ONBOARDING_THEME] theme analysis", {
         isDark,
+        primaryColor: extractedTheme['--primary'],
         backgroundLuminance: isDark ? "dark" : "light"
       });
       
-      // Intelligently map extracted colors to theme variables
-      const baseBackground = extractColorsResult.colors.background || (isDark ? "#0f0f0f" : "#ffffff");
-      const baseForeground = extractColorsResult.colors.foreground || (isDark ? "#ffffff" : "#292524");
-      
-      // Intelligently determine brand colors from extracted colors
-      let primaryColor: string | undefined;
-      
-      // Priority 1: Use extracted primary if it's vibrant (good for brand)
-      if (extractColorsResult.colors.primary && isVibrantColor(extractColorsResult.colors.primary)) {
-        primaryColor = extractColorsResult.colors.primary;
-        console.log("[ONBOARDING_THEME] using extracted primary as brand color", { primaryColor });
-      }
-      // Priority 2: Use extracted accent if it's vibrant
-      else if (extractColorsResult.colors.accent && isVibrantColor(extractColorsResult.colors.accent)) {
-        primaryColor = extractColorsResult.colors.accent;
-        console.log("[ONBOARDING_THEME] using extracted accent as brand color", { primaryColor });
-      }
-      // Priority 3: Use extracted secondary if it's vibrant
-      else if (extractColorsResult.colors.secondary && isVibrantColor(extractColorsResult.colors.secondary)) {
-        primaryColor = extractColorsResult.colors.secondary;
-        console.log("[ONBOARDING_THEME] using extracted secondary as brand color", { primaryColor });
-      }
-      
-      // If no vibrant brand color found, generate one based on the domain/company
-      if (!primaryColor) {
-        primaryColor = generateDomainBasedColor(input.domain, extractColorsResult.companyName);
-        console.log("[ONBOARDING_THEME] generated domain-based brand color", { primaryColor, domain: input.domain, companyName: extractColorsResult.companyName });
-      }
-      
+      // The new extractor already generates a complete, consistent theme
       const theme = {
-        variables: {
-          // Base colors - main app background and text
-          "--background": baseBackground,
-          "--foreground": baseForeground,
-          
-          // Card colors - for elevated surfaces like modals, dropdowns
-          "--card": isDark ? lightenColor(baseBackground, 0.05) : baseBackground,
-          "--card-foreground": baseForeground,
-          
-          // Popover colors - for floating elements like tooltips, dropdowns
-          "--popover": isDark ? lightenColor(baseBackground, 0.08) : baseBackground,
-          "--popover-foreground": baseForeground,
-          
-          // Primary colors - main brand color for buttons, links, focus states
-          "--primary": primaryColor,
-          "--primary-foreground": getContrastColor(primaryColor),
-          
-          // Secondary colors - for less prominent buttons and backgrounds
-          "--secondary": isDark ? lightenColor(baseBackground, 0.1) : "#f5f5f4",
-          "--secondary-foreground": baseForeground,
-          
-          // Muted colors - for disabled states, placeholders, subtle text
-          "--muted": isDark ? lightenColor(baseBackground, 0.08) : "#f5f5f4",
-          "--muted-foreground": isDark ? "#9ca3af" : "#78716c",
-          
-          // Accent colors - for hover states, highlights, active elements (subtle)
-          "--accent": isDark ? lightenColor(baseBackground, 0.12) : "#f5f5f4",
-          "--accent-foreground": baseForeground,
-          
-          // Status colors - consistent across light/dark modes
-          "--destructive": "#dc2626",
-          "--destructive-foreground": "#ffffff",
-          
-          // Border and input colors - for form elements and dividers
-          "--border": isDark ? lightenColor(baseBackground, 0.15) : "#e7e5e4",
-          "--input": isDark ? lightenColor(baseBackground, 0.15) : "#e7e5e4",
-          
-          // Sidebar color - for navigation sidebars
-          "--sidebar": isDark ? lightenColor(baseBackground, 0.03) : "#fafafa",
-          
-          // Splash color - for loading screens, brand moments
-          "--splash": primaryColor,
-        },
+        variables: extractedTheme,
         isDark,
       };
       
-      const message = `I analyzed ${extractColorsResult.companyName || input.domain}'s brand colors and created a comprehensive ${isDark ? 'dark' : 'light'} theme. The theme uses your primary color (${primaryColor}) as the foundation and includes all shadcn/ui variables for consistent styling. All components will look cohesive with your brand!`;
+      const message = `I analyzed ${extractColorsResult.companyName || input.domain}'s brand colors and created a comprehensive ${isDark ? 'dark' : 'light'} theme. The theme uses your primary color (${extractedTheme['--primary']}) as the foundation and includes all shadcn/ui variables for consistent styling. All components will look cohesive with your brand!`;
       
       const generateThemeResult = {
         object: {

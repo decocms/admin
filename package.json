@@ -44,7 +44,8 @@
   "workspaces": [
     "apps/*",
     "packages/*",
-    "server"
+  "server",
+  "seo-ecommerce/*"
   ],
   "compilerOptions": {
     "experimentalDecorators": true,

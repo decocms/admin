@@ -149,6 +149,12 @@ Requisitos obrigatórios para deploy (checados por `scripts/check-secrets.mjs` e
 | SUPABASE_URL | URL base do projeto Supabase (server) |
 | SUPABASE_SERVER_TOKEN | Service role key (NÃO expor publicamente) |
 
+Sinônimos aceitos (qualquer um do par):
+| Lógico | Aceitos |
+|--------|---------|
+| CF_API_TOKEN | CF_API_TOKEN ou CLOUDFLARE_API_TOKEN |
+| CF_ACCOUNT_ID | CF_ACCOUNT_ID ou CLOUDFLARE_ACCOUNT_ID |
+
 Opcionais (habilitam recursos extras):
 | Variável | Uso |
 |----------|-----|

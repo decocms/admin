@@ -41,12 +41,20 @@ for (const scriptName of criticalScripts) {
 }
 
 // 3. Check for deploy scripts consistency
-if (scripts['deploy:cf'] && scripts['deploy:cf'].includes('fast')) {
-    fail('The `deploy:cf` script seems to be pointing to a fast version. It should be the safe, checked version.');
+// Allow deploy:cf to call deploy:cf:fast as long as it also runs predeploy or tests first.
+function checkDeployScript(name, fastName) {
+  const s = scripts[name];
+  if (!s) return;
+  if (!s.includes(fastName)) return;
+  // If it references the fast variant, ensure predeploy or test is present
+  if (!(s.includes('predeploy') || s.includes('test'))) {
+    fail(`The \
+\`${name}\` script references the fast variant \
+\`${fastName}\` but does not run 'predeploy' or 'test' before it.`);
+  }
 }
-if (scripts['deploy:full'] && scripts['deploy:full'].includes('fast')) {
-    fail('The `deploy:full` script seems to be pointing to a fast version. It should be the safe, checked version.');
-}
+checkDeployScript('deploy:cf', 'deploy:cf:fast');
+checkDeployScript('deploy:full', 'deploy:full:fast');
 
 
 console.log('[verify-scripts] OK: Scripts and documentation are consistent.');

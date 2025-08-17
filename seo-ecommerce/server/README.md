@@ -351,8 +351,10 @@ The runtime wraps `console.warn` and filters lines containing `session storage|d
 | Generate types/env | `npm run gen` |
 | Build assets only | `npm run build:assets` |
 | Deploy Cloudflare (only) | `npm run deploy:cf` |
+| Fast Cloudflare deploy (skip checks) | `npm run deploy:cf:fast` |
 | Deploy Deco (no KV) | `npm run deploy:deco` |
 | Full (Cloudflare + Deco) | `npm run deploy:full` |
+| Fast Full deploy (skip checks) | `npm run deploy:full:fast` |
 | Health check script | `npm run health` |
 | Smoke test | `npm run smoke` |
 | Purge cache key/prefix | `npm run seo:cache:purge -- --prefix links:v1:` |

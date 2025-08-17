@@ -234,7 +234,10 @@ function applyCacheHeaders(
 
 const { Workflow, ...baseRuntime } = withRuntime<Env>({
   workflows: [createMyWorkflow, createSeoAuditWorkflow],
-  tools: [createMyTool, ...toolFactories],
+  tools: [
+    createMyTool,
+    ...toolFactories.map((factory) => ((env: Env) => factory(env as any))),
+  ],
   // Pass wrapper that includes ctx to fallback (needed for astro dynamic invocation)
   fetch: (req: Request, env: Env, ctx: unknown) =>
     fallbackToView("/")(req, env, ctx),

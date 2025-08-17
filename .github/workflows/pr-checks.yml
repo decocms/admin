@@ -15,7 +15,7 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 20
-          cache: npm
+          # cache disabled to avoid failing when no root lockfile is present
 
       - name: Install root deps
         run: npm install --no-audit --no-fund

@@ -56,6 +56,13 @@ Add workflow that on tag `seo-v*`:
 1. `POST /mcp/tools` body: `{ "tool":"LINK_ANALYZER", "input": { "url": "https://example.com/" } }` expect 200 + JSON with `seoScore`.
 2. Visit landing page: https://seo-ecommercex.deco.page/ (score summary card loads, form works).
 
+### Health Check Script
+Run after deploy (expects deployed base URL):
+```bash
+HEALTH_URL=https://seu-worker.example.workers.dev npm run health
+```
+CI: fail pipeline if exit code !=0 (degraded ou rate limited / erro de rede).
+
 ## Rollback
 Deploy previous Git SHA with same pipeline or use Cloudflare Worker Versions UI to revert.
 

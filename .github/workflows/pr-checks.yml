@@ -27,6 +27,10 @@ jobs:
         run: |
           if npm run -s lint --silent 2>/dev/null; then echo 'lint ok'; else echo 'no lint script or lint failed'; fi
 
+      - name: Run server lint (if available)
+        run: |
+          if npm --workspace=seo-ecommerce/server run -s lint --silent 2>/dev/null; then echo 'server lint ok'; else echo 'no server lint script or lint failed'; fi
+
       - name: Run script verifications
         run: node seo-ecommerce/server/scripts/verify-scripts.mjs
 

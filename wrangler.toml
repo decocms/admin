@@ -1,1 +1,10 @@
 #:schema node_modules/@deco/workers-runtime/config-schema.json
+
+name = "chat-worker"
+compatibility_date = "2025-08-17"
+main = "apps/api/main.ts"
+
+compatibility_flags = ["nodejs_compat"]
+
+[assets]
+directory = "seo-ecommerce/server/dist"

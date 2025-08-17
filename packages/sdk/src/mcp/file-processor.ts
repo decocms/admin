@@ -72,9 +72,6 @@ export class FileProcessor {
     let content = "";
 
     switch (fileExt) {
-      case ".pdf":
-        content = await this.processPDF(file);
-        break;
       case ".txt":
       case ".md":
         content = await this.processText(file);
@@ -139,17 +136,6 @@ export class FileProcessor {
    */
   private getExtensionFromContentType(_contentType: string | null): FileExt {
     return getExtensionFromContentType(_contentType);
-  }
-
-  /**
-   * PDF processing using unpdf library
-   * Install: npm install unpdf
-   */
-  private async processPDF(file: File): Promise<string> {
-    const { extractText } = await import("unpdf");
-    const arrayBuffer = await file.arrayBuffer();
-    const text = await extractText(new Uint8Array(arrayBuffer));
-    return text.text.join("");
   }
 
   /**

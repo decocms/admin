@@ -1,28 +1,7 @@
 import type { MCPClientStub, WorkspaceTools } from "@deco/sdk/mcp";
 import type { Message as AIMessage } from "ai";
-import { extractText } from "unpdf";
 
 const MIN_PDF_SUMMARIZATION_SIZE_BYTES = 100_000; // 100KB
-
-async function extractPDFText(pdfUrl: string): Promise<string> {
-  try {
-    const response = await fetch(pdfUrl);
-    if (!response.ok) {
-      throw new Error(
-        `Failed to fetch PDF: ${response.status} ${response.statusText}`,
-      );
-    }
-
-    const arrayBuffer = await response.arrayBuffer();
-    const text = await extractText(new Uint8Array(arrayBuffer));
-    const extractedText = text.text.join(" ");
-
-    return extractedText;
-  } catch (error) {
-    console.error("[PDF Summarizer] Error extracting PDF text:", error);
-    throw new Error(`Failed to extract text from PDF: ${error}`);
-  }
-}
 
 function chunkText(text: string, maxChunkSize: number): string[] {
   const chunks: string[] = [];

@@ -18,7 +18,6 @@
     "@mastra/core": "0.12.1",
     "@mastra/memory": "0.12.0",
     "@mastra/voice-openai": "0.10.7",
-    "unpdf": "^1.0.5",
     "@aws-sdk/client-s3": "^3.808.0",
     "@aws-sdk/s3-request-presigner": "^3.808.0",
     "@modelcontextprotocol/sdk": "1.17.1",
@@ -35,7 +34,8 @@
     "@libsql/client": "^0.15.0",
     "uuid": "^11.1.0",
     "croner": "^9.0.0",
-    "hono": "^4.7.9"
+    "hono": "^4.7.9",
+    "unpdf": "^1.0.5"
   },
   "devDependencies": {
     "@cloudflare/workers-types": "^4.20250319.0"

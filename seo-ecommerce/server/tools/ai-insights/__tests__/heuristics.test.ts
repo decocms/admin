@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { createAiInsightsTool } from '../../ai-insights';
+import { runAiInsightsPure as runAiInsights } from '../../ai-insights/runner';
 
 const mockAudit = {
   url: 'https://example.com',
@@ -10,8 +10,7 @@ const mockAudit = {
 
 describe('AI_INSIGHTS heuristics fallback', () => {
   it('generates heuristic insights without LLM key', async () => {
-    const tool = createAiInsightsTool({});
-    const out = await tool.execute({ context: { url: mockAudit.url, audit: mockAudit } } as any);
+  const out = await runAiInsights({}, { url: mockAudit.url, audit: mockAudit });
     expect(out.insights.length).toBeGreaterThan(0);
     const joined = out.insights.join(' ');
     expect(joined).toMatch(/performance mobile/i);

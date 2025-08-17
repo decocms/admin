@@ -1,59 +1,56 @@
 import { describe, it, expect } from 'vitest';
-import { createSeoAuditTool } from '../../seo-audit';
+import { runSeoAuditPure } from '../runner';
 
-// We'll monkey patch dependencies by injecting a fake env with overrides if tool reads them later (currently not used).
-// Instead, we simulate the internal functions by temporarily replacing global fetch for PageSpeed calls.
-
-function withPatchedFetch(impl: (input: RequestInfo | URL, init?: RequestInit) => Promise<Response>, fn: () => Promise<void>) {
-  const orig = (globalThis as any).fetch;
-  (globalThis as any).fetch = impl;
-  return fn().finally(() => { (globalThis as any).fetch = orig; });
+function mockLink(over: Partial<any> = {}) {
+  return {
+    linksFound: 10,
+    brokenLinks: over.brokenLinks ?? 2,
+    internalLinks: 3,
+    externalLinks: 1,
+    images: 5,
+    imagesMissingAlt: over.imagesMissingAlt ?? 1,
+    h1Count: over.h1Count ?? 2,
+    titleLength: over.titleLength ?? 70,
+    metaDescriptionLength: over.metaDescriptionLength ?? 40,
+    wordCount: over.wordCount ?? 200,
+    seoScore: 55,
+  };
 }
 
-const makePSI = (over: Partial<any>) => ({
-  lighthouseResult: {
+function mockPS(over: Partial<any> = {}) {
+  return {
     categories: {
-      performance: { score: (over.performanceScore ?? 0.45) },
-      seo: { score: (over.seoScore ?? 0.65) },
+      performance: (over.performance ?? 45) / 100, // convert to 0-1 like Lighthouse to simulate normalization? We'll pass already normalized numbers
+      seo: (over.seo ?? 65) / 100,
     },
-    audits: {
-      'largest-contentful-paint': { numericValue: over.LCP_ms ?? 4200 },
-      'cumulative-layout-shift': { numericValue: over.CLS ?? 0.12 },
-      'interaction-to-next-paint': { numericValue: 250 },
-      'first-contentful-paint': { numericValue: 1200 },
-      'total-blocking-time': { numericValue: 300 },
-      // Add an opportunity audit to test mapping (not directly warning-related here)
-      'unused-css-rules': { id: 'unused-css-rules', title: 'Remove unused CSS', score: 0.5, details: { type: 'opportunity', overallSavingsMs: 1500 } }
-    },
-  },
-  id: 'https://example.com',
-});
+    metrics: {
+      LCP_ms: over.LCP_ms ?? 4200,
+      CLS: over.CLS ?? 0.12,
+      INP_ms: 250,
+    }
+  };
+}
 
-// Fake link analyzer import side-effect; we cannot easily patch analyzeLinks here without changing tool code.
-// We'll simulate a scenario by letting real analyzeLinks run for example.com (fast) and accept variability.
-
-describe('SEO_AUDIT warning generation', () => {
+describe('SEO_AUDIT warning generation (pure)', () => {
   it('triggers multiple warnings for poor metrics', async () => {
-    await withPatchedFetch(async () => new Response(JSON.stringify(makePSI({})), { status: 200 }), async () => {
-      const tool = createSeoAuditTool({});
-      const out = await tool.execute({ context: { url: 'https://example.com' } } as any);
-      // Expect presence of key warnings based on our injected scores
-      const w = out.warnings.join('\n');
-      expect(w).toMatch(/LCP mobile > 4s/);
-      expect(w).toMatch(/CLS mobile > 0.1/);
-      expect(w).toMatch(/Performance mobile baixa/);
-      expect(w).toMatch(/Score SEO mobile baixo/);
-    });
-  }, 15000);
+    const out = await runSeoAuditPure({
+      analyzeLinks: async () => mockLink({}),
+      getPageSpeed: async ({ strategy }) => ({ categories: { performance: 45, seo: 65 }, metrics: { LCP_ms: 4200, CLS: 0.12, INP_ms: 250 } })
+    }, { url: 'https://example.com' });
+    const w = out.warnings.join('\n');
+    expect(w).toMatch(/LCP mobile > 4s/);
+    expect(w).toMatch(/CLS mobile > 0.1/);
+    expect(w).toMatch(/Performance mobile baixa/);
+    expect(w).toMatch(/Score SEO mobile baixo/);
+  });
 
-  it('gracefully handles partial PageSpeed (missing audits)', async () => {
-    const partial = { lighthouseResult: { categories: { performance: { score: 0.9 } }, audits: {} }, id: 'https://example.com' };
-    await withPatchedFetch(async () => new Response(JSON.stringify(partial), { status: 200 }), async () => {
-      const tool = createSeoAuditTool({});
-      const out = await tool.execute({ context: { url: 'https://example.com' } } as any);
-      expect(out.coreWebVitals.LCP_ms_mobile).toBeNull();
-      expect(out.coreWebVitals.CLS_mobile).toBeNull();
-      expect(out.scores.performanceMobile).toBe(90);
-    });
-  }, 10000);
+  it('handles partial metrics gracefully', async () => {
+    const out = await runSeoAuditPure({
+      analyzeLinks: async () => mockLink({ imagesMissingAlt: 0 }),
+      getPageSpeed: async ({ strategy }) => ({ categories: { performance: 90 }, metrics: {} })
+    }, { url: 'https://example.com' });
+    expect(out.coreWebVitals.LCP_ms_mobile).toBeNull();
+    expect(out.coreWebVitals.CLS_mobile).toBeNull();
+    expect(out.scores.performanceMobile).toBe(90);
+  });
 });

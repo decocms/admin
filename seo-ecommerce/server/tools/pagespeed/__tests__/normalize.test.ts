@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { normalizePageSpeed } from '../index';
+import { normalizePageSpeedPure as normalizePageSpeed } from '../normalize';
 
 const sample = {
   id: 'https://example.com',

@@ -344,6 +344,8 @@ $env:SUPPRESS_SESSION_WARN="1"; npm run deploy:cf
 ```
 The runtime wraps `console.warn` and filters lines containing `session storage|driver` when enabled. No functional behavior is changed.
 
+Critical scripts: `seo:cache:purge`, `health`, `smoke`
+
 ## Rapid Command Reference
 
 | Action | Command (PowerShell) |

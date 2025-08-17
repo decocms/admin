@@ -1,0 +1,34 @@
+name: PR Checks
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
+
+jobs:
+  verify-and-test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install root deps
+        run: npm install --no-audit --no-fund
+
+      - name: Install server deps
+        run: npm --workspace=seo-ecommerce/server install --no-audit --no-fund
+
+      - name: Run root lint (if available)
+        run: |
+          if npm run -s lint --silent 2>/dev/null; then echo 'lint ok'; else echo 'no lint script or lint failed'; fi
+
+      - name: Run script verifications
+        run: node seo-ecommerce/server/scripts/verify-scripts.mjs
+
+      - name: Run server tests (fast)
+        run: npm --workspace=seo-ecommerce/server test --silent

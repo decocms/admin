@@ -62,8 +62,8 @@ jobs:
           SUPABASE_URL: "${{ secrets.SUPABASE_URL }}"
           SUPABASE_SERVER_TOKEN: "${{ secrets.SUPABASE_SERVER_TOKEN }}"
 
-      - name: Deploy Worker
-        run: npm --workspace=seo-ecommerce/server run deploy
+      - name: Deploy Worker (safe)
+        run: npm --workspace=seo-ecommerce/server run deploy:cf
         env:
           CLOUDFLARE_API_TOKEN: "${{ secrets.CLOUDFLARE_API_TOKEN }}"
           CLOUDFLARE_ACCOUNT_ID: "${{ secrets.CLOUDFLARE_ACCOUNT_ID }}"

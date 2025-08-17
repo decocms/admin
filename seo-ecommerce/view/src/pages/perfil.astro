@@ -115,13 +115,9 @@ export const prerender = false;
           // Supabase client for updates
           let supa;
           try {
-            const SUPA_URL = import.meta.env.PUBLIC_SUPABASE_URL || '';
-            const SUPA_ANON = import.meta.env.PUBLIC_SUPABASE_ANON_KEY || '';
-            if(SUPA_URL && SUPA_ANON){
-              const { createClient } = await import('https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm');
-              supa = createClient(SUPA_URL, SUPA_ANON, { auth: { persistSession: true, storageKey:'la-supa-auth' } });
-            }
-          } catch(e){ console.warn('Supabase client load falhou', e); }
+            const { loadSupabase } = await import('../lib/supabaseClient.ts');
+            supa = await loadSupabase();
+          } catch(e){ console.warn('[perfil] supabase load falhou', e); }
           form?.addEventListener('submit', async (e)=>{
             e.preventDefault();
             if(!supa){ saveStatus.textContent='Indisponível'; return; }

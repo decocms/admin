@@ -5,13 +5,18 @@
 import { createLinkAnalyzerTool } from './link-analyzer';
 import { createPageSpeedTool } from './pagespeed';
 import { createSeoAuditTool } from './seo-audit';
+// @ts-ignore - dynamic directory export without types yet
+import { createAiInsightsTool } from './ai-insights';
 
 export const toolFactories = [
   createLinkAnalyzerTool,
   createPageSpeedTool,
   createSeoAuditTool,
+  createAiInsightsTool,
 ];
 
 export * from './link-analyzer';
 export * from './pagespeed';
 export * from './seo-audit';
+// @ts-ignore re-export
+export * from './ai-insights';

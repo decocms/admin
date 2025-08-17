@@ -52,28 +52,30 @@ export const prerender = false; // client-only reset
     </div>
     <script type="module">
       (async ()=>{
-        const SUPA_URL = import.meta.env.PUBLIC_SUPABASE_URL || '';
-        const SUPA_ANON = import.meta.env.PUBLIC_SUPABASE_ANON_KEY || '';
-        if(!SUPA_URL || !SUPA_ANON) return;
+        const form = document.getElementById('reset-form');
+        const alertEl = document.getElementById('reset-alert');
+        const infoEl = document.getElementById('reset-info');
+        let supa;
         try {
-          const { createClient } = await import('https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm');
-          const supa = createClient(SUPA_URL, SUPA_ANON, { auth:{ persistSession:true, storageKey:'la-supa-auth' } });
-          const form = document.getElementById('reset-form');
-            const alertEl = document.getElementById('reset-alert');
-            const infoEl = document.getElementById('reset-info');
-          form?.addEventListener('submit', async (e)=>{
-            e.preventDefault();
-            const fd = new FormData(form);
-            const email = fd.get('email')?.toString()||'';
-            if(!email){ alertEl.textContent='Informe email'; alertEl.style.display='block'; infoEl.style.display='none'; return; }
-            alertEl.style.display='none'; infoEl.style.display='none';
-            try {
-              const { error } = await supa.auth.resetPasswordForEmail(email, { redirectTo: location.origin + '/login' });
-              if(error){ alertEl.textContent = error.message; alertEl.style.display='block'; }
-              else { infoEl.textContent='Se o email existir, enviamos link de redefinição.'; infoEl.style.display='block'; }
-            } catch(err){ alertEl.textContent='Falha inesperada'; alertEl.style.display='block'; }
-          });
-        } catch(e){ console.error('Supabase reset falhou', e); }
+          const { loadSupabase } = await import('../lib/supabaseClient.ts');
+          supa = await loadSupabase();
+        } catch (e) {
+          console.error('[reset] supabase init falhou', e);
+          alertEl.textContent='Auth indisponível'; alertEl.style.display='block';
+          return;
+        }
+        form?.addEventListener('submit', async (e)=>{
+          e.preventDefault();
+          const fd = new FormData(form);
+          const email = fd.get('email')?.toString()||'';
+          if(!email){ alertEl.textContent='Informe email'; alertEl.style.display='block'; infoEl.style.display='none'; return; }
+          alertEl.style.display='none'; infoEl.style.display='none';
+          try {
+            const { error } = await supa.auth.resetPasswordForEmail(email, { redirectTo: location.origin + '/login' });
+            if(error){ alertEl.textContent = error.message; alertEl.style.display='block'; }
+            else { infoEl.textContent='Se o email existir, enviamos link de redefinição.'; infoEl.style.display='block'; }
+          } catch(err){ alertEl.textContent='Falha inesperada'; alertEl.style.display='block'; }
+        });
       })();
     </script>
   </body>

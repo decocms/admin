@@ -55,18 +55,21 @@ const requested = q.get('url');
         <button type="submit">Auditar</button>
       </form>
       <div id="status" class="meta"></div>
-      <div id="result" style="margin-top:1.4rem;"></div>
+  <div id="result" style="margin-top:1.4rem;"></div>
+  <div id="insights" style="margin-top:2.4rem;"></div>
     </div>
     <script>
       (function(){
         const form = document.getElementById('audit-form');
         const statusEl = document.getElementById('status');
-        const resultEl = document.getElementById('result');
+  const resultEl = document.getElementById('result');
+  const insightsEl = document.getElementById('insights');
         const qUrl = new URL(location.href).searchParams.get('url');
         function cls(v){ if(v==null) return 'bad'; if(v>=80) return 'ok'; if(v>=60) return 'mid'; return 'bad'; }
         async function run(url){
           statusEl.textContent='Rodando auditoria...';
           resultEl.innerHTML='';
+          insightsEl.innerHTML='';
           try {
             const res = await fetch('/mcp/tools',{method:'POST',headers:{'Content-Type':'application/json'},body: JSON.stringify({ tool:'SEO_AUDIT', input:{ url } })});
             if(!res.ok){ statusEl.textContent='Falha '+res.status; return; }
@@ -94,6 +97,22 @@ const requested = q.get('url');
               <details style="margin-top:2rem;"><summary style="cursor:pointer;font-size:.75rem;">JSON completo</summary><pre class="json-pre">${JSON.stringify(r,null,2).replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]))}</pre></details>
             `;
             try { localStorage.setItem('seo-audit-last', JSON.stringify(r)); } catch {}
+            // Fetch AI insights (non-blocking)
+            try {
+              insightsEl.innerHTML = '<div class="meta">Gerando insights com IA...</div>';
+              const aiRes = await fetch('/mcp/tools',{method:'POST',headers:{'Content-Type':'application/json'},body: JSON.stringify({ tool:'AI_INSIGHTS', input:{ url, audit: r } })});
+              if(aiRes.ok){
+                const ai = await aiRes.json();
+                const out = ai.result || ai;
+                const bullets = (out.insights||[]).map((i:string)=>`<li>${i.replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]))}</li>`).join('');
+                insightsEl.innerHTML = `
+                  <h2 style="font-size:1.1rem;margin:0 0 .6rem;">Insights Prioritários <span style="font-size:.55rem;letter-spacing:.5px;text-transform:uppercase;color:#7ea6d6;">${out.modelUsed}</span></h2>
+                  ${bullets? `<ul style="margin:0;padding-left:1.1rem;font-size:.8rem;line-height:1.4;">${bullets}</ul>` : '<div class="meta">Nenhum insight gerado</div>'}
+                `;
+              } else {
+                insightsEl.innerHTML = '<div class="meta">Falha ao gerar insights</div>';
+              }
+            } catch(e){ insightsEl.innerHTML='<div class="meta">Erro IA</div>'; }
           } catch (e){ statusEl.textContent='Erro de rede'; }
         }
         form.addEventListener('submit', e=>{ e.preventDefault(); const fd=new FormData(form); const url=fd.get('url'); if(!url) return; history.replaceState(null,'','?url='+encodeURIComponent(url)); run(url); });

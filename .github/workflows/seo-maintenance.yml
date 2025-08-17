@@ -16,6 +16,15 @@ on:
       purge_prefix:
         description: 'prefix to purge'
         required: false
+      concurrency:
+        description: 'concurrency for deletes (default 8)'
+        required: false
+      audit_file:
+        description: 'path to write audit ndjson file'
+        required: false
+      batch_wait_ms:
+        description: 'milliseconds to wait between batches'
+        required: false
       dry_run:
         description: 'dry run (true/false)'
         required: false
@@ -67,6 +76,9 @@ jobs:
             if [ "$DRY" = 'true' ]; then CMD="$CMD --dry-run"; fi
             if [ -n "$KEY" ]; then CMD="$CMD --key $KEY"; fi
             if [ -n "$PREFIX" ]; then CMD="$CMD --prefix $PREFIX"; fi
+            if [ -n "${{ github.event.inputs.concurrency }}" ]; then CMD="$CMD --concurrency ${{ github.event.inputs.concurrency }}"; fi
+            if [ -n "${{ github.event.inputs.audit_file }}" ]; then CMD="$CMD --audit-file ${{ github.event.inputs.audit_file }}"; fi
+            if [ -n "${{ github.event.inputs.batch_wait_ms }}" ]; then CMD="$CMD --batch-wait-ms ${{ github.event.inputs.batch_wait_ms }}"; fi
             echo "Running: $CMD" >> $GITHUB_STEP_SUMMARY
             bash -c "$CMD"
           else

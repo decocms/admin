@@ -133,6 +133,24 @@ npm run seo:cache:purge -- --prefix pagespeed:v1:                               
 npm run seo:cache:purge -- --prefix links:v1: --dry-run                           # preview deletions
 # JSON summary output (machine-readable)
 npm run seo:cache:purge -- --prefix links:v1: --json --dry-run
+Additional options:
+
+- `--concurrency <n>`: number of parallel deletes per batch (default 8). Useful to tune for rate limits.
+- `--audit-file <path>`: write an ndjson file with the list of keys that will be deleted (one JSON object per line). Useful for audit/approval.
+- `--batch-wait-ms <ms>`: wait this many milliseconds between batches to reduce rate-limit pressure.
+
+Examples:
+
+PowerShell (dry-run with audit):
+```powershell
+npm run seo:cache:purge -- --prefix pagespeed:v1: --dry-run --audit-file purge-audit.ndjson --json
+```
+
+Actual purge with limited concurrency and wait:
+```powershell
+npm run seo:cache:purge -- --prefix pagespeed:v1: --concurrency 4 --batch-wait-ms 500 --json
+```
+
 ```
 
 ## Pure Runners

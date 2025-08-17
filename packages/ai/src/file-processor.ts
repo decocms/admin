@@ -1,6 +1,6 @@
-import { processPDF } from 'unpdf';
+import { extractText } from 'unpdf';
 
-export function analyzePDF(filePath: string): string {
-  const pdfContent = processPDF(filePath);
+export async function analyzePDF(filePath: string): Promise<string> {
+  const pdfContent = await extractText(filePath);
   return pdfContent;
 }

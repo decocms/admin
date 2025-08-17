@@ -53,14 +53,17 @@ export const createSeoAuditTool = (env: any) => {
       const { url, includeRaw } = context;
       const warnings: string[] = [];
       const link = await analyzeLinks(url).catch(e => { warnings.push(`Link analyzer failed: ${(e as Error).message}`); return null; });
-      let mobile: any = null;
-      let desktop: any = null;
-      try {
-        mobile = await pageSpeedTool.execute({ context: { url, strategy: 'mobile', category: ['performance','seo'] } } as any);
-      } catch (e) { warnings.push(`PageSpeed mobile error: ${(e as Error).message}`); }
-      try {
-        desktop = await pageSpeedTool.execute({ context: { url, strategy: 'desktop', category: ['performance','seo'] } } as any);
-      } catch (e) { warnings.push(`PageSpeed desktop error: ${(e as Error).message}`); }
+      // Execute PageSpeed mobile & desktop in parallel to reduce total latency
+      const [mobile, desktop] = await Promise.all([
+        (async () => {
+          try { return await pageSpeedTool.execute({ context: { url, strategy: 'mobile', category: ['performance','seo'] } } as any); }
+          catch (e) { warnings.push(`PageSpeed mobile error: ${(e as Error).message}`); return null; }
+        })(),
+        (async () => {
+          try { return await pageSpeedTool.execute({ context: { url, strategy: 'desktop', category: ['performance','seo'] } } as any); }
+          catch (e) { warnings.push(`PageSpeed desktop error: ${(e as Error).message}`); return null; }
+        })(),
+      ]);
       const performanceMobile = mobile?.categories?.performance ?? null;
       const performanceDesktop = desktop?.categories?.performance ?? null;
       const seoMobile = mobile?.categories?.seo ?? null;

@@ -1,6 +1,9 @@
 // Pure AI insights generator without workers runtime imports
 export interface AiInsightsEnvLike {
   OPENROUTER_API_KEY?: string;
+  DECO_CHAT_API_TOKEN?: string;
+  DECO_CHAT_API_URL?: string;
+  DECO_CHAT_WORKSPACE?: string;
 }
 export interface AiInsightsAuditLike {
   url: string;
@@ -76,37 +79,50 @@ export async function runAiInsightsPure(
   ].slice(0, 10);
   // Optional LLM path (only if enableLlm flag and key present)
   let modelUsed = "heuristic";
-  if (enableLlm && env.OPENROUTER_API_KEY && fetchFn) {
+  if (enableLlm && fetchFn && (env.DECO_CHAT_API_TOKEN || env.OPENROUTER_API_KEY)) {
+    const start = Date.now();
     try {
       const prompt = `Bullets SEO para ${url}: performanceMobile=${scores.performanceMobile} seoMobile=${scores.seoMobile}`;
-      const resp = await fetchFn(
-        "https://openrouter.ai/api/v1/chat/completions",
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${env.OPENROUTER_API_KEY}`,
+      let txt = "";
+      let usedModel = "";
+      if (env.DECO_CHAT_API_TOKEN) {
+        const { callDecoLlm } = await import("./decoLLM");
+        const decoRes = await callDecoLlm(env as any, { prompt }, fetchFn as any);
+        txt = decoRes.content;
+        usedModel = decoRes.model || "deco/auto";
+      } else if (env.OPENROUTER_API_KEY) {
+        const resp = await fetchFn(
+          "https://openrouter.ai/api/v1/chat/completions",
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${env.OPENROUTER_API_KEY}`,
+            },
+            body: JSON.stringify({
+              model: "openrouter/auto",
+              messages: [{ role: "user", content: prompt }],
+            }),
           },
-          body: JSON.stringify({
-            model: "openrouter/auto",
-            messages: [{ role: "user", content: prompt }],
-          }),
-        },
-      );
-      if (!resp.ok) throw new Error("HTTP " + resp.status);
-      const json = await resp.json();
-      const txt = json.choices?.[0]?.message?.content || "";
+        );
+        if (!resp.ok) throw new Error("HTTP " + resp.status);
+        const json = await resp.json();
+        txt = json.choices?.[0]?.message?.content || "";
+        usedModel = json.model || "openrouter/auto";
+      }
       const llmLines = txt
         .split(/\n+/)
         .map((l: string) => l.replace(/^[-*\d\.)\s]+/, "").trim())
         .filter((l: string) => l.length > 4)
         .slice(0, 10);
+      const ms = Date.now() - start;
+  try { (await import("./metricsLLMProxy"))?.recordLlmSuccess?.(ms); } catch {}
       if (llmLines.length) {
         return {
           url,
           summary: `Insights via LLM (${llmLines.length})`,
           insights: llmLines,
-          modelUsed: json.model || "openrouter/auto",
+          modelUsed: usedModel || "llm/auto",
           warnings,
           rawAudit: audit,
           llmTried: true,
@@ -114,6 +130,8 @@ export async function runAiInsightsPure(
         };
       }
     } catch (e) {
+      const ms = Date.now() - start;
+  try { (await import("./metricsLLMProxy"))?.recordLlmError?.(ms); } catch {}
       warnings.push(
         "Fallback heurístico (LLM falhou): " + (e as Error).message,
       );

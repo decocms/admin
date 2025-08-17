@@ -20,6 +20,9 @@ This document summarizes the production deployment steps for the Worker + Astro 
 | SUPABASE_ANON_KEY | Public anon key (exposed to client if injected) |
 | SUPABASE_SERVER_TOKEN | Service role (server side only secret) |
 | OPENROUTER_API_KEY | (Optional) AI features |
+| DECO_CHAT_API_TOKEN | (Optional) Prioritário para LLM Deco |
+| DECO_CHAT_API_URL | (Optional) Override base URL da API Deco |
+| DECO_CHAT_WORKSPACE | (Optional) Workspace alvo para LLM |
 | PUBLIC_API_URL | (Optional) Override API base for client analyzer |
 
 Use `wrangler secret put SUPABASE_SERVER_TOKEN` for secrets; non‑sensitive public values can remain in `[vars]`.
@@ -181,12 +184,34 @@ Uso rápido de diagnóstico:
 4. `errorRate` > 0.2 em qualquer ferramenta sugere instabilidade externa ou bug.
 5. `p95Ms` subindo enquanto média estável indica outliers (investigar dependências externas / rede).
 
-Futuro (planejado): export em formato Prometheus/OpenTelemetry + breakdown por categoria de erro.
+Inclui também métricas agregadas de LLM quando chave de provedor está presente (prioridade: Deco -> OpenRouter):
+Campo `llm` em `/__metrics`:
+```jsonc
+"llm": {
+	"calls": 12,
+	"errors": 2,
+	"avgMs": 1800.4,
+	"p95Ms": 3200,
+	"errorRate": 0.1666
+}
+```
+Interpretando LLM:
+- `calls`: tentativas de invocar modelo (sucesso + erro)
+- `errors`: falhas HTTP / rede / timeout
+- `avgMs` / `p95Ms`: latência de round-trip apenas de chamadas LLM
+- `errorRate`: estabilidade (alvo < 0.1 ideal)
+
+Alertas rápidos:
+- `p95Ms` > 5000ms sugere latência excessiva (possível upstream congestion / throttling)
+- `errorRate` > 0.3 por 5+ chamadas → investigar chave / limites de quota
+
+Futuro (planejado): breakdown de categorias de erro (rede, timeout, quota), histogramas Prometheus e tagging de modelo.
 
 ## Prometheus Metrics (`/__metrics/prom`)
 Formato exposition (text/plain) para scraping Prometheus. Inclui:
 - cache_* counters e gauges (hits, misses, stale, writes, lru size/capacity)
 - tool_* (calls, errors, avg_latency_ms, p95_latency_ms, error_rate)
+- llm_* (calls_total, errors_total, avg_latency_ms, p95_latency_ms, error_rate) – agregadas (sem label de modelo ainda; provedor usado definido pela prioridade)
 
 Exemplo scrape:
 ```bash
@@ -221,6 +246,7 @@ Example:
 Degradation triggers:
 - Segredo obrigatório ausente.
 - errorRate > 50% (>=5 chamadas) em alguma ferramenta.
+- (Implícito futuro) LLM errorRate alto pode ser sinal, consulte métricas `llm`.
 
 HTTP Codes:
 - 200 ok

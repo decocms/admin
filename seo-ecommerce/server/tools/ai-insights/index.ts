@@ -21,6 +21,9 @@ interface EnvLike {
   OPENROUTER_API_KEY?: string;
   OPENAI_API_KEY?: string;
   ANTHROPIC_API_KEY?: string;
+  DECO_CHAT_API_TOKEN?: string;
+  DECO_CHAT_API_URL?: string;
+  DECO_CHAT_WORKSPACE?: string;
 }
 
 export async function runAiInsights(
@@ -97,41 +100,55 @@ export async function runAiInsights(
   let summary = "";
   let modelUsed = "heuristic";
   const openRouterKey = env.OPENROUTER_API_KEY;
-  if (openRouterKey) {
+  const decoToken = env.DECO_CHAT_API_TOKEN;
+  if (decoToken || openRouterKey) {
     try {
-      const resp = await fetch(
-        "https://openrouter.ai/api/v1/chat/completions",
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${openRouterKey}`,
+      const llmStart = Date.now();
+      let txt = "";
+      let usedModel = "";
+      if (decoToken) {
+        const { callDecoLlm } = await import("./decoLLM");
+        const decoRes = await callDecoLlm(env as any, { prompt });
+        txt = decoRes.content;
+        usedModel = decoRes.model || "deco/auto";
+      } else if (openRouterKey) {
+        const resp = await fetch(
+          "https://openrouter.ai/api/v1/chat/completions",
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${openRouterKey}`,
+            },
+            body: JSON.stringify({
+              model: "openrouter/auto",
+              messages: [
+                {
+                  role: "system",
+                  content:
+                    "Você é um especialista em SEO técnico e performance web.",
+                },
+                { role: "user", content: prompt },
+              ],
+              temperature: 0.5,
+            }),
           },
-          body: JSON.stringify({
-            model: "openrouter/auto",
-            messages: [
-              {
-                role: "system",
-                content:
-                  "Você é um especialista em SEO técnico e performance web.",
-              },
-              { role: "user", content: prompt },
-            ],
-            temperature: 0.5,
-          }),
-        },
-      );
-      if (!resp.ok) throw new Error("HTTP " + resp.status);
-      const json = await resp.json();
-      const txt = json.choices?.[0]?.message?.content || "";
+        );
+        if (!resp.ok) throw new Error("HTTP " + resp.status);
+        const json = await resp.json();
+        txt = json.choices?.[0]?.message?.content || "";
+        usedModel = json.model || "openrouter/auto";
+      }
       const lines = txt
         .split(/\n+/)
         .map((l: string) => l.replace(/^[-*\d\.)\s]+/, "").trim())
         .filter((l: string) => l.length > 4);
       insights = lines.slice(0, 12);
       summary = `Gerado via LLM (${insights.length} itens)`;
-      modelUsed = json.model || "openrouter/auto";
+      modelUsed = usedModel || modelUsed;
+      try { (await import("./metricsLLMProxy"))?.recordLlmSuccess?.(Date.now() - llmStart); } catch {}
     } catch (e) {
+      try { (await import("./metricsLLMProxy"))?.recordLlmError?.(0); } catch {}
       warnings.push(
         "Fallback heurístico (LLM falhou): " + (e as Error).message,
       );

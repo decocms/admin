@@ -9,6 +9,17 @@ interface LatencyState {
   idx: number; // next write index
 }
 
+// Separate LLM aggregate metrics (cross-tool AI usage)
+interface LlmState {
+  calls: number;
+  errors: number;
+  totalMs: number;
+  recent: number[];
+  idx: number;
+}
+const LLM_RING = 100;
+const llmState: LlmState = { calls: 0, errors: 0, totalMs: 0, recent: new Array<number>(LLM_RING), idx: 0 };
+
 const RING = 100; // window size for p95 estimation
 const toolStates = new Map<string, LatencyState>();
 
@@ -53,6 +64,14 @@ export interface ToolMetricsSnapshotEntry {
   errorRate: number | null;
 }
 
+export interface LlmMetricsSnapshotEntry {
+  calls: number;
+  errors: number;
+  avgMs: number | null;
+  p95Ms: number | null;
+  errorRate: number | null;
+}
+
 export function toolMetricsSnapshot(): Record<string, ToolMetricsSnapshotEntry> {
   const out: Record<string, ToolMetricsSnapshotEntry> = {};
   for (const [tool, s] of toolStates.entries()) {
@@ -67,6 +86,32 @@ export function toolMetricsSnapshot(): Record<string, ToolMetricsSnapshotEntry> 
     };
   }
   return out;
+}
+
+export function llmMetricsSnapshot(): LlmMetricsSnapshotEntry {
+  const avgMs = llmState.calls ? llmState.totalMs / llmState.calls : null;
+  const p95Ms = computeP95(llmState.recent);
+  return {
+    calls: llmState.calls,
+    errors: llmState.errors,
+    avgMs,
+    p95Ms,
+    errorRate: llmState.calls ? llmState.errors / llmState.calls : null,
+  };
+}
+
+export function recordLlmSuccess(ms: number) {
+  llmState.calls++;
+  llmState.totalMs += ms;
+  llmState.recent[llmState.idx] = ms;
+  llmState.idx = (llmState.idx + 1) % LLM_RING;
+}
+export function recordLlmError(ms: number) {
+  llmState.calls++;
+  llmState.errors++;
+  llmState.totalMs += ms;
+  llmState.recent[llmState.idx] = ms;
+  llmState.idx = (llmState.idx + 1) % LLM_RING;
 }
 
 export async function withToolMetrics<T>(tool: string, fn: () => Promise<T>): Promise<T> {

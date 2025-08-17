@@ -2,7 +2,7 @@
 import { withRuntime } from "@deco/workers-runtime";
 import { logSafe } from "@deco/workers-runtime/logSafe";
 import { cacheMetricsSnapshot } from "./tools/cache";
-import { toolMetricsSnapshot, recordToolError, recordToolSuccess } from "./tools/metrics";
+import { toolMetricsSnapshot, recordToolError, recordToolSuccess, llmMetricsSnapshot } from "./tools/metrics";
 import { toolFactories } from "./tools";
 import { analyzeLinks } from "./tools/link-analyzer/analyze";
 import { createPageSpeedTool } from "./tools/pagespeed";
@@ -327,7 +327,8 @@ const runtime = {
     if (url.pathname === "/__metrics") {
       const snapshot = cacheMetricsSnapshot();
       const tools = toolMetricsSnapshot();
-      return new Response(JSON.stringify({ cache: snapshot, tools }), {
+      const llm = llmMetricsSnapshot();
+      return new Response(JSON.stringify({ cache: snapshot, tools, llm }), {
         status: 200,
         headers: {
           "content-type": "application/json",
@@ -338,6 +339,7 @@ const runtime = {
     if (url.pathname === "/__metrics/prom") {
       const cache = cacheMetricsSnapshot();
       const tools = toolMetricsSnapshot();
+      const llm = llmMetricsSnapshot();
       const lines: string[] = [];
       lines.push('# HELP cache_lru_hits_total LRU memory cache hits');
       lines.push('# TYPE cache_lru_hits_total counter');
@@ -380,6 +382,28 @@ const runtime = {
         if (m.avgMs != null) lines.push(`tool_avg_latency_ms${label} ${m.avgMs}`);
         if (m.p95Ms != null) lines.push(`tool_p95_latency_ms${label} ${m.p95Ms}`);
         if (m.errorRate != null) lines.push(`tool_error_rate${label} ${m.errorRate}`);
+      }
+      // LLM metrics
+      lines.push('# HELP llm_calls_total LLM invocation attempts');
+      lines.push('# TYPE llm_calls_total counter');
+      lines.push(`llm_calls_total ${llm.calls}`);
+      lines.push('# HELP llm_errors_total LLM invocation errors');
+      lines.push('# TYPE llm_errors_total counter');
+      lines.push(`llm_errors_total ${llm.errors}`);
+      if (llm.avgMs != null) {
+        lines.push('# HELP llm_avg_latency_ms Average LLM latency in ms (gauge)');
+        lines.push('# TYPE llm_avg_latency_ms gauge');
+        lines.push(`llm_avg_latency_ms ${llm.avgMs}`);
+      }
+      if (llm.p95Ms != null) {
+        lines.push('# HELP llm_p95_latency_ms Approx p95 LLM latency in ms (gauge)');
+        lines.push('# TYPE llm_p95_latency_ms gauge');
+        lines.push(`llm_p95_latency_ms ${llm.p95Ms}`);
+      }
+      if (llm.errorRate != null) {
+        lines.push('# HELP llm_error_rate LLM error rate (gauge)');
+        lines.push('# TYPE llm_error_rate gauge');
+        lines.push(`llm_error_rate ${llm.errorRate}`);
       }
       return new Response(lines.join("\n") + "\n", {
         status: 200,

@@ -87,3 +87,9 @@ jobs:
       - name: Summary
         if: always()
         run: echo "Maintenance action completed" >> $GITHUB_STEP_SUMMARY
+      - name: Upload purge audit file
+        if: ${{ github.event.inputs.action == 'purge' && github.event.inputs.audit_file != '' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: purge-audit
+          path: seo-ecommerce/server/${{ github.event.inputs.audit_file }}

@@ -44,6 +44,16 @@ interface GetOrSetResult<T> {
 const LRU_CAP = 200;
 const memory = new Map<string, Entry<any>>();
 
+// Metrics counters (in-memory per isolate)
+const metrics = {
+  lruHits: 0,
+  kvHits: 0,
+  misses: 0,
+  staleServed: 0,
+  revalidationsTriggered: 0,
+  writes: 0,
+};
+
 function lruGet<T>(k: string): Entry<T> | undefined {
   const v = memory.get(k);
   if (v) {
@@ -97,6 +107,7 @@ export async function getOrSet<T>(
   if (mem && mem.version === version) {
     const ageSec = (now - mem.ts) / 1000;
     if (ageSec <= ttlSeconds) {
+      metrics.lruHits++;
       return { data: mem.data, cache: true, stale: false, storedAt: mem.ts };
     }
   }
@@ -117,6 +128,7 @@ export async function getOrSet<T>(
     const withinHard = ageSec <= hardTtlSeconds;
     if (fresh) {
       lruSet(key, kvEntry);
+      metrics.kvHits++;
       return {
         data: kvEntry.data,
         cache: true,
@@ -128,6 +140,9 @@ export async function getOrSet<T>(
       // Serve stale, trigger background revalidation (fire and forget)
       revalidateAsync(env, key, fetchFn, opts).catch(() => {});
       lruSet(key, kvEntry);
+      metrics.kvHits++;
+      metrics.staleServed++;
+      metrics.revalidationsTriggered++;
       return {
         data: kvEntry.data,
         cache: true,
@@ -150,8 +165,10 @@ export async function getOrSet<T>(
   if (kv) {
     try {
       await kv.put(key, serialize(entry));
+      metrics.writes++;
     } catch {}
   }
+  metrics.misses++;
   return { data, cache: false, stale: false, storedAt: now };
 }
 
@@ -174,6 +191,7 @@ async function revalidateAsync<T>(
     lruSet(key, entry);
     const kv = opts.kv || env.SEO_CACHE;
     if (kv) await kv.put(key, (opts.serialize || DEFAULT_SERIALIZE)(entry));
+    metrics.writes++;
   } catch {
     // swallow
   }
@@ -208,4 +226,8 @@ export function buildPageSpeedKey(url: string, strategy: string) {
 export function buildLinkAnalyzerKey(url: string) {
   const { origin, path, query } = normalizeUrl(url);
   return `links:v1:${origin}${path}?${query}`;
+}
+
+export function cacheMetricsSnapshot() {
+  return { ...metrics, lruSize: memory.size, lruCap: LRU_CAP };
 }

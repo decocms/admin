@@ -1,6 +1,7 @@
 // deno-lint-ignore-file require-await
 import { withRuntime } from "@deco/workers-runtime";
 import { logSafe } from "@deco/workers-runtime/logSafe";
+import { cacheMetricsSnapshot } from "./tools/cache";
 import { toolFactories } from "./tools";
 import { analyzeLinks } from "./tools/link-analyzer/analyze";
 import { createPageSpeedTool } from "./tools/pagespeed";
@@ -319,6 +320,16 @@ const runtime = {
           },
         });
       })();
+    }
+    if (url.pathname === "/__metrics") {
+      const snapshot = cacheMetricsSnapshot();
+      return new Response(JSON.stringify({ cache: snapshot }), {
+        status: 200,
+        headers: {
+          "content-type": "application/json",
+          "Cache-Control": "no-cache, no-store, must-revalidate",
+        },
+      });
     }
     // Direct analyze endpoint (mirrors view /api/analisar) so production worker serves it without relying on view server bundle
     if (url.pathname === "/api/analisar") {

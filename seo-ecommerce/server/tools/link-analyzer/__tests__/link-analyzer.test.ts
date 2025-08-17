@@ -1,13 +1,14 @@
 import { describe, it, expect } from 'vitest';
 import { analyzeLinks } from '../analyze';
 
-describe('analyzeLinks pure function', () => {
-  it('returns deterministic mocked metrics', () => {
-    const result = analyzeLinks('https://example.com');
-    expect(result.linksFound).toBe(42);
-    expect(result.brokenLinks).toBe(3);
-    expect(result.seoScore).toBe(85);
-  });
+describe('analyzeLinks basic structure', () => {
+  it('resolves with expected shape (no network guarantee on metrics)', async () => {
+    const result = await analyzeLinks('https://example.com');
+    expect(result).toHaveProperty('linksFound');
+    expect(result).toHaveProperty('brokenLinks');
+    expect(result).toHaveProperty('seoScore');
+    expect(typeof result.seoScore).toBe('number');
+  }, 20000);
 });
 
 // Integration test of tool factory skipped due to Vitest parser issues with

@@ -131,6 +131,36 @@ async function run() {
     return { status: r.status };
   });
 
+  // 7. SEO_AUDIT composite
+  await step('SEO_AUDIT', async () => {
+    const t0 = Date.now();
+    const r = await safeFetch(`${BASE}/mcp/tools`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ tool: 'SEO_AUDIT', input: { url: testUrl } }),
+    });
+    summary.timings.seoAudit = Date.now() - t0;
+    if (r.status !== 200) throw new Error(`Status ${r.status}: ${JSON.stringify(r.body)}`);
+    const out = r.body.result || r.body;
+    summary.tools.SEO_AUDIT = { perfMobile: out.scores?.performanceMobile, seoMobile: out.scores?.seoMobile, linkSeo: out.scores?.linkSeoScore, warnings: (out.warnings||[]).length };
+    return summary.tools.SEO_AUDIT;
+  });
+
+  // 8. AI_INSIGHTS (heuristic or LLM)
+  await step('AI_INSIGHTS', async () => {
+    const t0 = Date.now();
+    const r = await safeFetch(`${BASE}/mcp/tools`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ tool: 'AI_INSIGHTS', input: { url: testUrl } }),
+    });
+    summary.timings.aiInsights = Date.now() - t0;
+    if (r.status !== 200) throw new Error(`Status ${r.status}: ${JSON.stringify(r.body)}`);
+    const out = r.body.result || r.body;
+    summary.tools.AI_INSIGHTS = { insights: (out.insights||[]).length, model: out.modelUsed };
+    return summary.tools.AI_INSIGHTS;
+  });
+
   const totalMs = Date.now() - startAll;
   console.log('\n===== SUMMARY =====');
   console.log(JSON.stringify({ totalMs, ...summary }, null, 2));

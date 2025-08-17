@@ -63,7 +63,7 @@ npm run seo:smoke:verbose
 ```
 
 Saída esperada inclui:
-- Tools list contém LINK_ANALYZER e PAGESPEED
+- Tools list contém LINK_ANALYZER, PAGESPEED, SEO_AUDIT, AI_INSIGHTS
 - Status 200 em /__env e /api/analisar
 - PageSpeed retorna performance/seo >= 0
 
@@ -75,20 +75,23 @@ Invoke-RestMethod -Uri http://localhost:8787/mcp/tools
 Invoke-RestMethod -Uri http://localhost:8787/mcp/tools -Method Post -ContentType 'application/json' -Body (@{tool='LINK_ANALYZER';input=@{url='https://example.com'}}|ConvertTo-Json)
 Invoke-RestMethod -Uri http://localhost:8787/mcp/tools -Method Post -ContentType 'application/json' -Body (@{tool='PAGESPEED';input=@{url='https://example.com';strategy='mobile'}}|ConvertTo-Json)
 Invoke-RestMethod -Uri http://localhost:8787/mcp/tools -Method Post -ContentType 'application/json' -Body (@{tool='SEO_AUDIT';input=@{url='https://example.com'}}|ConvertTo-Json)
+Invoke-RestMethod -Uri http://localhost:8787/mcp/tools -Method Post -ContentType 'application/json' -Body (@{tool='AI_INSIGHTS';input=@{url='https://example.com'}}|ConvertTo-Json)
 ```
 
-## Página de Auditoria Unificada
+## Página de Auditoria Unificada + Insights
 
 Rota: `/auditoria`
 
 O que faz:
-- Envia POST para `/mcp/tools` com `{ tool: 'SEO_AUDIT', input: { url } }`
-- Mostra scores (performance/SEO mobile & desktop), CWV e alertas heurísticos
+- POST para `/mcp/tools` com `{ tool: 'SEO_AUDIT', input: { url } }`
+- Mostra scores (performance/SEO mobile & desktop), Core Web Vitals e alertas heurísticos
+- Dispara também `{ tool: 'AI_INSIGHTS' }` (usa auditoria como contexto) e exibe recomendações
 - Mantém último resultado em `localStorage` (`seo-audit-last`)
 
 Diferença para `/analise`:
-- `/analise` exibe saída pura do LINK_ANALYZER
+- `/analise` exibe saída crua do LINK_ANALYZER
 - `/auditoria` agrega LINK_ANALYZER + PageSpeed (mobile/desktop) + heurísticas
+- Acrescenta recomendações AI (LLM se `OPENROUTER_API_KEY` presente; senão heurísticas)
 
 ## Deploy
 
@@ -129,11 +132,11 @@ $env:BASE_URL='http://localhost:8799'; npm --prefix seo-ecommerce/server run smo
 
 ## Próximos Passos (Pendentes)
 
-- (Em andamento) Melhorar workflow SEO_AUDIT (atual usa single-step tool; considerar paralelizar PageSpeed)
-- Tool AI_INSIGHTS (recomendações SEO) + exibição UI
-- Página /auditoria consolidando resultados
-- Refino supabaseClient e migração de páginas restantes
-- Testes unitários (vitest) para normalização do PageSpeed
+- Paralelizar chamadas PageSpeed dentro da auditoria
+- Workflow SEO_AUDIT multi-step formal (telemetria, retries)
+- Testes vitest: heurísticas AI_INSIGHTS & normalização PageSpeed
+- Sanitização extra logs /mcp/tools (remover tokens eventuals)
+- Cache persistente (KV/R2) opcional para PageSpeed (reduzir quota)
 
 ---
 Qualquer dúvida: ver `seo-ecommerce/server/scripts/smoke.mjs` para entender a sequência ou abrir issue interna.

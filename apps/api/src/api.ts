@@ -4,6 +4,7 @@ import { DECO_CHAT_WEB, MCPConnection, WellKnownMcpGroups } from "@deco/sdk";
 import { DECO_CHAT_KEY_ID, getKeyPair } from "@deco/sdk/auth";
 import {
   AGENT_TOOLS,
+  assertWorkspaceResourceAccess,
   AuthorizationClient,
   CallToolMiddleware,
   compose,
@@ -46,6 +47,7 @@ import {
 } from "@modelcontextprotocol/sdk/types.js";
 import { getIntegration } from "packages/sdk/src/mcp/integrations/api.ts";
 import { createPosthogServerClient } from "packages/sdk/src/posthog.ts";
+import { studio } from "@outerbase/browsable-durable-object";
 
 export const app = new Hono<AppEnv>();
 export const honoCtxToAppCtx = (c: Context<AppEnv>): AppContext => {
@@ -374,6 +376,14 @@ app.post("/:root/:slug/:integrationId/tools/list", async (c) => {
       method: "tools/list" as const,
     }),
   );
+});
+
+app.all("/:root/:slug/i:databases-management/studio", async (c) => {
+  const ctx = honoCtxToAppCtx(c);
+  await assertWorkspaceResourceAccess(ctx, {
+    resource: "DATABASES_RUN_SQL",
+  });
+  return studio(c.req.raw, ctx.workspaceDO);
 });
 
 app.post("/:root/:slug/:integrationId/tools/call/:tool", async (c) => {

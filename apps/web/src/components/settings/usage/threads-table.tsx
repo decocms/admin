@@ -4,6 +4,7 @@ import { Table, type TableColumn } from "../../common/table/index.tsx";
 import { AgentAvatar } from "../../common/avatar/agent.tsx";
 import { color } from "./util.ts";
 import { UserAvatar } from "../../common/avatar/user.tsx";
+import { useNavigateWorkspace } from "../../../hooks/use-navigate-workspace.ts";
 
 export function ThreadsTable({
   agents,
@@ -16,6 +17,7 @@ export function ThreadsTable({
   members: Member[];
   threadHistory: Thread[];
 }) {
+  const navigate = useNavigateWorkspace();
   const [sortKey, setSortKey] = useState<string>("total");
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("desc");
 
@@ -203,6 +205,9 @@ export function ThreadsTable({
       sortKey={sortKey}
       sortDirection={sortDirection}
       onSort={handleSort}
+      onRowClick={(thread) => {
+        navigate(`/audit/${thread.id}`);
+      }}
     />
   );
 }

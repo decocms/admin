@@ -1,12 +1,13 @@
 import {
   createServerClient as createMcpServerClient,
-  isApiDecoChatMCPConnection as shouldPatchDecoChatMCPConnection,
   listToolsByConnectionType,
   patchApiDecoChatTokenHTTPConnection,
+  isApiDecoChatMCPConnection as shouldPatchDecoChatMCPConnection,
 } from "@deco/ai/mcp";
 import { CallToolRequestSchema } from "@modelcontextprotocol/sdk/types.js";
 import { z } from "zod";
 import { KNOWLEDGE_BASE_GROUP } from "../../constants.ts";
+import type { MCPTool } from "../../hooks/tools.ts";
 import {
   type Agent,
   AgentSchema,
@@ -39,9 +40,8 @@ import {
   WellKnownBindings,
 } from "../index.ts";
 import { listKnowledgeBases } from "../knowledge/api.ts";
-import { getRegistryApp, listRegistryApps } from "../registry/api.ts";
+import { AppName, getRegistryApp, listRegistryApps } from "../registry/api.ts";
 import { createServerClient } from "../utils.ts";
-import type { MCPTool } from "../../hooks/tools.ts";
 
 const SELECT_INTEGRATION_QUERY = `
           *,
@@ -68,7 +68,7 @@ const mapIntegration = (
   const appScope =
     integration.deco_chat_apps_registry?.deco_chat_registry_scopes?.scope_name;
   if (registryName && appScope) {
-    appName = `@${appScope}/${registryName}`;
+    appName = AppName.build(appScope, registryName);
   }
   return {
     ...integration,
@@ -495,6 +495,29 @@ export const getIntegration = createIntegrationManagementTool({
   },
 });
 
+const assertsValidOAuthParams = async (payload: Omit<Integration, "id">) => {
+  try {
+    const oauth = (await MCPClient.INTEGRATIONS_CALL_TOOL({
+      connection: payload.connection,
+      params: {
+        name: "DECO_CHAT_OAUTH_CALLBACK",
+        arguments: payload,
+      },
+    })) as {
+      isError?: boolean;
+      structuredContent: { validated: boolean; reason?: string };
+    };
+    const isInvalid = oauth?.structuredContent?.validated === false;
+    if (isInvalid) {
+      throw new UserInputError(
+        `Invalid OAuth params. ${oauth?.structuredContent?.reason}`,
+      );
+    }
+  } catch {
+    // validate on error
+    // ignore validation on error
+  }
+};
 export const createIntegration = createIntegrationManagementTool({
   name: "INTEGRATIONS_CREATE",
   description: "Create a new integration",
@@ -504,13 +527,20 @@ export const createIntegration = createIntegrationManagementTool({
     await assertWorkspaceResourceAccess(c);
 
     const { appId, ...integration } = _integration;
-
-    const payload = {
+    const baseIntegration = {
       ...NEW_INTEGRATION_TEMPLATE,
       ...integration,
-      app_id: appId ?? undefined,
       workspace: c.workspace.value,
       id: integration.id ? parseId(integration.id).uuid : undefined,
+    };
+
+    if (appId) {
+      await assertsValidOAuthParams(baseIntegration);
+    }
+
+    const payload = {
+      ...baseIntegration,
+      app_id: appId ?? undefined,
     };
 
     const { data, error } =
@@ -556,6 +586,10 @@ export const updateIntegration = createIntegrationManagementTool({
     }
 
     const { name, description, icon, connection, access, appId } = integration;
+
+    if (appId) {
+      await assertsValidOAuthParams(integration);
+    }
 
     const { data, error } = await c.db
       .from("deco_chat_integrations")
@@ -678,7 +712,7 @@ It's always handy to search for installed integrations with no query, since all 
 
     const registryList = registry.apps.map((app) => ({
       id: app.id,
-      name: `@${app.scopeName}/${app.name}`,
+      name: AppName.build(app.scopeName, app.name),
       friendlyName: app.friendlyName,
       description: app.description,
       icon: app.icon,
@@ -744,6 +778,7 @@ export const DECO_INTEGRATION_OAUTH_START = createIntegrationManagementTool({
         token: installId,
       };
     }
+
     const oauth = (await MCPClient.INTEGRATIONS_CALL_TOOL({
       connection,
       params: {
@@ -836,7 +871,7 @@ export const DECO_INTEGRATION_INSTALL = createIntegrationManagementTool({
       const app = await getRegistryApp.handler({ name: args.id });
       integration = {
         id: crypto.randomUUID(),
-        name: app.friendlyName ?? `@${app.scopeName}/${app.name}`,
+        name: app.friendlyName ?? AppName.build(app.scopeName, app.name),
         appId: args.appId,
         description: app.description,
         icon: app.icon,

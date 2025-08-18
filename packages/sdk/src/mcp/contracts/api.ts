@@ -231,11 +231,16 @@ export const contractGet = createContractTool({
   description: "Get the current contract state.",
   inputSchema: z.object({}),
   outputSchema: z.object({
+    appName: z.string().optional(),
     contract: ContractStateSchema,
   }),
   handler: (_, c) => {
     c.resourceAccess.grant();
     return {
+      appName:
+        "appName" in c.user && typeof c.user.appName === "string"
+          ? c.user.appName
+          : undefined,
       contract: c.state,
     };
   },

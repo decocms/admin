@@ -25,6 +25,7 @@ import { bundler } from "./bundler.ts";
 import { assertsDomainUniqueness } from "./custom-domains.ts";
 import { type DeployResult, deployToCloudflare } from "./deployment.ts";
 import type { WranglerConfig } from "./wrangler.ts";
+import { AppName } from "../registry/api.ts";
 const uid = new ShortUniqueId({
   dictionary: "alphanum_lower",
   length: 10,
@@ -784,7 +785,7 @@ Important Notes:
 
       const issuer = await JwtIssuer.forKeyPair(keyPair);
       const scope = wranglerConfig?.scope ?? c.workspace.slug;
-      const appName = `@${scope}/${scriptSlug}`;
+      const appName = AppName.build(scope, scriptSlug);
 
       const token = await issuer.issue({
         sub: `app:${appName}`,

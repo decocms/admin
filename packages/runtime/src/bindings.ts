@@ -33,7 +33,7 @@ const createIntegrationsUrl = ({
 
 type WorkspaceClientContext = Omit<
   RequestContext,
-  "ensureAuthenticated" | "state"
+  "ensureAuthenticated" | "state" | "fetchIntegrationMetadata"
 >;
 export const workspaceClient = (
   ctx: WorkspaceClientContext,

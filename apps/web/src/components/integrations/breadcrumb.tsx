@@ -24,11 +24,9 @@ export function IntegrationPageLayout({ tabs }: { tabs: Record<string, Tab> }) {
     <>
       <PageLayout
         hideViewsButton
-        breadcrumb={
-          <DefaultBreadcrumb
-            items={[{ label: "Integrations", link: "/connections" }]}
-          />
-        }
+        useNewHeader={true}
+        pageTitle="Integrations"
+        pageIcon="link"
         actionButtons={<SelectConnectionDialog forceTab="new-connection" />}
         tabs={tabs}
       />

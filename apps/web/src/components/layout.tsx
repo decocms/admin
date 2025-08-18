@@ -24,6 +24,7 @@ import { useWorkspaceLink } from "../hooks/use-navigate-workspace.ts";
 import { useUserPreferences } from "../hooks/use-user-preferences.ts";
 import { useUser } from "../hooks/use-user.ts";
 import RegisterActivity from "./common/register-activity.tsx";
+import { PageHeader } from "./common/page-header.tsx";
 import {
   DecopilotChat,
   DecopilotTabs,
@@ -82,7 +83,7 @@ export function RouteLayout() {
               setDefaultOpen(open);
               setOpen(open);
             }}
-            className="h-full bg-sidebar"
+            className="h-full bg-background"
             style={
               {
                 "--sidebar-width": "16rem",
@@ -91,7 +92,7 @@ export function RouteLayout() {
             }
           >
             <AppSidebar />
-            <SidebarInset className="h-full flex-col bg-sidebar">
+            <SidebarInset className="h-full flex-col bg-background">
               <Outlet />
             </SidebarInset>
             <RegisterActivity teamSlug={teamSlug} />
@@ -107,6 +108,10 @@ export interface PageLayoutProps {
   actionButtons?: ReactNode;
   tabs: Record<string, Tab>;
   hideViewsButton?: boolean;
+  // New header props
+  useNewHeader?: boolean;
+  pageTitle?: string;
+  pageIcon?: string;
 }
 
 const ToggleDecopilotButton = () => {
@@ -141,6 +146,9 @@ export function PageLayout({
   actionButtons,
   tabs,
   hideViewsButton,
+  useNewHeader,
+  pageTitle,
+  pageIcon,
 }: PageLayoutProps) {
   const { toggleSidebar, open } = useSidebar();
   const { preferences } = useUserPreferences();
@@ -161,9 +169,36 @@ export function PageLayout({
     }
   };
 
+  // If using new header, render it differently
+  if (useNewHeader && pageTitle) {
+    return (
+      <div className="flex flex-col gap-2 p-1 w-full min-h-screen">
+        <PageHeader 
+          title={pageTitle}
+          icon={pageIcon}
+          actionButtons={actionButtons}
+        />
+        <div className="flex-1">
+          <Docked.Provider tabs={withDecopilot}>
+            <div className="h-full">
+              <Docked
+                hideViewsButton={hideViewsButton}
+                onReady={onReady}
+                tabComponents={{
+                  [DecopilotTabs.displayName]: DecopilotTabs,
+                }}
+              />
+            </div>
+          </Docked.Provider>
+        </div>
+      </div>
+    );
+  }
+
+  // Original layout for backward compatibility
   return (
     <Docked.Provider tabs={withDecopilot}>
-      <div className={cn("bg-sidebar", "grid grid-cols-3 md:grid-cols-2 px-0")}>
+      <div className={cn("grid grid-cols-3 md:grid-cols-2 px-0")}>
         <div className="p-2 md:p-0 md:hidden">
           <Button
             onClick={toggleSidebar}

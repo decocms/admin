@@ -13,8 +13,8 @@ function WorkspaceList() {
   const teams = useUserTeams();
 
   const handleWorkspaceSelect = (teamSlug: string) => {
-    // Navigate to onboarding for the selected workspace
-    navigate(`/${teamSlug}/onboarding`);
+    // Navigate to chat for the selected workspace
+    navigate(`/${teamSlug}/chat`);
   };
 
   // Separate personal and team workspaces
@@ -105,7 +105,7 @@ function WorkspaceList() {
         <p className="text-muted-foreground">
           No workspaces available. Create your first team to get started.
         </p>
-        <Button onClick={() => navigate("/onboarding")}>
+        <Button onClick={() => navigate("/chat")}>
           Get Started
         </Button>
       </div>

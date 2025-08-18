@@ -45,9 +45,9 @@ export default function SettingsPage() {
   return (
     <PageLayout
       tabs={tabs}
-      breadcrumb={
-        <DefaultBreadcrumb items={[{ label: "Settings", link: "/settings" }]} />
-      }
+      useNewHeader={true}
+      pageTitle="Settings"
+      pageIcon="settings"
     />
   );
 }

@@ -21,6 +21,7 @@ import { TriggerCard } from "./trigger-card.tsx";
 import { TriggerModal } from "./trigger-dialog.tsx";
 import { TriggerToggle } from "./trigger-toggle.tsx";
 import { TriggerType } from "./trigger-type.tsx";
+import { ActionButton } from "../common/action-button.tsx";
 
 const SORTABLE_KEYS = ["title", "type", "target", "author"] as const;
 
@@ -72,19 +73,14 @@ export default function ListTriggersLayout() {
     <PageLayout
       hideViewsButton
       tabs={TABS}
-      breadcrumb={
-        <DefaultBreadcrumb items={[{ label: "Triggers", link: "/triggers" }]} />
-      }
+      useNewHeader={true}
+      pageTitle="Triggers"
+      pageIcon="cable"
       actionButtons={
         <>
-          <Button
-            variant="special"
-            title="Add Trigger"
-            onClick={() => setIsCreateModalOpen(true)}
-          >
-            <Icon name="add" />
-            <span className="hidden md:inline">New Trigger</span>
-          </Button>
+          <ActionButton onClick={() => setIsCreateModalOpen(true)}>
+            New Trigger
+          </ActionButton>
           {isCreateModalOpen && (
             <TriggerModal
               isOpen={isCreateModalOpen}

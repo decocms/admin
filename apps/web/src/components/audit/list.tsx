@@ -288,9 +288,9 @@ function Page() {
     <PageLayout
       hideViewsButton
       tabs={TABS}
-      breadcrumb={
-        <DefaultBreadcrumb items={[{ label: "Activity", link: "/audits" }]} />
-      }
+      useNewHeader={true}
+      pageTitle="Activity"
+      pageIcon="activity"
     />
   );
 }

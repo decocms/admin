@@ -164,7 +164,7 @@ function NotFound(): null {
   throw new NotFoundError("The path was not found");
 }
 
-const DEFAULT_PATH = "/agents";
+const DEFAULT_PATH = "/chat";
 
 /**
  * Home component that either shows workspace selection or redirects to the default path.
@@ -323,8 +323,7 @@ const router = createBrowserRouter([
             index: true,
             Component: Home,
           },
-          { path: "chat", Component: lazy(() => import("./components/chat/chat-page.tsx").then(m => ({ default: m.ChatPage }))) },
-          { path: "onboarding", Component: lazy(() => import("./components/onboarding/onboarding-page.tsx").then(m => ({ default: m.OnboardingPage }))) },
+          { path: "chat", Component: lazy(() => import("./components/onboarding/onboarding-page.tsx")) },
           { path: "discover", Component: DiscoverPage },
           { path: "discover/item/:itemId", Component: lazy(() => wrapWithUILoadingFallback(import("./components/discover/item-detail.tsx").then(m => ({ default: m.ItemDetailPage })))) },
           { path: "agents", Component: AgentList },

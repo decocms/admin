@@ -13,7 +13,7 @@ import { useUserPreferences } from "../../hooks/use-user-preferences.ts";
 import { AudioButton } from "./audio-button.tsx";
 import { ContextResources, UploadedFile } from "./context-resources.tsx";
 import { useAgent } from "../agent/provider.tsx";
-import { ModelSelector } from "./model-selector.tsx";
+import { ModelSelectorFigma } from "./model-selector-figma.tsx";
 import { RichTextArea } from "./rich-text.tsx";
 import ToolsButton from "./tools-button.tsx";
 
@@ -127,7 +127,7 @@ export function ChatInput({ disabled }: { disabled?: boolean } = {}) {
                 </div>
                 <div className="flex items-center gap-2">
                   {showModelSelector && (
-                    <ModelSelector
+                    <ModelSelectorFigma
                       model={model}
                       onModelChange={(modelToSelect) =>
                         setPreferences({
@@ -135,6 +135,7 @@ export function ChatInput({ disabled }: { disabled?: boolean } = {}) {
                           defaultModel: modelToSelect,
                         })
                       }
+                      variant="borderless"
                     />
                   )}
                   {showThreadTools && <ToolsButton />}

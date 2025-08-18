@@ -512,6 +512,29 @@ app.get("/apps/oauth", (c) => {
   return c.redirect(target.href);
 });
 
+// OpenRouter models proxy endpoint
+app.get("/openrouter/models", async (c: Context) => {
+  try {
+    const response = await fetch("https://openrouter.ai/api/v1/models", {
+      headers: {
+        "Accept": "application/json",
+      },
+    });
+    
+    if (!response.ok) {
+      throw new HTTPException(response.status as ContentfulStatusCode, { 
+        message: `OpenRouter API error: ${response.statusText}` 
+      });
+    }
+    
+    const data = await response.json() as Record<string, unknown>;
+    return c.json(data);
+  } catch (error) {
+    console.error("Failed to fetch OpenRouter models:", error);
+    return c.json({ error: "Failed to fetch models" }, 500 as ContentfulStatusCode);
+  }
+});
+
 // Health check endpoint
 app.get("/health", (c: Context) => c.json({ status: "ok" }));
 

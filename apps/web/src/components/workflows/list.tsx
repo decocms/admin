@@ -356,7 +356,9 @@ function WorkflowRunsListPage() {
     <PageLayout
       hideViewsButton
       tabs={tabs}
-      breadcrumb={<DefaultBreadcrumb items={[{ label: "Workflow Runs" }]} />}
+      useNewHeader={true}
+      pageTitle="Workflows"
+      pageIcon="workflow"
     />
   );
 }

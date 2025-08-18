@@ -21,7 +21,7 @@
     --dv-drag-over-background-color: var(--accent);
     --dv-drag-over-border-color: var(--border);
     --dv-tabs-container-scrollbar-color: var(--muted);
-    --dv-group-view-background-color: var(--sidebar);
+    --dv-group-view-background-color: var(--background);
     --dv-tabs-and-actions-container-background-color: var(--background);
     --dv-activegroup-visiblepanel-tab-background-color: transparent;
     --dv-activegroup-hiddenpanel-tab-background-color: transparent;
@@ -32,8 +32,8 @@
     --dv-activegroup-hiddenpanel-tab-color: var(--muted-foreground);
     --dv-inactivegroup-visiblepanel-tab-color: var(--muted-foreground);
     --dv-inactivegroup-hiddenpanel-tab-color: var(--muted-foreground);
-    --dv-separator-border: var(--border);
-    --dv-paneview-header-border-color: var(--border);
+    --dv-separator-border: transparent;
+    --dv-paneview-header-border-color: transparent;
     --dv-icon-hover-background-color: var(--accent);
     --dv-floating-box-shadow:
       0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
@@ -65,11 +65,11 @@
     }
 
     .dv-groupview {
-      @apply border;
+      @apply border-0;
     }
 
     .dv-groupview {
-      @apply md:rounded-xl md:shadow-md;
+      @apply md:rounded-none;
     }
 
     .dv-content-container {
@@ -78,7 +78,6 @@
 
     .dv-active-tab [data-active="true"] {
       @apply bg-background! rounded-t-xl relative z-10;
-      border-bottom: 1px solid var(--background);
     }
 
     .dv-active-tab [data-active="true"]::before,

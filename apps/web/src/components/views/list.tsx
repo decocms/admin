@@ -304,9 +304,9 @@ export default function Page() {
     <PageLayout
       tabs={TABS}
       hideViewsButton
-      breadcrumb={
-        <DefaultBreadcrumb items={[{ label: "Views", link: "/views" }]} />
-      }
+      useNewHeader={true}
+      pageTitle="Views"
+      pageIcon="app-window"
     />
   );
 }

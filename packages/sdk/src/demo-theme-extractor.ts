@@ -60,7 +60,3 @@ async function main() {
     process.exit(1);
   }
 }
-
-if (import.meta.main) {
-  main();
-}

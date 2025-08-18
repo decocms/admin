@@ -32,6 +32,7 @@ import { Table, type TableColumn } from "../../common/table/index.tsx";
 import { DefaultBreadcrumb, PageLayout } from "../../layout.tsx";
 import { Header } from "./common.tsx";
 import { useViewMode } from "@deco/ui/hooks/use-view-mode.ts";
+import { ActionButton } from "../../common/action-button.tsx";
 
 interface ListState {
   filter: string;
@@ -114,24 +115,13 @@ function ListPromptsLayout() {
         },
       }}
       actionButtons={
-        <Button
+        <ActionButton 
           onClick={handleCreate}
           disabled={create.isPending}
-          variant="special"
-          className="gap-2"
+          loading={create.isPending}
         >
-          {create.isPending ? (
-            <>
-              <Spinner size="xs" />
-              <span>Creating prompt...</span>
-            </>
-          ) : (
-            <>
-              <Icon name="add" />
-              <span className="hidden md:inline">New prompt</span>
-            </>
-          )}
-        </Button>
+          {create.isPending ? "Creating prompt..." : "New prompt"}
+        </ActionButton>
       }
     />
   );

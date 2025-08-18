@@ -4,10 +4,11 @@ import {
   getThreadsUsage,
   getWalletAccount,
   getWorkspacePlan,
+  redeemWalletVoucher,
 } from "../crud/wallet.ts";
 import { KEYS } from "./api.ts";
 import { useSDK } from "./store.tsx";
-import { useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
+import { useQueryClient, useSuspenseQuery, useMutation } from "@tanstack/react-query";
 
 export function useWorkspaceWalletBalance() {
   const { workspace } = useSDK();
@@ -86,4 +87,25 @@ export function usePlan() {
   });
 
   return plan;
+}
+
+export function useClaimOnboardingBonus() {
+  const { workspace } = useSDK();
+  const queryClient = useQueryClient();
+  
+  return useMutation({
+    mutationFn: async () => {
+      // Use a special voucher code for onboarding bonus
+      // This should be configured on the backend to add $2
+      const result = await redeemWalletVoucher({
+        workspace,
+        voucher: "ONBOARDING_BONUS_2USD",
+      });
+      return result;
+    },
+    onSuccess: () => {
+      // Invalidate wallet balance to refresh it
+      queryClient.invalidateQueries({ queryKey: KEYS.WALLET(workspace) });
+    },
+  });
 }

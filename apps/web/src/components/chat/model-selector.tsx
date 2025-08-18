@@ -115,6 +115,10 @@ interface ModelSelectorProps {
   variant?: "borderless" | "bordered";
 }
 
+// Export the enhanced version as well
+export { ModelSelectorEnhanced } from "./model-selector-enhanced.tsx";
+export { ModelSelectorFigma } from "./model-selector-figma.tsx";
+
 export function ModelSelector({
   model = DEFAULT_MODEL.id,
   onModelChange,

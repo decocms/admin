@@ -66,5 +66,8 @@
       "./plugins/ensure-tailwind-design-system-tokens.ts",
       "./plugins/enforce-kebab-case-file-names.ts"
     ]
+  },
+  "dependencies": {
+    "lucide-react": "^0.539.0"
   }
 }

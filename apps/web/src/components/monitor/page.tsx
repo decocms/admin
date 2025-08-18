@@ -44,9 +44,9 @@ export default function MonitorPage() {
   return (
     <PageLayout
       tabs={tabs}
-      breadcrumb={
-        <DefaultBreadcrumb items={[{ label: "Monitor", link: "/monitor" }]} />
-      }
+      useNewHeader={true}
+      pageTitle="Monitor"
+      pageIcon="monitor"
     />
   );
 }

@@ -46,6 +46,7 @@ import type { Tab } from "../dock/index.tsx";
 import { DefaultBreadcrumb, PageLayout } from "../layout.tsx";
 import { useFocusChat } from "./hooks.ts";
 import { useViewMode } from "@deco/ui/hooks/use-view-mode.ts";
+import { ActionButton } from "../common/action-button.tsx";
 
 export const useDuplicateAgent = (agent: Agent | null) => {
   const [duplicating, setDuplicating] = useState(false);
@@ -476,14 +477,13 @@ export default function Page() {
       <PageLayout
         tabs={TABS}
         hideViewsButton
-        breadcrumb={
-          <DefaultBreadcrumb items={[{ label: "Agents", link: "/agents" }]} />
-        }
+        useNewHeader={true}
+        pageTitle="Agents"
+        pageIcon="bot"
         actionButtons={
-          <Button onClick={handleCreate} variant="special" className="gap-2">
-            <Icon name="add" />
-            <span className="hidden md:inline">New agent</span>
-          </Button>
+          <ActionButton onClick={handleCreate}>
+            New agent
+          </ActionButton>
         }
       />
     </Context.Provider>

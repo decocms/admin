@@ -1,30 +1,7 @@
-import {
-  type Agent,
-  type Thread,
-  useAgents,
-  useDeleteThread,
-  useThreads,
-  useUpdateThreadTitle,
-  WELL_KNOWN_AGENT_IDS,
-} from "@deco/sdk";
-import { Button } from "@deco/ui/components/button.tsx";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@deco/ui/components/dialog.tsx";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@deco/ui/components/dropdown-menu.tsx";
-import { Form } from "@deco/ui/components/form.tsx";
+import { useState } from "react";
+import { Link, useLocation } from "react-router";
+import { cn } from "@deco/ui/lib/utils.ts";
 import { Icon } from "@deco/ui/components/icon.tsx";
-import { Input } from "@deco/ui/components/input.tsx";
 import {
   Sidebar,
   SidebarContent,
@@ -32,691 +9,245 @@ import {
   SidebarGroupContent,
   SidebarGroupLabel,
   SidebarMenu,
-  SidebarMenuButton,
   SidebarMenuItem,
-  SidebarSeparator,
-  useSidebar,
 } from "@deco/ui/components/sidebar.tsx";
-import { Skeleton } from "@deco/ui/components/skeleton.tsx";
-import { cn } from "@deco/ui/lib/utils.ts";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { type ReactNode, Suspense, useRef, useState } from "react";
-import { useForm } from "react-hook-form";
-import { Link, useMatch } from "react-router";
-import { z } from "zod";
 import { trackEvent } from "../../hooks/analytics.ts";
-import { useUser } from "../../hooks/use-user.ts";
 import { useWorkspaceLink } from "../../hooks/use-navigate-workspace.ts";
-import { useFocusChat } from "../agents/hooks.ts";
-import { AgentAvatar } from "../common/avatar/agent.tsx";
-import { groupThreadsByDate } from "../threads/index.tsx";
 import { SidebarFooter } from "./footer.tsx";
 import { Header as SidebarHeader } from "./header.tsx";
 
-const editTitleSchema = z.object({
-  title: z.string().min(1, "Title is required"),
-});
-
-type EditTitleForm = z.infer<typeof editTitleSchema>;
-
-const WithActive = ({
-  children,
-  ...props
+// Component for navigation items with active state
+function NavItem({
+  to,
+  icon,
+  label,
+  isActive,
+  onClick,
 }: {
   to: string;
-  children: (props: { isActive: boolean }) => ReactNode;
-}) => {
-  const match = useMatch(props.to);
-
-  return <div {...props}>{children({ isActive: !!match })}</div>;
-};
-
-function buildThreadUrl(thread: Thread): string {
-  return `agent/${thread.metadata?.agentId ?? ""}/${thread.id}`;
-}
-
-function DeleteThreadModal({
-  thread,
-  open,
-  onOpenChange,
-}: {
-  thread: Thread;
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
+  icon: string;
+  label: string;
+  isActive: boolean;
+  onClick?: () => void;
 }) {
-  const deleteThread = useDeleteThread(thread.id);
-
-  const handleDelete = async () => {
-    try {
-      await deleteThread.mutateAsync();
-      onOpenChange(false);
-    } catch (error) {
-      console.error("Failed to delete thread:", error);
-    }
-  };
-
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent>
-        <DialogHeader>
-          <DialogTitle>Delete Thread</DialogTitle>
-          <DialogDescription>
-            Are you sure you want to delete "{thread.title}"? This action cannot
-            be undone.
-          </DialogDescription>
-        </DialogHeader>
-        <DialogFooter>
-          <Button variant="ghost" onClick={() => onOpenChange(false)}>
-            Cancel
-          </Button>
-          <Button
-            variant="destructive"
-            onClick={handleDelete}
-            disabled={deleteThread.isPending}
-          >
-            {deleteThread.isPending ? "Deleting..." : "Delete"}
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
-  );
-}
-
-function ThreadActions({
-  thread,
-  onEdit,
-  className,
-}: {
-  thread: Thread;
-  onEdit: () => void;
-  className: string;
-}) {
-  const [open, setOpen] = useState(false);
-  const [showDeleteModal, setShowDeleteModal] = useState(false);
-  const match = useMatch(buildThreadUrl(thread));
-  const isCurrentThread = !!match;
-
-  return (
-    <>
-      <DropdownMenu open={open} onOpenChange={setOpen}>
-        <DropdownMenuTrigger asChild>
-          <Button
-            variant="ghost"
-            size="icon"
-            className={cn("h-8 w-8", className)}
-            onClick={(e) => {
-              e.preventDefault();
-              e.stopPropagation();
-            }}
-          >
-            <Icon
-              name="more_vert"
-              size={16}
-              className="text-muted-foreground"
-            />
-          </Button>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent align="end" onClick={(e) => e.stopPropagation()}>
-          <DropdownMenuItem
-            onClick={(e) => {
-              e.preventDefault();
-              e.stopPropagation();
-              setOpen(false);
-              onEdit();
-            }}
-          >
-            <Icon name="edit" className="mr-2" size={16} />
-            Rename
-          </DropdownMenuItem>
-          {!isCurrentThread && (
-            <DropdownMenuItem
-              onClick={(e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                setOpen(false);
-                setShowDeleteModal(true);
-              }}
-              className="text-destructive focus:text-destructive"
-            >
-              <Icon name="delete" className="mr-2" size={16} />
-              Delete
-            </DropdownMenuItem>
-          )}
-        </DropdownMenuContent>
-      </DropdownMenu>
-
-      <DeleteThreadModal
-        thread={thread}
-        open={showDeleteModal}
-        onOpenChange={setShowDeleteModal}
-      />
-    </>
-  );
-}
-
-function SidebarThreadItem({
-  thread,
-  onThreadClick,
-  agent,
-}: {
-  thread: Thread;
-  agent?: Agent;
-  onThreadClick: (thread: Thread) => void;
-}) {
-  const [isEditing, setIsEditing] = useState(false);
-  const formRef = useRef<HTMLFormElement>(null);
-  const updateTitle = useUpdateThreadTitle();
-
-  const methods = useForm<EditTitleForm>({
-    resolver: zodResolver(editTitleSchema),
-    defaultValues: {
-      title: thread.title,
-    },
-  });
-
-  function focusInput() {
-    const input = formRef.current?.querySelector("input");
-    input?.focus();
-  }
-
-  function handleBlur() {
-    setIsEditing(false);
-  }
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    const data = methods.getValues();
-
-    if (data.title === thread.title) {
-      setIsEditing(false);
-      return;
-    }
-
-    try {
-      updateTitle.mutateAsync({ threadId: thread.id, title: data.title });
-      setIsEditing(false);
-    } catch (_) {
-      methods.setValue("title", thread.title);
-      setIsEditing(false);
-    }
-  };
-
-  return (
-    <SidebarMenuItem key={thread.id} className="relative group/item">
-      <div className="w-full">
-        <WithActive to={buildThreadUrl(thread)}>
-          {({ isActive }) => (
-            <SidebarMenuButton
-              asChild
-              isActive={isActive}
-              tooltip={thread.title}
-              className="h-9 w-full -ml-1 pr-8 gap-3"
-            >
-              {isEditing ? (
-                <Form {...methods}>
-                  <form
-                    ref={formRef}
-                    onSubmit={handleSubmit}
-                    className="flex-1"
-                  >
-                    <Input
-                      {...methods.register("title")}
-                      className="h-8 text-sm w-5/6"
-                      onKeyDown={(e) => {
-                        if (e.key === "Enter") {
-                          e.preventDefault();
-                          handleSubmit(e);
-                        }
-                      }}
-                      onBlur={handleBlur}
-                    />
-                  </form>
-                </Form>
-              ) : (
-                <Link
-                  to={buildThreadUrl(thread)}
-                  onClick={() => onThreadClick(thread)}
-                >
-                  <AgentAvatar
-                    url={agent?.avatar}
-                    fallback={agent?.name ?? WELL_KNOWN_AGENT_IDS.teamAgent}
-                    size="xs"
-                  />
-
-                  <span className="truncate">{thread.title}</span>
-                </Link>
-              )}
-            </SidebarMenuButton>
-          )}
-        </WithActive>
-      </div>
-
-      {!isEditing && (
-        <ThreadActions
-          thread={thread}
-          className="absolute right-2 top-1/2 -translate-y-1/2 transition-all opacity-0 group-hover/item:opacity-100"
-          onEdit={() => {
-            setIsEditing(true);
-            methods.setValue("title", thread.title);
-            focusInput();
-          }}
+    <SidebarMenuItem>
+      <Link
+        to={to}
+        onClick={onClick}
+        className={cn(
+          "flex items-center gap-1.5 px-4 py-2.5 rounded-lg hover:bg-foreground/5 transition-colors w-full",
+          isActive && "bg-foreground/10"
+        )}
+      >
+        <Icon
+          name={icon}
+          size={16}
+          className="text-muted-foreground opacity-50"
         />
-      )}
+        <span className="text-sm text-foreground">{label}</span>
+      </Link>
     </SidebarMenuItem>
   );
 }
 
-function SidebarThreadList({
-  threads,
-  agents,
+// Component for sub-navigation items (indented)
+function SubNavItem({
+  to,
+  icon,
+  label,
+  onClick,
 }: {
-  threads: Thread[];
-  agents: Agent[];
+  to: string;
+  icon: string;
+  label: string;
+  onClick?: () => void;
 }) {
-  const { isMobile, toggleSidebar } = useSidebar();
-
-  const handleThreadClick = (thread: Thread) => {
-    trackEvent("sidebar_thread_click", {
-      threadId: thread.id,
-      threadTitle: thread.title,
-      agentId: thread.metadata?.agentId ?? "",
-    });
-    isMobile && toggleSidebar();
-  };
-
-  return threads.map((thread) => (
-    <SidebarThreadItem
-      key={thread.id}
-      thread={thread}
-      agent={agents.find((agent) => agent.id === thread.metadata?.agentId)}
-      onThreadClick={handleThreadClick}
-    />
-  ));
-}
-
-function SidebarThreads() {
-  const user = useUser();
-  const { data: agents } = useAgents();
-  const { data } = useThreads({
-    resourceId: user?.id ?? "",
-  });
-
-  const groupedThreads = groupThreadsByDate(data?.threads ?? []);
-
   return (
-    <>
-      {groupedThreads.today.length > 0 && (
-        <SidebarGroup>
-          <SidebarGroupContent>
-            <SidebarGroupLabel>Today</SidebarGroupLabel>
-            <SidebarMenu className="gap-0.5">
-              <SidebarThreadList
-                threads={groupedThreads.today}
-                agents={agents}
-              />
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
-      )}
-
-      {groupedThreads.yesterday.length > 0 && (
-        <SidebarGroup>
-          <SidebarGroupContent>
-            <SidebarGroupLabel>Yesterday</SidebarGroupLabel>
-            <SidebarMenu className="gap-0.5">
-              <SidebarThreadList
-                threads={groupedThreads.yesterday}
-                agents={agents}
-              />
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
-      )}
-
-      {Object.entries(groupedThreads.older).length > 0
-        ? Object.entries(groupedThreads.older).map(([date, threads]) => {
-            return (
-              <SidebarGroup key={date}>
-                <SidebarGroupContent>
-                  <SidebarGroupLabel>{date}</SidebarGroupLabel>
-                  <SidebarMenu className="gap-0.5">
-                    <SidebarThreadList threads={threads} agents={agents} />
-                  </SidebarMenu>
-                </SidebarGroupContent>
-              </SidebarGroup>
-            );
-          })
-        : null}
-    </>
+    <SidebarMenuItem>
+      <Link
+        to={to}
+        onClick={onClick}
+        className="flex items-center gap-1.5 pl-8 pr-4 py-2.5 rounded-lg w-full hover:bg-foreground/5 transition-colors"
+      >
+        <Icon
+          name={icon}
+          size={16}
+          className="text-muted-foreground opacity-50"
+        />
+        <span className="text-sm text-foreground">{label}</span>
+      </Link>
+    </SidebarMenuItem>
   );
 }
 
-SidebarThreads.Skeleton = () => (
-  <div className="flex flex-col gap-4">
-    {Array.from({ length: 20 }).map((_, index) => (
-      <div key={index} className="w-full h-10 px-2">
-        <Skeleton className="h-full bg-sidebar-accent rounded-sm" />
-      </div>
-    ))}
-  </div>
-);
-
-// Removed WorkspaceViews - navigation items are now explicitly defined in AppSidebar
-
 export function AppSidebar() {
-  const { state, toggleSidebar, isMobile } = useSidebar();
-  const isCollapsed = state === "collapsed";
-  const focusChat = useFocusChat();
   const workspaceLink = useWorkspaceLink();
+  const location = useLocation();
+  const [appsExpanded, setAppsExpanded] = useState(false);
+  
+  // Get current path to determine active state
+  const isActive = (path: string) => {
+    return location.pathname.includes(path);
+  };
 
   return (
-    <Sidebar variant="sidebar">
-      <SidebarHeader />
+    <Sidebar className="p-2 h-full bg-transparent [&_[data-sidebar=sidebar]]:bg-transparent [&_[data-slot=sidebar-inner]]:bg-transparent">
+      <div className="bg-secondary rounded-2xl h-full flex flex-col">
+        <SidebarHeader />
+        
+        <SidebarContent className="px-2 py-2">
+          {/* Main Navigation */}
+          <SidebarGroup>
+            <SidebarGroupContent>
+              <SidebarMenu className="gap-0">
+                <NavItem
+                  to={workspaceLink("/chat")}
+                  icon="message_circle"
+                  label="Chat"
+                  isActive={isActive("/chat")}
+                  onClick={() => trackEvent("sidebar_navigation_click", { item: "Chat" })}
+                />
+                <NavItem
+                  to={workspaceLink("/discover")}
+                  icon="compass"
+                  label="Discover"
+                  isActive={isActive("/discover")}
+                  onClick={() => trackEvent("sidebar_navigation_click", { item: "Discover" })}
+                />
+                <NavItem
+                  to={workspaceLink("/monitor")}
+                  icon="line_chart"
+                  label="Monitor"
+                  isActive={isActive("/monitor")}
+                  onClick={() => trackEvent("sidebar_navigation_click", { item: "Monitor" })}
+                />
+              </SidebarMenu>
+            </SidebarGroupContent>
+          </SidebarGroup>
 
-      <SidebarContent className="flex flex-col h-full overflow-x-hidden">
-        <div className="flex flex-col h-full">
-          <div className="flex-none">
-            {/* Chat Section */}
-            <SidebarGroup className="font-medium">
-              <SidebarGroupContent>
-                <SidebarMenu className="gap-0.5">
-                  <SidebarMenuItem>
-                    <WithActive to={workspaceLink("/chat")}>
-                      {({ isActive }) => (
-                        <SidebarMenuButton
-                          asChild
-                          isActive={isActive}
-                          tooltip="Chat"
-                        >
-                          <Link
-                            to={workspaceLink("/chat")}
-                            onClick={() => {
-                              trackEvent("sidebar_navigation_click", {
-                                item: "Chat",
-                              });
-                              isMobile && toggleSidebar();
-                            }}
-                          >
-                            <Icon
-                              name="chat"
-                              filled={isActive}
-                              size={20}
-                              className="text-muted-foreground"
-                            />
-                            <span className="truncate">Chat</span>
-                          </Link>
-                        </SidebarMenuButton>
-                      )}
-                    </WithActive>
-                  </SidebarMenuItem>
-
-                  <SidebarMenuItem>
-                    <WithActive to={workspaceLink("/monitor")}>
-                      {({ isActive }) => (
-                        <SidebarMenuButton
-                          asChild
-                          isActive={isActive}
-                          tooltip="Monitor"
-                        >
-                          <Link
-                            to={workspaceLink("/monitor")}
-                            onClick={() => {
-                              trackEvent("sidebar_navigation_click", {
-                                item: "Monitor",
-                              });
-                              isMobile && toggleSidebar();
-                            }}
-                          >
-                            <Icon
-                              name="monitoring"
-                              filled={isActive}
-                              size={20}
-                              className="text-muted-foreground"
-                            />
-                            <span className="truncate">Monitor</span>
-                          </Link>
-                        </SidebarMenuButton>
-                      )}
-                    </WithActive>
-                  </SidebarMenuItem>
-
-                  <SidebarMenuItem>
-                    <WithActive to={workspaceLink("/discover")}>
-                      {({ isActive }) => (
-                        <SidebarMenuButton
-                          asChild
-                          isActive={isActive}
-                          tooltip="Discover"
-                        >
-                          <Link
-                            to={workspaceLink("/discover")}
-                            onClick={() => {
-                              trackEvent("sidebar_navigation_click", {
-                                item: "Discover",
-                              });
-                              isMobile && toggleSidebar();
-                            }}
-                          >
-                            <Icon
-                              name="explore"
-                              filled={isActive}
-                              size={20}
-                              className="text-muted-foreground"
-                            />
-                            <span className="truncate">Discover</span>
-                          </Link>
-                        </SidebarMenuButton>
-                      )}
-                    </WithActive>
-                  </SidebarMenuItem>
-                </SidebarMenu>
-              </SidebarGroupContent>
-            </SidebarGroup>
-
-            {/* MCPs Section */}
-            <SidebarGroup className="font-medium">
-              <SidebarGroupLabel className="text-xs text-muted-foreground">
-                MCPs
-              </SidebarGroupLabel>
-              <SidebarGroupContent>
-                <SidebarMenu className="gap-0.5">
-                  <SidebarMenuItem>
-                    <WithActive to={workspaceLink("/agents")}>
-                      {({ isActive }) => (
-                        <SidebarMenuButton
-                          asChild
-                          isActive={isActive}
-                          tooltip="Agents"
-                        >
-                          <Link
-                            to={workspaceLink("/agents")}
-                            onClick={() => {
-                              trackEvent("sidebar_navigation_click", {
-                                item: "Agents",
-                              });
-                              isMobile && toggleSidebar();
-                            }}
-                          >
-                            <Icon
-                              name="robot_2"
-                              filled={isActive}
-                              size={20}
-                              className="text-muted-foreground"
-                            />
-                            <span className="truncate">Agents</span>
-                          </Link>
-                        </SidebarMenuButton>
-                      )}
-                    </WithActive>
-                  </SidebarMenuItem>
-
-                  <SidebarMenuItem>
-                    <WithActive to={workspaceLink("/prompts")}>
-                      {({ isActive }) => (
-                        <SidebarMenuButton
-                          asChild
-                          isActive={isActive}
-                          tooltip="Prompts"
-                        >
-                          <Link
-                            to={workspaceLink("/prompts")}
-                            onClick={() => {
-                              trackEvent("sidebar_navigation_click", {
-                                item: "Prompts",
-                              });
-                              isMobile && toggleSidebar();
-                            }}
-                          >
-                            <Icon
-                              name="local_library"
-                              filled={isActive}
-                              size={20}
-                              className="text-muted-foreground"
-                            />
-                            <span className="truncate">Prompts</span>
-                          </Link>
-                        </SidebarMenuButton>
-                      )}
-                    </WithActive>
-                  </SidebarMenuItem>
-
-                  <SidebarMenuItem>
-                    <WithActive to={workspaceLink("/connections")}>
-                      {({ isActive }) => (
-                        <SidebarMenuButton
-                          asChild
-                          isActive={isActive}
-                          tooltip="Tools"
-                        >
-                          <Link
-                            to={workspaceLink("/connections")}
-                            onClick={() => {
-                              trackEvent("sidebar_navigation_click", {
-                                item: "Tools",
-                              });
-                              isMobile && toggleSidebar();
-                            }}
-                          >
-                            <Icon
-                              name="build"
-                              filled={isActive}
-                              size={20}
-                              className="text-muted-foreground"
-                            />
-                            <span className="truncate">Tools</span>
-                          </Link>
-                        </SidebarMenuButton>
-                      )}
-                    </WithActive>
-                  </SidebarMenuItem>
-
-                  <SidebarMenuItem>
-                    <WithActive to={workspaceLink("/views")}>
-                      {({ isActive }) => (
-                        <SidebarMenuButton
-                          asChild
-                          isActive={isActive}
-                          tooltip="Views"
-                        >
-                          <Link
-                            to={workspaceLink("/views")}
-                            onClick={() => {
-                              trackEvent("sidebar_navigation_click", {
-                                item: "Views",
-                              });
-                              isMobile && toggleSidebar();
-                            }}
-                          >
-                            <Icon
-                              name="dashboard"
-                              filled={isActive}
-                              size={20}
-                              className="text-muted-foreground"
-                            />
-                            <span className="truncate">Views</span>
-                          </Link>
-                        </SidebarMenuButton>
-                      )}
-                    </WithActive>
-                  </SidebarMenuItem>
-
-                  <SidebarMenuItem>
-                    <WithActive to={workspaceLink("/workflows")}>
-                      {({ isActive }) => (
-                        <SidebarMenuButton
-                          asChild
-                          isActive={isActive}
-                          tooltip="Workflows"
-                        >
-                          <Link
-                            to={workspaceLink("/workflows")}
-                            onClick={() => {
-                              trackEvent("sidebar_navigation_click", {
-                                item: "Workflows",
-                              });
-                              isMobile && toggleSidebar();
-                            }}
-                          >
-                            <Icon
-                              name="account_tree"
-                              filled={isActive}
-                              size={20}
-                              className="text-muted-foreground"
-                            />
-                            <span className="truncate">Workflows</span>
-                          </Link>
-                        </SidebarMenuButton>
-                      )}
-                    </WithActive>
-                  </SidebarMenuItem>
-                </SidebarMenu>
-              </SidebarGroupContent>
-            </SidebarGroup>
-
-            {/* APPS Section - Placeholder for future functionality */}
-            <SidebarGroup className="font-medium">
-              <SidebarGroupLabel className="text-xs text-muted-foreground">
-                APPS
-              </SidebarGroupLabel>
-              <SidebarGroupContent>
-                <SidebarMenu className="gap-0.5">
-                  <SidebarMenuItem>
-                    <SidebarMenuButton
-                      className="cursor-pointer opacity-50"
-                      disabled
-                    >
+          {/* MCPs Section */}
+          <SidebarGroup>
+            <SidebarGroupContent>
+              <SidebarMenu className="gap-0">
+                <SidebarMenuItem>
+                  <button className="flex items-center justify-between px-4 py-2.5 rounded-lg w-full hover:bg-foreground/5 transition-colors">
+                    <div className="flex items-center gap-1.5">
                       <Icon
-                        name="extension"
-                        size={20}
-                        className="text-muted-foreground"
-                      />
-                      <span className="truncate">deco.cx</span>
-                      <Icon
-                        name="expand_more"
+                        name="layout_grid"
                         size={16}
-                        className="text-muted-foreground ml-auto"
+                        className="text-muted-foreground opacity-50"
                       />
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                </SidebarMenu>
-              </SidebarGroupContent>
-            </SidebarGroup>
-          </div>
+                      <span className="text-sm text-foreground">MCPs</span>
+                    </div>
+                    <Icon
+                      name="plus"
+                      size={16}
+                      className="text-muted-foreground opacity-50 hover:opacity-100 transition-opacity"
+                    />
+                  </button>
+                </SidebarMenuItem>
+                
+                <SubNavItem
+                  to={workspaceLink("/agents")}
+                  icon="bot"
+                  label="Agents"
+                  onClick={() => trackEvent("sidebar_navigation_click", { item: "Agents" })}
+                />
+                <SubNavItem
+                  to={workspaceLink("/prompts")}
+                  icon="notebook"
+                  label="Prompts"
+                  onClick={() => trackEvent("sidebar_navigation_click", { item: "Prompts" })}
+                />
+                <SubNavItem
+                  to={workspaceLink("/connections")}
+                  icon="wrench"
+                  label="Tools"
+                  onClick={() => trackEvent("sidebar_navigation_click", { item: "Tools" })}
+                />
+                <SubNavItem
+                  to={workspaceLink("/views")}
+                  icon="app_window"
+                  label="Views"
+                  onClick={() => trackEvent("sidebar_navigation_click", { item: "Views" })}
+                />
+                <SubNavItem
+                  to={workspaceLink("/workflows")}
+                  icon="workflow"
+                  label="Workflows"
+                  onClick={() => trackEvent("sidebar_navigation_click", { item: "Workflows" })}
+                />
+              </SidebarMenu>
+            </SidebarGroupContent>
+          </SidebarGroup>
 
-          {!isCollapsed && (
-            <>
-              <SidebarSeparator className="!w-[224px]" />
-              <div className="flex-1 overflow-y-auto overflow-x-hidden">
-                <Suspense fallback={<SidebarThreads.Skeleton />}>
-                  <SidebarThreads />
-                </Suspense>
-              </div>
-            </>
-          )}
-
-          <SidebarFooter />
-        </div>
-      </SidebarContent>
+          {/* APPS Section */}
+          <SidebarGroup>
+            <SidebarGroupContent>
+              <SidebarMenu className="gap-0">
+                {/* APPS Label */}
+                <div className="px-4 pt-4 pb-1.5">
+                  <span className="text-xs font-medium text-muted-foreground">APPS</span>
+                </div>
+                
+                {/* deco.cx expandable item without background */}
+                <SidebarMenuItem>
+                  <button
+                    onClick={() => setAppsExpanded(!appsExpanded)}
+                    className="flex items-center justify-between px-4 py-2.5 rounded-lg w-full hover:bg-foreground/5 transition-colors"
+                  >
+                    <div className="flex items-center gap-1.5">
+                      <div className="w-4 h-4 bg-[#d0ec1a] rounded flex items-center justify-center">
+                        <Icon
+                          name="check"
+                          size={10}
+                          className="text-[#07401a]"
+                        />
+                      </div>
+                      <span className="text-sm text-foreground">deco.cx</span>
+                    </div>
+                    <Icon
+                      name="chevron_down"
+                      size={16}
+                      className={cn(
+                        "text-muted-foreground opacity-50 transition-transform",
+                        appsExpanded && "rotate-180"
+                      )}
+                    />
+                  </button>
+                </SidebarMenuItem>
+                
+                {/* Expanded items as sub-nav items */}
+                {appsExpanded && (
+                  <>
+                    <SubNavItem
+                      to={workspaceLink("/pages")}
+                      icon="layers"
+                      label="Pages"
+                      onClick={() => trackEvent("sidebar_navigation_click", { item: "Pages" })}
+                    />
+                    <SubNavItem
+                      to={workspaceLink("/sections")}
+                      icon="layout_panel_top"
+                      label="Sections"
+                      onClick={() => trackEvent("sidebar_navigation_click", { item: "Sections" })}
+                    />
+                    <SubNavItem
+                      to={workspaceLink("/loaders")}
+                      icon="box"
+                      label="Loaders"
+                      onClick={() => trackEvent("sidebar_navigation_click", { item: "Loaders" })}
+                    />
+                  </>
+                )}
+              </SidebarMenu>
+            </SidebarGroupContent>
+          </SidebarGroup>
+        </SidebarContent>
+        
+        <SidebarFooter />
+      </div>
     </Sidebar>
   );
 }

@@ -4,7 +4,7 @@ import { Card, CardContent } from "@deco/ui/components/card.tsx";
 import { Button } from "@deco/ui/components/button.tsx";
 import { Textarea } from "@deco/ui/components/textarea.tsx";
 import { Icon } from "@deco/ui/components/icon.tsx";
-import { useCurrentTeam, useUpdateTeamTheme } from "@deco/sdk";
+import { useCurrentTeam, useUpdateTeamTheme, useProfile } from "@deco/sdk";
 import { DECO_CHAT_API } from "@deco/sdk/constants";
 import { cn } from "@deco/ui/lib/utils.ts";
 import { motion, AnimatePresence } from "framer-motion";
@@ -64,6 +64,7 @@ interface TaskSuggestion {
 export function OnboardingChat() {
   const { teamSlug } = useParams();
   const { data: team } = useCurrentTeam();
+  const { data: profile } = useProfile();
   const { mutateAsync: updateTeamTheme, isPending: isUpdatingTheme } = useUpdateTeamTheme();
   
   const [state, setState] = useState<OnboardingState>({
@@ -371,7 +372,7 @@ export function OnboardingChat() {
         transition={{ duration: 0.5 }}
       >
         <h1 className="text-3xl font-normal text-foreground">
-          Welcome, {team?.name || "there"}
+          Welcome, {profile?.metadata?.full_name?.split(" ")[0] || "there"}
         </h1>
       </motion.div>
       

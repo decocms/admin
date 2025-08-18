@@ -1,7 +1,7 @@
 // Minimal placeholder types to avoid relying on Deno types at build time
 type LintPlugin = {
   name: string;
-  rules: Record<string, { create: (context: any) => Record<string, (node: any) => void> }>;
+  rules: Record<string, { create: (context: unknown) => Record<string, (node: unknown) => void> }>;
 };
 const BANNED_CLASS_NAMES_CONTAIN_VALUES = [
   '50',
@@ -54,16 +54,12 @@ function handleLiteral({
   value: string;
   range: unknown;
 }) {
-  const ctx = context as { report: (arg: { range: any; message: string }) => void };
-  const rng = range as unknown as {
-    start: { line: number; col: number };
-    end: { line: number; col: number };
-  };
+  const ctx = context as { report: (arg: { range: unknown; message: string }) => void };
   const classes = value.split(' ');
   for (const className of classes) {
     if (!isValidDesignSystemToken(className)) {
       ctx.report({
-        range: rng,
+        range,
         message:
           `Class "${className}" does not use design system tokens. Please use tokens from the design system.`,
       });

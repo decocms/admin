@@ -52,8 +52,7 @@ export const enviromentForFixedDatabaseBinding = (binding: {
 
 export function drizzle<
   TSchema extends Record<string, unknown> = Record<string, never>,
->(env: DrizzleEnvironment, config?: DrizzleConfig<TSchema>) {
-  const { DECO_CHAT_WORKSPACE_DB } = env;
+>({ DECO_CHAT_WORKSPACE_DB }: DrizzleEnvironment, config?: DrizzleConfig<TSchema>) {
   return drizzleProxy((sql, params, method) => {
     // https://orm.drizzle.team/docs/connect-drizzle-proxy says
     // Drizzle always waits for {rows: string[][]} or {rows: string[]} for the return value.

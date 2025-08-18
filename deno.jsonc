@@ -33,23 +33,21 @@
     }
   },
   "lint": {
-    "files": {
-      "include": [
-        "plugins"
-      ],
-      "exclude": [
-        "**/node_modules",
-        "**/.next",
-        "**/dist",
-        "**/build",
-        "**/.turbo",
-        "**/.wrangler",
-        "**/.cache",
-        "**/coverage",
-        "seo-ecommerce",
-        "server"
-      ]
-    },
+    "include": [
+      "plugins"
+    ],
+    "exclude": [
+      "**/node_modules",
+      "**/.next",
+      "**/dist",
+      "**/build",
+      "**/.turbo",
+      "**/.wrangler",
+      "**/.cache",
+      "**/coverage",
+      "seo-ecommerce",
+      "server"
+    ],
     "rules": {
       "tags": ["recommended"]
     },

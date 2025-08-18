@@ -19,7 +19,7 @@ const plugin: any = {
       create(context) {
         // Return an AST visitor object
         return {
-          Program(node) {
+          Program(_node) {
             if (context.filename) {
               // Get the filename without extension
               let filename = context.filename.split('/').pop()?.split('.')[0];

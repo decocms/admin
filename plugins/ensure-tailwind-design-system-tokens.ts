@@ -52,16 +52,12 @@ function isValidDesignSystemToken(className: string): boolean {
 }
 
 function handleLiteral({
-  // deno-lint-ignore no-explicit-any
   context,
   value,
-  // deno-lint-ignore no-explicit-any
   range,
 }: {
-  // deno-lint-ignore no-explicit-any
   context: any;
   value: string;
-  // deno-lint-ignore no-explicit-any
   range: any;
 }) {
   const classes = value.split(' ');

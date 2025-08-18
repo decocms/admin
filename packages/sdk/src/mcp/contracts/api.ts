@@ -3,8 +3,8 @@ import z from "zod";
 import { WellKnownMcpGroups } from "../../crud/groups.ts";
 import {
   AppContext,
-  createToolFactory,
   createTool,
+  createToolFactory,
   DECO_CHAT_API,
   State,
 } from "../context.ts";
@@ -14,28 +14,29 @@ import {
   UserInputError,
   WithTool,
 } from "../index.ts";
-import { publishApp } from "../registry/api.ts";
+import { AppName, getRegistryApp, publishApp } from "../registry/api.ts";
 import {
   commitPreAuthorizedAmount,
   preAuthorizeAmount,
 } from "../wallet/api.ts";
 import { MicroDollar } from "../wallet/microdollar.ts";
+import { SWRCache } from "../../cache/swr.ts";
+import { WebCache } from "../../cache/index.ts";
 
 type ContractContext = WithTool<AppContext> & {
   state: ContractState;
 };
 
-const parseContract = (contract?: string | null): ContractState => {
-  if (!contract) {
-    return {
-      clauses: [],
-    };
-  }
-  const decoded = atob(contract);
-  return JSON.parse(decoded) as ContractState;
+export const ContractSignature = {
+  generate: (app: string, state: ContractState) => `${app}-${MD5(state)}`,
 };
+
+export const contractSWRCache = new SWRCache<ContractState>("contract-swr", {
+  staleTtlSeconds: WebCache.MAX_SAFE_TTL,
+});
+
 const createContractTool = createToolFactory<ContractContext>(
-  (c) => {
+  async (c) => {
     if (!("aud" in c.user) || typeof c.user.aud !== "string") {
       throw new ForbiddenError("User not found");
     }
@@ -43,10 +44,15 @@ const createContractTool = createToolFactory<ContractContext>(
       throw new ForbiddenError("App name not found in user");
     }
     const appName = c.user.appName;
-    const state = parseContract(c.params["contract"]);
-    const assignor = c.params["assignor"];
-    if (!assignor || assignor !== appName) {
-      throw new ForbiddenError("Assignor not found in contract");
+    const state = await contractSWRCache.cache(async () => {
+      const app = await getRegistryApp.handler({ name: appName });
+      if (!app) {
+        throw new ForbiddenError("App not found");
+      }
+      return app.metadata?.contract as ContractState;
+    }, appName);
+    if (!state) {
+      throw new ForbiddenError("Contract not found in app metadata");
     }
     return {
       ...(c as unknown as ContractContext),
@@ -139,23 +145,27 @@ export const contractRegister = createTool({
     appName: z.string(),
   }),
   handler: async (context, c) => {
-    const hash = MD5(context.contract);
-    const assignorName = `${context.author.name}-${hash}`;
-    const assignor = `@${context.author.scope}/${assignorName}`;
+    const appName = AppName.build(context.author.scope, context.author.name);
+    const assignor = ContractSignature.generate(
+      appName,
+      context.contract as ContractState,
+    );
     const url = new URL(`/contracts/mcp`, DECO_CHAT_API(c));
     url.searchParams.set("contract", btoa(JSON.stringify(context.contract)));
-    url.searchParams.set("assignor", assignor);
 
     const app = await publishApp.handler({
-      name: assignorName,
+      name: assignor,
       scopeName: context.author.scope,
       icon: "https://assets.decocache.com/mcp/10b5e8b4-a4e2-4868-8a7d-8cf9b46f0d79/contract.png",
       description: context.contract.body,
-      friendlyName: `A Contract for ${assignorName}`,
+      friendlyName: `A Contract for ${assignor}`,
       unlisted: true,
       connection: {
         type: "HTTP",
         url: url.href,
+      },
+      metadata: {
+        contract: context.contract,
       },
     });
 

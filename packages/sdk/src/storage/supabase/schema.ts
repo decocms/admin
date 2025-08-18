@@ -7,6 +7,11 @@ export type Json =
   | Json[];
 
 export type Database = {
+  // Allows to automatically instantiate createClient with right options
+  // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
+  __InternalSupabase: {
+    PostgrestVersion: "12.2.3 (519615d)";
+  };
   public: {
     Tables: {
       admin_ai_usage: {
@@ -458,6 +463,7 @@ export type Database = {
           friendly_name: string | null;
           icon: string | null;
           id: string;
+          metadata: Json | null;
           name: string;
           scope_id: string;
           unlisted: boolean;
@@ -472,6 +478,7 @@ export type Database = {
           friendly_name?: string | null;
           icon?: string | null;
           id?: string;
+          metadata?: Json | null;
           name: string;
           scope_id: string;
           unlisted?: boolean;
@@ -486,6 +493,7 @@ export type Database = {
           friendly_name?: string | null;
           icon?: string | null;
           id?: string;
+          metadata?: Json | null;
           name?: string;
           scope_id?: string;
           unlisted?: boolean;
@@ -4343,11 +4351,11 @@ export type Database = {
         Returns: number;
       };
       deduct_app_use_balance: {
-        Args: { target_user_id: string; amount: string };
+        Args: { amount: string; target_user_id: string };
         Returns: undefined;
       };
       deduct_earnings_balance: {
-        Args: { target_user_id: string; amount: string };
+        Args: { amount: string; target_user_id: string };
         Returns: undefined;
       };
       exchange_session_share_code: {
@@ -4361,215 +4369,215 @@ export type Database = {
       get_app_reactions: {
         Args: {
           app_id: number;
+          comment_id?: number;
           from_offset: number;
           to_offset: number;
-          comment_id?: number;
         };
         Returns: {
+          avatar_url: string;
+          company: string;
+          full_name: string;
           id: string;
+          occupation: string;
           reaction: string;
           username: string;
-          full_name: string;
-          avatar_url: string;
-          occupation: string;
-          company: string;
         }[];
       };
       get_apps_by_category: {
         Args: {
-          from_offset: number;
-          to_offset: number;
           category_id: number;
           from_date?: string;
+          from_offset: number;
+          to_offset: number;
         };
         Returns: {
-          id: number;
-          title: string;
+          allow_fork: boolean;
+          avatar_url: string;
           content: string;
           created_at: string;
-          updated_at: string;
-          slug: string;
-          user_id: string;
-          link: string;
-          icon_url: string;
-          short_description: string;
-          allow_fork: boolean;
-          reactions: number;
-          medias: Json[];
-          webdraw_app_reactions: Json;
-          username: string;
           full_name: string;
-          avatar_url: string;
-          user_metadata_user_id: string;
-          visibility: string;
+          icon_url: string;
+          id: number;
+          link: string;
+          medias: Json[];
+          reactions: number;
+          short_description: string;
+          slug: string;
+          title: string;
+          updated_at: string;
           user_apps: Json;
+          user_id: string;
+          user_metadata_user_id: string;
+          username: string;
+          visibility: string;
+          webdraw_app_reactions: Json;
         }[];
       };
       get_followers_by_profile_id: {
         Args: {
-          profile_id: string;
+          limit_value: number;
           logged_user_id: string;
           page: number;
-          limit_value: number;
+          profile_id: string;
         };
         Returns: {
-          id: number;
-          username: string;
           avatar_url: string;
-          full_name: string;
-          created_at: string;
           company: string;
-          user_id: string;
-          occupation: string;
+          created_at: string;
+          full_name: string;
+          id: number;
           is_following: boolean;
+          occupation: string;
+          user_id: string;
+          username: string;
         }[];
       };
       get_followers_by_user_id: {
         Args: {
-          profile_id: string;
+          limit_value: number;
           logged_user_id: string;
           page: number;
-          limit_value: number;
+          profile_id: string;
         };
         Returns: {
-          id: number;
-          username: string;
           avatar_url: string;
-          full_name: string;
-          created_at: string;
           company: string;
-          user_id: string;
-          occupation: string;
+          created_at: string;
+          full_name: string;
+          id: number;
           is_following: boolean;
+          occupation: string;
+          user_id: string;
+          username: string;
         }[];
       };
       get_following_by_user_id: {
         Args:
           | {
-              profile_id: string;
+              limit_rows?: number;
               logged_user_id: string;
               page: number;
-              limit_rows?: number;
+              profile_id: string;
             }
           | {
-              profile_id: string;
+              limit_rows?: number;
               logged_user_id: string;
               page: number;
-              limit_rows?: number;
+              profile_id: string;
             };
         Returns: {
-          id: number;
-          username: string;
           avatar_url: string;
-          full_name: string;
-          created_at: string;
           company: string;
-          user_id: string;
-          occupation: string;
+          created_at: string;
+          full_name: string;
+          id: number;
           is_following: boolean;
+          occupation: string;
+          user_id: string;
+          username: string;
         }[];
       };
       get_followings_by_profile_id: {
         Args: {
-          profile_id: string;
+          limit_value: number;
           logged_user_id: string;
           page: number;
-          limit_value: number;
+          profile_id: string;
         };
         Returns: {
-          id: number;
-          username: string;
           avatar_url: string;
-          full_name: string;
-          created_at: string;
           company: string;
-          user_id: string;
-          occupation: string;
+          created_at: string;
+          full_name: string;
+          id: number;
           is_following: boolean;
+          occupation: string;
+          user_id: string;
+          username: string;
         }[];
       };
       get_latest_user_activity: {
         Args: {
-          p_user_id?: string;
-          p_resource?: string;
           p_key?: string;
+          p_resource?: string;
+          p_user_id?: string;
           p_value?: string;
         };
         Returns: {
-          user_id: string;
           created_at: string;
-          resource: string;
           key: string;
+          resource: string;
+          user_id: string;
           value: string;
         }[];
       };
       get_more_liked_apps: {
         Args: { from_offset: number; to_offset: number };
         Returns: {
-          id: number;
-          title: string;
+          avatar_url: string;
           content: string;
           created_at: string;
-          updated_at: string;
-          slug: string;
-          user_id: string;
-          link: string;
-          likes: number;
-          medias: Json[];
-          webdraw_app_likes: Json;
-          username: string;
           full_name: string;
-          avatar_url: string;
+          id: number;
+          likes: number;
+          link: string;
+          medias: Json[];
+          slug: string;
+          title: string;
+          updated_at: string;
+          user_id: string;
           user_metadata_user_id: string;
+          username: string;
           visibility: string;
+          webdraw_app_likes: Json;
         }[];
       };
       get_more_reacted_apps: {
-        Args: { from_offset: number; to_offset: number; from_date?: string };
+        Args: { from_date?: string; from_offset: number; to_offset: number };
         Returns: {
-          id: number;
-          title: string;
+          avatar_url: string;
           content: string;
           created_at: string;
-          updated_at: string;
-          slug: string;
-          user_id: string;
-          link: string;
-          icon_url: string;
-          short_description: string;
-          reactions: number;
-          medias: Json[];
-          webdraw_app_reactions: Json;
-          username: string;
           full_name: string;
-          avatar_url: string;
-          user_metadata_user_id: string;
-          visibility: string;
+          icon_url: string;
+          id: number;
+          link: string;
+          medias: Json[];
+          reactions: number;
+          short_description: string;
+          slug: string;
+          title: string;
+          updated_at: string;
           user_apps: Json;
+          user_id: string;
+          user_metadata_user_id: string;
+          username: string;
+          visibility: string;
+          webdraw_app_reactions: Json;
         }[];
       };
       get_reacted_apps_by_user_id: {
-        Args: { user_id_input: string; from_offset: number; to_offset: number };
+        Args: { from_offset: number; to_offset: number; user_id_input: string };
         Returns: {
-          id: number;
-          title: string;
+          avatar_url: string;
           content: string;
           created_at: string;
-          updated_at: string;
-          slug: string;
-          user_id: string;
-          link: string;
-          short_description: string;
-          icon_url: string;
-          reactions: number;
-          medias: Json[];
-          webdraw_app_reactions: Json;
-          username: string;
           full_name: string;
-          avatar_url: string;
-          user_metadata_user_id: string;
-          visibility: string;
+          icon_url: string;
+          id: number;
+          link: string;
+          medias: Json[];
+          reactions: number;
+          short_description: string;
+          slug: string;
+          title: string;
+          updated_at: string;
           user_apps: Json;
+          user_id: string;
+          user_metadata_user_id: string;
+          username: string;
+          visibility: string;
+          webdraw_app_reactions: Json;
         }[];
       };
       get_student_by_email: {
@@ -4607,84 +4615,84 @@ export type Database = {
         };
       };
       is_member_of: {
-        Args: { _user_id: string; _team_id: number };
+        Args: { _team_id: number; _user_id: string };
         Returns: boolean;
       };
       list_distinct_blocks: {
-        Args: { site: string; resolve_type: string };
+        Args: { resolve_type: string; site: string };
         Returns: {
-          id: string;
-          site: string;
           __resolveType: string;
-          value: Json;
+          block_count: number;
           created_at: string;
           created_by: string;
+          id: string;
           revision: string;
-          block_count: number;
+          site: string;
+          value: Json;
         }[];
       };
       list_many_distinct_blocks: {
-        Args: { site: string; resolve_type: string[] };
+        Args: { resolve_type: string[]; site: string };
         Returns: {
-          id: string;
-          site: string;
           __resolveType: string;
-          value: Json;
+          block_count: number;
           created_at: string;
           created_by: string;
+          id: string;
           revision: string;
-          block_count: number;
+          site: string;
+          value: Json;
         }[];
       };
       list_many_distinct_blocks_optimized: {
-        Args: { site: string; resolve_type: string[] };
+        Args: { resolve_type: string[]; site: string };
         Returns: {
-          id: string;
-          site: string;
           __resolveType: string;
-          value: Json;
+          block_count: number;
           created_at: string;
           created_by: string;
+          id: string;
           revision: string;
-          block_count: number;
+          site: string;
+          value: Json;
         }[];
       };
       put_app_use_balance: {
-        Args: { target_user_id: string; amount: string };
+        Args: { amount: string; target_user_id: string };
         Returns: undefined;
       };
       put_earnings_balance: {
-        Args: { target_user_id: string; amount: string };
+        Args: { amount: string; target_user_id: string };
         Returns: undefined;
       };
       rank_search_community_apps: {
         Args: { search_text: string };
         Returns: {
-          metadata_score: number;
-          id: number;
-          user_id: string;
-          created_at: string;
-          title: string;
-          content: string;
-          views: number;
-          updated_at: string;
-          link: string;
-          slug: string;
-          uid: string;
-          medias: Json[];
-          visibility: string;
-          short_description: string;
-          icon_url: string;
           allow_fork: boolean;
+          content: string;
+          created_at: string;
+          icon_url: string;
+          id: number;
+          link: string;
+          medias: Json[];
+          metadata_score: number;
           milestones: Json;
+          short_description: string;
+          slug: string;
+          title: string;
+          uid: string;
+          updated_at: string;
+          user_id: string;
+          views: number;
+          visibility: string;
         }[];
       };
       register_app_usage: {
         Args: {
-          user_id_from: string;
-          user_id_to: string;
           deduct_amount: string;
           earning_amount: string;
+          user_id_from: string;
+          user_id_to: string;
         };
         Returns: undefined;
       };
@@ -4695,29 +4703,29 @@ export type Database = {
       search_community_apps: {
         Args: { search_text: string };
         Returns: {
-          metadata_score: number;
-          id: number;
-          user_id: string;
-          created_at: string;
-          title: string;
-          content: string;
-          views: number;
-          updated_at: string;
-          link: string;
-          slug: string;
-          uid: string;
-          medias: Json[];
-          visibility: string;
-          short_description: string;
-          icon_url: string;
           allow_fork: boolean;
+          content: string;
+          created_at: string;
+          icon_url: string;
+          id: number;
+          link: string;
+          medias: Json[];
+          metadata_score: number;
           milestones: Json;
           reactions: Json;
+          short_description: string;
+          slug: string;
+          title: string;
+          uid: string;
+          updated_at: string;
+          user_id: string;
           user_metadata: Json;
+          views: number;
+          visibility: string;
         }[];
       };
       update_referral_by_email: {
-        Args: { user_email: string; new_referred_by: string };
+        Args: { new_referred_by: string; user_email: string };
         Returns: {
           referral_id: string | null;
           referrals_count: number;

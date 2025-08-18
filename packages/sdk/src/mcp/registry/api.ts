@@ -9,7 +9,7 @@ import {
   SSEConnectionSchema,
   WebsocketConnectionSchema,
 } from "../../models/mcp.ts";
-import type { QueryResult } from "../../storage/index.ts";
+import type { Json, QueryResult } from "../../storage/index.ts";
 import {
   assertHasWorkspace,
   assertWorkspaceResourceAccess,
@@ -33,6 +33,7 @@ const SELECT_REGISTRY_APP_QUERY = `
   id,
   workspace,
   scope_id,
+  metadata,
   name,
   description,
   icon,
@@ -100,6 +101,7 @@ const RegistryAppSchema = z.object({
   friendlyName: z.string().optional(),
   verified: z.boolean().optional(),
   tools: z.array(RegistryToolSchema).optional(),
+  metadata: z.record(z.unknown()).optional(),
 });
 
 export type RegistryScope = {
@@ -111,6 +113,17 @@ export type RegistryScope = {
 };
 
 export type RegistryApp = z.infer<typeof RegistryAppSchema>;
+
+export const AppName = {
+  build: (scopeName: string, name: string) => `@${scopeName}/${name}`,
+  parse: (appName: string) => {
+    const parts = appName.split("/");
+    return {
+      scopeName: parts[0],
+      name: parts[1],
+    };
+  },
+};
 
 const Mappers = {
   toRegistryScope: (
@@ -161,6 +174,7 @@ const Mappers = {
       updatedAt: data.updated_at,
       unlisted: data.unlisted,
       verified: data.verified ?? false,
+      metadata: data.metadata as Record<string, unknown> | undefined,
       tools,
     };
   },
@@ -393,6 +407,7 @@ export const publishApp = createTool({
     connection: MCPConnectionSchema.describe(
       "The MCP connection configuration for the app",
     ),
+    metadata: z.record(z.unknown()).optional().describe("Metadata for the app"),
     unlisted: z
       .boolean()
       .optional()
@@ -408,6 +423,7 @@ export const publishApp = createTool({
       connection,
       unlisted,
       friendlyName,
+      metadata,
     },
     c,
   ) => {
@@ -434,6 +450,7 @@ export const publishApp = createTool({
           scope_id: scopeId,
           friendly_name: friendlyName?.trim() || null,
           name: name.trim(),
+          metadata: metadata as Json,
           description: description?.trim() || null,
           icon: icon?.trim() || null,
           connection,

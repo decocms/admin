@@ -4,6 +4,7 @@ import type { AIAgent, Trigger } from "@deco/ai/actors";
 import type { Client } from "@deco/sdk/storage";
 import { createClient } from "@libsql/client/web";
 import type { ToolAnnotations } from "@modelcontextprotocol/sdk/types.d.ts";
+import * as api from "@opentelemetry/api";
 import type { User as SupaUser } from "@supabase/supabase-js";
 import type Cloudflare from "cloudflare";
 import { AsyncLocalStorage } from "node:async_hooks";
@@ -16,14 +17,13 @@ import type {
 } from "../auth/policy.ts";
 import { type WellKnownMcpGroup, WellKnownMcpGroups } from "../crud/groups.ts";
 import { ForbiddenError, type HttpError } from "../errors.ts";
+import { trace } from "../observability/index.ts";
+import { PosthogServerClient } from "../posthog.ts";
 import { type WithTool } from "./assertions.ts";
 import type { ResourceAccess } from "./auth/index.ts";
 import { DatatabasesRunSqlInput, QueryResult } from "./databases/api.ts";
 import { addGroup, type GroupIntegration } from "./groups.ts";
 import { generateUUIDv5, toAlphanumericId } from "./slugify.ts";
-import { trace } from "../observability/index.ts";
-import * as api from "@opentelemetry/api";
-import { PosthogServerClient } from "../posthog.ts";
 
 export type UserPrincipal = Pick<SupaUser, "id" | "email" | "is_anonymous">;
 
@@ -329,7 +329,7 @@ type GroupName = string;
 export const resourceGroupMap = new Map<ToolName, GroupName | undefined>();
 
 export function createToolFactory<TAppContext extends AppContext = AppContext>(
-  contextFactory: (c: AppContext) => TAppContext,
+  contextFactory: (c: AppContext) => Promise<TAppContext> | TAppContext,
   group?: string,
   integration?: GroupIntegration,
 ) {
@@ -346,7 +346,7 @@ export function createToolFactory<TAppContext extends AppContext = AppContext>(
       group,
       ...def,
       handler: async (props: TInput): Promise<TReturn> => {
-        const context = contextFactory(State.getStore());
+        const context = await contextFactory(State.getStore());
         context.tool = { name: def.name };
 
         const result = await def.handler(props, context);

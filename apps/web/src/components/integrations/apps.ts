@@ -63,7 +63,8 @@ export const WELL_KNOWN_APPS: Record<string, GroupedApp> = {
   [WELL_KNOWN_DECO_CHAT_APP_KEY]: {
     id: WELL_KNOWN_DECO_CHAT_APP_KEY,
     name: "Deco Chat",
-    icon: "https://assets.decocache.com/mcp/306fcf27-d5dd-4d8c-8ddd-567d763372ee/decochat.png",
+    icon:
+      "https://assets.decocache.com/mcp/306fcf27-d5dd-4d8c-8ddd-567d763372ee/decochat.png",
     description: "Native deco.chat tools.",
     instances: 1,
     usedBy: [],
@@ -71,7 +72,8 @@ export const WELL_KNOWN_APPS: Record<string, GroupedApp> = {
   [WELL_KNOWN_KNOWLEDGE_BASE_APP_KEY]: {
     id: WELL_KNOWN_KNOWLEDGE_BASE_APP_KEY,
     name: "Knowledge Base",
-    icon: "https://assets.decocache.com/mcp/85269424-f5c7-4473-a67e-c3d6a120f586/knowledgebase.png",
+    icon:
+      "https://assets.decocache.com/mcp/85269424-f5c7-4473-a67e-c3d6a120f586/knowledgebase.png",
     description: "Native knowledge base tools",
     instances: 1,
     usedBy: [],
@@ -191,13 +193,12 @@ export function useGroupedApps({ filter }: { filter: string }) {
   useRefetchIntegrationsOnNotification();
 
   const groupedApps: GroupedApp[] = useMemo(() => {
-    const filteredIntegrations =
-      installedIntegrations?.filter(
-        (integration) =>
-          integration.name.toLowerCase().includes(filter.toLowerCase()) &&
-          !isAgentIntegration(integration) &&
-          !isInnateIntegration(integration),
-      ) ?? [];
+    const filteredIntegrations = installedIntegrations?.filter(
+      (integration) =>
+        integration.name.toLowerCase().includes(filter.toLowerCase()) &&
+        !isAgentIntegration(integration) &&
+        !isInnateIntegration(integration),
+    ) ?? [];
 
     const grouped = groupConnections(filteredIntegrations);
     const apps: GroupedApp[] = [];

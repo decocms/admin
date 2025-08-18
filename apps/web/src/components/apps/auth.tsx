@@ -106,8 +106,7 @@ function ShowInstalls({
                   matchingIntegrations.find(
                     (integration) => integration.id === value,
                   ) ?? null,
-                )
-              }
+                )}
             >
               <SelectTrigger>
                 <SelectValue placeholder="Select an integration" />
@@ -219,8 +218,9 @@ function AppsOAuth({
     preSelectTeam(teams, workspace_hint),
   );
   const [showTeamSelector, setShowTeamSelector] = useState(false);
-  const [selectedIntegration, setSelectedIntegration] =
-    useState<Integration | null>(null);
+  const [selectedIntegration, setSelectedIntegration] = useState<
+    Integration | null
+  >(null);
 
   const createOAuthCode = useCreateOAuthCodeForIntegration();
 
@@ -258,8 +258,7 @@ function AppsOAuth({
             <Select
               value=""
               onValueChange={(value) =>
-                setTeam(teams.find((team) => team.slug === value) ?? null)
-              }
+                setTeam(teams.find((team) => team.slug === value) ?? null)}
             >
               <SelectTrigger>
                 <SelectValue placeholder="Select a team" />
@@ -381,14 +380,16 @@ function AppsOAuth({
               globalThis.location.href = redirectTo;
             }}
           >
-            {createOAuthCode.isPending ? (
-              <div className="flex items-center gap-2">
-                <Spinner size="sm" />
-                Authorizing...
-              </div>
-            ) : (
-              `Continue with ${team.label}`
-            )}
+            {createOAuthCode.isPending
+              ? (
+                <div className="flex items-center gap-2">
+                  <Spinner size="sm" />
+                  Authorizing...
+                </div>
+              )
+              : (
+                `Continue with ${team.label}`
+              )}
           </Button>
         </div>
       </div>

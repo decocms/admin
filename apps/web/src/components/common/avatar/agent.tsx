@@ -26,22 +26,19 @@ export function AgentAvatar({
   ...props
 }: AgentAvatarProps) {
   const isDeleted = !fallback && !url;
-  const urlWithDefaults =
-    fallback === WELL_KNOWN_AGENT_IDS.teamAgent
-      ? "icon://edit_square"
-      : isDeleted
-        ? "icon://robot_2"
-        : url;
-  const fallbackWithDefaults =
-    fallback === WELL_KNOWN_AGENT_IDS.teamAgent
-      ? "New chat"
-      : isDeleted
-        ? "Deleted agent"
-        : fallback;
+  const urlWithDefaults = fallback === WELL_KNOWN_AGENT_IDS.teamAgent
+    ? "icon://edit_square"
+    : isDeleted
+    ? "icon://robot_2"
+    : url;
+  const fallbackWithDefaults = fallback === WELL_KNOWN_AGENT_IDS.teamAgent
+    ? "New chat"
+    : isDeleted
+    ? "Deleted agent"
+    : fallback;
 
   // Check if URL is already a valid HTTPS URL
-  const isValidUrl =
-    urlWithDefaults?.startsWith("https://") ||
+  const isValidUrl = urlWithDefaults?.startsWith("https://") ||
     urlWithDefaults?.startsWith("http://") ||
     urlWithDefaults?.startsWith("icon://");
 
@@ -54,8 +51,8 @@ export function AgentAvatar({
   const finalUrl = isValidUrl
     ? urlWithDefaults
     : typeof resolvedFileUrl === "string"
-      ? resolvedFileUrl
-      : undefined;
+    ? resolvedFileUrl
+    : undefined;
 
   return (
     <Avatar

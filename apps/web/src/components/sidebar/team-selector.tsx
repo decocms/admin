@@ -164,7 +164,7 @@ function TeamsToSwitch({ query }: { query: string }) {
   const availableTeamsToSwitch = useUserTeams();
 
   const filteredTeams = availableTeamsToSwitch.filter((team) =>
-    team.label.toLowerCase().includes(query.toLowerCase()),
+    team.label.toLowerCase().includes(query.toLowerCase())
   );
 
   if (filteredTeams.length === 0) {

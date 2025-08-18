@@ -27,14 +27,16 @@ import {
 } from "react";
 import { ViewsButton } from "./views-button.tsx";
 
-const Context = createContext<{
-  tabs: Record<string, Tab>;
-  totalTabs: number;
-  openPanels: Set<string>;
-  setOpenPanels: Dispatch<SetStateAction<Set<string>>>;
-  setApi: Dispatch<SetStateAction<DockviewApi | null>>;
-  api: DockviewApi | null;
-} | null>(null);
+const Context = createContext<
+  {
+    tabs: Record<string, Tab>;
+    totalTabs: number;
+    openPanels: Set<string>;
+    setOpenPanels: Dispatch<SetStateAction<Set<string>>>;
+    setApi: Dispatch<SetStateAction<DockviewApi | null>>;
+    api: DockviewApi | null;
+  } | null
+>(null);
 
 export const useDock = () => {
   const ctx = use(Context);
@@ -136,11 +138,13 @@ export interface Tab {
   metadata?: TabMetadata;
 }
 
-type Props = Partial<
-  Omit<ComponentProps<typeof DockviewReact>, "components">
-> & {
-  hideViewsButton?: boolean;
-};
+type Props =
+  & Partial<
+    Omit<ComponentProps<typeof DockviewReact>, "components">
+  >
+  & {
+    hideViewsButton?: boolean;
+  };
 
 const addPanel = (
   options: AddPanelOptions,
@@ -209,8 +213,8 @@ function Docked({ hideViewsButton, onReady, ...props }: Props) {
             maximumHeight: !isMobile ? value.maximumHeight : undefined,
             maximumWidth: !isMobile ? value.maximumWidth : undefined,
             position: initialOpenDirections.includes(
-              value.initialOpen as initialOpen,
-            )
+                value.initialOpen as initialOpen,
+              )
               ? { direction: value.initialOpen as initialOpen }
               : undefined,
           },
@@ -236,7 +240,7 @@ function Docked({ hideViewsButton, onReady, ...props }: Props) {
         );
 
         setOpenPanels((prev) =>
-          equals(prev, currentPanels) ? prev : currentPanels,
+          equals(prev, currentPanels) ? prev : currentPanels
         );
       });
 

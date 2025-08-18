@@ -157,8 +157,8 @@ function Actions({ agent }: { agent: Agent }) {
           <AlertDialogHeader>
             <AlertDialogTitle>Are you sure?</AlertDialogTitle>
             <AlertDialogDescription>
-              This will permanently delete the {agent.name} agent. This action
-              cannot be undone.
+              This will permanently delete the {agent.name}{" "}
+              agent. This action cannot be undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -172,14 +172,16 @@ function Actions({ agent }: { agent: Agent }) {
               disabled={removeAgent.isPending}
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
-              {removeAgent.isPending ? (
-                <>
-                  <Spinner size="xs" />
-                  <span className="ml-2">Deleting...</span>
-                </>
-              ) : (
-                "Delete"
-              )}
+              {removeAgent.isPending
+                ? (
+                  <>
+                    <Spinner size="xs" />
+                    <span className="ml-2">Deleting...</span>
+                  </>
+                )
+                : (
+                  "Delete"
+                )}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
@@ -354,11 +356,12 @@ function List() {
   const { filter } = state;
   const { data: agents } = useAgents();
   const [viewMode, setViewMode] = useViewMode("agents");
-  const { value: visibility, update: setVisibility } =
-    useLocalStorage<Visibility>({
-      key: "agents-visibility",
-      defaultValue: "all",
-    });
+  const { value: visibility, update: setVisibility } = useLocalStorage<
+    Visibility
+  >({
+    key: "agents-visibility",
+    defaultValue: "all",
+  });
 
   const agentsByVisibility = useMemo(() => {
     const initial = Object.fromEntries(
@@ -375,7 +378,7 @@ function List() {
 
   const filteredAgents =
     agentsByVisibility[visibility]?.filter((agent) =>
-      agent.name.toLowerCase().includes(filter.toLowerCase()),
+      agent.name.toLowerCase().includes(filter.toLowerCase())
     ) ?? [];
 
   return (
@@ -399,55 +402,47 @@ function List() {
         view={{ viewMode, onChange: setViewMode }}
       />
 
-      {filteredAgents.length > 0 ? (
-        <div className="flex-1 min-h-0 overflow-x-auto">
-          {viewMode === "table" ? (
-            <TableView agents={filteredAgents} />
-          ) : (
-            <CardsView agents={filteredAgents} />
-          )}
-        </div>
-      ) : (
-        <EmptyState
-          icon={
-            agents.length === 0
-              ? "robot_2"
-              : visibility === "public" &&
-                  agentsByVisibility["public"].length === 0
-                ? "public"
-                : visibility === "workspace" &&
-                    agentsByVisibility["workspace"].length === 0
-                  ? "groups"
-                  : "search_off"
-          }
-          title={
-            agents.length === 0
+      {filteredAgents.length > 0
+        ? (
+          <div className="flex-1 min-h-0 overflow-x-auto">
+            {viewMode === "table"
+              ? <TableView agents={filteredAgents} />
+              : <CardsView agents={filteredAgents} />}
+          </div>
+        )
+        : (
+          <EmptyState
+            icon={agents.length === 0 ? "robot_2" : visibility === "public" &&
+                agentsByVisibility["public"].length === 0
+              ? "public"
+              : visibility === "workspace" &&
+                  agentsByVisibility["workspace"].length === 0
+              ? "groups"
+              : "search_off"}
+            title={agents.length === 0
               ? "No agents yet"
               : visibility === "public" &&
                   agentsByVisibility["public"].length === 0
-                ? "No public agents available"
-                : visibility === "workspace" &&
-                    agentsByVisibility["workspace"].length === 0
-                  ? "No team agents yet"
-                  : "No agents match your filter"
-          }
-          description={
-            agents.length === 0
+              ? "No public agents available"
+              : visibility === "workspace" &&
+                  agentsByVisibility["workspace"].length === 0
+              ? "No team agents yet"
+              : "No agents match your filter"}
+            description={agents.length === 0
               ? "You haven't created any agents yet. Create one to get started."
               : visibility === "public" &&
                   agentsByVisibility["public"].length === 0
-                ? "Once agents are shared publicly, they'll appear here for anyone to explore and try out."
-                : visibility === "workspace" &&
-                    agentsByVisibility["workspace"].length === 0
-                  ? "Agents shared with your team will show up here. Create one to start collaborating."
-                  : "Try adjusting your search. If you still can't find what you're looking for, you can create a new agent."
-          }
-          buttonProps={{
-            children: "New agent",
-            onClick: handleCreate,
-          }}
-        />
-      )}
+              ? "Once agents are shared publicly, they'll appear here for anyone to explore and try out."
+              : visibility === "workspace" &&
+                  agentsByVisibility["workspace"].length === 0
+              ? "Agents shared with your team will show up here. Create one to start collaborating."
+              : "Try adjusting your search. If you still can't find what you're looking for, you can create a new agent."}
+            buttonProps={{
+              children: "New agent",
+              onClick: handleCreate,
+            }}
+          />
+        )}
     </div>
   );
 }

@@ -130,11 +130,11 @@ export function useIntegrationInstallWithModal() {
               resource: toolName ?? scope,
               ...(integrationId
                 ? {
-                    matchCondition: {
-                      resource: "is_integration",
-                      integrationId,
-                    },
-                  }
+                  matchCondition: {
+                    resource: "is_integration",
+                    integrationId,
+                  },
+                }
                 : {}),
             };
           }) ?? []),
@@ -206,10 +206,9 @@ export function useIntegrationInstallWithModal() {
       const { bindingName, toolName } = parseAppScope(scope);
       return {
         name: toolName ?? scope,
-        app:
-          installState.stateSchema && bindingName
-            ? getAppNameFromSchema(installState.stateSchema, bindingName)
-            : undefined,
+        app: installState.stateSchema && bindingName
+          ? getAppNameFromSchema(installState.stateSchema, bindingName)
+          : undefined,
       };
     });
   };
@@ -233,8 +232,7 @@ export function useIntegrationInstallWithModal() {
       integration: installState.integration,
       onSubmit: handleModalSubmit,
       onClose: handleModalClose,
-      isLoading:
-        createAPIKey.isPending ||
+      isLoading: createAPIKey.isPending ||
         getRegistryApp.isPending ||
         createIntegration.isPending ||
         permissionsLoading,

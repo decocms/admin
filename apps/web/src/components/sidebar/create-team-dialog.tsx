@@ -78,8 +78,8 @@ export function CreateTeamDialog({
         typeof err === "string"
           ? err
           : err instanceof Error
-            ? err.message
-            : "Failed to create team.",
+          ? err.message
+          : "Failed to create team.",
       );
     }
   }
@@ -141,17 +141,18 @@ export function CreateTeamDialog({
               <Button
                 type="submit"
                 variant="default"
-                disabled={
-                  !form.formState.isValid || createTeam.isPending || !slug
-                }
+                disabled={!form.formState.isValid || createTeam.isPending ||
+                  !slug}
               >
-                {createTeam.isPending ? (
-                  <span className="flex items-center gap-2">
-                    <Spinner size="xs" /> Creating...
-                  </span>
-                ) : (
-                  "Create Team"
-                )}
+                {createTeam.isPending
+                  ? (
+                    <span className="flex items-center gap-2">
+                      <Spinner size="xs" /> Creating...
+                    </span>
+                  )
+                  : (
+                    "Create Team"
+                  )}
               </Button>
             </AlertDialogFooter>
           </form>

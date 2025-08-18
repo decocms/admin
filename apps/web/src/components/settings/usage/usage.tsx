@@ -27,11 +27,10 @@ const useAgentsMergedWithWellKnown = () => {
   const agents = useAgents();
   return {
     ...agents,
-    data:
-      agents.data?.concat([
-        WELL_KNOWN_AGENTS.teamAgent,
-        WELL_KNOWN_AGENTS.setupAgent,
-      ]) || [],
+    data: agents.data?.concat([
+      WELL_KNOWN_AGENTS.teamAgent,
+      WELL_KNOWN_AGENTS.setupAgent,
+    ]) || [],
   };
 };
 

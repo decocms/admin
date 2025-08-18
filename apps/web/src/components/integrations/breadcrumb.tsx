@@ -80,10 +80,9 @@ export const Header = ({
               </span>
             ),
             id: "connected",
-            count:
-              installedIntegrations?.filter(
-                (integration) => integration.connection.type !== "INNATE",
-              ).length ?? 0,
+            count: installedIntegrations?.filter(
+              (integration) => integration.connection.type !== "INNATE",
+            ).length ?? 0,
           },
           {
             active: !teamConnectionsViewActive,

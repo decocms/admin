@@ -3,13 +3,13 @@ import { useChat } from "@ai-sdk/react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import {
   createContext,
+  type PropsWithChildren,
+  type RefObject,
   useCallback,
   useContext,
   useMemo,
   useRef,
   useState,
-  type PropsWithChildren,
-  type RefObject,
 } from "react";
 import { useForm, type UseFormReturn } from "react-hook-form";
 import { useBlocker } from "react-router";
@@ -17,18 +17,18 @@ import { toast } from "sonner";
 
 import type { Toolset } from "@deco/ai";
 import {
+  type Agent,
   AgentSchema,
   DECO_CHAT_API,
   dispatchMessages,
   getTraceDebugId,
+  type Integration,
   useAgentData,
   useAgentRoot,
   useIntegrations,
   useThreadMessages,
   useUpdateAgent,
   WELL_KNOWN_AGENTS,
-  type Agent,
-  type Integration,
 } from "@deco/sdk";
 import {
   AlertDialog,
@@ -142,8 +142,9 @@ export function AgentProvider({
   const agentRoot = useAgentRoot(agentId);
   const { preferences } = useUserPreferences();
 
-  const [finishReason, setFinishReason] =
-    useState<LanguageModelV1FinishReason | null>(null);
+  const [finishReason, setFinishReason] = useState<
+    LanguageModelV1FinishReason | null
+  >(null);
   const scrollRef = useRef<HTMLDivElement>(null);
   const correlationIdRef = useRef<string | null>(null);
 
@@ -264,10 +265,9 @@ export function AgentProvider({
             maxSteps: effectiveChatState.max_steps,
             pdfSummarization: preferences.pdfSummarization ?? true,
             toolsets,
-            smoothStream:
-              preferences.smoothStream !== false
-                ? { delayInMs: 25, chunk: "word" }
-                : undefined,
+            smoothStream: preferences.smoothStream !== false
+              ? { delayInMs: 25, chunk: "word" }
+              : undefined,
           },
         ],
       };
@@ -316,7 +316,7 @@ export function AgentProvider({
           toolInvocations: msg.toolInvocations?.filter(
             (tool) => tool.toolCallId !== toolCallId,
           ),
-        })),
+        }))
       );
 
       await chat.append({ role: "user", content: selectedValue });

@@ -33,13 +33,11 @@ export default function ViewDetail() {
   if (!view && !url) {
     throw new NotFoundError("View not found");
   }
-  const meta = view
-    ? parseViewMetadata(view)
-    : {
-        type: "custom",
-        icon: "dashboard",
-        url: url || "",
-      };
+  const meta = view ? parseViewMetadata(view) : {
+    type: "custom",
+    icon: "dashboard",
+    url: url || "",
+  };
   if (meta?.type !== "custom") {
     throw new NotFoundError("View not found");
   }

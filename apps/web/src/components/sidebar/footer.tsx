@@ -322,9 +322,7 @@ function LoggedUser() {
   const userAvatarURL = user?.metadata?.avatar_url ?? undefined;
   const userName = user?.metadata?.full_name || user?.email;
   const formattedStars = stars
-    ? stars >= 1000
-      ? `${(stars / 1000).toFixed(1)}k`
-      : stars
+    ? stars >= 1000 ? `${(stars / 1000).toFixed(1)}k` : stars
     : null;
 
   const handleClickInvite = () => {

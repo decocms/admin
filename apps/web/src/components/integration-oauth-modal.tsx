@@ -67,8 +67,8 @@ export function IntegrationOAuthModal({
             <div className="space-y-4">
               <Alert>
                 <AlertDescription>
-                  <strong>{integrationName}</strong> will have access to the
-                  following permissions:
+                  <strong>{integrationName}</strong>{" "}
+                  will have access to the following permissions:
                 </AlertDescription>
               </Alert>
 

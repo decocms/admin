@@ -23,13 +23,12 @@ export function AgentTriggers() {
   }
 
   // Filter triggers by agentId
-  const agentTriggers =
-    data?.triggers?.filter((trigger) => {
-      if ("agentId" in trigger.data && trigger.data.agentId) {
-        return trigger.data.agentId === agentId;
-      }
-      return false;
-    }) || [];
+  const agentTriggers = data?.triggers?.filter((trigger) => {
+    if ("agentId" in trigger.data && trigger.data.agentId) {
+      return trigger.data.agentId === agentId;
+    }
+    return false;
+  }) || [];
 
   if (!agentTriggers.length) {
     return <ListTriggersEmpty />;
@@ -44,7 +43,7 @@ export function AgentTriggers() {
   }
 
   const filteredTriggers = agentTriggers.filter((trigger) =>
-    trigger.data.title.toLowerCase().includes(search.toLowerCase()),
+    trigger.data.title.toLowerCase().includes(search.toLowerCase())
   );
 
   return (

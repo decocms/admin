@@ -155,9 +155,9 @@ export function ChatMessage({
   const handleCopy = async () => {
     const content = message.parts
       ? (message.parts as Part[])
-          .filter((part) => part.type === "text")
-          .map((part) => part.text)
-          .join("\n")
+        .filter((part) => part.type === "text")
+        .map((part) => part.text)
+        .join("\n")
       : message.content;
     await navigator.clipboard.writeText(content);
   };
@@ -217,52 +217,53 @@ export function ChatMessage({
             isUser ? "bg-muted p-3" : "bg-transparent",
           )}
         >
-          {message.parts ? (
-            <div className="space-y-2 w-full">
-              {mergedParts.map((part, index) => {
-                if (part.type === "reasoning") {
-                  const isLastReasoningPart = mergedParts
-                    .slice(index + 1)
-                    .every((p) => p.type !== "reasoning");
-                  return (
-                    <ReasoningPart
-                      key={index}
-                      reasoning={part.reasoning || ""}
-                      messageId={message.id}
-                      index={index}
-                      isStreaming={isLastReasoningPart && isReasoningStreaming}
-                      isResponseStreaming={isResponseStreaming}
-                    />
-                  );
-                } else if (part.type === "text") {
-                  return (
-                    <MemoizedMarkdown
-                      key={index}
-                      id={`${message.id}-${index}`}
-                      content={part.content || ""}
-                    />
-                  );
-                } else if (part.type === "image") {
-                  if (!part.image) return null;
-                  return <ImagePart image={part.image} key={index} />;
-                } else if (
-                  part.type === "tool-invocation-group" &&
-                  part.toolInvocations
-                ) {
-                  return (
-                    <ToolMessage
-                      key={index}
-                      toolInvocations={part.toolInvocations}
-                      isLastMessage={isLastMessage}
-                    />
-                  );
-                }
-                return null;
-              })}
-            </div>
-          ) : (
-            <MemoizedMarkdown id={message.id} content={message.content} />
-          )}
+          {message.parts
+            ? (
+              <div className="space-y-2 w-full">
+                {mergedParts.map((part, index) => {
+                  if (part.type === "reasoning") {
+                    const isLastReasoningPart = mergedParts
+                      .slice(index + 1)
+                      .every((p) => p.type !== "reasoning");
+                    return (
+                      <ReasoningPart
+                        key={index}
+                        reasoning={part.reasoning || ""}
+                        messageId={message.id}
+                        index={index}
+                        isStreaming={isLastReasoningPart &&
+                          isReasoningStreaming}
+                        isResponseStreaming={isResponseStreaming}
+                      />
+                    );
+                  } else if (part.type === "text") {
+                    return (
+                      <MemoizedMarkdown
+                        key={index}
+                        id={`${message.id}-${index}`}
+                        content={part.content || ""}
+                      />
+                    );
+                  } else if (part.type === "image") {
+                    if (!part.image) return null;
+                    return <ImagePart image={part.image} key={index} />;
+                  } else if (
+                    part.type === "tool-invocation-group" &&
+                    part.toolInvocations
+                  ) {
+                    return (
+                      <ToolMessage
+                        key={index}
+                        toolInvocations={part.toolInvocations}
+                        isLastMessage={isLastMessage}
+                      />
+                    );
+                  }
+                  return null;
+                })}
+              </div>
+            )
+            : <MemoizedMarkdown id={message.id} content={message.content} />}
 
           {attachments && attachments.length > 0 && (
             <div className="mt-2 flex flex-wrap gap-2">
@@ -275,45 +276,49 @@ export function ChatMessage({
                     rel="noopener noreferrer"
                     className="relative group flex items-center gap-2 p-2 bg-muted rounded-xl border border-border hover:bg-muted/50 transition-colors"
                   >
-                    {attachment.contentType?.startsWith("image/") ? (
-                      <div className="relative">
-                        <img
-                          src={attachment.url}
-                          alt={attachment.name ?? `attachment-${index}`}
-                          className="rounded-lg max-h-[300px] object-cover"
-                        />
-                      </div>
-                    ) : attachment.contentType?.startsWith(
-                        "application/pdf",
-                      ) ? (
-                      <div className="flex items-center gap-2">
-                        <div className="h-8 w-8 rounded-lg flex items-center justify-center bg-muted">
-                          <Icon
-                            name="picture_as_pdf"
-                            className="text-muted-foreground"
+                    {attachment.contentType?.startsWith("image/")
+                      ? (
+                        <div className="relative">
+                          <img
+                            src={attachment.url}
+                            alt={attachment.name ?? `attachment-${index}`}
+                            className="rounded-lg max-h-[300px] object-cover"
                           />
                         </div>
-                        <div className="flex flex-col min-w-0">
-                          <span className="text-xs text-foreground font-medium truncate max-w-[200px]">
-                            {attachment.name ?? "PDF Document"}
-                          </span>
+                      )
+                      : attachment.contentType?.startsWith(
+                          "application/pdf",
+                        )
+                      ? (
+                        <div className="flex items-center gap-2">
+                          <div className="h-8 w-8 rounded-lg flex items-center justify-center bg-muted">
+                            <Icon
+                              name="picture_as_pdf"
+                              className="text-muted-foreground"
+                            />
+                          </div>
+                          <div className="flex flex-col min-w-0">
+                            <span className="text-xs text-foreground font-medium truncate max-w-[200px]">
+                              {attachment.name ?? "PDF Document"}
+                            </span>
+                          </div>
                         </div>
-                      </div>
-                    ) : (
-                      <div className="flex items-center gap-2">
-                        <div className="h-8 w-8 rounded-lg flex items-center justify-center bg-muted">
-                          <Icon
-                            name="draft"
-                            className="text-muted-foreground"
-                          />
+                      )
+                      : (
+                        <div className="flex items-center gap-2">
+                          <div className="h-8 w-8 rounded-lg flex items-center justify-center bg-muted">
+                            <Icon
+                              name="draft"
+                              className="text-muted-foreground"
+                            />
+                          </div>
+                          <div className="flex flex-col min-w-0">
+                            <span className="text-xs text-foreground font-medium truncate max-w-[200px]">
+                              {attachment.name ?? "Document"}
+                            </span>
+                          </div>
                         </div>
-                        <div className="flex flex-col min-w-0">
-                          <span className="text-xs text-foreground font-medium truncate max-w-[200px]">
-                            {attachment.name ?? "Document"}
-                          </span>
-                        </div>
-                      </div>
-                    )}
+                      )}
                   </a>
                 ),
               )}

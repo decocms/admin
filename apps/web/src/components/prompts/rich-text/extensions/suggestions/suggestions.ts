@@ -25,7 +25,7 @@ export const suggestion: (
               icon: "text_snippet",
               children: items
                 .filter((prompt) =>
-                  prompt.name.toLowerCase().includes(query?.toLowerCase()),
+                  prompt.name.toLowerCase().includes(query?.toLowerCase())
                 )
                 .map(
                   (prompt): Option => ({

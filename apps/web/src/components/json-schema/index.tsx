@@ -139,8 +139,8 @@ function Field<T extends FieldValues = Record<string, unknown>>({
   const description = schema.description as string | undefined;
   // Extract just the property name from the full path for cleaner titles
   const propertyName = name.split(".").pop() || name;
-  const title =
-    (schema.title as string | undefined) || formatPropertyName(propertyName);
+  const title = (schema.title as string | undefined) ||
+    formatPropertyName(propertyName);
 
   switch (type) {
     case "string":
@@ -231,8 +231,9 @@ function Field<T extends FieldValues = Record<string, unknown>>({
             <div className="space-y-4">
               {Object.entries(schema.properties).map(
                 ([propName, propSchema]) => {
-                  const isPropertyRequired =
-                    schema.required?.includes(propName);
+                  const isPropertyRequired = schema.required?.includes(
+                    propName,
+                  );
                   const fullName = `${name}.${propName}`;
 
                   return (

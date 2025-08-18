@@ -66,8 +66,8 @@ export function generateDefaultValue(
       return schema.default !== undefined
         ? schema.default
         : schema.enum && schema.enum.length > 0
-          ? schema.enum[0]
-          : "";
+        ? schema.enum[0]
+        : "";
     case "number":
     case "integer":
       return schema.default !== undefined ? schema.default : 0;

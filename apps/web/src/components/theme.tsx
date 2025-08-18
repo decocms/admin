@@ -36,8 +36,7 @@ export const useTheme = () => {
   return {
     data: cachedTheme || theme,
     isLoading: isQueryLoading && !cachedTheme,
-    isStale:
-      !!cachedTheme &&
+    isStale: !!cachedTheme &&
       !!theme &&
       JSON.stringify(cachedTheme) !== JSON.stringify(theme),
   };
@@ -50,8 +49,7 @@ export function WithWorkspaceTheme({
 }) {
   const { data: theme } = useTheme();
   const loadedLogo = theme?.picture ?? "/img/deco-chat-logo.png";
-  const loadedBackground =
-    theme?.variables?.["--splash" as ThemeVariable] ??
+  const loadedBackground = theme?.variables?.["--splash" as ThemeVariable] ??
     theme?.variables?.["--sidebar" as ThemeVariable] ??
     null;
   const splashRef = useRef<HTMLDivElement>(null);

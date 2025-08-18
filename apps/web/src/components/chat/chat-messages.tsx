@@ -78,9 +78,7 @@ export function ChatMessages() {
 
   return (
     <div className="w-full max-w-2xl mx-auto">
-      {isEmpty ? (
-        <EmptyState />
-      ) : (
+      {isEmpty ? <EmptyState /> : (
         <div className="flex flex-col gap-4">
           {messages.map((message, index) => (
             <ChatMessage

@@ -54,18 +54,15 @@ const Chat = () => {
                 </h1>
               </div>
               <Button
-                className={
-                  messages.length > 0 && !hasChanges
-                    ? "inline-flex text-xs"
-                    : "hidden"
-                }
+                className={messages.length > 0 && !hasChanges
+                  ? "inline-flex text-xs"
+                  : "hidden"}
                 variant="outline"
                 size="sm"
                 onClick={() =>
                   focusChat(agentId, crypto.randomUUID(), {
                     history: false,
-                  })
-                }
+                  })}
               >
                 New Thread
               </Button>
@@ -172,20 +169,22 @@ function ActionButtons() {
         onClick={handleSubmit}
         disabled={!numberOfChanges || form.formState.isSubmitting}
       >
-        {form.formState.isSubmitting ? (
-          <>
-            <Spinner size="xs" />
-            <span>Saving...</span>
-          </>
-        ) : (
-          <span>
-            {isWellKnownAgent
-              ? "Save Agent"
-              : `Save ${numberOfChanges} change${
+        {form.formState.isSubmitting
+          ? (
+            <>
+              <Spinner size="xs" />
+              <span>Saving...</span>
+            </>
+          )
+          : (
+            <span>
+              {isWellKnownAgent
+                ? "Save Agent"
+                : `Save ${numberOfChanges} change${
                   numberOfChanges > 1 ? "s" : ""
                 }`}
-          </span>
-        )}
+            </span>
+          )}
       </Button>
     </div>
   );
@@ -206,9 +205,7 @@ function FormProvider(props: Props & { agentId: string; threadId: string }) {
       ? (agent.description ?? agent.instructions ?? "")
       : undefined,
     favicon: isFilePath(agent?.avatar)
-      ? typeof resolvedAvatar === "string"
-        ? resolvedAvatar
-        : undefined
+      ? typeof resolvedAvatar === "string" ? resolvedAvatar : undefined
       : agent?.avatar,
     socialImage: agent?.avatar,
   });

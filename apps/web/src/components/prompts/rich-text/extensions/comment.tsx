@@ -43,16 +43,14 @@ export const Comment = Node.create({
   },
   addCommands() {
     return {
-      setComment:
-        () =>
-        ({ commands }) => {
-          return commands.insertContent([
-            {
-              type: "comment",
-              content: [{ type: "text", text: " " }],
-            },
-          ]);
-        },
+      setComment: () => ({ commands }) => {
+        return commands.insertContent([
+          {
+            type: "comment",
+            content: [{ type: "text", text: " " }],
+          },
+        ]);
+      },
     };
   },
   addInputRules() {

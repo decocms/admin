@@ -123,8 +123,9 @@ export const useUploadAgentKnowledgeFiles = ({
   const addFileToKnowledgeBase = useKnowledgeAddFile();
   const readFile = useReadFile();
   const deleteFile = useDeleteFile();
-  const knowledeIntegrationPromise =
-    useRef<PromiseWithResolvers<Integration>>(null);
+  const knowledeIntegrationPromise = useRef<PromiseWithResolvers<Integration>>(
+    null,
+  );
 
   useEffect(() => {
     if (!knowledeIntegrationPromise.current || !knowledgeIntegration) return;
@@ -158,8 +159,9 @@ export const useUploadAgentKnowledgeFiles = ({
             content: new Uint8Array(buffer),
           };
 
-          const savedResponse =
-            await writeFileMutation.mutateAsync(fileMutateData);
+          const savedResponse = await writeFileMutation.mutateAsync(
+            fileMutateData,
+          );
 
           if (!savedResponse.ok) {
             throw new Error(`Failed to upload file ${filename}`);
@@ -230,8 +232,7 @@ export const useUploadAgentKnowledgeFiles = ({
 
       await knowledeIntegrationPromise.current.promise;
     }
-    const kbIntegration =
-      knowledgeIntegration ??
+    const kbIntegration = knowledgeIntegration ??
       (await knowledeIntegrationPromise.current?.promise);
     if (!kbIntegration) throw new Error("Not found knowledge for this agent");
     return _uploadKnowledgeFiles(files, kbIntegration);

@@ -91,10 +91,12 @@ export function Channels({ className }: ChannelsProps) {
   const [discriminator, setDiscriminator] = useState("");
   const [name, setName] = useState<string | undefined>(undefined);
   const [showCreateForm, setShowCreateForm] = useState(false);
-  const [confirmChannelSwitch, setConfirmChannelSwitch] = useState<{
-    channelId: string;
-    channelName: string;
-  } | null>(null);
+  const [confirmChannelSwitch, setConfirmChannelSwitch] = useState<
+    {
+      channelId: string;
+      channelName: string;
+    } | null
+  >(null);
   const { agent } = useAgent();
   const { mutate: createChannel, isPending: isCreating } = useCreateChannel();
   const joinChannelMutation = useJoinChannel();
@@ -140,8 +142,8 @@ export function Channels({ className }: ChannelsProps) {
     const channel = availableChannels.find((c: Channel) => c.id === channelId);
     if (!channel) return;
 
-    const isUsedByOtherAgent =
-      channel.agentIds.length > 0 && channel.agentIds[0] !== agent.id;
+    const isUsedByOtherAgent = channel.agentIds.length > 0 &&
+      channel.agentIds[0] !== agent.id;
     if (isUsedByOtherAgent) {
       setConfirmChannelSwitch({
         channelId,
@@ -299,11 +301,9 @@ export function Channels({ className }: ChannelsProps) {
               onClick={() => handleLeaveChannel(channel.id)}
               disabled={isLeavingChannel(channel.id)}
             >
-              {isLeavingChannel(channel.id) ? (
-                <Spinner size="sm" />
-              ) : (
-                <Icon name="close" size={16} />
-              )}
+              {isLeavingChannel(channel.id)
+                ? <Spinner size="sm" />
+                : <Icon name="close" size={16} />}
             </button>
           </ChannelCard>
         );
@@ -340,16 +340,20 @@ export function Channels({ className }: ChannelsProps) {
                     disabled={isJoiningChannel(channel.id)}
                     className="h-6 px-2 text-xs"
                   >
-                    {isJoiningChannel(channel.id) ? (
-                      <div className="flex items-center gap-1">
-                        <Spinner size="xs" />
-                        <span>Joining...</span>
-                      </div>
-                    ) : isInAgentChannels ? (
-                      "Joined"
-                    ) : (
-                      "Join"
-                    )}
+                    {isJoiningChannel(channel.id)
+                      ? (
+                        <div className="flex items-center gap-1">
+                          <Spinner size="xs" />
+                          <span>Joining...</span>
+                        </div>
+                      )
+                      : isInAgentChannels
+                      ? (
+                        "Joined"
+                      )
+                      : (
+                        "Join"
+                      )}
                   </Button>
                   <button
                     className="cursor-pointer hover:text-destructive"
@@ -357,11 +361,9 @@ export function Channels({ className }: ChannelsProps) {
                     onClick={() => handleRemoveChannel(channel.id)}
                     disabled={isChannelRemoving(channel.id)}
                   >
-                    {isChannelRemoving(channel.id) ? (
-                      <Spinner size="xs" />
-                    ) : (
-                      <Icon name="delete" size={16} />
-                    )}
+                    {isChannelRemoving(channel.id)
+                      ? <Spinner size="xs" />
+                      : <Icon name="delete" size={16} />}
                   </button>
                 </div>
               </ChannelCard>
@@ -418,17 +420,19 @@ export function Channels({ className }: ChannelsProps) {
               }}
               className="gap-2"
             >
-              {isCreating ? (
-                <>
-                  <Spinner size="sm" />
-                  Creating...
-                </>
-              ) : (
-                <>
-                  <Icon name="add" size={16} />
-                  Create Channel
-                </>
-              )}
+              {isCreating
+                ? (
+                  <>
+                    <Spinner size="sm" />
+                    Creating...
+                  </>
+                )
+                : (
+                  <>
+                    <Icon name="add" size={16} />
+                    Create Channel
+                  </>
+                )}
             </Button>
           </div>
         </>
@@ -512,8 +516,7 @@ function IntegrationSelect({
                 placeholder="Search for an integration"
                 value={query}
                 onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-                  setQuery(e.target.value)
-                }
+                  setQuery(e.target.value)}
                 className="mb-4"
               />
               <InstalledConnections
@@ -579,40 +582,41 @@ function ConnectionChannels({
       <Label htmlFor="discriminator">Channel</Label>
       <div className="mt-2 w-full">
         {availableChannels?.channels?.length &&
-        availableChannels?.channels?.length > 0 ? (
-          <Select
-            onValueChange={(value: string) => {
-              const nameForChannel = availableChannels?.channels?.find(
-                (channel) => channel.value === value,
-              )?.label;
-              setDiscriminator(value);
-              setName(nameForChannel);
-            }}
-            disabled={isLoadingAvailableChannels}
-          >
-            <SelectTrigger className="w-full">
-              <SelectValue placeholder="Select a channel" />
-            </SelectTrigger>
-            <SelectContent className="w-full">
-              {availableChannels?.channels?.map((channel) => {
-                return (
-                  <SelectItem key={channel.value} value={channel.value}>
-                    {channel.label}
-                  </SelectItem>
-                );
-              })}
-            </SelectContent>
-          </Select>
-        ) : (
-          <Input
-            id="discriminator"
-            placeholder="Enter unique identifier (e.g., phone number ID for WhatsApp)"
-            value={discriminator}
-            onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-              setDiscriminator(e.target.value)
-            }
-          />
-        )}
+            availableChannels?.channels?.length > 0
+          ? (
+            <Select
+              onValueChange={(value: string) => {
+                const nameForChannel = availableChannels?.channels?.find(
+                  (channel) => channel.value === value,
+                )?.label;
+                setDiscriminator(value);
+                setName(nameForChannel);
+              }}
+              disabled={isLoadingAvailableChannels}
+            >
+              <SelectTrigger className="w-full">
+                <SelectValue placeholder="Select a channel" />
+              </SelectTrigger>
+              <SelectContent className="w-full">
+                {availableChannels?.channels?.map((channel) => {
+                  return (
+                    <SelectItem key={channel.value} value={channel.value}>
+                      {channel.label}
+                    </SelectItem>
+                  );
+                })}
+              </SelectContent>
+            </Select>
+          )
+          : (
+            <Input
+              id="discriminator"
+              placeholder="Enter unique identifier (e.g., phone number ID for WhatsApp)"
+              value={discriminator}
+              onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                setDiscriminator(e.target.value)}
+            />
+          )}
       </div>
     </div>
   );

@@ -16,7 +16,7 @@ import {
   type MarketplaceIntegration,
   NEW_CUSTOM_CONNECTION,
 } from "./marketplace.tsx";
-import { useMarketplaceIntegrations, type Integration } from "@deco/sdk";
+import { type Integration, useMarketplaceIntegrations } from "@deco/sdk";
 import { cn } from "@deco/ui/lib/utils.ts";
 import { InstalledConnections } from "./installed-connections.tsx";
 import { useCreateCustomConnection } from "../../hooks/use-create-custom-connection.ts";
@@ -164,11 +164,9 @@ export function ConfirmMarketplaceInstallDialog({
           </DialogDescription>
         </DialogHeader>
         <DialogFooter>
-          {isLoading ? (
-            <Button disabled={isLoading}>Connecting...</Button>
-          ) : (
-            <Button onClick={handleConnect}>Connect</Button>
-          )}
+          {isLoading
+            ? <Button disabled={isLoading}>Connecting...</Button>
+            : <Button onClick={handleConnect}>Connect</Button>}
         </DialogFooter>
       </DialogContent>
 
@@ -178,9 +176,8 @@ export function ConfirmMarketplaceInstallDialog({
           isOpen={modalState.isOpen}
           onClose={modalState.onClose}
           schema={modalState.schema}
-          integrationName={
-            modalState.integrationName || integration?.name || "Integration"
-          }
+          integrationName={modalState.integrationName || integration?.name ||
+            "Integration"}
           permissions={modalState.permissions || []}
           onSubmit={handleModalComplete}
           isLoading={modalState.isLoading}
@@ -212,15 +209,16 @@ function AddConnectionDialogContent({
   const [search, setSearch] = useState("");
   const createCustomConnection = useCreateCustomConnection();
   const { data: marketplace } = useMarketplaceIntegrations();
-  const [installingIntegration, setInstallingIntegration] =
-    useState<MarketplaceIntegration | null>(() => {
-      if (!installingIntegrationId) return null;
-      return (
-        marketplace?.integrations.find(
-          (integration) => integration.id === installingIntegrationId,
-        ) ?? null
-      );
-    });
+  const [installingIntegration, setInstallingIntegration] = useState<
+    MarketplaceIntegration | null
+  >(() => {
+    if (!installingIntegrationId) return null;
+    return (
+      marketplace?.integrations.find(
+        (integration) => integration.id === installingIntegrationId,
+      ) ?? null
+    );
+  });
   const [oauthCompletionDialog, setOauthCompletionDialog] = useState<{
     open: boolean;
     url: string;
@@ -320,39 +318,37 @@ function AddConnectionDialogContent({
           {tab === "my-connections" && (
             <InstalledConnections
               query={search}
-              emptyState={
-                showEmptyState
-                  ? (myConnectionsEmptyState ?? (
-                      <div className="flex flex-col h-full min-h-[200px] gap-4 pb-16">
-                        <div className="w-full flex items-center flex-col gap-2 py-8">
-                          <h3 className="text-2xl font-medium">
-                            No integrations found
-                          </h3>
+              emptyState={showEmptyState
+                ? (myConnectionsEmptyState ?? (
+                  <div className="flex flex-col h-full min-h-[200px] gap-4 pb-16">
+                    <div className="w-full flex items-center flex-col gap-2 py-8">
+                      <h3 className="text-2xl font-medium">
+                        No integrations found
+                      </h3>
+                      <p className="text-sm text-muted-foreground">
+                        Create a new integration to get started
+                      </p>
+                    </div>
+                    <Marketplace
+                      filter={search}
+                      emptyState={
+                        <div className="flex flex-col gap-2 py-8 w-full items-center">
                           <p className="text-sm text-muted-foreground">
-                            Create a new integration to get started
+                            No integrations found for the search "{search}"
                           </p>
                         </div>
-                        <Marketplace
-                          filter={search}
-                          emptyState={
-                            <div className="flex flex-col gap-2 py-8 w-full items-center">
-                              <p className="text-sm text-muted-foreground">
-                                No integrations found for the search "{search}"
-                              </p>
-                            </div>
-                          }
-                          onClick={async (integration) => {
-                            if (integration.id === NEW_CUSTOM_CONNECTION.id) {
-                              await createCustomConnection();
-                              return;
-                            }
-                            setInstallingIntegration(integration);
-                          }}
-                        />
-                      </div>
-                    ))
-                  : null
-              }
+                      }
+                      onClick={async (integration) => {
+                        if (integration.id === NEW_CUSTOM_CONNECTION.id) {
+                          await createCustomConnection();
+                          return;
+                        }
+                        setInstallingIntegration(integration);
+                      }}
+                    />
+                  </div>
+                ))
+                : null}
               filter={filter}
               onClick={(integration) => onSelect?.(integration)}
             />
@@ -380,8 +376,7 @@ function AddConnectionDialogContent({
       <OAuthCompletionDialog
         open={oauthCompletionDialog.open}
         onOpenChange={(open) =>
-          setOauthCompletionDialog((prev) => ({ ...prev, open }))
-        }
+          setOauthCompletionDialog((prev) => ({ ...prev, open }))}
         authorizeOauthUrl={oauthCompletionDialog.url}
         integrationName={oauthCompletionDialog.integrationName}
       />

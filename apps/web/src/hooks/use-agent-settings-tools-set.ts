@@ -1,4 +1,4 @@
-import { useIntegrations, listTools } from "@deco/sdk";
+import { listTools, useIntegrations } from "@deco/sdk";
 import { useAgent } from "../components/agent/provider.tsx";
 import { useRefetchIntegrationsOnNotification } from "../components/integrations/apps.ts";
 

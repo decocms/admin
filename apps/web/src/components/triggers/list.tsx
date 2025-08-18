@@ -112,12 +112,11 @@ function ListTriggersSuspended() {
 
   const triggers = (data?.triggers || []) as TriggerOutput[];
 
-  const filteredTriggers =
-    search.trim().length > 0
-      ? triggers.filter((t) =>
-          t.data.title.toLowerCase().includes(search.toLowerCase()),
-        )
-      : triggers;
+  const filteredTriggers = search.trim().length > 0
+    ? triggers.filter((t) =>
+      t.data.title.toLowerCase().includes(search.toLowerCase())
+    )
+    : triggers;
 
   if (isLoading) {
     return <ListTriggersSkeleton />;
@@ -142,33 +141,31 @@ function ListTriggersSuspended() {
       />
 
       <div className="flex-1 min-h-0 overflow-x-auto">
-        {filteredTriggers.length === 0 ? (
-          <EmptyState
-            icon="cable"
-            title={
-              search.trim().length > 0 ? "No triggers found" : "No triggers yet"
-            }
-            description={
-              search.trim().length > 0
+        {filteredTriggers.length === 0
+          ? (
+            <EmptyState
+              icon="cable"
+              title={search.trim().length > 0
+                ? "No triggers found"
+                : "No triggers yet"}
+              description={search.trim().length > 0
                 ? "Try adjusting your search terms to find what you're looking for."
-                : "Create your first trigger to automate your agent workflows and respond to events automatically."
-            }
-            buttonProps={{
-              children: "Create Trigger",
-              onClick: () => {
-                // This will trigger the modal to open
-                const createButton = document.querySelector(
-                  '[title="Add Trigger"]',
-                ) as HTMLButtonElement;
-                createButton?.click();
-              },
-            }}
-          />
-        ) : viewMode === "table" ? (
-          <TableView triggers={filteredTriggers} />
-        ) : (
-          <CardsView triggers={filteredTriggers} />
-        )}
+                : "Create your first trigger to automate your agent workflows and respond to events automatically."}
+              buttonProps={{
+                children: "Create Trigger",
+                onClick: () => {
+                  // This will trigger the modal to open
+                  const createButton = document.querySelector(
+                    '[title="Add Trigger"]',
+                  ) as HTMLButtonElement;
+                  createButton?.click();
+                },
+              }}
+            />
+          )
+          : viewMode === "table"
+          ? <TableView triggers={filteredTriggers} />
+          : <CardsView triggers={filteredTriggers} />}
       </div>
     </div>
   );

@@ -46,7 +46,8 @@ export default function BubbleMenu({ editor }: Props) {
       className="rounded-xl border bg-background shadow-md flex"
       editor={editor}
     >
-      {/* <Button
+      {
+        /* <Button
         type="button"
         variant="ghost"
         size="sm"
@@ -56,7 +57,8 @@ export default function BubbleMenu({ editor }: Props) {
         <span className="text-sm text-foreground font-medium">
           Edit in chat
         </span>
-      </Button> */}
+      </Button> */
+      }
       <Button
         type="button"
         variant="ghost"

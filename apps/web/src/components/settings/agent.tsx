@@ -70,8 +70,8 @@ function CopyLinkButton({
 
 const useAvatarFilename = () => {
   const generate = (originalFile: File) => {
-    const extension =
-      originalFile.name.split(".").pop()?.toLowerCase() || "png";
+    const extension = originalFile.name.split(".").pop()?.toLowerCase() ||
+      "png";
     return `avatar-${crypto.randomUUID()}.${extension}`;
   };
 
@@ -159,26 +159,28 @@ function SettingsTab() {
                                 className="w-16 h-16 group aspect-square rounded-xl border flex flex-col items-center justify-center gap-1 cursor-pointer relative overflow-hidden"
                                 onClick={triggerFileInput}
                               >
-                                {isUploading ? (
-                                  <Skeleton
-                                    className={cn("w-full h-full rounded-xl")}
-                                  />
-                                ) : (
-                                  <>
-                                    <AgentAvatar
-                                      url={field.value || agent.avatar}
-                                      fallback={agent.name}
-                                      size="xl"
+                                {isUploading
+                                  ? (
+                                    <Skeleton
+                                      className={cn("w-full h-full rounded-xl")}
                                     />
-                                    <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
-                                      <Icon
-                                        name="upload"
-                                        className="text-white text-xl"
+                                  )
+                                  : (
+                                    <>
+                                      <AgentAvatar
+                                        url={field.value || agent.avatar}
+                                        fallback={agent.name}
+                                        size="xl"
                                       />
-                                    </div>
-                                    <Input type="hidden" {...field} />
-                                  </>
-                                )}
+                                      <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
+                                        <Icon
+                                          name="upload"
+                                          className="text-white text-xl"
+                                        />
+                                      </div>
+                                      <Input type="hidden" {...field} />
+                                    </>
+                                  )}
                               </div>
                             </FormControl>
                           </div>
@@ -351,11 +353,9 @@ function SettingsTab() {
                             {roles.map((role) => (
                               <SelectItem key={role.id} value={role.name}>
                                 <Icon
-                                  name={
-                                    role.name === "owner"
-                                      ? "lock_person"
-                                      : "groups"
-                                  }
+                                  name={role.name === "owner"
+                                    ? "lock_person"
+                                    : "groups"}
                                 />
                                 {role.name}
                               </SelectItem>

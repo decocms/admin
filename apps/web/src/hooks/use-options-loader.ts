@@ -1,6 +1,6 @@
 import {
-  Integration,
   getRegistryApp,
+  Integration,
   listIntegrations,
   useSDK,
 } from "@deco/sdk";

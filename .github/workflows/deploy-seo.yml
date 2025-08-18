@@ -71,7 +71,7 @@ jobs:
           SUPABASE_ANON_KEY: "${{ secrets.SUPABASE_ANON_KEY }}"
           SUPABASE_SERVER_TOKEN: "${{ secrets.SUPABASE_SERVER_TOKEN }}"
           OPENROUTER_API_KEY: "${{ secrets.OPENROUTER_API_KEY }}"
-          PUBLIC_API_URL: "${{ secrets.PUBLIC_API_URL }}"
+          PUBLIC_API_URL: "https://seo-ecommercex.deco.page"
           PUBLIC_APP_ORIGIN: "https://seo-ecommercex.deco.page"
           USE_KV: "1"
 

@@ -1,6 +1,16 @@
-import { processPDF } from 'unpdf';
+import { extractText } from 'unpdf';
 
-export function analyzePDF(filePath: string): string {
-  const pdfContent = processPDF(filePath);
-  return pdfContent;
+export async function analyzePDF(filePath: string): Promise<string> {
+  const pdfContent = await extractText(filePath);
+
+  // `extractText` may return a string or an object like { text: string[] }
+  if (typeof pdfContent === 'string') return pdfContent;
+  if (pdfContent && Array.isArray((pdfContent as any).text)) {
+    return (pdfContent as any).text.join('\n');
+  }
+  if (pdfContent && typeof (pdfContent as any).text === 'string') {
+    return (pdfContent as any).text;
+  }
+
+  return '';
 }

@@ -7,6 +7,7 @@ import { QueryResult } from "./mcp.ts";
 export * from "drizzle-orm/sqlite-core";
 export * as orm from "drizzle-orm";
 import { sql } from "drizzle-orm";
+import { DefaultEnv } from "./index.ts";
 
 const mapGetResult = ({ result: [page] }: { result: QueryResult[] }) => {
   return page.results ?? [];
@@ -22,38 +23,10 @@ const mapPostResult = ({ result }: { result: QueryResult[] }) => {
   );
 };
 
-export interface DrizzleEnvironment {
-  DECO_CHAT_WORKSPACE_DB: {
-    query: (params: {
-      sql: string;
-      params: string[];
-    }) => Promise<{ result: QueryResult[] }>;
-  };
-}
-
-/**
- * Helper to create an environment for a fixed database binding.
- *
- * @param binding - The binding to use for the database.
- * @returns The environment object that can be used to create a Drizzle database.
- */
-export const enviromentForFixedDatabaseBinding = (binding: {
-  DATABASES_RUN_SQL: (params: {
-    sql: string;
-    params: string[];
-  }) => Promise<{ result: QueryResult[] }>;
-}): DrizzleEnvironment => {
-  return {
-    DECO_CHAT_WORKSPACE_DB: {
-      query: binding.DATABASES_RUN_SQL,
-    },
-  };
-};
-
 export function drizzle<
   TSchema extends Record<string, unknown> = Record<string, never>,
 >(
-  { DECO_CHAT_WORKSPACE_DB }: DrizzleEnvironment,
+  { DECO_CHAT_WORKSPACE_DB }: Pick<DefaultEnv, "DECO_CHAT_WORKSPACE_DB">,
   config?: DrizzleConfig<TSchema>,
 ) {
   return drizzleProxy((sql, params, method) => {

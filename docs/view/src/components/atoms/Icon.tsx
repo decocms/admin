@@ -1,6 +1,6 @@
-import type { HTMLAttributes } from "react";
-import * as LucideIcons from "lucide-react";
-import React from "react";
+import type { HTMLAttributes } from 'react';
+import * as LucideIcons from 'lucide-react';
+import React from 'react';
 
 export interface Props extends HTMLAttributes<HTMLSpanElement> {
   /**

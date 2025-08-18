@@ -1,4 +1,4 @@
-import type { Migration } from "./wrangler.ts";
+import type { Migration } from './wrangler.ts';
 
 interface SingleStepMigration {
   old_tag?: string;
@@ -12,7 +12,7 @@ interface SingleStepMigration {
 }
 
 interface DoBinding {
-  type: "durable_object_namespace";
+  type: 'durable_object_namespace';
   class_name: string;
   name: string;
 }
@@ -33,13 +33,13 @@ const applyMigration = (currentBindings: DoBinding[]) =>
   let bindingsResult: DoBinding[] = bindings;
   const shouldRunMigration = stepMigration.old_tag != null;
 
-  if ("new_classes" in migration) {
+  if ('new_classes' in migration) {
     bindingsResult = [
       ...bindings,
       ...migration.new_classes.map((className) => ({
         class_name: className,
         name: className,
-        type: "durable_object_namespace" as const,
+        type: 'durable_object_namespace' as const,
       })),
     ];
     if (shouldRunMigration) {
@@ -50,7 +50,7 @@ const applyMigration = (currentBindings: DoBinding[]) =>
     }
   }
 
-  if ("deleted_classes" in migration) {
+  if ('deleted_classes' in migration) {
     bindingsResult = bindings.filter(
       (binding) => !migration.deleted_classes.includes(binding.class_name),
     );
@@ -62,7 +62,7 @@ const applyMigration = (currentBindings: DoBinding[]) =>
     }
   }
 
-  if ("renamed_classes" in migration) {
+  if ('renamed_classes' in migration) {
     const renamedClasses = migration.renamed_classes.reduce(
       (acc, renamedClass) => {
         acc[renamedClass.from] = renamedClass.to;
@@ -126,21 +126,21 @@ export const migrationDiff = (
       simulatedBindings = newBindings[0];
     } else {
       // We're past the current state, accumulate this migration in the diff
-      if ("new_classes" in migrationStep) {
+      if ('new_classes' in migrationStep) {
         migration.new_classes = [
           ...(migration.new_classes ?? []),
           ...migrationStep.new_classes,
         ];
       }
 
-      if ("deleted_classes" in migrationStep) {
+      if ('deleted_classes' in migrationStep) {
         migration.deleted_classes = [
           ...(migration.deleted_classes ?? []),
           ...migrationStep.deleted_classes,
         ];
       }
 
-      if ("renamed_classes" in migrationStep) {
+      if ('renamed_classes' in migrationStep) {
         migration.renamed_classes = [
           ...(migration.renamed_classes ?? []),
           ...migrationStep.renamed_classes,
@@ -154,21 +154,21 @@ export const migrationDiff = (
   // If we never found the current state, it means we need to apply all migrations
   if (!foundCurrentState) {
     for (const migrationStep of allMigrations) {
-      if ("new_classes" in migrationStep) {
+      if ('new_classes' in migrationStep) {
         migration.new_classes = [
           ...(migration.new_classes ?? []),
           ...migrationStep.new_classes,
         ];
       }
 
-      if ("deleted_classes" in migrationStep) {
+      if ('deleted_classes' in migrationStep) {
         migration.deleted_classes = [
           ...(migration.deleted_classes ?? []),
           ...migrationStep.deleted_classes,
         ];
       }
 
-      if ("renamed_classes" in migrationStep) {
+      if ('renamed_classes' in migrationStep) {
         migration.renamed_classes = [
           ...(migration.renamed_classes ?? []),
           ...migrationStep.renamed_classes,
@@ -199,8 +199,8 @@ export function isDoBinding(
 ): binding is DoBinding {
   return (
     binding != null &&
-    typeof binding === "object" &&
-    "type" in binding &&
-    binding.type === "durable_object_namespace"
+    typeof binding === 'object' &&
+    'type' in binding &&
+    binding.type === 'durable_object_namespace'
   );
 }

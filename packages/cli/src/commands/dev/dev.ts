@@ -1,8 +1,8 @@
 // @ts-ignore Node types may be excluded in some build contexts
-import { execSync, spawn } from "child_process";
-import { getConfig, readWranglerConfig } from "../../lib/config.js";
-import { ensureDevEnvironment } from "../../lib/wrangler.js";
-import { link } from "./link.js";
+import { execSync, spawn } from 'child_process';
+import { getConfig, readWranglerConfig } from '../../lib/config.js';
+import { ensureDevEnvironment } from '../../lib/wrangler.js';
+import { link } from './link.js';
 // Use global process (avoid node:process import for type resolution portability)
 
 // Lightweight free port finder using fetch race (net module may be unavailable in some runtimes)
@@ -26,7 +26,7 @@ async function findFreePort(
       return port; // treat as free
     }
   }
-  throw new Error("No free port found for wrangler dev");
+  throw new Error('No free port found for wrangler dev');
 }
 
 export interface StartDevServerOptions {
@@ -39,21 +39,19 @@ export interface StartDevServerOptions {
 export async function devCommand(opts: StartDevServerOptions): Promise<void> {
   try {
     // 1. Ensure development environment is set up
-    console.log("🔧 Setting up development environment...");
+    console.log('🔧 Setting up development environment...');
     await ensureDevEnvironment(opts);
 
     // 2. Get configuration
     const _config = await getConfig().catch(() => ({
-      workspace: "default",
+      workspace: 'default',
       bindings: [],
       local: false,
       enable_workflows: true,
     }));
 
     const wranglerConfig = await readWranglerConfig();
-    const app = typeof wranglerConfig.name === "string"
-      ? wranglerConfig.name
-      : "my-app";
+    const app = typeof wranglerConfig.name === 'string' ? wranglerConfig.name : 'my-app';
 
     console.log(`📦 Starting development server for '${app}'...`);
 
@@ -70,16 +68,16 @@ export async function devCommand(opts: StartDevServerOptions): Promise<void> {
     // }
 
     // 4. Start development server with tunnel integration
-    console.log("🚀 Starting development server with tunnel...");
+    console.log('🚀 Starting development server with tunnel...');
 
     // Detect unsupported macOS for local workerd and fall back to remote mode
     let useRemote = false;
-    if (process.platform === "darwin") {
+    if (process.platform === 'darwin') {
       try {
-        const ver = execSync("sw_vers -productVersion", {
-          encoding: "utf8",
+        const ver = execSync('sw_vers -productVersion', {
+          encoding: 'utf8',
         }).trim();
-        const [maj, min] = ver.split(".").map((n: string) => parseInt(n, 10));
+        const [maj, min] = ver.split('.').map((n: string) => parseInt(n, 10));
         // Minimum required: 13.5.0
         if (maj < 13 || (maj === 13 && min < 5)) {
           useRemote = true;
@@ -95,8 +93,8 @@ export async function devCommand(opts: StartDevServerOptions): Promise<void> {
     let wranglerPort: number | undefined;
     if (!useRemote) {
       const argPort = process.argv
-        .find((a: string) => a.startsWith("--port="))
-        ?.split("=")[1];
+        .find((a: string) => a.startsWith('--port='))
+        ?.split('=')[1];
       const desiredPort = Number(argPort || process.env.PORT || 8787);
       wranglerPort = await findFreePort(
         Number.isFinite(desiredPort) ? desiredPort : 8787,
@@ -106,45 +104,45 @@ export async function devCommand(opts: StartDevServerOptions): Promise<void> {
       console.log(`🛠️  Selected local wrangler port: ${wranglerPort}`);
     } else {
       // Remote preview URL will be printed by wrangler; user can set DECO_SELF_URL manually for gen:self
-      process.env.DECO_REMOTE = "1";
+      process.env.DECO_REMOTE = '1';
     }
 
     // Use link command with wrangler dev as subprocess
     await link({
       port: 8888,
       onBeforeRegister: () => {
-        console.log("🔗 Starting Wrangler development server...");
+        console.log('🔗 Starting Wrangler development server...');
 
         const wranglerArgs = useRemote
-          ? ["wrangler", "dev", "--remote"]
-          : ["wrangler", "dev", "--port", String(process.env.PORT)];
-        const wranglerProcess = spawn("npx", wranglerArgs, {
-          stdio: "inherit",
+          ? ['wrangler', 'dev', '--remote']
+          : ['wrangler', 'dev', '--port', String(process.env.PORT)];
+        const wranglerProcess = spawn('npx', wranglerArgs, {
+          stdio: 'inherit',
           shell: true,
         });
 
         // Handle process termination
         const cleanup = () => {
-          console.log("\n⏹️  Stopping development server...");
-          wranglerProcess.kill("SIGINT");
+          console.log('\n⏹️  Stopping development server...');
+          wranglerProcess.kill('SIGINT');
           process.exit(0);
         };
 
-        process.on("SIGINT", cleanup);
-        process.on("SIGTERM", cleanup);
+        process.on('SIGINT', cleanup);
+        process.on('SIGTERM', cleanup);
         if (!useRemote && process.env.DECO_SELF_URL) {
           console.log(`🔍 MCP base URL: ${process.env.DECO_SELF_URL}/mcp`);
         } else if (useRemote) {
           console.log(
-            "🔍 Remote mode enabled. After wrangler shows the preview URL, use it as DECO_SELF_URL for generation.",
+            '🔍 Remote mode enabled. After wrangler shows the preview URL, use it as DECO_SELF_URL for generation.',
           );
         }
 
-        wranglerProcess.on("error", (error: unknown) => {
-          const msg = error && typeof error === "object" && "message" in error
+        wranglerProcess.on('error', (error: unknown) => {
+          const msg = error && typeof error === 'object' && 'message' in error
             ? (error as { message: string }).message
             : String(error);
-          console.error("❌ Failed to start Wrangler:", msg);
+          console.error('❌ Failed to start Wrangler:', msg);
           process.exit(1);
         });
 
@@ -153,7 +151,7 @@ export async function devCommand(opts: StartDevServerOptions): Promise<void> {
     });
   } catch (error) {
     console.error(
-      "❌ Development server failed:",
+      '❌ Development server failed:',
       error instanceof Error ? error.message : String(error),
     );
     process.exit(1);

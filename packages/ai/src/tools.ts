@@ -1,66 +1,62 @@
-import { z } from "zod";
-import { createInnateTool } from "./utils/create-tool.ts";
-import type { Agent } from "@deco/sdk";
-import {
-  GetObjectCommand,
-  PutObjectCommand,
-  S3Client,
-} from "@aws-sdk/client-s3";
-import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
-import { Buffer } from "node:buffer";
+import { z } from 'zod';
+import { createInnateTool } from './utils/create-tool.ts';
+import type { Agent } from '@deco/sdk';
+import { GetObjectCommand, PutObjectCommand, S3Client } from '@aws-sdk/client-s3';
+import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
+import { Buffer } from 'node:buffer';
 
 export type Tool = ReturnType<typeof createInnateTool>;
 
 const FetchInputSchema = z.object({
-  url: z.string().describe("The URL to fetch content from"),
+  url: z.string().describe('The URL to fetch content from'),
   method: z
-    .enum(["GET", "PUT", "POST", "DELETE", "PATCH", "HEAD"] as const)
-    .default("GET")
-    .describe("The HTTP method to use for the request"),
+    .enum(['GET', 'PUT', 'POST', 'DELETE', 'PATCH', 'HEAD'] as const)
+    .default('GET')
+    .describe('The HTTP method to use for the request'),
   useProxy: z
     .boolean()
     .default(true)
-    .describe("Whether to use the proxy endpoint for the request"),
+    .describe('Whether to use the proxy endpoint for the request'),
   headers: z
     .record(z.string(), z.string())
     .optional()
-    .describe("Optional headers to include with the request"),
-  body: z.any().optional().describe("Optional body to send with the request"),
+    .describe('Optional headers to include with the request'),
+  body: z.any().optional().describe('Optional body to send with the request'),
   maxRetries: z
     .number()
     .int()
     .min(0)
     .max(5)
     .default(3)
-    .describe("Maximum number of retry attempts (0-5)"),
+    .describe('Maximum number of retry attempts (0-5)'),
   timeout: z
     .number()
     .int()
     .min(1000)
     .max(30000)
     .default(10000)
-    .describe("Request timeout in milliseconds (1000-30000)"),
+    .describe('Request timeout in milliseconds (1000-30000)'),
 });
 
 const FetchOutputSchema = z.object({
-  content: z.string().describe("The content of the URL"),
-  status: z.number().describe("The HTTP status code of the response"),
-  headers: z.record(z.string(), z.string()).describe("The response headers"),
+  content: z.string().describe('The content of the URL'),
+  status: z.number().describe('The HTTP status code of the response'),
+  headers: z.record(z.string(), z.string()).describe('The response headers'),
   ok: z
     .boolean()
-    .describe("Whether the request was successful (status in 200-299 range)"),
+    .describe('Whether the request was successful (status in 200-299 range)'),
 });
 
 export type Configuration = Agent;
 
 const RenderInputSchema = z.object({
-  title: z.string().describe("A Title for the preview"),
-  type: z.enum(["url", "html"]).describe("The type of content to render"),
+  title: z.string().describe('A Title for the preview'),
+  type: z.enum(['url', 'html']).describe('The type of content to render'),
   content: z
     .string()
-    .describe("The URL or HTML content to display in the preview"),
+    .describe('The URL or HTML content to display in the preview'),
   mediaType: z
-    .enum(["image", "video", "audio"])
+    .enum(['image', 'video', 'audio'])
     .optional()
     .describe(
       "The media type of the content. This is only required if type is 'url' and the content is the URL of a file.",
@@ -73,28 +69,27 @@ const RETRY_CONFIG = {
 } as const;
 
 const PollForContentInputSchema = z.object({
-  url: z.string().describe("The URL to check for content"),
+  url: z.string().describe('The URL to check for content'),
   maxAttempts: z
     .number()
     .optional()
     .describe(
-      "Maximum number of retry attempts (default: 20). Recommended to be 20 or more.",
+      'Maximum number of retry attempts (default: 20). Recommended to be 20 or more.',
     ),
   maxDelay: z
     .number()
     .optional()
-    .describe("Maximum delay between retries in milliseconds (default: 5000)."),
+    .describe('Maximum delay between retries in milliseconds (default: 5000).'),
 });
 
 const PollForContentOutputSchema = z.object({
-  hasContent: z.boolean().describe("Whether the URL has content available"),
-  message: z.string().describe("Status message about the URL check"),
+  hasContent: z.boolean().describe('Whether the URL has content available'),
+  message: z.string().describe('Status message about the URL check'),
 });
 
 export const RENDER = createInnateTool({
-  id: "RENDER",
-  description:
-    "Display content in a preview iframe. Accepts either a URL or HTML content.",
+  id: 'RENDER',
+  description: 'Display content in a preview iframe. Accepts either a URL or HTML content.',
   inputSchema: RenderInputSchema,
   outputSchema: RenderInputSchema,
   execute: () => async ({ context }) => {
@@ -103,7 +98,7 @@ export const RENDER = createInnateTool({
 });
 
 export const FETCH = createInnateTool({
-  id: "FETCH",
+  id: 'FETCH',
   description:
     "Fetch to a URL. Use only when you don't have a specific integration, so make sure to try to use the other tools first. Supports multiple HTTP methods, custom headers, request body, and optional proxy usage. With this you can get the content of a URL or make requests to APIs.",
   inputSchema: FetchInputSchema,
@@ -115,20 +110,18 @@ export const FETCH = createInnateTool({
     const timeoutId = setTimeout(() => controller.abort(), timeout);
 
     try {
-      const targetUrl = useProxy
-        ? `https://webdraw.com/proxy?url=${encodeURIComponent(url)}`
-        : url;
+      const targetUrl = useProxy ? `https://webdraw.com/proxy?url=${encodeURIComponent(url)}` : url;
 
       const requestHeaders = new Headers(headers);
-      if (body && typeof body === "object") {
-        requestHeaders.set("Content-Type", "application/json");
+      if (body && typeof body === 'object') {
+        requestHeaders.set('Content-Type', 'application/json');
       }
 
       const requestInit: RequestInit = {
         method,
         headers: requestHeaders,
         signal: controller.signal,
-        body: body && typeof body === "object" ? JSON.stringify(body) : body,
+        body: body && typeof body === 'object' ? JSON.stringify(body) : body,
       };
 
       const response = await fetch(targetUrl, requestInit);
@@ -145,7 +138,7 @@ export const FETCH = createInnateTool({
         ok: response.ok,
       };
     } catch (error) {
-      if (error instanceof Error && error.name === "AbortError") {
+      if (error instanceof Error && error.name === 'AbortError') {
         throw new Error(`Request timed out after ${timeout}ms`);
       }
       throw error;
@@ -156,9 +149,9 @@ export const FETCH = createInnateTool({
 });
 
 export const POLL_FOR_CONTENT = createInnateTool({
-  id: "POLL_FOR_CONTENT",
+  id: 'POLL_FOR_CONTENT',
   description:
-    "Check if a URL has content available with better detection methods, timeouts, and resource management. Uses HEAD requests for efficiency and proper retry logic.",
+    'Check if a URL has content available with better detection methods, timeouts, and resource management. Uses HEAD requests for efficiency and proper retry logic.',
   inputSchema: PollForContentInputSchema,
   outputSchema: PollForContentOutputSchema,
   execute: () => async ({ context }) => {
@@ -173,7 +166,7 @@ export const POLL_FOR_CONTENT = createInnateTool({
     } catch {
       return {
         hasContent: false,
-        message: "Invalid URL format",
+        message: 'Invalid URL format',
       };
     }
 
@@ -185,35 +178,32 @@ export const POLL_FOR_CONTENT = createInnateTool({
 
       try {
         let hasContent = false;
-        let contentInfo = "";
+        let contentInfo = '';
 
         try {
           const headRes = await fetch(url, {
-            method: "HEAD",
+            method: 'HEAD',
             signal: controller.signal,
           });
 
           if (headRes.ok) {
-            const contentLength = headRes.headers.get("Content-Length");
-            const contentType = headRes.headers.get("Content-Type");
+            const contentLength = headRes.headers.get('Content-Length');
+            const contentType = headRes.headers.get('Content-Type');
 
             // Simple logic: if HEAD returns OK (200-299), content is likely available
             // Additional checks for content length can help confirm
-            const hasValidLength = contentLength
-              ? parseInt(contentLength, 10) > 0
-              : true; // Default to true if no length header
+            const hasValidLength = contentLength ? parseInt(contentLength, 10) > 0 : true; // Default to true if no length header
 
             if (hasValidLength) {
               hasContent = true;
-              contentInfo =
-                `URL has content available (HEAD: ${headRes.status}, Content-Length: ${
-                  contentLength || "unknown"
-                }, Content-Type: ${contentType || "unknown"})`;
+              contentInfo = `URL has content available (HEAD: ${headRes.status}, Content-Length: ${
+                contentLength || 'unknown'
+              }, Content-Type: ${contentType || 'unknown'})`;
             }
           }
         } catch (headError) {
           console.debug(
-            "HEAD request failed, will try GET fallback:",
+            'HEAD request failed, will try GET fallback:',
             headError,
           );
         }
@@ -222,16 +212,16 @@ export const POLL_FOR_CONTENT = createInnateTool({
         if (!hasContent) {
           try {
             const getRes = await fetch(url, {
-              method: "GET",
+              method: 'GET',
               signal: controller.signal,
               headers: {
-                Range: "bytes=0-1023", // Only fetch first 1KB to minimize data transfer
+                Range: 'bytes=0-1023', // Only fetch first 1KB to minimize data transfer
               },
             });
 
             if (getRes.ok) {
-              const contentLength = getRes.headers.get("Content-Length");
-              const contentType = getRes.headers.get("Content-Type");
+              const contentLength = getRes.headers.get('Content-Length');
+              const contentType = getRes.headers.get('Content-Type');
 
               // Cancel the response body to avoid downloading the full content
               if (getRes.body) {
@@ -239,14 +229,13 @@ export const POLL_FOR_CONTENT = createInnateTool({
               }
 
               hasContent = true;
-              contentInfo =
-                `URL has content available (GET: ${getRes.status}, Content-Length: ${
-                  contentLength || "unknown"
-                }, Content-Type: ${contentType || "unknown"})`;
+              contentInfo = `URL has content available (GET: ${getRes.status}, Content-Length: ${
+                contentLength || 'unknown'
+              }, Content-Type: ${contentType || 'unknown'})`;
             }
           } catch (getError) {
             // Both HEAD and GET failed, continue to retry logic
-            console.debug("GET request also failed:", getError);
+            console.debug('GET request also failed:', getError);
           }
         }
 
@@ -282,7 +271,7 @@ export const POLL_FOR_CONTENT = createInnateTool({
         clearTimeout(timeoutId);
 
         // Check if it's a timeout error
-        if (error instanceof Error && error.name === "AbortError") {
+        if (error instanceof Error && error.name === 'AbortError') {
           if (attempt < maxAttempts) {
             const baseDelay = Math.min(
               1000 * Math.pow(2, attempt - 1),
@@ -298,13 +287,13 @@ export const POLL_FOR_CONTENT = createInnateTool({
 
           return {
             hasContent: false,
-            message: "Request timed out after multiple attempts",
+            message: 'Request timed out after multiple attempts',
           };
         }
 
         // For other errors, determine if they're retryable
         const isRetryable = error instanceof TypeError || // Network errors
-          (error instanceof Error && error.message.includes("fetch"));
+          (error instanceof Error && error.message.includes('fetch'));
 
         if (isRetryable && attempt < maxAttempts) {
           const baseDelay = Math.min(
@@ -322,7 +311,7 @@ export const POLL_FOR_CONTENT = createInnateTool({
         return {
           hasContent: false,
           message: `Error checking URL: ${
-            error instanceof Error ? error.message : "Unknown error"
+            error instanceof Error ? error.message : 'Unknown error'
           }`,
         };
       }
@@ -330,7 +319,7 @@ export const POLL_FOR_CONTENT = createInnateTool({
 
     return {
       hasContent: false,
-      message: "Maximum retry attempts reached",
+      message: 'Maximum retry attempts reached',
     };
   },
 });
@@ -338,22 +327,22 @@ export const POLL_FOR_CONTENT = createInnateTool({
 const ShowPickerInputSchema = z.object({
   options: z.array(
     z.object({
-      label: z.string().describe("The display text for the option"),
-      value: z.string().describe("The value of the option"),
+      label: z.string().describe('The display text for the option'),
+      value: z.string().describe('The value of the option'),
       description: z
         .string()
         .optional()
-        .describe("Optional description of the option"),
+        .describe('Optional description of the option'),
     }),
   ),
-  question: z.string().describe("The question to ask the user"),
+  question: z.string().describe('The question to ask the user'),
 });
 
 export const SHOW_PICKER = createInnateTool({
-  id: "SHOW_PICKER",
+  id: 'SHOW_PICKER',
   description:
-    "When you need to ask the user to pick one option from a list, use this tool to ask the user for their choice. " +
-    "The user will be presented with a message and a list of options, they can pick one of the options. " +
+    'When you need to ask the user to pick one option from a list, use this tool to ask the user for their choice. ' +
+    'The user will be presented with a message and a list of options, they can pick one of the options. ' +
     "Don't repeat the question in text before calling the tool, just call the tool with the question and options.",
   inputSchema: ShowPickerInputSchema,
   outputSchema: ShowPickerInputSchema,
@@ -363,17 +352,17 @@ export const SHOW_PICKER = createInnateTool({
 });
 
 const ConfirmInputSchema = z.object({
-  message: z.string().describe("The message to confirm"),
+  message: z.string().describe('The message to confirm'),
 });
 
 export const CONFIRM = createInnateTool({
-  id: "CONFIRM",
+  id: 'CONFIRM',
   description:
-    "When you need to confirm an action, use this tool to ask the user for confirmation. " +
+    'When you need to confirm an action, use this tool to ask the user for confirmation. ' +
     "The user will be presented with a message and two options, 'Confirm' and 'Cancel'. " +
     "Don't repeat the message in text before calling the tool, just call the tool with the message." +
-    "Only use this tool when you believe the action has important consequences and you need to be sure the user wants to proceed, " +
-    "for example when confirming a payment, deleting a file, etc.",
+    'Only use this tool when you believe the action has important consequences and you need to be sure the user wants to proceed, ' +
+    'for example when confirming a payment, deleting a file, etc.',
   inputSchema: ConfirmInputSchema,
   outputSchema: ShowPickerInputSchema,
   execute: () => async ({ context }) => {
@@ -381,12 +370,12 @@ export const CONFIRM = createInnateTool({
       question: context.message,
       options: [
         {
-          label: "Confirm",
-          value: "confirm",
+          label: 'Confirm',
+          value: 'confirm',
         },
         {
-          label: "Cancel",
-          value: "cancel",
+          label: 'Cancel',
+          value: 'cancel',
         },
       ],
     });
@@ -397,30 +386,30 @@ const CreatePresignedUrlInputSchema = z.object({
   expiresIn: z
     .number()
     .optional()
-    .describe("Number of seconds until the URL expires (default: 3600)"),
-  fileExtension: z.string().describe("The file extension to use for the file"),
+    .describe('Number of seconds until the URL expires (default: 3600)'),
+  fileExtension: z.string().describe('The file extension to use for the file'),
 });
 
 const CreatePresignedUrlOutputSchema = z.object({
-  putUrl: z.string().describe("The presigned URL for uploading a file"),
-  getUrl: z.string().describe("The presigned URL for downloading a file"),
-  expiresAt: z.number().describe("Unix timestamp when the URL expires"),
+  putUrl: z.string().describe('The presigned URL for uploading a file'),
+  getUrl: z.string().describe('The presigned URL for downloading a file'),
+  expiresAt: z.number().describe('Unix timestamp when the URL expires'),
 });
 
 export const CREATE_PRESIGNED_URL = createInnateTool({
-  id: "CREATE_PRESIGNED_URL",
-  description: "Create a presigned URL for a file in the Deco Chat file system",
+  id: 'CREATE_PRESIGNED_URL',
+  description: 'Create a presigned URL for a file in the Deco Chat file system',
   inputSchema: CreatePresignedUrlInputSchema,
   outputSchema: CreatePresignedUrlOutputSchema,
   execute: (agent, env) => async ({ context }) => {
     const { expiresIn = 3600, fileExtension } = context;
     if (!env) {
-      throw new Error("Env is required");
+      throw new Error('Env is required');
     }
 
     const { workspace } = agent;
-    const bucketName = env.DECO_CHAT_DATA_BUCKET_NAME ?? "deco-chat-fs";
-    const region = env.AWS_REGION ?? "us-east-2";
+    const bucketName = env.DECO_CHAT_DATA_BUCKET_NAME ?? 'deco-chat-fs';
+    const region = env.AWS_REGION ?? 'us-east-2';
 
     const expiresAt = Math.floor(Date.now() / 1000) + expiresIn;
 
@@ -444,7 +433,7 @@ export const CREATE_PRESIGNED_URL = createInnateTool({
 
     const putUrl = await getSignedUrl(s3Client, putCommand, {
       expiresIn,
-      signableHeaders: new Set(["content-type"]),
+      signableHeaders: new Set(['content-type']),
     });
 
     const getCommand = new GetObjectCommand({
@@ -467,53 +456,51 @@ export const CREATE_PRESIGNED_URL = createInnateTool({
 
 function getContentType(extension: string): string {
   const contentTypes: Record<string, string> = {
-    jpg: "image/jpeg",
-    jpeg: "image/jpeg",
-    png: "image/png",
-    gif: "image/gif",
-    webp: "image/webp",
-    svg: "image/svg+xml",
-    pdf: "application/pdf",
-    doc: "application/msword",
-    docx:
-      "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-    xls: "application/vnd.ms-excel",
-    xlsx: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-    ppt: "application/vnd.ms-powerpoint",
-    pptx:
-      "application/vnd.openxmlformats-officedocument.presentationml.presentation",
-    txt: "text/plain",
-    csv: "text/csv",
-    html: "text/html",
-    htm: "text/html",
-    json: "application/json",
-    mp4: "video/mp4",
-    mp3: "audio/mpeg",
-    wav: "audio/wav",
-    zip: "application/zip",
-    rar: "application/x-rar-compressed",
-    tar: "application/x-tar",
-    gz: "application/gzip",
+    jpg: 'image/jpeg',
+    jpeg: 'image/jpeg',
+    png: 'image/png',
+    gif: 'image/gif',
+    webp: 'image/webp',
+    svg: 'image/svg+xml',
+    pdf: 'application/pdf',
+    doc: 'application/msword',
+    docx: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+    xls: 'application/vnd.ms-excel',
+    xlsx: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    ppt: 'application/vnd.ms-powerpoint',
+    pptx: 'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+    txt: 'text/plain',
+    csv: 'text/csv',
+    html: 'text/html',
+    htm: 'text/html',
+    json: 'application/json',
+    mp4: 'video/mp4',
+    mp3: 'audio/mpeg',
+    wav: 'audio/wav',
+    zip: 'application/zip',
+    rar: 'application/x-rar-compressed',
+    tar: 'application/x-tar',
+    gz: 'application/gzip',
   };
 
-  return contentTypes[extension] || "application/octet-stream";
+  return contentTypes[extension] || 'application/octet-stream';
 }
 
 const WhoAmIOutputSchema = z.object({
-  agentId: z.string().describe("The ID of the current agent"),
-  agentName: z.string().describe("The name of the current agent"),
+  agentId: z.string().describe('The ID of the current agent'),
+  agentName: z.string().describe('The name of the current agent'),
   workspace: z
     .string()
-    .describe("The workspace path where the agent is running"),
-  model: z.string().optional().describe("The model used by the agent"),
+    .describe('The workspace path where the agent is running'),
+  model: z.string().optional().describe('The model used by the agent'),
   instructions: z.string().optional().describe("The agent's instructions"),
   visibility: z.string().optional().describe("The agent's visibility setting"),
 });
 
 export const WHO_AM_I = createInnateTool({
-  id: "WHO_AM_I",
+  id: 'WHO_AM_I',
   description:
-    "Get information about the current agent, including agent ID, name, workspace, model, and configuration details.",
+    'Get information about the current agent, including agent ID, name, workspace, model, and configuration details.',
   inputSchema: z.object({}),
   outputSchema: WhoAmIOutputSchema,
   execute: (agent) => async () => {
@@ -533,29 +520,29 @@ export const WHO_AM_I = createInnateTool({
 const SpeakInputSchema = z.object({
   text: z.string().describe("The text to speak using the agent's voice"),
   emotion: z
-    .enum(["neutral", "excited", "calm", "serious", "friendly"])
+    .enum(['neutral', 'excited', 'calm', 'serious', 'friendly'])
     .optional()
-    .catch("neutral")
-    .describe("The emotional tone to use when speaking (optional)"),
+    .catch('neutral')
+    .describe('The emotional tone to use when speaking (optional)'),
   speed: z
-    .enum(["slow", "normal", "fast"])
+    .enum(['slow', 'normal', 'fast'])
     .optional()
-    .catch("normal")
-    .describe("The speed at which to speak (optional)"),
+    .catch('normal')
+    .describe('The speed at which to speak (optional)'),
   voice: z
     .enum([
-      "alloy",
-      "echo",
-      "fable",
-      "onyx",
-      "nova",
-      "shimmer",
-      "ash",
-      "sage",
-      "coral",
+      'alloy',
+      'echo',
+      'fable',
+      'onyx',
+      'nova',
+      'shimmer',
+      'ash',
+      'sage',
+      'coral',
     ])
     .optional()
-    .catch("echo")
+    .catch('echo')
     .describe(
       "The voice to use for speech synthesis (optional, defaults to agent's configured voice)",
     ),
@@ -564,20 +551,20 @@ const SpeakInputSchema = z.object({
 const SpeakOutputSchema = z.object({
   success: z
     .boolean()
-    .describe("Whether the speech was successfully generated"),
-  message: z.string().describe("Status message about the speech generation"),
-  audioUrl: z.string().optional().describe("URL to the generated audio file"),
+    .describe('Whether the speech was successfully generated'),
+  message: z.string().describe('Status message about the speech generation'),
+  audioUrl: z.string().optional().describe('URL to the generated audio file'),
 });
 
 export const SPEAK = createInnateTool({
-  id: "SPEAK",
+  id: 'SPEAK',
   description:
     "Use the agent's voice to speak text aloud. This tool converts text to speech using the agent's configured voice model. " +
-    "Use this when you want to provide audio responses, when the user specifically requests voice output, " +
-    "or when you want to create more engaging interactions. You can optionally generate an audio file that can be shared or played later. " +
-    "This is perfect for creating voice-enabled conversations, reading content aloud, or providing audio feedback. " +
-    "Use the audioUrl in markdown to display the audio file in the chat. " +
-    "For example: ![audio]({audioUrl})",
+    'Use this when you want to provide audio responses, when the user specifically requests voice output, ' +
+    'or when you want to create more engaging interactions. You can optionally generate an audio file that can be shared or played later. ' +
+    'This is perfect for creating voice-enabled conversations, reading content aloud, or providing audio feedback. ' +
+    'Use the audioUrl in markdown to display the audio file in the chat. ' +
+    'For example: ![audio]({audioUrl})',
   inputSchema: SpeakInputSchema,
   outputSchema: SpeakOutputSchema,
   execute: (agent, env) => async ({ context }) => {
@@ -590,7 +577,7 @@ export const SPEAK = createInnateTool({
 
       // Add emotional context to the text if specified
       let enhancedText = text;
-      if (emotion && emotion !== "neutral") {
+      if (emotion && emotion !== 'neutral') {
         enhancedText = `[Speaking in a ${emotion} tone] ${text}`;
       }
 
@@ -607,7 +594,7 @@ export const SPEAK = createInnateTool({
       if (!readableStream) {
         return {
           success: false,
-          message: "Voice synthesis is not available for this agent",
+          message: 'Voice synthesis is not available for this agent',
         };
       }
 
@@ -647,23 +634,23 @@ export const SPEAK = createInnateTool({
             s3Key,
           );
         } catch (uploadError) {
-          console.error("💥 Error uploading audio:", uploadError);
+          console.error('💥 Error uploading audio:', uploadError);
         }
       }
 
       return {
         success: true,
         message: `Successfully generated speech for: "${text.substring(0, 50)}${
-          text.length > 50 ? "..." : ""
+          text.length > 50 ? '...' : ''
         }"`,
         audioUrl,
       };
     } catch (error) {
-      console.error("💥 Error in SPEAK tool:", error);
+      console.error('💥 Error in SPEAK tool:', error);
       return {
         success: false,
         message: `Failed to generate speech: ${
-          error instanceof Error ? error.message : "Unknown error"
+          error instanceof Error ? error.message : 'Unknown error'
         }`,
       };
     } finally {
@@ -687,12 +674,12 @@ async function processAudioStream(
 
   try {
     // Handle different stream types with better error recovery
-    if (readableStream && typeof readableStream === "object") {
+    if (readableStream && typeof readableStream === 'object') {
       // Check if it's a Node.js readable stream
-      if ("read" in readableStream || "on" in readableStream) {
+      if ('read' in readableStream || 'on' in readableStream) {
         await new Promise<void>((resolve, reject) => {
           const timeout = setTimeout(() => {
-            reject(new Error("Stream processing timeout after 30 seconds"));
+            reject(new Error('Stream processing timeout after 30 seconds'));
           }, 30000);
 
           const cleanup = () => {
@@ -708,9 +695,7 @@ async function processAudioStream(
                   cleanup();
                   reject(
                     new Error(
-                      `Audio file too large (>${
-                        MAX_MEMORY_BUFFER / 1024 / 1024
-                      }MB)`,
+                      `Audio file too large (>${MAX_MEMORY_BUFFER / 1024 / 1024}MB)`,
                     ),
                   );
                   return;
@@ -720,15 +705,13 @@ async function processAudioStream(
             }
           }
 
-          readableStream.on("data", (chunk: Buffer) => {
+          readableStream.on('data', (chunk: Buffer) => {
             totalSize += chunk.length;
             if (totalSize > MAX_MEMORY_BUFFER) {
               cleanup();
               reject(
                 new Error(
-                  `Audio file too large (>${
-                    MAX_MEMORY_BUFFER / 1024 / 1024
-                  }MB)`,
+                  `Audio file too large (>${MAX_MEMORY_BUFFER / 1024 / 1024}MB)`,
                 ),
               );
               return;
@@ -736,12 +719,12 @@ async function processAudioStream(
             chunks.push(chunk);
           });
 
-          readableStream.on("end", () => {
+          readableStream.on('end', () => {
             cleanup();
             resolve();
           });
 
-          readableStream.on("error", (error: Error) => {
+          readableStream.on('error', (error: Error) => {
             cleanup();
             reject(new Error(`Stream error: ${error.message}`));
           });
@@ -759,8 +742,8 @@ async function processAudioStream(
           );
         }
         chunks.push(buffer);
-      } else if (typeof readableStream === "string") {
-        const buffer = Buffer.from(readableStream, "base64");
+      } else if (typeof readableStream === 'string') {
+        const buffer = Buffer.from(readableStream, 'base64');
         if (buffer.length > MAX_MEMORY_BUFFER) {
           throw new Error(
             `Audio file too large (>${MAX_MEMORY_BUFFER / 1024 / 1024}MB)`,
@@ -768,14 +751,14 @@ async function processAudioStream(
         }
         chunks.push(buffer);
       } else {
-        throw new Error("Unsupported stream type");
+        throw new Error('Unsupported stream type');
       }
     } else {
-      throw new Error("Invalid stream object");
+      throw new Error('Invalid stream object');
     }
 
     if (chunks.length === 0) {
-      throw new Error("No audio data received from voice synthesis");
+      throw new Error('No audio data received from voice synthesis');
     }
 
     const audioBuffer = Buffer.concat(chunks);
@@ -785,7 +768,7 @@ async function processAudioStream(
     const getCommand = new GetObjectCommand({
       Bucket: bucketName,
       Key: s3Key,
-      ResponseContentType: "audio/mpeg",
+      ResponseContentType: 'audio/mpeg',
     });
 
     return await getSignedUrl(s3Client, getCommand, {
@@ -812,16 +795,14 @@ async function uploadWithRetry(
         Bucket: bucketName,
         Key: s3Key,
         Body: audioBuffer,
-        ContentType: "audio/mpeg",
+        ContentType: 'audio/mpeg',
         ContentLength: audioBuffer.length,
       });
 
       await s3Client.send(putCommand);
       return; // Success
     } catch (error) {
-      lastError = error instanceof Error
-        ? error
-        : new Error("Unknown upload error");
+      lastError = error instanceof Error ? error : new Error('Unknown upload error');
 
       if (attempt < maxRetries) {
         // Exponential backoff: 1s, 2s, 4s
@@ -843,33 +824,33 @@ function cleanupResources(
   s3Client: S3Client | null,
 ): void {
   try {
-    if (readableStream && typeof readableStream === "object") {
+    if (readableStream && typeof readableStream === 'object') {
       if (
-        "destroy" in readableStream &&
-        typeof readableStream.destroy === "function"
+        'destroy' in readableStream &&
+        typeof readableStream.destroy === 'function'
       ) {
         readableStream.destroy();
       } else if (
-        "close" in readableStream &&
-        typeof readableStream.close === "function"
+        'close' in readableStream &&
+        typeof readableStream.close === 'function'
       ) {
         readableStream.close();
       }
     }
   } catch (error) {
-    console.warn("Warning: Failed to cleanup stream resources:", error);
+    console.warn('Warning: Failed to cleanup stream resources:', error);
   }
 
   try {
     if (
       s3Client &&
-      "destroy" in s3Client &&
-      typeof s3Client.destroy === "function"
+      'destroy' in s3Client &&
+      typeof s3Client.destroy === 'function'
     ) {
       s3Client.destroy();
     }
   } catch (error) {
-    console.warn("Warning: Failed to cleanup S3 client resources:", error);
+    console.warn('Warning: Failed to cleanup S3 client resources:', error);
   }
 }
 

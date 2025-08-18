@@ -7,20 +7,20 @@
  * and run json-schema-to-typescript to regenerate this file.
  */
 
-export type String = "HTTP";
+export type String = 'HTTP';
 export type String_1 = string;
 export type String_2 = string;
-export type String_3 = "SSE";
+export type String_3 = 'SSE';
 export type String_4 = string;
 export type String_5 = string;
 export type String_6 = string;
-export type String_7 = "Websocket";
+export type String_7 = 'Websocket';
 export type String_8 = string;
 export type String_9 = string;
-export type String_10 = "Deco";
+export type String_10 = 'Deco';
 export type String_11 = string;
 export type String_12 = string;
-export type String_13 = "INNATE";
+export type String_13 = 'INNATE';
 export type String_14 = string;
 export type String_15 = string;
 export type String_16 = string;
@@ -90,20 +90,20 @@ export interface INTEGRATIONS_CALL_TOOLOutput {}
  * and run json-schema-to-typescript to regenerate this file.
  */
 
-export type String_18 = "HTTP";
+export type String_18 = 'HTTP';
 export type String_19 = string;
 export type String_20 = string;
-export type String_21 = "SSE";
+export type String_21 = 'SSE';
 export type String_22 = string;
 export type String_23 = string;
 export type String_24 = string;
-export type String_25 = "Websocket";
+export type String_25 = 'Websocket';
 export type String_26 = string;
 export type String_27 = string;
-export type String_28 = "Deco";
+export type String_28 = 'Deco';
 export type String_29 = string;
 export type String_30 = string;
-export type String_31 = "INNATE";
+export type String_31 = 'INNATE';
 export type String_32 = string;
 export type String_33 = string;
 
@@ -412,7 +412,7 @@ export interface TEAM_MEMBERS_UPDATEOutput {}
 export type Number_8 = number;
 export type String_42 = string;
 export type Number_9 = number;
-export type String_43 = "grant" | "revoke";
+export type String_43 = 'grant' | 'revoke';
 
 export interface TEAM_MEMBERS_UPDATE_ROLEInput {
   teamId: Number_8;
@@ -693,7 +693,7 @@ export type String_78 = string;
 /**
  * Use a Google Fonts font
  */
-export type String_79 = "Google Fonts";
+export type String_79 = 'Google Fonts';
 /**
  * Name of the Google Font (e.g., 'Inter', 'Roboto', 'Open Sans')
  */
@@ -701,7 +701,7 @@ export type String_80 = string;
 /**
  * Use a custom uploaded font
  */
-export type String_81 = "Custom";
+export type String_81 = 'Custom';
 /**
  * Display name for the custom font
  */
@@ -736,32 +736,32 @@ export interface Object_19 {
  * CSS custom properties for theme colors. Use OKLCH format (preferred) or hex colors.
  */
 export interface Object_20 {
-  "--background"?: String_52;
-  "--foreground"?: String_53;
-  "--card"?: String_54;
-  "--card-foreground"?: String_55;
-  "--popover"?: String_56;
-  "--popover-foreground"?: String_57;
-  "--primary"?: String_58;
-  "--primary-foreground"?: String_59;
-  "--primary-light"?: String_60;
-  "--primary-dark"?: String_61;
-  "--secondary"?: String_62;
-  "--secondary-foreground"?: String_63;
-  "--muted"?: String_64;
-  "--muted-foreground"?: String_65;
-  "--accent"?: String_66;
-  "--accent-foreground"?: String_67;
-  "--destructive"?: String_68;
-  "--destructive-foreground"?: String_69;
-  "--success"?: String_70;
-  "--success-foreground"?: String_71;
-  "--warning"?: String_72;
-  "--warning-foreground"?: String_73;
-  "--border"?: String_74;
-  "--input"?: String_75;
-  "--sidebar"?: String_76;
-  "--splash"?: String_77;
+  '--background'?: String_52;
+  '--foreground'?: String_53;
+  '--card'?: String_54;
+  '--card-foreground'?: String_55;
+  '--popover'?: String_56;
+  '--popover-foreground'?: String_57;
+  '--primary'?: String_58;
+  '--primary-foreground'?: String_59;
+  '--primary-light'?: String_60;
+  '--primary-dark'?: String_61;
+  '--secondary'?: String_62;
+  '--secondary-foreground'?: String_63;
+  '--muted'?: String_64;
+  '--muted-foreground'?: String_65;
+  '--accent'?: String_66;
+  '--accent-foreground'?: String_67;
+  '--destructive'?: String_68;
+  '--destructive-foreground'?: String_69;
+  '--success'?: String_70;
+  '--success-foreground'?: String_71;
+  '--warning'?: String_72;
+  '--warning-foreground'?: String_73;
+  '--border'?: String_74;
+  '--input'?: String_75;
+  '--sidebar'?: String_76;
+  '--splash'?: String_77;
 }
 export interface Object_21 {
   type: String_79;
@@ -825,18 +825,18 @@ export type NumberNull_1 = Number_14 | Null_4;
 export type Number_14 = number;
 export type Null_4 = null;
 export type String_90 =
-  | "openai:gpt-4.1-mini"
-  | "google:gemini-2.5-pro"
-  | "google:gemini-2.5-flash-lite-preview-06-17"
-  | "anthropic:claude-sonnet-4"
-  | "anthropic:claude-3.7-sonnet:thinking"
-  | "openai:gpt-4.1"
-  | "openai:gpt-4.1-nano"
-  | "openai:o3-mini-high"
-  | "x-ai:grok-4"
-  | "google:gemini-2.5-pro-preview"
-  | "anthropic:claude-3-7-sonnet-20250219"
-  | "x-ai:grok-3-beta";
+  | 'openai:gpt-4.1-mini'
+  | 'google:gemini-2.5-pro'
+  | 'google:gemini-2.5-flash-lite-preview-06-17'
+  | 'anthropic:claude-sonnet-4'
+  | 'anthropic:claude-3.7-sonnet:thinking'
+  | 'openai:gpt-4.1'
+  | 'openai:gpt-4.1-nano'
+  | 'openai:o3-mini-high'
+  | 'x-ai:grok-4'
+  | 'google:gemini-2.5-pro-preview'
+  | 'anthropic:claude-3-7-sonnet-20250219'
+  | 'x-ai:grok-3-beta';
 /**
  * UUID for BYOK models
  */
@@ -876,7 +876,7 @@ export type Array_3 = Object_26[];
 /**
  * Visibility of the agent
  */
-export type String_96 = "PUBLIC" | "WORKSPACE" | "PRIVATE";
+export type String_96 = 'PUBLIC' | 'WORKSPACE' | 'PRIVATE';
 export type String_97 = string;
 export type Null_5 = null;
 export type Number_16 = number;
@@ -1063,18 +1063,18 @@ export type NumberNull_2 = Number_18 | Null_7;
 export type Number_18 = number;
 export type Null_7 = null;
 export type String_107 =
-  | "openai:gpt-4.1-mini"
-  | "google:gemini-2.5-pro"
-  | "google:gemini-2.5-flash-lite-preview-06-17"
-  | "anthropic:claude-sonnet-4"
-  | "anthropic:claude-3.7-sonnet:thinking"
-  | "openai:gpt-4.1"
-  | "openai:gpt-4.1-nano"
-  | "openai:o3-mini-high"
-  | "x-ai:grok-4"
-  | "google:gemini-2.5-pro-preview"
-  | "anthropic:claude-3-7-sonnet-20250219"
-  | "x-ai:grok-3-beta";
+  | 'openai:gpt-4.1-mini'
+  | 'google:gemini-2.5-pro'
+  | 'google:gemini-2.5-flash-lite-preview-06-17'
+  | 'anthropic:claude-sonnet-4'
+  | 'anthropic:claude-3.7-sonnet:thinking'
+  | 'openai:gpt-4.1'
+  | 'openai:gpt-4.1-nano'
+  | 'openai:o3-mini-high'
+  | 'x-ai:grok-4'
+  | 'google:gemini-2.5-pro-preview'
+  | 'anthropic:claude-3-7-sonnet-20250219'
+  | 'x-ai:grok-3-beta';
 /**
  * UUID for BYOK models
  */
@@ -1114,7 +1114,7 @@ export type Array_5 = Object_31[];
 /**
  * Visibility of the agent
  */
-export type String_113 = "PUBLIC" | "WORKSPACE" | "PRIVATE";
+export type String_113 = 'PUBLIC' | 'WORKSPACE' | 'PRIVATE';
 export type String_114 = string;
 export type Null_8 = null;
 export type Number_20 = number;
@@ -1207,7 +1207,7 @@ export interface AGENTS_UPDATEOutput {}
  */
 
 export type String_115 = string;
-export type String_116 = "user" | "assistant" | "system";
+export type String_116 = 'user' | 'assistant' | 'system';
 export type String_117 = string;
 export type String_118 = string;
 /**
@@ -1326,7 +1326,7 @@ export interface Object_35 {
  */
 
 export type String_127 = string;
-export type String_128 = "user" | "assistant" | "system";
+export type String_128 = 'user' | 'assistant' | 'system';
 export type String_129 = string;
 export type String_130 = string;
 /**
@@ -1494,7 +1494,7 @@ export interface Object_41 {
  * The name of the API key
  */
 export type String_140 = string;
-export type String_141 = "allow" | "deny";
+export type String_141 = 'allow' | 'deny';
 export type String_142 = string;
 /**
  * Policies for the API key
@@ -1662,7 +1662,7 @@ export type String_148 = string;
  * Whether the API key is enabled
  */
 export type Boolean_8 = boolean;
-export type String_149 = "allow" | "deny";
+export type String_149 = 'allow' | 'deny';
 export type String_150 = string;
 /**
  * Policies for the API key
@@ -1987,7 +1987,7 @@ export type Number_35 = number;
 export type Number_36 = number;
 export type Number_37 = number;
 export type Boolean_10 = boolean;
-export type String_166 = "WNAM" | "ENAM" | "WEUR" | "EEUR" | "APAC" | "OC";
+export type String_166 = 'WNAM' | 'ENAM' | 'WEUR' | 'EEUR' | 'APAC' | 'OC';
 export type Number_38 = number;
 export type Number_39 = number;
 export type Array_17 = unknown[];
@@ -2334,7 +2334,7 @@ export interface FS_WRITEOutput {
  * and run json-schema-to-typescript to regenerate this file.
  */
 
-export type String_193 = "day" | "week" | "month";
+export type String_193 = 'day' | 'week' | 'month';
 
 export interface GET_AGENTS_USAGEInput {
   range: String_193;
@@ -2356,7 +2356,7 @@ export interface GET_AGENTS_USAGEOutput {}
  * and run json-schema-to-typescript to regenerate this file.
  */
 
-export type String_194 = "day" | "week" | "month";
+export type String_194 = 'day' | 'week' | 'month';
 
 export interface GET_THREADS_USAGEInput {
   range: String_194;
@@ -2656,20 +2656,20 @@ export interface HOSTING_APPS_LISTOutput {}
  * and run json-schema-to-typescript to regenerate this file.
  */
 
-export type String_218 = "HTTP";
+export type String_218 = 'HTTP';
 export type String_219 = string;
 export type String_220 = string;
-export type String_221 = "SSE";
+export type String_221 = 'SSE';
 export type String_222 = string;
 export type String_223 = string;
 export type String_224 = string;
-export type String_225 = "Websocket";
+export type String_225 = 'Websocket';
 export type String_226 = string;
 export type String_227 = string;
-export type String_228 = "Deco";
+export type String_228 = 'Deco';
 export type String_229 = string;
 export type String_230 = string;
-export type String_231 = "INNATE";
+export type String_231 = 'INNATE';
 export type String_232 = string;
 export type String_233 = string;
 export type String_234 = string;
@@ -2747,20 +2747,20 @@ export type String_240 = string;
 export type Null_15 = null;
 export type String_241 = string;
 export type Null_16 = null;
-export type String_242 = "HTTP";
+export type String_242 = 'HTTP';
 export type String_243 = string;
 export type String_244 = string;
-export type String_245 = "SSE";
+export type String_245 = 'SSE';
 export type String_246 = string;
 export type String_247 = string;
 export type String_248 = string;
-export type String_249 = "Websocket";
+export type String_249 = 'Websocket';
 export type String_250 = string;
 export type String_251 = string;
-export type String_252 = "Deco";
+export type String_252 = 'Deco';
 export type String_253 = string;
 export type String_254 = string;
-export type String_255 = "INNATE";
+export type String_255 = 'INNATE';
 export type String_256 = string;
 export type String_257 = string;
 
@@ -2877,7 +2877,7 @@ export interface INTEGRATIONS_GETOutput {}
  * and run json-schema-to-typescript to regenerate this file.
  */
 
-export type String_260 = "Channel";
+export type String_260 = 'Channel';
 
 export interface INTEGRATIONS_LISTInput {
   binder?: String_260;
@@ -2910,20 +2910,20 @@ export type String_267 = string;
 export type Null_18 = null;
 export type String_268 = string;
 export type Null_19 = null;
-export type String_269 = "HTTP";
+export type String_269 = 'HTTP';
 export type String_270 = string;
 export type String_271 = string;
-export type String_272 = "SSE";
+export type String_272 = 'SSE';
 export type String_273 = string;
 export type String_274 = string;
 export type String_275 = string;
-export type String_276 = "Websocket";
+export type String_276 = 'Websocket';
 export type String_277 = string;
 export type String_278 = string;
-export type String_279 = "Deco";
+export type String_279 = 'Deco';
 export type String_280 = string;
 export type String_281 = string;
-export type String_282 = "INNATE";
+export type String_282 = 'INNATE';
 export type String_283 = string;
 export type String_284 = string;
 
@@ -3764,20 +3764,20 @@ export type String_339 = string;
 export type String_340 = string;
 export type String_341 = string;
 export type String_342 = string;
-export type String_343 = "HTTP";
+export type String_343 = 'HTTP';
 export type String_344 = string;
 export type String_345 = string;
-export type String_346 = "SSE";
+export type String_346 = 'SSE';
 export type String_347 = string;
 export type String_348 = string;
 export type String_349 = string;
-export type String_350 = "Websocket";
+export type String_350 = 'Websocket';
 export type String_351 = string;
 export type String_352 = string;
-export type String_353 = "Deco";
+export type String_353 = 'Deco';
 export type String_354 = string;
 export type String_355 = string;
-export type String_356 = "INNATE";
+export type String_356 = 'INNATE';
 export type String_357 = string;
 export type String_358 = string;
 export type String_359 = string;
@@ -3866,20 +3866,20 @@ export type String_367 = string;
 export type String_368 = string;
 export type String_369 = string;
 export type String_370 = string;
-export type String_371 = "HTTP";
+export type String_371 = 'HTTP';
 export type String_372 = string;
 export type String_373 = string;
-export type String_374 = "SSE";
+export type String_374 = 'SSE';
 export type String_375 = string;
 export type String_376 = string;
 export type String_377 = string;
-export type String_378 = "Websocket";
+export type String_378 = 'Websocket';
 export type String_379 = string;
 export type String_380 = string;
-export type String_381 = "Deco";
+export type String_381 = 'Deco';
 export type String_382 = string;
 export type String_383 = string;
-export type String_384 = "INNATE";
+export type String_384 = 'INNATE';
 export type String_385 = string;
 export type String_386 = string;
 export type String_387 = string;
@@ -4005,20 +4005,20 @@ export type String_399 = string;
  * URL to an icon for the app
  */
 export type String_400 = string;
-export type String_401 = "HTTP";
+export type String_401 = 'HTTP';
 export type String_402 = string;
 export type String_403 = string;
-export type String_404 = "SSE";
+export type String_404 = 'SSE';
 export type String_405 = string;
 export type String_406 = string;
 export type String_407 = string;
-export type String_408 = "Websocket";
+export type String_408 = 'Websocket';
 export type String_409 = string;
 export type String_410 = string;
-export type String_411 = "Deco";
+export type String_411 = 'Deco';
 export type String_412 = string;
 export type String_413 = string;
-export type String_414 = "INNATE";
+export type String_414 = 'INNATE';
 export type String_415 = string;
 export type String_416 = string;
 /**
@@ -4082,20 +4082,20 @@ export type String_420 = string;
 export type String_421 = string;
 export type String_422 = string;
 export type String_423 = string;
-export type String_424 = "HTTP";
+export type String_424 = 'HTTP';
 export type String_425 = string;
 export type String_426 = string;
-export type String_427 = "SSE";
+export type String_427 = 'SSE';
 export type String_428 = string;
 export type String_429 = string;
 export type String_430 = string;
-export type String_431 = "Websocket";
+export type String_431 = 'Websocket';
 export type String_432 = string;
 export type String_433 = string;
-export type String_434 = "Deco";
+export type String_434 = 'Deco';
 export type String_435 = string;
 export type String_436 = string;
-export type String_437 = "INNATE";
+export type String_437 = 'INNATE';
 export type String_438 = string;
 export type String_439 = string;
 export type String_440 = string;
@@ -4262,10 +4262,10 @@ export type Number_57 = number;
 export type String_449 = string;
 export type String_450 = string;
 export type String_451 =
-  | "createdAt_desc"
-  | "createdAt_asc"
-  | "updatedAt_desc"
-  | "updatedAt_asc";
+  | 'createdAt_desc'
+  | 'createdAt_asc'
+  | 'updatedAt_desc'
+  | 'updatedAt_asc';
 export type String_452 = string;
 
 export interface THREADS_LISTInput {
@@ -4413,7 +4413,7 @@ export interface TRIGGERS_CREATE_WEBHOOKInput {}
  * The trigger ID
  */
 export type String_457 = string;
-export type String_458 = "cron" | "webhook";
+export type String_458 = 'cron' | 'webhook';
 /**
  * The title of the trigger
  */
@@ -4423,7 +4423,7 @@ export type String_459 = string;
  */
 export type String_460 = string;
 export type String_461 = string;
-export type String_462 = "cron";
+export type String_462 = 'cron';
 /**
  * The agent ID to use for the trigger
  */
@@ -4436,7 +4436,7 @@ export type String_464 = string;
  * if not provided, the same resource will be used, you can pass any string you want to use
  */
 export type String_465 = string;
-export type String_466 = "user" | "assistant" | "system";
+export type String_466 = 'user' | 'assistant' | 'system';
 export type String_467 = string;
 /**
  * The messages to send to the LLM
@@ -4462,7 +4462,7 @@ export type String_471 = string;
  * The description of the trigger
  */
 export type String_472 = string;
-export type String_473 = "webhook";
+export type String_473 = 'webhook';
 /**
  * The URL of the webhook
  */
@@ -4723,7 +4723,7 @@ export interface TRIGGERS_LISTInput {
  * The trigger ID
  */
 export type String_491 = string;
-export type String_492 = "cron" | "webhook";
+export type String_492 = 'cron' | 'webhook';
 /**
  * The title of the trigger
  */
@@ -4733,7 +4733,7 @@ export type String_493 = string;
  */
 export type String_494 = string;
 export type String_495 = string;
-export type String_496 = "cron";
+export type String_496 = 'cron';
 /**
  * The agent ID to use for the trigger
  */
@@ -4746,7 +4746,7 @@ export type String_498 = string;
  * if not provided, the same resource will be used, you can pass any string you want to use
  */
 export type String_499 = string;
-export type String_500 = "user" | "assistant" | "system";
+export type String_500 = 'user' | 'assistant' | 'system';
 export type String_501 = string;
 /**
  * The messages to send to the LLM
@@ -4772,7 +4772,7 @@ export type String_505 = string;
  * The description of the trigger
  */
 export type String_506 = string;
-export type String_507 = "webhook";
+export type String_507 = 'webhook';
 /**
  * The URL of the webhook
  */
@@ -4928,7 +4928,7 @@ export type String_519 = string;
  */
 export type String_520 = string;
 export type String_521 = string;
-export type String_522 = "cron";
+export type String_522 = 'cron';
 /**
  * The agent ID to use for the trigger
  */
@@ -4941,7 +4941,7 @@ export type String_524 = string;
  * if not provided, the same resource will be used, you can pass any string you want to use
  */
 export type String_525 = string;
-export type String_526 = "user" | "assistant" | "system";
+export type String_526 = 'user' | 'assistant' | 'system';
 export type String_527 = string;
 /**
  * The messages to send to the LLM
@@ -4967,7 +4967,7 @@ export type String_531 = string;
  * The description of the trigger
  */
 export type String_532 = string;
-export type String_533 = "webhook";
+export type String_533 = 'webhook';
 /**
  * The URL of the webhook
  */
@@ -5176,7 +5176,7 @@ export interface WHATSAPP_UPSERT_USERInput {
 export interface WHATSAPP_UPSERT_USEROutput {}
 
 // this should be added to your package.json
-import { z } from "zod";
+import { z } from 'zod';
 
 export type Mcp<T extends Record<string, (input: any) => Promise<any>>> = {
   [K in keyof T]:

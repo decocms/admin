@@ -23,7 +23,7 @@ export class WebCache<TCachedValue> {
   private createCacheKey(key: string): URL {
     return new URL(
       `/cache?key=${encodeURIComponent(key)}`,
-      "http://localhost:8000",
+      'http://localhost:8000',
     );
   }
 
@@ -37,8 +37,8 @@ export class WebCache<TCachedValue> {
     };
     return new Response(JsonSerializer.serialize(serializedData), {
       headers: {
-        "Content-Type": "application/json",
-        "Cache-Control": `public, max-age=${options?.ttl ?? this.ttl}`,
+        'Content-Type': 'application/json',
+        'Cache-Control': `public, max-age=${options?.ttl ?? this.ttl}`,
       },
     });
   }
@@ -63,7 +63,7 @@ export class WebCache<TCachedValue> {
 
       return parsed.value;
     } catch (error) {
-      console.error("Error deserializing cached value:", error);
+      console.error('Error deserializing cached value:', error);
       return null;
     }
   }
@@ -102,7 +102,7 @@ export class WebCache<TCachedValue> {
         isExpired,
       };
     } catch (error) {
-      console.error("Error deserializing cached value:", error);
+      console.error('Error deserializing cached value:', error);
       return null;
     }
   }
@@ -181,7 +181,7 @@ export class JsonSerializer {
         // Convert Uint8Array to base64 string
         const base64 = btoa(String.fromCharCode.apply(null, Array.from(value)));
         return {
-          __type: "Uint8Array",
+          __type: 'Uint8Array',
           data: base64,
         };
       }
@@ -193,9 +193,9 @@ export class JsonSerializer {
     return JSON.parse(json, (_, value) => {
       if (
         value &&
-        typeof value === "object" &&
-        value.__type === "Uint8Array" &&
-        typeof value.data === "string"
+        typeof value === 'object' &&
+        value.__type === 'Uint8Array' &&
+        typeof value.data === 'string'
       ) {
         // Convert base64 string back to Uint8Array
         const binaryString = atob(value.data);
@@ -212,9 +212,9 @@ export class JsonSerializer {
   static isSerializable(value: unknown): boolean {
     if (value === null || value === undefined) return true;
     if (
-      typeof value === "string" ||
-      typeof value === "number" ||
-      typeof value === "boolean"
+      typeof value === 'string' ||
+      typeof value === 'number' ||
+      typeof value === 'boolean'
     ) {
       return true;
     }
@@ -224,10 +224,8 @@ export class JsonSerializer {
       return value.every((item) => JsonSerializer.isSerializable(item));
     }
 
-    if (typeof value === "object") {
-      return Object.values(value).every((item) =>
-        JsonSerializer.isSerializable(item)
-      );
+    if (typeof value === 'object') {
+      return Object.values(value).every((item) => JsonSerializer.isSerializable(item));
     }
 
     return false;

@@ -1,4 +1,4 @@
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   type Channel,
   createChannel,
@@ -8,11 +8,11 @@ import {
   leaveChannel,
   listAvailableChannelsForConnection,
   listChannels,
-} from "../crud/channels.ts";
-import { InternalServerError } from "../errors.ts";
-import { KEYS } from "./api.ts";
-import { useSDK } from "./store.tsx";
-import type { Integration } from "../index.ts";
+} from '../crud/channels.ts';
+import { InternalServerError } from '../errors.ts';
+import { KEYS } from './api.ts';
+import { useSDK } from './store.tsx';
+import type { Integration } from '../index.ts';
 
 export const useCreateChannel = () => {
   const client = useQueryClient();
@@ -136,8 +136,7 @@ export const useChannel = (id: string) => {
   const data = useQuery({
     queryKey: KEYS.CHANNELS(workspace, id),
     queryFn: ({ signal }) => getChannel(workspace, id, signal),
-    retry: (failureCount, error) =>
-      error instanceof InternalServerError && failureCount < 2,
+    retry: (failureCount, error) => error instanceof InternalServerError && failureCount < 2,
   });
 
   return data;

@@ -1,30 +1,30 @@
 export type SSEConnection = {
-  type: "SSE";
+  type: 'SSE';
   url: string;
   token?: string;
   headers?: Record<string, string>;
 };
 
 export type WebsocketConnection = {
-  type: "Websocket";
+  type: 'Websocket';
   url: string;
   token?: string;
 };
 
 export type DecoConnection = {
-  type: "Deco";
+  type: 'Deco';
   tenant: string;
   token?: string;
 };
 
 export type InnateConnection = {
-  type: "INNATE";
+  type: 'INNATE';
   name: string;
   workspace?: string;
 };
 
 export type HTTPConnection = {
-  type: "HTTP";
+  type: 'HTTP';
   url: string;
   token?: string;
 };

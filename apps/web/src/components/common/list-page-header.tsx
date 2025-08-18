@@ -1,13 +1,9 @@
-import { Button } from "@deco/ui/components/button.tsx";
-import { Input } from "@deco/ui/components/input.tsx";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger,
-} from "@deco/ui/components/tooltip.tsx";
-import { cn } from "@deco/ui/lib/utils.ts";
-import type { ComponentProps, InputHTMLAttributes, ReactNode } from "react";
-import { ViewModeSwitcher } from "./view-mode-switcher.tsx";
+import { Button } from '@deco/ui/components/button.tsx';
+import { Input } from '@deco/ui/components/input.tsx';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@deco/ui/components/tooltip.tsx';
+import { cn } from '@deco/ui/lib/utils.ts';
+import type { ComponentProps, InputHTMLAttributes, ReactNode } from 'react';
+import { ViewModeSwitcher } from './view-mode-switcher.tsx';
 
 interface Props<TChiplet extends Chiplet> {
   filter?: {
@@ -39,22 +35,20 @@ export function Chiplet(props: ChipletProps) {
     <Tooltip>
       <TooltipTrigger>
         <Button
-          variant="outline"
+          variant='outline'
           disabled={item.disabled}
           className={cn(
-            "shadow-none items-center gap-2",
-            item.active && "bg-accent",
+            'shadow-none items-center gap-2',
+            item.active && 'bg-accent',
           )}
           onClick={() => onClick(item)}
-          type="button"
+          type='button'
         >
           {item.label}
-          <span className="text-xs text-muted-foreground">{item.count}</span>
+          <span className='text-xs text-muted-foreground'>{item.count}</span>
         </Button>
       </TooltipTrigger>
-      {item.tooltip && (
-        <TooltipContent side="bottom">{item.tooltip}</TooltipContent>
-      )}
+      {item.tooltip && <TooltipContent side='bottom'>{item.tooltip}</TooltipContent>}
     </Tooltip>
   );
 }
@@ -65,8 +59,8 @@ export function ListPageHeader<TChiplet extends Chiplet>({
   view,
 }: Props<TChiplet>) {
   return (
-    <div className="w-full grid grid-cols-1 md:grid-cols-2 gap-2">
-      <div className="flex items-center gap-2">
+    <div className='w-full grid grid-cols-1 md:grid-cols-2 gap-2'>
+      <div className='flex items-center gap-2'>
         {filter?.items.map((chiplet) => (
           <Chiplet
             key={chiplet.id}
@@ -75,9 +69,9 @@ export function ListPageHeader<TChiplet extends Chiplet>({
           />
         ))}
       </div>
-      <div className="flex items-center gap-2 justify-self-auto md:justify-self-end p-1">
+      <div className='flex items-center gap-2 justify-self-auto md:justify-self-end p-1'>
         {view && <ViewModeSwitcher {...view} />}
-        {input && <Input className="w-80 text-sm" {...input} />}
+        {input && <Input className='w-80 text-sm' {...input} />}
       </div>
     </div>
   );

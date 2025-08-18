@@ -1,12 +1,9 @@
-import { z } from "zod";
-import { type Model, WELL_KNOWN_MODELS } from "../../constants.ts";
-import {
-  assertHasWorkspace,
-  assertWorkspaceResourceAccess,
-} from "../assertions.ts";
-import { createToolGroup } from "../context.ts";
-import type { AppContext } from "../index.ts";
-import { SupabaseLLMVault } from "./llm-vault.ts";
+import { z } from 'zod';
+import { type Model, WELL_KNOWN_MODELS } from '../../constants.ts';
+import { assertHasWorkspace, assertWorkspaceResourceAccess } from '../assertions.ts';
+import { createToolGroup } from '../context.ts';
+import type { AppContext } from '../index.ts';
+import { SupabaseLLMVault } from './llm-vault.ts';
 
 interface ModelRow {
   id: string;
@@ -27,7 +24,7 @@ const formatModelRow = (model: ModelRow, showApiKey = false): Model => {
     id: model.id,
     name: model.name,
     model: model.model,
-    logo: defaultModel?.logo ?? "",
+    logo: defaultModel?.logo ?? '',
     capabilities: defaultModel?.capabilities ?? [],
     legacyId: defaultModel?.legacyId,
     description: model.description ?? undefined,
@@ -49,16 +46,16 @@ export const createModelSchema = z.object({
 
 export type CreateModelInput = z.infer<typeof createModelSchema>;
 
-const createTool = createToolGroup("Model", {
-  name: "Model Management",
-  description: "Configure custom language models.",
+const createTool = createToolGroup('Model', {
+  name: 'Model Management',
+  description: 'Configure custom language models.',
   icon:
-    "https://assets.decocache.com/mcp/8d655881-941f-4b5b-8c30-5cf80bd00c9e/Model-Management.png",
+    'https://assets.decocache.com/mcp/8d655881-941f-4b5b-8c30-5cf80bd00c9e/Model-Management.png',
 });
 
 export const createModel = createTool({
-  name: "MODELS_CREATE",
-  description: "Create a new model",
+  name: 'MODELS_CREATE',
+  description: 'Create a new model',
   inputSchema: createModelSchema,
   handler: async (props, c) => {
     assertHasWorkspace(c);
@@ -76,7 +73,7 @@ export const createModel = createTool({
     } = props;
 
     const { data, error } = await c.db
-      .from("models")
+      .from('models')
       .insert({
         workspace,
         name: modelName,
@@ -119,17 +116,17 @@ export const updateModelSchema = z.object({
 export type UpdateModelInput = z.infer<typeof updateModelSchema>;
 
 const keyMap: Record<string, keyof ModelRow> = {
-  name: "name",
-  model: "model",
-  apiKey: "api_key_hash",
-  isEnabled: "is_enabled",
-  byDeco: "by_deco",
-  description: "description",
+  name: 'name',
+  model: 'model',
+  apiKey: 'api_key_hash',
+  isEnabled: 'is_enabled',
+  byDeco: 'by_deco',
+  description: 'description',
 };
 
 export const updateModel = createTool({
-  name: "MODELS_UPDATE",
-  description: "Update an existing model",
+  name: 'MODELS_UPDATE',
+  description: 'Update an existing model',
   inputSchema: updateModelSchema,
   handler: async (props, c) => {
     assertHasWorkspace(c);
@@ -141,8 +138,8 @@ export const updateModel = createTool({
     const updateData: Partial<ModelRow> = {};
 
     for await (const [key, value] of Object.entries(modelData)) {
-      if (key === "apiKey") {
-        if (typeof value === "string" || value === null) {
+      if (key === 'apiKey') {
+        if (typeof value === 'string' || value === null) {
           const llmVault = new SupabaseLLMVault(
             c.db as any,
             c.envVars.LLMS_ENCRYPTION_KEY,
@@ -155,7 +152,7 @@ export const updateModel = createTool({
         continue;
       }
 
-      if (typeof value === "string" || typeof value === "boolean") {
+      if (typeof value === 'string' || typeof value === 'boolean') {
         // @ts-expect-error - we know that the key is a valid property
         updateData[keyMap[key]] = value;
       }
@@ -172,19 +169,19 @@ export const updateModel = createTool({
       }
 
       await c.db
-        .from("models")
+        .from('models')
         .delete()
-        .eq("id", id)
-        .eq("workspace", workspace);
+        .eq('id', id)
+        .eq('workspace', workspace);
 
       return wellKnownModel;
     }
 
     const { data, error } = await c.db
-      .from("models")
+      .from('models')
       .update(updateData)
-      .eq("id", id)
-      .eq("workspace", workspace)
+      .eq('id', id)
+      .eq('workspace', workspace)
       .select(`
         id,
         name,
@@ -211,8 +208,8 @@ export const deleteModelSchema = z.object({
 export type DeleteModelInput = z.infer<typeof deleteModelSchema>;
 
 export const deleteModel = createTool({
-  name: "MODELS_DELETE",
-  description: "Delete a model by id",
+  name: 'MODELS_DELETE',
+  description: 'Delete a model by id',
   inputSchema: deleteModelSchema,
   handler: async (props, c) => {
     assertHasWorkspace(c);
@@ -222,10 +219,10 @@ export const deleteModel = createTool({
     await assertWorkspaceResourceAccess(c);
 
     const { error } = await c.db
-      .from("models")
+      .from('models')
       .delete()
-      .eq("id", id)
-      .eq("workspace", workspace);
+      .eq('id', id)
+      .eq('workspace', workspace);
 
     if (error) throw error;
 
@@ -246,13 +243,13 @@ export const listModelsForWorkspace = async ({
   options,
 }: {
   workspace: string;
-  db: AppContext["db"];
+  db: AppContext['db'];
   options?: {
     excludeDisabled?: boolean;
   };
 }) => {
   const { data, error } = await db
-    .from("models")
+    .from('models')
     .select(`
         id,
         model,
@@ -263,7 +260,7 @@ export const listModelsForWorkspace = async ({
         name,
         description
       `)
-    .eq("workspace", workspace);
+    .eq('workspace', workspace);
 
   if (error) throw error;
 
@@ -292,8 +289,8 @@ export const listModelsForWorkspace = async ({
 };
 
 export const listModels = createTool({
-  name: "MODELS_LIST",
-  description: "List models for the current user",
+  name: 'MODELS_LIST',
+  description: 'List models for the current user',
   inputSchema: listModelsSchema,
   outputSchema: z.object({
     items: z.array(z.any()),
@@ -331,8 +328,8 @@ export const getModelSchema = z.object({
 export type GetModelInput = z.infer<typeof getModelSchema>;
 
 export const getModel = createTool({
-  name: "MODELS_GET",
-  description: "Get a model by id",
+  name: 'MODELS_GET',
+  description: 'Get a model by id',
   inputSchema: getModelSchema,
   handler: async (props, c) => {
     assertHasWorkspace(c);
@@ -348,7 +345,7 @@ export const getModel = createTool({
     }
 
     const { data, error } = await c.db
-      .from("models")
+      .from('models')
       .select(`
         id,
         name,
@@ -360,8 +357,8 @@ export const getModel = createTool({
         by_deco,
         description
       `)
-      .eq("id", id)
-      .eq("workspace", workspace)
+      .eq('id', id)
+      .eq('workspace', workspace)
       .single();
 
     if (error) throw error;

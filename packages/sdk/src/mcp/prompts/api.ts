@@ -1,23 +1,20 @@
-import { z } from "zod";
-import { WELL_KNOWN_PROMPT_IDS } from "../../constants.ts";
-import { resolveMentions as resolveMentionsFn } from "../../utils/prompt-mentions.ts";
-import {
-  assertHasWorkspace,
-  assertWorkspaceResourceAccess,
-} from "../assertions.ts";
-import { createToolGroup } from "../context.ts";
-import { MCPClient } from "../index.ts";
+import { z } from 'zod';
+import { WELL_KNOWN_PROMPT_IDS } from '../../constants.ts';
+import { resolveMentions as resolveMentionsFn } from '../../utils/prompt-mentions.ts';
+import { assertHasWorkspace, assertWorkspaceResourceAccess } from '../assertions.ts';
+import { createToolGroup } from '../context.ts';
+import { MCPClient } from '../index.ts';
 
-const createTool = createToolGroup("Prompt", {
-  name: "Prompt Management",
-  description: "Manage reusable prompt templates.",
+const createTool = createToolGroup('Prompt', {
+  name: 'Prompt Management',
+  description: 'Manage reusable prompt templates.',
   icon:
-    "https://assets.decocache.com/mcp/9861d914-141d-4236-b616-d73ef6559ca1/Prompt-Management.png",
+    'https://assets.decocache.com/mcp/9861d914-141d-4236-b616-d73ef6559ca1/Prompt-Management.png',
 });
 
 export const createPrompt = createTool({
-  name: "PROMPTS_CREATE",
-  description: "Create a new prompt",
+  name: 'PROMPTS_CREATE',
+  description: 'Create a new prompt',
   inputSchema: z.object({
     name: z.string(),
     description: z.string().optional(),
@@ -32,7 +29,7 @@ export const createPrompt = createTool({
     const { name, description, content } = props;
 
     const { data, error } = await c.db
-      .from("deco_chat_prompts")
+      .from('deco_chat_prompts')
       .insert({
         workspace,
         name,
@@ -44,9 +41,9 @@ export const createPrompt = createTool({
 
     if (error) throw error;
 
-    if (!data) throw new Error("Failed to create prompt");
+    if (!data) throw new Error('Failed to create prompt');
     await c.db
-      .from("deco_chat_prompts_versions")
+      .from('deco_chat_prompts_versions')
       .insert({
         prompt_id: data.id,
         name: data.name,
@@ -61,8 +58,8 @@ export const createPrompt = createTool({
 });
 
 export const updatePrompt = createTool({
-  name: "PROMPTS_UPDATE",
-  description: "Update an existing prompt",
+  name: 'PROMPTS_UPDATE',
+  description: 'Update an existing prompt',
   inputSchema: z.object({
     id: z.string(),
     data: z.object({
@@ -81,19 +78,19 @@ export const updatePrompt = createTool({
     const { id, data, versionName } = props;
 
     const { data: prompt, error } = await c.db
-      .from("deco_chat_prompts")
+      .from('deco_chat_prompts')
       .update(data)
-      .eq("id", id)
-      .eq("workspace", workspace)
-      .select("*")
+      .eq('id', id)
+      .eq('workspace', workspace)
+      .select('*')
       .single();
 
     if (error) throw error;
 
-    if (!prompt) throw new Error("Failed to update prompt");
+    if (!prompt) throw new Error('Failed to update prompt');
 
     await c.db
-      .from("deco_chat_prompts_versions")
+      .from('deco_chat_prompts_versions')
       .insert({
         prompt_id: id,
         name: data.name,
@@ -109,8 +106,8 @@ export const updatePrompt = createTool({
 });
 
 export const deletePrompt = createTool({
-  name: "PROMPTS_DELETE",
-  description: "Delete a prompt by id",
+  name: 'PROMPTS_DELETE',
+  description: 'Delete a prompt by id',
   inputSchema: z.object({
     id: z.string(),
   }),
@@ -122,10 +119,10 @@ export const deletePrompt = createTool({
     await assertWorkspaceResourceAccess(c);
 
     const { error } = await c.db
-      .from("deco_chat_prompts")
+      .from('deco_chat_prompts')
       .delete()
-      .eq("id", id)
-      .eq("workspace", workspace);
+      .eq('id', id)
+      .eq('workspace', workspace);
 
     if (error) throw error;
 
@@ -152,9 +149,9 @@ const virtualPromptsFor = (
     {
       content: workspace,
       created_at: now,
-      description: "The workspace name",
+      description: 'The workspace name',
       id: WELL_KNOWN_PROMPT_IDS.workspace,
-      name: "workspace",
+      name: 'workspace',
       readonly: true,
     },
     {
@@ -162,7 +159,7 @@ const virtualPromptsFor = (
       created_at: now,
       description: `The current date and time ${now}`,
       id: WELL_KNOWN_PROMPT_IDS.now,
-      name: "now",
+      name: 'now',
       readonly: true,
     },
   ];
@@ -176,18 +173,18 @@ const virtualPromptsFor = (
   ];
 };
 export const listPrompts = createTool({
-  name: "PROMPTS_LIST",
-  description: "List prompts for the current workspace",
+  name: 'PROMPTS_LIST',
+  description: 'List prompts for the current workspace',
   inputSchema: z.object({
-    ids: z.array(z.string()).optional().describe("Filter prompts by ids"),
+    ids: z.array(z.string()).optional().describe('Filter prompts by ids'),
     resolveMentions: z
       .boolean()
       .optional()
-      .describe("Resolve mentions in the prompts"),
+      .describe('Resolve mentions in the prompts'),
     excludeIds: z
       .array(z.string())
       .optional()
-      .describe("Exclude prompts by ids"),
+      .describe('Exclude prompts by ids'),
   }),
   outputSchema: z.object({
     items: z.array(z.any()),
@@ -209,16 +206,16 @@ export const listPrompts = createTool({
     }
 
     let query = c.db
-      .from("deco_chat_prompts")
-      .select("*")
-      .eq("workspace", workspace);
+      .from('deco_chat_prompts')
+      .select('*')
+      .eq('workspace', workspace);
 
     if (remainingIds.length > 0) {
-      query = query.in("id", remainingIds);
+      query = query.in('id', remainingIds);
     }
 
     if (excludeIds.length > 0) {
-      query = query.not("id", "in", `(${excludeIds.join(",")})`);
+      query = query.not('id', 'in', `(${excludeIds.join(',')})`);
     }
 
     const { data, error } = await query;
@@ -236,7 +233,7 @@ export const listPrompts = createTool({
 
       prompts = prompts.map((prompt, index) => ({
         ...prompt,
-        content: resolvedPrompts[index].status === "fulfilled"
+        content: resolvedPrompts[index].status === 'fulfilled'
           ? resolvedPrompts[index].value
           : prompt.content,
       }));
@@ -247,32 +244,32 @@ export const listPrompts = createTool({
 });
 
 export const getPrompt = createTool({
-  name: "PROMPTS_GET",
-  description: "Get a prompt by id",
+  name: 'PROMPTS_GET',
+  description: 'Get a prompt by id',
   inputSchema: z
     .object({
       id: z.string(),
     })
-    .describe("The id of the prompt to get"),
+    .describe('The id of the prompt to get'),
   outputSchema: z.object({
-    id: z.string().describe("The id of the prompt"),
-    name: z.string().describe("The name of the prompt"),
+    id: z.string().describe('The id of the prompt'),
+    name: z.string().describe('The name of the prompt'),
     description: z
       .string()
       .nullable()
-      .describe("The description of the prompt"),
-    content: z.string().describe("The content of the prompt"),
-    created_at: z.string().describe("The date and time the prompt was created"),
+      .describe('The description of the prompt'),
+    content: z.string().describe('The content of the prompt'),
+    created_at: z.string().describe('The date and time the prompt was created'),
     updated_at: z
       .string()
       .nullable()
       .optional()
-      .describe("The date and time the prompt was last updated"),
+      .describe('The date and time the prompt was last updated'),
     workspace: z
       .string()
       .optional()
-      .describe("The workspace the prompt belongs to"),
-    readonly: z.boolean().optional().describe("Whether the prompt is readonly"),
+      .describe('The workspace the prompt belongs to'),
+    readonly: z.boolean().optional().describe('Whether the prompt is readonly'),
   }),
   handler: async (props, c) => {
     assertHasWorkspace(c);
@@ -285,10 +282,10 @@ export const getPrompt = createTool({
     if (prompt) return prompt;
 
     const { data, error } = await c.db
-      .from("deco_chat_prompts")
-      .select("*")
-      .eq("id", id)
-      .eq("workspace", workspace)
+      .from('deco_chat_prompts')
+      .select('*')
+      .eq('id', id)
+      .eq('workspace', workspace)
       .single();
 
     if (error) throw error;
@@ -298,8 +295,8 @@ export const getPrompt = createTool({
 });
 
 export const searchPrompts = createTool({
-  name: "PROMPTS_SEARCH",
-  description: "Search for prompts",
+  name: 'PROMPTS_SEARCH',
+  description: 'Search for prompts',
   inputSchema: z.object({
     query: z.string(),
     limit: z.number().optional(),
@@ -314,10 +311,10 @@ export const searchPrompts = createTool({
     const { query, limit = 10, offset = 0 } = props;
 
     const { data, error } = await c.db
-      .from("deco_chat_prompts")
-      .select("*")
-      .eq("workspace", workspace)
-      .textSearch("name", query)
+      .from('deco_chat_prompts')
+      .select('*')
+      .eq('workspace', workspace)
+      .textSearch('name', query)
       .range(offset * limit, (offset + 1) * limit);
 
     if (error) throw error;
@@ -327,8 +324,8 @@ export const searchPrompts = createTool({
 });
 
 export const getPromptVersions = createTool({
-  name: "PROMPTS_GET_VERSIONS",
-  description: "Get the versions of a prompt",
+  name: 'PROMPTS_GET_VERSIONS',
+  description: 'Get the versions of a prompt',
   inputSchema: z.object({
     id: z.string(),
     limit: z.number().optional(),
@@ -341,10 +338,10 @@ export const getPromptVersions = createTool({
     await assertWorkspaceResourceAccess(c);
 
     const { data, error } = await c.db
-      .from("deco_chat_prompts_versions")
-      .select("*")
-      .eq("prompt_id", id)
-      .order("created_at", { ascending: false })
+      .from('deco_chat_prompts_versions')
+      .select('*')
+      .eq('prompt_id', id)
+      .order('created_at', { ascending: false })
       .range(offset * limit, (offset + 1) * limit);
 
     if (error) throw error;
@@ -354,8 +351,8 @@ export const getPromptVersions = createTool({
 });
 
 export const renamePromptVersion = createTool({
-  name: "PROMPTS_RENAME_VERSION",
-  description: "Rename a prompt version",
+  name: 'PROMPTS_RENAME_VERSION',
+  description: 'Rename a prompt version',
   inputSchema: z.object({
     id: z.string(),
     versionName: z.string(),
@@ -367,9 +364,9 @@ export const renamePromptVersion = createTool({
     await assertWorkspaceResourceAccess(c);
 
     const { data, error } = await c.db
-      .from("deco_chat_prompts_versions")
+      .from('deco_chat_prompts_versions')
       .update({ version_name: versionName })
-      .eq("id", id)
+      .eq('id', id)
       .single();
 
     if (error) throw error;

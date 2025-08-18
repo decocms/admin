@@ -1,6 +1,6 @@
-import type { Integration } from "../models/index.ts";
+import type { Integration } from '../models/index.ts';
 
-export type GroupIntegration = Omit<Integration, "id" | "connection"> & {
+export type GroupIntegration = Omit<Integration, 'id' | 'connection'> & {
   workspace?: false;
 };
 const groups: Record<string, GroupIntegration> = {};

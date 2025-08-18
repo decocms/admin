@@ -10,7 +10,7 @@ import {
   type SpanStatus,
   SpanStatusCode,
   type TimeInput,
-} from "@opentelemetry/api";
+} from '@opentelemetry/api';
 import {
   hrTimeDuration,
   type InstrumentationLibrary,
@@ -18,10 +18,10 @@ import {
   isAttributeValue,
   isTimeInput,
   sanitizeAttributes,
-} from "@opentelemetry/core";
-import type { IResource } from "@opentelemetry/resources";
-import type { ReadableSpan, TimedEvent } from "@opentelemetry/sdk-trace-base";
-import { SemanticAttributes } from "@opentelemetry/semantic-conventions";
+} from '@opentelemetry/core';
+import type { IResource } from '@opentelemetry/resources';
+import type { ReadableSpan, TimedEvent } from '@opentelemetry/sdk-trace-base';
+import { SemanticAttributes } from '@opentelemetry/semantic-conventions';
 
 type OnSpanEnd = (span: Span) => void;
 
@@ -39,7 +39,7 @@ interface SpanInit {
 
 function transformExceptionAttributes(exception: Exception): Attributes {
   const attributes: Attributes = {};
-  if (typeof exception === "string") {
+  if (typeof exception === 'string') {
     attributes[SemanticAttributes.EXCEPTION_MESSAGE] = exception;
   } else {
     if (exception.code) {
@@ -67,7 +67,7 @@ function getHrTime(input?: TimeInput): HrTime {
     return millisToHr(now);
   } else if (input instanceof Date) {
     return millisToHr(input.getTime());
-  } else if (typeof input === "number") {
+  } else if (typeof input === 'number') {
     //TODO: do something with performance.now something
     return millisToHr(input);
   } else if (Array.isArray(input)) {
@@ -95,7 +95,7 @@ export class SpanImpl implements Span, ReadableSpan {
   readonly links: Link[];
   readonly resource: IResource;
   instrumentationLibrary: InstrumentationLibrary = {
-    name: "@microlabs/otel-cf-workers",
+    name: '@microlabs/otel-cf-workers',
   };
   private _ended: boolean = false;
   private _droppedAttributesCount: number = 0;
@@ -183,7 +183,7 @@ export class SpanImpl implements Span, ReadableSpan {
 
   recordException(exception: Exception, time?: TimeInput): void {
     const attributes = transformExceptionAttributes(exception);
-    this.addEvent("exception", attributes, time);
+    this.addEvent('exception', attributes, time);
   }
 
   get duration(): HrTime {

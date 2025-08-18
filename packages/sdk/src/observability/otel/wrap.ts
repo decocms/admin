@@ -1,5 +1,5 @@
 // deno-lint-ignore-file no-explicit-any
-const unwrapSymbol = Symbol("unwrap");
+const unwrapSymbol = Symbol('unwrap');
 
 type Wrapped<T> = { [unwrapSymbol]: T } & T;
 
@@ -9,7 +9,7 @@ export function isWrapped<T>(item: T): item is Wrapped<T> {
 
 export function isProxyable(item: any) {
   return (
-    (item !== null && typeof item === "object") || typeof item === "function"
+    (item !== null && typeof item === 'object') || typeof item === 'function'
   );
 }
 
@@ -28,7 +28,7 @@ export function wrap<T extends object>(
     } else {
       if (handler.get) {
         return handler.get(target, prop, receiver);
-      } else if (prop === "bind") {
+      } else if (prop === 'bind') {
         return () => receiver;
       } else if (autoPassthrough) {
         return passthroughGet(target, prop);
@@ -58,8 +58,8 @@ export function passthroughGet(
 ) {
   const unwrappedTarget = unwrap(target);
   const value = Reflect.get(unwrappedTarget, prop);
-  if (typeof value === "function") {
-    if (value.constructor.name === "RpcProperty") {
+  if (typeof value === 'function') {
+    if (value.constructor.name === 'RpcProperty') {
       return (...args: unknown[]) => unwrappedTarget[prop](...args);
     }
     thisArg = thisArg || unwrappedTarget;

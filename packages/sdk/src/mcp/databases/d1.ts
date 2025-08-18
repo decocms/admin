@@ -1,12 +1,8 @@
-import { WebCache } from "../../cache/index.ts";
-import {
-  type AppContext,
-  assertHasWorkspace,
-  assertsNotNull,
-} from "../index.ts";
+import { WebCache } from '../../cache/index.ts';
+import { type AppContext, assertHasWorkspace, assertsNotNull } from '../index.ts';
 
 const cache = new WebCache<string>(
-  "workspace-d1-database",
+  'workspace-d1-database',
   WebCache.MAX_SAFE_TTL,
 );
 const inMemoryCache = new Map<string, string>();
@@ -36,7 +32,7 @@ const assertsWorkspaceD1Database = async (c: AppContext) => {
   const workspace = c.workspace.value;
 
   // Slugify workspace name to meet D1 naming requirements (lowercase letters, numbers, underscores, hyphens)
-  const dbName = workspace.toLowerCase().replace(/[^a-z0-9_-]/g, "-");
+  const dbName = workspace.toLowerCase().replace(/[^a-z0-9_-]/g, '-');
 
   // List databases to check if it already exists
   const databases = await c.cf.d1.database.list({

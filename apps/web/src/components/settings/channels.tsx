@@ -7,8 +7,8 @@ import {
   useJoinChannel,
   useLeaveChannel,
   useRemoveChannel,
-} from "@deco/sdk/hooks";
-import type { Channel, Integration } from "@deco/sdk/models";
+} from '@deco/sdk/hooks';
+import type { Channel, Integration } from '@deco/sdk/models';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -18,30 +18,30 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-} from "@deco/ui/components/alert-dialog.tsx";
-import { FormControl, FormItem, FormLabel } from "@deco/ui/components/form.tsx";
-import { Icon } from "@deco/ui/components/icon.tsx";
-import { Input } from "@deco/ui/components/input.tsx";
-import { Label } from "@deco/ui/components/label.tsx";
+} from '@deco/ui/components/alert-dialog.tsx';
+import { FormControl, FormItem, FormLabel } from '@deco/ui/components/form.tsx';
+import { Icon } from '@deco/ui/components/icon.tsx';
+import { Input } from '@deco/ui/components/input.tsx';
+import { Label } from '@deco/ui/components/label.tsx';
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@deco/ui/components/select.tsx";
-import { toast } from "@deco/ui/components/sonner.tsx";
-import { Spinner } from "@deco/ui/components/spinner.tsx";
-import { cn } from "@deco/ui/lib/utils.ts";
-import { useMemo, useState } from "react";
-import { useAgent } from "../agent/provider.tsx";
-import { IntegrationIcon } from "../integrations/common.tsx";
-import { InstalledConnections } from "../integrations/installed-connections.tsx";
-import { Dialog } from "@deco/ui/components/dialog.tsx";
-import { DialogTrigger } from "@deco/ui/components/dialog.tsx";
-import { DialogContent } from "@deco/ui/components/dialog.tsx";
-import { Button } from "@deco/ui/components/button.tsx";
-import { Binding, WellKnownBindings } from "@deco/sdk/mcp/bindings";
+} from '@deco/ui/components/select.tsx';
+import { toast } from '@deco/ui/components/sonner.tsx';
+import { Spinner } from '@deco/ui/components/spinner.tsx';
+import { cn } from '@deco/ui/lib/utils.ts';
+import { useMemo, useState } from 'react';
+import { useAgent } from '../agent/provider.tsx';
+import { IntegrationIcon } from '../integrations/common.tsx';
+import { InstalledConnections } from '../integrations/installed-connections.tsx';
+import { Dialog } from '@deco/ui/components/dialog.tsx';
+import { DialogTrigger } from '@deco/ui/components/dialog.tsx';
+import { DialogContent } from '@deco/ui/components/dialog.tsx';
+import { Button } from '@deco/ui/components/button.tsx';
+import { Binding, WellKnownBindings } from '@deco/sdk/mcp/bindings';
 
 interface ChannelsProps {
   className?: string;
@@ -50,35 +50,35 @@ interface ChannelsProps {
 interface ChannelCardProps {
   channel: Channel;
   children: React.ReactNode;
-  variant?: "agent" | "available";
+  variant?: 'agent' | 'available';
 }
 
 function ChannelCard({
   channel,
   children,
-  variant = "agent",
+  variant = 'agent',
 }: ChannelCardProps) {
   const integration = channel.integration;
-  const isAgentVariant = variant === "agent";
+  const isAgentVariant = variant === 'agent';
 
   return (
     <div
       className={cn(
-        "border border-input rounded-xl py-2 px-3 h-10 flex gap-2 items-center",
-        !isAgentVariant && "justify-between",
+        'border border-input rounded-xl py-2 px-3 h-10 flex gap-2 items-center',
+        !isAgentVariant && 'justify-between',
       )}
     >
-      <div className="flex items-center gap-2">
+      <div className='flex items-center gap-2'>
         <IntegrationIcon
-          icon={integration?.icon ?? ""}
+          icon={integration?.icon ?? ''}
           name={integration?.name}
-          className="w-8 h-8"
+          className='w-8 h-8'
         />
 
-        <p className="text-sm text-foreground font-medium">
-          {integration?.name ?? "Unknown"}
+        <p className='text-sm text-foreground font-medium'>
+          {integration?.name ?? 'Unknown'}
         </p>
-        <span className="text-sm text-foreground font-normal">
+        <span className='text-sm text-foreground font-normal'>
           {channel.name ?? channel.discriminator}
         </span>
       </div>
@@ -88,7 +88,7 @@ function ChannelCard({
 }
 
 export function Channels({ className }: ChannelsProps) {
-  const [discriminator, setDiscriminator] = useState("");
+  const [discriminator, setDiscriminator] = useState('');
   const [name, setName] = useState<string | undefined>(undefined);
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [confirmChannelSwitch, setConfirmChannelSwitch] = useState<
@@ -159,11 +159,11 @@ export function Channels({ className }: ChannelsProps) {
       },
       {
         onSuccess: () => {
-          toast.success("Channel joined successfully");
+          toast.success('Channel joined successfully');
         },
         onError: (error) => {
           toast.error(
-            error instanceof Error ? error.message : "Failed to join channel",
+            error instanceof Error ? error.message : 'Failed to join channel',
           );
         },
       },
@@ -180,12 +180,12 @@ export function Channels({ className }: ChannelsProps) {
       },
       {
         onSuccess: () => {
-          toast.success("Channel switched successfully");
+          toast.success('Channel switched successfully');
           setConfirmChannelSwitch(null);
         },
         onError: (error) => {
           toast.error(
-            error instanceof Error ? error.message : "Failed to switch channel",
+            error instanceof Error ? error.message : 'Failed to switch channel',
           );
           setConfirmChannelSwitch(null);
         },
@@ -204,11 +204,11 @@ export function Channels({ className }: ChannelsProps) {
       },
       {
         onSuccess: () => {
-          toast.success("Channel left successfully");
+          toast.success('Channel left successfully');
         },
         onError: (error) => {
           toast.error(
-            error instanceof Error ? error.message : "Failed to leave channel",
+            error instanceof Error ? error.message : 'Failed to leave channel',
           );
         },
       },
@@ -220,12 +220,12 @@ export function Channels({ className }: ChannelsProps) {
       (b: Integration) => b.id === bindingId,
     );
     if (!selectedBinding) {
-      toast.error("Please select a integration first");
+      toast.error('Please select a integration first');
       return;
     }
 
     if (!discriminator.trim()) {
-      toast.error("Please enter a discriminator");
+      toast.error('Please enter a discriminator');
       return;
     }
 
@@ -238,13 +238,13 @@ export function Channels({ className }: ChannelsProps) {
       },
       {
         onSuccess: () => {
-          toast.success("Channel created successfully");
-          setDiscriminator("");
+          toast.success('Channel created successfully');
+          setDiscriminator('');
           setShowCreateForm(false);
         },
         onError: (error) => {
           toast.error(
-            error instanceof Error ? error.message : "Failed to create channel",
+            error instanceof Error ? error.message : 'Failed to create channel',
           );
         },
       },
@@ -254,38 +254,37 @@ export function Channels({ className }: ChannelsProps) {
   const handleRemoveChannel = (channelId: string) => {
     removeChannelMutation.mutate(channelId, {
       onSuccess: () => {
-        toast.success("Channel removed successfully");
+        toast.success('Channel removed successfully');
       },
       onError: (error) => {
         toast.error(
-          error instanceof Error ? error.message : "Failed to remove channel",
+          error instanceof Error ? error.message : 'Failed to remove channel',
         );
       },
     });
   };
 
   return (
-    <div className={cn("space-y-2", className)}>
-      <div className="space-y-2">
-        <div className="flex w-full justify-between gap-2 items-center">
+    <div className={cn('space-y-2', className)}>
+      <div className='space-y-2'>
+        <div className='flex w-full justify-between gap-2 items-center'>
           <div>
-            <div className="flex items-center gap-2">
-              <h3 className="text-sm font-medium text-foreground leading-">
+            <div className='flex items-center gap-2'>
+              <h3 className='text-sm font-medium text-foreground leading-'>
                 Communication Channels
               </h3>
             </div>
-            <p className="text-xs font-normal text-muted-foreground">
-              These are the channels your agent can find users on and
-              communicate with them
+            <p className='text-xs font-normal text-muted-foreground'>
+              These are the channels your agent can find users on and communicate with them
             </p>
           </div>
-          <div className="flex items-center gap-2">
+          <div className='flex items-center gap-2'>
             <Button
               onClick={() => setShowCreateForm(true)}
-              className="gap-2 h-8 w-8"
-              type="button"
+              className='gap-2 h-8 w-8'
+              type='button'
             >
-              <Icon name="add" size={16} />
+              <Icon name='add' size={16} />
             </Button>
           </div>
         </div>
@@ -294,31 +293,31 @@ export function Channels({ className }: ChannelsProps) {
       {agentChannels.map((channel: Channel) => {
         if (!channel) return null;
         return (
-          <ChannelCard key={channel.id} channel={channel} variant="agent">
+          <ChannelCard key={channel.id} channel={channel} variant='agent'>
             <button
-              className="ml-auto cursor-pointer"
-              type="button"
+              className='ml-auto cursor-pointer'
+              type='button'
               onClick={() => handleLeaveChannel(channel.id)}
               disabled={isLeavingChannel(channel.id)}
             >
               {isLeavingChannel(channel.id)
-                ? <Spinner size="sm" />
-                : <Icon name="close" size={16} />}
+                ? <Spinner size='sm' />
+                : <Icon name='close' size={16} />}
             </button>
           </ChannelCard>
         );
       })}
 
       {isLoadingChannels && agentChannels.length === 0 && (
-        <div className="flex items-center gap-2 py-4">
-          <Spinner size="sm" />
-          <p className="text-sm text-muted-foreground">Loading channels...</p>
+        <div className='flex items-center gap-2 py-4'>
+          <Spinner size='sm' />
+          <p className='text-sm text-muted-foreground'>Loading channels...</p>
         </div>
       )}
 
       {availableChannels.length > 0 && (
-        <div className="space-y-2">
-          <p className="text-sm font-medium text-foreground">
+        <div className='space-y-2'>
+          <p className='text-sm font-medium text-foreground'>
             Available Channels
           </p>
           {availableChannels.map((channel: Channel) => {
@@ -330,40 +329,40 @@ export function Channels({ className }: ChannelsProps) {
               <ChannelCard
                 key={channel.id}
                 channel={channel}
-                variant="available"
+                variant='available'
               >
-                <div className="flex items-center gap-2">
+                <div className='flex items-center gap-2'>
                   <Button
-                    size="sm"
-                    variant="outline"
+                    size='sm'
+                    variant='outline'
                     onClick={() => handleJoinChannel(channel.id)}
                     disabled={isJoiningChannel(channel.id)}
-                    className="h-6 px-2 text-xs"
+                    className='h-6 px-2 text-xs'
                   >
                     {isJoiningChannel(channel.id)
                       ? (
-                        <div className="flex items-center gap-1">
-                          <Spinner size="xs" />
+                        <div className='flex items-center gap-1'>
+                          <Spinner size='xs' />
                           <span>Joining...</span>
                         </div>
                       )
                       : isInAgentChannels
                       ? (
-                        "Joined"
+                        'Joined'
                       )
                       : (
-                        "Join"
+                        'Join'
                       )}
                   </Button>
                   <button
-                    className="cursor-pointer hover:text-destructive"
-                    type="button"
+                    className='cursor-pointer hover:text-destructive'
+                    type='button'
                     onClick={() => handleRemoveChannel(channel.id)}
                     disabled={isChannelRemoving(channel.id)}
                   >
                     {isChannelRemoving(channel.id)
-                      ? <Spinner size="xs" />
-                      : <Icon name="delete" size={16} />}
+                      ? <Spinner size='xs' />
+                      : <Icon name='delete' size={16} />}
                   </button>
                 </div>
               </ChannelCard>
@@ -375,7 +374,7 @@ export function Channels({ className }: ChannelsProps) {
       {!showCreateForm ? null : (
         <>
           <FormItem>
-            <div className="flex items-center justify-between">
+            <div className='flex items-center justify-between'>
               <FormLabel>Integration</FormLabel>
             </div>
             <FormControl>
@@ -386,7 +385,7 @@ export function Channels({ className }: ChannelsProps) {
             </FormControl>
           </FormItem>
 
-          <div className="space-y-2">
+          <div className='space-y-2'>
             {integration && (
               <ConnectionChannels
                 key={integration.id}
@@ -398,38 +397,38 @@ export function Channels({ className }: ChannelsProps) {
             )}
           </div>
 
-          <div className="flex gap-2 pt-2">
+          <div className='flex gap-2 pt-2'>
             <Button
-              variant="outline"
+              variant='outline'
               onClick={() => {
                 setShowCreateForm(false);
-                setDiscriminator("");
+                setDiscriminator('');
               }}
             >
               Cancel
             </Button>
             <Button
-              variant="default"
+              variant='default'
               disabled={!discriminator.trim() || isCreating}
               onClick={() => {
                 if (!integration) {
-                  toast.error("Please select an integration first");
+                  toast.error('Please select an integration first');
                   return;
                 }
                 handleCreateChannel(integration.id);
               }}
-              className="gap-2"
+              className='gap-2'
             >
               {isCreating
                 ? (
                   <>
-                    <Spinner size="sm" />
+                    <Spinner size='sm' />
                     Creating...
                   </>
                 )
                 : (
                   <>
-                    <Icon name="add" size={16} />
+                    <Icon name='add' size={16} />
                     Create Channel
                   </>
                 )}
@@ -443,9 +442,8 @@ export function Channels({ className }: ChannelsProps) {
           <AlertDialogHeader>
             <AlertDialogTitle>Switch channel to this agent?</AlertDialogTitle>
             <AlertDialogDescription>
-              The channel "{confirmChannelSwitch?.channelName}" is currently
-              used by another agent. Do you want to switch it to this agent?
-              This will remove it from the other agent.
+              The channel "{confirmChannelSwitch?.channelName}" is currently used by another agent.
+              Do you want to switch it to this agent? This will remove it from the other agent.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -470,7 +468,7 @@ function IntegrationSelect({
   integration: Integration | null;
 }) {
   const [open, setOpen] = useState(false);
-  const [query, setQuery] = useState("");
+  const [query, setQuery] = useState('');
   const [isChannelsBinding, setIsChannelsBinding] = useState<boolean | null>(
     null,
   );
@@ -484,7 +482,7 @@ function IntegrationSelect({
       ).isImplementedBy(toolsData.tools);
       setIsChannelsBinding(isChannelBinding);
     } catch (error) {
-      console.error("Error checking channels binding:", error);
+      console.error('Error checking channels binding:', error);
       setIsChannelsBinding(false);
     }
   };
@@ -500,24 +498,23 @@ function IntegrationSelect({
   };
 
   return (
-    <div className="w-full">
+    <div className='w-full'>
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogTrigger>
           <Button>
-            <Icon name="add" size={16} />
+            <Icon name='add' size={16} />
             Select integration
           </Button>
         </DialogTrigger>
 
-        <DialogContent className="p-0 min-w-[80vw] min-h-[80vh] gap-0">
-          <div className="flex h-[calc(100vh-10rem)]">
-            <div className="h-full overflow-y-hidden p-4 pb-20 w-full">
+        <DialogContent className='p-0 min-w-[80vw] min-h-[80vh] gap-0'>
+          <div className='flex h-[calc(100vh-10rem)]'>
+            <div className='h-full overflow-y-hidden p-4 pb-20 w-full'>
               <Input
-                placeholder="Search for an integration"
+                placeholder='Search for an integration'
                 value={query}
-                onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-                  setQuery(e.target.value)}
-                className="mb-4"
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setQuery(e.target.value)}
+                className='mb-4'
               />
               <InstalledConnections
                 query={query}
@@ -529,23 +526,19 @@ function IntegrationSelect({
         </DialogContent>
       </Dialog>
       {integration && (
-        <div className="mt-4 p-3 border rounded-lg">
-          <div className="flex items-center gap-2">
-            <span className="text-sm font-medium">Selected Integration:</span>
-            <span className="text-sm">
+        <div className='mt-4 p-3 border rounded-lg'>
+          <div className='flex items-center gap-2'>
+            <span className='text-sm font-medium'>Selected Integration:</span>
+            <span className='text-sm'>
               {integration.name || integration.id}
             </span>
             {isChannelsBinding !== null && (
               <span
                 className={`text-xs px-2 py-1 rounded ${
-                  isChannelsBinding
-                    ? "bg-green-100 text-green-800"
-                    : "bg-red-100 text-red-800"
+                  isChannelsBinding ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
                 }`}
               >
-                {isChannelsBinding
-                  ? "Channels Binding ✓"
-                  : "Not Channels Binding ✗"}
+                {isChannelsBinding ? 'Channels Binding ✓' : 'Not Channels Binding ✗'}
               </span>
             )}
           </div>
@@ -566,21 +559,22 @@ function ConnectionChannels({
   setDiscriminator: (discriminator: string) => void;
   setName: (name: string | undefined) => void;
 }) {
-  const { data: availableChannels, isLoading: isLoadingAvailableChannels } =
-    useConnectionChannels(binding);
+  const { data: availableChannels, isLoading: isLoadingAvailableChannels } = useConnectionChannels(
+    binding,
+  );
   if (isLoadingAvailableChannels) {
     return (
-      <div className="w-full flex items-center gap-2">
-        <Spinner size="sm" />
-        <p className="text-sm text-muted-foreground">Loading...</p>
+      <div className='w-full flex items-center gap-2'>
+        <Spinner size='sm' />
+        <p className='text-sm text-muted-foreground'>Loading...</p>
       </div>
     );
   }
 
   return (
-    <div className="w-full">
-      <Label htmlFor="discriminator">Channel</Label>
-      <div className="mt-2 w-full">
+    <div className='w-full'>
+      <Label htmlFor='discriminator'>Channel</Label>
+      <div className='mt-2 w-full'>
         {availableChannels?.channels?.length &&
             availableChannels?.channels?.length > 0
           ? (
@@ -594,10 +588,10 @@ function ConnectionChannels({
               }}
               disabled={isLoadingAvailableChannels}
             >
-              <SelectTrigger className="w-full">
-                <SelectValue placeholder="Select a channel" />
+              <SelectTrigger className='w-full'>
+                <SelectValue placeholder='Select a channel' />
               </SelectTrigger>
-              <SelectContent className="w-full">
+              <SelectContent className='w-full'>
                 {availableChannels?.channels?.map((channel) => {
                   return (
                     <SelectItem key={channel.value} value={channel.value}>
@@ -610,8 +604,8 @@ function ConnectionChannels({
           )
           : (
             <Input
-              id="discriminator"
-              placeholder="Enter unique identifier (e.g., phone number ID for WhatsApp)"
+              id='discriminator'
+              placeholder='Enter unique identifier (e.g., phone number ID for WhatsApp)'
               value={discriminator}
               onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
                 setDiscriminator(e.target.value)}

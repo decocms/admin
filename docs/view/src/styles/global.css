@@ -1,10 +1,10 @@
 /* Import fonts first */
-@import url("https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&display=swap");
-@import url("https://fonts.googleapis.com/css2?family=JetBrains+Mono:ital,wght@0,100..800;1,100..800&display=swap");
+@import url('https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:ital,wght@0,100..800;1,100..800&display=swap');
 
 /* Then import Tailwind */
-@import "tailwindcss";
-@plugin "@tailwindcss/typography";
+@import 'tailwindcss';
+@plugin '@tailwindcss/typography';
 
 /* Global font smoothing */
 * {
@@ -81,8 +81,8 @@
 }
 
 /* Shiki dual theme support for data-theme attribute - Fixed selector */
-[data-theme="dark"] .astro-code,
-[data-theme="dark"] .astro-code span {
+[data-theme='dark'] .astro-code,
+[data-theme='dark'] .astro-code span {
   color: var(--shiki-dark) !important;
   /* Optional, if you also want font styles */
   font-style: var(--shiki-dark-font-style) !important;
@@ -95,7 +95,7 @@
   background-color: var(--secondary) !important;
 }
 
-[data-theme="dark"] .astro-code {
+[data-theme='dark'] .astro-code {
   background-color: var(--secondary) !important;
 }
 
@@ -106,7 +106,7 @@ pre {
   padding: 1rem;
 }
 
-[data-theme="dark"] pre {
+[data-theme='dark'] pre {
   border-color: transparent;
 }
 
@@ -146,7 +146,7 @@ pre .astro-code {
 
 /* Alternative: use ::before to remove first line spacing */
 pre .astro-code::before {
-  content: "";
+  content: '';
   display: block;
   height: 0;
   margin-top: -0.25rem;
@@ -204,17 +204,17 @@ pre .astro-code > *:first-child {
 
 /* Component spacing - using Tailwind classes instead */
 
-[data-theme="dark"] pre {
+[data-theme='dark'] pre {
   border-color: transparent;
 }
 
 /* Remove backticks from inline code */
 .prose code::before {
-  content: "";
+  content: '';
 }
 
 .prose code::after {
-  content: "";
+  content: '';
 }
 
 /* Custom Scrollbar Styles */
@@ -260,29 +260,29 @@ pre .astro-code > *:first-child {
 }
 
 /* Dark mode scrollbar adjustments */
-[data-theme="dark"] ::-webkit-scrollbar-track {
+[data-theme='dark'] ::-webkit-scrollbar-track {
   background: transparent;
 }
 
-[data-theme="dark"] ::-webkit-scrollbar-thumb {
+[data-theme='dark'] ::-webkit-scrollbar-thumb {
   background: var(--border);
 }
 
-[data-theme="dark"] ::-webkit-scrollbar-thumb:hover {
+[data-theme='dark'] ::-webkit-scrollbar-thumb:hover {
   background: var(--muted-foreground);
 }
 
-[data-theme="dark"] ::-webkit-scrollbar-corner {
+[data-theme='dark'] ::-webkit-scrollbar-corner {
   background: transparent;
 }
 
-[data-theme="dark"] * {
+[data-theme='dark'] * {
   scrollbar-color: var(--border) transparent;
 }
 
 @theme {
-  --font-sans: "Inter", sans-serif;
-  --font-mono: "JetBrains Mono", monospace;
+  --font-sans: 'Inter', sans-serif;
+  --font-mono: 'JetBrains Mono', monospace;
 
   /* Color tokens for Tailwind */
   --color-background: var(--background);
@@ -432,7 +432,7 @@ pre .astro-code > *:first-child {
 }
 
 /* Dark Mode Colors - Using Starlight's [data-theme="dark"] approach */
-[data-theme="dark"] {
+[data-theme='dark'] {
   --background: oklch(21.6% 0.006 56.043);
   --app-background: oklch(0.1838 0.0052 67.5);
   --foreground: oklch(98.5% 0.001 106.423);

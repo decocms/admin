@@ -1,13 +1,10 @@
-import type { DrizzleConfig } from "drizzle-orm";
-import {
-  drizzle as drizzleProxy,
-  type SqliteRemoteDatabase,
-} from "drizzle-orm/sqlite-proxy";
-import { DefaultEnv } from "./index.ts";
-import { QueryResult } from "./mcp.ts";
-export * from "drizzle-orm/sqlite-core";
-export * as orm from "drizzle-orm";
-import { sql } from "drizzle-orm";
+import type { DrizzleConfig } from 'drizzle-orm';
+import { drizzle as drizzleProxy, type SqliteRemoteDatabase } from 'drizzle-orm/sqlite-proxy';
+import { DefaultEnv } from './index.ts';
+import { QueryResult } from './mcp.ts';
+export * from 'drizzle-orm/sqlite-core';
+export * as orm from 'drizzle-orm';
+import { sql } from 'drizzle-orm';
 
 const mapGetResult = ({ result: [page] }: { result: QueryResult[] }) => {
   return page.results ?? [];
@@ -31,7 +28,7 @@ export function drizzle<
     // Drizzle always waits for {rows: string[][]} or {rows: string[]} for the return value.
     // When the method is get, you should return a value as {rows: string[]}.
     // Otherwise, you should return {rows: string[][]}.
-    const asRows = method === "get" ? mapGetResult : mapPostResult;
+    const asRows = method === 'get' ? mapGetResult : mapPostResult;
     return DECO_CHAT_WORKSPACE_DB.query({
       sql,
       params,
@@ -73,15 +70,14 @@ function readMigrationFiles({
   const migrationQueries: MigrationMeta[] = [];
 
   for (const journalEntry of journal.entries) {
-    const query =
-      migrations[`m${journalEntry.idx.toString().padStart(4, "0")}`];
+    const query = migrations[`m${journalEntry.idx.toString().padStart(4, '0')}`];
 
     if (!query) {
       throw new Error(`Missing migration: ${journalEntry.tag}`);
     }
 
     try {
-      const result = query.split("--> statement-breakpoint").map((it) => {
+      const result = query.split('--> statement-breakpoint').map((it) => {
         return it;
       });
 
@@ -89,7 +85,7 @@ function readMigrationFiles({
         sql: result,
         bps: journalEntry.breakpoints,
         folderMillis: journalEntry.when,
-        hash: "",
+        hash: '',
       });
     } catch {
       throw new Error(`Failed to parse migration: ${journalEntry.tag}`);
@@ -105,13 +101,13 @@ export async function migrateWithoutTransaction(
 ): Promise<void> {
   const debug = config.debug ?? false;
 
-  if (debug) console.log("Migrating database");
+  if (debug) console.log('Migrating database');
   const migrations = readMigrationFiles(config);
-  if (debug) console.log("Migrations", migrations);
+  if (debug) console.log('Migrations', migrations);
 
   try {
-    if (debug) console.log("Setting up migrations table");
-    const migrationsTable = "__drizzle_migrations";
+    if (debug) console.log('Setting up migrations table');
+    const migrationsTable = '__drizzle_migrations';
 
     // Create migrations table if it doesn't exist
     // Note: Changed from SERIAL to INTEGER PRIMARY KEY AUTOINCREMENT for SQLite compatibility
@@ -132,7 +128,7 @@ export async function migrateWithoutTransaction(
     );
 
     const lastDbMigration = dbMigrations[0] ?? undefined;
-    if (debug) console.log("Last applied migration:", lastDbMigration);
+    if (debug) console.log('Last applied migration:', lastDbMigration);
 
     // Apply pending migrations sequentially (without transaction wrapper)
     for (const migration of migrations) {
@@ -150,7 +146,7 @@ export async function migrateWithoutTransaction(
             if (stmt.trim()) {
               // Skip empty statements
               if (debug) {
-                console.log("Executing:", stmt.substring(0, 100) + "...");
+                console.log('Executing:', stmt.substring(0, 100) + '...');
               }
               await db.run(sql.raw(stmt));
             }
@@ -177,9 +173,7 @@ export async function migrateWithoutTransaction(
           );
           throw new Error(
             `Migration failed at ${migration.folderMillis}: ${
-              migrationError instanceof Error
-                ? migrationError.message
-                : String(migrationError)
+              migrationError instanceof Error ? migrationError.message : String(migrationError)
             }`,
           );
         }
@@ -192,9 +186,9 @@ export async function migrateWithoutTransaction(
       }
     }
 
-    if (debug) console.log("✅ All migrations completed successfully");
+    if (debug) console.log('✅ All migrations completed successfully');
   } catch (error: unknown) {
-    console.error("❌ Migration process failed:", error);
+    console.error('❌ Migration process failed:', error);
     throw error;
   }
 }

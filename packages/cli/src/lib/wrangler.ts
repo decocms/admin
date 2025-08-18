@@ -1,30 +1,25 @@
-import { dirname, join } from "path";
-import { promises as fs } from "fs";
-import {
-  addWorkflowDO,
-  getConfig,
-  getConfigFilePath,
-  readWranglerConfig,
-} from "./config.js";
-import { readSession } from "./session.js";
-import process from "node:process";
-import { Buffer } from "node:buffer";
-import { StartDevServerOptions } from "../commands/dev/dev.js";
+import { dirname, join } from 'path';
+import { promises as fs } from 'fs';
+import { addWorkflowDO, getConfig, getConfigFilePath, readWranglerConfig } from './config.js';
+import { readSession } from './session.js';
+import process from 'node:process';
+import { Buffer } from 'node:buffer';
+import { StartDevServerOptions } from '../commands/dev/dev.js';
 
-const envFile = ".dev.vars";
+const envFile = '.dev.vars';
 
 export async function getCurrentEnvVars(projectRoot: string): Promise<{
   envVars: Record<string, string>;
   envFilepath: string;
 }> {
   const envFilepath = join(projectRoot, envFile);
-  const devVarsFile = await fs.readFile(envFilepath, "utf-8").catch(() => "");
-  const envVars = devVarsFile.split("\n").reduce(
+  const devVarsFile = await fs.readFile(envFilepath, 'utf-8').catch(() => '');
+  const envVars = devVarsFile.split('\n').reduce(
     (acc, line) => {
-      if (!line || line.startsWith("#")) {
+      if (!line || line.startsWith('#')) {
         return acc;
       }
-      const firstEqualIndex = line.indexOf("=");
+      const firstEqualIndex = line.indexOf('=');
       if (firstEqualIndex === -1) {
         return acc;
       }
@@ -50,7 +45,7 @@ export async function writeEnvVars(
     join(projectRoot, envFile),
     Object.entries(envVars)
       .map(([key, value]) => `${key}=${value}`)
-      .join("\n"),
+      .join('\n'),
   );
 }
 
@@ -70,26 +65,26 @@ export async function getEnvVars(projectRoot?: string) {
     readWranglerConfig(projectRoot),
   ]);
   const encodedBindings = Buffer.from(JSON.stringify(config.bindings)).toString(
-    "base64",
+    'base64',
   );
 
   const workspace = config.workspace ?? session?.workspace;
   const env: Record<string, string> = {
     ...currentEnvVars,
-    DECO_CHAT_WORKSPACE: workspace || "",
-    DECO_CHAT_API_TOKEN: session?.access_token ?? "",
+    DECO_CHAT_WORKSPACE: workspace || '',
+    DECO_CHAT_API_TOKEN: session?.access_token ?? '',
     DECO_CHAT_BINDINGS: encodedBindings,
-    DECO_CHAT_APP_ENTRYPOINT: "http://localhost:8888",
+    DECO_CHAT_APP_ENTRYPOINT: 'http://localhost:8888',
   };
 
   const { name, scope } = wrangler;
   if (name && workspace) {
-    const [_, slug] = workspace.split("/");
+    const [_, slug] = workspace.split('/');
     env.DECO_CHAT_APP_NAME = `@${scope ?? slug}/${name}`;
   }
 
   if (config.local) {
-    env.DECO_CHAT_API_URL = "http://localhost:3001";
+    env.DECO_CHAT_API_URL = 'http://localhost:3001';
   } else {
     delete env.DECO_CHAT_API_URL;
   }
@@ -98,12 +93,12 @@ export async function getEnvVars(projectRoot?: string) {
 }
 
 async function ensureEnvVarsGitIgnore(projectRoot: string) {
-  const gitignorePath = join(projectRoot, ".gitignore");
+  const gitignorePath = join(projectRoot, '.gitignore');
 
   try {
-    const gitignoreContent = await fs.readFile(gitignorePath, "utf-8");
+    const gitignoreContent = await fs.readFile(gitignorePath, 'utf-8');
     const lines = gitignoreContent
-      .split("\n")
+      .split('\n')
       .reduce<string[]>((acc: string[], line: string) => {
         if (!line.includes(envFile)) {
           acc.push(line);
@@ -117,21 +112,21 @@ async function ensureEnvVarsGitIgnore(projectRoot: string) {
     );
 
     if (!entryExists) {
-      const newContent = gitignoreContent.endsWith("\n")
-        ? gitignoreContent + envFile + "\n"
-        : gitignoreContent + "\n" + envFile + "\n";
+      const newContent = gitignoreContent.endsWith('\n')
+        ? gitignoreContent + envFile + '\n'
+        : gitignoreContent + '\n' + envFile + '\n';
       await fs.writeFile(gitignorePath, newContent);
     }
   } catch {
     // .gitignore doesn't exist, create it
-    await fs.writeFile(gitignorePath, envFile + "\n");
+    await fs.writeFile(gitignorePath, envFile + '\n');
   }
 }
 
 async function addZodDependency(projectRoot: string) {
-  const packageJsonPath = join(projectRoot, "package.json");
+  const packageJsonPath = join(projectRoot, 'package.json');
 
-  const packageJsonContent = await fs.readFile(packageJsonPath, "utf-8");
+  const packageJsonContent = await fs.readFile(packageJsonPath, 'utf-8');
   const packageJson = JSON.parse(packageJsonContent);
 
   // Ensure dependencies object exists
@@ -140,12 +135,12 @@ async function addZodDependency(projectRoot: string) {
   }
 
   // Add or update zod dependency
-  packageJson.dependencies.zod = "^3.24.3";
+  packageJson.dependencies.zod = '^3.24.3';
 
   // Write back to file with proper formatting
   await fs.writeFile(
     packageJsonPath,
-    JSON.stringify(packageJson, null, 2) + "\n",
+    JSON.stringify(packageJson, null, 2) + '\n',
   );
 }
 

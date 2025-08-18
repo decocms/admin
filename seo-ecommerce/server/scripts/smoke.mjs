@@ -4,11 +4,11 @@
  * Assumes `npm run dev` is running (view + server) so the worker listens on localhost:8787.
  * You can override BASE_URL env var.
  */
-const BASE = process.env.BASE_URL || "http://localhost:8787";
-const MAX_WAIT_MS = parseInt(process.env.SMOKE_WAIT_MS || "30000", 10); // total wait up to 30s by default
+const BASE = process.env.BASE_URL || 'http://localhost:8787';
+const MAX_WAIT_MS = parseInt(process.env.SMOKE_WAIT_MS || '30000', 10); // total wait up to 30s by default
 const WAIT_INTERVAL_MS = 1000;
 
-import { logSafe } from "@deco/workers-runtime/logSafe";
+import { logSafe } from '@deco/workers-runtime/logSafe';
 function log(title, data, ok = true) {
   if (ok) logSafe.info(`[smoke] ${title}`, { data });
   else {
@@ -21,9 +21,9 @@ function log(title, data, ok = true) {
 async function safeFetch(url, opts) {
   const res = await fetch(url, opts).catch((e) => ({ error: e }));
   if (res.error) throw res.error;
-  const ct = res.headers.get("content-type") || "";
+  const ct = res.headers.get('content-type') || '';
   let body;
-  if (ct.includes("application/json")) body = await res.json();
+  if (ct.includes('application/json')) body = await res.json();
   else body = await res.text();
   return { status: res.status, body, headers: Object.fromEntries(res.headers) };
 }
@@ -32,7 +32,7 @@ async function waitForReady() {
   const start = Date.now();
   while (Date.now() - start < MAX_WAIT_MS) {
     try {
-      const r = await fetch(`${BASE}/__env`, { method: "GET" });
+      const r = await fetch(`${BASE}/__env`, { method: 'GET' });
       if (r.ok) return true;
     } catch (e) {
       // ignore until timeout
@@ -45,7 +45,7 @@ async function waitForReady() {
 async function run() {
   const ready = await waitForReady();
   if (!ready) {
-    logSafe.error("[smoke] worker not reachable", {
+    logSafe.error('[smoke] worker not reachable', {
       base: BASE,
       maxWaitMs: MAX_WAIT_MS,
     });
@@ -54,7 +54,7 @@ async function run() {
   const summary = { tools: {}, timings: {} };
   const startAll = Date.now();
   // 1. __env
-  await step("__env", async () => {
+  await step('__env', async () => {
     const t0 = Date.now();
     const r = await safeFetch(`${BASE}/__env`);
     summary.timings.__env = Date.now() - t0;
@@ -62,27 +62,27 @@ async function run() {
     return r.body;
   });
   // 2. list tools
-  await step("list tools", async () => {
+  await step('list tools', async () => {
     const t0 = Date.now();
     const r = await safeFetch(`${BASE}/mcp/tools`);
     summary.timings.list = Date.now() - t0;
     if (r.status !== 200) throw new Error(`Status ${r.status}`);
     const names = (r.body.tools || []).map((t) => t.name);
     summary.tools.listed = names;
-    if (!names.includes("LINK_ANALYZER")) {
-      throw new Error("LINK_ANALYZER missing");
+    if (!names.includes('LINK_ANALYZER')) {
+      throw new Error('LINK_ANALYZER missing');
     }
-    if (!names.includes("PAGESPEED")) throw new Error("PAGESPEED missing");
+    if (!names.includes('PAGESPEED')) throw new Error('PAGESPEED missing');
     return names;
   });
   // 3. LINK_ANALYZER
-  const testUrl = "https://example.com";
-  await step("LINK_ANALYZER", async () => {
+  const testUrl = 'https://example.com';
+  await step('LINK_ANALYZER', async () => {
     const t0 = Date.now();
     const r = await safeFetch(`${BASE}/mcp/tools`, {
-      method: "POST",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify({ tool: "LINK_ANALYZER", input: { url: testUrl } }),
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ tool: 'LINK_ANALYZER', input: { url: testUrl } }),
     });
     summary.timings.link = Date.now() - t0;
     if (r.status !== 200) {
@@ -95,17 +95,17 @@ async function run() {
     return summary.tools.LINK_ANALYZER;
   });
   // 4. PAGESPEED mobile
-  await step("PAGESPEED mobile", async () => {
+  await step('PAGESPEED mobile', async () => {
     const t0 = Date.now();
     const r = await safeFetch(`${BASE}/mcp/tools`, {
-      method: "POST",
-      headers: { "content-type": "application/json" },
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
       body: JSON.stringify({
-        tool: "PAGESPEED",
+        tool: 'PAGESPEED',
         input: {
           url: testUrl,
-          strategy: "mobile",
-          category: ["performance", "seo"],
+          strategy: 'mobile',
+          category: ['performance', 'seo'],
         },
       }),
     });
@@ -122,17 +122,17 @@ async function run() {
     return summary.tools.PAGESPEED_mobile;
   });
   // 5. PAGESPEED desktop
-  await step("PAGESPEED desktop", async () => {
+  await step('PAGESPEED desktop', async () => {
     const t0 = Date.now();
     const r = await safeFetch(`${BASE}/mcp/tools`, {
-      method: "POST",
-      headers: { "content-type": "application/json" },
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
       body: JSON.stringify({
-        tool: "PAGESPEED",
+        tool: 'PAGESPEED',
         input: {
           url: testUrl,
-          strategy: "desktop",
-          category: ["performance", "seo"],
+          strategy: 'desktop',
+          category: ['performance', 'seo'],
         },
       }),
     });
@@ -149,11 +149,11 @@ async function run() {
     return summary.tools.PAGESPEED_desktop;
   });
   // 6. Direct /api/analisar endpoint
-  await step("/api/analisar", async () => {
+  await step('/api/analisar', async () => {
     const t0 = Date.now();
     const r = await safeFetch(`${BASE}/api/analisar`, {
-      method: "POST",
-      headers: { "content-type": "application/json" },
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
       body: JSON.stringify({ url: testUrl }),
     });
     summary.timings.directAnalyze = Date.now() - t0;
@@ -164,12 +164,12 @@ async function run() {
   });
 
   // 7. SEO_AUDIT composite
-  await step("SEO_AUDIT", async () => {
+  await step('SEO_AUDIT', async () => {
     const t0 = Date.now();
     const r = await safeFetch(`${BASE}/mcp/tools`, {
-      method: "POST",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify({ tool: "SEO_AUDIT", input: { url: testUrl } }),
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ tool: 'SEO_AUDIT', input: { url: testUrl } }),
     });
     summary.timings.seoAudit = Date.now() - t0;
     if (r.status !== 200) {
@@ -186,12 +186,12 @@ async function run() {
   });
 
   // 8. AI_INSIGHTS (heuristic or LLM)
-  await step("AI_INSIGHTS", async () => {
+  await step('AI_INSIGHTS', async () => {
     const t0 = Date.now();
     const r = await safeFetch(`${BASE}/mcp/tools`, {
-      method: "POST",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify({ tool: "AI_INSIGHTS", input: { url: testUrl } }),
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ tool: 'AI_INSIGHTS', input: { url: testUrl } }),
     });
     summary.timings.aiInsights = Date.now() - t0;
     if (r.status !== 200) {
@@ -206,12 +206,12 @@ async function run() {
   });
 
   const totalMs = Date.now() - startAll;
-  logSafe.info("[smoke] summary", { totalMs, ...summary });
+  logSafe.info('[smoke] summary', { totalMs, ...summary });
   const warn = [];
   const mob = summary.tools.PAGESPEED_mobile || {};
-  if (mob.perf && mob.perf < 60) warn.push("Mobile performance < 60");
-  if (mob.LCP_ms && mob.LCP_ms > 4000) warn.push("Mobile LCP > 4000ms");
-  if (warn.length) logSafe.warn("[smoke] warnings", { warn });
+  if (mob.perf && mob.perf < 60) warn.push('Mobile performance < 60');
+  if (mob.LCP_ms && mob.LCP_ms > 4000) warn.push('Mobile LCP > 4000ms');
+  if (warn.length) logSafe.warn('[smoke] warnings', { warn });
   process.exit(0);
 }
 
@@ -227,6 +227,6 @@ async function step(name, fn) {
 }
 
 run().catch((e) => {
-  logSafe.error("[smoke] failed", { error: e.message });
+  logSafe.error('[smoke] failed', { error: e.message });
   process.exit(1);
 });

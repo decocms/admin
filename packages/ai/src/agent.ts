@@ -11,16 +11,13 @@
 // Also, visibility modifiers (like 'private' or 'protected') from TypeScript
 // are not enforced at runtime in JavaScript and are not preserved in the transpiled output.
 
-import type { JSONSchema7 } from "@ai-sdk/provider";
-import type { ActorState, InvokeMiddlewareOptions } from "@deco/actors";
-import { Actor } from "@deco/actors";
-import type { Agent as Configuration } from "@deco/sdk";
-import {
-  createPosthogServerClient,
-  type PosthogServerClient,
-} from "@deco/sdk/posthog";
-import { type AuthMetadata, BaseActor } from "@deco/sdk/actors";
-import { JwtIssuer } from "@deco/sdk/auth";
+import type { JSONSchema7 } from '@ai-sdk/provider';
+import type { ActorState, InvokeMiddlewareOptions } from '@deco/actors';
+import { Actor } from '@deco/actors';
+import type { Agent as Configuration } from '@deco/sdk';
+import { createPosthogServerClient, type PosthogServerClient } from '@deco/sdk/posthog';
+import { type AuthMetadata, BaseActor } from '@deco/sdk/actors';
+import { JwtIssuer } from '@deco/sdk/auth';
 import {
   DEFAULT_MAX_STEPS,
   DEFAULT_MAX_THINKING_TOKENS,
@@ -32,8 +29,8 @@ import {
   MIN_MAX_TOKENS,
   SUPABASE_URL,
   WELL_KNOWN_AGENTS,
-} from "@deco/sdk/constants";
-import { contextStorage } from "@deco/sdk/fetch";
+} from '@deco/sdk/constants';
+import { contextStorage } from '@deco/sdk/fetch';
 import {
   type AppContext,
   assertWorkspaceResourceAccess,
@@ -47,56 +44,43 @@ import {
   serializeError,
   SupabaseLLMVault,
   type WorkspaceTools,
-} from "@deco/sdk/mcp";
-import type { AgentMemoryConfig } from "@deco/sdk/memory";
-import { AgentMemory, slugify, toAlphanumericId } from "@deco/sdk/memory";
-import { trace } from "@deco/sdk/observability";
-import {
-  getTwoFirstSegments as getWorkspace,
-  type Workspace,
-} from "@deco/sdk/path";
-import {
-  createServerTimings,
-  type ServerTimingsBuilder,
-} from "@deco/sdk/timings";
-import { Telemetry, type WorkingMemory } from "@mastra/core";
-import type { ToolsetsInput, ToolsInput } from "@mastra/core/agent";
-import { Agent } from "@mastra/core/agent";
-import type { MastraMemory } from "@mastra/core/memory";
-import { TokenLimiter } from "@mastra/memory/processors";
-import { createServerClient } from "@supabase/ssr";
-import type { TextPart } from "ai";
+} from '@deco/sdk/mcp';
+import type { AgentMemoryConfig } from '@deco/sdk/memory';
+import { AgentMemory, slugify, toAlphanumericId } from '@deco/sdk/memory';
+import { trace } from '@deco/sdk/observability';
+import { getTwoFirstSegments as getWorkspace, type Workspace } from '@deco/sdk/path';
+import { createServerTimings, type ServerTimingsBuilder } from '@deco/sdk/timings';
+import { Telemetry, type WorkingMemory } from '@mastra/core';
+import type { ToolsetsInput, ToolsInput } from '@mastra/core/agent';
+import { Agent } from '@mastra/core/agent';
+import type { MastraMemory } from '@mastra/core/memory';
+import { TokenLimiter } from '@mastra/memory/processors';
+import { createServerClient } from '@supabase/ssr';
+import type { TextPart } from 'ai';
 import {
   type GenerateObjectResult,
   type GenerateTextResult,
   type LanguageModelUsage,
   type Message,
   smoothStream,
-} from "ai";
-import { Cloudflare } from "cloudflare";
-import { getRuntimeKey } from "hono/adapter";
-import jsonSchemaToZod from "json-schema-to-zod";
-import process from "node:process";
-import { Readable } from "node:stream";
-import { z } from "zod";
-import type { MCPConnection } from "../../sdk/src/index.ts";
-import { createWalletClient } from "../../sdk/src/mcp/wallet/index.ts";
-import { resolveMentions } from "../../sdk/src/utils/prompt-mentions.ts";
-import { convertToAIMessage } from "./agent/ai-message.ts";
-import { createAgentOpenAIVoice } from "./agent/audio.ts";
-import {
-  createLLMInstance,
-  DEFAULT_ACCOUNT_ID,
-  getLLMConfig,
-} from "./agent/llm.ts";
-import { getProviderOptions } from "./agent/provider-options.ts";
-import {
-  shouldSummarizePDFs,
-  summarizePDFMessages,
-} from "./agent/summarize-pdf.ts";
-import { AgentWallet } from "./agent/wallet.ts";
-import { pickCapybaraAvatar } from "./capybaras.ts";
-import { mcpServerTools } from "./mcp.ts";
+} from 'ai';
+import { Cloudflare } from 'cloudflare';
+import { getRuntimeKey } from 'hono/adapter';
+import jsonSchemaToZod from 'json-schema-to-zod';
+import process from 'node:process';
+import { Readable } from 'node:stream';
+import { z } from 'zod';
+import type { MCPConnection } from '../../sdk/src/index.ts';
+import { createWalletClient } from '../../sdk/src/mcp/wallet/index.ts';
+import { resolveMentions } from '../../sdk/src/utils/prompt-mentions.ts';
+import { convertToAIMessage } from './agent/ai-message.ts';
+import { createAgentOpenAIVoice } from './agent/audio.ts';
+import { createLLMInstance, DEFAULT_ACCOUNT_ID, getLLMConfig } from './agent/llm.ts';
+import { getProviderOptions } from './agent/provider-options.ts';
+import { shouldSummarizePDFs, summarizePDFMessages } from './agent/summarize-pdf.ts';
+import { AgentWallet } from './agent/wallet.ts';
+import { pickCapybaraAvatar } from './capybaras.ts';
+import { mcpServerTools } from './mcp.ts';
 import type {
   AIAgent as IIAgent,
   GenerateOptions,
@@ -105,13 +89,13 @@ import type {
   Thread,
   ThreadQueryOptions,
   Toolset,
-} from "./types.ts";
+} from './types.ts';
 
-const TURSO_AUTH_TOKEN_KEY = "turso-auth-token";
+const TURSO_AUTH_TOKEN_KEY = 'turso-auth-token';
 const ANONYMOUS_INSTRUCTIONS =
   "You should help users to configure yourself. Users should give you your name, instructions, and optionally a model (leave it default if the user don't mention it, don't force they to set it). This is your only task for now. Tell the user that you are ready to configure yourself when you have all the information.";
 
-const ANONYMOUS_NAME = "Anonymous";
+const ANONYMOUS_NAME = 'Anonymous';
 const LOAD_TOOLS_TIMEOUT_MS = 5_000;
 
 export interface Env {
@@ -138,20 +122,18 @@ export interface AgentMetadata extends AuthMetadata {
 }
 
 const normalizeMCPId = (mcpId: string | MCPConnection) => {
-  if (typeof mcpId === "string") {
-    return mcpId.startsWith("i:") || mcpId.startsWith("a:")
-      ? mcpId.slice(2)
-      : mcpId;
+  if (typeof mcpId === 'string') {
+    return mcpId.startsWith('i:') || mcpId.startsWith('a:') ? mcpId.slice(2) : mcpId;
   }
 
-  if ("url" in mcpId) {
+  if ('url' in mcpId) {
     return decodeURIComponent(mcpId.url);
   }
 
   return crypto.randomUUID();
 };
 
-const NON_SERIALIZABLE_FIELDS = ["WALLET"];
+const NON_SERIALIZABLE_FIELDS = ['WALLET'];
 
 const removeNonSerializableFields = (obj: any) => {
   const newObj: Record<string, unknown> = {};
@@ -167,7 +149,7 @@ const assertConfiguration: (
   config: Configuration | undefined,
 ) => asserts config is Configuration = (config) => {
   if (!config) {
-    throw new Error("Agent is not initialized");
+    throw new Error('Agent is not initialized');
   }
 };
 
@@ -177,7 +159,7 @@ interface ThreadLocator {
 }
 
 const agentWorkingMemoryToWorkingMemoryConfig = (
-  workingMemory: NonNullable<Configuration["memory"]>["working_memory"],
+  workingMemory: NonNullable<Configuration['memory']>['working_memory'],
 ): WorkingMemory => {
   if (!workingMemory?.enabled) {
     return { enabled: false };
@@ -189,9 +171,9 @@ const agentWorkingMemoryToWorkingMemoryConfig = (
       const parsed = JSON.parse(template);
 
       // in case parsed is a string
-      if (typeof parsed === "object") {
+      if (typeof parsed === 'object') {
         const getSchema = new Function(
-          "z",
+          'z',
           // @ts-ignore: jsonSchemaToZod is a function
           `return ${jsonSchemaToZod(parsed)}`,
         );
@@ -243,7 +225,7 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
     };
     this.workspace = getWorkspace(this.state.id);
     this.agentMemoryConfig = null as unknown as AgentMemoryConfig;
-    this.agentId = this.state.id.split("/").pop() ?? "";
+    this.agentId = this.state.id.split('/').pop() ?? '';
     this.db = createServerClient(SUPABASE_URL, this.env.SUPABASE_SERVER_TOKEN, {
       cookies: { getAll: () => [] },
     });
@@ -269,8 +251,8 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
     this.state.blockConcurrencyWhile(async () => {
       await this._runWithContext(async () => {
         await this._init().catch((error) => {
-          console.error("Error initializing agent", error);
-          this._trackEvent("agent_init_error", {
+          console.error('Error initializing agent', error);
+          this._trackEvent('agent_init_error', {
             error: error.message,
           });
           throw error;
@@ -284,7 +266,7 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
       distinctId: this.metadata?.user?.id ?? this.id,
       $process_person_profile: this.metadata?.user !== null,
       actorId: this.id,
-      actorType: "agent",
+      actorType: 'agent',
       agentId: this.agentId,
       ...properties,
     });
@@ -298,7 +280,7 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
       db: this.db,
       user: metadata?.user!,
       isLocal: metadata?.user == null,
-      stub: this.state.stub as AppContext["stub"],
+      stub: this.state.stub as AppContext['stub'],
       workspaceDO: this.actorEnv.WORKSPACE_DB,
       cookie: metadata?.userCookie ?? undefined,
       workspace: fromWorkspaceString(this.workspace),
@@ -325,7 +307,7 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
     connection: string | MCPConnection,
     signal?: AbortSignal,
   ): Promise<ToolsInput | null> {
-    const [mcpId, integration] = typeof connection === "string"
+    const [mcpId, integration] = typeof connection === 'string'
       ? [
         connection,
         await this.metadata?.mcpClient?.INTEGRATIONS_GET({
@@ -335,9 +317,9 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
       : [normalizeMCPId(connection), { connection }];
 
     if (!integration) {
-      console.log("integration not found", mcpId);
-      this._trackEvent("agent_mcp_client_error", {
-        error: "Integration not found",
+      console.log('integration not found', mcpId);
+      this._trackEvent('agent_mcp_client_error', {
+        error: 'Integration not found',
         integrationId: mcpId,
       });
       return null;
@@ -359,8 +341,8 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
 
       return this.callableToolSet[mcpId];
     } catch (error) {
-      console.error("Error getting server tools", error);
-      this._trackEvent("agent_tool_connection_error", {
+      console.error('Error getting server tools', error);
+      this._trackEvent('agent_tool_connection_error', {
         error: serializeError(error),
         integrationId: mcpId,
       });
@@ -369,7 +351,7 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
   }
 
   protected async _pickCallableTools(
-    tool_set: Configuration["tools_set"],
+    tool_set: Configuration['tools_set'],
     timings?: ServerTimingsBuilder,
     toolsetsFromOptions?: Toolset[],
   ): Promise<ToolsetsInput> {
@@ -388,26 +370,26 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
           const allToolsFor = await Promise.race([
             this._getOrCreateCallableToolSet(connection, timeout.signal).catch(
               (err) => {
-                console.error("list tools error", err);
-                this._trackEvent("agent_tool_connection_error", {
+                console.error('list tools error', err);
+                this._trackEvent('agent_tool_connection_error', {
                   error: serializeError(err),
                   integrationId: mcpId,
-                  method: "_pickCallableTools",
+                  method: '_pickCallableTools',
                 });
                 return null;
               },
             ),
-            new Promise((resolve) =>
-              setTimeout(() => resolve(null), LOAD_TOOLS_TIMEOUT_MS)
-            ).then(() => {
-              // should not rely only on timeout abort because it also aborts subsequent requests
-              timeout.abort();
-              return null;
-            }),
+            new Promise((resolve) => setTimeout(() => resolve(null), LOAD_TOOLS_TIMEOUT_MS)).then(
+              () => {
+                // should not rely only on timeout abort because it also aborts subsequent requests
+                timeout.abort();
+                return null;
+              },
+            ),
           ]);
           if (!allToolsFor) {
             console.warn(`No tools found for server: ${mcpId}. Skipping.`);
-            getOrCreateCallableToolSetTiming?.end("timeout"); // sinalize timeout for timings
+            getOrCreateCallableToolSetTiming?.end('timeout'); // sinalize timeout for timings
             return;
           }
           getOrCreateCallableToolSetTiming?.end();
@@ -436,7 +418,7 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
   }
 
   private async _initMemory(config: Configuration, tokenLimit: number) {
-    const tursoOrganization = this.env.TURSO_ORGANIZATION ?? "decoai";
+    const tursoOrganization = this.env.TURSO_ORGANIZATION ?? 'decoai';
     const tokenStorage = this.env.TURSO_GROUP_DATABASE_TOKEN ?? {
       getToken: (memoryId: string) => {
         return this.state.storage.get<string>(
@@ -494,15 +476,15 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
       metadata: {
         workspace: this.workspace,
         agentId: config.id,
-        threadId: this.metadata?.threadId || "",
-        resourceId: this.metadata?.resourceId || "",
+        threadId: this.metadata?.threadId || '',
+        resourceId: this.metadata?.resourceId || '',
       },
     });
 
     await this._initMemory(config, tokenLimit);
 
-    this.telemetry = Telemetry.init({ serviceName: "agent" });
-    this.telemetry.tracer = trace.getTracer("agent");
+    this.telemetry = Telemetry.init({ serviceName: 'agent' });
+    this.telemetry.tracer = trace.getTracer('agent');
 
     // Process instructions to replace prompt mentions
     const processedInstructions = await resolveMentions(
@@ -544,7 +526,7 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
         envs: this.env,
         metadata: {
           workspace: this.workspace,
-          agentId: "anonymous",
+          agentId: 'anonymous',
         },
       }).llm,
       mastra: {
@@ -592,11 +574,11 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
     thread = this._thread,
     toolsetsFromOptions?: Toolset[],
   ): Promise<ToolsetsInput> {
-    const getThreadToolsTiming = timings?.start("get-thread-tools");
+    const getThreadToolsTiming = timings?.start('get-thread-tools');
     const tool_set = tools ?? (await this.getThreadTools(thread));
     getThreadToolsTiming?.end();
 
-    const pickCallableToolsTiming = timings?.start("pick-callable-tools");
+    const pickCallableToolsTiming = timings?.start('pick-callable-tools');
     const toolsets = await this._pickCallableTools(
       tool_set,
       timings,
@@ -691,10 +673,10 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
     usage: LanguageModelUsage;
   }) {
     if (!this.metadata?.mcpClient) {
-      console.error("No MCP client found, skipping usage tracking");
-      this._trackEvent("agent_mcp_client_error", {
-        error: "No MCP client found for usage tracking",
-        method: "_handleGenerationFinish",
+      console.error('No MCP client found, skipping usage tracking');
+      this._trackEvent('agent_mcp_client_error', {
+        error: 'No MCP client found for usage tracking',
+        method: '_handleGenerationFinish',
       });
       return;
     }
@@ -733,7 +715,7 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
     });
     methodTiming.end();
     try {
-      response.headers.set("Server-Timing", timings.printTimings());
+      response.headers.set('Server-Timing', timings.printTimings());
     } catch {
       // some headers are immutable
     }
@@ -745,24 +727,24 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
     req: Request,
   ): Promise<AgentMetadata> {
     const timings = m.timings;
-    const enrichMetadata = timings?.start("enrichMetadata");
+    const enrichMetadata = timings?.start('enrichMetadata');
     this.metadata = await super.enrichMetadata(m, req);
-    this.metadata.userCookie = req.headers.get("cookie");
+    this.metadata.userCookie = req.headers.get('cookie');
 
     const runtimeKey = getRuntimeKey();
     const ctx = this._createAppContext(this.metadata);
 
     // this is a weak check, but it works for now
     if (
-      req.headers.get("host") !== null &&
-      runtimeKey !== "deno" &&
-      this._configuration?.visibility !== "PUBLIC"
+      req.headers.get('host') !== null &&
+      runtimeKey !== 'deno' &&
+      this._configuration?.visibility !== 'PUBLIC'
     ) {
       // if host is set so its not an internal request so checks must be applied
-      await assertWorkspaceResourceAccess(ctx, "AGENTS_GET");
-    } else if (req.headers.get("host") !== null && runtimeKey === "deno") {
+      await assertWorkspaceResourceAccess(ctx, 'AGENTS_GET');
+    } else if (req.headers.get('host') !== null && runtimeKey === 'deno') {
       console.warn(
-        "Deno runtime detected, skipping access check. This might fail in production.",
+        'Deno runtime detected, skipping access check. This might fail in production.',
       );
     }
     // Propagate supabase token from request to integration token
@@ -791,7 +773,7 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
       });
 
       if (!dbConfig) {
-        throw new Error("Failed to update agent");
+        throw new Error('Failed to update agent');
       }
 
       await this._initAgent(dbConfig);
@@ -799,8 +781,8 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
 
       return dbConfig;
     } catch (error) {
-      console.error("Error configuring agent", error);
-      this._trackEvent("agent_configure_error", {
+      console.error('Error configuring agent', error);
+      this._trackEvent('agent_configure_error', {
         error: serializeError(error),
         agentId: this.agentId,
       });
@@ -823,8 +805,8 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
         threadId: options?.threadId ?? currentThreadId.threadId,
       })
       .catch((error) => {
-        console.error("Error querying memory", error);
-        this._trackEvent("agent_memory_query_error", {
+        console.error('Error querying memory', error);
+        this._trackEvent('agent_memory_query_error', {
           error: serializeError(error),
           threadId: options?.threadId ?? currentThreadId.threadId,
         });
@@ -855,27 +837,27 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
 
   async speak(text: string, options?: { voice?: string; speed?: number }) {
     if (!this._maybeAgent) {
-      this._trackEvent("agent_generate_error", {
-        error: "Agent not initialized for speak",
-        method: "speak",
+      this._trackEvent('agent_generate_error', {
+        error: 'Agent not initialized for speak',
+        method: 'speak',
       });
-      throw new Error("Agent not initialized");
+      throw new Error('Agent not initialized');
     }
 
     try {
       const readableStream = await this._maybeAgent.voice.speak(text, {
-        speaker: options?.voice || "echo",
+        speaker: options?.voice || 'echo',
         properties: {
           speed: options?.speed || 1.0,
-          pitch: "default",
+          pitch: 'default',
         },
       });
 
       return readableStream;
     } catch (error) {
-      this._trackEvent("agent_generate_error", {
+      this._trackEvent('agent_generate_error', {
         error: serializeError(error),
-        method: "speak",
+        method: 'speak',
       });
       throw error;
     }
@@ -883,11 +865,11 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
 
   async listen(buffer: Uint8Array) {
     if (!this._maybeAgent) {
-      this._trackEvent("agent_generate_error", {
-        error: "Agent not initialized for listen",
-        method: "listen",
+      this._trackEvent('agent_generate_error', {
+        error: 'Agent not initialized for listen',
+        method: 'listen',
       });
-      throw new Error("Agent not initialized");
+      throw new Error('Agent not initialized');
     }
     try {
       const nodeStream = new Readable({
@@ -899,20 +881,20 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
       const transcription = await this._maybeAgent.voice.listen(nodeStream);
       return transcription;
     } catch (error) {
-      this._trackEvent("agent_generate_error", {
+      this._trackEvent('agent_generate_error', {
         error: serializeError(error),
-        method: "listen",
+        method: 'listen',
       });
       throw error;
     }
   }
 
-  public async updateThreadTools(tool_set: Configuration["tools_set"]) {
+  public async updateThreadTools(tool_set: Configuration['tools_set']) {
     const thread = await this._memory.getThreadById(this._thread);
     if (!thread) {
       return {
         success: false,
-        message: "Thread not found",
+        message: 'Thread not found',
       };
     }
     const metadata = thread?.metadata ?? {};
@@ -932,13 +914,13 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
 
     return {
       success: true,
-      message: "Thread updated",
+      message: 'Thread updated',
     };
   }
 
   public async getThreadTools(
     threadLocator = this._thread,
-  ): Promise<Configuration["tools_set"]> {
+  ): Promise<Configuration['tools_set']> {
     const thread = await this._memory
       .getThreadById(threadLocator)
       .catch(() => null);
@@ -948,12 +930,12 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
     }
     const metadata = thread?.metadata ?? {};
     const tool_set = metadata?.tool_set as
-      | Configuration["tools_set"]
+      | Configuration['tools_set']
       | undefined;
     return tool_set ?? this.getTools();
   }
 
-  public getTools(): Promise<Configuration["tools_set"]> {
+  public getTools(): Promise<Configuration['tools_set']> {
     return Promise.resolve(this._configuration?.tools_set ?? {});
   }
 
@@ -965,10 +947,10 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
       : await client
         .AGENTS_GET({ id: this.agentId })
         .catch((err: unknown) => {
-          console.error("Error getting agent", err);
-          this._trackEvent("agent_mcp_client_error", {
+          console.error('Error getting agent', err);
+          this._trackEvent('agent_mcp_client_error', {
             error: serializeError(err),
-            method: "configuration",
+            method: 'configuration',
             agentId: this.agentId,
           });
           return null;
@@ -982,7 +964,7 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
       id: crypto.randomUUID(),
       model: DEFAULT_MODEL.id,
       views: [],
-      visibility: "WORKSPACE",
+      visibility: 'WORKSPACE',
       ...manifest,
     };
 
@@ -993,16 +975,16 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
 
   async callTool(toolId: string, input: any): Promise<any> {
     try {
-      const [integrationId, toolName] = toolId.split(".");
+      const [integrationId, toolName] = toolId.split('.');
 
       const toolSet = await this.getThreadTools();
 
       if (!toolSet[integrationId]) {
-        this._trackEvent("agent_tool_connection_error", {
+        this._trackEvent('agent_tool_connection_error', {
           error: `Integration ${integrationId} not found`,
           integrationId,
           toolId,
-          method: "callTool",
+          method: 'callTool',
         });
         return {
           success: false,
@@ -1016,12 +998,12 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
 
       const tool = callable?.[integrationId]?.[toolName];
       if (!tool) {
-        this._trackEvent("agent_tool_connection_error", {
+        this._trackEvent('agent_tool_connection_error', {
           error: `Tool ${toolName} not found`,
           integrationId,
           toolName,
           toolId,
-          method: "callTool",
+          method: 'callTool',
         });
         return {
           success: false,
@@ -1037,10 +1019,10 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
       );
       return result;
     } catch (error) {
-      this._trackEvent("agent_tool_error", {
+      this._trackEvent('agent_tool_error', {
         error: serializeError(error),
         toolId,
-        method: "callTool",
+        method: 'callTool',
       });
       throw error;
     }
@@ -1065,17 +1047,15 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
   ): Promise<GenerateObjectResult<TObject>> {
     const hasBalance = await this.wallet.canProceed();
     if (!hasBalance) {
-      this._trackEvent("agent_insufficient_funds_error", {
-        error: "Insufficient funds for generateObject",
-        method: "generateObject",
+      this._trackEvent('agent_insufficient_funds_error', {
+        error: 'Insufficient funds for generateObject',
+        method: 'generateObject',
       });
-      throw new Error("Insufficient funds");
+      throw new Error('Insufficient funds');
     }
 
     const aiMessages = await Promise.all(
-      payload.map((msg) =>
-        convertToAIMessage({ message: msg, agent: this._agent })
-      ),
+      payload.map((msg) => convertToAIMessage({ message: msg, agent: this._agent })),
     );
     const result = (await this._agent.generate(aiMessages, {
       ...this.thread,
@@ -1100,19 +1080,19 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
   ): Promise<GenerateTextResult<any, any>> {
     const hasBalance = await this.wallet.canProceed();
     if (!hasBalance) {
-      this._trackEvent("agent_insufficient_funds_error", {
-        error: "Insufficient funds for generate",
-        method: "generate",
+      this._trackEvent('agent_insufficient_funds_error', {
+        error: 'Insufficient funds for generate',
+        method: 'generate',
       });
-      throw new Error("Insufficient funds");
+      throw new Error('Insufficient funds');
     }
 
     const toolsets = await this._withToolOverrides(options?.tools);
 
-    const isClaude = this._configuration?.model.includes("claude");
+    const isClaude = this._configuration?.model.includes('claude');
     const hasPdf = payload.some((message) =>
       message.experimental_attachments?.some(
-        (attachment) => attachment.contentType === "application/pdf",
+        (attachment) => attachment.contentType === 'application/pdf',
       )
     );
     const bypassOpenRouter = isClaude && hasPdf;
@@ -1123,9 +1103,7 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
     });
 
     const aiMessages = await Promise.all(
-      payload.map((msg) =>
-        convertToAIMessage({ message: msg, agent: this._agent })
-      ),
+      payload.map((msg) => convertToAIMessage({ message: msg, agent: this._agent })),
     );
 
     const result = (await agent.generate(aiMessages, {
@@ -1162,8 +1140,8 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
       const isClaude = (
         options?.model ??
           this._configuration?.model ??
-          ""
-      ).includes("claude");
+          ''
+      ).includes('claude');
       const { hasPdf, hasMinimumSizeForSummarization } = shouldSummarizePDFs(
         payload as Message[],
       );
@@ -1175,18 +1153,18 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
         hasMinimumSizeForSummarization
       ) {
         if (!this.metadata?.mcpClient) {
-          this._trackEvent("agent_mcp_client_error", {
-            error: "MCP client not found for PDF summarization",
-            method: "stream_pdf_summarization",
+          this._trackEvent('agent_mcp_client_error', {
+            error: 'MCP client not found for PDF summarization',
+            method: 'stream_pdf_summarization',
           });
-          throw new Error("MCP client not found");
+          throw new Error('MCP client not found');
         }
         const processedMessages = await summarizePDFMessages(
           payload as Message[],
           this.metadata.mcpClient,
           {
             // TODO: fallback to a custom model if this one is disabled.
-            model: "openai:gpt-4.1-mini",
+            model: 'openai:gpt-4.1-mini',
             maxChunkSize: 8_000,
             maxSummaryTokens: 2_000,
             maxTotalTokens: 16_000,
@@ -1203,10 +1181,10 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
       const context = payload.flatMap((message) =>
         Array.isArray(message.annotations)
           ? message.annotations.map((annotation) => ({
-            role: "user" as const,
-            content: typeof annotation === "string" ? annotation : [
+            role: 'user' as const,
+            content: typeof annotation === 'string' ? annotation : [
               {
-                type: "text",
+                type: 'text',
                 text: JSON.stringify(annotation),
               } as TextPart,
             ],
@@ -1221,7 +1199,7 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
         options?.toolsets,
       );
 
-      const agentOverridesTiming = timings.start("agent-overrides");
+      const agentOverridesTiming = timings.start('agent-overrides');
       const agent = await this._withAgentOverrides({
         ...options,
         bypassOpenRouter: bypassOpenRouter ?? options?.bypassOpenRouter ??
@@ -1230,26 +1208,24 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
       agentOverridesTiming.end();
 
       const wallet = this.wallet;
-      const walletTiming = timings.start("init-wallet");
+      const walletTiming = timings.start('init-wallet');
       const hasBalance = await wallet.canProceed();
       walletTiming.end();
 
       if (!hasBalance) {
-        this._trackEvent("agent_insufficient_funds_error", {
-          error: "Insufficient funds for stream",
-          method: "stream",
+        this._trackEvent('agent_insufficient_funds_error', {
+          error: 'Insufficient funds for stream',
+          method: 'stream',
         });
-        throw new Error("Insufficient funds");
+        throw new Error('Insufficient funds');
       }
 
-      const ttfbSpan = tracer?.startSpan("stream-ttfb", {
+      const ttfbSpan = tracer?.startSpan('stream-ttfb', {
         attributes: {
-          "agent.id": this.state.id,
+          'agent.id': this.state.id,
           model: options?.model ?? this._configuration?.model,
-          "thread.id": thread.threadId,
-          "openrouter.bypass": `${
-            bypassOpenRouter ?? options?.bypassOpenRouter ?? false
-          }`,
+          'thread.id': thread.threadId,
+          'openrouter.bypass': `${bypassOpenRouter ?? options?.bypassOpenRouter ?? false}`,
         },
       });
       let ended = false;
@@ -1260,7 +1236,7 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
         ended = true;
         ttfbSpan?.end();
       };
-      const streamTiming = timings.start("stream");
+      const streamTiming = timings.start('stream');
 
       const experimentalTransform = options?.smoothStream
         ? smoothStream({
@@ -1278,9 +1254,7 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
       );
 
       const aiMessages = await Promise.all(
-        payload.map((msg) =>
-          convertToAIMessage({ message: msg, agent: this._agent })
-        ),
+        payload.map((msg) => convertToAIMessage({ message: msg, agent: this._agent })),
       );
 
       // Process instructions if provided in options
@@ -1305,8 +1279,8 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
         providerOptions: getProviderOptions({ budgetTokens }),
         onChunk: endTtfbSpan,
         onError: (err) => {
-          console.error("agent stream error", err);
-          this._trackEvent("agent_stream_error", {
+          console.error('agent stream error', err);
+          this._trackEvent('agent_stream_error', {
             error: serializeError(err),
             threadId: thread.threadId,
             model: options?.model ?? this._configuration?.model,
@@ -1323,15 +1297,15 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
       });
       streamTiming.end();
 
-      const dataStreamResponseTiming = timings.start("data-stream-response");
+      const dataStreamResponseTiming = timings.start('data-stream-response');
       const dataStreamResponse = response.toDataStreamResponse({
         sendReasoning: options?.sendReasoning,
         getErrorMessage: (error) => {
           if (error == null) {
-            return "unknown error";
+            return 'unknown error';
           }
 
-          if (typeof error === "string") {
+          if (typeof error === 'string') {
             return error;
           }
 
@@ -1346,10 +1320,10 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
 
       return dataStreamResponse;
     } catch (err) {
-      console.error("Error on stream", err);
-      this._trackEvent("agent_stream_error", {
+      console.error('Error on stream', err);
+      this._trackEvent('agent_stream_error', {
         error: serializeError(err),
-        method: "stream_main",
+        method: 'stream_main',
       });
       throw err;
     }

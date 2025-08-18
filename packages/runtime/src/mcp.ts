@@ -1,10 +1,10 @@
 // deno-lint-ignore-file no-explicit-any
-import { env } from "cloudflare:workers";
-import { z } from "zod";
-import type { MCPConnection } from "./connection.ts";
-import type { DefaultEnv } from "./index.ts";
-import { createMCPClientProxy } from "./proxy.ts";
-import { JSONSchemaToZod } from "@dmitryrechkin/json-schema-to-zod";
+import { env } from 'cloudflare:workers';
+import { z } from 'zod';
+import type { MCPConnection } from './connection.ts';
+import type { DefaultEnv } from './index.ts';
+import { createMCPClientProxy } from './proxy.ts';
+import { JSONSchemaToZod } from '@dmitryrechkin/json-schema-to-zod';
 
 export interface FetchOptions extends RequestInit {
   path?: string;
@@ -24,7 +24,7 @@ const Meta = z.object({
   rows_written: z.number().optional(),
   served_by_primary: z.boolean().optional(),
   served_by_region: z
-    .enum(["WNAM", "ENAM", "WEUR", "EEUR", "APAC", "OC"])
+    .enum(['WNAM', 'ENAM', 'WEUR', 'EEUR', 'APAC', 'OC'])
     .optional(),
   size_after: z.number().optional(),
   timings: Timings.optional(),
@@ -40,7 +40,7 @@ export type QueryResult = z.infer<typeof QueryResult>;
 
 const workspaceTools = [
   {
-    name: "INTEGRATIONS_GET" as const,
+    name: 'INTEGRATIONS_GET' as const,
     inputSchema: z.object({
       id: z.string(),
     }),
@@ -49,12 +49,12 @@ const workspaceTools = [
     }),
   },
   {
-    name: "DATABASES_RUN_SQL" as const,
+    name: 'DATABASES_RUN_SQL' as const,
     inputSchema: z.object({
-      sql: z.string().describe("The SQL query to run"),
+      sql: z.string().describe('The SQL query to run'),
       params: z
         .array(z.string())
-        .describe("The parameters to pass to the SQL query"),
+        .describe('The parameters to pass to the SQL query'),
     }),
     outputSchema: z.object({
       result: z.array(QueryResult),
@@ -76,11 +76,11 @@ export const MCPClient = new Proxy(
   },
   {
     get(_, name) {
-      if (name === "toJSON") {
+      if (name === 'toJSON') {
         return null;
       }
 
-      if (name === "forWorkspace") {
+      if (name === 'forWorkspace') {
         return (workspace: string, token?: string) =>
           createMCPFetchStub<[]>({
             workspace,
@@ -88,7 +88,7 @@ export const MCPClient = new Proxy(
             decoChatApiUrl: (env as DefaultEnv).DECO_CHAT_API_URL,
           });
       }
-      if (name === "forConnection") {
+      if (name === 'forConnection') {
         return <TDefinition extends readonly ToolBinder[]>(
           connection: MCPConnectionProvider,
         ) =>
@@ -113,7 +113,7 @@ export interface ToolBinder<
   opt?: true;
 }
 export type MCPClientStub<TDefinition extends readonly ToolBinder[]> = {
-  [K in TDefinition[number] as K["name"]]: K extends ToolBinder<
+  [K in TDefinition[number] as K['name']]: K extends ToolBinder<
     string,
     infer TInput,
     infer TReturn
@@ -122,7 +122,7 @@ export type MCPClientStub<TDefinition extends readonly ToolBinder[]> = {
 };
 
 export type MCPClientFetchStub<TDefinition extends readonly ToolBinder[]> = {
-  [K in TDefinition[number] as K["name"]]: K extends ToolBinder<
+  [K in TDefinition[number] as K['name']]: K extends ToolBinder<
     string,
     infer TInput,
     infer TReturn

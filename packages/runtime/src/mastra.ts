@@ -1,28 +1,28 @@
 // deno-lint-ignore-file no-explicit-any ban-types
-import { HttpServerTransport } from "@deco/mcp/http";
+import { HttpServerTransport } from '@deco/mcp/http';
 import {
   createTool as mastraCreateTool,
   Tool,
   type ToolAction,
   type ToolExecutionContext,
   type Workflow,
-} from "@mastra/core";
-import { RuntimeContext } from "@mastra/core/di";
+} from '@mastra/core';
+import { RuntimeContext } from '@mastra/core/di';
 import {
   createStep as mastraCreateStep,
   createWorkflow,
   type DefaultEngineType,
   type ExecuteFunction,
   type Step as MastraStep,
-} from "@mastra/core/workflows";
-import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { z } from "zod";
-import { zodToJsonSchema } from "zod-to-json-schema";
-import type { DefaultEnv } from "./index.ts";
-import { State } from "./state.ts";
+} from '@mastra/core/workflows';
+import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
+import { z } from 'zod';
+import { zodToJsonSchema } from 'zod-to-json-schema';
+import type { DefaultEnv } from './index.ts';
+import { State } from './state.ts';
 export { createWorkflow };
 
-export { cloneStep, cloneWorkflow } from "@mastra/core/workflows";
+export { cloneStep, cloneWorkflow } from '@mastra/core/workflows';
 
 const createRuntimeContext = (prev?: RuntimeContext<AppContext>) => {
   const runtimeContext = new RuntimeContext<AppContext>();
@@ -31,12 +31,12 @@ const createRuntimeContext = (prev?: RuntimeContext<AppContext>) => {
     if (prev) {
       return prev;
     }
-    throw new Error("Missing context, did you forget to call State.bind?");
+    throw new Error('Missing context, did you forget to call State.bind?');
   }
   const { env, ctx, req } = store;
-  runtimeContext.set("env", env);
-  runtimeContext.set("ctx", ctx);
-  runtimeContext.set("req", req);
+  runtimeContext.set('env', env);
+  runtimeContext.set('ctx', ctx);
+  runtimeContext.set('req', req);
   return runtimeContext;
 };
 
@@ -53,7 +53,7 @@ export function createPrivateTool<
     TSchemaIn,
     TSchemaOut,
     TContext
-  >["execute"] = ToolAction<TSchemaIn, TSchemaOut, TContext>["execute"],
+  >['execute'] = ToolAction<TSchemaIn, TSchemaOut, TContext>['execute'],
 >(
   opts: ToolAction<TSchemaIn, TSchemaOut, TContext> & {
     execute?: TExecute;
@@ -69,9 +69,9 @@ export function createPrivateTool<
   }
   : Tool<TSchemaIn, TSchemaOut, TContext> {
   const execute = opts.execute;
-  if (typeof execute === "function") {
+  if (typeof execute === 'function') {
     opts.execute = ((input, options) => {
-      const env = input.runtimeContext.get("env") as DefaultEnv;
+      const env = input.runtimeContext.get('env') as DefaultEnv;
       if (env) {
         env.DECO_CHAT_REQUEST_CONTEXT.ensureAuthenticated();
       }
@@ -90,7 +90,7 @@ export function createTool<
     TSchemaIn,
     TSchemaOut,
     TContext
-  >["execute"] = ToolAction<TSchemaIn, TSchemaOut, TContext>["execute"],
+  >['execute'] = ToolAction<TSchemaIn, TSchemaOut, TContext>['execute'],
 >(
   opts: ToolAction<TSchemaIn, TSchemaOut, TContext> & {
     execute?: TExecute;
@@ -107,7 +107,7 @@ export function createTool<
   : Tool<TSchemaIn, TSchemaOut, TContext> {
   return mastraCreateTool({
     ...opts,
-    execute: typeof opts?.execute === "function"
+    execute: typeof opts?.execute === 'function'
       ? (((input) => {
         return opts.execute!({
           ...input,
@@ -119,7 +119,7 @@ export function createTool<
 }
 
 export type ExecWithContext<TF extends (...args: any[]) => any> = (
-  input: Omit<Parameters<TF>[0], "runtimeContext"> & {
+  input: Omit<Parameters<TF>[0], 'runtimeContext'> & {
     runtimeContext: RuntimeContext<AppContext>;
   },
 ) => ReturnType<TF>;
@@ -141,7 +141,7 @@ export interface Step<
       TSuspendSchema,
       TEngineType
     >,
-    "execute"
+    'execute'
   > {
   execute: ExecWithContext<
     ExecuteFunction<
@@ -258,13 +258,11 @@ export interface AppContext<TEnv = any> {
 const decoChatOAuthToolFor = <TSchema extends z.ZodTypeAny = never>({
   state: schema,
   scopes,
-}: CreateMCPServerOptions<any, TSchema>["oauth"] = {}) => {
-  const jsonSchema = schema
-    ? zodToJsonSchema(schema)
-    : { type: "object", properties: {} };
+}: CreateMCPServerOptions<any, TSchema>['oauth'] = {}) => {
+  const jsonSchema = schema ? zodToJsonSchema(schema) : { type: 'object', properties: {} };
   return createTool({
-    id: "DECO_CHAT_OAUTH_START",
-    description: "OAuth for Deco Chat",
+    id: 'DECO_CHAT_OAUTH_START',
+    description: 'OAuth for Deco Chat',
     inputSchema: z.object({
       returnUrl: z.string(),
     }),
@@ -288,7 +286,7 @@ const createWorkflowTools = <TEnv = any, TSchema extends z.ZodTypeAny = never>(
   const startTool = createTool({
     id: `DECO_CHAT_WORKFLOWS_START_${workflow.id}`,
     description: workflow.description ?? `Start workflow ${workflow.id}`,
-    inputSchema: workflow.inputSchema && "shape" in workflow.inputSchema
+    inputSchema: workflow.inputSchema && 'shape' in workflow.inputSchema
       ? workflow.inputSchema
       : z.object({}),
     outputSchema: z.object({
@@ -296,7 +294,7 @@ const createWorkflowTools = <TEnv = any, TSchema extends z.ZodTypeAny = never>(
     }),
     execute: async (args) => {
       const store = State.getStore();
-      const runId = store?.req?.headers.get("x-deco-chat-run-id") ??
+      const runId = store?.req?.headers.get('x-deco-chat-run-id') ??
         crypto.randomUUID();
       const workflowDO = bindings.DECO_CHAT_WORKFLOW_DO.get(
         bindings.DECO_CHAT_WORKFLOW_DO.idFromName(runId),
@@ -388,7 +386,7 @@ export const createMCPServer = <
 ): MCPServer<TEnv, TSchema> => {
   const createServer = async (bindings: TEnv & DefaultEnv<TSchema>) => {
     const server = new McpServer(
-      { name: "@deco/mcp-api", version: "1.0.0" },
+      { name: '@deco/mcp-api', version: '1.0.0' },
       { capabilities: { tools: {} } },
     );
 
@@ -421,7 +419,7 @@ export const createMCPServer = <
     tools.push(
       createTool({
         id: `DECO_CHAT_VIEWS_LIST`,
-        description: "List views exposed by this MCP",
+        description: 'List views exposed by this MCP',
         inputSchema: z.any(),
         outputSchema: z.object({
           views: z.array(
@@ -443,12 +441,12 @@ export const createMCPServer = <
         tool.id,
         {
           description: tool.description,
-          inputSchema: tool.inputSchema && "shape" in tool.inputSchema
+          inputSchema: tool.inputSchema && 'shape' in tool.inputSchema
             ? (tool.inputSchema.shape as z.ZodRawShape)
             : z.object({}).shape,
           outputSchema: tool.outputSchema &&
-              typeof tool.outputSchema === "object" &&
-              "shape" in tool.outputSchema
+              typeof tool.outputSchema === 'object' &&
+              'shape' in tool.outputSchema
             ? (tool.outputSchema.shape as z.ZodRawShape)
             : z.object({}).shape,
         },
@@ -462,7 +460,7 @@ export const createMCPServer = <
             structuredContent: result,
             content: [
               {
-                type: "text",
+                type: 'text',
                 text: JSON.stringify(result),
               },
             ],
@@ -490,7 +488,7 @@ export const createMCPServer = <
   const callTool: CallTool = async ({ toolCallId, toolCallInput }) => {
     const currentState = State.getStore();
     if (!currentState) {
-      throw new Error("Missing state, did you forget to call State.bind?");
+      throw new Error('Missing state, did you forget to call State.bind?');
     }
     const env = currentState?.env;
     const { tools } = await createServer(env);

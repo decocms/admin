@@ -96,8 +96,8 @@ export async function getOrSet<T>(
     version = 1,
     // Respect explicit override in opts or env flag USE_KV=0 to disable KV usage.
     kv = ((): KVNamespaceLike | undefined => {
-      const disabled = (env as any)?.USE_KV === "0" ||
-        (globalThis as any)?.USE_KV === "0";
+      const disabled = (env as any)?.USE_KV === '0' ||
+        (globalThis as any)?.USE_KV === '0';
       if (disabled) return undefined;
       return env.SEO_CACHE;
     })(),
@@ -133,7 +133,7 @@ export async function getOrSet<T>(
     try {
       // Lightweight single log to indicate KV disabled / missing; avoid spamming.
       console.warn(
-        "[cache] KV disabled or missing (using in-memory only). Set USE_KV=1 and provide binding SEO_CACHE to enable persistence.",
+        '[cache] KV disabled or missing (using in-memory only). Set USE_KV=1 and provide binding SEO_CACHE to enable persistence.',
       );
     } catch {}
   }
@@ -225,12 +225,12 @@ const TRACKING_PARAM_REGEX = /^(utm_|gclid|fbclid|yclid|_hs|mc_|sc_)/i;
 export function normalizeUrl(raw: string): NormalizedUrlParts {
   const u = new URL(raw);
   const origin = u.origin.toLowerCase();
-  const path = u.pathname.replace(/\/+/g, "/");
+  const path = u.pathname.replace(/\/+/g, '/');
   const params = [...u.searchParams.entries()]
     .filter(([k]) => !TRACKING_PARAM_REGEX.test(k))
     .sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0))
     .map(([k, v]) => `${encodeURIComponent(k)}=${encodeURIComponent(v)}`)
-    .join("&");
+    .join('&');
   return { origin, path, query: params };
 }
 

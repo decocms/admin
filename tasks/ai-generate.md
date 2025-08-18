@@ -38,38 +38,38 @@ const AIGenerateInputSchema = z.object({
   // Core generation parameters
   messages: z.array(z.object({
     id: z.string().optional(),
-    role: z.enum(["user", "assistant", "system"]),
+    role: z.enum(['user', 'assistant', 'system']),
     content: z.string(),
     createdAt: z.date().optional(),
     experimental_attachments: z.array(z.object({
       name: z.string().optional().describe(
-        "The name of the attachment, usually the file name",
+        'The name of the attachment, usually the file name',
       ),
       contentType: z.string().optional().describe(
-        "Media type of the attachment",
+        'Media type of the attachment',
       ),
       url: z.string().describe(
-        "URL of the attachment (hosted file or Data URL)",
+        'URL of the attachment (hosted file or Data URL)',
       ),
     })).optional().describe(
-      "Additional attachments to be sent along with the message",
+      'Additional attachments to be sent along with the message',
     ),
-  })).describe("Array of messages for the conversation"),
+  })).describe('Array of messages for the conversation'),
 
   // Model and configuration
   model: z.string().optional().describe(
-    "Model ID to use for generation (defaults to workspace default)",
+    'Model ID to use for generation (defaults to workspace default)',
   ),
-  instructions: z.string().optional().describe("System instructions/prompt"),
+  instructions: z.string().optional().describe('System instructions/prompt'),
 
   // Generation limits
   maxTokens: z.number().default(8192).optional().describe(
-    "Maximum number of tokens to generate",
+    'Maximum number of tokens to generate',
   ),
 
   // Tool integration (optional)
   tools: z.record(z.string(), z.array(z.string())).optional().describe(
-    "Tools available for the generation",
+    'Tools available for the generation',
   ),
 });
 ```
@@ -78,14 +78,14 @@ const AIGenerateInputSchema = z.object({
 
 ```typescript
 const AIGenerateOutputSchema = z.object({
-  text: z.string().describe("The generated text response"),
+  text: z.string().describe('The generated text response'),
   usage: z.object({
-    promptTokens: z.number().describe("Number of tokens in the prompt"),
-    completionTokens: z.number().describe("Number of tokens in the completion"),
-    totalTokens: z.number().describe("Total number of tokens used"),
-  }).describe("Token usage information"),
-  finishReason: z.enum(["stop", "length", "content-filter", "tool-calls"])
-    .optional().describe("Reason why generation finished"),
+    promptTokens: z.number().describe('Number of tokens in the prompt'),
+    completionTokens: z.number().describe('Number of tokens in the completion'),
+    totalTokens: z.number().describe('Total number of tokens used'),
+  }).describe('Token usage information'),
+  finishReason: z.enum(['stop', 'length', 'content-filter', 'tool-calls'])
+    .optional().describe('Reason why generation finished'),
   // Additional metadata as needed
 });
 ```
@@ -104,20 +104,19 @@ The tool must implement wallet checking similar to `packages/ai/src/agent.ts`:
 
 ```typescript
 // packages/sdk/src/mcp/ai/api.ts
-import { createToolGroup } from "../context.ts";
-import { createWalletClient } from "../wallet/index.ts";
-import { createLLMInstance, getLLMConfig } from "@deco/ai/agent/llm.ts";
+import { createToolGroup } from '../context.ts';
+import { createWalletClient } from '../wallet/index.ts';
+import { createLLMInstance, getLLMConfig } from '@deco/ai/agent/llm.ts';
 
-const createTool = createToolGroup("AI", {
-  name: "AI Generation",
-  description: "Direct AI model generation capabilities.",
-  icon: "https://assets.decodecache.com/mcp/[icon-id]/AI-Generation.png", // Need icon
+const createTool = createToolGroup('AI', {
+  name: 'AI Generation',
+  description: 'Direct AI model generation capabilities.',
+  icon: 'https://assets.decodecache.com/mcp/[icon-id]/AI-Generation.png', // Need icon
 });
 
 export const aiGenerate = createTool({
-  name: "GENERATE",
-  description:
-    "Generate text using AI models directly without agent context (stateless)",
+  name: 'GENERATE',
+  description: 'Generate text using AI models directly without agent context (stateless)',
   inputSchema: AIGenerateInputSchema,
   outputSchema: AIGenerateOutputSchema,
   handler: async (input, c) => {

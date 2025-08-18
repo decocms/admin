@@ -1,22 +1,18 @@
-import {
-  useMutation,
-  useQueryClient,
-  useSuspenseQuery,
-} from "@tanstack/react-query";
+import { useMutation, useQueryClient, useSuspenseQuery } from '@tanstack/react-query';
 import {
   createIntegration,
   deleteIntegration,
   listIntegrations,
   loadIntegration,
   saveIntegration,
-} from "../crud/mcp.ts";
-import { InternalServerError } from "../errors.ts";
-import { MCPClient } from "../fetcher.ts";
-import type { Agent, Binder, Integration } from "../models/index.ts";
-import { applyDisplayNameToIntegration } from "../utils/integration-display-name.ts";
-import { KEYS } from "./api.ts";
-import { type MCPTool } from "./index.ts";
-import { useSDK } from "./store.tsx";
+} from '../crud/mcp.ts';
+import { InternalServerError } from '../errors.ts';
+import { MCPClient } from '../fetcher.ts';
+import type { Agent, Binder, Integration } from '../models/index.ts';
+import { applyDisplayNameToIntegration } from '../utils/integration-display-name.ts';
+import { KEYS } from './api.ts';
+import { type MCPTool } from './index.ts';
+import { useSDK } from './store.tsx';
 
 interface IntegrationToolsResult {
   integration: Integration;
@@ -29,8 +25,7 @@ export const useCreateIntegration = () => {
   const { workspace } = useSDK();
 
   const create = useMutation({
-    mutationFn: (mcp: Partial<Integration>) =>
-      createIntegration(workspace, mcp),
+    mutationFn: (mcp: Partial<Integration>) => createIntegration(workspace, mcp),
     onSuccess: (result) => {
       const agents = client.getQueryData<Agent[]>(KEYS.AGENT(workspace));
       const processedResult = applyDisplayNameToIntegration(result, agents);
@@ -85,7 +80,7 @@ export const useUpdateIntegration = ({
             : old.map((mcp) => (mcp.id === result.id ? processedResult : mcp)),
       );
 
-      client.invalidateQueries({ queryKey: ["tools"] });
+      client.invalidateQueries({ queryKey: ['tools'] });
 
       onSuccess?.(result);
     },
@@ -127,8 +122,7 @@ export const useIntegration = (id: string) => {
   const data = useSuspenseQuery({
     queryKey: KEYS.INTEGRATION(workspace, id),
     queryFn: ({ signal }) => loadIntegration(workspace, id, signal),
-    retry: (failureCount, error) =>
-      error instanceof InternalServerError && failureCount < 2,
+    retry: (failureCount, error) => error instanceof InternalServerError && failureCount < 2,
   });
 
   return data;
@@ -164,9 +158,7 @@ export const useIntegrations = ({ isPublic }: { isPublic?: boolean } = {}) => {
       const items = await listIntegrations(workspace, {}, signal);
 
       const agents = client.getQueryData<Agent[]>(KEYS.AGENT(workspace));
-      const processedItems = items.map((item) =>
-        applyDisplayNameToIntegration(item, agents)
-      );
+      const processedItems = items.map((item) => applyDisplayNameToIntegration(item, agents));
 
       for (const item of processedItems) {
         const itemKey = KEYS.INTEGRATION(workspace, item.id);
@@ -183,34 +175,32 @@ export const useIntegrations = ({ isPublic }: { isPublic?: boolean } = {}) => {
 };
 
 interface IntegrationsResult {
-  integrations: Array<Omit<Integration, "connection"> & { provider: string }>;
+  integrations: Array<Omit<Integration, 'connection'> & { provider: string }>;
 }
 
 export const useMarketplaceIntegrations = () => {
   const { workspace } = useSDK();
 
   return useSuspenseQuery<IntegrationsResult>({
-    queryKey: ["integrations", "marketplace"],
+    queryKey: ['integrations', 'marketplace'],
     queryFn: () =>
       MCPClient.forWorkspace(workspace)
-        .DECO_INTEGRATIONS_SEARCH({ query: "" })
-        .then((r: IntegrationsResult | string) =>
-          typeof r === "string" ? { integrations: [] } : r
-        ),
+        .DECO_INTEGRATIONS_SEARCH({ query: '' })
+        .then((r: IntegrationsResult | string) => typeof r === 'string' ? { integrations: [] } : r),
   });
 };
 
 const WELL_KNOWN_DECO_OAUTH_INTEGRATIONS = [
-  "github",
-  "googlesheets",
-  "googlegmail",
-  "googleyoutube",
-  "googledocs",
-  "googledrive",
-  "airtable",
-  "slack",
-  "googlecalendar",
-  "spotify",
+  'github',
+  'googlesheets',
+  'googlegmail',
+  'googleyoutube',
+  'googledocs',
+  'googledrive',
+  'airtable',
+  'slack',
+  'googlecalendar',
+  'spotify',
 ];
 
 export const useInstallFromMarketplace = () => {
@@ -251,22 +241,22 @@ export const useInstallFromMarketplace = () => {
 
       if (
         (WELL_KNOWN_DECO_OAUTH_INTEGRATIONS.includes(appName.toLowerCase()) &&
-          provider === "deco") ||
-        provider === "marketplace"
+          provider === 'deco') ||
+        provider === 'marketplace'
       ) {
         const result = await MCPClient.forWorkspace(
           workspace,
         ).DECO_INTEGRATION_OAUTH_START({
           appName: appName,
           returnUrl,
-          installId: integration.id.split(":").pop()!,
+          installId: integration.id.split(':').pop()!,
           provider,
         });
 
         // Handle both return types: { redirectUrl } or { stateSchema }
-        if (result && "redirectUrl" in result) {
+        if (result && 'redirectUrl' in result) {
           redirectUrl = result.redirectUrl;
-        } else if (result && "stateSchema" in result) {
+        } else if (result && 'stateSchema' in result) {
           // Return integration with stateSchema for modal handling
           return {
             integration,
@@ -274,7 +264,7 @@ export const useInstallFromMarketplace = () => {
             scopes: result.scopes,
           };
         } else {
-          throw new Error("Invalid OAuth response format");
+          throw new Error('Invalid OAuth response format');
         }
       }
 
@@ -326,8 +316,8 @@ export const useCreateOAuthCodeForIntegration = () => {
       });
 
       const url = new URL(redirectUri);
-      url.searchParams.set("code", code);
-      state && url.searchParams.set("state", state);
+      url.searchParams.set('code', code);
+      state && url.searchParams.set('state', state);
 
       return {
         redirectTo: url.toString(),

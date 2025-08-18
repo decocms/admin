@@ -5,7 +5,7 @@ export interface BindingTool {
   toolName: string;
 }
 
-const SEPARATOR = "::";
+const SEPARATOR = '::';
 export const parser = {
   fromBindingToolToScope: ({
     bindingName,

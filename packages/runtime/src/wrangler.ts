@@ -3,7 +3,7 @@ export interface BindingBase {
 }
 
 export interface MCPIntegrationIdBinding extends BindingBase {
-  type: "mcp";
+  type: 'mcp';
   /**
    * If not provided, will return a function that takes the integration id and return the binding implementation..
    */
@@ -11,7 +11,7 @@ export interface MCPIntegrationIdBinding extends BindingBase {
 }
 
 export interface MCPIntegrationNameBinding extends BindingBase {
-  type: "mcp";
+  type: 'mcp';
   /**
    * The name of the integration to bind.
    */

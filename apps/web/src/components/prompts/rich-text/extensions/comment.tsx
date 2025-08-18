@@ -1,6 +1,6 @@
-import { InputRule, mergeAttributes, Node } from "@tiptap/react";
+import { InputRule, mergeAttributes, Node } from '@tiptap/react';
 
-declare module "@tiptap/react" {
+declare module '@tiptap/react' {
   interface Commands<ReturnType> {
     comment: {
       /**
@@ -14,26 +14,26 @@ declare module "@tiptap/react" {
 }
 
 export const Comment = Node.create({
-  name: "comment",
-  group: "block",
-  marks: "",
+  name: 'comment',
+  group: 'block',
+  marks: '',
   code: true,
-  content: "text*",
+  content: 'text*',
   parseHTML() {
     return [
       {
-        tag: "span",
+        tag: 'span',
         attrs: {
-          "data-type": "comment",
+          'data-type': 'comment',
         },
       },
     ];
   },
   renderHTML({ HTMLAttributes }) {
     return [
-      "span",
+      'span',
       mergeAttributes(HTMLAttributes, {
-        "data-type": "comment",
+        'data-type': 'comment',
       }),
       0,
     ];
@@ -46,8 +46,8 @@ export const Comment = Node.create({
       setComment: () => ({ commands }) => {
         return commands.insertContent([
           {
-            type: "comment",
-            content: [{ type: "text", text: " " }],
+            type: 'comment',
+            content: [{ type: 'text', text: ' ' }],
           },
         ]);
       },
@@ -62,8 +62,8 @@ export const Comment = Node.create({
             commands.deleteRange(range);
             commands.insertContent([
               {
-                type: "comment",
-                content: [{ type: "text", text: " " }],
+                type: 'comment',
+                content: [{ type: 'text', text: ' ' }],
               },
             ]);
             return true;

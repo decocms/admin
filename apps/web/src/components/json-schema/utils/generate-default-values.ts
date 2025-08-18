@@ -1,7 +1,7 @@
-import type { JSONSchema7 } from "json-schema";
-import type { SchemaType } from "../index.tsx";
-import { generateDefaultValue } from "./generate-default-value.ts";
-import { selectAnyOfSchema } from "./schema.ts";
+import type { JSONSchema7 } from 'json-schema';
+import type { SchemaType } from '../index.tsx';
+import { generateDefaultValue } from './generate-default-value.ts';
+import { selectAnyOfSchema } from './schema.ts';
 
 // Generate default values based on schema
 export function generateDefaultValues(
@@ -9,7 +9,7 @@ export function generateDefaultValues(
   formData?: Record<string, SchemaType>,
   fieldPath?: string,
 ): Record<string, SchemaType> {
-  if (!schema || typeof schema !== "object") {
+  if (!schema || typeof schema !== 'object') {
     return {};
   }
 
@@ -23,7 +23,7 @@ export function generateDefaultValues(
     return generateDefaultValues(representativeSchema, formData, fieldPath);
   }
 
-  if (schema.type === "object" && schema.properties) {
+  if (schema.type === 'object' && schema.properties) {
     const result: Record<string, SchemaType> = {};
     for (const [name, propSchema] of Object.entries(schema.properties)) {
       const isRequired = schema.required?.includes(name);

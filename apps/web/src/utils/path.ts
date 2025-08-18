@@ -6,10 +6,10 @@ export function isUrlLike(path?: string): boolean {
   if (!path) return false;
 
   // Handle data URIs
-  if (path.startsWith("data:")) return true;
+  if (path.startsWith('data:')) return true;
 
   // Try URL.canParse() first (modern browsers)
-  if (typeof URL !== "undefined" && "canParse" in URL) {
+  if (typeof URL !== 'undefined' && 'canParse' in URL) {
     try {
       return URL.canParse(path);
     } catch {

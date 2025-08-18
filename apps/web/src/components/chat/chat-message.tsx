@@ -1,12 +1,12 @@
-import type { Message } from "@ai-sdk/react";
-import { Button } from "@deco/ui/components/button.tsx";
-import { Icon } from "@deco/ui/components/icon.tsx";
-import { cn } from "@deco/ui/lib/utils.ts";
-import { useMemo } from "react";
-import { MemoizedMarkdown } from "./chat-markdown.tsx";
-import { ToolMessage } from "./tool-message.tsx";
-import { ReasoningPart } from "./reasoning-part.tsx";
-import { useFile } from "@deco/sdk";
+import type { Message } from '@ai-sdk/react';
+import { Button } from '@deco/ui/components/button.tsx';
+import { Icon } from '@deco/ui/components/icon.tsx';
+import { cn } from '@deco/ui/lib/utils.ts';
+import { useMemo } from 'react';
+import { MemoizedMarkdown } from './chat-markdown.tsx';
+import { ToolMessage } from './tool-message.tsx';
+import { ReasoningPart } from './reasoning-part.tsx';
+import { useFile } from '@deco/sdk';
 
 interface ChatMessageProps {
   message: Message;
@@ -15,9 +15,9 @@ interface ChatMessageProps {
 }
 
 interface MessagePart {
-  type: "text" | "tool-invocation-group" | "reasoning" | "image";
+  type: 'text' | 'tool-invocation-group' | 'reasoning' | 'image';
   content?: string;
-  toolInvocations?: NonNullable<Message["toolInvocations"]>;
+  toolInvocations?: NonNullable<Message['toolInvocations']>;
   reasoning?: string;
   image?: string;
 }
@@ -29,22 +29,22 @@ interface MessageAttachment {
 }
 
 interface TextPart {
-  type: "text";
+  type: 'text';
   text: string;
 }
 
 interface ToolPart {
-  type: "tool-invocation";
-  toolInvocation: NonNullable<Message["toolInvocations"]>[0];
+  type: 'tool-invocation';
+  toolInvocation: NonNullable<Message['toolInvocations']>[0];
 }
 
 interface ImagePart {
-  type: "image";
+  type: 'image';
   image: string;
 }
 
 interface ReasoningPart {
-  type: "reasoning";
+  type: 'reasoning';
   reasoning: string;
 }
 
@@ -54,14 +54,14 @@ function mergeParts(parts: Part[] | undefined): MessagePart[] {
   if (!parts) return [];
 
   const mergedParts: MessagePart[] = [];
-  let currentToolGroup: NonNullable<Message["toolInvocations"]> = [];
+  let currentToolGroup: NonNullable<Message['toolInvocations']> = [];
   let currentTextContent: string[] = [];
   let currentReasoning: string[] = [];
   let currentImage: string[] = [];
   const flushToolGroup = () => {
     if (currentToolGroup.length > 0) {
       mergedParts.push({
-        type: "tool-invocation-group",
+        type: 'tool-invocation-group',
         toolInvocations: [...currentToolGroup],
       });
       currentToolGroup = [];
@@ -71,8 +71,8 @@ function mergeParts(parts: Part[] | undefined): MessagePart[] {
   const flushTextContent = () => {
     if (currentTextContent.length > 0) {
       mergedParts.push({
-        type: "text",
-        content: currentTextContent.join("\n").trim(),
+        type: 'text',
+        content: currentTextContent.join('\n').trim(),
       });
       currentTextContent = [];
     }
@@ -81,8 +81,8 @@ function mergeParts(parts: Part[] | undefined): MessagePart[] {
   const flushReasoning = () => {
     if (currentReasoning.length > 0) {
       mergedParts.push({
-        type: "reasoning",
-        reasoning: currentReasoning.join("\n").trim(),
+        type: 'reasoning',
+        reasoning: currentReasoning.join('\n').trim(),
       });
       currentReasoning = [];
     }
@@ -91,20 +91,20 @@ function mergeParts(parts: Part[] | undefined): MessagePart[] {
   const flushImage = () => {
     if (currentImage.length > 0) {
       mergedParts.push({
-        type: "image",
-        image: currentImage.join("\n").trim(),
+        type: 'image',
+        image: currentImage.join('\n').trim(),
       });
       currentImage = [];
     }
   };
 
   parts.forEach((part) => {
-    if (part.type === "tool-invocation") {
+    if (part.type === 'tool-invocation') {
       // If we have pending text content or reasoning, flush them first
       flushTextContent();
       flushReasoning();
       currentToolGroup.push(part.toolInvocation);
-    } else if (part.type === "text") {
+    } else if (part.type === 'text') {
       // If we have pending tool invocations or reasoning, flush them first
       flushToolGroup();
       flushReasoning();
@@ -112,11 +112,11 @@ function mergeParts(parts: Part[] | undefined): MessagePart[] {
       if (part.text.trim()) {
         currentTextContent.push(part.text);
       }
-    } else if (part.type === "reasoning") {
+    } else if (part.type === 'reasoning') {
       // If we have pending tool invocations, flush them first
       flushToolGroup();
       currentReasoning.push(part.reasoning);
-    } else if (part.type === "image") {
+    } else if (part.type === 'image') {
       flushToolGroup();
       flushReasoning();
       flushTextContent();
@@ -138,26 +138,26 @@ export function ChatMessage({
   isStreaming = false,
   isLastMessage = false,
 }: ChatMessageProps) {
-  const isUser = message.role === "user";
+  const isUser = message.role === 'user';
   const timestamp = new Date(
     message.createdAt || Date.now(),
   ).toLocaleTimeString([], {
-    hour: "2-digit",
-    minute: "2-digit",
+    hour: '2-digit',
+    minute: '2-digit',
   });
 
   const attachments = message.experimental_attachments?.filter(
     (attachment: MessageAttachment) =>
-      attachment?.contentType?.startsWith("image/") ||
-      attachment?.contentType?.startsWith("application/pdf"),
+      attachment?.contentType?.startsWith('image/') ||
+      attachment?.contentType?.startsWith('application/pdf'),
   );
 
   const handleCopy = async () => {
     const content = message.parts
       ? (message.parts as Part[])
-        .filter((part) => part.type === "text")
+        .filter((part) => part.type === 'text')
         .map((part) => part.text)
-        .join("\n")
+        .join('\n')
       : message.content;
     await navigator.clipboard.writeText(content);
   };
@@ -169,7 +169,7 @@ export function ChatMessage({
 
   const hasTextContent = useMemo(() => {
     return (
-      (message.parts as Part[])?.some((part) => part.type === "text") ||
+      (message.parts as Part[])?.some((part) => part.type === 'text') ||
       message.content
     );
   }, [message.parts, message.content]);
@@ -179,7 +179,7 @@ export function ChatMessage({
     // If we have parts and the last part is reasoning, it's streaming
     if (message.parts && message.parts.length > 0) {
       const lastPart = message.parts[message.parts.length - 1];
-      return lastPart.type === "reasoning";
+      return lastPart.type === 'reasoning';
     }
     return false;
   }, [message.parts, isStreaming]);
@@ -189,7 +189,7 @@ export function ChatMessage({
     // If we have parts and the last part is text, it's streaming
     if (message.parts && message.parts.length > 0) {
       const lastPart = message.parts[message.parts.length - 1];
-      return lastPart.type === "text";
+      return lastPart.type === 'text';
     }
     return false;
   }, [message.parts, isStreaming]);
@@ -197,38 +197,38 @@ export function ChatMessage({
   return (
     <div
       className={cn(
-        "w-full group relative flex items-start gap-4 px-4 z-20 text-foreground group",
-        isUser ? "flex-row-reverse py-4" : "flex-row",
+        'w-full group relative flex items-start gap-4 px-4 z-20 text-foreground group',
+        isUser ? 'flex-row-reverse py-4' : 'flex-row',
       )}
     >
       <div
         className={cn(
-          "flex flex-col gap-1",
-          isUser ? "items-end max-w-[70%]" : "w-full items-start",
+          'flex flex-col gap-1',
+          isUser ? 'items-end max-w-[70%]' : 'w-full items-start',
         )}
       >
-        <div className="flex items-center gap-2 text-xs text-muted-foreground">
+        <div className='flex items-center gap-2 text-xs text-muted-foreground'>
           <span>{timestamp}</span>
         </div>
 
         <div
           className={cn(
-            "w-full not-only:rounded-2xl text-base break-words overflow-wrap-anywhere",
-            isUser ? "bg-muted p-3" : "bg-transparent",
+            'w-full not-only:rounded-2xl text-base break-words overflow-wrap-anywhere',
+            isUser ? 'bg-muted p-3' : 'bg-transparent',
           )}
         >
           {message.parts
             ? (
-              <div className="space-y-2 w-full">
+              <div className='space-y-2 w-full'>
                 {mergedParts.map((part, index) => {
-                  if (part.type === "reasoning") {
+                  if (part.type === 'reasoning') {
                     const isLastReasoningPart = mergedParts
                       .slice(index + 1)
-                      .every((p) => p.type !== "reasoning");
+                      .every((p) => p.type !== 'reasoning');
                     return (
                       <ReasoningPart
                         key={index}
-                        reasoning={part.reasoning || ""}
+                        reasoning={part.reasoning || ''}
                         messageId={message.id}
                         index={index}
                         isStreaming={isLastReasoningPart &&
@@ -236,19 +236,19 @@ export function ChatMessage({
                         isResponseStreaming={isResponseStreaming}
                       />
                     );
-                  } else if (part.type === "text") {
+                  } else if (part.type === 'text') {
                     return (
                       <MemoizedMarkdown
                         key={index}
                         id={`${message.id}-${index}`}
-                        content={part.content || ""}
+                        content={part.content || ''}
                       />
                     );
-                  } else if (part.type === "image") {
+                  } else if (part.type === 'image') {
                     if (!part.image) return null;
                     return <ImagePart image={part.image} key={index} />;
                   } else if (
-                    part.type === "tool-invocation-group" &&
+                    part.type === 'tool-invocation-group' &&
                     part.toolInvocations
                   ) {
                     return (
@@ -266,55 +266,55 @@ export function ChatMessage({
             : <MemoizedMarkdown id={message.id} content={message.content} />}
 
           {attachments && attachments.length > 0 && (
-            <div className="mt-2 flex flex-wrap gap-2">
+            <div className='mt-2 flex flex-wrap gap-2'>
               {attachments.map(
                 (attachment: MessageAttachment, index: number) => (
                   <a
                     key={`${message.id}-${index}`}
                     href={attachment.url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="relative group flex items-center gap-2 p-2 bg-muted rounded-xl border border-border hover:bg-muted/50 transition-colors"
+                    target='_blank'
+                    rel='noopener noreferrer'
+                    className='relative group flex items-center gap-2 p-2 bg-muted rounded-xl border border-border hover:bg-muted/50 transition-colors'
                   >
-                    {attachment.contentType?.startsWith("image/")
+                    {attachment.contentType?.startsWith('image/')
                       ? (
-                        <div className="relative">
+                        <div className='relative'>
                           <img
                             src={attachment.url}
                             alt={attachment.name ?? `attachment-${index}`}
-                            className="rounded-lg max-h-[300px] object-cover"
+                            className='rounded-lg max-h-[300px] object-cover'
                           />
                         </div>
                       )
                       : attachment.contentType?.startsWith(
-                          "application/pdf",
+                          'application/pdf',
                         )
                       ? (
-                        <div className="flex items-center gap-2">
-                          <div className="h-8 w-8 rounded-lg flex items-center justify-center bg-muted">
+                        <div className='flex items-center gap-2'>
+                          <div className='h-8 w-8 rounded-lg flex items-center justify-center bg-muted'>
                             <Icon
-                              name="picture_as_pdf"
-                              className="text-muted-foreground"
+                              name='picture_as_pdf'
+                              className='text-muted-foreground'
                             />
                           </div>
-                          <div className="flex flex-col min-w-0">
-                            <span className="text-xs text-foreground font-medium truncate max-w-[200px]">
-                              {attachment.name ?? "PDF Document"}
+                          <div className='flex flex-col min-w-0'>
+                            <span className='text-xs text-foreground font-medium truncate max-w-[200px]'>
+                              {attachment.name ?? 'PDF Document'}
                             </span>
                           </div>
                         </div>
                       )
                       : (
-                        <div className="flex items-center gap-2">
-                          <div className="h-8 w-8 rounded-lg flex items-center justify-center bg-muted">
+                        <div className='flex items-center gap-2'>
+                          <div className='h-8 w-8 rounded-lg flex items-center justify-center bg-muted'>
                             <Icon
-                              name="draft"
-                              className="text-muted-foreground"
+                              name='draft'
+                              className='text-muted-foreground'
                             />
                           </div>
-                          <div className="flex flex-col min-w-0">
-                            <span className="text-xs text-foreground font-medium truncate max-w-[200px]">
-                              {attachment.name ?? "Document"}
+                          <div className='flex flex-col min-w-0'>
+                            <span className='text-xs text-foreground font-medium truncate max-w-[200px]'>
+                              {attachment.name ?? 'Document'}
                             </span>
                           </div>
                         </div>
@@ -326,15 +326,15 @@ export function ChatMessage({
           )}
 
           {!isUser && hasTextContent && (
-            <div className="mt-2 flex gap-2 items-center text-xs text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity duration-200">
-              <div className="flex gap-1">
+            <div className='mt-2 flex gap-2 items-center text-xs text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity duration-200'>
+              <div className='flex gap-1'>
                 <Button
                   onClick={handleCopy}
-                  variant="ghost"
-                  size="sm"
-                  className="text-muted-foreground hover:text-foreground p-0 hover:bg-transparent"
+                  variant='ghost'
+                  size='sm'
+                  className='text-muted-foreground hover:text-foreground p-0 hover:bg-transparent'
                 >
-                  <Icon name="content_copy" className="mr-1 text-sm" />
+                  <Icon name='content_copy' className='mr-1 text-sm' />
                   Copy message
                 </Button>
               </div>
@@ -355,7 +355,7 @@ function ImagePart({ image }: { image: string }) {
     <img
       src={fileUrl}
       alt={image}
-      className="rounded-lg max-h-[300px] object-cover"
+      className='rounded-lg max-h-[300px] object-cover'
     />
   );
 }

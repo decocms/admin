@@ -1,13 +1,13 @@
-import { type Integration, useIntegrations } from "@deco/sdk";
-import { cn } from "@deco/ui/lib/utils.ts";
-import Placeholder from "@tiptap/extension-placeholder";
-import { EditorContent, type Extensions, useEditor } from "@tiptap/react";
-import StarterKit from "@tiptap/starter-kit";
-import { useEffect, useMemo } from "react";
-import { Markdown } from "tiptap-markdown";
-import { NoNewLine } from "./extensions/no-new-line.ts";
-import { toolMentions } from "./extensions/tool-mention.ts";
-import { useAgent } from "../agent/provider.tsx";
+import { type Integration, useIntegrations } from '@deco/sdk';
+import { cn } from '@deco/ui/lib/utils.ts';
+import Placeholder from '@tiptap/extension-placeholder';
+import { EditorContent, type Extensions, useEditor } from '@tiptap/react';
+import StarterKit from '@tiptap/starter-kit';
+import { useEffect, useMemo } from 'react';
+import { Markdown } from 'tiptap-markdown';
+import { NoNewLine } from './extensions/no-new-line.ts';
+import { toolMentions } from './extensions/tool-mention.ts';
+import { useAgent } from '../agent/provider.tsx';
 
 export interface Mention {
   id: string;
@@ -102,7 +102,7 @@ export function RichTextArea({
         shouldPreventNewLine: () => !allowNewLine,
       }),
       Placeholder.configure({
-        placeholder: placeholder ?? "Type a message...",
+        placeholder: placeholder ?? 'Type a message...',
       }),
     ];
 
@@ -127,8 +127,8 @@ export function RichTextArea({
     editorProps: {
       attributes: {
         class: cn(
-          "w-full outline-none min-h-[48px] max-h-[164px] overflow-y-auto p-4  leading-[1.2] rounded-t-2xl",
-          disabled && "opacity-100 text-muted-foreground",
+          'w-full outline-none min-h-[48px] max-h-[164px] overflow-y-auto p-4  leading-[1.2] rounded-t-2xl',
+          disabled && 'opacity-100 text-muted-foreground',
           className,
         ),
       },

@@ -1,4 +1,4 @@
-import { useCreateTeam } from "@deco/sdk";
+import { useCreateTeam } from '@deco/sdk';
 import {
   AlertDialog,
   AlertDialogCancel,
@@ -7,8 +7,8 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-} from "@deco/ui/components/alert-dialog.tsx";
-import { Button } from "@deco/ui/components/button.tsx";
+} from '@deco/ui/components/alert-dialog.tsx';
+import { Button } from '@deco/ui/components/button.tsx';
 import {
   Form,
   FormControl,
@@ -17,26 +17,26 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
-} from "@deco/ui/components/form.tsx";
-import { Input } from "@deco/ui/components/input.tsx";
-import { Spinner } from "@deco/ui/components/spinner.tsx";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { useState } from "react";
-import { useForm } from "react-hook-form";
-import { z } from "zod";
+} from '@deco/ui/components/form.tsx';
+import { Input } from '@deco/ui/components/input.tsx';
+import { Spinner } from '@deco/ui/components/spinner.tsx';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { useState } from 'react';
+import { useForm } from 'react-hook-form';
+import { z } from 'zod';
 
 // Simple slugify function for client-side use
 function slugify(input: string): string {
   return input
     .toLowerCase()
     .trim()
-    .replace(/[^a-z0-9\s_-]+/g, "")
-    .replace(/[\s_-]+/g, "-")
-    .replace(/^-+|-+$/g, "");
+    .replace(/[^a-z0-9\s_-]+/g, '')
+    .replace(/[\s_-]+/g, '-')
+    .replace(/^-+|-+$/g, '');
 }
 
 const createTeamSchema = z.object({
-  name: z.string().min(2, "Team name is required"),
+  name: z.string().min(2, 'Team name is required'),
 });
 
 interface CreateTeamDialogProps {
@@ -54,14 +54,14 @@ export function CreateTeamDialog({
   const form = useForm<z.infer<typeof createTeamSchema>>({
     resolver: zodResolver(createTeamSchema),
     defaultValues: {
-      name: "",
+      name: '',
     },
-    mode: "onChange",
+    mode: 'onChange',
   });
 
   // Compute slug from name
-  const nameValue = form.watch("name");
-  const slug = slugify(nameValue || "");
+  const nameValue = form.watch('name');
+  const slug = slugify(nameValue || '');
 
   async function onSubmit(data: z.infer<typeof createTeamSchema>) {
     setError(null);
@@ -75,11 +75,11 @@ export function CreateTeamDialog({
       }
     } catch (err) {
       setError(
-        typeof err === "string"
+        typeof err === 'string'
           ? err
           : err instanceof Error
           ? err.message
-          : "Failed to create team.",
+          : 'Failed to create team.',
       );
     }
   }
@@ -95,20 +95,20 @@ export function CreateTeamDialog({
         </AlertDialogHeader>
         <Form {...form}>
           <form
-            className="space-y-6"
+            className='space-y-6'
             onSubmit={form.handleSubmit(onSubmit)}
-            autoComplete="off"
+            autoComplete='off'
           >
             <FormField
               control={form.control}
-              name="name"
+              name='name'
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Team Name</FormLabel>
                   <FormControl>
                     <Input
                       {...field}
-                      placeholder="Acme Inc."
+                      placeholder='Acme Inc.'
                       disabled={createTeam.isPending}
                     />
                   </FormControl>
@@ -117,12 +117,10 @@ export function CreateTeamDialog({
                   </FormDescription>
                   {/* Slug preview */}
                   {slug && (
-                    <div className="text-xs text-muted-foreground mt-1">
-                      Team URL:{" "}
-                      <span className="font-mono">
-                        {typeof window !== "undefined"
-                          ? globalThis.location.origin
-                          : ""}
+                    <div className='text-xs text-muted-foreground mt-1'>
+                      Team URL:{' '}
+                      <span className='font-mono'>
+                        {typeof window !== 'undefined' ? globalThis.location.origin : ''}
                         /{slug}
                       </span>
                     </div>
@@ -131,27 +129,25 @@ export function CreateTeamDialog({
                 </FormItem>
               )}
             />
-            {error && (
-              <div className="text-destructive text-sm mt-2">{error}</div>
-            )}
+            {error && <div className='text-destructive text-sm mt-2'>{error}</div>}
             <AlertDialogFooter>
               <AlertDialogCancel disabled={createTeam.isPending}>
                 Cancel
               </AlertDialogCancel>
               <Button
-                type="submit"
-                variant="default"
+                type='submit'
+                variant='default'
                 disabled={!form.formState.isValid || createTeam.isPending ||
                   !slug}
               >
                 {createTeam.isPending
                   ? (
-                    <span className="flex items-center gap-2">
-                      <Spinner size="xs" /> Creating...
+                    <span className='flex items-center gap-2'>
+                      <Spinner size='xs' /> Creating...
                     </span>
                   )
                   : (
-                    "Create Team"
+                    'Create Team'
                   )}
               </Button>
             </AlertDialogFooter>

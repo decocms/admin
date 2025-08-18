@@ -2,13 +2,9 @@
  * Thread specific hooks
  */
 
-import {
-  useMutation,
-  useQueryClient,
-  useSuspenseQuery,
-} from "@tanstack/react-query";
-import type { UIMessage } from "ai";
-import { useCallback, useEffect } from "react";
+import { useMutation, useQueryClient, useSuspenseQuery } from '@tanstack/react-query';
+import type { UIMessage } from 'ai';
+import { useCallback, useEffect } from 'react';
 import {
   getThread,
   getThreadMessages,
@@ -18,10 +14,10 @@ import {
   type ThreadList,
   updateThreadMetadata,
   updateThreadTitle,
-} from "../crud/thread.ts";
-import { KEYS } from "./api.ts";
-import { useSDK } from "./store.tsx";
-import { MCPClient } from "../fetcher.ts";
+} from '../crud/thread.ts';
+import { KEYS } from './api.ts';
+import { useSDK } from './store.tsx';
+import { MCPClient } from '../fetcher.ts';
 
 // Minimum delay to prevent UI flickering during title generation
 const TITLE_GENERATION_MIN_DELAY_MS = 2000;
@@ -83,10 +79,10 @@ export const useThreads = (partialOptions: ThreadFilterOptions = {}) => {
         MCPClient.forWorkspace(workspace).AI_GENERATE({
           // This can break if the workspace disabled 4.1-nano.
           // TODO: Implement something like a model price/quality/speed hinting system.
-          model: "openai:gpt-4.1-nano",
+          model: 'openai:gpt-4.1-nano',
           messages: [
             {
-              role: "user",
+              role: 'user',
               content:
                 `Generate a title for the thread that started with the following user message:
                 <Rule>Make it short and concise</Rule>
@@ -101,9 +97,7 @@ export const useThreads = (partialOptions: ThreadFilterOptions = {}) => {
           ],
         }),
         // ensure at least 2 seconds delay to avoid UI flickering.
-        new Promise((resolve) =>
-          setTimeout(resolve, TITLE_GENERATION_MIN_DELAY_MS)
-        ),
+        new Promise((resolve) => setTimeout(resolve, TITLE_GENERATION_MIN_DELAY_MS)),
       ]);
       updateThreadTitle.mutate({ threadId, title: result.text, stream: true });
     },
@@ -132,9 +126,9 @@ export const useThreads = (partialOptions: ThreadFilterOptions = {}) => {
             return oldData;
           }
 
-          const temporaryTitle = typeof messages[0]?.content === "string"
+          const temporaryTitle = typeof messages[0]?.content === 'string'
             ? messages[0].content.slice(0, 20)
-            : "New chat";
+            : 'New chat';
 
           generateThreadTitle({ firstMessage: messages[0].content, threadId });
 
@@ -211,9 +205,7 @@ export const useUpdateThreadTitle = () => {
                 return {
                   ...oldData,
                   threads: oldData.threads.map((thread) =>
-                    thread.id === threadId
-                      ? { ...thread, title: partialTitle }
-                      : thread
+                    thread.id === threadId ? { ...thread, title: partialTitle } : thread
                   ),
                 };
               },
@@ -302,7 +294,7 @@ export interface Options {
 }
 
 export const dispatchMessages = (options: Options) => {
-  channel.dispatchEvent(new CustomEvent("message", { detail: options }));
+  channel.dispatchEvent(new CustomEvent('message', { detail: options }));
 };
 
 const useMessagesSentEffect = (cb: (options: Options) => void) => {
@@ -312,10 +304,10 @@ const useMessagesSentEffect = (cb: (options: Options) => void) => {
       cb(options);
     };
 
-    channel.addEventListener("message", handler);
+    channel.addEventListener('message', handler);
 
     return () => {
-      channel.removeEventListener("message", handler);
+      channel.removeEventListener('message', handler);
     };
   }, [cb]);
 };

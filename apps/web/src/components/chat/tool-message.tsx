@@ -1,14 +1,14 @@
-import type { Message } from "@ai-sdk/react";
-import { Button } from "@deco/ui/components/button.tsx";
-import { Icon } from "@deco/ui/components/icon.tsx";
-import { Spinner } from "@deco/ui/components/spinner.tsx";
-import { cn } from "@deco/ui/lib/utils.ts";
-import { useMemo, useRef, useState } from "react";
-import { Picker } from "./chat-picker.tsx";
-import { useAgent } from "../agent/provider.tsx";
-import { AgentCard } from "./tools/agent-card.tsx";
-import { Preview } from "./tools/render-preview.tsx";
-import { formatToolName } from "./utils/format-tool-name.ts";
+import type { Message } from '@ai-sdk/react';
+import { Button } from '@deco/ui/components/button.tsx';
+import { Icon } from '@deco/ui/components/icon.tsx';
+import { Spinner } from '@deco/ui/components/spinner.tsx';
+import { cn } from '@deco/ui/lib/utils.ts';
+import { useMemo, useRef, useState } from 'react';
+import { Picker } from './chat-picker.tsx';
+import { useAgent } from '../agent/provider.tsx';
+import { AgentCard } from './tools/agent-card.tsx';
+import { Preview } from './tools/render-preview.tsx';
+import { formatToolName } from './utils/format-tool-name.ts';
 
 interface ConfirmOption {
   value: string;
@@ -16,25 +16,25 @@ interface ConfirmOption {
 }
 
 interface ToolMessageProps {
-  toolInvocations: NonNullable<Message["toolInvocations"]>;
+  toolInvocations: NonNullable<Message['toolInvocations']>;
   isLastMessage?: boolean;
 }
 
 // Tools that have custom UI rendering and shouldn't show in the timeline
 const CUSTOM_UI_TOOLS = [
-  "HOSTING_APP_DEPLOY",
-  "RENDER",
-  "SHOW_PICKER",
-  "CONFIRM",
-  "CONFIGURE",
-  "AGENT_CREATE",
+  'HOSTING_APP_DEPLOY',
+  'RENDER',
+  'SHOW_PICKER',
+  'CONFIRM',
+  'CONFIGURE',
+  'AGENT_CREATE',
 ] as const;
 type CustomUITool = (typeof CUSTOM_UI_TOOLS)[number];
 
 interface ToolInvocation {
   toolCallId: string;
   toolName: string;
-  state: "call" | "result" | "error" | "partial-call";
+  state: 'call' | 'result' | 'error' | 'partial-call';
   args?: Record<string, unknown>;
   result?: Record<string, unknown>;
   error?: unknown;
@@ -59,19 +59,19 @@ function ToolStatus({
 
   const getIcon = (state: string) => {
     switch (state) {
-      case "call":
-        return <Spinner size="xs" variant="default" />;
-      case "result":
-        return <Icon name="check" className="text-muted-foreground" />;
-      case "error":
-        return <Icon name="close" className="text-muted-foreground" />;
+      case 'call':
+        return <Spinner size='xs' variant='default' />;
+      case 'result':
+        return <Icon name='check' className='text-muted-foreground' />;
+      case 'error':
+        return <Icon name='close' className='text-muted-foreground' />;
       default:
-        return "•";
+        return '•';
     }
   };
 
   const getToolName = () => {
-    if (tool.toolName.startsWith("AGENT_GENERATE_")) {
+    if (tool.toolName.startsWith('AGENT_GENERATE_')) {
       return `Delegating to agent`;
     }
     return formatToolName(tool.toolName);
@@ -98,8 +98,8 @@ function ToolStatus({
       setTimeout(() => {
         if (newState && contentRef.current) {
           contentRef.current.scrollIntoView({
-            behavior: "smooth",
-            block: "center",
+            behavior: 'smooth',
+            block: 'center',
           });
         }
       }, 100);
@@ -115,70 +115,70 @@ function ToolStatus({
   return (
     <div
       className={cn(
-        "flex flex-col relative",
-        isSingle && "p-4 hover:bg-accent rounded-2xl",
+        'flex flex-col relative',
+        isSingle && 'p-4 hover:bg-accent rounded-2xl',
       )}
       onClick={isSingle ? onClick : undefined}
       onMouseEnter={() => setShowCopyButton(true)}
       onMouseLeave={() => setShowCopyButton(false)}
     >
-      <div className="flex items-start gap-2">
+      <div className='flex items-start gap-2'>
         <button
-          type="submit"
+          type='submit'
           onClick={isSingle ? undefined : onClick}
           className={cn(
-            "w-full flex items-start gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors",
-            !isSingle && "hover:bg-accent rounded-lg p-2",
+            'w-full flex items-start gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors',
+            !isSingle && 'hover:bg-accent rounded-lg p-2',
           )}
         >
-          <div className="relative flex flex-col items-center min-h-[20px]">
+          <div className='relative flex flex-col items-center min-h-[20px]'>
             <div
               className={cn(
-                "w-5 h-5 rounded-full border flex items-center justify-center bg-muted",
+                'w-5 h-5 rounded-full border flex items-center justify-center bg-muted',
               )}
             >
               {getIcon(tool.state)}
             </div>
             {!isLast && !isExpanded && (
-              <div className="w-[1px] h-[150%] bg-muted absolute top-5 left-1/2 transform -translate-x-1/2" />
+              <div className='w-[1px] h-[150%] bg-muted absolute top-5 left-1/2 transform -translate-x-1/2' />
             )}
           </div>
-          <div className="flex-1">
-            <div className="flex items-center gap-2">
-              <div className="font-medium truncate max-w-[60vw] md:max-w-full">
+          <div className='flex-1'>
+            <div className='flex items-center gap-2'>
+              <div className='font-medium truncate max-w-[60vw] md:max-w-full'>
                 {getToolName()}
               </div>
               <Icon
-                className={cn("text-sm ml-auto", isExpanded && "rotate-90")}
-                name="chevron_right"
+                className={cn('text-sm ml-auto', isExpanded && 'rotate-90')}
+                name='chevron_right'
               />
             </div>
 
             {isExpanded && (
               <div
                 ref={contentRef}
-                className="text-left mt-2 rounded-lg bg-primary border border-border overflow-hidden w-full relative"
+                className='text-left mt-2 rounded-lg bg-primary border border-border overflow-hidden w-full relative'
                 onClick={(e) => e.stopPropagation()}
               >
                 {showCopyButton && (
                   <Button
-                    variant="ghost"
-                    size="icon"
+                    variant='ghost'
+                    size='icon'
                     onClick={(e) => {
                       e.stopPropagation();
                       handleCopy();
                     }}
-                    className="absolute top-2 right-2 p-1 rounded-full hover:bg-muted transition-colors"
-                    title="Copy tool details"
+                    className='absolute top-2 right-2 p-1 rounded-full hover:bg-muted transition-colors'
+                    title='Copy tool details'
                   >
                     <Icon
-                      name="content_copy"
-                      className="w-4 h-4 text-muted-foreground"
+                      name='content_copy'
+                      className='w-4 h-4 text-muted-foreground'
                     />
                   </Button>
                 )}
                 <pre
-                  className="p-4 text-xs whitespace-pre-wrap break-all overflow-y-auto max-h-[500px]"
+                  className='p-4 text-xs whitespace-pre-wrap break-all overflow-y-auto max-h-[500px]'
                   onClick={(e) => e.stopPropagation()}
                 >
                   <code className="text-primary-foreground select-text cursor-auto">
@@ -203,41 +203,41 @@ function CustomToolUI({
 }) {
   const { select } = useAgent();
 
-  if (tool.state !== "result" || !tool.result) return null;
+  if (tool.state !== 'result' || !tool.result) return null;
 
   switch (tool.toolName) {
-    case "RENDER": {
+    case 'RENDER': {
       return (
         <Preview
-          content={tool.result.content as "url" | "html"}
+          content={tool.result.content as 'url' | 'html'}
           title={tool.result.title as string}
         />
       );
     }
-    case "HOSTING_APP_DEPLOY": {
+    case 'HOSTING_APP_DEPLOY': {
       return (
         <Preview
-          content={tool.result.content as "url" | "html"}
+          content={tool.result.content as 'url' | 'html'}
           title={tool.result.title as string}
         />
       );
     }
-    case "CONFIGURE":
-    case "AGENT_CREATE": {
+    case 'CONFIGURE':
+    case 'AGENT_CREATE': {
       return (
-        <div className="animate-in slide-in-from-bottom duration-300">
+        <div className='animate-in slide-in-from-bottom duration-300'>
           <AgentCard
             id={tool.result.id as string}
             name={tool.result.name as string}
             description={tool.result.description as string}
             avatar={tool.result.avatar as string}
-            displayLink={tool.toolName === "AGENT_CREATE"}
+            displayLink={tool.toolName === 'AGENT_CREATE'}
           />
         </div>
       );
     }
-    case "SHOW_PICKER":
-    case "CONFIRM": {
+    case 'SHOW_PICKER':
+    case 'CONFIRM': {
       const options = (tool.result.options as ConfirmOption[]).map(
         (option) => ({
           id: option.value,
@@ -281,13 +281,13 @@ export function ToolMessage({
   }, [toolInvocations]);
 
   return (
-    <div className="w-full space-y-4">
+    <div className='w-full space-y-4'>
       {/* Timeline tools */}
       {timelineTools.length > 0 && (
         <div
           className={cn(
-            "flex flex-col gap-2 w-full border border-border rounded-2xl",
-            timelineTools.length > 1 && "p-2",
+            'flex flex-col gap-2 w-full border border-border rounded-2xl',
+            timelineTools.length > 1 && 'p-2',
           )}
         >
           {timelineTools.map((tool, index) => (

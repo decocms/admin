@@ -1,50 +1,46 @@
-import type { ThreadFilterOptions } from "@deco/sdk";
-import { useAgents, useAuditEvents, useTeamMembers, useTeams } from "@deco/sdk";
-import {
-  Alert,
-  AlertDescription,
-  AlertTitle,
-} from "@deco/ui/components/alert.tsx";
+import type { ThreadFilterOptions } from '@deco/sdk';
+import { useAgents, useAuditEvents, useTeamMembers, useTeams } from '@deco/sdk';
+import { Alert, AlertDescription, AlertTitle } from '@deco/ui/components/alert.tsx';
 import {
   Pagination,
   PaginationContent,
   PaginationItem,
   PaginationNext,
   PaginationPrevious,
-} from "@deco/ui/components/pagination.tsx";
-import { Spinner } from "@deco/ui/components/spinner.tsx";
-import { Suspense, useState } from "react";
-import { useParams, useSearchParams } from "react-router";
-import { ErrorBoundary } from "../../error-boundary.tsx";
-import { useNavigateWorkspace } from "../../hooks/use-navigate-workspace.ts";
-import type { Tab } from "../dock/index.tsx";
-import { DefaultBreadcrumb, PageLayout } from "../layout.tsx";
-import { AuditFilters } from "./audit-filters.tsx";
-import { AuditTable } from "./audit-table.tsx";
+} from '@deco/ui/components/pagination.tsx';
+import { Spinner } from '@deco/ui/components/spinner.tsx';
+import { Suspense, useState } from 'react';
+import { useParams, useSearchParams } from 'react-router';
+import { ErrorBoundary } from '../../error-boundary.tsx';
+import { useNavigateWorkspace } from '../../hooks/use-navigate-workspace.ts';
+import type { Tab } from '../dock/index.tsx';
+import { DefaultBreadcrumb, PageLayout } from '../layout.tsx';
+import { AuditFilters } from './audit-filters.tsx';
+import { AuditTable } from './audit-table.tsx';
 
-const CURSOR_PAGINATION_SEARCH_PARAM = "after";
-const AGENT_FILTER_SEARCH_PARAM = "agent";
-const USER_FILTER_SEARCH_PARAM = "user";
-const SORT_SEARCH_PARAM = "sort";
+const CURSOR_PAGINATION_SEARCH_PARAM = 'after';
+const AGENT_FILTER_SEARCH_PARAM = 'agent';
+const USER_FILTER_SEARCH_PARAM = 'user';
+const SORT_SEARCH_PARAM = 'sort';
 
 type AuditOrderBy =
-  | "createdAt_desc"
-  | "createdAt_asc"
-  | "updatedAt_desc"
-  | "updatedAt_asc";
+  | 'createdAt_desc'
+  | 'createdAt_asc'
+  | 'updatedAt_desc'
+  | 'updatedAt_asc';
 
 const SORT_OPTIONS: { value: AuditOrderBy; label: string }[] = [
-  { value: "createdAt_desc", label: "Newest" },
-  { value: "createdAt_asc", label: "Oldest" },
-  { value: "updatedAt_desc", label: "Recently Updated" },
-  { value: "updatedAt_asc", label: "Least Recently Updated" },
+  { value: 'createdAt_desc', label: 'Newest' },
+  { value: 'createdAt_asc', label: 'Oldest' },
+  { value: 'updatedAt_desc', label: 'Recently Updated' },
+  { value: 'updatedAt_asc', label: 'Least Recently Updated' },
 ];
 
 const limit = 11;
 
 function AuditListErrorFallback() {
   return (
-    <Alert variant="destructive" className="my-8">
+    <Alert variant='destructive' className='my-8'>
       <AlertTitle>Error loading audit events</AlertTitle>
       <AlertDescription>
         Something went wrong while loading the audit events.
@@ -97,9 +93,8 @@ export function AuditListContent({
       return;
     }
   };
-  const currentCursor =
-    getSafeCursor(searchParams.get(CURSOR_PAGINATION_SEARCH_PARAM)) ??
-      undefined;
+  const currentCursor = getSafeCursor(searchParams.get(CURSOR_PAGINATION_SEARCH_PARAM)) ??
+    undefined;
   const { data: teams } = useTeams();
   const resolvedTeamSlug = params.teamSlug;
   const teamId = teams?.find((t) => t.slug === resolvedTeamSlug)?.id ?? null;
@@ -119,7 +114,7 @@ export function AuditListContent({
 
   // Handlers
   function handleAgentChange(value: string) {
-    const newAgentValue = value === "all" ? undefined : value;
+    const newAgentValue = value === 'all' ? undefined : value;
     setSelectedAgent(newAgentValue);
 
     // Update URL params
@@ -134,7 +129,7 @@ export function AuditListContent({
   }
 
   function handleUserChange(value: string) {
-    const newUserValue = value === "all" ? undefined : value;
+    const newUserValue = value === 'all' ? undefined : value;
     setSelectedUser(newUserValue);
 
     // Update URL params
@@ -180,14 +175,14 @@ export function AuditListContent({
 
   if (isLoading) {
     return (
-      <div className="flex justify-center items-center h-64">
+      <div className='flex justify-center items-center h-64'>
         <Spinner />
       </div>
     );
   }
 
   return (
-    <div className="flex flex-col gap-4 overflow-x-auto w-full">
+    <div className='flex flex-col gap-4 overflow-x-auto w-full'>
       {showFilters && (
         <AuditFilters
           agents={agents}
@@ -201,8 +196,8 @@ export function AuditListContent({
       {/* Empty state */}
       {!threads.length
         ? (
-          <div className="flex flex-col items-center justify-center h-64 text-muted-foreground">
-            <span className="text-lg font-medium">No audit events found</span>
+          <div className='flex flex-col items-center justify-center h-64 text-muted-foreground'>
+            <span className='text-lg font-medium'>No audit events found</span>
           </div>
         )
         : (
@@ -215,35 +210,31 @@ export function AuditListContent({
               onRowClick={(threadId) => navigate(`/audit/${threadId}`)}
             />
             {/* Pagination */}
-            <div className="flex justify-center mt-4">
+            <div className='flex justify-center mt-4'>
               <Pagination>
                 <PaginationContent>
                   <PaginationItem>
                     <PaginationPrevious
-                      href="#"
+                      href='#'
                       onClick={(e) => {
                         e.preventDefault();
                         handlePrevPage();
                       }}
                       aria-disabled={!pagination?.hasPrev}
                       tabIndex={!pagination?.hasPrev ? -1 : 0}
-                      className={!pagination?.hasPrev
-                        ? "opacity-50 pointer-events-none"
-                        : ""}
+                      className={!pagination?.hasPrev ? 'opacity-50 pointer-events-none' : ''}
                     />
                   </PaginationItem>
                   <PaginationItem>
                     <PaginationNext
-                      href="#"
+                      href='#'
                       onClick={(e) => {
                         e.preventDefault();
                         if (pagination?.hasMore) handleNextPage();
                       }}
                       aria-disabled={!pagination?.hasMore}
                       tabIndex={!pagination?.hasMore ? -1 : 0}
-                      className={!pagination?.hasMore
-                        ? "opacity-50 pointer-events-none"
-                        : ""}
+                      className={!pagination?.hasMore ? 'opacity-50 pointer-events-none' : ''}
                     />
                   </PaginationItem>
                 </PaginationContent>
@@ -257,11 +248,11 @@ export function AuditListContent({
 
 function AuditList() {
   return (
-    <div className="h-full text-foreground px-6 py-6 overflow-x-auto w-full">
+    <div className='h-full text-foreground px-6 py-6 overflow-x-auto w-full'>
       <ErrorBoundary fallback={<AuditListErrorFallback />}>
         <Suspense
           fallback={
-            <div className="flex justify-center items-center h-64">
+            <div className='flex justify-center items-center h-64'>
               <Spinner />
             </div>
           }
@@ -275,7 +266,7 @@ function AuditList() {
 
 const TABS: Record<string, Tab> = {
   main: {
-    title: "Activity",
+    title: 'Activity',
     Component: AuditList,
     initialOpen: true,
   },
@@ -286,9 +277,7 @@ function Page() {
     <PageLayout
       hideViewsButton
       tabs={TABS}
-      breadcrumb={
-        <DefaultBreadcrumb items={[{ label: "Activity", link: "/audits" }]} />
-      }
+      breadcrumb={<DefaultBreadcrumb items={[{ label: 'Activity', link: '/audits' }]} />}
     />
   );
 }

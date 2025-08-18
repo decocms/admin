@@ -4,10 +4,10 @@ import {
   getThreadsUsage,
   getWalletAccount,
   getWorkspacePlan,
-} from "../crud/wallet.ts";
-import { KEYS } from "./api.ts";
-import { useSDK } from "./store.tsx";
-import { useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
+} from '../crud/wallet.ts';
+import { KEYS } from './api.ts';
+import { useSDK } from './store.tsx';
+import { useQueryClient, useSuspenseQuery } from '@tanstack/react-query';
 
 export function useWorkspaceWalletBalance() {
   const { workspace } = useSDK();
@@ -19,8 +19,7 @@ export function useWorkspaceWalletBalance() {
 
   return {
     ...account,
-    refetch: () =>
-      queryClient.invalidateQueries({ queryKey: KEYS.WALLET(workspace) }),
+    refetch: () => queryClient.invalidateQueries({ queryKey: KEYS.WALLET(workspace) }),
     isRefetching,
   };
 }
@@ -28,7 +27,7 @@ export function useWorkspaceWalletBalance() {
 export function useUsagePerAgent({
   range,
 }: {
-  range: "day" | "week" | "month";
+  range: 'day' | 'week' | 'month';
 }) {
   const { workspace } = useSDK();
 
@@ -41,12 +40,12 @@ export function useUsagePerAgent({
 }
 
 export type AgentUsage = Awaited<ReturnType<typeof useUsagePerAgent>>;
-export type AgentUsageItem = AgentUsage["items"][number];
+export type AgentUsageItem = AgentUsage['items'][number];
 
 export function useUsagePerThread({
   range,
 }: {
-  range: "day" | "week" | "month";
+  range: 'day' | 'week' | 'month';
 }) {
   const { workspace } = useSDK();
   const { data: usage } = useSuspenseQuery({
@@ -58,12 +57,12 @@ export function useUsagePerThread({
 }
 
 export type ThreadUsage = Awaited<ReturnType<typeof useUsagePerThread>>;
-export type ThreadUsageItem = ThreadUsage["items"][number];
+export type ThreadUsageItem = ThreadUsage['items'][number];
 
 export function useBillingHistory({
   range,
 }: {
-  range: "day" | "week" | "month" | "year";
+  range: 'day' | 'week' | 'month' | 'year';
 }) {
   const { workspace } = useSDK();
   const { data: billingHistory } = useSuspenseQuery({
@@ -76,7 +75,7 @@ export function useBillingHistory({
 
 export type BillingHistoryItem = Awaited<
   ReturnType<typeof useBillingHistory>
->["items"][number];
+>['items'][number];
 
 export function usePlan() {
   const { workspace } = useSDK();

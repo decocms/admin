@@ -1,9 +1,9 @@
-import { useQuery } from "@tanstack/react-query";
-import { DECO_CHAT_API } from "../constants.ts";
-import { MCPClient } from "../fetcher.ts";
-import { KEYS } from "./api.ts";
-import { useSDK } from "./store.tsx";
-import { getRegistryApp } from "../crud/registry.ts";
+import { useQuery } from '@tanstack/react-query';
+import { DECO_CHAT_API } from '../constants.ts';
+import { MCPClient } from '../fetcher.ts';
+import { KEYS } from './api.ts';
+import { useSDK } from './store.tsx';
+import { getRegistryApp } from '../crud/registry.ts';
 
 export interface PermissionDescription {
   scope: string;
@@ -39,15 +39,15 @@ export function usePermissionDescriptions(scopes: AppScope[]): {
     error: workspaceError,
   } = useQuery({
     queryKey: [
-      ...KEYS.INTEGRATION_TOOLS(workspace, "workspace-management"),
-      "permission-descriptions",
-      "workspace",
+      ...KEYS.INTEGRATION_TOOLS(workspace, 'workspace-management'),
+      'permission-descriptions',
+      'workspace',
     ],
     queryFn: async () => {
       // Get tools from workspace management integration (which contains most MCP tools)
       const result = await MCPClient.INTEGRATIONS_LIST_TOOLS({
         connection: {
-          type: "HTTP",
+          type: 'HTTP',
           url: `${DECO_CHAT_API}/${workspace}/mcp`,
         },
       });
@@ -68,7 +68,7 @@ export function usePermissionDescriptions(scopes: AppScope[]): {
     isLoading: isRegistryLoading,
     error: registryError,
   } = useQuery({
-    queryKey: ["registry-apps", workspace, uniqueApps],
+    queryKey: ['registry-apps', workspace, uniqueApps],
     queryFn: async () => {
       const results = await Promise.all(
         uniqueApps.map(async (appName) => {

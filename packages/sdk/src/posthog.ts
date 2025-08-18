@@ -16,23 +16,23 @@ export interface PosthogConfig {
 }
 
 export type ServerEvent =
-  | "agent_init_error"
-  | "agent_configure_error"
-  | "agent_memory_query_error"
-  | "agent_tool_connection_error"
-  | "agent_tool_error"
-  | "agent_generate_error"
-  | "agent_stream_error"
-  | "agent_insufficient_funds_error"
-  | "agent_mcp_client_error"
-  | "trigger_init_error"
-  | "trigger_run_error"
-  | "trigger_run_success"
-  | "trigger_create_error"
-  | "trigger_delete_error"
-  | "trigger_tool_error"
-  | "trigger_data_load_error"
-  | "hosting_app_deploy_error";
+  | 'agent_init_error'
+  | 'agent_configure_error'
+  | 'agent_memory_query_error'
+  | 'agent_tool_connection_error'
+  | 'agent_tool_error'
+  | 'agent_generate_error'
+  | 'agent_stream_error'
+  | 'agent_insufficient_funds_error'
+  | 'agent_mcp_client_error'
+  | 'trigger_init_error'
+  | 'trigger_run_error'
+  | 'trigger_run_success'
+  | 'trigger_create_error'
+  | 'trigger_delete_error'
+  | 'trigger_tool_error'
+  | 'trigger_data_load_error'
+  | 'hosting_app_deploy_error';
 
 export type ServerEventProperties = {
   distinctId: string;
@@ -49,11 +49,11 @@ export async function trackServerEvent(
 ) {
   try {
     if (!config.apiHost || !config.apiKey) {
-      throw new Error("Posthog API key and host are required to track events");
+      throw new Error('Posthog API key and host are required to track events');
     }
 
     const url = new URL(config.apiHost);
-    url.pathname = "/i/v0/e/";
+    url.pathname = '/i/v0/e/';
 
     const payload = {
       api_key: config.apiKey,
@@ -64,10 +64,10 @@ export async function trackServerEvent(
     };
 
     const response = await fetch(url.toString(), {
-      method: "POST",
+      method: 'POST',
       body: JSON.stringify(payload),
       headers: {
-        "Content-Type": "application/json",
+        'Content-Type': 'application/json',
       },
     });
 
@@ -77,7 +77,7 @@ export async function trackServerEvent(
       );
     }
   } catch (error) {
-    console.error("Failed to track event", error);
+    console.error('Failed to track event', error);
   }
 }
 

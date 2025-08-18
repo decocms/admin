@@ -1,6 +1,6 @@
-import type { SupabaseClient } from "@supabase/supabase-js";
-import { Buffer } from "node:buffer";
-import crypto from "node:crypto";
+import type { SupabaseClient } from '@supabase/supabase-js';
+import { Buffer } from 'node:buffer';
+import crypto from 'node:crypto';
 
 export interface LLMVault {
   readApiKey(modelId: string): Promise<{ model: string; apiKey: string }>;
@@ -20,7 +20,7 @@ export class SupabaseLLMVault implements LLMVault {
     workspace: string,
   ) {
     if (encryptionKey.length !== 32) {
-      throw new Error("Encryption key must be 32 characters long for AES-256");
+      throw new Error('Encryption key must be 32 characters long for AES-256');
     }
     this.encryptionKey = Buffer.from(encryptionKey);
     this.workspace = workspace;
@@ -28,20 +28,20 @@ export class SupabaseLLMVault implements LLMVault {
 
   private encrypt(text: string): string {
     const iv = crypto.randomBytes(this.ivLength);
-    const cipher = crypto.createCipheriv("aes-256-cbc", this.encryptionKey, iv);
-    let encrypted = cipher.update(text, "utf8", "hex");
-    encrypted += cipher.final("hex");
-    return iv.toString("hex") + ":" + encrypted;
+    const cipher = crypto.createCipheriv('aes-256-cbc', this.encryptionKey, iv);
+    let encrypted = cipher.update(text, 'utf8', 'hex');
+    encrypted += cipher.final('hex');
+    return iv.toString('hex') + ':' + encrypted;
   }
 
   async readApiKey(
     modelId: string,
   ): Promise<{ model: string; apiKey: string }> {
     const { data, error } = await this.db
-      .from("models")
-      .select("model, api_key_hash")
-      .eq("id", modelId)
-      .eq("workspace", this.workspace)
+      .from('models')
+      .select('model, api_key_hash')
+      .eq('id', modelId)
+      .eq('workspace', this.workspace)
       .single();
 
     if (error) throw error;
@@ -53,15 +53,15 @@ export class SupabaseLLMVault implements LLMVault {
   }
 
   decrypt(encryptedText: string): string {
-    const [ivHex, encrypted] = encryptedText.split(":");
-    const iv = Buffer.from(ivHex, "hex");
+    const [ivHex, encrypted] = encryptedText.split(':');
+    const iv = Buffer.from(ivHex, 'hex');
     const decipher = crypto.createDecipheriv(
-      "aes-256-cbc",
+      'aes-256-cbc',
       this.encryptionKey,
       iv,
     );
-    let decrypted = decipher.update(encrypted, "hex", "utf8");
-    decrypted += decipher.final("utf8");
+    let decrypted = decipher.update(encrypted, 'hex', 'utf8');
+    decrypted += decipher.final('utf8');
     return decrypted;
   }
 
@@ -69,10 +69,10 @@ export class SupabaseLLMVault implements LLMVault {
     const encryptedKey = this.encrypt(apiKey);
 
     const { error } = await this.db
-      .from("models")
+      .from('models')
       .update({ api_key_hash: encryptedKey })
-      .eq("id", modelId)
-      .eq("workspace", this.workspace);
+      .eq('id', modelId)
+      .eq('workspace', this.workspace);
 
     if (error) throw error;
   }
@@ -81,20 +81,20 @@ export class SupabaseLLMVault implements LLMVault {
     const encryptedKey = apiKey ? this.encrypt(apiKey) : null;
 
     const { error } = await this.db
-      .from("models")
+      .from('models')
       .update({ api_key_hash: encryptedKey })
-      .eq("id", modelId)
-      .eq("workspace", this.workspace);
+      .eq('id', modelId)
+      .eq('workspace', this.workspace);
 
     if (error) throw error;
   }
 
   async removeApiKey(modelId: string): Promise<void> {
     const { error } = await this.db
-      .from("models")
+      .from('models')
       .update({ api_key_hash: null })
-      .eq("id", modelId)
-      .eq("workspace", this.workspace);
+      .eq('id', modelId)
+      .eq('workspace', this.workspace);
 
     if (error) throw error;
   }

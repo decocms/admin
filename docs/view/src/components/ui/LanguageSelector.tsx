@@ -1,5 +1,5 @@
-import React from "react";
-import { Select } from "../atoms/Select";
+import React from 'react';
+import { Select } from '../atoms/Select';
 
 interface LanguageSelectorProps {
   locale: string;
@@ -8,15 +8,15 @@ interface LanguageSelectorProps {
 
 export function LanguageSelector({ locale, className }: LanguageSelectorProps) {
   const languageOptions = [
-    { value: "en", label: "English" },
-    { value: "pt-br", label: "Português" },
+    { value: 'en', label: 'English' },
+    { value: 'pt-br', label: 'Português' },
   ];
 
   const handleChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
     const newLocale = event.target.value;
     // Navigate to the new locale URL
     const currentPath = globalThis.location.pathname;
-    const pathWithoutLocale = currentPath.replace(/^\/[^\/]+/, "");
+    const pathWithoutLocale = currentPath.replace(/^\/[^\/]+/, '');
     globalThis.location.href = `/${newLocale}${pathWithoutLocale}`;
   };
 
@@ -24,9 +24,9 @@ export function LanguageSelector({ locale, className }: LanguageSelectorProps) {
     <Select
       options={languageOptions}
       value={locale}
-      icon="Languages"
+      icon='Languages'
       className={className}
-      selectClassName="text-muted-foreground"
+      selectClassName='text-muted-foreground'
       onChange={handleChange}
     />
   );

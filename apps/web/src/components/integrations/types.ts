@@ -4,7 +4,7 @@ export interface MCPToolCall {
 }
 
 export interface MCPToolCallResult {
-  status: "ok" | "error";
+  status: 'ok' | 'error';
   data: unknown;
   latency: number;
 }

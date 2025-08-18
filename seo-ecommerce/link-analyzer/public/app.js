@@ -1,19 +1,19 @@
 document
-  .getElementById("url-form")
-  .addEventListener("submit", async (event) => {
+  .getElementById('url-form')
+  .addEventListener('submit', async (event) => {
     event.preventDefault();
 
-    const urlInput = document.getElementById("url-input").value;
-    const resultsDiv = document.getElementById("results");
+    const urlInput = document.getElementById('url-input').value;
+    const resultsDiv = document.getElementById('results');
 
-    resultsDiv.innerHTML = "<p>Analyzing URL...</p>";
+    resultsDiv.innerHTML = '<p>Analyzing URL...</p>';
 
     try {
       // Simulate an API call to analyze the URL
-      const response = await fetch("/analyze", {
-        method: "POST",
+      const response = await fetch('/analyze', {
+        method: 'POST',
         headers: {
-          "Content-Type": "application/json",
+          'Content-Type': 'application/json',
         },
         body: JSON.stringify({ url: urlInput }),
       });

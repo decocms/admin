@@ -6,7 +6,7 @@ on:
       - main
       - integrate-seo-ecommerce
     paths:
-      - "seo-ecommerce/**"
+      - 'seo-ecommerce/**'
   workflow_dispatch: {}
 
 jobs:

@@ -1,9 +1,9 @@
-"use client";
+'use client';
 
-import { Check, ChevronsUpDown } from "lucide-react";
+import { Check, ChevronsUpDown } from 'lucide-react';
 
-import { cn } from "@deco/ui/lib/utils.ts";
-import { Button } from "./button.tsx";
+import { cn } from '@deco/ui/lib/utils.ts';
+import { Button } from './button.tsx';
 import {
   Command,
   CommandEmpty,
@@ -11,8 +11,8 @@ import {
   CommandInput,
   CommandItem,
   CommandList,
-} from "./command.tsx";
-import { Popover, PopoverContent, PopoverTrigger } from "./popover.tsx";
+} from './command.tsx';
+import { Popover, PopoverContent, PopoverTrigger } from './popover.tsx';
 
 export function Combobox({
   options,
@@ -27,19 +27,17 @@ export function Combobox({
     <Popover>
       <PopoverTrigger asChild>
         <Button
-          variant="outline"
-          role="combobox"
-          className="w-[200px] justify-between"
+          variant='outline'
+          role='combobox'
+          className='w-[200px] justify-between'
         >
-          {value
-            ? options.find((option) => option.value === value)?.label
-            : "Select..."}
-          <ChevronsUpDown className="opacity-50" />
+          {value ? options.find((option) => option.value === value)?.label : 'Select...'}
+          <ChevronsUpDown className='opacity-50' />
         </Button>
       </PopoverTrigger>
-      <PopoverContent className="w-[200px] p-0">
+      <PopoverContent className='w-[200px] p-0'>
         <Command>
-          <CommandInput placeholder="Search..." className="h-9" />
+          <CommandInput placeholder='Search...' className='h-9' />
           <CommandList>
             <CommandEmpty>No results found.</CommandEmpty>
             <CommandGroup>
@@ -52,15 +50,15 @@ export function Combobox({
                       (option) => option.label === currentLabel,
                     )?.value;
                     onChange(
-                      currentValue === value ? "" : (currentValue ?? ""),
+                      currentValue === value ? '' : (currentValue ?? ''),
                     );
                   }}
                 >
                   {option.label}
                   <Check
                     className={cn(
-                      "ml-auto",
-                      value === option.value ? "opacity-100" : "opacity-0",
+                      'ml-auto',
+                      value === option.value ? 'opacity-100' : 'opacity-0',
                     )}
                   />
                 </CommandItem>

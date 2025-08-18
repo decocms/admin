@@ -15,13 +15,10 @@ import {
   useMarketplaceIntegrations,
   WELL_KNOWN_KNOWLEDGE_BASE_CONNECTION_ID_STARTSWITH,
   WellKnownMcpGroupIds,
-} from "@deco/sdk";
-import { useEffect, useMemo } from "react";
-import {
-  INTEGRATION_CHANNEL,
-  type IntegrationMessage,
-} from "../../lib/broadcast-channels.ts";
-import { LEGACY_INTEGRATIONS } from "../../constants.ts";
+} from '@deco/sdk';
+import { useEffect, useMemo } from 'react';
+import { INTEGRATION_CHANNEL, type IntegrationMessage } from '../../lib/broadcast-channels.ts';
+import { LEGACY_INTEGRATIONS } from '../../constants.ts';
 
 export interface GroupedApp {
   id: string;
@@ -41,7 +38,7 @@ export interface AppKey {
 export const AppKeys = {
   build: (key: AppKey) => `${key.provider}:::${key.appId}`,
   parse: (key: string) => {
-    const [provider, appId] = key.split(":::");
+    const [provider, appId] = key.split(':::');
     return {
       appId,
       provider,
@@ -50,31 +47,29 @@ export const AppKeys = {
 };
 
 export const WELL_KNOWN_DECO_CHAT_APP_KEY = AppKeys.build({
-  appId: "deco.chat",
-  provider: "deco",
+  appId: 'deco.chat',
+  provider: 'deco',
 });
 
 export const WELL_KNOWN_KNOWLEDGE_BASE_APP_KEY = AppKeys.build({
-  appId: "knowledge-bases",
-  provider: "deco",
+  appId: 'knowledge-bases',
+  provider: 'deco',
 });
 
 export const WELL_KNOWN_APPS: Record<string, GroupedApp> = {
   [WELL_KNOWN_DECO_CHAT_APP_KEY]: {
     id: WELL_KNOWN_DECO_CHAT_APP_KEY,
-    name: "Deco Chat",
-    icon:
-      "https://assets.decocache.com/mcp/306fcf27-d5dd-4d8c-8ddd-567d763372ee/decochat.png",
-    description: "Native deco.chat tools.",
+    name: 'Deco Chat',
+    icon: 'https://assets.decocache.com/mcp/306fcf27-d5dd-4d8c-8ddd-567d763372ee/decochat.png',
+    description: 'Native deco.chat tools.',
     instances: 1,
     usedBy: [],
   },
   [WELL_KNOWN_KNOWLEDGE_BASE_APP_KEY]: {
     id: WELL_KNOWN_KNOWLEDGE_BASE_APP_KEY,
-    name: "Knowledge Base",
-    icon:
-      "https://assets.decocache.com/mcp/85269424-f5c7-4473-a67e-c3d6a120f586/knowledgebase.png",
-    description: "Native knowledge base tools",
+    name: 'Knowledge Base',
+    icon: 'https://assets.decocache.com/mcp/85269424-f5c7-4473-a67e-c3d6a120f586/knowledgebase.png',
+    description: 'Native knowledge base tools',
     instances: 1,
     usedBy: [],
   },
@@ -101,47 +96,47 @@ export function getConnectionAppKey(connection: Integration): AppKey {
       return AppKeys.parse(WELL_KNOWN_KNOWLEDGE_BASE_APP_KEY);
     }
 
-    if (connection.connection.type === "HTTP") {
+    if (connection.connection.type === 'HTTP') {
       const url = new URL(connection.connection.url);
 
-      if (url.hostname.includes("mcp.deco.site")) {
+      if (url.hostname.includes('mcp.deco.site')) {
         // https://mcp.deco.site/apps/{appName}...
-        const appName = url.pathname.split("/")[2];
+        const appName = url.pathname.split('/')[2];
         return {
           appId: decodeURIComponent(appName),
-          provider: "deco",
+          provider: 'deco',
         };
       }
 
-      if (url.hostname.includes("mcp.wppagent.com")) {
+      if (url.hostname.includes('mcp.wppagent.com')) {
         return {
-          appId: "WhatsApp",
-          provider: "wppagent", // the same as deco? will use this for a "verified" badge
+          appId: 'WhatsApp',
+          provider: 'wppagent', // the same as deco? will use this for a "verified" badge
         };
       }
 
       return {
         appId: connection.id,
-        provider: "unknown",
+        provider: 'unknown',
       };
     }
 
-    if (connection.connection.type === "SSE") {
+    if (connection.connection.type === 'SSE') {
       return {
         appId: connection.id,
-        provider: "unknown",
+        provider: 'unknown',
       };
     }
 
     return {
       appId: connection.id,
-      provider: "unknown",
+      provider: 'unknown',
     };
   } catch (err) {
-    console.error("Could not get connection app key", err, connection);
+    console.error('Could not get connection app key', err, connection);
     return {
       appId: connection.id,
-      provider: "unknown",
+      provider: 'unknown',
     };
   }
 }
@@ -168,24 +163,23 @@ export function useRefetchIntegrationsOnNotification() {
 
   useEffect(() => {
     const handleMessage = (event: MessageEvent<IntegrationMessage>) => {
-      if (event.data.type === "INTEGRATION_UPDATED") {
+      if (event.data.type === 'INTEGRATION_UPDATED') {
         refetchIntegrations();
       }
     };
 
-    INTEGRATION_CHANNEL.addEventListener("message", handleMessage);
+    INTEGRATION_CHANNEL.addEventListener('message', handleMessage);
     return () => {
-      INTEGRATION_CHANNEL.removeEventListener("message", handleMessage);
+      INTEGRATION_CHANNEL.removeEventListener('message', handleMessage);
     };
   }, [refetchIntegrations]);
 }
 
 const isAgentIntegration = (integration: Integration) =>
-  integration.connection.type === "HTTP" &&
-  integration.connection.url?.includes("/agents/");
+  integration.connection.type === 'HTTP' &&
+  integration.connection.url?.includes('/agents/');
 
-const isInnateIntegration = (integration: Integration) =>
-  integration.connection.type === "INNATE";
+const isInnateIntegration = (integration: Integration) => integration.connection.type === 'INNATE';
 
 export function useGroupedApps({ filter }: { filter: string }) {
   const { data: installedIntegrations } = useIntegrations();
@@ -223,7 +217,7 @@ export function useGroupedApps({ filter }: { filter: string }) {
           id: key,
           name: marketplaceApp.name,
           icon: marketplaceApp.icon,
-          description: marketplaceApp.description ?? "",
+          description: marketplaceApp.description ?? '',
           instances: integrations.length,
           usedBy: [],
         });
@@ -236,9 +230,9 @@ export function useGroupedApps({ filter }: { filter: string }) {
           id: key,
           name: firstInstance.name,
           icon: firstInstance.icon,
-          description: firstInstance.description ?? "",
+          description: firstInstance.description ?? '',
           instances: integrations.length,
-          provider: "custom",
+          provider: 'custom',
           usedBy: [],
         });
         continue;
@@ -246,9 +240,9 @@ export function useGroupedApps({ filter }: { filter: string }) {
 
       apps.push({
         id: key,
-        name: "Unknown",
-        icon: "",
-        description: "Unknown connection",
+        name: 'Unknown',
+        icon: '',
+        description: 'Unknown connection',
         instances: integrations.length,
         usedBy: [],
       });
@@ -299,15 +293,15 @@ export function useGroupedApp({ appKey }: { appKey: string }) {
       return {
         name: firstInstance.name,
         icon: firstInstance.icon,
-        description: firstInstance.description ?? "",
-        provider: "custom",
+        description: firstInstance.description ?? '',
+        provider: 'custom',
       };
     }
 
     return {
-      name: "Unknown Connection",
-      description: "No description available",
-      provider: "unknown",
+      name: 'Unknown Connection',
+      description: 'No description available',
+      provider: 'unknown',
     };
   }, [marketplace, appKey, instances]);
 

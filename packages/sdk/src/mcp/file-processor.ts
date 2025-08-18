@@ -1,14 +1,14 @@
-import { MDocument } from "@mastra/rag";
-import { extname } from "@std/path/posix";
+import { MDocument } from '@mastra/rag';
+import { extname } from '@std/path/posix';
 import {
   type FileExt,
   FileExtSchema,
   getExtensionFromContentType,
   isAllowedFileExt,
-} from "../utils/knowledge.ts";
-import { z } from "zod";
+} from '../utils/knowledge.ts';
+import { z } from 'zod';
 
-export { FileExtSchema } from "../utils/knowledge.ts";
+export { FileExtSchema } from '../utils/knowledge.ts';
 
 export const FileMetadataSchema = z.object({
   fileSize: z.number(),
@@ -20,7 +20,7 @@ export const FileMetadataSchema = z.object({
 export interface ProcessedDocument {
   filename: string;
   content: string;
-  chunks: Awaited<ReturnType<ReturnType<typeof MDocument.fromText>["chunk"]>>;
+  chunks: Awaited<ReturnType<ReturnType<typeof MDocument.fromText>['chunk']>>;
   metadata: z.infer<typeof FileMetadataSchema>;
 }
 
@@ -41,8 +41,8 @@ export class FileProcessor {
    */
   async processFile(fileUrl: string): Promise<ProcessedDocument> {
     // Check if file starts with http or https
-    if (!fileUrl.startsWith("http://") && !fileUrl.startsWith("https://")) {
-      throw new Error("File URL must start with http:// or https://");
+    if (!fileUrl.startsWith('http://') && !fileUrl.startsWith('https://')) {
+      throw new Error('File URL must start with http:// or https://');
     }
 
     // Fetch the file from URL
@@ -59,7 +59,7 @@ export class FileProcessor {
     // Create File object from response
     const arrayBuffer = await response.arrayBuffer();
     const file = new File([arrayBuffer], filename, {
-      type: response.headers.get("content-type") || "application/octet-stream",
+      type: response.headers.get('content-type') || 'application/octet-stream',
     });
 
     const fileExt = extname(file.name);
@@ -69,17 +69,17 @@ export class FileProcessor {
       throw new Error(`Unsupported file type: ${fileExt}.`);
     }
 
-    let content = "";
+    let content = '';
 
     switch (fileExt) {
-      case ".txt":
-      case ".md":
+      case '.txt':
+      case '.md':
         content = await this.processText(file);
         break;
-      case ".csv":
+      case '.csv':
         content = await this.processCSV(file);
         break;
-      case ".json":
+      case '.json':
         content = await this.processJSON(file);
         break;
     }
@@ -103,13 +103,13 @@ export class FileProcessor {
    */
   private extractFilenameFromUrl(url: string, response: Response): string {
     // First try to get filename from Content-Disposition header
-    const contentDisposition = response.headers.get("content-disposition");
+    const contentDisposition = response.headers.get('content-disposition');
     if (contentDisposition) {
       const filenameMatch = contentDisposition.match(
         /filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/,
       );
       if (filenameMatch && filenameMatch[1]) {
-        return filenameMatch[1].replace(/['"]/g, "");
+        return filenameMatch[1].replace(/['"]/g, '');
       }
     }
 
@@ -117,18 +117,18 @@ export class FileProcessor {
     try {
       const urlObj = new URL(url);
       const pathname = urlObj.pathname;
-      const filename = pathname.split("/").pop() || "unknown";
+      const filename = pathname.split('/').pop() || 'unknown';
 
       // If no extension, try to guess from content-type
-      if (!filename.includes(".")) {
-        const contentType = response.headers.get("content-type");
+      if (!filename.includes('.')) {
+        const contentType = response.headers.get('content-type');
         const extension = this.getExtensionFromContentType(contentType);
         return `${filename}${extension}`;
       }
 
       return filename;
     } catch {
-      return "unknown.txt";
+      return 'unknown.txt';
     }
   }
   /**
@@ -150,20 +150,20 @@ export class FileProcessor {
    */
   private async processCSV(file: File): Promise<string> {
     const text = await file.text();
-    const lines = text.split("\n");
+    const lines = text.split('\n');
 
-    if (lines.length === 0) return "";
+    if (lines.length === 0) return '';
 
-    const headers = lines[0].split(",").map((h) => h.trim().toLowerCase());
+    const headers = lines[0].split(',').map((h) => h.trim().toLowerCase());
     const rows = lines.slice(1).map((line) => {
-      const values = line.split(",").map((v) => v.trim());
+      const values = line.split(',').map((v) => v.trim());
       return values
-        .map((v, i) => (!v ? "" : `${headers[i]}: ${v}`))
+        .map((v, i) => (!v ? '' : `${headers[i]}: ${v}`))
         .filter(Boolean)
-        .join(". ");
+        .join('. ');
     });
 
-    return rows.join("\n");
+    return rows.join('\n');
   }
 
   /**
@@ -194,22 +194,22 @@ export class FileProcessor {
         if (value.length === 0) continue;
 
         // Array of primitives
-        if (value.every((v) => typeof v !== "object" || v === null)) {
-          parts.push(`${this.capitalize(key)}: ${value.join(", ")}`);
+        if (value.every((v) => typeof v !== 'object' || v === null)) {
+          parts.push(`${this.capitalize(key)}: ${value.join(', ')}`);
         } // Array of objects
         else {
           const objectItems = value
             .map((item) => {
-              if (typeof item === "object" && item !== null) {
+              if (typeof item === 'object' && item !== null) {
                 const inner = this.chunkLongStringsInObject(item);
                 return `(${inner})`;
               }
               return String(item);
             })
-            .join(", ");
+            .join(', ');
           parts.push(`${this.capitalize(key)}: ${objectItems}`);
         }
-      } else if (typeof value === "object") {
+      } else if (typeof value === 'object') {
         // Recursively flatten nested objects
         parts.push(
           `${this.capitalize(key)}: ${this.chunkLongStringsInObject(value)}`,
@@ -220,7 +220,7 @@ export class FileProcessor {
       }
     }
 
-    return parts.join(". ") + ".";
+    return parts.join('. ') + '.';
   }
 
   private capitalize(str: string) {
@@ -232,22 +232,22 @@ export class FileProcessor {
    */
   private chunkText(text: string, fileExt: FileExt) {
     switch (fileExt) {
-      case ".md": {
+      case '.md': {
         return MDocument.fromMarkdown(text).chunk({
           maxSize: this.config.chunkSize,
           headers: [
-            ["#", "title"],
-            ["##", "section"],
+            ['#', 'title'],
+            ['##', 'section'],
           ],
         });
       }
-      case ".txt":
-      case ".csv":
-      case ".json":
-      case ".pdf": {
+      case '.txt':
+      case '.csv':
+      case '.json':
+      case '.pdf': {
         return MDocument.fromText(text).chunk({
           maxSize: this.config.chunkSize,
-          separators: fileExt === ".csv" ? ["\n"] : undefined,
+          separators: fileExt === '.csv' ? ['\n'] : undefined,
         });
       }
     }

@@ -1,12 +1,8 @@
-import { SUPABASE_ANON_KEY, SUPABASE_URL } from "./constants.js";
-import {
-  createServerClient,
-  parseCookieHeader,
-  serializeCookieHeader,
-} from "@supabase/ssr";
+import { SUPABASE_ANON_KEY, SUPABASE_URL } from './constants.js';
+import { createServerClient, parseCookieHeader, serializeCookieHeader } from '@supabase/ssr';
 
 export function createClient(requestHeaders: Headers = new Headers()) {
-  const cookies = parseCookieHeader(requestHeaders.get("cookie") ?? "");
+  const cookies = parseCookieHeader(requestHeaders.get('cookie') ?? '');
   const filteredCookies = cookies.filter(
     (cookie): cookie is { name: string; value: string } => !!cookie.value,
   );
@@ -19,7 +15,7 @@ export function createClient(requestHeaders: Headers = new Headers()) {
       setAll(cookies) {
         cookies.forEach((cookie) => {
           responseHeaders.append(
-            "Set-Cookie",
+            'Set-Cookie',
             serializeCookieHeader(cookie.name, cookie.value, cookie.options),
           );
         });

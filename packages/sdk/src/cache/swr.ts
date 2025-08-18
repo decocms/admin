@@ -1,6 +1,6 @@
-import { SingleFlight, singleFlight } from "../common/singleflight.ts";
-import { contextStorage } from "../fetch.ts";
-import { WebCache } from "./index.ts";
+import { SingleFlight, singleFlight } from '../common/singleflight.ts';
+import { contextStorage } from '../fetch.ts';
+import { WebCache } from './index.ts';
 
 /**
  * Stale-While-Revalidate cache wrapper for async functions.
@@ -15,7 +15,7 @@ export class SWRCache<T> {
   private _staleTtlSeconds?: number;
 
   constructor(
-    cacheName = "swr-cache",
+    cacheName = 'swr-cache',
     options?: {
       staleTtlSeconds?: number;
       cacheTtlSeconds?: number;

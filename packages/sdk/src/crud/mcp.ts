@@ -1,9 +1,5 @@
-import { MCPClient } from "../fetcher.ts";
-import {
-  type Binder,
-  type Integration,
-  IntegrationSchema,
-} from "../models/mcp.ts";
+import { MCPClient } from '../fetcher.ts';
+import { type Binder, type Integration, IntegrationSchema } from '../models/mcp.ts';
 
 /**
  * Save an MCP to the file system
@@ -25,10 +21,10 @@ export const createIntegration = (
 ) =>
   MCPClient.forWorkspace(workspace).INTEGRATIONS_CREATE({
     id: crypto.randomUUID(),
-    name: "New Integration",
-    description: "A new multi-channel platform integration",
-    icon: "",
-    connection: { type: "HTTP", url: "https://example.com/mcp" },
+    name: 'New Integration',
+    description: 'A new multi-channel platform integration',
+    icon: '',
+    connection: { type: 'HTTP', url: 'https://example.com/mcp' },
     ...template,
   });
 
@@ -88,6 +84,6 @@ export const validateIntegration = (
     const validatedMCP = IntegrationSchema.parse(mcp);
     return [validatedMCP, null];
   } catch (error) {
-    return [null, error instanceof Error ? error : new Error("Invalid MCP")];
+    return [null, error instanceof Error ? error : new Error('Invalid MCP')];
   }
 };

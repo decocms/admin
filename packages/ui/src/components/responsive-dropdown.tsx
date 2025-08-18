@@ -1,16 +1,15 @@
-import { useControllableState } from "@radix-ui/react-use-controllable-state";
-import { createContext, useContext } from "react";
-import { useIsMobile } from "../hooks/use-mobile.ts";
-import { cn } from "../lib/utils.ts";
-import * as drawer from "./drawer.tsx";
-import * as dropdown from "./dropdown-menu.tsx";
+import { useControllableState } from '@radix-ui/react-use-controllable-state';
+import { createContext, useContext } from 'react';
+import { useIsMobile } from '../hooks/use-mobile.ts';
+import { cn } from '../lib/utils.ts';
+import * as drawer from './drawer.tsx';
+import * as dropdown from './dropdown-menu.tsx';
 
 const ResponsiveDropdownContext = createContext<{
   setOpen: (open: boolean) => void;
 }>({ setOpen: () => {} });
 
-const useResponsiveDropdownContext = () =>
-  useContext(ResponsiveDropdownContext);
+const useResponsiveDropdownContext = () => useContext(ResponsiveDropdownContext);
 
 const ResponsiveDropdown = ({
   children,
@@ -47,10 +46,10 @@ const ResponsiveDropdownContent = ({
   return isMobile
     ? (
       <drawer.DrawerContent {...restProps}>
-        <drawer.DrawerHeader className="hidden">
+        <drawer.DrawerHeader className='hidden'>
           <drawer.DrawerTitle>{title}</drawer.DrawerTitle>
         </drawer.DrawerHeader>
-        <div className={cn("flex flex-col gap-2 p-2 py-4", className)}>
+        <div className={cn('flex flex-col gap-2 p-2 py-4', className)}>
           {children}
         </div>
       </drawer.DrawerContent>

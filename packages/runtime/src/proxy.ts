@@ -1,12 +1,12 @@
 // deno-lint-ignore-file no-explicit-any
-import type { ToolExecutionContext } from "@mastra/core";
-import type { CreateStubAPIOptions } from "./mcp.ts";
+import type { ToolExecutionContext } from '@mastra/core';
+import type { CreateStubAPIOptions } from './mcp.ts';
 
 const getWorkspace = (workspace?: string) => {
-  if (workspace && workspace.length > 0 && !workspace.includes("/")) {
+  if (workspace && workspace.length > 0 && !workspace.includes('/')) {
     return `/shared/${workspace}`;
   }
-  return workspace ?? "";
+  return workspace ?? '';
 };
 
 const serializeData = (data: any) => {
@@ -58,8 +58,8 @@ async function makeApiCall(
     {
       signal: abortController.signal,
       body: JSON.stringify(config.payload),
-      method: "POST",
-      credentials: "include",
+      method: 'POST',
+      credentials: 'include',
       ...config.init,
       headers: {
         ...(options?.token
@@ -67,10 +67,10 @@ async function makeApiCall(
             Authorization: `Bearer ${options.token}`,
           }
           : {}),
-        "content-type": "application/json",
+        'content-type': 'application/json',
         ...config.init?.headers,
-        accept: "application/json",
-        "x-trace-debug-id": traceDebugId,
+        accept: 'application/json',
+        'x-trace-debug-id': traceDebugId,
       },
     },
   );
@@ -88,12 +88,11 @@ async function makeApiCall(
         "You don't have access to this tool, you might be missing a scope, you can import from import { Scopes } from 'deco.gen.ts', then you can export default withRuntime({ oauth: { scopes: ...Object.values(Scopes).flatMap((scope) => Object.values(scope)) } });",
       );
     }
-    const message = error || serializeData(data) || "Internal Server Error";
-    const err =
-      options?.getErrorByStatusCode?.(response.status, message, traceDebugId) ??
-        new Error(
-          `http error ${response.status} ${config.toolName} ${message} ${traceDebugId}`,
-        );
+    const message = error || serializeData(data) || 'Internal Server Error';
+    const err = options?.getErrorByStatusCode?.(response.status, message, traceDebugId) ??
+      new Error(
+        `http error ${response.status} ${config.toolName} ${message} ${traceDebugId}`,
+      );
 
     throw err;
   }
@@ -119,11 +118,11 @@ export function createMCPClientProxy<T extends Record<string, unknown>>(
     | undefined;
   return new Proxy<T>({} as T, {
     get(_, name) {
-      if (name === "toJSON") {
+      if (name === 'toJSON') {
         return null;
       }
-      if (typeof name !== "string") {
-        throw new Error("Name must be a string");
+      if (typeof name !== 'string') {
+        throw new Error('Name must be a string');
       }
       async function callToolFn(args: unknown, init?: RequestInit) {
         let payload = args;
@@ -132,7 +131,7 @@ export function createMCPClientProxy<T extends Record<string, unknown>>(
 
         if (options?.connection) {
           payload = {
-            connection: typeof options.connection === "function"
+            connection: typeof options.connection === 'function'
               ? await options.connection()
               : options.connection,
             params: {
@@ -140,7 +139,7 @@ export function createMCPClientProxy<T extends Record<string, unknown>>(
               arguments: args,
             },
           };
-          toolName = "INTEGRATIONS_CALL_TOOL";
+          toolName = 'INTEGRATIONS_CALL_TOOL';
           mapper = (data) =>
             (
               data as {
@@ -162,10 +161,10 @@ export function createMCPClientProxy<T extends Record<string, unknown>>(
       }
 
       const listToolsFn = async () => {
-        const connection = typeof options?.connection === "function"
+        const connection = typeof options?.connection === 'function'
           ? await options.connection()
           : (options?.connection ?? {
-            type: "HTTP",
+            type: 'HTTP',
             url: `${options?.decoChatApiUrl ?? `https://api.deco.chat`}${
               getWorkspace(
                 options?.workspace,
@@ -175,7 +174,7 @@ export function createMCPClientProxy<T extends Record<string, unknown>>(
 
         const data = await makeApiCall(
           {
-            toolName: "INTEGRATIONS_LIST_TOOLS",
+            toolName: 'INTEGRATIONS_LIST_TOOLS',
             payload: { connection },
             includeWorkspaceInPath: false,
             mapper: (data) => {
@@ -204,7 +203,7 @@ export function createMCPClientProxy<T extends Record<string, unknown>>(
 
       const listToolsOnce = () => {
         return (tools ??= listToolsFn().catch((error) => {
-          console.error("Failed to list tools", error);
+          console.error('Failed to list tools', error);
           return [];
         }));
       };

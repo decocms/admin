@@ -1,20 +1,20 @@
-import React, { useState } from "react";
+import React, { useState } from 'react';
 
 const LinkAnalyzer = () => {
-  const [url, setUrl] = useState("");
+  const [url, setUrl] = useState('');
   const [result, setResult] = useState(null);
   const [error, setError] = useState(null);
 
   const analyzeLink = async () => {
     try {
-      const response = await fetch("/tools/LINK_ANALYZER", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
+      const response = await fetch('/tools/LINK_ANALYZER', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ url }),
       });
 
       if (!response.ok) {
-        throw new Error("Failed to analyze link");
+        throw new Error('Failed to analyze link');
       }
 
       const data = await response.json();
@@ -30,14 +30,14 @@ const LinkAnalyzer = () => {
     <div>
       <h1>Link Analyzer</h1>
       <input
-        type="url"
-        placeholder="Enter URL"
+        type='url'
+        placeholder='Enter URL'
         value={url}
         onChange={(e) => setUrl(e.target.value)}
       />
       <button onClick={analyzeLink}>Analyze</button>
 
-      {error && <p style={{ color: "red" }}>{error}</p>}
+      {error && <p style={{ color: 'red' }}>{error}</p>}
       {result && (
         <div>
           <h2>Analysis Results</h2>

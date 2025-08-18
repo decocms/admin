@@ -1,32 +1,24 @@
-import type { ClientOf } from "@deco/sdk/http";
-import { z } from "zod";
-import { InternalServerError, UserInputError } from "../../errors.ts";
-import { Markup } from "../../plan.ts";
-import { isRequired } from "../../utils/fns.ts";
-import {
-  assertHasWorkspace,
-  assertWorkspaceResourceAccess,
-} from "../assertions.ts";
-import { type AppContext, createToolGroup } from "../context.ts";
-import {
-  createWalletClient,
-  MicroDollar,
-  type WalletAPI,
-  WellKnownWallets,
-} from "./index.ts";
-import { getPlan } from "./plans.ts";
-import { createCheckoutSession as createStripeCheckoutSession } from "./stripe/checkout.ts";
+import type { ClientOf } from '@deco/sdk/http';
+import { z } from 'zod';
+import { InternalServerError, UserInputError } from '../../errors.ts';
+import { Markup } from '../../plan.ts';
+import { isRequired } from '../../utils/fns.ts';
+import { assertHasWorkspace, assertWorkspaceResourceAccess } from '../assertions.ts';
+import { type AppContext, createToolGroup } from '../context.ts';
+import { createWalletClient, MicroDollar, type WalletAPI, WellKnownWallets } from './index.ts';
+import { getPlan } from './plans.ts';
+import { createCheckoutSession as createStripeCheckoutSession } from './stripe/checkout.ts';
 
 export const getWalletClient = (c: AppContext) => {
   if (!c.envVars.WALLET_API_KEY) {
-    throw new InternalServerError("WALLET_API_KEY is not set");
+    throw new InternalServerError('WALLET_API_KEY is not set');
   }
   return createWalletClient(c.envVars.WALLET_API_KEY, c.walletBinding);
 };
 
 const Account = {
   fetch: async (wallet: ClientOf<WalletAPI>, id: string) => {
-    const accountResponse = await wallet["GET /accounts/:id"]({
+    const accountResponse = await wallet['GET /accounts/:id']({
       id: encodeURIComponent(id),
     });
 
@@ -35,12 +27,12 @@ const Account = {
     }
 
     if (!accountResponse.ok) {
-      throw new Error("Failed to fetch account");
+      throw new Error('Failed to fetch account');
     }
 
     return accountResponse.json();
   },
-  format: (account: WalletAPI["GET /accounts/:id"]["response"]) => {
+  format: (account: WalletAPI['GET /accounts/:id']['response']) => {
     return {
       balance: MicroDollar.fromMicrodollarString(account.balance).display(),
       balanceExact: MicroDollar.fromMicrodollarString(account.balance).display({
@@ -54,20 +46,20 @@ const ThreadsUsage = {
   fetch: async (
     wallet: ClientOf<WalletAPI>,
     workspace: string,
-    range: "day" | "week" | "month",
+    range: 'day' | 'week' | 'month',
   ) => {
-    const usageResponse = await wallet["GET /usage/threads"]({
+    const usageResponse = await wallet['GET /usage/threads']({
       workspace: encodeURIComponent(workspace),
       range,
     });
 
     if (!usageResponse.ok) {
-      throw new Error("Failed to fetch usage");
+      throw new Error('Failed to fetch usage');
     }
 
     return usageResponse.json();
   },
-  format: (usage: WalletAPI["GET /usage/threads"]["response"]) => {
+  format: (usage: WalletAPI['GET /usage/threads']['response']) => {
     return {
       items: usage.items
         .map((thread) => ({
@@ -94,20 +86,20 @@ const AgentsUsage = {
   fetch: async (
     wallet: ClientOf<WalletAPI>,
     workspace: string,
-    range: "day" | "week" | "month",
+    range: 'day' | 'week' | 'month',
   ) => {
-    const usageResponse = await wallet["GET /usage/agents"]({
+    const usageResponse = await wallet['GET /usage/agents']({
       workspace,
       range,
     });
 
     if (!usageResponse.ok) {
-      throw new Error("Failed to fetch usage");
+      throw new Error('Failed to fetch usage');
     }
 
     return usageResponse.json();
   },
-  format: (usage: WalletAPI["GET /usage/agents"]["response"]) => {
+  format: (usage: WalletAPI['GET /usage/agents']['response']) => {
     return {
       total: MicroDollar.fromMicrodollarString(usage.total).display(),
       items: usage.items.map((item) => ({
@@ -132,20 +124,20 @@ const BillingHistory = {
   fetch: async (
     wallet: ClientOf<WalletAPI>,
     workspace: string,
-    range: "day" | "week" | "month" | "year",
+    range: 'day' | 'week' | 'month' | 'year',
   ) => {
-    const historyResponse = await wallet["GET /billing/history"]({
+    const historyResponse = await wallet['GET /billing/history']({
       workspace: encodeURIComponent(workspace),
       range,
     });
 
     if (!historyResponse.ok) {
-      throw new Error("Failed to fetch billing history");
+      throw new Error('Failed to fetch billing history');
     }
 
     return historyResponse.json();
   },
-  format: (history: WalletAPI["GET /billing/history"]["response"]) => {
+  format: (history: WalletAPI['GET /billing/history']['response']) => {
     return {
       items: history.items.map((item) => ({
         ...item,
@@ -155,16 +147,15 @@ const BillingHistory = {
   },
 };
 
-const createTool = createToolGroup("Wallet", {
-  name: "Wallet & Billing",
-  description: "Handle payments and subscriptions.",
-  icon:
-    "https://assets.decocache.com/mcp/c179a1cd-4933-40ac-a9c1-18f24e19e592/Wallet--Billing.png",
+const createTool = createToolGroup('Wallet', {
+  name: 'Wallet & Billing',
+  description: 'Handle payments and subscriptions.',
+  icon: 'https://assets.decocache.com/mcp/c179a1cd-4933-40ac-a9c1-18f24e19e592/Wallet--Billing.png',
 });
 
 export const getWalletAccount = createTool({
-  name: "GET_WALLET_ACCOUNT",
-  description: "Get the wallet account for the current tenant",
+  name: 'GET_WALLET_ACCOUNT',
+  description: 'Get the wallet account for the current tenant',
   inputSchema: z.object({}),
   outputSchema: z.object({
     balance: z.string(),
@@ -196,10 +187,10 @@ export const getWalletAccount = createTool({
 });
 
 export const getThreadsUsage = createTool({
-  name: "GET_THREADS_USAGE",
+  name: 'GET_THREADS_USAGE',
   description: "Get the threads usage for the current tenant's wallet",
   inputSchema: z.object({
-    range: z.enum(["day", "week", "month"]),
+    range: z.enum(['day', 'week', 'month']),
   }),
   handler: async ({ range }, c) => {
     assertHasWorkspace(c);
@@ -214,10 +205,10 @@ export const getThreadsUsage = createTool({
 });
 
 export const getAgentsUsage = createTool({
-  name: "GET_AGENTS_USAGE",
+  name: 'GET_AGENTS_USAGE',
   description: "Get the agents usage for the current tenant's wallet",
   inputSchema: z.object({
-    range: z.enum(["day", "week", "month"]),
+    range: z.enum(['day', 'week', 'month']),
   }),
   outputSchema: z.object({
     total: z.string(),
@@ -251,10 +242,10 @@ export const getAgentsUsage = createTool({
 });
 
 export const getBillingHistory = createTool({
-  name: "GET_BILLING_HISTORY",
+  name: 'GET_BILLING_HISTORY',
   description: "Get the billing history for the current tenant's wallet",
   inputSchema: z.object({
-    range: z.enum(["day", "week", "month", "year"]),
+    range: z.enum(['day', 'week', 'month', 'year']),
   }),
   outputSchema: z.object({
     items: z.array(
@@ -284,7 +275,7 @@ export const getBillingHistory = createTool({
 });
 
 export const createCheckoutSession = createTool({
-  name: "CREATE_CHECKOUT_SESSION",
+  name: 'CREATE_CHECKOUT_SESSION',
   description: "Create a checkout session for the current tenant's wallet",
   inputSchema: z.object({
     amountUSDCents: z.number(),
@@ -308,13 +299,13 @@ export const createCheckoutSession = createTool({
       successUrl,
       cancelUrl,
       product: {
-        id: "WorkspaceWalletDeposit",
+        id: 'WorkspaceWalletDeposit',
         amountUSD: amount,
       },
       ctx,
       metadata: {
         created_by_user_id: ctx.user.id as string,
-        created_by_user_email: (ctx.user.email || "") as string,
+        created_by_user_email: (ctx.user.email || '') as string,
       },
     });
 
@@ -325,13 +316,13 @@ export const createCheckoutSession = createTool({
 });
 
 export const createWalletVoucher = createTool({
-  name: "CREATE_VOUCHER",
+  name: 'CREATE_VOUCHER',
   description: "Create a voucher with money from the current tenant's wallet",
   inputSchema: z.object({
     amount: z
       .number()
       .describe(
-        "The amount of money to add to the voucher. Specified in USD dollars.",
+        'The amount of money to add to the voucher. Specified in USD dollars.',
       ),
   }),
   outputSchema: z.object({
@@ -348,17 +339,17 @@ export const createWalletVoucher = createTool({
     const claimableId = `${id}-${amountMicroDollars.toMicrodollarString()}`;
 
     if (amountMicroDollars.isZero() || amountMicroDollars.isNegative()) {
-      throw new UserInputError("Amount must be positive");
+      throw new UserInputError('Amount must be positive');
     }
 
     const operation = {
-      type: "WorkspaceCreateVoucher" as const,
+      type: 'WorkspaceCreateVoucher' as const,
       amount: amountMicroDollars.toMicrodollarString(),
       voucherId: id,
       workspace: c.workspace.value,
     } as const;
 
-    const response = await wallet["POST /transactions"](
+    const response = await wallet['POST /transactions'](
       {},
       {
         body: operation,
@@ -366,7 +357,7 @@ export const createWalletVoucher = createTool({
     );
 
     if (!response.ok) {
-      throw new Error("Failed to create voucher");
+      throw new Error('Failed to create voucher');
     }
 
     return {
@@ -376,7 +367,7 @@ export const createWalletVoucher = createTool({
 });
 
 export const redeemWalletVoucher = createTool({
-  name: "REDEEM_VOUCHER",
+  name: 'REDEEM_VOUCHER',
   description: "Redeem a voucher for the current tenant's wallet",
   inputSchema: z.object({
     voucher: z.string(),
@@ -391,12 +382,12 @@ export const redeemWalletVoucher = createTool({
 
     const wallet = getWalletClient(c);
 
-    const parts = voucher.split("-");
-    const voucherId = parts.slice(0, -1).join("-");
+    const parts = voucher.split('-');
+    const voucherId = parts.slice(0, -1).join('-');
     const amountHintMicroDollars = parts.at(-1);
 
     if (!amountHintMicroDollars) {
-      throw new UserInputError("Invalid voucher ID");
+      throw new UserInputError('Invalid voucher ID');
     }
 
     const amountMicroDollars = MicroDollar.fromMicrodollarString(
@@ -404,17 +395,17 @@ export const redeemWalletVoucher = createTool({
     );
 
     if (amountMicroDollars.isZero() || amountMicroDollars.isNegative()) {
-      throw new UserInputError("Invalid voucher ID");
+      throw new UserInputError('Invalid voucher ID');
     }
 
     const operation = {
-      type: "WorkspaceRedeemVoucher" as const,
+      type: 'WorkspaceRedeemVoucher' as const,
       amount: amountMicroDollars.toMicrodollarString(),
       voucherId,
       workspace: c.workspace.value,
     } as const;
 
-    const response = await wallet["POST /transactions"](
+    const response = await wallet['POST /transactions'](
       {},
       {
         body: operation,
@@ -422,7 +413,7 @@ export const redeemWalletVoucher = createTool({
     );
 
     if (!response.ok) {
-      throw new Error("Failed to redeem voucher");
+      throw new Error('Failed to redeem voucher');
     }
 
     return {
@@ -432,7 +423,7 @@ export const redeemWalletVoucher = createTool({
 });
 
 export const getWorkspacePlan = createTool({
-  name: "GET_WORKSPACE_PLAN",
+  name: 'GET_WORKSPACE_PLAN',
   description: "Get the plan for the current tenant's workspace",
   inputSchema: z.object({}),
   handler: async (_, c) => {
@@ -444,14 +435,13 @@ export const getWorkspacePlan = createTool({
 });
 
 export const preAuthorizeAmount = createTool({
-  name: "PRE_AUTHORIZE_AMOUNT",
-  description:
-    "Pre-authorize an amount of money for the current tenant's wallet",
+  name: 'PRE_AUTHORIZE_AMOUNT',
+  description: "Pre-authorize an amount of money for the current tenant's wallet",
   inputSchema: z.object({
     amount: z
       .number()
       .describe(
-        "The amount of money to pre-authorize. Specified in USD dollars.",
+        'The amount of money to pre-authorize. Specified in USD dollars.',
       ),
     metadata: z.record(z.string(), z.unknown()).optional(),
   }),
@@ -468,15 +458,15 @@ export const preAuthorizeAmount = createTool({
     const amountMicroDollars = MicroDollar.fromDollars(amount);
 
     if (amountMicroDollars.isZero() || amountMicroDollars.isNegative()) {
-      throw new UserInputError("Amount must be positive");
+      throw new UserInputError('Amount must be positive');
     }
 
     const operation = {
-      type: "PreAuthorization" as const,
+      type: 'PreAuthorization' as const,
       amount: amountMicroDollars.toMicrodollarString(),
       identifier: id,
       payer: {
-        type: "wallet",
+        type: 'wallet',
         id: c.workspace.value,
       },
       metadata: {
@@ -485,7 +475,7 @@ export const preAuthorizeAmount = createTool({
       },
     } as const;
 
-    const response = await wallet["POST /transactions"](
+    const response = await wallet['POST /transactions'](
       {},
       {
         body: operation,
@@ -493,7 +483,7 @@ export const preAuthorizeAmount = createTool({
     );
 
     if (!response.ok) {
-      throw new Error("Failed to pre-authorize amount");
+      throw new Error('Failed to pre-authorize amount');
     }
 
     const data = await response.json();
@@ -505,16 +495,15 @@ export const preAuthorizeAmount = createTool({
 });
 
 export const commitPreAuthorizedAmount = createTool({
-  name: "COMMIT_PRE_AUTHORIZED_AMOUNT",
-  description:
-    "Commit a pre-authorized amount of money for the current tenant's wallet",
+  name: 'COMMIT_PRE_AUTHORIZED_AMOUNT',
+  description: "Commit a pre-authorized amount of money for the current tenant's wallet",
   inputSchema: z.object({
     identifier: z.string().optional(),
     contractId: z.string(),
     vendorId: z.string(),
     amount: z
       .number()
-      .describe("The amount of money to commit. Specified in USD dollars."),
+      .describe('The amount of money to commit. Specified in USD dollars.'),
     metadata: z.record(z.string(), z.unknown()).optional(),
   }),
   outputSchema: z.object({
@@ -532,18 +521,18 @@ export const commitPreAuthorizedAmount = createTool({
     const amountMicroDollars = MicroDollar.fromDollars(amount);
 
     if (amountMicroDollars.isZero() || amountMicroDollars.isNegative()) {
-      throw new UserInputError("Amount must be positive");
+      throw new UserInputError('Amount must be positive');
     }
 
     identifier ??= crypto.randomUUID();
 
     const operation = {
-      type: "CommitPreAuthorized" as const,
+      type: 'CommitPreAuthorized' as const,
       amount: amountMicroDollars.toMicrodollarString(),
       identifier,
       contractId,
       vendor: {
-        type: "vendor",
+        type: 'vendor',
         id: vendorId,
       },
       metadata: {
@@ -552,7 +541,7 @@ export const commitPreAuthorizedAmount = createTool({
       },
     } as const;
 
-    const response = await wallet["POST /transactions/:id/commit"](
+    const response = await wallet['POST /transactions/:id/commit'](
       {
         id: identifier,
       },

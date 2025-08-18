@@ -1,14 +1,10 @@
-import type { AIAgent } from "@deco/ai";
-import { z } from "zod";
-import { AgentGenerateOptions } from "../../models/index.ts";
-import { stub } from "../../stub.ts";
-import {
-  assertHasWorkspace,
-  assertWorkspaceResourceAccess,
-  type WithTool,
-} from "../assertions.ts";
-import { type AppContext, createToolFactory } from "../context.ts";
-import { baseMessageSchema } from "../ai/api.ts";
+import type { AIAgent } from '@deco/ai';
+import { z } from 'zod';
+import { AgentGenerateOptions } from '../../models/index.ts';
+import { stub } from '../../stub.ts';
+import { assertHasWorkspace, assertWorkspaceResourceAccess, type WithTool } from '../assertions.ts';
+import { type AppContext, createToolFactory } from '../context.ts';
+import { baseMessageSchema } from '../ai/api.ts';
 
 export interface AgentContext extends AppContext {
   agent: string;
@@ -18,39 +14,39 @@ const createAgentTool = createToolFactory<WithTool<AgentContext>>(
   (c) =>
     ({
       ...c,
-      agent: c.params.agentId ?? "teamAgent",
+      agent: c.params.agentId ?? 'teamAgent',
     }) as unknown as WithTool<AgentContext>,
 );
 
 export const agentGenerateText = createAgentTool({
-  name: "AGENT_GENERATE_TEXT",
-  description: "Generate text output using an agent",
+  name: 'AGENT_GENERATE_TEXT',
+  description: 'Generate text output using an agent',
   inputSchema: z.object({
     message: z
       .union([z.string(), baseMessageSchema])
-      .describe("The message to send to the agent"),
+      .describe('The message to send to the agent'),
     options: AgentGenerateOptions.optional().nullable(),
   }),
   outputSchema: z.object({
-    text: z.string().optional().describe("The text output from the agent"),
+    text: z.string().optional().describe('The text output from the agent'),
   }),
   handler: async ({ message }, c) => {
     assertHasWorkspace(c);
     await assertWorkspaceResourceAccess(c);
 
-    const agentStub = stub<AIAgent>("AIAgent").new(
+    const agentStub = stub<AIAgent>('AIAgent').new(
       `${c.workspace.value}/Agents/${c.agent}`,
     );
 
     const asMessageArray = Array.isArray(message)
       ? message
-      : [{ role: "user" as const, content: message }];
+      : [{ role: 'user' as const, content: message }];
 
     const asMessage = asMessageArray.map((m) => ({
       ...m,
       parts: [
         {
-          type: "text" as const,
+          type: 'text' as const,
           text: m.content,
         },
       ],
@@ -64,38 +60,38 @@ export const agentGenerateText = createAgentTool({
 });
 
 export const agentGenerateObject = createAgentTool({
-  name: "AGENT_GENERATE_OBJECT",
-  description: "Generate an object using an agent",
+  name: 'AGENT_GENERATE_OBJECT',
+  description: 'Generate an object using an agent',
   inputSchema: z.object({
     message: z
       .union([z.string(), baseMessageSchema])
-      .describe("The message to send to the agent"),
+      .describe('The message to send to the agent'),
     schema: z
       .any()
       .describe(
-        "The JSON schema to use for a structured response. If provided, the response will be an object.",
+        'The JSON schema to use for a structured response. If provided, the response will be an object.',
       ),
   }),
   outputSchema: z.object({
-    object: z.any().describe("The object output from the agent"),
+    object: z.any().describe('The object output from the agent'),
   }),
   handler: async ({ message, schema }, c) => {
     assertHasWorkspace(c);
     await assertWorkspaceResourceAccess(c);
 
-    const agentStub = stub<AIAgent>("AIAgent").new(
+    const agentStub = stub<AIAgent>('AIAgent').new(
       `${c.workspace.value}/Agents/${c.agent}`,
     );
 
     const asMessageArray = Array.isArray(message)
       ? message
-      : [{ role: "user" as const, content: message }];
+      : [{ role: 'user' as const, content: message }];
 
     const asMessage = asMessageArray.map((m) => ({
       ...m,
       parts: [
         {
-          type: "text" as const,
+          type: 'text' as const,
           text: m.content,
         },
       ],
@@ -112,25 +108,24 @@ const TranscribeAudioInputSchema = z.object({
   audioUrl: z
     .string()
     .describe(
-      "URL to the audio file to transcribe (supports mp3, wav, m4a, etc.)",
+      'URL to the audio file to transcribe (supports mp3, wav, m4a, etc.)',
     ),
 });
 
 const TranscribeAudioOutputSchema = z.object({
-  transcription: z.string().describe("The transcribed text from the audio"),
-  success: z.boolean().describe("Whether the transcription was successful"),
-  message: z.string().describe("Status message about the transcription"),
+  transcription: z.string().describe('The transcribed text from the audio'),
+  success: z.boolean().describe('Whether the transcription was successful'),
+  message: z.string().describe('Status message about the transcription'),
 });
 
 export const agentListen = createAgentTool({
-  name: "AGENT_LISTEN",
-  description:
-    "Transcribe audio content to text using OpenAI's Whisper model. " +
-    "This tool accepts a URL to an audio file and returns the transcribed text. " +
-    "Supports common audio formats like mp3, wav, m4a, and more. " +
-    "Perfect for converting voice messages, audio recordings, or any audio content into readable text. " +
-    "Maximum file size is 25MB. Use this when you need to process audio files, transcribe voice messages, " +
-    "or convert speech to text for further processing. This tool is only available if the agent has voice transcription capabilities.",
+  name: 'AGENT_LISTEN',
+  description: "Transcribe audio content to text using OpenAI's Whisper model. " +
+    'This tool accepts a URL to an audio file and returns the transcribed text. ' +
+    'Supports common audio formats like mp3, wav, m4a, and more. ' +
+    'Perfect for converting voice messages, audio recordings, or any audio content into readable text. ' +
+    'Maximum file size is 25MB. Use this when you need to process audio files, transcribe voice messages, ' +
+    'or convert speech to text for further processing. This tool is only available if the agent has voice transcription capabilities.',
   inputSchema: TranscribeAudioInputSchema,
   outputSchema: TranscribeAudioOutputSchema,
   handler: async ({ audioUrl }, c) => {
@@ -140,9 +135,9 @@ export const agentListen = createAgentTool({
 
       if (!audioUrl) {
         return {
-          transcription: "",
+          transcription: '',
           success: false,
-          message: "Invalid audio data: audioUrl must be a non-empty string",
+          message: 'Invalid audio data: audioUrl must be a non-empty string',
         };
       }
 
@@ -150,56 +145,56 @@ export const agentListen = createAgentTool({
 
       if (response.status === 403) {
         return {
-          transcription: "",
+          transcription: '',
           success: false,
-          message: "Forbidden: Access to the audio file is denied",
+          message: 'Forbidden: Access to the audio file is denied',
         };
       }
 
       if (response.status === 404) {
         return {
-          transcription: "",
+          transcription: '',
           success: false,
-          message: "Not Found: Audio file not found",
+          message: 'Not Found: Audio file not found',
         };
       }
 
       if (response.status === 401) {
         return {
-          transcription: "",
+          transcription: '',
           success: false,
-          message: "Unauthorized: Access to the audio file is denied",
+          message: 'Unauthorized: Access to the audio file is denied',
         };
       }
 
       if (!response.ok) {
         return {
-          transcription: "",
+          transcription: '',
           success: false,
           message: `Failed to fetch audio file: ${response.statusText}`,
         };
       }
 
       // Check content type to ensure it's not HTML or other non-audio content
-      const contentType = response.headers.get("content-type")?.toLowerCase() ||
-        "";
+      const contentType = response.headers.get('content-type')?.toLowerCase() ||
+        '';
       if (
-        contentType.includes("text/html") ||
-        contentType.includes("application/json") ||
-        contentType.includes("text/plain")
+        contentType.includes('text/html') ||
+        contentType.includes('application/json') ||
+        contentType.includes('text/plain')
       ) {
         return {
-          transcription: "",
+          transcription: '',
           success: false,
           message:
-            "Invalid content: The URL returned a web page instead of an audio file. The file may be private or require authentication.",
+            'Invalid content: The URL returned a web page instead of an audio file. The file may be private or require authentication.',
         };
       }
 
       const audioBuffer = await response.arrayBuffer();
       const audioBufferUint8Array = new Uint8Array(audioBuffer);
 
-      const agentStub = stub<AIAgent>("AIAgent").new(
+      const agentStub = stub<AIAgent>('AIAgent').new(
         `${c.workspace.value}/Agents/${c.agent}`,
       );
 
@@ -207,9 +202,9 @@ export const agentListen = createAgentTool({
 
       if (!transcription) {
         return {
-          transcription: "",
+          transcription: '',
           success: false,
-          message: "Failed to transcribe audio",
+          message: 'Failed to transcribe audio',
         };
       }
 
@@ -223,24 +218,24 @@ export const agentListen = createAgentTool({
         }KB)`,
       };
     } catch (error) {
-      console.error("💥 Error in TRANSCRIBE_AUDIO tool:", error);
+      console.error('💥 Error in TRANSCRIBE_AUDIO tool:', error);
 
-      let errorMessage = "Failed to transcribe audio";
+      let errorMessage = 'Failed to transcribe audio';
       if (error instanceof Error) {
-        if (error.message.includes("exceeds the maximum")) {
-          errorMessage = "Audio file too large (maximum 25MB allowed)";
-        } else if (error.message.includes("Invalid audio")) {
-          errorMessage = "Invalid audio format or corrupted audio data";
-        } else if (error.message.includes("Invalid file format")) {
+        if (error.message.includes('exceeds the maximum')) {
+          errorMessage = 'Audio file too large (maximum 25MB allowed)';
+        } else if (error.message.includes('Invalid audio')) {
+          errorMessage = 'Invalid audio format or corrupted audio data';
+        } else if (error.message.includes('Invalid file format')) {
           errorMessage =
-            "Invalid file format: The file may be corrupted, protected, or not a supported audio format";
+            'Invalid file format: The file may be corrupted, protected, or not a supported audio format';
         } else {
           errorMessage = `Transcription failed: ${error.message}`;
         }
       }
 
       return {
-        transcription: "",
+        transcription: '',
         success: false,
         message: errorMessage,
       };

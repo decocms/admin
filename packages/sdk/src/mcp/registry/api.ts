@@ -1,25 +1,21 @@
-import { listToolsByConnectionType } from "@deco/ai/mcp";
-import { z } from "zod";
-import { UserInputError } from "../../errors.ts";
-import type { MCPConnection } from "../../models/mcp.ts";
+import { listToolsByConnectionType } from '@deco/ai/mcp';
+import { z } from 'zod';
+import { UserInputError } from '../../errors.ts';
+import type { MCPConnection } from '../../models/mcp.ts';
 import {
   DecoConnectionSchema,
   HTTPConnectionSchema,
   InnateConnectionSchema,
   SSEConnectionSchema,
   WebsocketConnectionSchema,
-} from "../../models/mcp.ts";
-import type { QueryResult } from "../../storage/index.ts";
-import {
-  assertHasWorkspace,
-  assertWorkspaceResourceAccess,
-} from "../assertions.ts";
-import { type AppContext, createToolGroup } from "../context.ts";
+} from '../../models/mcp.ts';
+import type { QueryResult } from '../../storage/index.ts';
+import { assertHasWorkspace, assertWorkspaceResourceAccess } from '../assertions.ts';
+import { type AppContext, createToolGroup } from '../context.ts';
 
-const DECO_CHAT_APPS_REGISTRY_TABLE = "deco_chat_apps_registry" as const;
-const DECO_CHAT_REGISTRY_SCOPES_TABLE = "deco_chat_registry_scopes" as const;
-const DECO_CHAT_REGISTRY_APPS_TOOLS_TABLE =
-  "deco_chat_apps_registry_tools" as const;
+const DECO_CHAT_APPS_REGISTRY_TABLE = 'deco_chat_apps_registry' as const;
+const DECO_CHAT_REGISTRY_SCOPES_TABLE = 'deco_chat_registry_scopes' as const;
+const DECO_CHAT_REGISTRY_APPS_TOOLS_TABLE = 'deco_chat_apps_registry_tools' as const;
 
 const SELECT_REGISTRY_SCOPE_QUERY = `
   id,
@@ -58,7 +54,7 @@ const SELECT_REGISTRY_APP_WITH_SCOPE_QUERY = `
 ` as const;
 
 // MCPConnection schema for validation
-const MCPConnectionSchema = z.discriminatedUnion("type", [
+const MCPConnectionSchema = z.discriminatedUnion('type', [
   HTTPConnectionSchema,
   SSEConnectionSchema,
   WebsocketConnectionSchema,
@@ -166,21 +162,20 @@ const Mappers = {
   },
 };
 
-const createTool = createToolGroup("Registry", {
-  name: "App Registry",
-  description: "Manage and discover published apps in the registry.",
-  icon:
-    "https://assets.decocache.com/mcp/09e44283-f47d-4046-955f-816d227c626f/app.png",
+const createTool = createToolGroup('Registry', {
+  name: 'App Registry',
+  description: 'Manage and discover published apps in the registry.',
+  icon: 'https://assets.decocache.com/mcp/09e44283-f47d-4046-955f-816d227c626f/app.png',
 });
 
 export const listRegistryScopes = createTool({
-  name: "REGISTRY_LIST_SCOPES",
-  description: "List all registry scopes",
+  name: 'REGISTRY_LIST_SCOPES',
+  description: 'List all registry scopes',
   inputSchema: z.object({
     search: z
       .string()
       .optional()
-      .describe("Search term to filter scopes by name"),
+      .describe('Search term to filter scopes by name'),
   }),
   outputSchema: z.object({ scopes: z.array(RegistryScopeSchema) }),
   handler: async ({ search }, c) => {
@@ -191,10 +186,10 @@ export const listRegistryScopes = createTool({
       .select(SELECT_REGISTRY_SCOPE_QUERY);
 
     if (search) {
-      query = query.ilike("scope_name", `%${search}%`);
+      query = query.ilike('scope_name', `%${search}%`);
     }
 
-    const { data, error } = await query.order("created_at", {
+    const { data, error } = await query.order('created_at', {
       ascending: false,
     });
 
@@ -208,13 +203,13 @@ const MAX_SCOPES_PER_WORKSPACE = 5;
 async function ensureScope(
   scopeName: string,
   workspace: string,
-  db: AppContext["db"],
+  db: AppContext['db'],
 ): Promise<string> {
   // First, try to find existing scope
   const { data: existingScope, error: findError } = await db
     .from(DECO_CHAT_REGISTRY_SCOPES_TABLE)
-    .select("id, workspace")
-    .eq("scope_name", scopeName)
+    .select('id, workspace')
+    .eq('scope_name', scopeName)
     .maybeSingle();
 
   if (findError) throw findError;
@@ -232,8 +227,8 @@ async function ensureScope(
   // Check scope limit before creating new scope
   const { data: existingScopes, error: countError } = await db
     .from(DECO_CHAT_REGISTRY_SCOPES_TABLE)
-    .select("id", { count: "exact" })
-    .eq("workspace", workspace);
+    .select('id', { count: 'exact' })
+    .eq('workspace', workspace);
 
   if (countError) throw countError;
 
@@ -252,7 +247,7 @@ async function ensureScope(
       workspace,
       updated_at: new Date().toISOString(),
     })
-    .select("id")
+    .select('id')
     .single();
 
   if (createError) throw createError;
@@ -261,11 +256,11 @@ async function ensureScope(
 }
 
 export const getRegistryApp = createTool({
-  name: "REGISTRY_GET_APP",
-  description: "Get an app from the registry",
+  name: 'REGISTRY_GET_APP',
+  description: 'Get an app from the registry',
   inputSchema: z.object({
-    name: z.string().describe("The name of the app to get").optional(),
-    id: z.string().describe("The id of the app to get").optional(),
+    name: z.string().describe('The name of the app to get').optional(),
+    id: z.string().describe('The id of the app to get').optional(),
   }),
   outputSchema: RegistryAppSchema,
   handler: async (ctx, c) => {
@@ -277,42 +272,42 @@ export const getRegistryApp = createTool({
       >
       | null = null;
 
-    if ("id" in ctx && ctx.id) {
+    if ('id' in ctx && ctx.id) {
       const result = await c.db
         .from(DECO_CHAT_APPS_REGISTRY_TABLE)
         .select(SELECT_REGISTRY_APP_WITH_SCOPE_QUERY)
-        .eq("id", ctx.id)
+        .eq('id', ctx.id)
         .single();
 
       if (result.error) throw result.error;
       data = result.data;
-    } else if ("name" in ctx && ctx.name) {
-      const [scopeName, appName] = ctx.name.slice(1).split("/");
+    } else if ('name' in ctx && ctx.name) {
+      const [scopeName, appName] = ctx.name.slice(1).split('/');
       const result = await c.db
         .from(DECO_CHAT_APPS_REGISTRY_TABLE)
         .select(SELECT_REGISTRY_APP_WITH_SCOPE_QUERY)
         .eq(`${DECO_CHAT_REGISTRY_SCOPES_TABLE}.scope_name`, scopeName)
-        .eq("name", appName)
+        .eq('name', appName)
         .single();
 
       if (result.error) throw result.error;
       data = result.data;
     }
     if (!data) {
-      throw new UserInputError("App not found");
+      throw new UserInputError('App not found');
     }
     return Mappers.toRegistryApp(data!);
   },
 });
 export const listRegistryApps = createTool({
-  name: "REGISTRY_LIST_APPS",
-  description: "List all apps in the registry for the current workspace",
+  name: 'REGISTRY_LIST_APPS',
+  description: 'List all apps in the registry for the current workspace',
   inputSchema: z.object({
     search: z
       .string()
       .optional()
-      .describe("Search term to filter apps by name or description"),
-    scopeName: z.string().optional().describe("Filter apps by scope name"),
+      .describe('Search term to filter apps by name or description'),
+    scopeName: z.string().optional().describe('Filter apps by scope name'),
   }),
   outputSchema: z.object({ apps: z.array(RegistryAppSchema) }),
   handler: async ({ search, scopeName }, c) => {
@@ -327,14 +322,14 @@ export const listRegistryApps = createTool({
       .or(`unlisted.eq.false,and(workspace.eq.${workspace},unlisted.eq.true)`);
 
     if (scopeName) {
-      query = query.eq("deco_chat_registry_scopes.scope_name", scopeName);
+      query = query.eq('deco_chat_registry_scopes.scope_name', scopeName);
     }
 
     if (search) {
       query = query.or(`name.ilike.%${search}%,description.ilike.%${search}%`);
     }
 
-    const { data, error } = await query.order("created_at", {
+    const { data, error } = await query.order('created_at', {
       ascending: false,
     });
 
@@ -345,13 +340,13 @@ export const listRegistryApps = createTool({
 });
 
 export const listPublishedApps = createTool({
-  name: "REGISTRY_LIST_PUBLISHED_APPS",
-  description: "List published apps by the current workspace",
+  name: 'REGISTRY_LIST_PUBLISHED_APPS',
+  description: 'List published apps by the current workspace',
   inputSchema: z.object({
     search: z
       .string()
       .optional()
-      .describe("Search term to filter apps by name or description"),
+      .describe('Search term to filter apps by name or description'),
   }),
   outputSchema: z.object({ apps: z.array(RegistryAppSchema) }),
   handler: async ({ search }, c) => {
@@ -363,13 +358,13 @@ export const listPublishedApps = createTool({
     let query = c.db
       .from(DECO_CHAT_APPS_REGISTRY_TABLE)
       .select(SELECT_REGISTRY_APP_WITH_SCOPE_QUERY)
-      .eq("workspace", workspace);
+      .eq('workspace', workspace);
 
     if (search) {
       query = query.or(`name.ilike.%${search}%,description.ilike.%${search}%`);
     }
 
-    const { data, error } = await query.order("created_at", {
+    const { data, error } = await query.order('created_at', {
       ascending: false,
     });
 
@@ -380,26 +375,25 @@ export const listPublishedApps = createTool({
 });
 
 export const publishApp = createTool({
-  name: "REGISTRY_PUBLISH_APP",
-  description:
-    "Publish an app to the registry (automatically claims scope on first use)",
+  name: 'REGISTRY_PUBLISH_APP',
+  description: 'Publish an app to the registry (automatically claims scope on first use)',
   inputSchema: z.object({
     scopeName: z
       .string()
       .describe(
-        "The scope to publish to (defaults to team slug, automatically claimed on first use)",
+        'The scope to publish to (defaults to team slug, automatically claimed on first use)',
       ),
-    name: z.string().describe("The name of the app"),
-    friendlyName: z.string().optional().describe("A friendly name for the app"),
-    description: z.string().optional().describe("A description of the app"),
-    icon: z.string().optional().describe("URL to an icon for the app"),
+    name: z.string().describe('The name of the app'),
+    friendlyName: z.string().optional().describe('A friendly name for the app'),
+    description: z.string().optional().describe('A description of the app'),
+    icon: z.string().optional().describe('URL to an icon for the app'),
     connection: MCPConnectionSchema.describe(
-      "The MCP connection configuration for the app",
+      'The MCP connection configuration for the app',
     ),
     unlisted: z
       .boolean()
       .optional()
-      .describe("Whether the app should be unlisted"),
+      .describe('Whether the app should be unlisted'),
   }),
   outputSchema: RegistryAppSchema,
   handler: async (
@@ -420,7 +414,7 @@ export const publishApp = createTool({
     const workspace = c.workspace.value;
 
     if (!name.trim()) {
-      throw new UserInputError("App name cannot be empty");
+      throw new UserInputError('App name cannot be empty');
     }
 
     // Use team slug as default scope if none provided
@@ -444,7 +438,7 @@ export const publishApp = createTool({
           unlisted: unlisted ?? true,
         },
         {
-          onConflict: "scope_id,name",
+          onConflict: 'scope_id,name',
         },
       )
       .select(SELECT_REGISTRY_APP_WITH_SCOPE_QUERY)
@@ -461,8 +455,8 @@ export const publishApp = createTool({
     // Get current tools for this app to calculate diff
     const { data: currentTools, error: currentToolsError } = await c.db
       .from(DECO_CHAT_REGISTRY_APPS_TOOLS_TABLE)
-      .select("name")
-      .eq("app_id", data.id);
+      .select('name')
+      .eq('app_id', data.id);
 
     if (currentToolsError) throw currentToolsError;
 
@@ -479,8 +473,8 @@ export const publishApp = createTool({
       const { error: deleteError } = await c.db
         .from(DECO_CHAT_REGISTRY_APPS_TOOLS_TABLE)
         .delete()
-        .eq("app_id", data.id)
-        .in("name", toolsToDelete);
+        .eq('app_id', data.id)
+        .in('name', toolsToDelete);
 
       if (deleteError) throw deleteError;
     }
@@ -499,7 +493,7 @@ export const publishApp = createTool({
             updated_at: new Date().toISOString(),
           },
           {
-            onConflict: "app_id,name",
+            onConflict: 'app_id,name',
           },
         )
       ),

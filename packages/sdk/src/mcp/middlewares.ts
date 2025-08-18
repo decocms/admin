@@ -4,12 +4,12 @@ import {
   CallToolResultSchema,
   ListToolsRequestSchema,
   ListToolsResult,
-} from "@modelcontextprotocol/sdk/types.js";
-import * as api from "@opentelemetry/api";
-import z from "zod";
-import { SpanStatusCode, trace } from "../observability/index.ts";
-import { assertWorkspaceResourceAccess } from "./assertions.ts";
-import { type AppContext, serializeError, State } from "./context.ts";
+} from '@modelcontextprotocol/sdk/types.js';
+import * as api from '@opentelemetry/api';
+import z from 'zod';
+import { SpanStatusCode, trace } from '../observability/index.ts';
+import { assertWorkspaceResourceAccess } from './assertions.ts';
+import { type AppContext, serializeError, State } from './context.ts';
 
 export interface RequestMiddlewareContext<T = any> {
   next?(): Promise<T>;
@@ -62,12 +62,12 @@ export const wrapToolFn = <
   workspace?: string,
 ) => {
   return async (props: TInput) => {
-    const tracer = trace.getTracer("tools");
+    const tracer = trace.getTracer('tools');
     return await tracer.startActiveSpan(
-      "tools.call",
+      'tools.call',
       {
         attributes: {
-          "mcp.tool.name": toolName,
+          'mcp.tool.name': toolName,
           workspace,
         },
       },
@@ -82,7 +82,7 @@ export const wrapToolFn = <
         } finally {
           const ctx = safeGetContext();
           const workspace = ctx?.workspace?.value;
-          workspace && span.setAttribute("workspace", workspace);
+          workspace && span.setAttribute('workspace', workspace);
           err && span.recordException(err as Error);
           span.setStatus({
             code: err ? SpanStatusCode.ERROR : SpanStatusCode.OK,
@@ -112,7 +112,7 @@ export const withMCPErrorHandling = <
     } catch (error) {
       return {
         isError: true,
-        content: [{ type: "text", text: serializeError(error) }],
+        content: [{ type: 'text', text: serializeError(error) }],
       };
     }
   }, toolName);
@@ -122,13 +122,12 @@ interface AuthContext {
 }
 
 export const withMCPAuthorization =
-  (ctx: AppContext, { integrationId }: AuthContext): CallToolMiddleware =>
-  async (req, next) => {
+  (ctx: AppContext, { integrationId }: AuthContext): CallToolMiddleware => async (req, next) => {
     try {
       await assertWorkspaceResourceAccess(
         ctx,
         { integrationId, resource: req.params.name },
-        "INTEGRATIONS_GET", // fallback to INTEGRATIONS_GET to keep compatibility with old MCP Integrations
+        'INTEGRATIONS_GET', // fallback to INTEGRATIONS_GET to keep compatibility with old MCP Integrations
       );
     } catch (error) {
       console.error(
@@ -136,7 +135,7 @@ export const withMCPAuthorization =
       );
       return {
         isError: true,
-        content: [{ type: "text", text: serializeError(error) }],
+        content: [{ type: 'text', text: serializeError(error) }],
       };
     }
 

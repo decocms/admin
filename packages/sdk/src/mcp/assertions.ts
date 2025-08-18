@@ -1,13 +1,13 @@
-import type { AuthContext, Statement } from "../auth/policy.ts";
-import { ForbiddenError, NotFoundError, UnauthorizedError } from "../errors.ts";
-import type { Workspace } from "../path.ts";
-import { QueryResult } from "../storage/index.ts";
-import type { AppContext, UserPrincipal } from "./context.ts";
+import type { AuthContext, Statement } from '../auth/policy.ts';
+import { ForbiddenError, NotFoundError, UnauthorizedError } from '../errors.ts';
+import type { Workspace } from '../path.ts';
+import { QueryResult } from '../storage/index.ts';
+import type { AppContext, UserPrincipal } from './context.ts';
 
 type WithUser<TAppContext extends AppContext = AppContext> =
   & Omit<
     TAppContext,
-    "user"
+    'user'
   >
   & {
     user: UserPrincipal;
@@ -16,7 +16,7 @@ type WithUser<TAppContext extends AppContext = AppContext> =
 type WithWorkspace<TAppContext extends AppContext = AppContext> =
   & Omit<
     TAppContext,
-    "workspace"
+    'workspace'
   >
   & {
     workspace: { root: string; slug: string; value: Workspace };
@@ -25,7 +25,7 @@ type WithWorkspace<TAppContext extends AppContext = AppContext> =
 type WithKbFileProcessor<TAppContext extends AppContext = AppContext> =
   & Omit<
     TAppContext,
-    "kbFileProcessor"
+    'kbFileProcessor'
   >
   & {
     kbFileProcessor: Workflow;
@@ -34,25 +34,25 @@ type WithKbFileProcessor<TAppContext extends AppContext = AppContext> =
 export type WithTool<TAppContext extends AppContext = AppContext> =
   & Omit<
     TAppContext,
-    "tool"
+    'tool'
   >
   & {
     tool: { name: string };
   };
 
 export function assertHasWorkspace<TContext extends AppContext = AppContext>(
-  c: Pick<TContext, "workspace"> | Pick<WithWorkspace<TContext>, "workspace">,
+  c: Pick<TContext, 'workspace'> | Pick<WithWorkspace<TContext>, 'workspace'>,
 ): asserts c is WithWorkspace<TContext> {
   if (!c.workspace) {
-    throw new NotFoundError("Workspace not found");
+    throw new NotFoundError('Workspace not found');
   }
 }
 
 export function assertPrincipalIsUser<TContext extends AppContext = AppContext>(
-  c: Pick<TContext, "user"> | Pick<WithUser<TContext>, "user">,
+  c: Pick<TContext, 'user'> | Pick<WithUser<TContext>, 'user'>,
 ): asserts c is WithUser<TContext> {
-  if (!c.user || typeof c.user.id !== "string") {
-    throw new NotFoundError("User not found");
+  if (!c.user || typeof c.user.id !== 'string') {
+    throw new NotFoundError('User not found');
   }
 }
 
@@ -74,7 +74,7 @@ const assertPoliciesIsStatementArray = (
   return (
     Array.isArray(policies) &&
     policies.every(
-      (p) => typeof p === "object" && "effect" in p && "resource" in p,
+      (p) => typeof p === 'object' && 'effect' in p && 'resource' in p,
     )
   );
 };
@@ -83,11 +83,11 @@ export function assertsNotNull<T>(
   value: T | null | undefined,
 ): asserts value is T {
   if (value === null || value === undefined) {
-    throw new Error("Value is null or undefined");
+    throw new Error('Value is null or undefined');
   }
 }
 
-interface ResourceAccessContext extends Partial<Omit<AuthContext, "user">> {
+interface ResourceAccessContext extends Partial<Omit<AuthContext, 'user'>> {
   resource: string;
 }
 
@@ -105,7 +105,7 @@ export const assertWorkspaceResourceAccess = async (
 
   // If no resources provided, throw error
   if (resourcesOrContexts.length === 0) {
-    throw new ForbiddenError("No resources specified for access check");
+    throw new ForbiddenError('No resources specified for access check');
   }
 
   assertHasUser(c);
@@ -118,19 +118,19 @@ export const assertWorkspaceResourceAccess = async (
   const errors: string[] = [];
 
   // For API keys, query the database only once
-  let apiKeyData: QueryResult<"deco_chat_api_keys", "*"> | null = null;
+  let apiKeyData: QueryResult<'deco_chat_api_keys', '*'> | null = null;
   let apiKeyError: string | null = null;
 
   // Check if this is an API key request and pre-fetch the data
-  if ("aud" in user && user.aud === c.workspace.value) {
-    const [sub, id] = user.sub?.split(":") ?? [];
-    if (sub === "api-key") {
+  if ('aud' in user && user.aud === c.workspace.value) {
+    const [sub, id] = user.sub?.split(':') ?? [];
+    if (sub === 'api-key') {
       const { data, error } = await c.db
-        .from("deco_chat_api_keys")
-        .select("*")
-        .eq("id", id)
-        .eq("enabled", true)
-        .eq("workspace", c.workspace.value)
+        .from('deco_chat_api_keys')
+        .select('*')
+        .eq('id', id)
+        .eq('enabled', true)
+        .eq('workspace', c.workspace.value)
         .maybeSingle();
 
       if (error) {
@@ -143,16 +143,15 @@ export const assertWorkspaceResourceAccess = async (
 
   for (const toolOrResourceContext of resourcesOrContexts) {
     try {
-      const { resource, ...authContext } =
-        typeof toolOrResourceContext === "string"
-          ? { resource: toolOrResourceContext }
-          : toolOrResourceContext;
+      const { resource, ...authContext } = typeof toolOrResourceContext === 'string'
+        ? { resource: toolOrResourceContext }
+        : toolOrResourceContext;
 
       // agent tokens
-      if ("aud" in user && user.aud === c.workspace.value) {
+      if ('aud' in user && user.aud === c.workspace.value) {
         // API keys
-        const [sub] = user.sub?.split(":") ?? [];
-        if (sub === "api-key") {
+        const [sub] = user.sub?.split(':') ?? [];
+        if (sub === 'api-key') {
           if (apiKeyError) {
             errors.push(`API key error for ${resource}: ${apiKeyError}`);
             continue;
@@ -185,12 +184,12 @@ export const assertWorkspaceResourceAccess = async (
         return c.resourceAccess.grant();
       }
 
-      if (root === "users" && user.id === slug) {
+      if (root === 'users' && user.id === slug) {
         // If we reach here for this resource, access is granted
         return c.resourceAccess.grant();
       }
 
-      if (root === "shared") {
+      if (root === 'shared') {
         const canAccess = await c.authorization.canAccess(
           user.id as string,
           slug,
@@ -222,7 +221,7 @@ export const assertWorkspaceResourceAccess = async (
   // If we reach here, none of the resources granted access
   throw new ForbiddenError(
     `Cannot access any of the requested resources in workspace ${c.workspace.value}. Errors: ${
-      errors.join("; ")
+      errors.join('; ')
     }`,
   );
 };
@@ -237,7 +236,7 @@ export const assertTeamResourceAccess = async (
   }
   assertHasUser(c);
   const user = c.user;
-  if ("id" in user && typeof user.id === "string") {
+  if ('id' in user && typeof user.id === 'string') {
     const canAccess = await c.authorization.canAccess(
       user.id,
       teamIdOrSlug,
@@ -256,6 +255,6 @@ export function assertKbFileProcessor(
   c: AppContext,
 ): asserts c is WithKbFileProcessor<AppContext> {
   if (!c.kbFileProcessor) {
-    throw new ForbiddenError("KbFileProcessor not found");
+    throw new ForbiddenError('KbFileProcessor not found');
   }
 }

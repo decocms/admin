@@ -1,11 +1,11 @@
-import { NotFoundError, parseViewMetadata, useRemoveView } from "@deco/sdk";
-import { useParams, useSearchParams } from "react-router";
-import { useCurrentTeam } from "../sidebar/team-selector";
-import Preview from "../agent/preview";
-import { DefaultBreadcrumb, PageLayout } from "../layout.tsx";
-import { Icon } from "@deco/ui/components/icon.tsx";
-import { Button } from "@deco/ui/components/button.tsx";
-import { toast } from "@deco/ui/components/sonner.tsx";
+import { NotFoundError, parseViewMetadata, useRemoveView } from '@deco/sdk';
+import { useParams, useSearchParams } from 'react-router';
+import { useCurrentTeam } from '../sidebar/team-selector';
+import Preview from '../agent/preview';
+import { DefaultBreadcrumb, PageLayout } from '../layout.tsx';
+import { Icon } from '@deco/ui/components/icon.tsx';
+import { Button } from '@deco/ui/components/button.tsx';
+import { toast } from '@deco/ui/components/sonner.tsx';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -15,15 +15,15 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-} from "@deco/ui/components/alert-dialog.tsx";
-import type { Tab } from "../dock/index.tsx";
-import { useNavigateWorkspace } from "../../hooks/use-navigate-workspace.ts";
-import { useState } from "react";
+} from '@deco/ui/components/alert-dialog.tsx';
+import type { Tab } from '../dock/index.tsx';
+import { useNavigateWorkspace } from '../../hooks/use-navigate-workspace.ts';
+import { useState } from 'react';
 
 export default function ViewDetail() {
   const { id } = useParams();
   const [searchParams] = useSearchParams();
-  const url = searchParams.get("url");
+  const url = searchParams.get('url');
   const team = useCurrentTeam();
   const removeViewMutation = useRemoveView();
   const navigateWorkspace = useNavigateWorkspace();
@@ -31,15 +31,15 @@ export default function ViewDetail() {
 
   const view = team.views.find((view) => view.id === id);
   if (!view && !url) {
-    throw new NotFoundError("View not found");
+    throw new NotFoundError('View not found');
   }
   const meta = view ? parseViewMetadata(view) : {
-    type: "custom",
-    icon: "dashboard",
-    url: url || "",
+    type: 'custom',
+    icon: 'dashboard',
+    url: url || '',
   };
-  if (meta?.type !== "custom") {
-    throw new NotFoundError("View not found");
+  if (meta?.type !== 'custom') {
+    throw new NotFoundError('View not found');
   }
 
   const handleDeleteView = async () => {
@@ -53,9 +53,9 @@ export default function ViewDetail() {
 
       toast.success(`View "${view.title}" deleted successfully`);
       setShowDeleteAlert(false);
-      navigateWorkspace("/"); // Navigate back to the main page after deletion
+      navigateWorkspace('/'); // Navigate back to the main page after deletion
     } catch (error) {
-      console.error("Error deleting view:", error);
+      console.error('Error deleting view:', error);
       toast.error(`Failed to delete view "${view.title}"`);
       setShowDeleteAlert(false);
     }
@@ -63,10 +63,8 @@ export default function ViewDetail() {
 
   const tabs: Record<string, Tab> = {
     preview: {
-      Component: () => (
-        <Preview src={meta.url} title={view?.title || "Untitled view"} />
-      ),
-      title: "Preview",
+      Component: () => <Preview src={meta.url} title={view?.title || 'Untitled view'} />,
+      title: 'Preview',
       initialOpen: true,
       active: true,
     },
@@ -83,10 +81,10 @@ export default function ViewDetail() {
             items={[
               {
                 label: (
-                  <div className="flex items-center gap-2">
+                  <div className='flex items-center gap-2'>
                     <Icon
-                      name={view?.icon || "dashboard"}
-                      className="w-4 h-4"
+                      name={view?.icon || 'dashboard'}
+                      className='w-4 h-4'
                     />
                     <span>{view?.title}</span>
                   </div>
@@ -97,13 +95,13 @@ export default function ViewDetail() {
         }
         actionButtons={
           <Button
-            variant="ghost"
-            size="icon"
+            variant='ghost'
+            size='icon'
             onClick={() => setShowDeleteAlert(true)}
-            className="text-muted-foreground hover:text-destructive"
-            title="Delete view"
+            className='text-muted-foreground hover:text-destructive'
+            title='Delete view'
           >
-            <Icon name="delete" className="w-4 h-4" />
+            <Icon name='delete' className='w-4 h-4' />
           </Button>
         }
       />
@@ -113,8 +111,8 @@ export default function ViewDetail() {
           <AlertDialogHeader>
             <AlertDialogTitle>Delete View</AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to delete the view "{view?.title}"? This
-              action cannot be undone.
+              Are you sure you want to delete the view "{view?.title}"? This action cannot be
+              undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -122,9 +120,9 @@ export default function ViewDetail() {
             <AlertDialogAction
               onClick={handleDeleteView}
               disabled={removeViewMutation.isPending}
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              className='bg-destructive text-destructive-foreground hover:bg-destructive/90'
             >
-              {removeViewMutation.isPending ? "Deleting..." : "Delete"}
+              {removeViewMutation.isPending ? 'Deleting...' : 'Delete'}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

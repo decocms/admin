@@ -21,7 +21,7 @@ function extractLinks(html: string, base: URL): string[] {
   let m: RegExpExecArray | null;
   while ((m = re.exec(html))) {
     const raw = m[1].trim();
-    if (!raw || raw.startsWith("mailto:") || raw.startsWith("javascript:")) {
+    if (!raw || raw.startsWith('mailto:') || raw.startsWith('javascript:')) {
       continue;
     }
     try {
@@ -47,16 +47,16 @@ export function parseHtml(html: string, baseUrl: string): ParsedHtmlMetrics {
   });
 
   // Metadata extraction (regex based to avoid heavy DOM dependency)
-  let title = "";
+  let title = '';
   const titleMatch = /<title[^>]*>([^<]*)<\/title>/i.exec(html);
   if (titleMatch) title = titleMatch[1].trim();
-  let metaDescription = "";
+  let metaDescription = '';
   const metaDescMatch = /<meta[^>]*name=["']description["'][^>]*>/i.exec(html);
   if (metaDescMatch) {
     const attrMatch = /content=["']([^"']*)["']/i.exec(metaDescMatch[0]);
     if (attrMatch) metaDescription = attrMatch[1].trim();
   }
-  let canonical = "";
+  let canonical = '';
   const canonicalMatch = /<link[^>]*rel=["']canonical["'][^>]*>/i.exec(html);
   if (canonicalMatch) {
     const hrefMatch = /href=["']([^"']+)["']/i.exec(canonicalMatch[0]);
@@ -70,9 +70,9 @@ export function parseHtml(html: string, baseUrl: string): ParsedHtmlMetrics {
   let wordCount = 0;
   if (html) {
     const text = html
-      .replace(/<script[\s\S]*?<\/script>/gi, "")
-      .replace(/<style[\s\S]*?<\/style>/gi, "")
-      .replace(/<[^>]+>/g, " ");
+      .replace(/<script[\s\S]*?<\/script>/gi, '')
+      .replace(/<style[\s\S]*?<\/style>/gi, '')
+      .replace(/<[^>]+>/g, ' ');
     wordCount = text.trim().split(/\s+/).filter(Boolean).length;
   }
   let images = 0;

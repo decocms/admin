@@ -1,27 +1,26 @@
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useSDK } from "./index.ts";
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useSDK } from './index.ts';
 import {
   createKnowledge,
   knowledgeAddFile,
   knowledgeDeleteFile,
   knowledgeListFiles,
-} from "../crud/knowledge.ts";
-import type { Integration } from "../index.ts";
-import { KEYS } from "./api.ts";
+} from '../crud/knowledge.ts';
+import type { Integration } from '../index.ts';
+import { KEYS } from './api.ts';
 
 const getConnectionUrl = ({ connection }: ForConnection) =>
-  connection && "url" in connection ? connection.url : "";
+  connection && 'url' in connection ? connection.url : '';
 
 interface ForConnection {
-  connection?: Integration["connection"];
+  connection?: Integration['connection'];
 }
 
 export const useCreateKnowledge = () => {
   const { workspace } = useSDK();
 
   return useMutation({
-    mutationFn: ({ name }: { name: string }) =>
-      createKnowledge({ workspace, name }),
+    mutationFn: ({ name }: { name: string }) => createKnowledge({ workspace, name }),
   });
 };
 
@@ -94,14 +93,11 @@ export const useKnowledgeListFiles = (params: KnowledgeListFilesParams) => {
   const { workspace } = useSDK();
   const { connection } = params;
   const connectionUrl = getConnectionUrl(params);
-  const hasConnection = "connection" in params;
+  const hasConnection = 'connection' in params;
 
   return useQuery({
     queryKey: KEYS.KNOWLEDGE_FILES(workspace, connectionUrl),
-    queryFn: () =>
-      "connection" in params
-        ? knowledgeListFiles({ workspace, connection })
-        : [],
+    queryFn: () => 'connection' in params ? knowledgeListFiles({ workspace, connection }) : [],
     enabled: hasConnection ? !!connectionUrl : true,
   });
 };

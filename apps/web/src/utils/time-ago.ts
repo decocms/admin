@@ -5,9 +5,9 @@ export function timeAgo(date: string | Date): string {
   const elapsed = now.getTime() - past.getTime();
 
   // Create formatter with English locale
-  formatter ??= new Intl.RelativeTimeFormat("en", {
-    numeric: "auto",
-    style: "long",
+  formatter ??= new Intl.RelativeTimeFormat('en', {
+    numeric: 'auto',
+    style: 'long',
   });
 
   // Time units in milliseconds
@@ -21,18 +21,18 @@ export function timeAgo(date: string | Date): string {
 
   // Determine the appropriate time unit
   if (Math.abs(elapsed) < MINUTE) {
-    return formatter.format(-Math.round(elapsed / SECOND), "second");
+    return formatter.format(-Math.round(elapsed / SECOND), 'second');
   } else if (Math.abs(elapsed) < HOUR) {
-    return formatter.format(-Math.round(elapsed / MINUTE), "minute");
+    return formatter.format(-Math.round(elapsed / MINUTE), 'minute');
   } else if (Math.abs(elapsed) < DAY) {
-    return formatter.format(-Math.round(elapsed / HOUR), "hour");
+    return formatter.format(-Math.round(elapsed / HOUR), 'hour');
   } else if (Math.abs(elapsed) < WEEK) {
-    return formatter.format(-Math.round(elapsed / DAY), "day");
+    return formatter.format(-Math.round(elapsed / DAY), 'day');
   } else if (Math.abs(elapsed) < MONTH) {
-    return formatter.format(-Math.round(elapsed / WEEK), "week");
+    return formatter.format(-Math.round(elapsed / WEEK), 'week');
   } else if (Math.abs(elapsed) < YEAR) {
-    return formatter.format(-Math.round(elapsed / MONTH), "month");
+    return formatter.format(-Math.round(elapsed / MONTH), 'month');
   } else {
-    return formatter.format(-Math.round(elapsed / YEAR), "year");
+    return formatter.format(-Math.round(elapsed / YEAR), 'year');
   }
 }

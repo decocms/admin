@@ -1,16 +1,16 @@
-import { useThread } from "@deco/sdk";
-import { ScrollArea } from "@deco/ui/components/scroll-area.tsx";
-import { useParams } from "react-router";
-import { ChatMessages } from "../chat/chat-messages.tsx";
-import { AgentProvider } from "../agent/provider.tsx";
-import type { Tab } from "../dock/index.tsx";
-import { DefaultBreadcrumb, PageLayout } from "../layout.tsx";
+import { useThread } from '@deco/sdk';
+import { ScrollArea } from '@deco/ui/components/scroll-area.tsx';
+import { useParams } from 'react-router';
+import { ChatMessages } from '../chat/chat-messages.tsx';
+import { AgentProvider } from '../agent/provider.tsx';
+import type { Tab } from '../dock/index.tsx';
+import { DefaultBreadcrumb, PageLayout } from '../layout.tsx';
 
 const useThreadId = () => {
   const { id } = useParams();
 
   if (!id) {
-    throw new Error("No id provided");
+    throw new Error('No id provided');
   }
 
   return id;
@@ -18,9 +18,9 @@ const useThreadId = () => {
 
 const TABS: Record<string, Tab> = {
   main: {
-    title: "Audit",
+    title: 'Audit',
     Component: () => (
-      <ScrollArea className="h-full py-6">
+      <ScrollArea className='h-full py-6'>
         <ChatMessages />
       </ScrollArea>
     ),
@@ -29,7 +29,7 @@ const TABS: Record<string, Tab> = {
 };
 
 function truncate(title: string) {
-  return title.length > 20 ? title.slice(0, 20) + "..." : title;
+  return title.length > 20 ? title.slice(0, 20) + '...' : title;
 }
 
 function Page() {
@@ -45,8 +45,8 @@ function Page() {
         breadcrumb={
           <DefaultBreadcrumb
             items={[
-              { label: "Activity", link: "/audits" },
-              ...(title ? [{ label: truncate(title), link: "" }] : []),
+              { label: 'Activity', link: '/audits' },
+              ...(title ? [{ label: truncate(title), link: '' }] : []),
             ]}
           />
         }

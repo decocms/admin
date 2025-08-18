@@ -1,8 +1,8 @@
-import type { EnvVars, IWorkspaceDB, Vars } from "@deco/sdk/mcp";
-import type { Context } from "hono";
-import type { TimingVariables } from "hono/timing";
+import type { EnvVars, IWorkspaceDB, Vars } from '@deco/sdk/mcp';
+import type { Context } from 'hono';
+import type { TimingVariables } from 'hono/timing';
 
-export * from "@deco/sdk/mcp";
+export * from '@deco/sdk/mcp';
 
 export type Bindings = EnvVars & {
   DECO_CHAT_APP_ORIGIN?: string;

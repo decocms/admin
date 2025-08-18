@@ -1,10 +1,10 @@
 // deno-lint-ignore-file no-explicit-any
-import { compile } from "json-schema-to-typescript";
-import { generateName } from "json-schema-to-typescript/dist/src/utils.js";
-import type { DecoBinding } from "../../lib/config.js";
-import { createWorkspaceClient } from "../../lib/mcp.js";
-import { parser as scopeParser } from "../../lib/parse-binding-tool.js";
-import prettier from "prettier";
+import { compile } from 'json-schema-to-typescript';
+import { generateName } from 'json-schema-to-typescript/dist/src/utils.js';
+import type { DecoBinding } from '../../lib/config.js';
+import { createWorkspaceClient } from '../../lib/mcp.js';
+import { parser as scopeParser } from '../../lib/parse-binding-tool.js';
+import prettier from 'prettier';
 
 interface Options {
   workspace: string;
@@ -19,32 +19,32 @@ const toValidProperty = (property: string) => {
 
 // Sanitize description for safe use in JSDoc block comments
 const formatDescription = (desc: string | undefined) => {
-  if (!desc) return "";
+  if (!desc) return '';
 
   return (
     desc
       // Escape */ sequences that would break the comment block
-      .replace(/\*\//g, "*\\/")
+      .replace(/\*\//g, '*\\/')
       // Normalize line endings
-      .replace(/\r\n/g, "\n")
-      .replace(/\r/g, "\n")
+      .replace(/\r\n/g, '\n')
+      .replace(/\r/g, '\n')
       // Split into lines and format each line
-      .split("\n")
+      .split('\n')
       .map((line) => line.trim())
       .filter((line) => line.length > 0)
       .map((line) => ` * ${line}`)
-      .join("\n")
+      .join('\n')
   );
 };
 
 function slugify(name: string) {
-  return name.replace(/[^a-zA-Z0-9]/g, "").toLowerCase();
+  return name.replace(/[^a-zA-Z0-9]/g, '').toLowerCase();
 }
 
 export function format(content: string): Promise<string> {
   try {
     return prettier.format(content, {
-      parser: "babel-ts",
+      parser: 'babel-ts',
       plugins: [],
     });
   } catch {
@@ -55,71 +55,71 @@ export function format(content: string): Promise<string> {
 
 // Shared list of reserved JavaScript keywords
 const RESERVED_KEYWORDS = [
-  "break",
-  "case",
-  "catch",
-  "class",
-  "const",
-  "continue",
-  "debugger",
-  "default",
-  "delete",
-  "do",
-  "else",
-  "export",
-  "extends",
-  "finally",
-  "for",
-  "function",
-  "if",
-  "import",
-  "in",
-  "instanceof",
-  "let",
-  "new",
-  "return",
-  "super",
-  "switch",
-  "this",
-  "throw",
-  "try",
-  "typeof",
-  "var",
-  "void",
-  "while",
-  "with",
-  "yield",
-  "enum",
-  "await",
-  "implements",
-  "interface",
-  "package",
-  "private",
-  "protected",
-  "public",
-  "static",
-  "abstract",
-  "boolean",
-  "byte",
-  "char",
-  "double",
-  "final",
-  "float",
-  "goto",
-  "int",
-  "long",
-  "native",
-  "short",
-  "synchronized",
-  "throws",
-  "transient",
-  "volatile",
-  "null",
-  "true",
-  "false",
-  "undefined",
-  "NaN",
-  "Infinity",
+  'break',
+  'case',
+  'catch',
+  'class',
+  'const',
+  'continue',
+  'debugger',
+  'default',
+  'delete',
+  'do',
+  'else',
+  'export',
+  'extends',
+  'finally',
+  'for',
+  'function',
+  'if',
+  'import',
+  'in',
+  'instanceof',
+  'let',
+  'new',
+  'return',
+  'super',
+  'switch',
+  'this',
+  'throw',
+  'try',
+  'typeof',
+  'var',
+  'void',
+  'while',
+  'with',
+  'yield',
+  'enum',
+  'await',
+  'implements',
+  'interface',
+  'package',
+  'private',
+  'protected',
+  'public',
+  'static',
+  'abstract',
+  'boolean',
+  'byte',
+  'char',
+  'double',
+  'final',
+  'float',
+  'goto',
+  'int',
+  'long',
+  'native',
+  'short',
+  'synchronized',
+  'throws',
+  'transient',
+  'volatile',
+  'null',
+  'true',
+  'false',
+  'undefined',
+  'NaN',
+  'Infinity',
 ];
 
 function isValidJavaScriptPropertyName(name: string): boolean {
@@ -138,14 +138,14 @@ type KeyInfo = { type: string; key: string };
 
 const DEFAULT_BINDINGS: DecoBinding[] = [
   {
-    name: "DECO_CHAT_WORKSPACE_API",
-    integration_id: "i:workspace-management",
-    type: "mcp",
+    name: 'DECO_CHAT_WORKSPACE_API',
+    integration_id: 'i:workspace-management',
+    type: 'mcp',
   },
   {
-    name: "DECO_CHAT_API",
-    integration_id: "i:user-management",
-    type: "mcp",
+    name: 'DECO_CHAT_API',
+    integration_id: 'i:user-management',
+    type: 'mcp',
   },
 ];
 
@@ -154,7 +154,7 @@ type MCPResult<T> =
   | {
     isError: true;
     content?: {
-      type: "text";
+      type: 'text';
       text: string;
     }[];
   };
@@ -165,10 +165,9 @@ const unwrapMcpResult = <T extends object>(
     errorMessage?: (error: unknown) => string;
   },
 ): T => {
-  if ("isError" in result && result.isError) {
-    const message =
-      (Array.isArray(result.content) ? result.content[0]?.text : undefined) ??
-        JSON.stringify(result);
+  if ('isError' in result && result.isError) {
+    const message = (Array.isArray(result.content) ? result.content[0]?.text : undefined) ??
+      JSON.stringify(result);
     throw new Error(opts?.errorMessage?.(message) ?? message);
   }
   return result as T;
@@ -181,36 +180,34 @@ export const genEnv = async ({
   selfUrl,
 }: Options) => {
   console.log(
-    `🛠️ genEnv start (workspace=${
-      workspace ?? "none"
-    }, local=${!!local}, selfUrl=${selfUrl ?? "none"})`,
+    `🛠️ genEnv start (workspace=${workspace ?? 'none'}, local=${!!local}, selfUrl=${
+      selfUrl ?? 'none'
+    })`,
   );
   const client = await createWorkspaceClient({ workspace, local });
   const apiClient = await createWorkspaceClient({ local });
 
   try {
     const types = new Map<string, number>();
-    types.set("Env", 1); // set the default env type
-    let tsTypes = "";
+    types.set('Env', 1); // set the default env type
+    let tsTypes = '';
     const mapBindingTools: Record<string, string[]> = {};
     // Determine effective bindings: if only generating SELF types and no explicit bindings provided, skip DEFAULT_BINDINGS to avoid auth/API calls.
     const effectiveBindings: DecoBinding[] = [
       ...bindings,
-      ...((!bindings || bindings.length === 0) && selfUrl
-        ? []
-        : DEFAULT_BINDINGS),
+      ...((!bindings || bindings.length === 0) && selfUrl ? [] : DEFAULT_BINDINGS),
     ];
     if (selfUrl) {
       effectiveBindings.push({
-        name: "SELF",
-        type: "mcp" as const,
+        name: 'SELF',
+        type: 'mcp' as const,
         integration_url: selfUrl,
         ignoreCache: true,
       } as any);
     }
     console.log(
       `🔧 Effective bindings: ${
-        effectiveBindings.map((b) => (b as any).name || "unknown").join(", ")
+        effectiveBindings.map((b) => (b as any).name || 'unknown').join(', ')
       }`,
     );
 
@@ -218,9 +215,9 @@ export const genEnv = async ({
       effectiveBindings.map(async (binding) => {
         let connection: unknown;
         let stateKey: KeyInfo | undefined;
-        if ("integration_id" in binding) {
+        if ('integration_id' in binding) {
           const integrationResult = (await client.callTool({
-            name: "INTEGRATIONS_GET",
+            name: 'INTEGRATIONS_GET',
             arguments: {
               id: binding.integration_id,
             },
@@ -230,22 +227,21 @@ export const genEnv = async ({
               `Error getting integration ${binding.integration_id}: ${error}`,
           });
           connection = integration.structuredContent.connection;
-        } else if ("integration_name" in binding) {
+        } else if ('integration_name' in binding) {
           stateKey = { type: binding.integration_name, key: binding.name };
           const appResult = (await client.callTool({
-            name: "REGISTRY_GET_APP",
+            name: 'REGISTRY_GET_APP',
             arguments: {
               name: binding.integration_name,
             },
           })) as MCPResult<{ structuredContent: { connection: unknown } }>;
           const app = unwrapMcpResult(appResult, {
-            errorMessage: (error) =>
-              `Error getting app ${binding.integration_name}: ${error}`,
+            errorMessage: (error) => `Error getting app ${binding.integration_name}: ${error}`,
           });
           connection = app.structuredContent.connection;
-        } else if ("integration_url" in binding) {
+        } else if ('integration_url' in binding) {
           connection = {
-            type: "HTTP",
+            type: 'HTTP',
             url: (binding as any).integration_url,
           } as any;
         } else {
@@ -264,19 +260,15 @@ export const genEnv = async ({
         };
         try {
           tools = (await apiClient.callTool({
-            name: "INTEGRATIONS_LIST_TOOLS",
+            name: 'INTEGRATIONS_LIST_TOOLS',
             arguments: {
               connection,
-              ignoreCache: "ignoreCache" in binding
-                ? binding.ignoreCache
-                : undefined,
+              ignoreCache: 'ignoreCache' in binding ? binding.ignoreCache : undefined,
             },
           })) as any;
         } catch (err) {
           console.warn(
-            `⚠️ INTEGRATIONS_LIST_TOOLS error for ${binding.name}: ${
-              (err as Error).message
-            }`,
+            `⚠️ INTEGRATIONS_LIST_TOOLS error for ${binding.name}: ${(err as Error).message}`,
           );
           tools = { structuredContent: { tools: [] } };
         }
@@ -284,9 +276,9 @@ export const genEnv = async ({
         const integrationUrl = (binding as any).integration_url as
           | string
           | undefined;
-        const shouldAttemptHttpFallback = typeof integrationUrl === "string" &&
-          (integrationUrl.startsWith("http://") ||
-            integrationUrl.startsWith("https://"));
+        const shouldAttemptHttpFallback = typeof integrationUrl === 'string' &&
+          (integrationUrl.startsWith('http://') ||
+            integrationUrl.startsWith('https://'));
 
         if (shouldAttemptHttpFallback) {
           console.log(
@@ -300,12 +292,12 @@ export const genEnv = async ({
             tools.structuredContent.tools.length === 0)
         ) {
           try {
-            const url = new URL("/mcp/tools", integrationUrl!);
+            const url = new URL('/mcp/tools', integrationUrl!);
             console.log(
               `🌐 Fetching ${url.toString()} for fallback tool listing`,
             );
             const resp = await fetch(url.toString(), {
-              headers: { Accept: "application/json" },
+              headers: { Accept: 'application/json' },
             });
             if (!resp.ok) {
               console.warn(
@@ -338,9 +330,7 @@ export const genEnv = async ({
             }
           } catch (e) {
             console.warn(
-              `⚠️ Fallback fetch failed for ${binding.name}: ${
-                (e as Error).message
-              }`,
+              `⚠️ Fallback fetch failed for ${binding.name}: ${(e as Error).message}`,
             );
           }
         }
@@ -353,15 +343,13 @@ export const genEnv = async ({
             `⚠️ No tools found for integration ${binding.name}. Skipping...`,
           );
           // Provide a stub so output file is not fully empty for diagnostics
-          if (binding.name === "SELF") {
-            tsTypes += `\n// No tools discovered for SELF (${
-              (binding as any).integration_url
-            })\n`;
+          if (binding.name === 'SELF') {
+            tsTypes += `\n// No tools discovered for SELF (${(binding as any).integration_url})\n`;
           }
           return null;
         }
 
-        if ("integration_name" in binding) {
+        if ('integration_name' in binding) {
           mapBindingTools[binding.name] = tools.structuredContent.tools.map(
             (t) => t.name,
           );
@@ -375,10 +363,10 @@ export const genEnv = async ({
             const customName = (schema: any) => {
               let typeName = schema.title ?? schema.type;
               if (Array.isArray(typeName)) {
-                typeName = typeName.join(",");
+                typeName = typeName.join(',');
               }
 
-              if (typeof typeName !== "string") {
+              if (typeof typeName !== 'string') {
                 return undefined;
               }
               const key = slugify(typeName);
@@ -406,7 +394,7 @@ export const genEnv = async ({
             ]);
             tsTypes += `
         ${inputTs}
-        ${outputTs ?? ""}
+        ${outputTs ?? ''}
           `;
             return [
               t.name,
@@ -458,7 +446,7 @@ ${tsTypes}
         __type: z.literal("${stateKey!.type}").default("${stateKey!.type}"),
       })`;
         })
-        .join(",\n")
+        .join(',\n')
     }
   })
 
@@ -473,23 +461,21 @@ ${tsTypes}
         ${
             tools
               .map(([toolName, inputName, outputName, description]) => {
-                const docComment = description
-                  ? `/**\n${formatDescription(description)}\n */`
-                  : "";
+                const docComment = description ? `/**\n${formatDescription(description)}\n */` : '';
 
                 return `${docComment}
           ${
                   toValidProperty(
                     toolName,
                   )
-                }: (input: ${inputName}) => Promise<${outputName ?? "any"}>;
+                }: (input: ${inputName}) => Promise<${outputName ?? 'any'}>;
           `;
               })
-              .join("")
+              .join('')
           }
       }>;`;
         })
-        .join("")
+        .join('')
     }
   }
 
@@ -509,18 +495,18 @@ ${tsTypes}
                       )
                     }"`,
                 )
-                .join(",\n")
+                .join(',\n')
             }
     }`,
         )
-        .join(",\n")
+        .join(',\n')
     }
   }
   `);
     if (!tsTypes.trim()) {
       // Ensure file not empty for diagnostics when no tools
       return (
-        "// Generated types (empty) - no tools discovered for provided bindings\n" +
+        '// Generated types (empty) - no tools discovered for provided bindings\n' +
         generated
       );
     }

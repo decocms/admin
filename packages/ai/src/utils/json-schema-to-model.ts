@@ -1,5 +1,5 @@
 // deno-lint-ignore-file no-explicit-any
-import z, { type ZodObject } from "zod";
+import z, { type ZodObject } from 'zod';
 
 export function jsonSchemaPropertiesToTSTypes(value: any): z.ZodTypeAny {
   if (!value?.type) {
@@ -12,60 +12,60 @@ export function jsonSchemaPropertiesToTSTypes(value: any): z.ZodTypeAny {
       const singleTypeValue = { ...value, type: t };
       return jsonSchemaPropertiesToTSTypes(singleTypeValue);
     });
-    return z.union(types).describe(value.description || "");
+    return z.union(types).describe(value.description || '');
   }
 
   let zodType;
   switch (value.type) {
-    case "string":
+    case 'string':
       zodType = z
         .string()
         .describe(
-          (value.description || "") +
-            (value.examples ? `\nExamples: ${value.examples.join(", ")}` : ""),
+          (value.description || '') +
+            (value.examples ? `\nExamples: ${value.examples.join(', ')}` : ''),
         );
       break;
-    case "number":
+    case 'number':
       zodType = z
         .number()
         .describe(
-          (value.description || "") +
-            (value.examples ? `\nExamples: ${value.examples.join(", ")}` : ""),
+          (value.description || '') +
+            (value.examples ? `\nExamples: ${value.examples.join(', ')}` : ''),
         );
       break;
-    case "integer":
+    case 'integer':
       zodType = z
         .number()
         .int()
         .describe(
-          (value.description || "") +
-            (value.examples ? `\nExamples: ${value.examples.join(", ")}` : ""),
+          (value.description || '') +
+            (value.examples ? `\nExamples: ${value.examples.join(', ')}` : ''),
         );
       break;
-    case "boolean":
+    case 'boolean':
       zodType = z
         .boolean()
         .describe(
-          (value.description || "") +
-            (value.examples ? `\nExamples: ${value.examples.join(", ")}` : ""),
+          (value.description || '') +
+            (value.examples ? `\nExamples: ${value.examples.join(', ')}` : ''),
         );
       break;
-    case "array":
+    case 'array':
       zodType = z
         .array(jsonSchemaPropertiesToTSTypes(value.items))
         .describe(
-          (value.description || "") +
-            (value.examples ? `\nExamples: ${value.examples.join(", ")}` : ""),
+          (value.description || '') +
+            (value.examples ? `\nExamples: ${value.examples.join(', ')}` : ''),
         );
       break;
-    case "object":
+    case 'object':
       zodType = jsonSchemaToModel(value).describe(
-        (value.description || "") +
-          (value.examples ? `\nExamples: ${value.examples.join(", ")}` : ""),
+        (value.description || '') +
+          (value.examples ? `\nExamples: ${value.examples.join(', ')}` : ''),
       );
       break;
-    case "null":
-      zodType = z.null().describe(value.description || "");
+    case 'null':
+      zodType = z.null().describe(value.description || '');
       break;
     default:
       throw new Error(`Unsupported JSON schema type: ${value.type}`);
@@ -88,19 +88,15 @@ export function jsonSchemaToModel(
     const value = _ as any;
     let zodType;
     if (value.anyOf) {
-      const anyOfTypes = value.anyOf.map((schema: any) =>
-        jsonSchemaPropertiesToTSTypes(schema)
-      );
+      const anyOfTypes = value.anyOf.map((schema: any) => jsonSchemaPropertiesToTSTypes(schema));
       zodType = z
         .union(anyOfTypes)
         .describe(
-          (value.description || "") +
-            (value.examples ? `\nExamples: ${value.examples.join(", ")}` : ""),
+          (value.description || '') +
+            (value.examples ? `\nExamples: ${value.examples.join(', ')}` : ''),
         );
     } else if (value.allOf) {
-      const allOfTypes = value.allOf.map((schema: any) =>
-        jsonSchemaPropertiesToTSTypes(schema)
-      );
+      const allOfTypes = value.allOf.map((schema: any) => jsonSchemaPropertiesToTSTypes(schema));
       zodType = z
         .intersection(
           allOfTypes[0],
@@ -112,12 +108,12 @@ export function jsonSchemaToModel(
             ),
         )
         .describe(
-          (value.description || "") +
-            (value.examples ? `\nExamples: ${value.examples.join(", ")}` : ""),
+          (value.description || '') +
+            (value.examples ? `\nExamples: ${value.examples.join(', ')}` : ''),
         );
     } else {
       if (!value.type) {
-        value.type = "string";
+        value.type = 'string';
       }
       zodType = jsonSchemaPropertiesToTSTypes(value);
     }
@@ -129,7 +125,7 @@ export function jsonSchemaToModel(
     // When generating the final schema back to JSON Schema, we could end up with
     // jsons like `{ "type": ["null", "null"] }` which breaks JSON schema. This prevents
     // creating null twice by making this field required.
-    const isTypeRequired = value.type === "null";
+    const isTypeRequired = value.type === 'null';
 
     if (requiredFields.includes(key) || isTypeRequired) {
       zodSchema[key] = zodType;

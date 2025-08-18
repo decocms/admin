@@ -1,5 +1,5 @@
-import type { SelectHTMLAttributes } from "react";
-import { Icon } from "./Icon.tsx";
+import type { SelectHTMLAttributes } from 'react';
+import { Icon } from './Icon.tsx';
 
 interface SelectOption {
   value: string;
@@ -7,8 +7,7 @@ interface SelectOption {
   icon?: string;
 }
 
-interface SelectProps
-  extends Omit<SelectHTMLAttributes<HTMLSelectElement>, "children"> {
+interface SelectProps extends Omit<SelectHTMLAttributes<HTMLSelectElement>, 'children'> {
   options: SelectOption[];
   placeholder?: string;
   icon?: string;
@@ -20,16 +19,16 @@ export function Select({
   options,
   placeholder,
   icon,
-  className = "",
-  selectClassName = "",
+  className = '',
+  selectClassName = '',
   ...props
 }: SelectProps) {
   return (
     <div className={`relative ${className}`}>
-      <div className="relative">
+      <div className='relative'>
         {icon && (
-          <div className="absolute left-3 top-1/2 transform -translate-y-1/2 z-10 flex items-center">
-            <Icon name={icon} size={16} className="text-muted-foreground" />
+          <div className='absolute left-3 top-1/2 transform -translate-y-1/2 z-10 flex items-center'>
+            <Icon name={icon} size={16} className='text-muted-foreground' />
           </div>
         )}
         <select
@@ -40,14 +39,14 @@ export function Select({
             appearance-none cursor-pointer
             focus:outline-none focus:ring-2 focus:ring-ring focus:border-ring
             disabled:cursor-not-allowed disabled:opacity-50
-            ${icon ? "pl-10" : ""}
+            ${icon ? 'pl-10' : ''}
             pr-10
             ${selectClassName}
           `}
           {...props}
         >
           {placeholder && (
-            <option value="" disabled>
+            <option value='' disabled>
               {placeholder}
             </option>
           )}
@@ -57,11 +56,11 @@ export function Select({
             </option>
           ))}
         </select>
-        <div className="absolute right-3 top-1/2 transform -translate-y-1/2 pointer-events-none flex items-center">
+        <div className='absolute right-3 top-1/2 transform -translate-y-1/2 pointer-events-none flex items-center'>
           <Icon
-            name="ChevronDown"
+            name='ChevronDown'
             size={16}
-            className="text-muted-foreground"
+            className='text-muted-foreground'
           />
         </div>
       </div>

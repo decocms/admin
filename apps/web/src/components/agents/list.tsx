@@ -1,10 +1,5 @@
-import type { Agent } from "@deco/sdk";
-import {
-  useAgents,
-  useRemoveAgent,
-  useSDK,
-  WELL_KNOWN_AGENT_IDS,
-} from "@deco/sdk";
+import type { Agent } from '@deco/sdk';
+import { useAgents, useRemoveAgent, useSDK, WELL_KNOWN_AGENT_IDS } from '@deco/sdk';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -14,38 +9,31 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-} from "@deco/ui/components/alert-dialog.tsx";
-import { Button } from "@deco/ui/components/button.tsx";
-import { Card as UICard, CardContent } from "@deco/ui/components/card.tsx";
+} from '@deco/ui/components/alert-dialog.tsx';
+import { Button } from '@deco/ui/components/button.tsx';
+import { Card as UICard, CardContent } from '@deco/ui/components/card.tsx';
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from "@deco/ui/components/dropdown-menu.tsx";
-import { Icon } from "@deco/ui/components/icon.tsx";
-import { Spinner } from "@deco/ui/components/spinner.tsx";
-import {
-  createContext,
-  useCallback,
-  useContext,
-  useMemo,
-  useReducer,
-  useState,
-} from "react";
-import { trackEvent } from "../../hooks/analytics.ts";
-import { useCreateAgent } from "../../hooks/use-create-agent.ts";
-import { useLocalStorage } from "../../hooks/use-local-storage.ts";
-import { getPublicChatLink } from "../agent/chats.tsx";
-import { AgentVisibility } from "../common/agent-visibility.tsx";
-import { AgentAvatar } from "../common/avatar/agent.tsx";
-import { EmptyState } from "../common/empty-state.tsx";
-import { ListPageHeader } from "../common/list-page-header.tsx";
-import { Table } from "../common/table/index.tsx";
-import type { Tab } from "../dock/index.tsx";
-import { DefaultBreadcrumb, PageLayout } from "../layout.tsx";
-import { useFocusChat } from "./hooks.ts";
-import { useViewMode } from "@deco/ui/hooks/use-view-mode.ts";
+} from '@deco/ui/components/dropdown-menu.tsx';
+import { Icon } from '@deco/ui/components/icon.tsx';
+import { Spinner } from '@deco/ui/components/spinner.tsx';
+import { createContext, useCallback, useContext, useMemo, useReducer, useState } from 'react';
+import { trackEvent } from '../../hooks/analytics.ts';
+import { useCreateAgent } from '../../hooks/use-create-agent.ts';
+import { useLocalStorage } from '../../hooks/use-local-storage.ts';
+import { getPublicChatLink } from '../agent/chats.tsx';
+import { AgentVisibility } from '../common/agent-visibility.tsx';
+import { AgentAvatar } from '../common/avatar/agent.tsx';
+import { EmptyState } from '../common/empty-state.tsx';
+import { ListPageHeader } from '../common/list-page-header.tsx';
+import { Table } from '../common/table/index.tsx';
+import type { Tab } from '../dock/index.tsx';
+import { DefaultBreadcrumb, PageLayout } from '../layout.tsx';
+import { useFocusChat } from './hooks.ts';
+import { useViewMode } from '@deco/ui/hooks/use-view-mode.ts';
 
 export const useDuplicateAgent = (agent: Agent | null) => {
   const [duplicating, setDuplicating] = useState(false);
@@ -66,11 +54,11 @@ export const useDuplicateAgent = (agent: Agent | null) => {
         model: agent.model,
         views: agent.views,
       };
-      await createAgent(newAgent, { eventName: "agent_duplicate" });
+      await createAgent(newAgent, { eventName: 'agent_duplicate' });
     } catch (error) {
-      console.error("Error duplicating agent:", error);
+      console.error('Error duplicating agent:', error);
 
-      trackEvent("agent_duplicate", {
+      trackEvent('agent_duplicate', {
         success: false,
         error,
       });
@@ -109,11 +97,11 @@ function Actions({ agent }: { agent: Agent }) {
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
           <Button
-            variant="ghost"
-            size="icon"
+            variant='ghost'
+            size='icon'
             onClick={(e) => e.stopPropagation()}
           >
-            <Icon name="more_horiz" />
+            <Icon name='more_horiz' />
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent>
@@ -124,10 +112,10 @@ function Actions({ agent }: { agent: Agent }) {
               duplicate();
             }}
           >
-            <Icon name="content_copy" className="mr-2" />
-            {duplicating ? "Duplicating..." : "Duplicate"}
+            <Icon name='content_copy' className='mr-2' />
+            {duplicating ? 'Duplicating...' : 'Duplicate'}
           </DropdownMenuItem>
-          {agent.visibility === "PUBLIC" && (
+          {agent.visibility === 'PUBLIC' && (
             <DropdownMenuItem
               disabled={duplicating}
               onClick={(e) => {
@@ -136,18 +124,18 @@ function Actions({ agent }: { agent: Agent }) {
                 copyLink();
               }}
             >
-              <Icon name="link" className="mr-2" />
+              <Icon name='link' className='mr-2' />
               Copy link
             </DropdownMenuItem>
           )}
           <DropdownMenuItem
-            className="text-destructive"
+            className='text-destructive'
             onClick={(e) => {
               e.stopPropagation();
               setDeleteDialogOpen(true);
             }}
           >
-            <Icon name="delete" className="mr-2" />
+            <Icon name='delete' className='mr-2' />
             Delete
           </DropdownMenuItem>
         </DropdownMenuContent>
@@ -157,8 +145,7 @@ function Actions({ agent }: { agent: Agent }) {
           <AlertDialogHeader>
             <AlertDialogTitle>Are you sure?</AlertDialogTitle>
             <AlertDialogDescription>
-              This will permanently delete the {agent.name}{" "}
-              agent. This action cannot be undone.
+              This will permanently delete the {agent.name} agent. This action cannot be undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -170,17 +157,17 @@ function Actions({ agent }: { agent: Agent }) {
                 await handleDelete();
               }}
               disabled={removeAgent.isPending}
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              className='bg-destructive text-destructive-foreground hover:bg-destructive/90'
             >
               {removeAgent.isPending
                 ? (
                   <>
-                    <Spinner size="xs" />
-                    <span className="ml-2">Deleting...</span>
+                    <Spinner size='xs' />
+                    <span className='ml-2'>Deleting...</span>
                   </>
                 )
                 : (
-                  "Delete"
+                  'Delete'
                 )}
             </AlertDialogAction>
           </AlertDialogFooter>
@@ -195,31 +182,31 @@ function Card({ agent }: { agent: Agent }) {
 
   return (
     <UICard
-      className="group cursor-pointer hover:shadow-md transition-shadow flex flex-col rounded-xl p-4 h-full"
+      className='group cursor-pointer hover:shadow-md transition-shadow flex flex-col rounded-xl p-4 h-full'
       onClick={() => {
         focusAgent(agent.id, crypto.randomUUID(), {
           history: false,
         });
       }}
     >
-      <CardContent className="gap-4 flex flex-col flex-grow">
-        <div className="flex flex-col gap-3 w-full">
-          <div className="relative w-full">
-            <AgentAvatar url={agent.avatar} fallback={agent.name} size="lg" />
+      <CardContent className='gap-4 flex flex-col flex-grow'>
+        <div className='flex flex-col gap-3 w-full'>
+          <div className='relative w-full'>
+            <AgentAvatar url={agent.avatar} fallback={agent.name} size='lg' />
             <div
-              className="absolute top-0 right-0"
+              className='absolute top-0 right-0'
               onClick={(e) => e.stopPropagation()}
             >
               <Actions agent={agent} />
             </div>
           </div>
-          <div className="flex flex-col gap-1">
-            <div className="flex items-center gap-2">
+          <div className='flex flex-col gap-1'>
+            <div className='flex items-center gap-2'>
               {agent.name}
               <AgentVisibility.Icon agent={agent} size={16} />
             </div>
-            <div className="text-sm text-muted-foreground line-clamp-2 min-h-[2.5rem]">
-              {agent.description || "No description"}
+            <div className='text-sm text-muted-foreground line-clamp-2 min-h-[2.5rem]'>
+              {agent.description || 'No description'}
             </div>
           </div>
         </div>
@@ -232,15 +219,15 @@ interface ListState {
   filter: string;
 }
 
-type ListAction = { type: "SET_FILTER"; payload: string };
+type ListAction = { type: 'SET_FILTER'; payload: string };
 
 const initialState: ListState = {
-  filter: "",
+  filter: '',
 };
 
 function listReducer(state: ListState, action: ListAction): ListState {
   switch (action.type) {
-    case "SET_FILTER":
+    case 'SET_FILTER':
       return { ...state, filter: action.payload };
     default:
       return state;
@@ -249,47 +236,47 @@ function listReducer(state: ListState, action: ListAction): ListState {
 
 function TableView({ agents }: { agents: Agent[] }) {
   const focusChat = useFocusChat();
-  const [sortKey, setSortKey] = useState<"name" | "description">("name");
-  const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc");
+  const [sortKey, setSortKey] = useState<'name' | 'description'>('name');
+  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
 
-  function getSortValue(agent: Agent, key: "name" | "description"): string {
-    if (key === "description") return agent.description?.toLowerCase() || "";
-    return agent.name?.toLowerCase() || "";
+  function getSortValue(agent: Agent, key: 'name' | 'description'): string {
+    if (key === 'description') return agent.description?.toLowerCase() || '';
+    return agent.name?.toLowerCase() || '';
   }
   const sortedAgents = [...agents].sort((a, b) => {
     const aVal = getSortValue(a, sortKey);
     const bVal = getSortValue(b, sortKey);
-    if (aVal < bVal) return sortDirection === "asc" ? -1 : 1;
-    if (aVal > bVal) return sortDirection === "asc" ? 1 : -1;
+    if (aVal < bVal) return sortDirection === 'asc' ? -1 : 1;
+    if (aVal > bVal) return sortDirection === 'asc' ? 1 : -1;
     return 0;
   });
 
   const columns = [
     {
-      id: "name",
-      header: "Name",
+      id: 'name',
+      header: 'Name',
       render: (agent: Agent) => (
-        <div className="flex items-center gap-2">
+        <div className='flex items-center gap-2'>
           <AgentAvatar
             url={agent.avatar}
             fallback={agent.name.substring(0, 2)}
-            size="sm"
+            size='sm'
           />
-          <span className="font-medium">{agent.name}</span>
+          <span className='font-medium'>{agent.name}</span>
         </div>
       ),
       sortable: true,
     },
     {
-      id: "description",
-      header: "Description",
+      id: 'description',
+      header: 'Description',
       accessor: (agent: Agent) => agent.description,
       sortable: true,
-      cellClassName: "max-w-xl",
+      cellClassName: 'max-w-xl',
     },
     {
-      id: "actions",
-      header: "",
+      id: 'actions',
+      header: '',
       render: (agent: Agent) => (
         <div onClick={(e) => e.stopPropagation()}>
           <Actions agent={agent} />
@@ -306,10 +293,10 @@ function TableView({ agents }: { agents: Agent[] }) {
       sortDirection={sortDirection}
       onSort={(key) => {
         if (sortKey === key) {
-          setSortDirection((prev) => (prev === "asc" ? "desc" : "asc"));
+          setSortDirection((prev) => (prev === 'asc' ? 'desc' : 'asc'));
         } else {
-          setSortKey(key as "name" | "description");
-          setSortDirection("asc");
+          setSortKey(key as 'name' | 'description');
+          setSortDirection('asc');
         }
       }}
       onRowClick={(agent) => {
@@ -323,9 +310,9 @@ function TableView({ agents }: { agents: Agent[] }) {
 
 function CardsView({ agents }: { agents: Agent[] }) {
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-4 2xl:grid-cols-5 gap-3 peer">
+    <div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-4 2xl:grid-cols-5 gap-3 peer'>
       {agents.map((agent) => (
-        <div key={agent.id} className="relative group">
+        <div key={agent.id} className='relative group'>
           <Card agent={agent} />
         </div>
       ))}
@@ -333,17 +320,17 @@ function CardsView({ agents }: { agents: Agent[] }) {
   );
 }
 
-const VISIBILITIES = ["all", "public", "workspace"] as const;
+const VISIBILITIES = ['all', 'public', 'workspace'] as const;
 const VISIBILITY_LABELS = {
-  all: "All",
+  all: 'All',
   public: (
     <>
-      <Icon name="public" /> Public
+      <Icon name='public' /> Public
     </>
   ),
   workspace: (
     <>
-      <Icon name="groups" /> Team
+      <Icon name='groups' /> Team
     </>
   ),
 } as const;
@@ -355,12 +342,12 @@ function List() {
   const { handleCreate } = useContext(Context)!;
   const { filter } = state;
   const { data: agents } = useAgents();
-  const [viewMode, setViewMode] = useViewMode("agents");
+  const [viewMode, setViewMode] = useViewMode('agents');
   const { value: visibility, update: setVisibility } = useLocalStorage<
     Visibility
   >({
-    key: "agents-visibility",
-    defaultValue: "all",
+    key: 'agents-visibility',
+    defaultValue: 'all',
   });
 
   const agentsByVisibility = useMemo(() => {
@@ -369,7 +356,7 @@ function List() {
     );
 
     return agents?.reduce((acc, agent) => {
-      acc["all"].push(agent);
+      acc['all'].push(agent);
       acc[agent.visibility.toLowerCase()]?.push(agent);
 
       return acc;
@@ -382,7 +369,7 @@ function List() {
     ) ?? [];
 
   return (
-    <div className="flex flex-col h-full gap-4 p-4">
+    <div className='flex flex-col h-full gap-4 p-4'>
       <ListPageHeader
         filter={{
           items: VISIBILITIES.map((v) => ({
@@ -394,51 +381,48 @@ function List() {
           onClick: (item) => setVisibility(item.id as Visibility),
         }}
         input={{
-          placeholder: "Search agent",
+          placeholder: 'Search agent',
           value: filter,
-          onChange: (e) =>
-            dispatch({ type: "SET_FILTER", payload: e.target.value }),
+          onChange: (e) => dispatch({ type: 'SET_FILTER', payload: e.target.value }),
         }}
         view={{ viewMode, onChange: setViewMode }}
       />
 
       {filteredAgents.length > 0
         ? (
-          <div className="flex-1 min-h-0 overflow-x-auto">
-            {viewMode === "table"
+          <div className='flex-1 min-h-0 overflow-x-auto'>
+            {viewMode === 'table'
               ? <TableView agents={filteredAgents} />
               : <CardsView agents={filteredAgents} />}
           </div>
         )
         : (
           <EmptyState
-            icon={agents.length === 0 ? "robot_2" : visibility === "public" &&
-                agentsByVisibility["public"].length === 0
-              ? "public"
-              : visibility === "workspace" &&
-                  agentsByVisibility["workspace"].length === 0
-              ? "groups"
-              : "search_off"}
-            title={agents.length === 0
-              ? "No agents yet"
-              : visibility === "public" &&
-                  agentsByVisibility["public"].length === 0
-              ? "No public agents available"
-              : visibility === "workspace" &&
-                  agentsByVisibility["workspace"].length === 0
-              ? "No team agents yet"
-              : "No agents match your filter"}
+            icon={agents.length === 0 ? 'robot_2' : visibility === 'public' &&
+                agentsByVisibility['public'].length === 0
+              ? 'public'
+              : visibility === 'workspace' &&
+                  agentsByVisibility['workspace'].length === 0
+              ? 'groups'
+              : 'search_off'}
+            title={agents.length === 0 ? 'No agents yet' : visibility === 'public' &&
+                agentsByVisibility['public'].length === 0
+              ? 'No public agents available'
+              : visibility === 'workspace' &&
+                  agentsByVisibility['workspace'].length === 0
+              ? 'No team agents yet'
+              : 'No agents match your filter'}
             description={agents.length === 0
               ? "You haven't created any agents yet. Create one to get started."
-              : visibility === "public" &&
-                  agentsByVisibility["public"].length === 0
+              : visibility === 'public' &&
+                  agentsByVisibility['public'].length === 0
               ? "Once agents are shared publicly, they'll appear here for anyone to explore and try out."
-              : visibility === "workspace" &&
-                  agentsByVisibility["workspace"].length === 0
-              ? "Agents shared with your team will show up here. Create one to start collaborating."
+              : visibility === 'workspace' &&
+                  agentsByVisibility['workspace'].length === 0
+              ? 'Agents shared with your team will show up here. Create one to start collaborating.'
               : "Try adjusting your search. If you still can't find what you're looking for, you can create a new agent."}
             buttonProps={{
-              children: "New agent",
+              children: 'New agent',
               onClick: handleCreate,
             }}
           />
@@ -450,7 +434,7 @@ function List() {
 const TABS: Record<string, Tab> = {
   list: {
     Component: List,
-    title: "Agents",
+    title: 'Agents',
     initialOpen: true,
   },
 };
@@ -471,13 +455,11 @@ export default function Page() {
       <PageLayout
         tabs={TABS}
         hideViewsButton
-        breadcrumb={
-          <DefaultBreadcrumb items={[{ label: "Agents", link: "/agents" }]} />
-        }
+        breadcrumb={<DefaultBreadcrumb items={[{ label: 'Agents', link: '/agents' }]} />}
         actionButtons={
-          <Button onClick={handleCreate} variant="special" className="gap-2">
-            <Icon name="add" />
-            <span className="hidden md:inline">New agent</span>
+          <Button onClick={handleCreate} variant='special' className='gap-2'>
+            <Icon name='add' />
+            <span className='hidden md:inline'>New agent</span>
           </Button>
         }
       />

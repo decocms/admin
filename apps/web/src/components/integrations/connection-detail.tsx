@@ -1,25 +1,25 @@
-import { Button } from "@deco/ui/components/button.tsx";
-import { cn } from "@deco/ui/lib/utils.ts";
-import { Navigate, useParams, useSearchParams } from "react-router";
-import { DefaultBreadcrumb, PageLayout } from "../layout.tsx";
-import { isWellKnownApp, useGroupedApp } from "./apps.ts";
-import { IntegrationIcon } from "./common.tsx";
-import { Skeleton } from "@deco/ui/components/skeleton.tsx";
+import { Button } from '@deco/ui/components/button.tsx';
+import { cn } from '@deco/ui/lib/utils.ts';
+import { Navigate, useParams, useSearchParams } from 'react-router';
+import { DefaultBreadcrumb, PageLayout } from '../layout.tsx';
+import { isWellKnownApp, useGroupedApp } from './apps.ts';
+import { IntegrationIcon } from './common.tsx';
+import { Skeleton } from '@deco/ui/components/skeleton.tsx';
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@deco/ui/components/select.tsx";
-import { AgentAvatar } from "../common/avatar/agent.tsx";
-import { Icon } from "@deco/ui/components/icon.tsx";
+} from '@deco/ui/components/select.tsx';
+import { AgentAvatar } from '../common/avatar/agent.tsx';
+import { Icon } from '@deco/ui/components/icon.tsx';
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from "@deco/ui/components/dropdown-menu.tsx";
+} from '@deco/ui/components/dropdown-menu.tsx';
 import {
   type Integration,
   listTools,
@@ -30,18 +30,15 @@ import {
   useRemoveView,
   useToolCall,
   useTools,
-} from "@deco/sdk";
-import { useEffect, useMemo, useRef, useState } from "react";
-import { Binding, WellKnownBindings } from "@deco/sdk/mcp/bindings";
-import { useCurrentTeam } from "../sidebar/team-selector.tsx";
-import { toast } from "@deco/ui/components/sonner.tsx";
+} from '@deco/sdk';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { Binding, WellKnownBindings } from '@deco/sdk/mcp/bindings';
+import { useCurrentTeam } from '../sidebar/team-selector.tsx';
+import { toast } from '@deco/ui/components/sonner.tsx';
 
-import {
-  RemoveConnectionAlert,
-  useRemoveConnection,
-} from "./remove-connection.tsx";
-import { Input } from "@deco/ui/components/input.tsx";
-import { PasswordInput } from "@deco/ui/components/password-input.tsx";
+import { RemoveConnectionAlert, useRemoveConnection } from './remove-connection.tsx';
+import { Input } from '@deco/ui/components/input.tsx';
+import { PasswordInput } from '@deco/ui/components/password-input.tsx';
 import {
   Form,
   FormControl,
@@ -49,31 +46,26 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
-} from "@deco/ui/components/form.tsx";
-import { useForm } from "react-hook-form";
-import { useUpdateIntegration, useWriteFile } from "@deco/sdk";
-import { trackEvent } from "../../hooks/analytics.ts";
-import { Card } from "@deco/ui/components/card.tsx";
+} from '@deco/ui/components/form.tsx';
+import { useForm } from 'react-hook-form';
+import { useUpdateIntegration, useWriteFile } from '@deco/sdk';
+import { trackEvent } from '../../hooks/analytics.ts';
+import { Card } from '@deco/ui/components/card.tsx';
 import {
   Accordion,
   AccordionContent,
   AccordionItem,
   AccordionTrigger,
-} from "@deco/ui/components/accordion.tsx";
-import {
-  Tabs,
-  TabsContent,
-  TabsList,
-  TabsTrigger,
-} from "@deco/ui/components/tabs.tsx";
-import { formatToolName } from "../chat/utils/format-tool-name.ts";
-import { ToolCallForm } from "./tool-call-form.tsx";
-import { ToolCallResult } from "./tool-call-result.tsx";
-import type { MCPToolCallResult } from "./types.ts";
-import { useWorkspaceLink } from "../../hooks/use-navigate-workspace.ts";
-import { ConfirmMarketplaceInstallDialog } from "./select-connection-dialog.tsx";
-import type { MarketplaceIntegration } from "./marketplace.tsx";
-import { OAuthCompletionDialog } from "./oauth-completion-dialog.tsx";
+} from '@deco/ui/components/accordion.tsx';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@deco/ui/components/tabs.tsx';
+import { formatToolName } from '../chat/utils/format-tool-name.ts';
+import { ToolCallForm } from './tool-call-form.tsx';
+import { ToolCallResult } from './tool-call-result.tsx';
+import type { MCPToolCallResult } from './types.ts';
+import { useWorkspaceLink } from '../../hooks/use-navigate-workspace.ts';
+import { ConfirmMarketplaceInstallDialog } from './select-connection-dialog.tsx';
+import type { MarketplaceIntegration } from './marketplace.tsx';
+import { OAuthCompletionDialog } from './oauth-completion-dialog.tsx';
 
 function ConnectionInstanceActions({
   onConfigure,
@@ -87,8 +79,8 @@ function ConnectionInstanceActions({
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button variant="ghost" size="icon" className="ml-2">
-          <Icon name="more_horiz" size={16} />
+        <Button variant='ghost' size='icon' className='ml-2'>
+          <Icon name='more_horiz' size={16} />
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent>
@@ -96,7 +88,7 @@ function ConnectionInstanceActions({
         <DropdownMenuItem onSelect={onTestTools}>Test tools</DropdownMenuItem>
         <DropdownMenuItem
           onSelect={onDelete}
-          className="text-destructive focus:bg-destructive/10 focus:text-destructive"
+          className='text-destructive focus:bg-destructive/10 focus:text-destructive'
         >
           Delete
         </DropdownMenuItem>
@@ -105,18 +97,18 @@ function ConnectionInstanceActions({
   );
 }
 
-const ICON_FILE_PATH = "assets/integrations";
+const ICON_FILE_PATH = 'assets/integrations';
 
 function useStartConfiguringOpen() {
   const [searchParams] = useSearchParams();
-  const connectionId = searchParams.get("edit");
+  const connectionId = searchParams.get('edit');
   return { connectionId };
 }
 
 function useIconFilename() {
   function generate(originalFile: File) {
-    const extension = originalFile.name.split(".").pop()?.toLowerCase() ||
-      "png";
+    const extension = originalFile.name.split('.').pop()?.toLowerCase() ||
+      'png';
     return `icon-${crypto.randomUUID()}.${extension}`;
   }
   return { generate };
@@ -127,13 +119,13 @@ function useIconUpload(form: ReturnType<typeof useForm<Integration>>) {
   const writeFileMutation = useWriteFile();
   const { generate: generateIconFilename } = useIconFilename();
   const [isUploading, setIsUploading] = useState(false);
-  const iconValue = form.watch("icon");
+  const iconValue = form.watch('icon');
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    if (!file.type.startsWith("image/")) {
-      alert("Please select an image file");
+    if (!file.type.startsWith('image/')) {
+      alert('Please select an image file');
       return;
     }
     try {
@@ -146,13 +138,13 @@ function useIconUpload(form: ReturnType<typeof useForm<Integration>>) {
         contentType: file.type,
         content: new Uint8Array(buffer),
       });
-      form.setValue("icon", path, {
+      form.setValue('icon', path, {
         shouldValidate: true,
         shouldDirty: true,
         shouldTouch: true,
       });
     } catch (error) {
-      console.error("Failed to upload icon:", error);
+      console.error('Failed to upload icon:', error);
     } finally {
       setIsUploading(false);
     }
@@ -181,13 +173,13 @@ function ConfigureConnectionInstanceForm({
   const form = useForm<Integration>({
     defaultValues: {
       id: instance.id || crypto.randomUUID(),
-      name: instance.name || "",
-      description: instance.description || "",
-      icon: instance.icon || "",
+      name: instance.name || '',
+      description: instance.description || '',
+      icon: instance.icon || '',
       connection: instance.connection || {
-        type: "HTTP" as const,
-        url: "https://example.com/messages",
-        token: "",
+        type: 'HTTP' as const,
+        url: 'https://example.com/messages',
+        token: '',
       },
       access: instance.access || null,
     },
@@ -195,7 +187,7 @@ function ConfigureConnectionInstanceForm({
   const numberOfChanges = Object.keys(form.formState.dirtyFields).length;
   const updateIntegration = useUpdateIntegration();
   const isSaving = updateIntegration.isPending;
-  const connection = form.watch("connection");
+  const connection = form.watch('connection');
 
   const {
     fileInputRef,
@@ -209,7 +201,7 @@ function ConfigureConnectionInstanceForm({
     try {
       await updateIntegration.mutateAsync(data);
 
-      trackEvent("integration_update", {
+      trackEvent('integration_update', {
         success: true,
         data,
       });
@@ -219,7 +211,7 @@ function ConfigureConnectionInstanceForm({
     } catch (error) {
       console.error(`Error updating integration:`, error);
 
-      trackEvent("integration_create", {
+      trackEvent('integration_create', {
         success: false,
         error,
         data,
@@ -227,61 +219,57 @@ function ConfigureConnectionInstanceForm({
     }
   };
 
-  const handleConnectionTypeChange = (value: MCPConnection["type"]) => {
+  const handleConnectionTypeChange = (value: MCPConnection['type']) => {
     const ec = instance.connection;
     form.setValue(
-      "connection",
-      value === "SSE" || value === "HTTP"
+      'connection',
+      value === 'SSE' || value === 'HTTP'
         ? {
           type: value,
-          url: ec?.type === "SSE"
-            ? ec.url || "https://example.com/sse"
-            : "https://example.com/sse",
+          url: ec?.type === 'SSE' ? ec.url || 'https://example.com/sse' : 'https://example.com/sse',
         }
-        : value === "Websocket"
+        : value === 'Websocket'
         ? {
-          type: "Websocket",
-          url: ec?.type === "Websocket"
-            ? ec.url || "wss://example.com/ws"
-            : "wss://example.com/ws",
+          type: 'Websocket',
+          url: ec?.type === 'Websocket' ? ec.url || 'wss://example.com/ws' : 'wss://example.com/ws',
         }
         : {
-          type: "Deco",
-          tenant: ec?.type === "Deco" ? ec.tenant || "tenant-id" : "tenant-id",
+          type: 'Deco',
+          tenant: ec?.type === 'Deco' ? ec.tenant || 'tenant-id' : 'tenant-id',
         },
     );
   };
 
   return (
-    <div className="w-full p-6 bg-muted rounded-xl border border-border flex flex-col gap-6">
+    <div className='w-full p-6 bg-muted rounded-xl border border-border flex flex-col gap-6'>
       <Form {...form}>
         <form
           onSubmit={form.handleSubmit(onSubmit)}
-          className="flex flex-col gap-6"
+          className='flex flex-col gap-6'
         >
-          <div className="flex items-end gap-4">
+          <div className='flex items-end gap-4'>
             <FormField
               control={form.control}
-              name="icon"
+              name='icon'
               render={({ field }) => (
                 <FormItem>
                   <input
-                    type="file"
+                    type='file'
                     ref={fileInputRef}
-                    accept="image/*"
-                    className="hidden"
+                    accept='image/*'
+                    className='hidden'
                     onChange={handleFileChange}
                   />
-                  <Input type="hidden" {...field} />
+                  <Input type='hidden' {...field} />
                   <FormControl>
                     {iconValue
                       ? (
-                        <div onClick={triggerFileInput} className="w-14 h-14">
+                        <div onClick={triggerFileInput} className='w-14 h-14'>
                           <IntegrationIcon
                             icon={iconValue}
                             className={cn(
-                              "w-14 h-14 bg-background",
-                              isUploading && "opacity-50",
+                              'w-14 h-14 bg-background',
+                              isUploading && 'opacity-50',
                             )}
                           />
                         </div>
@@ -289,10 +277,10 @@ function ConfigureConnectionInstanceForm({
                       : (
                         <div
                           onClick={triggerFileInput}
-                          className="w-14 h-14 flex flex-col items-center justify-center gap-1 border border-border bg-background rounded-xl"
+                          className='w-14 h-14 flex flex-col items-center justify-center gap-1 border border-border bg-background rounded-xl'
                         >
-                          <Icon name="upload" size={24} />
-                          <span className="text-xs text-muted-foreground/70 text-center px-1">
+                          <Icon name='upload' size={24} />
+                          <span className='text-xs text-muted-foreground/70 text-center px-1'>
                             Select an icon
                           </span>
                         </div>
@@ -303,26 +291,26 @@ function ConfigureConnectionInstanceForm({
               )}
             />
             <Button
-              type="button"
-              variant="outline"
-              className="h-10"
+              type='button'
+              variant='outline'
+              className='h-10'
               onClick={triggerFileInput}
               disabled={isUploading}
             >
-              <Icon name="upload" size={16} />
+              <Icon name='upload' size={16} />
               Upload image
             </Button>
           </div>
           <FormField
             control={form.control}
-            name="name"
+            name='name'
             render={({ field }) => (
               <FormItem>
                 <FormLabel>Name</FormLabel>
                 <FormControl>
                   <Input
-                    className="bg-background"
-                    placeholder="Integration name"
+                    className='bg-background'
+                    placeholder='Integration name'
                     {...field}
                   />
                 </FormControl>
@@ -330,19 +318,19 @@ function ConfigureConnectionInstanceForm({
               </FormItem>
             )}
           />
-          <div className="space-y-2">
-            <div className="flex items-center gap-2">
+          <div className='space-y-2'>
+            <div className='flex items-center gap-2'>
               <FormLabel>MCP Settings</FormLabel>
             </div>
-            <div className="space-y-4 p-4 border border-border rounded-xl bg-background">
+            <div className='space-y-4 p-4 border border-border rounded-xl bg-background'>
               <FormField
                 control={form.control}
-                name="connection.type"
+                name='connection.type'
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Connection Type</FormLabel>
                     <Select
-                      onValueChange={(value: MCPConnection["type"]) => {
+                      onValueChange={(value: MCPConnection['type']) => {
                         field.onChange(value);
                         handleConnectionTypeChange(value);
                       }}
@@ -351,16 +339,16 @@ function ConfigureConnectionInstanceForm({
                     >
                       <FormControl>
                         <SelectTrigger>
-                          <SelectValue placeholder="Select a connection type" />
+                          <SelectValue placeholder='Select a connection type' />
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        <SelectItem value="HTTP">HTTP</SelectItem>
-                        <SelectItem value="SSE">
+                        <SelectItem value='HTTP'>HTTP</SelectItem>
+                        <SelectItem value='SSE'>
                           Server-Sent Events (SSE)
                         </SelectItem>
-                        <SelectItem value="Websocket">WebSocket</SelectItem>
-                        <SelectItem value="Deco">Deco</SelectItem>
+                        <SelectItem value='Websocket'>WebSocket</SelectItem>
+                        <SelectItem value='Deco'>Deco</SelectItem>
                       </SelectContent>
                     </Select>
                     <FormMessage />
@@ -368,17 +356,17 @@ function ConfigureConnectionInstanceForm({
                 )}
               />
 
-              {["SSE", "HTTP"].includes(connection.type) && (
+              {['SSE', 'HTTP'].includes(connection.type) && (
                 <>
                   <FormField
                     control={form.control}
-                    name="connection.url"
+                    name='connection.url'
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>{connection.type} URL</FormLabel>
                         <FormControl>
                           <Input
-                            placeholder="https://example.com/messages"
+                            placeholder='https://example.com/messages'
                             {...field}
                           />
                         </FormControl>
@@ -388,15 +376,15 @@ function ConfigureConnectionInstanceForm({
                   />
                   <FormField
                     control={form.control}
-                    name="connection.token"
+                    name='connection.token'
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>Token</FormLabel>
-                        <span className="text-[10px] text-muted-foreground ml-1">
+                        <span className='text-[10px] text-muted-foreground ml-1'>
                           optional
                         </span>
                         <FormControl>
-                          <PasswordInput placeholder="token" {...field} />
+                          <PasswordInput placeholder='token' {...field} />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -405,15 +393,15 @@ function ConfigureConnectionInstanceForm({
                 </>
               )}
 
-              {connection.type === "Websocket" && (
+              {connection.type === 'Websocket' && (
                 <FormField
                   control={form.control}
-                  name="connection.url"
+                  name='connection.url'
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>WebSocket URL</FormLabel>
                       <FormControl>
-                        <Input placeholder="wss://example.com/ws" {...field} />
+                        <Input placeholder='wss://example.com/ws' {...field} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -421,16 +409,16 @@ function ConfigureConnectionInstanceForm({
                 />
               )}
 
-              {connection.type === "Deco" && (
+              {connection.type === 'Deco' && (
                 <>
                   <FormField
                     control={form.control}
-                    name="connection.tenant"
+                    name='connection.tenant'
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>Tenant ID</FormLabel>
                         <FormControl>
-                          <Input placeholder="tenant-id" {...field} />
+                          <Input placeholder='tenant-id' {...field} />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -438,15 +426,15 @@ function ConfigureConnectionInstanceForm({
                   />
                   <FormField
                     control={form.control}
-                    name="connection.token"
+                    name='connection.token'
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>Token</FormLabel>
-                        <span className="text-[10px] text-muted-foreground ml-1">
+                        <span className='text-[10px] text-muted-foreground ml-1'>
                           optional
                         </span>
                         <FormControl>
-                          <PasswordInput placeholder="token" {...field} />
+                          <PasswordInput placeholder='token' {...field} />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -456,16 +444,16 @@ function ConfigureConnectionInstanceForm({
               )}
             </div>
           </div>
-          <div className="flex justify-end gap-2">
+          <div className='flex justify-end gap-2'>
             <Button
-              type="button"
-              variant="outline"
+              type='button'
+              variant='outline'
               onClick={closeForm}
               disabled={isSaving}
             >
               Discard changes
             </Button>
-            <Button type="submit" disabled={isSaving || numberOfChanges === 0}>
+            <Button type='submit' disabled={isSaving || numberOfChanges === 0}>
               Save
             </Button>
           </div>
@@ -486,16 +474,15 @@ function ConnectionInstanceItem({
   const [isConfiguring, setIsConfiguring] = useState(
     queryStringConnectionId === instance.id,
   );
-  const { deletingId, performDelete, setDeletingId, isDeletionPending } =
-    useRemoveConnection();
+  const { deletingId, performDelete, setDeletingId, isDeletionPending } = useRemoveConnection();
   const instanceRef = useRef<HTMLDivElement>(null);
   // Smooth scroll to this instance when connectionId matches
   useEffect(() => {
     setTimeout(() => {
       if (queryStringConnectionId === instance.id && instanceRef.current) {
         instanceRef.current?.scrollIntoView({
-          behavior: "smooth",
-          block: "center",
+          behavior: 'smooth',
+          block: 'center',
         });
       }
     }, 100);
@@ -513,7 +500,7 @@ function ConnectionInstanceItem({
     return (
       <div
         ref={instanceRef}
-        className="w-full"
+        className='w-full'
         id={`connection-${instance.id}`}
       >
         <ConfigureConnectionInstanceForm
@@ -528,28 +515,28 @@ function ConnectionInstanceItem({
     <div
       ref={instanceRef}
       id={`connection-${instance.id}`}
-      className="w-full p-4 flex items-center gap-2 rounded-xl border border-border"
+      className='w-full p-4 flex items-center gap-2 rounded-xl border border-border'
       key={instance.id}
     >
       <IntegrationIcon icon={instance.icon} name={instance.name} />
-      <div className="h-12 flex flex-col gap-1 flex-1 min-w-0">
-        <h5 className="text-sm font-medium truncate">{instance.name}</h5>
-        <p className="text-sm text-muted-foreground truncate">
+      <div className='h-12 flex flex-col gap-1 flex-1 min-w-0'>
+        <h5 className='text-sm font-medium truncate'>{instance.name}</h5>
+        <p className='text-sm text-muted-foreground truncate'>
           {instance.description}
         </p>
       </div>
-      <div className="flex items-center gap-[-8px] ml-2">
+      <div className='flex items-center gap-[-8px] ml-2'>
         {agentsUsedBy.map((agent) => (
           <AgentAvatar
             key={agent.id}
-            className="border-2 border-background -ml-2 first:ml-0"
+            className='border-2 border-background -ml-2 first:ml-0'
             url={agent.avatar}
-            fallback={agent.name || "Unknown agent"}
-            size="base"
+            fallback={agent.name || 'Unknown agent'}
+            size='base'
           />
         ))}
         {extraCount > 0 && (
-          <span className="ml-2 text-xs font-medium bg-muted rounded-full px-2 py-0.5">
+          <span className='ml-2 text-xs font-medium bg-muted rounded-full px-2 py-0.5'>
             +{extraCount}
           </span>
         )}
@@ -579,8 +566,8 @@ function Instances({
   onTestTools: (connectionId: string) => void;
 }) {
   return (
-    <div className="w-full p-4 flex flex-col items-center gap-4">
-      <h6 className="text-sm text-muted-foreground font-medium w-full">
+    <div className='w-full p-4 flex flex-col items-center gap-4'>
+      <h6 className='text-sm text-muted-foreground font-medium w-full'>
         Instances
       </h6>
       {data.instances.map((instance) => (
@@ -609,37 +596,37 @@ function Overview({
     open: boolean;
     url: string;
     integrationName: string;
-  }>({ open: false, url: "", integrationName: "" });
+  }>({ open: false, url: '', integrationName: '' });
 
   const handleAddConnection = () => {
     setInstallingIntegration({
-      id: data.info?.id ?? "",
-      provider: data.info?.provider ?? "unknown",
-      name: data.info?.name ?? "",
-      description: data.info?.description ?? "",
-      icon: data.info?.icon ?? "",
+      id: data.info?.id ?? '',
+      provider: data.info?.provider ?? 'unknown',
+      name: data.info?.name ?? '',
+      description: data.info?.description ?? '',
+      icon: data.info?.icon ?? '',
     });
   };
 
   return (
-    <div className="w-full p-4 flex items-center justify-between gap-2">
-      <div className="flex items-center gap-4 h-12">
+    <div className='w-full p-4 flex items-center justify-between gap-2'>
+      <div className='flex items-center gap-4 h-12'>
         <IntegrationIcon
           icon={data.info?.icon}
           name={data.info?.name}
-          size="lg"
+          size='lg'
         />
-        <div className="h-12 flex flex-col gap-1">
-          <h5 className="text-xl font-medium">{data.info?.name}</h5>
-          <p className="text-sm text-muted-foreground">
+        <div className='h-12 flex flex-col gap-1'>
+          <h5 className='text-xl font-medium'>{data.info?.name}</h5>
+          <p className='text-sm text-muted-foreground'>
             {data.info?.description}
           </p>
         </div>
       </div>
-      {!isWellKnown && data.info?.provider !== "custom"
+      {!isWellKnown && data.info?.provider !== 'custom'
         ? (
-          <Button variant="special" onClick={handleAddConnection}>
-            <span className="hidden md:inline">Add connection</span>
+          <Button variant='special' onClick={handleAddConnection}>
+            <span className='hidden md:inline'>Add connection</span>
           </Button>
         )
         : null}
@@ -649,12 +636,12 @@ function Overview({
         setIntegration={setInstallingIntegration}
         onConfirm={({ authorizeOauthUrl }) => {
           if (authorizeOauthUrl) {
-            const popup = globalThis.open(authorizeOauthUrl, "_blank");
-            if (!popup || popup.closed || typeof popup.closed === "undefined") {
+            const popup = globalThis.open(authorizeOauthUrl, '_blank');
+            if (!popup || popup.closed || typeof popup.closed === 'undefined') {
               setOauthCompletionDialog({
                 open: true,
                 url: authorizeOauthUrl,
-                integrationName: installingIntegration?.name || "the service",
+                integrationName: installingIntegration?.name || 'the service',
               });
             }
           }
@@ -663,8 +650,7 @@ function Overview({
 
       <OAuthCompletionDialog
         open={oauthCompletionDialog.open}
-        onOpenChange={(open) =>
-          setOauthCompletionDialog((prev) => ({ ...prev, open }))}
+        onOpenChange={(open) => setOauthCompletionDialog((prev) => ({ ...prev, open }))}
         authorizeOauthUrl={oauthCompletionDialog.url}
         integrationName={oauthCompletionDialog.integrationName}
       />
@@ -672,9 +658,9 @@ function Overview({
   );
 }
 
-function ParametersViewer({ tool }: Pick<ToolProps, "tool">) {
+function ParametersViewer({ tool }: Pick<ToolProps, 'tool'>) {
   const getParameters = (schema: Record<string, unknown>) => {
-    if (!schema || typeof schema !== "object") return [];
+    if (!schema || typeof schema !== 'object') return [];
 
     // deno-lint-ignore no-explicit-any
     const properties = (schema.properties as Record<string, any>) || {};
@@ -682,8 +668,8 @@ function ParametersViewer({ tool }: Pick<ToolProps, "tool">) {
 
     return Object.entries(properties).map(([name, prop]) => ({
       name,
-      type: prop.type || "string",
-      description: prop.description || "",
+      type: prop.type || 'string',
+      description: prop.description || '',
       required: required.includes(name),
     }));
   };
@@ -691,30 +677,30 @@ function ParametersViewer({ tool }: Pick<ToolProps, "tool">) {
   const parameters = getParameters(tool.inputSchema);
 
   return (
-    <div className="flex flex-col gap-2">
+    <div className='flex flex-col gap-2'>
       {parameters.length > 0
         ? (
           parameters.map((param) => (
-            <div className="flex flex-col gap-2">
-              <div key={param.name} className="flex items-center gap-2">
+            <div className='flex flex-col gap-2'>
+              <div key={param.name} className='flex items-center gap-2'>
                 <Icon
-                  name={param.type === "string" ? "text_fields" : "category"}
+                  name={param.type === 'string' ? 'text_fields' : 'category'}
                   size={16}
                 />
-                <span className="text-sm pl-1">
+                <span className='text-sm pl-1'>
                   {formatToolName(param.name)}
                 </span>
                 <span
                   className={cn(
-                    "text-xs text-muted-foreground",
-                    param.required && "font-medium",
+                    'text-xs text-muted-foreground',
+                    param.required && 'font-medium',
                   )}
                 >
-                  {param.required ? "Required" : "Optional"}
+                  {param.required ? 'Required' : 'Optional'}
                 </span>
               </div>
               {param.description && (
-                <span className="px-7 text-sm text-muted-foreground font-normal">
+                <span className='px-7 text-sm text-muted-foreground font-normal'>
                   {param.description}
                 </span>
               )}
@@ -722,7 +708,7 @@ function ParametersViewer({ tool }: Pick<ToolProps, "tool">) {
           ))
         )
         : (
-          <div className="text-sm text-muted-foreground">
+          <div className='text-sm text-muted-foreground'>
             No parameters required
           </div>
         )}
@@ -761,19 +747,19 @@ function Tool({ tool, connection }: ToolProps) {
       }
 
       setToolCallResponse({
-        status: "ok",
+        status: 'ok',
         data: response,
         latency: endTime - startTime,
       });
 
       // Scroll to results automatically
       setTimeout(() => {
-        const resultElement = document.querySelector("[data-tool-result]");
-        resultElement?.scrollIntoView({ behavior: "smooth", block: "start" });
+        const resultElement = document.querySelector('[data-tool-result]');
+        resultElement?.scrollIntoView({ behavior: 'smooth', block: 'start' });
       }, 100);
     } catch (error) {
       // Check if this was a cancellation
-      if (error instanceof DOMException && error.name === "AbortError") {
+      if (error instanceof DOMException && error.name === 'AbortError') {
         return;
       }
 
@@ -783,7 +769,7 @@ function Tool({ tool, connection }: ToolProps) {
 
       const endTime = performance.now();
       setToolCallResponse({
-        status: "error",
+        status: 'error',
         data: error,
         latency: endTime - startTime,
       });
@@ -801,21 +787,21 @@ function Tool({ tool, connection }: ToolProps) {
   };
 
   return (
-    <Accordion type="single" collapsible className="w-full">
+    <Accordion type='single' collapsible className='w-full'>
       <AccordionItem
         value={tool.name}
-        className="border border-border overflow-hidden !border-b rounded-xl p-0"
+        className='border border-border overflow-hidden !border-b rounded-xl p-0'
       >
-        <AccordionTrigger className="p-4 hover:no-underline cursor-pointer hover:bg-accent rounded-t-xl rounded-b-none">
-          <div className="flex items-start gap-3 w-full text-left">
-            <Icon name="build" filled size={16} />
-            <div className="flex flex-col gap-1 min-w-0 flex-1">
-              <div className="font-medium text-sm truncate">
+        <AccordionTrigger className='p-4 hover:no-underline cursor-pointer hover:bg-accent rounded-t-xl rounded-b-none'>
+          <div className='flex items-start gap-3 w-full text-left'>
+            <Icon name='build' filled size={16} />
+            <div className='flex flex-col gap-1 min-w-0 flex-1'>
+              <div className='font-medium text-sm truncate'>
                 {formatToolName(tool.name)}
               </div>
               {tool.description && (
                 <div
-                  className="text-sm font-normal text-muted-foreground line-clamp-2"
+                  className='text-sm font-normal text-muted-foreground line-clamp-2'
                   title={tool.description}
                 >
                   {tool.description}
@@ -824,23 +810,23 @@ function Tool({ tool, connection }: ToolProps) {
             </div>
           </div>
         </AccordionTrigger>
-        <AccordionContent className="bg-secondary/50 p-4">
-          <Tabs defaultValue="parameters" className="w-full">
+        <AccordionContent className='bg-secondary/50 p-4'>
+          <Tabs defaultValue='parameters' className='w-full'>
             <TabsList>
-              <TabsTrigger value="parameters" className="px-4">
+              <TabsTrigger value='parameters' className='px-4'>
                 Parameters
               </TabsTrigger>
-              <TabsTrigger value="test-form" className="px-4">
+              <TabsTrigger value='test-form' className='px-4'>
                 Test form
               </TabsTrigger>
-              <TabsTrigger value="test-raw" className="px-4">
+              <TabsTrigger value='test-raw' className='px-4'>
                 Test raw
               </TabsTrigger>
             </TabsList>
-            <TabsContent value="parameters" className="mt-4">
+            <TabsContent value='parameters' className='mt-4'>
               <ParametersViewer tool={tool} />
             </TabsContent>
-            <TabsContent value="test-form" className="mt-4">
+            <TabsContent value='test-form' className='mt-4'>
               <ToolCallForm
                 tool={tool}
                 onSubmit={handleToolCall}
@@ -849,12 +835,12 @@ function Tool({ tool, connection }: ToolProps) {
                 rawMode={false}
               />
               {toolCallResponse && (
-                <Card className="p-4 mt-4" data-tool-result>
+                <Card className='p-4 mt-4' data-tool-result>
                   <ToolCallResult response={toolCallResponse} />
                 </Card>
               )}
             </TabsContent>
-            <TabsContent value="test-raw" className="mt-4">
+            <TabsContent value='test-raw' className='mt-4'>
               <ToolCallForm
                 tool={tool}
                 onSubmit={handleToolCall}
@@ -863,7 +849,7 @@ function Tool({ tool, connection }: ToolProps) {
                 rawMode
               />
               {toolCallResponse && (
-                <Card className="p-4 mt-4" data-tool-result>
+                <Card className='p-4 mt-4' data-tool-result>
                   <ToolCallResult response={toolCallResponse} />
                 </Card>
               )}
@@ -882,7 +868,7 @@ function ToolsInspector({
   data: ReturnType<typeof useGroupedApp>;
   selectedConnectionId?: string;
 }) {
-  const [search, setSearch] = useState("");
+  const [search, setSearch] = useState('');
   const [selectedIntegrationId, setSelectedIntegrationId] = useState<
     string | null
   >(data.instances[0]?.id ?? null);
@@ -906,8 +892,8 @@ function ToolsInspector({
         <IntegrationIcon
           icon={instance.icon}
           name={instance.name}
-          size="xs"
-          className="flex-shrink-0"
+          size='xs'
+          className='flex-shrink-0'
         />
         {instance.name}
       </SelectItem>
@@ -921,8 +907,8 @@ function ToolsInspector({
       // Scroll to tools section
       setTimeout(() => {
         toolsRef.current?.scrollIntoView({
-          behavior: "smooth",
-          block: "start",
+          behavior: 'smooth',
+          block: 'start',
         });
       }, 100);
     }
@@ -936,19 +922,19 @@ function ToolsInspector({
   );
 
   return (
-    <div ref={toolsRef} className="w-full p-4 flex flex-col items-center gap-4">
-      <h6 className="text-sm text-muted-foreground font-medium w-full">
+    <div ref={toolsRef} className='w-full p-4 flex flex-col items-center gap-4'>
+      <h6 className='text-sm text-muted-foreground font-medium w-full'>
         Tools
       </h6>
-      <div className="w-full flex items-center justify-between">
+      <div className='w-full flex items-center justify-between'>
         <Select
           value={selectedIntegration?.id}
           onValueChange={(value) => {
             setSelectedIntegrationId(value);
           }}
         >
-          <SelectTrigger className="max-w-[300px] w-full">
-            <SelectValue placeholder="Select connection" />
+          <SelectTrigger className='max-w-[300px] w-full'>
+            <SelectValue placeholder='Select connection' />
           </SelectTrigger>
           <SelectContent>
             {data.instances.map((instance) => (
@@ -958,63 +944,61 @@ function ToolsInspector({
         </Select>
 
         <Input
-          placeholder="Search tools..."
+          placeholder='Search tools...'
           value={search}
-          onChange={(e) =>
-            setSearch(e.target.value)}
-          className="max-w-xs"
+          onChange={(e) => setSearch(e.target.value)}
+          className='max-w-xs'
         />
       </div>
 
-      <div className="flex flex-col gap-4 w-full min-h-[80vh]">
+      <div className='flex flex-col gap-4 w-full min-h-[80vh]'>
         {tools.isLoading
           ? (
             Array.from({ length: 8 }).map((_, idx) => (
-              <Skeleton key={idx} className="rounded-lg w-full h-[76px]" />
+              <Skeleton key={idx} className='rounded-lg w-full h-[76px]' />
             ))
           )
           : tools.isError
           ? (
-            "url" in connection && connection.url.includes("example.com")
+            'url' in connection && connection.url.includes('example.com')
               ? (
-                <div className="flex flex-col items-center justify-center p-8 text-center space-y-3">
-                  <div className="w-12 h-12 rounded-full bg-muted/50 flex items-center justify-center">
+                <div className='flex flex-col items-center justify-center p-8 text-center space-y-3'>
+                  <div className='w-12 h-12 rounded-full bg-muted/50 flex items-center justify-center'>
                     <Icon
-                      name="tune"
+                      name='tune'
                       size={24}
-                      className="text-muted-foreground"
+                      className='text-muted-foreground'
                     />
                   </div>
-                  <div className="space-y-1">
-                    <h3 className="text-sm font-medium text-foreground">
+                  <div className='space-y-1'>
+                    <h3 className='text-sm font-medium text-foreground'>
                       Configuration Required
                     </h3>
-                    <p className="text-sm text-muted-foreground max-w-sm">
-                      This connection needs to be configured before tools can be
-                      tested. Please update the connection details above.
+                    <p className='text-sm text-muted-foreground max-w-sm'>
+                      This connection needs to be configured before tools can be tested. Please
+                      update the connection details above.
                     </p>
                   </div>
                 </div>
               )
               : (
-                <div className="flex flex-col items-center justify-center p-8 text-center">
+                <div className='flex flex-col items-center justify-center p-8 text-center'>
                   <img
-                    src="/img/error-state-connection-tools.svg"
-                    className="h-64 mb-4"
+                    src='/img/error-state-connection-tools.svg'
+                    className='h-64 mb-4'
                   />
-                  <h3 className="text-2xl font-semibold text-foreground mb-2">
+                  <h3 className='text-2xl font-semibold text-foreground mb-2'>
                     Unable to list connection tools
                   </h3>
-                  <div className="p-3 bg-destructive/5 border border-destructive/20 rounded-lg text-left mb-4">
-                    <pre className="text-xs text-destructive whitespace-pre-wrap break-words">
+                  <div className='p-3 bg-destructive/5 border border-destructive/20 rounded-lg text-left mb-4'>
+                    <pre className='text-xs text-destructive whitespace-pre-wrap break-words'>
                   Error: {tools.error?.message || "Unknown error occurred"}
                     </pre>
                   </div>
                   <Button
-                    onClick={() =>
-                      tools.refetch()}
+                    onClick={() => tools.refetch()}
                   >
-                    <Icon name="refresh" size={16} />
+                    <Icon name='refresh' size={16} />
                     Refresh
                   </Button>
                 </div>
@@ -1022,9 +1006,7 @@ function ToolsInspector({
           )
           : (
             filteredTools.map((tool) =>
-              connection
-                ? <Tool key={tool.name} connection={connection} tool={tool} />
-                : null
+              connection ? <Tool key={tool.name} connection={connection} tool={tool} /> : null
             )
           )}
       </div>
@@ -1047,7 +1029,7 @@ function ViewBindingDetector({ integration }: { integration: Integration }) {
       ).isImplementedBy(toolsData.tools);
       setIsViewBinding(isViewBindingResult);
     } catch (error) {
-      console.error("Error checking view binding:", error);
+      console.error('Error checking view binding:', error);
       setIsViewBinding(false);
     } finally {
       setIsChecking(false);
@@ -1060,9 +1042,9 @@ function ViewBindingDetector({ integration }: { integration: Integration }) {
 
   if (!integration || isChecking) {
     return (
-      <div className="w-full p-4 flex flex-col items-center gap-4">
-        <div className="w-full flex items-center justify-center p-4">
-          <Skeleton className="h-4 w-32" />
+      <div className='w-full p-4 flex flex-col items-center gap-4'>
+        <div className='w-full flex items-center justify-center p-4'>
+          <Skeleton className='h-4 w-32' />
         </div>
       </div>
     );
@@ -1110,14 +1092,14 @@ function ViewsList({ integration }: { integration: Integration }) {
           id: crypto.randomUUID(),
           title: view.title,
           icon: view.icon,
-          type: "custom" as const,
+          type: 'custom' as const,
           url: view.url,
         },
       });
 
       toast.success(`View "${view.title}" added successfully`);
     } catch (error) {
-      console.error("Error adding view:", error);
+      console.error('Error adding view:', error);
       toast.error(`Failed to add view "${view.title}"`);
     }
   };
@@ -1126,7 +1108,7 @@ function ViewsList({ integration }: { integration: Integration }) {
     viewWithStatus: (typeof viewsWithStatus)[0],
   ) => {
     if (!viewWithStatus.teamViewId) {
-      toast.error("No view to remove");
+      toast.error('No view to remove');
       return;
     }
 
@@ -1137,87 +1119,86 @@ function ViewsList({ integration }: { integration: Integration }) {
 
       toast.success(`View "${viewWithStatus.title}" removed successfully`);
     } catch (error) {
-      console.error("Error removing view:", error);
+      console.error('Error removing view:', error);
       toast.error(`Failed to remove view "${viewWithStatus.title}"`);
     }
   };
 
   if (isLoadingViews) {
     return (
-      <div className="w-full p-4 flex flex-col items-center gap-4">
-        <div className="w-full flex items-center justify-center p-4">
-          <Skeleton className="h-4 w-32" />
+      <div className='w-full p-4 flex flex-col items-center gap-4'>
+        <div className='w-full flex items-center justify-center p-4'>
+          <Skeleton className='h-4 w-32' />
         </div>
       </div>
     );
   }
 
   return (
-    <div className="w-full p-4 flex flex-col items-center gap-4">
-      <h6 className="text-sm text-muted-foreground font-medium w-full">
+    <div className='w-full p-4 flex flex-col items-center gap-4'>
+      <h6 className='text-sm text-muted-foreground font-medium w-full'>
         Views available from this integration
       </h6>
-      <div className="w-full p-4 border border-border rounded-xl bg-muted/30">
-        <div className="flex items-center gap-3 mb-4">
-          <div className="w-10 h-10 bg-success/10 rounded-full flex items-center justify-center">
-            <Icon name="layers" size={20} className="text-success" />
+      <div className='w-full p-4 border border-border rounded-xl bg-muted/30'>
+        <div className='flex items-center gap-3 mb-4'>
+          <div className='w-10 h-10 bg-success/10 rounded-full flex items-center justify-center'>
+            <Icon name='layers' size={20} className='text-success' />
           </div>
           <div>
-            <h3 className="text-sm font-medium text-foreground">
+            <h3 className='text-sm font-medium text-foreground'>
               {integration.name}
             </h3>
-            <p className="text-sm text-muted-foreground">
-              This integration provides custom views that can be added to your
-              workspace.
+            <p className='text-sm text-muted-foreground'>
+              This integration provides custom views that can be added to your workspace.
             </p>
           </div>
         </div>
 
-        <div className="space-y-3">
-          <div className="flex items-center gap-2 text-sm">
-            <Icon name="info" size={16} className="text-muted-foreground" />
-            <span className="text-muted-foreground">
+        <div className='space-y-3'>
+          <div className='flex items-center gap-2 text-sm'>
+            <Icon name='info' size={16} className='text-muted-foreground' />
+            <span className='text-muted-foreground'>
               Available views: {views.length}
             </span>
           </div>
 
           {viewsWithStatus.length === 0
             ? (
-              <div className="text-sm text-muted-foreground text-center py-4">
+              <div className='text-sm text-muted-foreground text-center py-4'>
                 No views available from this integration
               </div>
             )
             : (
-              <div className="space-y-2">
+              <div className='space-y-2'>
                 {viewsWithStatus.map((view) => (
                   <div
                     key={view.url}
-                    className="flex items-center justify-between p-3 border border-border rounded-lg bg-background"
+                    className='flex items-center justify-between p-3 border border-border rounded-lg bg-background'
                   >
-                    <div className="flex items-center gap-3 flex-1 min-w-0">
+                    <div className='flex items-center gap-3 flex-1 min-w-0'>
                       {view.icon && (
                         <Icon
                           name={view.icon}
                           size={24}
-                          className="flex-shrink-0"
+                          className='flex-shrink-0'
                         />
                       )}
-                      <div className="min-w-0 flex-1">
-                        <h4 className="text-sm font-medium truncate">
+                      <div className='min-w-0 flex-1'>
+                        <h4 className='text-sm font-medium truncate'>
                           {view.title}
                         </h4>
                         {view.url && (
-                          <p className="text-xs text-muted-foreground truncate">
+                          <p className='text-xs text-muted-foreground truncate'>
                             {view.url}
                           </p>
                         )}
                       </div>
                     </div>
 
-                    <div className="flex items-center gap-2 flex-shrink-0">
+                    <div className='flex items-center gap-2 flex-shrink-0'>
                       {view.isAdded && (
-                        <div className="flex items-center gap-1 text-xs text-success">
-                          <Icon name="check_circle" size={14} />
+                        <div className='flex items-center gap-1 text-xs text-success'>
+                          <Icon name='check_circle' size={14} />
                           <span>Added</span>
                         </div>
                       )}
@@ -1225,27 +1206,27 @@ function ViewsList({ integration }: { integration: Integration }) {
                       {view.isAdded
                         ? (
                           <Button
-                            variant="outline"
-                            size="sm"
-                            className="text-destructive hover:text-destructive"
+                            variant='outline'
+                            size='sm'
+                            className='text-destructive hover:text-destructive'
                             onClick={() => handleRemoveView(view)}
                             disabled={removeViewMutation.isPending}
                           >
                             {removeViewMutation.isPending
-                              ? <Icon name="hourglass_empty" size={14} />
-                              : <Icon name="remove" size={14} />}
+                              ? <Icon name='hourglass_empty' size={14} />
+                              : <Icon name='remove' size={14} />}
                           </Button>
                         )
                         : (
                           <Button
-                            variant="outline"
-                            size="sm"
+                            variant='outline'
+                            size='sm'
                             onClick={() => handleAddView(view)}
                             disabled={addViewMutation.isPending}
                           >
                             {addViewMutation.isPending
-                              ? <Icon name="hourglass_empty" size={14} />
-                              : <Icon name="add" size={14} />}
+                              ? <Icon name='hourglass_empty' size={14} />
+                              : <Icon name='add' size={14} />}
                           </Button>
                         )}
                     </div>
@@ -1292,17 +1273,16 @@ function AppDetail({ appKey }: { appKey: string }) {
   ] = useState<string>();
 
   if (!app.instances) {
-    return <Navigate to={workspaceLink("/connections")} replace />;
+    return <Navigate to={workspaceLink('/connections')} replace />;
   }
 
   return (
-    <div className="w-full flex flex-col items-center h-full overflow-y-scroll">
-      <div className="w-full max-w-[850px] flex flex-col gap-4 mt-6">
+    <div className='w-full flex flex-col items-center h-full overflow-y-scroll'>
+      <div className='w-full max-w-[850px] flex flex-col gap-4 mt-6'>
         <Overview data={app} appKey={appKey} />
         <Instances
           data={app}
-          onTestTools={(connectionId) =>
-            setSelectedToolInspectorConnectionId(connectionId)}
+          onTestTools={(connectionId) => setSelectedToolInspectorConnectionId(connectionId)}
         />
         <ViewBindingSection
           data={app}
@@ -1332,23 +1312,23 @@ export default function Page() {
       tabs={{
         main: {
           Component: () => <AppDetail appKey={appKey} />,
-          title: "Overview",
+          title: 'Overview',
           initialOpen: true,
         },
       }}
       breadcrumb={
         <DefaultBreadcrumb
           items={[
-            { label: "Integrations", link: "/connections" },
+            { label: 'Integrations', link: '/connections' },
             ...(info?.name
               ? [
                 {
                   label: (
-                    <div className="flex items-center gap-2">
+                    <div className='flex items-center gap-2'>
                       <IntegrationIcon
                         icon={info.icon}
                         name={info.name}
-                        size="xs"
+                        size='xs'
                       />
                       <span>{info.name}</span>
                     </div>

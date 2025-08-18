@@ -1,6 +1,6 @@
-import { useMutation, useQuery } from "@tanstack/react-query";
-import type { MCPConnection } from "../models/mcp.ts";
-import { MCPClient } from "../fetcher.ts";
+import { useMutation, useQuery } from '@tanstack/react-query';
+import type { MCPConnection } from '../models/mcp.ts';
+import { MCPClient } from '../fetcher.ts';
 export interface MCPTool {
   name: string;
   description?: string;
@@ -28,7 +28,7 @@ export type ToolsData = {
   capabilities?: Record<string, unknown>;
 };
 
-const INITIAL_DATA: ToolsData = { tools: [], instructions: "" };
+const INITIAL_DATA: ToolsData = { tools: [], instructions: '' };
 
 export const listTools = (
   connection: MCPConnection,
@@ -50,7 +50,7 @@ export function useTools(connection: MCPConnection) {
   const response = useQuery({
     retry: false,
     queryKey: [
-      "tools",
+      'tools',
       connection.type,
       // deno-lint-ignore no-explicit-any
       (connection as any).url ||

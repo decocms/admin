@@ -1,8 +1,8 @@
-import { describe, expect, it } from "vitest";
-import { runAiInsightsPure } from "../runner";
+import { describe, expect, it } from 'vitest';
+import { runAiInsightsPure } from '../runner';
 
 const baseAudit = {
-  url: "https://example.com",
+  url: 'https://example.com',
   scores: { performanceMobile: 40, seoMobile: 65 },
   linkSummary: {
     brokenLinks: 1,
@@ -12,22 +12,22 @@ const baseAudit = {
     metaDescriptionLength: 50,
     wordCount: 250,
   },
-  warnings: ["Broken links detectados: 1"],
+  warnings: ['Broken links detectados: 1'],
 };
 
-describe("AI insights LLM fallback", () => {
-  it("falls back to heuristics on LLM error", async () => {
+describe('AI insights LLM fallback', () => {
+  it('falls back to heuristics on LLM error', async () => {
     const fetchFn = async () => ({ ok: false, status: 500 }) as any;
     const res = await runAiInsightsPure(
-      { OPENROUTER_API_KEY: "sk-test" },
+      { OPENROUTER_API_KEY: 'sk-test' },
       { url: baseAudit.url, audit: baseAudit as any, enableLlm: true, fetchFn },
     );
-    expect(res.modelUsed).toBe("heuristic");
+    expect(res.modelUsed).toBe('heuristic');
     expect(res.llmTried).toBe(true);
     expect(res.llmError).toBeTruthy();
     expect(res.insights.length).toBeGreaterThan(0);
   });
-  it("uses LLM when successful", async () => {
+  it('uses LLM when successful', async () => {
     const fetchFn = async () =>
       ({
         ok: true,
@@ -36,20 +36,19 @@ describe("AI insights LLM fallback", () => {
           choices: [
             {
               message: {
-                content:
-                  "- Otimizar imagens\n- Reduzir LCP\n- Melhorar meta tags",
+                content: '- Otimizar imagens\n- Reduzir LCP\n- Melhorar meta tags',
               },
             },
           ],
-          model: "test-model",
+          model: 'test-model',
         }),
       }) as any;
     const res = await runAiInsightsPure(
-      { OPENROUTER_API_KEY: "sk-test" },
+      { OPENROUTER_API_KEY: 'sk-test' },
       { url: baseAudit.url, audit: baseAudit as any, enableLlm: true, fetchFn },
     );
-    expect(res.modelUsed).toBe("test-model");
-    expect(res.insights).toContain("Otimizar imagens");
+    expect(res.modelUsed).toBe('test-model');
+    expect(res.insights).toContain('Otimizar imagens');
     expect(res.llmTried).toBe(true);
     expect(res.llmError).toBeNull();
   });

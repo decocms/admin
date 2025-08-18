@@ -1,5 +1,5 @@
 // deno-lint-ignore-file no-explicit-any
-import type { JSONSchema7 } from "@ai-sdk/provider";
+import type { JSONSchema7 } from '@ai-sdk/provider';
 
 export interface Tool {
   name: string;
@@ -15,15 +15,15 @@ interface RootSchema extends JSONSchema7 {
 }
 
 const idFromDefinition = (definition: string) => {
-  const [_, __, id] = definition.split("/");
+  const [_, __, id] = definition.split('/');
   return id;
 };
 
-const RESOLVABLE_DEFINITION = "#/definitions/Resolvable";
+const RESOLVABLE_DEFINITION = '#/definitions/Resolvable';
 
 // Add slugify helper function
 const slugify = (name: string) => {
-  return name.replace(/[./]/g, "-").replace(/[^a-zA-Z0-9_-]/g, "");
+  return name.replace(/[./]/g, '-').replace(/[^a-zA-Z0-9_-]/g, '');
 };
 
 export function dereferenceSchema(
@@ -44,11 +44,11 @@ export function dereferenceSchema(
   }
 
   // Handle direct $ref
-  if ("$ref" in schema && typeof schema.$ref === "string") {
+  if ('$ref' in schema && typeof schema.$ref === 'string') {
     const refId = idFromDefinition(schema.$ref);
     if (visited.has(refId)) {
       // Prevent infinite recursion
-      return { type: "object", properties: {} };
+      return { type: 'object', properties: {} };
     }
     visited.add(refId);
     const referencedSchema = definitions[refId];
@@ -98,7 +98,7 @@ export function dereferenceSchema(
   // Handle additionalProperties
   if (
     result.additionalProperties &&
-    typeof result.additionalProperties === "object"
+    typeof result.additionalProperties === 'object'
   ) {
     result.additionalProperties = dereferenceSchema(
       result.additionalProperties as JSONSchema7,
@@ -116,8 +116,8 @@ export const getTools = (schemas?: any): Tool[] => {
 
   const loaders = schemas?.root.loaders ?? { anyOf: [] };
   const actions = schemas?.root.actions ?? { anyOf: [] };
-  const availableLoaders = "anyOf" in loaders ? (loaders.anyOf ?? []) : [];
-  const availableActions = "anyOf" in actions ? (actions.anyOf ?? []) : [];
+  const availableLoaders = 'anyOf' in loaders ? (loaders.anyOf ?? []) : [];
+  const availableActions = 'anyOf' in actions ? (actions.anyOf ?? []) : [];
 
   const tools = [...availableLoaders, ...availableActions].map((func) => {
     func = func as RootSchema;
@@ -128,7 +128,7 @@ export const getTools = (schemas?: any): Tool[] => {
     ).default;
 
     const getInputSchemaId = () => {
-      if ("inputSchema" in func) {
+      if ('inputSchema' in func) {
         return func.inputSchema as string;
       }
       const props = funcDefinition.allOf ?? [];
@@ -138,18 +138,14 @@ export const getTools = (schemas?: any): Tool[] => {
     };
 
     const ref = getInputSchemaId();
-    const rawInputSchema = ref
-      ? schemas.definitions[idFromDefinition(ref)]
-      : undefined;
+    const rawInputSchema = ref ? schemas.definitions[idFromDefinition(ref)] : undefined;
 
     // Dereference the input schema
     const inputSchema = rawInputSchema
       ? dereferenceSchema(rawInputSchema as JSONSchema7, schemas.definitions)
       : undefined;
 
-    const outputSchemaId = "outputSchema" in func
-      ? (func.outputSchema as string)
-      : undefined;
+    const outputSchemaId = 'outputSchema' in func ? (func.outputSchema as string) : undefined;
 
     const rawOutputSchema = outputSchemaId
       ? schemas.definitions[idFromDefinition(outputSchemaId)]
@@ -174,8 +170,8 @@ export const getTools = (schemas?: any): Tool[] => {
     toolNames.set(toolName, resolveType);
 
     const normalizeSchema = (schema?: JSONSchema7): JSONSchema7 => {
-      return schema && "type" in schema && schema.type === "object" ? schema : {
-        type: "object",
+      return schema && 'type' in schema && schema.type === 'object' ? schema : {
+        type: 'object',
         additionalProperties: true,
       };
     };

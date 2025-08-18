@@ -6,23 +6,23 @@ import {
   type SpanOptions,
   SpanStatusCode,
   trace,
-} from "@opentelemetry/api";
-import { SemanticAttributes } from "@opentelemetry/semantic-conventions";
-import { type Initialiser, setConfig } from "../config.ts";
-import type { DOConstructorTrigger } from "../types.ts";
-import { passthroughGet, unwrap, wrap } from "../wrap.ts";
-import { exportSpans } from "./common.ts";
-import { instrumentEnv } from "./env.ts";
+} from '@opentelemetry/api';
+import { SemanticAttributes } from '@opentelemetry/semantic-conventions';
+import { type Initialiser, setConfig } from '../config.ts';
+import type { DOConstructorTrigger } from '../types.ts';
+import { passthroughGet, unwrap, wrap } from '../wrap.ts';
+import { exportSpans } from './common.ts';
+import { instrumentEnv } from './env.ts';
 import {
   gatherIncomingCfAttributes,
   gatherRequestAttributes,
   gatherResponseAttributes,
   getParentContextFromHeaders,
   instrumentClientFetch,
-} from "./fetch.ts";
+} from './fetch.ts';
 
-type FetchFn = DurableObject["fetch"];
-type AlarmFn = DurableObject["alarm"];
+type FetchFn = DurableObject['fetch'];
+type AlarmFn = DurableObject['alarm'];
 type Env = Record<string, unknown>;
 
 function instrumentBindingStub(
@@ -31,13 +31,13 @@ function instrumentBindingStub(
 ): DurableObjectStub {
   const stubHandler: ProxyHandler<typeof stub> = {
     get(target, prop) {
-      if (prop === "fetch") {
+      if (prop === 'fetch') {
         const fetcher = Reflect.get(target, prop);
         const attrs = {
           name: `Durable Object ${nsName}`,
-          "do.namespace": nsName,
-          "do.id": target.id.toString(),
-          "do.id.name": target.id.name,
+          'do.namespace': nsName,
+          'do.id': target.id.toString(),
+          'do.id.name': target.id.name,
         };
         return instrumentClientFetch(
           fetcher,
@@ -53,10 +53,10 @@ function instrumentBindingStub(
 }
 
 function instrumentBindingGet(
-  getFn: DurableObjectNamespace["get"],
+  getFn: DurableObjectNamespace['get'],
   nsName: string,
-): DurableObjectNamespace["get"] {
-  const getHandler: ProxyHandler<DurableObjectNamespace["get"]> = {
+): DurableObjectNamespace['get'] {
+  const getHandler: ProxyHandler<DurableObjectNamespace['get']> = {
     apply(target, thisArg, argArray) {
       const stub: DurableObjectStub = Reflect.apply(target, thisArg, argArray);
       return instrumentBindingStub(stub, nsName);
@@ -71,7 +71,7 @@ export function instrumentDOBinding(
 ) {
   const nsHandler: ProxyHandler<typeof ns> = {
     get(target, prop) {
-      if (prop === "get") {
+      if (prop === 'get') {
         const fn = Reflect.get(ns, prop);
         return instrumentBindingGet(fn, nsName);
       } else {
@@ -86,7 +86,7 @@ export function instrumentState(state: DurableObjectState) {
   const stateHandler: ProxyHandler<DurableObjectState> = {
     get(target, prop, receiver) {
       const result = Reflect.get(target, prop, unwrap(receiver));
-      if (typeof result === "function") {
+      if (typeof result === 'function') {
         return result.bind(target);
       } else {
         return result;
@@ -107,9 +107,9 @@ export function executeDOFetch(
 ): Promise<Response> {
   const spanContext = getParentContextFromHeaders(request.headers);
 
-  const tracer = trace.getTracer("DO fetchHandler");
+  const tracer = trace.getTracer('DO fetchHandler');
   const attributes = {
-    [SemanticAttributes.FAAS_TRIGGER]: "http",
+    [SemanticAttributes.FAAS_TRIGGER]: 'http',
     [SemanticAttributes.FAAS_COLDSTART]: cold_start,
   };
   cold_start = false;
@@ -120,7 +120,7 @@ export function executeDOFetch(
     kind: SpanKind.SERVER,
   };
 
-  const name = id.name || "";
+  const name = id.name || '';
   const promise = tracer.startActiveSpan(
     `Durable Object Fetch ${name}`,
     options,
@@ -150,16 +150,16 @@ export function executeDOAlarm(
   alarmFn: NonNullable<AlarmFn>,
   id: DurableObjectId,
 ): Promise<void> {
-  const tracer = trace.getTracer("DO alarmHandler");
+  const tracer = trace.getTracer('DO alarmHandler');
 
-  const name = id.name || "";
+  const name = id.name || '';
   const promise = tracer.startActiveSpan(
     `Durable Object Alarm ${name}`,
     async (span) => {
       span.setAttribute(SemanticAttributes.FAAS_COLDSTART, cold_start);
       cold_start = false;
-      span.setAttribute("do.id", id.toString());
-      if (id.name) span.setAttribute("do.name", id.name);
+      span.setAttribute('do.id', id.toString());
+      if (id.name) span.setAttribute('do.name', id.name);
 
       try {
         await alarmFn();
@@ -216,7 +216,7 @@ function instrumentAlarmFn(
 
   const alarmHandler: ProxyHandler<NonNullable<AlarmFn>> = {
     async apply(target, thisArg) {
-      const config = initialiser(env, "do-alarm");
+      const config = initialiser(env, 'do-alarm');
       const context = setConfig(config);
       try {
         const bound = target.bind(unwrap(thisArg));
@@ -245,15 +245,15 @@ function instrumentDurableObject(
 ) {
   const objHandler: ProxyHandler<DurableObject> = {
     get(target, prop) {
-      if (prop === "fetch") {
+      if (prop === 'fetch') {
         const fetchFn = Reflect.get(target, prop);
         return instrumentFetchFn(fetchFn, initialiser, env, state.id);
-      } else if (prop === "alarm") {
+      } else if (prop === 'alarm') {
         const alarmFn = Reflect.get(target, prop);
         return instrumentAlarmFn(alarmFn, initialiser, env, state.id);
       } else {
         const result = Reflect.get(target, prop);
-        if (typeof result === "function") {
+        if (typeof result === 'function') {
           result.bind(doObj);
         }
         return result;

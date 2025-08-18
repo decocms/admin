@@ -1,5 +1,5 @@
-import { describe, expect, it } from "vitest";
-import { runSeoAuditPure as runSeoAudit } from "../runner";
+import { describe, expect, it } from 'vitest';
+import { runSeoAuditPure as runSeoAudit } from '../runner';
 
 // Lightweight heuristic test: mock PageSpeed tool via environment shim if needed.
 
@@ -7,8 +7,8 @@ function mockEnv(overrides: Record<string, any> = {}) {
   return { ...overrides } as any;
 }
 
-describe("SEO_AUDIT heuristics", () => {
-  it("produces warnings for poor metrics & structure", async () => {
+describe('SEO_AUDIT heuristics', () => {
+  it('produces warnings for poor metrics & structure', async () => {
     const out = await runSeoAudit(
       {
         analyzeLinks: async () => ({
@@ -29,11 +29,11 @@ describe("SEO_AUDIT heuristics", () => {
           metrics: { LCP_ms: 4100, CLS: 0.11, INP_ms: 280 },
         }),
       },
-      { url: "https://example.com" },
+      { url: 'https://example.com' },
     );
-    expect(out).toHaveProperty("scores");
-    expect(out).toHaveProperty("linkSummary");
-    expect(out).toHaveProperty("warnings");
+    expect(out).toHaveProperty('scores');
+    expect(out).toHaveProperty('linkSummary');
+    expect(out).toHaveProperty('warnings');
     expect(Array.isArray(out.warnings)).toBe(true);
   }, 20000);
 });

@@ -9,8 +9,8 @@ import {
   ImageContentSchema,
   ResultSchema,
   TextContentSchema,
-} from "@modelcontextprotocol/sdk/types.js";
-import { z } from "zod";
+} from '@modelcontextprotocol/sdk/types.js';
+import { z } from 'zod';
 
 export const CallToolResultSchema = ResultSchema.extend({
   /**

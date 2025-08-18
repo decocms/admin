@@ -1,1 +1,1 @@
-export * from "./file-processor/batch-file-processor.ts";
+export * from './file-processor/batch-file-processor.ts';

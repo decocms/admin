@@ -1,4 +1,4 @@
-version: "3.9"
+version: '3.9'
 services:
   seo-worker:
     build:
@@ -6,7 +6,7 @@ services:
       dockerfile: Dockerfile.worker
     container_name: seo-worker
     ports:
-      - "8787:8787"
+      - '8787:8787'
     volumes:
       - .:/workspace
       - /workspace/node_modules

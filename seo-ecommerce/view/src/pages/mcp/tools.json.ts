@@ -5,12 +5,11 @@ export async function GET() {
   return new Response(
     JSON.stringify({
       message:
-        "Use the deployed worker /mcp/tools endpoint for dynamic tool execution. This static file avoids SSR adapter needs.",
+        'Use the deployed worker /mcp/tools endpoint for dynamic tool execution. This static file avoids SSR adapter needs.',
       tools: [
         {
-          name: "LINK_ANALYZER",
-          description:
-            "Analisa link e retorna metadados (proxy/stub via worker).",
+          name: 'LINK_ANALYZER',
+          description: 'Analisa link e retorna metadados (proxy/stub via worker).',
         },
       ],
       _static: true,
@@ -18,8 +17,8 @@ export async function GET() {
     {
       status: 200,
       headers: {
-        "Content-Type": "application/json",
-        "Cache-Control": "public, max-age=600",
+        'Content-Type': 'application/json',
+        'Cache-Control': 'public, max-age=600',
       },
     },
   );

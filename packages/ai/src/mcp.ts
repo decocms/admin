@@ -5,37 +5,37 @@ import {
   type HTTPConnection,
   type Integration,
   type MCPConnection,
-} from "@deco/sdk";
-import { createSessionTokenCookie } from "@deco/sdk/auth";
-import { WebCache } from "@deco/sdk/cache";
-import { SWRCache } from "@deco/sdk/cache/swr";
-import { type AppContext, fromWorkspaceString, MCPClient } from "@deco/sdk/mcp";
-import { slugify } from "@deco/sdk/memory";
-import type { ToolAction } from "@mastra/core";
-import { Client } from "@modelcontextprotocol/sdk/client/index.js";
+} from '@deco/sdk';
+import { createSessionTokenCookie } from '@deco/sdk/auth';
+import { WebCache } from '@deco/sdk/cache';
+import { SWRCache } from '@deco/sdk/cache/swr';
+import { type AppContext, fromWorkspaceString, MCPClient } from '@deco/sdk/mcp';
+import { slugify } from '@deco/sdk/memory';
+import type { ToolAction } from '@mastra/core';
+import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import {
   SSEClientTransport,
   type SSEClientTransportOptions,
-} from "@modelcontextprotocol/sdk/client/sse.js";
-import { StreamableHTTPClientTransport } from "@modelcontextprotocol/sdk/client/streamableHttp.js";
-import { WebSocketClientTransport } from "@modelcontextprotocol/sdk/client/websocket.js";
-import type { AIAgent, Env } from "./agent.ts";
-import { getTools } from "./deco.ts";
-import { getToolsForInnateIntegration } from "./storage/tools.ts";
-import { createTool } from "./utils/create-tool.ts";
-import { jsonSchemaToModel } from "./utils/json-schema-to-model.ts";
-import { mapToolEntries } from "./utils/tool-entries.ts";
+} from '@modelcontextprotocol/sdk/client/sse.js';
+import { StreamableHTTPClientTransport } from '@modelcontextprotocol/sdk/client/streamableHttp.js';
+import { WebSocketClientTransport } from '@modelcontextprotocol/sdk/client/websocket.js';
+import type { AIAgent, Env } from './agent.ts';
+import { getTools } from './deco.ts';
+import { getToolsForInnateIntegration } from './storage/tools.ts';
+import { createTool } from './utils/create-tool.ts';
+import { jsonSchemaToModel } from './utils/json-schema-to-model.ts';
+import { mapToolEntries } from './utils/tool-entries.ts';
 
 const ApiDecoChatURLs = [
-  "https://api.deco.chat",
-  "http://localhost:3001",
-  "https://mcp-admin.wppagent.com",
+  'https://api.deco.chat',
+  'http://localhost:3001',
+  'https://mcp-admin.wppagent.com',
 ];
 export const isApiDecoChatMCPConnection = (
   connection: MCPConnection,
 ): connection is HTTPConnection =>
-  "url" in connection &&
-  connection.type === "HTTP" &&
+  'url' in connection &&
+  connection.type === 'HTTP' &&
   ApiDecoChatURLs.some((url) => connection.url.startsWith(url)) &&
   connection.token === undefined;
 
@@ -51,7 +51,7 @@ export const patchApiDecoChatTokenHTTPConnection = (
   };
 };
 
-const swr = new SWRCache<Awaited<ReturnType<Client["listTools"]>>>(
+const swr = new SWRCache<Awaited<ReturnType<Client['listTools']>>>(
   `list-tools`,
   {
     cacheTtlSeconds: WebCache.MAX_SAFE_TTL,
@@ -69,7 +69,7 @@ export const swrListTools = (mcpServer: Integration, signal?: AbortSignal) => {
 
       return client.listTools().finally(() => client.close());
     },
-    "url" in mcpServer.connection ? mcpServer.connection.url : mcpServer.id,
+    'url' in mcpServer.connection ? mcpServer.connection.url : mcpServer.id,
   );
 };
 
@@ -90,11 +90,11 @@ const getMCPServerTools = async (
           slug,
           createTool({
             id: slug,
-            description: tool.description! ?? "",
+            description: tool.description! ?? '',
             inputSchema: jsonSchemaToModel(tool.inputSchema),
             outputSchema: jsonSchemaToModel(
               tool.outputSchema ?? {
-                type: "object",
+                type: 'object',
                 additionalProperties: true,
               },
             ),
@@ -103,7 +103,7 @@ const getMCPServerTools = async (
                 console.error,
               );
               if (!innerClient) {
-                return { error: "Failed to create inner client" };
+                return { error: 'Failed to create inner client' };
               }
               try {
                 const result = await innerClient.callTool(
@@ -130,13 +130,13 @@ const getMCPServerTools = async (
 
     return mtools;
   } catch (err) {
-    console.error("[MCP] Error connecting to", mcpServer.name, err);
+    console.error('[MCP] Error connecting to', mcpServer.name, err);
     return {};
   }
 };
 
 export const fetchMeta = async (baseUrl: string) => {
-  const response = await fetch(new URL("/live/_meta", baseUrl));
+  const response = await fetch(new URL('/live/_meta', baseUrl));
   if (!response.ok) {
     return null;
   }
@@ -164,7 +164,7 @@ export const getDecoSiteTools = async (
         inputSchema: jsonSchemaToModel(tool.inputSchema),
         outputSchema: jsonSchemaToModel(
           tool.outputSchema ?? {
-            type: "object",
+            type: 'object',
             additionalProperties: true,
           },
         ),
@@ -172,12 +172,10 @@ export const getDecoSiteTools = async (
           const response = await fetch(
             new URL(`/live/invoke/${tool.resolveType}`, baseUrl),
             {
-              method: "POST",
-              body: typeof context === "string"
-                ? context
-                : JSON.stringify(context),
+              method: 'POST',
+              body: typeof context === 'string' ? context : JSON.stringify(context),
               headers: {
-                "content-type": "application/json",
+                'content-type': 'application/json',
                 ...(settings.token && {
                   authorization: settings.token,
                 }),
@@ -219,9 +217,9 @@ export const mcpServerTools = async (
     );
   }
 
-  const response = mcpServer.connection.type === "Deco"
+  const response = mcpServer.connection.type === 'Deco'
     ? await getDecoSiteTools(mcpServer.connection)
-    : mcpServer.connection.type === "INNATE"
+    : mcpServer.connection.type === 'INNATE'
     ? getToolsForInnateIntegration(mcpServer, agent, env)
     : await getMCPServerTools(mcpServer, agent, signal);
 
@@ -229,19 +227,19 @@ export const mcpServerTools = async (
 };
 
 export const createServerClient = async (
-  mcpServer: Pick<Integration, "connection" | "name">,
+  mcpServer: Pick<Integration, 'connection' | 'name'>,
   signal?: AbortSignal,
   extraHeaders?: Record<string, string>,
 ): Promise<Client> => {
   const transport = createTransport(mcpServer.connection, signal, extraHeaders);
 
   if (!transport) {
-    throw new Error("Unknown MCP connection type");
+    throw new Error('Unknown MCP connection type');
   }
 
   const client = new Client({
     name: mcpServer.name,
-    version: "1.0.0",
+    version: '1.0.0',
     timeout: 180000, // 3 minutes
   });
 
@@ -255,11 +253,11 @@ export const createTransport = (
   signal?: AbortSignal,
   extraHeaders?: Record<string, string>,
 ) => {
-  if (connection.type === "Websocket") {
+  if (connection.type === 'Websocket') {
     return new WebSocketClientTransport(new URL(connection.url));
   }
 
-  if (connection.type !== "SSE" && connection.type !== "HTTP") {
+  if (connection.type !== 'SSE' && connection.type !== 'HTTP') {
     return null;
   }
 
@@ -270,10 +268,10 @@ export const createTransport = (
   const headers: Record<string, string> = {
     ...authHeaders,
     ...(extraHeaders ?? {}),
-    ...("headers" in connection ? connection.headers || {} : {}),
+    ...('headers' in connection ? connection.headers || {} : {}),
   };
 
-  if (connection.type === "SSE") {
+  if (connection.type === 'SSE') {
     const config: SSEClientTransportOptions = {
       requestInit: { headers, signal },
     };
@@ -285,7 +283,7 @@ export const createTransport = (
             ...init,
             headers: {
               ...headers,
-              Accept: "text/event-stream",
+              Accept: 'text/event-stream',
             },
             signal,
           });
@@ -309,18 +307,18 @@ const handleMCPResponse = async (client: Client) => {
   return { tools: result.tools, instructions, capabilities, version };
 };
 export const swrMCPMetadata = (
-  mcpServer: Pick<Integration, "connection" | "name">,
+  mcpServer: Pick<Integration, 'connection' | 'name'>,
   ignoreCache = false,
 ) => {
   const fetch = async () => {
     const client = await createServerClient(
       mcpServer,
       undefined,
-      ignoreCache ? { "x-domain-swr-ignore-cache": "true" } : undefined,
+      ignoreCache ? { 'x-domain-swr-ignore-cache': 'true' } : undefined,
     );
     return handleMCPResponse(client).finally(() => client.close());
   };
-  if ("url" in mcpServer.connection && !ignoreCache) {
+  if ('url' in mcpServer.connection && !ignoreCache) {
     return swr.cache(fetch, mcpServer.connection.url);
   }
   return fetch();
@@ -332,13 +330,11 @@ export async function listToolsByConnectionType(
   ignoreCache = false,
 ) {
   switch (connection.type) {
-    case "INNATE": {
+    case 'INNATE': {
       const mcpClient = MCPClient.forContext({
         ...ctx,
         workspace: ctx.workspace ??
-          (connection.workspace
-            ? fromWorkspaceString(connection.workspace)
-            : undefined),
+          (connection.workspace ? fromWorkspaceString(connection.workspace) : undefined),
       });
 
       const maybeIntegration = await mcpClient.INTEGRATIONS_GET({
@@ -359,15 +355,15 @@ export async function listToolsByConnectionType(
 
       return { tools: mapToolEntries(tools) };
     }
-    case "Deco": {
+    case 'Deco': {
       const decoTools = await getDecoSiteTools(connection);
       return {
         tools: mapToolEntries(decoTools),
       };
     }
-    case "Websocket":
-    case "SSE":
-    case "HTTP": {
+    case 'Websocket':
+    case 'SSE':
+    case 'HTTP': {
       return await swrMCPMetadata(
         {
           name: connection.type,
@@ -377,7 +373,7 @@ export async function listToolsByConnectionType(
       );
     }
     default: {
-      return { error: "Invalid connection type" };
+      return { error: 'Invalid connection type' };
     }
   }
 }

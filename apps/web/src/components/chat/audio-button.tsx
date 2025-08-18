@@ -1,12 +1,12 @@
-import type React from "react";
-import { useCallback, useEffect, useState } from "react";
-import { Button } from "@deco/ui/components/button.tsx";
+import type React from 'react';
+import { useCallback, useEffect, useState } from 'react';
+import { Button } from '@deco/ui/components/button.tsx';
 import type {
   SpeechRecognition,
   SpeechRecognitionError,
   SpeechRecognitionEvent,
-} from "../../types/speech.d.ts";
-import { Icon } from "@deco/ui/components/icon.tsx";
+} from '../../types/speech.d.ts';
+import { Icon } from '@deco/ui/components/icon.tsx';
 
 interface AudioButtonProps {
   onMessage: (message: string) => void;
@@ -20,9 +20,9 @@ export const AudioButton: React.FC<AudioButtonProps> = ({ onMessage }) => {
 
   useEffect(() => {
     if (
-      (typeof globalThis !== "undefined" &&
-        "SpeechRecognition" in globalThis) ||
-      "webkitSpeechRecognition" in globalThis
+      (typeof globalThis !== 'undefined' &&
+        'SpeechRecognition' in globalThis) ||
+      'webkitSpeechRecognition' in globalThis
     ) {
       const SpeechRecognition = globalThis.SpeechRecognition ||
         globalThis.webkitSpeechRecognition;
@@ -34,7 +34,7 @@ export const AudioButton: React.FC<AudioButtonProps> = ({ onMessage }) => {
         const transcript = Array.from(event.results)
           .map((result) => result[0])
           .map((result) => result.transcript)
-          .join("");
+          .join('');
 
         if (event.results[0].isFinal) {
           onMessage(transcript);
@@ -42,7 +42,7 @@ export const AudioButton: React.FC<AudioButtonProps> = ({ onMessage }) => {
       };
 
       recognition.onerror = (event: SpeechRecognitionError) => {
-        if (event.error === "aborted") {
+        if (event.error === 'aborted') {
           // Ignore aborted errors as they're expected when stopping recognition
           return;
         }
@@ -75,22 +75,22 @@ export const AudioButton: React.FC<AudioButtonProps> = ({ onMessage }) => {
         setIsListening(true);
       }
     } catch (error) {
-      console.error("Error toggling speech recognition:", error);
+      console.error('Error toggling speech recognition:', error);
       setIsListening(false);
     }
   }, [recognition, isListening]);
 
   return (
-    <div className="flex flex-col items-center gap-4">
-      <div className="flex gap-4">
+    <div className='flex flex-col items-center gap-4'>
+      <div className='flex gap-4'>
         <Button
-          type="button"
-          variant={isListening ? "default" : "outline"}
-          size="icon"
+          type='button'
+          variant={isListening ? 'default' : 'outline'}
+          size='icon'
           onClick={toggleListening}
-          className="h-8 w-8"
+          className='h-8 w-8'
         >
-          <Icon filled name={isListening ? "stop" : "mic"} />
+          <Icon filled name={isListening ? 'stop' : 'mic'} />
         </Button>
       </div>
     </div>

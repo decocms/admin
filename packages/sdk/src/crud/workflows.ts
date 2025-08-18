@@ -1,4 +1,4 @@
-import { MCPClient } from "../fetcher.ts";
+import { MCPClient } from '../fetcher.ts';
 
 export interface WorkflowStartParams {
   workflowName: string;

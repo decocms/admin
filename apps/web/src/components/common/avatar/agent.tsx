@@ -1,7 +1,7 @@
-import { useFile, WELL_KNOWN_AGENT_IDS } from "@deco/sdk";
-import { Avatar, type AvatarProps } from "./index.tsx";
+import { useFile, WELL_KNOWN_AGENT_IDS } from '@deco/sdk';
+import { Avatar, type AvatarProps } from './index.tsx';
 
-export interface AgentAvatarProps extends Omit<AvatarProps, "shape"> {
+export interface AgentAvatarProps extends Omit<AvatarProps, 'shape'> {
   /**
    * The URL or file path of the avatar image
    * - If it's an https:// URL, it will be used directly
@@ -20,43 +20,43 @@ export interface AgentAvatarProps extends Omit<AvatarProps, "shape"> {
  */
 export function AgentAvatar({
   url,
-  size = "base",
-  objectFit = "cover",
+  size = 'base',
+  objectFit = 'cover',
   fallback,
   ...props
 }: AgentAvatarProps) {
   const isDeleted = !fallback && !url;
   const urlWithDefaults = fallback === WELL_KNOWN_AGENT_IDS.teamAgent
-    ? "icon://edit_square"
+    ? 'icon://edit_square'
     : isDeleted
-    ? "icon://robot_2"
+    ? 'icon://robot_2'
     : url;
   const fallbackWithDefaults = fallback === WELL_KNOWN_AGENT_IDS.teamAgent
-    ? "New chat"
+    ? 'New chat'
     : isDeleted
-    ? "Deleted agent"
+    ? 'Deleted agent'
     : fallback;
 
   // Check if URL is already a valid HTTPS URL
-  const isValidUrl = urlWithDefaults?.startsWith("https://") ||
-    urlWithDefaults?.startsWith("http://") ||
-    urlWithDefaults?.startsWith("icon://");
+  const isValidUrl = urlWithDefaults?.startsWith('https://') ||
+    urlWithDefaults?.startsWith('http://') ||
+    urlWithDefaults?.startsWith('icon://');
 
   // Use useFile hook only for non-URL paths
   const { data: resolvedFileUrl } = useFile(
-    urlWithDefaults && !isValidUrl ? urlWithDefaults : "",
+    urlWithDefaults && !isValidUrl ? urlWithDefaults : '',
   );
 
   // Determine the final URL to use
   const finalUrl = isValidUrl
     ? urlWithDefaults
-    : typeof resolvedFileUrl === "string"
+    : typeof resolvedFileUrl === 'string'
     ? resolvedFileUrl
     : undefined;
 
   return (
     <Avatar
-      shape="square"
+      shape='square'
       size={size}
       objectFit={objectFit}
       url={finalUrl}

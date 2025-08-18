@@ -1,11 +1,11 @@
-import { useSDK, useTeam, useTeamRoles } from "@deco/sdk";
+import { useSDK, useTeam, useTeamRoles } from '@deco/sdk';
 import {
   DEFAULT_MAX_STEPS,
   MAX_MAX_STEPS,
   MAX_MAX_TOKENS,
   MIN_MAX_TOKENS,
-} from "@deco/sdk/constants";
-import { Button } from "@deco/ui/components/button.tsx";
+} from '@deco/sdk/constants';
+import { Button } from '@deco/ui/components/button.tsx';
 import {
   Form,
   FormControl,
@@ -14,26 +14,26 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
-} from "@deco/ui/components/form.tsx";
-import { Icon } from "@deco/ui/components/icon.tsx";
-import { Input } from "@deco/ui/components/input.tsx";
-import { ScrollArea } from "@deco/ui/components/scroll-area.tsx";
+} from '@deco/ui/components/form.tsx';
+import { Icon } from '@deco/ui/components/icon.tsx';
+import { Input } from '@deco/ui/components/input.tsx';
+import { ScrollArea } from '@deco/ui/components/scroll-area.tsx';
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@deco/ui/components/select.tsx";
-import { Switch } from "@deco/ui/components/switch.tsx";
-import { Textarea } from "@deco/ui/components/textarea.tsx";
-import { cn } from "@deco/ui/lib/utils.ts";
-import { useState } from "react";
-import { useWatch } from "react-hook-form";
-import { getPublicChatLink } from "../agent/chats.tsx";
-import { useAgent } from "../agent/provider.tsx";
-import { useCurrentTeam } from "../sidebar/team-selector.tsx";
-import { Channels } from "./channels.tsx";
+} from '@deco/ui/components/select.tsx';
+import { Switch } from '@deco/ui/components/switch.tsx';
+import { Textarea } from '@deco/ui/components/textarea.tsx';
+import { cn } from '@deco/ui/lib/utils.ts';
+import { useState } from 'react';
+import { useWatch } from 'react-hook-form';
+import { getPublicChatLink } from '../agent/chats.tsx';
+import { useAgent } from '../agent/provider.tsx';
+import { useCurrentTeam } from '../sidebar/team-selector.tsx';
+import { Channels } from './channels.tsx';
 
 export const useCurrentTeamRoles = () => {
   const { slug } = useCurrentTeam();
@@ -54,9 +54,9 @@ function CopyLinkButton({
 
   return (
     <Button
-      type="button"
-      variant="outline"
-      aria-label="Copy link"
+      type='button'
+      variant='outline'
+      aria-label='Copy link'
       className={className}
       onClick={() => {
         navigator.clipboard.writeText(link);
@@ -66,7 +66,7 @@ function CopyLinkButton({
         }, 2000);
       }}
     >
-      <Icon name={isCopied ? "check" : "link"} size={16} />
+      <Icon name={isCopied ? 'check' : 'link'} size={16} />
       Copy link
     </Button>
   );
@@ -78,26 +78,26 @@ function AdvancedTab() {
 
   const useWorkingMemory = useWatch({
     control: form.control,
-    name: "memory.working_memory.enabled",
-    defaultValue: form.getValues("memory.working_memory.enabled"),
+    name: 'memory.working_memory.enabled',
+    defaultValue: form.getValues('memory.working_memory.enabled'),
   });
 
   return (
-    <ScrollArea className="h-full w-full">
+    <ScrollArea className='h-full w-full'>
       <Form {...form}>
-        <div className="h-full w-full p-4 max-w-3xl mx-auto">
-          <form onSubmit={handleSubmit} className="space-y-6 py-2 pb-16">
+        <div className='h-full w-full p-4 max-w-3xl mx-auto'>
+          <form onSubmit={handleSubmit} className='space-y-6 py-2 pb-16'>
             <FormField
-              name="visibility"
+              name='visibility'
               render={({ field }) => {
                 const { workspace } = useSDK();
-                const isPublic = field.value === "PUBLIC";
+                const isPublic = field.value === 'PUBLIC';
                 const publicLink = getPublicChatLink(agent.id, workspace);
 
                 return (
                   <FormItem>
-                    <div className="flex items-center justify-between">
-                      <div className="flex flex-col gap-2">
+                    <div className='flex items-center justify-between'>
+                      <div className='flex flex-col gap-2'>
                         <FormLabel>Visibility</FormLabel>
                         <FormDescription>
                           Control who can interact with this agent.
@@ -106,34 +106,33 @@ function AdvancedTab() {
 
                       <CopyLinkButton
                         link={publicLink}
-                        className={cn(isPublic ? "visible" : "invisible")}
+                        className={cn(isPublic ? 'visible' : 'invisible')}
                       />
                     </div>
 
                     <FormControl>
                       <Select
-                        value={field.value ?? "PRIVATE"}
+                        value={field.value ?? 'PRIVATE'}
                         onValueChange={field.onChange}
                       >
-                        <SelectTrigger className="w-full">
+                        <SelectTrigger className='w-full'>
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="WORKSPACE">
-                            <div className="flex items-center gap-2">
-                              <Icon className="text-foreground" name="groups" />
-                              <span className="text-foreground">Team</span>
-                              <span className="text-xs text-muted-foreground">
-                                Members of your team can access and edit the
-                                agent
+                          <SelectItem value='WORKSPACE'>
+                            <div className='flex items-center gap-2'>
+                              <Icon className='text-foreground' name='groups' />
+                              <span className='text-foreground'>Team</span>
+                              <span className='text-xs text-muted-foreground'>
+                                Members of your team can access and edit the agent
                               </span>
                             </div>
                           </SelectItem>
-                          <SelectItem value="PUBLIC">
-                            <div className="flex items-center gap-2">
-                              <Icon className="text-foreground" name="public" />
-                              <span className="text-foreground">Public</span>
-                              <span className="text-xs text-muted-foreground">
+                          <SelectItem value='PUBLIC'>
+                            <div className='flex items-center gap-2'>
+                              <Icon className='text-foreground' name='public' />
+                              <span className='text-foreground'>Public</span>
+                              <span className='text-xs text-muted-foreground'>
                                 Anyone with the link can view and use the agent.
                               </span>
                             </div>
@@ -148,18 +147,18 @@ function AdvancedTab() {
               }}
             />
             <FormField
-              name="max_steps"
+              name='max_steps'
               render={({ field }) => (
                 <FormItem>
-                  <div className="flex flex-col gap-2">
+                  <div className='flex flex-col gap-2'>
                     <FormLabel>
-                      Max Steps{" "}
+                      Max Steps{' '}
                       <a
-                        href="https://mastra.ai/en/docs/agents/overview#using-maxsteps"
-                        target="_blank"
-                        rel="noopener noreferrer"
+                        href='https://mastra.ai/en/docs/agents/overview#using-maxsteps'
+                        target='_blank'
+                        rel='noopener noreferrer'
                       >
-                        <Icon name="open_in_new" className="w-4 h-4" />
+                        <Icon name='open_in_new' className='w-4 h-4' />
                       </a>
                     </FormLabel>
                     <FormDescription>
@@ -168,7 +167,7 @@ function AdvancedTab() {
                   </div>
                   <FormControl>
                     <Input
-                      type="number"
+                      type='number'
                       min={1}
                       max={MAX_MAX_STEPS}
                       defaultValue={DEFAULT_MAX_STEPS}
@@ -182,10 +181,10 @@ function AdvancedTab() {
             />
 
             <FormField
-              name="max_tokens"
+              name='max_tokens'
               render={({ field }) => (
                 <FormItem>
-                  <div className="flex flex-col gap-2">
+                  <div className='flex flex-col gap-2'>
                     <FormLabel>Max Tokens</FormLabel>
                     <FormDescription>
                       The maximum number of tokens the agent can generate.
@@ -193,7 +192,7 @@ function AdvancedTab() {
                   </div>
                   <FormControl>
                     <Input
-                      type="number"
+                      type='number'
                       min={MIN_MAX_TOKENS}
                       max={MAX_MAX_TOKENS}
                       {...field}
@@ -206,10 +205,10 @@ function AdvancedTab() {
             />
 
             <FormField
-              name="temperature"
+              name='temperature'
               render={({ field }) => (
                 <FormItem>
-                  <div className="flex flex-col gap-2">
+                  <div className='flex flex-col gap-2'>
                     <FormLabel>Temperature</FormLabel>
                     <FormDescription>
                       The temperature of the LLM.
@@ -217,16 +216,16 @@ function AdvancedTab() {
                   </div>
                   <FormControl>
                     <Input
-                      type="number"
+                      type='number'
                       min={0}
                       max={1}
                       step={0.01}
-                      defaultValue={form.getValues("temperature") ?? undefined}
+                      defaultValue={form.getValues('temperature') ?? undefined}
                       {...field}
                       onChange={(e) => {
                         const value = e.target.value;
                         field.onChange(
-                          value === "" ? "" : parseFloat(value) || value,
+                          value === '' ? '' : parseFloat(value) || value,
                         );
                       }}
                     />
@@ -239,34 +238,33 @@ function AdvancedTab() {
             {/* --- Memory Settings Section (migrated from memory.tsx) --- */}
             <FormField
               control={form.control}
-              name="memory.last_messages"
+              name='memory.last_messages'
               render={({ field }) => (
                 <FormItem>
-                  <div className="flex flex-col gap-2">
+                  <div className='flex flex-col gap-2'>
                     <FormLabel>
-                      Context Window{" "}
+                      Context Window{' '}
                       <a
-                        href="https://mastra.ai/en/docs/memory/overview#conversation-history"
-                        target="_blank"
-                        rel="noopener noreferrer"
+                        href='https://mastra.ai/en/docs/memory/overview#conversation-history'
+                        target='_blank'
+                        rel='noopener noreferrer'
                       >
-                        <Icon name="open_in_new" className="w-4 h-4" />
+                        <Icon name='open_in_new' className='w-4 h-4' />
                       </a>
                     </FormLabel>
                     <FormDescription>
-                      The number of recent messages to keep in memory context
-                      window.
+                      The number of recent messages to keep in memory context window.
                     </FormDescription>
                   </div>
                   <FormControl>
                     <Input
-                      type="number"
+                      type='number'
                       min={0}
                       max={100}
-                      placeholder="Number of past messages to remember"
+                      placeholder='Number of past messages to remember'
                       {...field}
                       onChange={(e) => field.onChange(e.target.valueAsNumber)}
-                      value={field.value ?? ""}
+                      value={field.value ?? ''}
                     />
                   </FormControl>
                   <FormMessage />
@@ -275,23 +273,22 @@ function AdvancedTab() {
             />
             <FormField
               control={form.control}
-              name="memory.semantic_recall"
+              name='memory.semantic_recall'
               render={({ field }) => (
-                <FormItem className="flex flex-row items-center justify-between">
-                  <div className="flex flex-col gap-2">
+                <FormItem className='flex flex-row items-center justify-between'>
+                  <div className='flex flex-col gap-2'>
                     <FormLabel>
-                      Semantic Recall{" "}
+                      Semantic Recall{' '}
                       <a
-                        href="https://mastra.ai/en/docs/memory/semantic-recall"
-                        target="_blank"
-                        rel="noopener noreferrer"
+                        href='https://mastra.ai/en/docs/memory/semantic-recall'
+                        target='_blank'
+                        rel='noopener noreferrer'
                       >
-                        <Icon name="open_in_new" className="w-4 h-4" />
+                        <Icon name='open_in_new' className='w-4 h-4' />
                       </a>
                     </FormLabel>
                     <FormDescription>
-                      Enable the agent to recall relevant information from past
-                      conversations.
+                      Enable the agent to recall relevant information from past conversations.
                     </FormDescription>
                   </div>
                   <FormControl>
@@ -303,27 +300,26 @@ function AdvancedTab() {
                 </FormItem>
               )}
             />
-            <div className="flex flex-col items-center justify-between gap-4">
-              <div className="flex flex-row items-center justify-between w-full">
+            <div className='flex flex-col items-center justify-between gap-4'>
+              <div className='flex flex-row items-center justify-between w-full'>
                 <FormField
                   control={form.control}
-                  name="memory.working_memory.enabled"
+                  name='memory.working_memory.enabled'
                   render={({ field }) => (
-                    <FormItem className="flex flex-row items-center justify-between w-full">
-                      <div className="flex flex-col gap-2">
+                    <FormItem className='flex flex-row items-center justify-between w-full'>
+                      <div className='flex flex-col gap-2'>
                         <FormLabel>
-                          Working Memory{" "}
+                          Working Memory{' '}
                           <a
-                            href="https://mastra.ai/en/docs/memory/working-memory"
-                            target="_blank"
-                            rel="noopener noreferrer"
+                            href='https://mastra.ai/en/docs/memory/working-memory'
+                            target='_blank'
+                            rel='noopener noreferrer'
                           >
-                            <Icon name="open_in_new" className="w-4 h-4" />
+                            <Icon name='open_in_new' className='w-4 h-4' />
                           </a>
                         </FormLabel>
                         <FormDescription>
-                          Allow the agent to maintain a short-term memory for
-                          ongoing tasks.
+                          Allow the agent to maintain a short-term memory for ongoing tasks.
                         </FormDescription>
                       </div>
                       <FormControl>
@@ -339,11 +335,11 @@ function AdvancedTab() {
               {useWorkingMemory && (
                 <FormField
                   control={form.control}
-                  name="memory.working_memory.template"
+                  name='memory.working_memory.template'
                   render={({ field }) => {
                     let isJson = false;
                     try {
-                      if (field.value && typeof field.value === "string") {
+                      if (field.value && typeof field.value === 'string') {
                         JSON.parse(field.value);
                         isJson = true;
                       }
@@ -352,24 +348,24 @@ function AdvancedTab() {
                     }
                     return (
                       <FormItem>
-                        <div className="flex items-center gap-2">
+                        <div className='flex items-center gap-2'>
                           <FormLabel>Working Memory Template</FormLabel>
                           {isJson && (
-                            <span className="px-2 py-0.5 text-xs bg-muted rounded text-muted-foreground border border-muted-foreground/20">
+                            <span className='px-2 py-0.5 text-xs bg-muted rounded text-muted-foreground border border-muted-foreground/20'>
                               Schema
                             </span>
                           )}
                         </div>
                         <FormControl>
                           <Textarea
-                            placeholder="Define a template (markdown or JSON schema) for the working memory..."
+                            placeholder='Define a template (markdown or JSON schema) for the working memory...'
                             {...field}
-                            value={field.value ?? ""}
+                            value={field.value ?? ''}
                           />
                         </FormControl>
                         <FormDescription>
-                          Use markdown for a text template, or paste a JSON
-                          schema to structure the agent's working memory.
+                          Use markdown for a text template, or paste a JSON schema to structure the
+                          agent's working memory.
                         </FormDescription>
                         <FormMessage />
                       </FormItem>
@@ -384,13 +380,13 @@ function AdvancedTab() {
             {/* Team Access Section */}
             {roles.length > 0 && (
               <FormField
-                name="access"
+                name='access'
                 control={form.control}
                 render={({ field }) => {
                   return (
                     <FormItem>
-                      <div className="flex items-center justify-between">
-                        <div className="flex flex-col gap-2">
+                      <div className='flex items-center justify-between'>
+                        <div className='flex flex-col gap-2'>
                           <FormLabel>Access</FormLabel>
                           <FormDescription>
                             Control who can access with this agent by role.
@@ -403,16 +399,14 @@ function AdvancedTab() {
                           value={`${field.value}`}
                           onValueChange={field.onChange}
                         >
-                          <SelectTrigger className="w-full">
+                          <SelectTrigger className='w-full'>
                             <SelectValue />
                           </SelectTrigger>
                           <SelectContent>
                             {roles.map((role) => (
                               <SelectItem key={role.id} value={role.name}>
                                 <Icon
-                                  name={role.name === "owner"
-                                    ? "lock_person"
-                                    : "groups"}
+                                  name={role.name === 'owner' ? 'lock_person' : 'groups'}
                                 />
                                 {role.name}
                               </SelectItem>
@@ -428,7 +422,7 @@ function AdvancedTab() {
               />
             )}
 
-            <div className="border-t pt-6">
+            <div className='border-t pt-6'>
               <Channels />
             </div>
           </form>

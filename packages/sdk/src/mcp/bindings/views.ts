@@ -1,5 +1,5 @@
-import { z } from "zod";
-import type { Binder } from "../index.ts";
+import { z } from 'zod';
+import type { Binder } from '../index.ts';
 
 const listViewsSchema = z.object({
   views: z.array(
@@ -13,7 +13,7 @@ const listViewsSchema = z.object({
 
 export const VIEW_BINDING_SCHEMA = [
   {
-    name: "DECO_CHAT_VIEWS_LIST" as const,
+    name: 'DECO_CHAT_VIEWS_LIST' as const,
     inputSchema: z.any(),
     outputSchema: listViewsSchema,
   },

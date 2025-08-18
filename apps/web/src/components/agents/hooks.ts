@@ -1,14 +1,13 @@
-import { useUpdateThreadMessages } from "@deco/sdk";
-import { useCallback } from "react";
-import { useNavigateWorkspace } from "../../hooks/use-navigate-workspace.ts";
+import { useUpdateThreadMessages } from '@deco/sdk';
+import { useCallback } from 'react';
+import { useNavigateWorkspace } from '../../hooks/use-navigate-workspace.ts';
 
 interface AgentNavigationOptions {
   message?: string;
   history?: boolean;
 }
 
-const getChatPath = (agentId: string, threadId: string): string =>
-  `/agent/${agentId}/${threadId}`;
+const getChatPath = (agentId: string, threadId: string): string => `/agent/${agentId}/${threadId}`;
 
 export const useFocusChat = () => {
   const navigateWorkspace = useNavigateWorkspace();
@@ -27,7 +26,7 @@ export const useFocusChat = () => {
       const searchParams = new URLSearchParams();
 
       if (options?.message) {
-        searchParams.append("message", options.message);
+        searchParams.append('message', options.message);
       }
 
       // Only append search params if we have any

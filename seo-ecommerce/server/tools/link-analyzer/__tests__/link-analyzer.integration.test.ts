@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it } from 'vitest';
 
 const selfUrl = process.env.DECO_SELF_URL;
 
@@ -6,18 +6,18 @@ const selfUrl = process.env.DECO_SELF_URL;
 // Use: DECO_SELF_URL=https://your-worker.workers.dev npm run test
 // Otherwise the suite is skipped to keep CI green locally.
 (selfUrl ? describe : describe.skip)(
-  "LINK_ANALYZER integration (MCP HTTP)",
+  'LINK_ANALYZER integration (MCP HTTP)',
   () => {
-    it("calls the tool via /mcp/call-tool/LINK_ANALYZER", async () => {
+    it('calls the tool via /mcp/call-tool/LINK_ANALYZER', async () => {
       const res = await fetch(`${selfUrl}/mcp/call-tool/LINK_ANALYZER`, {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({ url: "https://example.com" }),
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ url: 'https://example.com' }),
       });
       expect(res.ok).toBe(true);
       const json = await res.json();
       expect(json.structuredContent).toBeTruthy();
-      expect(typeof json.structuredContent.linksFound).toBe("number");
+      expect(typeof json.structuredContent.linksFound).toBe('number');
     });
   },
 );

@@ -1,14 +1,14 @@
-import type { ClientOf } from "@deco/sdk/http";
-import type { Workspace } from "@deco/sdk/path";
+import type { ClientOf } from '@deco/sdk/http';
+import type { Workspace } from '@deco/sdk/path';
 import {
   MicroDollar,
   type Transaction,
   type WalletAPI,
   WellKnownTransactions,
   WellKnownWallets,
-} from "@deco/sdk/mcp/wallet";
-import type { LanguageModelUsage } from "ai";
-import { WebCache } from "@deco/sdk/cache";
+} from '@deco/sdk/mcp/wallet';
+import type { LanguageModelUsage } from 'ai';
+import { WebCache } from '@deco/sdk/cache';
 
 export interface AgentWalletConfig {
   wallet: ClientOf<WalletAPI>;
@@ -50,16 +50,16 @@ function createAgentUsageTransaction({
     agentPath,
   };
   const vendor = {
-    type: "vendor" as const,
+    type: 'vendor' as const,
     id: workspace,
   };
   const generatedBy = {
-    type: "user" as const,
-    id: userId || "unknown",
+    type: 'user' as const,
+    id: userId || 'unknown',
   };
 
   return {
-    type: "AgentGeneration" as const,
+    type: 'AgentGeneration' as const,
     usage: {
       usage,
       ...usageData,
@@ -77,11 +77,11 @@ function createAgentUsageTransaction({
 export class AgentWallet {
   private checkedUserCreditReward = false;
   private hasBalanceCache: WebCache<boolean> = new WebCache<boolean>(
-    "agent_wallet_funds",
+    'agent_wallet_funds',
     WebCache.MAX_SAFE_TTL,
   );
   private userCreditsRewardsCache: WebCache<boolean> = new WebCache<boolean>(
-    "agent_wallet_user_credits_rewards",
+    'agent_wallet_user_credits_rewards',
     WebCache.MAX_SAFE_TTL,
   );
   private rewardPromise: Map<string, Promise<void>> = new Map();
@@ -95,7 +95,7 @@ export class AgentWallet {
 
   async canProceed() {
     const hasBalance = await this.hasBalanceCache.get(this.config.workspace);
-    if (typeof hasBalance === "boolean") {
+    if (typeof hasBalance === 'boolean') {
       if (!hasBalance) {
         return this.updateBalanceCache(); // lazy update
       }
@@ -117,7 +117,7 @@ export class AgentWallet {
     const walletId = WellKnownWallets.build(
       ...WellKnownWallets.workspace.genCredits(this.config.workspace),
     );
-    const response = await this.client["GET /accounts/:id"]({
+    const response = await this.client['GET /accounts/:id']({
       id: encodeURIComponent(walletId),
     });
 
@@ -126,7 +126,7 @@ export class AgentWallet {
     }
 
     if (!response.ok) {
-      console.error("Failed to check balance", response);
+      console.error('Failed to check balance', response);
       return true;
     }
 
@@ -157,7 +157,7 @@ export class AgentWallet {
       workspace: this.config.workspace,
     });
 
-    const response = await this.client["POST /transactions"](
+    const response = await this.client['POST /transactions'](
       {},
       {
         body: operation,
@@ -183,8 +183,8 @@ export class AgentWallet {
     const promise = (async () => {
       const rewards = [
         {
-          type: "WorkspaceGenCreditReward" as const,
-          amount: "2_000000",
+          type: 'WorkspaceGenCreditReward' as const,
+          amount: '2_000000',
           workspace: this.config.workspace,
           transactionId: WellKnownTransactions.freeTwoDollars(
             encodeURIComponent(this.config.workspace),
@@ -196,7 +196,7 @@ export class AgentWallet {
         rewards.map(async (operation) => {
           let retries = 3;
           while (retries > 0) {
-            const response = await this.client["PUT /transactions/:id"](
+            const response = await this.client['PUT /transactions/:id'](
               { id: operation.transactionId },
               { body: operation },
             );
@@ -248,7 +248,7 @@ export class AgentWallet {
       // Mark as rewarded
       await this.userCreditsRewardsCache.set(this.config.workspace, true);
     } catch (error) {
-      console.error("Failed to ensure credit rewards", error);
+      console.error('Failed to ensure credit rewards', error);
     }
   }
 }

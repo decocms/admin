@@ -1,13 +1,13 @@
-import type { AuthUser, SupabaseClient } from "@supabase/supabase-js";
-import { decodeJwt } from "jose";
-import { LRUCache } from "lru-cache";
-import type { Principal } from "../mcp/context.ts";
-import { JwtIssuer, type JwtIssuerKeyPair } from "./jwt.ts";
+import type { AuthUser, SupabaseClient } from '@supabase/supabase-js';
+import { decodeJwt } from 'jose';
+import { LRUCache } from 'lru-cache';
+import type { Principal } from '../mcp/context.ts';
+import { JwtIssuer, type JwtIssuerKeyPair } from './jwt.ts';
 import {
   createSupabaseSessionClient,
   getSessionToken,
   parseAuthorizationHeader,
-} from "./supabase.ts";
+} from './supabase.ts';
 
 export type { AuthUser };
 const ONE_MINUTE_MS = 60e3;
@@ -45,7 +45,7 @@ export async function getUserBySupabaseCookie(
   if (accessToken && cache.has(accessToken)) {
     return cache.get(accessToken);
   }
-  const { supabase } = typeof supabaseServerToken === "string"
+  const { supabase } = typeof supabaseServerToken === 'string'
     ? createSupabaseSessionClient(request, supabaseServerToken)
     : { supabase: supabaseServerToken };
   const [{ data: _user }, jwt] = await Promise.all([

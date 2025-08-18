@@ -1,9 +1,9 @@
-import { CHANNEL_BINDING_SCHEMA } from "./channels.ts";
-import { VIEW_BINDING_SCHEMA } from "./views.ts";
+import { CHANNEL_BINDING_SCHEMA } from './channels.ts';
+import { VIEW_BINDING_SCHEMA } from './views.ts';
 
-export { type Binder } from "./binder.ts";
-export * from "./channels.ts";
-export * from "./utils.ts";
+export { type Binder } from './binder.ts';
+export * from './channels.ts';
+export * from './utils.ts';
 // should not export binder.ts because it is a server-side only file
 
 export const WellKnownBindings = {

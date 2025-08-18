@@ -1,10 +1,6 @@
-import {
-  useMutation,
-  useQueryClient,
-  useSuspenseQuery,
-} from "@tanstack/react-query";
-import { MCPClient } from "../fetcher.ts";
-import { KEYS } from "./api.ts";
+import { useMutation, useQueryClient, useSuspenseQuery } from '@tanstack/react-query';
+import { MCPClient } from '../fetcher.ts';
+import { KEYS } from './api.ts';
 
 export const useProfile = () => {
   return useSuspenseQuery({

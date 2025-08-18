@@ -1,9 +1,9 @@
 // deno-lint-ignore-file no-explicit-any
-import { useState } from "react";
-import { Button } from "@deco/ui/components/button.tsx";
-import { Input } from "@deco/ui/components/input.tsx";
-import { Icon } from "@deco/ui/components/icon.tsx";
-import { cn } from "@deco/ui/lib/utils.ts";
+import { useState } from 'react';
+import { Button } from '@deco/ui/components/button.tsx';
+import { Input } from '@deco/ui/components/input.tsx';
+import { Icon } from '@deco/ui/components/icon.tsx';
+import { cn } from '@deco/ui/lib/utils.ts';
 
 interface PasswordInputProps {
   value?: string;
@@ -30,7 +30,7 @@ function PasswordInput({
         setCopySuccess(true);
         setTimeout(() => setCopySuccess(false), 2000);
       } catch (err) {
-        console.error("Failed to copy text: ", err);
+        console.error('Failed to copy text: ', err);
       }
     }
   };
@@ -40,39 +40,39 @@ function PasswordInput({
   };
 
   return (
-    <div className="relative">
+    <div className='relative'>
       <Input
-        type={showPassword ? "text" : "password"}
+        type={showPassword ? 'text' : 'password'}
         value={value}
         onChange={onChange}
         placeholder={placeholder}
-        className={cn("pr-20", className)}
+        className={cn('pr-20', className)}
         {...props}
       />
-      <div className="absolute right-1 top-1 flex items-center gap-1 h-8">
+      <div className='absolute right-1 top-1 flex items-center gap-1 h-8'>
         <Button
-          type="button"
-          variant="ghost"
-          size="sm"
-          className="h-8 w-8 p-0"
+          type='button'
+          variant='ghost'
+          size='sm'
+          className='h-8 w-8 p-0'
           onClick={togglePasswordVisibility}
-          title={showPassword ? "Hide password" : "Show password"}
+          title={showPassword ? 'Hide password' : 'Show password'}
         >
           <Icon
-            name={showPassword ? "visibility_off" : "visibility"}
+            name={showPassword ? 'visibility_off' : 'visibility'}
             size={16}
           />
         </Button>
         <Button
-          type="button"
-          variant="ghost"
-          size="sm"
-          className="h-8 w-8 p-0"
+          type='button'
+          variant='ghost'
+          size='sm'
+          className='h-8 w-8 p-0'
           onClick={handleCopy}
           disabled={!value}
-          title={copySuccess ? "Copied!" : "Copy token"}
+          title={copySuccess ? 'Copied!' : 'Copy token'}
         >
-          <Icon name={copySuccess ? "check" : "content_copy"} size={16} />
+          <Icon name={copySuccess ? 'check' : 'content_copy'} size={16} />
         </Button>
       </div>
     </div>

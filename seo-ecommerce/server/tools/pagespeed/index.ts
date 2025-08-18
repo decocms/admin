@@ -1,15 +1,15 @@
-import { z } from "zod";
-import { createTool } from "@deco/workers-runtime/mastra";
-import { buildPageSpeedKey, type CacheLayerEnv, getOrSet } from "../cache";
-import { getCacheConfig } from "../../config/cache";
-import { recordToolError, recordToolSuccess } from "../metrics";
+import { z } from 'zod';
+import { createTool } from '@deco/workers-runtime/mastra';
+import { buildPageSpeedKey, type CacheLayerEnv, getOrSet } from '../cache';
+import { getCacheConfig } from '../../config/cache';
+import { recordToolError, recordToolSuccess } from '../metrics';
 
 const InputSchema = z.object({
   url: z.string().url(),
-  strategy: z.enum(["mobile", "desktop"]).default("mobile"),
+  strategy: z.enum(['mobile', 'desktop']).default('mobile'),
   category: z
-    .array(z.enum(["performance", "accessibility", "seo", "pwa"]))
-    .default(["performance", "seo"]),
+    .array(z.enum(['performance', 'accessibility', 'seo', 'pwa']))
+    .default(['performance', 'seo']),
 });
 
 // Normalized output focusing on key core web vitals + category scores
@@ -48,16 +48,15 @@ export const createPageSpeedTool = (
   env: CacheLayerEnv & Record<string, unknown>,
 ) =>
   createTool({
-    id: "PAGESPEED",
-    description:
-      "Fetches Google PageSpeed Insights (Lighthouse) summary for a URL",
+    id: 'PAGESPEED',
+    description: 'Fetches Google PageSpeed Insights (Lighthouse) summary for a URL',
     inputSchema: InputSchema,
     outputSchema: OutputSchema,
     execute: async ({ context }) => {
       const start = Date.now();
       const { url, strategy, category } = context;
       try {
-        const cfg = getCacheConfig("pagespeed");
+        const cfg = getCacheConfig('pagespeed');
         const key = buildPageSpeedKey(url, strategy);
         const bypass = (context as any)?.noCache === true;
         const res = await getOrSet(
@@ -66,12 +65,12 @@ export const createPageSpeedTool = (
           async () => {
             const params = new URLSearchParams({ url, strategy });
             if (category && category.length) {
-              category.forEach((c) => params.append("category", c));
+              category.forEach((c) => params.append('category', c));
             }
             const apiUrl =
               `https://www.googleapis.com/pagespeedonline/v5/runPagespeed?${params.toString()}`;
             const resp = await fetch(apiUrl, {
-              headers: { Accept: "application/json" },
+              headers: { Accept: 'application/json' },
             });
             if (!resp.ok) throw new Error(`PageSpeed API ${resp.status}`);
             const json = await resp.json();
@@ -85,10 +84,10 @@ export const createPageSpeedTool = (
             bypass,
           },
         );
-        recordToolSuccess("PAGESPEED", Date.now() - start);
+        recordToolSuccess('PAGESPEED', Date.now() - start);
         return { ...res.data, cache: res.cache, stale: res.stale };
       } catch (e) {
-        recordToolError("PAGESPEED", Date.now() - start);
+        recordToolError('PAGESPEED', Date.now() - start);
         throw e;
       }
     },
@@ -114,19 +113,19 @@ export function normalizePageSpeed(
       pwa: cats.pwa ? cats.pwa.score * 100 : null,
     },
     metrics: {
-      FCP_ms: audits["first-contentful-paint"]?.numericValue ?? null,
-      LCP_ms: audits["largest-contentful-paint"]?.numericValue ?? null,
-      CLS: audits["cumulative-layout-shift"]?.numericValue ?? null,
-      TBT_ms: audits["total-blocking-time"]?.numericValue ?? null,
-      INP_ms: audits["interaction-to-next-paint"]?.numericValue ?? null,
+      FCP_ms: audits['first-contentful-paint']?.numericValue ?? null,
+      LCP_ms: audits['largest-contentful-paint']?.numericValue ?? null,
+      CLS: audits['cumulative-layout-shift']?.numericValue ?? null,
+      TBT_ms: audits['total-blocking-time']?.numericValue ?? null,
+      INP_ms: audits['interaction-to-next-paint']?.numericValue ?? null,
     },
     opportunities: Object.values(audits)
-      .filter((a: any) => a?.details?.type === "opportunity")
+      .filter((a: any) => a?.details?.type === 'opportunity')
       .slice(0, 8)
       .map((a: any) => ({
         id: a.id,
         title: a.title,
-        score: typeof a.score === "number" ? a.score : null,
+        score: typeof a.score === 'number' ? a.score : null,
         savingsMs: a?.details?.overallSavingsMs ?? null,
       })),
     fetchedAt: new Date().toISOString(),

@@ -1,4 +1,4 @@
-import { DEFAULT_MIN_THINKING_TOKENS } from "@deco/sdk";
+import { DEFAULT_MIN_THINKING_TOKENS } from '@deco/sdk';
 
 interface GetProviderOptionsParams {
   budgetTokens: number;
@@ -11,7 +11,7 @@ export function getProviderOptions({ budgetTokens }: GetProviderOptionsParams) {
   if (budgetTokens > DEFAULT_MIN_THINKING_TOKENS) {
     opts.anthropic = {
       thinking: {
-        type: "enabled",
+        type: 'enabled',
         budgetTokens,
       },
     };
@@ -20,7 +20,7 @@ export function getProviderOptions({ budgetTokens }: GetProviderOptionsParams) {
   // Prefer Cerebras and Groq when using Openrouter OSS models
   opts.openrouter = {
     provider: {
-      order: ["groq", "cerebras"],
+      order: ['groq', 'cerebras'],
     },
   };
 

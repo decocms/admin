@@ -1,19 +1,15 @@
-import inquirer from "inquirer";
-import { promises as fs } from "fs";
-import { spawn } from "child_process";
-import { dirname, join } from "path";
-import { fileURLToPath } from "url";
-import { copy, ensureDir } from "../../lib/fs.js";
-import {
-  type Config,
-  readWranglerConfig,
-  writeWranglerConfig,
-} from "../../lib/config.js";
-import { slugify } from "../../lib/slugify.js";
-import { promptWorkspace } from "../../lib/prompt-workspace.js";
-import { genEnv } from "../gen/gen.js";
-import { promptIDESetup, writeIDEConfig } from "../../lib/prompt-ide-setup.js";
-import process from "node:process";
+import inquirer from 'inquirer';
+import { promises as fs } from 'fs';
+import { spawn } from 'child_process';
+import { dirname, join } from 'path';
+import { fileURLToPath } from 'url';
+import { copy, ensureDir } from '../../lib/fs.js';
+import { type Config, readWranglerConfig, writeWranglerConfig } from '../../lib/config.js';
+import { slugify } from '../../lib/slugify.js';
+import { promptWorkspace } from '../../lib/prompt-workspace.js';
+import { genEnv } from '../gen/gen.js';
+import { promptIDESetup, writeIDEConfig } from '../../lib/prompt-ide-setup.js';
+import process from 'node:process';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -33,12 +29,12 @@ interface Template {
 }
 
 const DEFAULT_TEMPLATE: Template = {
-  name: "Deco MCP app",
-  description: "A Deco MCP app",
-  repo: "deco-cx/deco-create",
-  branch: "main",
-  wranglerRoot: "server",
-  pathsToIgnore: [".cursorindexingignore", ".specstory", "plans"],
+  name: 'Deco MCP app',
+  description: 'A Deco MCP app',
+  repo: 'deco-cx/deco-create',
+  branch: 'main',
+  wranglerRoot: 'server',
+  pathsToIgnore: ['.cursorindexingignore', '.specstory', 'plans'],
 };
 
 function runCommand(
@@ -49,28 +45,28 @@ function runCommand(
   return new Promise((resolve) => {
     const process = spawn(command, args, {
       cwd,
-      stdio: "pipe",
+      stdio: 'pipe',
     });
 
-    process.on("close", (code) => {
+    process.on('close', (code) => {
       resolve(code === 0);
     });
 
-    process.on("error", () => {
+    process.on('error', () => {
       resolve(false);
     });
   });
 }
 
-const PATHS_TO_IGNORE_ALWAYS = [".git"];
+const PATHS_TO_IGNORE_ALWAYS = ['.git'];
 
 async function downloadTemplate(
   template: Template,
   targetDir: string,
 ): Promise<void> {
   // For the base template, use the local copy
-  if (template.name === "base") {
-    const templatePath = join(__dirname, "../../../template/base");
+  if (template.name === 'base') {
+    const templatePath = join(__dirname, '../../../template/base');
     await ensureDir(targetDir);
     await copy(templatePath, targetDir, { overwrite: true });
     console.log(`✅ Template '${template.name}' copied successfully!`);
@@ -81,12 +77,12 @@ async function downloadTemplate(
   const tempDir = join(process.cwd(), `.temp-${Date.now()}`);
 
   try {
-    const success = await runCommand("git", [
-      "clone",
-      "--depth",
-      "1",
-      "--branch",
-      template.branch || "main",
+    const success = await runCommand('git', [
+      'clone',
+      '--depth',
+      '1',
+      '--branch',
+      template.branch || 'main',
       `https://github.com/${template.repo}.git`,
       tempDir,
     ]);
@@ -117,7 +113,7 @@ async function downloadTemplate(
         });
     }
 
-    const templatePath = join(tempDir, template.path || "");
+    const templatePath = join(tempDir, template.path || '');
     try {
       await fs.access(templatePath);
     } catch {
@@ -144,10 +140,10 @@ async function customizeTemplate({
   workspace?: string;
   wranglerRoot?: string;
 }): Promise<void> {
-  const packageJsonPath = join(targetDir, "package.json");
+  const packageJsonPath = join(targetDir, 'package.json');
 
   try {
-    const packageJsonContent = await fs.readFile(packageJsonPath, "utf-8");
+    const packageJsonContent = await fs.readFile(packageJsonPath, 'utf-8');
     const packageJson = JSON.parse(packageJsonContent);
 
     packageJson.name = projectName;
@@ -155,7 +151,7 @@ async function customizeTemplate({
     await fs.writeFile(packageJsonPath, JSON.stringify(packageJson, null, 2));
   } catch (error) {
     console.warn(
-      "⚠️  Could not customize package.json:",
+      '⚠️  Could not customize package.json:',
       error instanceof Error ? error.message : String(error),
     );
   }
@@ -194,12 +190,12 @@ async function customizeTemplate({
         bindings: newConfig.deco.bindings || [],
       });
 
-      const outputPath = join(wranglerRoot || targetDir, "deco.gen.ts");
+      const outputPath = join(wranglerRoot || targetDir, 'deco.gen.ts');
       await fs.writeFile(outputPath, envContent);
       console.log(`✅ Environment types written to: ${outputPath}`);
     } catch (error) {
       console.warn(
-        "⚠️  Could not update config file:",
+        '⚠️  Could not update config file:',
         error instanceof Error ? error.message : String(error),
       );
     }
@@ -218,15 +214,15 @@ export async function createCommand(
         (
           await inquirer.prompt([
             {
-              type: "input",
-              name: "projectName",
-              message: "Enter project name:",
+              type: 'input',
+              name: 'projectName',
+              message: 'Enter project name:',
               validate: (value: string) => {
                 if (!value.trim()) {
-                  return "Project name cannot be empty";
+                  return 'Project name cannot be empty';
                 }
                 if (!/^[a-z0-9-]+$/.test(value)) {
-                  return "Project name can only contain lowercase letters, numbers, and hyphens";
+                  return 'Project name can only contain lowercase letters, numbers, and hyphens';
                 }
                 return true;
               },
@@ -254,15 +250,15 @@ export async function createCommand(
 
       const { overwrite } = await inquirer.prompt([
         {
-          type: "list",
-          name: "overwrite",
+          type: 'list',
+          name: 'overwrite',
           message: `Directory '${finalProjectName}' already exists. Overwrite?`,
-          choices: ["No", "Yes"],
+          choices: ['No', 'Yes'],
         },
       ]);
 
-      if (overwrite === "No") {
-        console.log("❌ Project creation cancelled.");
+      if (overwrite === 'No') {
+        console.log('❌ Project creation cancelled.');
         return;
       }
 
@@ -271,14 +267,14 @@ export async function createCommand(
       // Directory doesn't exist, that's fine
     }
 
-    const wranglerRoot = join(targetDir, selectedTemplate.wranglerRoot || "");
+    const wranglerRoot = join(targetDir, selectedTemplate.wranglerRoot || '');
 
     const { initGit } = await inquirer.prompt([
       {
-        type: "list",
-        name: "initGit",
-        message: "Initialize a git repository?",
-        choices: ["No", "Yes"],
+        type: 'list',
+        name: 'initGit',
+        message: 'Initialize a git repository?',
+        choices: ['No', 'Yes'],
       },
     ]);
 
@@ -301,17 +297,17 @@ export async function createCommand(
       wranglerRoot,
     });
 
-    if (initGit === "Yes") {
+    if (initGit === 'Yes') {
       try {
-        const success = await runCommand("git", ["init"], targetDir);
+        const success = await runCommand('git', ['init'], targetDir);
         if (success) {
           console.log(`✅ Git repository initialized in '${finalProjectName}'`);
         } else {
-          console.warn("⚠️  Failed to initialize git repository");
+          console.warn('⚠️  Failed to initialize git repository');
         }
       } catch (error) {
         console.warn(
-          "⚠️  Could not initialize git repository:",
+          '⚠️  Could not initialize git repository:',
           error instanceof Error ? error.message : String(error),
         );
       }
@@ -324,7 +320,7 @@ export async function createCommand(
     console.log(`  npm run dev`);
   } catch (error) {
     console.error(
-      "❌ Failed to create project:",
+      '❌ Failed to create project:',
       error instanceof Error ? error.message : String(error),
     );
     process.exit(1);

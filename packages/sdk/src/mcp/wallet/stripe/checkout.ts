@@ -1,11 +1,11 @@
-import Stripe from "stripe";
-import type { AppContext } from "../../context.ts";
-import { assertHasWorkspace } from "../../assertions.ts";
-import { createCurrencyClient } from "../index.ts";
+import Stripe from 'stripe';
+import type { AppContext } from '../../context.ts';
+import { assertHasWorkspace } from '../../assertions.ts';
+import { createCurrencyClient } from '../index.ts';
 
 const getStripeClient = (secretKey: string) => {
   return new Stripe(secretKey, {
-    apiVersion: "2025-03-31.basil",
+    apiVersion: '2025-03-31.basil',
     httpClient: Stripe.createFetchHttpClient(),
   });
 };
@@ -28,16 +28,16 @@ const getOrCreateWorkspaceStripeCustomer = async (
   const workspace = ctx.workspace.value;
 
   const { data: maybeCustomer } = await ctx.db
-    .from("deco_chat_customer")
-    .select("customer_id")
-    .eq("workspace", workspace)
+    .from('deco_chat_customer')
+    .select('customer_id')
+    .eq('workspace', workspace)
     .maybeSingle();
 
   if (maybeCustomer) {
     const customer = await stripe.customers.retrieve(maybeCustomer.customer_id);
 
     if (customer.deleted) {
-      throw new Error("Stripe customer is deleted");
+      throw new Error('Stripe customer is deleted');
     }
 
     return customer;
@@ -45,12 +45,12 @@ const getOrCreateWorkspaceStripeCustomer = async (
 
   const customer = await stripe.customers.create({
     metadata: {
-      product: "deco.chat",
+      product: 'deco.chat',
       workspace,
     },
   });
 
-  await ctx.db.from("deco_chat_customer").insert({
+  await ctx.db.from('deco_chat_customer').insert({
     customer_id: customer.id,
     workspace,
   });
@@ -67,16 +67,16 @@ const convertUSDToBRL = async ({
 }): Promise<number> => {
   const currencyClient = createCurrencyClient(currencyAPIKey);
 
-  const response = await currencyClient["GET /latest"]({
-    currencies: ["BRL"],
+  const response = await currencyClient['GET /latest']({
+    currencies: ['BRL'],
   });
 
   if (!response.ok) {
     console.error(
-      "[Stripe Checkout Session] Error fetching currency",
+      '[Stripe Checkout Session] Error fetching currency',
       response,
     );
-    throw new Error("Internal server error: Failed to fetch currency");
+    throw new Error('Internal server error: Failed to fetch currency');
   }
 
   const currency = await response.json();
@@ -86,21 +86,20 @@ const convertUSDToBRL = async ({
   return amountInBrl;
 };
 
-const MANDATORY_CUSTOM_FIELDS:
-  Stripe.Checkout.SessionCreateParams.CustomField[] = [
-    {
-      label: {
-        custom: "Tax ID/CNPJ/CPF",
-        type: "custom",
-      },
-      key: "tax_id",
-      type: "text",
-      optional: false,
+const MANDATORY_CUSTOM_FIELDS: Stripe.Checkout.SessionCreateParams.CustomField[] = [
+  {
+    label: {
+      custom: 'Tax ID/CNPJ/CPF',
+      type: 'custom',
     },
-  ];
+    key: 'tax_id',
+    type: 'text',
+    optional: false,
+  },
+];
 
 interface WorkspaceWalletDeposit {
-  id: "WorkspaceWalletDeposit";
+  id: 'WorkspaceWalletDeposit';
   /**
    * Amount in cents
    */
@@ -121,14 +120,14 @@ const handleWorkspaceWalletDeposit: ProductHandler<
   WorkspaceWalletDeposit
 > = async (product, stripe, ctx) => {
   if (!ctx.envVars.CURRENCY_API_KEY) {
-    throw new Error("CURRENCY_API_KEY is not set");
+    throw new Error('CURRENCY_API_KEY is not set');
   }
 
   if (
     Number.isNaN(product.amountUSD) ||
     product.amountUSD < MINIMUM_AMOUNT_IN_USD_CENTS
   ) {
-    throw new Error("Invalid amount");
+    throw new Error('Invalid amount');
   }
 
   const customer = await getOrCreateWorkspaceStripeCustomer(stripe, ctx);
@@ -150,7 +149,7 @@ const handleWorkspaceWalletDeposit: ProductHandler<
   const unitAmount = amountInBrl;
 
   return {
-    mode: "payment",
+    mode: 'payment',
     customer: customer.id,
     adaptive_pricing: {
       enabled: true,
@@ -158,9 +157,9 @@ const handleWorkspaceWalletDeposit: ProductHandler<
     line_items: [
       {
         price_data: {
-          currency: "brl",
+          currency: 'brl',
           product_data: {
-            name: "Deco.chat Credits",
+            name: 'Deco.chat Credits',
           },
           unit_amount: unitAmount,
         },
@@ -179,7 +178,7 @@ const argsFor = ({
   stripe: Stripe;
   ctx: AppContext;
 }): Promise<Partial<Stripe.Checkout.SessionCreateParams>> => {
-  const productHandlers: Record<Product["id"], ProductHandler<Product>> = {
+  const productHandlers: Record<Product['id'], ProductHandler<Product>> = {
     WorkspaceWalletDeposit: handleWorkspaceWalletDeposit,
   };
 
@@ -208,7 +207,7 @@ export const createCheckoutSession = async ({
   ctx,
 }: CreateCheckoutSessionArgs) => {
   if (!ctx.envVars.STRIPE_SECRET_KEY) {
-    throw new Error("STRIPE_SECRET_KEY is not set");
+    throw new Error('STRIPE_SECRET_KEY is not set');
   }
 
   const stripe = getStripeClient(ctx.envVars.STRIPE_SECRET_KEY);

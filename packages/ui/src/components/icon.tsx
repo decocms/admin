@@ -1,7 +1,7 @@
-import { cn } from "@deco/ui/lib/utils.ts";
-import type { HTMLAttributes } from "react";
+import { cn } from '@deco/ui/lib/utils.ts';
+import type { HTMLAttributes } from 'react';
 
-export type IconVariant = "filled";
+export type IconVariant = 'filled';
 
 export interface Props extends HTMLAttributes<HTMLSpanElement> {
   /**
@@ -42,16 +42,16 @@ export function Icon({
 }: Props) {
   return (
     <span
-      translate="no"
-      className={cn("material-symbols-outlined", className)}
+      translate='no'
+      className={cn('material-symbols-outlined', className)}
       style={{
         fontVariationSettings: Object.entries({
-          FILL: filled ? "1" : "0",
+          FILL: filled ? '1' : '0',
           wght: weight,
           GRAD: grade,
         })
           .map(([key, value]) => `'${key}' ${value}`)
-          .join(", "),
+          .join(', '),
         ...style,
         fontSize: `${size}px`,
       }}

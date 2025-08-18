@@ -1,20 +1,20 @@
-import type { ListTriggersOutput } from "@deco/sdk";
-import { useDeleteTrigger } from "@deco/sdk";
-import { Button } from "@deco/ui/components/button.tsx";
+import type { ListTriggersOutput } from '@deco/sdk';
+import { useDeleteTrigger } from '@deco/sdk';
+import { Button } from '@deco/ui/components/button.tsx';
 import {
   Dialog,
   DialogContent,
   DialogDescription,
   DialogFooter,
   DialogHeader,
-} from "@deco/ui/components/dialog.tsx";
+} from '@deco/ui/components/dialog.tsx';
 
 export const DeleteTriggerModal = ({
   trigger,
   open,
   onOpenChange,
 }: {
-  trigger: ListTriggersOutput["triggers"][number];
+  trigger: ListTriggersOutput['triggers'][number];
 
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -28,11 +28,11 @@ export const DeleteTriggerModal = ({
           Are you sure you want to delete this trigger?
         </DialogDescription>
         <DialogFooter>
-          <Button variant="outline" onClick={() => onOpenChange(false)}>
+          <Button variant='outline' onClick={() => onOpenChange(false)}>
             Cancel
           </Button>
           <Button
-            variant="destructive"
+            variant='destructive'
             onClick={() => {
               deleteTrigger(trigger.id);
               onOpenChange(false);

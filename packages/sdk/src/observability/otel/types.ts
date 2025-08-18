@@ -1,16 +1,13 @@
-import type { TextMapPropagator } from "@opentelemetry/api";
+import type { TextMapPropagator } from '@opentelemetry/api';
 import type {
   ReadableSpan,
   Sampler,
   SpanExporter,
   SpanProcessor,
-} from "@opentelemetry/sdk-trace-base";
-import type { OTLPExporterConfig } from "./exporter.ts";
-import type {
-  FetcherConfig,
-  FetchHandlerConfig,
-} from "./instrumentation/fetch.ts";
-import type { TailSampleFn } from "./sampling.ts";
+} from '@opentelemetry/sdk-trace-base';
+import type { OTLPExporterConfig } from './exporter.ts';
+import type { FetcherConfig, FetchHandlerConfig } from './instrumentation/fetch.ts';
+import type { TailSampleFn } from './sampling.ts';
 
 export type PostProcessorFn = (spans: ReadableSpan[]) => ReadableSpan[];
 
@@ -88,5 +85,5 @@ export type Trigger =
   | MessageBatch
   | ScheduledController
   | DOConstructorTrigger
-  | "do-alarm"
+  | 'do-alarm'
   | ForwardableEmailMessage;

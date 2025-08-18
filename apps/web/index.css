@@ -1,8 +1,8 @@
-@import "@deco/ui/styles/global.css";
-@import "dockview-react/dist/styles/dockview.css";
+@import '@deco/ui/styles/global.css';
+@import 'dockview-react/dist/styles/dockview.css';
 
 /* include the ui package */
-@source "../../packages/ui";
+@source '../../packages/ui';
 
 @layer base {
   .tiptap p.is-editor-empty:first-child::before {
@@ -35,8 +35,7 @@
     --dv-separator-border: var(--border);
     --dv-paneview-header-border-color: var(--border);
     --dv-icon-hover-background-color: var(--accent);
-    --dv-floating-box-shadow:
-      0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+    --dv-floating-box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
     --dv-active-sash-color: var(--color-slate-50);
     --dv-background-color: var(--background);
 
@@ -76,14 +75,14 @@
       @apply bg-background;
     }
 
-    .dv-active-tab [data-active="true"] {
+    .dv-active-tab [data-active='true'] {
       @apply bg-background! rounded-t-xl relative z-10;
       border-bottom: 1px solid var(--background);
     }
 
-    .dv-active-tab [data-active="true"]::before,
-    .dv-active-tab [data-active="true"]::after {
-      content: "";
+    .dv-active-tab [data-active='true']::before,
+    .dv-active-tab [data-active='true']::after {
+      content: '';
       pointer-events: none;
       position: absolute;
       bottom: -3px;
@@ -92,13 +91,13 @@
       background: transparent;
     }
 
-    .dv-active-tab [data-active="true"]::before {
+    .dv-active-tab [data-active='true']::before {
       left: -1rem;
       border-bottom-right-radius: 16px;
       box-shadow: 8px 8px 0 0 var(--background);
     }
 
-    .dv-active-tab [data-active="true"]::after {
+    .dv-active-tab [data-active='true']::after {
       right: -1rem;
       border-bottom-left-radius: 16px;
       box-shadow: -8px 8px 0 0 var(--background);
@@ -158,11 +157,10 @@
       overflow-wrap: anywhere;
     }
 
-    .prose span[data-type="comment"] {
-      @apply rounded bg-muted-foreground/10 border border-muted-foreground/20
-        whitespace-pre-wrap px-1 leading-normal block break-words pl-6 relative
-        before:content-["//"] before:absolute before:left-1 before:top-1
-        text-muted-foreground italic before:text-muted-foreground
+    .prose span[data-type='comment'] {
+      @apply rounded bg-muted-foreground/10 border border-muted-foreground/20 whitespace-pre-wrap
+        px-1 leading-normal block break-words pl-6 relative before:content-['//'] before:absolute
+        before:left-1 before:top-1 text-muted-foreground italic before:text-muted-foreground
         before:opacity-60 before:text-xs/tight before:font-mono my-1;
       overflow-wrap: anywhere;
     }
@@ -172,14 +170,14 @@
     }
 
     .prose pre code {
-      @apply my-2 rounded-lg bg-primary-light/10 border border-primary-light
-        block whitespace-pre-wrap !p-2 break-words;
+      @apply my-2 rounded-lg bg-primary-light/10 border border-primary-light block
+        whitespace-pre-wrap !p-2 break-words;
       overflow-wrap: anywhere;
     }
 
     .prose code {
-      @apply rounded bg-muted-foreground/10 border border-muted-foreground/20
-        whitespace-pre-wrap px-1 leading-normal inline break-words;
+      @apply rounded bg-muted-foreground/10 border border-muted-foreground/20 whitespace-pre-wrap
+        px-1 leading-normal inline break-words;
       overflow-wrap: anywhere;
     }
 
@@ -187,11 +185,11 @@
       @apply my-4 border-border;
     }
 
-    .dv-active-tab [data-active="true"] button {
+    .dv-active-tab [data-active='true'] button {
       @apply opacity-100;
     }
 
-    .dv-inactive-tab [data-active="true"] button {
+    .dv-inactive-tab [data-active='true'] button {
       @apply opacity-0 group-hover:opacity-100;
     }
 

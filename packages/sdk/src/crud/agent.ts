@@ -1,6 +1,6 @@
-import { MCPClient } from "../fetcher.ts";
-import { type Agent, AgentSchema } from "../models/agent.ts";
-import { stub } from "../stub.ts";
+import { MCPClient } from '../fetcher.ts';
+import { type Agent, AgentSchema } from '../models/agent.ts';
+import { stub } from '../stub.ts';
 
 /**
  * Update an agent
@@ -12,7 +12,7 @@ export const updateAgent = async (workspace: string, agent: Agent) => {
   const agentRoot = `/${workspace}/Agents/${agent.id}`;
 
   // deno-lint-ignore no-explicit-any
-  const agentStub = stub<any>("AIAgent").new(agentRoot);
+  const agentStub = stub<any>('AIAgent').new(agentRoot);
 
   await agentStub.configure(agent);
 
@@ -38,8 +38,7 @@ export const loadAgent = (
   workspace: string,
   agentId: string,
   signal?: AbortSignal,
-): Promise<Agent> =>
-  MCPClient.forWorkspace(workspace).AGENTS_GET({ id: agentId }, { signal });
+): Promise<Agent> => MCPClient.forWorkspace(workspace).AGENTS_GET({ id: agentId }, { signal });
 
 export const listAgents = (
   workspace: string,
@@ -70,6 +69,6 @@ export const validateAgent = (
     const validatedAgent = AgentSchema.parse(agent);
     return [validatedAgent, null];
   } catch (error) {
-    return [null, error instanceof Error ? error : new Error("Invalid agent")];
+    return [null, error instanceof Error ? error : new Error('Invalid agent')];
   }
 };

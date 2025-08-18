@@ -1,5 +1,5 @@
-import { describe, expect, it } from "vitest";
-import { runSeoAuditPure } from "../runner";
+import { describe, expect, it } from 'vitest';
+import { runSeoAuditPure } from '../runner';
 
 function mockLink(over: Partial<any> = {}) {
   return {
@@ -31,8 +31,8 @@ function mockPS(over: Partial<any> = {}) {
   };
 }
 
-describe("SEO_AUDIT warning generation (pure)", () => {
-  it("triggers multiple warnings for poor metrics", async () => {
+describe('SEO_AUDIT warning generation (pure)', () => {
+  it('triggers multiple warnings for poor metrics', async () => {
     const out = await runSeoAuditPure(
       {
         analyzeLinks: async () => mockLink({}),
@@ -41,16 +41,16 @@ describe("SEO_AUDIT warning generation (pure)", () => {
           metrics: { LCP_ms: 4200, CLS: 0.12, INP_ms: 250 },
         }),
       },
-      { url: "https://example.com" },
+      { url: 'https://example.com' },
     );
-    const w = out.warnings.join("\n");
+    const w = out.warnings.join('\n');
     expect(w).toMatch(/LCP mobile > 4s/);
     expect(w).toMatch(/CLS mobile > 0.1/);
     expect(w).toMatch(/Performance mobile baixa/);
     expect(w).toMatch(/Score SEO mobile baixo/);
   });
 
-  it("handles partial metrics gracefully", async () => {
+  it('handles partial metrics gracefully', async () => {
     const out = await runSeoAuditPure(
       {
         analyzeLinks: async () => mockLink({ imagesMissingAlt: 0 }),
@@ -59,7 +59,7 @@ describe("SEO_AUDIT warning generation (pure)", () => {
           metrics: {},
         }),
       },
-      { url: "https://example.com" },
+      { url: 'https://example.com' },
     );
     expect(out.coreWebVitals.LCP_ms_mobile).toBeNull();
     expect(out.coreWebVitals.CLS_mobile).toBeNull();

@@ -4,31 +4,31 @@ on:
   workflow_dispatch:
     inputs:
       action:
-        description: "maintenance action (rollback|purge)"
+        description: 'maintenance action (rollback|purge)'
         required: true
-        default: "purge"
+        default: 'purge'
       version_id:
-        description: "version id (for rollback)"
+        description: 'version id (for rollback)'
         required: false
       purge_key:
-        description: "exact key to purge"
+        description: 'exact key to purge'
         required: false
       purge_prefix:
-        description: "prefix to purge"
+        description: 'prefix to purge'
         required: false
       concurrency:
-        description: "concurrency for deletes (default 8)"
+        description: 'concurrency for deletes (default 8)'
         required: false
       audit_file:
-        description: "path to write audit ndjson file"
+        description: 'path to write audit ndjson file'
         required: false
       batch_wait_ms:
-        description: "milliseconds to wait between batches"
+        description: 'milliseconds to wait between batches'
         required: false
       dry_run:
-        description: "dry run (true/false)"
+        description: 'dry run (true/false)'
         required: false
-        default: "false"
+        default: 'false'
 
 jobs:
   run:

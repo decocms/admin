@@ -1,4 +1,4 @@
-import type { Statement } from "@deco/sdk/auth";
+import type { Statement } from '@deco/sdk/auth';
 import {
   AppScope,
   useCreateAPIKey,
@@ -6,15 +6,15 @@ import {
   useGetRegistryApp,
   useInstallFromMarketplace,
   usePermissionDescriptions,
-} from "@deco/sdk/hooks";
-import type { Integration } from "@deco/sdk/models";
-import type { JSONSchema7 } from "json-schema";
-import { useState } from "react";
-import { useWorkspaceLink } from "./use-navigate-workspace.ts";
+} from '@deco/sdk/hooks';
+import type { Integration } from '@deco/sdk/models';
+import type { JSONSchema7 } from 'json-schema';
+import { useState } from 'react';
+import { useWorkspaceLink } from './use-navigate-workspace.ts';
 
 // Default policies required for all integrations
 const DEFAULT_INTEGRATION_POLICIES = [
-  { effect: "allow" as const, resource: "DATABASES_RUN_SQL" },
+  { effect: 'allow' as const, resource: 'DATABASES_RUN_SQL' },
 ];
 
 interface InstallState {
@@ -30,7 +30,7 @@ interface InstallState {
 }
 
 const parseAppScope = (scope: string) => {
-  const [bindingName, toolName] = scope.split("::");
+  const [bindingName, toolName] = scope.split('::');
   return { bindingName, toolName };
 };
 
@@ -44,9 +44,9 @@ const getBindingObject = (
 ): BindingObject | undefined => {
   if (
     formData?.[prop] &&
-    typeof formData[prop] === "object" &&
-    "value" in formData[prop] &&
-    typeof formData[prop].value === "string"
+    typeof formData[prop] === 'object' &&
+    'value' in formData[prop] &&
+    typeof formData[prop].value === 'string'
   ) {
     return formData[prop] as BindingObject;
   }
@@ -93,14 +93,14 @@ export function useIntegrationInstallWithModal() {
 
       return result;
     } catch (error) {
-      console.error("Installation failed:", error);
+      console.error('Installation failed:', error);
       throw error;
     }
   };
 
   const handleModalSubmit = async (formData: Record<string, unknown>) => {
     if (!installState.appName || !installState.provider) {
-      throw new Error("Missing app name or provider");
+      throw new Error('Missing app name or provider');
     }
 
     try {
@@ -126,12 +126,12 @@ export function useIntegrationInstallWithModal() {
             const binding = getBindingObject(formData, bindingName);
             const integrationId = binding?.value;
             return {
-              effect: "allow" as const,
+              effect: 'allow' as const,
               resource: toolName ?? scope,
               ...(integrationId
                 ? {
                   matchCondition: {
-                    resource: "is_integration",
+                    resource: 'is_integration',
                     integrationId,
                   },
                 }
@@ -169,7 +169,7 @@ export function useIntegrationInstallWithModal() {
       const redirectPath = getLinkFor(`/connection/unknown:::${installId}`);
       globalThis.location.href = redirectPath;
     } catch (error) {
-      console.error("Failed to complete setup:", error);
+      console.error('Failed to complete setup:', error);
       throw error;
     }
   };
@@ -181,15 +181,15 @@ export function useIntegrationInstallWithModal() {
   const getAppNameFromSchema = (schema: JSONSchema7, bindingName: string) => {
     const binding = schema.properties?.[bindingName];
     if (
-      typeof binding === "object" &&
+      typeof binding === 'object' &&
       binding !== null &&
-      "properties" in binding
+      'properties' in binding
     ) {
       const typeProperty = binding.properties?.__type;
       if (
-        typeof typeProperty === "object" &&
+        typeof typeProperty === 'object' &&
         typeProperty !== null &&
-        "const" in typeProperty
+        'const' in typeProperty
       ) {
         return typeProperty.const as string;
       }

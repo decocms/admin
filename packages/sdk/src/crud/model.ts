@@ -1,6 +1,6 @@
-import type { Model } from "../constants.ts";
-import { MCPClient } from "../fetcher.ts";
-import type { CreateModelInput } from "../mcp/models/api.ts";
+import type { Model } from '../constants.ts';
+import { MCPClient } from '../fetcher.ts';
+import type { CreateModelInput } from '../mcp/models/api.ts';
 
 export interface ListModelsInput {
   excludeDisabled?: boolean;
@@ -28,7 +28,7 @@ export const createModel = (
 export interface UpdateModelInput {
   id: string;
   data: Partial<
-    Pick<Model, "name" | "model" | "description" | "isEnabled"> & {
+    Pick<Model, 'name' | 'model' | 'description' | 'isEnabled'> & {
       apiKey?: string | null;
     }
   >;

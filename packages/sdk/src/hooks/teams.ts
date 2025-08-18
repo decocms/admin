@@ -1,9 +1,4 @@
-import {
-  useMutation,
-  useQuery,
-  useQueryClient,
-  useSuspenseQuery,
-} from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient, useSuspenseQuery } from '@tanstack/react-query';
 import {
   addView,
   type AddViewInput,
@@ -18,28 +13,26 @@ import {
   type RemoveViewInput,
   updateTeam,
   type UpdateTeamInput,
-} from "../crud/teams.ts";
-import { KEYS } from "./api.ts";
-import { InternalServerError } from "../errors.ts";
-import { DEFAULT_THEME } from "../theme.ts";
-import { useSDK } from "./store.tsx";
-import { MCPConnection } from "../models/index.ts";
-import { listIntegrations } from "../crud/mcp.ts";
+} from '../crud/teams.ts';
+import { KEYS } from './api.ts';
+import { InternalServerError } from '../errors.ts';
+import { DEFAULT_THEME } from '../theme.ts';
+import { useSDK } from './store.tsx';
+import { MCPConnection } from '../models/index.ts';
+import { listIntegrations } from '../crud/mcp.ts';
 
 export const useTeams = () => {
   return useSuspenseQuery({
     queryKey: KEYS.TEAMS(),
     queryFn: ({ signal }) => listTeams({ signal }),
-    retry: (failureCount, error) =>
-      error instanceof InternalServerError && failureCount < 2,
+    retry: (failureCount, error) => error instanceof InternalServerError && failureCount < 2,
   });
 };
 
-export const useTeam = (slug: string = "") => {
+export const useTeam = (slug: string = '') => {
   return useSuspenseQuery({
     queryKey: KEYS.TEAM(slug),
-    retry: (failureCount, error) =>
-      error instanceof InternalServerError && failureCount < 2,
+    retry: (failureCount, error) => error instanceof InternalServerError && failureCount < 2,
     queryFn: ({ signal }) => {
       if (!slug.length) {
         return null;
@@ -55,7 +48,7 @@ export function useCreateTeam() {
     mutationFn: (input: CreateTeamInput) => createTeam(input),
     onSuccess: (result) => {
       client.invalidateQueries({ queryKey: KEYS.TEAMS() });
-      client.setQueryData(["team", result.slug], result);
+      client.setQueryData(['team', result.slug], result);
     },
   });
 }
@@ -66,7 +59,7 @@ export function useUpdateTeam() {
     mutationFn: (input: UpdateTeamInput) => updateTeam(input),
     onSuccess: (result) => {
       client.invalidateQueries({ queryKey: KEYS.TEAMS() });
-      client.setQueryData(["team", result.slug], result);
+      client.setQueryData(['team', result.slug], result);
     },
   });
 }
@@ -84,7 +77,7 @@ export function useDeleteTeam() {
 
 export function useWorkspaceTheme() {
   const { workspace } = useSDK();
-  const slug = workspace.split("/")[1] ?? "";
+  const slug = workspace.split('/')[1] ?? '';
   return useQuery({
     queryKey: KEYS.TEAM_THEME(slug),
     queryFn: async () => {
@@ -101,7 +94,7 @@ export function useWorkspaceTheme() {
 export function useAddView() {
   const client = useQueryClient();
   const { workspace } = useSDK();
-  const slug = workspace.split("/")[1] ?? "";
+  const slug = workspace.split('/')[1] ?? '';
 
   return useMutation({
     mutationFn: (input: AddViewInput) => addView(workspace, input),
@@ -115,7 +108,7 @@ export function useAddView() {
 export function useRemoveView() {
   const client = useQueryClient();
   const { workspace } = useSDK();
-  const slug = workspace.split("/")[1] ?? "";
+  const slug = workspace.split('/')[1] ?? '';
 
   return useMutation({
     mutationFn: (input: RemoveViewInput) => removeView(workspace, input),
@@ -132,7 +125,7 @@ export function useConnectionViews(
   const { workspace } = useSDK();
 
   const data = useQuery({
-    queryKey: KEYS.TEAM_VIEWS(workspace, integration?.id ?? "null"),
+    queryKey: KEYS.TEAM_VIEWS(workspace, integration?.id ?? 'null'),
     queryFn: async () => {
       if (!integration) return { views: [] };
       const result = await listAvailableViewsForConnection(
@@ -156,7 +149,7 @@ export function useWorkspaceViews() {
     queryFn: async ({ signal }) => {
       const integrations = await listIntegrations(
         workspace,
-        { binder: "View" },
+        { binder: 'View' },
         signal,
       );
       const promises = integrations.map(async (integration) => {

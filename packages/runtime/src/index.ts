@@ -1,30 +1,17 @@
 // deno-lint-ignore-file no-explicit-any
-import type { ExecutionContext } from "@cloudflare/workers-types";
-import { decodeJwt } from "jose";
-import type { z } from "zod";
-import {
-  getReqToken,
-  handleAuthCallback,
-  handleLogout,
-  StateParser,
-} from "./auth.ts";
-import { createIntegrationBinding, workspaceClient } from "./bindings.ts";
-import { DECO_MCP_CLIENT_HEADER } from "./client.ts";
-import {
-  createMCPServer,
-  type CreateMCPServerOptions,
-  MCPServer,
-} from "./mastra.ts";
-import { MCPClient, type QueryResult } from "./mcp.ts";
-import type { WorkflowDO } from "./workflow.ts";
-import { Workflow } from "./workflow.ts";
-import type { Binding, MCPBinding } from "./wrangler.ts";
-import { State } from "./state.ts";
-export {
-  createMCPFetchStub,
-  type CreateStubAPIOptions,
-  type ToolBinder,
-} from "./mcp.ts";
+import type { ExecutionContext } from '@cloudflare/workers-types';
+import { decodeJwt } from 'jose';
+import type { z } from 'zod';
+import { getReqToken, handleAuthCallback, handleLogout, StateParser } from './auth.ts';
+import { createIntegrationBinding, workspaceClient } from './bindings.ts';
+import { DECO_MCP_CLIENT_HEADER } from './client.ts';
+import { createMCPServer, type CreateMCPServerOptions, MCPServer } from './mastra.ts';
+import { MCPClient, type QueryResult } from './mcp.ts';
+import type { WorkflowDO } from './workflow.ts';
+import { Workflow } from './workflow.ts';
+import type { Binding, MCPBinding } from './wrangler.ts';
+import { State } from './state.ts';
+export { createMCPFetchStub, type CreateStubAPIOptions, type ToolBinder } from './mcp.ts';
 
 export interface WorkspaceDB {
   query: (params: {
@@ -144,11 +131,11 @@ const withDefaultBindings = ({
       },
     };
   };
-  env["SELF"] = new Proxy(
+  env['SELF'] = new Proxy(
     {},
     {
       get: (_, prop) => {
-        if (prop === "toJSON") {
+        if (prop === 'toJSON') {
           return null;
         }
 
@@ -161,14 +148,14 @@ const withDefaultBindings = ({
       },
     },
   );
-  env["DECO_CHAT_API"] = MCPClient;
-  env["DECO_CHAT_WORKSPACE_API"] = client;
-  env["DECO_CHAT_WORKSPACE_DB"] = {
+  env['DECO_CHAT_API'] = MCPClient;
+  env['DECO_CHAT_WORKSPACE_API'] = client;
+  env['DECO_CHAT_WORKSPACE_DB'] = {
     ...createWorkspaceDB(ctx),
     forContext: createWorkspaceDB,
   };
-  env["IS_LOCAL"] = (url?.startsWith("http://localhost") ||
-    url?.startsWith("http://127.0.0.1")) ??
+  env['IS_LOCAL'] = (url?.startsWith('http://localhost') ||
+    url?.startsWith('http://127.0.0.1')) ??
     false;
 };
 
@@ -178,13 +165,13 @@ export class UnauthorizedError extends Error {
     public redirectTo: URL,
   ) {
     super(message);
-    this.name = "UnauthorizedError";
+    this.name = 'UnauthorizedError';
   }
 }
 
-const AUTH_CALLBACK_ENDPOINT = "/oauth/callback";
-const AUTH_START_ENDPOINT = "/oauth/start";
-const AUTH_LOGOUT_ENDPOINT = "/oauth/logout";
+const AUTH_CALLBACK_ENDPOINT = '/oauth/callback';
+const AUTH_START_ENDPOINT = '/oauth/start';
+const AUTH_LOGOUT_ENDPOINT = '/oauth/logout';
 const AUTHENTICATED = (user?: unknown, workspace?: string) => () => {
   return {
     ...((user as User) ?? {}),
@@ -208,7 +195,7 @@ export const withBindings = <TEnv>({
   const env = _env as DefaultEnv<any>;
 
   let context;
-  if (typeof tokenOrContext === "string") {
+  if (typeof tokenOrContext === 'string') {
     const decoded = decodeJwt(tokenOrContext);
     const workspace = decoded.aud as string;
     context = {
@@ -217,7 +204,7 @@ export const withBindings = <TEnv>({
       workspace,
       ensureAuthenticated: AUTHENTICATED(decoded.user, workspace),
     } as RequestContext<any>;
-  } else if (typeof tokenOrContext === "object") {
+  } else if (typeof tokenOrContext === 'object') {
     context = tokenOrContext;
     const decoded = decodeJwt(tokenOrContext.token);
     const workspace = decoded.aud as string;
@@ -230,20 +217,20 @@ export const withBindings = <TEnv>({
       ensureAuthenticated: (options?: { workspaceHint?: string }) => {
         const workspaceHint = options?.workspaceHint ?? env.DECO_CHAT_WORKSPACE;
         const authUri = new URL(
-          "/apps/oauth",
-          env.DECO_CHAT_API_URL ?? "https://api.deco.chat",
+          '/apps/oauth',
+          env.DECO_CHAT_API_URL ?? 'https://api.deco.chat',
         );
-        authUri.searchParams.set("client_id", env.DECO_CHAT_APP_NAME);
+        authUri.searchParams.set('client_id', env.DECO_CHAT_APP_NAME);
         authUri.searchParams.set(
-          "redirect_uri",
+          'redirect_uri',
           new URL(
             AUTH_CALLBACK_ENDPOINT,
             origin ?? env.DECO_CHAT_APP_ENTRYPOINT,
           ).href,
         );
         workspaceHint &&
-          authUri.searchParams.set("workspace_hint", workspaceHint);
-        throw new UnauthorizedError("Unauthorized", authUri);
+          authUri.searchParams.set('workspace_hint', workspaceHint);
+        throw new UnauthorizedError('Unauthorized', authUri);
       },
     };
   }
@@ -285,21 +272,21 @@ export const withRuntime = <TEnv, TSchema extends z.ZodTypeAny = never>(
     }
     if (url.pathname === AUTH_START_ENDPOINT) {
       env.DECO_CHAT_REQUEST_CONTEXT.ensureAuthenticated();
-      const redirectTo = new URL("/", url);
-      const next = url.searchParams.get("next");
+      const redirectTo = new URL('/', url);
+      const next = url.searchParams.get('next');
       return Response.redirect(next ?? redirectTo, 302);
     }
     if (url.pathname === AUTH_LOGOUT_ENDPOINT) {
       return handleLogout(req);
     }
-    if (url.pathname === "/mcp") {
+    if (url.pathname === '/mcp') {
       return server.fetch(req, env, ctx);
     }
 
-    if (url.pathname.startsWith("/mcp/call-tool")) {
-      const toolCallId = url.pathname.split("/").pop();
+    if (url.pathname.startsWith('/mcp/call-tool')) {
+      const toolCallId = url.pathname.split('/').pop();
       if (!toolCallId) {
-        return new Response("Not found", { status: 404 });
+        return new Response('Not found', { status: 404 });
       }
       const toolCallInput = await req.json();
       const result = await server.callTool({
@@ -309,13 +296,13 @@ export const withRuntime = <TEnv, TSchema extends z.ZodTypeAny = never>(
 
       return new Response(JSON.stringify(result), {
         headers: {
-          "Content-Type": "application/json",
+          'Content-Type': 'application/json',
         },
       });
     }
     return (
       userFns.fetch?.(req, env, ctx) ||
-      new Response("Not found", { status: 404 })
+      new Response('Not found', { status: 404 })
     );
   };
   return {
@@ -325,16 +312,16 @@ export const withRuntime = <TEnv, TSchema extends z.ZodTypeAny = never>(
       env: TEnv & DefaultEnv<TSchema>,
       ctx: ExecutionContext,
     ) => {
-      const referer = req.headers.get("referer");
+      const referer = req.headers.get('referer');
       const isFetchRequest = req.headers.has(DECO_MCP_CLIENT_HEADER) ||
-        req.headers.get("sec-fetch-mode") === "cors";
+        req.headers.get('sec-fetch-mode') === 'cors';
 
       try {
         const bindings = withBindings({
           env,
           server,
           tokenOrContext: getReqToken(req),
-          origin: referer ?? req.headers.get("origin"),
+          origin: referer ?? req.headers.get('origin'),
           url: req.url,
         });
         return await State.run(
@@ -346,9 +333,9 @@ export const withRuntime = <TEnv, TSchema extends z.ZodTypeAny = never>(
           if (!isFetchRequest) {
             const url = new URL(req.url);
             error.redirectTo.searchParams.set(
-              "state",
+              'state',
               StateParser.stringify({
-                next: url.searchParams.get("next") ?? referer ?? req.url,
+                next: url.searchParams.get('next') ?? referer ?? req.url,
               }),
             );
             return Response.redirect(error.redirectTo, 302);
@@ -361,4 +348,4 @@ export const withRuntime = <TEnv, TSchema extends z.ZodTypeAny = never>(
   };
 };
 
-export { type Migration, type WranglerConfig } from "./wrangler.ts";
+export { type Migration, type WranglerConfig } from './wrangler.ts';

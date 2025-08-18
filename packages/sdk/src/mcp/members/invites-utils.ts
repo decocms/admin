@@ -1,13 +1,13 @@
-import { NotFoundError } from "../../errors.ts";
-import type { Plan, PlanWithTeamMetadata } from "../../plan.ts";
-import type { Client } from "../../storage/index.ts";
-import { type AppContext, getEnv } from "../context.ts";
-import { getInviteEmailTemplate } from "./invite-email-template.ts";
+import { NotFoundError } from '../../errors.ts';
+import type { Plan, PlanWithTeamMetadata } from '../../plan.ts';
+import type { Client } from '../../storage/index.ts';
+import { type AppContext, getEnv } from '../context.ts';
+import { getInviteEmailTemplate } from './invite-email-template.ts';
 
 // Email sending functionality
 
 export function sanitizeTeamName(name: string): string {
-  return name.replace(/[<>&'"]/g, "");
+  return name.replace(/[<>&'"]/g, '');
 }
 
 export interface EmailBodyProps {
@@ -36,7 +36,7 @@ export function generateEmailBody({
       return `${capitalizedRoles[0]} and ${capitalizedRoles[1]}`;
     } else {
       const lastRole = capitalizedRoles.pop();
-      return `${capitalizedRoles.join(", ")}, and ${lastRole}`;
+      return `${capitalizedRoles.join(', ')}, and ${lastRole}`;
     }
   }
 
@@ -75,22 +75,22 @@ export async function sendInviteEmail(
   };
   const { RESEND_API_KEY } = getEnv(c);
 
-  const res = await fetch("https://api.resend.com/emails", {
-    method: "POST",
+  const res = await fetch('https://api.resend.com/emails', {
+    method: 'POST',
     headers: {
-      "Content-Type": "application/json",
+      'Content-Type': 'application/json',
       Authorization: `Bearer ${RESEND_API_KEY}`,
     },
     body: JSON.stringify({
-      from: "deco.chat <noreply@deco.chat>",
+      from: 'deco.chat <noreply@deco.chat>',
       to: [invited_email],
-      subject: "Team invitation",
+      subject: 'Team invitation',
       html: generateEmailBody(htmlProps),
     }),
   });
 
   if (res.status >= 400) {
-    console.error("[Resend Error] error sending email", await res.text());
+    console.error('[Resend Error] error sending email', await res.text());
     throw new Error(res.statusText);
   }
 
@@ -109,10 +109,10 @@ export async function getInviteIdByEmailAndTeam(
   db: Client,
 ) {
   const { data } = await db
-    .from("invites")
-    .select("id")
-    .eq("invited_email", email)
-    .eq("team_id", Number(teamId));
+    .from('invites')
+    .select('id')
+    .eq('invited_email', email)
+    .eq('team_id', Number(teamId));
   return data;
 }
 
@@ -130,29 +130,29 @@ export async function checkAlreadyExistUserIdInTeam(
 ) {
   if (userId) {
     const { data } = await db
-      .from("members")
-      .select("id")
-      .eq("user_id", userId)
-      .eq("team_id", Number(teamId))
-      .is("deleted_at", null)
+      .from('members')
+      .select('id')
+      .eq('user_id', userId)
+      .eq('team_id', Number(teamId))
+      .is('deleted_at', null)
       .limit(1);
 
     return data && data.length > 0;
   } else if (email) {
     const { data: profiles } = await db
-      .from("profiles")
-      .select("user_id")
-      .eq("email", email.toLowerCase());
+      .from('profiles')
+      .select('user_id')
+      .eq('email', email.toLowerCase());
 
     if (!profiles || profiles.length === 0) return false;
 
     const userId = profiles[0].user_id;
     const { data } = await db
-      .from("members")
-      .select("id")
-      .eq("user_id", userId)
-      .eq("team_id", Number(teamId))
-      .is("deleted_at", null)
+      .from('members')
+      .select('id')
+      .eq('user_id', userId)
+      .eq('team_id', Number(teamId))
+      .is('deleted_at', null)
       .limit(1);
 
     return data && data.length > 0;
@@ -171,7 +171,7 @@ export async function insertInvites(
   }>,
   db: Client,
 ) {
-  const { data, error } = await db.from("invites").insert(invites).select();
+  const { data, error } = await db.from('invites').insert(invites).select();
 
   if (error) {
     return { error, status: 400 };
@@ -194,8 +194,7 @@ export function enrichPlanWithTeamMetadata({
   };
   plan: Plan;
 }): PlanWithTeamMetadata {
-  const extractOptionalProfile = (member: (typeof team.members)[number]) =>
-    member.profile;
+  const extractOptionalProfile = (member: (typeof team.members)[number]) => member.profile;
   const filterExistingEmail = (
     member: { email: string } | null,
   ): member is { email: string } => Boolean(member?.email);
@@ -204,8 +203,7 @@ export function enrichPlanWithTeamMetadata({
    * Developers from deco can sometimes join user teams to provide support,
    * so we don't want to count those as seats.
    */
-  const excludeDevEmails = (member: { email: string }) =>
-    !member.email.endsWith("@deco.cx");
+  const excludeDevEmails = (member: { email: string }) => !member.email.endsWith('@deco.cx');
 
   const members = team.members
     .map(extractOptionalProfile)
@@ -223,15 +221,15 @@ export function enrichPlanWithTeamMetadata({
 
 export async function getTeamBySlug(slug: string, db: Client) {
   const { data: team, error } = await db
-    .from("teams")
+    .from('teams')
     .select(
-      "id, name, slug, members(user_id, profile:profiles(email)), plan_id, plan:deco_chat_plans(*)",
+      'id, name, slug, members(user_id, profile:profiles(email)), plan_id, plan:deco_chat_plans(*)',
     )
-    .eq("slug", slug)
+    .eq('slug', slug)
     .single();
 
   if (!team || error || !team.plan) {
-    throw new NotFoundError("Could not find team");
+    throw new NotFoundError('Could not find team');
   }
 
   return team;
@@ -239,15 +237,15 @@ export async function getTeamBySlug(slug: string, db: Client) {
 
 export async function getTeamById(teamId: string, db: Client) {
   const { data: team, error } = await db
-    .from("teams")
+    .from('teams')
     .select(
-      "id, name, members(user_id, profile:profiles(email)), plan_id, plan:deco_chat_plans(*)",
+      'id, name, members(user_id, profile:profiles(email)), plan_id, plan:deco_chat_plans(*)',
     )
-    .eq("id", Number(teamId))
+    .eq('id', Number(teamId))
     .single();
 
   if (!team || error || !team.plan) {
-    throw new NotFoundError("Could not find team");
+    throw new NotFoundError('Could not find team');
   }
 
   return team;

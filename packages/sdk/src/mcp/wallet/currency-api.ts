@@ -6,10 +6,10 @@
  *
  * @see https://currencyapi.com/docs
  */
-import { createHttpClient } from "../../http.ts";
+import { createHttpClient } from '../../http.ts';
 
 interface CurrencyAPI {
-  "GET /latest": {
+  'GET /latest': {
     searchParams: {
       currencies?: string[];
       base_currency?: string;
@@ -26,7 +26,7 @@ interface CurrencyAPI {
 
 export const createCurrencyClient = (apiKey: string) => {
   const client = createHttpClient<CurrencyAPI>({
-    base: "https://api.currencyapi.com/v3",
+    base: 'https://api.currencyapi.com/v3',
     headers: new Headers({
       apikey: apiKey,
     }),

@@ -1,15 +1,11 @@
-import { Button } from "@deco/ui/components/button.tsx";
-import { Dialog, DialogContent } from "@deco/ui/components/dialog.tsx";
-import { Icon } from "@deco/ui/components/icon.tsx";
-import { Skeleton } from "@deco/ui/components/skeleton.tsx";
-import { cn } from "@deco/ui/lib/utils.ts";
-import { useState } from "react";
-import { ALLOWANCES } from "../../../constants.ts";
-import {
-  IMAGE_REGEXP,
-  openPreviewPanel,
-  toIframeProps,
-} from "../utils/preview.ts";
+import { Button } from '@deco/ui/components/button.tsx';
+import { Dialog, DialogContent } from '@deco/ui/components/dialog.tsx';
+import { Icon } from '@deco/ui/components/icon.tsx';
+import { Skeleton } from '@deco/ui/components/skeleton.tsx';
+import { cn } from '@deco/ui/lib/utils.ts';
+import { useState } from 'react';
+import { ALLOWANCES } from '../../../constants.ts';
+import { IMAGE_REGEXP, openPreviewPanel, toIframeProps } from '../utils/preview.ts';
 
 interface PreviewProps {
   title?: string;
@@ -18,8 +14,8 @@ interface PreviewProps {
 }
 
 const BUTTON_STYLES = {
-  base: "h-8 w-8 rounded-full bg-primary/10 hover:bg-primary/20 duration-200",
-  icon: "text-sm text-white",
+  base: 'h-8 w-8 rounded-full bg-primary/10 hover:bg-primary/20 duration-200',
+  icon: 'text-sm text-white',
 } as const;
 
 interface ImageActionButtonProps {
@@ -39,8 +35,8 @@ function ImageActionButton({
 }: ImageActionButtonProps) {
   const button = (
     <Button
-      variant="ghost"
-      size="icon"
+      variant='ghost'
+      size='icon'
       className={BUTTON_STYLES.base}
       onClick={onClick}
       aria-label={label}
@@ -83,15 +79,15 @@ function ImagePreview({
   return (
     <div
       className={cn(
-        "relative w-max rounded-lg my-4 overflow-hidden group/image",
+        'relative w-max rounded-lg my-4 overflow-hidden group/image',
         className,
       )}
       onClick={onOpenDialog}
     >
-      <div className="absolute top-2 right-2 opacity-0 group-hover/image:opacity-100 transition-opacity z-10 flex gap-2">
+      <div className='absolute top-2 right-2 opacity-0 group-hover/image:opacity-100 transition-opacity z-10 flex gap-2'>
         <ImageActionButton
-          icon="expand_content"
-          label="Open in panel"
+          icon='expand_content'
+          label='Open in panel'
           onClick={(e) => {
             e.preventDefault();
             e.stopPropagation();
@@ -99,20 +95,20 @@ function ImagePreview({
           }}
         />
         <ImageActionButton
-          icon="download"
-          label="Download image"
+          icon='download'
+          label='Download image'
           href={src}
-          download={title || "image"}
+          download={title || 'image'}
         />
       </div>
-      <div className="w-max max-w-[420px]">
-        {isLoading && <Skeleton className="w-[420px] h-[420px] rounded-2xl" />}
+      <div className='w-max max-w-[420px]'>
+        {isLoading && <Skeleton className='w-[420px] h-[420px] rounded-2xl' />}
         <img
           src={src}
-          alt={title || "Preview"}
+          alt={title || 'Preview'}
           className={cn(
-            "w-full h-auto rounded-2xl shadow-lg cursor-pointer transition-opacity duration-300",
-            isLoading ? "opacity-0" : "opacity-100",
+            'w-full h-auto rounded-2xl shadow-lg cursor-pointer transition-opacity duration-300',
+            isLoading ? 'opacity-0' : 'opacity-100',
           )}
           onLoad={() => setIsLoading(false)}
         />
@@ -132,25 +128,25 @@ interface ImageDialogProps {
 function ImageDialog({ src, title, isOpen, onClose }: ImageDialogProps) {
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-[95vw] max-h-[95vh] sm:max-w-2xl sm:max-h-2xl p-0 border-none shadow-xl rounded-2xl">
-        <div className="absolute top-2 right-2 z-10 flex gap-2">
+      <DialogContent className='max-w-[95vw] max-h-[95vh] sm:max-w-2xl sm:max-h-2xl p-0 border-none shadow-xl rounded-2xl'>
+        <div className='absolute top-2 right-2 z-10 flex gap-2'>
           <ImageActionButton
-            icon="download"
-            label="Download image"
+            icon='download'
+            label='Download image'
             href={src}
-            download={title || "image"}
+            download={title || 'image'}
           />
           <ImageActionButton
-            icon="close"
-            label="Close dialog"
+            icon='close'
+            label='Close dialog'
             onClick={onClose}
           />
         </div>
-        <div className="w-full h-full flex items-center justify-center">
+        <div className='w-full h-full flex items-center justify-center'>
           <img
             src={src}
-            alt={title || "Preview"}
-            className="max-w-full max-h-full object-contain rounded-2xl"
+            alt={title || 'Preview'}
+            className='max-w-full max-h-full object-contain rounded-2xl'
           />
         </div>
       </DialogContent>
@@ -174,39 +170,39 @@ function HtmlPreview({
   return (
     <div
       className={cn(
-        "relative w-max flex flex-col rounded-lg mb-4 p-1",
+        'relative w-max flex flex-col rounded-lg mb-4 p-1',
         className,
       )}
     >
-      <div className="flex items-center justify-between p-2 pr-0">
-        <div className="flex items-center gap-2">
-          <Icon name="draft" className="text-sm text-muted-foreground" />
-          <p className="text-sm font-medium tracking-tight">
-            {title || "Preview"}
+      <div className='flex items-center justify-between p-2 pr-0'>
+        <div className='flex items-center gap-2'>
+          <Icon name='draft' className='text-sm text-muted-foreground' />
+          <p className='text-sm font-medium tracking-tight'>
+            {title || 'Preview'}
           </p>
         </div>
         <Button
           onClick={onExpand}
-          variant="ghost"
-          size="icon"
-          className="h-8 w-8 rounded-full hover:bg-muted"
-          aria-label="Expand preview"
+          variant='ghost'
+          size='icon'
+          className='h-8 w-8 rounded-full hover:bg-muted'
+          aria-label='Expand preview'
         >
           <Icon
-            name="expand_content"
-            className="text-sm text-muted-foreground"
+            name='expand_content'
+            className='text-sm text-muted-foreground'
           />
         </Button>
       </div>
 
-      <div className="w-max relative h-[420px] min-h-0 aspect-[4/5]">
+      <div className='w-max relative h-[420px] min-h-0 aspect-[4/5]'>
         <iframe
           {...iframeProps}
-          className="absolute inset-0 w-full h-full rounded-2xl shadow-lg"
-          title={title || "Preview content"}
+          className='absolute inset-0 w-full h-full rounded-2xl shadow-lg'
+          title={title || 'Preview content'}
           allow={ALLOWANCES}
           allowFullScreen
-          sandbox="allow-scripts allow-same-origin allow-popups allow-forms"
+          sandbox='allow-scripts allow-same-origin allow-popups allow-forms'
         />
       </div>
     </div>
@@ -219,9 +215,9 @@ export function Preview({ content, title, className }: PreviewProps) {
 
   const handleExpand = () => {
     openPreviewPanel(
-      `preview-${title?.toLowerCase().replace(/\s+/g, "-")}`,
+      `preview-${title?.toLowerCase().replace(/\s+/g, '-')}`,
       content,
-      title || "Preview",
+      title || 'Preview',
     );
   };
 

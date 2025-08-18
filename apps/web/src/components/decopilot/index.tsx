@@ -1,9 +1,9 @@
-import { WELL_KNOWN_AGENTS } from "@deco/sdk";
-import { DockviewApi } from "dockview-react";
-import { MainChat } from "../agent/chat.tsx";
-import { AgentProvider } from "../agent/provider.tsx";
+import { WELL_KNOWN_AGENTS } from '@deco/sdk';
+import { DockviewApi } from 'dockview-react';
+import { MainChat } from '../agent/chat.tsx';
+import { AgentProvider } from '../agent/provider.tsx';
 
-export const NO_DROP_TARGET = "no-drop-target";
+export const NO_DROP_TARGET = 'no-drop-target';
 
 /**
  * Returns true if the decopilot tab is open, false otherwise.
@@ -19,13 +19,13 @@ export const toggleDecopilotTab = (api: DockviewApi) => {
   api.addGroup({
     id: NO_DROP_TARGET,
     locked: NO_DROP_TARGET,
-    direction: "right",
+    direction: 'right',
   });
 
   api.addPanel({
     id: DecopilotChat.displayName,
     component: DecopilotChat.displayName,
-    title: "Default Chat",
+    title: 'Default Chat',
     tabComponent: DecopilotTabs.displayName,
     maximumWidth: 512,
   });
@@ -37,7 +37,7 @@ export function DecopilotChat() {
   return (
     <AgentProvider
       agentId={WELL_KNOWN_AGENTS.decopilotAgent.id}
-      threadId="1"
+      threadId='1'
       uiOptions={{
         showThreadTools: false,
         showModelSelector: false,
@@ -50,9 +50,9 @@ export function DecopilotChat() {
     </AgentProvider>
   );
 }
-DecopilotChat.displayName = "DefaultChat";
+DecopilotChat.displayName = 'DefaultChat';
 
 export function DecopilotTabs() {
   return null; //<div>display threads in here</div>;
 }
-DecopilotTabs.displayName = "DefaultChatTabComponent";
+DecopilotTabs.displayName = 'DefaultChatTabComponent';

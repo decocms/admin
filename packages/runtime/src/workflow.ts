@@ -1,22 +1,17 @@
 // deno-lint-ignore-file no-explicit-any
-import { type DefaultEnv, type RequestContext, withBindings } from "./index.ts";
-import {
-  type AppContext,
-  type CreateMCPServerOptions,
-  isWorkflow,
-  MCPServer,
-} from "./mastra.ts";
+import { type DefaultEnv, type RequestContext, withBindings } from './index.ts';
+import { type AppContext, type CreateMCPServerOptions, isWorkflow, MCPServer } from './mastra.ts';
 
-import { D1Store } from "./d1-store.ts";
-import { Mastra, type Workflow as MastraWorkflow } from "@mastra/core";
-import { RuntimeContext } from "@mastra/core/di";
-import { DurableObject } from "./cf-imports.ts";
-import { State } from "./state.ts";
+import { D1Store } from './d1-store.ts';
+import { Mastra, type Workflow as MastraWorkflow } from '@mastra/core';
+import { RuntimeContext } from '@mastra/core/di';
+import { DurableObject } from './cf-imports.ts';
+import { State } from './state.ts';
 
 const createRuntimeContext = (env: DefaultEnv, ctx: DurableObjectState) => {
   const runtimeContext = new RuntimeContext<AppContext>();
-  runtimeContext.set("env", env);
-  runtimeContext.set("ctx", ctx);
+  runtimeContext.set('env', env);
+  runtimeContext.set('ctx', ctx);
   return runtimeContext;
 };
 export interface StartWorkflowArgs {
@@ -47,10 +42,9 @@ export interface WorkflowDO extends Rpc.DurableObjectBranded {
 
 export const Workflow = (
   server: MCPServer<any, any>,
-  workflows?: CreateMCPServerOptions["workflows"],
+  workflows?: CreateMCPServerOptions['workflows'],
 ) => {
-  return class Workflow extends DurableObject<DefaultEnv>
-    implements WorkflowDO {
+  return class Workflow extends DurableObject<DefaultEnv> implements WorkflowDO {
     constructor(
       public override ctx: DurableObjectState,
       public override env: DefaultEnv,
@@ -109,9 +103,7 @@ export const Workflow = (
         },
         telemetry: {
           enabled: true,
-          serviceName: `app-${
-            this.env.DECO_CHAT_SCRIPT_SLUG ?? this.env.DECO_CHAT_APP_SLUG
-          }`,
+          serviceName: `app-${this.env.DECO_CHAT_SCRIPT_SLUG ?? this.env.DECO_CHAT_APP_SLUG}`,
         },
       });
       // since mastra workflows are thenables, so we need to wrap then into an object
@@ -134,10 +126,10 @@ export const Workflow = (
         this.ctx.waitUntil(
           promise
             .then(() => {
-              console.debug("workflow", run.runId, "finished successfully");
+              console.debug('workflow', run.runId, 'finished successfully');
             })
             .catch((e) => {
-              console.error("workflow", run.runId, "finished with error", e);
+              console.error('workflow', run.runId, 'finished with error', e);
               throw e;
             }),
         );

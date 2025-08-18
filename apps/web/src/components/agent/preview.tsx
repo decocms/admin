@@ -1,12 +1,8 @@
-import {
-  type DetailedHTMLProps,
-  type IframeHTMLAttributes,
-  useMemo,
-} from "react";
-import { ALLOWANCES } from "../../constants.ts";
-import { IMAGE_REGEXP } from "../chat/utils/preview.ts";
-import type { Agent } from "@deco/sdk";
-import type { Tab } from "../dock/index.tsx";
+import { type DetailedHTMLProps, type IframeHTMLAttributes, useMemo } from 'react';
+import { ALLOWANCES } from '../../constants.ts';
+import { IMAGE_REGEXP } from '../chat/utils/preview.ts';
+import type { Agent } from '@deco/sdk';
+import type { Tab } from '../dock/index.tsx';
 
 type Props = DetailedHTMLProps<
   IframeHTMLAttributes<HTMLIFrameElement>,
@@ -20,8 +16,8 @@ function Preview(props: Props) {
     return (
       <img
         src={props.src}
-        alt="Preview"
-        className="w-full h-full object-contain"
+        alt='Preview'
+        className='w-full h-full object-contain'
       />
     );
   }
@@ -30,8 +26,8 @@ function Preview(props: Props) {
     <iframe
       allow={ALLOWANCES}
       allowFullScreen
-      sandbox="allow-scripts allow-same-origin allow-popups allow-forms allow-downloads"
-      className="w-full h-full"
+      sandbox='allow-scripts allow-same-origin allow-popups allow-forms allow-downloads'
+      className='w-full h-full'
       {...props}
     />
   );
@@ -51,7 +47,7 @@ export function useTabsForAgent(
       viewTabs[tabKey] = {
         Component: () => <Preview src={view.url} title={view.name} />,
         title: view.name,
-        initialOpen: index === 0 ? "within" : false, // Open first view by default
+        initialOpen: index === 0 ? 'within' : false, // Open first view by default
         active: index === 0,
         metadata: {
           isSavedView: true,
@@ -78,7 +74,7 @@ export function useTabsForAgent(
     // Insert view tabs after chat tab
     if (hasViews) {
       const tabEntries = Object.entries(tabs);
-      const chatIndex = tabEntries.findIndex(([key]) => key === "chat");
+      const chatIndex = tabEntries.findIndex(([key]) => key === 'chat');
 
       if (chatIndex !== -1) {
         // Split tabs at chat position and insert view tabs after

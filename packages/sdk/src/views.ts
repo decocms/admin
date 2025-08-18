@@ -1,78 +1,78 @@
-import { z } from "zod";
+import { z } from 'zod';
 
 export const DEFAULT_VIEWS: View[] = [
   {
-    id: "agents",
-    title: "Agents",
-    icon: "robot_2",
-    type: "default",
+    id: 'agents',
+    title: 'Agents',
+    icon: 'robot_2',
+    type: 'default',
     metadata: {
-      path: "/agents",
+      path: '/agents',
     },
   },
   {
-    id: "connections",
-    title: "Integrations",
-    icon: "linked_services",
-    type: "default",
+    id: 'connections',
+    title: 'Integrations',
+    icon: 'linked_services',
+    type: 'default',
     metadata: {
-      path: "/connections",
+      path: '/connections',
     },
   },
   {
-    id: "views",
-    title: "Views",
-    icon: "dashboard",
-    type: "default",
+    id: 'views',
+    title: 'Views',
+    icon: 'dashboard',
+    type: 'default',
     metadata: {
-      path: "/views",
+      path: '/views',
     },
   },
   {
-    id: "workflows",
-    title: "Workflows",
-    icon: "flowchart",
-    type: "default",
+    id: 'workflows',
+    title: 'Workflows',
+    icon: 'flowchart',
+    type: 'default',
     metadata: {
-      path: "/workflows",
+      path: '/workflows',
     },
   },
   {
-    id: "triggers",
-    title: "Triggers",
-    icon: "cable",
-    type: "default",
+    id: 'triggers',
+    title: 'Triggers',
+    icon: 'cable',
+    type: 'default',
     metadata: {
-      path: "/triggers",
+      path: '/triggers',
     },
   },
   {
-    id: "prompts",
-    title: "Prompts",
-    icon: "local_library",
-    type: "default",
+    id: 'prompts',
+    title: 'Prompts',
+    icon: 'local_library',
+    type: 'default',
     metadata: {
-      path: "/prompts",
+      path: '/prompts',
     },
   },
   {
-    id: "monitor",
-    title: "Monitor",
-    icon: "monitoring",
-    type: "default",
+    id: 'monitor',
+    title: 'Monitor',
+    icon: 'monitoring',
+    type: 'default',
     metadata: {
-      path: "/monitor",
+      path: '/monitor',
     },
   },
 ];
 
-export const viewMetadataSchema = z.discriminatedUnion("type", [
+export const viewMetadataSchema = z.discriminatedUnion('type', [
   z.object({
-    type: z.literal("custom"),
+    type: z.literal('custom'),
     url: z.string(),
   }),
   z.object({
-    type: z.literal("default"),
+    type: z.literal('default'),
     path: z.string(),
   }),
 ]);
@@ -81,7 +81,7 @@ export interface View {
   id: string;
   title: string;
   icon: string;
-  type: "custom" | "default";
+  type: 'custom' | 'default';
   metadata: Record<string, unknown>;
 }
 

@@ -61,7 +61,7 @@ export function recordToolError(tool: string, ms: number) {
 }
 
 function computeP95(samples: number[]): number | null {
-  const vals = samples.filter((v) => typeof v === "number" && !isNaN(v));
+  const vals = samples.filter((v) => typeof v === 'number' && !isNaN(v));
   if (!vals.length) return null;
   const sorted = vals.slice().sort((a, b) => a - b);
   const idx = Math.min(

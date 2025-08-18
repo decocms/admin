@@ -1,7 +1,7 @@
-import { createTool } from "@deco/workers-runtime/mastra";
-import { z } from "zod";
-import { analyzeLinksCached } from "../link-analyzer/cached";
-import { createPageSpeedTool } from "../pagespeed";
+import { createTool } from '@deco/workers-runtime/mastra';
+import { z } from 'zod';
+import { analyzeLinksCached } from '../link-analyzer/cached';
+import { createPageSpeedTool } from '../pagespeed';
 
 const InputSchema = z.object({
   url: z.string().url(),
@@ -60,8 +60,8 @@ export async function runSeoAudit(
         return await pageSpeedTool.execute({
           context: {
             url,
-            strategy: "mobile",
-            category: ["performance", "seo"],
+            strategy: 'mobile',
+            category: ['performance', 'seo'],
           },
         } as any);
       } catch (e) {
@@ -74,8 +74,8 @@ export async function runSeoAudit(
         return await pageSpeedTool.execute({
           context: {
             url,
-            strategy: "desktop",
-            category: ["performance", "seo"],
+            strategy: 'desktop',
+            category: ['performance', 'seo'],
           },
         } as any);
       } catch (e) {
@@ -94,16 +94,16 @@ export async function runSeoAudit(
   const CLS_mobile = mobile?.metrics?.CLS ?? null;
   const CLS_desktop = desktop?.metrics?.CLS ?? null;
   const INP_ms_mobile = mobile?.metrics?.INP_ms ?? null;
-  if (typeof link?.brokenLinks === "number" && link.brokenLinks > 0) {
+  if (typeof link?.brokenLinks === 'number' && link.brokenLinks > 0) {
     warnings.push(`Broken links detectados: ${link.brokenLinks}`);
   }
-  if (LCP_ms_mobile && LCP_ms_mobile > 4000) warnings.push("LCP mobile > 4s");
-  if (CLS_mobile && CLS_mobile > 0.1) warnings.push("CLS mobile > 0.1");
+  if (LCP_ms_mobile && LCP_ms_mobile > 4000) warnings.push('LCP mobile > 4s');
+  if (CLS_mobile && CLS_mobile > 0.1) warnings.push('CLS mobile > 0.1');
   if (performanceMobile !== null && performanceMobile < 50) {
-    warnings.push("Performance mobile baixa (<50)");
+    warnings.push('Performance mobile baixa (<50)');
   }
   if (seoMobile !== null && seoMobile < 70) {
-    warnings.push("Score SEO mobile baixo (<70)");
+    warnings.push('Score SEO mobile baixo (<70)');
   }
   if (link?.imagesMissingAlt && link.imagesMissingAlt > 0) {
     warnings.push(`Imagens sem alt: ${link.imagesMissingAlt}`);
@@ -112,13 +112,13 @@ export async function runSeoAudit(
     warnings.push(`Quantidade de H1 = ${link.h1Count}`);
   }
   if (link?.titleLength && link.titleLength > 60) {
-    warnings.push("Título > 60 caracteres");
+    warnings.push('Título > 60 caracteres');
   }
   if (
     link?.metaDescriptionLength &&
     (link.metaDescriptionLength < 80 || link.metaDescriptionLength > 165)
   ) {
-    warnings.push("Meta description fora da faixa 80-165");
+    warnings.push('Meta description fora da faixa 80-165');
   }
   return {
     url,
@@ -159,9 +159,8 @@ export async function runSeoAudit(
 
 export const createSeoAuditTool = (env: any) =>
   createTool({
-    id: "SEO_AUDIT",
-    description:
-      "Combines LINK_ANALYZER and PageSpeed (mobile+desktop) into a unified SEO audit",
+    id: 'SEO_AUDIT',
+    description: 'Combines LINK_ANALYZER and PageSpeed (mobile+desktop) into a unified SEO audit',
     inputSchema: InputSchema,
     outputSchema: OutputSchema,
     execute: async ({ context }) => runSeoAudit(env, context),

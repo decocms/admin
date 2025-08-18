@@ -7,13 +7,13 @@
  */
 export const bundler = async (
   files: Record<string, string>,
-  entrypoint: string = "index.ts",
+  entrypoint: string = 'index.ts',
 ): Promise<string> => {
-  const response = await fetch("https://bundler.deco.site", {
-    method: "POST",
+  const response = await fetch('https://bundler.deco.site', {
+    method: 'POST',
     body: JSON.stringify({ files, entrypoint }),
     headers: {
-      "content-type": "application/json",
+      'content-type': 'application/json',
     },
   });
 

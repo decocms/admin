@@ -1,12 +1,12 @@
-import { decodeJwt, type JWTPayload, jwtVerify, SignJWT } from "jose";
+import { decodeJwt, type JWTPayload, jwtVerify, SignJWT } from 'jose';
 export type { JWTPayload };
-import { env } from "cloudflare:workers";
+import { env } from 'cloudflare:workers';
 
-export const alg = "RSASSA-PKCS1-v1_5";
-export const hash = "SHA-256";
+export const alg = 'RSASSA-PKCS1-v1_5';
+export const hash = 'SHA-256';
 
-const PUBLIC_KEY_ENV_VAR = "DECO_CHAT_API_JWT_PUBLIC_KEY";
-const PRIVATE_KEY_ENV_VAR = "DECO_CHAT_API_JWT_PRIVATE_KEY";
+const PUBLIC_KEY_ENV_VAR = 'DECO_CHAT_API_JWT_PUBLIC_KEY';
+const PRIVATE_KEY_ENV_VAR = 'DECO_CHAT_API_JWT_PRIVATE_KEY';
 
 const generateKeyPair = async (): Promise<[JsonWebKey, JsonWebKey]> => {
   const keyPair: CryptoKeyPair = (await crypto.subtle.generateKey(
@@ -17,17 +17,16 @@ const generateKeyPair = async (): Promise<[JsonWebKey, JsonWebKey]> => {
       hash,
     },
     true,
-    ["sign", "verify"],
+    ['sign', 'verify'],
   )) as CryptoKeyPair;
 
   return await Promise.all([
-    crypto.subtle.exportKey("jwk", keyPair.publicKey) as Promise<JsonWebKey>,
-    crypto.subtle.exportKey("jwk", keyPair.privateKey) as Promise<JsonWebKey>,
+    crypto.subtle.exportKey('jwk', keyPair.publicKey) as Promise<JsonWebKey>,
+    crypto.subtle.exportKey('jwk', keyPair.privateKey) as Promise<JsonWebKey>,
   ]);
 };
 
-export const stringifyJWK = (jwk: JsonWebKey): string =>
-  btoa(JSON.stringify(jwk));
+export const stringifyJWK = (jwk: JsonWebKey): string => btoa(JSON.stringify(jwk));
 export const parseJWK = (jwk: string): JsonWebKey => JSON.parse(atob(jwk));
 export const importJWK = (
   jwk: JsonWebKey,
@@ -35,11 +34,11 @@ export const importJWK = (
 ): Promise<CryptoKey> =>
   crypto.subtle.importKey(
     // @ts-ignore: deno types are not up to date
-    "jwk",
+    'jwk',
     jwk,
     { name: alg, hash },
     true,
-    usages ?? ["sign"],
+    usages ?? ['sign'],
   );
 
 const getOrGenerateKeyPair = async (): Promise<[JsonWebKey, JsonWebKey]> => {
@@ -69,7 +68,7 @@ export const getKeyPair = async () => {
   return await keys;
 };
 
-export const DECO_CHAT_KEY_ID = "deco-chat-api-key";
+export const DECO_CHAT_KEY_ID = 'deco-chat-api-key';
 
 export async function createJWT<
   TClaims extends Record<string, unknown> = Record<string, unknown>,
@@ -79,7 +78,7 @@ export async function createJWT<
   expiresIn?: number | string | Date,
 ): Promise<string> {
   let jwt = new SignJWT(payload)
-    .setProtectedHeader({ alg: "RS256", typ: "JWT", kid: DECO_CHAT_KEY_ID })
+    .setProtectedHeader({ alg: 'RS256', typ: 'JWT', kid: DECO_CHAT_KEY_ID })
     .setIssuedAt();
   if (expiresIn) {
     jwt = jwt.setExpirationTime(expiresIn);
@@ -95,7 +94,7 @@ export async function verifyJWT<
   return payload as JwtPayloadWithClaims<TClaims>;
 }
 
-const DECO_CHAT_ISSUER = "https://api.deco.chat";
+const DECO_CHAT_ISSUER = 'https://api.deco.chat';
 
 export type JwtPayloadWithClaims<
   TClaims extends Record<string, unknown> = Record<string, unknown>,
@@ -151,7 +150,7 @@ const importKey = (
   key: string | JsonWebKey,
   usages: string[],
 ): Promise<CryptoKey> => {
-  if (typeof key === "string") {
+  if (typeof key === 'string') {
     return importJWKFromString(key, usages);
   }
   return importJWK(key, usages);
@@ -159,7 +158,7 @@ const importKey = (
 const newJwtVerifierWithJWK = async (
   pubKey: string | JsonWebKey,
 ): Promise<JwtVerifier> => {
-  const pub = await importKey(pubKey, ["verify"]);
+  const pub = await importKey(pubKey, ['verify']);
   return newJwtVerifier(pub);
 };
 
@@ -175,7 +174,7 @@ export const JwtIssuer = {
       (await jwtKeyPair());
     const [verifier, priv] = await Promise.all([
       newJwtVerifierWithJWK(pubkey),
-      importKey(privkey, ["sign"]),
+      importKey(privkey, ['sign']),
     ]);
     return {
       ...verifier,

@@ -9,8 +9,8 @@ import {
   useUpdateThreadTitle,
   View,
   WELL_KNOWN_AGENT_IDS,
-} from "@deco/sdk";
-import { Button } from "@deco/ui/components/button.tsx";
+} from '@deco/sdk';
+import { Button } from '@deco/ui/components/button.tsx';
 import {
   Dialog,
   DialogContent,
@@ -18,16 +18,16 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from "@deco/ui/components/dialog.tsx";
+} from '@deco/ui/components/dialog.tsx';
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from "@deco/ui/components/dropdown-menu.tsx";
-import { Form } from "@deco/ui/components/form.tsx";
-import { Icon } from "@deco/ui/components/icon.tsx";
-import { Input } from "@deco/ui/components/input.tsx";
+} from '@deco/ui/components/dropdown-menu.tsx';
+import { Form } from '@deco/ui/components/form.tsx';
+import { Icon } from '@deco/ui/components/icon.tsx';
+import { Input } from '@deco/ui/components/input.tsx';
 import {
   Sidebar,
   SidebarContent,
@@ -39,26 +39,26 @@ import {
   SidebarMenuItem,
   SidebarSeparator,
   useSidebar,
-} from "@deco/ui/components/sidebar.tsx";
-import { Skeleton } from "@deco/ui/components/skeleton.tsx";
-import { cn } from "@deco/ui/lib/utils.ts";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { type ReactNode, Suspense, useRef, useState } from "react";
-import { useForm } from "react-hook-form";
-import { Link, useMatch } from "react-router";
-import { z } from "zod";
-import { trackEvent } from "../../hooks/analytics.ts";
-import { useUser } from "../../hooks/use-user.ts";
-import { useWorkspaceLink } from "../../hooks/use-navigate-workspace.ts";
-import { useFocusChat } from "../agents/hooks.ts";
-import { AgentAvatar } from "../common/avatar/agent.tsx";
-import { groupThreadsByDate } from "../threads/index.tsx";
-import { SidebarFooter } from "./footer.tsx";
-import { Header as SidebarHeader } from "./header.tsx";
-import { useCurrentTeam } from "./team-selector.tsx";
+} from '@deco/ui/components/sidebar.tsx';
+import { Skeleton } from '@deco/ui/components/skeleton.tsx';
+import { cn } from '@deco/ui/lib/utils.ts';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { type ReactNode, Suspense, useRef, useState } from 'react';
+import { useForm } from 'react-hook-form';
+import { Link, useMatch } from 'react-router';
+import { z } from 'zod';
+import { trackEvent } from '../../hooks/analytics.ts';
+import { useUser } from '../../hooks/use-user.ts';
+import { useWorkspaceLink } from '../../hooks/use-navigate-workspace.ts';
+import { useFocusChat } from '../agents/hooks.ts';
+import { AgentAvatar } from '../common/avatar/agent.tsx';
+import { groupThreadsByDate } from '../threads/index.tsx';
+import { SidebarFooter } from './footer.tsx';
+import { Header as SidebarHeader } from './header.tsx';
+import { useCurrentTeam } from './team-selector.tsx';
 
 const editTitleSchema = z.object({
-  title: z.string().min(1, "Title is required"),
+  title: z.string().min(1, 'Title is required'),
 });
 
 type EditTitleForm = z.infer<typeof editTitleSchema>;
@@ -76,7 +76,7 @@ const WithActive = ({
 };
 
 function buildThreadUrl(thread: Thread): string {
-  return `agent/${thread.metadata?.agentId ?? ""}/${thread.id}`;
+  return `agent/${thread.metadata?.agentId ?? ''}/${thread.id}`;
 }
 
 function DeleteThreadModal({
@@ -95,7 +95,7 @@ function DeleteThreadModal({
       await deleteThread.mutateAsync();
       onOpenChange(false);
     } catch (error) {
-      console.error("Failed to delete thread:", error);
+      console.error('Failed to delete thread:', error);
     }
   };
 
@@ -105,20 +105,19 @@ function DeleteThreadModal({
         <DialogHeader>
           <DialogTitle>Delete Thread</DialogTitle>
           <DialogDescription>
-            Are you sure you want to delete "{thread.title}"? This action cannot
-            be undone.
+            Are you sure you want to delete "{thread.title}"? This action cannot be undone.
           </DialogDescription>
         </DialogHeader>
         <DialogFooter>
-          <Button variant="ghost" onClick={() => onOpenChange(false)}>
+          <Button variant='ghost' onClick={() => onOpenChange(false)}>
             Cancel
           </Button>
           <Button
-            variant="destructive"
+            variant='destructive'
             onClick={handleDelete}
             disabled={deleteThread.isPending}
           >
-            {deleteThread.isPending ? "Deleting..." : "Delete"}
+            {deleteThread.isPending ? 'Deleting...' : 'Delete'}
           </Button>
         </DialogFooter>
       </DialogContent>
@@ -145,22 +144,22 @@ function ThreadActions({
       <DropdownMenu open={open} onOpenChange={setOpen}>
         <DropdownMenuTrigger asChild>
           <Button
-            variant="ghost"
-            size="icon"
-            className={cn("h-8 w-8", className)}
+            variant='ghost'
+            size='icon'
+            className={cn('h-8 w-8', className)}
             onClick={(e) => {
               e.preventDefault();
               e.stopPropagation();
             }}
           >
             <Icon
-              name="more_vert"
+              name='more_vert'
               size={16}
-              className="text-muted-foreground"
+              className='text-muted-foreground'
             />
           </Button>
         </DropdownMenuTrigger>
-        <DropdownMenuContent align="end" onClick={(e) => e.stopPropagation()}>
+        <DropdownMenuContent align='end' onClick={(e) => e.stopPropagation()}>
           <DropdownMenuItem
             onClick={(e) => {
               e.preventDefault();
@@ -169,7 +168,7 @@ function ThreadActions({
               onEdit();
             }}
           >
-            <Icon name="edit" className="mr-2" size={16} />
+            <Icon name='edit' className='mr-2' size={16} />
             Rename
           </DropdownMenuItem>
           {!isCurrentThread && (
@@ -180,9 +179,9 @@ function ThreadActions({
                 setOpen(false);
                 setShowDeleteModal(true);
               }}
-              className="text-destructive focus:text-destructive"
+              className='text-destructive focus:text-destructive'
             >
-              <Icon name="delete" className="mr-2" size={16} />
+              <Icon name='delete' className='mr-2' size={16} />
               Delete
             </DropdownMenuItem>
           )}
@@ -219,7 +218,7 @@ function SidebarThreadItem({
   });
 
   function focusInput() {
-    const input = formRef.current?.querySelector("input");
+    const input = formRef.current?.querySelector('input');
     input?.focus();
   }
 
@@ -240,21 +239,21 @@ function SidebarThreadItem({
       updateTitle.mutateAsync({ threadId: thread.id, title: data.title });
       setIsEditing(false);
     } catch (_) {
-      methods.setValue("title", thread.title);
+      methods.setValue('title', thread.title);
       setIsEditing(false);
     }
   };
 
   return (
-    <SidebarMenuItem key={thread.id} className="relative group/item">
-      <div className="w-full">
+    <SidebarMenuItem key={thread.id} className='relative group/item'>
+      <div className='w-full'>
         <WithActive to={buildThreadUrl(thread)}>
           {({ isActive }) => (
             <SidebarMenuButton
               asChild
               isActive={isActive}
               tooltip={thread.title}
-              className="h-9 w-full -ml-1 pr-8 gap-3"
+              className='h-9 w-full -ml-1 pr-8 gap-3'
             >
               {isEditing
                 ? (
@@ -262,13 +261,13 @@ function SidebarThreadItem({
                     <form
                       ref={formRef}
                       onSubmit={handleSubmit}
-                      className="flex-1"
+                      className='flex-1'
                     >
                       <Input
-                        {...methods.register("title")}
-                        className="h-8 text-sm w-5/6"
+                        {...methods.register('title')}
+                        className='h-8 text-sm w-5/6'
                         onKeyDown={(e) => {
-                          if (e.key === "Enter") {
+                          if (e.key === 'Enter') {
                             e.preventDefault();
                             handleSubmit(e);
                           }
@@ -286,10 +285,10 @@ function SidebarThreadItem({
                     <AgentAvatar
                       url={agent?.avatar}
                       fallback={agent?.name ?? WELL_KNOWN_AGENT_IDS.teamAgent}
-                      size="xs"
+                      size='xs'
                     />
 
-                    <span className="truncate">{thread.title}</span>
+                    <span className='truncate'>{thread.title}</span>
                   </Link>
                 )}
             </SidebarMenuButton>
@@ -300,10 +299,10 @@ function SidebarThreadItem({
       {!isEditing && (
         <ThreadActions
           thread={thread}
-          className="absolute right-2 top-1/2 -translate-y-1/2 transition-all opacity-0 group-hover/item:opacity-100"
+          className='absolute right-2 top-1/2 -translate-y-1/2 transition-all opacity-0 group-hover/item:opacity-100'
           onEdit={() => {
             setIsEditing(true);
-            methods.setValue("title", thread.title);
+            methods.setValue('title', thread.title);
             focusInput();
           }}
         />
@@ -322,10 +321,10 @@ function SidebarThreadList({
   const { isMobile, toggleSidebar } = useSidebar();
 
   const handleThreadClick = (thread: Thread) => {
-    trackEvent("sidebar_thread_click", {
+    trackEvent('sidebar_thread_click', {
       threadId: thread.id,
       threadTitle: thread.title,
-      agentId: thread.metadata?.agentId ?? "",
+      agentId: thread.metadata?.agentId ?? '',
     });
     isMobile && toggleSidebar();
   };
@@ -344,7 +343,7 @@ function SidebarThreads() {
   const user = useUser();
   const { data: agents } = useAgents();
   const { data } = useThreads({
-    resourceId: user?.id ?? "",
+    resourceId: user?.id ?? '',
   });
 
   const groupedThreads = groupThreadsByDate(data?.threads ?? []);
@@ -355,7 +354,7 @@ function SidebarThreads() {
         <SidebarGroup>
           <SidebarGroupContent>
             <SidebarGroupLabel>Today</SidebarGroupLabel>
-            <SidebarMenu className="gap-0.5">
+            <SidebarMenu className='gap-0.5'>
               <SidebarThreadList
                 threads={groupedThreads.today}
                 agents={agents}
@@ -369,7 +368,7 @@ function SidebarThreads() {
         <SidebarGroup>
           <SidebarGroupContent>
             <SidebarGroupLabel>Yesterday</SidebarGroupLabel>
-            <SidebarMenu className="gap-0.5">
+            <SidebarMenu className='gap-0.5'>
               <SidebarThreadList
                 threads={groupedThreads.yesterday}
                 agents={agents}
@@ -385,7 +384,7 @@ function SidebarThreads() {
             <SidebarGroup key={date}>
               <SidebarGroupContent>
                 <SidebarGroupLabel>{date}</SidebarGroupLabel>
-                <SidebarMenu className="gap-0.5">
+                <SidebarMenu className='gap-0.5'>
                   <SidebarThreadList threads={threads} agents={agents} />
                 </SidebarMenu>
               </SidebarGroupContent>
@@ -398,10 +397,10 @@ function SidebarThreads() {
 }
 
 SidebarThreads.Skeleton = () => (
-  <div className="flex flex-col gap-4">
+  <div className='flex flex-col gap-4'>
     {Array.from({ length: 20 }).map((_, index) => (
-      <div key={index} className="w-full h-10 px-2">
-        <Skeleton className="h-full bg-sidebar-accent rounded-sm" />
+      <div key={index} className='w-full h-10 px-2'>
+        <Skeleton className='h-full bg-sidebar-accent rounded-sm' />
       </div>
     ))}
   </div>
@@ -423,7 +422,7 @@ function WorkspaceViews() {
       return null;
     }
     const href = workspaceLink(
-      meta.type === "custom" ? `/views/${item.id}` : meta.path,
+      meta.type === 'custom' ? `/views/${item.id}` : meta.path,
     );
 
     return (
@@ -433,9 +432,9 @@ function WorkspaceViews() {
             <SidebarMenuButton asChild isActive={isActive} tooltip={item.title}>
               <Link
                 to={href}
-                className="group/item"
+                className='group/item'
                 onClick={() => {
-                  trackEvent("sidebar_navigation_click", {
+                  trackEvent('sidebar_navigation_click', {
                     item: item.title,
                   });
                   isMobile && toggleSidebar();
@@ -444,15 +443,15 @@ function WorkspaceViews() {
                 <Icon
                   name={item.icon}
                   filled={isActive}
-                  className="text-muted-foreground"
+                  className='text-muted-foreground'
                 />
-                <span className="truncate">{item.title}</span>
+                <span className='truncate'>{item.title}</span>
 
-                {meta.type === "custom" && (
+                {meta.type === 'custom' && (
                   <Button
-                    variant="outline"
-                    size="sm"
-                    className="text-destructive hover:text-destructive ml-auto group-hover/item:block! hidden! p-0.5 h-6"
+                    variant='outline'
+                    size='sm'
+                    className='text-destructive hover:text-destructive ml-auto group-hover/item:block! hidden! p-0.5 h-6'
                     onClick={(e) => {
                       e.preventDefault();
                       e.stopPropagation();
@@ -460,9 +459,9 @@ function WorkspaceViews() {
                     }}
                   >
                     <Icon
-                      name="remove"
+                      name='remove'
                       size={16}
-                      className="text-muted-foreground ml-auto group-hover/item:block! hidden!"
+                      className='text-muted-foreground ml-auto group-hover/item:block! hidden!'
                     />
                   </Button>
                 )}
@@ -476,10 +475,10 @@ function WorkspaceViews() {
 }
 
 WorkspaceViews.Skeleton = () => (
-  <div className="flex flex-col gap-4">
+  <div className='flex flex-col gap-4'>
     {Array.from({ length: 20 }).map((_, index) => (
-      <div key={index} className="w-full h-10 px-2">
-        <Skeleton className="h-full bg-sidebar-accent rounded-sm" />
+      <div key={index} className='w-full h-10 px-2'>
+        <Skeleton className='h-full bg-sidebar-accent rounded-sm' />
       </div>
     ))}
   </div>
@@ -487,22 +486,22 @@ WorkspaceViews.Skeleton = () => (
 
 export function AppSidebar() {
   const { state, toggleSidebar, isMobile } = useSidebar();
-  const isCollapsed = state === "collapsed";
+  const isCollapsed = state === 'collapsed';
   const focusChat = useFocusChat();
 
   return (
-    <Sidebar variant="sidebar">
+    <Sidebar variant='sidebar'>
       <SidebarHeader />
 
-      <SidebarContent className="flex flex-col h-full overflow-x-hidden">
-        <div className="flex flex-col h-full">
-          <div className="flex-none">
-            <SidebarGroup className="font-medium">
+      <SidebarContent className='flex flex-col h-full overflow-x-hidden'>
+        <div className='flex flex-col h-full'>
+          <div className='flex-none'>
+            <SidebarGroup className='font-medium'>
               <SidebarGroupContent>
-                <SidebarMenu className="gap-0.5">
+                <SidebarMenu className='gap-0.5'>
                   <SidebarMenuItem>
                     <SidebarMenuButton
-                      className="cursor-pointer"
+                      className='cursor-pointer'
                       onClick={() => {
                         focusChat(
                           WELL_KNOWN_AGENT_IDS.teamAgent,
@@ -513,11 +512,11 @@ export function AppSidebar() {
                       }}
                     >
                       <Icon
-                        name="edit_square"
+                        name='edit_square'
                         size={16}
-                        className="text-muted-foreground"
+                        className='text-muted-foreground'
                       />
-                      <span className="truncate">New chat</span>
+                      <span className='truncate'>New chat</span>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
 
@@ -531,8 +530,8 @@ export function AppSidebar() {
 
           {!isCollapsed && (
             <>
-              <SidebarSeparator className="!w-[224px]" />
-              <div className="flex-1 overflow-y-auto overflow-x-hidden">
+              <SidebarSeparator className='!w-[224px]' />
+              <div className='flex-1 overflow-y-auto overflow-x-hidden'>
                 <Suspense fallback={<SidebarThreads.Skeleton />}>
                   <SidebarThreads />
                 </Suspense>

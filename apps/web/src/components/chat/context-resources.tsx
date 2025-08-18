@@ -8,38 +8,23 @@ import {
   useModels,
   useSDK,
   useWriteFile,
-} from "@deco/sdk";
-import { Hosts } from "@deco/sdk/hosts";
-import { Button } from "@deco/ui/components/button.tsx";
-import { Checkbox } from "@deco/ui/components/checkbox.tsx";
-import { Icon } from "@deco/ui/components/icon.tsx";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@deco/ui/components/popover.tsx";
-import { Spinner } from "@deco/ui/components/spinner.tsx";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger,
-} from "@deco/ui/components/tooltip.tsx";
-import { cn } from "@deco/ui/lib/utils.ts";
-import {
-  type ChangeEvent,
-  type DragEvent,
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-} from "react";
-import { useAgentSettingsToolsSet } from "../../hooks/use-agent-settings-tools-set.ts";
-import { useUserPreferences } from "../../hooks/use-user-preferences.ts";
-import { formatFilename } from "../../utils/format.ts";
-import { useAgent } from "../agent/provider.tsx";
-import { IntegrationIcon } from "../integrations/common.tsx";
-import { SelectConnectionDialog } from "../integrations/select-connection-dialog.tsx";
-import { formatToolName } from "./utils/format-tool-name.ts";
+} from '@deco/sdk';
+import { Hosts } from '@deco/sdk/hosts';
+import { Button } from '@deco/ui/components/button.tsx';
+import { Checkbox } from '@deco/ui/components/checkbox.tsx';
+import { Icon } from '@deco/ui/components/icon.tsx';
+import { Popover, PopoverContent, PopoverTrigger } from '@deco/ui/components/popover.tsx';
+import { Spinner } from '@deco/ui/components/spinner.tsx';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@deco/ui/components/tooltip.tsx';
+import { cn } from '@deco/ui/lib/utils.ts';
+import { type ChangeEvent, type DragEvent, useEffect, useMemo, useRef, useState } from 'react';
+import { useAgentSettingsToolsSet } from '../../hooks/use-agent-settings-tools-set.ts';
+import { useUserPreferences } from '../../hooks/use-user-preferences.ts';
+import { formatFilename } from '../../utils/format.ts';
+import { useAgent } from '../agent/provider.tsx';
+import { IntegrationIcon } from '../integrations/common.tsx';
+import { SelectConnectionDialog } from '../integrations/select-connection-dialog.tsx';
+import { formatToolName } from './utils/format-tool-name.ts';
 
 interface IntegrationWithTools extends Integration {
   tools?: Array<{
@@ -51,7 +36,7 @@ interface IntegrationWithTools extends Integration {
 export interface UploadedFile {
   file: File;
   url?: string;
-  status: "uploading" | "done" | "error";
+  status: 'uploading' | 'done' | 'error';
   error?: string;
 }
 
@@ -92,16 +77,16 @@ const useGlobalDrop = (handleFileDrop: (e: DragEvent) => void) => {
       skip = true;
     }
 
-    globalThis.addEventListener("drop", handleDrop);
-    globalThis.addEventListener("drag", handleDrag);
-    globalThis.addEventListener("dragover", handleDragOver);
-    globalThis.addEventListener("dragend", handleDragEnd);
+    globalThis.addEventListener('drop', handleDrop);
+    globalThis.addEventListener('drag', handleDrag);
+    globalThis.addEventListener('dragover', handleDragOver);
+    globalThis.addEventListener('dragend', handleDragEnd);
 
     return () => {
-      globalThis.removeEventListener("drop", handleDrop);
-      globalThis.removeEventListener("drag", handleDrag);
-      globalThis.removeEventListener("dragover", handleDragOver);
-      globalThis.removeEventListener("dragend", handleDragEnd);
+      globalThis.removeEventListener('drop', handleDrop);
+      globalThis.removeEventListener('drag', handleDrag);
+      globalThis.removeEventListener('dragover', handleDragOver);
+      globalThis.removeEventListener('dragend', handleDragEnd);
     };
   }, [handleFileDrop]);
 
@@ -125,24 +110,22 @@ export function ContextResources({
     excludeDisabled: true,
   });
   const { preferences } = useUserPreferences();
-  const { disableAllTools, enableAllTools, setIntegrationTools } =
-    useAgentSettingsToolsSet();
+  const { disableAllTools, enableAllTools, setIntegrationTools } = useAgentSettingsToolsSet();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const writeFileMutation = useWriteFile();
 
-  const selectedModel =
-    models.find((m: Model) => m.id === preferences.defaultModel) ||
+  const selectedModel = models.find((m: Model) => m.id === preferences.defaultModel) ||
     DEFAULT_MODEL;
 
   const getAcceptedFileTypes = () => {
     const acceptTypes: string[] = [];
-    if (selectedModel.capabilities.includes("image-upload")) {
-      acceptTypes.push("image/jpeg", "image/png", "image/gif", "image/webp");
+    if (selectedModel.capabilities.includes('image-upload')) {
+      acceptTypes.push('image/jpeg', 'image/png', 'image/gif', 'image/webp');
     }
-    if (selectedModel.capabilities.includes("file-upload")) {
-      acceptTypes.push("text/*", "application/pdf");
+    if (selectedModel.capabilities.includes('file-upload')) {
+      acceptTypes.push('text/*', 'application/pdf');
     }
-    return acceptTypes.join(",");
+    return acceptTypes.join(',');
   };
 
   const integrationsWithTools = useMemo(() => {
@@ -172,8 +155,7 @@ export function ContextResources({
   const integrationsWithTotalTools = useMemo(() => {
     return integrationsWithTools.map((item) => {
       // Use integration.tools?.length for total tools count, handle nullable field
-      const totalTools =
-        (item.integration as IntegrationWithTools).tools?.length ||
+      const totalTools = (item.integration as IntegrationWithTools).tools?.length ||
         item.enabledTools.length;
       return {
         ...item,
@@ -189,7 +171,7 @@ export function ContextResources({
       // Use the disableAllTools function from useAgentSettingsToolsSet
       disableAllTools(integrationId);
     } catch (error) {
-      console.error("Failed to remove integration:", error);
+      console.error('Failed to remove integration:', error);
       // You could add a toast notification here if needed
     }
   };
@@ -216,7 +198,7 @@ export function ContextResources({
       // Use setIntegrationTools to update the tools for this integration
       setIntegrationTools(integrationId, newTools);
     } catch (error) {
-      console.error("Failed to toggle tool:", error);
+      console.error('Failed to toggle tool:', error);
     }
   };
 
@@ -233,7 +215,7 @@ export function ContextResources({
     }
 
     if (fileInputRef.current) {
-      fileInputRef.current.value = "";
+      fileInputRef.current.value = '';
     }
   };
 
@@ -266,7 +248,7 @@ export function ContextResources({
             (uf) => uf.file.name === file.name && uf.file.size === file.size,
           ),
       )
-      .map((file): UploadedFile => ({ file, status: "uploading" }));
+      .map((file): UploadedFile => ({ file, status: 'uploading' }));
 
     setUploadedFiles((prev) => [...prev, ...filesToUpload]);
     await Promise.all(filesToUpload.map(({ file }) => uploadFile(file)));
@@ -285,11 +267,7 @@ export function ContextResources({
       const url = `https://${Hosts.API}/files/${workspace}/${path}`; // does not work when running locally
 
       setUploadedFiles((prev) =>
-        prev.map((uf) =>
-          uf.file === file
-            ? { ...uf, url: url || undefined, status: "done" }
-            : uf
-        )
+        prev.map((uf) => uf.file === file ? { ...uf, url: url || undefined, status: 'done' } : uf)
       );
     } catch (error) {
       setUploadedFiles((prev) =>
@@ -297,8 +275,8 @@ export function ContextResources({
           uf.file === file
             ? {
               ...uf,
-              status: "error",
-              error: error instanceof Error ? error.message : "Upload failed",
+              status: 'error',
+              error: error instanceof Error ? error.message : 'Upload failed',
             }
             : uf
         )
@@ -309,40 +287,40 @@ export function ContextResources({
   const isDragging = useGlobalDrop(handleFileDrop);
 
   return (
-    <div className="w-full mx-auto">
+    <div className='w-full mx-auto'>
       <FileDropOverlay display={isDragging} />
-      <div className="flex flex-wrap gap-2 mb-4 overflow-visible">
+      <div className='flex flex-wrap gap-2 mb-4 overflow-visible'>
         {/* File Upload Button */}
         <input
-          type="file"
+          type='file'
           ref={fileInputRef}
           onChange={handleFileChange}
           multiple
-          className="hidden"
+          className='hidden'
           accept={getAcceptedFileTypes()}
         />
-        {(selectedModel.capabilities.includes("file-upload") ||
-          selectedModel.capabilities.includes("image-upload")) && (
+        {(selectedModel.capabilities.includes('file-upload') ||
+          selectedModel.capabilities.includes('image-upload')) && (
           <Button
-            type="button"
-            variant="outline"
-            size="icon"
-            title="Upload files"
+            type='button'
+            variant='outline'
+            size='icon'
+            title='Upload files'
             onClick={() => fileInputRef.current?.click()}
           >
-            <Icon name="file_upload" />
+            <Icon name='file_upload' />
           </Button>
         )}
         <SelectConnectionDialog
           onSelect={handleAddIntegration}
           trigger={
             <Button
-              type="button"
-              variant="outline"
-              size="icon"
-              title="Add files or integrations"
+              type='button'
+              variant='outline'
+              size='icon'
+              title='Add files or integrations'
             >
-              <Icon name="alternate_email" />
+              <Icon name='alternate_email' />
             </Button>
           }
         />
@@ -395,60 +373,59 @@ function IntegrationResourceItem({
   const [isRemoving, setIsRemoving] = useState(false);
 
   return (
-    <div className="relative group flex items-center gap-1.5 px-1.5 py-1 bg-muted/50 rounded-xl border border-border h-10">
+    <div className='relative group flex items-center gap-1.5 px-1.5 py-1 bg-muted/50 rounded-xl border border-border h-10'>
       <Popover>
         <PopoverTrigger asChild>
-          <div className="flex items-center gap-1.5 cursor-pointer hover:bg-muted/50 rounded p-1 flex-1">
-            <div className="flex items-center justify-center size-6 rounded overflow-hidden bg-muted flex-shrink-0">
+          <div className='flex items-center gap-1.5 cursor-pointer hover:bg-muted/50 rounded p-1 flex-1'>
+            <div className='flex items-center justify-center size-6 rounded overflow-hidden bg-muted flex-shrink-0'>
               <IntegrationIcon
                 icon={integration.icon}
                 name={integration.name}
-                className="h-6 w-6"
+                className='h-6 w-6'
               />
             </div>
-            <div className="flex flex-col min-w-0 flex-1">
-              <div className="text-xs font-medium truncate leading-tight">
+            <div className='flex flex-col min-w-0 flex-1'>
+              <div className='text-xs font-medium truncate leading-tight'>
                 {integration.name}
               </div>
-              <div className="text-xs text-muted-foreground leading-tight">
+              <div className='text-xs text-muted-foreground leading-tight'>
                 {enabledTools.length}/{totalTools}
               </div>
             </div>
           </div>
         </PopoverTrigger>
-        <PopoverContent className="w-64 p-3" align="start" side="top">
-          <div className="space-y-2">
-            <div className="font-medium text-sm">{integration.name}</div>
-            <div className="text-xs text-muted-foreground">
+        <PopoverContent className='w-64 p-3' align='start' side='top'>
+          <div className='space-y-2'>
+            <div className='font-medium text-sm'>{integration.name}</div>
+            <div className='text-xs text-muted-foreground'>
               {enabledTools.length} of {totalTools} tools enabled
             </div>
             {(integration as IntegrationWithTools).tools && (
-              <div className="space-y-1">
-                <div className="text-xs font-medium">Tools:</div>
-                <div className="space-y-1 max-h-64 overflow-y-auto">
+              <div className='space-y-1'>
+                <div className='text-xs font-medium'>Tools:</div>
+                <div className='space-y-1 max-h-64 overflow-y-auto'>
                   {(integration as IntegrationWithTools).tools!.map(
                     (tool, index: number) => {
                       const isEnabled = enabledTools.includes(tool.name);
                       return (
                         <div
                           key={index}
-                          className="flex items-center justify-between text-xs px-2 py-1 bg-muted rounded hover:bg-muted/80"
+                          className='flex items-center justify-between text-xs px-2 py-1 bg-muted rounded hover:bg-muted/80'
                         >
-                          <div className="flex-1 min-w-0">
-                            <div className="font-medium truncate">
+                          <div className='flex-1 min-w-0'>
+                            <div className='font-medium truncate'>
                               {formatToolName(tool.name)}
                             </div>
                             {tool.description && (
-                              <div className="text-muted-foreground text-xs truncate">
+                              <div className='text-muted-foreground text-xs truncate'>
                                 {tool.description}
                               </div>
                             )}
                           </div>
                           <Checkbox
                             checked={isEnabled}
-                            onCheckedChange={() =>
-                              onToggleTool(tool.name, isEnabled)}
-                            className="ml-2 flex-shrink-0"
+                            onCheckedChange={() => onToggleTool(tool.name, isEnabled)}
+                            className='ml-2 flex-shrink-0'
                           />
                         </div>
                       );
@@ -462,9 +439,9 @@ function IntegrationResourceItem({
       </Popover>
 
       <Button
-        type="button"
-        variant="ghost"
-        size="icon"
+        type='button'
+        variant='ghost'
+        size='icon'
         onClick={async () => {
           setIsRemoving(true);
           try {
@@ -474,10 +451,10 @@ function IntegrationResourceItem({
           }
         }}
         disabled={isRemoving}
-        className="absolute -top-1 -right-1 h-4 w-4 opacity-0 group-hover:opacity-100 transition-opacity rounded-full shadow-sm bg-primary text-primary-foreground hover:bg-primary/50 hover:text-sidebar flex-shrink-0"
+        className='absolute -top-1 -right-1 h-4 w-4 opacity-0 group-hover:opacity-100 transition-opacity rounded-full shadow-sm bg-primary text-primary-foreground hover:bg-primary/50 hover:text-sidebar flex-shrink-0'
         title={`Remove ${integration.name} integration`}
       >
-        {isRemoving ? <Spinner size="xs" /> : <Icon name="close" size={10} />}
+        {isRemoving ? <Spinner size='xs' /> : <Icon name='close' size={10} />}
       </Button>
     </div>
   );
@@ -489,20 +466,20 @@ function FileDropOverlay({ display }: { display: boolean }) {
   }
 
   return (
-    <div className="relative">
+    <div className='relative'>
       <div
         className={cn(
-          "absolute bottom-2 left-0 right-0 z-50",
-          "flex flex-col items-center justify-center gap-2",
-          "pointer-events-none animate-fade-in",
-          "p-8 shadow-2xl rounded-2xl border border-border bg-background/95",
+          'absolute bottom-2 left-0 right-0 z-50',
+          'flex flex-col items-center justify-center gap-2',
+          'pointer-events-none animate-fade-in',
+          'p-8 shadow-2xl rounded-2xl border border-border bg-background/95',
         )}
       >
-        <Icon name="upload" size={48} className="text-foreground" />
-        <span className="text-lg font-semibold text-foreground">
+        <Icon name='upload' size={48} className='text-foreground' />
+        <span className='text-lg font-semibold text-foreground'>
           Drop files to upload
         </span>
-        <span className="text-sm text-muted-foreground">
+        <span className='text-sm text-muted-foreground'>
           (Max 5 files, images or PDFs)
         </span>
       </div>
@@ -519,48 +496,46 @@ function FilePreviewItem({ uploadedFile, removeFile }: FilePreviewItemProps) {
   const { file, status, error, url } = uploadedFile;
 
   return (
-    <div className="relative group flex items-center gap-1.5 px-1.5 py-1 bg-muted/50 rounded-xl border border-border h-10">
-      <div className="flex items-center justify-center size-6 rounded overflow-hidden bg-muted flex-shrink-0">
-        {status === "uploading"
-          ? <Spinner size="xs" />
-          : status === "error"
+    <div className='relative group flex items-center gap-1.5 px-1.5 py-1 bg-muted/50 rounded-xl border border-border h-10'>
+      <div className='flex items-center justify-center size-6 rounded overflow-hidden bg-muted flex-shrink-0'>
+        {status === 'uploading' ? <Spinner size='xs' /> : status === 'error'
           ? (
             <Tooltip>
               <TooltipTrigger asChild>
-                <Icon name="error" size={16} className="text-destructive" />
+                <Icon name='error' size={16} className='text-destructive' />
               </TooltipTrigger>
-              <TooltipContent className="flex flex-col items-center">
+              <TooltipContent className='flex flex-col items-center'>
                 Error uploading file {error?.toString()}
               </TooltipContent>
             </Tooltip>
           )
           : (
             <>
-              {file.type.startsWith("image/") && url
-                ? <img src={url} className="h-full w-full object-cover" />
-                : <Icon name="draft" size={16} />}
+              {file.type.startsWith('image/') && url
+                ? <img src={url} className='h-full w-full object-cover' />
+                : <Icon name='draft' size={16} />}
             </>
           )}
       </div>
 
-      <div className="flex flex-col min-w-0 flex-1">
-        <div className="text-xs font-medium truncate leading-tight">
+      <div className='flex flex-col min-w-0 flex-1'>
+        <div className='text-xs font-medium truncate leading-tight'>
           {file.name}
         </div>
-        <div className="text-xs text-muted-foreground leading-tight">
+        <div className='text-xs text-muted-foreground leading-tight'>
           {(file.size / 1024).toFixed(1)}KB
         </div>
       </div>
 
       <Button
-        type="button"
-        variant="ghost"
-        size="icon"
-        className="absolute -top-1 -right-1 h-4 w-4 opacity-0 group-hover:opacity-100 transition-opacity rounded-full shadow-sm bg-primary text-primary-foreground hover:bg-primary/50 hover:text-sidebar flex-shrink-0"
+        type='button'
+        variant='ghost'
+        size='icon'
+        className='absolute -top-1 -right-1 h-4 w-4 opacity-0 group-hover:opacity-100 transition-opacity rounded-full shadow-sm bg-primary text-primary-foreground hover:bg-primary/50 hover:text-sidebar flex-shrink-0'
         onClick={removeFile}
-        title="Remove file"
+        title='Remove file'
       >
-        <Icon name="close" size={10} />
+        <Icon name='close' size={10} />
       </Button>
     </div>
   );

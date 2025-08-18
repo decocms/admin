@@ -8,19 +8,19 @@ import {
   trace,
   TraceFlags,
   type Tracer,
-} from "@opentelemetry/api";
-import { sanitizeAttributes } from "@opentelemetry/core";
-import type { Resource } from "@opentelemetry/resources";
+} from '@opentelemetry/api';
+import { sanitizeAttributes } from '@opentelemetry/core';
+import type { Resource } from '@opentelemetry/resources';
 import {
   AlwaysOffSampler,
   RandomIdGenerator,
   type ReadableSpan,
   SamplingDecision,
   type SpanProcessor,
-} from "@opentelemetry/sdk-trace-base";
+} from '@opentelemetry/sdk-trace-base';
 
-import { getActiveConfig } from "./config.ts";
-import { SpanImpl } from "./span.ts";
+import { getActiveConfig } from './config.ts';
+import { SpanImpl } from './span.ts';
 
 let withNextSpanAttributes: Attributes;
 
@@ -63,9 +63,7 @@ export class WorkerTracer implements Tracer {
     const config = getActiveConfig();
 
     // TODO (@0xHericles) - This is a bug in the instrumentation logic
-    const sampler = config
-      ? config.sampling.headSampler
-      : new AlwaysOffSampler();
+    const sampler = config ? config.sampling.headSampler : new AlwaysOffSampler();
 
     const samplingDecision = sampler.shouldSample(
       context,
@@ -86,9 +84,7 @@ export class WorkerTracer implements Tracer {
     withNextSpanAttributes = {};
 
     const spanId = this.idGenerator.generateSpanId();
-    const parentSpanId = hasParentContext
-      ? parentSpanContext.spanId
-      : undefined;
+    const parentSpanId = hasParentContext ? parentSpanContext.spanId : undefined;
     const traceFlags = decision === SamplingDecision.RECORD_AND_SAMPLED
       ? TraceFlags.SAMPLED
       : TraceFlags.NONE;
@@ -136,9 +132,7 @@ export class WorkerTracer implements Tracer {
     ...args: unknown[]
   ): ReturnType<F> {
     const options = args.length > 1 ? (args[0] as SpanOptions) : undefined;
-    const parentContext = args.length > 2
-      ? (args[1] as Context)
-      : api_context.active();
+    const parentContext = args.length > 2 ? (args[1] as Context) : api_context.active();
     const fn = args[args.length - 1] as F;
 
     const span = this.startSpan(name, options, parentContext);

@@ -1,7 +1,7 @@
-import type { MCPConnection } from "./connection.ts";
-import type { DefaultEnv, RequestContext } from "./index.ts";
-import { MCPClient } from "./mcp.ts";
-import type { MCPBinding } from "./wrangler.ts";
+import type { MCPConnection } from './connection.ts';
+import type { DefaultEnv, RequestContext } from './index.ts';
+import { MCPClient } from './mcp.ts';
+import type { MCPBinding } from './wrangler.ts';
 
 interface IntegrationContext {
   integrationId: string;
@@ -10,10 +10,10 @@ interface IntegrationContext {
 }
 
 const normalizeWorkspace = (workspace: string) => {
-  if (workspace.startsWith("/users")) {
+  if (workspace.startsWith('/users')) {
     return workspace;
   }
-  if (workspace.startsWith("/shared")) {
+  if (workspace.startsWith('/shared')) {
     return workspace;
   }
   return `/shared/${workspace}`;
@@ -28,16 +28,16 @@ const createIntegrationsUrl = ({
 }: IntegrationContext) =>
   new URL(
     `${normalizeWorkspace(workspace)}/${integrationId}/mcp`,
-    decoChatApiUrl ?? "https://api.deco.chat",
+    decoChatApiUrl ?? 'https://api.deco.chat',
   ).href;
 
 type WorkspaceClientContext = Omit<
   RequestContext,
-  "ensureAuthenticated" | "state"
+  'ensureAuthenticated' | 'state'
 >;
 export const workspaceClient = (
   ctx: WorkspaceClientContext,
-): ReturnType<(typeof MCPClient)["forWorkspace"]> => {
+): ReturnType<(typeof MCPClient)['forWorkspace']> => {
   return MCPClient.forWorkspace(ctx.workspace, ctx.token);
 };
 
@@ -47,7 +47,7 @@ const mcpClientForIntegrationId = (
   decoChatApiUrl?: string,
 ) => {
   const mcpConnection: MCPConnection = {
-    type: "HTTP",
+    type: 'HTTP',
     url: createIntegrationsUrl({
       integrationId,
       workspace: ctx.workspace,
@@ -64,18 +64,16 @@ export const createIntegrationBinding = (
   binding: MCPBinding,
   env: DefaultEnv,
 ) => {
-  const integrationId = "integration_id" in binding
-    ? binding.integration_id
-    : undefined;
+  const integrationId = 'integration_id' in binding ? binding.integration_id : undefined;
   if (!integrationId) {
     const ctx = env.DECO_CHAT_REQUEST_CONTEXT;
     const bindingFromState = ctx?.state?.[binding.name];
     const integrationId = bindingFromState &&
-        typeof bindingFromState === "object" &&
-        "value" in bindingFromState
+        typeof bindingFromState === 'object' &&
+        'value' in bindingFromState
       ? bindingFromState.value
       : undefined;
-    if (typeof integrationId !== "string") {
+    if (typeof integrationId !== 'string') {
       return null;
     }
     return mcpClientForIntegrationId(integrationId, ctx, env.DECO_CHAT_API_URL);

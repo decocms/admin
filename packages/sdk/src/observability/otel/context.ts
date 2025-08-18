@@ -15,13 +15,9 @@
  * limitations under the License.
  */
 
-import {
-  type Context,
-  type ContextManager,
-  ROOT_CONTEXT,
-} from "@opentelemetry/api";
-import { AsyncLocalStorage } from "node:async_hooks";
-import { EventEmitter } from "node:events";
+import { type Context, type ContextManager, ROOT_CONTEXT } from '@opentelemetry/api';
+import { AsyncLocalStorage } from 'node:async_hooks';
+import { EventEmitter } from 'node:events';
 
 type Func<T> = (...args: unknown[]) => T;
 
@@ -35,11 +31,11 @@ interface PatchMap {
 }
 
 const ADD_LISTENER_METHODS = [
-  "addListener" as const,
-  "on" as const,
-  "once" as const,
-  "prependListener" as const,
-  "prependOnceListener" as const,
+  'addListener' as const,
+  'on' as const,
+  'once' as const,
+  'prependListener' as const,
+  'prependOnceListener' as const,
 ];
 
 abstract class AbstractAsyncHooksContextManager implements ContextManager {
@@ -67,7 +63,7 @@ abstract class AbstractAsyncHooksContextManager implements ContextManager {
       return this._bindEventEmitter(context, target);
     }
 
-    if (typeof target === "function") {
+    if (typeof target === 'function') {
       return this._bindFunction(context, target);
     }
     return target;
@@ -78,7 +74,7 @@ abstract class AbstractAsyncHooksContextManager implements ContextManager {
     const contextWrapper = function (this: never, ...args: unknown[]) {
       return manager.with(context, () => target.apply(this, args));
     };
-    Object.defineProperty(contextWrapper, "length", {
+    Object.defineProperty(contextWrapper, 'length', {
       enumerable: false,
       configurable: true,
       writable: false,
@@ -113,14 +109,14 @@ abstract class AbstractAsyncHooksContextManager implements ContextManager {
       ee[methodName] = this._patchAddListener(ee, ee[methodName], context);
     });
     // patch methods that remove a listener
-    if (typeof ee.removeListener === "function") {
+    if (typeof ee.removeListener === 'function') {
       ee.removeListener = this._patchRemoveListener(ee, ee.removeListener);
     }
-    if (typeof ee.off === "function") {
+    if (typeof ee.off === 'function') {
       ee.off = this._patchRemoveListener(ee, ee.off);
     }
     // patch method that remove all listeners
-    if (typeof ee.removeAllListeners === "function") {
+    if (typeof ee.removeAllListeners === 'function') {
       ee.removeAllListeners = this._patchRemoveAllListeners(
         ee,
         ee.removeAllListeners,
@@ -227,12 +223,11 @@ abstract class AbstractAsyncHooksContextManager implements ContextManager {
     return (ee as never)[this._kOtListeners];
   }
 
-  private readonly _kOtListeners = Symbol("OtListeners");
+  private readonly _kOtListeners = Symbol('OtListeners');
   private _wrapped = false;
 }
 
-export class AsyncLocalStorageContextManager
-  extends AbstractAsyncHooksContextManager {
+export class AsyncLocalStorageContextManager extends AbstractAsyncHooksContextManager {
   private _asyncLocalStorage: AsyncLocalStorage<Context>;
 
   constructor() {

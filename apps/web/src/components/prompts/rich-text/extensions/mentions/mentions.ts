@@ -1,9 +1,9 @@
-import type { Prompt } from "@deco/sdk";
-import { toMention } from "@deco/sdk/utils";
-import Mention from "@tiptap/extension-mention";
-import { ReactNodeViewRenderer } from "@tiptap/react";
-import MentionNode from "./mention-node.tsx";
-import { suggestion } from "../suggestions/suggestions.ts";
+import type { Prompt } from '@deco/sdk';
+import { toMention } from '@deco/sdk/utils';
+import Mention from '@tiptap/extension-mention';
+import { ReactNodeViewRenderer } from '@tiptap/react';
+import MentionNode from './mention-node.tsx';
+import { suggestion } from '../suggestions/suggestions.ts';
 
 export const mentions = (prompts: Prompt[]) => {
   const promptMap = new Map<string, Prompt>(
@@ -16,10 +16,10 @@ export const mentions = (prompts: Prompt[]) => {
     },
     addAttributes() {
       return {
-        type: { default: "mention" },
-        id: { default: "" },
-        label: { default: "" },
-        mentionType: { default: "prompt" },
+        type: { default: 'mention' },
+        id: { default: '' },
+        label: { default: '' },
+        mentionType: { default: 'prompt' },
       };
     },
     parseHTML() {
@@ -29,12 +29,12 @@ export const mentions = (prompts: Prompt[]) => {
           getAttrs: (node) => {
             if (!(node instanceof HTMLElement)) return false;
 
-            const id = node.getAttribute("data-id");
+            const id = node.getAttribute('data-id');
             if (!id) return false;
 
             return {
               id,
-              mentionType: node.getAttribute("data-mention-type"),
+              mentionType: node.getAttribute('data-mention-type'),
               label: promptMap.get(id)?.name,
             };
           },
@@ -43,11 +43,11 @@ export const mentions = (prompts: Prompt[]) => {
     },
     renderHTML({ node }) {
       return [
-        "span",
+        'span',
         {
-          "data-type": "mention",
-          "data-id": node.attrs.id,
-          "data-mention-type": node.attrs.mentionType,
+          'data-type': 'mention',
+          'data-id': node.attrs.id,
+          'data-mention-type': node.attrs.mentionType,
         },
         `${node.attrs.label}`,
       ];
@@ -56,7 +56,7 @@ export const mentions = (prompts: Prompt[]) => {
     suggestion: suggestion(prompts ?? []),
     renderText({ node }) {
       const prompt = promptMap.get(node.attrs.id) || node.attrs.id;
-      return toMention(prompt.id, "prompt");
+      return toMention(prompt.id, 'prompt');
     },
   });
 };

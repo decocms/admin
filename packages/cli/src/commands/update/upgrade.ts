@@ -1,20 +1,20 @@
-import { readFile } from "fs/promises";
-import { dirname, join } from "path";
-import { fileURLToPath } from "url";
-import { spawn } from "child_process";
-import * as semver from "semver";
-import inquirer from "inquirer";
-import chalk from "chalk";
-import process from "node:process";
-import { detectRuntime } from "../../lib/runtime.js";
+import { readFile } from 'fs/promises';
+import { dirname, join } from 'path';
+import { fileURLToPath } from 'url';
+import { spawn } from 'child_process';
+import * as semver from 'semver';
+import inquirer from 'inquirer';
+import chalk from 'chalk';
+import process from 'node:process';
+import { detectRuntime } from '../../lib/runtime.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
 // Read package.json for current version
 const getPackageJson = async () => {
-  const packageJsonPath = join(__dirname, "../../../package.json");
-  const packageJson = JSON.parse(await readFile(packageJsonPath, "utf-8"));
+  const packageJsonPath = join(__dirname, '../../../package.json');
+  const packageJson = JSON.parse(await readFile(packageJsonPath, 'utf-8'));
   return packageJson;
 };
 
@@ -40,8 +40,8 @@ const getLatestVersion = async (packageName: string): Promise<string> => {
     return data.version;
   } catch (error) {
     clearTimeout(timeoutId);
-    if (error instanceof Error && error.name === "AbortError") {
-      throw new Error("Request timed out while checking for updates");
+    if (error instanceof Error && error.name === 'AbortError') {
+      throw new Error('Request timed out while checking for updates');
     }
     throw error;
   }
@@ -51,26 +51,26 @@ const getLatestVersion = async (packageName: string): Promise<string> => {
  * Gets the install command for a specific runtime
  */
 const getInstallCommand = (
-  runtime: "node" | "bun" | "deno" | "unknown",
+  runtime: 'node' | 'bun' | 'deno' | 'unknown',
   packageName: string,
 ): [string, string[]] => {
   switch (runtime) {
-    case "bun":
-      return ["bun", ["install", "-g", packageName]];
-    case "deno":
-      return ["deno", ["install", "-Ar", "-g", "-f", `npm:${packageName}`]];
-    case "node":
-      return ["npm", ["install", "-g", packageName]];
-    case "unknown":
+    case 'bun':
+      return ['bun', ['install', '-g', packageName]];
+    case 'deno':
+      return ['deno', ['install', '-Ar', '-g', '-f', `npm:${packageName}`]];
+    case 'node':
+      return ['npm', ['install', '-g', packageName]];
+    case 'unknown':
     default:
       // Fallback to npm for unknown runtime
-      console.log(chalk.yellow("⚠️  Unknown runtime, falling back to npm"));
-      return ["npm", ["install", "-g", packageName]];
+      console.log(chalk.yellow('⚠️  Unknown runtime, falling back to npm'));
+      return ['npm', ['install', '-g', packageName]];
   }
 };
 
 export const upgrade = (packageName: string): Promise<void> => {
-  console.log(chalk.yellow("🔄 Upgrading to the latest version..."));
+  console.log(chalk.yellow('🔄 Upgrading to the latest version...'));
 
   const runtime = detectRuntime();
   console.log(chalk.gray(`Detected runtime: ${runtime}`));
@@ -79,13 +79,13 @@ export const upgrade = (packageName: string): Promise<void> => {
 
   return new Promise((resolve, reject) => {
     const child = spawn(command, args, {
-      stdio: "inherit",
+      stdio: 'inherit',
       shell: true,
     });
 
-    child.on("close", (code) => {
+    child.on('close', (code) => {
       if (code === 0) {
-        console.log(chalk.green("🎉 CLI updated successfully!"));
+        console.log(chalk.green('🎉 CLI updated successfully!'));
         console.log(
           chalk.blue(
             "Please restart your terminal or run 'deco --version' to verify.",
@@ -93,17 +93,17 @@ export const upgrade = (packageName: string): Promise<void> => {
         );
         resolve();
       } else {
-        console.error(chalk.red("❌ Failed to update the CLI."));
+        console.error(chalk.red('❌ Failed to update the CLI.'));
         reject(
           new Error(
-            `${command} ${args.join(" ")} failed with exit code ${code}`,
+            `${command} ${args.join(' ')} failed with exit code ${code}`,
           ),
         );
       }
     });
 
-    child.on("error", (error) => {
-      console.error(chalk.red("❌ Failed to update the CLI."));
+    child.on('error', (error) => {
+      console.error(chalk.red('❌ Failed to update the CLI.'));
       reject(error);
     });
   });
@@ -111,10 +111,10 @@ export const upgrade = (packageName: string): Promise<void> => {
 
 export async function checkForUpdates(): Promise<void> {
   // Skip if we've already checked in this session or if running update command
-  if (process.env.DECO_CLI_UPDATE_CHECKED || process.argv.includes("update")) {
+  if (process.env.DECO_CLI_UPDATE_CHECKED || process.argv.includes('update')) {
     return;
   }
-  process.env.DECO_CLI_UPDATE_CHECKED = "true";
+  process.env.DECO_CLI_UPDATE_CHECKED = 'true';
 
   try {
     const packageJson = await getPackageJson();
@@ -137,9 +137,9 @@ export async function checkForUpdates(): Promise<void> {
 
       const { upgradeConfirm } = await inquirer.prompt([
         {
-          type: "confirm",
-          name: "upgradeConfirm",
-          message: "Do you want to upgrade?",
+          type: 'confirm',
+          name: 'upgradeConfirm',
+          message: 'Do you want to upgrade?',
           default: true,
         },
       ]);
@@ -152,7 +152,7 @@ export async function checkForUpdates(): Promise<void> {
     // We can ignore this error since it's not critical.
     // Only log in debug mode
     if (process.env.DEBUG) {
-      console.debug("Update check failed:", error);
+      console.debug('Update check failed:', error);
     }
   }
 }
@@ -163,7 +163,7 @@ export async function upgradeCommand(): Promise<void> {
     const currentVersion = packageJson.version;
 
     console.log(chalk.blue(`Current version: v${currentVersion}`));
-    console.log(chalk.blue("Checking for updates..."));
+    console.log(chalk.blue('Checking for updates...'));
 
     const latestVersion = await getLatestVersion(packageJson.name);
 
@@ -176,8 +176,8 @@ export async function upgradeCommand(): Promise<void> {
 
       const { confirmed } = await inquirer.prompt([
         {
-          type: "confirm",
-          name: "confirmed",
+          type: 'confirm',
+          name: 'confirmed',
           message: `Update from v${currentVersion} to v${latestVersion}?`,
           default: true,
         },
@@ -186,18 +186,18 @@ export async function upgradeCommand(): Promise<void> {
       if (confirmed) {
         await upgrade(packageJson.name);
       } else {
-        console.log(chalk.gray("Update cancelled."));
+        console.log(chalk.gray('Update cancelled.'));
       }
     } else if (semver.eq(latestVersion, currentVersion)) {
       console.log(
-        chalk.green("✅ You are already running the latest version!"),
+        chalk.green('✅ You are already running the latest version!'),
       );
     } else {
-      console.log(chalk.blue("ℹ️  You are running a development version."));
+      console.log(chalk.blue('ℹ️  You are running a development version.'));
     }
   } catch (error) {
     console.error(
-      chalk.red("❌ Failed to check for updates:"),
+      chalk.red('❌ Failed to check for updates:'),
       error instanceof Error ? error.message : String(error),
     );
     process.exit(1);

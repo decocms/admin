@@ -1,10 +1,6 @@
-import type { JSONSchema7 } from "json-schema";
-import type { SchemaType } from "../index.tsx";
-import {
-  doesSchemaTypeMatchValue,
-  getDetectedType,
-  selectAnyOfSchema,
-} from "./schema.ts";
+import type { JSONSchema7 } from 'json-schema';
+import type { SchemaType } from '../index.tsx';
+import { doesSchemaTypeMatchValue, getDetectedType, selectAnyOfSchema } from './schema.ts';
 
 /**
  * This algorithm generates default value given a schema and form data, following this steps:
@@ -19,16 +15,16 @@ export function generateDefaultValue(
   formData?: SchemaType,
   fieldPath?: string,
 ): SchemaType {
-  if (!schema || typeof schema !== "object") {
+  if (!schema || typeof schema !== 'object') {
     return null;
   }
 
   // Special handling for primitive types
   if (
     schema.type &&
-    typeof schema.type === "string" &&
-    schema.type !== "object" &&
-    schema.type !== "array"
+    typeof schema.type === 'string' &&
+    schema.type !== 'object' &&
+    schema.type !== 'array'
   ) {
     // For primitive types, check if form data matches the schema type
     if (formData !== undefined && formData !== null) {
@@ -58,22 +54,22 @@ export function generateDefaultValue(
 
   // Handle arrays of types (e.g. ["string", "null"])
   const type = Array.isArray(schema.type)
-    ? (schema.type.find((prop) => prop !== "null") ?? "null")
+    ? (schema.type.find((prop) => prop !== 'null') ?? 'null')
     : schema.type;
 
   switch (type) {
-    case "string":
+    case 'string':
       return schema.default !== undefined
         ? schema.default
         : schema.enum && schema.enum.length > 0
         ? schema.enum[0]
-        : "";
-    case "number":
-    case "integer":
+        : '';
+    case 'number':
+    case 'integer':
       return schema.default !== undefined ? schema.default : 0;
-    case "boolean":
+    case 'boolean':
       return schema.default !== undefined ? schema.default : false;
-    case "object":
+    case 'object':
       if (schema.default !== undefined) {
         return schema.default as SchemaType;
       }
@@ -85,10 +81,9 @@ export function generateDefaultValue(
           const propPath = fieldPath ? `${fieldPath}.${name}` : name;
 
           // Extract child form data if available and if formData is an object
-          const childFormData =
-            formData && typeof formData === "object" && !Array.isArray(formData)
-              ? (formData as Record<string, SchemaType>)[name]
-              : undefined;
+          const childFormData = formData && typeof formData === 'object' && !Array.isArray(formData)
+            ? (formData as Record<string, SchemaType>)[name]
+            : undefined;
 
           // Check if the property should be included based on form data and schema
           if (childFormData !== undefined) {
@@ -126,7 +121,7 @@ export function generateDefaultValue(
         return result;
       }
       return {};
-    case "array":
+    case 'array':
       if (schema.default !== undefined) {
         return schema.default as SchemaType;
       }
@@ -139,9 +134,7 @@ export function generateDefaultValue(
           // Process each item in the array
           const items = formData as unknown as SchemaType[];
           return items.map((item: SchemaType, index: number) => {
-            const itemPath = fieldPath
-              ? `${fieldPath}[${index}]`
-              : `[${index}]`;
+            const itemPath = fieldPath ? `${fieldPath}[${index}]` : `[${index}]`;
             return generateDefaultValue(
               schema.items as JSONSchema7,
               item,
@@ -156,9 +149,7 @@ export function generateDefaultValue(
           return Array(minItems)
             .fill(null)
             .map((_, index) => {
-              const itemPath = fieldPath
-                ? `${fieldPath}[${index}]`
-                : `[${index}]`;
+              const itemPath = fieldPath ? `${fieldPath}[${index}]` : `[${index}]`;
               return generateDefaultValue(
                 schema.items as JSONSchema7,
                 undefined,

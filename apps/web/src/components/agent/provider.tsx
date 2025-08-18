@@ -1,6 +1,6 @@
-import type { LanguageModelV1FinishReason } from "@ai-sdk/provider";
-import { useChat } from "@ai-sdk/react";
-import { zodResolver } from "@hookform/resolvers/zod";
+import type { LanguageModelV1FinishReason } from '@ai-sdk/provider';
+import { useChat } from '@ai-sdk/react';
+import { zodResolver } from '@hookform/resolvers/zod';
 import {
   createContext,
   type PropsWithChildren,
@@ -10,12 +10,12 @@ import {
   useMemo,
   useRef,
   useState,
-} from "react";
-import { useForm, type UseFormReturn } from "react-hook-form";
-import { useBlocker } from "react-router";
-import { toast } from "sonner";
+} from 'react';
+import { useForm, type UseFormReturn } from 'react-hook-form';
+import { useBlocker } from 'react-router';
+import { toast } from 'sonner';
 
-import type { Toolset } from "@deco/ai";
+import type { Toolset } from '@deco/ai';
 import {
   type Agent,
   AgentSchema,
@@ -29,7 +29,7 @@ import {
   useThreadMessages,
   useUpdateAgent,
   WELL_KNOWN_AGENTS,
-} from "@deco/sdk";
+} from '@deco/sdk';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -39,12 +39,12 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-} from "@deco/ui/components/alert-dialog.tsx";
-import type { UIMessage } from "ai";
-import { trackEvent } from "../../hooks/analytics.ts";
-import { useCreateAgent } from "../../hooks/use-create-agent.ts";
-import { useUserPreferences } from "../../hooks/use-user-preferences.ts";
-import { IMAGE_REGEXP, openPreviewPanel } from "../chat/utils/preview.ts";
+} from '@deco/ui/components/alert-dialog.tsx';
+import type { UIMessage } from 'ai';
+import { trackEvent } from '../../hooks/analytics.ts';
+import { useCreateAgent } from '../../hooks/use-create-agent.ts';
+import { useUserPreferences } from '../../hooks/use-user-preferences.ts';
+import { IMAGE_REGEXP, openPreviewPanel } from '../chat/utils/preview.ts';
 
 interface UiOptions {
   showThreadTools: boolean;
@@ -116,11 +116,11 @@ const AgentContext = createContext<AgentContextValue | null>(null);
 
 const setAutoScroll = (e: HTMLDivElement | null, enabled: boolean) => {
   if (!e) return;
-  e.dataset.disableAutoScroll = enabled ? "false" : "true";
+  e.dataset.disableAutoScroll = enabled ? 'false' : 'true';
 };
 
 const isAutoScrollEnabled = (e: HTMLDivElement | null) => {
-  return e?.dataset.disableAutoScroll !== "true";
+  return e?.dataset.disableAutoScroll !== 'true';
 };
 
 export function AgentProvider({
@@ -135,7 +135,7 @@ export function AgentProvider({
   children,
 }: PropsWithChildren<AgentProviderProps>) {
   const { data: serverAgent } = useAgentData(agentId);
-  const isPublic = serverAgent.visibility === "PUBLIC";
+  const isPublic = serverAgent.visibility === 'PUBLIC';
   const { data: installedIntegrations } = useIntegrations({ isPublic });
   const updateAgentMutation = useUpdateAgent();
   const createAgent = useCreateAgent();
@@ -191,10 +191,9 @@ export function AgentProvider({
         const id = crypto.randomUUID();
         const newAgent = { ...agent, id };
         await createAgent(newAgent, {
-          eventName: "agent_create_from_well_known",
+          eventName: 'agent_create_from_well_known',
         });
-        const wellKnownAgent =
-          WELL_KNOWN_AGENTS[agentId as keyof typeof WELL_KNOWN_AGENTS];
+        const wellKnownAgent = WELL_KNOWN_AGENTS[agentId as keyof typeof WELL_KNOWN_AGENTS];
         form.reset(wellKnownAgent);
         return;
       }
@@ -203,9 +202,9 @@ export function AgentProvider({
         agent as Agent,
       );
       form.reset(updatedAgent); // Reset form with server response
-      toast.success("Agent updated successfully");
+      toast.success('Agent updated successfully');
     } catch (error) {
-      toast.error("Failed to update agent");
+      toast.error('Failed to update agent');
       throw error;
     }
   }, [
@@ -225,27 +224,26 @@ export function AgentProvider({
   const chat = useChat({
     initialInput,
     initialMessages: initialMessages || threadMessages || [],
-    credentials: "include",
+    credentials: 'include',
     headers: {
-      "x-deno-isolate-instance-id": agentRoot,
-      "x-trace-debug-id": getTraceDebugId(),
+      'x-deno-isolate-instance-id': agentRoot,
+      'x-trace-debug-id': getTraceDebugId(),
     },
-    api: new URL("/actors/AIAgent/invoke/stream", DECO_CHAT_API).href,
+    api: new URL('/actors/AIAgent/invoke/stream', DECO_CHAT_API).href,
     experimental_prepareRequestBody: ({ messages }) => {
       dispatchMessages({ messages, threadId, agentId });
       const lastMessage = messages.at(-1);
 
       /** Add annotation so we can use the file URL as a parameter to a tool call */
       if (lastMessage) {
-        lastMessage.annotations =
-          lastMessage?.["experimental_attachments"]?.map((attachment) => ({
-            type: "file",
-            url: attachment.url,
-            name: attachment.name ?? "unknown file",
-            contentType: attachment.contentType ?? "unknown content type",
-            content:
-              "This message refers to a file uploaded by the user. You might use the file URL as a parameter to a tool call.",
-          })) || lastMessage?.annotations;
+        lastMessage.annotations = lastMessage?.['experimental_attachments']?.map((attachment) => ({
+          type: 'file',
+          url: attachment.url,
+          name: attachment.name ?? 'unknown file',
+          contentType: attachment.contentType ?? 'unknown content type',
+          content:
+            'This message refers to a file uploaded by the user. You might use the file URL as a parameter to a tool call.',
+        })) || lastMessage?.annotations;
       }
 
       const bypassOpenRouter = !preferences.useOpenRouter;
@@ -266,7 +264,7 @@ export function AgentProvider({
             pdfSummarization: preferences.pdfSummarization ?? true,
             toolsets,
             smoothStream: preferences.smoothStream !== false
-              ? { delayInMs: 25, chunk: "word" }
+              ? { delayInMs: 25, chunk: 'word' }
               : undefined,
           },
         ],
@@ -276,10 +274,10 @@ export function AgentProvider({
       setFinishReason(finishReason);
     },
     onError: (error) => {
-      console.error("Chat error:", error);
+      console.error('Chat error:', error);
     },
     onToolCall: ({ toolCall }) => {
-      if (toolCall.toolName === "RENDER") {
+      if (toolCall.toolName === 'RENDER') {
         const { content, title } = toolCall.args as {
           content: string;
           title: string;
@@ -297,7 +295,7 @@ export function AgentProvider({
       }
     },
     onResponse: (response) => {
-      correlationIdRef.current = response.headers.get("x-trace-debug-id");
+      correlationIdRef.current = response.headers.get('x-trace-debug-id');
     },
     ...chatOptions, // Allow passing any additional useChat options
   });
@@ -319,24 +317,24 @@ export function AgentProvider({
         }))
       );
 
-      await chat.append({ role: "user", content: selectedValue });
+      await chat.append({ role: 'user', content: selectedValue });
     }
   };
 
   const handleRetry = async (context?: string[]) => {
     const lastUserMessage = chat.messages.findLast(
-      (msg) => msg.role === "user",
+      (msg) => msg.role === 'user',
     );
 
     if (!lastUserMessage) return;
 
     await chat.append({
       content: lastUserMessage.content,
-      role: "user",
+      role: 'user',
       annotations: context || [],
     });
 
-    trackEvent("chat_retry", {
+    trackEvent('chat_retry', {
       data: { agentId, threadId, lastUserMessage: lastUserMessage.content },
     });
   };
@@ -363,8 +361,7 @@ export function AgentProvider({
     agent: agent as Agent,
     updateAgent,
     hasUnsavedChanges,
-    installedIntegrations:
-      installedIntegrations?.filter((i) => !i.id.includes(agentId)) || [],
+    installedIntegrations: installedIntegrations?.filter((i) => !i.id.includes(agentId)) || [],
     uiOptions: mergedUiOptions,
     chat: {
       ...chat,
@@ -389,21 +386,20 @@ export function AgentProvider({
 
   return (
     <>
-      <AlertDialog open={blocked.state === "blocked"}>
+      <AlertDialog open={blocked.state === 'blocked'}>
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Discard unsaved changes?</AlertDialogTitle>
             <AlertDialogDescription>
-              You have unsaved changes. If you leave this page, your edits will
-              be lost. Are you sure you want to discard your changes and
-              navigate away?
+              You have unsaved changes. If you leave this page, your edits will be lost. Are you
+              sure you want to discard your changes and navigate away?
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel onClick={handleCancel}>Cancel</AlertDialogCancel>
             <AlertDialogAction
               onClick={discardChangesBlocked}
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              className='bg-destructive text-destructive-foreground hover:bg-destructive/90'
             >
               Discard changes
             </AlertDialogAction>
@@ -421,6 +417,6 @@ export function AgentProvider({
 // Main hook for the AgentProvider context
 export const useAgent = () => {
   const context = useContext(AgentContext);
-  if (!context) throw new Error("useAgent must be used within AgentProvider");
+  if (!context) throw new Error('useAgent must be used within AgentProvider');
   return context;
 };

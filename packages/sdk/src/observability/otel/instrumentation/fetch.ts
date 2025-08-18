@@ -8,15 +8,15 @@ import {
   type SpanOptions,
   SpanStatusCode,
   trace,
-} from "@opentelemetry/api";
-import { getActiveConfig, type Initialiser, setConfig } from "../config.ts";
-import { wrap } from "../wrap.ts";
-import { instrumentEnv } from "./env.ts";
-import { exportSpans, proxyExecutionContext } from "./common.ts";
-import type { ResolvedTraceConfig } from "../types.ts";
-import type { ReadableSpan } from "@opentelemetry/sdk-trace-base";
-import { versionAttributes } from "./version.ts";
-import { REQUEST_CONTEXT_KEY } from "../../constants.ts";
+} from '@opentelemetry/api';
+import { getActiveConfig, type Initialiser, setConfig } from '../config.ts';
+import { wrap } from '../wrap.ts';
+import { instrumentEnv } from './env.ts';
+import { exportSpans, proxyExecutionContext } from './common.ts';
+import type { ResolvedTraceConfig } from '../types.ts';
+import type { ReadableSpan } from '@opentelemetry/sdk-trace-base';
+import { versionAttributes } from './version.ts';
+import { REQUEST_CONTEXT_KEY } from '../../constants.ts';
 
 export type IncludeTraceContextFn = (request: Request) => boolean;
 export interface FetcherConfig {
@@ -37,13 +37,13 @@ type FetchHandler = ExportedHandlerFetchHandler;
 type FetchHandlerArgs = Parameters<FetchHandler>;
 
 const netKeysFromCF = new Set([
-  "colo",
-  "country",
-  "request_priority",
-  "tls_cipher",
-  "tls_version",
-  "asn",
-  "tcp_rtt",
+  'colo',
+  'country',
+  'request_priority',
+  'tls_cipher',
+  'tls_version',
+  'asn',
+  'tcp_rtt',
 ]);
 
 const camelToSnakeCase = (s: string): string => {
@@ -58,7 +58,7 @@ const gatherOutgoingCfAttributes = (
     const value = cf[key];
     const destKey = camelToSnakeCase(key);
     if (!netKeysFromCF.has(destKey)) {
-      if (typeof value === "string" || typeof value === "number") {
+      if (typeof value === 'string' || typeof value === 'number') {
         attrs[`cf.${destKey}`] = value;
       } else {
         attrs[`cf.${destKey}`] = JSON.stringify(value);
@@ -71,43 +71,43 @@ const gatherOutgoingCfAttributes = (
 export function gatherRequestAttributes(request: Request): Attributes {
   const attrs: Record<string, string | number> = {};
   const headers = request.headers;
-  attrs["http.request.method"] = request.method.toUpperCase();
-  attrs["network.protocol.name"] = "http";
-  attrs["network.protocol.version"] = request.cf?.httpProtocol as string;
-  attrs["http.request.body.size"] = headers.get("content-length")!;
-  attrs["user_agent.original"] = headers.get("user-agent")!;
-  attrs["http.mime_type"] = headers.get("content-type")!;
-  attrs["http.accepts"] = request.cf?.clientAcceptEncoding as string;
+  attrs['http.request.method'] = request.method.toUpperCase();
+  attrs['network.protocol.name'] = 'http';
+  attrs['network.protocol.version'] = request.cf?.httpProtocol as string;
+  attrs['http.request.body.size'] = headers.get('content-length')!;
+  attrs['user_agent.original'] = headers.get('user-agent')!;
+  attrs['http.mime_type'] = headers.get('content-type')!;
+  attrs['http.accepts'] = request.cf?.clientAcceptEncoding as string;
 
   const u = new URL(request.url);
-  attrs["url.full"] = `${u.protocol}//${u.host}${u.pathname}${u.search}`;
-  attrs["server.address"] = u.host;
-  attrs["url.scheme"] = u.protocol;
-  attrs["url.path"] = u.pathname;
-  attrs["url.query"] = u.search;
+  attrs['url.full'] = `${u.protocol}//${u.host}${u.pathname}${u.search}`;
+  attrs['server.address'] = u.host;
+  attrs['url.scheme'] = u.protocol;
+  attrs['url.path'] = u.pathname;
+  attrs['url.query'] = u.search;
 
   return attrs;
 }
 
 export function gatherResponseAttributes(response: Response): Attributes {
   const attrs: Record<string, string | number> = {};
-  attrs["http.response.status_code"] = response.status;
-  if (response.headers.get("content-length")! == null) {
-    attrs["http.response.body.size"] = response.headers.get("content-length")!;
+  attrs['http.response.status_code'] = response.status;
+  if (response.headers.get('content-length')! == null) {
+    attrs['http.response.body.size'] = response.headers.get('content-length')!;
   }
-  attrs["http.mime_type"] = response.headers.get("content-type")!;
+  attrs['http.mime_type'] = response.headers.get('content-type')!;
   return attrs;
 }
 
 export function gatherIncomingCfAttributes(request: Request): Attributes {
   const attrs: Record<string, string | number> = {};
-  attrs["net.colo"] = request.cf?.colo as string;
-  attrs["net.country"] = request.cf?.country as string;
-  attrs["net.request_priority"] = request.cf?.requestPriority as string;
-  attrs["net.tls_cipher"] = request.cf?.tlsCipher as string;
-  attrs["net.tls_version"] = request.cf?.tlsVersion as string;
-  attrs["net.asn"] = request.cf?.asn as number;
-  attrs["net.tcp_rtt"] = request.cf?.clientTcpRtt as number;
+  attrs['net.colo'] = request.cf?.colo as string;
+  attrs['net.country'] = request.cf?.country as string;
+  attrs['net.request_priority'] = request.cf?.requestPriority as string;
+  attrs['net.tls_cipher'] = request.cf?.tlsCipher as string;
+  attrs['net.tls_version'] = request.cf?.tlsVersion as string;
+  attrs['net.asn'] = request.cf?.asn as number;
+  attrs['net.tcp_rtt'] = request.cf?.clientTcpRtt as number;
   return attrs;
 }
 
@@ -129,18 +129,15 @@ function getParentContextFromRequest(request: Request) {
     return api_context.active();
   }
 
-  const acceptTraceContext =
-    typeof workerConfig.handlers.fetch.acceptTraceContext === "function"
-      ? workerConfig.handlers.fetch.acceptTraceContext(request)
-      : (workerConfig.handlers.fetch.acceptTraceContext ?? true);
-  return acceptTraceContext
-    ? getParentContextFromHeaders(request.headers)
-    : api_context.active();
+  const acceptTraceContext = typeof workerConfig.handlers.fetch.acceptTraceContext === 'function'
+    ? workerConfig.handlers.fetch.acceptTraceContext(request)
+    : (workerConfig.handlers.fetch.acceptTraceContext ?? true);
+  return acceptTraceContext ? getParentContextFromHeaders(request.headers) : api_context.active();
 }
 
 export function waitUntilTrace(fn: () => Promise<unknown>): Promise<void> {
-  const tracer = trace.getTracer("waitUntil");
-  return tracer.startActiveSpan("waitUntil", async (span) => {
+  const tracer = trace.getTracer('waitUntil');
+  return tracer.startActiveSpan('waitUntil', async (span) => {
     await fn();
     span.end();
   });
@@ -153,11 +150,11 @@ export function executeFetchHandler(
 ): Promise<Response> {
   const spanContext = getParentContextFromRequest(request);
 
-  const tracer = trace.getTracer("fetchHandler");
+  const tracer = trace.getTracer('fetchHandler');
   const attributes = {
-    ["faas.trigger"]: "http",
-    ["faas.coldstart"]: cold_start,
-    ["faas.invocation_id"]: request.headers.get("cf-ray") ?? undefined,
+    ['faas.trigger']: 'http',
+    ['faas.coldstart']: cold_start,
+    ['faas.invocation_id']: request.headers.get('cf-ray') ?? undefined,
   };
   cold_start = false;
   Object.assign(attributes, gatherRequestAttributes(request));
@@ -185,9 +182,9 @@ export function executeFetchHandler(
         span.setStatus({ code: SpanStatusCode.ERROR });
         throw error;
       } finally {
-        if (readable.attributes["http.route"]) {
+        if (readable.attributes['http.route']) {
           span.updateName(
-            `fetchHandler ${method} ${readable.attributes["http.route"]}`,
+            `fetchHandler ${method} ${readable.attributes['http.route']}`,
           );
         }
         span.end();
@@ -234,14 +231,14 @@ export function createFetchHandler(
 
 type getFetchConfig = (config: ResolvedTraceConfig) => FetcherConfig;
 export function instrumentClientFetch(
-  fetchFn: Fetcher["fetch"],
+  fetchFn: Fetcher['fetch'],
   configFn: getFetchConfig,
   attrs?: Attributes,
-): Fetcher["fetch"] {
-  const handler: ProxyHandler<Fetcher["fetch"]> = {
+): Fetcher['fetch'] {
+  const handler: ProxyHandler<Fetcher['fetch']> = {
     apply: (target, thisArg, argArray): Response | Promise<Response> => {
       const request = new Request(argArray[0], argArray[1]);
-      if (!request.url.startsWith("http")) {
+      if (!request.url.startsWith('http')) {
         return Reflect.apply(target, thisArg, argArray);
       }
 
@@ -251,25 +248,24 @@ export function instrumentClientFetch(
       }
       const config = configFn(workerConfig);
 
-      const tracer = trace.getTracer("fetcher");
+      const tracer = trace.getTracer('fetcher');
       const options: SpanOptions = { kind: SpanKind.CLIENT, attributes: attrs };
 
       const host = new URL(request.url).host;
       const method = request.method.toUpperCase();
-      const spanName = typeof attrs?.["name"] === "string"
-        ? attrs?.["name"]
+      const spanName = typeof attrs?.['name'] === 'string'
+        ? attrs?.['name']
         : `fetch ${method} ${host}`;
       const promise = tracer.startActiveSpan(
         spanName,
         options,
         async (span) => {
-          const includeTraceContext =
-            typeof config.includeTraceContext === "function"
-              ? config.includeTraceContext(request)
-              : config.includeTraceContext;
+          const includeTraceContext = typeof config.includeTraceContext === 'function'
+            ? config.includeTraceContext(request)
+            : config.includeTraceContext;
           if (includeTraceContext ?? true) {
             propagation.inject(api_context.active(), request.headers, {
-              set: (h, k, v) => h.set(k, typeof v === "string" ? v : String(v)),
+              set: (h, k, v) => h.set(k, typeof v === 'string' ? v : String(v)),
             });
           }
           span.setAttributes(gatherRequestAttributes(request));

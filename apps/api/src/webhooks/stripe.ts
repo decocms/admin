@@ -1,18 +1,18 @@
-import type { Context } from "hono";
+import type { Context } from 'hono';
 import {
   createTransactionFromStripeEvent,
   serializeError,
   verifyAndParseStripeEvent,
   WebhookEventIgnoredError,
-} from "@deco/sdk/mcp";
-import { honoCtxToAppCtx } from "../api.ts";
-import { createWalletClient } from "@deco/sdk/mcp/wallet";
+} from '@deco/sdk/mcp';
+import { honoCtxToAppCtx } from '../api.ts';
+import { createWalletClient } from '@deco/sdk/mcp/wallet';
 
 export const handleStripeWebhook = async (c: Context) => {
   try {
-    const signature = c.req.header("stripe-signature");
+    const signature = c.req.header('stripe-signature');
     if (!signature) {
-      throw new Error("Stripe signature header not found");
+      throw new Error('Stripe signature header not found');
     }
 
     const appContext = honoCtxToAppCtx(c);
@@ -23,11 +23,10 @@ export const handleStripeWebhook = async (c: Context) => {
       signature,
       appContext,
     );
-    const { transaction, idempotentId } =
-      await createTransactionFromStripeEvent(appContext, event);
+    const { transaction, idempotentId } = await createTransactionFromStripeEvent(appContext, event);
 
     if (!appContext.envVars.WALLET_API_KEY) {
-      throw new Error("WALLET_API_KEY is not set");
+      throw new Error('WALLET_API_KEY is not set');
     }
 
     const wallet = createWalletClient(
@@ -35,7 +34,7 @@ export const handleStripeWebhook = async (c: Context) => {
       appContext.walletBinding,
     );
 
-    const response = await wallet["PUT /transactions/:id"](
+    const response = await wallet['PUT /transactions/:id'](
       {
         id: idempotentId,
       },
@@ -51,7 +50,7 @@ export const handleStripeWebhook = async (c: Context) => {
 
     return c.json(
       {
-        message: "Transaction created",
+        message: 'Transaction created',
       },
       200,
     );
@@ -65,10 +64,10 @@ export const handleStripeWebhook = async (c: Context) => {
       );
     }
 
-    console.error("[Stripe Webhook] Error", serializeError(error));
+    console.error('[Stripe Webhook] Error', serializeError(error));
     return c.json(
       {
-        message: "Internal server error",
+        message: 'Internal server error',
       },
       500,
     );

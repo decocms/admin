@@ -1,41 +1,38 @@
-import type { Prompt } from "@deco/sdk";
-import { ReactRenderer } from "@tiptap/react";
-import type { SuggestionOptions } from "@tiptap/suggestion";
-import tippy, { type Instance, type Props } from "tippy.js";
-import MentionDropdown, { type Option } from "./dropdown.tsx";
+import type { Prompt } from '@deco/sdk';
+import { ReactRenderer } from '@tiptap/react';
+import type { SuggestionOptions } from '@tiptap/suggestion';
+import tippy, { type Instance, type Props } from 'tippy.js';
+import MentionDropdown, { type Option } from './dropdown.tsx';
 
 export const suggestion: (
   items: Prompt[],
 ) => Partial<SuggestionOptions<Option>> = (items) => {
   return {
-    char: "/",
+    char: '/',
     items: (props) => {
       const { query } = props;
 
       return [
         {
-          id: "references",
-          type: "category",
-          label: "References",
+          id: 'references',
+          type: 'category',
+          label: 'References',
           children: [
             {
-              id: "prompts",
-              type: "category",
-              label: "Prompts",
-              icon: "text_snippet",
+              id: 'prompts',
+              type: 'category',
+              label: 'Prompts',
+              icon: 'text_snippet',
               children: items
-                .filter((prompt) =>
-                  prompt.name.toLowerCase().includes(query?.toLowerCase())
-                )
+                .filter((prompt) => prompt.name.toLowerCase().includes(query?.toLowerCase()))
                 .map(
                   (prompt): Option => ({
                     id: prompt.id,
-                    type: "option",
+                    type: 'option',
                     label: prompt.name,
-                    icon: "text_snippet",
+                    icon: 'text_snippet',
                     tooltip: prompt.content,
-                    handle: ({ command }) =>
-                      command({ id: prompt.id, label: prompt.name }),
+                    handle: ({ command }) => command({ id: prompt.id, label: prompt.name }),
                   }),
                 )
                 .slice(0, 10),
@@ -76,14 +73,14 @@ export const suggestion: (
           }
 
           // @ts-expect-error - tippy is not well typed
-          popup = tippy("body", {
+          popup = tippy('body', {
             getReferenceClientRect: props.clientRect,
             appendTo: () => document.body,
             content: component?.element,
             showOnCreate: true,
             interactive: true,
-            trigger: "manual",
-            placement: "bottom-start",
+            trigger: 'manual',
+            placement: 'bottom-start',
           });
         },
 
@@ -97,7 +94,7 @@ export const suggestion: (
         },
 
         onKeyDown(props) {
-          if (props.event.key === "Escape") {
+          if (props.event.key === 'Escape') {
             popup?.[0]?.hide();
 
             return true;

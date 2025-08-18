@@ -111,8 +111,8 @@ The template includes full Tailwind CSS integration with custom theming. Edit
 ```css
 @theme {
   /* Custom fonts */
-  --font-sans: "Atkinson Hyperlegible";
-  --font-mono: "IBM Plex Mono";
+  --font-sans: 'Atkinson Hyperlegible';
+  --font-mono: 'IBM Plex Mono';
 
   /* Custom accent colors (currently set to green) */
   --color-accent-50: var(--color-green-50);
@@ -138,15 +138,15 @@ Edit `view/astro.config.mjs` to customize your documentation site:
 
 ```javascript
 starlight({
-  title: "My Documentation",
+  title: 'My Documentation',
   social: [
-    { icon: "github", label: "GitHub", href: "https://github.com/your-repo" },
+    { icon: 'github', label: 'GitHub', href: 'https://github.com/your-repo' },
   ],
   sidebar: [
     {
-      label: "Guides",
+      label: 'Guides',
       items: [
-        { label: "Getting Started", slug: "guides/getting-started" },
+        { label: 'Getting Started', slug: 'guides/getting-started' },
       ],
     },
   ],

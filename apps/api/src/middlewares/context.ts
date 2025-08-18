@@ -1,8 +1,8 @@
-import { getServerClient } from "@deco/sdk/storage";
-import Cloudflare from "cloudflare";
-import type { MiddlewareHandler } from "hono";
-import { honoCtxToAppCtx } from "../api.ts";
-import { type AppEnv, createResourceAccess, getEnv } from "../utils/context.ts";
+import { getServerClient } from '@deco/sdk/storage';
+import Cloudflare from 'cloudflare';
+import type { MiddlewareHandler } from 'hono';
+import { honoCtxToAppCtx } from '../api.ts';
+import { type AppEnv, createResourceAccess, getEnv } from '../utils/context.ts';
 
 export const withContextMiddleware: MiddlewareHandler<AppEnv> = async (
   ctx,
@@ -12,11 +12,11 @@ export const withContextMiddleware: MiddlewareHandler<AppEnv> = async (
     honoCtxToAppCtx(ctx),
   );
 
-  ctx.set("db", getServerClient(SUPABASE_URL, SUPABASE_SERVER_TOKEN));
+  ctx.set('db', getServerClient(SUPABASE_URL, SUPABASE_SERVER_TOKEN));
 
-  ctx.set("cf", new Cloudflare({ apiToken: CF_API_TOKEN }));
+  ctx.set('cf', new Cloudflare({ apiToken: CF_API_TOKEN }));
 
-  ctx.set("resourceAccess", createResourceAccess());
+  ctx.set('resourceAccess', createResourceAccess());
 
   await next();
 };

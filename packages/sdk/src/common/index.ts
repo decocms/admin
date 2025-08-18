@@ -1,1 +1,1 @@
-export * from "./singleflight.ts";
+export * from './singleflight.ts';

@@ -1,5 +1,5 @@
-import { DEFAULT_MODEL } from "@deco/sdk";
-import { useLocalStorage } from "./use-local-storage.ts";
+import { DEFAULT_MODEL } from '@deco/sdk';
+import { useLocalStorage } from './use-local-storage.ts';
 
 export interface UserPreferences {
   useOpenRouter: boolean;
@@ -11,7 +11,7 @@ export interface UserPreferences {
   enableDecopilot: boolean;
 }
 
-const USER_PREFERENCES_KEY = "user-preferences";
+const USER_PREFERENCES_KEY = 'user-preferences';
 
 export function useUserPreferences() {
   const { value: preferences, update: setPreferences } = useLocalStorage<

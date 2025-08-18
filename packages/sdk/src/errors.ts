@@ -14,14 +14,14 @@ export class HttpError extends Error {
 
 export class UserInputError extends HttpError {
   override code = 400;
-  constructor(message: string = "User input error", traceId?: string) {
+  constructor(message: string = 'User input error', traceId?: string) {
     super(message, traceId);
   }
 }
 
 export class UnauthorizedError extends HttpError {
   override code = 401;
-  constructor(message: string = "User is not logged in", traceId?: string) {
+  constructor(message: string = 'User is not logged in', traceId?: string) {
     super(message, traceId);
   }
 }
@@ -29,7 +29,7 @@ export class UnauthorizedError extends HttpError {
 export class ForbiddenError extends HttpError {
   override code = 403;
   constructor(
-    message: string = "User does not have access to this resource",
+    message: string = 'User does not have access to this resource',
     traceId?: string,
   ) {
     super(message, traceId);
@@ -38,28 +38,28 @@ export class ForbiddenError extends HttpError {
 
 export class NotFoundError extends HttpError {
   override code = 404;
-  constructor(message: string = "Resource not found", traceId?: string) {
+  constructor(message: string = 'Resource not found', traceId?: string) {
     super(message, traceId);
   }
 }
 
 export class InternalServerError extends HttpError {
   override code = 500;
-  constructor(message: string = "Internal server error", traceId?: string) {
+  constructor(message: string = 'Internal server error', traceId?: string) {
     super(message, traceId);
   }
 }
 
 export class FeatureNotAvailableError extends HttpError {
   override code = 403;
-  constructor(message: string = "Feature not available", traceId?: string) {
+  constructor(message: string = 'Feature not available', traceId?: string) {
     super(message, traceId);
   }
 }
 
 export class WebhookEventIgnoredError extends HttpError {
   override code = 400;
-  constructor(message: string = "Event ignored", traceId?: string) {
+  constructor(message: string = 'Event ignored', traceId?: string) {
     super(message, traceId);
   }
 }

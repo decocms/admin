@@ -11,12 +11,12 @@ export type CustomInit = RequestInit & {
   handleResponse?: (response: Response) => Promise<unknown>;
 };
 
-export const DECO_MCP_CLIENT_HEADER = "X-Deco-MCP-Client";
+export const DECO_MCP_CLIENT_HEADER = 'X-Deco-MCP-Client';
 
 export const DEFAULT_INIT: CustomInit = {
-  credentials: "include",
+  credentials: 'include',
   headers: {
-    [DECO_MCP_CLIENT_HEADER]: "true",
+    [DECO_MCP_CLIENT_HEADER]: 'true',
   },
 };
 
@@ -37,13 +37,13 @@ export const createClient = <T>(init?: CustomInit): MCPClient<T> => {
           };
 
           const response = await fetch(`/mcp/call-tool/${String(prop)}`, {
-            method: "POST",
+            method: 'POST',
             body: JSON.stringify(args),
-            credentials: "include",
+            credentials: 'include',
             ...mergedInit,
           });
 
-          if (typeof mergedInit.handleResponse === "function") {
+          if (typeof mergedInit.handleResponse === 'function') {
             return mergedInit.handleResponse(response);
           }
 

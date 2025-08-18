@@ -1,12 +1,9 @@
 // deno-lint-ignore-file no-explicit-any
-import { createExportTraceServiceRequest } from "@opentelemetry/otlp-transformer";
-import {
-  type ExportServiceError,
-  OTLPExporterError,
-} from "@opentelemetry/otlp-exporter-base";
-import { type ExportResult, ExportResultCode } from "@opentelemetry/core";
-import type { SpanExporter } from "@opentelemetry/sdk-trace-base";
-import { unwrap } from "./wrap.ts";
+import { createExportTraceServiceRequest } from '@opentelemetry/otlp-transformer';
+import { type ExportServiceError, OTLPExporterError } from '@opentelemetry/otlp-exporter-base';
+import { type ExportResult, ExportResultCode } from '@opentelemetry/core';
+import type { SpanExporter } from '@opentelemetry/sdk-trace-base';
+import { unwrap } from './wrap.ts';
 
 export interface OTLPExporterConfig {
   url: string;
@@ -14,8 +11,8 @@ export interface OTLPExporterConfig {
 }
 
 const defaultHeaders: Record<string, string> = {
-  accept: "application/json",
-  "content-type": "application/json",
+  accept: 'application/json',
+  'content-type': 'application/json',
 };
 
 export class OTLPExporter implements SpanExporter {
@@ -57,7 +54,7 @@ export class OTLPExporter implements SpanExporter {
     });
     const body = JSON.stringify(exportMessage);
     const params: RequestInit = {
-      method: "POST",
+      method: 'POST',
       headers: this.headers,
       body,
     };

@@ -1,5 +1,5 @@
-import { createHttpClient } from "../../http.ts";
-import type { MicroDollar } from "./microdollar.ts";
+import { createHttpClient } from '../../http.ts';
+import type { MicroDollar } from './microdollar.ts';
 
 export interface DoubleEntry {
   debit: string;
@@ -13,19 +13,19 @@ export interface TransactionOperation {
 }
 
 export interface WorkspaceCashIn extends TransactionOperation {
-  type: "WorkspaceCashIn";
+  type: 'WorkspaceCashIn';
   amount: number | string;
   workspace: string;
 }
 
 export interface CashIn extends TransactionOperation {
-  type: "CashIn";
+  type: 'CashIn';
   amount: number | string;
   userId: string;
 }
 
 export interface CashOut extends TransactionOperation {
-  type: "CashOut";
+  type: 'CashOut';
   amount: number | string;
   userId: string;
 }
@@ -35,17 +35,17 @@ export interface PartyBase {
 }
 
 export interface User extends PartyBase {
-  type: "user";
+  type: 'user';
   id: string;
 }
 
 export interface Vendor extends PartyBase {
-  type: "vendor";
+  type: 'vendor';
   id: string;
 }
 
 export interface Provider extends PartyBase {
-  type: "provider";
+  type: 'provider';
   model: string;
 }
 
@@ -78,7 +78,7 @@ export interface AudioModelUsage {
 
 export interface AppUsageEvent {
   model: string;
-  type: "text" | "image" | "video" | "audio" | "object3d";
+  type: 'text' | 'image' | 'video' | 'audio' | 'object3d';
   appId: string;
   usage: TextModelUsage | ImageModelUsage | VideoModelUsage | AudioModelUsage;
 }
@@ -104,18 +104,18 @@ export interface LLMUsageEvent {
 }
 
 export interface Payer {
-  type: "wallet";
+  type: 'wallet';
   id: string;
 }
 
 export interface GenCreditsReward extends TransactionOperation {
-  type: "GenCreditsReward";
+  type: 'GenCreditsReward';
   amount: number | string;
   userId: string;
 }
 
 export interface WorkspaceGenCreditReward extends TransactionOperation {
-  type: "WorkspaceGenCreditReward";
+  type: 'WorkspaceGenCreditReward';
   amount: number | string;
   workspace: string;
 }
@@ -129,22 +129,22 @@ interface BaseGeneration extends TransactionOperation {
 }
 
 export interface Generation extends BaseGeneration {
-  type: "Generation";
+  type: 'Generation';
   usage: AppUsageEvent;
 }
 
 export interface AgentGeneration extends BaseGeneration {
-  type: "AgentGeneration";
+  type: 'AgentGeneration';
   usage: AgentUsageEvent;
 }
 
 export interface LLMGeneration extends BaseGeneration {
-  type: "LLMGeneration";
+  type: 'LLMGeneration';
   usage: LLMUsageEvent;
 }
 
 export interface PreAuthorization extends TransactionOperation {
-  type: "PreAuthorization";
+  type: 'PreAuthorization';
   amount: number | string;
   payer: Payer;
   identifier: string;
@@ -152,7 +152,7 @@ export interface PreAuthorization extends TransactionOperation {
 }
 
 export interface CommitPreAuthorized extends TransactionOperation {
-  type: "CommitPreAuthorized";
+  type: 'CommitPreAuthorized';
   identifier: string;
   contractId: string;
   amount: number | string;
@@ -175,10 +175,10 @@ export type Transaction =
   | PreAuthorization
   | CommitPreAuthorized;
 
-export type TransactionType = Transaction["type"];
+export type TransactionType = Transaction['type'];
 
 export interface Wiretransfer extends TransactionOperation {
-  type: "Wiretransfer";
+  type: 'Wiretransfer';
   amount: number | string;
   from: string;
   to: string;
@@ -186,14 +186,14 @@ export interface Wiretransfer extends TransactionOperation {
 }
 
 export interface WorkspaceCreateVoucher extends TransactionOperation {
-  type: "WorkspaceCreateVoucher";
+  type: 'WorkspaceCreateVoucher';
   amount: number | string;
   voucherId: string;
   workspace: string;
 }
 
 export interface WorkspaceRedeemVoucher extends TransactionOperation {
-  type: "WorkspaceRedeemVoucher";
+  type: 'WorkspaceRedeemVoucher';
   amount: number | string;
   voucherId: string;
   workspace: string;
@@ -207,7 +207,7 @@ export interface GeneratedFact {
 }
 
 export interface WalletAPI {
-  "GET /accounts/:id": {
+  'GET /accounts/:id': {
     response: {
       balance: string;
       discriminator: string;
@@ -216,7 +216,7 @@ export interface WalletAPI {
       metadata?: Record<string, unknown>;
     };
   };
-  "GET /accounts/:id/statements": {
+  'GET /accounts/:id/statements': {
     searchParams: {
       cursor?: string;
       limit?: number;
@@ -232,7 +232,7 @@ export interface WalletAPI {
       nextCursor?: string;
     };
   };
-  "GET /statements": {
+  'GET /statements': {
     searchParams: {
       accountId: string[];
       cursor?: string;
@@ -251,24 +251,24 @@ export interface WalletAPI {
     };
   };
 
-  "GET /transactions/:id": {
+  'GET /transactions/:id': {
     response: {
       transaction: Transaction;
     };
   };
-  "POST /transactions": {
-    body: Omit<Transaction, "timestamp">;
+  'POST /transactions': {
+    body: Omit<Transaction, 'timestamp'>;
     response: {
       id: string;
     };
   };
-  "PUT /transactions/:id": {
-    body: Omit<Transaction, "timestamp">;
+  'PUT /transactions/:id': {
+    body: Omit<Transaction, 'timestamp'>;
     response: {
       id: string;
     };
   };
-  "GET /transactions": {
+  'GET /transactions': {
     searchParams: {
       cursor?: string;
       limit?: number;
@@ -279,11 +279,11 @@ export interface WalletAPI {
       nextCursor?: string;
     };
   };
-  "POST /transactions/:id/commit": {
+  'POST /transactions/:id/commit': {
     body: {
       contractId: string;
       vendor: {
-        type: "vendor";
+        type: 'vendor';
         id: string;
       };
       /**
@@ -297,10 +297,10 @@ export interface WalletAPI {
       id: string;
     };
   };
-  "GET /usage/agents": {
+  'GET /usage/agents': {
     searchParams: {
       workspace: string;
-      range: "day" | "week" | "month";
+      range: 'day' | 'week' | 'month';
     };
     response: {
       total: string;
@@ -323,10 +323,10 @@ export interface WalletAPI {
       }[];
     };
   };
-  "GET /usage/threads": {
+  'GET /usage/threads': {
     searchParams: {
       workspace: string;
-      range: "day" | "week" | "month";
+      range: 'day' | 'week' | 'month';
     };
     response: {
       total: string;
@@ -355,10 +355,10 @@ export interface WalletAPI {
       }[];
     };
   };
-  "GET /billing/history": {
+  'GET /billing/history': {
     searchParams: {
       workspace: string;
-      range: "day" | "week" | "month" | "year";
+      range: 'day' | 'week' | 'month' | 'year';
     };
     response: {
       items: {
@@ -373,7 +373,7 @@ export interface WalletAPI {
 
 // for local dev
 // const WALLET_API_URL = "http://localhost:8001";
-const WALLET_API_URL = "https://wallet.webdraw.com";
+const WALLET_API_URL = 'https://wallet.webdraw.com';
 
 export function createWalletClient(
   apiKey: string,
@@ -401,7 +401,7 @@ export function createWalletClient(
       : undefined,
     base: WALLET_API_URL,
     headers: new Headers({
-      "x-api-key": apiKey,
+      'x-api-key': apiKey,
     }),
   });
 

@@ -1,10 +1,10 @@
-import z from "zod";
-import { workspaceDB } from "../context.ts";
-import { assertHasWorkspace, assertWorkspaceResourceAccess } from "../index.ts";
-import { createDatabaseTool } from "./tool.ts";
+import z from 'zod';
+import { workspaceDB } from '../context.ts';
+import { assertHasWorkspace, assertWorkspaceResourceAccess } from '../index.ts';
+import { createDatabaseTool } from './tool.ts';
 
-export { getWorkspaceD1Database } from "./d1.ts";
-export { migrate } from "./migration.ts";
+export { getWorkspaceD1Database } from './d1.ts';
+export { migrate } from './migration.ts';
 
 const Timings = z.object({
   sql_duration_ms: z.number().optional(),
@@ -19,7 +19,7 @@ const Meta = z.object({
   rows_written: z.number().optional(),
   served_by_primary: z.boolean().optional(),
   served_by_region: z
-    .enum(["WNAM", "ENAM", "WEUR", "EEUR", "APAC", "OC"])
+    .enum(['WNAM', 'ENAM', 'WEUR', 'EEUR', 'APAC', 'OC'])
     .optional(),
   size_after: z.number().optional(),
   timings: Timings.optional(),
@@ -32,10 +32,10 @@ const QueryResult = z.object({
 });
 export type QueryResult = z.infer<typeof QueryResult>;
 export const DatatabasesRunSqlInputSchema = z.object({
-  sql: z.string().describe("The SQL query to run"),
+  sql: z.string().describe('The SQL query to run'),
   params: z
     .array(z.any())
-    .describe("The parameters to pass to the SQL query")
+    .describe('The parameters to pass to the SQL query')
     .optional(),
 });
 
@@ -44,15 +44,15 @@ export type DatatabasesRunSqlInput = z.infer<
 >;
 
 export const getMeta = createDatabaseTool({
-  name: "DATABASES_GET_META",
-  description: "Run a SQL query against the workspace database",
+  name: 'DATABASES_GET_META',
+  description: 'Run a SQL query against the workspace database',
   inputSchema: z.void(),
   outputSchema: z.object({
     bytes: z.number().optional(),
   }),
   handler: async (_, c) => {
     assertHasWorkspace(c);
-    await assertWorkspaceResourceAccess(c, "DATABASES_RUN_SQL");
+    await assertWorkspaceResourceAccess(c, 'DATABASES_RUN_SQL');
     const db = await workspaceDB(c);
     const dbMeta = await db.meta?.();
     dbMeta?.[Symbol.dispose]();
@@ -61,32 +61,32 @@ export const getMeta = createDatabaseTool({
 });
 
 const MASTRA_CREATE_TABLE_SQLs: Record<string, boolean> = {
-  "CREATE TABLE IF NOT EXISTS mastra_resources (id TEXT NOT NULL PRIMARY KEY, workingMemory TEXT, metadata TEXT, createdAt TIMESTAMP NOT NULL, updatedAt TIMESTAMP NOT NULL)":
+  'CREATE TABLE IF NOT EXISTS mastra_resources (id TEXT NOT NULL PRIMARY KEY, workingMemory TEXT, metadata TEXT, createdAt TIMESTAMP NOT NULL, updatedAt TIMESTAMP NOT NULL)':
     true,
-  "CREATE TABLE IF NOT EXISTS mastra_scorers (id TEXT NOT NULL PRIMARY KEY, scorerId TEXT, traceId TEXT, runId TEXT, scorer TEXT, extractStepResult TEXT, analyzeStepResult TEXT, score FLOAT, reason TEXT, metadata TEXT, extractPrompt TEXT, analyzePrompt TEXT, reasonPrompt TEXT, input TEXT, output TEXT, additionalContext TEXT, runtimeContext TEXT, entityType TEXT, entity TEXT, entityId TEXT, source TEXT, resourceId TEXT, threadId TEXT, createdAt TIMESTAMP, updatedAt TIMESTAMP)":
+  'CREATE TABLE IF NOT EXISTS mastra_scorers (id TEXT NOT NULL PRIMARY KEY, scorerId TEXT, traceId TEXT, runId TEXT, scorer TEXT, extractStepResult TEXT, analyzeStepResult TEXT, score FLOAT, reason TEXT, metadata TEXT, extractPrompt TEXT, analyzePrompt TEXT, reasonPrompt TEXT, input TEXT, output TEXT, additionalContext TEXT, runtimeContext TEXT, entityType TEXT, entity TEXT, entityId TEXT, source TEXT, resourceId TEXT, threadId TEXT, createdAt TIMESTAMP, updatedAt TIMESTAMP)':
     true,
-  "CREATE TABLE IF NOT EXISTS mastra_traces (id TEXT NOT NULL PRIMARY KEY, parentSpanId TEXT, name TEXT NOT NULL, traceId TEXT NOT NULL, scope TEXT NOT NULL, kind INTEGER NOT NULL, attributes TEXT, status TEXT, events TEXT, links TEXT, other TEXT, startTime INTEGER NOT NULL, endTime INTEGER NOT NULL, createdAt TIMESTAMP NOT NULL)":
+  'CREATE TABLE IF NOT EXISTS mastra_traces (id TEXT NOT NULL PRIMARY KEY, parentSpanId TEXT, name TEXT NOT NULL, traceId TEXT NOT NULL, scope TEXT NOT NULL, kind INTEGER NOT NULL, attributes TEXT, status TEXT, events TEXT, links TEXT, other TEXT, startTime INTEGER NOT NULL, endTime INTEGER NOT NULL, createdAt TIMESTAMP NOT NULL)':
     true,
-  "CREATE TABLE IF NOT EXISTS mastra_messages (id TEXT NOT NULL PRIMARY KEY, thread_id TEXT NOT NULL, content TEXT NOT NULL, role TEXT NOT NULL, type TEXT NOT NULL, createdAt TIMESTAMP NOT NULL, resourceId TEXT)":
+  'CREATE TABLE IF NOT EXISTS mastra_messages (id TEXT NOT NULL PRIMARY KEY, thread_id TEXT NOT NULL, content TEXT NOT NULL, role TEXT NOT NULL, type TEXT NOT NULL, createdAt TIMESTAMP NOT NULL, resourceId TEXT)':
     true,
-  "CREATE TABLE IF NOT EXISTS mastra_threads (id TEXT NOT NULL PRIMARY KEY, resourceId TEXT NOT NULL, title TEXT NOT NULL, metadata TEXT, createdAt TIMESTAMP NOT NULL, updatedAt TIMESTAMP NOT NULL)":
+  'CREATE TABLE IF NOT EXISTS mastra_threads (id TEXT NOT NULL PRIMARY KEY, resourceId TEXT NOT NULL, title TEXT NOT NULL, metadata TEXT, createdAt TIMESTAMP NOT NULL, updatedAt TIMESTAMP NOT NULL)':
     true,
-  "CREATE TABLE IF NOT EXISTS mastra_evals (input TEXT, output TEXT, result TEXT, agent_name TEXT, metric_name TEXT, instructions TEXT, test_info TEXT, global_run_id TEXT, run_id TEXT, created_at TIMESTAMP, createdAt TIMESTAMP)":
+  'CREATE TABLE IF NOT EXISTS mastra_evals (input TEXT, output TEXT, result TEXT, agent_name TEXT, metric_name TEXT, instructions TEXT, test_info TEXT, global_run_id TEXT, run_id TEXT, created_at TIMESTAMP, createdAt TIMESTAMP)':
     true,
-  "CREATE TABLE IF NOT EXISTS mastra_workflow_snapshot (workflow_name TEXT, run_id TEXT, resourceId TEXT, snapshot TEXT, createdAt TIMESTAMP, updatedAt TIMESTAMP, UNIQUE (workflow_name, run_id))":
+  'CREATE TABLE IF NOT EXISTS mastra_workflow_snapshot (workflow_name TEXT, run_id TEXT, resourceId TEXT, snapshot TEXT, createdAt TIMESTAMP, updatedAt TIMESTAMP, UNIQUE (workflow_name, run_id))':
     true,
 };
 
 const CREATED: Map<string, boolean> = new Map();
 
 export const runSql = createDatabaseTool({
-  name: "DATABASES_RUN_SQL",
-  description: "Run a SQL query against the workspace database",
+  name: 'DATABASES_RUN_SQL',
+  description: 'Run a SQL query against the workspace database',
   inputSchema: DatatabasesRunSqlInputSchema.extend({
     _legacy: z
       .boolean()
       .optional()
-      .describe("If true, the query will be run against the legacy database"),
+      .describe('If true, the query will be run against the legacy database'),
   }),
   outputSchema: z.object({
     result: z.array(QueryResult),

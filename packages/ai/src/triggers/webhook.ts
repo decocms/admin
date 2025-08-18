@@ -1,9 +1,9 @@
-import { AIAgent } from "../agent.ts";
-import type { Message, StreamOptions } from "../types.ts";
+import { AIAgent } from '../agent.ts';
+import type { Message, StreamOptions } from '../types.ts';
 
-import type { TriggerData } from "./services.ts";
+import type { TriggerData } from './services.ts';
 
-import type { TriggerHooks } from "./trigger.ts";
+import type { TriggerHooks } from './trigger.ts';
 
 export interface WebhookArgs {
   threadId?: string;
@@ -13,13 +13,13 @@ export interface WebhookArgs {
 
 const isAIMessage = (m: unknown | Message): m is Message => {
   return (
-    typeof m === "object" &&
+    typeof m === 'object' &&
     m !== null &&
-    "role" in m &&
-    ("content" in m || "audioBase64" in m) &&
-    "id" in m &&
-    typeof m.id === "string" &&
-    typeof m.role === "string"
+    'role' in m &&
+    ('content' in m || 'audioBase64' in m) &&
+    'id' in m &&
+    typeof m.id === 'string' &&
+    typeof m.role === 'string'
   );
 };
 
@@ -41,13 +41,13 @@ const parseOptions: {
     val: string | null | undefined,
   ) => StreamOptions[key];
 } = {
-  bypassOpenRouter: (val) => val === "true",
-  sendReasoning: (val) => val === "true",
-  enableSemanticRecall: (val) => val === "true",
+  bypassOpenRouter: (val) => val === 'true',
+  sendReasoning: (val) => val === 'true',
+  enableSemanticRecall: (val) => val === 'true',
 };
 
-export const hooks: TriggerHooks<TriggerData & { type: "webhook" }> = {
-  type: "webhook",
+export const hooks: TriggerHooks<TriggerData & { type: 'webhook' }> = {
+  type: 'webhook',
   onCreated: (data, trigger) => {
     const metadata = trigger.metadata ?? {};
     trigger.metadata = metadata;
@@ -63,20 +63,18 @@ export const hooks: TriggerHooks<TriggerData & { type: "webhook" }> = {
       data.passphrase !== trigger.metadata?.params?.passphrase
     ) {
       return {
-        error: "Invalid passphrase",
+        error: 'Invalid passphrase',
       };
     }
 
-    if ("callTool" in data) {
+    if ('callTool' in data) {
       return await trigger._callTool(
         data.callTool,
-        typeof args === "object"
-          ? ((args as Record<string, unknown>) ?? {})
-          : {},
+        typeof args === 'object' ? ((args as Record<string, unknown>) ?? {}) : {},
       );
     }
 
-    const useStream = trigger.metadata?.params?.stream === "true";
+    const useStream = trigger.metadata?.params?.stream === 'true';
     const options: StreamOptions = {};
 
     for (const _key in parseOptions) {
@@ -100,8 +98,8 @@ export const hooks: TriggerHooks<TriggerData & { type: "webhook" }> = {
       .withMetadata({ threadId, resourceId });
 
     const messagesFromArgs = args &&
-        typeof args === "object" &&
-        "messages" in args &&
+        typeof args === 'object' &&
+        'messages' in args &&
         isAIMessages(args.messages)
       ? args.messages
       : undefined;
@@ -109,26 +107,24 @@ export const hooks: TriggerHooks<TriggerData & { type: "webhook" }> = {
     const messages = messagesFromArgs ?? [
       {
         id: crypto.randomUUID(),
-        role: "user" as const,
+        role: 'user' as const,
         content: `the webhook is triggered with the following messages:`,
       },
       ...(args
         ? [
           {
             id: crypto.randomUUID(),
-            role: "user" as const,
+            role: 'user' as const,
             content: `\`\`\`json\n${JSON.stringify(args)}\`\`\``,
           },
         ]
         : []),
     ];
 
-    const schema = "schema" in data && data.schema
-      ? data.schema
-      : typeof args === "object" &&
-          args !== null &&
-          "schema" in args &&
-          typeof args.schema === "object"
+    const schema = 'schema' in data && data.schema ? data.schema : typeof args === 'object' &&
+        args !== null &&
+        'schema' in args &&
+        typeof args.schema === 'object'
       ? args.schema
       : undefined;
     if (schema) {

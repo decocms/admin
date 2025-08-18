@@ -1,11 +1,8 @@
-import { SpanStatusCode, trace } from "@deco/sdk/observability";
-import {
-  createTool as mastraCreateTool,
-  type ToolExecutionContext,
-} from "@mastra/core";
-import type { ToolExecutionOptions } from "ai";
-import type { z } from "zod";
-import type { AIAgent, Env } from "../agent.ts";
+import { SpanStatusCode, trace } from '@deco/sdk/observability';
+import { createTool as mastraCreateTool, type ToolExecutionContext } from '@mastra/core';
+import type { ToolExecutionOptions } from 'ai';
+import type { z } from 'zod';
+import type { AIAgent, Env } from '../agent.ts';
 
 export interface ToolOptions<
   TSchemaIn extends z.ZodSchema | undefined = undefined,
@@ -44,22 +41,22 @@ export const createTool = ({
     ...args,
     outputSchema,
     execute: (ctx, options) => {
-      const tracer = trace.getTracer("tool-tracer");
+      const tracer = trace.getTracer('tool-tracer');
       return tracer.startActiveSpan(`TOOL@${args.id}`, async (span) => {
         let err: unknown | null = null;
-        span.setAttribute("tool.id", args.id);
-        ctx.threadId && span.setAttribute("tool.thread", ctx.threadId);
-        ctx.resourceId && span.setAttribute("tool.resource", ctx.resourceId);
+        span.setAttribute('tool.id', args.id);
+        ctx.threadId && span.setAttribute('tool.thread', ctx.threadId);
+        ctx.resourceId && span.setAttribute('tool.resource', ctx.resourceId);
         try {
           const result = await execute?.(ctx, options);
 
           if (
             Array.isArray(result?.content) &&
             result.content.length > 0 &&
-            result.content[0]?.type === "text"
+            result.content[0]?.type === 'text'
           ) {
             // deno-lint-ignore no-explicit-any
-            return result.content.map((t: any) => t.text).join("\n\n");
+            return result.content.map((t: any) => t.text).join('\n\n');
           }
 
           return result;
@@ -74,9 +71,9 @@ export const createTool = ({
           if (err) {
             span.setStatus({
               code: SpanStatusCode.ERROR,
-              message: typeof err === "object" && "message" in err
+              message: typeof err === 'object' && 'message' in err
                 ? String(err.message)
-                : "Unknown error",
+                : 'Unknown error',
             });
           } else {
             span.setStatus({

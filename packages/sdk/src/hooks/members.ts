@@ -1,9 +1,5 @@
-import {
-  useMutation,
-  useQueryClient,
-  useSuspenseQuery,
-} from "@tanstack/react-query";
-import { useEffect, useMemo } from "react";
+import { useMutation, useQueryClient, useSuspenseQuery } from '@tanstack/react-query';
+import { useEffect, useMemo } from 'react';
 import {
   acceptInvite,
   getMyInvites,
@@ -17,10 +13,10 @@ import {
   removeTeamMember,
   type Role as _Role,
   updateMemberRole,
-} from "../crud/members.ts";
-import { KEYS } from "./api.ts";
-import { useTeams } from "./teams.ts";
-import { type User, useSDK } from "../index.ts";
+} from '../crud/members.ts';
+import { KEYS } from './api.ts';
+import { useTeams } from './teams.ts';
+import { type User, useSDK } from '../index.ts';
 
 type TeamMembers = Awaited<ReturnType<typeof getTeamMembers>>;
 
@@ -72,8 +68,7 @@ export const useTeamMembersBySlug = (currentTeamSlug: string | null) => {
 export const useTeamRoles = (teamId: number | null) => {
   return useSuspenseQuery({
     queryKey: KEYS.TEAM_ROLES(teamId ?? -1),
-    queryFn: ({ signal }) =>
-      typeof teamId === "number" ? getTeamRoles(teamId, signal) : [],
+    queryFn: ({ signal }) => typeof teamId === 'number' ? getTeamRoles(teamId, signal) : [],
   });
 };
 
@@ -112,8 +107,7 @@ export const useRejectInvite = () => {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: ({ id: id }: { id: string; teamId?: number }) =>
-      rejectInvite(id),
+    mutationFn: ({ id: id }: { id: string; teamId?: number }) => rejectInvite(id),
     onSuccess: (_, variables) => {
       variables.teamId === undefined &&
         queryClient.invalidateQueries({ queryKey: KEYS.MY_INVITES() });
@@ -200,7 +194,7 @@ export const useUpdateMemberRole = () => {
       userId: string;
       roleId: number;
       roleName: string;
-      action: "grant" | "revoke";
+      action: 'grant' | 'revoke';
     }) => updateMemberRole(teamId, userId, roleId, action),
     onSuccess: (_, { teamId, userId, roleId, action, roleName }) => {
       const membersKey = KEYS.TEAM_MEMBERS(teamId);
@@ -212,7 +206,7 @@ export const useUpdateMemberRole = () => {
       const membersWithChangedRole = members.map((member) => {
         if (member.user_id !== userId) return member;
 
-        const newRoles = action === "grant"
+        const newRoles = action === 'grant'
           ? [...member.roles, { id: roleId, name: roleName }]
           : member.roles.filter((r) => r.id !== roleId);
         return { ...member, roles: newRoles };

@@ -1,5 +1,5 @@
-import { fetchUser, type User } from "@deco/sdk";
-import { use } from "react";
+import { fetchUser, type User } from '@deco/sdk';
+import { use } from 'react';
 
 const promise = fetchUser();
 

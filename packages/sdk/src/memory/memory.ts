@@ -1,18 +1,18 @@
-import { createOpenAI } from "@ai-sdk/openai";
-import type { Workspace } from "@deco/sdk/path";
-import { D1Store } from "@deco/workers-runtime/d1";
-import type { Client as LibSQLClient } from "@libsql/client";
-import type { CoreMessage } from "@mastra/core";
-import type { SharedMemoryConfig } from "@mastra/core/memory";
-import { MemoryProcessor } from "@mastra/core/memory";
-import { Memory as MastraMemory } from "@mastra/memory";
-import type { TextPart, ToolCallPart } from "ai";
-import { workspaceDB, WorkspaceDO } from "../mcp/context.ts";
-import { slugify, slugifyForDNS, toAlphanumericId } from "../mcp/slugify.ts";
-import { LibSQLFactory, type LibSQLFactoryOpts } from "./libsql.ts";
+import { createOpenAI } from '@ai-sdk/openai';
+import type { Workspace } from '@deco/sdk/path';
+import { D1Store } from '@deco/workers-runtime/d1';
+import type { Client as LibSQLClient } from '@libsql/client';
+import type { CoreMessage } from '@mastra/core';
+import type { SharedMemoryConfig } from '@mastra/core/memory';
+import { MemoryProcessor } from '@mastra/core/memory';
+import { Memory as MastraMemory } from '@mastra/memory';
+import type { TextPart, ToolCallPart } from 'ai';
+import { workspaceDB, WorkspaceDO } from '../mcp/context.ts';
+import { slugify, slugifyForDNS, toAlphanumericId } from '../mcp/slugify.ts';
+import { LibSQLFactory, type LibSQLFactoryOpts } from './libsql.ts';
 
 export { slugify, slugifyForDNS, toAlphanumericId };
-type CreateThreadOpts = Parameters<MastraMemory["createThread"]>[0];
+type CreateThreadOpts = Parameters<MastraMemory['createThread']>[0];
 
 interface WorkspaceMemoryConfig extends SharedMemoryConfig {
   libsqlClient: LibSQLClient;
@@ -20,7 +20,7 @@ interface WorkspaceMemoryConfig extends SharedMemoryConfig {
 }
 
 interface CreateWorkspaceMemoryOpts
-  extends LibSQLFactoryOpts, Omit<SharedMemoryConfig, "storage" | "vector"> {
+  extends LibSQLFactoryOpts, Omit<SharedMemoryConfig, 'storage' | 'vector'> {
   workspaceDO: WorkspaceDO;
   workspace: Workspace;
   discriminator?: string;
@@ -29,7 +29,7 @@ interface CreateWorkspaceMemoryOpts
 }
 
 const openAIEmbedder = (apiKey: string) =>
-  createOpenAI({ apiKey }).embedding("text-embedding-3-small");
+  createOpenAI({ apiKey }).embedding('text-embedding-3-small');
 
 export class WorkspaceMemory extends MastraMemory {
   constructor(protected config: WorkspaceMemoryConfig) {
@@ -81,9 +81,7 @@ export class WorkspaceMemory extends MastraMemory {
         workspaceDO,
         workspace: { value: workspace },
         envVars: {
-          TURSO_GROUP_DATABASE_TOKEN: typeof tokenStorage === "string"
-            ? tokenStorage
-            : "",
+          TURSO_GROUP_DATABASE_TOKEN: typeof tokenStorage === 'string' ? tokenStorage : '',
           TURSO_ORGANIZATION: tursoOrganization,
         },
       },
@@ -102,13 +100,11 @@ export class WorkspaceMemory extends MastraMemory {
       storage.init(),
     ]);
 
-    const embedder = opts.openAPIKey
-      ? openAIEmbedder(opts.openAPIKey)
-      : undefined;
+    const embedder = opts.openAPIKey ? openAIEmbedder(opts.openAPIKey) : undefined;
 
     if (embedder === undefined) {
       console.warn(
-        "No openAI API key provided, Memory semantic recall will be disabled",
+        'No openAI API key provided, Memory semantic recall will be disabled',
       );
       opts.options = {
         ...opts.options,
@@ -171,12 +167,12 @@ export class AgentMemory extends WorkspaceMemory {
 }
 
 export function buildMemoryId(workspace: Workspace, discriminator?: string) {
-  return toAlphanumericId(`${workspace}/${discriminator ?? "default"}`);
+  return toAlphanumericId(`${workspace}/${discriminator ?? 'default'}`);
 }
 
 export class PatchToolCallProcessor extends MemoryProcessor {
   constructor() {
-    super({ name: "PatchToolCallProcessor" });
+    super({ name: 'PatchToolCallProcessor' });
   }
 
   override process(messages: CoreMessage[]): CoreMessage[] {
@@ -186,9 +182,9 @@ export class PatchToolCallProcessor extends MemoryProcessor {
 
 const isToolCallMessage = (message: CoreMessage): boolean => {
   if (
-    typeof message !== "object" ||
-    !("role" in message) ||
-    message.role !== "assistant"
+    typeof message !== 'object' ||
+    !('role' in message) ||
+    message.role !== 'assistant'
   ) {
     return false;
   }
@@ -198,13 +194,13 @@ const isToolCallMessage = (message: CoreMessage): boolean => {
   }
 
   return message.content.some(
-    (part) => typeof part === "object" && part.type === "tool-call",
+    (part) => typeof part === 'object' && part.type === 'tool-call',
   );
 };
 
 const isToolResultMessage = (message: CoreMessage): boolean => {
   return (
-    typeof message === "object" && "role" in message && message.role === "tool"
+    typeof message === 'object' && 'role' in message && message.role === 'tool'
   );
 };
 
@@ -227,8 +223,7 @@ const patchToolCallProcessor = (
       const toolCallPart = (
         toolCallMessage.content as (TextPart | ToolCallPart)[]
       ).find(
-        (part): part is ToolCallPart =>
-          typeof part === "object" && part.type === "tool-call",
+        (part): part is ToolCallPart => typeof part === 'object' && part.type === 'tool-call',
       );
 
       if (!toolCallPart) {
@@ -242,35 +237,35 @@ const patchToolCallProcessor = (
 
       // Add any text parts first
       for (const part of toolCallMessage.content) {
-        if (typeof part === "string") {
+        if (typeof part === 'string') {
           toolCallContent.push({
-            type: "text",
+            type: 'text',
             text: part,
           });
-        } else if (typeof part === "object" && part.type === "text") {
+        } else if (typeof part === 'object' && part.type === 'text') {
           toolCallContent.push(part as TextPart);
         }
       }
 
       // Add the summarized tool call as text
       toolCallContent.push({
-        type: "text",
+        type: 'text',
         text: JSON.stringify({
-          type: "tool-call",
+          type: 'tool-call',
           toolName: toolCallPart.toolName,
           args: toolCallPart.args,
         }),
       });
 
       const relevantToolCallMessage: CoreMessage = {
-        role: "assistant",
+        role: 'assistant',
         content: toolCallContent,
       };
       const toolResultMessage = processedMessages[i + 1];
 
       // Create a condensed message with both messages as JSON content
       const condensedMessage: CoreMessage = {
-        role: "assistant",
+        role: 'assistant',
         content: JSON.stringify({
           toolCall: relevantToolCallMessage,
           toolResult: toolResultMessage,

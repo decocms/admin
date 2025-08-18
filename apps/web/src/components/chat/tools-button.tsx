@@ -1,15 +1,15 @@
-import { Button } from "@deco/ui/components/button.tsx";
-import { Icon } from "@deco/ui/components/icon.tsx";
-import { cn } from "@deco/ui/lib/utils.ts";
-import { type ComponentProps, type ReactNode, Suspense, useMemo } from "react";
-import { useTools } from "../../hooks/use-tools.ts";
-import { togglePanel, useDock } from "../dock/index.tsx";
-import { useAgent } from "../agent/provider.tsx";
+import { Button } from '@deco/ui/components/button.tsx';
+import { Icon } from '@deco/ui/components/icon.tsx';
+import { cn } from '@deco/ui/lib/utils.ts';
+import { type ComponentProps, type ReactNode, Suspense, useMemo } from 'react';
+import { useTools } from '../../hooks/use-tools.ts';
+import { togglePanel, useDock } from '../dock/index.tsx';
+import { useAgent } from '../agent/provider.tsx';
 
 function ToolsButton() {
   const { uiOptions } = useAgent();
   const showThreadTools = uiOptions?.showThreadTools;
-  if (typeof showThreadTools === "boolean" && !showThreadTools) {
+  if (typeof showThreadTools === 'boolean' && !showThreadTools) {
     return null;
   }
   return (
@@ -36,7 +36,7 @@ function DockedToggleButton({
   return (
     <Button
       {...btnProps}
-      type="button"
+      type='button'
       disabled={disabled || !tabs[id]}
       onClick={() =>
         togglePanel({
@@ -44,9 +44,9 @@ function DockedToggleButton({
           component: id,
           title,
           initialWidth: 420,
-          position: { direction: "right" },
+          position: { direction: 'right' },
         })}
-      className={cn(className, openPanels.has(id) ? "bg-accent" : "")}
+      className={cn(className, openPanels.has(id) ? 'bg-accent' : '')}
     >
       {children}
     </Button>
@@ -55,13 +55,13 @@ function DockedToggleButton({
 
 ToolsButton.Skeleton = () => (
   <DockedToggleButton
-    id="tools"
-    title="Chat settings"
-    variant="outline"
-    size="sm"
+    id='tools'
+    title='Chat settings'
+    variant='outline'
+    size='sm'
     disabled
   >
-    <Icon name="build" />
+    <Icon name='build' />
   </DockedToggleButton>
 );
 
@@ -75,13 +75,13 @@ ToolsButton.UI = () => {
 
   return (
     <DockedToggleButton
-      id="tools"
-      title="Chat settings"
-      variant="outline"
-      size="sm"
+      id='tools'
+      title='Chat settings'
+      variant='outline'
+      size='sm'
     >
-      <Icon name="build" />
-      <span className="text-xs">{numberOfTools}</span>
+      <Icon name='build' />
+      <span className='text-xs'>{numberOfTools}</span>
     </DockedToggleButton>
   );
 };

@@ -1,5 +1,5 @@
-import { describe, expect, it } from "vitest";
-import { runAiInsightsPure as runAiInsights } from "../../ai-insights/runner";
+import { describe, expect, it } from 'vitest';
+import { runAiInsightsPure as runAiInsights } from '../../ai-insights/runner';
 
 // Mock fetch to simulate LLM failure
 function withPatchedFetch(
@@ -13,10 +13,10 @@ function withPatchedFetch(
   });
 }
 
-describe("AI_INSIGHTS heuristics (pure, no LLM)", () => {
-  it("produces heuristic insights even if LLM env key provided", async () => {
+describe('AI_INSIGHTS heuristics (pure, no LLM)', () => {
+  it('produces heuristic insights even if LLM env key provided', async () => {
     const audit = {
-      url: "https://example.com",
+      url: 'https://example.com',
       scores: { performanceMobile: 40, seoMobile: 60 },
       linkSummary: {
         brokenLinks: 1,
@@ -26,13 +26,13 @@ describe("AI_INSIGHTS heuristics (pure, no LLM)", () => {
         metaDescriptionLength: 40,
         wordCount: 250,
       },
-      warnings: ["Broken links detectados: 1"],
+      warnings: ['Broken links detectados: 1'],
     };
     const out = await runAiInsights(
-      { OPENROUTER_API_KEY: "dummy" },
+      { OPENROUTER_API_KEY: 'dummy' },
       { url: audit.url, audit },
     );
-    expect(out.modelUsed).toBe("heuristic");
+    expect(out.modelUsed).toBe('heuristic');
     expect(out.insights.length).toBeGreaterThan(0);
     expect(out.warnings.length).toBe(0);
   });

@@ -10,12 +10,12 @@
 // Instead, use a leading underscore (_) to indicate a method or property is private.
 // Also, visibility modifiers (like 'private' or 'protected') from TypeScript
 // are not enforced at runtime in JavaScript and are not preserved in the transpiled output.
-import type { ActorState } from "@deco/actors";
-import { Actor } from "@deco/actors";
-import { JwtIssuer } from "@deco/sdk/auth";
-import { SUPABASE_URL, WELL_KNOWN_AGENT_IDS } from "@deco/sdk/constants";
-import { contextStorage } from "@deco/sdk/fetch";
-import { Hosts } from "@deco/sdk/hosts";
+import type { ActorState } from '@deco/actors';
+import { Actor } from '@deco/actors';
+import { JwtIssuer } from '@deco/sdk/auth';
+import { SUPABASE_URL, WELL_KNOWN_AGENT_IDS } from '@deco/sdk/constants';
+import { contextStorage } from '@deco/sdk/fetch';
+import { Hosts } from '@deco/sdk/hosts';
 import {
   type AppContext,
   AuthorizationClient,
@@ -25,45 +25,42 @@ import {
   type MCPClientStub,
   PolicyClient,
   type WorkspaceTools,
-} from "@deco/sdk/mcp";
-import type { Callbacks } from "@deco/sdk/mcp/binder";
-import type { CallTool } from "@deco/sdk/models";
-import { getTwoFirstSegments, type Workspace } from "@deco/sdk/path";
-import type { Json } from "@deco/sdk/storage";
-import { createServerClient } from "@supabase/ssr";
-import { Cloudflare } from "cloudflare";
-import { getRuntimeKey } from "hono/adapter";
-import process from "node:process";
-import { AIAgent } from "../agent.ts";
-import { isApiDecoChatMCPConnection } from "../mcp.ts";
-import { hooks as cron } from "./cron.ts";
-import type { TriggerData, TriggerRun } from "./services.ts";
-import { hooks as webhook } from "./webhook.ts";
-import {
-  createPosthogServerClient,
-  PosthogServerClient,
-} from "packages/sdk/src/posthog.ts";
+} from '@deco/sdk/mcp';
+import type { Callbacks } from '@deco/sdk/mcp/binder';
+import type { CallTool } from '@deco/sdk/models';
+import { getTwoFirstSegments, type Workspace } from '@deco/sdk/path';
+import type { Json } from '@deco/sdk/storage';
+import { createServerClient } from '@supabase/ssr';
+import { Cloudflare } from 'cloudflare';
+import { getRuntimeKey } from 'hono/adapter';
+import process from 'node:process';
+import { AIAgent } from '../agent.ts';
+import { isApiDecoChatMCPConnection } from '../mcp.ts';
+import { hooks as cron } from './cron.ts';
+import type { TriggerData, TriggerRun } from './services.ts';
+import { hooks as webhook } from './webhook.ts';
+import { createPosthogServerClient, PosthogServerClient } from 'packages/sdk/src/posthog.ts';
 export type { TriggerData };
 
 export const threadOf = (
   data: TriggerData,
   url?: URL,
 ): { threadId: string | undefined; resourceId: string | undefined } => {
-  const resourceId = data.resourceId ?? url?.searchParams.get("resourceId") ??
+  const resourceId = data.resourceId ?? url?.searchParams.get('resourceId') ??
     undefined;
-  const threadId = url?.searchParams.get("threadId") ??
+  const threadId = url?.searchParams.get('threadId') ??
     (resourceId ? crypto.randomUUID() : undefined); // generate a random threadId if resourceId exists.
   return { threadId, resourceId };
 };
 
 export interface TriggerHooks<TData extends TriggerData = TriggerData> {
-  type: TData["type"];
+  type: TData['type'];
   onCreated?(data: TData, trigger: Trigger): Promise<void>;
   onDeleted?(data: TData, trigger: Trigger): Promise<void>;
   run(data: TData, trigger: Trigger, args?: unknown): Promise<unknown>;
 }
 
-const hooks: Record<TriggerData["type"], TriggerHooks<TriggerData>> = {
+const hooks: Record<TriggerData['type'], TriggerHooks<TriggerData>> = {
   cron,
   webhook,
 };
@@ -76,7 +73,7 @@ export interface TriggerMetadata {
 
 function mapTriggerToTriggerData(
   trigger: NonNullable<
-    Awaited<ReturnType<MCPClientStub<WorkspaceTools>["TRIGGERS_GET"]>>
+    Awaited<ReturnType<MCPClientStub<WorkspaceTools>['TRIGGERS_GET']>>
   >,
 ): TriggerData {
   return {
@@ -107,14 +104,14 @@ const buildInvokeUrl = (
   const invoke = new URL(
     `https://${Hosts.API}/actors/${Trigger.name}/invoke/${method}`,
   );
-  invoke.searchParams.set("deno_isolate_instance_id", triggerId);
+  invoke.searchParams.set('deno_isolate_instance_id', triggerId);
 
   if (passphrase) {
-    invoke.searchParams.set("passphrase", passphrase);
+    invoke.searchParams.set('passphrase', passphrase);
   }
   if (payload) {
     invoke.searchParams.set(
-      "args",
+      'args',
       encodeURIComponent(JSON.stringify(payload)),
     );
   }
@@ -160,10 +157,10 @@ export class Trigger {
           this._setData(loadedData);
         }
       } catch (error) {
-        console.error("Error loading data from Supabase:", error);
-        this._trackEvent("trigger_init_error", {
+        console.error('Error loading data from Supabase:', error);
+        this._trackEvent('trigger_init_error', {
           error: error instanceof Error ? error.message : String(error),
-          method: "constructor",
+          method: 'constructor',
         });
       }
     });
@@ -174,14 +171,14 @@ export class Trigger {
       distinctId: this.state.id,
       $process_person_profile: false,
       actorId: this.state.id,
-      actorType: "trigger",
+      actorType: 'trigger',
       ...properties,
     });
   }
 
   public get agentId(): string {
     // Only certain trigger types have agentId
-    if (this.data && "agentId" in this.data) {
+    if (this.data && 'agentId' in this.data) {
       return `${this.workspace}/Agents/${this.data.agentId}`;
     }
     return `${this.workspace}/Agents/${WELL_KNOWN_AGENT_IDS.teamAgent}`;
@@ -195,10 +192,10 @@ export class Trigger {
       envVars: this.env,
       db: this.db,
       // can be ignored for now.
-      user: null as unknown as AppContext["user"],
+      user: null as unknown as AppContext['user'],
       isLocal: true,
       workspaceDO: this.actorEnv.WORKSPACE_DB,
-      stub: this.state.stub as AppContext["stub"],
+      stub: this.state.stub as AppContext['stub'],
       workspace: fromWorkspaceString(this.workspace),
       resourceAccess: createResourceAccess(),
       cf: new Cloudflare({ apiToken: this.env.CF_API_TOKEN }),
@@ -261,12 +258,12 @@ export class Trigger {
 
         return response;
       } catch (error) {
-        console.error("Error calling tool:", error);
-        this._trackEvent("trigger_tool_error", {
+        console.error('Error calling tool:', error);
+        this._trackEvent('trigger_tool_error', {
           error: error instanceof Error ? error.message : String(error),
           toolId: tool.integrationId,
           toolName: tool.toolName,
-          method: "_callTool",
+          method: '_callTool',
         });
         throw error;
       }
@@ -287,17 +284,17 @@ export class Trigger {
       ).href;
 
     return {
-      stream: urlFor("stream"),
-      generate: urlFor("generate"),
-      generateObject: urlFor("generateObject"),
+      stream: urlFor('stream'),
+      generate: urlFor('generate'),
+      generateObject: urlFor('generateObject'),
     };
   }
 
   private async _loadFromState() {
-    return await this.state.storage.get<TriggerData | null>("triggerData");
+    return await this.state.storage.get<TriggerData | null>('triggerData');
   }
   private async _saveToState(data: TriggerData) {
-    await this.state.storage.put("triggerData", data);
+    await this.state.storage.put('triggerData', data);
   }
 
   private async _loadData(): Promise<TriggerData | null> {
@@ -308,10 +305,10 @@ export class Trigger {
         })
         .then((v) => (v === null ? null : mapTriggerToTriggerData(v)))
         .catch((error) => {
-          console.error("Error loading trigger from DB:", error);
-          this._trackEvent("trigger_data_load_error", {
+          console.error('Error loading trigger from DB:', error);
+          this._trackEvent('trigger_data_load_error', {
             error: error instanceof Error ? error.message : String(error),
-            source: "database",
+            source: 'database',
             triggerId: this._getTriggerId(),
           });
           return null;
@@ -320,10 +317,10 @@ export class Trigger {
       const loadFromStatePromise = this._loadFromState()
         .then((v) => (v === null ? loadFromDbPromise : v))
         .catch((error) => {
-          console.error("Error loading trigger from state:", error);
-          this._trackEvent("trigger_data_load_error", {
+          console.error('Error loading trigger from state:', error);
+          this._trackEvent('trigger_data_load_error', {
             error: error instanceof Error ? error.message : String(error),
-            source: "state",
+            source: 'state',
             triggerId: this._getTriggerId(),
           });
           return null;
@@ -344,10 +341,10 @@ export class Trigger {
 
       return triggerData;
     } catch (error) {
-      console.error("Error in _loadData:", error);
-      this._trackEvent("trigger_data_load_error", {
+      console.error('Error in _loadData:', error);
+      this._trackEvent('trigger_data_load_error', {
         error: error instanceof Error ? error.message : String(error),
-        source: "general",
+        source: 'general',
         triggerId: this._getTriggerId(),
       });
       throw error;
@@ -356,35 +353,35 @@ export class Trigger {
 
   private _setData(data: TriggerData) {
     this.data = data;
-    this.hooks = this.data ? hooks[this.data?.type ?? "cron"] : cron;
+    this.hooks = this.data ? hooks[this.data?.type ?? 'cron'] : cron;
   }
 
   private _getTriggerId() {
-    return this.state.id.split("/").at(-1) || "";
+    return this.state.id.split('/').at(-1) || '';
   }
 
-  private async _saveRun(run: Omit<TriggerRun, "id" | "timestamp">) {
+  private async _saveRun(run: Omit<TriggerRun, 'id' | 'timestamp'>) {
     await this.db
-      .from("deco_chat_trigger_runs")
+      .from('deco_chat_trigger_runs')
       .insert({
         trigger_id: run.triggerId,
         result: run.result as Json,
         metadata: run.metadata as Json,
         status: run.status,
       })
-      .select("*")
+      .select('*')
       .single();
   }
 
   _assertsValidInvoke() {
     if (!this.data) {
-      throw new Error("Trigger does not have a data");
+      throw new Error('Trigger does not have a data');
     }
-    if (!("passphrase" in this.data)) {
+    if (!('passphrase' in this.data)) {
       return;
     }
     if (this.data.passphrase !== this.metadata?.params?.passphrase) {
-      throw new Error("Invalid passphrase");
+      throw new Error('Invalid passphrase');
     }
   }
 
@@ -396,8 +393,8 @@ export class Trigger {
 
   enrichMetadata(metadata: TriggerMetadata, req: Request): TriggerMetadata {
     return {
-      internalCall: req.headers.get("host") === null ||
-        getRuntimeKey() === "deno",
+      internalCall: req.headers.get('host') === null ||
+        getRuntimeKey() === 'deno',
       params: Object.fromEntries(new URL(req.url).searchParams.entries()),
       reqHeaders: Object.fromEntries(req.headers.entries()),
       ...metadata,
@@ -422,13 +419,13 @@ export class Trigger {
       runData.result = await this.hooks?.run(data, this, args);
       return runData.result;
     } catch (error) {
-      console.error("Error running trigger:", error);
+      console.error('Error running trigger:', error);
       runData.error = JSON.stringify(error);
     } finally {
       await this._saveRun({
         triggerId: this._getTriggerId(),
         result: runData.result as Record<string, unknown> | null,
-        status: runData.error ? "error" : "success",
+        status: runData.error ? 'error' : 'success',
         metadata: {
           ...(runData.metadata as Record<string, unknown> | null),
           args,
@@ -442,19 +439,19 @@ export class Trigger {
     await this.run();
   }
 
-  generateObject(...args: Parameters<AIAgent["generateObject"]>) {
+  generateObject(...args: Parameters<AIAgent['generateObject']>) {
     this._assertsValidInvoke();
     const stub = this.state.stub(AIAgent).new(`${this.agentId}`);
     return stub.generateObject(...args);
   }
 
-  stream(...args: Parameters<AIAgent["stream"]>) {
+  stream(...args: Parameters<AIAgent['stream']>) {
     this._assertsValidInvoke();
     const stub = this.state.stub(AIAgent).new(`${this.agentId}`);
     return stub.stream(...args);
   }
 
-  generate(...args: Parameters<AIAgent["generate"]>) {
+  generate(...args: Parameters<AIAgent['generate']>) {
     this._assertsValidInvoke();
     const stub = this.state.stub(AIAgent).new(`${this.agentId}`);
     return stub.generate(...args);
@@ -468,7 +465,7 @@ export class Trigger {
     if (this.metadata?.internalCall === false) {
       return {
         ok: false,
-        message: "Trigger is not allowed to be created from external sources",
+        message: 'Trigger is not allowed to be created from external sources',
       };
     }
 
@@ -482,8 +479,8 @@ export class Trigger {
         callbacks: this._callbacks(),
       };
     } catch (error) {
-      console.error("Error creating trigger in Supabase:", error);
-      this._trackEvent("trigger_create_error", {
+      console.error('Error creating trigger in Supabase:', error);
+      this._trackEvent('trigger_create_error', {
         error: error instanceof Error ? error.message : String(error),
         triggerId: this._getTriggerId(),
         triggerType: data.type,
@@ -499,7 +496,7 @@ export class Trigger {
     if (this.metadata?.internalCall === false) {
       return {
         success: false,
-        message: "Trigger is not allowed to be deleted from external sources",
+        message: 'Trigger is not allowed to be deleted from external sources',
       };
     }
     if (!this.data) {
@@ -515,11 +512,11 @@ export class Trigger {
 
       return {
         success: true,
-        message: "Trigger deleted successfully",
+        message: 'Trigger deleted successfully',
       };
     } catch (error) {
-      console.error("Error deleting trigger:", error);
-      this._trackEvent("trigger_delete_error", {
+      console.error('Error deleting trigger:', error);
+      this._trackEvent('trigger_delete_error', {
         error: error instanceof Error ? error.message : String(error),
         triggerId: this._getTriggerId(),
         triggerType: this.data?.type,

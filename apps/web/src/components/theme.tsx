@@ -2,17 +2,16 @@
  * Very ugly code but the animation looks good.
  * Take the time to refactor this someday.
  */
-import type { CSSProperties } from "react";
-import { type ThemeVariable, useSDK, useWorkspaceTheme } from "@deco/sdk";
-import { useEffect, useRef, useState } from "react";
-import gsap from "gsap";
+import type { CSSProperties } from 'react';
+import { type ThemeVariable, useSDK, useWorkspaceTheme } from '@deco/sdk';
+import { useEffect, useRef, useState } from 'react';
+import gsap from 'gsap';
 
 /**
  * Kind of a stale cache for the theme so we don't show the splash screen
  * every time the user opens a workspace.
  */
-const THEME_CACHE_KEY = (workspace: string) =>
-  `workspace_theme_cache_${workspace}`;
+const THEME_CACHE_KEY = (workspace: string) => `workspace_theme_cache_${workspace}`;
 
 export const clearThemeCache = (workspace: string) => {
   localStorage.removeItem(THEME_CACHE_KEY(workspace));
@@ -48,9 +47,9 @@ export function WithWorkspaceTheme({
   children: React.ReactNode;
 }) {
   const { data: theme } = useTheme();
-  const loadedLogo = theme?.picture ?? "/img/deco-chat-logo.png";
-  const loadedBackground = theme?.variables?.["--splash" as ThemeVariable] ??
-    theme?.variables?.["--sidebar" as ThemeVariable] ??
+  const loadedLogo = theme?.picture ?? '/img/deco-chat-logo.png';
+  const loadedBackground = theme?.variables?.['--splash' as ThemeVariable] ??
+    theme?.variables?.['--sidebar' as ThemeVariable] ??
     null;
   const splashRef = useRef<HTMLDivElement>(null);
   const circleRef = useRef<HTMLDivElement>(null);
@@ -76,7 +75,7 @@ export function WithWorkspaceTheme({
       gsap.fromTo(
         splashRef.current,
         { scale: 0.5, opacity: 0 },
-        { scale: 1, opacity: 1, duration: 0.5, ease: "power2.out" },
+        { scale: 1, opacity: 1, duration: 0.5, ease: 'power2.out' },
       );
 
       // Expand the background circle
@@ -88,7 +87,7 @@ export function WithWorkspaceTheme({
             scale: 20, // Large enough to cover the screen
             opacity: 1,
             duration: 1.5,
-            ease: "power2.inOut",
+            ease: 'power2.inOut',
             delay: 0.2,
           },
         )
@@ -112,7 +111,7 @@ export function WithWorkspaceTheme({
           gsap.to(logoRef.current, {
             opacity: 0,
             duration: 0.5,
-            ease: "power2.inOut",
+            ease: 'power2.inOut',
             onComplete: () => {
               // Update the src and fade in
               if (logoRef.current) {
@@ -120,7 +119,7 @@ export function WithWorkspaceTheme({
                 gsap.to(logoRef.current, {
                   opacity: 1,
                   duration: 0.5,
-                  ease: "power2.inOut",
+                  ease: 'power2.inOut',
                 });
               }
             },
@@ -136,7 +135,7 @@ export function WithWorkspaceTheme({
         scale: 0,
         opacity: 1,
         duration: 1,
-        ease: "power2.inOut",
+        ease: 'power2.inOut',
         onComplete: () => {
           setShowSplash(false);
         },
@@ -158,7 +157,7 @@ export function WithWorkspaceTheme({
                 scale: 20,
                 opacity: 1,
                 duration: 1.5,
-                ease: "power2.inOut",
+                ease: 'power2.inOut',
                 delay: 0.2,
               },
             )
@@ -211,40 +210,40 @@ export function WithWorkspaceTheme({
       {showSplash && (
         <div
           ref={splashScreenRef}
-          className="fixed inset-0 flex items-center justify-center z-50 bg-white"
+          className='fixed inset-0 flex items-center justify-center z-50 bg-white'
         >
           <div
             ref={circleRef}
             // deno-lint-ignore ensure-tailwind-design-system-tokens/ensure-tailwind-design-system-tokens
-            className="absolute w-24 h-24 rounded-full bg-stone-200"
-            style={{ transformOrigin: "center" }}
+            className='absolute w-24 h-24 rounded-full bg-stone-200'
+            style={{ transformOrigin: 'center' }}
           />
           {loadedBackground && (
             <div
               ref={loadedColorCircleRef}
-              className="absolute w-24 h-24 rounded-full opacity-0"
+              className='absolute w-24 h-24 rounded-full opacity-0'
               style={{
-                transformOrigin: "center",
+                transformOrigin: 'center',
                 backgroundColor: loadedBackground,
               }}
             />
           )}
           <div
             ref={splashRef}
-            className="relative flex flex-col items-center justify-center"
+            className='relative flex flex-col items-center justify-center'
           >
-            <div className="p-4 rounded-full bg-white">
+            <div className='p-4 rounded-full bg-white'>
               <img
                 ref={logoRef}
-                src="/img/deco-chat-logo.png"
-                alt="Deco Chat Logo"
-                className="w-36 h-36 object-contain rounded-full"
+                src='/img/deco-chat-logo.png'
+                alt='Deco Chat Logo'
+                className='w-36 h-36 object-contain rounded-full'
               />
             </div>
           </div>
         </div>
       )}
-      <div className="h-full w-full" style={variables as CSSProperties}>
+      <div className='h-full w-full' style={variables as CSSProperties}>
         {children}
       </div>
     </>

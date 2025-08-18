@@ -1,9 +1,9 @@
 export const Hosts = {
-  API: "api.deco.chat",
-  APPS: "deco.page",
-  FS: "fs.deco.chat",
-  Chat: "deco.chat",
-  LOCALHOST: "localhost:3000",
+  API: 'api.deco.chat',
+  APPS: 'deco.page',
+  FS: 'fs.deco.chat',
+  Chat: 'deco.chat',
+  LOCALHOST: 'localhost:3000',
 } as const;
 
 export const WELL_KNOWN_ORIGINS = [

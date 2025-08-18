@@ -7,7 +7,7 @@ import {
   useMemo,
   useRef,
   useState,
-} from "react";
+} from 'react';
 import {
   type Agent,
   type Integration,
@@ -28,43 +28,39 @@ import {
   useTeamRoles,
   useTools,
   useUpdateTeamRole,
-} from "@deco/sdk";
-import { Button } from "@deco/ui/components/button.tsx";
-import { Card, CardContent } from "@deco/ui/components/card.tsx";
-import { Input } from "@deco/ui/components/input.tsx";
-import { toast } from "@deco/ui/components/sonner.tsx";
-import { Icon } from "@deco/ui/components/icon.tsx";
+} from '@deco/sdk';
+import { Button } from '@deco/ui/components/button.tsx';
+import { Card, CardContent } from '@deco/ui/components/card.tsx';
+import { Input } from '@deco/ui/components/input.tsx';
+import { toast } from '@deco/ui/components/sonner.tsx';
+import { Icon } from '@deco/ui/components/icon.tsx';
 import {
   Dialog,
   DialogContent,
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from "@deco/ui/components/dialog.tsx";
+} from '@deco/ui/components/dialog.tsx';
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from "@deco/ui/components/dropdown-menu.tsx";
-import { Badge } from "@deco/ui/components/badge.tsx";
-import { Table, TableColumn } from "../../common/table/index.tsx";
-import { useParams } from "react-router";
-import { UserAvatar } from "../../common/avatar/user.tsx";
-import { useUser } from "../../../hooks/use-user.ts";
-import { useTeams } from "@deco/sdk";
-import { AgentAvatar } from "../../common/avatar/agent.tsx";
-import { IntegrationAvatar } from "../../common/avatar/integration.tsx";
-import { Skeleton } from "@deco/ui/components/skeleton.tsx";
-import {
-  SidebarMenu,
-  SidebarMenuButton,
-  SidebarMenuItem,
-} from "@deco/ui/components/sidebar.tsx";
-import { Textarea } from "@deco/ui/components/textarea.tsx";
-import { Checkbox } from "@deco/ui/components/checkbox.tsx";
-import { Alert, AlertDescription } from "@deco/ui/components/alert.tsx";
-import { Label } from "@deco/ui/components/label.tsx";
+} from '@deco/ui/components/dropdown-menu.tsx';
+import { Badge } from '@deco/ui/components/badge.tsx';
+import { Table, TableColumn } from '../../common/table/index.tsx';
+import { useParams } from 'react-router';
+import { UserAvatar } from '../../common/avatar/user.tsx';
+import { useUser } from '../../../hooks/use-user.ts';
+import { useTeams } from '@deco/sdk';
+import { AgentAvatar } from '../../common/avatar/agent.tsx';
+import { IntegrationAvatar } from '../../common/avatar/integration.tsx';
+import { Skeleton } from '@deco/ui/components/skeleton.tsx';
+import { SidebarMenu, SidebarMenuButton, SidebarMenuItem } from '@deco/ui/components/sidebar.tsx';
+import { Textarea } from '@deco/ui/components/textarea.tsx';
+import { Checkbox } from '@deco/ui/components/checkbox.tsx';
+import { Alert, AlertDescription } from '@deco/ui/components/alert.tsx';
+import { Label } from '@deco/ui/components/label.tsx';
 
 interface RoleDialogUserInfoProps {
   userId: string;
@@ -156,26 +152,26 @@ function RoleDialogSidebar({
   onToolsTabClick,
 }: RoleDialogSidebarProps) {
   return (
-    <div className="w-48 pr-4 flex-shrink-0">
-      <SidebarMenu className="gap-0.5">
+    <div className='w-48 pr-4 flex-shrink-0'>
+      <SidebarMenu className='gap-0.5'>
         <SidebarMenuItem>
           <SidebarMenuButton
-            isActive={selectedTab === "general"}
-            onClick={() => onTabChange("general")}
-            className="cursor-pointer justify-between"
+            isActive={selectedTab === 'general'}
+            onClick={() => onTabChange('general')}
+            className='cursor-pointer justify-between'
           >
             <span>General</span>
           </SidebarMenuButton>
         </SidebarMenuItem>
         <SidebarMenuItem>
           <SidebarMenuButton
-            isActive={selectedTab === "tools"}
+            isActive={selectedTab === 'tools'}
             onClick={onToolsTabClick}
-            className="cursor-pointer justify-between"
+            className='cursor-pointer justify-between'
           >
             <span>Tools</span>
             {selectedToolsCount > 0 && (
-              <Badge variant="secondary" className="ml-2 text-xs">
+              <Badge variant='secondary' className='ml-2 text-xs'>
                 {selectedToolsCount}
               </Badge>
             )}
@@ -200,13 +196,13 @@ function RoleDialogSidebar({
         }
         <SidebarMenuItem>
           <SidebarMenuButton
-            isActive={selectedTab === "members"}
-            onClick={() => onTabChange("members")}
-            className="cursor-pointer justify-between"
+            isActive={selectedTab === 'members'}
+            onClick={() => onTabChange('members')}
+            className='cursor-pointer justify-between'
           >
             <span>Members</span>
             {selectedMembersCount > 0 && (
-              <Badge variant="secondary" className="ml-2 text-xs">
+              <Badge variant='secondary' className='ml-2 text-xs'>
                 {selectedMembersCount}
               </Badge>
             )}
@@ -239,28 +235,28 @@ function RoleGeneralPanel({ formData, setFormData }: RoleGeneralPanelProps) {
   );
 
   return (
-    <div className="space-y-4 flex-1">
-      <div className="space-y-2">
-        <Label htmlFor="role-name" className="text-sm font-medium">
+    <div className='space-y-4 flex-1'>
+      <div className='space-y-2'>
+        <Label htmlFor='role-name' className='text-sm font-medium'>
           Name
         </Label>
         <Input
-          id="role-name"
+          id='role-name'
           value={formData.name}
           onChange={handleNameChange}
-          placeholder="Enter role name"
+          placeholder='Enter role name'
           disabled
         />
       </div>
-      <div className="space-y-2">
-        <Label htmlFor="role-description" className="text-sm font-medium">
+      <div className='space-y-2'>
+        <Label htmlFor='role-description' className='text-sm font-medium'>
           Description
         </Label>
         <Textarea
-          id="role-description"
-          value={formData.description || ""}
+          id='role-description'
+          value={formData.description || ''}
           onChange={handleDescriptionChange}
-          placeholder="Describe what this role can do"
+          placeholder='Describe what this role can do'
           rows={3}
           disabled
         />
@@ -308,7 +304,7 @@ function RoleToolsPanel({
             const toolPermissions: ToolPermission[] = toolsData.tools?.map(
               (tool: { name: string; description?: string }) => ({
                 toolName: tool.name,
-                effect: "allow" as const,
+                effect: 'allow' as const,
               }),
             ) || [];
             newTools[integration.id] = toolPermissions;
@@ -362,58 +358,55 @@ function RoleToolsPanel({
   );
 
   return (
-    <div className="space-y-4">
-      {currentView === "integrations"
+    <div className='space-y-4'>
+      {currentView === 'integrations'
         ? (
           <>
             <Input
-              placeholder="Search integrations..."
+              placeholder='Search integrations...'
               value={toolsSearch}
               onChange={handleToolsSearchChange}
-              className="w-full"
+              className='w-full'
             />
 
-            <div className="flex items-center justify-between">
-              <span className="text-sm text-muted-foreground">
-                {totalSelectedTools} tools from {selectedIntegrations}{" "}
-                integrations
+            <div className='flex items-center justify-between'>
+              <span className='text-sm text-muted-foreground'>
+                {totalSelectedTools} tools from {selectedIntegrations} integrations
               </span>
               <Button
-                variant="outline"
-                size="sm"
+                variant='outline'
+                size='sm'
                 disabled
                 onClick={handleSelectAll}
               >
-                {selectingAllTools
-                  ? "Loading..."
-                  : Object.values(formData.tools).some(
-                      (tools) => Array.isArray(tools) && tools.length > 0,
-                    )
-                  ? "Deselect All"
-                  : "Select All"}
+                {selectingAllTools ? 'Loading...' : Object.values(formData.tools).some(
+                    (tools) => Array.isArray(tools) && tools.length > 0,
+                  )
+                  ? 'Deselect All'
+                  : 'Select All'}
               </Button>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className='grid grid-cols-1 md:grid-cols-2 gap-4'>
               {filteredIntegrations.map((integration) => (
                 <RoleDialogIntegrationListItem
                   key={integration.id}
                   toolsSet={toolsSetForDisplay}
                   setIntegrationTools={setIntegrationTools}
                   integration={integration}
-                  searchTerm=""
+                  searchTerm=''
                   onNavigateToIntegration={handleNavigateToIntegration}
                 />
               ))}
               {filteredIntegrations.length === 0 && (
-                <div className="text-center py-8 text-muted-foreground">
+                <div className='text-center py-8 text-muted-foreground'>
                   No integrations found.
                 </div>
               )}
             </div>
           </>
         )
-        : currentView === "integration-detail" && selectedIntegration
+        : currentView === 'integration-detail' && selectedIntegration
         ? (
           <IntegrationDetailView
             integration={selectedIntegration}
@@ -471,66 +464,65 @@ function _RoleAgentsPanel({
   );
 
   return (
-    <div className="space-y-4">
+    <div className='space-y-4'>
       <Input
-        placeholder="Search agents..."
+        placeholder='Search agents...'
         value={agentsSearch}
         onChange={handleAgentsSearchChange}
-        className="w-full"
+        className='w-full'
       />
 
-      <div className="flex items-center justify-between">
-        <span className="text-sm text-muted-foreground">
+      <div className='flex items-center justify-between'>
+        <span className='text-sm text-muted-foreground'>
           {formData.agents.length} agents selected
         </span>
-        <Button variant="outline" size="sm" onClick={handleSelectAllAgents}>
-          {formData.agents.length > 0 ? "Deselect All" : "Select All"}
+        <Button variant='outline' size='sm' onClick={handleSelectAllAgents}>
+          {formData.agents.length > 0 ? 'Deselect All' : 'Select All'}
         </Button>
       </div>
 
       {hasAgentsWithMissingTools && (
-        <Alert variant="warning">
-          <Icon name="warning" />
+        <Alert variant='warning'>
+          <Icon name='warning' />
           <AlertDescription>
-            Some selected agents have tools that this role doesn't have access
-            to. Those tools will be automatically added.
+            Some selected agents have tools that this role doesn't have access to. Those tools will
+            be automatically added.
           </AlertDescription>
         </Alert>
       )}
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div className='grid grid-cols-1 md:grid-cols-2 gap-4'>
         {filteredAgents.map((agent) => (
           <Card
             key={agent.id}
-            className="w-full cursor-pointer"
-            onClick={() =>
-              handleAgentToggle(agent.id, !formData.agents.includes(agent.id))}
+            className='w-full cursor-pointer'
+            onClick={() => handleAgentToggle(agent.id, !formData.agents.includes(agent.id))}
           >
-            <CardContent className="flex items-start p-3 w-full">
+            <CardContent className='flex items-start p-3 w-full'>
               <AgentAvatar
                 url={agent.avatar}
                 fallback={agent.name}
-                size="base"
+                size='base'
               />
-              <div className="flex flex-col items-start text-left leading-tight w-full min-w-0 ml-3 pr-3">
+              <div className='flex flex-col items-start text-left leading-tight w-full min-w-0 ml-3 pr-3'>
                 <span
-                  className="truncate block text-sm font-medium text-foreground"
-                  style={{ maxWidth: "300px" }}
+                  className='truncate block text-sm font-medium text-foreground'
+                  style={{ maxWidth: '300px' }}
                 >
                   {agent.name}
                 </span>
                 <span
-                  className="block text-xs font-normal text-muted-foreground break-words whitespace-pre-line"
+                  className='block text-xs font-normal text-muted-foreground break-words whitespace-pre-line'
                   style={{
-                    maxWidth: "300px",
-                    wordBreak: "break-word",
+                    maxWidth: '300px',
+                    wordBreak: 'break-word',
                   }}
                 >
-                  {agent.description || "No description"}
+                  {agent.description || 'No description'}
                 </span>
               </div>
               <div
-                className="ml-auto flex items-start"
+                className='ml-auto flex items-start'
                 onClick={(e) => e.stopPropagation()}
               >
                 <Checkbox
@@ -543,7 +535,7 @@ function _RoleAgentsPanel({
           </Card>
         ))}
         {filteredAgents.length === 0 && (
-          <div className="text-center py-8 text-muted-foreground">
+          <div className='text-center py-8 text-muted-foreground'>
             No agents found.
           </div>
         )}
@@ -574,7 +566,7 @@ function RoleMembersPanel({
       const allMemberActions: MemberRoleAction[] = filteredMembers.map(
         (member) => ({
           user_id: member.user_id,
-          action: "grant" as const,
+          action: 'grant' as const,
         }),
       );
       setFormData((prev) => ({
@@ -585,48 +577,48 @@ function RoleMembersPanel({
   }, [formData.members.length, filteredMembers, setFormData]);
 
   return (
-    <div className="space-y-4">
+    <div className='space-y-4'>
       <Input
-        placeholder="Search members..."
+        placeholder='Search members...'
         value={membersSearch}
         onChange={handleMembersSearchChange}
-        className="w-full"
+        className='w-full'
       />
 
-      <div className="flex items-center justify-between">
-        <span className="text-sm text-muted-foreground">
+      <div className='flex items-center justify-between'>
+        <span className='text-sm text-muted-foreground'>
           {formData.members.length} members selected
         </span>
-        <Button variant="outline" size="sm" onClick={handleSelectAllMembers}>
-          {formData.members.length > 0 ? "Deselect All" : "Select All"}
+        <Button variant='outline' size='sm' onClick={handleSelectAllMembers}>
+          {formData.members.length > 0 ? 'Deselect All' : 'Select All'}
         </Button>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div className='grid grid-cols-1 md:grid-cols-2 gap-4'>
         {filteredMembers.map((member) => {
           const memberCurrentRoles = member.roles || [];
 
           return (
             <Card
               key={member.id}
-              className="w-full cursor-pointer"
+              className='w-full cursor-pointer'
               onClick={() =>
                 handleMemberToggle(
                   member.user_id,
                   !formData.members.some((m) => m.user_id === member.user_id),
                 )}
             >
-              <CardContent className="flex items-start p-3 w-full">
-                <div className="flex flex-col w-full pr-3">
+              <CardContent className='flex items-start p-3 w-full'>
+                <div className='flex flex-col w-full pr-3'>
                   <RoleDialogUserInfo userId={member.user_id} />
                   {memberCurrentRoles.length > 0 && (
-                    <div className="mt-2">
-                      <div className="flex flex-wrap gap-1">
+                    <div className='mt-2'>
+                      <div className='flex flex-wrap gap-1'>
                         {memberCurrentRoles.map((role) => (
                           <Badge
                             key={role.id}
-                            variant="secondary"
-                            className="text-xs"
+                            variant='secondary'
+                            className='text-xs'
                           >
                             {role.name}
                           </Badge>
@@ -636,7 +628,7 @@ function RoleMembersPanel({
                   )}
                 </div>
                 <div
-                  className="ml-auto flex items-start"
+                  className='ml-auto flex items-start'
                   onClick={(e) => e.stopPropagation()}
                 >
                   <Checkbox
@@ -652,7 +644,7 @@ function RoleMembersPanel({
           );
         })}
         {filteredMembers.length === 0 && (
-          <div className="text-center py-8 text-muted-foreground">
+          <div className='text-center py-8 text-muted-foreground'>
             No members found.
           </div>
         )}
@@ -693,32 +685,28 @@ function RoleDialogUserInfo({ userId }: RoleDialogUserInfoProps) {
 
   const avatarData = useMemo(
     () => ({
-      url: isCurrentUser
-        ? user?.metadata.avatar_url
-        : member?.profiles?.metadata?.avatar_url,
-      name: isCurrentUser
-        ? user?.metadata.full_name
-        : member?.profiles?.metadata?.full_name,
+      url: isCurrentUser ? user?.metadata.avatar_url : member?.profiles?.metadata?.avatar_url,
+      name: isCurrentUser ? user?.metadata.full_name : member?.profiles?.metadata?.full_name,
       email: isCurrentUser ? user?.email : member?.profiles?.email,
     }),
     [isCurrentUser, user, member],
   );
 
   return (
-    <div className="flex items-center gap-2 min-w-[48px]">
-      <UserAvatar url={avatarData.url} fallback={avatarData.name} size="base" />
-      <div className="flex flex-col items-start text-left leading-tight w-full">
+    <div className='flex items-center gap-2 min-w-[48px]'>
+      <UserAvatar url={avatarData.url} fallback={avatarData.name} size='base' />
+      <div className='flex flex-col items-start text-left leading-tight w-full'>
         <span
-          className="truncate block text-sm font-medium text-foreground"
-          style={{ maxWidth: "300px" }}
+          className='truncate block text-sm font-medium text-foreground'
+          style={{ maxWidth: '300px' }}
         >
-          {avatarData.name || "Unknown"}
+          {avatarData.name || 'Unknown'}
         </span>
         <span
-          className="truncate block text-xs font-normal text-muted-foreground"
-          style={{ maxWidth: "300px" }}
+          className='truncate block text-xs font-normal text-muted-foreground'
+          style={{ maxWidth: '300px' }}
         >
-          {avatarData.email || ""}
+          {avatarData.email || ''}
         </span>
       </div>
     </div>
@@ -777,28 +765,24 @@ function RoleDialogIntegrationListItem({
   return (
     <Card
       key={integration.id}
-      className={`w-full ${
-        toolsInfo.isEmpty ? "cursor-default" : "cursor-pointer"
-      }`}
+      className={`w-full ${toolsInfo.isEmpty ? 'cursor-default' : 'cursor-pointer'}`}
       onClick={handleClick}
     >
-      <CardContent className="flex items-center justify-between p-3 w-full">
-        <div className="flex items-center gap-3 min-w-0 flex-1">
+      <CardContent className='flex items-center justify-between p-3 w-full'>
+        <div className='flex items-center gap-3 min-w-0 flex-1'>
           <IntegrationAvatar
             url={integration.icon}
             fallback={integration.name}
-            size="base"
+            size='base'
           />
-          <div className="flex flex-col min-w-0">
-            <h4 className="text-sm font-medium truncate text-foreground">
+          <div className='flex flex-col min-w-0'>
+            <h4 className='text-sm font-medium truncate text-foreground'>
               {integration.name}
             </h4>
-            <p className="text-xs text-muted-foreground truncate">
-              {isLoading
-                ? <Skeleton className="h-3 w-16" />
-                : toolsInfo.isEmpty
+            <p className='text-xs text-muted-foreground truncate'>
+              {isLoading ? <Skeleton className='h-3 w-16' /> : toolsInfo.isEmpty
                 ? (
-                  "No tools available"
+                  'No tools available'
                 )
                 : (
                   `${toolsInfo.enabledCount}/${toolsInfo.total} tools selected`
@@ -808,14 +792,14 @@ function RoleDialogIntegrationListItem({
         </div>
 
         {!toolsInfo.isEmpty && (
-          <div className="flex items-center gap-2 ml-4">
+          <div className='flex items-center gap-2 ml-4'>
             <Checkbox
               checked={toolsInfo.isAll}
               onCheckedChange={handleAll}
               onClick={handleCheckboxClick}
               disabled
             />
-            <Icon name="chevron_right" size={20} />
+            <Icon name='chevron_right' size={20} />
           </div>
         )}
       </CardContent>
@@ -830,7 +814,7 @@ function IntegrationDetailView({
   onBack,
 }: IntegrationDetailViewProps) {
   const { data: toolsData, isLoading } = useTools(integration.connection);
-  const [toolsSearch, setToolsSearch] = useState("");
+  const [toolsSearch, setToolsSearch] = useState('');
 
   const toolsInfo: {
     total: number;
@@ -854,9 +838,9 @@ function IntegrationDetailView({
       toolsInfo.allTools.filter((tool) => {
         if (!toolsSearch) return true;
         const searchTerm = toolsSearch.toLowerCase();
-        const toolNameFormatted = tool.name.replace(/_/g, " ").toLowerCase();
+        const toolNameFormatted = tool.name.replace(/_/g, ' ').toLowerCase();
         const toolNameOriginal = tool.name.toLowerCase();
-        const toolDescription = tool.description?.toLowerCase() || "";
+        const toolDescription = tool.description?.toLowerCase() || '';
         return (
           toolNameFormatted.includes(searchTerm) ||
           toolNameOriginal.includes(searchTerm) ||
@@ -877,33 +861,33 @@ function IntegrationDetailView({
   );
 
   return (
-    <div className="space-y-4">
+    <div className='space-y-4'>
       {/* Breadcrumbs */}
-      <div className="flex items-center gap-2 text-sm">
+      <div className='flex items-center gap-2 text-sm'>
         <button
-          type="button"
+          type='button'
           onClick={onBack}
-          className="text-primary hover:text-primary/80 cursor-pointer"
+          className='text-primary hover:text-primary/80 cursor-pointer'
         >
           Tools
         </button>
-        <Icon name="chevron_right" size={16} />
-        <span className="text-foreground">{integration.name}</span>
+        <Icon name='chevron_right' size={16} />
+        <span className='text-foreground'>{integration.name}</span>
       </div>
 
       {/* Integration header */}
-      <div className="flex items-center gap-3 py-4">
+      <div className='flex items-center gap-3 py-4'>
         <IntegrationAvatar
           url={integration.icon}
           fallback={integration.name}
-          size="base"
+          size='base'
         />
-        <div className="flex flex-col min-w-0">
-          <h3 className="text-base font-semibold text-foreground">
+        <div className='flex flex-col min-w-0'>
+          <h3 className='text-base font-semibold text-foreground'>
             {integration.name}
           </h3>
-          <p className="text-sm text-muted-foreground">
-            {isLoading ? <Skeleton className="h-4 w-24" /> : (
+          <p className='text-sm text-muted-foreground'>
+            {isLoading ? <Skeleton className='h-4 w-24' /> : (
               `${toolsInfo.total} tools available`
             )}
           </p>
@@ -911,55 +895,52 @@ function IntegrationDetailView({
       </div>
 
       {/* Tools search and controls */}
-      <div className="space-y-3">
+      <div className='space-y-3'>
         <Input
-          placeholder="Search tools..."
+          placeholder='Search tools...'
           value={toolsSearch}
-          onChange={(e: ChangeEvent<HTMLInputElement>) =>
-            setToolsSearch(e.target.value)}
-          className="w-full"
+          onChange={(e: ChangeEvent<HTMLInputElement>) => setToolsSearch(e.target.value)}
+          className='w-full'
         />
 
-        <div className="flex items-center justify-between">
-          <span className="text-sm text-muted-foreground">
+        <div className='flex items-center justify-between'>
+          <span className='text-sm text-muted-foreground'>
             {toolsInfo.enabledCount} of {filteredTools.length} tools selected
           </span>
           <Button
-            variant="outline"
-            size="sm"
+            variant='outline'
+            size='sm'
             disabled
             onClick={() => handleAll(!toolsInfo.isAll)}
           >
-            {toolsInfo.isAll ? "Deselect All" : "Select All"}
+            {toolsInfo.isAll ? 'Deselect All' : 'Select All'}
           </Button>
         </div>
       </div>
 
       {/* Tools list */}
-      <div className="space-y-2">
+      <div className='space-y-2'>
         {isLoading
           ? (
-            <div className="space-y-2">
+            <div className='space-y-2'>
               {[...Array(3)].map((_, i) => (
                 <div
                   key={i}
-                  className="flex items-center justify-between p-3 border rounded-lg"
+                  className='flex items-center justify-between p-3 border rounded-lg'
                 >
-                  <div className="space-y-2">
-                    <Skeleton className="h-4 w-32" />
-                    <Skeleton className="h-3 w-48" />
+                  <div className='space-y-2'>
+                    <Skeleton className='h-4 w-32' />
+                    <Skeleton className='h-3 w-48' />
                   </div>
-                  <Skeleton className="h-5 w-5" />
+                  <Skeleton className='h-5 w-5' />
                 </div>
               ))}
             </div>
           )
           : filteredTools.length === 0
           ? (
-            <div className="text-center py-8 text-muted-foreground">
-              {toolsSearch
-                ? "No tools match your search."
-                : "No tools available."}
+            <div className='text-center py-8 text-muted-foreground'>
+              {toolsSearch ? 'No tools match your search.' : 'No tools available.'}
             </div>
           )
           : (
@@ -981,23 +962,23 @@ function IntegrationDetailView({
               return (
                 <label
                   key={tool.name}
-                  className="flex items-start justify-between gap-3 p-3 border rounded-xl cursor-pointer hover:bg-muted/50 transition-colors"
+                  className='flex items-start justify-between gap-3 p-3 border rounded-xl cursor-pointer hover:bg-muted/50 transition-colors'
                 >
-                  <div className="flex flex-col min-w-0 flex-1">
-                    <span className="text-sm font-medium truncate text-foreground">
+                  <div className='flex flex-col min-w-0 flex-1'>
+                    <span className='text-sm font-medium truncate text-foreground'>
                       {tool.name
-                        .replace(/_/g, " ")
+                        .replace(/_/g, ' ')
                         .toLowerCase()
                         .replace(/\b\w/g, (c: string) => c.toUpperCase())}
                     </span>
-                    <span className="text-xs text-muted-foreground break-words">
-                      {tool.description || "No description"}
+                    <span className='text-xs text-muted-foreground break-words'>
+                      {tool.description || 'No description'}
                     </span>
                   </div>
                   <Checkbox
                     checked={enabled}
                     onCheckedChange={handleCheckboxChange}
-                    className="cursor-pointer mt-0.5 flex-shrink-0"
+                    className='cursor-pointer mt-0.5 flex-shrink-0'
                     disabled
                   />
                 </label>
@@ -1014,7 +995,7 @@ function RoleDialogContent({
   role,
   teamId,
   onSave,
-  initialTab = "general",
+  initialTab = 'general',
   onOpenChange,
 }: {
   role?: Role;
@@ -1044,8 +1025,8 @@ function RoleDialogContent({
       // Creating new role
       return {
         id: 0,
-        name: "",
-        description: "",
+        name: '',
+        description: '',
         team_id: teamId || null,
         tools: {},
         agents: [],
@@ -1058,15 +1039,15 @@ function RoleDialogContent({
   const [selectedTab, setSelectedTab] = useState(initialTab);
 
   // Search states for each section
-  const [toolsSearch, setToolsSearch] = useState("");
+  const [toolsSearch, setToolsSearch] = useState('');
   // const [agentsSearch, setAgentsSearch] = useState("");
-  const [membersSearch, setMembersSearch] = useState("");
+  const [membersSearch, setMembersSearch] = useState('');
   const [selectingAllTools, setSelectingAllTools] = useState(false);
 
   // Navigation state for tools section
   const [currentView, setCurrentView] = useState<
-    "integrations" | "integration-detail"
-  >("integrations");
+    'integrations' | 'integration-detail'
+  >('integrations');
   const [selectedIntegration, setSelectedIntegration] = useState<
     Integration | null
   >(null);
@@ -1081,16 +1062,16 @@ function RoleDialogContent({
 
   // Reset navigation state when switching tabs
   useEffect(() => {
-    if (selectedTab !== "tools") {
-      setCurrentView("integrations");
+    if (selectedTab !== 'tools') {
+      setCurrentView('integrations');
       setSelectedIntegration(null);
     }
   }, [selectedTab]);
 
   const availableIntegrations = integrations.filter(
     (i) =>
-      i.id.startsWith("i:") &&
-      !["i:user-management", "i:workspace-management"].includes(i.id),
+      i.id.startsWith('i:') &&
+      !['i:user-management', 'i:workspace-management'].includes(i.id),
   );
 
   // Use deferred values for search to prevent blocking input
@@ -1126,8 +1107,8 @@ function RoleDialogContent({
   const filteredMembers = useMemo(
     () =>
       members.filter((member) => {
-        const name = member.profiles.metadata.full_name || "";
-        const email = member.profiles.email || "";
+        const name = member.profiles.metadata.full_name || '';
+        const email = member.profiles.email || '';
         const searchTerm = deferredMembersSearch.toLowerCase();
         return (
           name.toLowerCase().includes(searchTerm) ||
@@ -1145,7 +1126,7 @@ function RoleDialogContent({
           ...prev.tools,
           [integrationId]: tools.map((toolName) => ({
             toolName,
-            effect: "allow" as const,
+            effect: 'allow' as const,
           })),
         },
       }));
@@ -1157,7 +1138,7 @@ function RoleDialogContent({
   const handleNavigateToIntegration = useCallback(
     (integration: Integration) => {
       setSelectedIntegration(integration);
-      setCurrentView("integration-detail");
+      setCurrentView('integration-detail');
       // Reset scroll to top when navigating to integration detail
       setTimeout(() => {
         if (contentAreaRef.current) {
@@ -1169,7 +1150,7 @@ function RoleDialogContent({
   );
 
   const handleBackToIntegrations = useCallback(() => {
-    setCurrentView("integrations");
+    setCurrentView('integrations');
     setSelectedIntegration(null);
     // Reset scroll to top when going back to integrations list
     setTimeout(() => {
@@ -1222,7 +1203,7 @@ function RoleDialogContent({
     setFormData((prev) => ({
       ...prev,
       members: checked
-        ? [...prev.members, { user_id: userId, action: "grant" as const }]
+        ? [...prev.members, { user_id: userId, action: 'grant' as const }]
         : prev.members.filter((m) => m.user_id !== userId),
     }));
   }, []);
@@ -1241,14 +1222,14 @@ function RoleDialogContent({
     // Grant action for new members (added to role)
     currentMemberIds.forEach((userId) => {
       if (!originalMemberIds.has(userId)) {
-        memberActions.push({ user_id: userId, action: "grant" });
+        memberActions.push({ user_id: userId, action: 'grant' });
       }
     });
 
     // Revoke action for removed members (removed from role)
     originalMemberIds.forEach((userId) => {
       if (!currentMemberIds.has(userId)) {
-        memberActions.push({ user_id: userId, action: "revoke" });
+        memberActions.push({ user_id: userId, action: 'revoke' });
       }
     });
 
@@ -1267,8 +1248,7 @@ function RoleDialogContent({
   const selectedToolsCount = useMemo(
     () =>
       Object.values(formData.tools).reduce(
-        (total: number, tools) =>
-          total + (Array.isArray(tools) ? tools.length : 0),
+        (total: number, tools) => total + (Array.isArray(tools) ? tools.length : 0),
         0,
       ),
     [formData.tools],
@@ -1285,7 +1265,7 @@ function RoleDialogContent({
   );
 
   return (
-    <div className="flex h-[60vh]">
+    <div className='flex h-[60vh]'>
       {/* Left sidebar menu */}
       <RoleDialogSidebar
         selectedTab={selectedTab}
@@ -1294,25 +1274,25 @@ function RoleDialogContent({
         selectedAgentsCount={selectedAgentsCount}
         selectedMembersCount={selectedMembersCount}
         onToolsTabClick={() => {
-          setSelectedTab("tools");
+          setSelectedTab('tools');
           // If we're in integration detail view, go back to integrations list
-          if (currentView === "integration-detail") {
+          if (currentView === 'integration-detail') {
             handleBackToIntegrations();
           }
         }}
       />
 
-      <div className="flex flex-1 flex-col gap-2 pl-6">
+      <div className='flex flex-1 flex-col gap-2 pl-6'>
         {/* Right content area */}
         <div
           ref={contentAreaRef}
-          className="flex-1 max-h-full min-w-0 overflow-y-auto"
+          className='flex-1 max-h-full min-w-0 overflow-y-auto'
         >
-          {selectedTab === "general" && (
+          {selectedTab === 'general' && (
             <RoleGeneralPanel formData={formData} setFormData={setFormData} />
           )}
 
-          {selectedTab === "tools" && (
+          {selectedTab === 'tools' && (
             <RoleToolsPanel
               formData={formData}
               setFormData={setFormData}
@@ -1343,7 +1323,7 @@ function RoleDialogContent({
           ) */
           }
 
-          {selectedTab === "members" && (
+          {selectedTab === 'members' && (
             <RoleMembersPanel
               formData={formData}
               setFormData={setFormData}
@@ -1354,12 +1334,12 @@ function RoleDialogContent({
             />
           )}
         </div>
-        <DialogFooter className="bottom-4 right-4">
-          <Button variant="outline" onClick={() => onOpenChange(false)}>
+        <DialogFooter className='bottom-4 right-4'>
+          <Button variant='outline' onClick={() => onOpenChange(false)}>
             Cancel
           </Button>
           <Button onClick={handleSave} disabled>
-            {role ? "Update Role" : "Create Role"}
+            {role ? 'Update Role' : 'Create Role'}
           </Button>
         </DialogFooter>
       </div>
@@ -1373,29 +1353,29 @@ function AddRoleDialog({
   role,
   teamId,
   onSave,
-  initialTab = "general",
+  initialTab = 'general',
 }: AddRoleDialogProps) {
   const handleSave = (roleData: RoleFormData, isEditing: boolean) => {
     onSave(roleData, isEditing);
     onOpenChange(false);
     toast.success(
-      role ? "Role updated successfully" : "Role created successfully",
+      role ? 'Role updated successfully' : 'Role created successfully',
     );
   };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="w-fit min-w-[900px] max-w-[95vw] max-h-[80vh] overflow-hidden">
+      <DialogContent className='w-fit min-w-[900px] max-w-[95vw] max-h-[80vh] overflow-hidden'>
         <DialogHeader>
-          <DialogTitle>{role ? "View Role" : "Add New Role"}</DialogTitle>
+          <DialogTitle>{role ? 'View Role' : 'Add New Role'}</DialogTitle>
         </DialogHeader>
 
         <Suspense
           fallback={
-            <div className="flex h-[60vh] items-center justify-center">
-              <div className="text-center">
-                <Skeleton className="h-4 w-48 mb-2" />
-                <Skeleton className="h-4 w-32" />
+            <div className='flex h-[60vh] items-center justify-center'>
+              <div className='text-center'>
+                <Skeleton className='h-4 w-48 mb-2' />
+                <Skeleton className='h-4 w-32' />
               </div>
             </div>
           }
@@ -1436,14 +1416,14 @@ function RoleToolsColumn({ role, teamId, handleEditRole }: BaseColumnProps) {
   }, [teamRoleData?.tools]);
 
   if (!teamRoleData) {
-    return <Skeleton className="h-4 w-16" />;
+    return <Skeleton className='h-4 w-16' />;
   }
 
   if (integrationsWithTools.length === 0) {
     return (
       <span
-        className="text-muted-foreground text-sm cursor-pointer hover:text-foreground transition-colors"
-        onClick={() => handleEditRole(role, "tools")}
+        className='text-muted-foreground text-sm cursor-pointer hover:text-foreground transition-colors'
+        onClick={() => handleEditRole(role, 'tools')}
       >
         No tools
       </span>
@@ -1452,22 +1432,22 @@ function RoleToolsColumn({ role, teamId, handleEditRole }: BaseColumnProps) {
 
   return (
     <div
-      className="flex items-center cursor-pointer hover:opacity-80 transition-opacity"
-      onClick={() => handleEditRole(role, "tools")}
+      className='flex items-center cursor-pointer hover:opacity-80 transition-opacity'
+      onClick={() => handleEditRole(role, 'tools')}
     >
-      <div className="flex -space-x-1">
+      <div className='flex -space-x-1'>
         {integrationsWithTools.slice(0, 3).map((integration) => (
           <IntegrationAvatar
             key={integration.id}
             url={integration.icon}
             fallback={integration.name}
-            size="sm"
-            className="border border-background"
+            size='sm'
+            className='border border-background'
           />
         ))}
       </div>
       {integrationsWithTools.length > 3 && (
-        <span className="ml-2 text-xs font-medium text-muted-foreground">
+        <span className='ml-2 text-xs font-medium text-muted-foreground'>
           +{integrationsWithTools.length - 3}
         </span>
       )}
@@ -1493,14 +1473,14 @@ function RoleMembersColumn({ role, teamId, handleEditRole }: BaseColumnProps) {
   }, [teamRoleData?.members]);
 
   if (!teamRoleData) {
-    return <Skeleton className="h-4 w-16" />;
+    return <Skeleton className='h-4 w-16' />;
   }
 
   if (roleMembersList.length === 0) {
     return (
       <span
-        className="text-muted-foreground text-sm cursor-pointer hover:text-foreground transition-colors"
-        onClick={() => handleEditRole(role, "members")}
+        className='text-muted-foreground text-sm cursor-pointer hover:text-foreground transition-colors'
+        onClick={() => handleEditRole(role, 'members')}
       >
         No members
       </span>
@@ -1509,23 +1489,23 @@ function RoleMembersColumn({ role, teamId, handleEditRole }: BaseColumnProps) {
 
   return (
     <div
-      className="flex items-center cursor-pointer hover:opacity-80 transition-opacity"
-      onClick={() => handleEditRole(role, "members")}
+      className='flex items-center cursor-pointer hover:opacity-80 transition-opacity'
+      onClick={() => handleEditRole(role, 'members')}
     >
-      <div className="flex -space-x-1">
+      <div className='flex -space-x-1'>
         {roleMembersList.slice(0, 3).map((member) => (
           <UserAvatar
             key={member.user_id}
             url={member.profiles.metadata.avatar_url}
             fallback={member.profiles.metadata.full_name ||
               member.profiles.email}
-            size="sm"
-            className="border border-background"
+            size='sm'
+            className='border border-background'
           />
         ))}
       </div>
       {roleMembersList.length > 3 && (
-        <span className="ml-2 text-xs font-medium text-muted-foreground">
+        <span className='ml-2 text-xs font-medium text-muted-foreground'>
           +{roleMembersList.length - 3}
         </span>
       )}
@@ -1545,14 +1525,14 @@ function _RoleAgentsColumn({ role, teamId, handleEditRole }: BaseColumnProps) {
   }, [teamRoleData?.agents]);
 
   if (!teamRoleData) {
-    return <Skeleton className="h-4 w-16" />;
+    return <Skeleton className='h-4 w-16' />;
   }
 
   if (roleAgentsList.length === 0) {
     return (
       <span
-        className="text-muted-foreground text-sm cursor-pointer hover:text-foreground transition-colors"
-        onClick={() => handleEditRole(role, "agents")}
+        className='text-muted-foreground text-sm cursor-pointer hover:text-foreground transition-colors'
+        onClick={() => handleEditRole(role, 'agents')}
       >
         No agents
       </span>
@@ -1561,22 +1541,22 @@ function _RoleAgentsColumn({ role, teamId, handleEditRole }: BaseColumnProps) {
 
   return (
     <div
-      className="flex items-center cursor-pointer hover:opacity-80 transition-opacity"
-      onClick={() => handleEditRole(role, "agents")}
+      className='flex items-center cursor-pointer hover:opacity-80 transition-opacity'
+      onClick={() => handleEditRole(role, 'agents')}
     >
-      <div className="flex -space-x-1">
+      <div className='flex -space-x-1'>
         {roleAgentsList.slice(0, 3).map((agent) => (
           <AgentAvatar
             key={agent.id}
             url={agent.avatar}
             fallback={agent.name}
-            size="sm"
-            className="border border-background"
+            size='sm'
+            className='border border-background'
           />
         ))}
       </div>
       {roleAgentsList.length > 3 && (
-        <span className="ml-2 text-xs font-medium text-muted-foreground">
+        <span className='ml-2 text-xs font-medium text-muted-foreground'>
           +{roleAgentsList.length - 3}
         </span>
       )}
@@ -1584,7 +1564,7 @@ function _RoleAgentsColumn({ role, teamId, handleEditRole }: BaseColumnProps) {
   );
 }
 
-type SortKey = "name";
+type SortKey = 'name';
 
 // Sub-Components for Roles Table View
 export function RolesTableView({ teamId }: RolesTableViewProps) {
@@ -1596,14 +1576,14 @@ export function RolesTableView({ teamId }: RolesTableViewProps) {
   const deleteRoleMutation = useDeleteTeamRole();
 
   // Local state
-  const [rolesQuery, setRolesQuery] = useState("");
-  const [rolesSortKey, setRolesSortKey] = useState<"" | SortKey>("");
-  const [rolesSortDirection, setRolesSortDirection] = useState<"asc" | "desc">(
-    "desc",
+  const [rolesQuery, setRolesQuery] = useState('');
+  const [rolesSortKey, setRolesSortKey] = useState<'' | SortKey>('');
+  const [rolesSortDirection, setRolesSortDirection] = useState<'asc' | 'desc'>(
+    'desc',
   );
   const [roleDialogOpen, setRoleDialogOpen] = useState(false);
   const [editingRole, setEditingRole] = useState<Role | undefined>(undefined);
-  const [roleDialogInitialTab, setRoleDialogInitialTab] = useState("general");
+  const [roleDialogInitialTab, setRoleDialogInitialTab] = useState('general');
 
   const _handleCreateRole = useCallback(
     async (roleData: RoleFormData) => {
@@ -1613,10 +1593,10 @@ export function RolesTableView({ teamId }: RolesTableViewProps) {
           teamId,
           roleData,
         });
-        toast.success("Role created successfully");
+        toast.success('Role created successfully');
       } catch (error) {
-        toast.error("Failed to create role");
-        console.error("Role create error:", error);
+        toast.error('Failed to create role');
+        console.error('Role create error:', error);
       }
     },
     [teamId, createRoleMutation],
@@ -1631,10 +1611,10 @@ export function RolesTableView({ teamId }: RolesTableViewProps) {
           roleId,
           roleData,
         });
-        toast.success("Role updated successfully");
+        toast.success('Role updated successfully');
       } catch (error) {
-        toast.error("Failed to update role");
-        console.error("Role update error:", error);
+        toast.error('Failed to update role');
+        console.error('Role update error:', error);
       }
     },
     [teamId, updateRoleMutation],
@@ -1643,31 +1623,29 @@ export function RolesTableView({ teamId }: RolesTableViewProps) {
   const handleRolesSort = useCallback(
     (key: string) => {
       if (rolesSortKey === key) {
-        setRolesSortDirection((prev: "asc" | "desc") =>
-          prev === "asc" ? "desc" : "asc"
-        );
+        setRolesSortDirection((prev: 'asc' | 'desc') => prev === 'asc' ? 'desc' : 'asc');
       } else {
         setRolesSortKey(key as SortKey);
-        setRolesSortDirection("asc");
+        setRolesSortDirection('asc');
       }
     },
     [rolesSortKey],
   );
 
   const getRoleSortValue = useCallback(
-    (role: Role, key: SortKey | ""): string => {
+    (role: Role, key: SortKey | ''): string => {
       switch (key) {
-        case "name":
+        case 'name':
           return role.name.toLowerCase();
         default:
-          return "";
+          return '';
       }
     },
     [],
   );
 
   const handleEditRole = useCallback(
-    (role: Role | undefined, initialTab = "general") => {
+    (role: Role | undefined, initialTab = 'general') => {
       setEditingRole(role);
       setRoleDialogInitialTab(initialTab);
       setRoleDialogOpen(true);
@@ -1680,15 +1658,15 @@ export function RolesTableView({ teamId }: RolesTableViewProps) {
     () =>
       [
         {
-          id: "role",
-          header: "Role",
+          id: 'role',
+          header: 'Role',
           render: (role) => (
             <div
-              className="flex flex-col cursor-pointer hover:opacity-80 transition-opacity"
-              onClick={() => handleEditRole(role, "general")}
+              className='flex flex-col cursor-pointer hover:opacity-80 transition-opacity'
+              onClick={() => handleEditRole(role, 'general')}
             >
-              <span className="font-medium">{role.name}</span>
-              <span className="text-xs text-muted-foreground">
+              <span className='font-medium'>{role.name}</span>
+              <span className='text-xs text-muted-foreground'>
                 {role.description}
               </span>
             </div>
@@ -1696,8 +1674,8 @@ export function RolesTableView({ teamId }: RolesTableViewProps) {
           sortable: true,
         },
         {
-          id: "tools",
-          header: "Tools",
+          id: 'tools',
+          header: 'Tools',
           render: (role) => (
             <RoleToolsColumn
               role={role}
@@ -1718,8 +1696,8 @@ export function RolesTableView({ teamId }: RolesTableViewProps) {
         //   ),
         // },
         {
-          id: "members",
-          header: "Members",
+          id: 'members',
+          header: 'Members',
           render: (role) => (
             <RoleMembersColumn
               role={role}
@@ -1729,22 +1707,22 @@ export function RolesTableView({ teamId }: RolesTableViewProps) {
           ),
         },
         {
-          id: "actions",
-          header: "",
+          id: 'actions',
+          header: '',
           render: (role) => (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="icon">
-                  <Icon name="more_horiz" />
+                <Button variant='ghost' size='icon'>
+                  <Icon name='more_horiz' />
                 </Button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
+              <DropdownMenuContent align='end'>
                 <DropdownMenuItem onClick={() => handleEditRole(role)}>
-                  <Icon name="assignment_ind" />
+                  <Icon name='assignment_ind' />
                   View role
                 </DropdownMenuItem>
                 <DropdownMenuItem
-                  variant="destructive"
+                  variant='destructive'
                   disabled={role.team_id === null}
                   onClick={async () => {
                     if (role.team_id !== null && teamId) {
@@ -1753,15 +1731,15 @@ export function RolesTableView({ teamId }: RolesTableViewProps) {
                           teamId,
                           roleId: role.id,
                         });
-                        toast.success("Role deleted successfully");
+                        toast.success('Role deleted successfully');
                       } catch (error) {
-                        toast.error("Failed to delete role");
-                        console.error("Role delete error:", error);
+                        toast.error('Failed to delete role');
+                        console.error('Role delete error:', error);
                       }
                     }
                   }}
                 >
-                  <Icon name="delete" />
+                  <Icon name='delete' />
                   Delete role
                 </DropdownMenuItem>
               </DropdownMenuContent>
@@ -1774,10 +1752,7 @@ export function RolesTableView({ teamId }: RolesTableViewProps) {
 
   // Filter roles based on search
   const filteredRoles = useMemo(
-    () =>
-      roles.filter((role) =>
-        role.name.toLowerCase().includes(rolesQuery.toLowerCase())
-      ),
+    () => roles.filter((role) => role.name.toLowerCase().includes(rolesQuery.toLowerCase())),
     [roles, rolesQuery],
   );
 
@@ -1788,7 +1763,7 @@ export function RolesTableView({ teamId }: RolesTableViewProps) {
         const aValue = getRoleSortValue(a, rolesSortKey);
         const bValue = getRoleSortValue(b, rolesSortKey);
 
-        if (rolesSortDirection === "asc") {
+        if (rolesSortDirection === 'asc') {
           return aValue.localeCompare(bValue);
         } else {
           return bValue.localeCompare(aValue);
@@ -1799,14 +1774,13 @@ export function RolesTableView({ teamId }: RolesTableViewProps) {
 
   return (
     <>
-      <div className="flex flex-col gap-4">
-        <div className="flex items-center justify-between">
+      <div className='flex flex-col gap-4'>
+        <div className='flex items-center justify-between'>
           <Input
-            placeholder="Search roles..."
+            placeholder='Search roles...'
             value={rolesQuery}
-            onChange={(e: ChangeEvent<HTMLInputElement>) =>
-              setRolesQuery(e.target.value)}
-            className="w-80"
+            onChange={(e: ChangeEvent<HTMLInputElement>) => setRolesQuery(e.target.value)}
+            className='w-80'
           />
           {/* Disabled at the moment */}
           {
@@ -1818,14 +1792,13 @@ export function RolesTableView({ teamId }: RolesTableViewProps) {
         </div>
         {roles.length === 0
           ? (
-            <div className="text-center py-8 text-muted-foreground">
-              No roles available. Create roles to manage team member
-              permissions.
+            <div className='text-center py-8 text-muted-foreground'>
+              No roles available. Create roles to manage team member permissions.
             </div>
           )
           : filteredRoles.length === 0
           ? (
-            <div className="text-center py-8 text-muted-foreground">
+            <div className='text-center py-8 text-muted-foreground'>
               No roles found matching your search.
             </div>
           )
@@ -1846,7 +1819,7 @@ export function RolesTableView({ teamId }: RolesTableViewProps) {
           setRoleDialogOpen(open);
           if (!open) {
             setEditingRole(undefined);
-            setRoleDialogInitialTab("general");
+            setRoleDialogInitialTab('general');
           }
         }}
         role={editingRole}

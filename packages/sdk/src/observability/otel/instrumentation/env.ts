@@ -1,11 +1,11 @@
-import { isProxyable, wrap } from "../wrap.ts";
-import { instrumentDOBinding } from "./do.ts";
-import { instrumentServiceBinding } from "./service.ts";
+import { isProxyable, wrap } from '../wrap.ts';
+import { instrumentDOBinding } from './do.ts';
+import { instrumentServiceBinding } from './service.ts';
 
 const isJSRPC = (item?: unknown): item is Service => {
   // @ts-expect-error The point of RPC types is to block non-existent properties, but that's the goal here
   return !!(item as Service)?.[
-    "__some_property_that_will_never_exist" + Math.random()
+    '__some_property_that_will_never_exist' + Math.random()
   ];
 };
 
@@ -14,8 +14,8 @@ export const isVersionMetadata = (
 ): item is WorkerVersionMetadata => {
   return (
     !isJSRPC(item) &&
-    typeof (item as WorkerVersionMetadata)?.id === "string" &&
-    typeof (item as WorkerVersionMetadata)?.tag === "string"
+    typeof (item as WorkerVersionMetadata)?.id === 'string' &&
+    typeof (item as WorkerVersionMetadata)?.tag === 'string'
   );
 };
 

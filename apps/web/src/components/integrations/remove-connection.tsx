@@ -1,4 +1,4 @@
-import { useRemoveIntegration } from "@deco/sdk";
+import { useRemoveIntegration } from '@deco/sdk';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -8,10 +8,10 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-} from "@deco/ui/components/alert-dialog.tsx";
-import { Spinner } from "@deco/ui/components/spinner.tsx";
-import { type MouseEvent, useState } from "react";
-import { trackEvent } from "../../hooks/analytics.ts";
+} from '@deco/ui/components/alert-dialog.tsx';
+import { Spinner } from '@deco/ui/components/spinner.tsx';
+import { type MouseEvent, useState } from 'react';
+import { trackEvent } from '../../hooks/analytics.ts';
 
 export function useRemoveConnection() {
   const { mutateAsync: removeIntegration, isPending } = useRemoveIntegration();
@@ -25,14 +25,14 @@ export function useRemoveConnection() {
     try {
       await removeIntegration(deletingId);
 
-      trackEvent("integration_delete", {
+      trackEvent('integration_delete', {
         success: true,
         data: deletingId,
       });
     } catch (error) {
-      console.error("Error deleting integration:", error);
+      console.error('Error deleting integration:', error);
 
-      trackEvent("integration_delete", {
+      trackEvent('integration_delete', {
         success: false,
         data: deletingId,
         error,
@@ -67,8 +67,7 @@ export function RemoveConnectionAlert({
         <AlertDialogHeader>
           <AlertDialogTitle>Are you sure?</AlertDialogTitle>
           <AlertDialogDescription>
-            This will permanently delete the integration. This action cannot be
-            undone.
+            This will permanently delete the integration. This action cannot be undone.
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
@@ -76,7 +75,7 @@ export function RemoveConnectionAlert({
           <AlertDialogAction
             onClick={onDelete}
             disabled={isDeleting}
-            className="bg-destructive text-destructive-foreground hover:bg-destructive/90 gap-2"
+            className='bg-destructive text-destructive-foreground hover:bg-destructive/90 gap-2'
           >
             {isDeleting
               ? (
@@ -86,7 +85,7 @@ export function RemoveConnectionAlert({
                 </>
               )
               : (
-                "Delete"
+                'Delete'
               )}
           </AlertDialogAction>
         </AlertDialogFooter>

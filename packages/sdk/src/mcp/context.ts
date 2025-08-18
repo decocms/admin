@@ -1,39 +1,35 @@
 // deno-lint-ignore-file no-explicit-any
-import type { ActorConstructor, StubFactory } from "@deco/actors";
-import type { AIAgent, Trigger } from "@deco/ai/actors";
-import type { Client } from "@deco/sdk/storage";
-import { createClient } from "@libsql/client/web";
-import type { ToolAnnotations } from "@modelcontextprotocol/sdk/types.d.ts";
-import type { User as SupaUser } from "@supabase/supabase-js";
-import type Cloudflare from "cloudflare";
-import { AsyncLocalStorage } from "node:async_hooks";
-import { z } from "zod";
-import type { JWTPayload } from "../auth/jwt.ts";
-import type {
-  AuthorizationClient,
-  Policy,
-  PolicyClient,
-} from "../auth/policy.ts";
-import { type WellKnownMcpGroup, WellKnownMcpGroups } from "../crud/groups.ts";
-import { ForbiddenError, type HttpError } from "../errors.ts";
-import { type WithTool } from "./assertions.ts";
-import type { ResourceAccess } from "./auth/index.ts";
-import { DatatabasesRunSqlInput, QueryResult } from "./databases/api.ts";
-import { addGroup, type GroupIntegration } from "./groups.ts";
-import { generateUUIDv5, toAlphanumericId } from "./slugify.ts";
-import { trace } from "../observability/index.ts";
-import * as api from "@opentelemetry/api";
-import { PosthogServerClient } from "../posthog.ts";
+import type { ActorConstructor, StubFactory } from '@deco/actors';
+import type { AIAgent, Trigger } from '@deco/ai/actors';
+import type { Client } from '@deco/sdk/storage';
+import { createClient } from '@libsql/client/web';
+import type { ToolAnnotations } from '@modelcontextprotocol/sdk/types.d.ts';
+import type { User as SupaUser } from '@supabase/supabase-js';
+import type Cloudflare from 'cloudflare';
+import { AsyncLocalStorage } from 'node:async_hooks';
+import { z } from 'zod';
+import type { JWTPayload } from '../auth/jwt.ts';
+import type { AuthorizationClient, Policy, PolicyClient } from '../auth/policy.ts';
+import { type WellKnownMcpGroup, WellKnownMcpGroups } from '../crud/groups.ts';
+import { ForbiddenError, type HttpError } from '../errors.ts';
+import { type WithTool } from './assertions.ts';
+import type { ResourceAccess } from './auth/index.ts';
+import { DatatabasesRunSqlInput, QueryResult } from './databases/api.ts';
+import { addGroup, type GroupIntegration } from './groups.ts';
+import { generateUUIDv5, toAlphanumericId } from './slugify.ts';
+import { trace } from '../observability/index.ts';
+import * as api from '@opentelemetry/api';
+import { PosthogServerClient } from '../posthog.ts';
 
-export type UserPrincipal = Pick<SupaUser, "id" | "email" | "is_anonymous">;
+export type UserPrincipal = Pick<SupaUser, 'id' | 'email' | 'is_anonymous'>;
 
 export interface JWTPrincipal extends JWTPayload {
-  policies?: Pick<Policy, "statements">[];
+  policies?: Pick<Policy, 'statements'>[];
 }
 
 export type Principal = UserPrincipal | JWTPrincipal;
 
-const TURSO_GROUP = "deco-agents-v2";
+const TURSO_GROUP = 'deco-agents-v2';
 
 const createSQLClientFor = async (
   workspace: string,
@@ -50,14 +46,14 @@ const createSQLClientFor = async (
 };
 
 export interface TursoOptions {
-  type: "turso";
+  type: 'turso';
   TURSO_GROUP_DATABASE_TOKEN: string;
   TURSO_ORGANIZATION: string;
   workspace: string;
 }
 
 export interface SQLIteOptions {
-  type: "sqlite";
+  type: 'sqlite';
   workspaceDO: WorkspaceDO;
   workspace: string;
 }
@@ -70,12 +66,12 @@ const wrapIWorkspaceDB = (
   return {
     ...db,
     exec: ({ sql, params }) => {
-      const tracer = trace.getTracer("db-sql-tracer");
+      const tracer = trace.getTracer('db-sql-tracer');
       return tracer.startActiveSpan(
-        "db-query",
+        'db-query',
         {
           attributes: {
-            "db.sql.query": sql,
+            'db.sql.query': sql,
             workspace,
             turso,
           },
@@ -94,9 +90,9 @@ const wrapIWorkspaceDB = (
 };
 
 const createWorkspaceDB = async (
-  options: Pick<AppContext, "workspaceDO"> & {
-    workspace: Pick<NonNullable<AppContext["workspace"]>, "value">;
-    envVars: Pick<EnvVars, "TURSO_GROUP_DATABASE_TOKEN" | "TURSO_ORGANIZATION">;
+  options: Pick<AppContext, 'workspaceDO'> & {
+    workspace: Pick<NonNullable<AppContext['workspace']>, 'value'>;
+    envVars: Pick<EnvVars, 'TURSO_GROUP_DATABASE_TOKEN' | 'TURSO_ORGANIZATION'>;
   },
   turso?: boolean,
 ): Promise<IWorkspaceDB> => {
@@ -135,9 +131,9 @@ const createWorkspaceDB = async (
 };
 
 export const workspaceDB = async (
-  options: Pick<AppContext, "workspaceDO"> & {
-    workspace: Pick<NonNullable<AppContext["workspace"]>, "value">;
-    envVars: Pick<EnvVars, "TURSO_GROUP_DATABASE_TOKEN" | "TURSO_ORGANIZATION">;
+  options: Pick<AppContext, 'workspaceDO'> & {
+    workspace: Pick<NonNullable<AppContext['workspace']>, 'value'>;
+    envVars: Pick<EnvVars, 'TURSO_GROUP_DATABASE_TOKEN' | 'TURSO_ORGANIZATION'>;
   },
   turso?: boolean,
 ): Promise<IWorkspaceDB> => {
@@ -196,14 +192,13 @@ export type AppContext = Vars & {
   envVars: EnvVars;
 };
 
-const isErrorLike = (error: unknown): error is Error =>
-  Boolean((error as Error)?.message);
+const isErrorLike = (error: unknown): error is Error => Boolean((error as Error)?.message);
 
 const isHttpError = (error: unknown): error is HttpError =>
   Boolean((error as HttpError)?.code) && Boolean((error as HttpError)?.message);
 
 export const serializeError = (error: unknown): string => {
-  if (typeof error === "string") {
+  if (typeof error === 'string') {
     return error;
   }
 
@@ -211,8 +206,8 @@ export const serializeError = (error: unknown): string => {
     return JSON.stringify(
       {
         message: error.message, // message and code era not enumerable
-        code: "code" in error ? error.code : undefined,
-        name: "name" in error ? error.name : undefined,
+        code: 'code' in error ? error.code : undefined,
+        name: 'name' in error ? error.name : undefined,
       },
       null,
       2,
@@ -223,7 +218,7 @@ export const serializeError = (error: unknown): string => {
     return JSON.stringify(error, null, 2);
   } catch (e) {
     console.error(e);
-    return "Unknown error";
+    return 'Unknown error';
   }
 };
 
@@ -260,13 +255,10 @@ const envSchema = z.object({
   TESTING_CUSTOMER_ID: z.string().nullish(),
 });
 
-export const getEnv = (ctx: AppContext): EnvVars =>
-  envSchema.parse(ctx.envVars);
+export const getEnv = (ctx: AppContext): EnvVars => envSchema.parse(ctx.envVars);
 
 export const DECO_CHAT_API = (ctx: AppContext) =>
-  getEnv(ctx).VITE_USE_LOCAL_BACKEND === "true"
-    ? "http://localhost:3001"
-    : "https://api.deco.chat";
+  getEnv(ctx).VITE_USE_LOCAL_BACKEND === 'true' ? 'http://localhost:3001' : 'https://api.deco.chat';
 
 type ToolCallResultSuccess<T> = {
   isError: false;
@@ -275,7 +267,7 @@ type ToolCallResultSuccess<T> = {
 
 type ToolCallResultError = {
   isError: true;
-  content: { type: "text"; text: string }[];
+  content: { type: 'text'; text: string }[];
 };
 
 type ToolCallResult<T> = ToolCallResultSuccess<T> | ToolCallResultError;
@@ -377,7 +369,7 @@ export const State = {
     const store = asyncLocalStorage.getStore();
 
     if (!store) {
-      throw new Error("Missing context, did you forget to call State.bind?");
+      throw new Error('Missing context, did you forget to call State.bind?');
     }
 
     return store;
@@ -389,4 +381,4 @@ export const State = {
   ): R => asyncLocalStorage.run(ctx, f, ...args),
 };
 
-export * from "./stub.ts";
+export * from './stub.ts';

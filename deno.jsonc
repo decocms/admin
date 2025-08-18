@@ -1,0 +1,35 @@
+{
+  "fmt": {
+    "files": {
+      "include": [
+        "apps",
+        "packages",
+        "seo-ecommerce",
+        "scripts",
+        "tools"
+      ],
+      "exclude": [
+        "**/node_modules",
+        "**/.next",
+        "**/dist",
+        "**/build",
+        "**/.turbo",
+        "**/.wrangler",
+        "**/.cache",
+        "**/coverage",
+        "seo-ecommerce/server/view-build",
+        "seo-ecommerce/server/dist",
+        "seo-ecommerce/view/dist",
+        "seo-ecommerce/server/deco.gen.ts",
+        "**/*.gen.ts"
+      ]
+    },
+    "options": {
+      "useTabs": false,
+      "lineWidth": 100,
+      "indentWidth": 2,
+      "singleQuote": true,
+      "proseWrap": "preserve"
+    }
+  }
+}

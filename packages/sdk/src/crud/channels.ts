@@ -1,7 +1,7 @@
-import { MCPClient } from "../fetcher.ts";
-import type { WellKnownBindings } from "../mcp/index.ts";
-import type { Channel } from "../models/channels.ts";
-import type { MCPConnection } from "../models/mcp.ts";
+import { MCPClient } from '../fetcher.ts';
+import type { WellKnownBindings } from '../mcp/index.ts';
+import type { Channel } from '../models/channels.ts';
+import type { MCPConnection } from '../models/mcp.ts';
 export type { Channel };
 
 /**
@@ -30,8 +30,7 @@ export const createChannel = (
     agentId?: string;
     name?: string;
   },
-): Promise<Channel> =>
-  MCPClient.forWorkspace(workspace).CHANNELS_CREATE(channel);
+): Promise<Channel> => MCPClient.forWorkspace(workspace).CHANNELS_CREATE(channel);
 
 /**
  * Get a channel by ID
@@ -44,8 +43,7 @@ export const getChannel = (
   workspace: string,
   id: string,
   signal?: AbortSignal,
-): Promise<Channel> =>
-  MCPClient.forWorkspace(workspace).CHANNELS_GET({ id }, { signal });
+): Promise<Channel> => MCPClient.forWorkspace(workspace).CHANNELS_GET({ id }, { signal });
 
 /**
  * Make a agent join the channel
@@ -71,7 +69,7 @@ export const listAvailableChannelsForConnection = (
   workspace: string,
   connection: MCPConnection,
 ) =>
-  MCPClient.forConnection<(typeof WellKnownBindings)["Channel"]>(
+  MCPClient.forConnection<(typeof WellKnownBindings)['Channel']>(
     connection,
   ).DECO_CHAT_CHANNELS_LIST({
     workspace,

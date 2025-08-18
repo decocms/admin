@@ -1,17 +1,13 @@
-import { useAgents, useTeamMembers, useTeams } from "@deco/sdk";
-import { WELL_KNOWN_AGENT_IDS } from "@deco/sdk/constants";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger,
-} from "@deco/ui/components/tooltip.tsx";
-import { format } from "date-fns";
-import { useMemo } from "react";
-import { useParams } from "react-router";
-import { useUser } from "../../../hooks/use-user.ts";
-import { IntegrationIcon } from "../../integrations/common.tsx";
-import { AgentAvatar } from "../avatar/agent.tsx";
-import { UserAvatar } from "../avatar/user.tsx";
+import { useAgents, useTeamMembers, useTeams } from '@deco/sdk';
+import { WELL_KNOWN_AGENT_IDS } from '@deco/sdk/constants';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@deco/ui/components/tooltip.tsx';
+import { format } from 'date-fns';
+import { useMemo } from 'react';
+import { useParams } from 'react-router';
+import { useUser } from '../../../hooks/use-user.ts';
+import { IntegrationIcon } from '../../integrations/common.tsx';
+import { AgentAvatar } from '../avatar/agent.tsx';
+import { UserAvatar } from '../avatar/user.tsx';
 
 interface AgentInfoProps {
   agentId?: string;
@@ -29,21 +25,19 @@ function AgentInfo({ agentId, className }: AgentInfoProps) {
     <Tooltip>
       <TooltipTrigger asChild>
         <div
-          className={`flex items-center gap-2 min-w-[48px] ${className ?? ""}`}
+          className={`flex items-center gap-2 min-w-[48px] ${className ?? ''}`}
         >
           <AgentAvatar
             url={agent?.avatar}
-            fallback={agentId === WELL_KNOWN_AGENT_IDS.teamAgent
-              ? agentId
-              : agent?.name}
-            size="sm"
+            fallback={agentId === WELL_KNOWN_AGENT_IDS.teamAgent ? agentId : agent?.name}
+            size='sm'
           />
-          <span className="truncate hidden md:inline">
+          <span className='truncate hidden md:inline'>
             {agentId === WELL_KNOWN_AGENT_IDS.teamAgent
-              ? "New chat"
+              ? 'New chat'
               : agent
               ? agent.name
-              : "Deleted agent"}
+              : 'Deleted agent'}
           </span>
         </div>
       </TooltipTrigger>
@@ -63,7 +57,7 @@ function UserInfo({
   userId,
   className,
   showDetails = false,
-  maxWidth = "200px", // Default to 200px, but allow customization
+  maxWidth = '200px', // Default to 200px, but allow customization
 }: UserInfoProps) {
   const user = useUser();
   const params = useParams();
@@ -90,34 +84,32 @@ function UserInfo({
   const avatarUrl = isCurrentUser
     ? user.metadata.avatar_url
     : member?.profiles?.metadata?.avatar_url;
-  const name = isCurrentUser
-    ? user.metadata.full_name
-    : member?.profiles?.metadata?.full_name;
+  const name = isCurrentUser ? user.metadata.full_name : member?.profiles?.metadata?.full_name;
   const email = isCurrentUser ? user.email : member?.profiles?.email;
 
   return (
     <Tooltip>
       <TooltipTrigger asChild>
         <div
-          className={`flex items-center gap-2 min-w-[48px] ${className ?? ""}`}
+          className={`flex items-center gap-2 min-w-[48px] ${className ?? ''}`}
         >
-          <UserAvatar url={avatarUrl} fallback={name} size="sm" />
+          <UserAvatar url={avatarUrl} fallback={name} size='sm' />
           <div
             className={`flex-col items-start text-left leading-tight w-full ${
-              showDetails ? "hidden md:flex" : "flex"
+              showDetails ? 'hidden md:flex' : 'flex'
             }`}
           >
             <span
-              className="truncate block text-xs font-medium text-foreground"
+              className='truncate block text-xs font-medium text-foreground'
               style={{ maxWidth }}
             >
-              {name || "Unknown"}
+              {name || 'Unknown'}
             </span>
             <span
-              className="truncate block text-xs font-normal text-muted-foreground"
+              className='truncate block text-xs font-normal text-muted-foreground'
               style={{ maxWidth }}
             >
-              {email || ""}
+              {email || ''}
             </span>
           </div>
         </div>
@@ -125,7 +117,7 @@ function UserInfo({
       <TooltipContent>
         {name
           ? (
-            <div className="flex flex-col">
+            <div className='flex flex-col'>
               <span>{name}</span>
               <span>{email}</span>
             </div>
@@ -145,22 +137,22 @@ interface DateTimeCellProps {
 
 export function DateTimeCell({
   value,
-  dateFormat = "MMM dd, yyyy",
-  timeFormat = "HH:mm:ss",
-  className = "",
+  dateFormat = 'MMM dd, yyyy',
+  timeFormat = 'HH:mm:ss',
+  className = '',
 }: DateTimeCellProps) {
   if (!value) {
     return <span className={className}>-</span>;
   }
-  const dateObj = typeof value === "string" ? new Date(value) : value;
+  const dateObj = typeof value === 'string' ? new Date(value) : value;
   return (
     <div
       className={`flex flex-col items-start text-left leading-tight ${className}`}
     >
-      <span className="font-medium text-foreground">
+      <span className='font-medium text-foreground'>
         {format(dateObj, dateFormat)}
       </span>
-      <span className="font-normal text-muted-foreground">
+      <span className='font-normal text-muted-foreground'>
         {format(dateObj, timeFormat)}
       </span>
     </div>
@@ -184,19 +176,19 @@ function IntegrationInfo({
     <Tooltip>
       <TooltipTrigger asChild>
         <div
-          className={`flex items-center gap-2 min-w-[48px] ${className ?? ""}`}
+          className={`flex items-center gap-2 min-w-[48px] ${className ?? ''}`}
         >
           <IntegrationIcon
             icon={integration?.icon}
-            name={integration?.name || integrationId || "Unknown"}
-            size="sm"
+            name={integration?.name || integrationId || 'Unknown'}
+            size='sm'
           />
-          <div className="flex flex-col">
-            <span className="truncate hidden md:inline text-sm font-medium">
-              {integration?.name || integrationId || "Unknown"}
+          <div className='flex flex-col'>
+            <span className='truncate hidden md:inline text-sm font-medium'>
+              {integration?.name || integrationId || 'Unknown'}
             </span>
             {toolName && (
-              <span className="text-xs text-muted-foreground truncate hidden md:inline">
+              <span className='text-xs text-muted-foreground truncate hidden md:inline'>
                 {toolName}
               </span>
             )}
@@ -204,8 +196,8 @@ function IntegrationInfo({
         </div>
       </TooltipTrigger>
       <TooltipContent>
-        <div className="flex flex-col">
-          <span>{integration?.name || integrationId || "Unknown"}</span>
+        <div className='flex flex-col'>
+          <span>{integration?.name || integrationId || 'Unknown'}</span>
           {toolName && <span>{toolName}</span>}
         </div>
       </TooltipContent>
@@ -220,7 +212,7 @@ interface ActivityStatusCellProps {
 
 function ActivityStatusCell({
   lastActivity,
-  className = "",
+  className = '',
 }: ActivityStatusCellProps) {
   // Helper function to format relative time
   function formatRelativeTime(date: Date): string {
@@ -232,35 +224,33 @@ function ActivityStatusCell({
     const diffInMonths = Math.floor(diffInMs / (1000 * 60 * 60 * 24 * 30));
     const diffInYears = Math.floor(diffInMs / (1000 * 60 * 60 * 24 * 365));
 
-    if (diffInMinutes < 1) return "Active";
+    if (diffInMinutes < 1) return 'Active';
     if (diffInMinutes < 60) return `${diffInMinutes} min ago`;
     if (diffInHours < 24) {
-      return `${diffInHours} hour${diffInHours === 1 ? "" : "s"} ago`;
+      return `${diffInHours} hour${diffInHours === 1 ? '' : 's'} ago`;
     }
     if (diffInDays < 30) {
-      return `${diffInDays} day${diffInDays === 1 ? "" : "s"} ago`;
+      return `${diffInDays} day${diffInDays === 1 ? '' : 's'} ago`;
     }
     if (diffInMonths < 12) {
-      return `${diffInMonths} month${diffInMonths === 1 ? "" : "s"} ago`;
+      return `${diffInMonths} month${diffInMonths === 1 ? '' : 's'} ago`;
     }
-    return `${diffInYears} year${diffInYears === 1 ? "" : "s"} ago`;
+    return `${diffInYears} year${diffInYears === 1 ? '' : 's'} ago`;
   }
 
   if (!lastActivity) {
     return <span className={`text-muted-foreground ${className}`}>Never</span>;
   }
 
-  const activityDate = typeof lastActivity === "string"
-    ? new Date(lastActivity)
-    : lastActivity;
+  const activityDate = typeof lastActivity === 'string' ? new Date(lastActivity) : lastActivity;
 
   const relativeTime = formatRelativeTime(activityDate);
-  const isActive = relativeTime === "Active";
+  const isActive = relativeTime === 'Active';
 
   return (
     <div className={`flex items-center gap-2 ${className}`}>
-      {isActive && <div className="w-2 h-2 bg-success rounded-full"></div>}
-      <span className={isActive ? "text-foreground" : "text-muted-foreground"}>
+      {isActive && <div className='w-2 h-2 bg-success rounded-full'></div>}
+      <span className={isActive ? 'text-foreground' : 'text-muted-foreground'}>
         {relativeTime}
       </span>
     </div>

@@ -1,8 +1,8 @@
-import { MCPClient } from "../fetcher.ts";
-import type { Theme } from "../theme.ts";
-import { View } from "../views.ts";
-import type { MCPConnection } from "../models/mcp.ts";
-import { WellKnownBindings } from "../mcp/bindings/index.ts";
+import { MCPClient } from '../fetcher.ts';
+import type { Theme } from '../theme.ts';
+import { View } from '../views.ts';
+import type { MCPConnection } from '../models/mcp.ts';
+import { WellKnownBindings } from '../mcp/bindings/index.ts';
 
 export interface Team {
   id: number;
@@ -23,8 +23,7 @@ export const listTeams = (init?: RequestInit): Promise<Team[]> =>
 export const getTeam = (
   slug: string,
   init?: RequestInit,
-): Promise<TeamWithViews> =>
-  MCPClient.TEAMS_GET({ slug }, init) as Promise<TeamWithViews>;
+): Promise<TeamWithViews> => MCPClient.TEAMS_GET({ slug }, init) as Promise<TeamWithViews>;
 
 export interface CreateTeamInput {
   name: string;
@@ -51,7 +50,7 @@ export const getWorkspaceTheme = (
 export interface UpdateTeamInput {
   id: number;
   data: Partial<
-    Pick<Team, "name" | "slug" | "theme"> & { stripe_subscription_id?: string }
+    Pick<Team, 'name' | 'slug' | 'theme'> & { stripe_subscription_id?: string }
   >;
   [key: string]: unknown;
 }
@@ -72,7 +71,7 @@ export interface AddViewInput {
     id: string;
     title: string;
     icon: string;
-    type: "custom";
+    type: 'custom';
     url: string;
   };
 }
@@ -104,13 +103,13 @@ export const listAvailableViewsForConnection = async (
   connection: MCPConnection,
 ) => {
   try {
-    const client = MCPClient.forConnection<(typeof WellKnownBindings)["View"]>(
+    const client = MCPClient.forConnection<(typeof WellKnownBindings)['View']>(
       connection,
     );
     const result = await client.DECO_CHAT_VIEWS_LIST({});
     return result;
   } catch (error) {
-    console.error("Error listing available views for connection:", error);
+    console.error('Error listing available views for connection:', error);
     return { views: [] };
   }
 };

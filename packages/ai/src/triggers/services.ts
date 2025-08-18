@@ -1,4 +1,4 @@
-import type { CreateTriggerInput, ListTriggersOutput } from "@deco/sdk";
+import type { CreateTriggerInput, ListTriggersOutput } from '@deco/sdk';
 
 export type TriggerData = CreateTriggerInput & {
   id: string;
@@ -16,7 +16,7 @@ export type TriggerData = CreateTriggerInput & {
 export interface TriggerListResult {
   success: boolean;
   message: string;
-  triggers: ListTriggersOutput["triggers"];
+  triggers: ListTriggersOutput['triggers'];
 }
 
 export interface TriggerRun {

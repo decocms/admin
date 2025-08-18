@@ -4,24 +4,24 @@ import {
   useUsagePerAgent,
   useUsagePerThread,
   WELL_KNOWN_AGENTS,
-} from "@deco/sdk";
-import { Suspense, useMemo, useState } from "react";
-import { Card, CardContent } from "@deco/ui/components/card.tsx";
-import { Icon } from "@deco/ui/components/icon.tsx";
-import { Skeleton } from "@deco/ui/components/skeleton.tsx";
+} from '@deco/sdk';
+import { Suspense, useMemo, useState } from 'react';
+import { Card, CardContent } from '@deco/ui/components/card.tsx';
+import { Icon } from '@deco/ui/components/icon.tsx';
+import { Skeleton } from '@deco/ui/components/skeleton.tsx';
 
-import { useMembersWithUnknownUsers } from "./members.ts";
-import { UsageFilters } from "./filters.tsx";
-import { UsageTable } from "./agents-table.tsx";
-import { ThreadsTable } from "./threads-table.tsx";
-import { UsersTable } from "./users-table.tsx";
+import { useMembersWithUnknownUsers } from './members.ts';
+import { UsageFilters } from './filters.tsx';
+import { UsageTable } from './agents-table.tsx';
+import { ThreadsTable } from './threads-table.tsx';
+import { UsersTable } from './users-table.tsx';
 import {
   createAgentChartData,
   createThreadChartData,
   createUserChartData,
   UsageChartData,
-} from "./usage-stacked-bar-chart.tsx";
-import { StackedBarChart } from "./stacked-bar-chart.tsx";
+} from './usage-stacked-bar-chart.tsx';
+import { StackedBarChart } from './stacked-bar-chart.tsx';
 
 const useAgentsMergedWithWellKnown = () => {
   const agents = useAgents();
@@ -34,27 +34,27 @@ const useAgentsMergedWithWellKnown = () => {
   };
 };
 
-export type UsageType = "agent" | "thread" | "user";
-export type TimeRange = "day" | "week" | "month";
+export type UsageType = 'agent' | 'thread' | 'user';
+export type TimeRange = 'day' | 'week' | 'month';
 
 const labelsByUsageType = {
   agent: {
-    title: "Agents used",
-    plural: "agents",
+    title: 'Agents used',
+    plural: 'agents',
   },
   thread: {
-    title: "Threads created",
-    plural: "threads",
+    title: 'Threads created',
+    plural: 'threads',
   },
   user: {
-    title: "Users active",
-    plural: "users",
+    title: 'Users active',
+    plural: 'users',
   },
 } as const;
 
 export function Usage() {
-  const [usageType, setUsageType] = useState<UsageType>("agent");
-  const [timeRange, setTimeRange] = useState<TimeRange>("week");
+  const [usageType, setUsageType] = useState<UsageType>('agent');
+  const [timeRange, setTimeRange] = useState<TimeRange>('week');
 
   const agents = useAgentsMergedWithWellKnown();
   const agentUsage = useUsagePerAgent({
@@ -68,17 +68,17 @@ export function Usage() {
     userIdsToEnsureExist: threadUsage.items.map((thread) => thread.generatedBy),
   });
   const threads = useAuditEvents({
-    orderBy: "updatedAt_desc",
+    orderBy: 'updatedAt_desc',
     limit: 100,
   });
 
   const chartData = useMemo((): UsageChartData => {
     switch (usageType) {
-      case "agent":
+      case 'agent':
         return createAgentChartData(agents.data || [], agentUsage, timeRange);
-      case "user":
+      case 'user':
         return createUserChartData(threadUsage, teamMembers || [], timeRange);
-      case "thread":
+      case 'thread':
         return createThreadChartData(threadUsage, timeRange);
       default:
         return {
@@ -97,8 +97,8 @@ export function Usage() {
   const labels = useMemo(() => labelsByUsageType[usageType], [usageType]);
 
   return (
-    <div className="h-full text-foreground px-6 py-6 overflow-x-auto w-full">
-      <div className="flex flex-col gap-6 overflow-x-auto w-full">
+    <div className='h-full text-foreground px-6 py-6 overflow-x-auto w-full'>
+      <div className='flex flex-col gap-6 overflow-x-auto w-full'>
         <UsageFilters
           usageType={usageType}
           setUsageType={setUsageType}
@@ -106,33 +106,33 @@ export function Usage() {
           setTimeRange={setTimeRange}
         />
 
-        <div className="flex gap-4 w-full">
-          <Card className="flex-1 p-6 rounded-xl border">
-            <CardContent className="p-0">
-              <div className="flex items-center gap-2 mb-2">
-                <Icon name="robot_2" size={16} />
-                <span className="text-sm font-medium text-muted-foreground">
+        <div className='flex gap-4 w-full'>
+          <Card className='flex-1 p-6 rounded-xl border'>
+            <CardContent className='p-0'>
+              <div className='flex items-center gap-2 mb-2'>
+                <Icon name='robot_2' size={16} />
+                <span className='text-sm font-medium text-muted-foreground'>
                   {labels.title}
                 </span>
               </div>
-              <div className="text-4xl font-normal text-foreground">
+              <div className='text-4xl font-normal text-foreground'>
                 {totals.count} {labels.plural}
               </div>
             </CardContent>
           </Card>
 
-          <Card className="flex-1 p-6 rounded-xl bg-primary-dark text-primary-light">
-            <CardContent className="p-0">
-              <div className="text-sm font-medium mb-2">Total Cost</div>
-              <div className="text-4xl font-semibold">${totals.cost}</div>
+          <Card className='flex-1 p-6 rounded-xl bg-primary-dark text-primary-light'>
+            <CardContent className='p-0'>
+              <div className='text-sm font-medium mb-2'>Total Cost</div>
+              <div className='text-4xl font-semibold'>${totals.cost}</div>
             </CardContent>
           </Card>
         </div>
 
         <StackedBarChart chartData={chartData.chartData} />
 
-        {usageType === "agent" && (
-          <Suspense fallback={<Skeleton className="w-full h-[400px]" />}>
+        {usageType === 'agent' && (
+          <Suspense fallback={<Skeleton className='w-full h-[400px]' />}>
             <UsageTable
               agents={agents.data || []}
               agentUsage={agentUsage}
@@ -141,8 +141,8 @@ export function Usage() {
           </Suspense>
         )}
 
-        {usageType === "thread" && (
-          <Suspense fallback={<Skeleton className="w-full h-[400px]" />}>
+        {usageType === 'thread' && (
+          <Suspense fallback={<Skeleton className='w-full h-[400px]' />}>
             <ThreadsTable
               agents={agents.data || []}
               threadUsage={threadUsage}
@@ -152,8 +152,8 @@ export function Usage() {
           </Suspense>
         )}
 
-        {usageType === "user" && (
-          <Suspense fallback={<Skeleton className="w-full h-[400px]" />}>
+        {usageType === 'user' && (
+          <Suspense fallback={<Skeleton className='w-full h-[400px]' />}>
             <UsersTable threadUsage={threadUsage} members={teamMembers} />
           </Suspense>
         )}

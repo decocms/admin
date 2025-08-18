@@ -1,23 +1,23 @@
 // @ts-check
-import { defineConfig } from "astro/config";
-import tailwindcss from "@tailwindcss/vite";
+import { defineConfig } from 'astro/config';
+import tailwindcss from '@tailwindcss/vite';
 
-import mdx from "@astrojs/mdx";
+import mdx from '@astrojs/mdx';
 
-import react from "@astrojs/react";
+import react from '@astrojs/react';
 
 // https://astro.build/config
 export default defineConfig({
   redirects: {
-    "/": "/en/introduction",
+    '/': '/en/introduction',
   },
   server: {
     port: 4000,
   },
-  outDir: "../server/view-build/",
+  outDir: '../server/view-build/',
   i18n: {
-    locales: ["en", "pt-br"],
-    defaultLocale: "en",
+    locales: ['en', 'pt-br'],
+    defaultLocale: 'en',
     routing: {
       prefixDefaultLocale: true,
     },
@@ -32,10 +32,10 @@ export default defineConfig({
   markdown: {
     shikiConfig: {
       themes: {
-        light: "github-light",
-        dark: "github-dark",
+        light: 'github-light',
+        dark: 'github-dark',
       },
-      defaultColor: "light",
+      defaultColor: 'light',
     },
   },
 });

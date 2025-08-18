@@ -1,9 +1,4 @@
-import {
-  useMutation,
-  useQuery,
-  useQueryClient,
-  type UseQueryOptions,
-} from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient, type UseQueryOptions } from '@tanstack/react-query';
 import {
   activateTrigger,
   createTrigger,
@@ -12,20 +7,16 @@ import {
   getTrigger,
   listAllTriggers,
   updateTrigger,
-} from "../crud/trigger.ts";
-import type {
-  CreateTriggerInput,
-  ListTriggersOutput,
-  TriggerOutput,
-} from "../models/trigger.ts";
-import { KEYS } from "./api.ts";
-import { useSDK } from "./store.tsx";
+} from '../crud/trigger.ts';
+import type { CreateTriggerInput, ListTriggersOutput, TriggerOutput } from '../models/trigger.ts';
+import { KEYS } from './api.ts';
+import { useSDK } from './store.tsx';
 
 export function useTrigger(
   triggerId: string,
   options?: Omit<
     UseQueryOptions<TriggerOutput, Error, TriggerOutput, string[]>,
-    "queryKey" | "queryFn"
+    'queryKey' | 'queryFn'
   >,
 ) {
   const { workspace } = useSDK();
@@ -87,8 +78,7 @@ export function useCreateTrigger() {
   const client = useQueryClient();
 
   return useMutation({
-    mutationFn: (trigger: CreateTriggerInput) =>
-      createTrigger(workspace, trigger),
+    mutationFn: (trigger: CreateTriggerInput) => createTrigger(workspace, trigger),
     onSuccess: (result) => {
       // update item
       const itemKey = KEYS.TRIGGER(workspace, result.id);
@@ -169,9 +159,7 @@ export function useActivateTrigger() {
         client.setQueryData<ListTriggersOutput>(listKey, (old) => {
           if (!old) return old;
           return {
-            triggers: old.triggers.map((t) =>
-              t.id === triggerId ? { ...t, active: true } : t
-            ),
+            triggers: old.triggers.map((t) => t.id === triggerId ? { ...t, active: true } : t),
           };
         });
       }
@@ -201,9 +189,7 @@ export function useDeactivateTrigger() {
         client.setQueryData<ListTriggersOutput>(listKey, (old) => {
           if (!old) return old;
           return {
-            triggers: old.triggers.map((t) =>
-              t.id === triggerId ? { ...t, active: false } : t
-            ),
+            triggers: old.triggers.map((t) => t.id === triggerId ? { ...t, active: false } : t),
           };
         });
       }

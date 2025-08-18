@@ -1,5 +1,5 @@
-import { z } from "zod";
-import type { Binder } from "../index.ts";
+import { z } from 'zod';
+import type { Binder } from '../index.ts';
 
 const callbacksSchema = z.object({
   stream: z.string(),
@@ -36,17 +36,17 @@ export type JoinedChannelPayload = z.infer<typeof joinChannelSchema>;
 export type ListChannelsSchema = z.infer<typeof listChannelsSchema>;
 export const CHANNEL_BINDING_SCHEMA = [
   {
-    name: "DECO_CHAT_CHANNELS_JOIN" as const,
+    name: 'DECO_CHAT_CHANNELS_JOIN' as const,
     inputSchema: joinChannelSchema,
     outputSchema: z.any(),
   },
   {
-    name: "DECO_CHAT_CHANNELS_LEAVE" as const,
+    name: 'DECO_CHAT_CHANNELS_LEAVE' as const,
     inputSchema: channelIdSchema,
     outputSchema: z.any(),
   },
   {
-    name: "DECO_CHAT_CHANNELS_LIST" as const,
+    name: 'DECO_CHAT_CHANNELS_LIST' as const,
     inputSchema: z.any(),
     outputSchema: listChannelsSchema,
     opt: true,

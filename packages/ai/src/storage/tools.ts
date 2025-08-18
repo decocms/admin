@@ -1,10 +1,10 @@
-import type { Integration } from "@deco/sdk";
-import { INNATE_INTEGRATIONS } from "@deco/sdk";
-import type { AIAgent, Env } from "../agent.ts";
-import { createHandoffToolsFor } from "../agents/handoff.ts";
-import { createTool } from "../utils/create-tool.ts";
-import { INNATE_TOOLS } from "./constants.ts";
-export { INNATE_TOOLS } from "./constants.ts";
+import type { Integration } from '@deco/sdk';
+import { INNATE_INTEGRATIONS } from '@deco/sdk';
+import type { AIAgent, Env } from '../agent.ts';
+import { createHandoffToolsFor } from '../agents/handoff.ts';
+import { createTool } from '../utils/create-tool.ts';
+import { INNATE_TOOLS } from './constants.ts';
+export { INNATE_TOOLS } from './constants.ts';
 
 export const getToolsForInnateIntegration = (
   integration: Integration,
@@ -17,7 +17,7 @@ export const getToolsForInnateIntegration = (
 
   return Object.fromEntries(
     Object.entries(tools).map(([key, tool]) => {
-      if (typeof tool.execute !== "function") {
+      if (typeof tool.execute !== 'function') {
         console.log({ tool });
       }
 

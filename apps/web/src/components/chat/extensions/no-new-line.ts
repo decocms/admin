@@ -1,11 +1,11 @@
-import { Extension } from "@tiptap/react";
+import { Extension } from '@tiptap/react';
 
 export interface NoNewLineOptions {
   shouldPreventNewLine: () => boolean;
 }
 
 export const NoNewLine = Extension.create<NoNewLineOptions>({
-  name: "noNewLine",
+  name: 'noNewLine',
 
   addOptions() {
     return {

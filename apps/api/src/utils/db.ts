@@ -1,13 +1,8 @@
-import {
-  type createServerClient,
-  serializeCookieHeader,
-  type SetAllCookies,
-} from "@supabase/ssr";
+import { type createServerClient, serializeCookieHeader, type SetAllCookies } from '@supabase/ssr';
 
 export type Options = Parameters<typeof createServerClient>;
 
-export const getCookieDomain = (hostname: string) =>
-  hostname.split(".").slice(-2).join(".");
+export const getCookieDomain = (hostname: string) => hostname.split('.').slice(-2).join('.');
 
 export const getServerClientOptions = ({
   cookies,
@@ -35,10 +30,10 @@ export const authSetCookie = ({ request }: { request: Request }) => {
     const rootDomain = getCookieDomain(url.hostname);
     for (const { name, value, options } of cookies) {
       headers.append(
-        "set-cookie",
+        'set-cookie',
         serializeCookieHeader(name, value, {
           ...options,
-          sameSite: "none", // allow for subdomains.
+          sameSite: 'none', // allow for subdomains.
           secure: true,
           domain: `.${rootDomain}`,
         }),

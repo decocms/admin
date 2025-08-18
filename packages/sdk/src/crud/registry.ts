@@ -1,4 +1,4 @@
-import { MCPClient } from "../fetcher.ts";
+import { MCPClient } from '../fetcher.ts';
 
 /**
  * Get a registry app

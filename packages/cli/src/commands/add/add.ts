@@ -1,13 +1,13 @@
-import inquirer from "inquirer";
+import inquirer from 'inquirer';
 import {
   type DecoBinding,
   getConfig,
   readWranglerConfig,
   writeConfigFile,
-} from "../../lib/config.js";
-import { promptIntegrations } from "../../lib/prompt-integrations.js";
-import { readSession } from "../../lib/session.js";
-import process from "node:process";
+} from '../../lib/config.js';
+import { promptIntegrations } from '../../lib/prompt-integrations.js';
+import { readSession } from '../../lib/session.js';
+import process from 'node:process';
 
 interface AddCommandOptions {
   workspace?: string;
@@ -27,14 +27,14 @@ export async function addCommand({ workspace, local }: AddCommandOptions) {
     const config = await getConfig({
       inlineOptions: { workspace, local },
     }).catch(() => ({
-      workspace: workspace || session.workspace || "default",
+      workspace: workspace || session.workspace || 'default',
       bindings: [],
       local: local || false,
       enable_workflows: true,
     }));
 
     console.log(`📁 Using workspace: ${config.workspace}`);
-    console.log("🔍 Fetching available integrations...");
+    console.log('🔍 Fetching available integrations...');
 
     // Prompt user to select integrations
     const selectedBindings = await promptIntegrations(
@@ -43,7 +43,7 @@ export async function addCommand({ workspace, local }: AddCommandOptions) {
     );
 
     if (selectedBindings.length === 0) {
-      console.log("ℹ️  No integrations selected. Nothing to add.");
+      console.log('ℹ️  No integrations selected. Nothing to add.');
       return;
     }
 
@@ -61,17 +61,16 @@ export async function addCommand({ workspace, local }: AddCommandOptions) {
 
       const { bindingName } = await inquirer.prompt([
         {
-          type: "input",
-          name: "bindingName",
-          message:
-            `Enter binding name for integration "${integrationBinding.integration_id}":`,
+          type: 'input',
+          name: 'bindingName',
+          message: `Enter binding name for integration "${integrationBinding.integration_id}":`,
           default: integrationBinding.name,
           validate: (value: string) => {
             if (!value.trim()) {
-              return "Binding name cannot be empty";
+              return 'Binding name cannot be empty';
             }
             if (!/^[A-Z_][A-Z0-9_]*$/.test(value)) {
-              return "Binding name must be uppercase with underscores (e.g., MY_INTEGRATION)";
+              return 'Binding name must be uppercase with underscores (e.g., MY_INTEGRATION)';
             }
             return true;
           },
@@ -80,7 +79,7 @@ export async function addCommand({ workspace, local }: AddCommandOptions) {
 
       newBindings.push({
         name: bindingName,
-        type: "mcp",
+        type: 'mcp',
         integration_id: integrationBinding.integration_id,
       });
     }
@@ -104,18 +103,18 @@ export async function addCommand({ workspace, local }: AddCommandOptions) {
 
     console.log(`✅ Added ${newBindings.length} integration(s) successfully!`);
     newBindings.forEach((binding) => {
-      const id = "integration_id" in binding
+      const id = 'integration_id' in binding
         ? binding.integration_id
-        : "integration_name" in binding
+        : 'integration_name' in binding
         ? binding.integration_name
-        : "unknown";
+        : 'unknown';
       console.log(`  - ${binding.name} (${id})`);
     });
     console.log("\n💡 Run 'deco gen' to update your environment types.");
-    console.log("🎉 Your integrations are ready to use!");
+    console.log('🎉 Your integrations are ready to use!');
   } catch (error) {
     console.error(
-      "❌ Failed to add integrations:",
+      '❌ Failed to add integrations:',
       error instanceof Error ? error.message : String(error),
     );
     process.exit(1);

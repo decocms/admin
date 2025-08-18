@@ -6,42 +6,38 @@
  * it will use the localhost version.
  */
 
-import { pickCapybaraAvatar } from "@deco/ai/capybaras";
-import type { Agent } from "./models/agent.ts";
-import type { Integration } from "./models/mcp.ts";
+import { pickCapybaraAvatar } from '@deco/ai/capybaras';
+import type { Agent } from './models/agent.ts';
+import type { Integration } from './models/mcp.ts';
 
 // @ts-ignore - Vite injects env variables at build time
-const LOCAL_DEBUGGER = import.meta.env?.VITE_USE_LOCAL_BACKEND === "true";
-const isLocalhost = globalThis.location?.hostname === "localhost";
+const LOCAL_DEBUGGER = import.meta.env?.VITE_USE_LOCAL_BACKEND === 'true';
+const isLocalhost = globalThis.location?.hostname === 'localhost';
 
 // Log a warning if the environment variable is not set
 // @ts-ignore - Vite injects env variables at build time
 if (isLocalhost && import.meta.env?.VITE_USE_LOCAL_BACKEND === undefined) {
   console.warn(
-    "VITE_USE_LOCAL_BACKEND environment variable is not set. " +
-      "To use local backend services, create a .env file in apps/web/ " +
-      "and add VITE_USE_LOCAL_BACKEND=true",
+    'VITE_USE_LOCAL_BACKEND environment variable is not set. ' +
+      'To use local backend services, create a .env file in apps/web/ ' +
+      'and add VITE_USE_LOCAL_BACKEND=true',
   );
 }
 
-export const SUPABASE_URL = "https://auth.deco.cx";
+export const SUPABASE_URL = 'https://auth.deco.cx';
 
-export const DECO_CHAT_WEB = LOCAL_DEBUGGER
-  ? "http://localhost:3000"
-  : "https://deco.chat";
+export const DECO_CHAT_WEB = LOCAL_DEBUGGER ? 'http://localhost:3000' : 'https://deco.chat';
 
-export const DECO_CHAT_API = LOCAL_DEBUGGER
-  ? "http://localhost:3001"
-  : "https://api.deco.chat";
+export const DECO_CHAT_API = LOCAL_DEBUGGER ? 'http://localhost:3001' : 'https://api.deco.chat';
 
 export const AUTH_PORT_CLI = 3457;
 export const AUTH_URL_CLI = `http://localhost:${AUTH_PORT_CLI}`;
 
 export const WELL_KNOWN_AGENT_IDS = {
-  teamAgent: "teamAgent",
-  setupAgent: "setupAgent",
-  promptAgent: "promptAgent",
-  decopilotAgent: "decopilotAgent",
+  teamAgent: 'teamAgent',
+  setupAgent: 'setupAgent',
+  promptAgent: 'promptAgent',
+  decopilotAgent: 'decopilotAgent',
 } as const;
 
 export interface Model {
@@ -59,133 +55,130 @@ export interface Model {
 }
 
 const LOGOS = {
-  openai:
-    "https://assets.decocache.com/webdraw/15dc381c-23b4-4f6b-9ceb-9690f77a7cf5/openai.svg",
+  openai: 'https://assets.decocache.com/webdraw/15dc381c-23b4-4f6b-9ceb-9690f77a7cf5/openai.svg',
   anthropic:
-    "https://assets.decocache.com/webdraw/6ae2b0e1-7b81-48f7-9707-998751698b6f/anthropic.svg",
-  gemini:
-    "https://assets.decocache.com/webdraw/17df85af-1578-42ef-ae07-4300de0d1723/gemini.svg",
-  xai:
-    "https://assets.decocache.com/webdraw/7a8003ff-8f2d-4988-8693-3feb20e87eca/xai.svg",
+    'https://assets.decocache.com/webdraw/6ae2b0e1-7b81-48f7-9707-998751698b6f/anthropic.svg',
+  gemini: 'https://assets.decocache.com/webdraw/17df85af-1578-42ef-ae07-4300de0d1723/gemini.svg',
+  xai: 'https://assets.decocache.com/webdraw/7a8003ff-8f2d-4988-8693-3feb20e87eca/xai.svg',
 };
 
 // TODO(@camudo): Make native web search work
-type Capability = "reasoning" | "image-upload" | "file-upload" | "web-search";
+type Capability = 'reasoning' | 'image-upload' | 'file-upload' | 'web-search';
 
 /**
  * First one is the default model for agents, so choose wisely.
  */
 export const WELL_KNOWN_MODELS: Model[] = [
   {
-    id: "openai:gpt-4.1-mini",
-    model: "openai:gpt-4.1-mini",
-    name: "OpenAI GPT-4.1 mini",
+    id: 'openai:gpt-4.1-mini',
+    model: 'openai:gpt-4.1-mini',
+    name: 'OpenAI GPT-4.1 mini',
     logo: LOGOS.openai,
-    capabilities: ["reasoning", "image-upload", "file-upload"],
+    capabilities: ['reasoning', 'image-upload', 'file-upload'],
     byDeco: true,
     isEnabled: true,
     hasCustomKey: false,
   },
   {
-    id: "openai:gpt-oss-120b",
-    model: "openai:gpt-oss-120b",
-    name: "OpenAI GPT OSS 120B",
+    id: 'openai:gpt-oss-120b',
+    model: 'openai:gpt-oss-120b',
+    name: 'OpenAI GPT OSS 120B',
     logo: LOGOS.openai,
-    capabilities: ["reasoning", "image-upload", "file-upload"],
+    capabilities: ['reasoning', 'image-upload', 'file-upload'],
     byDeco: true,
     isEnabled: true,
     hasCustomKey: false,
   },
   {
-    id: "openai:gpt-oss-20b",
-    model: "openai:gpt-oss-20b",
-    name: "OpenAI GPT OSS 20B",
+    id: 'openai:gpt-oss-20b',
+    model: 'openai:gpt-oss-20b',
+    name: 'OpenAI GPT OSS 20B',
     logo: LOGOS.openai,
-    capabilities: ["reasoning", "image-upload", "file-upload"],
+    capabilities: ['reasoning', 'image-upload', 'file-upload'],
     byDeco: true,
     isEnabled: true,
     hasCustomKey: false,
   },
   {
-    id: "google:gemini-2.5-pro",
-    model: "google:gemini-2.5-pro",
-    name: "Google Gemini Pro 2.5",
+    id: 'google:gemini-2.5-pro',
+    model: 'google:gemini-2.5-pro',
+    name: 'Google Gemini Pro 2.5',
     logo: LOGOS.gemini,
-    capabilities: ["reasoning", "image-upload", "file-upload"],
-    legacyId: "google:gemini-2.5-pro-preview",
+    capabilities: ['reasoning', 'image-upload', 'file-upload'],
+    legacyId: 'google:gemini-2.5-pro-preview',
     byDeco: true,
     isEnabled: true,
     hasCustomKey: false,
   },
   {
-    id: "google:gemini-2.5-flash-lite-preview-06-17",
-    model: "google:gemini-2.5-flash-lite-preview-06-17",
-    name: "Google: Gemini 2.5 Flash Lite",
+    id: 'google:gemini-2.5-flash-lite-preview-06-17',
+    model: 'google:gemini-2.5-flash-lite-preview-06-17',
+    name: 'Google: Gemini 2.5 Flash Lite',
     logo: LOGOS.gemini,
-    capabilities: ["reasoning", "image-upload", "file-upload"],
+    capabilities: ['reasoning', 'image-upload', 'file-upload'],
     byDeco: true,
     isEnabled: true,
     hasCustomKey: false,
   },
   {
-    id: "anthropic:claude-sonnet-4",
-    model: "anthropic:claude-sonnet-4",
-    name: "Claude Sonnet 4",
+    id: 'anthropic:claude-sonnet-4',
+    model: 'anthropic:claude-sonnet-4',
+    name: 'Claude Sonnet 4',
     logo: LOGOS.anthropic,
-    capabilities: ["reasoning", "image-upload", "file-upload"],
+    capabilities: ['reasoning', 'image-upload', 'file-upload'],
     // TODO: remove duplicated ids, bydeco, enabled, etc. from here.
     byDeco: true,
     isEnabled: true,
     hasCustomKey: false,
   },
   {
-    id: "anthropic:claude-3.7-sonnet:thinking",
-    model: "anthropic:claude-3.7-sonnet:thinking",
-    name: "Claude Sonnet 3.7",
+    id: 'anthropic:claude-3.7-sonnet:thinking',
+    model: 'anthropic:claude-3.7-sonnet:thinking',
+    name: 'Claude Sonnet 3.7',
     logo: LOGOS.anthropic,
-    capabilities: ["reasoning", "image-upload", "file-upload"],
-    legacyId: "anthropic:claude-3-7-sonnet-20250219",
+    capabilities: ['reasoning', 'image-upload', 'file-upload'],
+    legacyId: 'anthropic:claude-3-7-sonnet-20250219',
     byDeco: true,
     isEnabled: true,
     hasCustomKey: false,
   },
   {
-    id: "openai:gpt-4.1",
-    model: "openai:gpt-4.1",
-    name: "OpenAI GPT-4.1",
+    id: 'openai:gpt-4.1',
+    model: 'openai:gpt-4.1',
+    name: 'OpenAI GPT-4.1',
     logo: LOGOS.openai,
-    capabilities: ["reasoning", "image-upload", "file-upload"],
+    capabilities: ['reasoning', 'image-upload', 'file-upload'],
     byDeco: true,
     isEnabled: true,
     hasCustomKey: false,
   },
   {
-    id: "openai:gpt-4.1-nano",
-    model: "openai:gpt-4.1-nano",
-    name: "OpenAI GPT-4.1 nano",
+    id: 'openai:gpt-4.1-nano',
+    model: 'openai:gpt-4.1-nano',
+    name: 'OpenAI GPT-4.1 nano',
     logo: LOGOS.openai,
-    capabilities: ["reasoning", "image-upload"],
+    capabilities: ['reasoning', 'image-upload'],
     byDeco: true,
     isEnabled: true,
     hasCustomKey: false,
   },
   {
-    id: "openai:o3-mini-high",
-    model: "openai:o3-mini-high",
-    name: "OpenAI o3-mini",
+    id: 'openai:o3-mini-high',
+    model: 'openai:o3-mini-high',
+    name: 'OpenAI o3-mini',
     logo: LOGOS.openai,
-    capabilities: ["reasoning"],
+    capabilities: ['reasoning'],
     byDeco: true,
     isEnabled: true,
     hasCustomKey: false,
   },
   {
-    id: "x-ai:grok-4",
-    model: "x-ai:grok-4",
-    name: "Grok 4",
+    id: 'x-ai:grok-4',
+    model: 'x-ai:grok-4',
+    name: 'Grok 4',
     logo: LOGOS.xai,
-    capabilities: ["reasoning", "image-upload", "file-upload"],
-    legacyId: "x-ai:grok-3-beta",
+    capabilities: ['reasoning', 'image-upload', 'file-upload'],
+    legacyId: 'x-ai:grok-3-beta',
     byDeco: true,
     isEnabled: true,
     hasCustomKey: false,
@@ -210,25 +203,25 @@ export function getTraceDebugId(): string {
     return crypto.randomUUID();
   }
   return (
-    new URL(globalThis.location.href).searchParams.get("__d") ||
+    new URL(globalThis.location.href).searchParams.get('__d') ||
     crypto.randomUUID()
   );
 }
 
-export const NEW_INTEGRATION_TEMPLATE: Omit<Integration, "id"> = {
-  name: "New Integration",
-  description: "A new multi-channel platform integration",
-  icon: "https://assets.webdraw.app/uploads/deco-avocado-light.png",
-  connection: { type: "HTTP", url: "https://example.com/messages" },
+export const NEW_INTEGRATION_TEMPLATE: Omit<Integration, 'id'> = {
+  name: 'New Integration',
+  description: 'A new multi-channel platform integration',
+  icon: 'https://assets.webdraw.app/uploads/deco-avocado-light.png',
+  connection: { type: 'HTTP', url: 'https://example.com/messages' },
 };
 
 export const INNATE_INTEGRATIONS = {
   DECO_UTILS: {
-    id: "DECO_UTILS",
-    name: "Utility Toolkit",
-    description: "Core utilities for user interaction and data handling.",
-    icon: "https://assets.webdraw.app/uploads/utils.png",
-    connection: { type: "INNATE", name: "DECO_UTILS" },
+    id: 'DECO_UTILS',
+    name: 'Utility Toolkit',
+    description: 'Core utilities for user interaction and data handling.',
+    icon: 'https://assets.webdraw.app/uploads/utils.png',
+    connection: { type: 'INNATE', name: 'DECO_UTILS' },
   },
 } satisfies Record<string, Integration>;
 
@@ -246,15 +239,15 @@ export const DEFAULT_MEMORY = {
   working_memory: { enabled: false },
 };
 
-export const NEW_AGENT_TEMPLATE: Omit<Agent, "id"> = {
-  name: "Untitled",
+export const NEW_AGENT_TEMPLATE: Omit<Agent, 'id'> = {
+  name: 'Untitled',
   avatar: pickCapybaraAvatar(12),
-  description: "",
+  description: '',
   model: DEFAULT_MODEL.id,
-  visibility: "WORKSPACE",
+  visibility: 'WORKSPACE',
   tools_set: {},
   views: [],
-  instructions: "",
+  instructions: '',
   max_steps: DEFAULT_MAX_STEPS,
   max_tokens: DEFAULT_MAX_TOKENS,
   memory: DEFAULT_MEMORY,
@@ -266,14 +259,14 @@ export const NEW_AGENT_TEMPLATE: Omit<Agent, "id"> = {
  * these tools hardcoded in here. Maybe a setup is missing?
  */
 export const WELL_KNOWN_AGENTS = {
-  teamAgent: { id: "teamAgent", ...NEW_AGENT_TEMPLATE },
+  teamAgent: { id: 'teamAgent', ...NEW_AGENT_TEMPLATE },
   setupAgent: {
-    id: "setupAgent",
-    name: "Setup agent",
+    id: 'setupAgent',
+    name: 'Setup agent',
     avatar: pickCapybaraAvatar(12),
-    description: "I can help you with this setup.",
+    description: 'I can help you with this setup.',
     model: DEFAULT_MODEL.id,
-    visibility: "PUBLIC",
+    visibility: 'PUBLIC',
     tools_set: {},
     views: [],
     memory: DEFAULT_MEMORY,
@@ -290,14 +283,14 @@ check if the agent is active and configure the agent.
 `,
   },
   promptAgent: {
-    id: "promptAgent",
-    name: "Prompt Agent",
+    id: 'promptAgent',
+    name: 'Prompt Agent',
     avatar: pickCapybaraAvatar(12),
-    description: "I can help you with this prompt.",
+    description: 'I can help you with this prompt.',
     model: DEFAULT_MODEL.id,
-    visibility: "PUBLIC",
+    visibility: 'PUBLIC',
     tools_set: {
-      "i:workspace-management": ["PROMPTS_GET", "PROMPTS_UPDATE"],
+      'i:workspace-management': ['PROMPTS_GET', 'PROMPTS_UPDATE'],
     },
     views: [],
     instructions: `
@@ -312,8 +305,8 @@ When user asks for a prompt, you should use the PROMPTS_GET tool to get the actu
   },
   decopilotAgent: {
     ...NEW_AGENT_TEMPLATE,
-    id: "decopilotAgent",
-    name: "Decopilot",
+    id: 'decopilotAgent',
+    name: 'Decopilot',
     avatar: pickCapybaraAvatar(12),
     description: "Let's Deco!",
     instructions:
@@ -321,27 +314,26 @@ When user asks for a prompt, you should use the PROMPTS_GET tool to get the actu
   },
 } satisfies Record<string, Agent>;
 
-export const WELL_KNOWN_KNOWLEDGE_BASE_CONNECTION_ID_STARTSWITH =
-  "i:knowledge-base";
+export const WELL_KNOWN_KNOWLEDGE_BASE_CONNECTION_ID_STARTSWITH = 'i:knowledge-base';
 export const KNOWLEDGE_BASE_DIMENSION = 1536;
 
 // main.ts or main.mjs or main.js or main.cjs
 export const USER_WORKER_APP_ENTRYPOINTS = [
-  "main.ts",
-  "main.mjs",
-  "main.js",
-  "main.cjs",
+  'main.ts',
+  'main.mjs',
+  'main.js',
+  'main.cjs',
 ];
 
-export const DECO_BOTS_DOMAIN = "deco.bot";
+export const DECO_BOTS_DOMAIN = 'deco.bot';
 
 export const WELL_KNOWN_PROMPT_IDS = {
-  workspace: "dynamic-workspace",
-  now: "dynamic-now",
+  workspace: 'dynamic-workspace',
+  now: 'dynamic-now',
 } as const;
 
 export const isWellKnownPromptId = (id: string): boolean =>
   (Object.values(WELL_KNOWN_PROMPT_IDS) as string[]).includes(id);
 
-export const KNOWLEDGE_BASE_GROUP = "knowledge_base";
-export const DEFAULT_KNOWLEDGE_BASE_NAME = "standard";
+export const KNOWLEDGE_BASE_GROUP = 'knowledge_base';
+export const DEFAULT_KNOWLEDGE_BASE_NAME = 'standard';

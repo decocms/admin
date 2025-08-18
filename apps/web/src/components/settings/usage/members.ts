@@ -1,7 +1,7 @@
-import { useParams } from "react-router";
-import { type Member, useTeamMembersBySlug } from "@deco/sdk";
-import { useMemo } from "react";
-import { useUser } from "../../../hooks/use-user.ts";
+import { useParams } from 'react-router';
+import { type Member, useTeamMembersBySlug } from '@deco/sdk';
+import { useMemo } from 'react';
+import { useUser } from '../../../hooks/use-user.ts';
 
 function userToMember(user: ReturnType<typeof useUser>): Member {
   return {
@@ -15,8 +15,8 @@ function userToMember(user: ReturnType<typeof useUser>): Member {
       phone: user.phone,
     },
     roles: [],
-    created_at: "",
-    lastActivity: "",
+    created_at: '',
+    lastActivity: '',
   };
 }
 
@@ -26,14 +26,14 @@ function createUnknownMember(userId: string): Member {
     user_id: userId,
     profiles: {
       id: userId,
-      email: "Unknown User",
+      email: 'Unknown User',
       is_anonymous: false,
-      metadata: { avatar_url: "", username: "unknown", email: "Unknown User" },
+      metadata: { avatar_url: '', username: 'unknown', email: 'Unknown User' },
       phone: null,
     },
     roles: [],
     created_at: new Date().toISOString(),
-    lastActivity: "",
+    lastActivity: '',
   };
 }
 

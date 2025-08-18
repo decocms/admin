@@ -1,10 +1,10 @@
-import { Avatar, type AvatarProps } from "./index.tsx";
+import { Avatar, type AvatarProps } from './index.tsx';
 
-export interface UserAvatarProps extends Omit<AvatarProps, "shape"> {
+export interface UserAvatarProps extends Omit<AvatarProps, 'shape'> {
   /**
    * Override the default shape for special cases
    */
-  shape?: AvatarProps["shape"];
+  shape?: AvatarProps['shape'];
 }
 
 /**
@@ -17,17 +17,17 @@ export interface UserAvatarProps extends Omit<AvatarProps, "shape"> {
  * - When no URL and no fallback: renders person icon with muted styling
  */
 export function UserAvatar({
-  shape = "circle",
-  size = "base",
-  objectFit = "cover",
+  shape = 'circle',
+  size = 'base',
+  objectFit = 'cover',
   url,
   fallback,
   ...props
 }: UserAvatarProps) {
   // When no URL and no fallback provided, render a person icon with muted styling
   const shouldShowPersonIcon = !url && !fallback;
-  const avatarUrl = shouldShowPersonIcon ? "icon://person" : url;
-  const avatarFallback = shouldShowPersonIcon ? "" : fallback;
+  const avatarUrl = shouldShowPersonIcon ? 'icon://person' : url;
+  const avatarFallback = shouldShowPersonIcon ? '' : fallback;
   const isMuted = shouldShowPersonIcon;
 
   return (

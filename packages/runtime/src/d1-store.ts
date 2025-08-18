@@ -1,7 +1,7 @@
 import {
   D1ClientConfig as MastraD1StoreConfig,
   D1Store as MastraD1Store,
-} from "@mastra/cloudflare-d1";
+} from '@mastra/cloudflare-d1';
 
 export class D1Store extends MastraD1Store {
   constructor(private config: MastraD1StoreConfig) {
@@ -15,12 +15,12 @@ export class D1Store extends MastraD1Store {
     const indexQueries = [
       {
         sql:
-          "CREATE INDEX IF NOT EXISTS idx_mastra_workflow_snapshot_created_at ON mastra_workflow_snapshot(createdAt)",
+          'CREATE INDEX IF NOT EXISTS idx_mastra_workflow_snapshot_created_at ON mastra_workflow_snapshot(createdAt)',
         params: [],
       },
       {
         sql:
-          "CREATE INDEX IF NOT EXISTS idx_mastra_messages_created_at ON mastra_messages(createdAt)",
+          'CREATE INDEX IF NOT EXISTS idx_mastra_messages_created_at ON mastra_messages(createdAt)',
         params: [],
       },
     ];

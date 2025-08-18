@@ -1,9 +1,9 @@
-import { createServerClient } from "@supabase/ssr";
-import { JwtIssuer } from "./jwt.ts";
+import { createServerClient } from '@supabase/ssr';
+import { JwtIssuer } from './jwt.ts';
 
 const Hosts = {
-  API: "api.deco.chat",
-  APPS: "deco.page",
+  API: 'api.deco.chat',
+  APPS: 'deco.page',
 } as const;
 
 type Client = ReturnType<typeof createServerClient>;
@@ -33,12 +33,12 @@ const isWellKnownHost = (host: string): boolean => {
 export default {
   fetch: async (req: Request, env: Env) => {
     try {
-      const host = req.headers.get("host") ?? new URL(req.url).hostname;
+      const host = req.headers.get('host') ?? new URL(req.url).hostname;
       const fetcher = isWellKnownHost(host)
         ? (req: Request, opts?: RequestInit) =>
           env?.DECO_CHAT_API?.fetch(req, opts) ?? fetch(req, opts)
         : fetch;
-      const isAuthorized = typeof req.headers.get("Authorization") === "string";
+      const isAuthorized = typeof req.headers.get('Authorization') === 'string';
       if (host !== Hosts.API || isAuthorized) {
         // just forward the request to the target url
         return fetcher(req);
@@ -48,22 +48,22 @@ export default {
       const { DECO_CHAT_APP_ORIGIN, SUPABASE_URL, SUPABASE_SERVER_TOKEN } = env;
 
       if (!DECO_CHAT_APP_ORIGIN || !SUPABASE_URL || !SUPABASE_SERVER_TOKEN) {
-        return new Response("Missing environment variables", { status: 500 });
+        return new Response('Missing environment variables', { status: 500 });
       }
 
       const db = getServerClient(SUPABASE_URL, SUPABASE_SERVER_TOKEN);
       const { data, error } = await db
-        .from("deco_chat_hosting_apps")
-        .select("*")
-        .eq("slug", DECO_CHAT_APP_ORIGIN.split("--")[0])
+        .from('deco_chat_hosting_apps')
+        .select('*')
+        .eq('slug', DECO_CHAT_APP_ORIGIN.split('--')[0])
         .maybeSingle();
 
       if (error) {
-        return new Response("Error querying script", { status: 500 });
+        return new Response('Error querying script', { status: 500 });
       }
 
       if (!data) {
-        return new Response("App not found", { status: 404 });
+        return new Response('App not found', { status: 404 });
       }
 
       const issuer = await JwtIssuer.forKeyPair({
@@ -85,7 +85,7 @@ export default {
       }
 
       const reqHeaders = new Headers(req.headers);
-      reqHeaders.set("Authorization", `Bearer ${token}`);
+      reqHeaders.set('Authorization', `Bearer ${token}`);
 
       return fetcher(
         new Request(req.url, {
@@ -97,7 +97,7 @@ export default {
       );
     } catch (err) {
       return new Response(
-        `Error: ${err instanceof Error ? err.message : "Unknown error"}`,
+        `Error: ${err instanceof Error ? err.message : 'Unknown error'}`,
         { status: 500 },
       );
     }

@@ -1,159 +1,151 @@
-import { z } from "zod";
-import {
-  InternalServerError,
-  NotFoundError,
-  UserInputError,
-} from "../../errors.ts";
-import type { Json } from "../../storage/index.ts";
-import type { Theme } from "../../theme.ts";
+import { z } from 'zod';
+import { InternalServerError, NotFoundError, UserInputError } from '../../errors.ts';
+import type { Json } from '../../storage/index.ts';
+import type { Theme } from '../../theme.ts';
 import {
   assertHasWorkspace,
   assertPrincipalIsUser,
   assertTeamResourceAccess,
-} from "../assertions.ts";
-import { type AppContext, resourceGroupMap } from "../context.ts";
+} from '../assertions.ts';
+import { type AppContext, resourceGroupMap } from '../context.ts';
 import {
   getPresignedReadUrl_WITHOUT_CHECKING_AUTHORIZATION,
   getWorkspaceBucketName,
-} from "../fs/api.ts";
-import { createTool } from "../members/api.ts";
-import { mergeThemes } from "./merge-theme.ts";
-import { getWalletClient } from "../wallet/api.ts";
-import { getTeamBySlug } from "../members/invites-utils.ts";
-import {
-  isValidMonth,
-  isValidYear,
-  WellKnownTransactions,
-} from "../wallet/well-known.ts";
-import { MicroDollar, type Transaction } from "../wallet/index.ts";
-import { WebCache } from "../../cache/index.ts";
-import { TeamWithViews } from "../../crud/teams.ts";
-import { type View } from "../../views.ts";
-import { RoleUpdateAction, Statement } from "../../auth/policy.ts";
-import { isRequired } from "../../utils/fns.ts";
-import { parseId } from "../integrations/api.ts";
+} from '../fs/api.ts';
+import { createTool } from '../members/api.ts';
+import { mergeThemes } from './merge-theme.ts';
+import { getWalletClient } from '../wallet/api.ts';
+import { getTeamBySlug } from '../members/invites-utils.ts';
+import { isValidMonth, isValidYear, WellKnownTransactions } from '../wallet/well-known.ts';
+import { MicroDollar, type Transaction } from '../wallet/index.ts';
+import { WebCache } from '../../cache/index.ts';
+import { TeamWithViews } from '../../crud/teams.ts';
+import { type View } from '../../views.ts';
+import { RoleUpdateAction, Statement } from '../../auth/policy.ts';
+import { isRequired } from '../../utils/fns.ts';
+import { parseId } from '../integrations/api.ts';
 
 const OWNER_ROLE_ID = 1;
 
 // Enhanced theme schema with detailed context for AI tools
 const themeVariablesSchema = z.object({
-  "--background": z
+  '--background': z
     .string()
     .optional()
-    .describe("Main background color of the application (OKLCH/hex format)"),
-  "--foreground": z
+    .describe('Main background color of the application (OKLCH/hex format)'),
+  '--foreground': z
     .string()
     .optional()
-    .describe("Main text color on background (OKLCH/hex format)"),
-  "--card": z
+    .describe('Main text color on background (OKLCH/hex format)'),
+  '--card': z
     .string()
     .optional()
-    .describe("Background color for cards and panels (OKLCH/hex format)"),
-  "--card-foreground": z
+    .describe('Background color for cards and panels (OKLCH/hex format)'),
+  '--card-foreground': z
     .string()
     .optional()
-    .describe("Text color on cards and panels (OKLCH/hex format)"),
-  "--popover": z
+    .describe('Text color on cards and panels (OKLCH/hex format)'),
+  '--popover': z
     .string()
     .optional()
-    .describe("Background color for popovers and dropdowns (OKLCH/hex format)"),
-  "--popover-foreground": z
+    .describe('Background color for popovers and dropdowns (OKLCH/hex format)'),
+  '--popover-foreground': z
     .string()
     .optional()
-    .describe("Text color in popovers and dropdowns (OKLCH/hex format)"),
-  "--primary": z
+    .describe('Text color in popovers and dropdowns (OKLCH/hex format)'),
+  '--primary': z
     .string()
     .optional()
     .describe(
-      "Primary brand color for buttons and highlights (OKLCH/hex format)",
+      'Primary brand color for buttons and highlights (OKLCH/hex format)',
     ),
-  "--primary-foreground": z
+  '--primary-foreground': z
     .string()
     .optional()
-    .describe("Text color on primary elements (OKLCH/hex format)"),
-  "--primary-light": z
+    .describe('Text color on primary elements (OKLCH/hex format)'),
+  '--primary-light': z
     .string()
     .optional()
-    .describe("Lighter variant of primary color (OKLCH/hex format)"),
-  "--primary-dark": z
+    .describe('Lighter variant of primary color (OKLCH/hex format)'),
+  '--primary-dark': z
     .string()
     .optional()
-    .describe("Darker variant of primary color (OKLCH/hex format)"),
-  "--secondary": z
+    .describe('Darker variant of primary color (OKLCH/hex format)'),
+  '--secondary': z
     .string()
     .optional()
-    .describe("Secondary color for less prominent elements (OKLCH/hex format)"),
-  "--secondary-foreground": z
+    .describe('Secondary color for less prominent elements (OKLCH/hex format)'),
+  '--secondary-foreground': z
     .string()
     .optional()
-    .describe("Text color on secondary elements (OKLCH/hex format)"),
-  "--muted": z
+    .describe('Text color on secondary elements (OKLCH/hex format)'),
+  '--muted': z
     .string()
     .optional()
-    .describe("Muted background color for subtle elements (OKLCH/hex format)"),
-  "--muted-foreground": z
+    .describe('Muted background color for subtle elements (OKLCH/hex format)'),
+  '--muted-foreground': z
     .string()
     .optional()
-    .describe("Muted text color for secondary text (OKLCH/hex format)"),
-  "--accent": z
+    .describe('Muted text color for secondary text (OKLCH/hex format)'),
+  '--accent': z
     .string()
     .optional()
-    .describe("Accent color for interactive elements (OKLCH/hex format)"),
-  "--accent-foreground": z
+    .describe('Accent color for interactive elements (OKLCH/hex format)'),
+  '--accent-foreground': z
     .string()
     .optional()
-    .describe("Text color on accent elements (OKLCH/hex format)"),
-  "--destructive": z
+    .describe('Text color on accent elements (OKLCH/hex format)'),
+  '--destructive': z
     .string()
     .optional()
-    .describe("Color for destructive actions and errors (OKLCH/hex format)"),
-  "--destructive-foreground": z
+    .describe('Color for destructive actions and errors (OKLCH/hex format)'),
+  '--destructive-foreground': z
     .string()
     .optional()
-    .describe("Text color on destructive elements (OKLCH/hex format)"),
-  "--success": z
+    .describe('Text color on destructive elements (OKLCH/hex format)'),
+  '--success': z
     .string()
     .optional()
     .describe(
-      "Color for success states and positive actions (OKLCH/hex format)",
+      'Color for success states and positive actions (OKLCH/hex format)',
     ),
-  "--success-foreground": z
+  '--success-foreground': z
     .string()
     .optional()
-    .describe("Text color on success elements (OKLCH/hex format)"),
-  "--warning": z
+    .describe('Text color on success elements (OKLCH/hex format)'),
+  '--warning': z
     .string()
     .optional()
     .describe(
-      "Color for warning states and caution indicators (OKLCH/hex format)",
+      'Color for warning states and caution indicators (OKLCH/hex format)',
     ),
-  "--warning-foreground": z
+  '--warning-foreground': z
     .string()
     .optional()
-    .describe("Text color on warning elements (OKLCH/hex format)"),
-  "--border": z
+    .describe('Text color on warning elements (OKLCH/hex format)'),
+  '--border': z
     .string()
     .optional()
-    .describe("Border color for elements (OKLCH/hex format)"),
-  "--input": z
+    .describe('Border color for elements (OKLCH/hex format)'),
+  '--input': z
     .string()
     .optional()
-    .describe("Border color for input fields (OKLCH/hex format)"),
-  "--sidebar": z
+    .describe('Border color for input fields (OKLCH/hex format)'),
+  '--sidebar': z
     .string()
     .optional()
-    .describe("Background color for sidebar navigation (OKLCH/hex format)"),
-  "--splash": z
+    .describe('Background color for sidebar navigation (OKLCH/hex format)'),
+  '--splash': z
     .string()
     .optional()
     .describe(
-      "Background color for splash screen animation (OKLCH/hex format)",
+      'Background color for splash screen animation (OKLCH/hex format)',
     ),
 });
 
 const fontSchema = z.union([
   z.object({
-    type: z.literal("Google Fonts").describe("Use a Google Fonts font"),
+    type: z.literal('Google Fonts').describe('Use a Google Fonts font'),
     name: z
       .string()
       .describe(
@@ -161,9 +153,9 @@ const fontSchema = z.union([
       ),
   }),
   z.object({
-    type: z.literal("Custom").describe("Use a custom uploaded font"),
-    name: z.string().describe("Display name for the custom font"),
-    url: z.string().describe("URL to the custom font file"),
+    type: z.literal('Custom').describe('Use a custom uploaded font'),
+    name: z.string().describe('Display name for the custom font'),
+    url: z.string().describe('URL to the custom font file'),
   }),
 ]);
 
@@ -172,20 +164,20 @@ const enhancedThemeSchema = z
     variables: themeVariablesSchema
       .optional()
       .describe(
-        "CSS custom properties for theme colors. Use OKLCH format (preferred) or hex colors.",
+        'CSS custom properties for theme colors. Use OKLCH format (preferred) or hex colors.',
       ),
-    picture: z.string().optional().describe("URL to team avatar/logo image"),
+    picture: z.string().optional().describe('URL to team avatar/logo image'),
     font: fontSchema
       .optional()
-      .describe("Font configuration for the workspace"),
+      .describe('Font configuration for the workspace'),
   })
   .describe(
-    "Theme configuration for the workspace. Only include the properties you want to change - existing values will be preserved.",
+    'Theme configuration for the workspace. Only include the properties you want to change - existing values will be preserved.',
   );
 
 const ToolPermissionSchema = z.object({
   toolName: z.string(),
-  effect: z.enum(["allow", "deny"]),
+  effect: z.enum(['allow', 'deny']),
   policyId: z.string().optional(),
 });
 
@@ -197,7 +189,7 @@ const MemberRoleActionSchema = z.object({
 });
 
 const RoleFormDataSchema = z.object({
-  name: z.string().min(1, "Role name is required"),
+  name: z.string().min(1, 'Role name is required'),
   description: z.string().optional(),
   tools: ToolsSchema,
   agents: z.array(z.string()).optional().default([]),
@@ -218,12 +210,12 @@ export type ToolPermission = z.infer<typeof ToolPermissionSchema>;
 type ToolsMap = z.infer<typeof ToolsSchema>;
 
 export const sanitizeTeamName = (name: string): string => {
-  if (!name) return "";
+  if (!name) return '';
   const nameWithoutAccents = removeNameAccents(name);
   return nameWithoutAccents
     .trim()
-    .replace(/\s+/g, " ")
-    .replace(/[^\w\s\-.+@]/g, "");
+    .replace(/\s+/g, ' ')
+    .replace(/[^\w\s\-.+@]/g, '');
 };
 
 export const getAvatarFromTheme = (
@@ -232,13 +224,13 @@ export const getAvatarFromTheme = (
 ): Promise<string | null> => {
   if (
     theme !== null &&
-    typeof theme === "object" &&
-    "picture" in theme &&
-    typeof theme.picture === "string"
+    typeof theme === 'object' &&
+    'picture' in theme &&
+    typeof theme.picture === 'string'
   ) {
     const picture = theme.picture as string;
     return createSignedUrl(picture).catch((error) => {
-      console.error("Error getting avatar from theme", error);
+      console.error('Error getting avatar from theme', error);
       return null;
     });
   }
@@ -246,7 +238,7 @@ export const getAvatarFromTheme = (
 };
 
 export const removeNameAccents = (name: string): string => {
-  return name.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+  return name.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
 };
 
 export const buildSignedUrlCreator = ({
@@ -267,7 +259,7 @@ export const buildSignedUrlCreator = ({
   };
 };
 
-const cache = new WebCache<string>("monthly-plan-credits-reward");
+const cache = new WebCache<string>('monthly-plan-credits-reward');
 const TWELVE_HOURS_IN_SECONDS = 12 * 60 * 60;
 
 const ensureMonthlyPlanCreditsReward = async ({
@@ -283,7 +275,7 @@ const ensureMonthlyPlanCreditsReward = async ({
   const year = String(new Date().getFullYear());
 
   if (!isValidMonth(month) || !isValidYear(year)) {
-    throw new Error("Invalid month or year");
+    throw new Error('Invalid month or year');
   }
 
   const cacheKey = `${slug}-${month}-${year}`;
@@ -304,13 +296,13 @@ const ensureMonthlyPlanCreditsReward = async ({
   );
 
   const transaction: Transaction = {
-    type: "WorkspaceGenCreditReward",
+    type: 'WorkspaceGenCreditReward',
     amount: monthlyRewardMicroDollars.toMicrodollarString(),
     workspace,
     timestamp: new Date(),
   };
 
-  const response = await wallet["PUT /transactions/:id"](
+  const response = await wallet['PUT /transactions/:id'](
     {
       id: transactionId,
     },
@@ -331,13 +323,13 @@ const ensureMonthlyPlanCreditsReward = async ({
 };
 
 const getIntegrationIdForGroup = (wellKnownGroup?: string) => {
-  return wellKnownGroup ? `i:${wellKnownGroup}` : "";
+  return wellKnownGroup ? `i:${wellKnownGroup}` : '';
 };
 
 const getMatchConditionForTool = (
   tool: ToolPermission,
   integrationId: string,
-): Pick<Statement, "matchCondition"> => {
+): Pick<Statement, 'matchCondition'> => {
   const resourceGroup = resourceGroupMap.get(tool.toolName);
 
   // if tool is well known, doesn't add the integrationId to the matchCondition
@@ -350,7 +342,7 @@ const getMatchConditionForTool = (
 
   return {
     matchCondition: {
-      resource: "is_integration",
+      resource: 'is_integration',
       integrationId,
     },
   };
@@ -390,11 +382,11 @@ async function assignRoleToMembers(
 
   // Assign role to specified members
   const { data: dbMembers } = await c.db
-    .from("members")
-    .select("profiles(email), user_id")
-    .eq("team_id", teamId)
+    .from('members')
+    .select('profiles(email), user_id')
+    .eq('team_id', teamId)
     .in(
-      "user_id",
+      'user_id',
       members.map((m) => m.user_id),
     );
 
@@ -419,8 +411,8 @@ async function assignRoleToMembers(
 }
 
 export const getTeam = createTool({
-  name: "TEAMS_GET",
-  description: "Get a team by slug",
+  name: 'TEAMS_GET',
+  description: 'Get a team by slug',
   inputSchema: z.object({
     slug: z.string(),
   }),
@@ -430,7 +422,7 @@ export const getTeam = createTool({
     await assertTeamResourceAccess(c.tool.name, slug, c);
 
     const { data: teamData, error } = await c.db
-      .from("teams")
+      .from('teams')
       .select(`
         *,
         deco_chat_views (
@@ -441,12 +433,12 @@ export const getTeam = createTool({
           metadata
         )
       `)
-      .eq("slug", slug)
+      .eq('slug', slug)
       .single();
 
     if (error) throw error;
     if (!teamData) {
-      throw new NotFoundError("Team not found or user does not have access");
+      throw new NotFoundError('Team not found or user does not have access');
     }
 
     await ensureMonthlyPlanCreditsReward({
@@ -455,7 +447,7 @@ export const getTeam = createTool({
       context: c,
     });
 
-    const teamWithoutAvatar: Omit<TeamWithViews, "avatar_url"> = {
+    const teamWithoutAvatar: Omit<TeamWithViews, 'avatar_url'> = {
       id: teamData.id,
       name: teamData.name,
       slug,
@@ -475,7 +467,7 @@ export const getTeam = createTool({
         avatar_url: await getAvatarFromTheme(teamData.theme, signedUrlCreator),
       };
     } catch (error) {
-      console.error("Error getting signed url creator", error);
+      console.error('Error getting signed url creator', error);
       return {
         ...teamWithoutAvatar,
         avatar_url: null,
@@ -485,8 +477,8 @@ export const getTeam = createTool({
 });
 
 export const createTeam = createTool({
-  name: "TEAMS_CREATE",
-  description: "Create a new team",
+  name: 'TEAMS_CREATE',
+  description: 'Create a new team',
   inputSchema: z.object({
     name: z.string(),
     slug: z.string().optional(),
@@ -510,19 +502,19 @@ export const createTeam = createTool({
     // Enforce unique slug if provided
     if (slug) {
       const { data: existingTeam, error: slugError } = await c.db
-        .from("teams")
-        .select("id")
-        .eq("slug", slug)
+        .from('teams')
+        .select('id')
+        .eq('slug', slug)
         .maybeSingle();
       if (slugError) throw slugError;
       if (existingTeam) {
-        throw new UserInputError("A team with this slug already exists.");
+        throw new UserInputError('A team with this slug already exists.');
       }
     }
 
     // Create the team
     const { data: team, error: createError } = await c.db
-      .from("teams")
+      .from('teams')
       .insert([{ name: sanitizeTeamName(name), slug, stripe_subscription_id }])
       .select()
       .single();
@@ -531,14 +523,14 @@ export const createTeam = createTool({
 
     // Add the creator as an admin member
     const { data: member, error: memberError } = await c.db
-      .from("members")
+      .from('members')
       .insert([
         {
           team_id: team.id,
           user_id: user.id,
           activity: [
             {
-              action: "add_member",
+              action: 'add_member',
               timestamp: new Date().toISOString(),
             },
           ],
@@ -548,12 +540,12 @@ export const createTeam = createTool({
       .single();
 
     if (memberError) {
-      await c.db.from("teams").delete().eq("id", team.id);
+      await c.db.from('teams').delete().eq('id', team.id);
       throw memberError;
     }
 
     // Set the member's role_id to 1 in member_roles
-    const { error: roleError } = await c.db.from("member_roles").insert([
+    const { error: roleError } = await c.db.from('member_roles').insert([
       {
         member_id: member.id,
         role_id: OWNER_ROLE_ID,
@@ -567,13 +559,13 @@ export const createTeam = createTool({
 });
 
 export const updateTeam = createTool({
-  name: "TEAMS_UPDATE",
-  description: "Update an existing team including theme customization",
+  name: 'TEAMS_UPDATE',
+  description: 'Update an existing team including theme customization',
   inputSchema: z.object({
-    id: z.number().describe("The id of the team to update"),
+    id: z.number().describe('The id of the team to update'),
     data: z.object({
-      name: z.string().optional().describe("Team name"),
-      slug: z.string().optional().describe("Team URL slug"),
+      name: z.string().optional().describe('Team name'),
+      slug: z.string().optional().describe('Team URL slug'),
       stripe_subscription_id: z.string().optional(),
       theme: enhancedThemeSchema.optional(),
     }),
@@ -587,22 +579,22 @@ export const updateTeam = createTool({
     // Enforce unique slug if being updated
     if (data.slug) {
       const { data: existingTeam, error: slugError } = await c.db
-        .from("teams")
-        .select("id")
-        .eq("slug", data.slug)
-        .neq("id", id)
+        .from('teams')
+        .select('id')
+        .eq('slug', data.slug)
+        .neq('id', id)
         .maybeSingle();
       if (slugError) throw slugError;
       if (existingTeam) {
-        throw new UserInputError("A team with this slug already exists.");
+        throw new UserInputError('A team with this slug already exists.');
       }
     }
 
     // Get current team data to merge theme
     const { data: currentTeam, error: getError } = await c.db
-      .from("teams")
-      .select("theme")
-      .eq("id", id)
+      .from('teams')
+      .select('theme')
+      .eq('id', id)
       .single();
 
     if (getError) throw getError;
@@ -611,13 +603,13 @@ export const updateTeam = createTool({
 
     // Update the team
     const { data: updatedTeam, error: updateError } = await c.db
-      .from("teams")
+      .from('teams')
       .update({
         ...data,
         ...(data.name ? { name: sanitizeTeamName(data.name) } : {}),
         ...(mergedTheme ? { theme: mergedTheme as Json } : {}),
       })
-      .eq("id", id)
+      .eq('id', id)
       .select()
       .single();
 
@@ -637,8 +629,8 @@ export const updateTeam = createTool({
 });
 
 export const deleteTeam = createTool({
-  name: "TEAMS_DELETE",
-  description: "Delete a team by id",
+  name: 'TEAMS_DELETE',
+  description: 'Delete a team by id',
   inputSchema: z.object({
     teamId: z.number(),
   }),
@@ -648,25 +640,25 @@ export const deleteTeam = createTool({
     await assertTeamResourceAccess(c.tool.name, teamId, c);
 
     const members = await c.db
-      .from("members")
-      .select("id")
-      .eq("team_id", teamId);
+      .from('members')
+      .select('id')
+      .eq('team_id', teamId);
 
     const memberIds = members.data?.map((member) => Number(member.id));
 
     if (!memberIds) {
-      return { data: null, error: "No members found" };
+      return { data: null, error: 'No members found' };
     }
 
     // TODO: delete roles, policies and role_policy
-    await c.db.from("member_roles").delete().in("member_id", memberIds);
-    await c.db.from("members").delete().eq("team_id", teamId);
+    await c.db.from('member_roles').delete().in('member_id', memberIds);
+    await c.db.from('members').delete().eq('team_id', teamId);
 
     const { error } = await c.db
-      .from("teams")
+      .from('teams')
       .delete()
-      .eq("id", teamId)
-      .select("id");
+      .eq('id', teamId)
+      .select('id');
 
     if (error) throw error;
     return { success: true };
@@ -674,8 +666,8 @@ export const deleteTeam = createTool({
 });
 
 export const listTeams = createTool({
-  name: "TEAMS_LIST",
-  description: "List teams for the current user",
+  name: 'TEAMS_LIST',
+  description: 'List teams for the current user',
   inputSchema: z.object({}),
   outputSchema: z.object({
     items: z.array(z.any()),
@@ -687,7 +679,7 @@ export const listTeams = createTool({
     const user = c.user;
 
     const { data, error } = await c.db
-      .from("teams")
+      .from('teams')
       .select(`
         id,
         name,
@@ -700,8 +692,8 @@ export const listTeams = createTool({
           admin
         )
       `)
-      .eq("members.user_id", user.id)
-      .is("members.deleted_at", null);
+      .eq('members.user_id', user.id)
+      .is('members.deleted_at', null);
 
     if (error) {
       console.error(error);
@@ -730,8 +722,8 @@ export const listTeams = createTool({
 });
 
 export const getWorkspaceTheme = createTool({
-  name: "TEAMS_GET_THEME",
-  description: "Get the theme for a workspace",
+  name: 'TEAMS_GET_THEME',
+  description: 'Get the theme for a workspace',
   inputSchema: z.object({
     slug: z.string(),
   }),
@@ -740,16 +732,16 @@ export const getWorkspaceTheme = createTool({
     const { slug } = props;
 
     const { data: team, error } = await c.db
-      .from("teams")
-      .select("theme")
-      .eq("slug", slug)
+      .from('teams')
+      .select('theme')
+      .eq('slug', slug)
       .maybeSingle();
 
     if (error) throw error;
 
     const _theme = team?.theme as Theme | null;
 
-    if (!_theme || typeof _theme !== "object") {
+    if (!_theme || typeof _theme !== 'object') {
       return { theme: {} };
     }
 
@@ -769,9 +761,8 @@ export const getWorkspaceTheme = createTool({
 });
 
 export const createTeamRole = createTool({
-  name: "TEAM_ROLE_CREATE",
-  description:
-    "Create a new team role with associated policies and permissions",
+  name: 'TEAM_ROLE_CREATE',
+  description: 'Create a new team role with associated policies and permissions',
   inputSchema: z.object({
     teamId: z.number(),
     roleData: RoleFormDataSchema,
@@ -818,16 +809,15 @@ export const createTeamRole = createTool({
         members: members || [],
       };
     } catch (error) {
-      console.error("Error creating team role:", error);
-      throw new InternalServerError("Failed to create team role");
+      console.error('Error creating team role:', error);
+      throw new InternalServerError('Failed to create team role');
     }
   },
 });
 
 export const deleteTeamRole = createTool({
-  name: "TEAM_ROLE_DELETE",
-  description:
-    "Delete a team role and its associated policies (only team-specific roles)",
+  name: 'TEAM_ROLE_DELETE',
+  description: 'Delete a team role and its associated policies (only team-specific roles)',
   inputSchema: z.object({
     teamId: z.number(),
     roleId: z.number(),
@@ -836,7 +826,7 @@ export const deleteTeamRole = createTool({
     const { teamId, roleId } = props;
 
     if (teamId === null) {
-      throw new UserInputError("Team ID is required");
+      throw new UserInputError('Team ID is required');
     }
 
     await assertTeamResourceAccess(c.tool.name, teamId, c);
@@ -848,21 +838,21 @@ export const deleteTeamRole = createTool({
     } catch (error) {
       if (
         error instanceof Error &&
-        error.message.includes("Cannot delete system roles")
+        error.message.includes('Cannot delete system roles')
       ) {
         throw new UserInputError(
-          "Cannot delete system roles. Only team-specific roles can be deleted.",
+          'Cannot delete system roles. Only team-specific roles can be deleted.',
         );
       }
-      console.error("Error deleting team role:", error);
-      throw new InternalServerError("Failed to delete team role");
+      console.error('Error deleting team role:', error);
+      throw new InternalServerError('Failed to delete team role');
     }
   },
 });
 
 export const updateTeamRole = createTool({
-  name: "TEAM_ROLE_UPDATE",
-  description: "Update a team role and its associated policies",
+  name: 'TEAM_ROLE_UPDATE',
+  description: 'Update a team role and its associated policies',
   inputSchema: z.object({
     teamId: z.number(),
     roleId: z.number(),
@@ -890,7 +880,7 @@ export const updateTeamRole = createTool({
       );
 
       if (!updatedRole) {
-        throw new InternalServerError("Failed to update role");
+        throw new InternalServerError('Failed to update role');
       }
 
       if (members && members.length > 0) {
@@ -909,15 +899,15 @@ export const updateTeamRole = createTool({
         members: members || [],
       };
     } catch (error) {
-      console.error("Error updating team role:", error);
-      throw new InternalServerError("Failed to update team role");
+      console.error('Error updating team role:', error);
+      throw new InternalServerError('Failed to update team role');
     }
   },
 });
 
 export const getTeamRole = createTool({
-  name: "TEAM_ROLE_GET",
-  description: "Get detailed information about a specific team role",
+  name: 'TEAM_ROLE_GET',
+  description: 'Get detailed information about a specific team role',
   inputSchema: z.object({
     teamId: z.number(),
     roleId: z.number(),
@@ -942,13 +932,13 @@ export const getTeamRole = createTool({
 
       // Get assigned members
       const { data: memberRoles } = await c.db
-        .from("member_roles")
-        .select("role_id, members!inner(team_id, user_id)")
-        .eq("role_id", roleId)
-        .eq("members.team_id", teamId);
+        .from('member_roles')
+        .select('role_id, members!inner(team_id, user_id)')
+        .eq('role_id', roleId)
+        .eq('members.team_id', teamId);
 
       const getIntegrationId = (statement: Statement) => {
-        if (statement.matchCondition?.resource === "is_integration") {
+        if (statement.matchCondition?.resource === 'is_integration') {
           const { uuid: integrationId } = parseId(
             statement.matchCondition.integrationId,
           );
@@ -980,7 +970,7 @@ export const getTeamRole = createTool({
       // Extract member user IDs with grant action (existing members have granted access)
       const members = memberRoles?.map((mr) => ({
         user_id: mr.members.user_id,
-        action: "grant" as const,
+        action: 'grant' as const,
       })) || [];
 
       return {
@@ -993,28 +983,28 @@ export const getTeamRole = createTool({
         members,
       };
     } catch (error) {
-      console.error("Error getting team role:", error);
+      console.error('Error getting team role:', error);
       if (error instanceof NotFoundError) {
         throw error;
       }
-      throw new InternalServerError("Failed to get team role");
+      throw new InternalServerError('Failed to get team role');
     }
   },
 });
 
 export const addView = createTool({
-  name: "TEAMS_ADD_VIEW",
-  description: "Add a custom view to a team",
+  name: 'TEAMS_ADD_VIEW',
+  description: 'Add a custom view to a team',
   inputSchema: z.object({
     view: z
       .object({
-        id: z.string().describe("Unique identifier for the view"),
-        title: z.string().describe("Display title for the view"),
-        icon: z.string().describe("Icon identifier for the view"),
-        type: z.literal("custom").describe("Type of view (must be 'custom')"),
-        url: z.string().describe("URL for the custom view"),
+        id: z.string().describe('Unique identifier for the view'),
+        title: z.string().describe('Display title for the view'),
+        icon: z.string().describe('Icon identifier for the view'),
+        type: z.literal('custom').describe("Type of view (must be 'custom')"),
+        url: z.string().describe('URL for the custom view'),
       })
-      .describe("View configuration to add"),
+      .describe('View configuration to add'),
   }),
   handler: async (props, c) => {
     const { view } = props;
@@ -1023,34 +1013,34 @@ export const addView = createTool({
     const slug = c.workspace.slug;
 
     const { data: team, error: teamError } = await c.db
-      .from("teams")
-      .select("id")
-      .eq("slug", slug)
+      .from('teams')
+      .select('id')
+      .eq('slug', slug)
       .single();
 
     if (teamError) throw teamError;
     if (!team) {
-      throw new NotFoundError("Team not found.");
+      throw new NotFoundError('Team not found.');
     }
 
     await assertTeamResourceAccess(c.tool.name, team.id, c);
 
     const { data: existingView, error: checkError } = await c.db
-      .from("deco_chat_views")
-      .select("id")
-      .eq("id", view.id)
-      .eq("team_id", team.id)
+      .from('deco_chat_views')
+      .select('id')
+      .eq('id', view.id)
+      .eq('team_id', team.id)
       .maybeSingle();
 
     if (checkError) throw checkError;
     if (existingView) {
       throw new UserInputError(
-        "A view with this ID already exists for this team.",
+        'A view with this ID already exists for this team.',
       );
     }
 
     const { data: newView, error: insertError } = await c.db
-      .from("deco_chat_views")
+      .from('deco_chat_views')
       .insert([
         {
           id: view.id,
@@ -1073,10 +1063,10 @@ export const addView = createTool({
 });
 
 export const removeView = createTool({
-  name: "TEAMS_REMOVE_VIEW",
-  description: "Remove a custom view from a team",
+  name: 'TEAMS_REMOVE_VIEW',
+  description: 'Remove a custom view from a team',
   inputSchema: z.object({
-    viewId: z.string().describe("The ID of the view to remove"),
+    viewId: z.string().describe('The ID of the view to remove'),
   }),
   handler: async (props, c) => {
     const { viewId } = props;
@@ -1086,37 +1076,37 @@ export const removeView = createTool({
 
     // Get team by slug to get the team ID
     const { data: team, error: teamError } = await c.db
-      .from("teams")
-      .select("id")
-      .eq("slug", slug)
+      .from('teams')
+      .select('id')
+      .eq('slug', slug)
       .single();
 
     if (teamError) throw teamError;
     if (!team) {
-      throw new NotFoundError("Team not found.");
+      throw new NotFoundError('Team not found.');
     }
 
     await assertTeamResourceAccess(c.tool.name, team.id, c);
 
     // Check if view exists
     const { data: existingView, error: checkError } = await c.db
-      .from("deco_chat_views")
-      .select("id")
-      .eq("id", viewId)
-      .eq("team_id", team.id)
+      .from('deco_chat_views')
+      .select('id')
+      .eq('id', viewId)
+      .eq('team_id', team.id)
       .maybeSingle();
 
     if (checkError) throw checkError;
     if (!existingView) {
-      throw new NotFoundError("View not found for this team.");
+      throw new NotFoundError('View not found for this team.');
     }
 
     // Remove the view
     const { error: deleteError } = await c.db
-      .from("deco_chat_views")
+      .from('deco_chat_views')
       .delete()
-      .eq("id", viewId)
-      .eq("team_id", team.id);
+      .eq('id', viewId)
+      .eq('team_id', team.id);
 
     if (deleteError) throw deleteError;
 

@@ -1,8 +1,8 @@
-import { type Tool } from "../rich-text.tsx";
-import Mention from "@tiptap/extension-mention";
-import { ReactNodeViewRenderer } from "@tiptap/react";
-import { suggestion } from "./tool-suggestion.ts";
-import ToolMentionNode from "./tool-mention-node.tsx";
+import { type Tool } from '../rich-text.tsx';
+import Mention from '@tiptap/extension-mention';
+import { ReactNodeViewRenderer } from '@tiptap/react';
+import { suggestion } from './tool-suggestion.ts';
+import ToolMentionNode from './tool-mention-node.tsx';
 
 export const toolMentions = (tools: Tool[]) => {
   const toolMap = new Map<string, Tool>(tools.map((tool) => [tool.id, tool]));
@@ -13,10 +13,10 @@ export const toolMentions = (tools: Tool[]) => {
     },
     addAttributes() {
       return {
-        type: { default: "tool-mention" },
-        id: { default: "" },
-        label: { default: "" },
-        mentionType: { default: "tool" },
+        type: { default: 'tool-mention' },
+        id: { default: '' },
+        label: { default: '' },
+        mentionType: { default: 'tool' },
       };
     },
     parseHTML() {
@@ -26,13 +26,13 @@ export const toolMentions = (tools: Tool[]) => {
           getAttrs: (node) => {
             if (!(node instanceof HTMLElement)) return false;
 
-            const id = node.getAttribute("data-id");
+            const id = node.getAttribute('data-id');
             if (!id) return false;
 
             const tool = toolMap.get(id);
             return {
               id,
-              mentionType: node.getAttribute("data-mention-type"),
+              mentionType: node.getAttribute('data-mention-type'),
               label: tool?.name || id,
             };
           },
@@ -41,11 +41,11 @@ export const toolMentions = (tools: Tool[]) => {
     },
     renderHTML({ node }) {
       return [
-        "span",
+        'span',
         {
-          "data-type": "tool-mention",
-          "data-id": node.attrs.id,
-          "data-mention-type": node.attrs.mentionType,
+          'data-type': 'tool-mention',
+          'data-id': node.attrs.id,
+          'data-mention-type': node.attrs.mentionType,
         },
         `@${node.attrs.label}`,
       ];

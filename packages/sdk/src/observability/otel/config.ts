@@ -1,4 +1,4 @@
-import { context } from "@opentelemetry/api";
+import { context } from '@opentelemetry/api';
 import {
   type ExporterConfig,
   isSpanProcessorConfig,
@@ -6,25 +6,20 @@ import {
   type ResolvedTraceConfig,
   type TraceConfig,
   type Trigger,
-} from "./types.ts";
-import { W3CTraceContextPropagator } from "@opentelemetry/core";
+} from './types.ts';
+import { W3CTraceContextPropagator } from '@opentelemetry/core';
 import {
   AlwaysOnSampler,
   type ReadableSpan,
   type Sampler,
   type SpanExporter,
-} from "@opentelemetry/sdk-trace-base";
+} from '@opentelemetry/sdk-trace-base';
 
-import { OTLPExporter } from "./exporter.ts";
-import {
-  createSampler,
-  isHeadSampled,
-  isRootErrorSpan,
-  multiTailSampler,
-} from "./sampling.ts";
-import { BatchTraceSpanProcessor } from "./spanprocessor.ts";
+import { OTLPExporter } from './exporter.ts';
+import { createSampler, isHeadSampled, isRootErrorSpan, multiTailSampler } from './sampling.ts';
+import { BatchTraceSpanProcessor } from './spanprocessor.ts';
 
-const configSymbol = Symbol("Otel Workers Tracing Configuration");
+const configSymbol = Symbol('Otel Workers Tracing Configuration');
 
 export type Initialiser = (
   env: Record<string, unknown>,
@@ -56,16 +51,14 @@ export function parseConfig(supplied: TraceConfig): ResolvedTraceConfig {
   if (isSpanProcessorConfig(supplied)) {
     const headSampleConf = supplied.sampling?.headSampler;
     const headSampler = headSampleConf
-      ? isSampler(headSampleConf)
-        ? headSampleConf
-        : createSampler(headSampleConf)
+      ? isSampler(headSampleConf) ? headSampleConf : createSampler(headSampleConf)
       : new AlwaysOnSampler();
     const spanProcessors = Array.isArray(supplied.spanProcessors)
       ? supplied.spanProcessors
       : [supplied.spanProcessors];
     if (spanProcessors.length === 0) {
       console.log(
-        "Warning! You must either specify an exporter or your own SpanProcessor(s)/Exporter combination in the open-telemetry configuration.",
+        'Warning! You must either specify an exporter or your own SpanProcessor(s)/Exporter combination in the open-telemetry configuration.',
       );
     }
     return {
@@ -89,10 +82,8 @@ export function parseConfig(supplied: TraceConfig): ResolvedTraceConfig {
       spanProcessors,
       propagator: supplied.propagator || new W3CTraceContextPropagator(),
       instrumentation: {
-        instrumentGlobalCache:
-          supplied.instrumentation?.instrumentGlobalCache ?? true,
-        instrumentGlobalFetch:
-          supplied.instrumentation?.instrumentGlobalFetch ?? true,
+        instrumentGlobalCache: supplied.instrumentation?.instrumentGlobalCache ?? true,
+        instrumentGlobalFetch: supplied.instrumentation?.instrumentGlobalFetch ?? true,
       },
     };
   } else {
@@ -124,10 +115,8 @@ export function parseConfig(supplied: TraceConfig): ResolvedTraceConfig {
         },
         propagator: supplied.propagator || new W3CTraceContextPropagator(),
         instrumentation: {
-          instrumentGlobalCache:
-            supplied.instrumentation?.instrumentGlobalCache ?? true,
-          instrumentGlobalFetch:
-            supplied.instrumentation?.instrumentGlobalFetch ?? true,
+          instrumentGlobalCache: supplied.instrumentation?.instrumentGlobalCache ?? true,
+          instrumentGlobalFetch: supplied.instrumentation?.instrumentGlobalFetch ?? true,
         },
       } as ResolvedTraceConfig;
     }

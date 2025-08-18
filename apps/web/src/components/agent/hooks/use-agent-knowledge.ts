@@ -1,10 +1,4 @@
-import {
-  type Dispatch,
-  type SetStateAction,
-  useEffect,
-  useMemo,
-  useRef,
-} from "react";
+import { type Dispatch, type SetStateAction, useEffect, useMemo, useRef } from 'react';
 import {
   type Agent,
   type Integration,
@@ -15,12 +9,9 @@ import {
   useKnowledgeAddFile,
   useReadFile,
   useWriteFile,
-} from "@deco/sdk";
-import {
-  getKnowledgeBaseIntegrationId,
-  parseToValidIndexName,
-} from "@deco/sdk/utils";
-import { toast } from "@deco/ui/components/sonner.tsx";
+} from '@deco/sdk';
+import { getKnowledgeBaseIntegrationId, parseToValidIndexName } from '@deco/sdk/utils';
+import { toast } from '@deco/ui/components/sonner.tsx';
 
 interface UseAgentKnowledgeIntegrationProps {
   setIntegrationTools: (integrationId: string, tools: string[]) => void;
@@ -29,7 +20,7 @@ interface UseAgentKnowledgeIntegrationProps {
 
 export const useAgentKnowledgeIntegration = ({
   agent,
-}: Pick<UseAgentKnowledgeIntegrationProps, "agent">) => {
+}: Pick<UseAgentKnowledgeIntegrationProps, 'agent'>) => {
   const { id: idProp } = agent;
   const knowledgeName = useMemo(() => parseToValidIndexName(idProp), [idProp]);
   const knowledgeIntegrationId = useMemo(
@@ -76,7 +67,7 @@ export const useCreateAgentKnowledgeIntegration = ({
     const kb = await createKnowledge.mutateAsync({ name: knowledgeName });
     integrations.refetch();
 
-    setIntegrationTools(id, ["KNOWLEDGE_BASE_SEARCH"]);
+    setIntegrationTools(id, ['KNOWLEDGE_BASE_SEARCH']);
 
     return kb;
   };
@@ -87,8 +78,7 @@ export const useCreateAgentKnowledgeIntegration = ({
   };
 };
 
-export const agentKnowledgeBasePath = (agentId: string) =>
-  `agent/${agentId}/knowledge`;
+export const agentKnowledgeBasePath = (agentId: string) => `agent/${agentId}/knowledge`;
 
 const agentKnowledgeBaseFilepath = (agentId: string, path: string) =>
   `${agentKnowledgeBasePath(agentId)}/${path}`;
@@ -138,14 +128,14 @@ export const useUploadAgentKnowledgeFiles = ({
     knowledgeIntegration: Integration,
   ) => {
     if (!knowledgeIntegration.connection) {
-      throw new Error("Not found knowledge for this agent");
+      throw new Error('Not found knowledge for this agent');
     }
 
     try {
       // Upload each file using the writeFileMutation
       const uploadPromises = files.map(async (file) => {
         let fileWasUploaded = false;
-        let filePath = "";
+        let filePath = '';
 
         try {
           const filename = file.name;
@@ -155,7 +145,7 @@ export const useUploadAgentKnowledgeFiles = ({
 
           const fileMutateData = {
             path,
-            contentType: file.type || "application/octet-stream",
+            contentType: file.type || 'application/octet-stream',
             content: new Uint8Array(buffer),
           };
 
@@ -217,7 +207,7 @@ export const useUploadAgentKnowledgeFiles = ({
 
       await Promise.all(uploadPromises);
     } catch (error) {
-      console.error("Failed to upload some knowledge files:", error);
+      console.error('Failed to upload some knowledge files:', error);
     }
   };
 
@@ -234,7 +224,7 @@ export const useUploadAgentKnowledgeFiles = ({
     }
     const kbIntegration = knowledgeIntegration ??
       (await knowledeIntegrationPromise.current?.promise);
-    if (!kbIntegration) throw new Error("Not found knowledge for this agent");
+    if (!kbIntegration) throw new Error('Not found knowledge for this agent');
     return _uploadKnowledgeFiles(files, kbIntegration);
   };
 

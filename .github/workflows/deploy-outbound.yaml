@@ -5,7 +5,7 @@ on:
     branches:
       - main
     paths:
-      - "apps/outbound/**"
+      - 'apps/outbound/**'
 
 jobs:
   deploy:
@@ -25,7 +25,7 @@ jobs:
         with:
           apiToken: ${{ secrets.CF_API_TOKEN }}
           accountId: ${{ secrets.CF_ACCOUNT_ID }}
-          workingDirectory: "./apps/outbound"
+          workingDirectory: './apps/outbound'
           secrets: |
             SUPABASE_URL
             SUPABASE_SERVER_TOKEN

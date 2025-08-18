@@ -1,12 +1,12 @@
 // Utility functions for saving and reading session data securely
-import { join } from "path";
-import { homedir } from "os";
-import { promises as fs } from "fs";
-import type { User } from "@supabase/supabase-js";
-import { decodeJwt } from "jose";
-import { z } from "zod";
-import { createClient } from "./supabase.js";
-import process from "node:process";
+import { join } from 'path';
+import { homedir } from 'os';
+import { promises as fs } from 'fs';
+import type { User } from '@supabase/supabase-js';
+import { decodeJwt } from 'jose';
+import { z } from 'zod';
+import { createClient } from './supabase.js';
+import process from 'node:process';
 
 const SessionSchema = z.object({
   access_token: z.string().optional(),
@@ -29,7 +29,7 @@ export type SessionData = z.infer<typeof SessionSchema>;
  * Path to the session file in the user's home directory.
  */
 function getSessionPath(): string {
-  return join(homedir(), ".deco_auth_session.json");
+  return join(homedir(), '.deco_auth_session.json');
 }
 
 /**
@@ -53,13 +53,13 @@ export async function saveSession(data: {
 
   // Set file permissions to 600 (read/write for user only)
   // Skip chmod on Windows as it doesn't support Unix-style file permissions
-  if (process.platform !== "win32") {
+  if (process.platform !== 'win32') {
     try {
       await fs.chmod(sessionPath, 0o600);
     } catch (error) {
       // Silently ignore chmod errors on systems that don't support it
       console.warn(
-        "Warning: Could not set file permissions on session file:",
+        'Warning: Could not set file permissions on session file:',
         error instanceof Error ? error.message : String(error),
       );
     }
@@ -81,7 +81,7 @@ export async function readSession(): Promise<SessionData | null> {
 
   try {
     const sessionPath = getSessionPath();
-    const content = await fs.readFile(sessionPath, "utf-8");
+    const content = await fs.readFile(sessionPath, 'utf-8');
     return SessionSchema.safeParse(JSON.parse(content)).data ?? null;
   } catch (_error) {
     return null;
@@ -95,7 +95,7 @@ export async function deleteSession() {
   try {
     await fs.unlink(sessionPath);
   } catch (_error) {
-    console.warn("Session file not found");
+    console.warn('Session file not found');
   }
 
   await client.auth.signOut();
@@ -111,14 +111,14 @@ export async function getRequestAuthHeaders(): Promise<Record<string, string>> {
   }
 
   if (!session) {
-    throw new Error("Session not found. Please login again.");
+    throw new Error('Session not found. Please login again.');
   }
 
   // Extract tokens from session
   const { access_token, refresh_token } = session;
 
   if (!access_token || !refresh_token) {
-    throw new Error("Session expired. Please login again.");
+    throw new Error('Session expired. Please login again.');
   }
 
   // Create Supabase client (no cookies needed for this local op)
@@ -130,7 +130,7 @@ export async function getRequestAuthHeaders(): Promise<Record<string, string>> {
   });
 
   if (error) {
-    throw new Error("Session expired. Please login again.");
+    throw new Error('Session expired. Please login again.');
   }
 
   await saveSession(data);
@@ -138,10 +138,10 @@ export async function getRequestAuthHeaders(): Promise<Record<string, string>> {
   const setCookie = responseHeaders.getSetCookie();
 
   if (!setCookie.length) {
-    throw new Error("Session expired. Please login again.");
+    throw new Error('Session expired. Please login again.');
   }
 
-  const cookies = setCookie.map((cookie) => cookie.split(";")[0]).join("; ");
+  const cookies = setCookie.map((cookie) => cookie.split(';')[0]).join('; ');
 
   return { cookie: cookies };
 }
@@ -150,14 +150,14 @@ export async function getSessionToken(): Promise<string> {
   const session = await readSession();
 
   if (!session) {
-    throw new Error("Session not found. Please login again.");
+    throw new Error('Session not found. Please login again.');
   }
 
   // Extract tokens from session
   const { access_token, refresh_token } = session;
 
   if (!access_token || !refresh_token) {
-    throw new Error("Session expired. Please login again.");
+    throw new Error('Session expired. Please login again.');
   }
 
   return access_token;

@@ -1,6 +1,6 @@
-import { useEffect, useState } from "react";
-import decoLight from "../../assets/deco-light.svg?url";
-import decoDark from "../../assets/deco-dark.svg?url";
+import { useEffect, useState } from 'react';
+import decoLight from '../../assets/deco-light.svg?url';
+import decoDark from '../../assets/deco-dark.svg?url';
 
 interface LogoProps {
   className?: string;
@@ -8,7 +8,7 @@ interface LogoProps {
   height?: number;
 }
 
-export function Logo({ className = "", width = 68, height = 28 }: LogoProps) {
+export function Logo({ className = '', width = 68, height = 28 }: LogoProps) {
   const [isDark, setIsDark] = useState(false);
   const [isClient, setIsClient] = useState(false);
 
@@ -17,17 +17,17 @@ export function Logo({ className = "", width = 68, height = 28 }: LogoProps) {
 
     const checkTheme = () => {
       const _html = document.documentElement;
-      const savedTheme = localStorage.getItem("theme") || "auto";
+      const savedTheme = localStorage.getItem('theme') || 'auto';
 
       let isDarkTheme = false;
 
-      if (savedTheme === "auto") {
+      if (savedTheme === 'auto') {
         // Use system preference
         isDarkTheme = globalThis.matchMedia(
-          "(prefers-color-scheme: dark)",
+          '(prefers-color-scheme: dark)',
         ).matches;
       } else {
-        isDarkTheme = savedTheme === "dark";
+        isDarkTheme = savedTheme === 'dark';
       }
 
       setIsDark(isDarkTheme);
@@ -40,8 +40,8 @@ export function Logo({ className = "", width = 68, height = 28 }: LogoProps) {
     const observer = new MutationObserver((mutations) => {
       mutations.forEach((mutation) => {
         if (
-          mutation.type === "attributes" &&
-          mutation.attributeName === "data-theme"
+          mutation.type === 'attributes' &&
+          mutation.attributeName === 'data-theme'
         ) {
           checkTheme();
         }
@@ -50,16 +50,16 @@ export function Logo({ className = "", width = 68, height = 28 }: LogoProps) {
 
     observer.observe(document.documentElement, {
       attributes: true,
-      attributeFilter: ["data-theme"],
+      attributeFilter: ['data-theme'],
     });
 
     // Listen for system theme changes
-    const mediaQuery = globalThis.matchMedia("(prefers-color-scheme: dark)");
-    mediaQuery.addEventListener("change", checkTheme);
+    const mediaQuery = globalThis.matchMedia('(prefers-color-scheme: dark)');
+    mediaQuery.addEventListener('change', checkTheme);
 
     return () => {
       observer.disconnect();
-      mediaQuery.removeEventListener("change", checkTheme);
+      mediaQuery.removeEventListener('change', checkTheme);
     };
   }, []);
 
@@ -67,7 +67,7 @@ export function Logo({ className = "", width = 68, height = 28 }: LogoProps) {
   if (!isClient) {
     return (
       <div className={`relative ${className}`}>
-        <img src={decoLight} alt="Deco" width={width} height={height} />
+        <img src={decoLight} alt='Deco' width={width} height={height} />
       </div>
     );
   }
@@ -76,7 +76,7 @@ export function Logo({ className = "", width = 68, height = 28 }: LogoProps) {
     <div className={`relative ${className}`}>
       <img
         src={isDark ? decoDark : decoLight}
-        alt="Deco"
+        alt='Deco'
         width={width}
         height={height}
       />

@@ -1,10 +1,10 @@
-import { useCallback } from "react";
-import { useNavigate, useParams } from "react-router";
+import { useCallback } from 'react';
+import { useNavigate, useParams } from 'react-router';
 
 const joinPaths = (base: string | undefined, path: string) => {
-  const withoutStartingSlash = path.startsWith("/") ? path.slice(1) : path;
+  const withoutStartingSlash = path.startsWith('/') ? path.slice(1) : path;
 
-  return `/${[base, withoutStartingSlash].filter(Boolean).join("/")}`;
+  return `/${[base, withoutStartingSlash].filter(Boolean).join('/')}`;
 };
 
 export const useNavigateWorkspace = () => {

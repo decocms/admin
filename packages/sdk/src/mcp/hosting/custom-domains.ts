@@ -1,7 +1,7 @@
-import { resolveCname } from "node:dns";
-import { UserInputError } from "../../errors.ts";
-import type { AppContext } from "../context.ts";
-import { Entrypoint } from "./api.ts";
+import { resolveCname } from 'node:dns';
+import { UserInputError } from '../../errors.ts';
+import type { AppContext } from '../context.ts';
+import { Entrypoint } from './api.ts';
 
 export const assertsDomainOwnership = async (
   domain: string,
@@ -34,7 +34,7 @@ export const assertsDomainUniqueness = async (
   slug: string,
 ) => {
   const { data, error } = await c.db
-    .from("deco_chat_hosting_routes")
+    .from('deco_chat_hosting_routes')
     .select(`
       *,
       deco_chat_hosting_apps_deployments!deployment_id(
@@ -42,7 +42,7 @@ export const assertsDomainUniqueness = async (
         deco_chat_hosting_apps!hosting_app_id(slug, workspace)
       )
     `)
-    .eq("route_pattern", domain)
+    .eq('route_pattern', domain)
     .maybeSingle();
 
   if (error) {

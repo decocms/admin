@@ -1,4 +1,4 @@
-import { togglePanel } from "../../dock/index.tsx";
+import { togglePanel } from '../../dock/index.tsx';
 
 export const IMAGE_REGEXP = /\.png|\.jpg|\.jpeg|\.gif|\.webp/;
 
@@ -14,7 +14,7 @@ export const toIframeProps = (content: string) => {
   if (Array.isArray(content)) {
     const parsed = safeParse(content[0]?.text);
 
-    if (parsed && typeof parsed.entrypoint === "string") {
+    if (parsed && typeof parsed.entrypoint === 'string') {
       return {
         src: parsed.entrypoint,
       };
@@ -28,7 +28,7 @@ export const toIframeProps = (content: string) => {
       src: url.href,
     };
   } catch {
-    const html = new DOMParser().parseFromString(content, "text/html")
+    const html = new DOMParser().parseFromString(content, 'text/html')
       .documentElement.outerHTML;
 
     return {
@@ -44,7 +44,7 @@ export const openPreviewPanel = (
 ) => {
   togglePanel({
     id,
-    component: "preview",
+    component: 'preview',
     title,
     params: toIframeProps(content),
   });

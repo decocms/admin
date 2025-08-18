@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { useRef, useState } from 'react';
 
 export function useCopy() {
   const [copied, setCopied] = useState(false);

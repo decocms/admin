@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect } from 'react';
 
 /**
  * Shared hook to synchronise browser document metadata (title, favicon and
@@ -38,20 +38,20 @@ export function useDocumentMetadata({
     const faviconSelector = 'link[rel="icon"]';
     let faviconEl = document.querySelector<HTMLLinkElement>(faviconSelector);
     if (!faviconEl) {
-      faviconEl = document.createElement("link");
-      faviconEl.setAttribute("rel", "icon");
+      faviconEl = document.createElement('link');
+      faviconEl.setAttribute('rel', 'icon');
       document.head.appendChild(faviconEl);
     }
-    const prevFaviconHref = faviconEl.getAttribute("href");
+    const prevFaviconHref = faviconEl.getAttribute('href');
     if (favicon) {
-      faviconEl.setAttribute("href", favicon);
+      faviconEl.setAttribute('href', favicon);
     }
 
     /* ----------------- Meta tags -------------- */
     const trackedMeta: Array<{ el: HTMLMetaElement; prev: string | null }> = [];
 
     function setMeta(
-      attr: "name" | "property",
+      attr: 'name' | 'property',
       value: string,
       content: string | undefined,
     ) {
@@ -59,29 +59,29 @@ export function useDocumentMetadata({
       const selector = `meta[${attr}="${value}"]`;
       let el = document.querySelector<HTMLMetaElement>(selector);
       if (!el) {
-        el = document.createElement("meta");
+        el = document.createElement('meta');
         el.setAttribute(attr, value);
         document.head.appendChild(el);
       }
       // Track original value once per element.
       if (!trackedMeta.find((m) => m.el === el)) {
-        trackedMeta.push({ el, prev: el.getAttribute("content") });
+        trackedMeta.push({ el, prev: el.getAttribute('content') });
       }
-      el.setAttribute("content", content);
+      el.setAttribute('content', content);
     }
 
     if (title) {
-      setMeta("property", "og:title", title);
-      setMeta("name", "twitter:title", title);
+      setMeta('property', 'og:title', title);
+      setMeta('name', 'twitter:title', title);
     }
     if (description) {
-      setMeta("name", "description", description);
-      setMeta("property", "og:description", description);
-      setMeta("name", "twitter:description", description);
+      setMeta('name', 'description', description);
+      setMeta('property', 'og:description', description);
+      setMeta('name', 'twitter:description', description);
     }
     if (socialImage) {
-      setMeta("property", "og:image", socialImage);
-      setMeta("name", "twitter:image", socialImage);
+      setMeta('property', 'og:image', socialImage);
+      setMeta('name', 'twitter:image', socialImage);
     }
 
     /* ------------- Cleanup on unmount --------- */
@@ -90,7 +90,7 @@ export function useDocumentMetadata({
       document.title = previousTitle;
       // Favicon
       if (prevFaviconHref) {
-        faviconEl.setAttribute("href", prevFaviconHref);
+        faviconEl.setAttribute('href', prevFaviconHref);
       } else {
         // If there was no favicon before, remove the tag to leave DOM clean.
         faviconEl.remove();
@@ -100,7 +100,7 @@ export function useDocumentMetadata({
         if (prev === null) {
           el.remove();
         } else {
-          el.setAttribute("content", prev);
+          el.setAttribute('content', prev);
         }
       });
     };

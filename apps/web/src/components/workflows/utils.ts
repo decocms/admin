@@ -1,15 +1,15 @@
-import type { Workflow, WorkflowRun } from "./types.ts";
+import type { Workflow, WorkflowRun } from './types.ts';
 
 /**
  * Determines if a status is considered successful
  */
 function isSuccessStatus(status: string): boolean {
   const successStatuses = [
-    "success",
-    "succeeded",
-    "completed",
-    "complete",
-    "finished",
+    'success',
+    'succeeded',
+    'completed',
+    'complete',
+    'finished',
   ];
   return successStatuses.includes(status.toLowerCase());
 }
@@ -19,13 +19,13 @@ function isSuccessStatus(status: string): boolean {
  */
 function isErrorStatus(status: string): boolean {
   const errorStatuses = [
-    "failed",
-    "error",
-    "errored",
-    "failure",
-    "cancelled",
-    "canceled",
-    "timeout",
+    'failed',
+    'error',
+    'errored',
+    'failure',
+    'cancelled',
+    'canceled',
+    'timeout',
   ];
   return errorStatuses.includes(status.toLowerCase());
 }
@@ -35,11 +35,11 @@ function isErrorStatus(status: string): boolean {
  */
 function isRunningStatus(status: string): boolean {
   const runningStatuses = [
-    "running",
-    "in_progress",
-    "executing",
-    "active",
-    "processing",
+    'running',
+    'in_progress',
+    'executing',
+    'active',
+    'processing',
   ];
   return runningStatuses.includes(status.toLowerCase());
 }
@@ -49,11 +49,11 @@ function isRunningStatus(status: string): boolean {
  */
 export function getStatusBadgeVariant(
   status: string,
-): "default" | "destructive" | "secondary" | "outline" | "success" {
-  if (isSuccessStatus(status)) return "success";
-  if (isErrorStatus(status)) return "destructive";
-  if (isRunningStatus(status)) return "secondary";
-  return "outline";
+): 'default' | 'destructive' | 'secondary' | 'outline' | 'success' {
+  if (isSuccessStatus(status)) return 'success';
+  if (isErrorStatus(status)) return 'destructive';
+  if (isRunningStatus(status)) return 'secondary';
+  return 'outline';
 }
 
 /**
@@ -61,10 +61,10 @@ export function getStatusBadgeVariant(
  */
 export function formatStatus(status: string): string {
   switch (status) {
-    case "in_progress":
-      return "In Progress";
-    case "errored":
-      return "Error";
+    case 'in_progress':
+      return 'In Progress';
+    case 'errored':
+      return 'Error';
     default:
       return status.charAt(0).toUpperCase() + status.slice(1);
   }
@@ -76,30 +76,30 @@ export function formatStatus(status: string): string {
 export function sortWorkflowRuns(
   runs: WorkflowRun[],
   sortKey: string,
-  direction: "asc" | "desc",
+  direction: 'asc' | 'desc',
 ): WorkflowRun[] {
   return [...runs].sort((a, b) => {
     let aVal: string | number;
     let bVal: string | number;
 
     switch (sortKey) {
-      case "workflowName":
+      case 'workflowName':
         aVal = a.workflowName.toLowerCase();
         bVal = b.workflowName.toLowerCase();
         break;
-      case "runId":
+      case 'runId':
         aVal = a.runId.toLowerCase();
         bVal = b.runId.toLowerCase();
         break;
-      case "status":
+      case 'status':
         aVal = a.status.toLowerCase();
         bVal = b.status.toLowerCase();
         break;
-      case "createdAt":
+      case 'createdAt':
         aVal = a.createdAt;
         bVal = b.createdAt;
         break;
-      case "updatedAt":
+      case 'updatedAt':
         aVal = a.updatedAt || 0;
         bVal = b.updatedAt || 0;
         break;
@@ -108,14 +108,12 @@ export function sortWorkflowRuns(
         bVal = b.createdAt;
     }
 
-    if (typeof aVal === "string" && typeof bVal === "string") {
-      return direction === "asc"
-        ? aVal.localeCompare(bVal)
-        : bVal.localeCompare(aVal);
+    if (typeof aVal === 'string' && typeof bVal === 'string') {
+      return direction === 'asc' ? aVal.localeCompare(bVal) : bVal.localeCompare(aVal);
     }
 
-    if (aVal < bVal) return direction === "asc" ? -1 : 1;
-    if (aVal > bVal) return direction === "asc" ? 1 : -1;
+    if (aVal < bVal) return direction === 'asc' ? -1 : 1;
+    if (aVal > bVal) return direction === 'asc' ? 1 : -1;
     return 0;
   });
 }
@@ -126,26 +124,26 @@ export function sortWorkflowRuns(
 export function sortWorkflows(
   workflows: Workflow[],
   sortKey: string,
-  direction: "asc" | "desc",
+  direction: 'asc' | 'desc',
 ): Workflow[] {
   return [...workflows].sort((a, b) => {
     let aVal: string | number;
     let bVal: string | number;
 
     switch (sortKey) {
-      case "workflowName":
+      case 'workflowName':
         aVal = a.workflowName.toLowerCase();
         bVal = b.workflowName.toLowerCase();
         break;
-      case "runCount":
+      case 'runCount':
         aVal = a.runCount;
         bVal = b.runCount;
         break;
-      case "lastRun":
+      case 'lastRun':
         aVal = a.lastRunTimestamp || 0;
         bVal = b.lastRunTimestamp || 0;
         break;
-      case "lastStatus":
+      case 'lastStatus':
         aVal = a.lastRunStatus;
         bVal = b.lastRunStatus;
         break;
@@ -154,14 +152,12 @@ export function sortWorkflows(
         bVal = b.workflowName.toLowerCase();
     }
 
-    if (typeof aVal === "string" && typeof bVal === "string") {
-      return direction === "asc"
-        ? aVal.localeCompare(bVal)
-        : bVal.localeCompare(aVal);
+    if (typeof aVal === 'string' && typeof bVal === 'string') {
+      return direction === 'asc' ? aVal.localeCompare(bVal) : bVal.localeCompare(aVal);
     }
 
-    if (aVal < bVal) return direction === "asc" ? -1 : 1;
-    if (aVal > bVal) return direction === "asc" ? 1 : -1;
+    if (aVal < bVal) return direction === 'asc' ? -1 : 1;
+    if (aVal > bVal) return direction === 'asc' ? 1 : -1;
     return 0;
   });
 }

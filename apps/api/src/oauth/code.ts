@@ -1,11 +1,11 @@
-import { JwtIssuer, type JWTPayload } from "@deco/sdk/auth";
-import type { Context } from "hono";
-import { HTTPException } from "hono/http-exception";
-import { honoCtxToAppCtx } from "../api.ts";
-import type { AppEnv } from "../utils/context.ts";
+import { JwtIssuer, type JWTPayload } from '@deco/sdk/auth';
+import type { Context } from 'hono';
+import { HTTPException } from 'hono/http-exception';
+import { honoCtxToAppCtx } from '../api.ts';
+import type { AppEnv } from '../utils/context.ts';
 
 const tryParseUser = (user: unknown) => {
-  if (typeof user === "string") {
+  if (typeof user === 'string') {
     const { id, email, user_metadata } = JSON.parse(user);
     return { id, email, user_metadata };
   }
@@ -19,13 +19,13 @@ export const handleCodeExchange = async (c: Context<AppEnv>) => {
     const { code } = await c.req.json();
 
     const { data, error } = await appCtx.db
-      .from("deco_chat_oauth_codes")
-      .select("*")
-      .eq("code", code)
+      .from('deco_chat_oauth_codes')
+      .select('*')
+      .eq('code', code)
       .maybeSingle();
 
     if (error || !data) {
-      throw new HTTPException(500, { message: "Failed to exchange code" });
+      throw new HTTPException(500, { message: 'Failed to exchange code' });
     }
 
     const { claims } = data as unknown as { claims: JWTPayload };
@@ -40,13 +40,13 @@ export const handleCodeExchange = async (c: Context<AppEnv>) => {
     const issuer = await JwtIssuer.forKeyPair(keyPair);
     const token = await issuer.issue({
       ...claims,
-      user: "user" in claims ? tryParseUser(claims.user) : undefined,
+      user: 'user' in claims ? tryParseUser(claims.user) : undefined,
     });
 
-    await appCtx.db.from("deco_chat_oauth_codes").delete().eq("code", code);
+    await appCtx.db.from('deco_chat_oauth_codes').delete().eq('code', code);
 
     return c.json({ access_token: token });
   } catch {
-    throw new HTTPException(500, { message: "Failed to exchange code" });
+    throw new HTTPException(500, { message: 'Failed to exchange code' });
   }
 };

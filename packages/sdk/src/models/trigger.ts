@@ -1,4 +1,4 @@
-import { z } from "zod";
+import { z } from 'zod';
 
 /**
  * Schema for tool call validation
@@ -8,49 +8,49 @@ export const PromptSchema = z.object({
     .string()
     .optional()
     .describe(
-      "if not provided, the same conversation thread will be used, you can pass any string you want to use",
+      'if not provided, the same conversation thread will be used, you can pass any string you want to use',
     ),
   resourceId: z
     .string()
     .optional()
     .describe(
-      "if not provided, the same resource will be used, you can pass any string you want to use",
+      'if not provided, the same resource will be used, you can pass any string you want to use',
     ),
   messages: z
     .array(
       z.object({
-        role: z.enum(["user", "assistant", "system"]),
+        role: z.enum(['user', 'assistant', 'system']),
         content: z.string(),
       }),
     )
-    .describe("The messages to send to the LLM"),
+    .describe('The messages to send to the LLM'),
 });
 
 /**
  * Schema for cron trigger validation
  */
 export const CronBaseTriggerSchema = z.object({
-  title: z.string().describe("The title of the trigger"),
-  description: z.string().optional().describe("The description of the trigger"),
+  title: z.string().describe('The title of the trigger'),
+  description: z.string().optional().describe('The description of the trigger'),
   cronExp: z.string(),
-  type: z.literal("cron"),
+  type: z.literal('cron'),
 });
 
 /**
  * Schema for cron trigger validation
  */
 export const CronTriggerPromptAgentSchema = CronBaseTriggerSchema.extend({
-  agentId: z.string().describe("The agent ID to use for the trigger"),
+  agentId: z.string().describe('The agent ID to use for the trigger'),
   prompt: PromptSchema,
-  url: z.string().describe("The URL of the webhook").optional(),
+  url: z.string().describe('The URL of the webhook').optional(),
 });
 
 export const CallToolSchema = z.object({
-  integrationId: z.string().describe("The integration ID"),
-  toolName: z.string().describe("The tool name"),
+  integrationId: z.string().describe('The integration ID'),
+  toolName: z.string().describe('The tool name'),
   arguments: z
     .record(z.string(), z.unknown())
-    .describe("The arguments to pass to the tool")
+    .describe('The arguments to pass to the tool')
     .optional(),
 });
 export type CallTool = z.infer<typeof CallToolSchema>;
@@ -65,25 +65,25 @@ export const CronTriggerSchema = z.union([
 ]);
 
 export const WebhookBaseTriggerSchema = z.object({
-  title: z.string().describe("The title of the trigger"),
-  description: z.string().optional().describe("The description of the trigger"),
-  type: z.literal("webhook"),
-  url: z.string().optional().describe("The URL of the webhook"),
-  passphrase: z.string().optional().describe("The passphrase for the webhook"),
+  title: z.string().describe('The title of the trigger'),
+  description: z.string().optional().describe('The description of the trigger'),
+  type: z.literal('webhook'),
+  url: z.string().optional().describe('The URL of the webhook'),
+  passphrase: z.string().optional().describe('The passphrase for the webhook'),
 });
 
 /**
  * Schema for webhook trigger validation
  */
 export const WebhookTriggerAgentSchema = WebhookBaseTriggerSchema.extend({
-  agentId: z.string().describe("The agent ID to use for the trigger"),
+  agentId: z.string().describe('The agent ID to use for the trigger'),
   schema: z
     .record(z.string(), z.unknown())
     .optional()
     .describe(
-      "The JSONSchema of the returning of the webhook.\n\n" +
-        "By default this webhook returns the LLM generate text response.\n\n" +
-        "If a JSONSchema is specified, it returns a JSON with the specified schema.\n\n",
+      'The JSONSchema of the returning of the webhook.\n\n' +
+        'By default this webhook returns the LLM generate text response.\n\n' +
+        'If a JSONSchema is specified, it returns a JSON with the specified schema.\n\n',
     ),
 });
 
@@ -97,19 +97,19 @@ export const WebhookTriggerSchema = z.union([
 ]);
 
 export const WebhookTriggerOutputSchema = z.object({
-  title: z.string().describe("The title of the trigger"),
-  description: z.string().optional().describe("The description of the trigger"),
-  type: z.literal("webhook"),
-  passphrase: z.string().optional().describe("The passphrase for the webhook"),
+  title: z.string().describe('The title of the trigger'),
+  description: z.string().optional().describe('The description of the trigger'),
+  type: z.literal('webhook'),
+  passphrase: z.string().optional().describe('The passphrase for the webhook'),
   schema: z
     .record(z.string(), z.unknown())
     .optional()
     .describe(
-      "The JSONSchema of the returning of the webhook.\n\n" +
-        "By default this webhook returns the LLM generate text response.\n\n" +
-        "If a JSONSchema is specified, it returns a JSON with the specified schema.\n\n",
+      'The JSONSchema of the returning of the webhook.\n\n' +
+        'By default this webhook returns the LLM generate text response.\n\n' +
+        'If a JSONSchema is specified, it returns a JSON with the specified schema.\n\n',
     ),
-  url: z.string().describe("The URL of the webhook"),
+  url: z.string().describe('The URL of the webhook'),
 });
 
 /**
@@ -134,14 +134,14 @@ export const CreateCronTriggerOutputSchema = z.object({
  * Input schema for deleting a trigger
  */
 export const DeleteTriggerInputSchema = z.object({
-  id: z.string().describe("The trigger ID"),
+  id: z.string().describe('The trigger ID'),
 });
 
 /**
  * Output schema for trigger deletion results
  */
 export const DeleteTriggerOutputSchema = z.object({
-  id: z.string().describe("The trigger ID"),
+  id: z.string().describe('The trigger ID'),
 });
 
 export const TriggerSchema = z.union([
@@ -153,39 +153,39 @@ export const TriggerSchema = z.union([
  * Input schema for getting webhook trigger URL
  */
 export const GetWebhookTriggerUrlInputSchema = z.object({
-  id: z.string().describe("The trigger ID"),
+  id: z.string().describe('The trigger ID'),
 });
 
 /**
  * Output schema for webhook trigger URL results
  */
 export const GetWebhookTriggerUrlOutputSchema = z.object({
-  url: z.string().optional().describe("The URL of the webhook trigger"),
+  url: z.string().optional().describe('The URL of the webhook trigger'),
 });
 
 /**
  * Output schema for trigger results
  */
 export const TriggerOutputSchema = z.object({
-  id: z.string().describe("The trigger ID"),
-  type: z.enum(["cron", "webhook"]),
+  id: z.string().describe('The trigger ID'),
+  type: z.enum(['cron', 'webhook']),
   data: TriggerSchema,
-  createdAt: z.string().describe("The creation date"),
-  updatedAt: z.string().describe("The update date"),
+  createdAt: z.string().describe('The creation date'),
+  updatedAt: z.string().describe('The update date'),
   user: z.object({
-    id: z.string().describe("The user ID"),
+    id: z.string().describe('The user ID'),
     metadata: z.object({
-      full_name: z.string().describe("The user name"),
-      email: z.string().describe("The user email"),
-      avatar_url: z.string().describe("The user avatar"),
+      full_name: z.string().describe('The user name'),
+      email: z.string().describe('The user email'),
+      avatar_url: z.string().describe('The user avatar'),
     }),
   }),
-  active: z.boolean().optional().describe("The trigger status"),
-  workspace: z.string().describe("The workspace ID"),
+  active: z.boolean().optional().describe('The trigger status'),
+  workspace: z.string().describe('The workspace ID'),
 });
 
 export const CreateTriggerOutputSchema = TriggerOutputSchema.describe(
-  "The created trigger",
+  'The created trigger',
 );
 
 /**
@@ -197,7 +197,7 @@ export const ListTriggersOutputSchema = z.object({
 
 export const CreateWebhookTriggerOutputSchema = z.object({
   id: z.string(),
-  url: z.string().optional().describe("The URL of the webhook"),
+  url: z.string().optional().describe('The URL of the webhook'),
 });
 
 /**

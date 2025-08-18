@@ -50,7 +50,7 @@ export const notUndefined = <T>(
 };
 
 export const isPrimitive = <T>(v: T): boolean => {
-  return !Array.isArray(v) && typeof v !== "object" && typeof v !== "function";
+  return !Array.isArray(v) && typeof v !== 'object' && typeof v !== 'function';
 };
 
 export interface SingleFlight<T> {
@@ -76,7 +76,7 @@ export const singleFlight = <T>(): SingleFlight<T> => {
   return {
     do: sfDo,
     run: (f) => {
-      return sfDo("$singleFlight", f);
+      return sfDo('$singleFlight', f);
     },
   };
 };

@@ -1,7 +1,8 @@
-const HTTP_VERBS: Set<"GET" | "PUT" | "POST" | "DELETE" | "PATCH" | "HEAD"> =
-  new Set(["GET", "PUT", "POST", "DELETE", "PATCH", "HEAD"] as const);
+const HTTP_VERBS: Set<'GET' | 'PUT' | 'POST' | 'DELETE' | 'PATCH' | 'HEAD'> = new Set(
+  ['GET', 'PUT', 'POST', 'DELETE', 'PATCH', 'HEAD'] as const,
+);
 
-export interface TypedRequestInit<T> extends Omit<RequestInit, "body"> {
+export interface TypedRequestInit<T> extends Omit<RequestInit, 'body'> {
   body: T;
 }
 export interface TypedResponse<T> extends Response {
@@ -9,8 +10,7 @@ export interface TypedResponse<T> extends Response {
 }
 type HttpVerb = typeof HTTP_VERBS extends Set<infer Verb> ? Verb : never;
 type URLPatternParam = string | number;
-type URLPatternParams<URL extends string> = URL extends
-  `/:${infer param}/${infer rest}` ?
+type URLPatternParams<URL extends string> = URL extends `/:${infer param}/${infer rest}` ?
     & {
       [key in param]: URLPatternParam;
     }
@@ -22,10 +22,10 @@ type URLPatternParams<URL extends string> = URL extends
       [key in param]: URLPatternParam;
     }
   : URL extends `/*?` ? {
-      "*"?: URLPatternParam | URLPatternParam[];
+      '*'?: URLPatternParam | URLPatternParam[];
     }
   : URL extends `/*` ? {
-      "*": URLPatternParam | URLPatternParam[];
+      '*': URLPatternParam | URLPatternParam[];
     }
   : URL extends `/*${infer param}?` ? {
       [key in param]: URLPatternParam | URLPatternParam[];
@@ -54,7 +54,7 @@ export type ClientOf<T> = {
       searchParams?: infer Params;
     } ? (
         params: URLPatternParams<`/${path}`> & Params,
-        init?: Omit<RequestInit, "body">,
+        init?: Omit<RequestInit, 'body'>,
       ) => Promise<TypedResponse<ResBody>>
     : never
     : never;
@@ -75,16 +75,16 @@ export const createHttpClient = <T>({
   keepEmptySegments,
 }: HttpClientOptions): ClientOf<T> => {
   // Base should always endwith / so when concatenating with path we get the right URL
-  const base = maybeBase.at(-1) === "/" ? maybeBase : `${maybeBase}/`;
+  const base = maybeBase.at(-1) === '/' ? maybeBase : `${maybeBase}/`;
   return new Proxy({} as ClientOf<T>, {
     get: (_target, prop) => {
       if (prop === Symbol.toStringTag || prop === Symbol.toPrimitive) {
         return `HttpClient: ${base}`;
       }
-      if (typeof prop !== "string") {
+      if (typeof prop !== 'string') {
         throw new TypeError(`HttpClient: Uknown path ${typeof prop}`);
       }
-      const [method, path] = prop.split(" ");
+      const [method, path] = prop.split(' ');
       // @ts-expect-error if not inside, throws
       if (!HTTP_VERBS.has(method)) {
         throw new TypeError(`HttpClient: Verb ${method} is not allowed`);
@@ -95,10 +95,10 @@ export const createHttpClient = <T>({
       ) => {
         const mapped = new Map(Object.entries(params));
         const compiled = path
-          .split("/")
+          .split('/')
           .flatMap((segment) => {
-            const isTemplate = segment.at(0) === ":" || segment.at(0) === "*";
-            const isRequred = segment.at(-1) !== "?";
+            const isTemplate = segment.at(0) === ':' || segment.at(0) === '*';
+            const isRequred = segment.at(-1) !== '?';
             if (!isTemplate) {
               return segment;
             }
@@ -111,11 +111,9 @@ export const createHttpClient = <T>({
             return param;
           })
           .filter((x) =>
-            typeof x === "string"
-              ? keepEmptySegments || x.length
-              : typeof x === "number"
+            typeof x === 'string' ? keepEmptySegments || x.length : typeof x === 'number'
           )
-          .join("/");
+          .join('/');
         const url = new URL(compiled, base);
         mapped.forEach((value, key) => {
           if (value === undefined) {
@@ -125,7 +123,7 @@ export const createHttpClient = <T>({
           arrayed.forEach((item) => url.searchParams.append(key, `${item}`));
         });
         const isJSON = init?.body != null &&
-          typeof init.body !== "string" &&
+          typeof init.body !== 'string' &&
           !(init.body instanceof ReadableStream) &&
           !(init.body instanceof FormData) &&
           !(init.body instanceof URLSearchParams) &&
@@ -133,7 +131,7 @@ export const createHttpClient = <T>({
           !(init.body instanceof ArrayBuffer);
         const headers = new Headers(init?.headers);
         defaultHeaders?.forEach((value, key) => headers.set(key, value));
-        isJSON && headers.set("content-type", "application/json");
+        isJSON && headers.set('content-type', 'application/json');
         const body = isJSON ? JSON.stringify(init.body) : init?.body;
         return fetcher(url.href, {
           ...init,

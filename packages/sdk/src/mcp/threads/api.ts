@@ -1,28 +1,16 @@
-import { MessageList } from "@mastra/core/agent";
-import type { Message as AIMessage } from "ai";
-import { z } from "zod";
-import { WorkspaceMemory } from "../../memory/memory.ts";
-import {
-  assertHasWorkspace,
-  assertWorkspaceResourceAccess,
-} from "../assertions.ts";
-import {
-  type AppContext,
-  createToolGroup,
-  IWorkspaceDB,
-  workspaceDB,
-} from "../context.ts";
-import {
-  DatatabasesRunSqlInput,
-  InternalServerError,
-  NotFoundError,
-} from "../index.ts";
+import { MessageList } from '@mastra/core/agent';
+import type { Message as AIMessage } from 'ai';
+import { z } from 'zod';
+import { WorkspaceMemory } from '../../memory/memory.ts';
+import { assertHasWorkspace, assertWorkspaceResourceAccess } from '../assertions.ts';
+import { type AppContext, createToolGroup, IWorkspaceDB, workspaceDB } from '../context.ts';
+import { DatatabasesRunSqlInput, InternalServerError, NotFoundError } from '../index.ts';
 
-const createTool = createToolGroup("Thread", {
-  name: "Thread Management",
-  description: "Track conversation history and usage.",
+const createTool = createToolGroup('Thread', {
+  name: 'Thread Management',
+  description: 'Track conversation history and usage.',
   icon:
-    "https://assets.decocache.com/mcp/4306211f-3d5e-4f1b-b55f-b46787ac82fe/Thread-Management.png",
+    'https://assets.decocache.com/mcp/4306211f-3d5e-4f1b-b55f-b46787ac82fe/Thread-Management.png',
 });
 
 async function getWorkspaceMemory(c: AppContext) {
@@ -30,7 +18,7 @@ async function getWorkspaceMemory(c: AppContext) {
   return await WorkspaceMemory.create({
     workspace: c.workspace.value,
     workspaceDO: c.workspaceDO,
-    tursoAdminToken: c.envVars.TURSO_ADMIN_TOKEN ?? "",
+    tursoAdminToken: c.envVars.TURSO_ADMIN_TOKEN ?? '',
     tursoOrganization: c.envVars.TURSO_ORGANIZATION,
     tokenStorage: c.envVars.TURSO_GROUP_DATABASE_TOKEN,
   });
@@ -90,21 +78,20 @@ type Thread = z.infer<typeof ThreadSchema>;
 type Message = z.infer<typeof MessageSchema>;
 
 export const listThreads = createTool({
-  name: "THREADS_LIST",
-  description:
-    "List all threads in a workspace with cursor-based pagination and filtering",
+  name: 'THREADS_LIST',
+  description: 'List all threads in a workspace with cursor-based pagination and filtering',
   inputSchema: z.object({
     limit: z.number().min(1).max(100).default(10).optional(),
     agentId: z.string().optional(),
     resourceId: z.string().optional(),
     orderBy: z
       .enum([
-        "createdAt_desc",
-        "createdAt_asc",
-        "updatedAt_desc",
-        "updatedAt_asc",
+        'createdAt_desc',
+        'createdAt_asc',
+        'updatedAt_desc',
+        'updatedAt_asc',
       ])
-      .default("createdAt_desc")
+      .default('createdAt_desc')
       .optional(),
     cursor: z.string().optional(),
   }),
@@ -113,10 +100,10 @@ export const listThreads = createTool({
 
     await assertWorkspaceResourceAccess(c);
 
-    orderBy ??= "createdAt_desc";
+    orderBy ??= 'createdAt_desc';
     // Parse orderBy parameter
-    const [field, direction] = orderBy.split("_");
-    const isDesc = direction === "desc";
+    const [field, direction] = orderBy.split('_');
+    const isDesc = direction === 'desc';
 
     // Build the WHERE clause for filtering
     const whereClauses = [];
@@ -128,13 +115,13 @@ export const listThreads = createTool({
     }
 
     if (resourceId) {
-      whereClauses.push("resourceId = ?");
+      whereClauses.push('resourceId = ?');
       args.push(resourceId);
     }
 
     let cursorWhereClauseIdx: number | undefined = undefined;
     if (cursor) {
-      const operator = isDesc ? "<" : ">";
+      const operator = isDesc ? '<' : '>';
       cursorWhereClauseIdx = whereClauses.length;
 
       whereClauses.push(`${field} ${operator} ?`);
@@ -149,16 +136,14 @@ export const listThreads = createTool({
     const prevWhereClauses = [...whereClauses];
     const hasCursor = cursorWhereClauseIdx !== undefined;
     if (cursorWhereClauseIdx !== undefined) {
-      const operator = isDesc ? ">" : "<"; // should be the oposite of cursor
+      const operator = isDesc ? '>' : '<'; // should be the oposite of cursor
       prevWhereClauses[cursorWhereClauseIdx] = `${field} ${operator} ?`;
     }
 
-    const whereClause = whereClauses.length > 0
-      ? `WHERE ${whereClauses.join(" AND ")}`
-      : "";
+    const whereClause = whereClauses.length > 0 ? `WHERE ${whereClauses.join(' AND ')}` : '';
     const prevWhereClause = whereClauses.length > 0
-      ? `WHERE ${prevWhereClauses.join(" AND ")}`
-      : "";
+      ? `WHERE ${prevWhereClauses.join(' AND ')}`
+      : '';
 
     limit ??= 10;
 
@@ -207,15 +192,13 @@ export const listThreads = createTool({
 
     // Get the cursor for the next page
     const nextCursor = threads.length > 0
-      ? field === "createdAt"
+      ? field === 'createdAt'
         ? threads[threads.length - 1].createdAt
         : threads[threads.length - 1].updatedAt
       : null;
 
     const _prevCursor = prevThreads && prevThreads.length > 0
-      ? field === "createdAt"
-        ? prevThreads.at(0)?.createdAt
-        : prevThreads.at(0)?.updatedAt
+      ? field === 'createdAt' ? prevThreads.at(0)?.createdAt : prevThreads.at(0)?.updatedAt
       : null;
 
     const prevCursor = !!_prevCursor && new Date(_prevCursor);
@@ -238,8 +221,8 @@ export const listThreads = createTool({
 });
 
 export const getThreadMessages = createTool({
-  name: "THREADS_GET_MESSAGES",
-  description: "Get only the messages for a thread by thread id",
+  name: 'THREADS_GET_MESSAGES',
+  description: 'Get only the messages for a thread by thread id',
   inputSchema: z.object({ id: z.string() }),
   handler: async ({ id }, c) => {
     assertHasWorkspace(c);
@@ -247,8 +230,7 @@ export const getThreadMessages = createTool({
     await assertWorkspaceResourceAccess(c);
 
     const { data: result, error } = await safeExecute(await getWorkspaceDB(c), {
-      sql:
-        `SELECT * FROM mastra_messages WHERE thread_id = ? ORDER BY createdAt ASC`,
+      sql: `SELECT * FROM mastra_messages WHERE thread_id = ? ORDER BY createdAt ASC`,
       params: [id],
     });
 
@@ -264,7 +246,7 @@ export const getThreadMessages = createTool({
 
     const list = new MessageList({ threadId: id });
     for (const message of messages) {
-      list.add(message as unknown as AIMessage, "memory");
+      list.add(message as unknown as AIMessage, 'memory');
     }
 
     const uiMessages = list.get.all.ui();
@@ -274,8 +256,8 @@ export const getThreadMessages = createTool({
 });
 
 export const getThread = createTool({
-  name: "THREADS_GET",
-  description: "Get a thread by thread id (without messages)",
+  name: 'THREADS_GET',
+  description: 'Get a thread by thread id (without messages)',
   inputSchema: z.object({ id: z.string() }),
   handler: async ({ id }, c) => {
     assertHasWorkspace(c);
@@ -290,7 +272,7 @@ export const getThread = createTool({
     const rows = result?.result?.[0]?.results;
 
     if (!rows || error) {
-      throw new NotFoundError("Thread not found");
+      throw new NotFoundError('Thread not found');
     }
 
     const thread = ThreadSchema.parse(rows[0]);
@@ -300,8 +282,8 @@ export const getThread = createTool({
 });
 
 export const getThreadTools = createTool({
-  name: "THREADS_GET_TOOLS",
-  description: "Get the tools_set for a thread by thread id",
+  name: 'THREADS_GET_TOOLS',
+  description: 'Get the tools_set for a thread by thread id',
   inputSchema: z.object({ id: z.string() }),
   handler: async ({ id }, c) => {
     assertHasWorkspace(c);
@@ -316,7 +298,7 @@ export const getThreadTools = createTool({
     const rows = result?.result?.[0]?.results;
 
     if (!rows || error) {
-      throw new NotFoundError("Thread not found");
+      throw new NotFoundError('Thread not found');
     }
 
     const { data: thread } = ThreadSchema.safeParse(rows[0] ?? {});
@@ -326,7 +308,7 @@ export const getThreadTools = createTool({
 });
 
 export const updateThreadTitle = createTool({
-  name: "THREADS_UPDATE_TITLE",
+  name: 'THREADS_UPDATE_TITLE',
   description: "Update a thread's title",
   inputSchema: z.object({
     threadId: z.string(),
@@ -341,7 +323,7 @@ export const updateThreadTitle = createTool({
 
     const currentThread = await memory.getThreadById({ threadId });
     if (!currentThread) {
-      throw new NotFoundError("Thread for title update not found");
+      throw new NotFoundError('Thread for title update not found');
     }
 
     const result = await memory.updateThread({
@@ -350,7 +332,7 @@ export const updateThreadTitle = createTool({
       metadata: currentThread.metadata ?? {},
     });
     if (!result) {
-      throw new InternalServerError("Failed to update thread title");
+      throw new InternalServerError('Failed to update thread title');
     }
 
     return {
@@ -366,7 +348,7 @@ export const updateThreadTitle = createTool({
 });
 
 export const updateThreadMetadata = createTool({
-  name: "THREADS_UPDATE_METADATA",
+  name: 'THREADS_UPDATE_METADATA',
   description: "Update a thread's metadata",
   inputSchema: z.object({
     threadId: z.string(),
@@ -381,16 +363,16 @@ export const updateThreadMetadata = createTool({
 
     const currentThread = await memory.getThreadById({ threadId });
     if (!currentThread) {
-      throw new NotFoundError("Thread for update not found");
+      throw new NotFoundError('Thread for update not found');
     }
 
     const result = await memory.updateThread({
       id: threadId,
-      title: currentThread.title ?? "",
+      title: currentThread.title ?? '',
       metadata: { ...currentThread.metadata, ...metadata },
     });
     if (!result) {
-      throw new InternalServerError("Failed to update thread metadata");
+      throw new InternalServerError('Failed to update thread metadata');
     }
 
     return {

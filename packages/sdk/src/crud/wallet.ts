@@ -1,11 +1,11 @@
-import { MCPClient } from "../fetcher.ts";
+import { MCPClient } from '../fetcher.ts';
 
 export const getWalletAccount = (workspace: string) =>
   MCPClient.forWorkspace(workspace).GET_WALLET_ACCOUNT({});
 
 export const getThreadsUsage = (
   workspace: string,
-  range: "day" | "week" | "month",
+  range: 'day' | 'week' | 'month',
 ) =>
   MCPClient.forWorkspace(workspace).GET_THREADS_USAGE({
     range,
@@ -13,7 +13,7 @@ export const getThreadsUsage = (
 
 export const getAgentsUsage = (
   workspace: string,
-  range: "day" | "week" | "month",
+  range: 'day' | 'week' | 'month',
 ) =>
   MCPClient.forWorkspace(workspace).GET_AGENTS_USAGE({
     range,
@@ -21,7 +21,7 @@ export const getAgentsUsage = (
 
 export const getBillingHistory = (
   workspace: string,
-  range: "day" | "week" | "month" | "year",
+  range: 'day' | 'week' | 'month' | 'year',
 ) =>
   MCPClient.forWorkspace(workspace).GET_BILLING_HISTORY({
     range,

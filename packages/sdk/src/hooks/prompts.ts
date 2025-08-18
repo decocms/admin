@@ -1,8 +1,4 @@
-import {
-  useMutation,
-  useQueryClient,
-  useSuspenseQuery,
-} from "@tanstack/react-query";
+import { useMutation, useQueryClient, useSuspenseQuery } from '@tanstack/react-query';
 import {
   createPrompt,
   type CreatePromptInput,
@@ -13,10 +9,10 @@ import {
   searchPrompts,
   updatePrompt,
   type UpdatePromptInput,
-} from "../crud/prompts.ts";
-import { InternalServerError } from "../errors.ts";
-import { KEYS } from "./api.ts";
-import { useSDK } from "./store.tsx";
+} from '../crud/prompts.ts';
+import { InternalServerError } from '../errors.ts';
+import { KEYS } from './api.ts';
+import { useSDK } from './store.tsx';
 
 export const usePrompts = (input?: {
   ids?: string[];
@@ -32,17 +28,15 @@ export const usePrompts = (input?: {
       input?.excludeIds,
     ),
     queryFn: ({ signal }) => listPrompts(workspace, input, { signal }),
-    retry: (failureCount, error) =>
-      error instanceof InternalServerError && failureCount < 2,
+    retry: (failureCount, error) => error instanceof InternalServerError && failureCount < 2,
   });
 };
 
-export const usePrompt = (id: string = "") => {
+export const usePrompt = (id: string = '') => {
   const { workspace } = useSDK();
   return useSuspenseQuery({
     queryKey: KEYS.PROMPT(workspace, id),
-    retry: (failureCount, error) =>
-      error instanceof InternalServerError && failureCount < 2,
+    retry: (failureCount, error) => error instanceof InternalServerError && failureCount < 2,
     queryFn: ({ signal }) => {
       if (!id.length) {
         return null;
@@ -61,7 +55,7 @@ export function useCreatePrompt() {
       client.invalidateQueries({
         queryKey: KEYS.PROMPTS(workspace).slice(0, 2),
       });
-      client.setQueryData(["prompt", result.id], result);
+      client.setQueryData(['prompt', result.id], result);
     },
   });
 }
@@ -78,7 +72,7 @@ export function useUpdatePrompt() {
       client.invalidateQueries({
         queryKey: KEYS.PROMPT_VERSIONS(workspace, result.id),
       });
-      client.setQueryData(["prompt", result.id], result);
+      client.setQueryData(['prompt', result.id], result);
     },
   });
 }
@@ -104,10 +98,8 @@ export function useSearchPrompts(
   const { workspace } = useSDK();
   return useSuspenseQuery({
     queryKey: KEYS.PROMPTS_SEARCH(workspace, query, limit, offset),
-    queryFn: ({ signal }) =>
-      searchPrompts(workspace, { query, limit, offset }, { signal }),
-    retry: (failureCount, error) =>
-      error instanceof InternalServerError && failureCount < 2,
+    queryFn: ({ signal }) => searchPrompts(workspace, { query, limit, offset }, { signal }),
+    retry: (failureCount, error) => error instanceof InternalServerError && failureCount < 2,
   });
 }
 
@@ -119,7 +111,6 @@ export function usePromptVersions(
   const { workspace } = useSDK();
   return useSuspenseQuery({
     queryKey: KEYS.PROMPT_VERSIONS(workspace, id),
-    queryFn: ({ signal }) =>
-      getPromptVersions(workspace, { id, limit, offset }, { signal }),
+    queryFn: ({ signal }) => getPromptVersions(workspace, { id, limit, offset }, { signal }),
   });
 }

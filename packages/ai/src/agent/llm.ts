@@ -1,10 +1,10 @@
-import { isWellKnownModel, WELL_KNOWN_MODELS } from "@deco/sdk";
-import type { LLMVault } from "@deco/sdk/mcp";
-import type { LanguageModelV1 } from "ai";
-import { createLLMProvider } from "./llm-provider.ts";
+import { isWellKnownModel, WELL_KNOWN_MODELS } from '@deco/sdk';
+import type { LLMVault } from '@deco/sdk/mcp';
+import type { LanguageModelV1 } from 'ai';
+import { createLLMProvider } from './llm-provider.ts';
 
-export const DEFAULT_ACCOUNT_ID = "c95fc4cec7fc52453228d9db170c372c";
-export const DEFAULT_GATEWAY_ID = "deco-ai";
+export const DEFAULT_ACCOUNT_ID = 'c95fc4cec7fc52453228d9db170c372c';
+export const DEFAULT_GATEWAY_ID = 'deco-ai';
 
 export interface LLMConfig {
   model: string;
@@ -38,7 +38,7 @@ export async function getLLMConfig({
 }): Promise<LLMConfigWithModelId> {
   if (isUUID(modelId)) {
     if (!llmVault) {
-      throw new Error("LLM vault not found");
+      throw new Error('LLM vault not found');
     }
 
     // TODO(@camudo): cache for custom models, so we don't read the api key every time.
@@ -71,8 +71,8 @@ export function createLLMInstance({
   llm: LanguageModelV1;
   tokenLimit: number;
 } {
-  const [provider, ...rest] = model.split(":");
-  const providerModel = rest.join(":");
+  const [provider, ...rest] = model.split(':');
+  const providerModel = rest.join(':');
   const accountId = envs?.ACCOUNT_ID ?? DEFAULT_ACCOUNT_ID;
   const gatewayId = envs?.GATEWAY_ID ?? DEFAULT_GATEWAY_ID;
 

@@ -2,23 +2,13 @@
  * Agent specific hooks
  */
 
-import {
-  useMutation,
-  useQueryClient,
-  useSuspenseQuery,
-} from "@tanstack/react-query";
-import { useMemo } from "react";
-import {
-  createAgent,
-  deleteAgent,
-  listAgents,
-  loadAgent,
-  updateAgent,
-} from "../crud/agent.ts";
-import { InternalServerError } from "../errors.ts";
-import type { Agent } from "../models/agent.ts";
-import { KEYS } from "./api.ts";
-import { useSDK } from "./store.tsx";
+import { useMutation, useQueryClient, useSuspenseQuery } from '@tanstack/react-query';
+import { useMemo } from 'react';
+import { createAgent, deleteAgent, listAgents, loadAgent, updateAgent } from '../crud/agent.ts';
+import { InternalServerError } from '../errors.ts';
+import type { Agent } from '../models/agent.ts';
+import { KEYS } from './api.ts';
+import { useSDK } from './store.tsx';
 
 export const useCreateAgent = () => {
   const client = useQueryClient();
@@ -62,8 +52,7 @@ export const useUpdateAgent = () => {
       client.cancelQueries({ queryKey: listKey });
       client.setQueryData<Agent[]>(
         listKey,
-        (old) =>
-          !old ? [result] : old.map((a) => (a.id === result.id ? result : a)),
+        (old) => !old ? [result] : old.map((a) => (a.id === result.id ? result : a)),
       );
     },
   });
@@ -107,8 +96,7 @@ export const useAgentData = (id: string) => {
   const data = useSuspenseQuery({
     queryKey: KEYS.AGENT(workspace, id),
     queryFn: ({ signal }) => loadAgent(workspace, id, signal),
-    retry: (failureCount, error) =>
-      error instanceof InternalServerError && failureCount < 2,
+    retry: (failureCount, error) => error instanceof InternalServerError && failureCount < 2,
     staleTime: 5 * 60 * 1000, // 5 minutes
     gcTime: 10 * 60 * 1000, // 10 minutes
   });

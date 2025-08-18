@@ -1,8 +1,8 @@
-import { SWRCache } from "./swr.ts";
+import { SWRCache } from './swr.ts';
 
 const FIVE_SECONDS = 5;
 
-export const domainSWRCache = new SWRCache<string | null>("domain-swr", {
+export const domainSWRCache = new SWRCache<string | null>('domain-swr', {
   staleTtlSeconds: FIVE_SECONDS,
 });
 

@@ -1,12 +1,12 @@
-import { describe, expect, it } from "vitest";
-import { runSeoAuditPure } from "../runner";
+import { describe, expect, it } from 'vitest';
+import { runSeoAuditPure } from '../runner';
 
-describe("SEO_AUDIT clean site scenario", () => {
-  it("produces no warnings with optimal metrics and no broken links", async () => {
-    const url = "https://example.com";
+describe('SEO_AUDIT clean site scenario', () => {
+  it('produces no warnings with optimal metrics and no broken links', async () => {
+    const url = 'https://example.com';
     const analyzeLinks = async () => ({
-      internal: ["https://example.com/a", "https://example.com/b"],
-      external: ["https://external.com/"],
+      internal: ['https://example.com/a', 'https://example.com/b'],
+      external: ['https://external.com/'],
       broken: [],
       total: 3,
     });
@@ -14,7 +14,7 @@ describe("SEO_AUDIT clean site scenario", () => {
       categories: {
         performance: 95,
         accessibility: 92,
-        "best-practices": 90,
+        'best-practices': 90,
         seo: 90,
         pwa: 50,
       },

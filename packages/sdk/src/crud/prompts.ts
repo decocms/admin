@@ -1,5 +1,5 @@
-import { MCPClient } from "../fetcher.ts";
-import type { Prompt, PromptVersion } from "../models/index.ts";
+import { MCPClient } from '../fetcher.ts';
+import type { Prompt, PromptVersion } from '../models/index.ts';
 
 export const listPrompts = (
   workspace: string,
@@ -9,7 +9,7 @@ export const listPrompts = (
     excludeIds?: string[];
   },
   init?: RequestInit,
-  client?: ReturnType<(typeof MCPClient)["forWorkspace"]>,
+  client?: ReturnType<(typeof MCPClient)['forWorkspace']>,
 ): Promise<Prompt[]> =>
   (client ?? MCPClient.forWorkspace(workspace))
     .PROMPTS_LIST(input || {}, init)
@@ -44,7 +44,7 @@ export const createPrompt = (
 
 export interface UpdatePromptInput {
   id: string;
-  data: Partial<Pick<Prompt, "name" | "description" | "content">>;
+  data: Partial<Pick<Prompt, 'name' | 'description' | 'content'>>;
   versionName?: string;
   [key: string]: unknown;
 }

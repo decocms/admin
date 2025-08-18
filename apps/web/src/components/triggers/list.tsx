@@ -1,54 +1,54 @@
-import type { TriggerOutput } from "@deco/sdk";
-import { useAgents, useIntegrations, useListTriggers } from "@deco/sdk";
-import { Button } from "@deco/ui/components/button.tsx";
-import { Icon } from "@deco/ui/components/icon.tsx";
-import { Skeleton } from "@deco/ui/components/skeleton.tsx";
-import { useViewMode } from "@deco/ui/hooks/use-view-mode.ts";
-import { Suspense, useCallback, useState } from "react";
-import { useNavigateWorkspace } from "../../hooks/use-navigate-workspace.ts";
-import { EmptyState } from "../common/empty-state.tsx";
-import { ListPageHeader } from "../common/list-page-header.tsx";
-import { Table, type TableColumn } from "../common/table/index.tsx";
+import type { TriggerOutput } from '@deco/sdk';
+import { useAgents, useIntegrations, useListTriggers } from '@deco/sdk';
+import { Button } from '@deco/ui/components/button.tsx';
+import { Icon } from '@deco/ui/components/icon.tsx';
+import { Skeleton } from '@deco/ui/components/skeleton.tsx';
+import { useViewMode } from '@deco/ui/hooks/use-view-mode.ts';
+import { Suspense, useCallback, useState } from 'react';
+import { useNavigateWorkspace } from '../../hooks/use-navigate-workspace.ts';
+import { EmptyState } from '../common/empty-state.tsx';
+import { ListPageHeader } from '../common/list-page-header.tsx';
+import { Table, type TableColumn } from '../common/table/index.tsx';
 import {
   AgentInfo,
   DateTimeCell,
   IntegrationInfo,
   UserInfo,
-} from "../common/table/table-cells.tsx";
-import { DefaultBreadcrumb, PageLayout } from "../layout.tsx";
-import { TriggerActions } from "./trigger-actions.tsx";
-import { TriggerCard } from "./trigger-card.tsx";
-import { TriggerModal } from "./trigger-dialog.tsx";
-import { TriggerToggle } from "./trigger-toggle.tsx";
-import { TriggerType } from "./trigger-type.tsx";
+} from '../common/table/table-cells.tsx';
+import { DefaultBreadcrumb, PageLayout } from '../layout.tsx';
+import { TriggerActions } from './trigger-actions.tsx';
+import { TriggerCard } from './trigger-card.tsx';
+import { TriggerModal } from './trigger-dialog.tsx';
+import { TriggerToggle } from './trigger-toggle.tsx';
+import { TriggerType } from './trigger-type.tsx';
 
-const SORTABLE_KEYS = ["title", "type", "target", "author"] as const;
+const SORTABLE_KEYS = ['title', 'type', 'target', 'author'] as const;
 
 type SortKey = (typeof SORTABLE_KEYS)[number];
-type SortDirection = "asc" | "desc";
+type SortDirection = 'asc' | 'desc';
 
 function ListTriggersSkeleton() {
   return (
-    <div className="mx-8 my-6">
-      <div className="mb-4 flex items-center justify-between">
-        <Skeleton className="w-80 h-10 rounded-full" />
-        <div className="flex items-center gap-2">
-          <Skeleton className="w-10 h-10 rounded-full" />
-          <Skeleton className="w-10 h-10 rounded-full" />
-          <Skeleton className="w-36 h-10 rounded-full" />
+    <div className='mx-8 my-6'>
+      <div className='mb-4 flex items-center justify-between'>
+        <Skeleton className='w-80 h-10 rounded-full' />
+        <div className='flex items-center gap-2'>
+          <Skeleton className='w-10 h-10 rounded-full' />
+          <Skeleton className='w-10 h-10 rounded-full' />
+          <Skeleton className='w-36 h-10 rounded-full' />
         </div>
       </div>
-      <div className="overflow-x-auto">
+      <div className='overflow-x-auto'>
         <div>
-          <div className="flex flex-col divide-y divide-border">
+          <div className='flex flex-col divide-y divide-border'>
             {[...Array(5)].map((_, i) => (
-              <div key={i} className="flex items-center gap-4 px-6 py-4">
-                <Skeleton className="w-64 h-6 rounded" />
-                <Skeleton className="w-44 h-6 rounded" />
-                <Skeleton className="w-32 h-6 rounded" />
-                <Skeleton className="w-64 h-6 rounded" />
-                <Skeleton className="w-40 h-6 rounded" />
-                <Skeleton className="w-8 h-6 rounded-full ml-auto" />
+              <div key={i} className='flex items-center gap-4 px-6 py-4'>
+                <Skeleton className='w-64 h-6 rounded' />
+                <Skeleton className='w-44 h-6 rounded' />
+                <Skeleton className='w-32 h-6 rounded' />
+                <Skeleton className='w-64 h-6 rounded' />
+                <Skeleton className='w-40 h-6 rounded' />
+                <Skeleton className='w-8 h-6 rounded-full ml-auto' />
               </div>
             ))}
           </div>
@@ -61,7 +61,7 @@ function ListTriggersSkeleton() {
 const TABS = {
   list: {
     Component: ListTriggers,
-    title: "Triggers",
+    title: 'Triggers',
     initialOpen: true,
   },
 };
@@ -72,18 +72,16 @@ export default function ListTriggersLayout() {
     <PageLayout
       hideViewsButton
       tabs={TABS}
-      breadcrumb={
-        <DefaultBreadcrumb items={[{ label: "Triggers", link: "/triggers" }]} />
-      }
+      breadcrumb={<DefaultBreadcrumb items={[{ label: 'Triggers', link: '/triggers' }]} />}
       actionButtons={
         <>
           <Button
-            variant="special"
-            title="Add Trigger"
+            variant='special'
+            title='Add Trigger'
             onClick={() => setIsCreateModalOpen(true)}
           >
-            <Icon name="add" />
-            <span className="hidden md:inline">New Trigger</span>
+            <Icon name='add' />
+            <span className='hidden md:inline'>New Trigger</span>
           </Button>
           {isCreateModalOpen && (
             <TriggerModal
@@ -107,15 +105,13 @@ export function ListTriggers() {
 
 function ListTriggersSuspended() {
   const { data, isLoading } = useListTriggers();
-  const [search, setSearch] = useState("");
-  const [viewMode, setViewMode] = useViewMode("triggers");
+  const [search, setSearch] = useState('');
+  const [viewMode, setViewMode] = useViewMode('triggers');
 
   const triggers = (data?.triggers || []) as TriggerOutput[];
 
   const filteredTriggers = search.trim().length > 0
-    ? triggers.filter((t) =>
-      t.data.title.toLowerCase().includes(search.toLowerCase())
-    )
+    ? triggers.filter((t) => t.data.title.toLowerCase().includes(search.toLowerCase()))
     : triggers;
 
   if (isLoading) {
@@ -123,14 +119,14 @@ function ListTriggersSuspended() {
   }
 
   return (
-    <div className="p-4 flex flex-col gap-4 h-full">
+    <div className='p-4 flex flex-col gap-4 h-full'>
       <ListPageHeader
         filter={{
           items: [],
           onClick: () => {},
         }}
         input={{
-          placeholder: "Search trigger",
+          placeholder: 'Search trigger',
           value: search,
           onChange: (e) => setSearch(e.target.value),
         }}
@@ -140,19 +136,17 @@ function ListTriggersSuspended() {
         }}
       />
 
-      <div className="flex-1 min-h-0 overflow-x-auto">
+      <div className='flex-1 min-h-0 overflow-x-auto'>
         {filteredTriggers.length === 0
           ? (
             <EmptyState
-              icon="cable"
-              title={search.trim().length > 0
-                ? "No triggers found"
-                : "No triggers yet"}
+              icon='cable'
+              title={search.trim().length > 0 ? 'No triggers found' : 'No triggers yet'}
               description={search.trim().length > 0
                 ? "Try adjusting your search terms to find what you're looking for."
-                : "Create your first trigger to automate your agent workflows and respond to events automatically."}
+                : 'Create your first trigger to automate your agent workflows and respond to events automatically.'}
               buttonProps={{
-                children: "Create Trigger",
+                children: 'Create Trigger',
                 onClick: () => {
                   // This will trigger the modal to open
                   const createButton = document.querySelector(
@@ -163,7 +157,7 @@ function ListTriggersSuspended() {
               }}
             />
           )
-          : viewMode === "table"
+          : viewMode === 'table'
           ? <TableView triggers={filteredTriggers} />
           : <CardsView triggers={filteredTriggers} />}
       </div>
@@ -172,8 +166,8 @@ function ListTriggersSuspended() {
 }
 
 function TableView({ triggers }: { triggers: TriggerOutput[] }) {
-  const [sortKey, setSortKey] = useState<SortKey>("title");
-  const [sortDirection, setSortDirection] = useState<SortDirection>("asc");
+  const [sortKey, setSortKey] = useState<SortKey>('title');
+  const [sortDirection, setSortDirection] = useState<SortDirection>('asc');
   const [openModalId, setOpenModalId] = useState<string | null>(null);
   const navigate = useNavigateWorkspace();
   const { data: agents } = useAgents();
@@ -183,12 +177,12 @@ function TableView({ triggers }: { triggers: TriggerOutput[] }) {
     const data = trigger.data;
 
     // For agent triggers - use type assertion to handle the schema
-    if ("agentId" in data && data.agentId) {
+    if ('agentId' in data && data.agentId) {
       return <AgentInfo agentId={data.agentId} />;
     }
 
     // For tool triggers - use type assertion to handle the complex union type
-    if ("callTool" in data && data.callTool) {
+    if ('callTool' in data && data.callTool) {
       const integration = integrations.find(
         (i) => i.id === data.callTool.integrationId,
       );
@@ -197,31 +191,31 @@ function TableView({ triggers }: { triggers: TriggerOutput[] }) {
       return <IntegrationInfo integration={integration} toolName={toolName} />;
     }
 
-    return <span className="text-muted-foreground">Unknown target</span>;
+    return <span className='text-muted-foreground'>Unknown target</span>;
   }
 
   function handleSort(key: string) {
     const k = key as SortKey;
     if (sortKey === k) {
-      setSortDirection((prev) => (prev === "asc" ? "desc" : "asc"));
+      setSortDirection((prev) => (prev === 'asc' ? 'desc' : 'asc'));
     } else {
       setSortKey(k);
-      setSortDirection("asc");
+      setSortDirection('asc');
     }
   }
 
   function getSortValue(trigger: TriggerOutput, key: SortKey): string {
-    if (key === "target") {
+    if (key === 'target') {
       const data = trigger.data;
 
       // For agent triggers - use type guard to handle the schema
-      if ("agentId" in data && data.agentId) {
+      if ('agentId' in data && data.agentId) {
         const agent = agents?.find((a) => a.id === data.agentId);
-        return agent?.name?.toLowerCase() || "";
+        return agent?.name?.toLowerCase() || '';
       }
 
       // For tool triggers - use type guard to handle the complex union type
-      if ("callTool" in data && data.callTool) {
+      if ('callTool' in data && data.callTool) {
         const integration = integrations.find(
           (i) => i.id === data.callTool.integrationId,
         );
@@ -231,22 +225,22 @@ function TableView({ triggers }: { triggers: TriggerOutput[] }) {
         );
       }
 
-      return "";
+      return '';
     }
-    if (key === "author") {
-      return trigger.user?.metadata?.full_name?.toLowerCase() || "";
+    if (key === 'author') {
+      return trigger.user?.metadata?.full_name?.toLowerCase() || '';
     }
-    if (key === "title" || key === "type") {
-      return trigger.data?.[key]?.toLowerCase?.() || "";
+    if (key === 'title' || key === 'type') {
+      return trigger.data?.[key]?.toLowerCase?.() || '';
     }
-    return "";
+    return '';
   }
 
   const sortedTriggers = [...triggers].sort((a, b) => {
     const aVal = getSortValue(a, sortKey);
     const bVal = getSortValue(b, sortKey);
-    if (aVal < bVal) return sortDirection === "asc" ? -1 : 1;
-    if (aVal > bVal) return sortDirection === "asc" ? 1 : -1;
+    if (aVal < bVal) return sortDirection === 'asc' ? -1 : 1;
+    if (aVal > bVal) return sortDirection === 'asc' ? 1 : -1;
     return 0;
   });
 
@@ -261,42 +255,42 @@ function TableView({ triggers }: { triggers: TriggerOutput[] }) {
 
   const columns: TableColumn<TriggerOutput>[] = [
     {
-      id: "active",
-      header: "Active",
+      id: 'active',
+      header: 'Active',
       render: (t) => <TriggerToggle trigger={t} />,
     },
     {
-      id: "title",
-      header: "Name",
+      id: 'title',
+      header: 'Name',
       accessor: (t) => t.data.title,
       sortable: true,
     },
     {
-      id: "type",
-      header: "Trigger",
+      id: 'type',
+      header: 'Trigger',
       render: (t) => <TriggerType trigger={t} />,
       sortable: true,
     },
     {
-      id: "target",
-      header: "Target",
+      id: 'target',
+      header: 'Target',
       render: (t) => <TargetInfo trigger={t} />,
       sortable: true,
     },
     {
-      id: "author",
-      header: "Created by",
+      id: 'author',
+      header: 'Created by',
       render: (t) => <UserInfo userId={t.user?.id} />,
       sortable: true,
     },
     {
-      id: "createdAt",
-      header: "Created at",
+      id: 'createdAt',
+      header: 'Created at',
       render: (t) => <DateTimeCell value={t.createdAt} />,
     },
     {
-      id: "actions",
-      header: "",
+      id: 'actions',
+      header: '',
       render: (t) => (
         <TriggerActions
           trigger={t}
@@ -328,7 +322,7 @@ function CardsView({ triggers }: { triggers: TriggerOutput[] }) {
     [navigate],
   );
   return (
-    <div className="grid gap-4 grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
+    <div className='grid gap-4 grid-cols-1 md:grid-cols-2 lg:grid-cols-3'>
       {triggers.map((trigger, index) => (
         <TriggerCard
           key={`trigger-card-${trigger.id}-${index}`}

@@ -1,7 +1,7 @@
-import { Dirent, promises as fs } from "fs";
-import { dirname, join, relative } from "path";
-import { createReadStream, createWriteStream } from "fs";
-import { pipeline } from "stream/promises";
+import { Dirent, promises as fs } from 'fs';
+import { dirname, join, relative } from 'path';
+import { createReadStream, createWriteStream } from 'fs';
+import { pipeline } from 'stream/promises';
 
 /**
  * Ensure that a directory exists, creating it if necessary (recursive)
@@ -12,7 +12,7 @@ export async function ensureDir(dirPath: string): Promise<void> {
     await fs.mkdir(dirPath, { recursive: true });
   } catch (error) {
     // If directory already exists, that's fine
-    if ((error as NodeJS.ErrnoException).code !== "EEXIST") {
+    if ((error as NodeJS.ErrnoException).code !== 'EEXIST') {
       throw error;
     }
   }
@@ -179,7 +179,7 @@ export async function* walk(
       }
 
       if (exts && isFile) {
-        const ext = entryPath.substring(entryPath.lastIndexOf(".") + 1);
+        const ext = entryPath.substring(entryPath.lastIndexOf('.') + 1);
         if (!exts.includes(ext)) {
           continue;
         }

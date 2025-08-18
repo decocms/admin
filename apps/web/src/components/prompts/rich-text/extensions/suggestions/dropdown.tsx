@@ -1,19 +1,15 @@
-import { Button } from "@deco/ui/components/button.tsx";
-import { Icon } from "@deco/ui/components/icon.tsx";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger,
-} from "@deco/ui/components/tooltip.tsx";
-import { cn } from "@deco/ui/lib/utils.ts";
-import type { Editor, Range } from "@tiptap/react";
-import { type Ref, useImperativeHandle, useMemo, useState } from "react";
-import Markdown from "react-markdown";
-import { mentionToTag } from "../../common.ts";
+import { Button } from '@deco/ui/components/button.tsx';
+import { Icon } from '@deco/ui/components/icon.tsx';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@deco/ui/components/tooltip.tsx';
+import { cn } from '@deco/ui/lib/utils.ts';
+import type { Editor, Range } from '@tiptap/react';
+import { type Ref, useImperativeHandle, useMemo, useState } from 'react';
+import Markdown from 'react-markdown';
+import { mentionToTag } from '../../common.ts';
 
 export interface Option {
   id: string;
-  type: "category" | "option";
+  type: 'category' | 'option';
   label: string;
   icon?: string;
   // deno-lint-ignore no-explicit-any
@@ -40,9 +36,9 @@ function FormattingTooltip({
   label: string;
 }) {
   return (
-    <div className="flex flex-col gap-2 min-w-40">
-      <p className="text-sm font-medium">{label}</p>
-      <div className="prose bg-popover p-2 rounded-md text-foreground">
+    <div className='flex flex-col gap-2 min-w-40'>
+      <p className='text-sm font-medium'>{label}</p>
+      <div className='prose bg-popover p-2 rounded-md text-foreground'>
         {children}
       </div>
     </div>
@@ -80,15 +76,15 @@ export default function MentionDropdown({
     return [
       ...defaultOptions,
       {
-        id: "Formatting",
-        type: "category",
-        label: "Formatting",
+        id: 'Formatting',
+        type: 'category',
+        label: 'Formatting',
         children: [
           {
-            icon: "chat",
-            id: "comment",
-            type: "option",
-            label: "Comment",
+            icon: 'chat',
+            id: 'comment',
+            type: 'option',
+            label: 'Comment',
             handle: ({ editor }) => {
               const { from, to } = range;
 
@@ -100,16 +96,16 @@ export default function MentionDropdown({
                 .run();
             },
             tooltip: (
-              <FormattingTooltip label="Comment">
-                <span data-type="comment">Comment</span>
+              <FormattingTooltip label='Comment'>
+                <span data-type='comment'>Comment</span>
               </FormattingTooltip>
             ),
           },
           {
-            icon: "format_h1",
-            id: "heading-1",
-            type: "option",
-            label: "Heading 1",
+            icon: 'format_h1',
+            id: 'heading-1',
+            type: 'option',
+            label: 'Heading 1',
             handle: ({ editor }) => {
               const { from, to } = range;
 
@@ -121,16 +117,16 @@ export default function MentionDropdown({
                 .run();
             },
             tooltip: (
-              <FormattingTooltip label="Heading 1">
+              <FormattingTooltip label='Heading 1'>
                 <h1>Heading 1</h1>
               </FormattingTooltip>
             ),
           },
           {
-            icon: "format_h2",
-            id: "heading-2",
-            type: "option",
-            label: "Heading 2",
+            icon: 'format_h2',
+            id: 'heading-2',
+            type: 'option',
+            label: 'Heading 2',
             handle: ({ editor }) => {
               const { from, to } = range;
 
@@ -142,16 +138,16 @@ export default function MentionDropdown({
                 .run();
             },
             tooltip: (
-              <FormattingTooltip label="Heading 2">
+              <FormattingTooltip label='Heading 2'>
                 <h2>Heading 2</h2>
               </FormattingTooltip>
             ),
           },
           {
-            icon: "format_h3",
-            id: "heading-3",
-            type: "option",
-            label: "Heading 3",
+            icon: 'format_h3',
+            id: 'heading-3',
+            type: 'option',
+            label: 'Heading 3',
             handle: ({ editor }) => {
               const { from, to } = range;
 
@@ -163,16 +159,16 @@ export default function MentionDropdown({
                 .run();
             },
             tooltip: (
-              <FormattingTooltip label="Heading 3">
+              <FormattingTooltip label='Heading 3'>
                 <h3>Heading 3</h3>
               </FormattingTooltip>
             ),
           },
           {
-            icon: "format_list_bulleted",
-            id: "bulled-list",
-            type: "option",
-            label: "Bulleted List",
+            icon: 'format_list_bulleted',
+            id: 'bulled-list',
+            type: 'option',
+            label: 'Bulleted List',
             handle: ({ editor }) => {
               const { from, to } = range;
 
@@ -184,7 +180,7 @@ export default function MentionDropdown({
                 .run();
             },
             tooltip: (
-              <FormattingTooltip label="Bulleted List">
+              <FormattingTooltip label='Bulleted List'>
                 <ul>
                   <li>Item 1</li>
                   <li>Item 2</li>
@@ -194,10 +190,10 @@ export default function MentionDropdown({
             ),
           },
           {
-            icon: "format_list_numbered",
-            id: "numbered-list",
-            type: "option",
-            label: "Numbered List",
+            icon: 'format_list_numbered',
+            id: 'numbered-list',
+            type: 'option',
+            label: 'Numbered List',
             handle: ({ editor }) => {
               const { from, to } = range;
 
@@ -209,7 +205,7 @@ export default function MentionDropdown({
                 .run();
             },
             tooltip: (
-              <FormattingTooltip label="Numbered List">
+              <FormattingTooltip label='Numbered List'>
                 <ol>
                   <li>Item 1</li>
                   <li>Item 2</li>
@@ -219,10 +215,10 @@ export default function MentionDropdown({
             ),
           },
           {
-            icon: "horizontal_rule",
-            id: "divider",
-            type: "option",
-            label: "Divider",
+            icon: 'horizontal_rule',
+            id: 'divider',
+            type: 'option',
+            label: 'Divider',
             handle: ({ editor }) => {
               const { from, to } = range;
 
@@ -230,11 +226,11 @@ export default function MentionDropdown({
                 .chain()
                 .focus()
                 .deleteRange({ from, to })
-                .insertContent("---")
+                .insertContent('---')
                 .run();
             },
             tooltip: (
-              <FormattingTooltip label="Divider">
+              <FormattingTooltip label='Divider'>
                 <p>content</p>
                 <hr />
                 <p>content</p>
@@ -256,24 +252,22 @@ export default function MentionDropdown({
 
   useImperativeHandle(ref, () => ({
     onKeyDown: ({ event }: { event: KeyboardEvent }) => {
-      if (event.key === "ArrowUp") {
-        setSelected((prev) =>
-          prev === null ? 0 : (prev - 1 + items.length) % items.length
-        );
+      if (event.key === 'ArrowUp') {
+        setSelected((prev) => prev === null ? 0 : (prev - 1 + items.length) % items.length);
         return true;
       }
 
-      if (event.key === "ArrowDown") {
+      if (event.key === 'ArrowDown') {
         setSelected((prev) => (prev === null ? 0 : (prev + 1) % items.length));
         return true;
       }
 
-      if (event.key === "Enter" && selectedIndex !== null) {
+      if (event.key === 'Enter' && selectedIndex !== null) {
         handleOptionClick(items[selectedIndex]);
         return true;
       }
 
-      if (event.key === "ArrowLeft" && selectedCategory) {
+      if (event.key === 'ArrowLeft' && selectedCategory) {
         setSelectedCategory(null);
         setSelected(null);
         return true;
@@ -293,20 +287,20 @@ export default function MentionDropdown({
   };
 
   const handleOptionClick = (item: Option) => {
-    if (item.type === "option") {
+    if (item.type === 'option') {
       item.handle?.({ editor, command });
     }
 
-    if (item.type === "category") {
+    if (item.type === 'category') {
       setSelectedCategory(item.id);
     }
   };
 
   return (
-    <div className="rounded-xl flex flex-col gap-3 bg-popover border text-sm w-50 p-1 shadow-xl">
+    <div className='rounded-xl flex flex-col gap-3 bg-popover border text-sm w-50 p-1 shadow-xl'>
       {currentCategory.map((category) => (
-        <div key={category.id} className="flex flex-col gap-1">
-          <span className="text-xs text-muted-foreground font-medium px-2 py-1.5">
+        <div key={category.id} className='flex flex-col gap-1'>
+          <span className='text-xs text-muted-foreground font-medium px-2 py-1.5'>
             {category.label}
           </span>
           {category.children?.length
@@ -318,14 +312,13 @@ export default function MentionDropdown({
                       <Button
                         key={item.id}
                         onClick={() => handleOptionClick(item)}
-                        variant="ghost"
-                        size="sm"
-                        onMouseEnter={() =>
-                          handleMouseEnter(item)}
+                        variant='ghost'
+                        size='sm'
+                        onMouseEnter={() => handleMouseEnter(item)}
                         onMouseLeave={handleMouseLeave}
                         className={cn(
-                          "w-full line-clamp-1 text-left justify-start flex gap-2 rounded-lg px-2 py-1.5 hover:bg-accent",
-                          isSelected(item) && "bg-accent",
+                          'w-full line-clamp-1 text-left justify-start flex gap-2 rounded-lg px-2 py-1.5 hover:bg-accent',
+                          isSelected(item) && 'bg-accent',
                         )}
                       >
                         {item.icon && (
@@ -335,7 +328,7 @@ export default function MentionDropdown({
                             size={16}
                           />
                         )}
-                        <span className="line-clamp-1">{item.label}</span>
+                        <span className='line-clamp-1'>{item.label}</span>
                       </Button>
                     </TooltipTrigger>
                     {item.tooltip && (
@@ -344,19 +337,19 @@ export default function MentionDropdown({
                           e.preventDefault();
                           e.stopPropagation();
                         }}
-                        className="max-w-sm bg-secondary text-secondary-foreground shadow-xl rounded-xl p-2 border [&>span>svg]:!bg-secondary [&>span>svg]:!fill-secondary"
-                        align="start"
-                        side="right"
+                        className='max-w-sm bg-secondary text-secondary-foreground shadow-xl rounded-xl p-2 border [&>span>svg]:!bg-secondary [&>span>svg]:!fill-secondary'
+                        align='start'
+                        side='right'
                       >
-                        {typeof item.tooltip === "string"
+                        {typeof item.tooltip === 'string'
                           ? (
                             <>
-                              <div className="flex items-center justify-between gap-2 text-muted-foreground">
-                                <p className="font-medium text-xs px-3 italic mt-4 mb-2">
+                              <div className='flex items-center justify-between gap-2 text-muted-foreground'>
+                                <p className='font-medium text-xs px-3 italic mt-4 mb-2'>
                                   Full prompt
                                 </p>
                               </div>
-                              <div className="px-2.5 py-1.5 prose italic text-sm max-h-96 overflow-y-auto">
+                              <div className='px-2.5 py-1.5 prose italic text-sm max-h-96 overflow-y-auto'>
                                 <Markdown>
                                   {mentionToTag(item.tooltip)}
                                 </Markdown>
@@ -373,8 +366,8 @@ export default function MentionDropdown({
               })
             )
             : (
-              <span className="text-xs my-2 text-muted-foreground flex items-center justify-center gap-1">
-                <Icon name="quick_reference_all" size={14} />
+              <span className='text-xs my-2 text-muted-foreground flex items-center justify-center gap-1'>
+                <Icon name='quick_reference_all' size={14} />
                 No results found
               </span>
             )}

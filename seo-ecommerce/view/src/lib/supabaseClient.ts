@@ -1,17 +1,13 @@
 // Unified Supabase client helper (browser). Avoid static ESM import when bundling causes 404 from worker port.
 // We lazily dynamic-import @supabase/supabase-js when needed. Type-only import is erased at build time.
-import type {
-  Session,
-  SupabaseClient as SupabaseClientType,
-  User,
-} from "@supabase/supabase-js";
+import type { Session, SupabaseClient as SupabaseClientType, User } from '@supabase/supabase-js';
 
 // Lightweight exported alias (we intentionally do not ship full types if tree-shaken out)
 export type SupabaseClient = SupabaseClientType;
 type CreateClientFn = (url: string, anon: string, opts?: any) => SupabaseClient;
 
 // Configurable constants
-const LS_SESSION_KEY = "la-supa-auth"; // persisted session storage key
+const LS_SESSION_KEY = 'la-supa-auth'; // persisted session storage key
 const DEFAULT_IMPORT_TIMEOUT_MS = 8000; // safety timeout for CDN dynamic import
 
 // Single-flight promise for dynamic module load
@@ -40,9 +36,9 @@ async function dynamicCreateClient(): Promise<CreateClientFn> {
     // Prefer local bundle resolution if Vite handled it; fallback to CDN.
     try {
       const m: any = await withTimeout(
-        import("@supabase/supabase-js"),
+        import('@supabase/supabase-js'),
         3000,
-        "local supabase import",
+        'local supabase import',
       );
       if (m?.createClient) return m.createClient as CreateClientFn;
     } catch (err) {
@@ -50,7 +46,7 @@ async function dynamicCreateClient(): Promise<CreateClientFn> {
       if ((globalThis as any)._supabaseDynWarned !== true) {
         (globalThis as any)._supabaseDynWarned = true;
         console.warn(
-          "[supabaseClient] local import fallback -> CDN",
+          '[supabaseClient] local import fallback -> CDN',
           err instanceof Error ? err.message : err,
         );
       }
@@ -58,20 +54,20 @@ async function dynamicCreateClient(): Promise<CreateClientFn> {
     // Optional version pin via global or import.meta.env
     const version = (globalThis as any).PUBLIC_SUPABASE_JS_VERSION ||
       (import.meta as any)?.env?.PUBLIC_SUPABASE_JS_VERSION ||
-      ""; // empty => latest
+      ''; // empty => latest
     const baseCdn = (globalThis as any).PUBLIC_SUPABASE_JS_CDN ||
       (import.meta as any)?.env?.PUBLIC_SUPABASE_JS_CDN ||
-      "https://cdn.jsdelivr.net/npm";
-    const spec = `@supabase/supabase-js${version ? "@" + version : ""}`;
+      'https://cdn.jsdelivr.net/npm';
+    const spec = `@supabase/supabase-js${version ? '@' + version : ''}`;
     const url = `${baseCdn}/${spec}/+esm`;
     // @ts-ignore - dynamic CDN ESM import (no types)
     const cdn: any = await withTimeout(
       import(url),
       DEFAULT_IMPORT_TIMEOUT_MS,
-      "cdn supabase import",
+      'cdn supabase import',
     );
     if (!cdn?.createClient) {
-      throw new Error("Supabase createClient ausente no CDN");
+      throw new Error('Supabase createClient ausente no CDN');
     }
     return cdn.createClient as CreateClientFn;
   })();
@@ -84,15 +80,15 @@ let publicEnvPromise: Promise<{ url: string; anon: string }> | null = null;
 async function fetchPublicEnv(): Promise<{ url: string; anon: string }> {
   if (publicEnvPromise) return publicEnvPromise;
   publicEnvPromise = (async () => {
-    let url = (import.meta as any)?.env?.PUBLIC_SUPABASE_URL || "";
-    let anon = (import.meta as any)?.env?.PUBLIC_SUPABASE_ANON_KEY || "";
+    let url = (import.meta as any)?.env?.PUBLIC_SUPABASE_URL || '';
+    let anon = (import.meta as any)?.env?.PUBLIC_SUPABASE_ANON_KEY || '';
     if (!url || !anon) {
       try {
         // Simple retry (2 attempts) for transient /__env fetch errors
         let attempt = 0;
         while (attempt < 2 && (!url || !anon)) {
           attempt++;
-          const r = await fetch("/__env", { cache: "no-store" });
+          const r = await fetch('/__env', { cache: 'no-store' });
           if (r.ok) {
             const d = await r.json();
             url = d.PUBLIC_SUPABASE_URL || url;
@@ -104,10 +100,10 @@ async function fetchPublicEnv(): Promise<{ url: string; anon: string }> {
         }
       } catch (e) {
         // Allow retry on subsequent call by clearing promise below in catch handler
-        console.warn("[supabaseClient] falha ao buscar /__env", e);
+        console.warn('[supabaseClient] falha ao buscar /__env', e);
       }
     }
-    if (!url || !anon) throw new Error("Supabase env ausente");
+    if (!url || !anon) throw new Error('Supabase env ausente');
     return { url, anon };
   })();
   // If it rejects, allow a new attempt later.
@@ -122,7 +118,7 @@ let clientInitPromise: Promise<SupabaseClient> | null = null;
 let cachedSession: Session | null = null;
 
 export async function loadSupabase(options?: { authStorageKey?: string }) {
-  if (typeof window === "undefined") throw new Error("Client only");
+  if (typeof window === 'undefined') throw new Error('Client only');
   if (client) return client;
   if (clientInitPromise) return clientInitPromise;
   clientInitPromise = (async () => {
@@ -187,7 +183,7 @@ export async function waitForSession(
     // Use rAF when possible to integrate with frame loop
     await new Promise((
       r,
-    ) => (typeof requestAnimationFrame !== "undefined"
+    ) => (typeof requestAnimationFrame !== 'undefined'
       ? requestAnimationFrame(() => r(null))
       : setTimeout(r, 50))
     );
@@ -232,12 +228,12 @@ export interface AnalysisRecord {
 export async function saveAnalysisDirect(url: string, data: any) {
   const supa = await getSupabase();
   const user = getUserSync();
-  if (!user) throw new Error("Usuário não autenticado");
+  if (!user) throw new Error('Usuário não autenticado');
   const user_hash = user.id;
   const { data: inserted, error } = await supa
-    .from("analyses")
+    .from('analyses')
     .insert({ user_hash, url, data })
-    .select("id")
+    .select('id')
     .single();
   if (error) throw error;
   return inserted?.id;

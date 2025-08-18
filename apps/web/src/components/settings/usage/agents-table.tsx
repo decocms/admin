@@ -1,18 +1,14 @@
-import { useMemo, useState } from "react";
-import type { Agent, AgentUsage, AgentUsageItem, ThreadUsage } from "@deco/sdk";
-import { Table, type TableColumn } from "../../common/table/index.tsx";
-import { AgentAvatar } from "../../common/avatar/agent.tsx";
-import { color } from "./util.ts";
-import { Dialog } from "@deco/ui/components/dialog.tsx";
-import { useWorkspaceLink } from "../../../hooks/use-navigate-workspace.ts";
-import {
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from "@deco/ui/components/dialog.tsx";
-import { Button } from "@deco/ui/components/button.tsx";
-import { Link } from "react-router";
-import { Icon } from "@deco/ui/components/icon.tsx";
+import { useMemo, useState } from 'react';
+import type { Agent, AgentUsage, AgentUsageItem, ThreadUsage } from '@deco/sdk';
+import { Table, type TableColumn } from '../../common/table/index.tsx';
+import { AgentAvatar } from '../../common/avatar/agent.tsx';
+import { color } from './util.ts';
+import { Dialog } from '@deco/ui/components/dialog.tsx';
+import { useWorkspaceLink } from '../../../hooks/use-navigate-workspace.ts';
+import { DialogContent, DialogHeader, DialogTitle } from '@deco/ui/components/dialog.tsx';
+import { Button } from '@deco/ui/components/button.tsx';
+import { Link } from 'react-router';
+import { Icon } from '@deco/ui/components/icon.tsx';
 
 interface AgentUsageMetrics {
   agentUsage: AgentUsageItem;
@@ -36,94 +32,94 @@ export function AgentUsageDetailsDialog({
   const withWorkspaceLink = useWorkspaceLink();
 
   return (
-    <DialogContent className="sm:max-w-[400px] p-6">
+    <DialogContent className='sm:max-w-[400px] p-6'>
       <DialogHeader>
         <DialogTitle>Agent Details</DialogTitle>
       </DialogHeader>
-      <div className="flex flex-col gap-6">
-        <div className="flex items-center gap-4">
-          <AgentAvatar url={agent.avatar} fallback={agent.name} size="lg" />
-          <div className="flex flex-col justify-center">
-            <span className="text-base font-semibold text-foreground">
+      <div className='flex flex-col gap-6'>
+        <div className='flex items-center gap-4'>
+          <AgentAvatar url={agent.avatar} fallback={agent.name} size='lg' />
+          <div className='flex flex-col justify-center'>
+            <span className='text-base font-semibold text-foreground'>
               {agent.name}
             </span>
-            <span className="text-sm text-muted-foreground mt-1">
+            <span className='text-sm text-muted-foreground mt-1'>
               $ {metrics.agentUsage.total} total cost
             </span>
           </div>
         </div>
 
-        <div className="border-t border-border" />
+        <div className='border-t border-border' />
 
-        <div className="flex flex-col gap-2">
-          <span className="text-xs font-medium text-muted-foreground mb-1">
+        <div className='flex flex-col gap-2'>
+          <span className='text-xs font-medium text-muted-foreground mb-1'>
             Usage Statistics
           </span>
-          <div className="grid grid-cols-2 gap-4">
-            <div className="flex flex-col">
-              <span className="text-sm font-medium text-foreground">
+          <div className='grid grid-cols-2 gap-4'>
+            <div className='flex flex-col'>
+              <span className='text-sm font-medium text-foreground'>
                 {metrics.uniqueUsers}
               </span>
-              <span className="text-xs text-muted-foreground">Users</span>
+              <span className='text-xs text-muted-foreground'>Users</span>
             </div>
-            <div className="flex flex-col">
-              <span className="text-sm font-medium text-foreground">
+            <div className='flex flex-col'>
+              <span className='text-sm font-medium text-foreground'>
                 {metrics.threadsCount}
               </span>
-              <span className="text-xs text-muted-foreground">Threads</span>
+              <span className='text-xs text-muted-foreground'>Threads</span>
             </div>
-            <div className="flex flex-col">
-              <span className="text-sm font-medium text-foreground">
+            <div className='flex flex-col'>
+              <span className='text-sm font-medium text-foreground'>
                 {metrics.totalTokens?.toLocaleString()}
               </span>
-              <span className="text-xs text-muted-foreground">
+              <span className='text-xs text-muted-foreground'>
                 Total Tokens
               </span>
             </div>
-            <div className="flex flex-col">
-              <span className="text-sm font-medium text-foreground">
+            <div className='flex flex-col'>
+              <span className='text-sm font-medium text-foreground'>
                 {metrics.promptTokens?.toLocaleString()}
               </span>
-              <span className="text-xs text-muted-foreground">
+              <span className='text-xs text-muted-foreground'>
                 Prompt Tokens
               </span>
             </div>
-            <div className="flex flex-col">
-              <span className="text-sm font-medium text-foreground">
+            <div className='flex flex-col'>
+              <span className='text-sm font-medium text-foreground'>
                 {metrics.completionTokens?.toLocaleString()}
               </span>
-              <span className="text-xs text-muted-foreground">
+              <span className='text-xs text-muted-foreground'>
                 Completion Tokens
               </span>
             </div>
           </div>
         </div>
 
-        <div className="border-t border-border" />
+        <div className='border-t border-border' />
 
-        <div className="flex flex-col gap-2">
-          <span className="text-xs font-medium text-muted-foreground mb-1">
+        <div className='flex flex-col gap-2'>
+          <span className='text-xs font-medium text-muted-foreground mb-1'>
             Cost Breakdown
           </span>
-          <div className="flex flex-col">
-            <span className="text-lg font-semibold text-foreground">
+          <div className='flex flex-col'>
+            <span className='text-lg font-semibold text-foreground'>
               $ {metrics.agentUsage.total}
             </span>
-            <span className="text-xs text-muted-foreground">Total Cost</span>
+            <span className='text-xs text-muted-foreground'>Total Cost</span>
           </div>
         </div>
 
         <Button
-          variant="outline"
-          size="sm"
+          variant='outline'
+          size='sm'
           asChild
-          className="mt-2 w-full justify-center"
+          className='mt-2 w-full justify-center'
         >
           <Link
             to={withWorkspaceLink(`/agent/${agent.id}/${crypto.randomUUID()}`)}
             onClick={onClose}
           >
-            <Icon name="open_in_new" size={16} />
+            <Icon name='open_in_new' size={16} />
             View agent
           </Link>
         </Button>
@@ -141,8 +137,8 @@ export function UsageTable({
   agentUsage: AgentUsage;
   threadUsage: ThreadUsage;
 }) {
-  const [sortKey, setSortKey] = useState<string>("total");
-  const [sortDirection, setSortDirection] = useState<"asc" | "desc">("desc");
+  const [sortKey, setSortKey] = useState<string>('total');
+  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
   const [selectedAgentDetails, setSelectedAgentDetails] = useState<
     {
       agent: Agent;
@@ -157,9 +153,7 @@ export function UsageTable({
         const agentUsageData = agentUsage.items?.find(
           (item) => item.id === agent.id,
         );
-        const agentThreads = threadUsage.items?.filter((thread) =>
-          thread.agentId === agent.id
-        ) ||
+        const agentThreads = threadUsage.items?.filter((thread) => thread.agentId === agent.id) ||
           [];
 
         // Calculate metrics from thread data
@@ -209,58 +203,54 @@ export function UsageTable({
   // Define table columns
   const columns: TableColumn<(typeof enrichedAgents)[0]>[] = [
     {
-      id: "color",
-      header: "",
+      id: 'color',
+      header: '',
       render: (agent) => (
         <div
-          className="w-3 h-3 rounded"
+          className='w-3 h-3 rounded'
           style={{ backgroundColor: agent.color }}
         />
       ),
     },
     {
-      id: "name",
-      header: "Agent",
+      id: 'name',
+      header: 'Agent',
       render: (agent) => (
-        <div className="flex items-center gap-3">
-          <AgentAvatar url={agent.avatar} fallback={agent.name} size="sm" />
-          <span className="font-medium">{agent.name}</span>
+        <div className='flex items-center gap-3'>
+          <AgentAvatar url={agent.avatar} fallback={agent.name} size='sm' />
+          <span className='font-medium'>{agent.name}</span>
         </div>
       ),
       sortable: true,
     },
     {
-      id: "users",
-      header: "Users",
-      render: (agent) => (
-        <span className="text-sm">{agent.metrics.uniqueUsers}</span>
-      ),
+      id: 'users',
+      header: 'Users',
+      render: (agent) => <span className='text-sm'>{agent.metrics.uniqueUsers}</span>,
       sortable: true,
     },
     {
-      id: "threads",
-      header: "Threads",
-      render: (agent) => (
-        <span className="text-sm">{agent.metrics.threadsCount}</span>
-      ),
+      id: 'threads',
+      header: 'Threads',
+      render: (agent) => <span className='text-sm'>{agent.metrics.threadsCount}</span>,
       sortable: true,
     },
     {
-      id: "tokens",
-      header: "Tokens",
+      id: 'tokens',
+      header: 'Tokens',
       render: (agent) => (
-        <span className="text-sm">
+        <span className='text-sm'>
           {agent.metrics.totalTokens.toLocaleString()}
         </span>
       ),
       sortable: true,
     },
     {
-      id: "total",
-      header: "Total Cost",
+      id: 'total',
+      header: 'Total Cost',
       render: (agent) => (
-        <span className="font-medium">
-          $ {agent.metrics.agentUsage?.total || "0.00"}
+        <span className='font-medium'>
+          $ {agent.metrics.agentUsage?.total || '0.00'}
         </span>
       ),
       sortable: true,
@@ -273,29 +263,27 @@ export function UsageTable({
     key: string,
   ): string | number => {
     switch (key) {
-      case "name":
+      case 'name':
         return agent.name.toLowerCase();
-      case "users":
+      case 'users':
         return agent.metrics.uniqueUsers;
-      case "threads":
+      case 'threads':
         return agent.metrics.threadsCount;
-      case "tokens":
+      case 'tokens':
         return agent.metrics.totalTokens;
-      case "total":
+      case 'total':
         return agent.totalCost;
       default:
-        return "";
+        return '';
     }
   };
 
   const handleSort = (key: string) => {
     if (sortKey === key) {
-      setSortDirection((prev: "asc" | "desc") =>
-        prev === "asc" ? "desc" : "asc"
-      );
+      setSortDirection((prev: 'asc' | 'desc') => prev === 'asc' ? 'desc' : 'asc');
     } else {
       setSortKey(key);
-      setSortDirection("asc");
+      setSortDirection('asc');
     }
   };
 
@@ -305,15 +293,15 @@ export function UsageTable({
       const aVal = getSortValue(a, sortKey);
       const bVal = getSortValue(b, sortKey);
 
-      if (typeof aVal === "number" && typeof bVal === "number") {
-        return sortDirection === "asc" ? aVal - bVal : bVal - aVal;
+      if (typeof aVal === 'number' && typeof bVal === 'number') {
+        return sortDirection === 'asc' ? aVal - bVal : bVal - aVal;
       }
 
       const aStr = String(aVal);
       const bStr = String(bVal);
 
-      if (aStr < bStr) return sortDirection === "asc" ? -1 : 1;
-      if (aStr > bStr) return sortDirection === "asc" ? 1 : -1;
+      if (aStr < bStr) return sortDirection === 'asc' ? -1 : 1;
+      if (aStr > bStr) return sortDirection === 'asc' ? 1 : -1;
       return 0;
     });
   }, [enrichedAgents, sortKey, sortDirection]);
@@ -326,8 +314,7 @@ export function UsageTable({
         sortKey={sortKey}
         sortDirection={sortDirection}
         onSort={handleSort}
-        onRowClick={(agent) =>
-          setSelectedAgentDetails({ agent, metrics: agent.metrics })}
+        onRowClick={(agent) => setSelectedAgentDetails({ agent, metrics: agent.metrics })}
       />
 
       <Dialog

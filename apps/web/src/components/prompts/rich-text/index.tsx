@@ -1,15 +1,15 @@
-import { usePrompts } from "@deco/sdk";
-import { Icon } from "@deco/ui/components/icon.tsx";
-import { cn } from "@deco/ui/lib/utils.ts";
-import Placeholder from "@tiptap/extension-placeholder";
-import { EditorContent, type Extensions, useEditor } from "@tiptap/react";
-import StarterKit from "@tiptap/starter-kit";
-import { useEffect, useMemo, useRef } from "react";
-import { Markdown } from "tiptap-markdown";
-import BubbleMenu from "./bubble-menu.tsx";
-import { mentionToTag, removeMarkdownCodeBlock } from "./common.ts";
-import { Comment } from "./extensions/comment.tsx";
-import { mentions } from "./extensions/mentions/mentions.ts";
+import { usePrompts } from '@deco/sdk';
+import { Icon } from '@deco/ui/components/icon.tsx';
+import { cn } from '@deco/ui/lib/utils.ts';
+import Placeholder from '@tiptap/extension-placeholder';
+import { EditorContent, type Extensions, useEditor } from '@tiptap/react';
+import StarterKit from '@tiptap/starter-kit';
+import { useEffect, useMemo, useRef } from 'react';
+import { Markdown } from 'tiptap-markdown';
+import BubbleMenu from './bubble-menu.tsx';
+import { mentionToTag, removeMarkdownCodeBlock } from './common.ts';
+import { Comment } from './extensions/comment.tsx';
+import { mentions } from './extensions/mentions/mentions.ts';
 
 interface Props {
   value: string;
@@ -56,7 +56,7 @@ export default function RichTextArea({
         transformPastedText: true,
       }),
       Placeholder.configure({
-        placeholder: placeholder ?? "Type a message...",
+        placeholder: placeholder ?? 'Type a message...',
       }),
       Comment,
     ];
@@ -87,7 +87,7 @@ export default function RichTextArea({
       editorProps: {
         attributes: {
           class: cn(
-            "h-full placeholder:text-muted-foreground field-sizing-content w-full bg-transparent text-base transition-[color,box-shadow] outline-none disabled:cursor-not-allowed disabled:opacity-50 prose whitespace-pre-wrap break-words wrap-anywhere",
+            'h-full placeholder:text-muted-foreground field-sizing-content w-full bg-transparent text-base transition-[color,box-shadow] outline-none disabled:cursor-not-allowed disabled:opacity-50 prose whitespace-pre-wrap break-words wrap-anywhere',
             className,
           ),
         },
@@ -103,7 +103,7 @@ export default function RichTextArea({
     const _value = removeMarkdownCodeBlock(value);
     if (mentionToTag(_value) !== editor.storage.markdown.getMarkdown()) {
       editor.commands.setContent(mentionToTag(_value, true), false, {
-        preserveWhitespace: "full",
+        preserveWhitespace: 'full',
       });
     }
   }, [value, editor]);
@@ -113,16 +113,16 @@ export default function RichTextArea({
   }, [disabled, editor]);
 
   return (
-    <div className="h-full flex flex-col">
+    <div className='h-full flex flex-col'>
       {enableMentions && !hideMentionsLabel && (
-        <div className="rounded-full flex gap-1 bg-muted text-muted-foreground w-fit items-center px-1.5 py-0.5 mb-2.5 select-none">
-          <Icon name="info" size={10} />
-          <p className="text-xs font-medium">Type / to add tools and more</p>
+        <div className='rounded-full flex gap-1 bg-muted text-muted-foreground w-fit items-center px-1.5 py-0.5 mb-2.5 select-none'>
+          <Icon name='info' size={10} />
+          <p className='text-xs font-medium'>Type / to add tools and more</p>
         </div>
       )}
       <BubbleMenu editor={editor} />
       <EditorContent
-        className="h-full"
+        className='h-full'
         editor={editor}
         onKeyDown={onKeyDown}
         onKeyUp={onKeyUp}

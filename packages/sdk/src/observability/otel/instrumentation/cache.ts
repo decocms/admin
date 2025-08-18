@@ -1,9 +1,9 @@
-import { SpanKind, type SpanOptions, trace } from "@opentelemetry/api";
-import { wrap } from "../wrap.ts";
+import { SpanKind, type SpanOptions, trace } from '@opentelemetry/api';
+import { wrap } from '../wrap.ts';
 
 type CacheFns = Cache[keyof Cache];
 
-const tracer = trace.getTracer("cache instrumentation");
+const tracer = trace.getTracer('cache instrumentation');
 
 function sanitiseURL(url: string): string {
   const u = new URL(url);
@@ -18,9 +18,9 @@ function instrumentFunction<T extends CacheFns>(
   const handler: ProxyHandler<typeof fn> = {
     apply(target, thisArg, argArray) {
       const attributes = {
-        "cache.name": cacheName,
-        "http.url": argArray[0].url ? sanitiseURL(argArray[0].url) : undefined,
-        "cache.operation": op,
+        'cache.name': cacheName,
+        'http.url': argArray[0].url ? sanitiseURL(argArray[0].url) : undefined,
+        'cache.operation': op,
       };
       const options: SpanOptions = { kind: SpanKind.CLIENT, attributes };
       return tracer.startActiveSpan(
@@ -28,8 +28,8 @@ function instrumentFunction<T extends CacheFns>(
         options,
         async (span) => {
           const result = await Reflect.apply(target, thisArg, argArray);
-          if (op === "match") {
-            span.setAttribute("cache.hit", !!result);
+          if (op === 'match') {
+            span.setAttribute('cache.hit', !!result);
           }
           span.end();
           return result;
@@ -43,7 +43,7 @@ function instrumentFunction<T extends CacheFns>(
 function instrumentCache(cache: Cache, cacheName: string): Cache {
   const handler: ProxyHandler<typeof cache> = {
     get(target, prop) {
-      if (prop === "delete" || prop === "match" || prop === "put") {
+      if (prop === 'delete' || prop === 'match' || prop === 'put') {
         const fn = Reflect.get(target, prop).bind(target);
         return instrumentFunction(fn, cacheName, prop);
       } else {
@@ -54,7 +54,7 @@ function instrumentCache(cache: Cache, cacheName: string): Cache {
   return wrap(cache, handler);
 }
 
-function instrumentOpen(openFn: CacheStorage["open"]): CacheStorage["open"] {
+function instrumentOpen(openFn: CacheStorage['open']): CacheStorage['open'] {
   const handler: ProxyHandler<typeof openFn> = {
     async apply(target, thisArg, argArray) {
       const cacheName = argArray[0];
@@ -68,10 +68,10 @@ function instrumentOpen(openFn: CacheStorage["open"]): CacheStorage["open"] {
 function _instrumentGlobalCache() {
   const handler: ProxyHandler<typeof caches> = {
     get(target, prop) {
-      if (prop === "default") {
+      if (prop === 'default') {
         const cache = (target as unknown as { default: Cache }).default;
-        return instrumentCache(cache, "default");
-      } else if (prop === "open") {
+        return instrumentCache(cache, 'default');
+      } else if (prop === 'open') {
         const openFn = Reflect.get(target, prop).bind(target);
         return instrumentOpen(openFn);
       } else {

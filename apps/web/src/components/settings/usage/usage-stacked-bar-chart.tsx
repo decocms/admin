@@ -1,7 +1,7 @@
-import type { Agent, AgentUsage, Member, ThreadUsage } from "@deco/sdk";
-import { ChartBarStack } from "./stacked-bar-chart.tsx";
-import { TimeRange } from "./usage.tsx";
-import { color } from "./util.ts";
+import type { Agent, AgentUsage, Member, ThreadUsage } from '@deco/sdk';
+import { ChartBarStack } from './stacked-bar-chart.tsx';
+import { TimeRange } from './usage.tsx';
+import { color } from './util.ts';
 
 export interface UsageChartData {
   chartData: ChartBarStack[];
@@ -14,14 +14,14 @@ export function hourId(transaction: { timestamp: string }): string {
   const hour = date.getHours();
   const isAM = hour < 12;
   const hour12 = hour % 12 === 0 ? 12 : hour % 12;
-  const period = isAM ? "AM" : "PM";
+  const period = isAM ? 'AM' : 'PM';
   return `${hour12}${period}`;
 }
 
 export function dayId(transaction: { timestamp: string }): string {
   const date = new Date(transaction.timestamp);
-  const options = { month: "short", day: "numeric" } as const;
-  return date.toLocaleDateString("en-US", options);
+  const options = { month: 'short', day: 'numeric' } as const;
+  return date.toLocaleDateString('en-US', options);
 }
 
 /**
@@ -43,10 +43,10 @@ export function weekId(transaction: { timestamp: string }): string {
   endDate.setDate(startDate.getDate() + 6);
   endDate.setHours(23, 59, 59, 999); // Optional: Set time to the end of the day
 
-  const options = { month: "short", day: "numeric" } as const;
+  const options = { month: 'short', day: 'numeric' } as const;
 
-  const startDateString = startDate.toLocaleDateString("en-US", options);
-  const endDateString = endDate.toLocaleDateString("en-US", options);
+  const startDateString = startDate.toLocaleDateString('en-US', options);
+  const endDateString = endDate.toLocaleDateString('en-US', options);
 
   return `${startDateString} - ${endDateString}`;
 }
@@ -231,11 +231,11 @@ const createStackBuilder = <T extends BaseTransaction>({
 
     if (otherCost > 0) {
       allData.push({
-        id: "other",
-        name: "Other",
-        avatar: "",
+        id: 'other',
+        name: 'Other',
+        avatar: '',
         cost: otherCost,
-        color: "#E5E7EB",
+        color: '#E5E7EB',
         type: getType(),
       });
     }
@@ -255,22 +255,22 @@ const buildAgentStack = createStackBuilder<AgentChartTransaction>({
   getName: (transaction) => transaction.agentName,
   getAvatar: (transaction) => transaction.agentAvatar,
   getAdditionalData: () => ({}),
-  getType: () => "agent",
+  getType: () => 'agent',
 });
 
 const buildUserStack = createStackBuilder<UserChartTransaction>({
   getKey: (transaction) => transaction.userId,
   getName: (transaction) => transaction.userName,
-  getAvatar: () => "",
-  getType: () => "user",
+  getAvatar: () => '',
+  getType: () => 'user',
   getAdditionalData: (transaction) => ({ member: transaction.member }),
 });
 
 const buildThreadStack = createStackBuilder<ThreadChartTransaction>({
   getKey: (transaction) => transaction.threadId,
   getName: (transaction) => transaction.threadTitle,
-  getAvatar: () => "",
-  getType: () => "thread",
+  getAvatar: () => '',
+  getType: () => 'thread',
   getAdditionalData: () => ({}),
 });
 
@@ -314,7 +314,7 @@ export function createAgentChartData(
 
   let chartStackedBars: ChartBarStack[] = [];
 
-  if (timeRange === "day") {
+  if (timeRange === 'day') {
     const allTransactionsByDay = createMap({
       keys: allWeekDaysKeys,
       fillWith: allTransactions,
@@ -335,7 +335,7 @@ export function createAgentChartData(
         label,
       })
     );
-  } else if (timeRange === "week") {
+  } else if (timeRange === 'week') {
     const allTransactionsByDay = createMap<AgentChartTransaction>({
       keys: allWeekDaysKeys,
       fillWith: allTransactions,
@@ -347,7 +347,7 @@ export function createAgentChartData(
         label,
       })
     );
-  } else if (timeRange === "month") {
+  } else if (timeRange === 'month') {
     const allTransactionsByWeek = createMap<AgentChartTransaction>({
       keys: allMonthWeeksKeys,
       fillWith: allTransactions,
@@ -360,7 +360,7 @@ export function createAgentChartData(
       })
     );
   } else {
-    throw new Error("Unknown time Range");
+    throw new Error('Unknown time Range');
   }
 
   // Calculate totals from the filtered transactions used in the chart
@@ -373,7 +373,7 @@ export function createAgentChartData(
   const filteredAgentIds = new Set<string>();
   chartStackedBars.forEach((stack) => {
     stack.items.forEach((item) => {
-      if (item.type === "agent" && item.id !== "other") {
+      if (item.type === 'agent' && item.id !== 'other') {
         filteredAgentIds.add(item.id);
       }
     });
@@ -418,7 +418,7 @@ export function createUserChartData(
           timestamp: transaction.timestamp,
           amount: transaction.amount,
           userId: thread.generatedBy,
-          userName: member?.profiles?.email || "Unknown User",
+          userName: member?.profiles?.email || 'Unknown User',
           member: member || null,
         });
       });
@@ -435,7 +435,7 @@ export function createUserChartData(
 
   let chartStackedBars: ChartBarStack[] = [];
 
-  if (timeRange === "day") {
+  if (timeRange === 'day') {
     const allTransactionsByHour = createMap<UserChartTransaction>({
       keys: allDayHoursKeys,
       fillWith: allTransactions,
@@ -447,7 +447,7 @@ export function createUserChartData(
         label,
       })
     );
-  } else if (timeRange === "week") {
+  } else if (timeRange === 'week') {
     const allTransactionsByDay = createMap<UserChartTransaction>({
       keys: allWeekDaysKeys,
       fillWith: allTransactions,
@@ -459,7 +459,7 @@ export function createUserChartData(
         label,
       })
     );
-  } else if (timeRange === "month") {
+  } else if (timeRange === 'month') {
     const allTransactionsByWeek = createMap<UserChartTransaction>({
       keys: allMonthWeeksKeys,
       fillWith: allTransactions,
@@ -472,7 +472,7 @@ export function createUserChartData(
       })
     );
   } else {
-    throw new Error("Unknown time Range");
+    throw new Error('Unknown time Range');
   }
 
   // Calculate totals from the filtered transactions used in the chart
@@ -485,7 +485,7 @@ export function createUserChartData(
   const filteredUserIds = new Set<string>();
   chartStackedBars.forEach((stack) => {
     stack.items.forEach((item) => {
-      if (item.type === "user" && item.id !== "other") {
+      if (item.type === 'user' && item.id !== 'other') {
         filteredUserIds.add(item.id);
       }
     });
@@ -543,7 +543,7 @@ export function createThreadChartData(
 
   let chartStackedBars: ChartBarStack[] = [];
 
-  if (timeRange === "day") {
+  if (timeRange === 'day') {
     const allTransactionsByHour = createMap<ThreadChartTransaction>({
       keys: allDayHoursKeys,
       fillWith: allTransactions,
@@ -556,7 +556,7 @@ export function createThreadChartData(
         label,
       })
     );
-  } else if (timeRange === "week") {
+  } else if (timeRange === 'week') {
     const allTransactionsByDay = createMap<ThreadChartTransaction>({
       keys: allWeekDaysKeys,
       fillWith: allTransactions,
@@ -569,7 +569,7 @@ export function createThreadChartData(
         label,
       })
     );
-  } else if (timeRange === "month") {
+  } else if (timeRange === 'month') {
     const allTransactionsByWeek = createMap<ThreadChartTransaction>({
       keys: allMonthWeeksKeys,
       fillWith: allTransactions,
@@ -583,7 +583,7 @@ export function createThreadChartData(
       })
     );
   } else {
-    throw new Error("Unknown time Range");
+    throw new Error('Unknown time Range');
   }
 
   // Calculate totals from the filtered transactions used in the chart
@@ -596,7 +596,7 @@ export function createThreadChartData(
   const filteredThreadIds = new Set<string>();
   chartStackedBars.forEach((stack) => {
     stack.items.forEach((item) => {
-      if (item.type === "thread" && item.id !== "other") {
+      if (item.type === 'thread' && item.id !== 'other') {
         filteredThreadIds.add(item.id);
       }
     });

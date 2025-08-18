@@ -1,33 +1,30 @@
-import { createOpenAI } from "@ai-sdk/openai";
-import type { MastraVector } from "@mastra/core";
-import { basename } from "@std/path";
-import { embedMany } from "ai";
-import { z } from "zod";
-import { KNOWLEDGE_BASE_GROUP } from "../../constants.ts";
-import { InternalServerError } from "../../errors.ts";
-import { type AppContext } from "../../mcp/context.ts";
-import {
-  FileProcessor,
-  type ProcessedDocument,
-} from "../../mcp/file-processor.ts";
-import { WorkspaceMemory } from "../../memory/memory.ts";
-import type { Workspace } from "../../path.ts";
-import { getServerClient } from "../../storage/supabase/client.ts";
+import { createOpenAI } from '@ai-sdk/openai';
+import type { MastraVector } from '@mastra/core';
+import { basename } from '@std/path';
+import { embedMany } from 'ai';
+import { z } from 'zod';
+import { KNOWLEDGE_BASE_GROUP } from '../../constants.ts';
+import { InternalServerError } from '../../errors.ts';
+import { type AppContext } from '../../mcp/context.ts';
+import { FileProcessor, type ProcessedDocument } from '../../mcp/file-processor.ts';
+import { WorkspaceMemory } from '../../memory/memory.ts';
+import type { Workspace } from '../../path.ts';
+import { getServerClient } from '../../storage/supabase/client.ts';
 
 // Workflow message schema for knowledge base file processing
 export const KbFileProcessorMessageSchema = z.object({
-  fileUrl: z.string().url("Invalid file URL"),
+  fileUrl: z.string().url('Invalid file URL'),
   path: z
     .string()
-    .describe("File path from file added using workspace fs_write tool")
+    .describe('File path from file added using workspace fs_write tool')
     .optional(),
-  filename: z.string().describe("The name of the file").optional(),
+  filename: z.string().describe('The name of the file').optional(),
   metadata: z
     .record(z.string(), z.union([z.string(), z.boolean()]))
-    .describe("Additional metadata for the file")
+    .describe('Additional metadata for the file')
     .optional(),
-  workspace: z.string().min(1, "Workspace is required"),
-  knowledgeBaseName: z.string().min(1, "Knowledge base name is required"),
+  workspace: z.string().min(1, 'Workspace is required'),
+  knowledgeBaseName: z.string().min(1, 'Knowledge base name is required'),
 });
 
 export type KbFileProcessorMessage = z.infer<
@@ -52,14 +49,14 @@ export interface KbFileProcessorWorkflow {
 
 // Environment variables schema for Workflow processing
 export const WorkflowEnvSchema = z.object({
-  OPENAI_API_KEY: z.string().min(1, "OpenAI API key is required"),
-  SUPABASE_URL: z.string().url("Invalid Supabase URL"),
-  SUPABASE_SERVER_TOKEN: z.string().min(1, "Supabase server token is required"),
-  TURSO_ADMIN_TOKEN: z.string().min(1, "Turso admin token is required"),
-  TURSO_ORGANIZATION: z.string().min(1, "Turso organization is required"),
+  OPENAI_API_KEY: z.string().min(1, 'OpenAI API key is required'),
+  SUPABASE_URL: z.string().url('Invalid Supabase URL'),
+  SUPABASE_SERVER_TOKEN: z.string().min(1, 'Supabase server token is required'),
+  TURSO_ADMIN_TOKEN: z.string().min(1, 'Turso admin token is required'),
+  TURSO_ORGANIZATION: z.string().min(1, 'Turso organization is required'),
   TURSO_GROUP_DATABASE_TOKEN: z
     .string()
-    .min(1, "Turso group database token is required"),
+    .min(1, 'Turso group database token is required'),
   VECTOR_BATCH_SIZE: z.string().optional(),
   WORKSPACE_DB: z.any().optional(),
 });
@@ -72,7 +69,7 @@ const DEFAULT_BATCH_SIZE = 50;
  */
 export function getBatchSize(env: WorkflowEnvs): number {
   const envBatchSize = env.VECTOR_BATCH_SIZE;
-  if (typeof envBatchSize === "string") {
+  if (typeof envBatchSize === 'string') {
     const parsed = parseInt(envBatchSize, 10);
     if (!isNaN(parsed) && parsed > 0) {
       return parsed;
@@ -98,7 +95,7 @@ async function getVectorClient(workspace: string, env: WorkflowEnvs) {
 
   const vector = mem.vector;
   if (!vector) {
-    throw new InternalServerError("Missing vector client");
+    throw new InternalServerError('Missing vector client');
   }
   return vector;
 }
@@ -123,7 +120,7 @@ async function generateFileChunks(
     metadata: Record<string, unknown>;
   }>;
   totalChunkCount: number;
-  fileMetadata: ProcessedDocument["metadata"] & { path?: string };
+  fileMetadata: ProcessedDocument['metadata'] & { path?: string };
 }> {
   // Process file and generate chunks
   const fileProcessor = new FileProcessor({
@@ -166,7 +163,7 @@ async function generateEmbeddings(
   const openai = createOpenAI({
     apiKey,
   });
-  const embedder = openai.embedding("text-embedding-3-small");
+  const embedder = openai.embedding('text-embedding-3-small');
 
   const { embeddings } = await embedMany({
     model: embedder,
@@ -234,10 +231,10 @@ async function updateAssetRecord(
 
   // Update the asset record
   const { data: previousAsset } = await supabase
-    .from("deco_chat_assets")
-    .select("doc_ids")
-    .eq("workspace", workspace)
-    .eq("file_url", fileUrl)
+    .from('deco_chat_assets')
+    .select('doc_ids')
+    .eq('workspace', workspace)
+    .eq('file_url', fileUrl)
     .single();
 
   const docIds = previousAsset?.doc_ids ?? [];
@@ -246,15 +243,15 @@ async function updateAssetRecord(
   const finished = allStoredIds.length === totalChunkCount;
 
   const { error } = await supabase
-    .from("deco_chat_assets")
+    .from('deco_chat_assets')
     .update({
       doc_ids: allStoredIds,
       filename: finalFilename,
       metadata: fileMetadata,
-      ...(finished ? { status: "completed" } : {}),
+      ...(finished ? { status: 'completed' } : {}),
     })
-    .eq("workspace", workspace)
-    .eq("file_url", fileUrl);
+    .eq('workspace', workspace)
+    .eq('file_url', fileUrl);
 
   if (error) {
     throw new InternalServerError(`Failed to update asset: ${error.message}`);
@@ -270,16 +267,18 @@ export async function processBatch(
   message: KbFileProcessorMessage,
   env: z.infer<typeof WorkflowEnvSchema>,
 ): Promise<ProcessingResult> {
-  const { fileUrl, path, filename, metadata, workspace, knowledgeBaseName } =
-    message;
+  const { fileUrl, path, filename, metadata, workspace, knowledgeBaseName } = message;
   const batchSize = getBatchSize(env);
 
   let allStoredIds: string[] = [];
   const vector = await getVectorClient(workspace, env);
 
   try {
-    const { enrichedChunks, totalChunkCount, fileMetadata } =
-      await generateFileChunks(fileUrl, path, metadata);
+    const { enrichedChunks, totalChunkCount, fileMetadata } = await generateFileChunks(
+      fileUrl,
+      path,
+      metadata,
+    );
 
     if (enrichedChunks.length === 0) {
       // No more chunks to process
@@ -377,16 +376,16 @@ export async function updateAssetStatusToFailed(
     const supabase = createKnowledgeBaseSupabaseClient(env);
 
     await supabase
-      .from("deco_chat_assets")
+      .from('deco_chat_assets')
       .update({
-        status: "failed",
+        status: 'failed',
         metadata: {
           error: params.error,
           failed_at: new Date().toISOString(),
         },
       })
-      .eq("workspace", params.workspace)
-      .eq("file_url", params.fileUrl);
+      .eq('workspace', params.workspace)
+      .eq('file_url', params.fileUrl);
   } catch {
     /** ignore */
   }
@@ -401,7 +400,7 @@ export async function startKbFileProcessorWorkflow(
 ): Promise<void> {
   if (!context.kbFileProcessor) {
     throw new InternalServerError(
-      "KB file processor workflow is not available",
+      'KB file processor workflow is not available',
     );
   }
 

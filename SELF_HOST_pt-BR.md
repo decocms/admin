@@ -132,19 +132,15 @@ As Apps Deco oferecem três capacidades principais:
 
 ```typescript
 // main.ts - Estrutura básica de uma App Deco
-import { withRuntime } from "@deco/workers-runtime";
-import {
-  createStepFromTool,
-  createTool,
-  createWorkflow,
-} from "@deco/workers-runtime/mastra";
-import { z } from "zod";
+import { withRuntime } from '@deco/workers-runtime';
+import { createStepFromTool, createTool, createWorkflow } from '@deco/workers-runtime/mastra';
+import { z } from 'zod';
 
 // Definição de uma ferramenta (Tool)
 const createMyTool = (_bindings: Bindings) =>
   createTool({
-    id: "MY_TOOL",
-    description: "Executa uma ação específica",
+    id: 'MY_TOOL',
+    description: 'Executa uma ação específica',
     inputSchema: z.object({ name: z.string() }),
     outputSchema: z.object({ message: z.string() }),
     execute: async ({ context }) => ({
@@ -157,7 +153,7 @@ const createMyWorkflow = (bindings: Bindings) => {
   const step = createStepFromTool(createMyTool(bindings));
 
   return createWorkflow({
-    id: "MY_WORKFLOW",
+    id: 'MY_WORKFLOW',
     inputSchema: z.object({ name: z.string() }),
     outputSchema: z.object({ message: z.string() }),
   })
@@ -203,8 +199,8 @@ deco deploy
 ```typescript
 const createDatabaseTool = (bindings: Bindings) =>
   createTool({
-    id: "QUERY_DATABASE",
-    description: "Consulta o banco de dados do cliente",
+    id: 'QUERY_DATABASE',
+    description: 'Consulta o banco de dados do cliente',
     inputSchema: z.object({
       query: z.string(),
       params: z.array(z.string()).optional(),
@@ -214,8 +210,8 @@ const createDatabaseTool = (bindings: Bindings) =>
     }),
     execute: async ({ context }) => {
       const response = await fetch(bindings.DATABASE_URL, {
-        method: "POST",
-        headers: { "Authorization": `Bearer ${bindings.DATABASE_TOKEN}` },
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${bindings.DATABASE_TOKEN}` },
         body: JSON.stringify({
           query: context.query,
           params: context.params,

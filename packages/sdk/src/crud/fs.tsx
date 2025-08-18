@@ -1,4 +1,4 @@
-import { MCPClient } from "../fetcher.ts";
+import { MCPClient } from '../fetcher.ts';
 
 interface ListOptions {
   workspace: string;
@@ -38,17 +38,17 @@ export const writeFile = async ({
   });
 
   const response = await fetch(uploadUrl!, {
-    method: "PUT",
+    method: 'PUT',
     // @ts-ignore todo: cloudflare types should not be affecting this
     body: content,
     headers: {
-      "Content-Type": contentType,
+      'Content-Type': contentType,
     },
   });
 
   if (!response.ok) {
     console.error(response);
-    throw new Error("Failed to upload file");
+    throw new Error('Failed to upload file');
   }
 
   return response;

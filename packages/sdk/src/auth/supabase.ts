@@ -1,27 +1,27 @@
-import { createServerClient, serializeCookieHeader } from "@supabase/ssr";
-import type { SupabaseClient } from "@supabase/supabase-js";
-import { SUPABASE_URL } from "../constants.ts";
+import { createServerClient, serializeCookieHeader } from '@supabase/ssr';
+import type { SupabaseClient } from '@supabase/supabase-js';
+import { SUPABASE_URL } from '../constants.ts';
 
 // from @std/http
 export function getCookies(headers: Headers): Record<string, string> {
-  const cookie = headers.get("Cookie");
+  const cookie = headers.get('Cookie');
   if (cookie !== null) {
     const out: Record<string, string> = {};
-    const c = cookie.split(";");
+    const c = cookie.split(';');
     for (const kv of c) {
-      const [cookieKey, ...cookieVal] = kv.split("=");
+      const [cookieKey, ...cookieVal] = kv.split('=');
       if (cookieKey === undefined) {
         throw new SyntaxError("Cookie cannot start with '='");
       }
       const key = cookieKey.trim();
-      out[key] = cookieVal.join("=");
+      out[key] = cookieVal.join('=');
     }
     return out;
   }
   return {};
 }
 
-export const SB_TOKEN_COOKIE_NAME = "sb-auth-auth-token";
+export const SB_TOKEN_COOKIE_NAME = 'sb-auth-auth-token';
 
 interface CreateSupabaseSessionClientResult {
   // Use 'any' to avoid protected member mismatch when multiple copies of package appear during type resolution.
@@ -50,13 +50,13 @@ export const createSupabaseSessionClient = (
       },
       setAll(cookies) {
         const url = new URL(request.url);
-        const rootDomain = url.hostname.split(".").slice(-2).join(".");
+        const rootDomain = url.hostname.split('.').slice(-2).join('.');
         for (const { name, value, options } of cookies) {
           headers.append(
-            "set-cookie",
+            'set-cookie',
             serializeCookieHeader(name, value, {
               ...options,
-              sameSite: "none", // allow for subdomains.
+              sameSite: 'none', // allow for subdomains.
               secure: true,
               domain: `.${rootDomain}`,
             }),
@@ -79,7 +79,7 @@ export const getSessionToken = (request: Request): string => {
     }
   }
 
-  return tokenParts.join("").replace("base64-", "");
+  return tokenParts.join('').replace('base64-', '');
 };
 
 export const createSessionTokenCookie = (
@@ -88,7 +88,7 @@ export const createSessionTokenCookie = (
 ): string => {
   return serializeCookieHeader(SB_TOKEN_COOKIE_NAME, token, {
     domain,
-    sameSite: "none",
+    sameSite: 'none',
     secure: true,
   });
 };
@@ -96,16 +96,16 @@ export const createSessionTokenCookie = (
 export const parseAuthorizationHeader = (
   request: Request,
 ): string | undefined => {
-  const authorization = request.headers.get("authorization");
+  const authorization = request.headers.get('authorization');
   if (!authorization) {
     return undefined;
   }
-  const parts = authorization.split(" ");
+  const parts = authorization.split(' ');
   if (parts.length !== 2) {
     return undefined;
   }
   const [scheme, token] = parts;
-  if (scheme.toLowerCase() !== "bearer") {
+  if (scheme.toLowerCase() !== 'bearer') {
     return undefined;
   }
   return token;

@@ -1,28 +1,28 @@
-import { Icon } from "@deco/ui/components/icon.tsx";
-import { openPanel, type Tab, useDock } from "./index.tsx";
+import { Icon } from '@deco/ui/components/icon.tsx';
+import { openPanel, type Tab, useDock } from './index.tsx';
 import {
   ResponsiveDropdown,
   ResponsiveDropdownContent,
   ResponsiveDropdownItem,
   ResponsiveDropdownTrigger,
-} from "@deco/ui/components/responsive-dropdown.tsx";
-import { cn } from "@deco/ui/lib/utils.ts";
-import { createPrependPortal } from "../../utils/react-prepend-portal.ts";
+} from '@deco/ui/components/responsive-dropdown.tsx';
+import { cn } from '@deco/ui/lib/utils.ts';
+import { createPrependPortal } from '../../utils/react-prepend-portal.ts';
 
 // The order of this object's properties matters for sorting
 const WELL_KNOWN_VIEW_ICONS = {
-  chat: "chat",
-  profile: "robot_2",
-  prompt: "assignment",
-  integrations: "linked_services",
-  triggers: "cable",
-  general: "settings",
-  members: "group",
-  models: "batch_prediction",
-  usage: "monitoring",
-  billing: "wallet",
-  audit: "forum",
-  advanced: "settings",
+  chat: 'chat',
+  profile: 'robot_2',
+  prompt: 'assignment',
+  integrations: 'linked_services',
+  triggers: 'cable',
+  general: 'settings',
+  members: 'group',
+  models: 'batch_prediction',
+  usage: 'monitoring',
+  billing: 'wallet',
+  audit: 'forum',
+  advanced: 'settings',
 };
 
 function ViewsButtonInner({ tabs }: { tabs: Record<string, Tab> }) {
@@ -47,18 +47,18 @@ function ViewsButtonInner({ tabs }: { tabs: Record<string, Tab> }) {
   return (
     <ResponsiveDropdown>
       <ResponsiveDropdownTrigger>
-        <div className="w-8 h-8 hover:bg-background flex items-center justify-center cursor-pointer rounded-xl">
-          <Icon name="layers" size={16} />
+        <div className='w-8 h-8 hover:bg-background flex items-center justify-center cursor-pointer rounded-xl'>
+          <Icon name='layers' size={16} />
         </div>
       </ResponsiveDropdownTrigger>
-      <ResponsiveDropdownContent align="start" className="p-2 md:min-w-48">
-        <span className="p-1 text-xs text-muted-foreground font-medium">
+      <ResponsiveDropdownContent align='start' className='p-2 md:min-w-48'>
+        <span className='p-1 text-xs text-muted-foreground font-medium'>
           Views
         </span>
         {sortedViews.map(([id, tab]) => (
           <ResponsiveDropdownItem
             key={id}
-            className={cn("text-sm mb-1 rounded-lg hover:bg-muted")}
+            className={cn('text-sm mb-1 rounded-lg hover:bg-muted')}
             onClick={() => {
               openPanel({ id, component: id, title: tab.title });
             }}
@@ -66,8 +66,8 @@ function ViewsButtonInner({ tabs }: { tabs: Record<string, Tab> }) {
             <Icon
               name={WELL_KNOWN_VIEW_ICONS[
                 id as keyof typeof WELL_KNOWN_VIEW_ICONS
-              ] || "atr"}
-              className="text-muted-foreground"
+              ] || 'atr'}
+              className='text-muted-foreground'
               size={16}
             />
             {tab.title}
@@ -75,13 +75,13 @@ function ViewsButtonInner({ tabs }: { tabs: Record<string, Tab> }) {
         ))}
         {saved.length > 0 && (
           <>
-            <span className="p-1 text-xs text-muted-foreground font-medium">
+            <span className='p-1 text-xs text-muted-foreground font-medium'>
               Saved
             </span>
             {saved.map(([id, tab]) => (
               <ResponsiveDropdownItem
                 key={id}
-                className={cn("text-xs hover:bg-muted")}
+                className={cn('text-xs hover:bg-muted')}
                 onClick={() => {
                   openPanel({ id, component: id, title: tab.title });
                 }}
@@ -98,7 +98,7 @@ function ViewsButtonInner({ tabs }: { tabs: Record<string, Tab> }) {
 
 export function ViewsButton() {
   const { tabs } = useDock();
-  const containers = document.querySelectorAll(".dv-tabs-container");
+  const containers = document.querySelectorAll('.dv-tabs-container');
 
   if (!containers || containers.length === 0) {
     return null;
@@ -108,8 +108,8 @@ export function ViewsButton() {
 
   return createPrependPortal(
     <div
-      key="views-button"
-      className="flex items-center text-foreground justify-center w-9 h-8 pr-1"
+      key='views-button'
+      className='flex items-center text-foreground justify-center w-9 h-8 pr-1'
     >
       <ViewsButtonInner tabs={tabs} />
     </div>,

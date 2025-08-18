@@ -1,8 +1,8 @@
 // deno-lint-ignore-file no-explicit-any
-import { MCPConnection } from "@deco/sdk";
-import { AppContext } from "../context.ts";
-import { listToolsByConnectionType } from "@deco/ai/mcp";
-import { zodToJsonSchema } from "zod-to-json-schema";
+import { MCPConnection } from '@deco/sdk';
+import { AppContext } from '../context.ts';
+import { listToolsByConnectionType } from '@deco/ai/mcp';
+import { zodToJsonSchema } from 'zod-to-json-schema';
 
 interface JSONSchema {
   type?: string | string[];
@@ -21,7 +21,7 @@ interface ToolLike {
 class MCPBreakingChangeError extends Error {
   constructor(message: string) {
     super(message);
-    this.name = "MCPBreakingChangeError";
+    this.name = 'MCPBreakingChangeError';
   }
 }
 
@@ -92,10 +92,10 @@ function areTypesCompatible(
       if (fromT === toT) return true;
 
       // Some type coercions that are generally safe
-      if (fromT === "string" && toT === "number") return true; // strings can often be parsed as numbers
-      if (fromT === "number" && toT === "string") return true; // numbers can be stringified
-      if (fromT === "integer" && toT === "number") return true; // integers are numbers
-      if (fromT === "number" && toT === "integer") return false; // numbers can't always be integers (breaking)
+      if (fromT === 'string' && toT === 'number') return true; // strings can often be parsed as numbers
+      if (fromT === 'number' && toT === 'string') return true; // numbers can be stringified
+      if (fromT === 'integer' && toT === 'number') return true; // integers are numbers
+      if (fromT === 'number' && toT === 'integer') return false; // numbers can't always be integers (breaking)
     }
   }
 
@@ -122,7 +122,7 @@ function checkSchemaBreakingChanges(
       if (!fromRequired.has(requiredProp)) {
         throw new MCPBreakingChangeError(
           `Tool '${toolName}' added new required input property '${
-            path ? path + "." : ""
+            path ? path + '.' : ''
           }${requiredProp}'. Adding required properties is a breaking change.`,
         );
       }
@@ -133,7 +133,7 @@ function checkSchemaBreakingChanges(
       if (!toRequired.has(requiredProp)) {
         throw new MCPBreakingChangeError(
           `Tool '${toolName}' removed required output property '${
-            path ? path + "." : ""
+            path ? path + '.' : ''
           }${requiredProp}'. Removing required output properties is a breaking change.`,
         );
       }
@@ -154,14 +154,14 @@ function checkSchemaBreakingChanges(
         if (!areTypesCompatible(fromPropSchema.type, toPropSchema.type)) {
           throw new MCPBreakingChangeError(
             `Tool '${toolName}' changed type of property '${
-              path ? path + "." : ""
+              path ? path + '.' : ''
             }${propName}' from '${fromPropSchema.type}' to '${toPropSchema.type}'. Incompatible type changes are breaking.`,
           );
         }
       }
 
       // Recursively check nested object properties
-      if (fromPropSchema.type === "object" && toPropSchema.type === "object") {
+      if (fromPropSchema.type === 'object' && toPropSchema.type === 'object') {
         if (fromPropSchema.properties || toPropSchema.properties) {
           checkSchemaBreakingChanges(
             fromPropSchema,
@@ -174,7 +174,7 @@ function checkSchemaBreakingChanges(
       }
 
       // Check array item schemas
-      if (fromPropSchema.type === "array" && toPropSchema.type === "array") {
+      if (fromPropSchema.type === 'array' && toPropSchema.type === 'array') {
         if (fromPropSchema.items && toPropSchema.items) {
           const fromItems = fromPropSchema.items as JSONSchema;
           const toItems = toPropSchema.items as JSONSchema;
@@ -184,14 +184,14 @@ function checkSchemaBreakingChanges(
             if (!areTypesCompatible(fromItems.type, toItems.type)) {
               throw new MCPBreakingChangeError(
                 `Tool '${toolName}' changed array item type of property '${
-                  path ? path + "." : ""
+                  path ? path + '.' : ''
                 }${propName}' from '${fromItems.type}' to '${toItems.type}'. Incompatible type changes are breaking.`,
               );
             }
           }
 
           // Recursively check nested array item objects
-          if (fromItems.type === "object" && toItems.type === "object") {
+          if (fromItems.type === 'object' && toItems.type === 'object') {
             if (fromItems.properties || toItems.properties) {
               checkSchemaBreakingChanges(
                 fromItems,
@@ -225,7 +225,7 @@ function checkInputSchemaBreakingChanges(
   }
 
   // Use the recursive schema checker for input schemas
-  checkSchemaBreakingChanges(fromSchema, toSchema, "", fromTool.name, true);
+  checkSchemaBreakingChanges(fromSchema, toSchema, '', fromTool.name, true);
 }
 
 /**
@@ -253,7 +253,7 @@ function checkOutputSchemaBreakingChanges(
   }
 
   // Use the recursive schema checker for output schemas
-  checkSchemaBreakingChanges(fromSchema!, toSchema!, "", fromTool.name, false);
+  checkSchemaBreakingChanges(fromSchema!, toSchema!, '', fromTool.name, false);
 }
 
 /**
@@ -276,13 +276,13 @@ export const assertsNoMCPBreakingChanges = async (
   ]);
 
   // Handle potential errors from tool fetching
-  if (fromResult && "error" in fromResult) {
+  if (fromResult && 'error' in fromResult) {
     throw new Error(
       `Failed to fetch tools from source connection: ${fromResult.error}`,
     );
   }
 
-  if (toResult && "error" in toResult) {
+  if (toResult && 'error' in toResult) {
     throw new Error(
       `Failed to fetch tools from target connection: ${toResult.error}`,
     );

@@ -1,10 +1,5 @@
-import {
-  DECO_CHAT_API,
-  UnauthorizedError,
-  useInvites,
-  useWorkspaceWalletBalance,
-} from "@deco/sdk";
-import { Button } from "@deco/ui/components/button.tsx";
+import { DECO_CHAT_API, UnauthorizedError, useInvites, useWorkspaceWalletBalance } from '@deco/sdk';
+import { Button } from '@deco/ui/components/button.tsx';
 import {
   Dialog,
   DialogClose,
@@ -13,7 +8,7 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from "@deco/ui/components/dialog.tsx";
+} from '@deco/ui/components/dialog.tsx';
 import {
   Form,
   FormControl,
@@ -22,35 +17,35 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
-} from "@deco/ui/components/form.tsx";
-import { Icon } from "@deco/ui/components/icon.tsx";
+} from '@deco/ui/components/form.tsx';
+import { Icon } from '@deco/ui/components/icon.tsx';
 import {
   ResponsiveDropdown,
   ResponsiveDropdownContent,
   ResponsiveDropdownItem,
   ResponsiveDropdownSeparator,
   ResponsiveDropdownTrigger,
-} from "@deco/ui/components/responsive-dropdown.tsx";
+} from '@deco/ui/components/responsive-dropdown.tsx';
 import {
   SidebarFooter as SidebarFooterInner,
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
-} from "@deco/ui/components/sidebar.tsx";
-import { Switch } from "@deco/ui/components/switch.tsx";
-import { cn } from "@deco/ui/lib/utils.ts";
-import { Suspense, useMemo, useState } from "react";
-import { useForm } from "react-hook-form";
-import { Link, useLocation, useMatch } from "react-router";
-import { ErrorBoundary } from "../../error-boundary.tsx";
-import { trackEvent } from "../../hooks/analytics.ts";
-import { useGitHubStars } from "../../hooks/use-github-stars.ts";
-import { useUserPreferences } from "../../hooks/use-user-preferences.ts";
-import { useUser } from "../../hooks/use-user.ts";
-import { ModelSelector } from "../chat/model-selector.tsx";
-import { UserAvatar } from "../common/avatar/user.tsx";
-import { ProfileSettings } from "../settings/profile.tsx";
-import { useWorkspaceLink } from "../../hooks/use-navigate-workspace.ts";
+} from '@deco/ui/components/sidebar.tsx';
+import { Switch } from '@deco/ui/components/switch.tsx';
+import { cn } from '@deco/ui/lib/utils.ts';
+import { Suspense, useMemo, useState } from 'react';
+import { useForm } from 'react-hook-form';
+import { Link, useLocation, useMatch } from 'react-router';
+import { ErrorBoundary } from '../../error-boundary.tsx';
+import { trackEvent } from '../../hooks/analytics.ts';
+import { useGitHubStars } from '../../hooks/use-github-stars.ts';
+import { useUserPreferences } from '../../hooks/use-user-preferences.ts';
+import { useUser } from '../../hooks/use-user.ts';
+import { ModelSelector } from '../chat/model-selector.tsx';
+import { UserAvatar } from '../common/avatar/user.tsx';
+import { ProfileSettings } from '../settings/profile.tsx';
+import { useWorkspaceLink } from '../../hooks/use-navigate-workspace.ts';
 
 /** Wrapped component to be suspended */
 function NotificationDot({ className }: { className?: string }) {
@@ -59,9 +54,9 @@ function NotificationDot({ className }: { className?: string }) {
   if (!invites.length) return null;
 
   return (
-    <span className={cn("relative flex size-2", className)}>
-      <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-destructive opacity-75" />
-      <span className="relative inline-flex size-2 rounded-full bg-destructive" />
+    <span className={cn('relative flex size-2', className)}>
+      <span className='absolute inline-flex h-full w-full animate-ping rounded-full bg-destructive opacity-75' />
+      <span className='relative inline-flex size-2 rounded-full bg-destructive' />
     </span>
   );
 }
@@ -73,7 +68,7 @@ function InvitesCount() {
   if (!invites.length) return null;
 
   return (
-    <span className="absolute right-2 top-1/2 -mt-2 flex h-4 w-4 items-center justify-center rounded-full bg-destructive text-[10px] font-medium text-white">
+    <span className='absolute right-2 top-1/2 -mt-2 flex h-4 w-4 items-center justify-center rounded-full bg-destructive text-[10px] font-medium text-white'>
       {invites.length}
     </span>
   );
@@ -130,13 +125,13 @@ function UserPreferencesModal({
         <Form {...form}>
           <form
             onSubmit={handleSubmit(onSubmit)}
-            className="flex flex-col gap-6 py-2"
+            className='flex flex-col gap-6 py-2'
           >
             <FormField
-              name="defaultModel"
+              name='defaultModel'
               render={({ field }) => (
-                <FormItem className="flex flex-col justify-center items-start gap-2">
-                  <div className="flex items-center gap-2">
+                <FormItem className='flex flex-col justify-center items-start gap-2'>
+                  <div className='flex items-center gap-2'>
                     <FormLabel>Default Model</FormLabel>
                     <FormControl>
                       <ModelSelector
@@ -153,20 +148,20 @@ function UserPreferencesModal({
               )}
             />
             <FormField
-              name="useOpenRouter"
+              name='useOpenRouter'
               render={({ field }) => (
-                <FormItem className="flex flex-col justify-center items-start gap-2">
-                  <div className="flex items-center gap-2 cursor-pointer">
+                <FormItem className='flex flex-col justify-center items-start gap-2'>
+                  <div className='flex items-center gap-2 cursor-pointer'>
                     <FormControl>
                       <Switch
-                        id="openrouter-switch"
+                        id='openrouter-switch'
                         checked={field.value}
                         onCheckedChange={field.onChange}
                       />
                     </FormControl>
                     <FormLabel
-                      htmlFor="openrouter-switch"
-                      className="cursor-pointer"
+                      htmlFor='openrouter-switch'
+                      className='cursor-pointer'
                     >
                       Use OpenRouter
                     </FormLabel>
@@ -179,20 +174,20 @@ function UserPreferencesModal({
               )}
             />
             <FormField
-              name="smoothStream"
+              name='smoothStream'
               render={({ field }) => (
-                <FormItem className="flex flex-col justify-center items-start gap-2">
-                  <div className="flex items-center gap-2 cursor-pointer">
+                <FormItem className='flex flex-col justify-center items-start gap-2'>
+                  <div className='flex items-center gap-2 cursor-pointer'>
                     <FormControl>
                       <Switch
-                        id="smoothStream"
+                        id='smoothStream'
                         checked={field.value}
                         onCheckedChange={field.onChange}
                       />
                     </FormControl>
                     <FormLabel
-                      htmlFor="smoothStream"
-                      className="cursor-pointer"
+                      htmlFor='smoothStream'
+                      className='cursor-pointer'
                     >
                       Smooth Stream
                     </FormLabel>
@@ -205,20 +200,20 @@ function UserPreferencesModal({
               )}
             />
             <FormField
-              name="sendReasoning"
+              name='sendReasoning'
               render={({ field }) => (
-                <FormItem className="flex flex-col justify-center items-start gap-2">
-                  <div className="flex items-center gap-2 cursor-pointer">
+                <FormItem className='flex flex-col justify-center items-start gap-2'>
+                  <div className='flex items-center gap-2 cursor-pointer'>
                     <FormControl>
                       <Switch
-                        id="sendReasoning"
+                        id='sendReasoning'
                         checked={field.value}
                         onCheckedChange={field.onChange}
                       />
                     </FormControl>
                     <FormLabel
-                      htmlFor="sendReasoning"
-                      className="cursor-pointer"
+                      htmlFor='sendReasoning'
+                      className='cursor-pointer'
                     >
                       Reasoning
                     </FormLabel>
@@ -231,47 +226,46 @@ function UserPreferencesModal({
               )}
             />
             <FormField
-              name="pdfSummarization"
+              name='pdfSummarization'
               render={({ field }) => (
-                <FormItem className="flex flex-col justify-center items-start gap-2">
-                  <div className="flex items-center gap-2 cursor-pointer">
+                <FormItem className='flex flex-col justify-center items-start gap-2'>
+                  <div className='flex items-center gap-2 cursor-pointer'>
                     <FormControl>
                       <Switch
-                        id="pdfSummarization"
+                        id='pdfSummarization'
                         checked={field.value}
                         onCheckedChange={field.onChange}
                       />
                     </FormControl>
                     <FormLabel
-                      htmlFor="pdfSummarization"
-                      className="cursor-pointer"
+                      htmlFor='pdfSummarization'
+                      className='cursor-pointer'
                     >
                       Summarize PDFs
                     </FormLabel>
                   </div>
                   <FormDescription>
-                    Summarize large PDFs to reduce token usage and enable larger
-                    PDF support.
+                    Summarize large PDFs to reduce token usage and enable larger PDF support.
                   </FormDescription>
                   <FormMessage />
                 </FormItem>
               )}
             />
             <FormField
-              name="enableDecopilot"
+              name='enableDecopilot'
               render={({ field }) => (
-                <FormItem className="flex flex-col justify-center items-start gap-2">
-                  <div className="flex items-center gap-2 cursor-pointer">
+                <FormItem className='flex flex-col justify-center items-start gap-2'>
+                  <div className='flex items-center gap-2 cursor-pointer'>
                     <FormControl>
                       <Switch
-                        id="enableDecopilot"
+                        id='enableDecopilot'
                         checked={field.value}
                         onCheckedChange={field.onChange}
                       />
                     </FormControl>
                     <FormLabel
-                      htmlFor="enableDecopilot"
-                      className="cursor-pointer"
+                      htmlFor='enableDecopilot'
+                      className='cursor-pointer'
                     >
                       Enable Decopilot
                     </FormLabel>
@@ -285,11 +279,11 @@ function UserPreferencesModal({
             />
             <DialogFooter>
               <DialogClose asChild>
-                <Button type="button" variant="outline">
+                <Button type='button' variant='outline'>
                   Cancel
                 </Button>
               </DialogClose>
-              <Button type="submit" disabled={!isDirty}>
+              <Button type='submit' disabled={!isDirty}>
                 Save Preferences
               </Button>
             </DialogFooter>
@@ -303,7 +297,7 @@ function UserPreferencesModal({
 function LoggedUser() {
   const user = useUser();
   const location = useLocation();
-  const href = "/invites";
+  const href = '/invites';
   const match = useMatch(href);
   const { data: stars } = useGitHubStars();
   const [preferencesOpen, setPreferencesOpen] = useState(false);
@@ -311,62 +305,60 @@ function LoggedUser() {
 
   const logoutUrl = useMemo(() => {
     const url = new URL(DECO_CHAT_API);
-    url.pathname = "/auth/logout";
+    url.pathname = '/auth/logout';
 
     const next = new URL(location.pathname, globalThis.location.origin);
-    url.searchParams.set("next", next.href);
+    url.searchParams.set('next', next.href);
 
     return url.href;
   }, [location.pathname]);
 
   const userAvatarURL = user?.metadata?.avatar_url ?? undefined;
   const userName = user?.metadata?.full_name || user?.email;
-  const formattedStars = stars
-    ? stars >= 1000 ? `${(stars / 1000).toFixed(1)}k` : stars
-    : null;
+  const formattedStars = stars ? stars >= 1000 ? `${(stars / 1000).toFixed(1)}k` : stars : null;
 
   const handleClickInvite = () => {
-    trackEvent("sidebar_navigation_click", {
-      item: "Invites",
+    trackEvent('sidebar_navigation_click', {
+      item: 'Invites',
     });
   };
 
   return (
     <ResponsiveDropdown>
       <ResponsiveDropdownTrigger asChild>
-        <SidebarMenuButton className="cursor-pointer gap-3 group-data-[collapsible=icon]:px-1! group-data-[collapsible=icon]:py-2!">
-          <UserAvatar url={userAvatarURL} fallback={userName} size="xs" />
-          <span className="text-sm grow">{user.metadata?.full_name}</span>
+        <SidebarMenuButton className='cursor-pointer gap-3 group-data-[collapsible=icon]:px-1! group-data-[collapsible=icon]:py-2!'>
+          <UserAvatar url={userAvatarURL} fallback={userName} size='xs' />
+          <span className='text-sm grow'>{user.metadata?.full_name}</span>
 
           <Suspense fallback={null}>
-            <div className="size-3 flex items-center">
-              <NotificationDot className="justify-end" />
+            <div className='size-3 flex items-center'>
+              <NotificationDot className='justify-end' />
             </div>
           </Suspense>
         </SidebarMenuButton>
       </ResponsiveDropdownTrigger>
       <ResponsiveDropdownContent
-        side="top"
-        align="start"
-        className="md:w-[240px]"
+        side='top'
+        align='start'
+        className='md:w-[240px]'
       >
         <ResponsiveDropdownItem asChild>
           <button
-            type="button"
-            className="flex items-center gap-2 text-sm w-full cursor-pointer"
+            type='button'
+            className='flex items-center gap-2 text-sm w-full cursor-pointer'
             onClick={() => setProfileOpen(true)}
           >
-            <Icon name="account_circle" className="text-muted-foreground" />
+            <Icon name='account_circle' className='text-muted-foreground' />
             Profile
           </button>
         </ResponsiveDropdownItem>
         <ResponsiveDropdownItem asChild>
           <button
-            type="button"
-            className="flex items-center gap-2 text-sm w-full cursor-pointer"
+            type='button'
+            className='flex items-center gap-2 text-sm w-full cursor-pointer'
             onClick={() => setPreferencesOpen(true)}
           >
-            <Icon name="tune" className="text-muted-foreground" />
+            <Icon name='tune' className='text-muted-foreground' />
             Preferences
           </button>
         </ResponsiveDropdownItem>
@@ -374,14 +366,14 @@ function LoggedUser() {
           <Link
             to={href}
             onClick={handleClickInvite}
-            className="flex items-center gap-2 text-sm w-full cursor-pointer"
+            className='flex items-center gap-2 text-sm w-full cursor-pointer'
           >
             <Icon
-              name="mail"
+              name='mail'
               filled={!!match}
-              className="text-muted-foreground"
+              className='text-muted-foreground'
             />
-            <span className="truncate">Invites</span>
+            <span className='truncate'>Invites</span>
 
             <Suspense fallback={null}>
               <InvitesCount />
@@ -393,42 +385,42 @@ function LoggedUser() {
 
         <ResponsiveDropdownItem asChild>
           <a
-            href="https://github.com/deco-cx/chat"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="flex w-full items-center gap-2 text-sm cursor-pointer"
+            href='https://github.com/deco-cx/chat'
+            target='_blank'
+            rel='noopener noreferrer'
+            className='flex w-full items-center gap-2 text-sm cursor-pointer'
           >
             <img
-              src="/img/github.svg"
-              alt="GitHub"
-              className="w-4 h-4 text-muted-foreground"
+              src='/img/github.svg'
+              alt='GitHub'
+              className='w-4 h-4 text-muted-foreground'
             />
             deco-cx/chat
             {formattedStars && (
-              <span className="text-xs ml-auto text-muted-foreground">
+              <span className='text-xs ml-auto text-muted-foreground'>
                 {formattedStars} stars
               </span>
             )}
             <Icon
-              name="arrow_outward"
+              name='arrow_outward'
               size={16}
-              className="text-muted-foreground"
+              className='text-muted-foreground'
             />
           </a>
         </ResponsiveDropdownItem>
         <ResponsiveDropdownItem asChild>
           <a
-            href="/about"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="flex w-full items-center gap-2 text-sm cursor-pointer"
+            href='/about'
+            target='_blank'
+            rel='noopener noreferrer'
+            className='flex w-full items-center gap-2 text-sm cursor-pointer'
           >
-            <Icon name="language" className="text-muted-foreground" />
+            <Icon name='language' className='text-muted-foreground' />
             Homepage
             <Icon
-              name="arrow_outward"
+              name='arrow_outward'
               size={16}
-              className="ml-auto text-muted-foreground"
+              className='ml-auto text-muted-foreground'
             />
           </a>
         </ResponsiveDropdownItem>
@@ -438,16 +430,14 @@ function LoggedUser() {
         <ResponsiveDropdownItem asChild>
           <a
             href={logoutUrl}
-            className="flex items-center gap-2 text-sm cursor-pointer"
+            className='flex items-center gap-2 text-sm cursor-pointer'
           >
-            <Icon name="logout" size={16} className="text-muted-foreground" />
+            <Icon name='logout' size={16} className='text-muted-foreground' />
             Log out
           </a>
         </ResponsiveDropdownItem>
       </ResponsiveDropdownContent>
-      {profileOpen && (
-        <ProfileSettings open={profileOpen} onOpenChange={setProfileOpen} />
-      )}
+      {profileOpen && <ProfileSettings open={profileOpen} onOpenChange={setProfileOpen} />}
       {preferencesOpen && (
         <UserPreferencesModal
           open={preferencesOpen}
@@ -468,21 +458,21 @@ function TeamBalanceLabel() {
   if (!account?.balance) return null;
 
   return (
-    <span className="text-xs text-muted-foreground p-2 justify-between vertical-align-middle flex items-center gap-1">
+    <span className='text-xs text-muted-foreground p-2 justify-between vertical-align-middle flex items-center gap-1'>
       <Link
-        to={withWorkspaceLink("/monitor/billing")}
-        className="flex items-center gap-1 transition-colors truncate"
+        to={withWorkspaceLink('/monitor/billing')}
+        className='flex items-center gap-1 transition-colors truncate'
       >
-        <Icon name="attach_money" size={16} />
+        <Icon name='attach_money' size={16} />
         Team balance: {account.balance}
       </Link>
-      <Link to={withWorkspaceLink("/monitor/billing")} className="shrink-0">
+      <Link to={withWorkspaceLink('/monitor/billing')} className='shrink-0'>
         <Button
-          variant="special"
-          size="sm"
-          className="h-4 px-1 py-0 leading-none vertical-align-middle"
+          variant='special'
+          size='sm'
+          className='h-4 px-1 py-0 leading-none vertical-align-middle'
         >
-          <Icon name="add" size={12} />
+          <Icon name='add' size={12} />
         </Button>
       </Link>
     </span>
@@ -505,7 +495,7 @@ function AnonymouseUser() {
   return (
     <SidebarMenuButton>
       <Link to={to}>
-        <Icon name="person" size={16} />
+        <Icon name='person' size={16} />
         Sign in
       </Link>
     </SidebarMenuButton>
@@ -515,8 +505,8 @@ function AnonymouseUser() {
 function Skeleton() {
   return (
     <SidebarMenuButton>
-      <div className="inline-flex items-center justify-center rounded-md border border-input bg-background hover:bg-muted hover:text-foreground h-8 px-4 py-2 gap-2">
-        <span className="w-24 h-8"></span>
+      <div className='inline-flex items-center justify-center rounded-md border border-input bg-background hover:bg-muted hover:text-foreground h-8 px-4 py-2 gap-2'>
+        <span className='w-24 h-8'></span>
       </div>
     </SidebarMenuButton>
   );
@@ -529,7 +519,7 @@ export function SidebarFooter() {
         shouldCatch={(error) => error instanceof UnauthorizedError}
         fallback={<AnonymouseUser />}
       >
-        <SidebarFooterInner className="border-t border-border">
+        <SidebarFooterInner className='border-t border-border'>
           <SidebarMenu>
             <SidebarMenuItem>
               <TeamBalance />

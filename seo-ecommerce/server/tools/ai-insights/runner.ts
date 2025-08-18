@@ -28,9 +28,9 @@ export async function runAiInsightsPure(
   if (!audit) {
     return {
       url,
-      summary: "Não foi possível gerar auditoria para criar insights.",
+      summary: 'Não foi possível gerar auditoria para criar insights.',
       insights: [],
-      modelUsed: "none",
+      modelUsed: 'none',
       warnings,
       llmTried: false,
       llmError: null,
@@ -45,11 +45,11 @@ export async function runAiInsightsPure(
   };
   pushIf(
     scores.performanceMobile != null && scores.performanceMobile < 60,
-    "Melhorar performance mobile priorizando LCP e TBT.",
+    'Melhorar performance mobile priorizando LCP e TBT.',
   );
   pushIf(
     scores.seoMobile != null && scores.seoMobile < 70,
-    "Revisar SEO on-page mobile; meta tags e estrutura semântica.",
+    'Revisar SEO on-page mobile; meta tags e estrutura semântica.',
   );
   pushIf(link.brokenLinks > 0, `Corrigir ${link.brokenLinks} links quebrados.`);
   pushIf(
@@ -62,23 +62,23 @@ export async function runAiInsightsPure(
   );
   pushIf(
     link.titleLength > 60,
-    "Título >60 caracteres; encurtar para melhor CTR.",
+    'Título >60 caracteres; encurtar para melhor CTR.',
   );
   pushIf(
     link.metaDescriptionLength &&
       (link.metaDescriptionLength < 80 || link.metaDescriptionLength > 165),
-    "Meta description fora da faixa recomendada.",
+    'Meta description fora da faixa recomendada.',
   );
   pushIf(
     link.wordCount && link.wordCount < 300,
-    "Conteúdo curto (<300 palavras); ampliar.",
+    'Conteúdo curto (<300 palavras); ampliar.',
   );
   const insights = [
     ...heuristics,
     ...auditWarnings.filter((w) => !heuristics.some((h) => h.includes(w))),
   ].slice(0, 10);
   // Optional LLM path (only if enableLlm flag and key present)
-  let modelUsed = "heuristic";
+  let modelUsed = 'heuristic';
   if (
     enableLlm && fetchFn && (env.DECO_CHAT_API_TOKEN || env.OPENROUTER_API_KEY)
   ) {
@@ -86,52 +86,52 @@ export async function runAiInsightsPure(
     try {
       const prompt =
         `Bullets SEO para ${url}: performanceMobile=${scores.performanceMobile} seoMobile=${scores.seoMobile}`;
-      let txt = "";
-      let usedModel = "";
+      let txt = '';
+      let usedModel = '';
       if (env.DECO_CHAT_API_TOKEN) {
-        const { callDecoLlm } = await import("./decoLLM");
+        const { callDecoLlm } = await import('./decoLLM');
         const decoRes = await callDecoLlm(
           env as any,
           { prompt },
           fetchFn as any,
         );
         txt = decoRes.content;
-        usedModel = decoRes.model || "deco/auto";
+        usedModel = decoRes.model || 'deco/auto';
       } else if (env.OPENROUTER_API_KEY) {
         const resp = await fetchFn(
-          "https://openrouter.ai/api/v1/chat/completions",
+          'https://openrouter.ai/api/v1/chat/completions',
           {
-            method: "POST",
+            method: 'POST',
             headers: {
-              "Content-Type": "application/json",
+              'Content-Type': 'application/json',
               Authorization: `Bearer ${env.OPENROUTER_API_KEY}`,
             },
             body: JSON.stringify({
-              model: "openrouter/auto",
-              messages: [{ role: "user", content: prompt }],
+              model: 'openrouter/auto',
+              messages: [{ role: 'user', content: prompt }],
             }),
           },
         );
-        if (!resp.ok) throw new Error("HTTP " + resp.status);
+        if (!resp.ok) throw new Error('HTTP ' + resp.status);
         const json = await resp.json();
-        txt = json.choices?.[0]?.message?.content || "";
-        usedModel = json.model || "openrouter/auto";
+        txt = json.choices?.[0]?.message?.content || '';
+        usedModel = json.model || 'openrouter/auto';
       }
       const llmLines = txt
         .split(/\n+/)
-        .map((l: string) => l.replace(/^[-*\d\.)\s]+/, "").trim())
+        .map((l: string) => l.replace(/^[-*\d\.)\s]+/, '').trim())
         .filter((l: string) => l.length > 4)
         .slice(0, 10);
       const ms = Date.now() - start;
       try {
-        (await import("./metricsLLMProxy"))?.recordLlmSuccess?.(ms);
+        (await import('./metricsLLMProxy'))?.recordLlmSuccess?.(ms);
       } catch {}
       if (llmLines.length) {
         return {
           url,
           summary: `Insights via LLM (${llmLines.length})`,
           insights: llmLines,
-          modelUsed: usedModel || "llm/auto",
+          modelUsed: usedModel || 'llm/auto',
           warnings,
           rawAudit: audit,
           llmTried: true,
@@ -141,14 +141,14 @@ export async function runAiInsightsPure(
     } catch (e) {
       const ms = Date.now() - start;
       try {
-        (await import("./metricsLLMProxy"))?.recordLlmError?.(ms);
+        (await import('./metricsLLMProxy'))?.recordLlmError?.(ms);
       } catch {}
       warnings.push(
-        "Fallback heurístico (LLM falhou): " + (e as Error).message,
+        'Fallback heurístico (LLM falhou): ' + (e as Error).message,
       );
       return {
         url,
-        summary: "Insights heurísticos baseados em métricas",
+        summary: 'Insights heurísticos baseados em métricas',
         insights,
         modelUsed,
         warnings,
@@ -160,7 +160,7 @@ export async function runAiInsightsPure(
   }
   return {
     url,
-    summary: "Insights heurísticos baseados em métricas",
+    summary: 'Insights heurísticos baseados em métricas',
     insights,
     modelUsed,
     warnings,

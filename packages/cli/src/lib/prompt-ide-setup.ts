@@ -10,17 +10,12 @@
  * @param projectRoot - The root path of the project where the config should be written
  * @returns Promise<{ config: any; targetPath: string } | null> - The MCP config and target path, or null if user declines
  */
-import inquirer from "inquirer";
-import { promises as fs } from "fs";
-import { dirname, join } from "path";
-import { ensureDir } from "./fs.js";
-import {
-  getAppUUID,
-  getMCPConfig,
-  getMCPConfigVersion,
-  getRulesConfig,
-} from "./config.js";
-import process from "node:process";
+import inquirer from 'inquirer';
+import { promises as fs } from 'fs';
+import { dirname, join } from 'path';
+import { ensureDir } from './fs.js';
+import { getAppUUID, getMCPConfig, getMCPConfigVersion, getRulesConfig } from './config.js';
+import process from 'node:process';
 
 type MCPServerConfig =
   | {
@@ -29,7 +24,7 @@ type MCPServerConfig =
   }
   | {
     url: string;
-    type: "http" | "sse";
+    type: 'http' | 'sse';
     headers?: Record<string, string>;
   };
 
@@ -52,15 +47,15 @@ interface IDESupport {
 
 const IDE_SUPPORT: Record<string, IDESupport> = {
   cursor: {
-    name: "Cursor",
+    name: 'Cursor',
     createConfig: async (mcpConfig: MCPConfig, projectRoot: string) => {
-      const outDir = join(projectRoot, ".cursor");
+      const outDir = join(projectRoot, '.cursor');
 
       const configs = [];
 
-      const configPath = join(outDir, "mcp.json");
+      const configPath = join(outDir, 'mcp.json');
       const existingConfig: MCPConfig = await fs
-        .readFile(configPath, "utf-8")
+        .readFile(configPath, 'utf-8')
         .then(JSON.parse)
         .catch(() => ({ mcpServers: {} }));
 
@@ -73,28 +68,28 @@ const IDE_SUPPORT: Record<string, IDESupport> = {
 
       configs.push({
         content: JSON.stringify(config, null, 2),
-        path: join(outDir, "mcp.json"),
+        path: join(outDir, 'mcp.json'),
       });
 
       const rules = Object.entries(await getRulesConfig());
 
       for (const [path, content] of rules) {
-        configs.push({ content, path: join(outDir, "rules", path) });
+        configs.push({ content, path: join(outDir, 'rules', path) });
       }
 
       return configs;
     },
   },
   vscode: {
-    name: "VS Code",
+    name: 'VS Code',
     createConfig: async (mcpConfig: MCPConfig, projectRoot: string) => {
-      const outDir = join(projectRoot, ".vscode");
+      const outDir = join(projectRoot, '.vscode');
 
       const configs = [];
 
-      const configPath = join(outDir, "mcp.json");
+      const configPath = join(outDir, 'mcp.json');
       const existingConfig: MCPConfig = await fs
-        .readFile(configPath, "utf-8")
+        .readFile(configPath, 'utf-8')
         .then(JSON.parse)
         .catch(() => ({ mcpServers: {} }));
 
@@ -107,13 +102,13 @@ const IDE_SUPPORT: Record<string, IDESupport> = {
 
       configs.push({
         content: JSON.stringify(config, null, 2),
-        path: join(outDir, "mcp.json"),
+        path: join(outDir, 'mcp.json'),
       });
 
       const rules = Object.entries(await getRulesConfig());
 
       for (const [path, content] of rules) {
-        configs.push({ content, path: join(outDir, "rules", path) });
+        configs.push({ content, path: join(outDir, 'rules', path) });
       }
 
       return configs;
@@ -122,7 +117,7 @@ const IDE_SUPPORT: Record<string, IDESupport> = {
 };
 
 export async function writeIDEConfig(configs: IDEConfig[]): Promise<void> {
-  const targetDir = dirname(configs[0]?.path ?? "");
+  const targetDir = dirname(configs[0]?.path ?? '');
 
   // Write all configuration files in parallel
   await Promise.all(
@@ -142,10 +137,10 @@ export const hasMCPPreferences = async (workspace: string, app: string) => {
   ]);
 
   // Use a simple file-based storage instead of localStorage for Node.js
-  const prefsPath = join(process.cwd(), ".deco", "preferences.json");
+  const prefsPath = join(process.cwd(), '.deco', 'preferences.json');
 
   try {
-    const prefs = JSON.parse(await fs.readFile(prefsPath, "utf-8")) as Record<
+    const prefs = JSON.parse(await fs.readFile(prefsPath, 'utf-8')) as Record<
       string,
       string
     >;
@@ -162,14 +157,14 @@ export const setMCPPreferences = async (workspace: string, app: string) => {
     getMCPConfigVersion(),
   ]);
 
-  const prefsPath = join(process.cwd(), ".deco", "preferences.json");
+  const prefsPath = join(process.cwd(), '.deco', 'preferences.json');
 
   try {
     await ensureDir(dirname(prefsPath));
     let prefs: Record<string, string> = {};
 
     try {
-      prefs = JSON.parse(await fs.readFile(prefsPath, "utf-8")) as Record<
+      prefs = JSON.parse(await fs.readFile(prefsPath, 'utf-8')) as Record<
         string,
         string
       >;
@@ -180,7 +175,7 @@ export const setMCPPreferences = async (workspace: string, app: string) => {
     prefs[`mcp-install-version-${appUUID}`] = currentVersion;
     await fs.writeFile(prefsPath, JSON.stringify(prefs, null, 2));
   } catch (error) {
-    console.warn("Failed to save MCP preferences:", error);
+    console.warn('Failed to save MCP preferences:', error);
   }
 };
 
@@ -195,9 +190,9 @@ export async function promptIDESetup(
   // Ask if user wants to make IDE sentient
   const { wantsSentientIDE } = await inquirer.prompt([
     {
-      type: "confirm",
-      name: "wantsSentientIDE",
-      message: "Would you like to configure your IDE to use this project?",
+      type: 'confirm',
+      name: 'wantsSentientIDE',
+      message: 'Would you like to configure your IDE to use this project?',
       default: true,
     },
   ]);
@@ -209,20 +204,20 @@ export async function promptIDESetup(
   // Prompt user to select their IDE
   const { selectedIDE } = await inquirer.prompt([
     {
-      type: "list",
-      name: "selectedIDE",
-      message: "Select your preferred IDE:",
+      type: 'list',
+      name: 'selectedIDE',
+      message: 'Select your preferred IDE:',
       choices: [
-        { name: "Cursor", value: "cursor" },
-        { name: "VS Code", value: "vscode" },
-        { name: "None", value: "none" },
+        { name: 'Cursor', value: 'cursor' },
+        { name: 'VS Code', value: 'vscode' },
+        { name: 'None', value: 'none' },
       ],
     },
   ]);
 
   const ideSupport = IDE_SUPPORT[selectedIDE];
 
-  if (selectedIDE === "none") {
+  if (selectedIDE === 'none') {
     return null;
   }
 

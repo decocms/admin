@@ -6,9 +6,9 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
-} from "@deco/ui/components/form.tsx";
-import { Textarea } from "@deco/ui/components/textarea.tsx";
-import type { FieldPath, FieldValues, UseFormReturn } from "react-hook-form";
+} from '@deco/ui/components/form.tsx';
+import { Textarea } from '@deco/ui/components/textarea.tsx';
+import type { FieldPath, FieldValues, UseFormReturn } from 'react-hook-form';
 
 interface JsonTextFieldProps<T extends FieldValues = FieldValues> {
   name: string;
@@ -36,12 +36,12 @@ export function JsonTextField<T extends FieldValues = FieldValues>({
         <FormItem>
           <FormLabel>
             {title}
-            {isRequired && <span className="text-destructive ml-1">*</span>}
+            {isRequired && <span className='text-destructive ml-1'>*</span>}
           </FormLabel>
           <FormControl>
             <Textarea
               {...field}
-              value={typeof field.value === "object"
+              value={typeof field.value === 'object'
                 ? JSON.stringify(field.value, null, 2)
                 : field.value}
               onChange={(e) => {
@@ -53,7 +53,7 @@ export function JsonTextField<T extends FieldValues = FieldValues>({
                   field.onChange(e.target.value);
                 }
               }}
-              className="font-mono"
+              className='font-mono'
               rows={5}
               disabled={disabled}
             />

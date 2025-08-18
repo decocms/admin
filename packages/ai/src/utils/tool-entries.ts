@@ -1,5 +1,5 @@
 // deno-lint-ignore-file no-explicit-any
-import { zodToJsonSchema } from "zod-to-json-schema";
+import { zodToJsonSchema } from 'zod-to-json-schema';
 
 /**
  * Maps Object.entries of tools to include the name as a property

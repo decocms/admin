@@ -1,15 +1,11 @@
-import { WebCache } from "@deco/sdk/cache";
-import { singleFlight } from "@deco/sdk/common";
-import { createClient } from "@libsql/client";
-import type { StorageThreadType } from "@mastra/core";
-import type { TABLE_NAMES } from "@mastra/core/storage";
-import {
-  type LibSQLConfig,
-  LibSQLStore as MastraLibSQLStore,
-  LibSQLVector,
-} from "@mastra/libsql";
-import { createClient as createTursoAPIClient } from "@tursodatabase/api";
-import * as uuid from "uuid";
+import { WebCache } from '@deco/sdk/cache';
+import { singleFlight } from '@deco/sdk/common';
+import { createClient } from '@libsql/client';
+import type { StorageThreadType } from '@mastra/core';
+import type { TABLE_NAMES } from '@mastra/core/storage';
+import { type LibSQLConfig, LibSQLStore as MastraLibSQLStore, LibSQLVector } from '@mastra/libsql';
+import { createClient as createTursoAPIClient } from '@tursodatabase/api';
+import * as uuid from 'uuid';
 
 const sf = singleFlight();
 export interface TokenStorage {
@@ -69,7 +65,7 @@ export class LibSQLStore extends MastraLibSQLStore {
     tableName: TABLE_NAMES;
     keys: Record<string, string>;
   }): Promise<R | null> {
-    const byId = "id" in keys;
+    const byId = 'id' in keys;
     if (byId) {
       const id = keys.id;
       return (await sf.do(id, async () => {
@@ -95,7 +91,7 @@ export interface LibSQLFactoryOpts {
 
 type TursoAPIClient = ReturnType<typeof createTursoAPIClient>;
 
-const TURSO_GROUP = "deco-agents-v2";
+const TURSO_GROUP = 'deco-agents-v2';
 /**
  * This class is used to create a LibSQLStore instance.
  * It handles the creation of the database and the authentication token.
@@ -115,7 +111,7 @@ export class LibSQLFactory {
   ): Promise<{ url: string; authToken: string; created: boolean }> {
     const uniqueDbName = uuid.v5(`${memoryId}-${TURSO_GROUP}`, uuid.v5.URL);
     const dbAuthToken = async (regenerate?: boolean) => {
-      if (typeof this.opts.tokenStorage === "string") {
+      if (typeof this.opts.tokenStorage === 'string') {
         return this.opts.tokenStorage;
       }
       const token = await this.opts.tokenStorage?.getToken?.(uniqueDbName);
@@ -127,8 +123,7 @@ export class LibSQLFactory {
       return newToken.jwt;
     };
 
-    const url =
-      `libsql://${uniqueDbName}-${this.opts.tursoOrganization}.aws-us-east-1.turso.io`;
+    const url = `libsql://${uniqueDbName}-${this.opts.tursoOrganization}.aws-us-east-1.turso.io`;
     const { authToken, created } = await this.turso.databases
       .get(uniqueDbName)
       .then(async () => {
@@ -141,7 +136,7 @@ export class LibSQLFactory {
         await this.turso.databases
           .create(uniqueDbName, { group: TURSO_GROUP })
           .catch((err) => {
-            if (err.name === "TursoClientError" && err.status === 409) {
+            if (err.name === 'TursoClientError' && err.status === 409) {
               // alreadyExists
               return; // ignore
             }
@@ -176,9 +171,7 @@ export class LibSQLFactory {
     // So we need to wait for it to be ready.
     const promise = storage
       .init()
-      .catch((e) =>
-        console.error("MASTRA tables creation failed with error", e)
-      );
+      .catch((e) => console.error('MASTRA tables creation failed with error', e));
 
     if (created) {
       await promise;

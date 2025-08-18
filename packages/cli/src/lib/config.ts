@@ -3,26 +3,26 @@
  * Config for Deco workers is stored in the wrangler.toml file, so
  * we're a superset of the wrangler config.
  */
-import { parse, stringify } from "smol-toml";
-import { promises as fs, statSync } from "fs";
-import { dirname, join } from "path";
-import { fileURLToPath } from "url";
-import { z } from "zod";
-import { readSession } from "./session.js";
-import { createHash } from "crypto";
-import process from "node:process";
+import { parse, stringify } from 'smol-toml';
+import { promises as fs, statSync } from 'fs';
+import { dirname, join } from 'path';
+import { fileURLToPath } from 'url';
+import { z } from 'zod';
+import { readSession } from './session.js';
+import { createHash } from 'crypto';
+import process from 'node:process';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
 // MD5 hash function using Node.js crypto
 function md5Hash(input: string): string {
-  const hash = createHash("sha1");
+  const hash = createHash('sha1');
   hash.update(input);
-  return hash.digest("hex");
+  return hash.digest('hex');
 }
 
-export const CONFIG_FILE = "wrangler.toml";
+export const CONFIG_FILE = 'wrangler.toml';
 
 const requiredErrorForProp = (prop: string) =>
   `Property ${prop} is required. Please provide an inline value using --${prop} or configure it using 'deco configure'.`;
@@ -44,7 +44,7 @@ export type DecoBinding = z.infer<typeof DecoBindingSchema>;
 
 const decoConfigSchema = z.object({
   workspace: z.string({
-    required_error: requiredErrorForProp("workspace"),
+    required_error: requiredErrorForProp('workspace'),
   }),
   bindings: z.array(DecoBindingSchema).optional().default([]),
   local: z.boolean().optional().default(false),
@@ -88,7 +88,7 @@ export const readWranglerConfig = async (cwd?: string) => {
   }
 
   try {
-    const config = await fs.readFile(configPath, "utf-8");
+    const config = await fs.readFile(configPath, 'utf-8');
     return parse(config) as WranglerConfig;
   } catch (_error) {
     return {};
@@ -110,8 +110,8 @@ const readConfigFile = async (cwd?: string) => {
 };
 
 const DECO_CHAT_WORKFLOW_BINDING = {
-  name: "DECO_CHAT_WORKFLOW_DO",
-  class_name: "Workflow",
+  name: 'DECO_CHAT_WORKFLOW_DO',
+  class_name: 'Workflow',
 };
 
 const addSchemaNotation = (stringified: string) => {
@@ -148,7 +148,7 @@ export const addWorkflowDO = async () => {
         (m) => !m.new_classes?.includes(DECO_CHAT_WORKFLOW_BINDING.class_name),
       ),
       {
-        tag: "v1",
+        tag: 'v1',
         new_classes: [DECO_CHAT_WORKFLOW_BINDING.class_name],
       },
     ],
@@ -251,7 +251,7 @@ export const getConfigFilePath = (cwd: string): string | null => {
   const maxDepth = dirs.length;
 
   for (let i = maxDepth; i >= 1; i--) {
-    const path = dirs.slice(0, i).join("/") || "/";
+    const path = dirs.slice(0, i).join('/') || '/';
     const configPath = join(path, CONFIG_FILE);
 
     try {
@@ -275,8 +275,8 @@ export const getConfigFilePath = (cwd: string): string | null => {
  * @returns A unique UUID string based on the workspace and app name.
  */
 export const getAppUUID = (
-  workspace: string = "default",
-  app: string = "my-app",
+  workspace: string = 'default',
+  app: string = 'my-app',
 ): string => {
   try {
     const combined = `${workspace}-${app}`;
@@ -285,7 +285,7 @@ export const getAppUUID = (
   } catch (_error) {
     // Fallback to random UUID if hash generation fails
     console.warn(
-      "Could not generate hash for UUID, using random fallback:",
+      'Could not generate hash for UUID, using random fallback:',
       _error,
     );
     return crypto.randomUUID().slice(0, 8);
@@ -307,7 +307,7 @@ export const getAppDomain = (workspace: string, app: string): string => {
 export type MCPConfig = {
   mcpServers: {
     [key: string]: {
-      type: "http";
+      type: 'http';
       url: string;
     };
   };
@@ -319,7 +319,7 @@ export function getMCPConfig(workspace: string, app: string): MCPConfig {
   return {
     mcpServers: {
       [app]: {
-        type: "http" as const,
+        type: 'http' as const,
         url: `https://${appDomain}/mcp`,
       },
     },
@@ -329,17 +329,17 @@ export function getMCPConfig(workspace: string, app: string): MCPConfig {
 export const getMCPConfigVersion = () => md5Hash(getMCPConfig.toString());
 
 export const getRulesConfig = async () => {
-  const rulesPath = join(__dirname, "../rules/deco-chat.mdc");
+  const rulesPath = join(__dirname, '../rules/deco-chat.mdc');
 
   try {
-    const content = await fs.readFile(rulesPath, "utf-8");
+    const content = await fs.readFile(rulesPath, 'utf-8');
     return {
-      "deco-chat.mdc": content,
+      'deco-chat.mdc': content,
     };
   } catch (error) {
-    console.warn("Could not read rules file:", error);
+    console.warn('Could not read rules file:', error);
     return {
-      "deco-chat.mdc": "",
+      'deco-chat.mdc': '',
     };
   }
 };

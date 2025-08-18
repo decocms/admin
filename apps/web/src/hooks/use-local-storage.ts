@@ -1,6 +1,6 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState } from 'react';
 
-const STORAGE_EVENT = "deco-chat::storage-change";
+const STORAGE_EVENT = 'deco-chat::storage-change';
 
 interface UseLocalStorageSetterProps {
   key: string;

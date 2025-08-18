@@ -1,4 +1,4 @@
-import { MCPClient } from "../fetcher.ts";
+import { MCPClient } from '../fetcher.ts';
 
 /**
  * Create an API key
@@ -11,6 +11,6 @@ export const createAPIKey = (
   params: {
     claims?: Record<string, unknown>;
     name: string;
-    policies: Array<{ effect: "allow" | "deny"; resource: string }>;
+    policies: Array<{ effect: 'allow' | 'deny'; resource: string }>;
   },
 ) => MCPClient.forWorkspace(workspace).API_KEYS_CREATE(params);

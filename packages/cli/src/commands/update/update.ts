@@ -1,15 +1,15 @@
-import { readFile, writeFile } from "fs/promises";
-import { resolve } from "path";
-import { existsSync } from "fs";
-import { glob } from "glob";
-import inquirer from "inquirer";
-import chalk from "chalk";
-import process from "node:process";
+import { readFile, writeFile } from 'fs/promises';
+import { resolve } from 'path';
+import { existsSync } from 'fs';
+import { glob } from 'glob';
+import inquirer from 'inquirer';
+import chalk from 'chalk';
+import process from 'node:process';
 
 // Hardcoded Deco dependencies to manage
-const DECO_DEPENDENCIES = ["@deco/workers-runtime"] as const;
+const DECO_DEPENDENCIES = ['@deco/workers-runtime'] as const;
 
-const DECO_DEV_DEPENDENCIES = ["deco-cli"] as const;
+const DECO_DEV_DEPENDENCIES = ['deco-cli'] as const;
 
 interface PackageJson {
   dependencies?: Record<string, string>;
@@ -30,9 +30,9 @@ const getLatestVersion = async (packageName: string): Promise<string> => {
 
   try {
     // Handle JSR packages - check JSR registry first
-    if (packageName === "@deco/workers-runtime") {
+    if (packageName === '@deco/workers-runtime') {
       const response = await fetch(
-        "https://jsr.io/@deco/workers-runtime/meta.json",
+        'https://jsr.io/@deco/workers-runtime/meta.json',
         {
           signal: controller.signal,
         },
@@ -64,8 +64,8 @@ const getLatestVersion = async (packageName: string): Promise<string> => {
     return data.version;
   } catch (error) {
     clearTimeout(timeoutId);
-    if (error instanceof Error && error.name === "AbortError") {
-      throw new Error("Request timed out while checking for updates");
+    if (error instanceof Error && error.name === 'AbortError') {
+      throw new Error('Request timed out while checking for updates');
     }
     throw error;
   }
@@ -73,33 +73,33 @@ const getLatestVersion = async (packageName: string): Promise<string> => {
 
 const parseCurrentVersion = (versionString: string): string => {
   // Handle JSR format: "npm:@jsr/deco__workers-runtime@0.6.3"
-  if (versionString.startsWith("npm:@jsr/")) {
+  if (versionString.startsWith('npm:@jsr/')) {
     const match = versionString.match(/@([^@]+)$/);
     return match ? match[1] : versionString;
   }
 
   // Handle regular semver versions
-  return versionString.replace(/^[\^~]/, "");
+  return versionString.replace(/^[\^~]/, '');
 };
 
 const formatVersionForPackageJson = (
   packageName: string,
   version: string,
 ): string => {
-  if (packageName === "@deco/workers-runtime") {
+  if (packageName === '@deco/workers-runtime') {
     return `npm:@jsr/deco__workers-runtime@${version}`;
   }
   return `^${version}`;
 };
 
 const discoverWorkspaces = async (rootPath: string): Promise<string[]> => {
-  const rootPackageJsonPath = resolve(rootPath, "package.json");
+  const rootPackageJsonPath = resolve(rootPath, 'package.json');
   if (!existsSync(rootPackageJsonPath)) {
-    throw new Error("No package.json found in the current directory");
+    throw new Error('No package.json found in the current directory');
   }
 
   const rootPackageJson: PackageJson & { workspaces?: string[] } = JSON.parse(
-    await readFile(rootPackageJsonPath, "utf-8"),
+    await readFile(rootPackageJsonPath, 'utf-8'),
   );
 
   if (!rootPackageJson.workspaces) {
@@ -116,7 +116,7 @@ const discoverWorkspaces = async (rootPath: string): Promise<string[]> => {
     });
 
     for (const dir of workspaceDirs) {
-      const packageJsonPath = resolve(rootPath, dir, "package.json");
+      const packageJsonPath = resolve(rootPath, dir, 'package.json');
       if (existsSync(packageJsonPath)) {
         packageJsonPaths.push(packageJsonPath);
       }
@@ -133,7 +133,7 @@ const findPackageJsons = async (cwd: string): Promise<string[]> => {
 const checkForUpdates = async (
   packageJsonPath: string,
 ): Promise<DependencyUpdate[]> => {
-  const packageJsonContent = await readFile(packageJsonPath, "utf-8");
+  const packageJsonContent = await readFile(packageJsonPath, 'utf-8');
   const packageJson: PackageJson = JSON.parse(packageJsonContent);
 
   const updates: DependencyUpdate[] = [];
@@ -239,7 +239,7 @@ const applyUpdates = async (updates: DependencyUpdate[]): Promise<void> => {
 
   // Apply updates to each package
   for (const [packageJsonPath, packageUpdates] of updatesByPackage) {
-    const packageJsonContent = await readFile(packageJsonPath, "utf-8");
+    const packageJsonContent = await readFile(packageJsonPath, 'utf-8');
     const packageJson: PackageJson = JSON.parse(packageJsonContent);
 
     for (const update of packageUpdates) {
@@ -254,7 +254,7 @@ const applyUpdates = async (updates: DependencyUpdate[]): Promise<void> => {
         packageJson.dependencies[update.name] = newVersionString;
       }
 
-      const relativePath = packageJsonPath.replace(process.cwd(), ".");
+      const relativePath = packageJsonPath.replace(process.cwd(), '.');
       console.log(
         chalk.green(
           `✅ Updated ${update.name} in ${relativePath}: ${update.currentVersion} → ${update.latestVersion}`,
@@ -264,7 +264,7 @@ const applyUpdates = async (updates: DependencyUpdate[]): Promise<void> => {
 
     await writeFile(
       packageJsonPath,
-      JSON.stringify(packageJson, null, 2) + "\n",
+      JSON.stringify(packageJson, null, 2) + '\n',
     );
   }
 };
@@ -272,7 +272,7 @@ const applyUpdates = async (updates: DependencyUpdate[]): Promise<void> => {
 export async function updateCommand(options: { yes?: boolean }): Promise<void> {
   try {
     const cwd = process.cwd();
-    console.log(chalk.blue("🔍 Searching for Deco dependencies to update..."));
+    console.log(chalk.blue('🔍 Searching for Deco dependencies to update...'));
 
     // Find all package.json files (workspace-aware)
     const packageJsonPaths = await findPackageJsons(cwd);
@@ -286,7 +286,7 @@ export async function updateCommand(options: { yes?: boolean }): Promise<void> {
         ),
       );
       for (const path of packageJsonPaths) {
-        const relativePath = path.replace(cwd, ".");
+        const relativePath = path.replace(cwd, '.');
         console.log(chalk.gray(`  - ${relativePath}`));
       }
     }
@@ -295,16 +295,16 @@ export async function updateCommand(options: { yes?: boolean }): Promise<void> {
     const updates = await checkAllPackagesForUpdates(packageJsonPaths);
 
     if (updates.length === 0) {
-      console.log(chalk.green("✅ All Deco dependencies are up to date!"));
+      console.log(chalk.green('✅ All Deco dependencies are up to date!'));
       return;
     }
 
     // Display available updates
     console.log();
-    console.log(chalk.yellow("📦 Available updates:"));
+    console.log(chalk.yellow('📦 Available updates:'));
     for (const update of updates) {
-      const depType = update.isDev ? "(dev)" : "";
-      const relativePath = update.packagePath.replace(cwd, ".");
+      const depType = update.isDev ? '(dev)' : '';
+      const relativePath = update.packagePath.replace(cwd, '.');
       console.log(
         chalk.blue(
           `  ${update.name} ${depType} in ${relativePath}: ${update.currentVersion} → ${update.latestVersion}`,
@@ -318,10 +318,10 @@ export async function updateCommand(options: { yes?: boolean }): Promise<void> {
     if (!confirmed) {
       const response = await inquirer.prompt([
         {
-          type: "confirm",
-          name: "confirmed",
+          type: 'confirm',
+          name: 'confirmed',
           message: `Update ${updates.length} Deco ${
-            updates.length === 1 ? "dependency" : "dependencies"
+            updates.length === 1 ? 'dependency' : 'dependencies'
           }?`,
           default: true,
         },
@@ -330,16 +330,16 @@ export async function updateCommand(options: { yes?: boolean }): Promise<void> {
     }
 
     if (!confirmed) {
-      console.log(chalk.gray("Update cancelled."));
+      console.log(chalk.gray('Update cancelled.'));
       return;
     }
 
     // Apply updates
-    console.log(chalk.yellow("🔄 Updating dependencies..."));
+    console.log(chalk.yellow('🔄 Updating dependencies...'));
     await applyUpdates(updates);
 
     console.log();
-    console.log(chalk.green("🎉 Dependencies updated successfully!"));
+    console.log(chalk.green('🎉 Dependencies updated successfully!'));
     console.log(
       chalk.blue(
         "💡 Don't forget to run your package manager to install the new versions.",
@@ -347,7 +347,7 @@ export async function updateCommand(options: { yes?: boolean }): Promise<void> {
     );
   } catch (error) {
     console.error(
-      chalk.red("❌ Failed to update dependencies:"),
+      chalk.red('❌ Failed to update dependencies:'),
       error instanceof Error ? error.message : String(error),
     );
     process.exit(1);

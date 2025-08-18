@@ -15,8 +15,8 @@ if (!globalThis.crypto.randomUUID) {
     bytes[8] = (bytes[8] & 0x3f) | 0x80; // Variant RFC4122
     // Convert to hex string with dashes
     const hex = Array.from(bytes)
-      .map((b) => b.toString(16).padStart(2, "0"))
-      .join("");
+      .map((b) => b.toString(16).padStart(2, '0'))
+      .join('');
     return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${
       hex.slice(
         16,

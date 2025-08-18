@@ -1,11 +1,11 @@
-import { SpanStatusCode, TraceFlags } from "@opentelemetry/api";
+import { SpanStatusCode, TraceFlags } from '@opentelemetry/api';
 import {
   ParentBasedSampler,
   type ReadableSpan,
   type Sampler,
   TraceIdRatioBasedSampler,
-} from "@opentelemetry/sdk-trace-base";
-import type { ParentRatioSamplingConfig } from "./types.ts";
+} from '@opentelemetry/sdk-trace-base';
+import type { ParentRatioSamplingConfig } from './types.ts';
 
 export interface LocalTrace {
   readonly traceId: string;
@@ -39,7 +39,7 @@ export const isRootErrorSpan: TailSampleFn = (traceInfo) => {
 
 export function createSampler(conf: ParentRatioSamplingConfig): Sampler {
   const ratioSampler = new TraceIdRatioBasedSampler(conf.ratio);
-  if (typeof conf.acceptRemote === "boolean" && !conf.acceptRemote) {
+  if (typeof conf.acceptRemote === 'boolean' && !conf.acceptRemote) {
     return new ParentBasedSampler({
       root: ratioSampler,
       remoteParentSampled: ratioSampler,

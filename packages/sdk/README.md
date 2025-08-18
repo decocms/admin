@@ -45,7 +45,7 @@ npm install @deco/sdk
 ### Basic Setup
 
 ```typescript
-import { SDKProvider } from "@deco/sdk";
+import { SDKProvider } from '@deco/sdk';
 
 function App() {
   return (
@@ -59,7 +59,7 @@ function App() {
 ### Using AI Models
 
 ```typescript
-import { useAgents } from "@deco/sdk";
+import { useAgents } from '@deco/sdk';
 
 function MyComponent() {
   const { data: agents } = useAgents();
@@ -80,10 +80,10 @@ function MyComponent() {
 ### File System Operations
 
 ```typescript
-import { useDirectory } from "@deco/sdk";
+import { useDirectory } from '@deco/sdk';
 
 function FileExplorer() {
-  const { data: directory } = useDirectory("/path/to/directory");
+  const { data: directory } = useDirectory('/path/to/directory');
 
   return (
     <div>

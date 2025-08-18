@@ -1,1 +1,1 @@
-export { DurableObject } from "cloudflare:workers";
+export { DurableObject } from 'cloudflare:workers';

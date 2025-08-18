@@ -13,16 +13,16 @@
  * @returns Promise<DecoBinding[]> - The selected integration bindings
  * @throws Error if no session is found or no integrations are available
  */
-import inquirer from "inquirer";
+import inquirer from 'inquirer';
 // @ts-ignore - does not have types
-import inquirerSearchCheckbox from "inquirer-search-checkbox";
-import { createWorkspaceClient } from "./mcp.js";
-import { readSession } from "./session.js";
-import { sanitizeConstantName } from "./slugify.js";
-import { z } from "zod";
+import inquirerSearchCheckbox from 'inquirer-search-checkbox';
+import { createWorkspaceClient } from './mcp.js';
+import { readSession } from './session.js';
+import { sanitizeConstantName } from './slugify.js';
+import { z } from 'zod';
 
 // Register the search checkbox plugin
-inquirer.registerPrompt("search-checkbox", inquirerSearchCheckbox);
+inquirer.registerPrompt('search-checkbox', inquirerSearchCheckbox);
 
 interface Integration {
   id: string;
@@ -43,7 +43,7 @@ export interface DecoBinding {
 
 export async function promptIntegrations(
   local = false,
-  workspace = "",
+  workspace = '',
 ): Promise<DecoBinding[]> {
   // Check if user has a session
   const session = await readSession();
@@ -58,7 +58,7 @@ export async function promptIntegrations(
     // Use INTEGRATIONS_LIST tool to get available integrations
     const response = await client.callTool(
       {
-        name: "INTEGRATIONS_LIST",
+        name: 'INTEGRATIONS_LIST',
         arguments: {},
       },
       // @ts-expect-error We need to refactor INTEGRATIONS_LIST to stop returning array and use a proper object
@@ -66,7 +66,7 @@ export async function promptIntegrations(
     );
 
     if (response.isError) {
-      throw new Error("Failed to fetch integrations");
+      throw new Error('Failed to fetch integrations');
     }
 
     const integrationsResponse = (
@@ -75,11 +75,11 @@ export async function promptIntegrations(
       }
     )?.items;
     const integrations = (integrationsResponse || [])
-      .filter((c) => c.connection.type !== "INNATE")
+      .filter((c) => c.connection.type !== 'INNATE')
       .sort((a, b) => a.name.localeCompare(b.name));
 
     if (!integrations || integrations.length === 0) {
-      throw new Error("No integrations found.");
+      throw new Error('No integrations found.');
     }
 
     // Create options for the search checkbox component
@@ -92,14 +92,14 @@ export async function promptIntegrations(
     // Use inquirer search checkbox to allow multiple selection with search
     const { selectedIntegrationIds } = await inquirer.prompt([
       {
-        type: "search-checkbox",
-        name: "selectedIntegrationIds",
-        message: "Select integrations (use space to select, enter to confirm):",
+        type: 'search-checkbox',
+        name: 'selectedIntegrationIds',
+        message: 'Select integrations (use space to select, enter to confirm):',
         choices: options,
         searchable: true,
         highlight: true,
-        searchText: "Type to search integrations:",
-        emptyText: "No integrations found matching your search.",
+        searchText: 'Type to search integrations:',
+        emptyText: 'No integrations found matching your search.',
       },
     ]);
 
@@ -111,7 +111,7 @@ export async function promptIntegrations(
     // Return the selected integration bindings
     return selectedIntegrations.map(({ name, id }) => ({
       name: sanitizeConstantName(name),
-      type: "mcp",
+      type: 'mcp',
       integration_id: id,
     }));
   } finally {

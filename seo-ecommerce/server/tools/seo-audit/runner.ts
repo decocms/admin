@@ -1,12 +1,12 @@
 // Pure, dependency-injected SEO audit runner (no workers runtime imports)
 // Allows unit tests to bypass createTool / runtime side-effects.
-import type { SeoAuditOutput } from "./index";
+import type { SeoAuditOutput } from './index';
 
 export interface SeoAuditDeps {
   analyzeLinks: (url: string) => Promise<any>;
   getPageSpeed: (opts: {
     url: string;
-    strategy: "mobile" | "desktop";
+    strategy: 'mobile' | 'desktop';
   }) => Promise<any>;
 }
 
@@ -27,11 +27,11 @@ export async function runSeoAuditPure(
     return null;
   });
   const [mobile, desktop] = await Promise.all([
-    getPageSpeed({ url, strategy: "mobile" }).catch((e) => {
+    getPageSpeed({ url, strategy: 'mobile' }).catch((e) => {
       warnings.push(`PageSpeed mobile error: ${(e as Error).message}`);
       return null;
     }),
-    getPageSpeed({ url, strategy: "desktop" }).catch((e) => {
+    getPageSpeed({ url, strategy: 'desktop' }).catch((e) => {
       warnings.push(`PageSpeed desktop error: ${(e as Error).message}`);
       return null;
     }),
@@ -46,16 +46,16 @@ export async function runSeoAuditPure(
   const CLS_mobile = mobile?.metrics?.CLS ?? null;
   const CLS_desktop = desktop?.metrics?.CLS ?? null;
   const INP_ms_mobile = mobile?.metrics?.INP_ms ?? null;
-  if (typeof link?.brokenLinks === "number" && link.brokenLinks > 0) {
+  if (typeof link?.brokenLinks === 'number' && link.brokenLinks > 0) {
     warnings.push(`Broken links detectados: ${link.brokenLinks}`);
   }
-  if (LCP_ms_mobile && LCP_ms_mobile > 4000) warnings.push("LCP mobile > 4s");
-  if (CLS_mobile && CLS_mobile > 0.1) warnings.push("CLS mobile > 0.1");
+  if (LCP_ms_mobile && LCP_ms_mobile > 4000) warnings.push('LCP mobile > 4s');
+  if (CLS_mobile && CLS_mobile > 0.1) warnings.push('CLS mobile > 0.1');
   if (performanceMobile !== null && performanceMobile < 50) {
-    warnings.push("Performance mobile baixa (<50)");
+    warnings.push('Performance mobile baixa (<50)');
   }
   if (seoMobile !== null && seoMobile < 70) {
-    warnings.push("Score SEO mobile baixo (<70)");
+    warnings.push('Score SEO mobile baixo (<70)');
   }
   if (link?.imagesMissingAlt && link.imagesMissingAlt > 0) {
     warnings.push(`Imagens sem alt: ${link.imagesMissingAlt}`);
@@ -64,13 +64,13 @@ export async function runSeoAuditPure(
     warnings.push(`Quantidade de H1 = ${link.h1Count}`);
   }
   if (link?.titleLength && link.titleLength > 60) {
-    warnings.push("Título > 60 caracteres");
+    warnings.push('Título > 60 caracteres');
   }
   if (
     link?.metaDescriptionLength &&
     (link.metaDescriptionLength < 80 || link.metaDescriptionLength > 165)
   ) {
-    warnings.push("Meta description fora da faixa 80-165");
+    warnings.push('Meta description fora da faixa 80-165');
   }
   return {
     url,

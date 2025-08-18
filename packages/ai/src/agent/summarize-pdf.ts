@@ -1,6 +1,6 @@
-import type { MCPClientStub, WorkspaceTools } from "@deco/sdk/mcp";
-import type { Message as AIMessage } from "ai";
-import { extractText } from "unpdf"; // Added to restore PDF text extraction feature
+import type { MCPClientStub, WorkspaceTools } from '@deco/sdk/mcp';
+import type { Message as AIMessage } from 'ai';
+import { extractText } from 'unpdf'; // Added to restore PDF text extraction feature
 
 const MIN_PDF_SUMMARIZATION_SIZE_BYTES = 100_000; // 100KB
 
@@ -8,12 +8,12 @@ function chunkText(text: string, maxChunkSize: number): string[] {
   const chunks: string[] = [];
   const sentences = text.split(/[.!?]+/).filter((s) => s.trim().length > 0);
 
-  let currentChunk = "";
+  let currentChunk = '';
 
   for (const sentence of sentences) {
     const trimmedSentence = sentence.trim();
     if (currentChunk.length + trimmedSentence.length + 1 <= maxChunkSize) {
-      currentChunk += (currentChunk ? " " : "") + trimmedSentence;
+      currentChunk += (currentChunk ? ' ' : '') + trimmedSentence;
     } else {
       if (currentChunk) {
         chunks.push(currentChunk);
@@ -37,16 +37,16 @@ async function extractPDFText(url: string): Promise<string> {
       console.error(
         `[PDF Summarizer] Failed to fetch PDF: ${url} status=${resp.status}`,
       );
-      return "";
+      return '';
     }
     const data = new Uint8Array(await resp.arrayBuffer());
     const { text } = await extractText(data, { mergePages: true } as any);
-    if (Array.isArray(text)) return text.join(" ");
-    if (typeof text === "string") return text;
-    return "";
+    if (Array.isArray(text)) return text.join(' ');
+    if (typeof text === 'string') return text;
+    return '';
   } catch (err) {
-    console.error("[PDF Summarizer] Error extracting PDF text", err);
-    return "";
+    console.error('[PDF Summarizer] Error extracting PDF text', err);
+    return '';
   }
 }
 
@@ -59,18 +59,18 @@ async function summarizeChunk(
 ): Promise<string> {
   try {
     const context = previousSummaries.length > 0
-      ? `\n\nPrevious summary context:\n${previousSummaries.join("\n\n")}\n\n`
-      : "";
+      ? `\n\nPrevious summary context:\n${previousSummaries.join('\n\n')}\n\n`
+      : '';
 
     const result = await mcpClient.AI_GENERATE({
       messages: [
         {
-          role: "system",
+          role: 'system',
           content:
-            "You are a helpful assistant that summarizes text content. Provide concise, accurate summaries that capture the key points and main ideas. Focus on the most important information and maintain the original meaning. When building on previous summaries, ensure continuity and avoid repetition while maintaining a cohesive narrative.",
+            'You are a helpful assistant that summarizes text content. Provide concise, accurate summaries that capture the key points and main ideas. Focus on the most important information and maintain the original meaning. When building on previous summaries, ensure continuity and avoid repetition while maintaining a cohesive narrative.',
         },
         {
-          role: "user",
+          role: 'user',
           content:
             `${context}Please summarize the following text in a concise way, building on the previous context if provided:\n\n${chunk}`,
         },
@@ -80,14 +80,14 @@ async function summarizeChunk(
       temperature: 0.3,
     });
 
-    if (result && typeof result === "object" && "text" in result) {
+    if (result && typeof result === 'object' && 'text' in result) {
       const summary = result.text as string;
       return summary;
     }
 
-    throw new Error("Invalid response from AI_GENERATE");
+    throw new Error('Invalid response from AI_GENERATE');
   } catch (error) {
-    console.error("[PDF Summarizer] Error summarizing chunk:", error);
+    console.error('[PDF Summarizer] Error summarizing chunk:', error);
     // Fallback to original chunk if summarization fails
     return chunk;
   }
@@ -108,7 +108,7 @@ export function shouldSummarizePDFs(messages: AIMessage[]): {
 } {
   const pdfMessages = messages.filter((message) =>
     message.experimental_attachments?.some(
-      (attachment) => attachment.contentType === "application/pdf",
+      (attachment) => attachment.contentType === 'application/pdf',
     )
   );
 
@@ -117,7 +117,7 @@ export function shouldSummarizePDFs(messages: AIMessage[]): {
     return (
       acc +
       (message.experimental_attachments ?? []).reduce((acc2, attachment) => {
-        if ("size" in attachment && typeof attachment.size === "number") {
+        if ('size' in attachment && typeof attachment.size === 'number') {
           return acc2 + attachment.size;
         }
         return acc2;
@@ -157,7 +157,7 @@ export async function summarizePDFMessages(
     const message = messages[i];
 
     const pdfAttachments = message.experimental_attachments?.filter(
-      (attachment) => attachment.contentType === "application/pdf",
+      (attachment) => attachment.contentType === 'application/pdf',
     );
 
     if (!pdfAttachments || pdfAttachments.length === 0) {
@@ -194,15 +194,15 @@ export async function summarizePDFMessages(
           totalTokens += estimatedTokens;
         }
 
-        const combinedSummary = summarizedChunks.join("\n\n");
+        const combinedSummary = summarizedChunks.join('\n\n');
 
         const pdfSummaryAnnotation = {
-          type: "file" as const,
+          type: 'file' as const,
           url: pdfAttachment.url,
-          name: pdfAttachment.name || "document",
-          contentType: "application/pdf",
+          name: pdfAttachment.name || 'document',
+          contentType: 'application/pdf',
           content: `<pdf_summary original="${
-            pdfAttachment.name || "document"
+            pdfAttachment.name || 'document'
           }">\n${combinedSummary}\n</pdf_summary>`,
         };
 
@@ -215,7 +215,7 @@ export async function summarizePDFMessages(
       const summarizedMessage: AIMessage = {
         ...message,
         experimental_attachments: message.experimental_attachments?.filter(
-          (attachment) => attachment.contentType !== "application/pdf",
+          (attachment) => attachment.contentType !== 'application/pdf',
         ),
       };
 

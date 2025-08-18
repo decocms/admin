@@ -94,7 +94,7 @@ export const MY_BINDING_SCHEMA = [{
 3. **Export your binding** in `index.ts`:
 
 ```ts
-export * from "./my-binding.ts";
+export * from './my-binding.ts';
 ```
 
 4. **Use your binding** in the UI or backend as needed.

@@ -1,5 +1,5 @@
-import type { Theme } from "../../theme.ts";
-import type { Json } from "../../storage/index.ts";
+import type { Theme } from '../../theme.ts';
+import type { Json } from '../../storage/index.ts';
 
 export function mergeThemes(
   currentTheme: Json | null,
@@ -9,7 +9,7 @@ export function mergeThemes(
   if (!newTheme) {
     if (
       !currentTheme ||
-      typeof currentTheme !== "object" ||
+      typeof currentTheme !== 'object' ||
       Array.isArray(currentTheme)
     ) {
       return null;
@@ -17,11 +17,10 @@ export function mergeThemes(
 
     const theme = currentTheme as Theme;
     return {
-      picture: typeof theme.picture === "string" ? theme.picture : undefined,
-      variables:
-        typeof theme.variables === "object" && !Array.isArray(theme.variables)
-          ? theme.variables
-          : undefined,
+      picture: typeof theme.picture === 'string' ? theme.picture : undefined,
+      variables: typeof theme.variables === 'object' && !Array.isArray(theme.variables)
+        ? theme.variables
+        : undefined,
       font: theme.font,
     };
   }
@@ -35,15 +34,15 @@ export function mergeThemes(
   // Merge current theme if valid
   if (
     currentTheme &&
-    typeof currentTheme === "object" &&
+    typeof currentTheme === 'object' &&
     !Array.isArray(currentTheme)
   ) {
     const theme = currentTheme as Theme;
-    if (typeof theme.picture === "string") {
+    if (typeof theme.picture === 'string') {
       merged.picture = theme.picture;
     }
     if (
-      typeof theme.variables === "object" &&
+      typeof theme.variables === 'object' &&
       !Array.isArray(theme.variables)
     ) {
       merged.variables = { ...theme.variables };

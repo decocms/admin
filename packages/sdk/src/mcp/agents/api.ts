@@ -1,30 +1,18 @@
-import type { PostgrestError } from "@supabase/supabase-js";
-import { z } from "zod";
-import {
-  AgentSchema,
-  NEW_AGENT_TEMPLATE,
-  WELL_KNOWN_AGENTS,
-} from "../../index.ts";
-import {
-  assertHasWorkspace,
-  assertWorkspaceResourceAccess,
-  type WithTool,
-} from "../assertions.ts";
-import { type AppContext, createToolGroup } from "../context.ts";
-import {
-  ForbiddenError,
-  InternalServerError,
-  NotFoundError,
-} from "../index.ts";
-import { deleteTrigger, listTriggers } from "../triggers/api.ts";
-const createTool = createToolGroup("Agent", {
-  name: "Agent Management",
-  description: "Manage your agents",
+import type { PostgrestError } from '@supabase/supabase-js';
+import { z } from 'zod';
+import { AgentSchema, NEW_AGENT_TEMPLATE, WELL_KNOWN_AGENTS } from '../../index.ts';
+import { assertHasWorkspace, assertWorkspaceResourceAccess, type WithTool } from '../assertions.ts';
+import { type AppContext, createToolGroup } from '../context.ts';
+import { ForbiddenError, InternalServerError, NotFoundError } from '../index.ts';
+import { deleteTrigger, listTriggers } from '../triggers/api.ts';
+const createTool = createToolGroup('Agent', {
+  name: 'Agent Management',
+  description: 'Manage your agents',
   icon:
-    "https://assets.decocache.com/mcp/6f6bb7ac-e2bd-49fc-a67c-96d09ef84993/Agent-Management.png",
+    'https://assets.decocache.com/mcp/6f6bb7ac-e2bd-49fc-a67c-96d09ef84993/Agent-Management.png',
 });
 
-const NO_DATA_ERROR = "PGRST116";
+const NO_DATA_ERROR = 'PGRST116';
 export const getAgentsByIds = async (ids: string[], c: AppContext) => {
   assertHasWorkspace(c);
 
@@ -34,14 +22,14 @@ export const getAgentsByIds = async (ids: string[], c: AppContext) => {
 
   let dbAgents: Omit<
     z.infer<typeof AgentSchema>,
-    "instructions" | "memory" | "views" | "visibility" | "access"
+    'instructions' | 'memory' | 'views' | 'visibility' | 'access'
   >[] = [];
   if (dbIds.length > 0) {
     const { data, error } = await c.db
-      .from("deco_chat_agents")
-      .select("id, name, description, tools_set, avatar")
-      .in("id", dbIds)
-      .eq("workspace", c.workspace.value);
+      .from('deco_chat_agents')
+      .select('id, name, description, tools_set, avatar')
+      .in('id', dbIds)
+      .eq('workspace', c.workspace.value);
 
     if (error) {
       throw error;
@@ -70,11 +58,11 @@ export const getAgentsByIds = async (ids: string[], c: AppContext) => {
     .filter((a): a is z.infer<typeof AgentSchema> => !!a);
 };
 
-export const IMPORTANT_ROLES = ["owner", "admin"];
+export const IMPORTANT_ROLES = ['owner', 'admin'];
 
 export const listAgents = createTool({
-  name: "AGENTS_LIST",
-  description: "List all agents",
+  name: 'AGENTS_LIST',
+  description: 'List all agents',
   inputSchema: z.object({}),
   outputSchema: z.object({
     items: z.array(AgentSchema),
@@ -85,15 +73,15 @@ export const listAgents = createTool({
     await assertWorkspaceResourceAccess(c);
 
     const { data, error } = await c.db
-      .from("deco_chat_agents")
-      .select("*")
-      .ilike("workspace", c.workspace.value);
+      .from('deco_chat_agents')
+      .select('*')
+      .ilike('workspace', c.workspace.value);
 
     if (error) {
       throw new InternalServerError(error.message);
     }
 
-    const roles = c.workspace.root === "users"
+    const roles = c.workspace.root === 'users'
       ? []
       : await c.policy.getUserRoles(c.user.id as string, c.workspace.slug);
     const userRoles: string[] = roles?.map((role) => role.name);
@@ -114,8 +102,8 @@ export const listAgents = createTool({
 });
 
 export const getAgent = createTool({
-  name: "AGENTS_GET",
-  description: "Get an agent by id",
+  name: 'AGENTS_GET',
+  description: 'Get an agent by id',
   inputSchema: z.object({ id: z.string() }),
   handler: async ({ id }, c) => {
     assertHasWorkspace(c);
@@ -130,10 +118,10 @@ export const getAgent = createTool({
           error: null,
         })
         : c.db
-          .from("deco_chat_agents")
-          .select("*")
-          .eq("workspace", c.workspace.value)
-          .eq("id", id)
+          .from('deco_chat_agents')
+          .select('*')
+          .eq('workspace', c.workspace.value)
+          .eq('id', id)
           .single(),
     ]);
 
@@ -141,7 +129,7 @@ export const getAgent = createTool({
       throw new NotFoundError(id);
     }
 
-    if (data.visibility !== "PUBLIC" && !canAccess) {
+    if (data.visibility !== 'PUBLIC' && !canAccess) {
       throw new ForbiddenError(`You are not allowed to access this agent`);
     }
 
@@ -156,8 +144,8 @@ export const getAgent = createTool({
 });
 
 export const createAgent = createTool({
-  name: "AGENTS_CREATE",
-  description: "Create a new agent",
+  name: 'AGENTS_CREATE',
+  description: 'Create a new agent',
   inputSchema: AgentSchema.partial(),
   handler: async (agent, c) => {
     assertHasWorkspace(c);
@@ -166,7 +154,7 @@ export const createAgent = createTool({
 
     const [{ data, error }] = await Promise.all([
       c.db
-        .from("deco_chat_agents")
+        .from('deco_chat_agents')
         // @ts-ignore - @Camudo push your code
         .insert({
           ...NEW_AGENT_TEMPLATE,
@@ -185,17 +173,15 @@ export const createAgent = createTool({
   },
 });
 
-export const createAgentSetupTool = createToolGroup("AgentSetup", {
-  name: "Agent Setup",
-  description:
-    "Configure agent identity, update settings, and list available integrations.",
-  icon:
-    "https://assets.decocache.com/mcp/42dcf0d2-5a2f-4d50-87a6-0e9ebaeae9b5/Agent-Setup.png",
+export const createAgentSetupTool = createToolGroup('AgentSetup', {
+  name: 'Agent Setup',
+  description: 'Configure agent identity, update settings, and list available integrations.',
+  icon: 'https://assets.decocache.com/mcp/42dcf0d2-5a2f-4d50-87a6-0e9ebaeae9b5/Agent-Setup.png',
 });
 
 export const updateAgent = createAgentSetupTool({
-  name: "AGENTS_UPDATE",
-  description: "Update an existing agent",
+  name: 'AGENTS_UPDATE',
+  description: 'Update an existing agent',
   inputSchema: z.object({
     id: z.string(),
     agent: AgentSchema.partial(),
@@ -206,9 +192,9 @@ export const updateAgent = createAgentSetupTool({
     await assertWorkspaceResourceAccess(c);
 
     const { data, error } = await c.db
-      .from("deco_chat_agents")
+      .from('deco_chat_agents')
       .update({ ...agent, id, workspace: c.workspace.value })
-      .eq("id", id)
+      .eq('id', id)
       .select()
       .single();
 
@@ -217,7 +203,7 @@ export const updateAgent = createAgentSetupTool({
     }
 
     if (!data) {
-      throw new NotFoundError("Agent not found");
+      throw new NotFoundError('Agent not found');
     }
 
     return AgentSchema.parse(data);
@@ -225,15 +211,15 @@ export const updateAgent = createAgentSetupTool({
 });
 
 export const deleteAgent = createTool({
-  name: "AGENTS_DELETE",
-  description: "Delete an agent by id",
+  name: 'AGENTS_DELETE',
+  description: 'Delete an agent by id',
   inputSchema: z.object({ id: z.string() }),
   handler: async ({ id }, c) => {
     assertHasWorkspace(c);
 
     await assertWorkspaceResourceAccess(c);
 
-    const { error } = await c.db.from("deco_chat_agents").delete().eq("id", id);
+    const { error } = await c.db.from('deco_chat_agents').delete().eq('id', id);
 
     const triggers = await listTriggers.handler({ agentId: id });
 

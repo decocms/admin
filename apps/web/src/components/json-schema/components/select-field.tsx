@@ -5,15 +5,15 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
-} from "@deco/ui/components/form.tsx";
+} from '@deco/ui/components/form.tsx';
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@deco/ui/components/select.tsx";
-import type { FieldPath, FieldValues, UseFormReturn } from "react-hook-form";
+} from '@deco/ui/components/select.tsx';
+import type { FieldPath, FieldValues, UseFormReturn } from 'react-hook-form';
 
 interface SelectFieldProps<T extends FieldValues = FieldValues> {
   name: string;
@@ -43,7 +43,7 @@ export function SelectField<T extends FieldValues = FieldValues>({
         <FormItem>
           <FormLabel>
             {title}
-            {isRequired && <span className="text-destructive ml-1">*</span>}
+            {isRequired && <span className='text-destructive ml-1'>*</span>}
           </FormLabel>
           <Select
             onValueChange={field.onChange}
@@ -52,7 +52,7 @@ export function SelectField<T extends FieldValues = FieldValues>({
           >
             <FormControl>
               <SelectTrigger>
-                <SelectValue placeholder="Select an option" />
+                <SelectValue placeholder='Select an option' />
               </SelectTrigger>
             </FormControl>
             <SelectContent>

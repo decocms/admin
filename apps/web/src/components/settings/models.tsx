@@ -6,8 +6,8 @@ import {
   useModels,
   useUpdateModel,
   WELL_KNOWN_MODELS,
-} from "@deco/sdk";
-import { Button } from "@deco/ui/components/button.tsx";
+} from '@deco/sdk';
+import { Button } from '@deco/ui/components/button.tsx';
 import {
   Dialog,
   DialogClose,
@@ -15,13 +15,13 @@ import {
   DialogDescription,
   DialogHeader,
   DialogTitle,
-} from "@deco/ui/components/dialog.tsx";
+} from '@deco/ui/components/dialog.tsx';
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from "@deco/ui/components/dropdown-menu.tsx";
+} from '@deco/ui/components/dropdown-menu.tsx';
 import {
   Form,
   FormControl,
@@ -29,27 +29,27 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
-} from "@deco/ui/components/form.tsx";
-import { Icon } from "@deco/ui/components/icon.tsx";
-import { Input } from "@deco/ui/components/input.tsx";
-import { ScrollArea } from "@deco/ui/components/scroll-area.tsx";
+} from '@deco/ui/components/form.tsx';
+import { Icon } from '@deco/ui/components/icon.tsx';
+import { Input } from '@deco/ui/components/input.tsx';
+import { ScrollArea } from '@deco/ui/components/scroll-area.tsx';
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@deco/ui/components/select.tsx";
-import { toast } from "@deco/ui/components/sonner.tsx";
-import { Switch } from "@deco/ui/components/switch.tsx";
-import { Textarea } from "@deco/ui/components/textarea.tsx";
-import { cn } from "@deco/ui/lib/utils.ts";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { createContext, Suspense, useContext, useRef, useState } from "react";
-import { useForm } from "react-hook-form";
-import { z } from "zod";
-import { Avatar } from "../common/avatar/index.tsx";
-import { Table, type TableColumn } from "../common/table/index.tsx";
+} from '@deco/ui/components/select.tsx';
+import { toast } from '@deco/ui/components/sonner.tsx';
+import { Switch } from '@deco/ui/components/switch.tsx';
+import { Textarea } from '@deco/ui/components/textarea.tsx';
+import { cn } from '@deco/ui/lib/utils.ts';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { createContext, Suspense, useContext, useRef, useState } from 'react';
+import { useForm } from 'react-hook-form';
+import { z } from 'zod';
+import { Avatar } from '../common/avatar/index.tsx';
+import { Table, type TableColumn } from '../common/table/index.tsx';
 
 interface ModelLogoProps {
   logo: string;
@@ -60,31 +60,31 @@ export function ModelLogo({ logo, name }: ModelLogoProps) {
   return (
     <div
       className={cn(
-        "rounded-2xl relative flex items-center justify-center p-2 h-16 w-16",
+        'rounded-2xl relative flex items-center justify-center p-2 h-16 w-16',
         "before:content-[''] before:absolute before:inset-0 before:rounded-2xl before:p-[1px] before:bg-gradient-to-t before:from-border before:to-border/50",
-        "before:![mask:linear-gradient(#000_0_0)_exclude_content-box,_linear-gradient(#000_0_0)]",
+        'before:![mask:linear-gradient(#000_0_0)_exclude_content-box,_linear-gradient(#000_0_0)]',
       )}
     >
       <Avatar
-        shape="square"
+        shape='square'
         url={logo}
         fallback={name}
-        objectFit="contain"
-        size="base"
+        objectFit='contain'
+        size='base'
       />
     </div>
   );
 }
 
-const SORTABLE_KEYS = ["name", "active", "APIKey"] as const;
+const SORTABLE_KEYS = ['name', 'active', 'APIKey'] as const;
 
 type SortKey = (typeof SORTABLE_KEYS)[number];
-type SortDirection = "asc" | "desc";
+type SortDirection = 'asc' | 'desc';
 
 function Title() {
   return (
-    <div className="items-center justify-between hidden md:flex">
-      <h2 className="text-2xl">Models</h2>
+    <div className='items-center justify-between hidden md:flex'>
+      <h2 className='text-2xl'>Models</h2>
     </div>
   );
 }
@@ -95,7 +95,7 @@ const Context = createContext<{
 }>({
   isOpen: false,
   setIsOpen: () => {
-    throw new Error("setIsOpen is not implemented");
+    throw new Error('setIsOpen is not implemented');
   },
 });
 
@@ -117,7 +117,7 @@ function useModal() {
 function Models() {
   return (
     <ModalProvider>
-      <ScrollArea className="h-full text-foreground">
+      <ScrollArea className='h-full text-foreground'>
         <Suspense fallback={<span>Loading...</span>}>
           <ModelsView />
         </Suspense>
@@ -131,19 +131,19 @@ function ModelsView() {
   const { setIsOpen } = useModal();
 
   return (
-    <div className="px-6 py-10 flex flex-col gap-6">
-      <div className="flex items-center justify-between">
+    <div className='px-6 py-10 flex flex-col gap-6'>
+      <div className='flex items-center justify-between'>
         <Title />
         <Button
-          variant="default"
-          className="ml-auto"
+          variant='default'
+          className='ml-auto'
           onClick={() => setIsOpen(true)}
         >
-          <Icon name="add" className="mr-2 h-4 w-4" />
+          <Icon name='add' className='mr-2 h-4 w-4' />
           Add Model
         </Button>
       </div>
-      <div className="space-y-6">
+      <div className='space-y-6'>
         <TableView models={models} />
       </div>
     </div>
@@ -153,14 +153,14 @@ function ModelsView() {
 const KeyCell = ({ model, onClick }: { model: Model; onClick: () => void }) => {
   if (model.byDeco) {
     return (
-      <Button variant="outline" onClick={onClick}>
+      <Button variant='outline' onClick={onClick}>
         Add Custom Key
       </Button>
     );
   }
   return (
-    <span className="flex items-center gap-2 px-4 py-2" onClick={onClick}>
-      <Icon name="key" /> Custom Key
+    <span className='flex items-center gap-2 px-4 py-2' onClick={onClick}>
+      <Icon name='key' /> Custom Key
     </span>
   );
 };
@@ -183,32 +183,32 @@ const ModelActions = ({
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <Button
-          variant="ghost"
-          size="icon"
+          variant='ghost'
+          size='icon'
           onClick={(e) => e.stopPropagation()}
         >
-          <Icon name="more_vert" size={20} />
+          <Icon name='more_vert' size={20} />
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent>
         <DropdownMenuItem
-          className="cursor-pointer"
+          className='cursor-pointer'
           onClick={(e) => {
             e.stopPropagation();
             onEditClick();
           }}
         >
-          <Icon name="edit" className="h-4 w-4 mr-2" />
+          <Icon name='edit' className='h-4 w-4 mr-2' />
           Edit
         </DropdownMenuItem>
         <DropdownMenuItem
-          className="text-destructive cursor-pointer"
+          className='text-destructive cursor-pointer'
           onClick={(e) => {
             e.stopPropagation();
             onDeleteClick();
           }}
         >
-          <Icon name="delete" className="h-4 w-4 mr-2" />
+          <Icon name='delete' className='h-4 w-4 mr-2' />
           Delete
         </DropdownMenuItem>
       </DropdownMenuContent>
@@ -218,40 +218,40 @@ const ModelActions = ({
 
 const ModelInfoCell = ({ model }: { model: Model }) => {
   return (
-    <div className="flex items-center gap-2">
+    <div className='flex items-center gap-2'>
       {model.logo
         ? (
           <Avatar
-            shape="square"
+            shape='square'
             url={model.logo}
             fallback={model.name}
-            objectFit="contain"
-            size="xs"
+            objectFit='contain'
+            size='xs'
           />
         )
-        : <Icon name="conversion_path" className="text-muted-foreground" />}
+        : <Icon name='conversion_path' className='text-muted-foreground' />}
       <div>
-        <div className="flex items-center gap-2">
-          <h3 className="font-medium line-clamp-1">{model.name}</h3>
+        <div className='flex items-center gap-2'>
+          <h3 className='font-medium line-clamp-1'>{model.name}</h3>
         </div>
-        <p className="text-sm text-muted-foreground">{model.model}</p>
+        <p className='text-sm text-muted-foreground'>{model.model}</p>
       </div>
     </div>
   );
 };
 
 const modelFormSchema = z.object({
-  name: z.string().min(1, "Name is required"),
-  model: z.string().min(1, "Model is required"),
+  name: z.string().min(1, 'Name is required'),
+  model: z.string().min(1, 'Model is required'),
   description: z.string().optional(),
-  apiKey: z.string().min(1, "API Key is required"),
+  apiKey: z.string().min(1, 'API Key is required'),
 });
 
 type ModelForm = z.infer<typeof modelFormSchema>;
 
 function TableView({ models }: { models: Model[] }) {
-  const [sortKey, setSortKey] = useState<SortKey>("active");
-  const [sortDirection, setSortDirection] = useState<SortDirection>("desc");
+  const [sortKey, setSortKey] = useState<SortKey>('active');
+  const [sortDirection, setSortDirection] = useState<SortDirection>('desc');
   const { isOpen: modalOpen, setIsOpen } = useModal();
   const [logo, setLogo] = useState<string | undefined>(undefined);
   const modelRef = useRef<Model | undefined>(undefined);
@@ -268,10 +268,10 @@ function TableView({ models }: { models: Model[] }) {
   function handleSort(key: string) {
     const k = key as SortKey;
     if (sortKey === k) {
-      setSortDirection((prev) => (prev === "asc" ? "desc" : "asc"));
+      setSortDirection((prev) => (prev === 'asc' ? 'desc' : 'asc'));
     } else {
       setSortKey(k);
-      setSortDirection("asc");
+      setSortDirection('asc');
     }
   }
 
@@ -281,7 +281,7 @@ function TableView({ models }: { models: Model[] }) {
     }
 
     if (models.filter((m) => m.isEnabled).length === 1) {
-      toast.error("You must have at least one enabled model");
+      toast.error('You must have at least one enabled model');
       return;
     }
 
@@ -289,32 +289,32 @@ function TableView({ models }: { models: Model[] }) {
   }
 
   function getSortValue(model: Model, key: SortKey): string {
-    if (key === "name") return model.name?.toLowerCase() || "";
-    if (key === "active") return model.isEnabled ? "1" : "0";
-    if (key === "APIKey") return model.hasCustomKey ? "1" : "0";
-    return "";
+    if (key === 'name') return model.name?.toLowerCase() || '';
+    if (key === 'active') return model.isEnabled ? '1' : '0';
+    if (key === 'APIKey') return model.hasCustomKey ? '1' : '0';
+    return '';
   }
 
   const sortedModels = [...models].sort((a, b) => {
     const aVal = getSortValue(a, sortKey);
     const bVal = getSortValue(b, sortKey);
-    if (aVal < bVal) return sortDirection === "asc" ? -1 : 1;
-    if (aVal > bVal) return sortDirection === "asc" ? 1 : -1;
+    if (aVal < bVal) return sortDirection === 'asc' ? -1 : 1;
+    if (aVal > bVal) return sortDirection === 'asc' ? 1 : -1;
     return 0;
   });
 
   const columns: TableColumn<Model>[] = [
     {
-      id: "active",
-      header: "",
+      id: 'active',
+      header: '',
       render: (model) => (
         <Switch
-          className="cursor-pointer"
+          className='cursor-pointer'
           onClick={(e) => e.stopPropagation()}
           checked={model.isEnabled}
           onCheckedChange={(checked: boolean) => {
             if (!checked && models.filter((m) => m.isEnabled).length === 1) {
-              toast.error("You must have at least one enabled model");
+              toast.error('You must have at least one enabled model');
               return;
             }
 
@@ -340,14 +340,14 @@ function TableView({ models }: { models: Model[] }) {
       ),
     },
     {
-      id: "name",
-      header: "Name",
+      id: 'name',
+      header: 'Name',
       accessor: (model) => <ModelInfoCell model={model} />,
       sortable: true,
     },
     {
-      id: "APIKey",
-      header: "API Key",
+      id: 'APIKey',
+      header: 'API Key',
       render: (model) => (
         <KeyCell
           model={model}
@@ -356,8 +356,8 @@ function TableView({ models }: { models: Model[] }) {
       ),
     },
     {
-      id: "actions",
-      header: "",
+      id: 'actions',
+      header: '',
       render: (model) => (
         <ModelActions
           model={model}
@@ -382,7 +382,7 @@ function TableView({ models }: { models: Model[] }) {
     const isCreatingNewModel = !model;
 
     if (isCreatingNewModel) {
-      modalForm.reset({ name: "New Model - Team" });
+      modalForm.reset({ name: 'New Model - Team' });
       return;
     }
 
@@ -444,24 +444,24 @@ function TableView({ models }: { models: Model[] }) {
           <Form {...modalForm}>
             <form
               onSubmit={modalForm.handleSubmit(onSubmit)}
-              className="space-y-6"
+              className='space-y-6'
             >
-              <div className="flex items-center gap-6">
+              <div className='flex items-center gap-6'>
                 <Avatar
-                  shape="square"
-                  url={logo || modelRef.current?.logo || ""}
-                  fallback={modalForm.getValues("name")}
-                  size="sm"
+                  shape='square'
+                  url={logo || modelRef.current?.logo || ''}
+                  fallback={modalForm.getValues('name')}
+                  size='sm'
                 />
                 <FormField
                   control={modalForm.control}
-                  name="name"
+                  name='name'
                   render={({ field }) => (
-                    <FormItem className="flex-1">
+                    <FormItem className='flex-1'>
                       <FormLabel>Name</FormLabel>
                       <FormControl>
                         <Input
-                          placeholder="My GPT Model"
+                          placeholder='My GPT Model'
                           {...field}
                           disabled={isMutating}
                         />
@@ -473,14 +473,14 @@ function TableView({ models }: { models: Model[] }) {
               </div>
               <FormField
                 control={modalForm.control}
-                name="description"
+                name='description'
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Description</FormLabel>
                     <FormControl>
                       <Textarea
-                        placeholder="Brief description of the model"
-                        className="min-h-[100px]"
+                        placeholder='Brief description of the model'
+                        className='min-h-[100px]'
                         {...field}
                         disabled={isMutating}
                       />
@@ -491,7 +491,7 @@ function TableView({ models }: { models: Model[] }) {
               />
               <FormField
                 control={modalForm.control}
-                name="model"
+                name='model'
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Model Identifier</FormLabel>
@@ -510,23 +510,23 @@ function TableView({ models }: { models: Model[] }) {
                           }
                         }}
                       >
-                        <SelectTrigger className="w-full">
-                          <SelectValue placeholder="Select Model" />
+                        <SelectTrigger className='w-full'>
+                          <SelectValue placeholder='Select Model' />
                         </SelectTrigger>
                         <SelectContent>
                           {WELL_KNOWN_MODELS.map((model) => (
                             <SelectItem
-                              key={model.model.split(":")[1]}
+                              key={model.model.split(':')[1]}
                               value={model.model}
                             >
                               {model.logo && (
                                 <img
                                   src={model.logo}
                                   alt={model.name}
-                                  className="w-6 h-6"
+                                  className='w-6 h-6'
                                 />
                               )}
-                              {model.model.split(":")[1]}
+                              {model.model.split(':')[1]}
                             </SelectItem>
                           ))}
                         </SelectContent>
@@ -536,20 +536,20 @@ function TableView({ models }: { models: Model[] }) {
                   </FormItem>
                 )}
               />
-              <div className="flex items-end gap-3">
+              <div className='flex items-end gap-3'>
                 <FormField
                   control={modalForm.control}
-                  name="apiKey"
+                  name='apiKey'
                   render={({ field }) => (
-                    <FormItem className="flex-1">
+                    <FormItem className='flex-1'>
                       <FormLabel>API Key</FormLabel>
                       <FormControl>
                         <Input
-                          type="password"
+                          type='password'
                           {...field}
                           placeholder={modelRef.current?.hasCustomKey
-                            ? "••••••••••••••••••••••••••••••••••••••••••"
-                            : ""}
+                            ? '••••••••••••••••••••••••••••••••••••••••••'
+                            : ''}
                           disabled={isMutating}
                         />
                       </FormControl>
@@ -558,12 +558,12 @@ function TableView({ models }: { models: Model[] }) {
                   )}
                 />
               </div>
-              <div className="flex items-center justify-end gap-3">
-                <Button type="submit" variant="default" disabled={isMutating}>
-                  {isMutating ? "Saving..." : "Save"}
+              <div className='flex items-center justify-end gap-3'>
+                <Button type='submit' variant='default' disabled={isMutating}>
+                  {isMutating ? 'Saving...' : 'Save'}
                 </Button>
                 <DialogClose asChild>
-                  <Button type="button" variant="outline">
+                  <Button type='button' variant='outline'>
                     Discard
                   </Button>
                 </DialogClose>

@@ -1,8 +1,8 @@
-import { generateDefaultValues } from "../src/components/json-schema/utils/generate-default-values.ts";
-import type { JSONSchema7 } from "json-schema";
-import { expect, test } from "vitest";
+import { generateDefaultValues } from '../src/components/json-schema/utils/generate-default-values.ts';
+import type { JSONSchema7 } from 'json-schema';
+import { expect, test } from 'vitest';
 
-test("generateDefaultValues - empty or invalid schema", () => {
+test('generateDefaultValues - empty or invalid schema', () => {
   // Test with null or undefined schema
   expect(generateDefaultValues(null as unknown as JSONSchema7)).toEqual({});
   expect(generateDefaultValues(undefined as unknown as JSONSchema7)).toEqual(
@@ -10,38 +10,38 @@ test("generateDefaultValues - empty or invalid schema", () => {
   );
 
   // Test with non-object schema
-  expect(generateDefaultValues({ type: "string" } as JSONSchema7)).toEqual({});
+  expect(generateDefaultValues({ type: 'string' } as JSONSchema7)).toEqual({});
 });
 
-test("generateDefaultValues - schema with default value", () => {
+test('generateDefaultValues - schema with default value', () => {
   // Test schema with default value
   const schemaWithDefault: JSONSchema7 = {
-    type: "object",
-    default: { name: "Default Name", age: 25 },
+    type: 'object',
+    default: { name: 'Default Name', age: 25 },
   };
 
   const result = generateDefaultValues(schemaWithDefault);
-  expect(result.name).toBe("Default Name");
+  expect(result.name).toBe('Default Name');
   expect(result.age).toBe(25);
 });
 
-test("generateDefaultValues - basic object properties", () => {
+test('generateDefaultValues - basic object properties', () => {
   // Test object schema with properties
   const schema: JSONSchema7 = {
-    type: "object",
+    type: 'object',
     properties: {
-      name: { type: "string" },
-      age: { type: "number" },
-      isActive: { type: "boolean" },
+      name: { type: 'string' },
+      age: { type: 'number' },
+      isActive: { type: 'boolean' },
     },
-    required: ["name", "isActive"],
+    required: ['name', 'isActive'],
   };
 
   const result = generateDefaultValues(schema);
 
   // Should have required properties
   expect(result.name).toBeDefined();
-  expect(result.name).toBe("");
+  expect(result.name).toBe('');
 
   expect(result.isActive).toBeDefined();
   expect(result.isActive).toBe(false);
@@ -50,19 +50,19 @@ test("generateDefaultValues - basic object properties", () => {
   expect(result.age).toBeUndefined();
 });
 
-test("generateDefaultValues - with formData", () => {
+test('generateDefaultValues - with formData', () => {
   // Test using existing form data
   const schema: JSONSchema7 = {
-    type: "object",
+    type: 'object',
     properties: {
-      name: { type: "string" },
-      age: { type: "number" },
-      isActive: { type: "boolean" },
+      name: { type: 'string' },
+      age: { type: 'number' },
+      isActive: { type: 'boolean' },
     },
   };
 
   const formData = {
-    name: "John Doe",
+    name: 'John Doe',
     age: 30,
   };
 
@@ -70,7 +70,7 @@ test("generateDefaultValues - with formData", () => {
 
   // Should preserve properties from formData
   expect(result.name).toBeDefined();
-  expect(result.name).toBe("John Doe");
+  expect(result.name).toBe('John Doe');
 
   expect(result.age).toBeDefined();
   expect(result.age).toBe(30);
@@ -79,25 +79,25 @@ test("generateDefaultValues - with formData", () => {
   expect(result.isActive).toBeUndefined();
 });
 
-test("generateDefaultValues - anyOf schema", () => {
+test('generateDefaultValues - anyOf schema', () => {
   // Test anyOf schema
   const anyOfSchema: JSONSchema7 = {
     anyOf: [
       {
-        type: "object",
+        type: 'object',
         properties: {
-          name: { type: "string" },
-          age: { type: "number" },
+          name: { type: 'string' },
+          age: { type: 'number' },
         },
-        required: ["name"],
+        required: ['name'],
       },
       {
-        type: "object",
+        type: 'object',
         properties: {
-          firstName: { type: "string" },
-          lastName: { type: "string" },
+          firstName: { type: 'string' },
+          lastName: { type: 'string' },
         },
-        required: ["firstName", "lastName"],
+        required: ['firstName', 'lastName'],
       },
     ],
   };
@@ -108,39 +108,39 @@ test("generateDefaultValues - anyOf schema", () => {
 
   // Test anyOf with matching form data
   const formData = {
-    firstName: "John",
-    lastName: "Doe",
+    firstName: 'John',
+    lastName: 'Doe',
   };
 
   const resultWithFormData = generateDefaultValues(anyOfSchema, formData);
   expect(resultWithFormData.firstName).toBeDefined();
   expect(resultWithFormData.lastName).toBeDefined();
-  expect(resultWithFormData.firstName).toBe("John");
-  expect(resultWithFormData.lastName).toBe("Doe");
+  expect(resultWithFormData.firstName).toBe('John');
+  expect(resultWithFormData.lastName).toBe('Doe');
 });
 
-test("generateDefaultValues - nested objects", () => {
+test('generateDefaultValues - nested objects', () => {
   // Test schema with nested objects
   const nestedSchema: JSONSchema7 = {
-    type: "object",
+    type: 'object',
     properties: {
       user: {
-        type: "object",
+        type: 'object',
         properties: {
-          name: { type: "string" },
+          name: { type: 'string' },
           address: {
-            type: "object",
+            type: 'object',
             properties: {
-              street: { type: "string" },
-              city: { type: "string" },
+              street: { type: 'string' },
+              city: { type: 'string' },
             },
-            required: ["street"],
+            required: ['street'],
           },
         },
-        required: ["name", "address"],
+        required: ['name', 'address'],
       },
     },
-    required: ["user"],
+    required: ['user'],
   };
 
   // deno-lint-ignore no-explicit-any
@@ -151,40 +151,40 @@ test("generateDefaultValues - nested objects", () => {
   expect(result.user.name).toBeDefined();
   expect(result.user.address).toBeDefined();
   expect(result.user.address.street).toBeDefined();
-  expect(result.user.address.street).toBe("");
+  expect(result.user.address.street).toBe('');
   expect(result.user.address.city).toBeUndefined();
 });
 
-test("generateDefaultValues - nested objects with formData", () => {
+test('generateDefaultValues - nested objects with formData', () => {
   // Test schema with nested objects
   const nestedSchema: JSONSchema7 = {
-    type: "object",
+    type: 'object',
     properties: {
       user: {
-        type: "object",
+        type: 'object',
         properties: {
-          name: { type: "string" },
+          name: { type: 'string' },
           address: {
-            type: "object",
+            type: 'object',
             properties: {
-              street: { type: "string" },
-              city: { type: "string" },
+              street: { type: 'string' },
+              city: { type: 'string' },
             },
-            required: ["street"],
+            required: ['street'],
           },
         },
-        required: ["name", "address"],
+        required: ['name', 'address'],
       },
     },
-    required: ["user"],
+    required: ['user'],
   };
 
   const formData = {
     user: {
-      name: "John Smith",
+      name: 'John Smith',
       address: {
-        street: "123 Main St",
-        city: "Anytown",
+        street: '123 Main St',
+        city: 'Anytown',
       },
     },
   };
@@ -197,52 +197,52 @@ test("generateDefaultValues - nested objects with formData", () => {
 
   // Check that nested structure preserves formData values
   expect(result.user).toBeDefined();
-  expect(result.user.name).toBe("John Smith");
+  expect(result.user.name).toBe('John Smith');
   expect(result.user.address).toBeDefined();
-  expect(result.user.address.street).toBe("123 Main St");
-  expect(result.user.address.city).toBe("Anytown");
+  expect(result.user.address.street).toBe('123 Main St');
+  expect(result.user.address.city).toBe('Anytown');
 });
 
-test("generateDefaultValues - with field path", () => {
+test('generateDefaultValues - with field path', () => {
   // Test with field path parameter
   const schema: JSONSchema7 = {
-    type: "object",
+    type: 'object',
     properties: {
-      name: { type: "string" },
-      age: { type: "number" },
+      name: { type: 'string' },
+      age: { type: 'number' },
     },
-    required: ["name", "age"],
+    required: ['name', 'age'],
   };
 
-  const result = generateDefaultValues(schema, undefined, "user");
+  const result = generateDefaultValues(schema, undefined, 'user');
 
   expect(result.name).toBeDefined();
   expect(result.age).toBeDefined();
-  expect(result.name).toBe("");
+  expect(result.name).toBe('');
   expect(result.age).toBe(0);
 });
 
-test("generateDefaultValues - with formData type mismatch", () => {
+test('generateDefaultValues - with formData type mismatch', () => {
   // Test handling of form data that doesn't match schema type
   const schema: JSONSchema7 = {
-    type: "object",
+    type: 'object',
     properties: {
-      name: { type: "string", default: "Default Name" },
-      age: { type: "number", default: 25 },
-      isActive: { type: "boolean", default: true },
+      name: { type: 'string', default: 'Default Name' },
+      age: { type: 'number', default: 25 },
+      isActive: { type: 'boolean', default: true },
     },
   };
 
   const formData = {
     name: 42, // Not a string
-    age: "thirty", // Not a number
-    isActive: "yes", // Not a boolean
+    age: 'thirty', // Not a number
+    isActive: 'yes', // Not a boolean
   };
 
   const result = generateDefaultValues(schema, formData);
 
   // Should use default values when types don't match
-  expect(result.name).toBe("Default Name");
+  expect(result.name).toBe('Default Name');
   expect(result.age).toBe(25);
   expect(result.isActive).toBe(true);
 });

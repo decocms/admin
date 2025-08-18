@@ -1,10 +1,10 @@
 // deno-lint-ignore-file no-explicit-any
-import z from "zod";
-import { workspaceDB } from "../context.ts";
-import { assertHasWorkspace, assertWorkspaceResourceAccess } from "../index.ts";
-import { createDatabaseTool } from "./tool.ts";
+import z from 'zod';
+import { workspaceDB } from '../context.ts';
+import { assertHasWorkspace, assertWorkspaceResourceAccess } from '../index.ts';
+import { createDatabaseTool } from './tool.ts';
 
-export { getWorkspaceD1Database } from "./d1.ts";
+export { getWorkspaceD1Database } from './d1.ts';
 
 // Estimate SQL size and parameter count to avoid SQLITE_TOOBIG and SQLITE_ERROR
 const estimateSQLMetrics = (
@@ -12,16 +12,15 @@ const estimateSQLMetrics = (
   columnNames: string,
   rows: any[],
 ): { size: number; paramCount: number } => {
-  const baseSQL =
-    `INSERT OR REPLACE INTO "${tableName}" (${columnNames}) VALUES `;
+  const baseSQL = `INSERT OR REPLACE INTO "${tableName}" (${columnNames}) VALUES `;
   const placeholders = columnNames
-    .split(", ")
-    .map(() => "?")
-    .join(", ");
+    .split(', ')
+    .map(() => '?')
+    .join(', ');
   const rowSQL = `(${placeholders})`;
 
   // Calculate parameter count
-  const columnsCount = columnNames.split(", ").length;
+  const columnsCount = columnNames.split(', ').length;
   const paramCount = rows.length * columnsCount;
 
   // Estimate size of the SQL statement
@@ -30,8 +29,8 @@ const estimateSQLMetrics = (
 
   // Add some buffer for actual data values - check actual data size
   for (const row of rows) {
-    for (const columnName of columnNames.split(", ")) {
-      const cleanColumnName = columnName.replace(/"/g, ""); // Remove quotes
+    for (const columnName of columnNames.split(', ')) {
+      const cleanColumnName = columnName.replace(/"/g, ''); // Remove quotes
       const value = (row as any)[cleanColumnName];
       if (value !== null && value !== undefined) {
         const valueStr = String(value);
@@ -70,13 +69,12 @@ const insertChunk = async (
   }
 
   try {
-    const placeholders = columns.map(() => "?").join(", ");
-    const insertSql =
-      `INSERT OR REPLACE INTO "${tableName}" (${columnNames}) VALUES ${
-        rows
-          .map(() => `(${placeholders})`)
-          .join(", ")
-      }`;
+    const placeholders = columns.map(() => '?').join(', ');
+    const insertSql = `INSERT OR REPLACE INTO "${tableName}" (${columnNames}) VALUES ${
+      rows
+        .map(() => `(${placeholders})`)
+        .join(', ')
+    }`;
 
     const params: any[] = [];
     for (const row of rows) {
@@ -84,7 +82,7 @@ const insertChunk = async (
         let value = (row as any)[column.name];
 
         // Handle extremely large string/blob values
-        if (typeof value === "string" && value.length > 1000000) {
+        if (typeof value === 'string' && value.length > 1000000) {
           // 1MB limit
           value = value.substring(0, 1000000);
         }
@@ -103,7 +101,7 @@ const insertChunk = async (
       insertError,
     );
     // Fall back to single-row inserts
-    const placeholders = columns.map(() => "?").join(", ");
+    const placeholders = columns.map(() => '?').join(', ');
     const singleInsertSql =
       `INSERT OR REPLACE INTO "${tableName}" (${columnNames}) VALUES (${placeholders})`;
 
@@ -113,7 +111,7 @@ const insertChunk = async (
         let value = (row as any)[column.name];
 
         // Handle extremely large string/blob values
-        if (typeof value === "string" && value.length > 1000000) {
+        if (typeof value === 'string' && value.length > 1000000) {
           // 1MB limit
           value = value.substring(0, 1000000);
         }
@@ -130,23 +128,23 @@ const insertChunk = async (
 };
 
 export const migrate = createDatabaseTool({
-  name: "DATABASES_MIGRATE",
-  description: "Migrate data from Turso database to new database",
+  name: 'DATABASES_MIGRATE',
+  description: 'Migrate data from Turso database to new database',
   inputSchema: z.object({
     dryRun: z
       .boolean()
       .optional()
-      .describe("If true, only shows what would be migrated without executing"),
+      .describe('If true, only shows what would be migrated without executing'),
     tables: z
       .array(z.string())
       .optional()
       .describe(
-        "Specific tables to migrate. If not provided, all tables will be migrated",
+        'Specific tables to migrate. If not provided, all tables will be migrated',
       ),
     batchSize: z
       .number()
       .default(1000)
-      .describe("Number of rows to migrate per batch"),
+      .describe('Number of rows to migrate per batch'),
   }),
   outputSchema: z.object({
     success: z.boolean(),
@@ -154,7 +152,7 @@ export const migrate = createDatabaseTool({
       z.object({
         tableName: z.string(),
         rowCount: z.number(),
-        status: z.enum(["success", "error", "skipped"]),
+        status: z.enum(['success', 'error', 'skipped']),
         error: z.string().optional(),
       }),
     ),
@@ -162,73 +160,71 @@ export const migrate = createDatabaseTool({
     executionTimeMs: z.number(),
   }),
   handler: async ({ dryRun = false, tables, batchSize = 1000 }, c) => {
-    console.log("🚀 Starting Turso database migration...");
-    console.log("📋 Migration parameters:", { dryRun, tables, batchSize });
+    console.log('🚀 Starting Turso database migration...');
+    console.log('📋 Migration parameters:', { dryRun, tables, batchSize });
 
     assertHasWorkspace(c);
-    await assertWorkspaceResourceAccess(c, "DATABASES_RUN_SQL");
+    await assertWorkspaceResourceAccess(c, 'DATABASES_RUN_SQL');
 
     const startTime = Date.now();
     const newDb = await workspaceDB(c, false);
     const tursoDb = await workspaceDB(c, true);
-    console.log("✅ Connected to databases");
+    console.log('✅ Connected to databases');
 
     // Disable foreign key constraints during migration to avoid constraint errors
-    console.log("🔒 Disabling foreign key constraints...");
+    console.log('🔒 Disabling foreign key constraints...');
     try {
       using _ = await newDb.exec({
-        sql: "PRAGMA foreign_keys = OFF",
+        sql: 'PRAGMA foreign_keys = OFF',
         params: [],
       });
-      console.log("✅ Foreign key constraints disabled");
+      console.log('✅ Foreign key constraints disabled');
     } catch (error) {
-      console.warn("⚠️ Could not disable foreign key constraints:", error);
+      console.warn('⚠️ Could not disable foreign key constraints:', error);
     }
 
     const migratedTables: Array<{
       tableName: string;
       rowCount: number;
-      status: "success" | "error" | "skipped";
+      status: 'success' | 'error' | 'skipped';
       error?: string;
     }> = [];
 
     let totalRowsMigrated = 0;
 
     try {
-      console.log("📊 Starting table discovery...");
+      console.log('📊 Starting table discovery...');
       // Get tables from Turso database
       const allTables = new Set<string>();
 
-      console.log("🔍 Discovering tables in Turso database...");
+      console.log('🔍 Discovering tables in Turso database...');
       try {
         using tursoResult = await tursoDb.exec({
-          sql:
-            "SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%'",
+          sql: "SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%'",
           params: [],
         });
-        const tursoTables =
-          (tursoResult.result[0]?.results as Array<{ name: string }>) || [];
+        const tursoTables = (tursoResult.result[0]?.results as Array<{ name: string }>) || [];
         tursoTables.forEach((table) => allTables.add(table.name));
         console.log(
           `📋 Found ${tursoTables.length} tables in Turso database:`,
           tursoTables.map((t) => t.name),
         );
       } catch (error) {
-        console.warn("❌ Failed to get tables from Turso database:", error);
+        console.warn('❌ Failed to get tables from Turso database:', error);
       }
 
       // Filter out system tables that shouldn't be migrated
       const systemTablesToExclude = [
-        "_cf_KV",
-        "_litestream_seq",
-        "_litestream_lock",
-        "mastra_workflow_snapshot",
+        '_cf_KV',
+        '_litestream_seq',
+        '_litestream_lock',
+        'mastra_workflow_snapshot',
       ];
       const filteredTables = Array.from(allTables).filter(
         (tableName) =>
           !systemTablesToExclude.includes(tableName) &&
-          !tableName.startsWith("_cf_") &&
-          !tableName.startsWith("sqlite_"),
+          !tableName.startsWith('_cf_') &&
+          !tableName.startsWith('sqlite_'),
       );
 
       const tablesToMigrate = tables
@@ -244,7 +240,7 @@ export const migrate = createDatabaseTool({
       console.log(`   - Tables to migrate:`, tablesToMigrate);
 
       if (dryRun) {
-        console.log("🔍 DRY RUN: Counting rows in tables...");
+        console.log('🔍 DRY RUN: Counting rows in tables...');
         for (const tableName of tablesToMigrate) {
           console.log(`📊 Counting rows in table: ${tableName}`);
           try {
@@ -256,8 +252,7 @@ export const migrate = createDatabaseTool({
                 sql: `SELECT COUNT(*) as count FROM "${tableName}"`,
                 params: [],
               });
-              const tursoCount =
-                (result.result[0]?.results?.[0] as { count: number })?.count ||
+              const tursoCount = (result.result[0]?.results?.[0] as { count: number })?.count ||
                 0;
               totalCount = tursoCount;
               console.log(`   - Turso: ${tursoCount} rows`);
@@ -272,23 +267,21 @@ export const migrate = createDatabaseTool({
             migratedTables.push({
               tableName,
               rowCount: totalCount,
-              status: "success",
+              status: 'success',
             });
           } catch (error) {
             console.log(
-              `   ❌ Error: ${
-                error instanceof Error ? error.message : String(error)
-              }`,
+              `   ❌ Error: ${error instanceof Error ? error.message : String(error)}`,
             );
             migratedTables.push({
               tableName,
               rowCount: 0,
-              status: "error",
+              status: 'error',
               error: error instanceof Error ? error.message : String(error),
             });
           }
         }
-        console.log("✅ DRY RUN completed successfully");
+        console.log('✅ DRY RUN completed successfully');
         return {
           success: true,
           migratedTables,
@@ -298,7 +291,7 @@ export const migrate = createDatabaseTool({
       }
 
       // Actual migration
-      console.log("🚀 Starting actual migration...");
+      console.log('🚀 Starting actual migration...');
       for (const tableName of tablesToMigrate) {
         console.log(`\n📋 Migrating table: ${tableName}`);
         try {
@@ -312,15 +305,13 @@ export const migrate = createDatabaseTool({
           // Check if table exists in Turso database
           try {
             using checkTursoResult = await tursoDb.exec({
-              sql:
-                `SELECT name FROM sqlite_master WHERE type='table' AND name='${tableName}'`,
+              sql: `SELECT name FROM sqlite_master WHERE type='table' AND name='${tableName}'`,
               params: [],
             });
-            tableExistsInTurso =
-              (checkTursoResult.result[0]?.results?.length || 0) > 0;
+            tableExistsInTurso = (checkTursoResult.result[0]?.results?.length || 0) > 0;
             console.log(
-              `   ${tableExistsInTurso ? "✅" : "❌"} Table ${tableName} ${
-                tableExistsInTurso ? "exists" : "does not exist"
+              `   ${tableExistsInTurso ? '✅' : '❌'} Table ${tableName} ${
+                tableExistsInTurso ? 'exists' : 'does not exist'
               } in Turso database`,
             );
           } catch (error) {
@@ -334,8 +325,7 @@ export const migrate = createDatabaseTool({
           if (tableExistsInTurso) {
             try {
               using result = await tursoDb.exec({
-                sql:
-                  `SELECT sql FROM sqlite_master WHERE type='table' AND name='${tableName}'`,
+                sql: `SELECT sql FROM sqlite_master WHERE type='table' AND name='${tableName}'`,
                 params: [],
               });
               const tursoSchemaResult = result.result[0]?.results?.[0] as
@@ -370,8 +360,8 @@ export const migrate = createDatabaseTool({
             migratedTables.push({
               tableName: tableName,
               rowCount: 0,
-              status: "error",
-              error: "Could not retrieve table schema",
+              status: 'error',
+              error: 'Could not retrieve table schema',
             });
             continue;
           }
@@ -383,15 +373,13 @@ export const migrate = createDatabaseTool({
           let tableExists = false;
           try {
             using checkTableResponse = await newDb.exec({
-              sql:
-                `SELECT name FROM sqlite_master WHERE type='table' AND name='${tableName}'`,
+              sql: `SELECT name FROM sqlite_master WHERE type='table' AND name='${tableName}'`,
               params: [],
             });
-            tableExists =
-              (checkTableResponse.result[0]?.results?.length || 0) > 0;
+            tableExists = (checkTableResponse.result[0]?.results?.length || 0) > 0;
             console.log(
-              `   ${tableExists ? "✅" : "❌"} Table ${tableName} ${
-                tableExists ? "exists" : "does not exist"
+              `   ${tableExists ? '✅' : '❌'} Table ${tableName} ${
+                tableExists ? 'exists' : 'does not exist'
               } in new database`,
             );
           } catch (error) {
@@ -420,11 +408,9 @@ export const migrate = createDatabaseTool({
               migratedTables.push({
                 tableName: tableName,
                 rowCount: 0,
-                status: "error",
+                status: 'error',
                 error: `Cannot create table: ${
-                  createError instanceof Error
-                    ? createError.message
-                    : String(createError)
+                  createError instanceof Error ? createError.message : String(createError)
                 }`,
               });
               continue;
@@ -455,7 +441,7 @@ export const migrate = createDatabaseTool({
             );
           }
 
-          const columnNames = columns.map((col) => `"${col.name}"`).join(", ");
+          const columnNames = columns.map((col) => `"${col.name}"`).join(', ');
 
           // Check if table already has data (for idempotency)
           let existingRowCount = 0;
@@ -483,8 +469,7 @@ export const migrate = createDatabaseTool({
                 sql: `SELECT COUNT(*) as count FROM "${tableName}"`,
                 params: [],
               });
-              totalRows =
-                (result.result[0]?.results?.[0] as { count: number })?.count ||
+              totalRows = (result.result[0]?.results?.[0] as { count: number })?.count ||
                 0;
               console.log(`   📊 Found ${totalRows} rows in Turso database`);
             } catch (error) {
@@ -498,11 +483,9 @@ export const migrate = createDatabaseTool({
             migratedTables.push({
               tableName: tableName,
               rowCount: 0,
-              status: "error",
+              status: 'error',
               error: `Cannot access table for counting: ${
-                countError instanceof Error
-                  ? countError.message
-                  : String(countError)
+                countError instanceof Error ? countError.message : String(countError)
               }`,
             });
             continue;
@@ -638,7 +621,7 @@ export const migrate = createDatabaseTool({
           migratedTables.push({
             tableName: tableName,
             rowCount: migratedRows,
-            status: "success",
+            status: 'success',
           });
 
           totalRowsMigrated += migratedRows;
@@ -647,7 +630,7 @@ export const migrate = createDatabaseTool({
           migratedTables.push({
             tableName: tableName,
             rowCount: 0,
-            status: "error",
+            status: 'error',
             error: error instanceof Error ? error.message : String(error),
           });
         }
@@ -658,20 +641,20 @@ export const migrate = createDatabaseTool({
       console.log(`📋 Tables processed: ${migratedTables.length}`);
 
       // Re-enable foreign key constraints after migration
-      console.log("🔒 Re-enabling foreign key constraints...");
+      console.log('🔒 Re-enabling foreign key constraints...');
       try {
         using _ = await newDb.exec({
-          sql: "PRAGMA foreign_keys = ON",
+          sql: 'PRAGMA foreign_keys = ON',
           params: [],
         });
-        console.log("✅ Foreign key constraints re-enabled");
+        console.log('✅ Foreign key constraints re-enabled');
       } catch (error) {
-        console.warn("⚠️ Could not re-enable foreign key constraints:", error);
+        console.warn('⚠️ Could not re-enable foreign key constraints:', error);
       }
 
       const executionTime = Date.now() - startTime;
       console.log(`⏱️ Total execution time: ${executionTime}ms`);
-      console.log("🎯 Migration completed successfully!");
+      console.log('🎯 Migration completed successfully!');
 
       return {
         success: true,
@@ -680,26 +663,26 @@ export const migrate = createDatabaseTool({
         executionTimeMs: executionTime,
       };
     } catch (error) {
-      console.error("💥 Migration failed with error:", error);
+      console.error('💥 Migration failed with error:', error);
 
       // Re-enable foreign key constraints even on error
-      console.log("🔒 Re-enabling foreign key constraints after error...");
+      console.log('🔒 Re-enabling foreign key constraints after error...');
       try {
         using _ = await newDb.exec({
-          sql: "PRAGMA foreign_keys = ON",
+          sql: 'PRAGMA foreign_keys = ON',
           params: [],
         });
-        console.log("✅ Foreign key constraints re-enabled");
+        console.log('✅ Foreign key constraints re-enabled');
       } catch (fkError) {
         console.warn(
-          "⚠️ Could not re-enable foreign key constraints:",
+          '⚠️ Could not re-enable foreign key constraints:',
           fkError,
         );
       }
 
       const executionTime = Date.now() - startTime;
       console.log(`⏱️ Total execution time: ${executionTime}ms`);
-      console.log("💥 Migration failed!");
+      console.log('💥 Migration failed!');
 
       return {
         success: false,

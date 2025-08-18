@@ -4,13 +4,13 @@ import {
   type Tracer,
   type TracerOptions,
   type TracerProvider,
-} from "@opentelemetry/api";
+} from '@opentelemetry/api';
 
-import type { SpanProcessor } from "@opentelemetry/sdk-trace-base";
-import type { Resource } from "@opentelemetry/resources";
+import type { SpanProcessor } from '@opentelemetry/sdk-trace-base';
+import type { Resource } from '@opentelemetry/resources';
 
-import { AsyncLocalStorageContextManager } from "./context.ts";
-import { WorkerTracer } from "./tracer.ts";
+import { AsyncLocalStorageContextManager } from './context.ts';
+import { WorkerTracer } from './tracer.ts';
 
 /**
  * Register this TracerProvider for use with the OpenTelemetry API.
@@ -30,7 +30,7 @@ export class WorkerTracerProvider implements TracerProvider {
   }
 
   getTracer(name: string, version?: string, options?: TracerOptions): Tracer {
-    const key = `${name}@${version || ""}:${options?.schemaUrl || ""}`;
+    const key = `${name}@${version || ''}:${options?.schemaUrl || ''}`;
     if (!this.tracers[key]) {
       this.tracers[key] = new WorkerTracer(this.spanProcessors, this.resource);
     }

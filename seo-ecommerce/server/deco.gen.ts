@@ -7,7 +7,7 @@
 // ...existing code...
 // Generated types - do not edit manually
 // ...existing code...
-import { z } from "zod";
+import { z } from 'zod';
 
 export type Mcp<T extends Record<string, (input: any) => Promise<any>>> = {
   [K in keyof T]:

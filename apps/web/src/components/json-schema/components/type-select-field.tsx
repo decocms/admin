@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useMemo } from 'react';
 import {
   FormControl,
   FormDescription,
@@ -6,20 +6,20 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
-} from "@deco/ui/components/form.tsx";
+} from '@deco/ui/components/form.tsx';
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@deco/ui/components/select.tsx";
-import type { FieldPath, FieldValues, UseFormReturn } from "react-hook-form";
-import type { OptionItem } from "../index.tsx";
-import { IntegrationIcon } from "../../integrations/common.tsx";
-import { useMarketplaceIntegrations } from "@deco/sdk";
-import { Button } from "@deco/ui/components/button.tsx";
-import { useOptionsLoader } from "../../../hooks/use-options-loader.ts";
+} from '@deco/ui/components/select.tsx';
+import type { FieldPath, FieldValues, UseFormReturn } from 'react-hook-form';
+import type { OptionItem } from '../index.tsx';
+import { IntegrationIcon } from '../../integrations/common.tsx';
+import { useMarketplaceIntegrations } from '@deco/sdk';
+import { Button } from '@deco/ui/components/button.tsx';
+import { useOptionsLoader } from '../../../hooks/use-options-loader.ts';
 
 interface TypeSelectFieldProps<T extends FieldValues = FieldValues> {
   name: string;
@@ -61,7 +61,7 @@ export function TypeSelectField<T extends FieldValues = FieldValues>({
     e.stopPropagation();
     globalThis.open(
       `/connections?installingIntegrationId=${matchingIntegration?.id}`,
-      "_blank",
+      '_blank',
     );
   };
 
@@ -70,12 +70,12 @@ export function TypeSelectField<T extends FieldValues = FieldValues>({
       control={form.control}
       name={name as unknown as FieldPath<T>}
       render={({ field }) => (
-        <FormItem className="space-y-2">
+        <FormItem className='space-y-2'>
           <FormLabel>
             {title}
-            {isRequired && <span className="text-destructive ml-1">*</span>}
+            {isRequired && <span className='text-destructive ml-1'>*</span>}
           </FormLabel>
-          <div className="flex items-center gap-4">
+          <div className='flex items-center gap-4'>
             {options.length > 0
               ? (
                 <Select
@@ -92,20 +92,18 @@ export function TypeSelectField<T extends FieldValues = FieldValues>({
                   disabled={disabled || isPending}
                 >
                   <FormControl>
-                    <SelectTrigger className="h-11">
+                    <SelectTrigger className='h-11'>
                       <SelectValue
-                        placeholder={isPending
-                          ? "Loading..."
-                          : "Select an integration"}
+                        placeholder={isPending ? 'Loading...' : 'Select an integration'}
                       >
                         {field.value?.value && selectedOption && (
-                          <div className="flex items-center gap-3">
+                          <div className='flex items-center gap-3'>
                             <IntegrationIcon
                               icon={selectedOption.icon}
                               name={selectedOption.label}
-                              size="sm"
+                              size='sm'
                             />
-                            <span className="font-medium">
+                            <span className='font-medium'>
                               {selectedOption.label}
                             </span>
                           </div>
@@ -118,16 +116,16 @@ export function TypeSelectField<T extends FieldValues = FieldValues>({
                       <SelectItem
                         key={option.value}
                         value={option.value}
-                        className="py-3"
+                        className='py-3'
                       >
-                        <div className="flex items-center gap-3 w-full">
+                        <div className='flex items-center gap-3 w-full'>
                           <IntegrationIcon
                             icon={option.icon}
                             name={option.label}
-                            size="sm"
-                            className="flex-shrink-0"
+                            size='sm'
+                            className='flex-shrink-0'
                           />
-                          <span className="font-medium text-sm">
+                          <span className='font-medium text-sm'>
                             {option.label}
                           </span>
                         </div>
@@ -137,13 +135,13 @@ export function TypeSelectField<T extends FieldValues = FieldValues>({
                 </Select>
               )
               : (
-                <Button onClick={handleAddIntegration} variant="special">
+                <Button onClick={handleAddIntegration} variant='special'>
                   Add integration
                 </Button>
               )}
           </div>
           {description && (
-            <FormDescription className="text-xs text-muted-foreground">
+            <FormDescription className='text-xs text-muted-foreground'>
               {description}
             </FormDescription>
           )}

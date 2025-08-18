@@ -1,45 +1,41 @@
-export * from "../errors.ts";
-export * from "./assertions.ts";
-export { createResourceAccess } from "./auth/index.ts";
-export * from "./bindings/binder.ts";
-export * from "./context.ts";
-export * from "./middlewares.ts";
+export * from '../errors.ts';
+export * from './assertions.ts';
+export { createResourceAccess } from './auth/index.ts';
+export * from './bindings/binder.ts';
+export * from './context.ts';
+export * from './middlewares.ts';
 export {
   getPresignedReadUrl_WITHOUT_CHECKING_AUTHORIZATION,
   getWorkspaceBucketName,
-} from "./fs/api.ts";
-export { HOSTING_APPS_DOMAIN } from "./hosting/api.ts";
-export * from "./models/llm-vault.ts";
-export * from "./wallet/stripe/webhook.ts";
+} from './fs/api.ts';
+export { HOSTING_APPS_DOMAIN } from './hosting/api.ts';
+export * from './models/llm-vault.ts';
+export * from './wallet/stripe/webhook.ts';
 
-export { EMAIL_TOOLS } from "./email/api.ts";
-import {
-  contractAuthorize,
-  contractSettle,
-  oauthStart,
-} from "./contracts/api.ts";
-import * as agentAPI from "./agent/api.ts";
-import * as agentsAPI from "./agents/api.ts";
-import * as aiAPI from "./ai/api.ts";
-import * as apiKeysAPI from "./api-keys/api.ts";
-import * as channelsAPI from "./channels/api.ts";
-import { type AppContext, State, type Tool } from "./context.ts";
-import * as databasesAPI from "./databases/api.ts";
-import * as fsAPI from "./fs/api.ts";
-import * as hostingAPI from "./hosting/api.ts";
-import * as integrationsAPI from "./integrations/api.ts";
-import * as knowledgeAPI from "./knowledge/api.ts";
-import * as membersAPI from "./members/api.ts";
-import * as modelsAPI from "./models/api.ts";
-import * as oauthAPI from "./oauth/api.ts";
-import * as profilesAPI from "./profiles/api.ts";
-import * as promptsAPI from "./prompts/api.ts";
-import * as registryAPI from "./registry/api.ts";
-import type { CreateStubHandlerOptions, MCPClientStub } from "./stub.ts";
-import * as teamsAPI from "./teams/api.ts";
-import * as threadsAPI from "./threads/api.ts";
-import * as triggersAPI from "./triggers/api.ts";
-import * as walletAPI from "./wallet/api.ts";
+export { EMAIL_TOOLS } from './email/api.ts';
+import { contractAuthorize, contractSettle, oauthStart } from './contracts/api.ts';
+import * as agentAPI from './agent/api.ts';
+import * as agentsAPI from './agents/api.ts';
+import * as aiAPI from './ai/api.ts';
+import * as apiKeysAPI from './api-keys/api.ts';
+import * as channelsAPI from './channels/api.ts';
+import { type AppContext, State, type Tool } from './context.ts';
+import * as databasesAPI from './databases/api.ts';
+import * as fsAPI from './fs/api.ts';
+import * as hostingAPI from './hosting/api.ts';
+import * as integrationsAPI from './integrations/api.ts';
+import * as knowledgeAPI from './knowledge/api.ts';
+import * as membersAPI from './members/api.ts';
+import * as modelsAPI from './models/api.ts';
+import * as oauthAPI from './oauth/api.ts';
+import * as profilesAPI from './profiles/api.ts';
+import * as promptsAPI from './prompts/api.ts';
+import * as registryAPI from './registry/api.ts';
+import type { CreateStubHandlerOptions, MCPClientStub } from './stub.ts';
+import * as teamsAPI from './teams/api.ts';
+import * as threadsAPI from './threads/api.ts';
+import * as triggersAPI from './triggers/api.ts';
+import * as walletAPI from './wallet/api.ts';
 
 export const CONTRACTS_TOOLS = [
   contractAuthorize,
@@ -209,7 +205,7 @@ export type ToolBinder<
 > =
   & Pick<
     ToolLike<TName, TInput, TReturn>,
-    "name" | "inputSchema" | "outputSchema"
+    'name' | 'inputSchema' | 'outputSchema'
   >
   & { opt?: true };
 
@@ -225,11 +221,9 @@ export const createGlobalForContext = (context?: AppContext): typeof global => {
 };
 export const fromWorkspaceString = (
   _workspace: string,
-): AppContext["workspace"] => {
-  const workspace: string = _workspace.startsWith("/")
-    ? _workspace
-    : `/${_workspace}`;
-  const [_, root, slug] = workspace.split("/");
+): AppContext['workspace'] => {
+  const workspace: string = _workspace.startsWith('/') ? _workspace : `/${_workspace}`;
+  const [_, root, slug] = workspace.split('/');
   return {
     value: workspace,
     root,
@@ -240,21 +234,20 @@ export const fromWorkspaceString = (
 export const MCPClient = new Proxy(
   {} as typeof global & {
     forContext: (
-      ctx: Omit<AppContext, "user"> & { user?: AppContext["user"] },
+      ctx: Omit<AppContext, 'user'> & { user?: AppContext['user'] },
     ) => MCPClientStub<WorkspaceTools>;
   },
   {
     get(_, name) {
-      if (name === "forContext") {
-        return (ctx: AppContext) =>
-          createMCPToolsStub({ tools: WORKSPACE_TOOLS, context: ctx });
+      if (name === 'forContext') {
+        return (ctx: AppContext) => createMCPToolsStub({ tools: WORKSPACE_TOOLS, context: ctx });
       }
       return global[name as keyof typeof global];
     },
   },
 );
 
-export { Entrypoint } from "./hosting/api.ts";
+export { Entrypoint } from './hosting/api.ts';
 
 export function createMCPToolsStub<TDefinition extends readonly ToolLike[]>(
   options: CreateStubHandlerOptions<TDefinition>,
@@ -263,8 +256,8 @@ export function createMCPToolsStub<TDefinition extends readonly ToolLike[]>(
     {} as MCPClientStub<TDefinition>,
     {
       get(_, name) {
-        if (typeof name !== "string") {
-          throw new Error("Name must be a string");
+        if (typeof name !== 'string') {
+          throw new Error('Name must be a string');
         }
         const toolMap = new Map<string, TDefinition[number]>(
           options.tools.map((h) => [h.name, h]),
@@ -290,6 +283,6 @@ export function createMCPToolsStub<TDefinition extends readonly ToolLike[]>(
   );
 }
 
-export { AuthorizationClient, PolicyClient } from "../auth/policy.ts";
-export { FileProcessor } from "../mcp/file-processor.ts";
-export type { DatatabasesRunSqlInput } from "./databases/api.ts";
+export { AuthorizationClient, PolicyClient } from '../auth/policy.ts';
+export { FileProcessor } from '../mcp/file-processor.ts';
+export type { DatatabasesRunSqlInput } from './databases/api.ts';

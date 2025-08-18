@@ -1,11 +1,11 @@
 /// <reference types="@cloudflare/workers-types" />
 
-import { trace } from "@opentelemetry/api";
-import { WorkerTracer } from "../tracer.ts";
-import { passthroughGet, wrap } from "../wrap.ts";
+import { trace } from '@opentelemetry/api';
+import { WorkerTracer } from '../tracer.ts';
+import { passthroughGet, wrap } from '../wrap.ts';
 
 type ContextAndTracker = { ctx: ExecutionContext; tracker: PromiseTracker };
-type WaitUntilFn = ExecutionContext["waitUntil"];
+type WaitUntilFn = ExecutionContext['waitUntil'];
 
 export class PromiseTracker {
   _outstandingPromises: Promise<unknown>[] = [];
@@ -43,7 +43,7 @@ export function proxyExecutionContext(
   const tracker = new PromiseTracker();
   const ctx = new Proxy(context, {
     get(target, prop) {
-      if (prop === "waitUntil") {
+      if (prop === 'waitUntil') {
         const fn = Reflect.get(target, prop);
         return createWaitUntil(fn, context, tracker);
       } else {
@@ -55,7 +55,7 @@ export function proxyExecutionContext(
 }
 
 export async function exportSpans(tracker?: PromiseTracker) {
-  const tracer = trace.getTracer("export");
+  const tracer = trace.getTracer('export');
   if (tracer instanceof WorkerTracer) {
     await scheduler.wait(1);
     if (tracker) {
@@ -67,7 +67,7 @@ export async function exportSpans(tracker?: PromiseTracker) {
     await Promise.allSettled(promises);
   } else {
     console.error(
-      "The global tracer is not of type WorkerTracer and can not export spans",
+      'The global tracer is not of type WorkerTracer and can not export spans',
     );
   }
 }

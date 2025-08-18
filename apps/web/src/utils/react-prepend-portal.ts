@@ -1,5 +1,5 @@
-import { createPortal } from "react-dom";
-import { type ReactNode, type ReactPortal, useEffect, useMemo } from "react";
+import { createPortal } from 'react-dom';
+import { type ReactNode, type ReactPortal, useEffect, useMemo } from 'react';
 
 /**
  * Same thing as React.createPortal, but prepends
@@ -9,12 +9,12 @@ export const createPrependPortal = (
   component: ReactNode,
   container: Element,
 ): ReactPortal => {
-  const portalContainer = useMemo(() => document.createElement("div"), []);
+  const portalContainer = useMemo(() => document.createElement('div'), []);
 
   useEffect(() => {
     // @ts-expect-error - Works fine
     container.prepend(portalContainer);
-    portalContainer.classList.add("dv-react-part");
+    portalContainer.classList.add('dv-react-part');
 
     return () => {
       if (container.contains(portalContainer)) {

@@ -1,1 +1,1 @@
-export * from "@deco/sdk/mcp";
+export * from '@deco/sdk/mcp';

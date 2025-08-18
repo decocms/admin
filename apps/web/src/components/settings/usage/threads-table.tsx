@@ -1,9 +1,9 @@
-import { useMemo, useState } from "react";
-import type { Agent, Member, Thread, ThreadUsage } from "@deco/sdk";
-import { Table, type TableColumn } from "../../common/table/index.tsx";
-import { AgentAvatar } from "../../common/avatar/agent.tsx";
-import { color } from "./util.ts";
-import { UserAvatar } from "../../common/avatar/user.tsx";
+import { useMemo, useState } from 'react';
+import type { Agent, Member, Thread, ThreadUsage } from '@deco/sdk';
+import { Table, type TableColumn } from '../../common/table/index.tsx';
+import { AgentAvatar } from '../../common/avatar/agent.tsx';
+import { color } from './util.ts';
+import { UserAvatar } from '../../common/avatar/user.tsx';
 
 export function ThreadsTable({
   agents,
@@ -16,8 +16,8 @@ export function ThreadsTable({
   members: Member[];
   threadHistory: Thread[];
 }) {
-  const [sortKey, setSortKey] = useState<string>("total");
-  const [sortDirection, setSortDirection] = useState<"asc" | "desc">("desc");
+  const [sortKey, setSortKey] = useState<string>('total');
+  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
 
   // Enrich thread data with agent and user information
   const enrichedThreads = useMemo(() => {
@@ -33,9 +33,9 @@ export function ThreadsTable({
       const threadDetail = threadHistory.find((t) => t.id === thread.id);
 
       // Ensure totalCost is always a proper number for sorting - handle dollar sign
-      const parsedCost = typeof thread.total === "string"
-        ? parseFloat(thread.total.replace("$", ""))
-        : typeof thread.total === "number"
+      const parsedCost = typeof thread.total === 'string'
+        ? parseFloat(thread.total.replace('$', ''))
+        : typeof thread.total === 'number'
         ? thread.total
         : 0;
       const totalCost = isNaN(parsedCost) ? 0 : parsedCost;
@@ -44,17 +44,17 @@ export function ThreadsTable({
         ...thread,
         agent: agent || {
           id: thread.agentId,
-          name: "Unknown Agent",
-          avatar: "",
+          name: 'Unknown Agent',
+          avatar: '',
         },
         user: user || {
           profiles: {
             id: thread.generatedBy,
-            email: "Unknown User",
+            email: 'Unknown User',
             metadata: {
-              avatar_url: "",
-              username: "unknown",
-              email: "Unknown User",
+              avatar_url: '',
+              username: 'unknown',
+              email: 'Unknown User',
             },
           },
         },
@@ -70,22 +70,22 @@ export function ThreadsTable({
   // Define table columns
   const columns: TableColumn<(typeof enrichedThreads)[0]>[] = [
     {
-      id: "color",
-      header: "",
+      id: 'color',
+      header: '',
       render: (thread) => (
         <div
-          className="w-3 h-3 rounded"
+          className='w-3 h-3 rounded'
           style={{ backgroundColor: thread.color }}
         />
       ),
     },
     {
-      id: "title",
-      header: "Thread",
+      id: 'title',
+      header: 'Thread',
       render: (thread) => (
-        <div className="flex flex-col">
-          <span className="font-medium text-sm">{thread.title}</span>
-          <span className="text-xs text-muted-foreground">
+        <div className='flex flex-col'>
+          <span className='font-medium text-sm'>{thread.title}</span>
+          <span className='text-xs text-muted-foreground'>
             ID: {thread.id.slice(-8)}
           </span>
         </div>
@@ -93,53 +93,51 @@ export function ThreadsTable({
       sortable: true,
     },
     {
-      id: "updatedAt",
-      header: "Last Updated",
+      id: 'updatedAt',
+      header: 'Last Updated',
       render: (thread) => (
-        <span className="text-sm text-muted-foreground">
+        <span className='text-sm text-muted-foreground'>
           {new Date(thread.updatedAt).toLocaleDateString()}
         </span>
       ),
       sortable: true,
     },
     {
-      id: "agent",
-      header: "Agent",
+      id: 'agent',
+      header: 'Agent',
       render: (thread) => (
-        <div className="flex items-center gap-2">
+        <div className='flex items-center gap-2'>
           <AgentAvatar
             url={thread.agent.avatar}
             fallback={thread.agent.name}
-            size="sm"
+            size='sm'
           />
-          <span className="text-sm">{thread.agent.name}</span>
+          <span className='text-sm'>{thread.agent.name}</span>
         </div>
       ),
       sortable: true,
     },
     {
-      id: "user",
-      header: "Used by",
+      id: 'user',
+      header: 'Used by',
       render: (thread) => (
-        <div className="flex items-center gap-2">
+        <div className='flex items-center gap-2'>
           <UserAvatar
             url={thread.user.profiles?.metadata?.avatar_url}
-            fallback={thread.user.profiles?.email || "Unknown"}
-            size="sm"
+            fallback={thread.user.profiles?.email || 'Unknown'}
+            size='sm'
           />
-          <span className="text-sm">
-            {thread.user.profiles?.email || "Unknown"}
+          <span className='text-sm'>
+            {thread.user.profiles?.email || 'Unknown'}
           </span>
         </div>
       ),
       sortable: true,
     },
     {
-      id: "total",
-      header: "Total Cost",
-      render: (thread) => (
-        <span className="font-medium">${thread.totalCost.toFixed(2)}</span>
-      ),
+      id: 'total',
+      header: 'Total Cost',
+      render: (thread) => <span className='font-medium'>${thread.totalCost.toFixed(2)}</span>,
       sortable: true,
     },
   ];
@@ -150,29 +148,27 @@ export function ThreadsTable({
     key: string,
   ): string | number => {
     switch (key) {
-      case "title":
+      case 'title':
         return thread.title.toLowerCase();
-      case "updatedAt":
+      case 'updatedAt':
         return new Date(thread.updatedAt).getTime();
-      case "agent":
+      case 'agent':
         return thread.agent.name.toLowerCase();
-      case "user":
-        return thread.user.profiles?.email?.toLowerCase() || "";
-      case "total":
+      case 'user':
+        return thread.user.profiles?.email?.toLowerCase() || '';
+      case 'total':
         return thread.totalCost;
       default:
-        return "";
+        return '';
     }
   };
 
   const handleSort = (key: string) => {
     if (sortKey === key) {
-      setSortDirection((prev: "asc" | "desc") =>
-        prev === "asc" ? "desc" : "asc"
-      );
+      setSortDirection((prev: 'asc' | 'desc') => prev === 'asc' ? 'desc' : 'asc');
     } else {
       setSortKey(key);
-      setSortDirection("asc");
+      setSortDirection('asc');
     }
   };
 
@@ -182,15 +178,15 @@ export function ThreadsTable({
       const aVal = getSortValue(a, sortKey);
       const bVal = getSortValue(b, sortKey);
 
-      if (typeof aVal === "number" && typeof bVal === "number") {
-        return sortDirection === "asc" ? aVal - bVal : bVal - aVal;
+      if (typeof aVal === 'number' && typeof bVal === 'number') {
+        return sortDirection === 'asc' ? aVal - bVal : bVal - aVal;
       }
 
       const aStr = String(aVal);
       const bStr = String(bVal);
 
-      if (aStr < bStr) return sortDirection === "asc" ? -1 : 1;
-      if (aStr > bStr) return sortDirection === "asc" ? 1 : -1;
+      if (aStr < bStr) return sortDirection === 'asc' ? -1 : 1;
+      if (aStr > bStr) return sortDirection === 'asc' ? 1 : -1;
       return 0;
     });
   }, [enrichedThreads, sortKey, sortDirection]);

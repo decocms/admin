@@ -1,5 +1,5 @@
-import { passthroughGet, wrap } from "../wrap.ts";
-import { instrumentClientFetch } from "./fetch.ts";
+import { passthroughGet, wrap } from '../wrap.ts';
+import { instrumentClientFetch } from './fetch.ts';
 
 export function instrumentServiceBinding(
   fetcher: Fetcher,
@@ -7,7 +7,7 @@ export function instrumentServiceBinding(
 ): Fetcher {
   const fetcherHandler: ProxyHandler<Fetcher> = {
     get(target, prop) {
-      if (prop === "fetch") {
+      if (prop === 'fetch') {
         const fetcher = Reflect.get(target, prop);
         const attrs = {
           name: `Service Binding ${envName}`,

@@ -6,9 +6,9 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
-} from "@deco/ui/components/form.tsx";
-import { Input } from "@deco/ui/components/input.tsx";
-import type { FieldPath, FieldValues, UseFormReturn } from "react-hook-form";
+} from '@deco/ui/components/form.tsx';
+import { Input } from '@deco/ui/components/input.tsx';
+import type { FieldPath, FieldValues, UseFormReturn } from 'react-hook-form';
 
 interface NumberFieldProps<T extends FieldValues = FieldValues> {
   name: string;
@@ -36,16 +36,14 @@ export function NumberField<T extends FieldValues = FieldValues>({
         <FormItem>
           <FormLabel>
             {title}
-            {isRequired && <span className="text-destructive ml-1">*</span>}
+            {isRequired && <span className='text-destructive ml-1'>*</span>}
           </FormLabel>
           <FormControl>
             <Input
               {...field}
-              type="number"
+              type='number'
               onChange={(e) => {
-                const val = Number.isNaN(e.target.valueAsNumber)
-                  ? ""
-                  : e.target.valueAsNumber;
+                const val = Number.isNaN(e.target.valueAsNumber) ? '' : e.target.valueAsNumber;
                 field.onChange(val);
               }}
               disabled={disabled}

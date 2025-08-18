@@ -1,5 +1,5 @@
-import { MCPClient } from "../fetcher.ts";
-import type { User } from "./user.ts";
+import { MCPClient } from '../fetcher.ts';
+import type { User } from './user.ts';
 
 interface Roles {
   name: string;
@@ -93,8 +93,7 @@ export const getTeamMembers = (
 export const getTeamRoles = (
   teamId: number,
   signal?: AbortSignal,
-): Promise<Role[]> =>
-  MCPClient.TEAM_ROLES_LIST({ teamId }, { signal }).then((res) => res.items);
+): Promise<Role[]> => MCPClient.TEAM_ROLES_LIST({ teamId }, { signal }).then((res) => res.items);
 
 /**
  * Invite new members to a team
@@ -124,8 +123,7 @@ export const inviteTeamMembers = (
 export const removeTeamMember = (
   teamId: number,
   memberId: number,
-): Promise<{ success: boolean }> =>
-  MCPClient.TEAM_MEMBERS_REMOVE({ teamId, memberId });
+): Promise<{ success: boolean }> => MCPClient.TEAM_MEMBERS_REMOVE({ teamId, memberId });
 
 export const registerActivity = (teamId: number) => {
   MCPClient.TEAM_MEMBER_ACTIVITY_REGISTER({ teamId });
@@ -143,7 +141,7 @@ export const updateMemberRole = (
   teamId: number,
   userId: string,
   roleId: number,
-  action: "grant" | "revoke",
+  action: 'grant' | 'revoke',
 ): Promise<{ success: boolean }> => {
   return MCPClient.TEAM_MEMBERS_UPDATE_ROLE({
     teamId,

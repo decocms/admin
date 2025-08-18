@@ -1,14 +1,14 @@
-import type { UIMessage } from "ai";
-import { MCPClient } from "../fetcher.ts";
+import type { UIMessage } from 'ai';
+import { MCPClient } from '../fetcher.ts';
 
 export interface ThreadFilterOptions {
   agentId?: string;
   resourceId?: string;
   orderBy?:
-    | "createdAt_desc"
-    | "createdAt_asc"
-    | "updatedAt_desc"
-    | "updatedAt_asc";
+    | 'createdAt_desc'
+    | 'createdAt_asc'
+    | 'updatedAt_desc'
+    | 'updatedAt_asc';
   cursor?: string;
   limit?: number;
 }
@@ -55,14 +55,13 @@ export const getThread = (
   workspace: string,
   threadId: string,
   init: RequestInit = {},
-): Promise<ThreadDetails> =>
-  MCPClient.forWorkspace(workspace).THREADS_GET({ id: threadId }, init);
+): Promise<ThreadDetails> => MCPClient.forWorkspace(workspace).THREADS_GET({ id: threadId }, init);
 
 export interface ThreadMessage {
   id: string;
   thread_id: string;
   content: string;
-  role: "data" | "system" | "user" | "assistant";
+  role: 'data' | 'system' | 'user' | 'assistant';
   type: string;
   createdAt: Date;
 }

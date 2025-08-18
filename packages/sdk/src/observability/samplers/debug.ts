@@ -1,11 +1,7 @@
-import type { Attributes, Context, Link, SpanKind } from "@opentelemetry/api";
-import {
-  type Sampler,
-  SamplingDecision,
-  type SamplingResult,
-} from "@opentelemetry/sdk-trace-base";
-import { Hosts } from "../../hosts.ts";
-import { DEBUG_QS, REQUEST_CONTEXT_KEY } from "../constants.ts";
+import type { Attributes, Context, Link, SpanKind } from '@opentelemetry/api';
+import { type Sampler, SamplingDecision, type SamplingResult } from '@opentelemetry/sdk-trace-base';
+import { Hosts } from '../../hosts.ts';
+import { DEBUG_QS, REQUEST_CONTEXT_KEY } from '../constants.ts';
 
 const ALLOWED_HOSTS: string[] = [Hosts.FS, Hosts.API, Hosts.Chat];
 
@@ -13,14 +9,14 @@ export const reqCorrelationId = (req: Request) => {
   const url = new URL(req.url);
   let correlationId = url.searchParams.get(DEBUG_QS);
   if (!correlationId) {
-    correlationId = req.headers.get("x-trace-debug-id");
+    correlationId = req.headers.get('x-trace-debug-id');
   }
   return correlationId;
 };
 
 export const setCorrelationId = (headers: Headers, correlationId: string) => {
   try {
-    headers.set("x-trace-debug-id", correlationId);
+    headers.set('x-trace-debug-id', correlationId);
   } catch {
     // ignore if headers are immutable
   }
@@ -47,13 +43,13 @@ export class DebugSampler implements Sampler {
       return {
         decision: SamplingDecision.RECORD_AND_SAMPLED,
         attributes: {
-          "trace.debug.id": correlationId,
+          'trace.debug.id': correlationId,
         },
       };
     }
 
     const url = new URL(req.url);
-    const host = req.headers.get("host") ?? url.host;
+    const host = req.headers.get('host') ?? url.host;
     if (!ALLOWED_HOSTS.includes(host)) {
       return {
         decision: SamplingDecision.NOT_RECORD,
@@ -74,7 +70,7 @@ export class DebugSampler implements Sampler {
         setCorrelationId(req.headers, correlationId);
         sampleDecision.attributes = {
           ...(sampleDecision.attributes ?? {}),
-          "trace.debug.id": correlationId,
+          'trace.debug.id': correlationId,
         };
       }
       return sampleDecision;
@@ -84,6 +80,6 @@ export class DebugSampler implements Sampler {
     };
   }
   toString(): string {
-    return "DebugSampler";
+    return 'DebugSampler';
   }
 }

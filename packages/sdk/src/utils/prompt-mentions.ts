@@ -1,16 +1,15 @@
-import { listPrompts } from "../crud/prompts.ts";
-import type { MCPClient } from "../fetcher.ts";
-import type { Prompt } from "../index.ts";
-import { unescapeHTML } from "./html.ts";
+import { listPrompts } from '../crud/prompts.ts';
+import type { MCPClient } from '../fetcher.ts';
+import type { Prompt } from '../index.ts';
+import { unescapeHTML } from './html.ts';
 
 export const MENTION_REGEX =
   /<span\s+[^>]*data-id=["']?([^"'\s>]+)["']?\s+[^>]*data-mention-type=["']?([^"'\s>]+)["']?[^>]*>.*?<\/span>/g;
-export const COMMENT_REGEX =
-  /<span\s+data-type="comment"\s*?[^>]*?>.*?<\/span>/gs;
+export const COMMENT_REGEX = /<span\s+data-type="comment"\s*?[^>]*?>.*?<\/span>/gs;
 
-type Mentionables = "prompt";
+type Mentionables = 'prompt';
 
-const mentionableTypes: Mentionables[] = ["prompt"];
+const mentionableTypes: Mentionables[] = ['prompt'];
 
 interface Mention {
   id: string;
@@ -38,7 +37,7 @@ export function extractMentionsFromString(systemPrompt: string): Mention[] {
   return mentions;
 }
 
-export function toMention(id: string, type: Mentionables = "prompt") {
+export function toMention(id: string, type: Mentionables = 'prompt') {
   return `<span data-type="mention" data-id=${id} data-mention-type=${type}></span>`;
 }
 
@@ -46,7 +45,7 @@ export function toMention(id: string, type: Mentionables = "prompt") {
 export async function resolveMentions(
   content: string,
   workspace: string,
-  client?: ReturnType<(typeof MCPClient)["forWorkspace"]>,
+  client?: ReturnType<(typeof MCPClient)['forWorkspace']>,
   options?: {
     /**
      * The id of the parent prompt. If provided, the resolution will skip the parent id to avoid infinite recursion.
@@ -54,12 +53,12 @@ export async function resolveMentions(
     parentPromptId?: string;
   },
 ): Promise<string> {
-  const contentWithoutComments = content.replaceAll(COMMENT_REGEX, "");
+  const contentWithoutComments = content.replaceAll(COMMENT_REGEX, '');
 
   const mentions = extractMentionsFromString(content);
 
   const promptIds = mentions
-    .filter((mention) => mention.type === "prompt")
+    .filter((mention) => mention.type === 'prompt')
     .map((mention) => mention.id);
 
   if (!promptIds.length) {
@@ -90,20 +89,20 @@ export async function resolveMentions(
   return contentWithoutComments.replaceAll(
     MENTION_REGEX,
     (_match, id, type) => {
-      if (type === "prompt") {
+      if (type === 'prompt') {
         if (id === options?.parentPromptId) {
-          return "";
+          return '';
         }
 
         const prompt = promptMap.get(id);
         if (!prompt) {
-          return "";
+          return '';
         }
 
         return `\n${prompt.content}\n`;
       }
 
-      return "";
+      return '';
     },
   );
 }

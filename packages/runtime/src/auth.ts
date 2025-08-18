@@ -1,4 +1,4 @@
-const DECO_APP_AUTH_COOKIE_NAME = "deco_page_auth";
+const DECO_APP_AUTH_COOKIE_NAME = 'deco_page_auth';
 
 export interface State {
   next?: string;
@@ -18,10 +18,10 @@ const parseCookies = (cookieHeader: string): Record<string, string> => {
   const cookies: Record<string, string> = {};
   if (!cookieHeader) return cookies;
 
-  cookieHeader.split(";").forEach((cookie) => {
-    const [name, ...rest] = cookie.trim().split("=");
+  cookieHeader.split(';').forEach((cookie) => {
+    const [name, ...rest] = cookie.trim().split('=');
     if (name && rest.length > 0) {
-      cookies[name] = decodeURIComponent(rest.join("="));
+      cookies[name] = decodeURIComponent(rest.join('='));
     }
   });
 
@@ -30,13 +30,13 @@ const parseCookies = (cookieHeader: string): Record<string, string> => {
 
 export const getReqToken = (req: Request) => {
   // First try to get token from Authorization header
-  const authHeader = req.headers.get("Authorization");
+  const authHeader = req.headers.get('Authorization');
   if (authHeader) {
-    return authHeader.split(" ")[1];
+    return authHeader.split(' ')[1];
   }
 
   // If not found, try to get from cookie
-  const cookieHeader = req.headers.get("Cookie");
+  const cookieHeader = req.headers.get('Cookie');
   if (cookieHeader) {
     const cookies = parseCookies(cookieHeader);
     return cookies[DECO_APP_AUTH_COOKIE_NAME];
@@ -55,19 +55,19 @@ export const handleAuthCallback = async (
   options: AuthCallbackOptions,
 ): Promise<Response> => {
   const url = new URL(req.url);
-  const code = url.searchParams.get("code");
-  const state = url.searchParams.get("state");
+  const code = url.searchParams.get('code');
+  const state = url.searchParams.get('state');
 
   if (!code) {
-    return new Response("Missing authorization code", { status: 400 });
+    return new Response('Missing authorization code', { status: 400 });
   }
 
   // Parse state to get the next URL
-  let next = "/";
+  let next = '/';
   if (state) {
     try {
       const parsedState = StateParser.parse(state);
-      next = parsedState.next || "/";
+      next = parsedState.next || '/';
     } catch {
       // ignore parse errors
     }
@@ -75,11 +75,11 @@ export const handleAuthCallback = async (
 
   try {
     // Exchange code for token
-    const apiUrl = options.apiUrl ?? "https://api.deco.chat";
+    const apiUrl = options.apiUrl ?? 'https://api.deco.chat';
     const exchangeResponse = await fetch(`${apiUrl}/apps/code-exchange`, {
-      method: "POST",
+      method: 'POST',
       headers: {
-        "Content-Type": "application/json",
+        'Content-Type': 'application/json',
       },
       body: JSON.stringify({
         code,
@@ -88,7 +88,7 @@ export const handleAuthCallback = async (
     });
 
     if (!exchangeResponse.ok) {
-      return new Response("Authentication failed", { status: 401 });
+      return new Response('Authentication failed', { status: 401 });
     }
 
     const { access_token } = (await exchangeResponse.json()) as {
@@ -96,14 +96,14 @@ export const handleAuthCallback = async (
     };
 
     if (!access_token) {
-      return new Response("No access token received", { status: 401 });
+      return new Response('No access token received', { status: 401 });
     }
 
     return new Response(null, {
       status: 302,
       headers: {
         Location: next,
-        "Set-Cookie":
+        'Set-Cookie':
           `${DECO_APP_AUTH_COOKIE_NAME}=${access_token}; HttpOnly; SameSite=None; Secure; Path=/`,
       },
     });
@@ -114,18 +114,18 @@ export const handleAuthCallback = async (
 
 const removeAuthCookie = (headers: Headers) => {
   headers.set(
-    "Set-Cookie",
+    'Set-Cookie',
     `${DECO_APP_AUTH_COOKIE_NAME}=; HttpOnly; SameSite=None; Secure; Path=/; Max-Age=0`,
   );
 };
 
 export const handleLogout = (req: Request) => {
   const url = new URL(req.url);
-  const next = url.searchParams.get("next");
-  const redirectTo = new URL("/", url);
+  const next = url.searchParams.get('next');
+  const redirectTo = new URL('/', url);
   const headers = new Headers();
   removeAuthCookie(headers);
-  headers.set("Location", next ?? redirectTo.href);
+  headers.set('Location', next ?? redirectTo.href);
   return new Response(null, {
     status: 302,
     headers,

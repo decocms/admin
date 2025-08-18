@@ -5,7 +5,7 @@ import {
   usePrompt,
   useUpdatePrompt,
   WELL_KNOWN_AGENT_IDS,
-} from "@deco/sdk";
+} from '@deco/sdk';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -15,34 +15,30 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-} from "@deco/ui/components/alert-dialog.tsx";
-import { Button } from "@deco/ui/components/button.tsx";
-import { Icon } from "@deco/ui/components/icon.tsx";
-import { Spinner } from "@deco/ui/components/spinner.tsx";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger,
-} from "@deco/ui/components/tooltip.tsx";
-import { cn } from "@deco/ui/lib/utils.ts";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { useEffect, useState } from "react";
-import { useForm } from "react-hook-form";
-import { useBlocker, useParams } from "react-router";
-import { trackEvent } from "../../../hooks/analytics.ts";
-import { AgentProvider } from "../../agent/provider.tsx";
-import type { Tab } from "../../dock/index.tsx";
-import { togglePanel } from "../../dock/index.tsx";
-import { DefaultBreadcrumb, PageLayout } from "../../layout.tsx";
-import { Context } from "./context.ts";
-import { DetailForm } from "./form.tsx";
-import HistoryTab from "./history.tsx";
+} from '@deco/ui/components/alert-dialog.tsx';
+import { Button } from '@deco/ui/components/button.tsx';
+import { Icon } from '@deco/ui/components/icon.tsx';
+import { Spinner } from '@deco/ui/components/spinner.tsx';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@deco/ui/components/tooltip.tsx';
+import { cn } from '@deco/ui/lib/utils.ts';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { useEffect, useState } from 'react';
+import { useForm } from 'react-hook-form';
+import { useBlocker, useParams } from 'react-router';
+import { trackEvent } from '../../../hooks/analytics.ts';
+import { AgentProvider } from '../../agent/provider.tsx';
+import type { Tab } from '../../dock/index.tsx';
+import { togglePanel } from '../../dock/index.tsx';
+import { DefaultBreadcrumb, PageLayout } from '../../layout.tsx';
+import { Context } from './context.ts';
+import { DetailForm } from './form.tsx';
+import HistoryTab from './history.tsx';
 
 const FORM_TAB: Record<string, Tab> = {
   form: {
     Component: DetailForm,
-    title: "Prompt",
-    initialOpen: "right",
+    title: 'Prompt',
+    initialOpen: 'right',
   },
 };
 
@@ -50,7 +46,7 @@ const TABS: Record<string, Tab> = {
   ...FORM_TAB,
   history: {
     Component: HistoryTab,
-    title: "History",
+    title: 'History',
     initialOpen: false,
   },
 };
@@ -65,9 +61,9 @@ export default function Page() {
   const { data: _prompt } = usePrompt(promptId);
   const prompt = _prompt || {
     id: crypto.randomUUID(),
-    name: "",
-    description: "",
-    content: "",
+    name: '',
+    description: '',
+    content: '',
     created_at: new Date().toISOString(),
     updated_at: null,
   };
@@ -113,7 +109,7 @@ export default function Page() {
         data,
       });
 
-      trackEvent("prompt_update", {
+      trackEvent('prompt_update', {
         success: true,
         data,
       });
@@ -122,7 +118,7 @@ export default function Page() {
     } catch (error) {
       console.error(`Error updating prompt:`, error);
 
-      trackEvent("prompt_create", {
+      trackEvent('prompt_create', {
         success: false,
         error,
         data,
@@ -147,21 +143,20 @@ export default function Page() {
 
   return (
     <>
-      <AlertDialog open={blocker.state === "blocked"}>
+      <AlertDialog open={blocker.state === 'blocked'}>
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Discard unsaved changes?</AlertDialogTitle>
             <AlertDialogDescription>
-              You have unsaved changes. If you leave this page, your edits will
-              be lost. Are you sure you want to discard your changes and
-              navigate away?
+              You have unsaved changes. If you leave this page, your edits will be lost. Are you
+              sure you want to discard your changes and navigate away?
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel onClick={handleCancel}>Cancel</AlertDialogCancel>
             <AlertDialogAction
               onClick={handleDiscard}
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              className='bg-destructive text-destructive-foreground hover:bg-destructive/90'
             >
               Discard changes
             </AlertDialogAction>
@@ -187,52 +182,52 @@ export default function Page() {
             hideViewsButton
             tabs={prompt.readonly ? FORM_TAB : TABS}
             actionButtons={
-              <div className="flex items-center gap-2">
+              <div className='flex items-center gap-2'>
                 <Tooltip>
                   <TooltipTrigger asChild>
                     <Button
-                      variant="ghost"
-                      size="icon"
+                      variant='ghost'
+                      size='icon'
                       onClick={() => {
                         togglePanel({
-                          id: "history",
-                          component: "history",
-                          title: "History",
-                          position: { direction: "right" },
+                          id: 'history',
+                          component: 'history',
+                          title: 'History',
+                          position: { direction: 'right' },
                         });
                       }}
                     >
-                      <Icon name="history" />
+                      <Icon name='history' />
                     </Button>
                   </TooltipTrigger>
                   <TooltipContent>Version history</TooltipContent>
                 </Tooltip>
                 <div
                   className={cn(
-                    promptVersion ? "opacity-100" : "opacity-0 w-0",
+                    promptVersion ? 'opacity-100' : 'opacity-0 w-0',
                   )}
                 >
-                  <Button variant="default" onClick={handleRestoreVersion}>
+                  <Button variant='default' onClick={handleRestoreVersion}>
                     Restore version
                   </Button>
                 </div>
                 <div
                   className={cn(
-                    "flex items-center gap-2",
-                    "transition-opacity",
-                    numberOfChanges > 0 ? "opacity-100" : "opacity-0 w-0",
+                    'flex items-center gap-2',
+                    'transition-opacity',
+                    numberOfChanges > 0 ? 'opacity-100' : 'opacity-0 w-0',
                   )}
                 >
                   <Button
-                    type="button"
-                    variant="outline"
-                    className="text-foreground"
+                    type='button'
+                    variant='outline'
+                    className='text-foreground'
                     onClick={handleDiscard}
                   >
                     Discard
                   </Button>
                   <Button
-                    className="bg-primary-light text-primary-dark hover:bg-primary-light/90 gap-2"
+                    className='bg-primary-light text-primary-dark hover:bg-primary-light/90 gap-2'
                     disabled={!numberOfChanges || prompt.readonly}
                     onClick={() => {
                       onSubmit(form.getValues());
@@ -241,14 +236,14 @@ export default function Page() {
                     {isMutating
                       ? (
                         <>
-                          <Spinner size="xs" />
+                          <Spinner size='xs' />
                           <span>Saving...</span>
                         </>
                       )
                       : (
                         <span>
                           Save {numberOfChanges} change
-                          {numberOfChanges > 1 ? "s" : ""}
+                          {numberOfChanges > 1 ? 's' : ''}
                         </span>
                       )}
                   </Button>
@@ -258,7 +253,7 @@ export default function Page() {
             breadcrumb={
               <DefaultBreadcrumb
                 items={[
-                  { label: "Prompt Library", link: "/prompts" },
+                  { label: 'Prompt Library', link: '/prompts' },
                   ...(prompt?.name ? [{ label: prompt.name }] : []),
                 ]}
               />

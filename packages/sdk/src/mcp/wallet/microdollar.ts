@@ -14,7 +14,7 @@ export class MicroDollar {
 
   public static fromMicrodollarString(microdollars: string): MicroDollar {
     // Remove the underscore and parse as BigInt
-    const cleanedStr = microdollars.replace("_", "");
+    const cleanedStr = microdollars.replace('_', '');
     const parsed = BigInt(cleanedStr);
     return new MicroDollar(parsed);
   }
@@ -28,7 +28,7 @@ export class MicroDollar {
   }
 
   public static from(dollars: number | string): MicroDollar {
-    if (typeof dollars === "number") {
+    if (typeof dollars === 'number') {
       return this.fromDollars(dollars);
     }
     return this.fromMicrodollarString(dollars);
@@ -50,9 +50,9 @@ export class MicroDollar {
     showAllDecimals?: boolean;
   } = {}): string {
     const dollars = this.toDollars();
-    return dollars.toLocaleString("en-US", {
-      style: "currency",
-      currency: "USD",
+    return dollars.toLocaleString('en-US', {
+      style: 'currency',
+      currency: 'USD',
       maximumFractionDigits: showAllDecimals ? 6 : 2,
     });
   }
@@ -73,7 +73,7 @@ export class MicroDollar {
     const str = absValue.toString();
 
     // Pad with leading zeros if needed to ensure at least 6 digits
-    const padded = str.padStart(6, "0");
+    const padded = str.padStart(6, '0');
 
     if (str.length <= 6) {
       return isNegative ? `-${padded}` : padded;
@@ -116,7 +116,7 @@ export class MicroDollar {
    */
   public divide(divisor: number): MicroDollar {
     if (divisor === 0) {
-      throw new Error("Division by zero");
+      throw new Error('Division by zero');
     }
     return new MicroDollar(
       (this.microdollars * MicroDollar.MICRO_MULTIPLIER) /

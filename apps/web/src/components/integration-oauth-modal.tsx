@@ -1,17 +1,12 @@
-import { FormProvider, useForm } from "react-hook-form";
-import { Button } from "@deco/ui/components/button.tsx";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from "@deco/ui/components/dialog.tsx";
-import { Badge } from "@deco/ui/components/badge.tsx";
-import { Separator } from "@deco/ui/components/separator.tsx";
-import { Alert, AlertDescription } from "@deco/ui/components/alert.tsx";
-import type { JSONSchema7 } from "json-schema";
-import JsonSchemaForm from "./json-schema/index.tsx";
-import { generateDefaultValues } from "./json-schema/utils/generate-default-values.ts";
+import { FormProvider, useForm } from 'react-hook-form';
+import { Button } from '@deco/ui/components/button.tsx';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@deco/ui/components/dialog.tsx';
+import { Badge } from '@deco/ui/components/badge.tsx';
+import { Separator } from '@deco/ui/components/separator.tsx';
+import { Alert, AlertDescription } from '@deco/ui/components/alert.tsx';
+import type { JSONSchema7 } from 'json-schema';
+import JsonSchemaForm from './json-schema/index.tsx';
+import { generateDefaultValues } from './json-schema/utils/generate-default-values.ts';
 
 interface Permission {
   scope: string;
@@ -49,42 +44,41 @@ export function IntegrationOAuthModal({
       await onSubmit(data);
       onClose();
     } catch (error) {
-      console.error("Error submitting OAuth form:", error);
+      console.error('Error submitting OAuth form:', error);
       // TODO: Show error to user
     }
   };
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+      <DialogContent className='max-w-2xl max-h-[80vh] overflow-y-auto'>
         <DialogHeader>
           <DialogTitle>Install {integrationName}</DialogTitle>
         </DialogHeader>
 
-        <div className="space-y-6 py-4">
+        <div className='space-y-6 py-4'>
           {/* Permissions Section */}
           {permissions.length > 0 && (
-            <div className="space-y-4">
+            <div className='space-y-4'>
               <Alert>
                 <AlertDescription>
-                  <strong>{integrationName}</strong>{" "}
-                  will have access to the following permissions:
+                  <strong>{integrationName}</strong> will have access to the following permissions:
                 </AlertDescription>
               </Alert>
 
-              <div className="grid gap-2">
+              <div className='grid gap-2'>
                 {permissions.map((permission, index) => (
                   <div
                     key={index}
-                    className="flex items-center gap-3 p-3 rounded-lg bg-muted/50"
+                    className='flex items-center gap-3 p-3 rounded-lg bg-muted/50'
                   >
-                    <div className="flex-shrink-0 text-success">✓</div>
-                    <div className="flex-1">
-                      <div className="text-sm font-medium">
+                    <div className='flex-shrink-0 text-success'>✓</div>
+                    <div className='flex-1'>
+                      <div className='text-sm font-medium'>
                         {permission.description}
                       </div>
-                      <div className="text-xs text-muted-foreground">
-                        <Badge variant="outline" className="text-xs">
+                      <div className='text-xs text-muted-foreground'>
+                        <Badge variant='outline' className='text-xs'>
                           {permission.scope}
                         </Badge>
                       </div>
@@ -99,7 +93,7 @@ export function IntegrationOAuthModal({
 
           {/* Configuration Form */}
           <div>
-            <h3 className="text-lg font-semibold mb-4">Configuration</h3>
+            <h3 className='text-lg font-semibold mb-4'>Configuration</h3>
             <FormProvider {...form}>
               <JsonSchemaForm
                 schema={schema}
@@ -107,12 +101,12 @@ export function IntegrationOAuthModal({
                 onSubmit={handleSubmit}
                 submitButton={
                   <Button
-                    type="submit"
+                    type='submit'
                     disabled={form.formState.isSubmitting || isLoading}
-                    className="w-full"
+                    className='w-full'
                   >
                     {form.formState.isSubmitting || isLoading
-                      ? "Installing..."
+                      ? 'Installing...'
                       : `Install ${integrationName}`}
                   </Button>
                 }

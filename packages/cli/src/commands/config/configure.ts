@@ -1,17 +1,17 @@
-import inquirer from "inquirer";
+import inquirer from 'inquirer';
 import {
   type Config,
   getConfig,
   readWranglerConfig,
   writeWranglerConfig,
-} from "../../lib/config.js";
-import { promptWorkspace } from "../../lib/prompt-workspace.js";
-import { promptIntegrations } from "../../lib/prompt-integrations.js";
-import { promptIDESetup, writeIDEConfig } from "../../lib/prompt-ide-setup.js";
-import { genEnv } from "../gen/gen.js";
-import { promises as fs } from "fs";
-import { join } from "path";
-import process from "node:process";
+} from '../../lib/config.js';
+import { promptWorkspace } from '../../lib/prompt-workspace.js';
+import { promptIntegrations } from '../../lib/prompt-integrations.js';
+import { promptIDESetup, writeIDEConfig } from '../../lib/prompt-ide-setup.js';
+import { genEnv } from '../gen/gen.js';
+import { promises as fs } from 'fs';
+import { join } from 'path';
+import process from 'node:process';
 
 export async function configureCommand(local?: boolean) {
   const currentConfig = await getConfig({ inlineOptions: { local } }).catch(
@@ -19,15 +19,13 @@ export async function configureCommand(local?: boolean) {
   );
 
   const wranglerConfig = await readWranglerConfig();
-  const defaultApp = typeof wranglerConfig.name === "string"
-    ? wranglerConfig.name
-    : "my-app";
+  const defaultApp = typeof wranglerConfig.name === 'string' ? wranglerConfig.name : 'my-app';
 
   const { app } = await inquirer.prompt([
     {
-      type: "input",
-      name: "app",
-      message: "Enter app name:",
+      type: 'input',
+      name: 'app',
+      message: 'Enter app name:',
       default: defaultApp,
     },
   ]);
@@ -60,7 +58,7 @@ export async function configureCommand(local?: boolean) {
   });
 
   // Write environment types file
-  const outputPath = join(process.cwd(), "deco.gen.ts");
+  const outputPath = join(process.cwd(), 'deco.gen.ts');
   await fs.writeFile(outputPath, envContent);
   console.log(`✅ Environment types written to: ${outputPath}`);
 

@@ -59,11 +59,11 @@ type AssertActionIsDefined<
   AN extends ActionNameType,
   ActionNames extends IndexType,
 > = AN extends ActionNames ? AN : ErrorBrand<`'${AN}' is not an action`>;
-type AssertAllNonTerminalStatesHandled<Transitions, HandledStates> =
-  MapKeys<Transitions> extends HandledStates ? void
-    : ErrorBrand<
-      `No handlers declared for ${Exclude<MapKeys<Transitions>, HandledStates>}`
-    >;
+type AssertAllNonTerminalStatesHandled<Transitions, HandledStates> = MapKeys<Transitions> extends
+  HandledStates ? void
+  : ErrorBrand<
+    `No handlers declared for ${Exclude<MapKeys<Transitions>, HandledStates>}`
+  >;
 
 type StateMachineDefinition<S, A> = {
   handlers: {
@@ -149,8 +149,7 @@ export type TransitionFunc<StateMap, Transitions> = <
   N extends StateType,
 >(
   curState: AssertStateInMap<StateMap, S>,
-  nextState: N extends MapKeys<StateMap>
-    ? AssertNewTransition<S, N, Transitions>
+  nextState: N extends MapKeys<StateMap> ? AssertNewTransition<S, N, Transitions>
     : ErrorBrand<`${S} is not a declared state`>,
 ) => TransitionBuilder<StateMap, AddToTypeMap<Transitions, S, N>>;
 
@@ -206,22 +205,21 @@ export type ActionHandlersBuilder<
 /**
  * The Signature of .actionHandler().
  */
-export type ActionHandlerFunc<StateMap, Transitions, ActionMap, HandledStates> =
-  <
-    S extends StateType,
-    AN extends ActionNameType,
-    NS extends MapValues<StateMap>,
-  >(
-    // TODO: Checking that the action and state pair haven't already been declared here causes
-    state: AssertStateInMap<StateMap, S>,
-    action: AssertActionIsDefined<AN, MapKeys<ActionMap>>,
-    handler: ActionHandlerCallback<StateMap, Transitions, S, AN, NS, ActionMap>,
-  ) => ActionHandlersBuilder<
-    StateMap,
-    Transitions,
-    ActionMap,
-    HandledStates | S
-  >;
+export type ActionHandlerFunc<StateMap, Transitions, ActionMap, HandledStates> = <
+  S extends StateType,
+  AN extends ActionNameType,
+  NS extends MapValues<StateMap>,
+>(
+  // TODO: Checking that the action and state pair haven't already been declared here causes
+  state: AssertStateInMap<StateMap, S>,
+  action: AssertActionIsDefined<AN, MapKeys<ActionMap>>,
+  handler: ActionHandlerCallback<StateMap, Transitions, S, AN, NS, ActionMap>,
+) => ActionHandlersBuilder<
+  StateMap,
+  Transitions,
+  ActionMap,
+  HandledStates | S
+>;
 
 type ActionHandlerCallback<
   States,
@@ -235,12 +233,11 @@ type ActionHandlerCallback<
   action: MapLookup<Actions, AN>,
 ) => NS extends State<infer N, infer ND>
   ? N extends MapKeys<States>
-    ? CS extends MapKeys<Transitions>
-      ? N extends MapLookup<Transitions, CS> ? State<N, ND>
+    ? CS extends MapKeys<Transitions> ? N extends MapLookup<Transitions, CS> ? State<N, ND>
       : ErrorBrand<`No transition declared between ${CS} and ${N}`>
     : ErrorBrand<`State ${CS} is terminal and has no transitions`>
   : ErrorBrand<`${N} is not a state`>
-  : ErrorBrand<"The returned value is not a state">;
+  : ErrorBrand<'The returned value is not a state'>;
 
 ///
 /// .done()
@@ -358,9 +355,7 @@ const actionHandler = <StateMap, Transitions, ActionMap, HandledStates>(
       handlers: {
         ...definition.handlers,
         [untypedState]: {
-          ...(definition.handlers[untypedState]
-            ? definition.handlers[untypedState]
-            : {}),
+          ...(definition.handlers[untypedState] ? definition.handlers[untypedState] : {}),
           [untypedAction]: handler as unknown,
         },
       },

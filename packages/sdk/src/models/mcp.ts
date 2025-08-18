@@ -1,42 +1,42 @@
-import { z } from "zod";
-import type { WellKnownBindingsName } from "../mcp/index.ts";
+import { z } from 'zod';
+import type { WellKnownBindingsName } from '../mcp/index.ts';
 
 export const BindingsSchema = z.enum(
   [
-    "Channel",
-    "View",
+    'Channel',
+    'View',
   ] as const satisfies WellKnownBindingsName[],
 );
 /**
  * Schema for different connection types
  */
 export const SSEConnectionSchema = z.object({
-  type: z.literal("SSE"),
+  type: z.literal('SSE'),
   url: z.string().url(),
   token: z.string().optional(),
   headers: z.record(z.string()).optional(),
 });
 
 export const WebsocketConnectionSchema = z.object({
-  type: z.literal("Websocket"),
+  type: z.literal('Websocket'),
   url: z.string().url(),
   token: z.string().optional(),
 });
 
 export const DecoConnectionSchema = z.object({
-  type: z.literal("Deco"),
+  type: z.literal('Deco'),
   tenant: z.string(),
   token: z.string().optional(),
 });
 
 export const InnateConnectionSchema = z.object({
-  type: z.literal("INNATE"),
+  type: z.literal('INNATE'),
   name: z.string(),
   workspace: z.string().optional(),
 });
 
 export const HTTPConnectionSchema = z.object({
-  type: z.literal("HTTP"),
+  type: z.literal('HTTP'),
   url: z.string().url(),
   token: z.string().optional(),
 });
@@ -60,7 +60,7 @@ export const IntegrationSchema = z.object({
   /** App ID */
   appId: z.string().optional().nullable(),
   /** Connection configuration */
-  connection: z.discriminatedUnion("type", [
+  connection: z.discriminatedUnion('type', [
     HTTPConnectionSchema,
     SSEConnectionSchema,
     WebsocketConnectionSchema,

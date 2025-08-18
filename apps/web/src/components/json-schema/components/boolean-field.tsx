@@ -6,9 +6,9 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
-} from "@deco/ui/components/form.tsx";
-import { Checkbox } from "@deco/ui/components/checkbox.tsx";
-import type { FieldPath, FieldValues, UseFormReturn } from "react-hook-form";
+} from '@deco/ui/components/form.tsx';
+import { Checkbox } from '@deco/ui/components/checkbox.tsx';
+import type { FieldPath, FieldValues, UseFormReturn } from 'react-hook-form';
 
 interface BooleanFieldProps<T extends FieldValues = FieldValues> {
   name: string;
@@ -33,7 +33,7 @@ export function BooleanField<T extends FieldValues = FieldValues>({
       control={form.control}
       name={name as unknown as FieldPath<T>}
       render={({ field }) => (
-        <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4">
+        <FormItem className='flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4'>
           <FormControl>
             <Checkbox
               checked={field.value ?? false}
@@ -41,10 +41,10 @@ export function BooleanField<T extends FieldValues = FieldValues>({
               disabled={disabled}
             />
           </FormControl>
-          <div className="space-y-1 leading-none">
+          <div className='space-y-1 leading-none'>
             <FormLabel>
               {title}
-              {isRequired && <span className="text-destructive ml-1">*</span>}
+              {isRequired && <span className='text-destructive ml-1'>*</span>}
             </FormLabel>
             {description && <FormDescription>{description}</FormDescription>}
           </div>

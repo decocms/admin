@@ -1,9 +1,9 @@
-import { useFile } from "@deco/sdk";
-import { Avatar, type AvatarProps } from "./index.tsx";
+import { useFile } from '@deco/sdk';
+import { Avatar, type AvatarProps } from './index.tsx';
 
-const DEFAULT_URL = "icon://linked_services";
+const DEFAULT_URL = 'icon://linked_services';
 
-export interface IntegrationAvatarProps extends Omit<AvatarProps, "shape"> {
+export interface IntegrationAvatarProps extends Omit<AvatarProps, 'shape'> {
   /**
    * The URL or file path of the avatar image
    * - If it's an https:// or http:// URL, it will be used directly
@@ -22,38 +22,38 @@ export interface IntegrationAvatarProps extends Omit<AvatarProps, "shape"> {
  */
 export function IntegrationAvatar({
   url,
-  size = "sm",
-  objectFit = "contain",
+  size = 'sm',
+  objectFit = 'contain',
   ...props
 }: IntegrationAvatarProps) {
   // Use default empty integration image if no URL is provided
   const actualUrl = url || DEFAULT_URL;
 
   // Check if URL is already a valid HTTPS/HTTP URL or is the default
-  const isValidUrl = actualUrl.startsWith("https://") ||
-    actualUrl.startsWith("http://") ||
-    actualUrl.startsWith("/") ||
-    actualUrl.startsWith("icon://");
+  const isValidUrl = actualUrl.startsWith('https://') ||
+    actualUrl.startsWith('http://') ||
+    actualUrl.startsWith('/') ||
+    actualUrl.startsWith('icon://');
 
   // Use useFile hook only for non-URL paths (excluding the default URL)
   const { data: resolvedFileUrl } = useFile(
-    actualUrl !== DEFAULT_URL && !isValidUrl ? actualUrl : "",
+    actualUrl !== DEFAULT_URL && !isValidUrl ? actualUrl : '',
   );
 
   // Determine the final URL to use
   const finalUrl = isValidUrl
     ? actualUrl
-    : typeof resolvedFileUrl === "string"
+    : typeof resolvedFileUrl === 'string'
     ? resolvedFileUrl
     : DEFAULT_URL;
 
   return (
     <Avatar
-      shape="square"
+      shape='square'
       size={size}
       objectFit={objectFit}
       url={finalUrl}
-      muted={props.muted || finalUrl?.startsWith("icon://")}
+      muted={props.muted || finalUrl?.startsWith('icon://')}
       {...props}
     />
   );

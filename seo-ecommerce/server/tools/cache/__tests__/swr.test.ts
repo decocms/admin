@@ -1,5 +1,5 @@
-import { afterEach, describe, expect, it, vi } from "vitest";
-import { cacheMetricsSnapshot, getOrSet } from "../index";
+import { afterEach, describe, expect, it, vi } from 'vitest';
+import { cacheMetricsSnapshot, getOrSet } from '../index';
 
 class MemoryKV {
   store = new Map<string, string>();
@@ -15,14 +15,14 @@ afterEach(() => {
   vi.useRealTimers();
 });
 
-describe("cache SWR behavior", () => {
-  it("serves stale and triggers background revalidation", async () => {
+describe('cache SWR behavior', () => {
+  it('serves stale and triggers background revalidation', async () => {
     vi.useFakeTimers();
     const kv = new MemoryKV();
     let calls = 0;
     const env = { SEO_CACHE: kv };
     // Initial set (fresh)
-    const first = await getOrSet(env, "swr:key", async () => ({ n: ++calls }), {
+    const first = await getOrSet(env, 'swr:key', async () => ({ n: ++calls }), {
       ttlSeconds: 1, // 1s fresh
       staleTtlSeconds: 5, // allow stale until 6s total
     });
@@ -34,7 +34,7 @@ describe("cache SWR behavior", () => {
 
     const second = await getOrSet(
       env,
-      "swr:key",
+      'swr:key',
       async () => ({ n: ++calls }),
       {
         ttlSeconds: 1,
@@ -50,7 +50,7 @@ describe("cache SWR behavior", () => {
     expect(calls).toBe(2);
 
     // Third fetch shortly after should now be fresh (new stored value) and not stale
-    const third = await getOrSet(env, "swr:key", async () => ({ n: ++calls }), {
+    const third = await getOrSet(env, 'swr:key', async () => ({ n: ++calls }), {
       ttlSeconds: 1,
       staleTtlSeconds: 5,
     });

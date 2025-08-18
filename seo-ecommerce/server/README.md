@@ -340,10 +340,10 @@ Integração Prometheus scrape config (exemplo):
 
 ```yaml
 scrape_configs:
-  - job_name: "seo-ecommerce-worker"
+  - job_name: 'seo-ecommerce-worker'
     metrics_path: /__metrics/prom
     static_configs:
-      - targets: ["worker-domain.workers.dev"]
+      - targets: ['worker-domain.workers.dev']
 ```
 
 ## Health Endpoint (`/__health`)

@@ -1,12 +1,12 @@
-import { z } from "zod";
-import { InternalServerError, NotFoundError } from "../../errors.ts";
-import { assertHasUser, assertPrincipalIsUser } from "../assertions.ts";
-import { UnauthorizedError } from "../index.ts";
-import { createTool } from "../members/api.ts";
-import { userFromDatabase } from "../user.ts";
+import { z } from 'zod';
+import { InternalServerError, NotFoundError } from '../../errors.ts';
+import { assertHasUser, assertPrincipalIsUser } from '../assertions.ts';
+import { UnauthorizedError } from '../index.ts';
+import { createTool } from '../members/api.ts';
+import { userFromDatabase } from '../user.ts';
 
 export const getProfile = createTool({
-  name: "PROFILES_GET",
+  name: 'PROFILES_GET',
   description: "Get the current user's profile",
   inputSchema: z.object({}),
   handler: async (_, c) => {
@@ -23,7 +23,7 @@ export const getProfile = createTool({
 
     // TODO: change profile data to have necessary info
     const { data, error } = await c.db
-      .from("profiles")
+      .from('profiles')
       .select(`
         id:user_id,
         name,
@@ -31,7 +31,7 @@ export const getProfile = createTool({
         phone,
         metadata:users_meta_data_view(id, raw_user_meta_data)
       `)
-      .eq("user_id", user.id)
+      .eq('user_id', user.id)
       .single();
 
     if (error) {
@@ -44,7 +44,7 @@ export const getProfile = createTool({
 });
 
 export const updateProfile = createTool({
-  name: "PROFILES_UPDATE",
+  name: 'PROFILES_UPDATE',
   description: "Update the current user's profile",
   inputSchema: z.object({
     name: z.string().nullable().optional(),
@@ -62,7 +62,7 @@ export const updateProfile = createTool({
     const user = c.user;
 
     const { data, error } = await c.db
-      .from("profiles")
+      .from('profiles')
       .update({
         name,
         email,
@@ -70,7 +70,7 @@ export const updateProfile = createTool({
         is_new_user,
         phone,
       })
-      .eq("user_id", user.id)
+      .eq('user_id', user.id)
       .select()
       .single();
 
@@ -79,7 +79,7 @@ export const updateProfile = createTool({
     }
 
     if (!data) {
-      throw new NotFoundError("Profile not found");
+      throw new NotFoundError('Profile not found');
     }
 
     return data;

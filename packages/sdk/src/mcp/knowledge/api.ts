@@ -1,28 +1,24 @@
-import { createOpenAI } from "@ai-sdk/openai";
-import { basename } from "@std/path";
-import { embed, embedMany } from "ai";
-import { z } from "zod";
+import { createOpenAI } from '@ai-sdk/openai';
+import { basename } from '@std/path';
+import { embed, embedMany } from 'ai';
+import { z } from 'zod';
 import {
   DEFAULT_KNOWLEDGE_BASE_NAME,
   KNOWLEDGE_BASE_DIMENSION,
   KNOWLEDGE_BASE_GROUP,
-} from "../../constants.ts";
-import { InternalServerError } from "../../errors.ts";
-import { WorkspaceMemory } from "../../memory/memory.ts";
-import type { Json } from "../../storage/index.ts";
-import { startKbFileProcessorWorkflow } from "../../workflows/file-processor/batch-file-processor.ts";
+} from '../../constants.ts';
+import { InternalServerError } from '../../errors.ts';
+import { WorkspaceMemory } from '../../memory/memory.ts';
+import type { Json } from '../../storage/index.ts';
+import { startKbFileProcessorWorkflow } from '../../workflows/file-processor/batch-file-processor.ts';
 import {
   assertHasWorkspace,
   assertKbFileProcessor,
   assertWorkspaceResourceAccess,
   type WithTool,
-} from "../assertions.ts";
-import {
-  type AppContext,
-  createToolFactory,
-  createToolGroup,
-} from "../context.ts";
-import { FileMetadataSchema } from "../file-processor.ts";
+} from '../assertions.ts';
+import { type AppContext, createToolFactory, createToolGroup } from '../context.ts';
+import { FileMetadataSchema } from '../file-processor.ts';
 
 export interface KnowledgeBaseContext extends AppContext {
   name: string;
@@ -46,7 +42,7 @@ const addFileDefaults = <
   },
 >(
   file: T,
-): Omit<T, "metadata"> & {
+): Omit<T, 'metadata'> & {
   metadata: z.infer<typeof KnowledgeFileMetadataSchema>;
   docIds: string[];
   filename: string;
@@ -58,8 +54,8 @@ const addFileDefaults = <
     typeof KnowledgeFileMetadataSchema
   >,
   docIds: file.docIds || [],
-  filename: file.filename ?? "",
-  path: file.path ?? "",
+  filename: file.filename ?? '',
+  path: file.path ?? '',
   status: file.status ?? undefined,
 });
 
@@ -78,7 +74,7 @@ const openAIEmbedder = (apiKey: string) => {
   const openai = createOpenAI({
     apiKey,
   });
-  return openai.embedding("text-embedding-3-small");
+  return openai.embedding('text-embedding-3-small');
 };
 
 async function getVector(c: AppContext) {
@@ -97,11 +93,11 @@ async function getVector(c: AppContext) {
     });
     const vector = mem.vector;
     if (!vector) {
-      throw new InternalServerError("Missing vector");
+      throw new InternalServerError('Missing vector');
     }
     return vector;
   } catch (e) {
-    console.error("Error getting vector", e);
+    console.error('Error getting vector', e);
     throw e;
   }
 }
@@ -117,7 +113,7 @@ async function batchUpsertVectorContent(
   assertHasWorkspace(c);
 
   if (!c.envVars.OPENAI_API_KEY) {
-    throw new InternalServerError("Missing OPENAI_API_KEY");
+    throw new InternalServerError('Missing OPENAI_API_KEY');
   }
 
   const vector = await getVector(c);
@@ -146,21 +142,20 @@ async function batchUpsertVectorContent(
       })),
     });
   } catch (e) {
-    console.error("Error embedding content", e);
+    console.error('Error embedding content', e);
     throw e;
   }
 }
 
-const createTool = createToolGroup("KnowledgeBaseManagement", {
-  name: "Knowledge Base Management",
-  description: "Delete, create and list knowledge bases.",
-  icon:
-    "https://assets.decocache.com/mcp/1b6e79a9-7830-459c-a1a6-ba83e7e58cbe/Knowledge-Base.png",
+const createTool = createToolGroup('KnowledgeBaseManagement', {
+  name: 'Knowledge Base Management',
+  description: 'Delete, create and list knowledge bases.',
+  icon: 'https://assets.decocache.com/mcp/1b6e79a9-7830-459c-a1a6-ba83e7e58cbe/Knowledge-Base.png',
 });
 
 export const listKnowledgeBases = createTool({
-  name: "KNOWLEDGE_BASE_LIST",
-  description: "List all knowledge bases",
+  name: 'KNOWLEDGE_BASE_LIST',
+  description: 'List all knowledge bases',
   inputSchema: z.object({}),
   handler: async (_, c) => {
     assertHasWorkspace(c);
@@ -182,10 +177,10 @@ export const listKnowledgeBases = createTool({
 });
 
 export const deleteBase = createTool({
-  name: "KNOWLEDGE_BASE_DELETE",
-  description: "Delete a knowledge base",
+  name: 'KNOWLEDGE_BASE_DELETE',
+  description: 'Delete a knowledge base',
   inputSchema: z.object({
-    name: z.string().describe("The name of the knowledge base"),
+    name: z.string().describe('The name of the knowledge base'),
   }),
   handler: async ({ name }, c) => {
     assertHasWorkspace(c);
@@ -201,19 +196,19 @@ export const deleteBase = createTool({
 });
 
 export const createBase = createTool({
-  name: "KNOWLEDGE_BASE_CREATE",
-  description: "Create a knowledge base",
+  name: 'KNOWLEDGE_BASE_CREATE',
+  description: 'Create a knowledge base',
   inputSchema: z.object({
     name: z
       .string()
       .regex(
         /^[a-z0-9-_]+$/,
-        "Name can only contain lowercase letters, numbers, hyphens, and underscores",
+        'Name can only contain lowercase letters, numbers, hyphens, and underscores',
       )
-      .describe("The name of the knowledge base"),
+      .describe('The name of the knowledge base'),
     dimension: z
       .number()
-      .describe("The dimension of the knowledge base")
+      .describe('The dimension of the knowledge base')
       .optional(),
   }),
   handler: async ({ name, dimension }, c) => {
@@ -231,10 +226,10 @@ export const createBase = createTool({
 });
 
 export const forget = createKnowledgeBaseTool({
-  name: "KNOWLEDGE_BASE_FORGET",
-  description: "Forget something",
+  name: 'KNOWLEDGE_BASE_FORGET',
+  description: 'Forget something',
   inputSchema: z.object({
-    docIds: z.array(z.string()).describe("The id of the content to forget"),
+    docIds: z.array(z.string()).describe('The id of the content to forget'),
   }),
   handler: async ({ docIds }, c) => {
     assertHasWorkspace(c);
@@ -243,9 +238,7 @@ export const forget = createKnowledgeBaseTool({
 
     const vector = await getVector(c);
     await Promise.all(
-      docIds.map((docId) =>
-        vector.deleteVector({ indexName: c.name, id: docId })
-      ),
+      docIds.map((docId) => vector.deleteVector({ indexName: c.name, id: docId })),
     );
     return {
       docIds,
@@ -254,17 +247,17 @@ export const forget = createKnowledgeBaseTool({
 });
 
 export const remember = createKnowledgeBaseTool({
-  name: "KNOWLEDGE_BASE_REMEMBER",
-  description: "Remember something",
+  name: 'KNOWLEDGE_BASE_REMEMBER',
+  description: 'Remember something',
   inputSchema: z.object({
     docId: z
       .string()
       .optional()
-      .describe("The id of the content being remembered"),
-    content: z.string().describe("The content to remember"),
+      .describe('The id of the content being remembered'),
+    content: z.string().describe('The content to remember'),
     metadata: z
       .record(z.string(), z.string())
-      .describe("The metadata to remember")
+      .describe('The metadata to remember')
       .optional(),
   }),
   handler: async ({ content, metadata, docId }, c) => {
@@ -290,12 +283,12 @@ export const remember = createKnowledgeBaseTool({
 });
 
 export const search = createKnowledgeBaseTool({
-  name: "KNOWLEDGE_BASE_SEARCH",
-  description: "Search the knowledge base",
+  name: 'KNOWLEDGE_BASE_SEARCH',
+  description: 'Search the knowledge base',
   inputSchema: z.object({
-    query: z.string().describe("The query to search the knowledge base"),
-    topK: z.number().describe("The number of results to return").optional(),
-    content: z.boolean().describe("Whether to return the content").optional(),
+    query: z.string().describe('The query to search the knowledge base'),
+    topK: z.number().describe('The number of results to return').optional(),
+    content: z.boolean().describe('Whether to return the content').optional(),
     filter: z
       .record(z.string(), z.any())
       .describe(
@@ -313,7 +306,7 @@ export const search = createKnowledgeBaseTool({
   handler: async ({ query, topK, filter }, c) => {
     assertHasWorkspace(c);
     if (!c.envVars.OPENAI_API_KEY) {
-      throw new InternalServerError("Missing OPENAI_API_KEY");
+      throw new InternalServerError('Missing OPENAI_API_KEY');
     }
 
     await assertWorkspaceResourceAccess(c);
@@ -339,15 +332,15 @@ export const search = createKnowledgeBaseTool({
 });
 
 export const addFile = createKnowledgeBaseTool({
-  name: "KNOWLEDGE_BASE_ADD_FILE",
-  description: "Add a file content into knowledge base",
+  name: 'KNOWLEDGE_BASE_ADD_FILE',
+  description: 'Add a file content into knowledge base',
   inputSchema: z.object({
     fileUrl: z.string(),
     path: z
       .string()
-      .describe("File path from file added using workspace fs_write tool")
+      .describe('File path from file added using workspace fs_write tool')
       .optional(),
-    filename: z.string().describe("The name of the file").optional(),
+    filename: z.string().describe('The name of the file').optional(),
     metadata: z
       .record(z.string(), z.union([z.string(), z.boolean()]))
       .optional(),
@@ -360,7 +353,7 @@ export const addFile = createKnowledgeBaseTool({
     const finalFilename = filename || (path ? basename(path) : undefined) ||
       fileUrl;
     const { data: newFile, error } = await c.db
-      .from("deco_chat_assets")
+      .from('deco_chat_assets')
       .upsert(
         {
           file_url: fileUrl,
@@ -368,17 +361,17 @@ export const addFile = createKnowledgeBaseTool({
           index_name: c.name,
           path,
           filename: finalFilename,
-          status: "processing",
+          status: 'processing',
         },
-        { onConflict: "workspace,file_url" },
+        { onConflict: 'workspace,file_url' },
       )
       .select(
-        "fileUrl:file_url, metadata, path, docIds:doc_ids, filename, status",
+        'fileUrl:file_url, metadata, path, docIds:doc_ids, filename, status',
       )
       .single();
 
     if (!newFile || error) {
-      throw new InternalServerError("Failed to update file metadata");
+      throw new InternalServerError('Failed to update file metadata');
     }
 
     await startKbFileProcessorWorkflow(c, {
@@ -395,8 +388,8 @@ export const addFile = createKnowledgeBaseTool({
 });
 
 export const listFiles = createKnowledgeBaseTool({
-  name: "KNOWLEDGE_BASE_LIST_FILES",
-  description: "List all files in the knowledge base",
+  name: 'KNOWLEDGE_BASE_LIST_FILES',
+  description: 'List all files in the knowledge base',
   inputSchema: z.object({}),
   outputSchema: z.object({
     items: z.array(z.any()),
@@ -406,20 +399,20 @@ export const listFiles = createKnowledgeBaseTool({
     assertHasWorkspace(c);
 
     const { data: files } = await c.db
-      .from("deco_chat_assets")
+      .from('deco_chat_assets')
       .select(
-        "fileUrl:file_url, metadata, path, docIds:doc_ids, filename, status",
+        'fileUrl:file_url, metadata, path, docIds:doc_ids, filename, status',
       )
-      .eq("workspace", c.workspace.value)
-      .eq("index_name", c.name);
+      .eq('workspace', c.workspace.value)
+      .eq('index_name', c.name);
 
     return { items: files?.map(addFileDefaults) ?? [] };
   },
 });
 
 export const deleteFile = createKnowledgeBaseTool({
-  name: "KNOWLEDGE_BASE_DELETE_FILE",
-  description: "Delete a file from the knowledge base",
+  name: 'KNOWLEDGE_BASE_DELETE_FILE',
+  description: 'Delete a file from the knowledge base',
   inputSchema: z.object({
     fileUrl: z.string(),
   }),
@@ -428,21 +421,21 @@ export const deleteFile = createKnowledgeBaseTool({
     assertHasWorkspace(c);
 
     const { data: file } = await c.db
-      .from("deco_chat_assets")
-      .select("file_url, metadata, doc_ids")
-      .eq("workspace", c.workspace.value)
-      .eq("file_url", fileUrl)
+      .from('deco_chat_assets')
+      .select('file_url, metadata, doc_ids')
+      .eq('workspace', c.workspace.value)
+      .eq('file_url', fileUrl)
       .single();
 
     file?.doc_ids && (await forget.handler({ docIds: file.doc_ids }));
     const { error } = await c.db
-      .from("deco_chat_assets")
+      .from('deco_chat_assets')
       .delete()
-      .eq("file_url", fileUrl);
+      .eq('file_url', fileUrl);
 
     if (error) {
       throw new InternalServerError(
-        "Failed to delete file from knowledge base",
+        'Failed to delete file from knowledge base',
       );
     }
 

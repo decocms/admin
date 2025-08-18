@@ -1,13 +1,13 @@
 // deno-lint-ignore-file no-explicit-any
-export * from "./src/actors.ts";
-import { contextStorage } from "@deco/sdk/fetch";
-import { Hosts } from "@deco/sdk/hosts";
-import { instrument } from "@deco/sdk/observability";
-import { default as app } from "./src/app.ts";
-import { email } from "./src/email.ts";
-import { KbFileProcessorWorkflow } from "./src/workflows/kb-file-processor-workflow.ts";
-import { env } from "cloudflare:workers";
-export { WorkspaceDatabase } from "./src/durable-objects/workspace-database.ts";
+export * from './src/actors.ts';
+import { contextStorage } from '@deco/sdk/fetch';
+import { Hosts } from '@deco/sdk/hosts';
+import { instrument } from '@deco/sdk/observability';
+import { default as app } from './src/app.ts';
+import { email } from './src/email.ts';
+import { KbFileProcessorWorkflow } from './src/workflows/kb-file-processor-workflow.ts';
+import { env } from 'cloudflare:workers';
+export { WorkspaceDatabase } from './src/durable-objects/workspace-database.ts';
 
 // Choose instrumented app depending on runtime
 const instrumentedApp = instrument(app);
@@ -38,14 +38,14 @@ globalThis.fetch = async function patchedFetch(
   init?: RequestInit,
 ): Promise<Response> {
   let req: Request;
-  if (typeof resource === "string") {
+  if (typeof resource === 'string') {
     req = new Request(resource, init);
   } else if (resource instanceof Request) {
     req = resource;
   } else if (resource instanceof URL) {
     req = new Request(resource.toString(), init);
   } else {
-    throw new Error("Unsupported resource type for fetch");
+    throw new Error('Unsupported resource type for fetch');
   }
 
   const url = new URL(req.url);
@@ -54,7 +54,7 @@ globalThis.fetch = async function patchedFetch(
 
   if (SELF_DOMAINS.some((domain) => url.host.endsWith(domain))) {
     if (!context) {
-      throw new Error("Missing context for internal self-invocation");
+      throw new Error('Missing context for internal self-invocation');
     }
     // Delegate to internal handler
     return await instrumentedApp.fetch!(

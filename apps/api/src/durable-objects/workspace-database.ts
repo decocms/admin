@@ -1,10 +1,6 @@
-import { DurableObject } from "cloudflare:workers";
-import { Bindings } from "../utils/context.ts";
-import {
-  DatatabasesRunSqlInput,
-  IWorkspaceDB,
-  IWorkspaceDBMeta,
-} from "@deco/sdk/mcp";
+import { DurableObject } from 'cloudflare:workers';
+import { Bindings } from '../utils/context.ts';
+import { DatatabasesRunSqlInput, IWorkspaceDB, IWorkspaceDBMeta } from '@deco/sdk/mcp';
 
 export class WorkspaceDatabase extends DurableObject implements IWorkspaceDB {
   private sql: SqlStorage;

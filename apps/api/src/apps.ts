@@ -1,9 +1,9 @@
-import { domainSWRCache } from "@deco/sdk/cache/routing";
-import { Entrypoint } from "@deco/sdk/mcp";
-import { type Context, Hono } from "hono";
-import { APPS_DOMAIN_QS, appsDomainOf } from "./app.ts";
-import { withContextMiddleware } from "./middlewares/context.ts";
-import type { AppEnv } from "./utils/context.ts";
+import { domainSWRCache } from '@deco/sdk/cache/routing';
+import { Entrypoint } from '@deco/sdk/mcp';
+import { type Context, Hono } from 'hono';
+import { APPS_DOMAIN_QS, appsDomainOf } from './app.ts';
+import { withContextMiddleware } from './middlewares/context.ts';
+import type { AppEnv } from './utils/context.ts';
 
 export type DispatcherFetch = typeof fetch;
 export const app = new Hono<AppEnv>();
@@ -14,7 +14,7 @@ export const fetchScript = async (
   req: Request,
 ) => {
   let dispatcher: typeof c.env.PROD_DISPATCHER;
-  if ("PROD_DISPATCHER" in c.env) {
+  if ('PROD_DISPATCHER' in c.env) {
     dispatcher = c.env.PROD_DISPATCHER;
   } else {
     dispatcher = {
@@ -37,9 +37,9 @@ export const fetchScript = async (
     },
   );
   const response = await scriptFetcher.fetch(req).catch((err) => {
-    if ("message" in err && err.message.startsWith("Worker not found")) {
+    if ('message' in err && err.message.startsWith('Worker not found')) {
       // we tried to get a worker that doesn't exist in our dispatch namespace
-      return new Response("worker not found", { status: 404 });
+      return new Response('worker not found', { status: 404 });
     }
     throw err;
   });
@@ -48,18 +48,18 @@ export const fetchScript = async (
 };
 
 app.use(withContextMiddleware);
-app.all("/*", async (c: Context<AppEnv>) => {
+app.all('/*', async (c: Context<AppEnv>) => {
   const url = new URL(c.req.url);
-  let host = appsDomainOf(c.req.raw) ?? c.req.header("host") ?? url.host;
+  let host = appsDomainOf(c.req.raw) ?? c.req.header('host') ?? url.host;
   if (!host) {
-    return new Response("No host", { status: 400 });
+    return new Response('No host', { status: 400 });
   }
   const locator = Entrypoint.script(host);
   // if it has a deployment ID, we can use the script ID directly
   let script = locator?.isCanonical ? locator.slug : null;
   const getScriptFn = async (): Promise<string | null> => {
     const { data, error } = await c.var.db
-      .from("deco_chat_hosting_routes")
+      .from('deco_chat_hosting_routes')
       .select(`
             *,
             deco_chat_hosting_apps_deployments!deployment_id(
@@ -67,7 +67,7 @@ app.all("/*", async (c: Context<AppEnv>) => {
               deco_chat_hosting_apps!hosting_app_id(slug)
             )
           `)
-      .eq("route_pattern", host)
+      .eq('route_pattern', host)
       .maybeSingle();
 
     if ((error || !data) && locator) {
@@ -80,11 +80,11 @@ app.all("/*", async (c: Context<AppEnv>) => {
     const slug = deployment?.deco_chat_hosting_apps?.slug;
     const deploymentId = deployment?.id;
     if (!slug || !deploymentId) {
-      throw new Error("No slug or deployment ID found");
+      throw new Error('No slug or deployment ID found');
     }
     return Entrypoint.id(slug, deploymentId);
   };
-  const isNoCache = c.req.header("x-domain-swr-ignore-cache") === "true";
+  const isNoCache = c.req.header('x-domain-swr-ignore-cache') === 'true';
   if (!script) {
     script = isNoCache
       ? await getScriptFn()
@@ -92,12 +92,12 @@ app.all("/*", async (c: Context<AppEnv>) => {
   }
 
   if (!script) {
-    return new Response("Not found", { status: 404 });
+    return new Response('Not found', { status: 404 });
   }
   host = Entrypoint.host(script);
   if (url.host !== host) {
     url.host = host;
-    url.protocol = "https";
+    url.protocol = 'https';
     url.port = `443`;
     url.searchParams.delete(APPS_DOMAIN_QS);
   }

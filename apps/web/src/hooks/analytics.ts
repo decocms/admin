@@ -1,17 +1,13 @@
-import { posthog } from "posthog-js";
-import {
-  POSTHOG_ORIGIN,
-  POSTHOG_PROJECT_API_KEY,
-  POSTHOG_SHOULD_TRACK,
-} from "../constants.ts";
-import { onUserChange } from "./use-user.ts";
+import { posthog } from 'posthog-js';
+import { POSTHOG_ORIGIN, POSTHOG_PROJECT_API_KEY, POSTHOG_SHOULD_TRACK } from '../constants.ts';
+import { onUserChange } from './use-user.ts';
 
 export const ANALYTICS = posthog.init(POSTHOG_PROJECT_API_KEY, {
   api_host: POSTHOG_ORIGIN,
-  person_profiles: "always",
+  person_profiles: 'always',
   capture_pageview: false,
   capture_exceptions: true,
-  defaults: "2025-05-24",
+  defaults: '2025-05-24',
   // Uncomment this if you want to test event tracking in development
   // debug: import.meta.env.MODE === "development",
 });
@@ -29,8 +25,7 @@ onUserChange((user) => {
 
 const maybeDisableTracking =
   // deno-lint-ignore no-explicit-any
-  <T extends (...args: any[]) => void>(callback: T) =>
-  (...args: Parameters<T>) =>
+  <T extends (...args: any[]) => void>(callback: T) => (...args: Parameters<T>) =>
     POSTHOG_SHOULD_TRACK ? callback(...args) : undefined;
 
 const serializeErrorProperties = (error: unknown) => {

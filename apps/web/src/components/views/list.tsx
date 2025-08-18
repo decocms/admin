@@ -1,17 +1,17 @@
-import { useAddView, useRemoveView, useWorkspaceViews } from "@deco/sdk";
-import { Button } from "@deco/ui/components/button.tsx";
-import { Card, CardContent } from "@deco/ui/components/card.tsx";
-import { Icon } from "@deco/ui/components/icon.tsx";
-import { toast } from "@deco/ui/components/sonner.tsx";
-import { useViewMode } from "@deco/ui/hooks/use-view-mode.ts";
-import { cn } from "@deco/ui/lib/utils.ts";
-import { useDeferredValue, useMemo, useState } from "react";
-import { useNavigateWorkspace } from "../../hooks/use-navigate-workspace.ts";
-import { EmptyState } from "../common/empty-state.tsx";
-import { ListPageHeader } from "../common/list-page-header.tsx";
-import { Table, TableColumn } from "../common/table/index.tsx";
-import { DefaultBreadcrumb, PageLayout } from "../layout.tsx";
-import { useCurrentTeam } from "../sidebar/team-selector";
+import { useAddView, useRemoveView, useWorkspaceViews } from '@deco/sdk';
+import { Button } from '@deco/ui/components/button.tsx';
+import { Card, CardContent } from '@deco/ui/components/card.tsx';
+import { Icon } from '@deco/ui/components/icon.tsx';
+import { toast } from '@deco/ui/components/sonner.tsx';
+import { useViewMode } from '@deco/ui/hooks/use-view-mode.ts';
+import { cn } from '@deco/ui/lib/utils.ts';
+import { useDeferredValue, useMemo, useState } from 'react';
+import { useNavigateWorkspace } from '../../hooks/use-navigate-workspace.ts';
+import { EmptyState } from '../common/empty-state.tsx';
+import { ListPageHeader } from '../common/list-page-header.tsx';
+import { Table, TableColumn } from '../common/table/index.tsx';
+import { DefaultBreadcrumb, PageLayout } from '../layout.tsx';
+import { useCurrentTeam } from '../sidebar/team-selector';
 
 interface ViewWithStatus {
   isAdded: boolean;
@@ -34,42 +34,42 @@ function TableView({
   views: ViewWithStatus[];
   onConfigure: (view: ViewWithStatus) => void;
 }) {
-  const [sortKey, setSortKey] = useState<string>("name");
-  const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc");
+  const [sortKey, setSortKey] = useState<string>('name');
+  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
 
   function getSortValue(row: ViewWithStatus): string {
-    return row.title?.toLowerCase() || "";
+    return row.title?.toLowerCase() || '';
   }
   const sortedViews = [...views].sort((a, b) => {
     const aVal = getSortValue(a);
     const bVal = getSortValue(b);
-    if (aVal < bVal) return sortDirection === "asc" ? -1 : 1;
-    if (aVal > bVal) return sortDirection === "asc" ? 1 : -1;
+    if (aVal < bVal) return sortDirection === 'asc' ? -1 : 1;
+    if (aVal > bVal) return sortDirection === 'asc' ? 1 : -1;
     return 0;
   });
 
   const columns: TableColumn<ViewWithStatus>[] = [
     {
-      id: "name",
-      header: "Name",
+      id: 'name',
+      header: 'Name',
       sortable: true,
       render: (view) => (
-        <div className="flex items-center gap-2 min-h-8 font-medium">
-          <Icon name={view.icon.toLowerCase()} className="shrink-0" size={20} />
-          <span className="truncate">{view.title}</span>
+        <div className='flex items-center gap-2 min-h-8 font-medium'>
+          <Icon name={view.icon.toLowerCase()} className='shrink-0' size={20} />
+          <span className='truncate'>{view.title}</span>
         </div>
       ),
     },
     {
-      id: "integration",
-      header: "Integration",
+      id: 'integration',
+      header: 'Integration',
       accessor: (view) => view.integration.name,
       sortable: true,
-      cellClassName: "max-w-md",
+      cellClassName: 'max-w-md',
     },
     {
-      id: "pin",
-      header: "Added",
+      id: 'pin',
+      header: 'Added',
       render: (view) => (
         <div>
           <TogglePin view={view} />
@@ -80,10 +80,10 @@ function TableView({
 
   function handleSort(key: string) {
     if (sortKey === key) {
-      setSortDirection((prev) => (prev === "asc" ? "desc" : "asc"));
+      setSortDirection((prev) => (prev === 'asc' ? 'desc' : 'asc'));
     } else {
       setSortKey(key);
-      setSortDirection("asc");
+      setSortDirection('asc');
     }
   }
 
@@ -110,21 +110,21 @@ function TogglePin({ view }: { view: ViewWithStatus }) {
           id: crypto.randomUUID(),
           title: view.title,
           icon: view.icon,
-          type: "custom" as const,
+          type: 'custom' as const,
           url: view.url,
         },
       });
 
       toast.success(`View "${view.title}" added successfully`);
     } catch (error) {
-      console.error("Error adding view:", error);
+      console.error('Error adding view:', error);
       toast.error(`Failed to add view "${view.title}"`);
     }
   };
 
   const handleRemoveView = async (viewWithStatus: ViewWithStatus) => {
     if (!viewWithStatus.teamViewId) {
-      toast.error("No view to remove");
+      toast.error('No view to remove');
       return;
     }
 
@@ -135,7 +135,7 @@ function TogglePin({ view }: { view: ViewWithStatus }) {
 
       toast.success(`View "${viewWithStatus.title}" removed successfully`);
     } catch (error) {
-      console.error("Error removing view:", error);
+      console.error('Error removing view:', error);
       toast.error(`Failed to remove view "${viewWithStatus.title}"`);
     }
   };
@@ -145,9 +145,9 @@ function TogglePin({ view }: { view: ViewWithStatus }) {
       {view.isAdded
         ? (
           <Button
-            variant="outline"
-            size="sm"
-            className="text-destructive hover:text-destructive"
+            variant='outline'
+            size='sm'
+            className='text-destructive hover:text-destructive'
             onClick={(e) => {
               e.stopPropagation();
               handleRemoveView(view);
@@ -155,14 +155,14 @@ function TogglePin({ view }: { view: ViewWithStatus }) {
             disabled={removeViewMutation.isPending}
           >
             {removeViewMutation.isPending
-              ? <Icon name="hourglass_empty" size={14} />
-              : <Icon name="remove" size={14} />}
+              ? <Icon name='hourglass_empty' size={14} />
+              : <Icon name='remove' size={14} />}
           </Button>
         )
         : (
           <Button
-            variant="outline"
-            size="sm"
+            variant='outline'
+            size='sm'
             onClick={(e) => {
               e.stopPropagation();
               handleAddView(view);
@@ -170,8 +170,8 @@ function TogglePin({ view }: { view: ViewWithStatus }) {
             disabled={addViewMutation.isPending}
           >
             {addViewMutation.isPending
-              ? <Icon name="hourglass_empty" size={14} />
-              : <Icon name="add" size={14} />}
+              ? <Icon name='hourglass_empty' size={14} />
+              : <Icon name='add' size={14} />}
           </Button>
         )}
     </>
@@ -183,7 +183,7 @@ function ViewsList() {
   const navigateWorkspace = useNavigateWorkspace();
   const [viewMode, setViewMode] = useViewMode();
   const { data: views = [] } = useWorkspaceViews();
-  const [searchTerm, setSearchTerm] = useState("");
+  const [searchTerm, setSearchTerm] = useState('');
   const deferredSearchTerm = useDeferredValue(searchTerm);
 
   const allViews = useMemo(() => {
@@ -214,8 +214,8 @@ function ViewsList() {
 
   const beautifyViewName = (text: string) => {
     return text
-      .replace("DECO_CHAT_VIEW_", "")
-      .replace(/_/g, " ")
+      .replace('DECO_CHAT_VIEW_', '')
+      .replace(/_/g, ' ')
       .toLowerCase()
       .replace(/\b\w/g, (c) => c.toUpperCase());
   };
@@ -229,36 +229,36 @@ function ViewsList() {
   };
 
   return (
-    <div className="flex flex-col h-full p-4">
+    <div className='flex flex-col h-full p-4'>
       <ListPageHeader
         input={{
-          placeholder: "Search views",
+          placeholder: 'Search views',
           value: searchTerm,
           onChange: (e) => setSearchTerm(e.target.value),
         }}
         view={{ viewMode, onChange: setViewMode }}
       />
 
-      {filteredViews.length > 0 && viewMode === "cards" && (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 py-4">
+      {filteredViews.length > 0 && viewMode === 'cards' && (
+        <div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 py-4'>
           {filteredViews.map((view) => (
             <Card
               key={`${view.integration.id}-${view.title}`}
-              className={cn("hover:shadow-md transition-shadow cursor-pointer")}
+              className={cn('hover:shadow-md transition-shadow cursor-pointer')}
               onClick={() => handleViewClick(view)}
             >
-              <CardContent className="p-4">
-                <div className="flex items-center gap-3">
+              <CardContent className='p-4'>
+                <div className='flex items-center gap-3'>
                   <Icon
                     name={view.icon.toLowerCase()}
-                    className="w-6 h-6 shrink-0"
+                    className='w-6 h-6 shrink-0'
                     size={24}
                   />
-                  <div className="flex-1 min-w-0">
-                    <h3 className="font-medium truncate">
-                      {beautifyViewName(view.title || "")}
+                  <div className='flex-1 min-w-0'>
+                    <h3 className='font-medium truncate'>
+                      {beautifyViewName(view.title || '')}
                     </h3>
-                    <p className="text-sm text-muted-foreground truncate">
+                    <p className='text-sm text-muted-foreground truncate'>
                       {view.integration.name}
                     </p>
                   </div>
@@ -270,17 +270,17 @@ function ViewsList() {
         </div>
       )}
 
-      {filteredViews.length > 0 && viewMode === "table" && (
+      {filteredViews.length > 0 && viewMode === 'table' && (
         <TableView views={filteredViews} onConfigure={handleViewClick} />
       )}
 
       {filteredViews.length === 0 && (
         <EmptyState
-          icon="dashboard"
-          title="No views found"
+          icon='dashboard'
+          title='No views found'
           description={deferredSearchTerm
-            ? "No views match your search."
-            : "No view tools are available from your integrations."}
+            ? 'No views match your search.'
+            : 'No view tools are available from your integrations.'}
         />
       )}
     </div>
@@ -290,7 +290,7 @@ function ViewsList() {
 const TABS = {
   list: {
     Component: ViewsList,
-    title: "Views",
+    title: 'Views',
     initialOpen: true,
   },
 };
@@ -300,9 +300,7 @@ export default function Page() {
     <PageLayout
       tabs={TABS}
       hideViewsButton
-      breadcrumb={
-        <DefaultBreadcrumb items={[{ label: "Views", link: "/views" }]} />
-      }
+      breadcrumb={<DefaultBreadcrumb items={[{ label: 'Views', link: '/views' }]} />}
     />
   );
 }

@@ -1,5 +1,5 @@
-import { useAgent } from "./provider.tsx";
-import { AgentAvatar } from "../common/avatar/agent.tsx";
+import { useAgent } from './provider.tsx';
+import { AgentAvatar } from '../common/avatar/agent.tsx';
 
 export function ChatHeader() {
   const { agent, chat } = useAgent();
@@ -9,14 +9,14 @@ export function ChatHeader() {
   }
 
   return (
-    <div className="flex items-center gap-3 h-10">
+    <div className='flex items-center gap-3 h-10'>
       <AgentAvatar
         url={agent.avatar}
         fallback={agent.name}
-        size="xs"
-        className="text-xs"
+        size='xs'
+        className='text-xs'
       />
-      <span className="text-sm font-medium tracking-tight text-foreground">
+      <span className='text-sm font-medium tracking-tight text-foreground'>
         {agent.name}
       </span>
     </div>

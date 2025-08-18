@@ -1,26 +1,26 @@
-import { SDKProvider, UnauthorizedError, type Workspace } from "@deco/sdk";
-import { ScrollArea } from "@deco/ui/components/scroll-area.tsx";
-import { SidebarInset, SidebarProvider } from "@deco/ui/components/sidebar.tsx";
-import { Spinner } from "@deco/ui/components/spinner.tsx";
-import { Suspense, useMemo } from "react";
-import { useSearchParams } from "react-router";
-import { ErrorBoundary } from "../../error-boundary.tsx";
-import { ChatInput } from "../chat/chat-input.tsx";
-import { ChatMessages } from "../chat/chat-messages.tsx";
-import { AgentProvider } from "./provider.tsx";
-import { EmptyState } from "../common/empty-state.tsx";
-import { PageLayout } from "../layout.tsx";
-import { ChatHeader } from "./chat-header.tsx";
-import AgentPreview from "./preview.tsx";
-import ThreadView from "./thread.tsx";
+import { SDKProvider, UnauthorizedError, type Workspace } from '@deco/sdk';
+import { ScrollArea } from '@deco/ui/components/scroll-area.tsx';
+import { SidebarInset, SidebarProvider } from '@deco/ui/components/sidebar.tsx';
+import { Spinner } from '@deco/ui/components/spinner.tsx';
+import { Suspense, useMemo } from 'react';
+import { useSearchParams } from 'react-router';
+import { ErrorBoundary } from '../../error-boundary.tsx';
+import { ChatInput } from '../chat/chat-input.tsx';
+import { ChatMessages } from '../chat/chat-messages.tsx';
+import { AgentProvider } from './provider.tsx';
+import { EmptyState } from '../common/empty-state.tsx';
+import { PageLayout } from '../layout.tsx';
+import { ChatHeader } from './chat-header.tsx';
+import AgentPreview from './preview.tsx';
+import ThreadView from './thread.tsx';
 
 const MainChat = () => {
   return (
-    <div className="h-full w-full flex flex-col">
-      <ScrollArea className="flex-1 min-h-0">
+    <div className='h-full w-full flex flex-col'>
+      <ScrollArea className='flex-1 min-h-0'>
         <ChatMessages />
       </ScrollArea>
-      <div className="p-2">
+      <div className='p-2'>
         <ChatInput />
       </div>
     </div>
@@ -30,25 +30,25 @@ const MainChat = () => {
 const TABS = {
   chat: {
     Component: MainChat,
-    title: "Chat",
+    title: 'Chat',
     initialOpen: true,
   },
   chatView: {
     Component: ThreadView,
-    title: "Thread",
+    title: 'Thread',
     hideFromViews: true,
   },
   preview: {
     Component: AgentPreview,
-    title: "Preview",
+    title: 'Preview',
     hideFromViews: true,
   },
 };
 
 export const getPublicChatLink = (agentId: string, workspace: Workspace) => {
-  const url = new URL("/chats", globalThis.location.href);
-  url.searchParams.set("agentId", agentId);
-  url.searchParams.set("workspace", workspace);
+  const url = new URL('/chats', globalThis.location.href);
+  url.searchParams.set('agentId', agentId);
+  url.searchParams.set('workspace', workspace);
 
   return url.href;
 };
@@ -57,22 +57,22 @@ function Page() {
   const [params] = useSearchParams();
 
   const { agentId, workspace, threadId, toolsets } = useMemo(() => {
-    const workspace = params.get("workspace") as Workspace | null;
-    const agentId = params.get("agentId");
-    const threadId = params.get("threadId") ?? crypto.randomUUID();
-    const toolsets = params.getAll("toolsets").map((toolset) => {
-      const [mcpUrl, connectionType = "HTTP"] = toolset.split(",");
+    const workspace = params.get('workspace') as Workspace | null;
+    const agentId = params.get('agentId');
+    const threadId = params.get('threadId') ?? crypto.randomUUID();
+    const toolsets = params.getAll('toolsets').map((toolset) => {
+      const [mcpUrl, connectionType = 'HTTP'] = toolset.split(',');
 
       return {
         connection: {
-          type: connectionType as "HTTP" | "SSE",
+          type: connectionType as 'HTTP' | 'SSE',
           url: mcpUrl,
         },
         filters: [],
       };
     });
     if (!workspace || !agentId) {
-      throw new Error("Missing required params, workspace, agentId, threadId");
+      throw new Error('Missing required params, workspace, agentId, threadId');
     }
 
     return { workspace, agentId, threadId, toolsets };
@@ -84,14 +84,14 @@ function Page() {
     <ErrorBoundary
       fallback={
         <EmptyState
-          icon="robot_2"
-          title="This agent is no longer available"
-          description="The agent you’re trying to access is no longer publicly available. Its visibility may have changed or it might have been removed."
+          icon='robot_2'
+          title='This agent is no longer available'
+          description='The agent you’re trying to access is no longer publicly available. Its visibility may have changed or it might have been removed.'
           buttonProps={{
-            variant: "outline",
-            children: "Create your agent at deco.chat",
+            variant: 'outline',
+            children: 'Create your agent at deco.chat',
             onClick: () => {
-              location.href = "https://deco.chat";
+              location.href = 'https://deco.chat';
             },
           }}
         />
@@ -102,7 +102,7 @@ function Page() {
         // This make the react render fallback when changin agent+threadid, instead of hang the whole navigation while the subtree isn't changed
         key={chatKey}
         fallback={
-          <div className="h-full w-full flex items-center justify-center">
+          <div className='h-full w-full flex items-center justify-center'>
             <Spinner />
           </div>
         }
@@ -122,8 +122,8 @@ function Page() {
           >
             <SidebarProvider
               style={{
-                "--sidebar-width": "16rem",
-                "--sidebar-width-mobile": "14rem",
+                '--sidebar-width': '16rem',
+                '--sidebar-width-mobile': '14rem',
               } as Record<string, string>}
             >
               <SidebarInset>

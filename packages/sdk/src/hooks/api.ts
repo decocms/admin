@@ -1,17 +1,17 @@
-import type { ListModelsInput } from "../crud/model.ts";
-import type { ThreadFilterOptions } from "../crud/thread.ts";
-import type { Workspace } from "../index.ts";
-import type { Binder } from "../models/mcp.ts";
+import type { ListModelsInput } from '../crud/model.ts';
+import type { ThreadFilterOptions } from '../crud/thread.ts';
+import type { Workspace } from '../index.ts';
+import type { Binder } from '../models/mcp.ts';
 
 export const KEYS = {
-  FILE: (workspace: string, path: string) => ["file", workspace, path],
+  FILE: (workspace: string, path: string) => ['file', workspace, path],
   AGENT: (workspace: Workspace, agentId?: string) => [
-    "agent",
+    'agent',
     workspace,
     agentId,
   ],
   INTEGRATION: (workspace: Workspace, integrationId?: string) => [
-    "integration",
+    'integration',
     workspace,
     integrationId,
   ],
@@ -20,27 +20,27 @@ export const KEYS = {
     integrationId: string,
     binder?: Binder,
   ) => [
-    "integration-tools",
+    'integration-tools',
     workspace,
     integrationId,
     ...(binder ? [binder] : []),
   ],
   CHANNELS: (workspace: Workspace, channelId?: string) => [
-    "channels",
+    'channels',
     workspace,
     channelId,
   ],
   BINDINGS: (workspace: Workspace, binder: Binder) => [
-    "bindings",
+    'bindings',
     workspace,
     binder,
   ],
   THREADS: (workspace: Workspace, options?: ThreadFilterOptions) => {
     if (!options) {
-      return ["threads", workspace];
+      return ['threads', workspace];
     }
     return [
-      "threads",
+      'threads',
       workspace,
       options.agentId,
       options.resourceId,
@@ -50,13 +50,13 @@ export const KEYS = {
     ];
   },
   TOOLS: (workspace: Workspace, agentId: string, threadId: string) => [
-    "tools",
+    'tools',
     workspace,
     agentId,
     threadId,
   ],
   AUDITS: (workspace: Workspace, options: ThreadFilterOptions) => [
-    "audit",
+    'audit',
     workspace,
     options.agentId,
     options.orderBy,
@@ -64,97 +64,97 @@ export const KEYS = {
     options.limit,
     options.resourceId,
   ],
-  TEAMS: () => ["teams"],
-  TEAM: (slug: string) => ["team", slug],
-  TEAM_THEME: (slug: string) => ["team-theme", slug],
+  TEAMS: () => ['teams'],
+  TEAM: (slug: string) => ['team', slug],
+  TEAM_THEME: (slug: string) => ['team-theme', slug],
   TEAM_VIEWS: (workspace: Workspace, integrationId: string) => [
-    "team-views",
+    'team-views',
     workspace,
     integrationId,
   ],
-  WORKSPACE_VIEWS: (workspace: Workspace) => ["workspace-views", workspace],
-  TEAM_MEMBERS: (slugOrId: string | number) => ["taem", slugOrId, "members"],
-  TEAM_ROLES: (teamId: number) => ["team", teamId, "roles"],
-  MY_INVITES: () => ["my_invites"],
+  WORKSPACE_VIEWS: (workspace: Workspace) => ['workspace-views', workspace],
+  TEAM_MEMBERS: (slugOrId: string | number) => ['taem', slugOrId, 'members'],
+  TEAM_ROLES: (teamId: number) => ['team', teamId, 'roles'],
+  MY_INVITES: () => ['my_invites'],
   MODELS: (workspace: Workspace, options?: ListModelsInput) => [
-    "models",
+    'models',
     workspace,
     options?.excludeDisabled || false,
     options?.excludeAuto || false,
   ],
-  MODEL: (workspace: Workspace, id: string) => ["model", workspace, id],
-  TRIGGERS: (workspace: Workspace, agentId = "") => [
-    "triggers",
+  MODEL: (workspace: Workspace, id: string) => ['model', workspace, id],
+  TRIGGERS: (workspace: Workspace, agentId = '') => [
+    'triggers',
     workspace,
     agentId,
   ],
   TRIGGER: (workspace: Workspace, triggerId: string) => [
-    "trigger",
+    'trigger',
     workspace,
     triggerId,
   ],
   THREAD: (workspace: Workspace, threadId: string) => [
-    "thread",
+    'thread',
     workspace,
     threadId,
   ],
   THREAD_MESSAGES: (workspace: Workspace, threadId: string) => [
-    "thread-messages",
+    'thread-messages',
     workspace,
     threadId,
   ],
   THREAD_TOOLS: (workspace: Workspace, threadId: string) => [
-    "thread-tools",
+    'thread-tools',
     workspace,
     threadId,
   ],
-  PROFILE: () => ["profile"],
+  PROFILE: () => ['profile'],
   PROMPTS: (
     workspace: Workspace,
     ids?: string[],
     resolveMentions?: boolean,
     excludeIds?: string[],
   ) => [
-    "prompts",
+    'prompts',
     workspace,
     ...(ids ? ids.sort() : []),
     `${resolveMentions ?? false}`,
     ...(excludeIds ? excludeIds.sort() : []),
   ],
-  PROMPT: (workspace: Workspace, id: string) => ["prompts", workspace, id],
+  PROMPT: (workspace: Workspace, id: string) => ['prompts', workspace, id],
   PROMPTS_SEARCH: (
     workspace: Workspace,
     query: string,
     limit: number = 10,
     offset: number = 0,
-  ) => ["prompts", workspace, query, limit, offset],
+  ) => ['prompts', workspace, query, limit, offset],
   PROMPT_VERSIONS: (workspace: Workspace, id: string) => [
-    "prompt-versions",
+    'prompt-versions',
     workspace,
     id,
   ],
-  WALLET: (workspace: Workspace) => ["wallet", workspace],
+  WALLET: (workspace: Workspace) => ['wallet', workspace],
   WALLET_USAGE_AGENTS: (
     workspace: Workspace,
-    range: "day" | "week" | "month",
-  ) => ["wallet-usage-agents", workspace, range],
+    range: 'day' | 'week' | 'month',
+  ) => ['wallet-usage-agents', workspace, range],
   WALLET_USAGE_THREADS: (
     workspace: Workspace,
-    range: "day" | "week" | "month",
-  ) => ["wallet-usage-threads", workspace, range],
+    range: 'day' | 'week' | 'month',
+  ) => ['wallet-usage-threads', workspace, range],
   WALLET_BILLING_HISTORY: (
     workspace: Workspace,
-    range: "day" | "week" | "month" | "year",
-  ) => ["wallet-billing-history", workspace, range],
-  WORKSPACE_PLAN: (workspace: Workspace) => ["workspace-plan", workspace],
+    range: 'day' | 'week' | 'month' | 'year',
+  ) => ['wallet-billing-history', workspace, range],
+  WORKSPACE_PLAN: (workspace: Workspace) => ['workspace-plan', workspace],
   WORKFLOWS: (workspace: Workspace, page?: number, per_page?: number) => [
-    "workflows",
+    'workflows',
     workspace,
     page,
     per_page,
   ],
   WORKFLOW: (workspace: Workspace, workflowName: string) => [
-    "workflow",
+    'workflow',
     workspace,
     workflowName,
   ],
@@ -163,14 +163,14 @@ export const KEYS = {
     workflowName: string,
     page?: number,
     per_page?: number,
-  ) => ["workflow-instances", workspace, workflowName, page, per_page],
+  ) => ['workflow-instances', workspace, workflowName, page, per_page],
   WORKFLOW_STATUS: (
     workspace: Workspace,
     workflowName: string,
     instanceId: string,
-  ) => ["workflow-status", workspace, workflowName, instanceId],
+  ) => ['workflow-status', workspace, workflowName, instanceId],
   KNOWLEDGE_FILES: (workspace: Workspace, connectionUrl: string) => [
-    "knowledge_files",
+    'knowledge_files',
     workspace,
     connectionUrl,
   ],

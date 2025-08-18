@@ -1,12 +1,12 @@
-import type { JSONSchema7 } from "json-schema";
-import type { SchemaType } from "../index.tsx";
-import { generateDefaultValues } from "./generate-default-values.ts";
-import type { FieldValues, Path, UseFormReturn } from "react-hook-form";
+import type { JSONSchema7 } from 'json-schema';
+import type { SchemaType } from '../index.tsx';
+import { generateDefaultValues } from './generate-default-values.ts';
+import type { FieldValues, Path, UseFormReturn } from 'react-hook-form';
 
 // Format property name for display
 export function formatPropertyName(name: string): string {
   return name
-    .replace(/([A-Z])/g, " $1")
+    .replace(/([A-Z])/g, ' $1')
     .replace(/^./, (str: string) => str.toUpperCase())
     .trim();
 }
@@ -35,10 +35,10 @@ export function getDetectedType(value: SchemaType): string {
   const valueType = typeof value;
 
   // Enhanced type detection for special cases
-  return valueType === "object" && value === null
-    ? "null"
-    : valueType === "object" && Array.isArray(value)
-    ? "array"
+  return valueType === 'object' && value === null
+    ? 'null'
+    : valueType === 'object' && Array.isArray(value)
+    ? 'array'
     : valueType;
 }
 
@@ -57,14 +57,14 @@ export function doesSchemaTypeMatchValue(
   // Handle array of types
   if (Array.isArray(schemaType)) {
     return schemaType.some((t) => {
-      if (t === "integer" && detectedType === "number") return true;
+      if (t === 'integer' && detectedType === 'number') return true;
       if (t === detectedType) return true;
       return false;
     });
   }
 
   // Handle single type
-  if (schemaType === "integer" && detectedType === "number") {
+  if (schemaType === 'integer' && detectedType === 'number') {
     return true;
   }
 
@@ -75,7 +75,7 @@ export function doesSchemaTypeMatchValue(
  * Helper function to check if schema type matches runtime type
  */
 export function typeMatches(
-  schemaType: JSONSchema7["type"],
+  schemaType: JSONSchema7['type'],
   runtimeType: string,
 ): boolean {
   if (schemaType === undefined) {
@@ -87,7 +87,7 @@ export function typeMatches(
   }
 
   // Special case for integers (typeof returns 'number')
-  if (schemaType === "integer" && runtimeType === "number") {
+  if (schemaType === 'integer' && runtimeType === 'number') {
     return true;
   }
 
@@ -121,8 +121,8 @@ export function findMatchingAnyOfSchema(
     // For objects, do additional validation with properties
     if (
       checkProperties &&
-      detectedType === "object" &&
-      typeof value === "object" &&
+      detectedType === 'object' &&
+      typeof value === 'object' &&
       value !== null &&
       !Array.isArray(value) &&
       schemaObj.properties
@@ -148,7 +148,7 @@ export function findMatchingAnyOfSchema(
 
     // For arrays, check if the items schema matches
     if (
-      detectedType === "array" &&
+      detectedType === 'array' &&
       Array.isArray(value) &&
       value.length > 0 &&
       schemaObj.items
@@ -171,12 +171,12 @@ export function doesChildFieldMatchSchema(
   namePrefix: string,
   schema: JSONSchema7,
 ): boolean {
-  if (schema.type !== "object" || !schema.properties) {
+  if (schema.type !== 'object' || !schema.properties) {
     return false;
   }
 
   const schemaProps = Object.keys(schema.properties);
-  const childName = childPath.slice(namePrefix.length).split(".")[0];
+  const childName = childPath.slice(namePrefix.length).split('.')[0];
 
   return schemaProps.includes(childName);
 }
@@ -192,7 +192,7 @@ export function findSchemaByChildFields<
   form: UseFormReturn<T>,
 ): JSONSchema7 | undefined {
   const childFields = form.getValues();
-  if (!childFields || typeof childFields !== "object") {
+  if (!childFields || typeof childFields !== 'object') {
     return undefined;
   }
 
@@ -236,17 +236,17 @@ export function findSchemaByParentRelationship<
   form: UseFormReturn<T>,
 ): JSONSchema7 | undefined {
   // Split field name to get parent path
-  const parentPath = name.split(".");
+  const parentPath = name.split('.');
   if (parentPath.length <= 1) {
     return undefined; // No parent exists
   }
 
   // Remove the last segment to get parent path
   parentPath.pop();
-  const parentName = parentPath.join(".");
+  const parentName = parentPath.join('.');
   const parentValue = form.watch(parentName as Path<T>);
 
-  if (!parentValue || typeof parentValue !== "object" || parentValue === null) {
+  if (!parentValue || typeof parentValue !== 'object' || parentValue === null) {
     return undefined;
   }
 
@@ -256,7 +256,7 @@ export function findSchemaByParentRelationship<
   // Try to find schema that best matches based on parent context
   if (schema.anyOf && Array.isArray(schema.anyOf)) {
     // First strategy: Look for a type property in parent
-    if ("type" in parentRecord && typeof parentRecord.type === "string") {
+    if ('type' in parentRecord && typeof parentRecord.type === 'string') {
       // Try to match schema title or a property with parent's type
       const matchByTitle = schema.anyOf.find((s) => {
         const schemaObj = s as JSONSchema7;
@@ -278,7 +278,7 @@ export function findSchemaByParentRelationship<
           return props.some(([key, propDef]) => {
             const propSchema = propDef as JSONSchema7;
             return (
-              (key === "type" || key === "kind" || key.endsWith("Type")) &&
+              (key === 'type' || key === 'kind' || key.endsWith('Type')) &&
               propSchema.enum?.includes(parentRecord.type as string)
             );
           });
@@ -296,7 +296,7 @@ export function findSchemaByParentRelationship<
       const schemaObj = subSchema as JSONSchema7;
 
       // Skip non-object schemas
-      if (schemaObj.type !== "object" || !schemaObj.properties) {
+      if (schemaObj.type !== 'object' || !schemaObj.properties) {
         return false;
       }
 
@@ -317,7 +317,7 @@ export function findSchemaByParentRelationship<
           // Check if this value matches any mapping
           if (
             mapping &&
-            typeof discriminatorValue === "string" &&
+            typeof discriminatorValue === 'string' &&
             discriminatorValue in mapping
           ) {
             return true;
@@ -346,9 +346,9 @@ export function getDefaultAnyOfSchema(schemas: JSONSchema7[]): JSONSchema7 {
     ? schemas.find((s) => {
       const schemaType = (s as JSONSchema7).type;
       if (Array.isArray(schemaType)) {
-        return !schemaType.includes("null");
+        return !schemaType.includes('null');
       }
-      return schemaType !== "null";
+      return schemaType !== 'null';
     })
     : null;
 

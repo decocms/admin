@@ -1,5 +1,5 @@
-import React, { useEffect, useRef, useState } from "react";
-import { Icon } from "../../components/atoms/Icon";
+import React, { useEffect, useRef, useState } from 'react';
+import { Icon } from '../../components/atoms/Icon';
 
 export interface MarkdownCopySelectProps {
   markdownPath?: string;
@@ -21,24 +21,24 @@ export function MarkdownCopySelect({
       }
     }
 
-    document.addEventListener("mousedown", handleClickOutside);
+    document.addEventListener('mousedown', handleClickOutside);
     return () => {
-      document.removeEventListener("mousedown", handleClickOutside);
+      document.removeEventListener('mousedown', handleClickOutside);
     };
   }, []);
 
   const handleCopyPage = async () => {
     try {
       // Copy the whole markdown page content
-      const content = document.getElementById("rendered-content");
+      const content = document.getElementById('rendered-content');
       if (content) {
-        const markdownText = content.textContent || "";
+        const markdownText = content.textContent || '';
         await navigator.clipboard.writeText(markdownText);
       }
       setIsOpen(false);
       // You could add a toast notification here
     } catch (err) {
-      console.error("Failed to copy page content:", err);
+      console.error('Failed to copy page content:', err);
     }
   };
 
@@ -48,7 +48,7 @@ export function MarkdownCopySelect({
       setIsOpen(false);
       // You could add a toast notification here
     } catch (err) {
-      console.error("Failed to copy page URL:", err);
+      console.error('Failed to copy page URL:', err);
     }
   };
 
@@ -59,97 +59,97 @@ export function MarkdownCopySelect({
         currentUrl,
       )
     }%20so%20I%20can%20ask%20questions%20about%20it.`;
-    globalThis.open(chatGPTUrl, "_blank");
+    globalThis.open(chatGPTUrl, '_blank');
     setIsOpen(false);
   };
 
   return (
-    <div className="relative" ref={dropdownRef}>
-      <div className="flex rounded-lg border border-border">
+    <div className='relative' ref={dropdownRef}>
+      <div className='flex rounded-lg border border-border'>
         {/* Copy page button */}
         <button
-          type="button"
+          type='button'
           onClick={handleCopyPage}
-          className="flex items-center gap-3 px-3 py-2 rounded-l-lg cursor-pointer hover:bg-muted transition-colors"
+          className='flex items-center gap-3 px-3 py-2 rounded-l-lg cursor-pointer hover:bg-muted transition-colors'
         >
-          <Icon name="Copy" size={16} className="text-muted-foreground" />
-          <span className="text-sm text-muted-foreground leading-none">
+          <Icon name='Copy' size={16} className='text-muted-foreground' />
+          <span className='text-sm text-muted-foreground leading-none'>
             Copy page
           </span>
         </button>
 
         {/* Dropdown trigger */}
         <button
-          type="button"
+          type='button'
           onClick={() => setIsOpen(!isOpen)}
-          className="flex items-center cursor-pointer justify-center w-8 h-8 border-l border-border rounded-r-lg hover:bg-muted transition-colors"
+          className='flex items-center cursor-pointer justify-center w-8 h-8 border-l border-border rounded-r-lg hover:bg-muted transition-colors'
         >
           <Icon
-            name="ChevronDown"
+            name='ChevronDown'
             size={16}
-            className="text-muted-foreground"
+            className='text-muted-foreground'
           />
         </button>
       </div>
 
       {/* Dropdown menu */}
       {isOpen && (
-        <div className="absolute top-full right-0 mt-1 bg-app-background border border-border rounded-lg shadow-lg z-10 min-w-[280px]">
+        <div className='absolute top-full right-0 mt-1 bg-app-background border border-border rounded-lg shadow-lg z-10 min-w-[280px]'>
           <button
-            type="button"
+            type='button'
             onClick={handleCopyPage}
-            className="flex items-start gap-3 w-full px-4 py-3 text-left hover:bg-muted transition-colors rounded-t-lg"
+            className='flex items-start gap-3 w-full px-4 py-3 text-left hover:bg-muted transition-colors rounded-t-lg'
           >
             <Icon
-              name="Copy"
+              name='Copy'
               size={16}
-              className="text-muted-foreground mt-0.5"
+              className='text-muted-foreground mt-0.5'
             />
-            <div className="flex-1">
-              <div className="text-sm font-medium text-foreground">
+            <div className='flex-1'>
+              <div className='text-sm font-medium text-foreground'>
                 Copy page
               </div>
-              <div className="text-xs text-muted-foreground">
+              <div className='text-xs text-muted-foreground'>
                 Copy page as Markdown for LLMs
               </div>
             </div>
           </button>
 
           <button
-            type="button"
+            type='button'
             onClick={handleCopyLink}
-            className="flex items-start gap-3 w-full px-4 py-3 text-left hover:bg-muted transition-colors border-t border-border"
+            className='flex items-start gap-3 w-full px-4 py-3 text-left hover:bg-muted transition-colors border-t border-border'
           >
             <Icon
-              name="Link"
+              name='Link'
               size={16}
-              className="text-muted-foreground mt-0.5"
+              className='text-muted-foreground mt-0.5'
             />
-            <div className="flex-1">
-              <div className="text-sm font-medium text-foreground">
+            <div className='flex-1'>
+              <div className='text-sm font-medium text-foreground'>
                 Copy link
               </div>
-              <div className="text-xs text-muted-foreground">
+              <div className='text-xs text-muted-foreground'>
                 Copy this page URL
               </div>
             </div>
           </button>
 
           <button
-            type="button"
+            type='button'
             onClick={handleOpenInChatGPT}
-            className="flex items-start gap-3 w-full px-4 py-3 text-left hover:bg-muted transition-colors border-t border-border rounded-b-lg"
+            className='flex items-start gap-3 w-full px-4 py-3 text-left hover:bg-muted transition-colors border-t border-border rounded-b-lg'
           >
             <Icon
-              name="ArrowUpRight"
+              name='ArrowUpRight'
               size={16}
-              className="text-muted-foreground mt-0.5"
+              className='text-muted-foreground mt-0.5'
             />
-            <div className="flex-1">
-              <div className="text-sm font-medium text-foreground">
+            <div className='flex-1'>
+              <div className='text-sm font-medium text-foreground'>
                 Open in ChatGPT
               </div>
-              <div className="text-xs text-muted-foreground">
+              <div className='text-xs text-muted-foreground'>
                 Ask questions about this page
               </div>
             </div>

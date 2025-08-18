@@ -1,7 +1,7 @@
-import { type Thread, useThreads } from "@deco/sdk";
-import { cn } from "@deco/ui/lib/utils.ts";
-import { useUser } from "../../hooks/use-user.ts";
-import { useFocusChat } from "../agents/hooks.ts";
+import { type Thread, useThreads } from '@deco/sdk';
+import { cn } from '@deco/ui/lib/utils.ts';
+import { useUser } from '../../hooks/use-user.ts';
+import { useFocusChat } from '../agents/hooks.ts';
 
 interface GroupedThreads {
   today: Thread[];
@@ -10,9 +10,9 @@ interface GroupedThreads {
 }
 
 const formatDate = (date: Date): string => {
-  return date.toLocaleDateString("en-GB", {
-    day: "numeric",
-    month: "short",
+  return date.toLocaleDateString('en-GB', {
+    day: 'numeric',
+    month: 'short',
   });
 };
 
@@ -54,14 +54,13 @@ function Item({ agentId, thread }: { agentId: string; thread: Thread }) {
   return (
     <button
       className={cn(
-        "block text-left w-full",
-        "text-sm font-normal",
-        "truncate rounded-lg px-2 py-1.5 hover:bg-muted",
-        "cursor-pointer",
+        'block text-left w-full',
+        'text-sm font-normal',
+        'truncate rounded-lg px-2 py-1.5 hover:bg-muted',
+        'cursor-pointer',
       )}
-      type="button"
-      onClick={() =>
-        focusChat(agentId, thread.id.replace(`${user?.id ?? ""}-`, ""))}
+      type='button'
+      onClick={() => focusChat(agentId, thread.id.replace(`${user?.id ?? ''}-`, ''))}
     >
       {thread.title}
     </button>
@@ -69,12 +68,12 @@ function Item({ agentId, thread }: { agentId: string; thread: Thread }) {
 }
 
 function Category({ children }: { children: React.ReactNode }) {
-  return <h2 className="text-xs font-semibold px-2 py-1.5">{children}</h2>;
+  return <h2 className='text-xs font-semibold px-2 py-1.5'>{children}</h2>;
 }
 
 function App({ agentId }: { agentId: string }) {
   const user = useUser();
-  const { data } = useThreads({ agentId, resourceId: user?.id ?? "" });
+  const { data } = useThreads({ agentId, resourceId: user?.id ?? '' });
 
   const groupedThreads = groupThreadsByDate(data.threads ?? []);
   const olderDates = Object.keys(groupedThreads.older).sort((a, b) => {
@@ -88,16 +87,16 @@ function App({ agentId }: { agentId: string }) {
   return (
     <div
       className={cn(
-        "p-4 text-foreground w-full max-w-2xl mx-auto space-y-4 inline-block",
+        'p-4 text-foreground w-full max-w-2xl mx-auto space-y-4 inline-block',
       )}
     >
       {hasNoThreads
         ? (
-          <div className="text-center py-12">
-            <h2 className="text-lg font-medium text-foreground mb-2">
+          <div className='text-center py-12'>
+            <h2 className='text-lg font-medium text-foreground mb-2'>
               No conversations yet
             </h2>
-            <p className="text-sm text-muted-foreground">
+            <p className='text-sm text-muted-foreground'>
               Start a new conversation to begin chatting with this agent.
             </p>
           </div>
@@ -105,7 +104,7 @@ function App({ agentId }: { agentId: string }) {
         : (
           <>
             {groupedThreads.today.length > 0 && (
-              <div className="flex flex-col items-start w-full">
+              <div className='flex flex-col items-start w-full'>
                 <Category>Today</Category>
                 {groupedThreads.today.map((thread) => (
                   <Item key={thread.id} agentId={agentId} thread={thread} />
@@ -114,7 +113,7 @@ function App({ agentId }: { agentId: string }) {
             )}
 
             {groupedThreads.yesterday.length > 0 && (
-              <div className="flex flex-col items-start w-full">
+              <div className='flex flex-col items-start w-full'>
                 <Category>Yesterday</Category>
                 {groupedThreads.yesterday.map((thread) => (
                   <Item key={thread.id} agentId={agentId} thread={thread} />
@@ -123,7 +122,7 @@ function App({ agentId }: { agentId: string }) {
             )}
 
             {olderDates.map((date) => (
-              <div key={date} className="flex flex-col items-start w-full">
+              <div key={date} className='flex flex-col items-start w-full'>
                 <Category>{date}</Category>
                 {groupedThreads.older[date].map((thread) => (
                   <Item key={thread.id} agentId={agentId} thread={thread} />

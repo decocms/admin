@@ -1,10 +1,4 @@
-import {
-  type ChangeEvent,
-  useCallback,
-  useDeferredValue,
-  useMemo,
-  useState,
-} from "react";
+import { type ChangeEvent, useCallback, useDeferredValue, useMemo, useState } from 'react';
 import {
   type Member,
   useInviteTeamMember,
@@ -14,30 +8,27 @@ import {
   useTeamMembers,
   useTeamRoles,
   useUpdateMemberRole,
-} from "@deco/sdk";
-import { Button } from "@deco/ui/components/button.tsx";
+} from '@deco/sdk';
+import { Button } from '@deco/ui/components/button.tsx';
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from "@deco/ui/components/dropdown-menu.tsx";
-import { Icon } from "@deco/ui/components/icon.tsx";
-import { Input } from "@deco/ui/components/input.tsx";
-import { useIsMobile } from "@deco/ui/hooks/use-mobile.ts";
-import { UserAvatar } from "../../common/avatar/user.tsx";
-import { InviteTeamMembersDialog } from "../../common/invite-team-members-dialog.tsx";
-import { toast } from "@deco/ui/components/sonner.tsx";
-import { Table, type TableColumn } from "../../common/table/index.tsx";
-import {
-  ActivityStatusCell,
-  UserInfo,
-} from "../../common/table/table-cells.tsx";
-import { MultiSelect } from "@deco/ui/components/multi-select.tsx";
+} from '@deco/ui/components/dropdown-menu.tsx';
+import { Icon } from '@deco/ui/components/icon.tsx';
+import { Input } from '@deco/ui/components/input.tsx';
+import { useIsMobile } from '@deco/ui/hooks/use-mobile.ts';
+import { UserAvatar } from '../../common/avatar/user.tsx';
+import { InviteTeamMembersDialog } from '../../common/invite-team-members-dialog.tsx';
+import { toast } from '@deco/ui/components/sonner.tsx';
+import { Table, type TableColumn } from '../../common/table/index.tsx';
+import { ActivityStatusCell, UserInfo } from '../../common/table/table-cells.tsx';
+import { MultiSelect } from '@deco/ui/components/multi-select.tsx';
 
 // Types and Interfaces
 interface MemberTableRow {
-  type: "member" | "invite";
+  type: 'member' | 'invite';
   id: string | number;
   name: string;
   email: string;
@@ -84,18 +75,18 @@ function MemberTableHeader({
   );
 
   return (
-    <div className="flex items-center justify-between">
+    <div className='flex items-center justify-between'>
       <Input
-        placeholder="Search"
+        placeholder='Search'
         onChange={handleChange}
-        className="w-80"
+        className='w-80'
         disabled={disabled}
       />
       <InviteTeamMembersDialog
         teamId={teamId}
         trigger={
           <Button>
-            <Icon name="person_add" />
+            <Icon name='person_add' />
             Invite members
           </Button>
         }
@@ -118,9 +109,9 @@ export function MembersTableView({ teamId, user }: MembersTableViewProps) {
   const updateMemberRoleMutation = useUpdateMemberRole();
 
   // Local state
-  const [query, setQuery] = useState("");
-  const [sortKey, setSortKey] = useState<string>("name");
-  const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc");
+  const [query, setQuery] = useState('');
+  const [sortKey, setSortKey] = useState<string>('name');
+  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
   const [resendingInviteId, setResendingInviteId] = useState<string | null>(
     null,
   );
@@ -131,7 +122,7 @@ export function MembersTableView({ teamId, user }: MembersTableViewProps) {
   // Convert members and invites to unified data structure with memoization
   const tableData = useMemo((): MemberTableRow[] => {
     const memberRows: MemberTableRow[] = members.map((member) => ({
-      type: "member" as const,
+      type: 'member' as const,
       id: member.id,
       name: getMemberName(member),
       email: member.profiles.email,
@@ -143,7 +134,7 @@ export function MembersTableView({ teamId, user }: MembersTableViewProps) {
     }));
 
     const inviteRows: MemberTableRow[] = invites.map((invite) => ({
-      type: "invite" as const,
+      type: 'invite' as const,
       id: invite.id,
       name: invite.email,
       email: invite.email,
@@ -173,8 +164,8 @@ export function MembersTableView({ teamId, user }: MembersTableViewProps) {
       try {
         await removeMemberMutation.mutateAsync({ teamId, memberId });
       } catch (error) {
-        console.error("Failed to remove team member:", error);
-        toast.error("Failed to remove team member");
+        console.error('Failed to remove team member:', error);
+        toast.error('Failed to remove team member');
       }
     },
     [teamId, removeMemberMutation],
@@ -193,19 +184,19 @@ export function MembersTableView({ teamId, user }: MembersTableViewProps) {
           userId,
           roleId: role.id,
           roleName: role.name,
-          action: checked ? "grant" : "revoke",
+          action: checked ? 'grant' : 'revoke',
         });
         toast.success(
-          checked ? "Role assigned successfully" : "Role removed successfully",
+          checked ? 'Role assigned successfully' : 'Role removed successfully',
         );
       } catch (error) {
-        const errorMessage = (typeof error === "object" &&
+        const errorMessage = (typeof error === 'object' &&
           !!error &&
-          "message" in error &&
+          'message' in error &&
           (error.message as string)) ||
-          "Failed to update role";
+          'Failed to update role';
         toast.error(errorMessage);
-        console.error("Failed to update member role:", error);
+        console.error('Failed to update member role:', error);
       }
     },
     [teamId, updateMemberRoleMutation],
@@ -215,30 +206,28 @@ export function MembersTableView({ teamId, user }: MembersTableViewProps) {
   const columns: TableColumn<MemberTableRow>[] = useMemo(() => {
     const baseColumns: TableColumn<MemberTableRow>[] = [
       {
-        id: "name",
-        header: "Name",
+        id: 'name',
+        header: 'Name',
         render: (row) => {
           // For actual members, use the standardized UserInfo component
-          if (row.type === "member" && row.userId) {
-            return (
-              <UserInfo userId={row.userId} showDetails maxWidth="250px" />
-            );
+          if (row.type === 'member' && row.userId) {
+            return <UserInfo userId={row.userId} showDetails maxWidth='250px' />;
           }
 
           // For pending invites, use custom implementation since they don't have userId yet
           return (
-            <div className="flex gap-2 items-center min-w-[48px]">
-              <UserAvatar fallback={row.email} size="sm" muted />
-              <div className="flex flex-col items-start text-left leading-tight w-full">
+            <div className='flex gap-2 items-center min-w-[48px]'>
+              <UserAvatar fallback={row.email} size='sm' muted />
+              <div className='flex flex-col items-start text-left leading-tight w-full'>
                 <span
-                  className="truncate block text-xs font-medium text-foreground"
-                  style={{ maxWidth: "250px" }}
+                  className='truncate block text-xs font-medium text-foreground'
+                  style={{ maxWidth: '250px' }}
                 >
                   {row.email}
                 </span>
                 <span
-                  className="truncate block text-xs font-normal text-muted-foreground"
-                  style={{ maxWidth: "250px" }}
+                  className='truncate block text-xs font-normal text-muted-foreground'
+                  style={{ maxWidth: '250px' }}
                 >
                   Pending
                 </span>
@@ -249,18 +238,18 @@ export function MembersTableView({ teamId, user }: MembersTableViewProps) {
         sortable: true,
       },
       {
-        id: "roles",
-        header: "Roles",
+        id: 'roles',
+        header: 'Roles',
         render: (row) => {
           if (roles.length === 0) {
             return (
-              <span className="text-muted-foreground text-sm">
+              <span className='text-muted-foreground text-sm'>
                 No roles available
               </span>
             );
           }
 
-          if (row.type === "member" && row.member) {
+          if (row.type === 'member' && row.member) {
             const selectedRoleIds = row.roles.map((r) => r.id.toString());
             const roleOptions = roles.map((role) => ({
               label: role.name,
@@ -295,17 +284,15 @@ export function MembersTableView({ teamId, user }: MembersTableViewProps) {
                     );
                   }
                 }}
-                placeholder="Select roles"
-                variant="secondary"
-                className="w-[240px]"
+                placeholder='Select roles'
+                variant='secondary'
+                className='w-[240px]'
                 disabled={updateMemberRoleMutation.isPending}
                 maxCount={2}
               />
             );
-          } else if (row.type === "invite" && row.invite) {
-            const selectedRoleIds = row.invite.roles.map((r) =>
-              r.id.toString()
-            );
+          } else if (row.type === 'invite' && row.invite) {
+            const selectedRoleIds = row.invite.roles.map((r) => r.id.toString());
             const roleOptions = roles.map((role) => ({
               label: role.name,
               value: role.id.toString(),
@@ -316,9 +303,9 @@ export function MembersTableView({ teamId, user }: MembersTableViewProps) {
                 options={roleOptions}
                 defaultValue={selectedRoleIds}
                 onValueChange={() => {}} // No-op for invites
-                placeholder="Select roles"
-                variant="secondary"
-                className="w-[240px]"
+                placeholder='Select roles'
+                variant='secondary'
+                className='w-[240px]'
                 disabled
                 maxCount={2}
               />
@@ -333,8 +320,8 @@ export function MembersTableView({ teamId, user }: MembersTableViewProps) {
     // Add Last Activity column if not mobile
     if (!isMobile) {
       baseColumns.push({
-        id: "lastActivity",
-        header: "Last active",
+        id: 'lastActivity',
+        header: 'Last active',
         render: (row) => <ActivityStatusCell lastActivity={row.lastActivity} />,
         sortable: true,
       });
@@ -342,18 +329,18 @@ export function MembersTableView({ teamId, user }: MembersTableViewProps) {
 
     // Add actions column
     baseColumns.push({
-      id: "actions",
-      header: "",
+      id: 'actions',
+      header: '',
       render: (row) => (
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant="ghost" size="icon">
-              <span className="sr-only">Open menu</span>
-              <Icon name="more_horiz" />
+            <Button variant='ghost' size='icon'>
+              <span className='sr-only'>Open menu</span>
+              <Icon name='more_horiz' />
             </Button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            {row.type === "invite" && row.invite && (
+          <DropdownMenuContent align='end'>
+            {row.type === 'invite' && row.invite && (
               <DropdownMenuItem
                 onClick={async () => {
                   setResendingInviteId(row.invite!.id.toString());
@@ -368,9 +355,9 @@ export function MembersTableView({ teamId, user }: MembersTableViewProps) {
                         },
                       ],
                     });
-                    toast.success("Invitation resent");
+                    toast.success('Invitation resent');
                   } catch {
-                    toast.error("Failed to resend invitation");
+                    toast.error('Failed to resend invitation');
                   } finally {
                     setResendingInviteId(null);
                   }
@@ -378,22 +365,22 @@ export function MembersTableView({ teamId, user }: MembersTableViewProps) {
                 disabled={resendingInviteId === row.invite.id.toString() ||
                   inviteTeamMember.isPending}
               >
-                <Icon name="mail" />
+                <Icon name='mail' />
                 {resendingInviteId === row.invite.id.toString() ||
                     inviteTeamMember.isPending
-                  ? "Resending..."
-                  : "Resend invite"}
+                  ? 'Resending...'
+                  : 'Resend invite'}
               </DropdownMenuItem>
             )}
             <DropdownMenuItem
-              variant="destructive"
+              variant='destructive'
               onClick={() => {
-                if (row.type === "invite" && row.invite && teamId) {
+                if (row.type === 'invite' && row.invite && teamId) {
                   rejectInvite.mutateAsync({
                     id: String(row.invite.id),
                     teamId,
                   });
-                } else if (row.type === "member" && row.member) {
+                } else if (row.type === 'member' && row.member) {
                   handleRemoveMember(row.member.id);
                 }
               }}
@@ -401,39 +388,39 @@ export function MembersTableView({ teamId, user }: MembersTableViewProps) {
                 rejectInvite.isPending}
             >
               {(() => {
-                const isCurrentUser = row.type === "member" &&
+                const isCurrentUser = row.type === 'member' &&
                   row.userId &&
                   user &&
                   row.userId === user.id;
 
-                if (row.type === "invite") {
+                if (row.type === 'invite') {
                   return (
                     <>
-                      <Icon name="delete" />
+                      <Icon name='delete' />
                       {rejectInvite.isPending &&
                           rejectInvite.variables?.id === row.id
-                        ? "Removing..."
-                        : "Delete invitation"}
+                        ? 'Removing...'
+                        : 'Delete invitation'}
                     </>
                   );
                 } else if (isCurrentUser) {
                   return (
                     <>
-                      <Icon name="waving_hand" />
+                      <Icon name='waving_hand' />
                       {removeMemberMutation.isPending &&
                           removeMemberMutation.variables?.memberId === row.id
-                        ? "Leaving..."
-                        : "Leave team"}
+                        ? 'Leaving...'
+                        : 'Leave team'}
                     </>
                   );
                 } else {
                   return (
                     <>
-                      <Icon name="waving_hand" />
+                      <Icon name='waving_hand' />
                       {removeMemberMutation.isPending &&
                           removeMemberMutation.variables?.memberId === row.id
-                        ? "Removing..."
-                        : "Remove Member"}
+                        ? 'Removing...'
+                        : 'Remove Member'}
                     </>
                   );
                 }
@@ -467,20 +454,18 @@ export function MembersTableView({ teamId, user }: MembersTableViewProps) {
   const getSortValue = useCallback(
     (row: MemberTableRow, key: string): string => {
       switch (key) {
-        case "name":
+        case 'name':
           return row.name.toLowerCase();
-        case "roles":
+        case 'roles':
           return row.roles
             .map((r) => r.name)
             .sort()
-            .join(",")
+            .join(',')
             .toLowerCase();
-        case "lastActivity":
-          return row.lastActivity
-            ? new Date(row.lastActivity).getTime().toString()
-            : "0";
+        case 'lastActivity':
+          return row.lastActivity ? new Date(row.lastActivity).getTime().toString() : '0';
         default:
-          return "";
+          return '';
       }
     },
     [],
@@ -489,12 +474,10 @@ export function MembersTableView({ teamId, user }: MembersTableViewProps) {
   const handleSort = useCallback(
     (key: string) => {
       if (sortKey === key) {
-        setSortDirection((prev: "asc" | "desc") =>
-          prev === "asc" ? "desc" : "asc"
-        );
+        setSortDirection((prev: 'asc' | 'desc') => prev === 'asc' ? 'desc' : 'asc');
       } else {
         setSortKey(key);
-        setSortDirection("asc");
+        setSortDirection('asc');
       }
     },
     [sortKey],
@@ -506,8 +489,8 @@ export function MembersTableView({ teamId, user }: MembersTableViewProps) {
       const aVal = getSortValue(a, sortKey);
       const bVal = getSortValue(b, sortKey);
 
-      if (aVal < bVal) return sortDirection === "asc" ? -1 : 1;
-      if (aVal > bVal) return sortDirection === "asc" ? 1 : -1;
+      if (aVal < bVal) return sortDirection === 'asc' ? -1 : 1;
+      if (aVal > bVal) return sortDirection === 'asc' ? 1 : -1;
       return 0;
     });
   }, [filteredData, sortKey, sortDirection, getSortValue]);
@@ -517,7 +500,7 @@ export function MembersTableView({ teamId, user }: MembersTableViewProps) {
       <MemberTableHeader onChange={setQuery} teamId={teamId} />
       {members.length === 0
         ? (
-          <div className="text-center py-8 text-muted-foreground">
+          <div className='text-center py-8 text-muted-foreground'>
             No members found. Add team members to get started.
           </div>
         )

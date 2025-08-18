@@ -1,13 +1,13 @@
 // Fallback fetch for Node.js (local dev)
 let localFetch: typeof fetch = globalThis.fetch;
 try {
-  if (typeof fetch === "undefined") {
+  if (typeof fetch === 'undefined') {
     // eslint-disable-next-line @typescript-eslint/no-var-requires
-    localFetch = require("node-fetch");
+    localFetch = require('node-fetch');
   }
 } catch {}
 
-import { parseHtml } from "./parser";
+import { parseHtml } from './parser';
 
 // Public result interface
 export interface LinkAnalysisResult {
@@ -36,15 +36,15 @@ async function headOrGet(url: string, timeoutMs: number): Promise<number> {
   const t = setTimeout(() => ctrl.abort(), timeoutMs);
   try {
     const res = await localFetch(url, {
-      method: "HEAD",
-      redirect: "follow",
+      method: 'HEAD',
+      redirect: 'follow',
       signal: ctrl.signal,
     });
     if (res.status === 405 || res.status === 501) {
       // Some servers disallow HEAD
       const resGet = await localFetch(url, {
-        method: "GET",
-        redirect: "follow",
+        method: 'GET',
+        redirect: 'follow',
         signal: ctrl.signal,
       });
       return resGet.status;
@@ -57,21 +57,21 @@ async function headOrGet(url: string, timeoutMs: number): Promise<number> {
   }
 }
 
-const APP_ORIGIN = (typeof process !== "undefined" &&
+const APP_ORIGIN = (typeof process !== 'undefined' &&
   process.env &&
   (process.env.PUBLIC_APP_ORIGIN || process.env.PUBLIC_APP_URL)) ||
-  "https://seo-ecommercex.deco.page";
+  'https://seo-ecommercex.deco.page';
 
 export async function analyzeLinks(url: string): Promise<LinkAnalysisResult> {
   const start = Date.now();
-  let html = "";
+  let html = '';
   let status = 0;
   const notes: string[] = [];
   try {
     const res = await localFetch(url, {
-      method: "GET",
-      redirect: "follow",
-      headers: { "User-Agent": `DecoLinkAnalyzer/1.0 (+${APP_ORIGIN}/)` },
+      method: 'GET',
+      redirect: 'follow',
+      headers: { 'User-Agent': `DecoLinkAnalyzer/1.0 (+${APP_ORIGIN}/)` },
     });
     status = res.status;
     if (!res.ok) {
@@ -94,13 +94,13 @@ export async function analyzeLinks(url: string): Promise<LinkAnalysisResult> {
         canonical: undefined,
         seoScore: 50,
         links: [],
-        notes: notes.concat("Retorno parcial (stub, fetch falhou)").join("; "),
+        notes: notes.concat('Retorno parcial (stub, fetch falhou)').join('; '),
       };
     }
     const buf = await res.arrayBuffer();
     const slice = buf.byteLength > 512 * 1024 ? buf.slice(0, 512 * 1024) : buf;
-    html = new TextDecoder("utf-8").decode(slice);
-    if (buf.byteLength > slice.byteLength) notes.push("HTML truncado a 500KB");
+    html = new TextDecoder('utf-8').decode(slice);
+    if (buf.byteLength > slice.byteLength) notes.push('HTML truncado a 500KB');
   } catch (e) {
     const err = e as Error;
     notes.push(`Falha no fetch principal: ${err.message}`);
@@ -122,7 +122,7 @@ export async function analyzeLinks(url: string): Promise<LinkAnalysisResult> {
       canonical: undefined,
       seoScore: 50,
       links: [],
-      notes: notes.concat("Retorno parcial (stub, fetch falhou)").join("; "),
+      notes: notes.concat('Retorno parcial (stub, fetch falhou)').join('; '),
     };
   }
 
@@ -152,21 +152,21 @@ export async function analyzeLinks(url: string): Promise<LinkAnalysisResult> {
   let score = 100;
   if (!title) {
     score -= 10;
-    notes.push("Sem <title>");
+    notes.push('Sem <title>');
   }
   if (title.length < 15 || title.length > 65) score -= 5;
   if (!metaDescription) {
     score -= 8;
-    notes.push("Sem meta description");
+    notes.push('Sem meta description');
   } else if (metaDescription.length < 50 || metaDescription.length > 165) {
     score -= 4;
   }
   if (h1Count === 0) {
     score -= 6;
-    notes.push("Sem H1");
+    notes.push('Sem H1');
   } else if (h1Count > 2) {
     score -= 4;
-    notes.push("H1s excessivos");
+    notes.push('H1s excessivos');
   }
   if (imagesMissingAlt > 0) score -= Math.min(10, imagesMissingAlt);
   if (broken > 0) score -= Math.min(20, broken * 2);
@@ -175,7 +175,7 @@ export async function analyzeLinks(url: string): Promise<LinkAnalysisResult> {
   if (links.length > 300) score -= 5;
   const seoScore = Math.max(0, Math.min(100, score));
 
-  if (Date.now() - start > 15000) notes.push("Análise demorou >15s (parcial)");
+  if (Date.now() - start > 15000) notes.push('Análise demorou >15s (parcial)');
 
   return {
     url,
@@ -195,6 +195,6 @@ export async function analyzeLinks(url: string): Promise<LinkAnalysisResult> {
     canonical: canonical || undefined,
     seoScore,
     links,
-    notes: notes.length ? notes.join("; ") : undefined,
+    notes: notes.length ? notes.join('; ') : undefined,
   };
 }

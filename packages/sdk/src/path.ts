@@ -1,4 +1,4 @@
-import { join } from "node:path/posix";
+import { join } from 'node:path/posix';
 
 export type Workspace = `/users/${string}` | `/shared/${string}`;
 
@@ -14,8 +14,8 @@ export type Workspace = `/users/${string}` | `/shared/${string}`;
  * @property {object} files - Namespace for file paths within the Webdraw file system.
  */
 export const Path = {
-  root: "/", // Root directory for the Webdraw file system
-  separator: "/", // Path separator for the Webdraw file system
+  root: '/', // Root directory for the Webdraw file system
+  separator: '/', // Path separator for the Webdraw file system
   resolveHome: (path: string, homePath: string) => {
     const [woLeadingSlash, absolutePath] = path.startsWith(Path.separator)
       ? [path.slice(1), path]
@@ -33,14 +33,13 @@ export const Path = {
     return Path.resolveHome(path, Path.folders.users.home(userId));
   },
   folders: {
-    trigger: (triggerId: string) =>
-      join(Path.folders.triggers(), `${triggerId}`),
-    triggers: () => join(Path.root, "triggers"),
-    home: "~", // Home directory for the Webdraw file system
+    trigger: (triggerId: string) => join(Path.folders.triggers(), `${triggerId}`),
+    triggers: () => join(Path.root, 'triggers'),
+    home: '~', // Home directory for the Webdraw file system
     users: {
-      home: (userId = "unknown") => join(Path.root, `users/${userId}`),
+      home: (userId = 'unknown') => join(Path.root, `users/${userId}`),
     },
-    Agents: () => join(Path.folders.home, "Agents"),
+    Agents: () => join(Path.folders.home, 'Agents'),
     Agent: {
       root: (id: string) => join(Path.folders.Agents(), id),
     },
@@ -48,9 +47,9 @@ export const Path = {
   files: {
     users: {
       home: {
-        ".config": {
+        '.config': {
           sidebar: (userId: string) =>
-            join(Path.folders.users.home(userId), ".config", "sidebar.json"),
+            join(Path.folders.users.home(userId), '.config', 'sidebar.json'),
         },
       },
     },

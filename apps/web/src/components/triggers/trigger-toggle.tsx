@@ -1,7 +1,7 @@
-import { useActivateTrigger, useDeactivateTrigger } from "@deco/sdk";
-import type { TriggerOutput } from "@deco/sdk";
-import { Switch } from "@deco/ui/components/switch.tsx";
-import { useState } from "react";
+import { useActivateTrigger, useDeactivateTrigger } from '@deco/sdk';
+import type { TriggerOutput } from '@deco/sdk';
+import { Switch } from '@deco/ui/components/switch.tsx';
+import { useState } from 'react';
 
 export function TriggerToggle({ trigger }: { trigger: TriggerOutput }) {
   const [isActive, setIsActive] = useState(trigger.active);
@@ -36,7 +36,7 @@ export function TriggerToggle({ trigger }: { trigger: TriggerOutput }) {
   return (
     <div onClick={handleClick}>
       <Switch
-        className="cursor-pointer"
+        className='cursor-pointer'
         checked={isActive}
         onCheckedChange={handleToggle}
       />

@@ -1,12 +1,12 @@
-"use client";
+'use client';
 
-import * as React from "react";
+import * as React from 'react';
 
-import { cn } from "../lib/utils.ts";
-import { Badge } from "./badge.tsx";
-import { Button } from "./button.tsx";
-import { Checkbox } from "./checkbox.tsx";
-import { Icon } from "./icon.tsx";
+import { cn } from '../lib/utils.ts';
+import { Badge } from './badge.tsx';
+import { Button } from './button.tsx';
+import { Checkbox } from './checkbox.tsx';
+import { Icon } from './icon.tsx';
 import {
   Command,
   CommandEmpty,
@@ -14,8 +14,8 @@ import {
   CommandInput,
   CommandItem,
   CommandList,
-} from "./command.tsx";
-import { Popover, PopoverContent, PopoverTrigger } from "./popover.tsx";
+} from './command.tsx';
+import { Popover, PopoverContent, PopoverTrigger } from './popover.tsx';
 
 export interface Option {
   label: string;
@@ -28,7 +28,7 @@ interface MultiSelectProps {
   onValueChange: (value: string[]) => void;
   defaultValue?: string[];
   placeholder?: string;
-  variant?: "default" | "secondary" | "destructive" | "outline";
+  variant?: 'default' | 'secondary' | 'destructive' | 'outline';
   animation?: number;
   maxCount?: number;
   modalPopover?: boolean;
@@ -41,8 +41,8 @@ export function MultiSelect({
   options,
   onValueChange,
   defaultValue = [],
-  placeholder = "Select items",
-  variant = "default",
+  placeholder = 'Select items',
+  variant = 'default',
   animation = 0,
   maxCount = 3,
   modalPopover = false,
@@ -62,10 +62,10 @@ export function MultiSelect({
   }, [defaultValue, selectedValues]);
 
   const handleInputKeyDown = (event: React.KeyboardEvent) => {
-    if (event.key === "Enter") {
+    if (event.key === 'Enter') {
       setIsPopoverOpen(true);
     } else if (
-      event.key === "Backspace" &&
+      event.key === 'Backspace' &&
       !(event.currentTarget as HTMLInputElement).value
     ) {
       const newSelectedValues = [...selectedValues];
@@ -114,93 +114,89 @@ export function MultiSelect({
       <PopoverTrigger asChild>
         <Button
           ref={null}
-          {...(asChild ? {} : { variant: "outline" })}
+          {...(asChild ? {} : { variant: 'outline' })}
           onClick={handleTogglePopover}
           className={cn(
-            "border-input data-[placeholder]:text-muted-foreground focus-visible:border-ring focus-visible:ring-ring/50 aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive dark:bg-input/30 dark:hover:bg-input/50 flex w-full max-w-xs items-center justify-between gap-2 rounded-xl border bg-transparent px-3 py-2 text-sm shadow-xs transition-[color,box-shadow] outline-none focus-visible:ring-[3px] disabled:cursor-not-allowed disabled:opacity-50 h-10 min-h-10",
+            'border-input data-[placeholder]:text-muted-foreground focus-visible:border-ring focus-visible:ring-ring/50 aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive dark:bg-input/30 dark:hover:bg-input/50 flex w-full max-w-xs items-center justify-between gap-2 rounded-xl border bg-transparent px-3 py-2 text-sm shadow-xs transition-[color,box-shadow] outline-none focus-visible:ring-[3px] disabled:cursor-not-allowed disabled:opacity-50 h-10 min-h-10',
             className,
           )}
           disabled={disabled}
         >
           {selectedValues.length > 0
             ? (
-              <div className="flex items-center justify-between w-full min-w-0">
-                <div className="flex items-center gap-1 min-w-0 flex-1">
+              <div className='flex items-center justify-between w-full min-w-0'>
+                <div className='flex items-center gap-1 min-w-0 flex-1'>
                   {selectedValues.slice(0, maxCount).map((value) => {
                     const option = options.find((o) => o.value === value);
                     const IconComponent = option?.icon;
                     return (
                       <Badge
                         key={value}
-                        variant={variant === "default"
-                          ? "default"
-                          : "secondary"}
-                        className="max-w-24"
+                        variant={variant === 'default' ? 'default' : 'secondary'}
+                        className='max-w-24'
                         style={{ animationDuration: `${animation}s` }}
                       >
-                        {IconComponent && (
-                          <IconComponent className="h-3 w-3 shrink-0" />
-                        )}
-                        <span className="truncate">{option?.label}</span>
+                        {IconComponent && <IconComponent className='h-3 w-3 shrink-0' />}
+                        <span className='truncate'>{option?.label}</span>
                       </Badge>
                     );
                   })}
                   {selectedValues.length > maxCount && (
                     <Badge
-                      variant={variant === "default" ? "default" : "secondary"}
-                      className="flex-shrink-0"
+                      variant={variant === 'default' ? 'default' : 'secondary'}
+                      className='flex-shrink-0'
                       style={{ animationDuration: `${animation}s` }}
                     >
                       +{selectedValues.length - maxCount}
                     </Badge>
                   )}
                 </div>
-                <div className="flex items-center shrink-0 ml-2">
+                <div className='flex items-center shrink-0 ml-2'>
                   <Icon
-                    name="keyboard_arrow_down"
+                    name='keyboard_arrow_down'
                     size={20}
-                    className="shrink-0 opacity-50"
+                    className='shrink-0 opacity-50'
                   />
                 </div>
               </div>
             )
             : (
-              <div className="flex items-center justify-between w-full">
-                <span className="text-sm text-muted-foreground">
+              <div className='flex items-center justify-between w-full'>
+                <span className='text-sm text-muted-foreground'>
                   {placeholder}
                 </span>
                 <Icon
-                  name="keyboard_arrow_down"
+                  name='keyboard_arrow_down'
                   size={20}
-                  className="shrink-0 opacity-50"
+                  className='shrink-0 opacity-50'
                 />
               </div>
             )}
         </Button>
       </PopoverTrigger>
       <PopoverContent
-        className="w-auto p-0 max-w-xs rounded-xl"
-        align="start"
+        className='w-auto p-0 max-w-xs rounded-xl'
+        align='start'
         onEscapeKeyDown={() => setIsPopoverOpen(false)}
       >
-        <Command className="rounded-xl">
+        <Command className='rounded-xl'>
           <CommandInput
-            placeholder="Search..."
+            placeholder='Search...'
             onKeyDown={handleInputKeyDown}
-            className="rounded-t-xl"
+            className='rounded-t-xl'
           />
-          <CommandList className="rounded-b-xl">
+          <CommandList className='rounded-b-xl'>
             <CommandEmpty>No results found.</CommandEmpty>
             <CommandGroup>
               <CommandItem
-                key="all"
+                key='all'
                 onSelect={() => {
                   toggleAll();
                 }}
-                className="cursor-pointer"
+                className='cursor-pointer'
               >
                 <div
-                  className="flex items-center w-full"
+                  className='flex items-center w-full'
                   onClick={(e) => {
                     e.stopPropagation();
                     toggleAll();
@@ -210,7 +206,7 @@ export function MultiSelect({
                     checked={selectedValues.length === options.length &&
                       options.length > 0}
                     onCheckedChange={toggleAll}
-                    className="mr-2 [&_svg]:!text-primary-foreground"
+                    className='mr-2 [&_svg]:!text-primary-foreground'
                     onClick={(e) => e.stopPropagation()}
                   />
                   <span>(Select All)</span>
@@ -224,10 +220,10 @@ export function MultiSelect({
                     onSelect={() => {
                       toggleOption(option);
                     }}
-                    className="cursor-pointer"
+                    className='cursor-pointer'
                   >
                     <div
-                      className="flex items-center w-full"
+                      className='flex items-center w-full'
                       onClick={(e) => {
                         e.stopPropagation();
                         toggleOption(option);
@@ -238,11 +234,11 @@ export function MultiSelect({
                         onCheckedChange={() => {
                           toggleOption(option);
                         }}
-                        className="mr-2 [&_svg]:!text-primary-foreground"
+                        className='mr-2 [&_svg]:!text-primary-foreground'
                         onClick={(e) => e.stopPropagation()}
                       />
                       {option.icon && (
-                        <option.icon className="mr-2 h-4 w-4 text-muted-foreground" />
+                        <option.icon className='mr-2 h-4 w-4 text-muted-foreground' />
                       )}
                       <span>{option.label}</span>
                     </div>

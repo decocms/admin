@@ -137,18 +137,18 @@ Atomic functions that call external APIs, databases, or AI models. All templates
 include the necessary imports from the Deco Workers runtime.
 
 ```ts
-import { createTool, Env, z } from "deco/mod.ts";
+import { createTool, Env, z } from 'deco/mod.ts';
 
 const createMyTool = (env: Env) =>
   createTool({
-    id: "MY_TOOL",
-    description: "Describe what it does",
+    id: 'MY_TOOL',
+    description: 'Describe what it does',
     inputSchema: z.object({ query: z.string() }),
     outputSchema: z.object({ answer: z.string() }),
     execute: async ({ context }) => {
       const res = await env.OPENAI.CHAT_COMPLETIONS({
-        model: "gpt-4o",
-        messages: [{ role: "user", content: context.query }],
+        model: 'gpt-4o',
+        messages: [{ role: 'user', content: context.query }],
       });
       return { answer: res.choices[0].message.content };
     },
@@ -169,10 +169,10 @@ Orchestrate tools using **Mastra** operators like `.then`, `.parallel`,
 > assistant for autocomplete and examples.
 
 ```ts
-import { createStepFromTool, createWorkflow } from "deco/mod.ts";
+import { createStepFromTool, createWorkflow } from 'deco/mod.ts';
 
 return createWorkflow({
-  id: "HELLO_WORLD",
+  id: 'HELLO_WORLD',
   inputSchema: z.object({ name: z.string() }),
   outputSchema: z.object({ greeting: z.string() }),
 })

@@ -1,8 +1,8 @@
-import React, { useEffect, useState } from "react";
-import { Logo } from "../../components/atoms/Logo.tsx";
-import { Icon } from "../../components/atoms/Icon.tsx";
-import { LanguageSelector } from "./LanguageSelector.tsx";
-import { ThemeToggle } from "./ThemeToggle.tsx";
+import React, { useEffect, useState } from 'react';
+import { Logo } from '../../components/atoms/Logo.tsx';
+import { Icon } from '../../components/atoms/Icon.tsx';
+import { LanguageSelector } from './LanguageSelector.tsx';
+import { ThemeToggle } from './ThemeToggle.tsx';
 
 // GitHub Stars Component
 function GitHubStars() {
@@ -13,14 +13,14 @@ function GitHubStars() {
     const fetchStars = async () => {
       try {
         const response = await fetch(
-          "https://api.github.com/repos/deco-cx/chat",
+          'https://api.github.com/repos/deco-cx/chat',
         );
         if (response.ok) {
           const data = await response.json();
           setStars(data.stargazers_count);
         }
       } catch (error) {
-        console.error("Failed to fetch GitHub stars:", error);
+        console.error('Failed to fetch GitHub stars:', error);
       } finally {
         setLoading(false);
       }
@@ -31,9 +31,9 @@ function GitHubStars() {
 
   if (loading) {
     return (
-      <div className="flex items-center gap-1 text-star">
-        <Icon name="Star" size={14} />
-        <span className="text-xs">...</span>
+      <div className='flex items-center gap-1 text-star'>
+        <Icon name='Star' size={14} />
+        <span className='text-xs'>...</span>
       </div>
     );
   }
@@ -43,9 +43,9 @@ function GitHubStars() {
   }
 
   return (
-    <div className="flex items-center gap-1 text-star">
-      <Icon name="Star" size={14} />
-      <span className="text-xs">{stars.toLocaleString()}</span>
+    <div className='flex items-center gap-1 text-star'>
+      <Icon name='Star' size={14} />
+      <span className='text-xs'>{stars.toLocaleString()}</span>
     </div>
   );
 }
@@ -63,7 +63,7 @@ interface Doc {
 
 interface TreeNode {
   name: string;
-  type: "file" | "folder";
+  type: 'file' | 'folder';
   children: TreeNode[];
   doc?: Doc;
   path: string[];
@@ -72,7 +72,7 @@ interface TreeNode {
 
 interface FlatNode {
   name: string;
-  type: "file" | "folder";
+  type: 'file' | 'folder';
   doc?: Doc;
   path: string[];
   depth: number;
@@ -109,10 +109,10 @@ function TreeItem({
   const [active, setActive] = useState(false);
 
   useEffect(() => {
-    if (node.type !== "file") return;
+    if (node.type !== 'file') return;
 
     const currentPath = globalThis.location.pathname;
-    const itemPath = `/${locale}/${node.path.join("/")}`;
+    const itemPath = `/${locale}/${node.path.join('/')}`;
 
     setActive(currentPath === itemPath);
   }, [node.type, node.path, locale]);
@@ -122,22 +122,22 @@ function TreeItem({
       <div
         className={`flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-colors cursor-pointer ${
           active
-            ? "bg-primary/5 text-primary" // Active state
-            : node.type === "folder"
-            ? "text-muted-foreground hover:bg-muted hover:text-foreground"
-            : "text-muted-foreground hover:bg-muted hover:text-foreground"
+            ? 'bg-primary/5 text-primary' // Active state
+            : node.type === 'folder'
+            ? 'text-muted-foreground hover:bg-muted hover:text-foreground'
+            : 'text-muted-foreground hover:bg-muted hover:text-foreground'
         }`}
       >
         {/* Indentation spacer for nested items */}
-        {node.depth > 1 && <div className="w-6 shrink-0" />}
+        {node.depth > 1 && <div className='w-6 shrink-0' />}
 
         {/* Icon */}
-        {node.type === "folder"
+        {node.type === 'folder'
           ? (
             <Icon
-              name="Folder"
+              name='Folder'
               size={16}
-              className={`shrink-0 ${active ? "text-primary" : ""}`}
+              className={`shrink-0 ${active ? 'text-primary' : ''}`}
             />
           )
           : node.doc?.data?.icon
@@ -145,39 +145,39 @@ function TreeItem({
             <Icon
               name={node.doc.data.icon}
               size={16}
-              className={`shrink-0 ${active ? "text-primary" : ""}`}
+              className={`shrink-0 ${active ? 'text-primary' : ''}`}
             />
           )
           : (
             <Icon
-              name="FileText"
+              name='FileText'
               size={16}
-              className={`shrink-0 ${active ? "text-primary" : ""}`}
+              className={`shrink-0 ${active ? 'text-primary' : ''}`}
             />
           )}
 
         {/* Content */}
-        {node.type === "folder"
+        {node.type === 'folder'
           ? (
             <button
-              type="button"
-              className="flex items-center justify-between w-full text-left"
+              type='button'
+              className='flex items-center justify-between w-full text-left'
               onClick={() => onToggle(node.id)}
             >
-              <span className="flex-1">
+              <span className='flex-1'>
                 {translations[`sidebar.section.${node.name}`] || node.name}
               </span>
               {node.hasChildren && (
                 <Icon
-                  name={isExpanded ? "ChevronDown" : "ChevronRight"}
+                  name={isExpanded ? 'ChevronDown' : 'ChevronRight'}
                   size={16}
-                  className={`shrink-0 ${active ? "text-primary" : ""}`}
+                  className={`shrink-0 ${active ? 'text-primary' : ''}`}
                 />
               )}
             </button>
           )
           : (
-            <a href={`/${locale}/${node.path.join("/")}`} className="flex-1">
+            <a href={`/${locale}/${node.path.join('/')}`} className='flex-1'>
               {node.doc?.data?.title || node.name}
             </a>
           )}
@@ -206,19 +206,19 @@ function TreeList({
 
     // Find the parent folder
     const parentPath = node.path.slice(0, -1);
-    const parentId = parentPath.join("/");
+    const parentId = parentPath.join('/');
 
     return treeState.get(parentId) !== false;
   };
 
   // Group nodes to determine when to add separators
-  const getNodeGroup = (node: FlatNode): "root-files" | "root-folders" => {
-    if (node.depth === 0 && node.type === "file") return "root-files";
-    return "root-folders";
+  const getNodeGroup = (node: FlatNode): 'root-files' | 'root-folders' => {
+    if (node.depth === 0 && node.type === 'file') return 'root-files';
+    return 'root-folders';
   };
 
   return (
-    <ul className="space-y-0.5">
+    <ul className='space-y-0.5'>
       {tree.map((node, index) => {
         const isVisible = isNodeVisible(node);
         const isExpanded = treeState.get(node.id) !== false;
@@ -238,19 +238,19 @@ function TreeList({
         }
 
         // Add section title for root folders
-        const needsSectionTitle = node.type === "folder" && node.depth === 0; // All root folders get section titles
+        const needsSectionTitle = node.type === 'folder' && node.depth === 0; // All root folders get section titles
 
         return (
           <React.Fragment key={node.id}>
             {needsSeparator && (
-              <li className="my-3">
-                <div className="h-px bg-border/50" />
+              <li className='my-3'>
+                <div className='h-px bg-border/50' />
               </li>
             )}
             {needsSectionTitle && (
-              <li className="mt-3 first:mt-0">
-                <div className="px-3 py-2">
-                  <h3 className="text-sm font-medium text-foreground">
+              <li className='mt-3 first:mt-0'>
+                <div className='px-3 py-2'>
+                  <h3 className='text-sm font-medium text-foreground'>
                     {translations[`sidebar.section.${node.name}`] || node.name}
                   </h3>
                 </div>
@@ -279,13 +279,13 @@ export default function Sidebar({ tree, locale, translations }: SidebarProps) {
   useEffect(() => {
     // Load saved state from localStorage
     const savedState = JSON.parse(
-      localStorage.getItem("sidebar-tree-state") || "{}",
+      localStorage.getItem('sidebar-tree-state') || '{}',
     );
     const initialState = new Map();
 
     // Initialize tree state - default to expanded
     tree.forEach((node) => {
-      if (node.type === "folder") {
+      if (node.type === 'folder') {
         initialState.set(node.id, savedState[node.id] !== false);
       }
     });
@@ -306,7 +306,7 @@ export default function Sidebar({ tree, locale, translations }: SidebarProps) {
       stateToSave[key] = value;
     });
     stateToSave[folderId] = isExpanded;
-    localStorage.setItem("sidebar-tree-state", JSON.stringify(stateToSave));
+    localStorage.setItem('sidebar-tree-state', JSON.stringify(stateToSave));
   };
 
   const handleFolderToggle = (folderId: string) => {
@@ -315,20 +315,20 @@ export default function Sidebar({ tree, locale, translations }: SidebarProps) {
   };
 
   return (
-    <div className="flex flex-col h-screen bg-app-background border-r border-border w-[19rem] lg:w-[19rem] w-full max-w-[19rem]">
+    <div className='flex flex-col h-screen bg-app-background border-r border-border w-[19rem] lg:w-[19rem] w-full max-w-[19rem]'>
       {/* Header - hidden on mobile */}
-      <div className="hidden lg:flex items-center justify-between px-4 lg:px-8 py-4 shrink-0">
+      <div className='hidden lg:flex items-center justify-between px-4 lg:px-8 py-4 shrink-0'>
         <Logo width={67} height={28} />
         <ThemeToggle />
       </div>
 
       {/* Language Select - hidden on mobile */}
-      <div className="hidden lg:block px-4 lg:px-8 py-4 shrink-0">
+      <div className='hidden lg:block px-4 lg:px-8 py-4 shrink-0'>
         <LanguageSelector locale={locale} />
       </div>
 
       {/* Content */}
-      <div className="flex-1 overflow-y-auto px-4 lg:px-8 py-4 min-h-0">
+      <div className='flex-1 overflow-y-auto px-4 lg:px-8 py-4 min-h-0'>
         <TreeList
           tree={tree}
           treeState={treeState}
@@ -339,32 +339,32 @@ export default function Sidebar({ tree, locale, translations }: SidebarProps) {
       </div>
 
       {/* Footer */}
-      <div className="px-4 lg:px-8 py-4 border-t border-border shrink-0">
-        <div className="space-y-2">
+      <div className='px-4 lg:px-8 py-4 border-t border-border shrink-0'>
+        <div className='space-y-2'>
           <a
-            href="https://github.com/deco-cx/chat"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-foreground hover:bg-muted hover:text-foreground transition-colors"
+            href='https://github.com/deco-cx/chat'
+            target='_blank'
+            rel='noopener noreferrer'
+            className='flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-foreground hover:bg-muted hover:text-foreground transition-colors'
           >
-            <Icon name="Github" size={16} className="text-muted-foreground" />
-            <span className="flex-1">GitHub</span>
+            <Icon name='Github' size={16} className='text-muted-foreground' />
+            <span className='flex-1'>GitHub</span>
             <GitHubStars />
           </a>
           <a
-            href="https://discord.gg/deco-cx"
-            className="flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-foreground hover:bg-muted hover:text-foreground transition-colors"
+            href='https://discord.gg/deco-cx'
+            className='flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-foreground hover:bg-muted hover:text-foreground transition-colors'
           >
             <Icon
-              name="MessageCircle"
+              name='MessageCircle'
               size={16}
-              className="text-muted-foreground"
+              className='text-muted-foreground'
             />
-            <span className="flex-1">Discord community</span>
+            <span className='flex-1'>Discord community</span>
             <Icon
-              name="ArrowUpRight"
+              name='ArrowUpRight'
               size={16}
-              className="text-muted-foreground"
+              className='text-muted-foreground'
             />
           </a>
         </div>

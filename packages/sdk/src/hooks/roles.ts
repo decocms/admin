@@ -1,18 +1,12 @@
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import {
-  createTeamRole,
-  deleteTeamRole,
-  getTeamRole,
-  updateTeamRole,
-} from "../crud/roles.ts";
-import type { GetTeamRoleParams, TeamRole } from "../crud/roles.ts";
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { createTeamRole, deleteTeamRole, getTeamRole, updateTeamRole } from '../crud/roles.ts';
+import type { GetTeamRoleParams, TeamRole } from '../crud/roles.ts';
 
 // Query keys
 export const ROLE_KEYS = {
-  all: ["roles"] as const,
-  team: (teamId: number) => [...ROLE_KEYS.all, "team", teamId] as const,
-  role: (teamId: number, roleId: number) =>
-    [...ROLE_KEYS.team(teamId), "role", roleId] as const,
+  all: ['roles'] as const,
+  team: (teamId: number) => [...ROLE_KEYS.all, 'team', teamId] as const,
+  role: (teamId: number, roleId: number) => [...ROLE_KEYS.team(teamId), 'role', roleId] as const,
 } as const;
 
 /**
@@ -20,11 +14,8 @@ export const ROLE_KEYS = {
  */
 export function useTeamRole(params: GetTeamRoleParams | null) {
   return useQuery({
-    queryKey: params
-      ? ROLE_KEYS.role(params.teamId, params.roleId)
-      : ["roles", "null"],
-    queryFn: (): Promise<TeamRole | null> =>
-      params ? getTeamRole(params) : Promise.resolve(null),
+    queryKey: params ? ROLE_KEYS.role(params.teamId, params.roleId) : ['roles', 'null'],
+    queryFn: (): Promise<TeamRole | null> => params ? getTeamRole(params) : Promise.resolve(null),
     enabled: params !== null,
     staleTime: 5 * 60 * 1000, // 5 minutes
   });

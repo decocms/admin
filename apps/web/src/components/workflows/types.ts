@@ -34,14 +34,14 @@ export interface WorkflowStats {
 
 // Status types for better type safety
 export type WorkflowStatus =
-  | "success"
-  | "failed"
-  | "running"
-  | "pending"
-  | "cancelled"
-  | "completed"
-  | "errored"
-  | "in_progress";
+  | 'success'
+  | 'failed'
+  | 'running'
+  | 'pending'
+  | 'cancelled'
+  | 'completed'
+  | 'errored'
+  | 'in_progress';
 
 // API response structure
 export interface WorkflowsListResponse {

@@ -55,7 +55,10 @@ function handleLiteral({
   range: unknown;
 }) {
   const ctx = context as { report: (arg: { range: any; message: string }) => void };
-  const rng = range as unknown as { start: { line: number; col: number }; end: { line: number; col: number } };
+  const rng = range as unknown as {
+    start: { line: number; col: number };
+    end: { line: number; col: number };
+  };
   const classes = value.split(' ');
   for (const className of classes) {
     if (!isValidDesignSystemToken(className)) {

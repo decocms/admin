@@ -1,9 +1,21 @@
-import { type Integration, useKnowledgeListFiles } from "@deco/sdk";
+import {
+  type Integration,
+  useKnowledgeListFiles,
+  useUpdateAgent,
+  useIntegrationViews,
+} from "@deco/sdk";
 import {
   getExtensionFromContentType,
   getKnowledgeBaseIntegrationId,
 } from "@deco/sdk/utils";
 import { Button } from "@deco/ui/components/button.tsx";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@deco/ui/components/dialog.tsx";
 import {
   Form,
   FormDescription,
@@ -31,6 +43,8 @@ import {
 import { AppKeys, getConnectionAppKey } from "../integrations/apps.ts";
 import { SelectConnectionDialog } from "../integrations/select-connection-dialog.tsx";
 import { IntegrationListItem } from "../toolsets/selector.tsx";
+import { Spinner } from "@deco/ui/components/spinner.tsx";
+import { ViewWithStatus } from "../views/list.tsx";
 
 const ADVANCED_INTEGRATIONS = [
   ...LEGACY_INTEGRATIONS,
@@ -355,6 +369,308 @@ function MultiAgent() {
   );
 }
 
+function AddViewButton() {
+  const [open, setOpen] = useState(false);
+  const [showCustomForm, setShowCustomForm] = useState(false);
+  const [customViewName, setCustomViewName] = useState("");
+  const [customViewUrl, setCustomViewUrl] = useState("");
+  const { agent, form } = useAgent();
+  const { data: allViews = [], isLoading: isLoadingViews } =
+    useIntegrationViews({
+      enabled: open,
+      suspense: false,
+    });
+  const [searchTerm, setSearchTerm] = useState("");
+  const deferredSearchTerm = useDeferredValue(searchTerm);
+  const updateAgentMutation = useUpdateAgent();
+
+  // Filter out views that are already added to the agent
+  const agentViewUrls = new Set(agent.views?.map((view) => view.url) || []);
+  const availableViews = allViews.filter(
+    (view) => !agentViewUrls.has(view.url),
+  );
+
+  const filteredViews = useMemo(() => {
+    if (!deferredSearchTerm) return availableViews;
+    const lowercaseSearch = deferredSearchTerm.toLowerCase();
+    return availableViews.filter(
+      (view) =>
+        view.title?.toLowerCase().includes(lowercaseSearch) ||
+        view.integration.name.toLowerCase().includes(lowercaseSearch),
+    );
+  }, [availableViews, deferredSearchTerm]);
+
+  const handleViewSelect = async (view: ViewWithStatus) => {
+    const newAgent = {
+      ...agent,
+      views: [
+        ...(agent.views || []),
+        {
+          url: view.url,
+          name: view.title,
+        },
+      ],
+    };
+    await updateAgentMutation.mutateAsync(newAgent);
+
+    form.reset(newAgent);
+
+    setOpen(false);
+  };
+
+  const handleCustomViewAdd = async () => {
+    if (!customViewName.trim() || !customViewUrl.trim()) {
+      return;
+    }
+
+    const newAgent = {
+      ...agent,
+      views: [
+        ...(agent.views || []),
+        {
+          url: customViewUrl.trim(),
+          name: customViewName.trim(),
+        },
+      ],
+    };
+    await updateAgentMutation.mutateAsync(newAgent);
+
+    form.reset(newAgent);
+
+    // Reset form
+    setCustomViewName("");
+    setCustomViewUrl("");
+    setShowCustomForm(false);
+    setOpen(false);
+  };
+
+  const handleOpenChange = (newOpen: boolean) => {
+    setOpen(newOpen);
+    if (!newOpen) {
+      // Reset all form state when closing
+      setShowCustomForm(false);
+      setCustomViewName("");
+      setCustomViewUrl("");
+      setSearchTerm("");
+    }
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={handleOpenChange}>
+      <DialogTrigger asChild>
+        <Button variant="outline">
+          <Icon name="add" /> Add view
+        </Button>
+      </DialogTrigger>
+      <DialogContent className="max-w-2xl w-full">
+        <DialogHeader>
+          <DialogTitle>
+            {showCustomForm ? "Add Custom View" : "Select a View"}
+          </DialogTitle>
+        </DialogHeader>
+        <div className="flex flex-col gap-4 h-[500px]">
+          {showCustomForm ? (
+            // Custom view form
+            <div className="flex flex-col gap-4 flex-1">
+              <div className="flex flex-col gap-2">
+                <label className="text-sm font-medium">View Name</label>
+                <Input
+                  placeholder="Enter view name..."
+                  value={customViewName}
+                  onChange={(e) => setCustomViewName(e.target.value)}
+                />
+              </div>
+              <div className="flex flex-col gap-2">
+                <label className="text-sm font-medium">View URL</label>
+                <Input
+                  placeholder="Enter view URL..."
+                  value={customViewUrl}
+                  onChange={(e) => setCustomViewUrl(e.target.value)}
+                />
+              </div>
+              <div className="flex gap-2 mt-auto">
+                <Button
+                  variant="outline"
+                  onClick={() => setShowCustomForm(false)}
+                  className="flex-1"
+                >
+                  <Icon name="arrow_back" size={16} />
+                  Back to Views
+                </Button>
+                <Button
+                  onClick={handleCustomViewAdd}
+                  disabled={!customViewName.trim() || !customViewUrl.trim()}
+                  className="flex-1"
+                >
+                  <Icon name="add" size={16} />
+                  Add Custom View
+                </Button>
+              </div>
+            </div>
+          ) : (
+            // Existing views selection
+            <>
+              <div className="flex gap-2 w-full">
+                <div className="border border-border rounded-xl w-full">
+                  <div className="flex items-center h-10 px-4 gap-2">
+                    <Icon
+                      name="search"
+                      size={20}
+                      className="text-muted-foreground"
+                    />
+                    <Input
+                      placeholder="Search views..."
+                      value={searchTerm}
+                      onChange={(e) => setSearchTerm(e.target.value)}
+                      className="flex-1 h-full border-none focus-visible:ring-0 placeholder:text-muted-foreground bg-transparent px-2"
+                    />
+                  </div>
+                </div>
+              </div>
+              {isLoadingViews && (
+                <div className="flex items-center justify-center w-full h-full">
+                  <Spinner />
+                </div>
+              )}
+              <ScrollArea className="w-full flex-1">
+                <div className="space-y-2">
+                  {filteredViews.length === 0 && !isLoadingViews ? (
+                    <div className="flex flex-col gap-2 items-center justify-center h-32 text-muted-foreground">
+                      <Icon name="dashboard" size={24} />
+                      <span className="text-sm">
+                        {availableViews.length === 0
+                          ? "All available views are already added"
+                          : "No views found"}
+                      </span>
+                    </div>
+                  ) : (
+                    filteredViews.map((view) => (
+                      <div
+                        key={view.url}
+                        className="flex items-center justify-between p-3 border border-border rounded-lg hover:bg-muted/50 cursor-pointer transition-colors"
+                        onClick={() => handleViewSelect(view)}
+                      >
+                        <div className="flex items-center gap-3">
+                          <div className="w-8 h-8 rounded-lg bg-muted flex items-center justify-center">
+                            <Icon name={view.icon || "dashboard"} size={16} />
+                          </div>
+                          <div className="flex flex-col">
+                            <span className="font-medium text-sm">
+                              {view.title}
+                            </span>
+                            <span className="text-xs text-muted-foreground">
+                              {view.integration.name}
+                            </span>
+                          </div>
+                        </div>
+                        <Button variant="ghost" size="sm">
+                          <Icon name="add" size={16} />
+                        </Button>
+                      </div>
+                    ))
+                  )}
+                </div>
+              </ScrollArea>
+
+              {/* Add Custom View Button */}
+              <div className="border-t pt-4">
+                <Button
+                  variant="outline"
+                  onClick={() => setShowCustomForm(true)}
+                  className="w-full"
+                >
+                  <Icon name="add" size={16} />
+                  Add Custom View
+                </Button>
+              </div>
+            </>
+          )}
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+function Views() {
+  const { agent, form } = useAgent();
+  const agentViews = agent.views || [];
+  const updateAgentMutation = useUpdateAgent();
+
+  const handleRemoveView = (viewUrl: string, viewName: string) => {
+    const newAgent = {
+      ...agent,
+      views: agent.views?.filter(
+        (view) => view.url !== viewUrl && view.name !== viewName,
+      ),
+    };
+    updateAgentMutation.mutateAsync(newAgent);
+    form.reset(newAgent);
+  };
+
+  return (
+    <div className="flex flex-col gap-2">
+      <FormLabel>Views</FormLabel>
+      <div className="flex justify-between items-center">
+        <FormDescription className="pb-2">
+          Create views to display your agent's knowledge in a specific format.
+        </FormDescription>
+        {agentViews.length !== 0 && <AddViewButton />}
+      </div>
+      {agentViews.length === 0 ? (
+        <div className="flex flex-col gap-2 items-center justify-center h-full min-h-[200px] rounded-xl bg-muted border border-border border-dashed">
+          <div className="flex flex-col items-center gap-2">
+            <Icon
+              name="dashboard"
+              size={32}
+              className="text-muted-foreground"
+            />
+            <span className="text-sm text-muted-foreground">
+              No views added to this agent
+            </span>
+            <AddViewButton />
+          </div>
+        </div>
+      ) : (
+        <div className="space-y-2">
+          <div className="grid gap-2">
+            {agentViews.map((view) => (
+              <div
+                key={view.url}
+                className="flex items-center justify-between p-3 border border-border rounded-lg"
+              >
+                <div className="flex items-center gap-3">
+                  <div className="w-8 h-8 rounded-lg bg-muted flex items-center justify-center">
+                    <Icon name="dashboard" size={16} />
+                  </div>
+                  <div className="flex flex-col">
+                    <span className="font-medium text-sm">{view.name}</span>
+                    <span className="text-xs text-muted-foreground">
+                      {view.url}
+                    </span>
+                  </div>
+                </div>
+                <div className="flex items-center gap-1">
+                  <Button variant="ghost" size="sm" type="button">
+                    <Icon name="open_in_new" size={16} />
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    type="button"
+                    size="sm"
+                    onClick={() => handleRemoveView(view.url, view.name)}
+                  >
+                    <Icon name="delete" size={16} />
+                  </Button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 function ToolsAndKnowledgeTab() {
   const { form, handleSubmit } = useAgent();
 
@@ -367,6 +683,7 @@ function ToolsAndKnowledgeTab() {
             {/* TODO: bring this back. The flow it buggs is adding a file to kb <Knowledge /> */}
             {/* <Knowledge /> */}
             <MultiAgent />
+            <Views />
           </form>
         </div>
       </Form>

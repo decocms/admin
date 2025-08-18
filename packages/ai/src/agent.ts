@@ -776,11 +776,11 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
   // we avoid to let the AI to set the id and tools_set, so we can keep the agent id and tools_set stable
   public async configure({
     id: _id,
-    views: _views,
     ...config
   }: Partial<Configuration>): Promise<Configuration> {
     try {
       const parsed = await this.configuration();
+
       const updatedConfig = {
         ...parsed,
         ...config,

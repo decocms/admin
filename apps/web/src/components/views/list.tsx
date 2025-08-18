@@ -1,7 +1,15 @@
-import { useAddView, useRemoveView, useWorkspaceViews } from "@deco/sdk";
+import { useAddView, useRemoveView, useIntegrationViews } from "@deco/sdk";
 import { Button } from "@deco/ui/components/button.tsx";
 import { Card, CardContent } from "@deco/ui/components/card.tsx";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@deco/ui/components/dialog.tsx";
 import { Icon } from "@deco/ui/components/icon.tsx";
+import { Input } from "@deco/ui/components/input.tsx";
 import { toast } from "@deco/ui/components/sonner.tsx";
 import { useViewMode } from "@deco/ui/hooks/use-view-mode.ts";
 import { cn } from "@deco/ui/lib/utils.ts";
@@ -12,14 +20,15 @@ import { ListPageHeader } from "../common/list-page-header.tsx";
 import { Table, TableColumn } from "../common/table/index.tsx";
 import { DefaultBreadcrumb, PageLayout } from "../layout.tsx";
 import { useCurrentTeam } from "../sidebar/team-selector";
+import { IntegrationAvatar } from "../common/avatar/integration.tsx";
 
-interface ViewWithStatus {
+export interface ViewWithStatus {
   isAdded: boolean;
   teamViewId?: string;
   url: string;
   title: string;
   icon: string;
-  integration: {
+  integration?: {
     id: string;
     name: string;
     icon?: string;
@@ -63,7 +72,7 @@ function TableView({
     {
       id: "integration",
       header: "Integration",
-      accessor: (view) => view.integration.name,
+      accessor: (view) => view.integration?.name,
       sortable: true,
       cellClassName: "max-w-md",
     },
@@ -180,13 +189,182 @@ function TogglePin({ view }: { view: ViewWithStatus }) {
   );
 }
 
+function AddCustomViewModal() {
+  const [open, setOpen] = useState(false);
+  const [customViewName, setCustomViewName] = useState("");
+  const [customViewUrl, setCustomViewUrl] = useState("");
+  const addViewMutation = useAddView();
+
+  const handleCustomViewAdd = async () => {
+    if (!customViewName.trim() || !customViewUrl.trim()) {
+      return;
+    }
+
+    try {
+      await addViewMutation.mutateAsync({
+        view: {
+          id: crypto.randomUUID(),
+          title: customViewName.trim(),
+          icon: "dashboard",
+          type: "custom" as const,
+          url: customViewUrl.trim(),
+        },
+      });
+
+      toast.success(
+        `Custom view "${customViewName.trim()}" added successfully`,
+      );
+
+      // Reset form and close modal
+      setCustomViewName("");
+      setCustomViewUrl("");
+      setOpen(false);
+    } catch (error) {
+      console.error("Error adding custom view:", error);
+      toast.error(`Failed to add custom view "${customViewName.trim()}"`);
+    }
+  };
+
+  const handleOpenChange = (newOpen: boolean) => {
+    setOpen(newOpen);
+    if (!newOpen) {
+      // Reset form when closing
+      setCustomViewName("");
+      setCustomViewUrl("");
+    }
+  };
+
+  return (
+    <div>
+      <Dialog open={open} onOpenChange={handleOpenChange}>
+        <DialogTrigger asChild>
+          <Button variant="special" className="w-full">
+            <Icon name="add" size={16} />
+            New view
+          </Button>
+        </DialogTrigger>
+        <DialogContent className="max-w-md w-full">
+          <DialogHeader>
+            <DialogTitle>Add Custom View</DialogTitle>
+          </DialogHeader>
+          <div className="flex flex-col gap-4">
+            <div className="flex flex-col gap-2">
+              <label className="text-sm font-medium">View Name</label>
+              <Input
+                placeholder="Enter view name..."
+                value={customViewName}
+                onChange={(e) => setCustomViewName(e.target.value)}
+              />
+            </div>
+            <div className="flex flex-col gap-2">
+              <label className="text-sm font-medium">View URL</label>
+              <Input
+                placeholder="Enter view URL..."
+                value={customViewUrl}
+                onChange={(e) => setCustomViewUrl(e.target.value)}
+              />
+            </div>
+
+            <div className="flex gap-2 mt-4">
+              <Button
+                variant="outline"
+                onClick={() => setOpen(false)}
+                className="flex-1"
+              >
+                Cancel
+              </Button>
+              <Button
+                onClick={handleCustomViewAdd}
+                disabled={
+                  !customViewName.trim() ||
+                  !customViewUrl.trim() ||
+                  addViewMutation.isPending
+                }
+                className="flex-1"
+              >
+                {addViewMutation.isPending ? (
+                  <Icon name="hourglass_empty" size={16} />
+                ) : (
+                  <Icon name="add" size={16} />
+                )}
+                Add View
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+    </div>
+  );
+}
+
+function ViewCard({
+  view,
+  handleViewClick,
+}: {
+  view: ViewWithStatus;
+  handleViewClick: (view: ViewWithStatus) => void;
+}) {
+  return (
+    <Card
+      className={cn("hover:shadow-md transition-shadow cursor-pointer")}
+      onClick={() => handleViewClick(view)}
+    >
+      <CardContent className="p-4">
+        <div className="flex items-center gap-3">
+          <Icon
+            name={view.icon.toLowerCase()}
+            className="w-6 h-6 shrink-0"
+            size={24}
+          />
+          <div className="flex-1 min-w-0">
+            <h3 className="font-medium truncate">{view.title}</h3>
+          </div>
+          <TogglePin view={view} />
+        </div>
+        {view.integration && (
+          <div className="flex gap-2 items-center mt-3 pt-3 border-t border-border">
+            <IntegrationAvatar
+              url={view.integration.icon}
+              fallback={view.integration.name}
+              size="xs"
+              className="flex-shrink-0"
+            />
+            <p className="text-sm text-muted-foreground truncate">
+              {view.integration.name}
+            </p>
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
+
 function ViewsList() {
   const currentTeam = useCurrentTeam();
   const navigateWorkspace = useNavigateWorkspace();
   const [viewMode, setViewMode] = useViewMode();
-  const { data: views = [] } = useWorkspaceViews();
+  const { data: views = [] } = useIntegrationViews({});
   const [searchTerm, setSearchTerm] = useState("");
   const deferredSearchTerm = useDeferredValue(searchTerm);
+
+  const customViews = currentTeam.views
+    .map((view) => {
+      const isFromIntegration = views.some((v) => v.url === view.metadata.url);
+      if (isFromIntegration) {
+        return;
+      }
+      if (view.type === "custom") {
+        return {
+          ...view,
+          isAdded: true,
+          integration: undefined,
+          url: view.metadata.url as string,
+          teamViewId: view?.id,
+        };
+      }
+      return;
+    })
+    .filter(Boolean);
 
   const allViews = useMemo(() => {
     return views.map((view) => {
@@ -214,14 +392,6 @@ function ViewsList() {
     );
   }, [allViews, deferredSearchTerm]);
 
-  const beautifyViewName = (text: string) => {
-    return text
-      .replace("DECO_CHAT_VIEW_", "")
-      .replace(/_/g, " ")
-      .toLowerCase()
-      .replace(/\b\w/g, (c) => c.toUpperCase());
-  };
-
   const handleViewClick = (view: ViewWithStatus) => {
     if (view.isAdded) {
       navigateWorkspace(`/views/${view.teamViewId}`);
@@ -242,35 +412,43 @@ function ViewsList() {
       />
 
       {filteredViews.length > 0 && viewMode === "cards" && (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 py-4">
-          {filteredViews.map((view) => (
-            <Card
-              key={`${view.integration.id}-${view.title}`}
-              className={cn("hover:shadow-md transition-shadow cursor-pointer")}
-              onClick={() => handleViewClick(view)}
-            >
-              <CardContent className="p-4">
-                <div className="flex items-center gap-3">
-                  <Icon
-                    name={view.icon.toLowerCase()}
-                    className="w-6 h-6 shrink-0"
-                    size={24}
-                  />
-                  <div className="flex-1 min-w-0">
-                    <h3 className="font-medium truncate">
-                      {beautifyViewName(view.title || "")}
-                    </h3>
-                    <p className="text-sm text-muted-foreground truncate">
-                      {view.integration.name}
-                    </p>
-                  </div>
-                  <TogglePin view={view} />
-                </div>
-              </CardContent>
-            </Card>
-          ))}
+        <div>
+          <div className="text-sm font-bold">From integrations</div>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 py-4">
+            {filteredViews.map((view) => (
+              <ViewCard
+                key={`${view.integration.id}-${view.title}`}
+                view={view}
+                handleViewClick={handleViewClick}
+              />
+            ))}
+          </div>
         </div>
       )}
+
+      {
+        <div>
+          <div className="text-sm font-bold">Custom</div>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 py-4">
+            {customViews.map(
+              (view) =>
+                view && (
+                  <ViewCard
+                    key={`${view.title}`}
+                    view={{
+                      ...view,
+                      isAdded: true,
+                      integration: undefined,
+                      url: view.metadata.url as string,
+                      teamViewId: view?.id,
+                    }}
+                    handleViewClick={handleViewClick}
+                  />
+                ),
+            )}
+          </div>
+        </div>
+      }
 
       {filteredViews.length > 0 && viewMode === "table" && (
         <TableView views={filteredViews} onConfigure={handleViewClick} />
@@ -304,6 +482,7 @@ export default function Page() {
     <PageLayout
       tabs={TABS}
       hideViewsButton
+      actionButtons={<AddCustomViewModal />}
       breadcrumb={
         <DefaultBreadcrumb items={[{ label: "Views", link: "/views" }]} />
       }

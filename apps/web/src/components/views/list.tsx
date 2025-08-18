@@ -1,4 +1,4 @@
-import { useAddView, useRemoveView, useWorkspaceViews } from "@deco/sdk";
+import { useAddView, useRemoveView, useIntegrationViews } from "@deco/sdk";
 import { Button } from "@deco/ui/components/button.tsx";
 import { Card, CardContent } from "@deco/ui/components/card.tsx";
 import { Icon } from "@deco/ui/components/icon.tsx";
@@ -13,7 +13,7 @@ import { Table, TableColumn } from "../common/table/index.tsx";
 import { DefaultBreadcrumb, PageLayout } from "../layout.tsx";
 import { useCurrentTeam } from "../sidebar/team-selector";
 
-interface ViewWithStatus {
+export interface ViewWithStatus {
   isAdded: boolean;
   teamViewId?: string;
   url: string;
@@ -184,7 +184,7 @@ function ViewsList() {
   const currentTeam = useCurrentTeam();
   const navigateWorkspace = useNavigateWorkspace();
   const [viewMode, setViewMode] = useViewMode();
-  const { data: views = [] } = useWorkspaceViews();
+  const { data: views = [] } = useIntegrationViews({});
   const [searchTerm, setSearchTerm] = useState("");
   const deferredSearchTerm = useDeferredValue(searchTerm);
 

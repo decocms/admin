@@ -53,7 +53,6 @@ export interface DefaultEnv<TSchema extends z.ZodTypeAny = any> {
     forContext: (ctx: RequestContext) => WorkspaceDB;
   };
   IS_LOCAL: boolean;
-  BINDINGS: Binding[];
   [key: string]: unknown;
 }
 
@@ -275,7 +274,6 @@ export const withBindings = <TEnv>({
 
   env.DECO_CHAT_REQUEST_CONTEXT = context;
   const bindings = WorkersMCPBindings.parse(env.DECO_CHAT_BINDINGS);
-  env.BINDINGS = bindings;
 
   for (const binding of bindings) {
     env[binding.name] = creatorByType[binding.type](binding as any, env);

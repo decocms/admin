@@ -1,3 +1,14 @@
+// Minimal ambient types so this file type-checks in Node/TS environments
+declare namespace Deno {
+  namespace lint {
+    // deno-lint-ignore no-explicit-any
+    type Plugin = any;
+    // deno-lint-ignore no-explicit-any
+    type RuleContext = any;
+    // deno-lint-ignore no-explicit-any
+    type Range = any;
+  }
+}
 const BANNED_CLASS_NAMES_CONTAIN_VALUES = [
   '50',
   '100',
@@ -41,13 +52,17 @@ function isValidDesignSystemToken(className: string): boolean {
 }
 
 function handleLiteral({
+  // deno-lint-ignore no-explicit-any
   context,
   value,
+  // deno-lint-ignore no-explicit-any
   range,
 }: {
-  context: Deno.lint.RuleContext;
+  // deno-lint-ignore no-explicit-any
+  context: any;
   value: string;
-  range: Deno.lint.Range;
+  // deno-lint-ignore no-explicit-any
+  range: any;
 }) {
   const classes = value.split(' ');
   for (const className of classes) {

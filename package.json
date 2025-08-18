@@ -28,7 +28,7 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "build": "PWD=$PWD/apps/web deno run build",
-    "lint": "deno lint --config ./package.json .",
+    "lint": "deno lint --config ./deno.jsonc",
     "fmt": "deno fmt",
     "fmt:check": "deno fmt --check",
     "version": "tsc --version",

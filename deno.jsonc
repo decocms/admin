@@ -31,5 +31,31 @@
       "singleQuote": true,
       "proseWrap": "preserve"
     }
+  },
+  "lint": {
+    "files": {
+      "include": [
+        "plugins"
+      ],
+      "exclude": [
+        "**/node_modules",
+        "**/.next",
+        "**/dist",
+        "**/build",
+        "**/.turbo",
+        "**/.wrangler",
+        "**/.cache",
+        "**/coverage",
+        "seo-ecommerce",
+        "server"
+      ]
+    },
+    "rules": {
+      "tags": ["recommended"]
+    },
+    "plugins": [
+      "./plugins/ensure-tailwind-design-system-tokens.ts",
+      "./plugins/enforce-kebab-case-file-names.ts"
+    ]
   }
 }

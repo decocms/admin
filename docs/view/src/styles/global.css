@@ -356,9 +356,9 @@ pre .astro-code > *:first-child {
   --star: oklch(68.1% 0.162 75.834);
 
   /* Callout Colors - Light Mode (from Figma) */
-  --callout-info-bg: #f5f5f4; /* stone-100 */
-  --callout-info-border: #e7e5e4; /* stone-200 */
-  --callout-info-text: #292524; /* stone-800 */
+  --callout-info-bg: oklch(97% 0.001 106.424); /* muted */
+  --callout-info-border: oklch(92.3% 0.003 48.717); /* border */
+  --callout-info-text: oklch(26.8% 0.007 34.298); /* foreground */
   --callout-warning-bg: #fffbeb; /* amber-50 */
   --callout-warning-border: #fde68a; /* amber-200 */
   --callout-warning-text: #78350f; /* amber-900 */
@@ -460,9 +460,9 @@ pre .astro-code > *:first-child {
   --star: oklch(0.9 0.15 85);
 
   /* Callout Colors - Dark Mode (from Figma) */
-  --callout-info-bg: oklch(21.6% 0.006 56.043); /* stone-900 */
-  --callout-info-border: oklch(37.4% 0.01 67.558 / 60%); /* stone-700 */
-  --callout-info-text: oklch(97% 0.001 106.424); /* stone-50 */
+  --callout-info-bg: oklch(0.269 0 0); /* muted */
+  --callout-info-border: oklch(0.269 0 0); /* border */
+  --callout-info-text: oklch(0.985 0 0); /* foreground */
   --callout-warning-bg: oklch(76.9% 0.188 70.08 / 10%); /* amber-950 */
   --callout-warning-border: oklch(76.9% 0.188 70.08 / 50%); /* amber-800 */
   --callout-warning-text: oklch(96.2% 0.059 95.617); /* amber-100 */

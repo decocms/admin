@@ -171,6 +171,8 @@ const ICON_MAP: Record<string, keyof typeof LucideIcons> = {
   "support": "LifeBuoy",
   "redeem": "Gift",
   "wallet": "Wallet",
+  "briefcase": "Briefcase",
+  "briefcase-business": "BriefcaseBusiness",
   "hub": "Network",
   "linked_services": "Link2",
   "cable": "Cable",

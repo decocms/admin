@@ -11,6 +11,8 @@ import {
   SidebarFooter as SidebarFooterInner,
   SidebarMenu,
   SidebarMenuItem,
+  SidebarMenuButton,
+  useSidebar,
 } from "@deco/ui/components/sidebar.tsx";
 import { cn } from "@deco/ui/lib/utils.ts";
 import { Suspense } from "react";
@@ -29,17 +31,20 @@ function WalletBalance() {
     minimumFractionDigits: 0,
     maximumFractionDigits: 0,
   }).format(balance);
+  const { state } = useSidebar();
 
   return (
-    <div className="bg-card rounded-xl px-4 py-3 mx-2">
-      <div className="flex flex-col gap-1">
-        <span className="text-xs text-muted-foreground">FREE PLAN</span>
-        <div className="flex items-center justify-between">
-          <span className="text-sm text-foreground">Team Balance</span>
-          <span className="text-sm text-muted-foreground">{formattedBalance}</span>
+    <SidebarMenuItem>
+      <SidebarMenuButton tooltip={`Team Balance: ${formattedBalance}`} className="bg-card hover:bg-card/80 h-auto p-3">
+        <div className="flex flex-col gap-1 flex-1 min-w-0">
+          <span className="text-xs text-muted-foreground">FREE PLAN</span>
+          <div className="flex items-center justify-between w-full">
+            <span className="text-sm text-foreground">Team Balance</span>
+            <span className="text-sm text-muted-foreground">{formattedBalance}</span>
+          </div>
         </div>
-      </div>
-    </div>
+      </SidebarMenuButton>
+    </SidebarMenuItem>
   );
 }
 
@@ -54,10 +59,14 @@ function LoggedUser() {
   return (
     <ResponsiveDropdown>
       <ResponsiveDropdownTrigger asChild>
-        <button className="flex items-center gap-1 px-4 py-3 rounded-lg w-full hover:bg-accent/50 transition-colors">
-          <UserAvatar user={user} size="xs" />
-          <span className="text-sm text-foreground">{displayName}</span>
-        </button>
+        <SidebarMenuButton tooltip={displayName}>
+          <UserAvatar 
+            url={user.metadata?.avatar_url} 
+            fallback={displayName} 
+            size="xs" 
+          />
+          <span>{displayName}</span>
+        </SidebarMenuButton>
       </ResponsiveDropdownTrigger>
       <ResponsiveDropdownContent align="end">
         <ResponsiveDropdownItem asChild>
@@ -95,11 +104,11 @@ function LoggedUser() {
 
 export function SidebarFooter() {
   return (
-    <SidebarFooterInner className="px-0 py-2">
-      <Suspense fallback={<div className="h-20" />}>
-        <WalletBalance />
-      </Suspense>
+    <SidebarFooterInner className="px-2 py-2">
       <SidebarMenu>
+        <Suspense fallback={<div className="h-12" />}>
+          <WalletBalance />
+        </Suspense>
         <SidebarMenuItem>
           <Suspense fallback={<div className="h-12" />}>
             <LoggedUser />

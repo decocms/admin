@@ -377,10 +377,10 @@ function MainChatContent() {
             transition={{ duration: 0.5 }}
           >
             <div className="flex flex-col gap-1">
-              <h1 className="text-2xl font-normal text-stone-800">
+              <h1 className="text-2xl font-normal text-foreground">
                 Welcome, {userName}
               </h1>
-              <p className="text-2xl font-normal text-stone-500">
+              <p className="text-2xl font-normal text-muted-foreground">
                 Where should we begin?
               </p>
             </div>
@@ -392,7 +392,7 @@ function MainChatContent() {
                 size="sm"
                 onClick={handleClaimBonus}
                 disabled={isClaimingBonus}
-                className="rounded-xl px-6 py-1.5 border-stone-200 text-stone-800"
+                className="rounded-xl px-6 py-1.5 border-border text-foreground"
               >
                 {isClaimingBonus ? "Claiming..." : "Claim $2"}
               </Button>
@@ -410,10 +410,10 @@ function MainChatContent() {
                 exit={{ opacity: 0, scale: 0.95 }}
                 transition={{ duration: 0.3 }}
               >
-                <Card className="h-full bg-stone-100 border-0 p-6 flex flex-col rounded-3xl">
+                <Card className="h-full bg-muted border-0 p-6 flex flex-col rounded-3xl">
                   <div className="flex flex-col gap-4 flex-1">
-                    <h3 className="text-lg font-medium text-stone-800">Update your theme</h3>
-                    <p className="text-sm text-stone-500 leading-relaxed">
+                    <h3 className="text-lg font-medium text-foreground">Update your theme</h3>
+                    <p className="text-sm text-muted-foreground leading-relaxed">
                       {state.isLoadingTheme 
                         ? "Analyzing your website colors..." 
                         : state.message}
@@ -445,19 +445,19 @@ function MainChatContent() {
                         </div>
                         
                         {/* Mini Preview */}
-                        <div className="flex-1 relative rounded-t-[15px] overflow-hidden border border-stone-200/20 shadow-2xl">
+                        <div className="flex-1 relative rounded-t-[15px] overflow-hidden border border-border/20 shadow-2xl">
                           <div 
-                            className="absolute inset-0 bg-stone-50"
+                            className="absolute inset-0 bg-muted"
                           >
                             {/* Mini app preview */}
                             <div className="h-full flex scale-[0.5] origin-top-left" style={{ width: '200%', height: '200%' }}>
                               {/* Sidebar */}
-                              <div className="w-[202px] p-4 bg-stone-50">
-                                <div className="h-10 w-20 rounded mb-8 bg-stone-800 opacity-20" />
+                              <div className="w-[202px] p-4 bg-muted">
+                                <div className="h-10 w-20 rounded mb-8 bg-foreground opacity-20" />
                                 {[...Array(8)].map((_, i) => (
                                   <div key={i} className="flex items-center gap-4 p-4 rounded">
-                                    <div className="w-4 h-4 rounded-sm bg-stone-800 opacity-20" />
-                                    <div className="h-4 w-16 rounded bg-stone-100" />
+                                    <div className="w-4 h-4 rounded-sm bg-foreground opacity-20" />
+                                    <div className="h-4 w-16 rounded bg-muted" />
                                   </div>
                                 ))}
                                 <div className="flex items-center gap-4 p-4 rounded bg-[#d0ec1a] bg-opacity-50">
@@ -467,12 +467,12 @@ function MainChatContent() {
                               </div>
                               {/* Main content */}
                               <div className="flex-1 p-4">
-                                <div className="h-14 border-b mb-4 border-stone-200">
-                                  <div className="h-10 w-40 rounded bg-stone-800 opacity-20" />
+                                <div className="h-14 border-b mb-4 border-border">
+                                  <div className="h-10 w-40 rounded bg-foreground opacity-20" />
                                 </div>
                                 <div className="flex gap-4">
-                                  <div className="flex-1 h-[800px] border rounded-lg bg-white border-stone-200" />
-                                  <div className="flex-1 h-[800px] border rounded-lg bg-white border-stone-200" />
+                                  <div className="flex-1 h-[800px] border rounded-lg bg-white border-border" />
+                                  <div className="flex-1 h-[800px] border rounded-lg bg-white border-border" />
                                 </div>
                               </div>
                             </div>
@@ -489,14 +489,14 @@ function MainChatContent() {
                         variant="outline"
                         onClick={handleSkipTheme}
                         disabled={isUpdatingTheme}
-                        className="flex-1 border-stone-200 text-stone-800"
+                        className="flex-1 border-border text-foreground"
                       >
                         Skip
                       </Button>
                       <Button
                         onClick={handleAcceptTheme}
                         disabled={isUpdatingTheme}
-                        className="flex-1 bg-stone-800 text-stone-50"
+                        className="flex-1 bg-foreground text-background"
                       >
                         {isUpdatingTheme ? "Applying..." : "Accept theme"}
                       </Button>
@@ -539,7 +539,7 @@ function MainChatContent() {
               
               if (showSkeleton) {
                 return (
-                  <div key={`skeleton-${index}`} className={`${gridClass} bg-stone-100 rounded-3xl p-6`}>
+                  <div key={`skeleton-${index}`} className={`${gridClass} bg-muted rounded-3xl p-6`}>
                     <Skeleton className="w-10 h-10 rounded-xl mb-auto" />
                     <div className="space-y-2 mt-auto">
                       <Skeleton className="h-3 w-20" />
@@ -552,7 +552,7 @@ function MainChatContent() {
               return (
                 <motion.button
                   key={suggestion.id}
-                  className={`${gridClass} bg-stone-100 hover:bg-stone-100/80 transition-all duration-200 rounded-3xl p-6 text-left group hover:shadow-md flex flex-col justify-between`}
+                  className={`${gridClass} bg-muted hover:bg-muted/80 transition-all duration-200 rounded-3xl p-6 text-left group hover:shadow-md flex flex-col justify-between`}
                   initial={{ opacity: 0, scale: 0.9 }}
                   animate={{ opacity: 1, scale: 1 }}
                   transition={{ duration: 0.3, delay: 0.1 * index }}
@@ -563,7 +563,7 @@ function MainChatContent() {
                     <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center shadow-sm">
                       <Icon 
                         name={suggestion.integration.icon} 
-                        className="w-5 h-5 text-stone-800"
+                        className="w-5 h-5 text-foreground"
                       />
                     </div>
                   )}
@@ -571,9 +571,9 @@ function MainChatContent() {
                   {/* Content */}
                   <div className="space-y-2">
                     {suggestion.label && (
-                      <p className="text-xs text-stone-500">{suggestion.label}</p>
+                      <p className="text-xs text-muted-foreground">{suggestion.label}</p>
                     )}
-                    <p className="text-lg font-medium leading-tight text-stone-800">
+                    <p className="text-lg font-medium leading-tight text-foreground">
                       {suggestion.title}
                     </p>
                   </div>
@@ -587,7 +587,7 @@ function MainChatContent() {
       {/* Chat Input - Fixed at bottom */}
       <div className="shrink-0 px-4 pb-4">
         <div className="w-full max-w-[600px] mx-auto">
-          <Card className="bg-white border border-stone-100 shadow-lg rounded-[20px] p-3">
+          <Card className="bg-white border border-border shadow-lg rounded-[20px] p-3">
             <div className="flex flex-col gap-3">
               {/* Input Area - Click anywhere to focus */}
               <div 
@@ -607,7 +607,7 @@ function MainChatContent() {
                       handleSendMessage();
                     }
                   }}
-                  className="w-full min-h-[40px] border-0 resize-none focus-visible:ring-0 focus:outline-none text-base placeholder:text-stone-500/60 bg-transparent"
+                  className="w-full min-h-[40px] border-0 resize-none focus-visible:ring-0 focus:outline-none text-base placeholder:text-muted-foreground/60 bg-transparent"
                 />
               </div>
               
@@ -634,12 +634,12 @@ function MainChatContent() {
                 
                 {/* Right Actions */}
                 <div className="flex items-center gap-2">
-                  <Button variant="outline" size="icon" className="h-10 w-10 border-stone-200">
+                  <Button variant="outline" size="icon" className="h-10 w-10 border-border">
                     <Icon name="stop" className="w-[18px] h-[18px]" />
                   </Button>
                   <Button 
                     size="icon" 
-                    className="h-10 w-10 bg-stone-800 hover:bg-stone-700"
+                    className="h-10 w-10 bg-foreground hover:bg-foreground/90"
                     onClick={handleSendMessage}
                     disabled={!inputValue.trim()}
                   >

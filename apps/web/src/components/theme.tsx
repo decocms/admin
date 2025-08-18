@@ -217,8 +217,7 @@ export function WithWorkspaceTheme({
         >
           <div
             ref={circleRef}
-            // deno-lint-ignore ensure-tailwind-design-system-tokens/ensure-tailwind-design-system-tokens
-            className="absolute w-24 h-24 rounded-full bg-stone-200"
+            className="absolute w-24 h-24 rounded-full bg-border"
             style={{ transformOrigin: "center" }}
           />
           {loadedBackground && (

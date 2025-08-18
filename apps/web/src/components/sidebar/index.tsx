@@ -1,4 +1,4 @@
-import { useState } from "react";
+import React, { useState } from "react";
 import { Link, useLocation } from "react-router";
 import { cn } from "@deco/ui/lib/utils.ts";
 import { Icon } from "@deco/ui/components/icon.tsx";
@@ -10,6 +10,8 @@ import {
   SidebarGroupLabel,
   SidebarMenu,
   SidebarMenuItem,
+  SidebarMenuButton,
+  useSidebar,
 } from "@deco/ui/components/sidebar.tsx";
 import { trackEvent } from "../../hooks/analytics.ts";
 import { useWorkspaceLink } from "../../hooks/use-navigate-workspace.ts";
@@ -32,21 +34,12 @@ function NavItem({
 }) {
   return (
     <SidebarMenuItem>
-      <Link
-        to={to}
-        onClick={onClick}
-        className={cn(
-          "flex items-center gap-1.5 px-4 py-2.5 rounded-lg hover:bg-foreground/5 transition-colors w-full",
-          isActive && "bg-foreground/10"
-        )}
-      >
-        <Icon
-          name={icon}
-          size={16}
-          className="text-muted-foreground opacity-50"
-        />
-        <span className="text-sm text-foreground">{label}</span>
-      </Link>
+      <SidebarMenuButton asChild isActive={isActive} tooltip={label}>
+        <Link to={to} onClick={onClick}>
+          <Icon name={icon} size={16} className="text-muted-foreground" />
+          <span>{label}</span>
+        </Link>
+      </SidebarMenuButton>
     </SidebarMenuItem>
   );
 }
@@ -65,18 +58,12 @@ function SubNavItem({
 }) {
   return (
     <SidebarMenuItem>
-      <Link
-        to={to}
-        onClick={onClick}
-        className="flex items-center gap-1.5 pl-8 pr-4 py-2.5 rounded-lg w-full hover:bg-foreground/5 transition-colors"
-      >
-        <Icon
-          name={icon}
-          size={16}
-          className="text-muted-foreground opacity-50"
-        />
-        <span className="text-sm text-foreground">{label}</span>
-      </Link>
+      <SidebarMenuButton asChild tooltip={label} className="pl-6">
+        <Link to={to} onClick={onClick}>
+          <Icon name={icon} size={16} className="text-muted-foreground" />
+          <span>{label}</span>
+        </Link>
+      </SidebarMenuButton>
     </SidebarMenuItem>
   );
 }
@@ -85,6 +72,7 @@ export function AppSidebar() {
   const workspaceLink = useWorkspaceLink();
   const location = useLocation();
   const [appsExpanded, setAppsExpanded] = useState(false);
+  const { state } = useSidebar();
   
   // Get current path to determine active state
   const isActive = (path: string) => {
@@ -92,11 +80,15 @@ export function AppSidebar() {
   };
 
   return (
-    <Sidebar className="p-2 h-full bg-transparent [&_[data-sidebar=sidebar]]:bg-transparent [&_[data-slot=sidebar-inner]]:bg-transparent">
-      <div className="bg-secondary rounded-2xl h-full flex flex-col">
+    <Sidebar 
+      collapsible="icon" 
+      className="p-2 h-full bg-transparent [&_[data-sidebar=sidebar]]:bg-transparent [&_[data-slot=sidebar-inner]]:bg-transparent"
+      style={{ "--sidebar-width-icon": "4.5rem" } as React.CSSProperties}
+    >
+      <div className="bg-secondary rounded-2xl h-full flex flex-col group-data-[collapsible=icon]:rounded-xl group-data-[collapsible=icon]:mx-auto group-data-[collapsible=icon]:w-16">
         <SidebarHeader />
         
-        <SidebarContent className="px-2 py-2">
+        <SidebarContent className="px-2 py-2 group-data-[collapsible=icon]:px-1">
           {/* Main Navigation */}
           <SidebarGroup>
             <SidebarGroupContent>
@@ -116,6 +108,13 @@ export function AppSidebar() {
                   onClick={() => trackEvent("sidebar_navigation_click", { item: "Discover" })}
                 />
                 <NavItem
+                  to={workspaceLink("/bounties")}
+                  icon="briefcase-business"
+                  label="Bounties"
+                  isActive={isActive("/bounties")}
+                  onClick={() => trackEvent("sidebar_navigation_click", { item: "Bounties" })}
+                />
+                <NavItem
                   to={workspaceLink("/monitor")}
                   icon="line_chart"
                   label="Monitor"
@@ -131,95 +130,91 @@ export function AppSidebar() {
             <SidebarGroupContent>
               <SidebarMenu className="gap-0">
                 <SidebarMenuItem>
-                  <button className="flex items-center justify-between px-4 py-2.5 rounded-lg w-full hover:bg-foreground/5 transition-colors">
-                    <div className="flex items-center gap-1.5">
+                  <SidebarMenuButton tooltip="MCPs">
+                    <Icon name="layout_grid" size={16} className="text-muted-foreground" />
+                    <span>MCPs</span>
+                    {state === "expanded" && (
                       <Icon
-                        name="layout_grid"
+                        name="plus"
                         size={16}
-                        className="text-muted-foreground opacity-50"
+                        className="text-muted-foreground opacity-50 hover:opacity-100 transition-opacity ml-auto"
                       />
-                      <span className="text-sm text-foreground">MCPs</span>
-                    </div>
-                    <Icon
-                      name="plus"
-                      size={16}
-                      className="text-muted-foreground opacity-50 hover:opacity-100 transition-opacity"
-                    />
-                  </button>
+                    )}
+                  </SidebarMenuButton>
                 </SidebarMenuItem>
                 
-                <SubNavItem
-                  to={workspaceLink("/agents")}
-                  icon="bot"
-                  label="Agents"
-                  onClick={() => trackEvent("sidebar_navigation_click", { item: "Agents" })}
-                />
-                <SubNavItem
-                  to={workspaceLink("/prompts")}
-                  icon="notebook"
-                  label="Prompts"
-                  onClick={() => trackEvent("sidebar_navigation_click", { item: "Prompts" })}
-                />
-                <SubNavItem
-                  to={workspaceLink("/connections")}
-                  icon="wrench"
-                  label="Tools"
-                  onClick={() => trackEvent("sidebar_navigation_click", { item: "Tools" })}
-                />
-                <SubNavItem
-                  to={workspaceLink("/views")}
-                  icon="app_window"
-                  label="Views"
-                  onClick={() => trackEvent("sidebar_navigation_click", { item: "Views" })}
-                />
-                <SubNavItem
-                  to={workspaceLink("/workflows")}
-                  icon="workflow"
-                  label="Workflows"
-                  onClick={() => trackEvent("sidebar_navigation_click", { item: "Workflows" })}
-                />
+                {state === "expanded" && (
+                  <>
+                    <SubNavItem
+                      to={workspaceLink("/agents")}
+                      icon="bot"
+                      label="Agents"
+                      onClick={() => trackEvent("sidebar_navigation_click", { item: "Agents" })}
+                    />
+                    <SubNavItem
+                      to={workspaceLink("/prompts")}
+                      icon="notebook"
+                      label="Prompts"
+                      onClick={() => trackEvent("sidebar_navigation_click", { item: "Prompts" })}
+                    />
+                    <SubNavItem
+                      to={workspaceLink("/connections")}
+                      icon="wrench"
+                      label="Tools"
+                      onClick={() => trackEvent("sidebar_navigation_click", { item: "Tools" })}
+                    />
+                    <SubNavItem
+                      to={workspaceLink("/views")}
+                      icon="app_window"
+                      label="Views"
+                      onClick={() => trackEvent("sidebar_navigation_click", { item: "Views" })}
+                    />
+                    <SubNavItem
+                      to={workspaceLink("/workflows")}
+                      icon="workflow"
+                      label="Workflows"
+                      onClick={() => trackEvent("sidebar_navigation_click", { item: "Workflows" })}
+                    />
+                  </>
+                )}
               </SidebarMenu>
             </SidebarGroupContent>
           </SidebarGroup>
 
           {/* APPS Section */}
           <SidebarGroup>
+            <SidebarGroupLabel>APPS</SidebarGroupLabel>
             <SidebarGroupContent>
               <SidebarMenu className="gap-0">
-                {/* APPS Label */}
-                <div className="px-4 pt-4 pb-1.5">
-                  <span className="text-xs font-medium text-muted-foreground">APPS</span>
-                </div>
-                
-                {/* deco.cx expandable item without background */}
+                {/* deco.cx expandable item */}
                 <SidebarMenuItem>
-                  <button
+                  <SidebarMenuButton
                     onClick={() => setAppsExpanded(!appsExpanded)}
-                    className="flex items-center justify-between px-4 py-2.5 rounded-lg w-full hover:bg-foreground/5 transition-colors"
+                    tooltip="deco.cx"
                   >
-                    <div className="flex items-center gap-1.5">
-                      <div className="w-4 h-4 bg-[#d0ec1a] rounded flex items-center justify-center">
-                        <Icon
-                          name="check"
-                          size={10}
-                          className="text-[#07401a]"
-                        />
-                      </div>
-                      <span className="text-sm text-foreground">deco.cx</span>
+                    <div className="w-4 h-4 bg-[#d0ec1a] rounded flex items-center justify-center">
+                      <Icon
+                        name="check"
+                        size={10}
+                        className="text-[#07401a]"
+                      />
                     </div>
-                    <Icon
-                      name="chevron_down"
-                      size={16}
-                      className={cn(
-                        "text-muted-foreground opacity-50 transition-transform",
-                        appsExpanded && "rotate-180"
-                      )}
-                    />
-                  </button>
+                    <span>deco.cx</span>
+                    {state === "expanded" && (
+                      <Icon
+                        name="chevron_down"
+                        size={16}
+                        className={cn(
+                          "text-muted-foreground opacity-50 transition-transform ml-auto",
+                          appsExpanded && "rotate-180"
+                        )}
+                      />
+                    )}
+                  </SidebarMenuButton>
                 </SidebarMenuItem>
                 
-                {/* Expanded items as sub-nav items */}
-                {appsExpanded && (
+                {/* Expanded items as sub-nav items - only show when sidebar is expanded */}
+                {appsExpanded && state === "expanded" && (
                   <>
                     <SubNavItem
                       to={workspaceLink("/pages")}

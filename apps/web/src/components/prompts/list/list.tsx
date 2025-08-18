@@ -102,11 +102,9 @@ function ListPromptsLayout() {
   return (
     <PageLayout
       hideViewsButton
-      breadcrumb={
-        <DefaultBreadcrumb
-          items={[{ label: "Prompt Library", link: "/prompts" }]}
-        />
-      }
+      useNewHeader={true}
+      pageTitle="Prompts"
+      pageIcon="edit"
       tabs={{
         prompts: {
           title: "Prompt Library",

@@ -397,7 +397,7 @@ function AddViewButton() {
     );
   }, [availableViews, deferredSearchTerm]);
 
-  const handleViewSelect = async (view: ViewWithStatus) => {
+  const handleViewSelect = async (view: { url: string; title: string }) => {
     const newAgent = {
       ...agent,
       views: [

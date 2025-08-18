@@ -35,11 +35,11 @@ export abstract class BaseActor<TMetadata extends AuthMetadata = AuthMetadata> {
       (this.env as Record<string, string>)?.DECO_CHAT_API_JWT_PRIVATE_KEY &&
         (this.env as Record<string, string>)?.DECO_CHAT_API_JWT_PUBLIC_KEY
         ? {
-            public: (this.env as Record<string, string>)
-              ?.DECO_CHAT_API_JWT_PUBLIC_KEY,
-            private: (this.env as Record<string, string>)
-              ?.DECO_CHAT_API_JWT_PRIVATE_KEY,
-          }
+          public: (this.env as Record<string, string>)
+            ?.DECO_CHAT_API_JWT_PUBLIC_KEY,
+          private: (this.env as Record<string, string>)
+            ?.DECO_CHAT_API_JWT_PRIVATE_KEY,
+        }
         : undefined,
     );
     return user ?? null;

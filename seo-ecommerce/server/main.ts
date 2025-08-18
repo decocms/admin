@@ -2,7 +2,12 @@
 import { withRuntime } from "@deco/workers-runtime";
 import { logSafe } from "@deco/workers-runtime/logSafe";
 import { cacheMetricsSnapshot } from "./tools/cache";
-import { toolMetricsSnapshot, recordToolError, recordToolSuccess, llmMetricsSnapshot } from "./tools/metrics";
+import {
+  llmMetricsSnapshot,
+  recordToolError,
+  recordToolSuccess,
+  toolMetricsSnapshot,
+} from "./tools/metrics";
 import { toolFactories } from "./tools";
 import { analyzeLinks } from "./tools/link-analyzer/analyze";
 import { createPageSpeedTool } from "./tools/pagespeed";
@@ -34,8 +39,13 @@ interface Env extends DecoEnv {
     const originalWarn = console.warn.bind(console);
     console.warn = (...args: any[]) => {
       try {
-        const joined = args.map(a => (typeof a === 'string' ? a : '')).join(' ');
-        if ((globalThis as any).SUPPRESS_SESSION_WARN === '1' || (globalThis as any).ENV_SUPPRESS_SESSION_WARN === '1') {
+        const joined = args.map((a) => (typeof a === "string" ? a : "")).join(
+          " ",
+        );
+        if (
+          (globalThis as any).SUPPRESS_SESSION_WARN === "1" ||
+          (globalThis as any).ENV_SUPPRESS_SESSION_WARN === "1"
+        ) {
           if (/session (storage|driver)/i.test(joined)) return; // swallow
         }
       } catch {}
@@ -119,9 +129,11 @@ const createMyWorkflow = (env: Env) => {
 // Lazy dynamic loader for Astro's generated Cloudflare worker (dynamic routes)
 // Built by Astro into ./view-build/_worker.js (output: server)
 // We call it only when we have a 404 from static assets & need HTML route resolution.
-let astroFetchPromise: Promise<
-  ((req: Request, env: Env, ctx: unknown) => Promise<Response>) | null
-> | null = null;
+let astroFetchPromise:
+  | Promise<
+    ((req: Request, env: Env, ctx: unknown) => Promise<Response>) | null
+  >
+  | null = null;
 async function loadAstroFetch(): Promise<
   ((req: Request, env: Env, ctx: unknown) => Promise<Response>) | null
 > {
@@ -139,8 +151,7 @@ async function loadAstroFetch(): Promise<
 }
 
 const fallbackToView =
-  (viewPath: string = "/") =>
-  async (req: Request, env: Env, ctx?: unknown) => {
+  (viewPath: string = "/") => async (req: Request, env: Env, ctx?: unknown) => {
     const LOCAL_URL = "http://localhost:4000";
     const url = new URL(req.url);
     const host = req.headers.get("origin") || req.headers.get("host") || "";
@@ -204,8 +215,8 @@ function applyCacheHeaders(
     const ct = res.headers.get("content-type") || "";
     const newHeaders = new Headers(res.headers);
     const isHtml = ct.includes("text/html");
-    const isHashedAsset =
-      /\/(_astro|assets)\/.*\.[a-f0-9]{6,}\.[a-z0-9]+$/i.test(path);
+    const isHashedAsset = /\/(_astro|assets)\/.*\.[a-f0-9]{6,}\.[a-z0-9]+$/i
+      .test(path);
     if (isHtml) {
       // Ensure fresh HTML after deploy
       newHeaders.set("Cache-Control", "no-cache, no-store, must-revalidate");
@@ -265,14 +276,12 @@ async function listTools(env: Env) {
   const factories = [createMyTool, ...toolFactories];
   return factories.map((f) => {
     const tool = f(env as any);
-    const inputSchema =
-      tool.inputSchema && "_def" in tool.inputSchema
-        ? zodToJsonSchema(tool.inputSchema as z.ZodTypeAny)
-        : { type: "object", properties: {} };
-    const outputSchema =
-      tool.outputSchema && "_def" in tool.outputSchema
-        ? zodToJsonSchema(tool.outputSchema as z.ZodTypeAny)
-        : { type: "object", properties: {} };
+    const inputSchema = tool.inputSchema && "_def" in tool.inputSchema
+      ? zodToJsonSchema(tool.inputSchema as z.ZodTypeAny)
+      : { type: "object", properties: {} };
+    const outputSchema = tool.outputSchema && "_def" in tool.outputSchema
+      ? zodToJsonSchema(tool.outputSchema as z.ZodTypeAny)
+      : { type: "object", properties: {} };
     return {
       name: tool.id,
       description: tool.description,
@@ -286,8 +295,9 @@ const runtime = {
   ...baseRuntime,
   fetch: (req: Request, env: Env, ctx: any) => {
     const url = new URL(req.url);
-  // Uptime marker
-  const startedAt = (globalThis as any).__APP_STARTED_AT || ((globalThis as any).__APP_STARTED_AT = Date.now());
+    // Uptime marker
+    const startedAt = (globalThis as any).__APP_STARTED_AT ||
+      ((globalThis as any).__APP_STARTED_AT = Date.now());
     // Early secret validation (once per request path) for production clarity
     const host = req.headers.get("host");
     const missing = validateCoreSecrets(env, host);
@@ -376,68 +386,86 @@ const runtime = {
       const tools = toolMetricsSnapshot();
       const llm = llmMetricsSnapshot();
       const lines: string[] = [];
-      lines.push('# HELP cache_lru_hits_total LRU memory cache hits');
-      lines.push('# TYPE cache_lru_hits_total counter');
+      lines.push("# HELP cache_lru_hits_total LRU memory cache hits");
+      lines.push("# TYPE cache_lru_hits_total counter");
       lines.push(`cache_lru_hits_total ${cache.lruHits}`);
-      lines.push('# HELP cache_kv_hits_total KV cache hits');
-      lines.push('# TYPE cache_kv_hits_total counter');
+      lines.push("# HELP cache_kv_hits_total KV cache hits");
+      lines.push("# TYPE cache_kv_hits_total counter");
       lines.push(`cache_kv_hits_total ${cache.kvHits}`);
-      lines.push('# HELP cache_misses_total Cache misses leading to origin fetch');
-      lines.push('# TYPE cache_misses_total counter');
+      lines.push(
+        "# HELP cache_misses_total Cache misses leading to origin fetch",
+      );
+      lines.push("# TYPE cache_misses_total counter");
       lines.push(`cache_misses_total ${cache.misses}`);
-      lines.push('# HELP cache_stale_served_total Stale responses served (SWR)');
-      lines.push('# TYPE cache_stale_served_total counter');
+      lines.push(
+        "# HELP cache_stale_served_total Stale responses served (SWR)",
+      );
+      lines.push("# TYPE cache_stale_served_total counter");
       lines.push(`cache_stale_served_total ${cache.staleServed}`);
-      lines.push('# HELP cache_revalidations_triggered_total Background revalidations triggered');
-      lines.push('# TYPE cache_revalidations_triggered_total counter');
-      lines.push(`cache_revalidations_triggered_total ${cache.revalidationsTriggered}`);
-      lines.push('# HELP cache_writes_total KV writes');
-      lines.push('# TYPE cache_writes_total counter');
+      lines.push(
+        "# HELP cache_revalidations_triggered_total Background revalidations triggered",
+      );
+      lines.push("# TYPE cache_revalidations_triggered_total counter");
+      lines.push(
+        `cache_revalidations_triggered_total ${cache.revalidationsTriggered}`,
+      );
+      lines.push("# HELP cache_writes_total KV writes");
+      lines.push("# TYPE cache_writes_total counter");
       lines.push(`cache_writes_total ${cache.writes}`);
-      lines.push('# HELP cache_lru_size Current LRU size');
-      lines.push('# TYPE cache_lru_size gauge');
+      lines.push("# HELP cache_lru_size Current LRU size");
+      lines.push("# TYPE cache_lru_size gauge");
       lines.push(`cache_lru_size ${cache.lruSize}`);
-      lines.push('# HELP cache_lru_capacity LRU capacity');
-      lines.push('# TYPE cache_lru_capacity gauge');
+      lines.push("# HELP cache_lru_capacity LRU capacity");
+      lines.push("# TYPE cache_lru_capacity gauge");
       lines.push(`cache_lru_capacity ${cache.lruCap}`);
-      lines.push('# HELP tool_calls_total Tool execution calls');
-      lines.push('# TYPE tool_calls_total counter');
-      lines.push('# HELP tool_errors_total Tool execution errors');
-      lines.push('# TYPE tool_errors_total counter');
-      lines.push('# HELP tool_avg_latency_ms Average latency in ms (gauge)');
-      lines.push('# TYPE tool_avg_latency_ms gauge');
-      lines.push('# HELP tool_p95_latency_ms Approx p95 latency in ms (gauge)');
-      lines.push('# TYPE tool_p95_latency_ms gauge');
-      lines.push('# HELP tool_error_rate Tool error rate (gauge)');
-      lines.push('# TYPE tool_error_rate gauge');
+      lines.push("# HELP tool_calls_total Tool execution calls");
+      lines.push("# TYPE tool_calls_total counter");
+      lines.push("# HELP tool_errors_total Tool execution errors");
+      lines.push("# TYPE tool_errors_total counter");
+      lines.push("# HELP tool_avg_latency_ms Average latency in ms (gauge)");
+      lines.push("# TYPE tool_avg_latency_ms gauge");
+      lines.push("# HELP tool_p95_latency_ms Approx p95 latency in ms (gauge)");
+      lines.push("# TYPE tool_p95_latency_ms gauge");
+      lines.push("# HELP tool_error_rate Tool error rate (gauge)");
+      lines.push("# TYPE tool_error_rate gauge");
       for (const [toolId, m] of Object.entries(tools)) {
         const label = `{tool="${toolId}"}`;
         lines.push(`tool_calls_total${label} ${m.calls}`);
         lines.push(`tool_errors_total${label} ${m.errors}`);
-        if (m.avgMs != null) lines.push(`tool_avg_latency_ms${label} ${m.avgMs}`);
-        if (m.p95Ms != null) lines.push(`tool_p95_latency_ms${label} ${m.p95Ms}`);
-        if (m.errorRate != null) lines.push(`tool_error_rate${label} ${m.errorRate}`);
+        if (m.avgMs != null) {
+          lines.push(`tool_avg_latency_ms${label} ${m.avgMs}`);
+        }
+        if (m.p95Ms != null) {
+          lines.push(`tool_p95_latency_ms${label} ${m.p95Ms}`);
+        }
+        if (m.errorRate != null) {
+          lines.push(`tool_error_rate${label} ${m.errorRate}`);
+        }
       }
       // LLM metrics
-      lines.push('# HELP llm_calls_total LLM invocation attempts');
-      lines.push('# TYPE llm_calls_total counter');
+      lines.push("# HELP llm_calls_total LLM invocation attempts");
+      lines.push("# TYPE llm_calls_total counter");
       lines.push(`llm_calls_total ${llm.calls}`);
-      lines.push('# HELP llm_errors_total LLM invocation errors');
-      lines.push('# TYPE llm_errors_total counter');
+      lines.push("# HELP llm_errors_total LLM invocation errors");
+      lines.push("# TYPE llm_errors_total counter");
       lines.push(`llm_errors_total ${llm.errors}`);
       if (llm.avgMs != null) {
-        lines.push('# HELP llm_avg_latency_ms Average LLM latency in ms (gauge)');
-        lines.push('# TYPE llm_avg_latency_ms gauge');
+        lines.push(
+          "# HELP llm_avg_latency_ms Average LLM latency in ms (gauge)",
+        );
+        lines.push("# TYPE llm_avg_latency_ms gauge");
         lines.push(`llm_avg_latency_ms ${llm.avgMs}`);
       }
       if (llm.p95Ms != null) {
-        lines.push('# HELP llm_p95_latency_ms Approx p95 LLM latency in ms (gauge)');
-        lines.push('# TYPE llm_p95_latency_ms gauge');
+        lines.push(
+          "# HELP llm_p95_latency_ms Approx p95 LLM latency in ms (gauge)",
+        );
+        lines.push("# TYPE llm_p95_latency_ms gauge");
         lines.push(`llm_p95_latency_ms ${llm.p95Ms}`);
       }
       if (llm.errorRate != null) {
-        lines.push('# HELP llm_error_rate LLM error rate (gauge)');
-        lines.push('# TYPE llm_error_rate gauge');
+        lines.push("# HELP llm_error_rate LLM error rate (gauge)");
+        lines.push("# TYPE llm_error_rate gauge");
         lines.push(`llm_error_rate ${llm.errorRate}`);
       }
       return new Response(lines.join("\n") + "\n", {
@@ -450,7 +478,8 @@ const runtime = {
     }
     if (url.pathname === "/__health") {
       // Simple in-memory token bucket (reset each minute per isolate)
-      const bucket = (globalThis as any).__HL_BUCKET || ((globalThis as any).__HL_BUCKET = { ts: Date.now(), tokens: 60 });
+      const bucket = (globalThis as any).__HL_BUCKET ||
+        ((globalThis as any).__HL_BUCKET = { ts: Date.now(), tokens: 60 });
       const nowTs = Date.now();
       if (nowTs - bucket.ts > 60_000) {
         bucket.ts = nowTs;
@@ -481,11 +510,23 @@ const runtime = {
       for (const [toolId, m] of Object.entries(tools)) {
         if (m.calls >= 5 && m.errorRate != null && m.errorRate > 0.5) {
           status = "degraded";
-          warnings.push(`High errorRate ${toolId}=${(m.errorRate * 100).toFixed(0)}%`);
+          warnings.push(
+            `High errorRate ${toolId}=${(m.errorRate * 100).toFixed(0)}%`,
+          );
         }
       }
-  const buildId = (globalThis as any).__BUILD_ID__ || (globalThis as any).BUILD_ID || null;
-      const body = { status, buildId, uptimeSec, startedAt, cache, tools, missingSecrets, warnings };
+      const buildId = (globalThis as any).__BUILD_ID__ ||
+        (globalThis as any).BUILD_ID || null;
+      const body = {
+        status,
+        buildId,
+        uptimeSec,
+        startedAt,
+        cache,
+        tools,
+        missingSecrets,
+        warnings,
+      };
       return new Response(JSON.stringify(body), {
         status: status === "ok" ? 200 : 503,
         headers: {
@@ -515,7 +556,7 @@ const runtime = {
         try {
           const body = await req.json().catch(() => ({}));
           const rawUrl = body.url || body.input?.url;
-            if (!rawUrl || typeof rawUrl !== "string") {
+          if (!rawUrl || typeof rawUrl !== "string") {
             return new Response(JSON.stringify({ error: "url requerida" }), {
               status: 400,
               headers: corsHeaders({ "content-type": "application/json" }),
@@ -555,11 +596,12 @@ const runtime = {
         try {
           const body = await req.json().catch(() => ({}));
           const u = body.url || body.input?.url;
-          if (!u)
+          if (!u) {
             return new Response(JSON.stringify({ error: "Missing url" }), {
               status: 400,
               headers: corsHeaders({ "content-type": "application/json" }),
             });
+          }
           const result = await analyzeLinks(u);
           return new Response(
             JSON.stringify({
@@ -646,7 +688,9 @@ const runtime = {
                 }
                 const result = await analyzeLinks((input as any).url);
                 const execMs = 0; // basic path already measured inside analyzeLinks if needed
-                try { recordToolSuccess("LINK_ANALYZER", execMs); } catch {}
+                try {
+                  recordToolSuccess("LINK_ANALYZER", execMs);
+                } catch {}
                 return new Response(
                   JSON.stringify({ tool: "LINK_ANALYZER", input, result }),
                   {
@@ -661,7 +705,9 @@ const runtime = {
                 logSafe.error("[MCP] LINK_ANALYZER direct exec error", {
                   error: (e as Error).message,
                 });
-                try { recordToolError("LINK_ANALYZER", 0); } catch {}
+                try {
+                  recordToolError("LINK_ANALYZER", 0);
+                } catch {}
                 return new Response(
                   JSON.stringify({ error: (e as Error).message }),
                   {
@@ -723,9 +769,9 @@ const runtime = {
                 },
               );
             }
-      const tool = (factory as any)(toolEnv);
-      let execStart = Date.now();
-      try {
+            const tool = (factory as any)(toolEnv);
+            let execStart = Date.now();
+            try {
               let execution: any;
               // Fast-path bypass for local dev to skip env-heavy validation for simple tools
               if (
@@ -738,12 +784,12 @@ const runtime = {
                   };
                 } else if (toolId === "LINK_ANALYZER") {
                   try {
-        const laStart = Date.now();
+                    const laStart = Date.now();
                     const { analyzeLinks } = await import(
                       "./tools/link-analyzer/analyze"
                     );
                     execution = await analyzeLinks((input as any).url);
-        recordToolSuccess("LINK_ANALYZER", Date.now() - laStart);
+                    recordToolSuccess("LINK_ANALYZER", Date.now() - laStart);
                   } catch (e) {
                     logSafe.error("[MCP] Bypass analyze error", {
                       error: (e as Error).message,
@@ -777,8 +823,7 @@ const runtime = {
                 const execMs = Date.now() - execStart;
                 recordToolError(toolId, execMs);
               } catch {}
-              const isZod =
-                toolErr &&
+              const isZod = toolErr &&
                 typeof toolErr === "object" &&
                 (toolErr as any).name === "ZodError";
               const stack =

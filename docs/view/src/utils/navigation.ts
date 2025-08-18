@@ -27,25 +27,24 @@ export async function getNavigationLinks(
   }
 
   const previous = currentIndex > 0 ? sortedDocs[currentIndex - 1] : undefined;
-  const next =
-    currentIndex < sortedDocs.length - 1
-      ? sortedDocs[currentIndex + 1]
-      : undefined;
+  const next = currentIndex < sortedDocs.length - 1
+    ? sortedDocs[currentIndex + 1]
+    : undefined;
 
   return {
     previous: previous
       ? {
-          title: previous.data.title,
-          description: previous.data.description,
-          href: `/${locale}/${previous.id.split("/").slice(1).join("/")}`,
-        }
+        title: previous.data.title,
+        description: previous.data.description,
+        href: `/${locale}/${previous.id.split("/").slice(1).join("/")}`,
+      }
       : undefined,
     next: next
       ? {
-          title: next.data.title,
-          description: next.data.description,
-          href: `/${locale}/${next.id.split("/").slice(1).join("/")}`,
-        }
+        title: next.data.title,
+        description: next.data.description,
+        href: `/${locale}/${next.id.split("/").slice(1).join("/")}`,
+      }
       : undefined,
   };
 }

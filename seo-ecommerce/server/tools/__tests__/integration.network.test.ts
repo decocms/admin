@@ -1,4 +1,4 @@
-import { describe, it, expect } from "vitest";
+import { describe, expect, it } from "vitest";
 
 // Este teste só roda quando RUN_NETWORK_TESTS=1 (ou true) para evitar chamadas externas em CI normal.
 const run = /^1|true$/i.test(process.env.RUN_NETWORK_TESTS || "");
@@ -8,13 +8,17 @@ const run = /^1|true$/i.test(process.env.RUN_NETWORK_TESTS || "");
   it("PageSpeed + LinkAnalyzer minimal smoke", async () => {
     // Require API key only if present; otherwise we accept heuristic path.
     const psApi = new URL(
-      `https://www.googleapis.com/pagespeedonline/v5/runPagespeed?${new URLSearchParams({
-        url: targetUrl,
-        strategy: "mobile",
-        category: "performance",
-      }).toString()}`,
+      `https://www.googleapis.com/pagespeedonline/v5/runPagespeed?${
+        new URLSearchParams({
+          url: targetUrl,
+          strategy: "mobile",
+          category: "performance",
+        }).toString()
+      }`,
     );
-    const psResp = await fetch(psApi.toString(), { headers: { Accept: "application/json" } });
+    const psResp = await fetch(psApi.toString(), {
+      headers: { Accept: "application/json" },
+    });
     expect(psResp.status).toBe(200);
     const psJson: any = await psResp.json();
     expect(psJson.id || psJson.lighthouseResult?.requestedUrl).toBeTruthy();

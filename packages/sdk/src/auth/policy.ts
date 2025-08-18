@@ -115,10 +115,9 @@ export class PolicyClient {
       throw new Error("PolicyClient not initialized with database client");
     }
 
-    const teamId =
-      typeof teamIdOrSlug === "number"
-        ? teamIdOrSlug
-        : await this.getTeamIdBySlug(teamIdOrSlug);
+    const teamId = typeof teamIdOrSlug === "number"
+      ? teamIdOrSlug
+      : await this.getTeamIdBySlug(teamIdOrSlug);
 
     const cacheKey = this.getUserRolesCacheKey(userId, teamId);
 
@@ -176,10 +175,9 @@ export class PolicyClient {
   ): Promise<Statement[]> {
     this.assertDb(this.db);
 
-    const teamId =
-      typeof teamIdOrSlug === "number"
-        ? teamIdOrSlug
-        : await this.getTeamIdBySlug(teamIdOrSlug);
+    const teamId = typeof teamIdOrSlug === "number"
+      ? teamIdOrSlug
+      : await this.getTeamIdBySlug(teamIdOrSlug);
 
     if (teamId === undefined) {
       throw new Error(`Team with slug "${teamIdOrSlug}" not found`);
@@ -224,7 +222,7 @@ export class PolicyClient {
     const policiesStatements = this.filterValidStatements(
       data
         .map((mr) =>
-          mr.roles.role_policies.map((p) => p.policies.statements).flat(),
+          mr.roles.role_policies.map((p) => p.policies.statements).flat()
         )
         .flat() as unknown as Statement[],
     );
@@ -406,8 +404,9 @@ export class PolicyClient {
       .insert({
         ...role,
         team_id: teamId,
-        statements:
-          statements?.length === 0 ? null : (statements as unknown as Json[]),
+        statements: statements?.length === 0
+          ? null
+          : (statements as unknown as Json[]),
       })
       .select()
       .single();
@@ -433,8 +432,9 @@ export class PolicyClient {
       .update({
         ...role,
         team_id: teamId,
-        statements:
-          statements?.length === 0 ? null : (statements as unknown as Json[]),
+        statements: statements?.length === 0
+          ? null
+          : (statements as unknown as Json[]),
       })
       .eq("id", role.id)
       .eq("team_id", teamId)
@@ -481,8 +481,9 @@ export class PolicyClient {
           "id",
           memberIds.map((m) => m.member_id),
         );
-      const members =
-        _members?.filter((m): m is { user_id: string } => m.user_id !== null) ??
+      const members = _members?.filter((m): m is { user_id: string } =>
+        m.user_id !== null
+      ) ??
         [];
       await this.deleteUserRolesCache(
         teamId,
@@ -547,13 +548,13 @@ export class PolicyClient {
 
     const roleStatementsAsPolicies: Policy | null = data.statements
       ? {
-          id: data.id,
-          name: data.name,
-          team_id: data.team_id,
-          statements: this.filterValidStatements(
-            data.statements as unknown as Statement[],
-          ),
-        }
+        id: data.id,
+        name: data.name,
+        team_id: data.team_id,
+        statements: this.filterValidStatements(
+          data.statements as unknown as Statement[],
+        ),
+      }
       : null;
 
     return {
@@ -594,12 +595,12 @@ export class PolicyClient {
   private async deleteUserRolesCache(teamId: number, userIds: string[]) {
     await Promise.all(
       userIds.map((u) =>
-        this.userPolicyCache.delete(this.getUserPoliceCacheKey(u, teamId)),
+        this.userPolicyCache.delete(this.getUserPoliceCacheKey(u, teamId))
       ),
     );
     await Promise.all(
       userIds.map((u) =>
-        this.userRolesCache.delete(this.getUserRolesCacheKey(u, teamId)),
+        this.userRolesCache.delete(this.getUserRolesCacheKey(u, teamId))
       ),
     );
   }
@@ -646,13 +647,12 @@ export class AuthorizationClient {
     resource: string,
     ctx: Partial<AuthContext> = {},
   ): Promise<boolean> {
-    const statements =
-      typeof userOrPolicies === "string"
-        ? await this.policyClient.getUserStatements(
-            userOrPolicies,
-            teamIdOrSlug,
-          )
-        : (userOrPolicies ?? []);
+    const statements = typeof userOrPolicies === "string"
+      ? await this.policyClient.getUserStatements(
+        userOrPolicies,
+        teamIdOrSlug,
+      )
+      : (userOrPolicies ?? []);
 
     let hasAllowMatch = false;
 
@@ -688,12 +688,11 @@ export class AuthorizationClient {
       ? MatcherFunctions[statement.matchCondition.resource]
       : undefined;
 
-    const matched =
-      matchFn?.handler?.(
-        // deno-lint-ignore no-explicit-any
-        matchFn?.schema.parse(statement.matchCondition!) as unknown as any,
-        ctx,
-      ) ?? true;
+    const matched = matchFn?.handler?.(
+      // deno-lint-ignore no-explicit-any
+      matchFn?.schema.parse(statement.matchCondition!) as unknown as any,
+      ctx,
+    ) ?? true;
 
     return matched && statement.resource === resource;
   }

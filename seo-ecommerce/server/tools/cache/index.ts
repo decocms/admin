@@ -96,7 +96,8 @@ export async function getOrSet<T>(
     version = 1,
     // Respect explicit override in opts or env flag USE_KV=0 to disable KV usage.
     kv = ((): KVNamespaceLike | undefined => {
-      const disabled = (env as any)?.USE_KV === '0' || (globalThis as any)?.USE_KV === '0';
+      const disabled = (env as any)?.USE_KV === "0" ||
+        (globalThis as any)?.USE_KV === "0";
       if (disabled) return undefined;
       return env.SEO_CACHE;
     })(),
@@ -131,7 +132,9 @@ export async function getOrSet<T>(
     __loggedKvFallback = true;
     try {
       // Lightweight single log to indicate KV disabled / missing; avoid spamming.
-      console.warn('[cache] KV disabled or missing (using in-memory only). Set USE_KV=1 and provide binding SEO_CACHE to enable persistence.');
+      console.warn(
+        "[cache] KV disabled or missing (using in-memory only). Set USE_KV=1 and provide binding SEO_CACHE to enable persistence.",
+      );
     } catch {}
   }
   if (kvEntry) {

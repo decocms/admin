@@ -124,57 +124,63 @@ function TreeItem({
           active
             ? "bg-primary/5 text-primary" // Active state
             : node.type === "folder"
-              ? "text-muted-foreground hover:bg-muted hover:text-foreground"
-              : "text-muted-foreground hover:bg-muted hover:text-foreground"
+            ? "text-muted-foreground hover:bg-muted hover:text-foreground"
+            : "text-muted-foreground hover:bg-muted hover:text-foreground"
         }`}
       >
         {/* Indentation spacer for nested items */}
         {node.depth > 1 && <div className="w-6 shrink-0" />}
 
         {/* Icon */}
-        {node.type === "folder" ? (
-          <Icon
-            name="Folder"
-            size={16}
-            className={`shrink-0 ${active ? "text-primary" : ""}`}
-          />
-        ) : node.doc?.data?.icon ? (
-          <Icon
-            name={node.doc.data.icon}
-            size={16}
-            className={`shrink-0 ${active ? "text-primary" : ""}`}
-          />
-        ) : (
-          <Icon
-            name="FileText"
-            size={16}
-            className={`shrink-0 ${active ? "text-primary" : ""}`}
-          />
-        )}
+        {node.type === "folder"
+          ? (
+            <Icon
+              name="Folder"
+              size={16}
+              className={`shrink-0 ${active ? "text-primary" : ""}`}
+            />
+          )
+          : node.doc?.data?.icon
+          ? (
+            <Icon
+              name={node.doc.data.icon}
+              size={16}
+              className={`shrink-0 ${active ? "text-primary" : ""}`}
+            />
+          )
+          : (
+            <Icon
+              name="FileText"
+              size={16}
+              className={`shrink-0 ${active ? "text-primary" : ""}`}
+            />
+          )}
 
         {/* Content */}
-        {node.type === "folder" ? (
-          <button
-            type="button"
-            className="flex items-center justify-between w-full text-left"
-            onClick={() => onToggle(node.id)}
-          >
-            <span className="flex-1">
-              {translations[`sidebar.section.${node.name}`] || node.name}
-            </span>
-            {node.hasChildren && (
-              <Icon
-                name={isExpanded ? "ChevronDown" : "ChevronRight"}
-                size={16}
-                className={`shrink-0 ${active ? "text-primary" : ""}`}
-              />
-            )}
-          </button>
-        ) : (
-          <a href={`/${locale}/${node.path.join("/")}`} className="flex-1">
-            {node.doc?.data?.title || node.name}
-          </a>
-        )}
+        {node.type === "folder"
+          ? (
+            <button
+              type="button"
+              className="flex items-center justify-between w-full text-left"
+              onClick={() => onToggle(node.id)}
+            >
+              <span className="flex-1">
+                {translations[`sidebar.section.${node.name}`] || node.name}
+              </span>
+              {node.hasChildren && (
+                <Icon
+                  name={isExpanded ? "ChevronDown" : "ChevronRight"}
+                  size={16}
+                  className={`shrink-0 ${active ? "text-primary" : ""}`}
+                />
+              )}
+            </button>
+          )
+          : (
+            <a href={`/${locale}/${node.path.join("/")}`} className="flex-1">
+              {node.doc?.data?.title || node.name}
+            </a>
+          )}
       </div>
     </li>
   );

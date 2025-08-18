@@ -132,8 +132,8 @@ export const writeWranglerConfig = async (
   const currentConfig = await readWranglerConfig(targetCwd);
   const mergedConfig = { ...currentConfig, ...config };
   mergedConfig.scope ??= mergedConfig.scope ?? mergedConfig?.deco?.workspace;
-  const configPath =
-    getConfigFilePath(targetCwd) ?? join(targetCwd, CONFIG_FILE);
+  const configPath = getConfigFilePath(targetCwd) ??
+    join(targetCwd, CONFIG_FILE);
 
   await fs.writeFile(configPath, addSchemaNotation(stringify(mergedConfig)));
   console.log(`✅ Wrangler configuration written to: ${configPath}`);
@@ -180,8 +180,8 @@ export const writeConfigFile = async (
   const current = wranglerConfig.deco ?? ({} as Partial<Config>);
   const mergedConfig = merge ? { ...current, ...config } : config;
 
-  const configPath =
-    getConfigFilePath(targetCwd) ?? join(targetCwd, CONFIG_FILE);
+  const configPath = getConfigFilePath(targetCwd) ??
+    join(targetCwd, CONFIG_FILE);
 
   await fs.writeFile(
     configPath,

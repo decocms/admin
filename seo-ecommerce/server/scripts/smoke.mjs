@@ -11,10 +11,11 @@ const WAIT_INTERVAL_MS = 1000;
 import { logSafe } from "@deco/workers-runtime/logSafe";
 function log(title, data, ok = true) {
   if (ok) logSafe.info(`[smoke] ${title}`, { data });
-  else
+  else {
     logSafe.error(`[smoke] ${title}`, {
       error: data?.message || String(data),
     });
+  }
 }
 
 async function safeFetch(url, opts) {
@@ -68,8 +69,9 @@ async function run() {
     if (r.status !== 200) throw new Error(`Status ${r.status}`);
     const names = (r.body.tools || []).map((t) => t.name);
     summary.tools.listed = names;
-    if (!names.includes("LINK_ANALYZER"))
+    if (!names.includes("LINK_ANALYZER")) {
       throw new Error("LINK_ANALYZER missing");
+    }
     if (!names.includes("PAGESPEED")) throw new Error("PAGESPEED missing");
     return names;
   });
@@ -83,8 +85,9 @@ async function run() {
       body: JSON.stringify({ tool: "LINK_ANALYZER", input: { url: testUrl } }),
     });
     summary.timings.link = Date.now() - t0;
-    if (r.status !== 200)
+    if (r.status !== 200) {
       throw new Error(`Status ${r.status}: ${JSON.stringify(r.body)}`);
+    }
     const c = r.body.result || r.body;
     summary.tools.LINK_ANALYZER = {
       linkCount: Array.isArray(c.links) ? c.links.length : 0,
@@ -107,8 +110,9 @@ async function run() {
       }),
     });
     summary.timings.psMobile = Date.now() - t0;
-    if (r.status !== 200)
+    if (r.status !== 200) {
       throw new Error(`Status ${r.status}: ${JSON.stringify(r.body)}`);
+    }
     const out = r.body.result || r.body;
     summary.tools.PAGESPEED_mobile = {
       perf: out.categories?.performance,
@@ -133,8 +137,9 @@ async function run() {
       }),
     });
     summary.timings.psDesktop = Date.now() - t0;
-    if (r.status !== 200)
+    if (r.status !== 200) {
       throw new Error(`Status ${r.status}: ${JSON.stringify(r.body)}`);
+    }
     const out = r.body.result || r.body;
     summary.tools.PAGESPEED_desktop = {
       perf: out.categories?.performance,
@@ -152,8 +157,9 @@ async function run() {
       body: JSON.stringify({ url: testUrl }),
     });
     summary.timings.directAnalyze = Date.now() - t0;
-    if (r.status !== 200)
+    if (r.status !== 200) {
       throw new Error(`Status ${r.status}: ${JSON.stringify(r.body)}`);
+    }
     return { status: r.status };
   });
 
@@ -166,8 +172,9 @@ async function run() {
       body: JSON.stringify({ tool: "SEO_AUDIT", input: { url: testUrl } }),
     });
     summary.timings.seoAudit = Date.now() - t0;
-    if (r.status !== 200)
+    if (r.status !== 200) {
       throw new Error(`Status ${r.status}: ${JSON.stringify(r.body)}`);
+    }
     const out = r.body.result || r.body;
     summary.tools.SEO_AUDIT = {
       perfMobile: out.scores?.performanceMobile,
@@ -187,8 +194,9 @@ async function run() {
       body: JSON.stringify({ tool: "AI_INSIGHTS", input: { url: testUrl } }),
     });
     summary.timings.aiInsights = Date.now() - t0;
-    if (r.status !== 200)
+    if (r.status !== 200) {
       throw new Error(`Status ${r.status}: ${JSON.stringify(r.body)}`);
+    }
     const out = r.body.result || r.body;
     summary.tools.AI_INSIGHTS = {
       insights: (out.insights || []).length,

@@ -16,8 +16,8 @@ import type { ActorState, InvokeMiddlewareOptions } from "@deco/actors";
 import { Actor } from "@deco/actors";
 import type { Agent as Configuration } from "@deco/sdk";
 import {
-  type PosthogServerClient,
   createPosthogServerClient,
+  type PosthogServerClient,
 } from "@deco/sdk/posthog";
 import { type AuthMetadata, BaseActor } from "@deco/sdk/actors";
 import { JwtIssuer } from "@deco/sdk/auth";
@@ -67,11 +67,11 @@ import { TokenLimiter } from "@mastra/memory/processors";
 import { createServerClient } from "@supabase/ssr";
 import type { TextPart } from "ai";
 import {
-  smoothStream,
   type GenerateObjectResult,
   type GenerateTextResult,
   type LanguageModelUsage,
   type Message,
+  smoothStream,
 } from "ai";
 import { Cloudflare } from "cloudflare";
 import { getRuntimeKey } from "hono/adapter";
@@ -249,10 +249,10 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
     });
     this.llmVault = this.env.LLMS_ENCRYPTION_KEY
       ? new SupabaseLLMVault(
-          this.db,
-          this.env.LLMS_ENCRYPTION_KEY,
-          this.workspace,
-        )
+        this.db,
+        this.env.LLMS_ENCRYPTION_KEY,
+        this.workspace,
+      )
       : undefined;
     this.posthog = createPosthogServerClient({
       apiKey: this.env.POSTHOG_API_KEY,
@@ -325,15 +325,14 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
     connection: string | MCPConnection,
     signal?: AbortSignal,
   ): Promise<ToolsInput | null> {
-    const [mcpId, integration] =
-      typeof connection === "string"
-        ? [
-            connection,
-            await this.metadata?.mcpClient?.INTEGRATIONS_GET({
-              id: connection,
-            }),
-          ]
-        : [normalizeMCPId(connection), { connection }];
+    const [mcpId, integration] = typeof connection === "string"
+      ? [
+        connection,
+        await this.metadata?.mcpClient?.INTEGRATIONS_GET({
+          id: connection,
+        }),
+      ]
+      : [normalizeMCPId(connection), { connection }];
 
     if (!integration) {
       console.log("integration not found", mcpId);
@@ -375,10 +374,9 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
     toolsetsFromOptions?: Toolset[],
   ): Promise<ToolsetsInput> {
     const tools: ToolsetsInput = {};
-    const toolsets =
-      toolsetsFromOptions?.map(({ connection, filters }) => {
-        return [connection, filters] as [MCPConnection, string[]];
-      }) ?? [];
+    const toolsets = toolsetsFromOptions?.map(({ connection, filters }) => {
+      return [connection, filters] as [MCPConnection, string[]];
+    }) ?? [];
     await Promise.all(
       [...Object.entries(tool_set), ...toolsets].map(
         async ([connection, filterList]) => {
@@ -400,7 +398,7 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
               },
             ),
             new Promise((resolve) =>
-              setTimeout(() => resolve(null), LOAD_TOOLS_TIMEOUT_MS),
+              setTimeout(() => resolve(null), LOAD_TOOLS_TIMEOUT_MS)
             ).then(() => {
               // should not rely only on timeout abort because it also aborts subsequent requests
               timeout.abort();
@@ -477,8 +475,8 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
         workingMemory: agentWorkingMemoryToWorkingMemoryConfig(
           memory?.working_memory ?? DEFAULT_MEMORY.working_memory,
         ),
-        semanticRecall:
-          memory?.semantic_recall ?? DEFAULT_MEMORY.semantic_recall,
+        semanticRecall: memory?.semantic_recall ??
+          DEFAULT_MEMORY.semantic_recall,
         lastMessages: memory?.last_messages ?? DEFAULT_MEMORY.last_messages,
       },
     });
@@ -569,8 +567,8 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
     const threadId = this.metadata?.threadId ?? this._memory.generateId(); // private thread with the given resource
     return {
       threadId,
-      resourceId:
-        this.metadata?.resourceId ?? this.metadata?.user?.id ?? threadId,
+      resourceId: this.metadata?.resourceId ?? this.metadata?.user?.id ??
+        threadId,
     };
   }
 
@@ -637,8 +635,8 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
         memory: this._memory,
         name: this._configuration?.name ?? ANONYMOUS_NAME,
         model: llm,
-        instructions:
-          this._configuration?.instructions ?? ANONYMOUS_INSTRUCTIONS,
+        instructions: this._configuration?.instructions ??
+          ANONYMOUS_INSTRUCTIONS,
         voice: this.env.OPENAI_API_KEY
           ? createAgentOpenAIVoice({ apiKey: this.env.OPENAI_API_KEY })
           : undefined,
@@ -668,19 +666,18 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
   }
 
   _token() {
-    const keyPair =
-      this.env.DECO_CHAT_API_JWT_PRIVATE_KEY &&
-      this.env.DECO_CHAT_API_JWT_PUBLIC_KEY
-        ? {
-            public: this.env.DECO_CHAT_API_JWT_PUBLIC_KEY,
-            private: this.env.DECO_CHAT_API_JWT_PRIVATE_KEY,
-          }
-        : undefined;
+    const keyPair = this.env.DECO_CHAT_API_JWT_PRIVATE_KEY &&
+        this.env.DECO_CHAT_API_JWT_PUBLIC_KEY
+      ? {
+        public: this.env.DECO_CHAT_API_JWT_PUBLIC_KEY,
+        private: this.env.DECO_CHAT_API_JWT_PRIVATE_KEY,
+      }
+      : undefined;
     return JwtIssuer.forKeyPair(keyPair).then((issuer) =>
       issuer.issue({
         sub: `agent:${this.id}`,
         aud: this.workspace,
-      }),
+      })
     );
   }
 
@@ -963,20 +960,19 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
   // Warning: This method also updates the configuration in memory
   async configuration(): Promise<Configuration> {
     const client = this.metadata?.mcpClient ?? this.agentScoppedMcpClient;
-    const manifest =
-      this.agentId in WELL_KNOWN_AGENTS
-        ? WELL_KNOWN_AGENTS[this.agentId as keyof typeof WELL_KNOWN_AGENTS]
-        : await client
-            .AGENTS_GET({ id: this.agentId })
-            .catch((err: unknown) => {
-              console.error("Error getting agent", err);
-              this._trackEvent("agent_mcp_client_error", {
-                error: serializeError(err),
-                method: "configuration",
-                agentId: this.agentId,
-              });
-              return null;
-            });
+    const manifest = this.agentId in WELL_KNOWN_AGENTS
+      ? WELL_KNOWN_AGENTS[this.agentId as keyof typeof WELL_KNOWN_AGENTS]
+      : await client
+        .AGENTS_GET({ id: this.agentId })
+        .catch((err: unknown) => {
+          console.error("Error getting agent", err);
+          this._trackEvent("agent_mcp_client_error", {
+            error: serializeError(err),
+            method: "configuration",
+            agentId: this.agentId,
+          });
+          return null;
+        });
 
     const merged: Configuration = {
       name: ANONYMOUS_NAME,
@@ -1058,8 +1054,8 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
     const threadId = this.metadata?.threadId ?? this.memory.generateId(); // private thread with the given resource
     return {
       threadId,
-      resourceId:
-        this.metadata?.resourceId ?? this.metadata?.user?.id ?? threadId,
+      resourceId: this.metadata?.resourceId ?? this.metadata?.user?.id ??
+        threadId,
     };
   }
 
@@ -1078,7 +1074,7 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
 
     const aiMessages = await Promise.all(
       payload.map((msg) =>
-        convertToAIMessage({ message: msg, agent: this._agent }),
+        convertToAIMessage({ message: msg, agent: this._agent })
       ),
     );
     const result = (await this._agent.generate(aiMessages, {
@@ -1117,7 +1113,7 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
     const hasPdf = payload.some((message) =>
       message.experimental_attachments?.some(
         (attachment) => attachment.contentType === "application/pdf",
-      ),
+      )
     );
     const bypassOpenRouter = isClaude && hasPdf;
 
@@ -1128,7 +1124,7 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
 
     const aiMessages = await Promise.all(
       payload.map((msg) =>
-        convertToAIMessage({ message: msg, agent: this._agent }),
+        convertToAIMessage({ message: msg, agent: this._agent })
       ),
     );
 
@@ -1165,8 +1161,8 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
 
       const isClaude = (
         options?.model ??
-        this._configuration?.model ??
-        ""
+          this._configuration?.model ??
+          ""
       ).includes("claude");
       const { hasPdf, hasMinimumSizeForSummarization } = shouldSummarizePDFs(
         payload as Message[],
@@ -1207,18 +1203,15 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
       const context = payload.flatMap((message) =>
         Array.isArray(message.annotations)
           ? message.annotations.map((annotation) => ({
-              role: "user" as const,
-              content:
-                typeof annotation === "string"
-                  ? annotation
-                  : [
-                      {
-                        type: "text",
-                        text: JSON.stringify(annotation),
-                      } as TextPart,
-                    ],
-            }))
-          : [],
+            role: "user" as const,
+            content: typeof annotation === "string" ? annotation : [
+              {
+                type: "text",
+                text: JSON.stringify(annotation),
+              } as TextPart,
+            ],
+          }))
+          : []
       );
 
       const toolsets = await this._withToolOverrides(
@@ -1231,8 +1224,8 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
       const agentOverridesTiming = timings.start("agent-overrides");
       const agent = await this._withAgentOverrides({
         ...options,
-        bypassOpenRouter:
-          bypassOpenRouter ?? options?.bypassOpenRouter ?? false,
+        bypassOpenRouter: bypassOpenRouter ?? options?.bypassOpenRouter ??
+          false,
       });
       agentOverridesTiming.end();
 
@@ -1271,11 +1264,11 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
 
       const experimentalTransform = options?.smoothStream
         ? smoothStream({
-            delayInMs: options.smoothStream.delayInMs,
-            // The default chunking breaks cloudflare due to using too much CPU.
-            // This is a simpler function that does the job.
-            chunking: (buffer) => buffer.slice(0, 15) || null,
-          })
+          delayInMs: options.smoothStream.delayInMs,
+          // The default chunking breaks cloudflare due to using too much CPU.
+          // This is a simpler function that does the job.
+          chunking: (buffer) => buffer.slice(0, 15) || null,
+        })
         : undefined;
 
       const maxLimit = Math.max(MIN_MAX_TOKENS, this._maxTokens());
@@ -1286,7 +1279,7 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
 
       const aiMessages = await Promise.all(
         payload.map((msg) =>
-          convertToAIMessage({ message: msg, agent: this._agent }),
+          convertToAIMessage({ message: msg, agent: this._agent })
         ),
       );
 

@@ -1,6 +1,6 @@
 import inquirer from "inquirer";
 import { promises as fs } from "fs";
-import { relative, join, posix } from "path";
+import { join, posix, relative } from "path";
 import { walk } from "../../lib/fs.js";
 import { createWorkspaceClient } from "../../lib/mcp.js";
 import { getCurrentEnvVars } from "../../lib/wrangler.js";
@@ -52,7 +52,9 @@ export const deploy = async ({
   dryRun = false,
 }: Options) => {
   console.log(
-    `\n🚀 ${dryRun ? "Preparing" : "Deploying"} '${appSlug}' to '${workspace}'${dryRun ? " (dry run)" : ""}...\n`,
+    `\n🚀 ${dryRun ? "Preparing" : "Deploying"} '${appSlug}' to '${workspace}'${
+      dryRun ? " (dry run)" : ""
+    }...\n`,
   );
 
   // Ensure the target directory exists
@@ -69,31 +71,33 @@ export const deploy = async ({
   let foundWranglerConfigName = "";
 
   // Recursively walk cwd/ and add all files
-  for await (const entry of walk(cwd, {
-    includeFiles: true,
-    includeDirs: false,
-    skip: [
-      /node_modules/,
-      /\.git/,
-      /\.DS_Store/,
-      /\.env/,
-      /\.env\.local/,
-      /\.dev\.vars/,
-    ],
-    exts: [
-      "ts",
-      "mjs",
-      "js",
-      "cjs",
-      "toml",
-      "json",
-      "css",
-      "html",
-      "txt",
-      "wasm",
-      "sql",
-    ],
-  })) {
+  for await (
+    const entry of walk(cwd, {
+      includeFiles: true,
+      includeDirs: false,
+      skip: [
+        /node_modules/,
+        /\.git/,
+        /\.DS_Store/,
+        /\.env/,
+        /\.env\.local/,
+        /\.dev\.vars/,
+      ],
+      exts: [
+        "ts",
+        "mjs",
+        "js",
+        "cjs",
+        "toml",
+        "json",
+        "css",
+        "html",
+        "txt",
+        "wasm",
+        "sql",
+      ],
+    })
+  ) {
     const realPath = normalizePath(relative(cwd, entry.path));
     const content = await fs.readFile(entry.path, "utf-8");
     files.push({ path: realPath, content });
@@ -107,18 +111,20 @@ export const deploy = async ({
   }
 
   if (assetsDirectory) {
-    for await (const entry of walk(assetsDirectory, {
-      includeFiles: true,
-      includeDirs: false,
-      skip: [
-        /node_modules/,
-        /\.git/,
-        /\.DS_Store/,
-        /\.env/,
-        /\.env\.local/,
-        /\.dev\.vars/,
-      ],
-    })) {
+    for await (
+      const entry of walk(assetsDirectory, {
+        includeFiles: true,
+        includeDirs: false,
+        skip: [
+          /node_modules/,
+          /\.git/,
+          /\.DS_Store/,
+          /\.env/,
+          /\.env\.local/,
+          /\.dev\.vars/,
+        ],
+      })
+    ) {
       const realPath = normalizePath(relative(assetsDirectory, entry.path));
       const content = await fs.readFile(entry.path);
       const base64Content = Buffer.from(content).toString("base64");
@@ -146,7 +152,8 @@ export const deploy = async ({
       wranglerConfigStatus = "wrangler.toml/json ❌";
     }
   } else {
-    wranglerConfigStatus = `${foundWranglerConfigName} ✅ (found in project files)`;
+    wranglerConfigStatus =
+      `${foundWranglerConfigName} ✅ (found in project files)`;
   }
 
   // 3. Load envVars from .dev.vars
@@ -180,8 +187,7 @@ export const deploy = async ({
     return;
   }
 
-  const confirmed =
-    skipConfirmation ||
+  const confirmed = skipConfirmation ||
     (
       await inquirer.prompt([
         {

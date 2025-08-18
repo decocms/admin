@@ -1,5 +1,5 @@
 import { analyzeLinks } from "./analyze";
-import { getOrSet, buildLinkAnalyzerKey, type CacheLayerEnv } from "../cache";
+import { buildLinkAnalyzerKey, type CacheLayerEnv, getOrSet } from "../cache";
 import { getCacheConfig } from "../../config/cache";
 import { recordToolError, recordToolSuccess } from "../metrics";
 

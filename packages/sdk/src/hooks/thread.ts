@@ -87,7 +87,8 @@ export const useThreads = (partialOptions: ThreadFilterOptions = {}) => {
           messages: [
             {
               role: "user",
-              content: `Generate a title for the thread that started with the following user message:
+              content:
+                `Generate a title for the thread that started with the following user message:
                 <Rule>Make it short and concise</Rule>
                 <Rule>Make it a single sentence</Rule>
                 <Rule>Keep the same language as the user message</Rule>
@@ -101,7 +102,7 @@ export const useThreads = (partialOptions: ThreadFilterOptions = {}) => {
         }),
         // ensure at least 2 seconds delay to avoid UI flickering.
         new Promise((resolve) =>
-          setTimeout(resolve, TITLE_GENERATION_MIN_DELAY_MS),
+          setTimeout(resolve, TITLE_GENERATION_MIN_DELAY_MS)
         ),
       ]);
       updateThreadTitle.mutate({ threadId, title: result.text, stream: true });
@@ -131,10 +132,9 @@ export const useThreads = (partialOptions: ThreadFilterOptions = {}) => {
             return oldData;
           }
 
-          const temporaryTitle =
-            typeof messages[0]?.content === "string"
-              ? messages[0].content.slice(0, 20)
-              : "New chat";
+          const temporaryTitle = typeof messages[0]?.content === "string"
+            ? messages[0].content.slice(0, 20)
+            : "New chat";
 
           generateThreadTitle({ firstMessage: messages[0].content, threadId });
 
@@ -213,7 +213,7 @@ export const useUpdateThreadTitle = () => {
                   threads: oldData.threads.map((thread) =>
                     thread.id === threadId
                       ? { ...thread, title: partialTitle }
-                      : thread,
+                      : thread
                   ),
                 };
               },
@@ -245,7 +245,7 @@ export const useUpdateThreadTitle = () => {
             return {
               ...oldData,
               threads: oldData.threads.map((thread) =>
-                thread.id === threadId ? { ...thread, title } : thread,
+                thread.id === threadId ? { ...thread, title } : thread
               ),
             };
           },

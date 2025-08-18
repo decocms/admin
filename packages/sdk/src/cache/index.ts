@@ -215,8 +215,9 @@ export class JsonSerializer {
       typeof value === "string" ||
       typeof value === "number" ||
       typeof value === "boolean"
-    )
+    ) {
       return true;
+    }
     if (value instanceof Uint8Array) return true;
 
     if (Array.isArray(value)) {
@@ -225,7 +226,7 @@ export class JsonSerializer {
 
     if (typeof value === "object") {
       return Object.values(value).every((item) =>
-        JsonSerializer.isSerializable(item),
+        JsonSerializer.isSerializable(item)
       );
     }
 

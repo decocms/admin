@@ -1,5 +1,5 @@
-import { describe, it, expect, vi, afterEach } from "vitest";
-import { getOrSet, cacheMetricsSnapshot } from "../index";
+import { afterEach, describe, expect, it, vi } from "vitest";
+import { cacheMetricsSnapshot, getOrSet } from "../index";
 
 class MemoryKV {
   store = new Map<string, string>();

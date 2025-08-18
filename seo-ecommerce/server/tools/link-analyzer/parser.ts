@@ -21,8 +21,9 @@ function extractLinks(html: string, base: URL): string[] {
   let m: RegExpExecArray | null;
   while ((m = re.exec(html))) {
     const raw = m[1].trim();
-    if (!raw || raw.startsWith("mailto:") || raw.startsWith("javascript:"))
+    if (!raw || raw.startsWith("mailto:") || raw.startsWith("javascript:")) {
       continue;
+    }
     try {
       const abs = new URL(raw, base).toString();
       links.add(abs);

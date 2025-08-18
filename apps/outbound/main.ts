@@ -36,7 +36,7 @@ export default {
       const host = req.headers.get("host") ?? new URL(req.url).hostname;
       const fetcher = isWellKnownHost(host)
         ? (req: Request, opts?: RequestInit) =>
-            env?.DECO_CHAT_API?.fetch(req, opts) ?? fetch(req, opts)
+          env?.DECO_CHAT_API?.fetch(req, opts) ?? fetch(req, opts)
         : fetch;
       const isAuthorized = typeof req.headers.get("Authorization") === "string";
       if (host !== Hosts.API || isAuthorized) {

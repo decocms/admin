@@ -14,38 +14,37 @@ export type Binder<TDefinition extends readonly ToolBinder[] = any> = {
   [K in keyof TDefinition]: TDefinition[K];
 };
 
-export type BinderImplementation<TBinder extends Binder<any>> =
-  TBinder extends Binder<infer TDefinition>
-    ? {
-        [K in keyof TDefinition]: Omit<
+export type BinderImplementation<TBinder extends Binder<any>> = TBinder extends
+  Binder<infer TDefinition> ? {
+    [K in keyof TDefinition]:
+      & Omit<
+        ToolLike<
+          TDefinition[K]["name"],
+          z.infer<TDefinition[K]["inputSchema"]>,
+          TDefinition[K] extends { outputSchema: infer Schema }
+            ? Schema extends z.ZodType ? z.infer<Schema>
+            : never
+            : never
+        >,
+        "name" | "inputSchema" | "outputSchema" | "handler"
+      >
+      & {
+        handler: (
+          props: z.infer<TDefinition[K]["inputSchema"]>,
+          c: AppContext,
+        ) => ReturnType<
           ToolLike<
             TDefinition[K]["name"],
             z.infer<TDefinition[K]["inputSchema"]>,
             TDefinition[K] extends { outputSchema: infer Schema }
-              ? Schema extends z.ZodType
-                ? z.infer<Schema>
-                : never
+              ? Schema extends z.ZodType ? z.infer<Schema>
               : never
-          >,
-          "name" | "inputSchema" | "outputSchema" | "handler"
-        > & {
-          handler: (
-            props: z.infer<TDefinition[K]["inputSchema"]>,
-            c: AppContext,
-          ) => ReturnType<
-            ToolLike<
-              TDefinition[K]["name"],
-              z.infer<TDefinition[K]["inputSchema"]>,
-              TDefinition[K] extends { outputSchema: infer Schema }
-                ? Schema extends z.ZodType
-                  ? z.infer<Schema>
-                  : never
-                : never
-            >["handler"]
-          >;
-        };
-      }
-    : never;
+              : never
+          >["handler"]
+        >;
+      };
+  }
+  : never;
 
 export const bindingClient = <TDefinition extends readonly ToolBinder[]>(
   binder: TDefinition,
@@ -59,14 +58,14 @@ export const bindingClient = <TDefinition extends readonly ToolBinder[]>(
       const listedTools = Array.isArray(connectionOrTools)
         ? connectionOrTools
         : await client
-            .INTEGRATIONS_LIST_TOOLS({
-              connection: connectionOrTools,
-            })
-            .then((r) => r.tools)
-            .catch(() => []);
+          .INTEGRATIONS_LIST_TOOLS({
+            connection: connectionOrTools,
+          })
+          .then((r) => r.tools)
+          .catch(() => []);
 
       return binder.every((tool) =>
-        (listedTools ?? []).some((t) => t.name === tool.name),
+        (listedTools ?? []).some((t) => t.name === tool.name)
       );
     },
     forConnection: (

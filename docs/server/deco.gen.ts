@@ -903,22 +903,22 @@ export interface AGENTS_CREATEInput {
    */
   access?:
     | (
-        | {
-            [k: string]: unknown;
-          }
-        | String_97
-      )
+      | {
+        [k: string]: unknown;
+      }
+      | String_97
+    )
     | Null_5;
   /**
    * Temperature of the LLM. Must be between 0 and 1.
    */
   temperature?:
     | (
-        | {
-            [k: string]: unknown;
-          }
-        | Number_16
-      )
+      | {
+        [k: string]: unknown;
+      }
+      | Number_16
+    )
     | Null_6;
 }
 /**
@@ -1145,22 +1145,22 @@ export interface Object_27 {
    */
   access?:
     | (
-        | {
-            [k: string]: unknown;
-          }
-        | String_114
-      )
+      | {
+        [k: string]: unknown;
+      }
+      | String_114
+    )
     | Null_8;
   /**
    * Temperature of the LLM. Must be between 0 and 1.
    */
   temperature?:
     | (
-        | {
-            [k: string]: unknown;
-          }
-        | Number_20
-      )
+      | {
+        [k: string]: unknown;
+      }
+      | Number_20
+    )
     | Null_9;
 }
 /**
@@ -2150,27 +2150,27 @@ export interface Object_47 {
   icon?: String_179;
   access?:
     | (
-        | {
-            [k: string]: unknown;
-          }
-        | String_180
-      )
+      | {
+        [k: string]: unknown;
+      }
+      | String_180
+    )
     | Null_10;
   appName?:
     | (
-        | {
-            [k: string]: unknown;
-          }
-        | String_181
-      )
+      | {
+        [k: string]: unknown;
+      }
+      | String_181
+    )
     | Null_11;
   appId?:
     | (
-        | {
-            [k: string]: unknown;
-          }
-        | String_182
-      )
+      | {
+        [k: string]: unknown;
+      }
+      | String_182
+    )
     | Null_12;
 }
 export interface Object_48 {
@@ -2771,19 +2771,19 @@ export interface INTEGRATIONS_CREATEInput {
   icon?: String_239;
   access?:
     | (
-        | {
-            [k: string]: unknown;
-          }
-        | String_240
-      )
+      | {
+        [k: string]: unknown;
+      }
+      | String_240
+    )
     | Null_15;
   appId?:
     | (
-        | {
-            [k: string]: unknown;
-          }
-        | String_241
-      )
+      | {
+        [k: string]: unknown;
+      }
+      | String_241
+    )
     | Null_16;
   connection?: Object_66 | Object_67 | Object_69 | Object_70 | Object_71;
 }
@@ -2938,27 +2938,27 @@ export interface Object_72 {
   icon?: String_265;
   access?:
     | (
-        | {
-            [k: string]: unknown;
-          }
-        | String_266
-      )
+      | {
+        [k: string]: unknown;
+      }
+      | String_266
+    )
     | Null_17;
   appName?:
     | (
-        | {
-            [k: string]: unknown;
-          }
-        | String_267
-      )
+      | {
+        [k: string]: unknown;
+      }
+      | String_267
+    )
     | Null_18;
   appId?:
     | (
-        | {
-            [k: string]: unknown;
-          }
-        | String_268
-      )
+      | {
+        [k: string]: unknown;
+      }
+      | String_268
+    )
     | Null_19;
   connection: Object_73 | Object_74 | Object_76 | Object_77 | Object_78;
 }
@@ -3689,11 +3689,11 @@ export interface Object_83 {
   name?: String_329;
   description?:
     | (
-        | {
-            [k: string]: unknown;
-          }
-        | String_330
-      )
+      | {
+        [k: string]: unknown;
+      }
+      | String_330
+    )
     | Null_23;
   content?: String_331;
 }
@@ -5179,21 +5179,23 @@ export interface WHATSAPP_UPSERT_USEROutput {}
 import { z } from "zod";
 
 export type Mcp<T extends Record<string, (input: any) => Promise<any>>> = {
-  [K in keyof T]: ((
-    input: Parameters<T[K]>[0],
-  ) => Promise<ReturnType<T[K]>>) & {
-    asTool: () => Promise<{
-      inputSchema: z.ZodType<Parameters<T[K]>[0]>;
-      outputSchema?: z.ZodType<ReturnType<T[K]>>;
-      description: string;
-      id: string;
-      execute: ({
-        context,
-      }: {
-        context: Parameters<T[K]>[0];
-      }) => Promise<ReturnType<T[K]>>;
-    }>;
-  };
+  [K in keyof T]:
+    & ((
+      input: Parameters<T[K]>[0],
+    ) => Promise<ReturnType<T[K]>>)
+    & {
+      asTool: () => Promise<{
+        inputSchema: z.ZodType<Parameters<T[K]>[0]>;
+        outputSchema?: z.ZodType<ReturnType<T[K]>>;
+        description: string;
+        id: string;
+        execute: ({
+          context,
+        }: {
+          context: Parameters<T[K]>[0];
+        }) => Promise<ReturnType<T[K]>>;
+      }>;
+    };
 };
 
 export const StateSchema = z.object({});

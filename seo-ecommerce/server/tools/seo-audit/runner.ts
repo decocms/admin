@@ -46,25 +46,32 @@ export async function runSeoAuditPure(
   const CLS_mobile = mobile?.metrics?.CLS ?? null;
   const CLS_desktop = desktop?.metrics?.CLS ?? null;
   const INP_ms_mobile = mobile?.metrics?.INP_ms ?? null;
-  if (typeof link?.brokenLinks === "number" && link.brokenLinks > 0)
+  if (typeof link?.brokenLinks === "number" && link.brokenLinks > 0) {
     warnings.push(`Broken links detectados: ${link.brokenLinks}`);
+  }
   if (LCP_ms_mobile && LCP_ms_mobile > 4000) warnings.push("LCP mobile > 4s");
   if (CLS_mobile && CLS_mobile > 0.1) warnings.push("CLS mobile > 0.1");
-  if (performanceMobile !== null && performanceMobile < 50)
+  if (performanceMobile !== null && performanceMobile < 50) {
     warnings.push("Performance mobile baixa (<50)");
-  if (seoMobile !== null && seoMobile < 70)
+  }
+  if (seoMobile !== null && seoMobile < 70) {
     warnings.push("Score SEO mobile baixo (<70)");
-  if (link?.imagesMissingAlt && link.imagesMissingAlt > 0)
+  }
+  if (link?.imagesMissingAlt && link.imagesMissingAlt > 0) {
     warnings.push(`Imagens sem alt: ${link.imagesMissingAlt}`);
-  if (link?.h1Count && link.h1Count !== 1)
+  }
+  if (link?.h1Count && link.h1Count !== 1) {
     warnings.push(`Quantidade de H1 = ${link.h1Count}`);
-  if (link?.titleLength && link.titleLength > 60)
+  }
+  if (link?.titleLength && link.titleLength > 60) {
     warnings.push("Título > 60 caracteres");
+  }
   if (
     link?.metaDescriptionLength &&
     (link.metaDescriptionLength < 80 || link.metaDescriptionLength > 165)
-  )
+  ) {
     warnings.push("Meta description fora da faixa 80-165");
+  }
   return {
     url,
     scores: {
@@ -84,17 +91,17 @@ export async function runSeoAuditPure(
     },
     linkSummary: link
       ? {
-          linksFound: link.linksFound,
-          brokenLinks: link.brokenLinks,
-          internalLinks: link.internalLinks,
-          externalLinks: link.externalLinks,
-          images: link.images,
-          imagesMissingAlt: link.imagesMissingAlt,
-          h1Count: link.h1Count,
-          titleLength: link.titleLength,
-          metaDescriptionLength: link.metaDescriptionLength,
-          wordCount: link.wordCount,
-        }
+        linksFound: link.linksFound,
+        brokenLinks: link.brokenLinks,
+        internalLinks: link.internalLinks,
+        externalLinks: link.externalLinks,
+        images: link.images,
+        imagesMissingAlt: link.imagesMissingAlt,
+        h1Count: link.h1Count,
+        titleLength: link.titleLength,
+        metaDescriptionLength: link.metaDescriptionLength,
+        wordCount: link.wordCount,
+      }
       : {},
     warnings,
     generatedAt: new Date().toISOString(),

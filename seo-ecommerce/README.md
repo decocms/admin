@@ -4,17 +4,19 @@
 
 > Migration Note (Mirror Sync)
 >
-> This codebase is now mirrored from the monorepo `ggstvfer/chat` (directory `seo-ecommerce/`).
-> The external repository history was replaced on 2025-08-13 (commit 356be755) via subtree split.
-> A backup of the previous external `main` branch is preserved at `backup-pre-mirror` (hash 22038acf) for reference.
-> Future updates will be force-with-lease pushed automatically by the mirror workflow including a safety backup each run.
+> This codebase is now mirrored from the monorepo `ggstvfer/chat` (directory
+> `seo-ecommerce/`). The external repository history was replaced on 2025-08-13
+> (commit 356be755) via subtree split. A backup of the previous external `main`
+> branch is preserved at `backup-pre-mirror` (hash 22038acf) for reference.
+> Future updates will be force-with-lease pushed automatically by the mirror
+> workflow including a safety backup each run.
 
 A full-stack template for building
 [Model Context Protocol (MCP)](https://spec.modelcontextprotocol.io/) servers
-with a modern Astro documentation site. This template provides a complete development
-environment where your MCP server not only exposes tools and workflows to AI
-agents but also serves a beautiful documentation interface built with Astro and
-Starlight.
+with a modern Astro documentation site. This template provides a complete
+development environment where your MCP server not only exposes tools and
+workflows to AI agents but also serves a beautiful documentation interface built
+with Astro and Starlight.
 
 ## ✨ Features
 
@@ -76,14 +78,16 @@ and the Astro documentation site.
 
 ## 📖 Documentation Features
 
-The template includes a fully configured Starlight documentation theme with Tailwind CSS:
+The template includes a fully configured Starlight documentation theme with
+Tailwind CSS:
 
 - **📝 MDX Support**: Write documentation in Markdown with React components
 - **🔍 Full-Text Search**: Built-in search functionality
 - **📱 Responsive Design**: Mobile-friendly documentation
 - **🎨 Tailwind Theming**: Customizable theme with Tailwind CSS variables
 - **🎨 Customizable Theme**: Easy to customize colors, fonts, and layout
-- **📚 Auto-Generated Sidebar**: Automatic navigation from your content structure
+- **📚 Auto-Generated Sidebar**: Automatic navigation from your content
+  structure
 
 ## 📚 Content Management
 
@@ -110,19 +114,20 @@ This is a documentation page written in MDX.
 
 ### Tailwind CSS Theming
 
-The template includes full Tailwind CSS integration with custom theming. Edit `view/src/styles/global.css` to customize your theme:
+The template includes full Tailwind CSS integration with custom theming. Edit
+`view/src/styles/global.css` to customize your theme:
 
 ```css
 @theme {
   /* Custom fonts */
-  --font-sans: 'Atkinson Hyperlegible';
-  --font-mono: 'IBM Plex Mono';
-  
+  --font-sans: "Atkinson Hyperlegible";
+  --font-mono: "IBM Plex Mono";
+
   /* Custom accent colors (currently set to green) */
   --color-accent-50: var(--color-green-50);
   --color-accent-500: var(--color-green-500);
   --color-accent-900: var(--color-green-900);
-  
+
   /* Custom gray scale */
   --color-gray-50: var(--color-zinc-50);
   --color-gray-900: var(--color-zinc-900);
@@ -130,6 +135,7 @@ The template includes full Tailwind CSS integration with custom theming. Edit `v
 ```
 
 You can customize:
+
 - **Fonts**: Change the sans-serif and monospace fonts
 - **Accent Colors**: Modify the primary accent color scheme
 - **Gray Scale**: Adjust the neutral color palette
@@ -141,19 +147,19 @@ Edit `view/astro.config.mjs` to customize your documentation site:
 
 ```javascript
 starlight({
-  title: 'My Documentation',
+  title: "My Documentation",
   social: [
-    { icon: 'github', label: 'GitHub', href: 'https://github.com/your-repo' }
+    { icon: "github", label: "GitHub", href: "https://github.com/your-repo" },
   ],
   sidebar: [
     {
-      label: 'Guides',
+      label: "Guides",
       items: [
-        { label: 'Getting Started', slug: 'guides/getting-started' },
+        { label: "Getting Started", slug: "guides/getting-started" },
       ],
     },
   ],
-})
+});
 ```
 
 ### Adding Content
@@ -177,4 +183,3 @@ This template is built for deploying primarily on top of the
 
 **Ready to build your next MCP server with beautiful documentation?
 [Get started now!](https://deco.chat)**
-

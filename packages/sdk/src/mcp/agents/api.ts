@@ -20,7 +20,8 @@ import { deleteTrigger, listTriggers } from "../triggers/api.ts";
 const createTool = createToolGroup("Agent", {
   name: "Agent Management",
   description: "Manage your agents",
-  icon: "https://assets.decocache.com/mcp/6f6bb7ac-e2bd-49fc-a67c-96d09ef84993/Agent-Management.png",
+  icon:
+    "https://assets.decocache.com/mcp/6f6bb7ac-e2bd-49fc-a67c-96d09ef84993/Agent-Management.png",
 });
 
 const NO_DATA_ERROR = "PGRST116";
@@ -53,7 +54,7 @@ export const getAgentsByIds = async (ids: string[], c: AppContext) => {
         views: true,
         visibility: true,
         access: true,
-      }).parse(item),
+      }).parse(item)
     );
   }
 
@@ -92,10 +93,9 @@ export const listAgents = createTool({
       throw new InternalServerError(error.message);
     }
 
-    const roles =
-      c.workspace.root === "users"
-        ? []
-        : await c.policy.getUserRoles(c.user.id as string, c.workspace.slug);
+    const roles = c.workspace.root === "users"
+      ? []
+      : await c.policy.getUserRoles(c.user.id as string, c.workspace.slug);
     const userRoles: string[] = roles?.map((role) => role.name);
 
     const filteredAgents = data.filter(
@@ -126,15 +126,15 @@ export const getAgent = createTool({
         .catch(() => false),
       id in WELL_KNOWN_AGENTS
         ? Promise.resolve({
-            data: WELL_KNOWN_AGENTS[id as keyof typeof WELL_KNOWN_AGENTS],
-            error: null,
-          })
+          data: WELL_KNOWN_AGENTS[id as keyof typeof WELL_KNOWN_AGENTS],
+          error: null,
+        })
         : c.db
-            .from("deco_chat_agents")
-            .select("*")
-            .eq("workspace", c.workspace.value)
-            .eq("id", id)
-            .single(),
+          .from("deco_chat_agents")
+          .select("*")
+          .eq("workspace", c.workspace.value)
+          .eq("id", id)
+          .single(),
     ]);
 
     if ((error && error.code == NO_DATA_ERROR) || !data) {
@@ -189,7 +189,8 @@ export const createAgentSetupTool = createToolGroup("AgentSetup", {
   name: "Agent Setup",
   description:
     "Configure agent identity, update settings, and list available integrations.",
-  icon: "https://assets.decocache.com/mcp/42dcf0d2-5a2f-4d50-87a6-0e9ebaeae9b5/Agent-Setup.png",
+  icon:
+    "https://assets.decocache.com/mcp/42dcf0d2-5a2f-4d50-87a6-0e9ebaeae9b5/Agent-Setup.png",
 });
 
 export const updateAgent = createAgentSetupTool({

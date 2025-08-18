@@ -1,6 +1,10 @@
 // Unified Supabase client helper (browser). Avoid static ESM import when bundling causes 404 from worker port.
 // We lazily dynamic-import @supabase/supabase-js when needed. Type-only import is erased at build time.
-import type { Session, User, SupabaseClient as SupabaseClientType } from "@supabase/supabase-js";
+import type {
+  Session,
+  SupabaseClient as SupabaseClientType,
+  User,
+} from "@supabase/supabase-js";
 
 // Lightweight exported alias (we intentionally do not ship full types if tree-shaken out)
 export type SupabaseClient = SupabaseClientType;
@@ -16,8 +20,17 @@ let createClientPromise: Promise<CreateClientFn> | null = null;
 function withTimeout<T>(p: Promise<T>, ms: number, label: string): Promise<T> {
   if (!ms) return p;
   return new Promise<T>((resolve, reject) => {
-    const to = setTimeout(() => reject(new Error(`${label} timeout after ${ms}ms`)), ms);
-    p.then(v => { clearTimeout(to); resolve(v); }, e => { clearTimeout(to); reject(e); });
+    const to = setTimeout(
+      () => reject(new Error(`${label} timeout after ${ms}ms`)),
+      ms,
+    );
+    p.then((v) => {
+      clearTimeout(to);
+      resolve(v);
+    }, (e) => {
+      clearTimeout(to);
+      reject(e);
+    });
   });
 }
 
@@ -26,29 +39,40 @@ async function dynamicCreateClient(): Promise<CreateClientFn> {
   createClientPromise = (async () => {
     // Prefer local bundle resolution if Vite handled it; fallback to CDN.
     try {
-      const m: any = await withTimeout(import("@supabase/supabase-js"), 3000, "local supabase import");
+      const m: any = await withTimeout(
+        import("@supabase/supabase-js"),
+        3000,
+        "local supabase import",
+      );
       if (m?.createClient) return m.createClient as CreateClientFn;
     } catch (err) {
       // Swallow and fallback; log once (avoid noisy console spam)
       if ((globalThis as any)._supabaseDynWarned !== true) {
         (globalThis as any)._supabaseDynWarned = true;
-        console.warn("[supabaseClient] local import fallback -> CDN", err instanceof Error ? err.message : err);
+        console.warn(
+          "[supabaseClient] local import fallback -> CDN",
+          err instanceof Error ? err.message : err,
+        );
       }
     }
     // Optional version pin via global or import.meta.env
-    const version =
-      (globalThis as any).PUBLIC_SUPABASE_JS_VERSION ||
+    const version = (globalThis as any).PUBLIC_SUPABASE_JS_VERSION ||
       (import.meta as any)?.env?.PUBLIC_SUPABASE_JS_VERSION ||
       ""; // empty => latest
-    const baseCdn =
-      (globalThis as any).PUBLIC_SUPABASE_JS_CDN ||
+    const baseCdn = (globalThis as any).PUBLIC_SUPABASE_JS_CDN ||
       (import.meta as any)?.env?.PUBLIC_SUPABASE_JS_CDN ||
       "https://cdn.jsdelivr.net/npm";
     const spec = `@supabase/supabase-js${version ? "@" + version : ""}`;
     const url = `${baseCdn}/${spec}/+esm`;
     // @ts-ignore - dynamic CDN ESM import (no types)
-    const cdn: any = await withTimeout(import(url), DEFAULT_IMPORT_TIMEOUT_MS, "cdn supabase import");
-    if (!cdn?.createClient) throw new Error("Supabase createClient ausente no CDN");
+    const cdn: any = await withTimeout(
+      import(url),
+      DEFAULT_IMPORT_TIMEOUT_MS,
+      "cdn supabase import",
+    );
+    if (!cdn?.createClient) {
+      throw new Error("Supabase createClient ausente no CDN");
+    }
     return cdn.createClient as CreateClientFn;
   })();
   return createClientPromise;
@@ -68,13 +92,15 @@ async function fetchPublicEnv(): Promise<{ url: string; anon: string }> {
         let attempt = 0;
         while (attempt < 2 && (!url || !anon)) {
           attempt++;
-            const r = await fetch("/__env", { cache: "no-store" });
-            if (r.ok) {
-              const d = await r.json();
-              url = d.PUBLIC_SUPABASE_URL || url;
-              anon = d.PUBLIC_SUPABASE_ANON_KEY || anon;
-            }
-            if (!url || !anon) await new Promise(r => setTimeout(r, 150 * attempt));
+          const r = await fetch("/__env", { cache: "no-store" });
+          if (r.ok) {
+            const d = await r.json();
+            url = d.PUBLIC_SUPABASE_URL || url;
+            anon = d.PUBLIC_SUPABASE_ANON_KEY || anon;
+          }
+          if (!url || !anon) {
+            await new Promise((r) => setTimeout(r, 150 * attempt));
+          }
         }
       } catch (e) {
         // Allow retry on subsequent call by clearing promise below in catch handler
@@ -85,7 +111,9 @@ async function fetchPublicEnv(): Promise<{ url: string; anon: string }> {
     return { url, anon };
   })();
   // If it rejects, allow a new attempt later.
-  publicEnvPromise.catch(() => { publicEnvPromise = null; });
+  publicEnvPromise.catch(() => {
+    publicEnvPromise = null;
+  });
   return publicEnvPromise;
 }
 
@@ -119,7 +147,9 @@ export async function loadSupabase(options?: { authStorageKey?: string }) {
   return clientInitPromise;
 }
 
-export async function getSupabase(opts?: { authStorageKey?: string }) { return loadSupabase(opts); }
+export async function getSupabase(opts?: { authStorageKey?: string }) {
+  return loadSupabase(opts);
+}
 
 export async function getSupabaseForToken(token: string) {
   const { url, anon } = await fetchPublicEnv();
@@ -134,7 +164,9 @@ export async function getSession() {
     const raw = localStorage.getItem(LS_SESSION_KEY);
     if (!raw) return null;
     return JSON.parse(raw);
-  } catch { return null; }
+  } catch {
+    return null;
+  }
 }
 
 export function getSessionSync() {
@@ -146,12 +178,19 @@ export function getUserSync(): User | null {
 }
 
 // Wait until we have attempted an initial session load (or timeout)
-export async function waitForSession(timeoutMs = 3000): Promise<Session | null> {
+export async function waitForSession(
+  timeoutMs = 3000,
+): Promise<Session | null> {
   const start = Date.now();
   while (Date.now() - start < timeoutMs) {
     if (cachedSession !== null) return cachedSession;
     // Use rAF when possible to integrate with frame loop
-    await new Promise(r => (typeof requestAnimationFrame !== 'undefined' ? requestAnimationFrame(() => r(null)) : setTimeout(r, 50)));
+    await new Promise((
+      r,
+    ) => (typeof requestAnimationFrame !== "undefined"
+      ? requestAnimationFrame(() => r(null))
+      : setTimeout(r, 50))
+    );
   }
   return cachedSession;
 }

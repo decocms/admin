@@ -79,15 +79,22 @@ export async function runAiInsightsPure(
   ].slice(0, 10);
   // Optional LLM path (only if enableLlm flag and key present)
   let modelUsed = "heuristic";
-  if (enableLlm && fetchFn && (env.DECO_CHAT_API_TOKEN || env.OPENROUTER_API_KEY)) {
+  if (
+    enableLlm && fetchFn && (env.DECO_CHAT_API_TOKEN || env.OPENROUTER_API_KEY)
+  ) {
     const start = Date.now();
     try {
-      const prompt = `Bullets SEO para ${url}: performanceMobile=${scores.performanceMobile} seoMobile=${scores.seoMobile}`;
+      const prompt =
+        `Bullets SEO para ${url}: performanceMobile=${scores.performanceMobile} seoMobile=${scores.seoMobile}`;
       let txt = "";
       let usedModel = "";
       if (env.DECO_CHAT_API_TOKEN) {
         const { callDecoLlm } = await import("./decoLLM");
-        const decoRes = await callDecoLlm(env as any, { prompt }, fetchFn as any);
+        const decoRes = await callDecoLlm(
+          env as any,
+          { prompt },
+          fetchFn as any,
+        );
         txt = decoRes.content;
         usedModel = decoRes.model || "deco/auto";
       } else if (env.OPENROUTER_API_KEY) {
@@ -116,7 +123,9 @@ export async function runAiInsightsPure(
         .filter((l: string) => l.length > 4)
         .slice(0, 10);
       const ms = Date.now() - start;
-  try { (await import("./metricsLLMProxy"))?.recordLlmSuccess?.(ms); } catch {}
+      try {
+        (await import("./metricsLLMProxy"))?.recordLlmSuccess?.(ms);
+      } catch {}
       if (llmLines.length) {
         return {
           url,
@@ -131,7 +140,9 @@ export async function runAiInsightsPure(
       }
     } catch (e) {
       const ms = Date.now() - start;
-  try { (await import("./metricsLLMProxy"))?.recordLlmError?.(ms); } catch {}
+      try {
+        (await import("./metricsLLMProxy"))?.recordLlmError?.(ms);
+      } catch {}
       warnings.push(
         "Fallback heurístico (LLM falhou): " + (e as Error).message,
       );

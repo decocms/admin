@@ -1,4 +1,4 @@
-import { describe, it, expect } from "vitest";
+import { describe, expect, it } from "vitest";
 import { runSeoAuditPure as runSeoAudit } from "../runner";
 
 // Lightweight heuristic test: mock PageSpeed tool via environment shim if needed.

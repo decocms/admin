@@ -54,9 +54,11 @@ export function MarkdownCopySelect({
 
   const handleOpenInChatGPT = () => {
     const currentUrl = globalThis.location.href;
-    const chatGPTUrl = `https://chatgpt.com/?hints=search&q=Read%20from%20${encodeURIComponent(
-      currentUrl,
-    )}%20so%20I%20can%20ask%20questions%20about%20it.`;
+    const chatGPTUrl = `https://chatgpt.com/?hints=search&q=Read%20from%20${
+      encodeURIComponent(
+        currentUrl,
+      )
+    }%20so%20I%20can%20ask%20questions%20about%20it.`;
     globalThis.open(chatGPTUrl, "_blank");
     setIsOpen(false);
   };
@@ -153,7 +155,8 @@ export function MarkdownCopySelect({
             </div>
           </button>
 
-          {/* Commented out the "View as Markdown" option
+          {
+            /* Commented out the "View as Markdown" option
           {markdownPath && (
             <button
               type="button"
@@ -171,7 +174,8 @@ export function MarkdownCopySelect({
               </div>
             </button>
           )}
-          */}
+          */
+          }
         </div>
       )}
     </div>

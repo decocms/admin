@@ -22,12 +22,14 @@ const getUserMetadata = (user: SupaUser): User["metadata"] => {
 };
 
 const generateUsername = (fullName: string) => {
-  const username = `${fullName
-    .toLocaleLowerCase()
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .replace(/\s+/g, "-")
-    .replace(/[^\w-]/g, "")}${Date.now().toString(36)}`;
+  const username = `${
+    fullName
+      .toLocaleLowerCase()
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .replace(/\s+/g, "-")
+      .replace(/[^\w-]/g, "")
+  }${Date.now().toString(36)}`;
 
   return username;
 };

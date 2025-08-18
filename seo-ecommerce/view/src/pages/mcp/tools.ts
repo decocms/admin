@@ -12,15 +12,18 @@ export const prerender = false; // dynamic
 
 export const POST: APIRoute = async ({ request }) => {
   try {
-    if (request.method !== "POST")
+    if (request.method !== "POST") {
       return new Response("Method Not Allowed", { status: 405 });
+    }
     const body: ToolRequest = await request.json().catch(() => ({}));
     if (!body.tool) return json({ error: "tool ausente" }, 400);
-    if (body.tool !== "LINK_ANALYZER")
+    if (body.tool !== "LINK_ANALYZER") {
       return json({ error: "tool desconhecida" }, 400);
+    }
     const url = body.input?.url?.toString() || "";
-    if (!url || !/^https?:\/\//i.test(url))
+    if (!url || !/^https?:\/\//i.test(url)) {
       return json({ error: "URL inválida" }, 422);
+    }
 
     // Try proxy to upstream worker path (root worker implements logic). If fails, fallback stub.
     try {

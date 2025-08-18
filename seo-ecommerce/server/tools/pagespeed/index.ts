@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { createTool } from "@deco/workers-runtime/mastra";
-import { buildPageSpeedKey, getOrSet, type CacheLayerEnv } from "../cache";
+import { buildPageSpeedKey, type CacheLayerEnv, getOrSet } from "../cache";
 import { getCacheConfig } from "../../config/cache";
 import { recordToolError, recordToolSuccess } from "../metrics";
 
@@ -65,9 +65,11 @@ export const createPageSpeedTool = (
           key,
           async () => {
             const params = new URLSearchParams({ url, strategy });
-            if (category && category.length)
+            if (category && category.length) {
               category.forEach((c) => params.append("category", c));
-            const apiUrl = `https://www.googleapis.com/pagespeedonline/v5/runPagespeed?${params.toString()}`;
+            }
+            const apiUrl =
+              `https://www.googleapis.com/pagespeedonline/v5/runPagespeed?${params.toString()}`;
             const resp = await fetch(apiUrl, {
               headers: { Accept: "application/json" },
             });

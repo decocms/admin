@@ -1,5 +1,5 @@
 // @ts-ignore Node types may be excluded in some build contexts
-import { spawn, execSync } from "child_process";
+import { execSync, spawn } from "child_process";
 import { getConfig, readWranglerConfig } from "../../lib/config.js";
 import { ensureDevEnvironment } from "../../lib/wrangler.js";
 import { link } from "./link.js";
@@ -51,8 +51,9 @@ export async function devCommand(opts: StartDevServerOptions): Promise<void> {
     }));
 
     const wranglerConfig = await readWranglerConfig();
-    const app =
-      typeof wranglerConfig.name === "string" ? wranglerConfig.name : "my-app";
+    const app = typeof wranglerConfig.name === "string"
+      ? wranglerConfig.name
+      : "my-app";
 
     console.log(`📦 Starting development server for '${app}'...`);
 
@@ -140,10 +141,9 @@ export async function devCommand(opts: StartDevServerOptions): Promise<void> {
         }
 
         wranglerProcess.on("error", (error: unknown) => {
-          const msg =
-            error && typeof error === "object" && "message" in error
-              ? (error as { message: string }).message
-              : String(error);
+          const msg = error && typeof error === "object" && "message" in error
+            ? (error as { message: string }).message
+            : String(error);
           console.error("❌ Failed to start Wrangler:", msg);
           process.exit(1);
         });

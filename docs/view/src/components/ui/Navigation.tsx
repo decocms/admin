@@ -56,32 +56,34 @@ export function Navigation({ previous, next }: NavigationProps) {
       <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-1">
         {/* Previous button */}
         <div className="flex-none">
-          {previous ? (
-            <a
-              href={previous.href}
-              className="flex items-center gap-3 px-3 py-2 rounded-lg hover:text-foreground transition-colors"
-            >
-              <Icon
-                name="ChevronLeft"
-                size={16}
-                className="text-muted-foreground hover:text-foreground transition-colors"
-              />
-              <span className="text-sm text-muted-foreground hover:text-foreground transition-colors">
-                Previous
-              </span>
-            </a>
-          ) : (
-            <div className="flex items-center gap-3 px-3 py-2 rounded-lg opacity-50">
-              <Icon
-                name="ChevronLeft"
-                size={16}
-                className="text-muted-foreground"
-              />
-              <span className="text-sm text-muted-foreground leading-5">
-                Previous
-              </span>
-            </div>
-          )}
+          {previous
+            ? (
+              <a
+                href={previous.href}
+                className="flex items-center gap-3 px-3 py-2 rounded-lg hover:text-foreground transition-colors"
+              >
+                <Icon
+                  name="ChevronLeft"
+                  size={16}
+                  className="text-muted-foreground hover:text-foreground transition-colors"
+                />
+                <span className="text-sm text-muted-foreground hover:text-foreground transition-colors">
+                  Previous
+                </span>
+              </a>
+            )
+            : (
+              <div className="flex items-center gap-3 px-3 py-2 rounded-lg opacity-50">
+                <Icon
+                  name="ChevronLeft"
+                  size={16}
+                  className="text-muted-foreground"
+                />
+                <span className="text-sm text-muted-foreground leading-5">
+                  Previous
+                </span>
+              </div>
+            )}
         </div>
 
         {/* Next button */}

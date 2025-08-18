@@ -22,7 +22,8 @@ const createContractTool = createToolFactory<WithTool<AppContext>>(
   {
     name: "Contracts",
     description: "Manage smart contracts",
-    icon: "https://assets.decocache.com/mcp/5e6930c3-86f6-4913-8de3-0c1fefdf02e3/API-key.png",
+    icon:
+      "https://assets.decocache.com/mcp/5e6930c3-86f6-4913-8de3-0c1fefdf02e3/API-key.png",
   },
 );
 
@@ -115,14 +116,16 @@ export const contractAuthorize = createContractTool({
 
     const clauseAmount = totalAmount(state.clauses, context.clauses);
 
-    const { id: transactionId } = await State.run(c, () =>
-      preAuthorizeAmount.handler({
-        amount: clauseAmount,
-        metadata: {
-          contractId,
-          clauses: context.clauses,
-        },
-      }),
+    const { id: transactionId } = await State.run(
+      c,
+      () =>
+        preAuthorizeAmount.handler({
+          amount: clauseAmount,
+          metadata: {
+            contractId,
+            clauses: context.clauses,
+          },
+        }),
     );
 
     return {
@@ -173,8 +176,7 @@ export const contractSettle = createContractTool({
         identifier: context.transactionId,
         amount,
         vendorId: context.vendorId,
-      }),
-    );
+      }));
 
     return {
       transactionId: context.transactionId,

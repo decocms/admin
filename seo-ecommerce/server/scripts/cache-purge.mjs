@@ -6,9 +6,9 @@
  *  node seo-ecommerce/server/scripts/cache-purge.mjs --prefix pagespeed:v1:
  * Requires environment with Cloudflare credentials or runs via `wrangler kv` CLI fallback.
  */
-import { execSync, exec } from "node:child_process";
+import { exec, execSync } from "node:child_process";
 import { logSafe } from "@deco/workers-runtime/logSafe";
-import { writeFileSync, appendFileSync } from 'node:fs';
+import { appendFileSync, writeFileSync } from "node:fs";
 
 function parseArgs() {
   const args = process.argv.slice(2);
@@ -18,16 +18,30 @@ function parseArgs() {
     if (a === "--key") out.key = args[++i];
     else if (a === "--prefix") out.prefix = args[++i];
     else if (a === "--dry-run") out.dry = true;
-  else if (a === "--offline") out.offline = true;
-  else if (a === "--json") out.json = true;
-  else if (a === "--concurrency") out.concurrency = Number(args[++i]) || undefined;
-  else if (a === "--audit-file") out.auditFile = args[++i];
-  else if (a === "--batch-wait-ms") out.batchWaitMs = Number(args[++i]) || undefined;
-  else if (a === "--rate-per-sec") out.ratePerSec = Number(args[++i]) || undefined;
+    else if (a === "--offline") out.offline = true;
+    else if (a === "--json") out.json = true;
+    else if (a === "--concurrency") {
+      out.concurrency = Number(args[++i]) || undefined;
+    } else if (a === "--audit-file") out.auditFile = args[++i];
+    else if (a === "--batch-wait-ms") {
+      out.batchWaitMs = Number(args[++i]) || undefined;
+    } else if (a === "--rate-per-sec") {
+      out.ratePerSec = Number(args[++i]) || undefined;
+    }
   }
   return out;
 }
-const { key, prefix, dry, json, offline, concurrency, auditFile, batchWaitMs, ratePerSec } = parseArgs();
+const {
+  key,
+  prefix,
+  dry,
+  json,
+  offline,
+  concurrency,
+  auditFile,
+  batchWaitMs,
+  ratePerSec,
+} = parseArgs();
 if (!key && !prefix) {
   console.error("Provide --key <key> or --prefix <prefix>");
   process.exit(1);
@@ -44,21 +58,21 @@ function sleep(ms) {
   return new Promise((res) => setTimeout(res, ms));
 }
 
-
 const MAX_RETRIES = 5;
 const BASE_DELAY = 300; // ms
 
 function isRetryableError(errMsg) {
   if (!errMsg) return false;
   const s = String(errMsg).toLowerCase();
-  return s.includes("429") || s.includes("rate limit") || s.includes("timeout") || s.includes("econnreset");
+  return s.includes("429") || s.includes("rate limit") ||
+    s.includes("timeout") || s.includes("econnreset");
 }
 
 function runAsync(cmd) {
   return new Promise((resolve, reject) => {
-    exec(cmd, { encoding: 'utf8' }, (err, stdout, stderr) => {
+    exec(cmd, { encoding: "utf8" }, (err, stdout, stderr) => {
       if (err) return reject(err);
-      resolve(stdout || '');
+      resolve(stdout || "");
     });
   });
 }
@@ -67,7 +81,9 @@ async function deleteWithRetries(keyName) {
   let attempt = 0;
   while (true) {
     try {
-      await runAsync(`npx wrangler kv key delete --binding=SEO_CACHE "${keyName}"`);
+      await runAsync(
+        `npx wrangler kv key delete --binding=SEO_CACHE "${keyName}"`,
+      );
       return { ok: true };
     } catch (e) {
       attempt++;
@@ -76,7 +92,12 @@ async function deleteWithRetries(keyName) {
         return { ok: false, error: msg };
       }
       const delay = BASE_DELAY * Math.pow(2, attempt - 1);
-      logSafe.warn('[cache-purge] transient delete error, retrying', { key: keyName, attempt, delay, error: msg });
+      logSafe.warn("[cache-purge] transient delete error, retrying", {
+        key: keyName,
+        attempt,
+        delay,
+        error: msg,
+      });
       // eslint-disable-next-line no-await-in-loop
       await sleep(delay);
     }
@@ -96,17 +117,22 @@ async function listKeysPaged(prefix) {
   let cursor = undefined;
   // Attempt to use --limit with cursor if supported by local wrangler
   while (true) {
-    const cursorArg = cursor ? ` --cursor='${cursor}'` : '';
+    const cursorArg = cursor ? ` --cursor='${cursor}'` : "";
     // Use double quotes around prefix so PowerShell handles it safely
-    const cmdWithLimit = `npx wrangler kv key list --binding=SEO_CACHE --prefix="${prefix}" --limit=1000${cursorArg}`;
+    const cmdWithLimit =
+      `npx wrangler kv key list --binding=SEO_CACHE --prefix="${prefix}" --limit=1000${cursorArg}`;
     let raw;
     try {
       raw = run(cmdWithLimit);
     } catch (e) {
       const msg = e && e.message ? e.message : String(e);
       // Some wrangler versions don't support --limit. If that's the case, try without it.
-      if (msg.toLowerCase().includes('unknown argument') && msg.toLowerCase().includes('limit')) {
-        const cmdNoLimit = `npx wrangler kv key list --binding=SEO_CACHE --prefix="${prefix}"${cursorArg}`;
+      if (
+        msg.toLowerCase().includes("unknown argument") &&
+        msg.toLowerCase().includes("limit")
+      ) {
+        const cmdNoLimit =
+          `npx wrangler kv key list --binding=SEO_CACHE --prefix="${prefix}"${cursorArg}`;
         try {
           raw = run(cmdNoLimit);
         } catch (e2) {
@@ -138,15 +164,18 @@ async function listKeysPaged(prefix) {
     }
     // Fallback: try to parse newline-delimited output (some wrangler prints pretty output)
     const lines = raw
-      .split('\n')
+      .split("\n")
       .map((l) => l.trim())
       .filter(Boolean);
     // Try to extract JSON-looking pieces
     for (const l of lines) {
       const p = safeJsonParse(l);
       if (p && (Array.isArray(p) || p.keys)) {
-        if (Array.isArray(p)) accumulated.push(...p.map((k) => (k && k.name) || k));
-        else if (Array.isArray(p.keys)) accumulated.push(...p.keys.map((k) => k.name));
+        if (Array.isArray(p)) {
+          accumulated.push(...p.map((k) => (k && k.name) || k));
+        } else if (Array.isArray(p.keys)) {
+          accumulated.push(...p.keys.map((k) => k.name));
+        }
       }
     }
     break;
@@ -154,7 +183,14 @@ async function listKeysPaged(prefix) {
   return accumulated;
 }
 
-const summary = { mode: key ? 'single' : 'prefix', key: key || null, prefix: prefix || null, dry, deleted: [], count: 0 };
+const summary = {
+  mode: key ? "single" : "prefix",
+  key: key || null,
+  prefix: prefix || null,
+  dry,
+  deleted: [],
+  count: 0,
+};
 
 try {
   if (key) {
@@ -162,7 +198,9 @@ try {
       logSafe.info("[cache-purge] dry-run delete key", { key });
     } else {
       if (offline) {
-        throw new Error('--offline may only be used with --dry-run to avoid accidental destructive actions');
+        throw new Error(
+          "--offline may only be used with --dry-run to avoid accidental destructive actions",
+        );
       }
       const res = await deleteWithRetries(key);
       if (!res.ok) throw new Error(`Failed to delete key ${key}: ${res.error}`);
@@ -173,17 +211,30 @@ try {
   } else if (prefix) {
     let list;
     if (offline) {
-      logSafe.info('[cache-purge] offline mode: skipping remote list and returning empty candidates', { prefix });
+      logSafe.info(
+        "[cache-purge] offline mode: skipping remote list and returning empty candidates",
+        { prefix },
+      );
       list = [];
     } else {
-  list = await listKeysPaged(prefix);
+      list = await listKeysPaged(prefix);
     }
-  if (offline && auditFile) {
+    if (offline && auditFile) {
       try {
-        writeFileSync(auditFile, JSON.stringify({ offline: true, prefix, generatedAt: new Date().toISOString() }) + '\n');
-        logSafe.info('[cache-purge] created offline audit file', { auditFile });
+        writeFileSync(
+          auditFile,
+          JSON.stringify({
+            offline: true,
+            prefix,
+            generatedAt: new Date().toISOString(),
+          }) + "\n",
+        );
+        logSafe.info("[cache-purge] created offline audit file", { auditFile });
       } catch (e) {
-        logSafe.error('[cache-purge] failed to write offline audit file', { auditFile, error: e && e.message });
+        logSafe.error("[cache-purge] failed to write offline audit file", {
+          auditFile,
+          error: e && e.message,
+        });
         summary.auditError = e && e.message;
       }
     }
@@ -199,21 +250,36 @@ try {
       summary.count = list.length;
       if (auditFile) {
         try {
-          writeFileSync(auditFile, '');
+          writeFileSync(auditFile, "");
           for (const name of list) {
-            appendFileSync(auditFile, JSON.stringify({ key: name }) + '\n');
+            appendFileSync(auditFile, JSON.stringify({ key: name }) + "\n");
           }
-          logSafe.info('[cache-purge] wrote audit file', { auditFile, count: list.length });
+          logSafe.info("[cache-purge] wrote audit file", {
+            auditFile,
+            count: list.length,
+          });
         } catch (e) {
-          logSafe.error('[cache-purge] failed writing audit file', { auditFile, error: e && e.message });
+          logSafe.error("[cache-purge] failed writing audit file", {
+            auditFile,
+            error: e && e.message,
+          });
           summary.auditError = e && e.message;
         }
       }
-  } else {
+    } else {
       if (auditFile) {
-        try { writeFileSync(auditFile, ''); } catch (e) { logSafe.error('[cache-purge] failed to create audit file', { auditFile, error: e && e.message }); summary.auditError = e && e.message; }
+        try {
+          writeFileSync(auditFile, "");
+        } catch (e) {
+          logSafe.error("[cache-purge] failed to create audit file", {
+            auditFile,
+            error: e && e.message,
+          });
+          summary.auditError = e && e.message;
+        }
       }
-      const concurrency = (typeof concurrency !== 'undefined' && concurrency) || 8;
+      const concurrency = (typeof concurrency !== "undefined" && concurrency) ||
+        8;
       // process in chunks to avoid overwhelming wrangler/CF
       const batchSize = concurrency;
       // token-bucket rate limiter (optional)
@@ -248,8 +314,11 @@ try {
           const name = batch[j];
           const res = results[j];
           if (!res.ok) {
-            logSafe.error('[cache-purge] failed to delete key after retries', { key: name, error: res.error });
-            summary.error = summary.error || '';
+            logSafe.error("[cache-purge] failed to delete key after retries", {
+              key: name,
+              error: res.error,
+            });
+            summary.error = summary.error || "";
             summary.error += `delete ${name}: ${res.error}; `;
             continue;
           }
@@ -258,7 +327,9 @@ try {
         }
         // optional wait between batches to avoid rate limits
         if (batchWaitMs && i + batchSize < list.length) {
-          logSafe.info('[cache-purge] waiting between batches', { waitMs: batchWaitMs });
+          logSafe.info("[cache-purge] waiting between batches", {
+            waitMs: batchWaitMs,
+          });
           // eslint-disable-next-line no-await-in-loop
           await sleep(batchWaitMs);
         }

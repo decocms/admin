@@ -2,8 +2,8 @@ import type { APIRoute } from "astro";
 import { getSupabase, getSupabaseForToken } from "../../lib/supabaseClient";
 
 // Fallback em memória (usado se Supabase não configurado)
-const store: Map<string, any[]> =
-  (globalThis as any).__ANALISES_STORE__ || new Map();
+const store: Map<string, any[]> = (globalThis as any).__ANALISES_STORE__ ||
+  new Map();
 (globalThis as any).__ANALISES_STORE__ = store;
 
 interface SavePayload {
@@ -127,8 +127,9 @@ export const POST: APIRoute = async ({ request }) => {
     const supa = await supaFromRequest(request);
     const { data: u } = await supa.auth.getUser();
     if (!u?.user) return json({ error: "não autenticado" }, 401);
-    if (!userHash || userHash === "supabase" || userHash === "me")
+    if (!userHash || userHash === "supabase" || userHash === "me") {
       userHash = u.user.id;
+    }
     // upload snapshot ao bucket (opcional)
     try {
       const snapshot = JSON.stringify({
@@ -136,7 +137,9 @@ export const POST: APIRoute = async ({ request }) => {
         url,
         data,
       });
-      const path = `${userHash}/${Date.now()}-${Math.random().toString(36).slice(2, 8)}.json`;
+      const path = `${userHash}/${Date.now()}-${
+        Math.random().toString(36).slice(2, 8)
+      }.json`;
       await supa.storage.from("analysis_snapshots").upload(path, snapshot, {
         contentType: "application/json",
         upsert: false,
@@ -162,8 +165,8 @@ export const POST: APIRoute = async ({ request }) => {
     });
   }
 
-  const id =
-    Date.now().toString(36) + "-" + Math.random().toString(36).slice(2, 8);
+  const id = Date.now().toString(36) + "-" +
+    Math.random().toString(36).slice(2, 8);
   const record = { id, url, ts: Date.now(), data };
   const memKey = userHash || "anon";
   const arr = store.get(memKey) || [];
@@ -182,8 +185,9 @@ export const DELETE: APIRoute = async ({ request }) => {
     const supa = await supaFromRequest(request);
     const { data: u } = await supa.auth.getUser();
     if (!u?.user) return json({ error: "não autenticado" }, 401);
-    if (!userHash || userHash === "supabase" || userHash === "me")
+    if (!userHash || userHash === "supabase" || userHash === "me") {
       userHash = u.user.id;
+    }
     const { error } = await supa
       .from(TABLE)
       .delete()

@@ -57,10 +57,9 @@ async function headOrGet(url: string, timeoutMs: number): Promise<number> {
   }
 }
 
-const APP_ORIGIN =
-  (typeof process !== "undefined" &&
-    process.env &&
-    (process.env.PUBLIC_APP_ORIGIN || process.env.PUBLIC_APP_URL)) ||
+const APP_ORIGIN = (typeof process !== "undefined" &&
+  process.env &&
+  (process.env.PUBLIC_APP_ORIGIN || process.env.PUBLIC_APP_URL)) ||
   "https://seo-ecommercex.deco.page";
 
 export async function analyzeLinks(url: string): Promise<LinkAnalysisResult> {
@@ -159,8 +158,9 @@ export async function analyzeLinks(url: string): Promise<LinkAnalysisResult> {
   if (!metaDescription) {
     score -= 8;
     notes.push("Sem meta description");
-  } else if (metaDescription.length < 50 || metaDescription.length > 165)
+  } else if (metaDescription.length < 50 || metaDescription.length > 165) {
     score -= 4;
+  }
   if (h1Count === 0) {
     score -= 6;
     notes.push("Sem H1");

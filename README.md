@@ -210,15 +210,18 @@ Build **React + Tailwind** frontends served by the same Cloudflare Worker.
 
 8. Deploy to Cloudflare
 
-  ```bash
-  # Safe deploy (runs predeploy checks and tests)
-  npm --workspace=seo-ecommerce/server run deploy:cf
+```bash
+# Safe deploy (runs predeploy checks and tests)
+npm --workspace=seo-ecommerce/server run deploy:cf
 
-  # Fast deploy (skip checks) for emergencies or local CI where you know state
-  npm --workspace=seo-ecommerce/server run deploy:cf:fast
-  ```
+# Fast deploy (skip checks) for emergencies or local CI where you know state
+npm --workspace=seo-ecommerce/server run deploy:cf:fast
+```
 
-Predeploy checks: the safe `deploy:cf` runs `predeploy` which validates `wrangler.toml` and scripts, then runs unit tests before invoking the fast deploy path. Use `*:fast` variants only when you intentionally want to skip checks.
+Predeploy checks: the safe `deploy:cf` runs `predeploy` which validates
+`wrangler.toml` and scripts, then runs unit tests before invoking the fast
+deploy path. Use `*:fast` variants only when you intentionally want to skip
+checks.
 
 ---
 

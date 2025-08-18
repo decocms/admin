@@ -72,9 +72,9 @@ export const getUser = async (
     supabase as any,
     DECO_CHAT_API_JWT_PRIVATE_KEY && DECO_CHAT_API_JWT_PUBLIC_KEY
       ? {
-          public: DECO_CHAT_API_JWT_PUBLIC_KEY,
-          private: DECO_CHAT_API_JWT_PRIVATE_KEY,
-        }
+        public: DECO_CHAT_API_JWT_PUBLIC_KEY,
+        private: DECO_CHAT_API_JWT_PRIVATE_KEY,
+      }
       : undefined,
   );
 
@@ -124,8 +124,7 @@ appLogin.all("/oauth", async (ctx: AppContext) => {
 
   // user already logged in, set by userMiddleware
   if (user && !user.is_anonymous) {
-    const origin =
-      ctx.req.header("referer") ||
+    const origin = ctx.req.header("referer") ||
       ctx.req.header("origin") ||
       "https://deco.chat";
     return ctx.redirect(origin);
@@ -179,8 +178,8 @@ appLogin.all("/magiclink", async (ctx: AppContext) => {
     const redirectTo = cli
       ? AUTH_URL_CLI
       : url.host.includes("localhost")
-        ? "http://localhost:3001/"
-        : "https://api.deco.chat/";
+      ? "http://localhost:3001/"
+      : "https://api.deco.chat/";
 
     await db.auth.signInWithOtp({
       email,
@@ -231,8 +230,7 @@ appAuth.all("/callback/magiclink", async (ctx: AppContext) => {
     const request = ctx.req.raw;
     const { db, headers } = createDbAndHeadersForRequest(ctx);
     const url = new URL(request.url);
-    const next =
-      url.searchParams.get("next") ||
+    const next = url.searchParams.get("next") ||
       (url.host.includes("localhost")
         ? "http://localhost:3000"
         : "https://deco.chat");

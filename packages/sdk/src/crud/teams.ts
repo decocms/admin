@@ -42,9 +42,11 @@ export const getWorkspaceTheme = (
   slug: string,
   init?: RequestInit,
 ): Promise<{ theme?: Theme } | null> =>
-  MCPClient.TEAMS_GET_THEME({ slug }, init) as Promise<{
-    theme?: Theme;
-  } | null>;
+  MCPClient.TEAMS_GET_THEME({ slug }, init) as Promise<
+    {
+      theme?: Theme;
+    } | null
+  >;
 
 export interface UpdateTeamInput {
   id: number;
@@ -102,8 +104,9 @@ export const listAvailableViewsForConnection = async (
   connection: MCPConnection,
 ) => {
   try {
-    const client =
-      MCPClient.forConnection<(typeof WellKnownBindings)["View"]>(connection);
+    const client = MCPClient.forConnection<(typeof WellKnownBindings)["View"]>(
+      connection,
+    );
     const result = await client.DECO_CHAT_VIEWS_LIST({});
     return result;
   } catch (error) {

@@ -94,7 +94,9 @@ export async function runAiInsights(
     `Performance Mobile: ${scores.performanceMobile}\nPerformance Desktop: ${scores.performanceDesktop}\n` +
     `SEO Mobile: ${scores.seoMobile}\nSEO Desktop: ${scores.seoDesktop}\nBroken Links: ${link.brokenLinks}\n` +
     `Images Missing Alt: ${link.imagesMissingAlt}\nH1 Count: ${link.h1Count}\nTitle Length: ${link.titleLength}\n` +
-    `Meta Description Length: ${link.metaDescriptionLength}\nWord Count: ${link.wordCount}\nAlertas: ${(auditWarnings || []).join("; ")}\n` +
+    `Meta Description Length: ${link.metaDescriptionLength}\nWord Count: ${link.wordCount}\nAlertas: ${
+      (auditWarnings || []).join("; ")
+    }\n` +
     `Gere 5-8 bullets práticos em pt-BR, evitando repetir números; focar em ações priorizadas.`;
   let insights: string[] = [];
   let summary = "";
@@ -146,9 +148,15 @@ export async function runAiInsights(
       insights = lines.slice(0, 12);
       summary = `Gerado via LLM (${insights.length} itens)`;
       modelUsed = usedModel || modelUsed;
-      try { (await import("./metricsLLMProxy"))?.recordLlmSuccess?.(Date.now() - llmStart); } catch {}
+      try {
+        (await import("./metricsLLMProxy"))?.recordLlmSuccess?.(
+          Date.now() - llmStart,
+        );
+      } catch {}
     } catch (e) {
-      try { (await import("./metricsLLMProxy"))?.recordLlmError?.(0); } catch {}
+      try {
+        (await import("./metricsLLMProxy"))?.recordLlmError?.(0);
+      } catch {}
       warnings.push(
         "Fallback heurístico (LLM falhou): " + (e as Error).message,
       );

@@ -34,7 +34,9 @@ async function extractPDFText(url: string): Promise<string> {
   try {
     const resp = await fetch(url);
     if (!resp.ok) {
-      console.error(`[PDF Summarizer] Failed to fetch PDF: ${url} status=${resp.status}`);
+      console.error(
+        `[PDF Summarizer] Failed to fetch PDF: ${url} status=${resp.status}`,
+      );
       return "";
     }
     const data = new Uint8Array(await resp.arrayBuffer());
@@ -56,10 +58,9 @@ async function summarizeChunk(
   maxTokens: number,
 ): Promise<string> {
   try {
-    const context =
-      previousSummaries.length > 0
-        ? `\n\nPrevious summary context:\n${previousSummaries.join("\n\n")}\n\n`
-        : "";
+    const context = previousSummaries.length > 0
+      ? `\n\nPrevious summary context:\n${previousSummaries.join("\n\n")}\n\n`
+      : "";
 
     const result = await mcpClient.AI_GENERATE({
       messages: [
@@ -70,7 +71,8 @@ async function summarizeChunk(
         },
         {
           role: "user",
-          content: `${context}Please summarize the following text in a concise way, building on the previous context if provided:\n\n${chunk}`,
+          content:
+            `${context}Please summarize the following text in a concise way, building on the previous context if provided:\n\n${chunk}`,
         },
       ],
       model,
@@ -107,7 +109,7 @@ export function shouldSummarizePDFs(messages: AIMessage[]): {
   const pdfMessages = messages.filter((message) =>
     message.experimental_attachments?.some(
       (attachment) => attachment.contentType === "application/pdf",
-    ),
+    )
   );
 
   const hasPdf = pdfMessages.length > 0;
@@ -140,7 +142,12 @@ export function shouldSummarizePDFs(messages: AIMessage[]): {
 export async function summarizePDFMessages(
   messages: AIMessage[],
   mcpClient: MCPClientStub<WorkspaceTools>,
-  options: { model: string; maxChunkSize: number; maxSummaryTokens: number; maxTotalTokens: number },
+  options: {
+    model: string;
+    maxChunkSize: number;
+    maxSummaryTokens: number;
+    maxTotalTokens: number;
+  },
 ): Promise<AIMessage[]> {
   const { model, maxChunkSize, maxSummaryTokens, maxTotalTokens } = options;
 
@@ -194,7 +201,9 @@ export async function summarizePDFMessages(
           url: pdfAttachment.url,
           name: pdfAttachment.name || "document",
           contentType: "application/pdf",
-          content: `<pdf_summary original="${pdfAttachment.name || "document"}">\n${combinedSummary}\n</pdf_summary>`,
+          content: `<pdf_summary original="${
+            pdfAttachment.name || "document"
+          }">\n${combinedSummary}\n</pdf_summary>`,
         };
 
         if (!message.annotations) {

@@ -62,11 +62,12 @@ body {
       transparent 60%
     ),
     radial-gradient(
-      circle at 82% 18%,
-      #1e3a8a 0%,
-      rgba(30, 58, 138, 0.3) 25%,
-      transparent 70%
-    ), linear-gradient(140deg, #0b1020, #111c3a 45%, #0b1020 90%);
+    circle at 82% 18%,
+    #1e3a8a 0%,
+    rgba(30, 58, 138, 0.3) 25%,
+    transparent 70%
+  ),
+    linear-gradient(140deg, #0b1020, #111c3a 45%, #0b1020 90%);
   color: var(--color-text);
   font-family: var(--font-sans);
 }
@@ -110,9 +111,7 @@ body {
 .fade-in {
   opacity: 0;
   transform: translateY(12px);
-  transition:
-    opacity 0.6s ease,
-    transform 0.6s ease;
+  transition: opacity 0.6s ease, transform 0.6s ease;
 }
 .fade-in.appear {
   opacity: 1;

@@ -127,10 +127,9 @@ const handleAssetUpload = async ({
       form.append(
         fileHash,
         new File([base64Data], fileHash, {
-          type:
-            mimeType === "application/javascript+module"
-              ? "application/javascript"
-              : mimeType,
+          type: mimeType === "application/javascript+module"
+            ? "application/javascript"
+            : mimeType,
         }),
         fileHash,
       );
@@ -172,8 +171,8 @@ const uploadWranglerAssets = async ({
 }) => {
   const assetsManifest = createAssetsManifest(assets, scriptSlug);
 
-  const assetUploadSession =
-    await c.cf.workersForPlatforms.dispatch.namespaces.scripts.assetUpload.create(
+  const assetUploadSession = await c.cf.workersForPlatforms.dispatch.namespaces
+    .scripts.assetUpload.create(
       c.envVars.CF_DISPATCH_NAMESPACE,
       scriptSlug,
       {
@@ -290,14 +289,14 @@ export async function deployToCloudflare({
     envVars["DECO_CHAT_BINDINGS"] = WorkersMCPBindings.stringify(decoBindings);
   }
 
-  const { bindings } =
-    await c.cf.workersForPlatforms.dispatch.namespaces.scripts.settings
-      .get(env.CF_DISPATCH_NAMESPACE, scriptSlug, {
-        account_id: env.CF_ACCOUNT_ID,
-      })
-      .catch(() => ({
-        bindings: [],
-      }));
+  const { bindings } = await c.cf.workersForPlatforms.dispatch.namespaces
+    .scripts.settings
+    .get(env.CF_DISPATCH_NAMESPACE, scriptSlug, {
+      account_id: env.CF_ACCOUNT_ID,
+    })
+    .catch(() => ({
+      bindings: [],
+    }));
 
   const doMigrations = migrationDiff(
     migrations ?? [],
@@ -343,11 +342,11 @@ export async function deployToCloudflare({
     })) ?? []),
     ...(wranglerAssetsConfig?.binding && hasAssets
       ? [
-          {
-            type: "assets" as const,
-            name: wranglerAssetsConfig.binding,
-          },
-        ]
+        {
+          type: "assets" as const,
+          name: wranglerAssetsConfig.binding,
+        },
+      ]
       : []),
   ];
 

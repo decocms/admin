@@ -86,8 +86,8 @@ const convertUSDToBRL = async ({
   return amountInBrl;
 };
 
-const MANDATORY_CUSTOM_FIELDS: Stripe.Checkout.SessionCreateParams.CustomField[] =
-  [
+const MANDATORY_CUSTOM_FIELDS:
+  Stripe.Checkout.SessionCreateParams.CustomField[] = [
     {
       label: {
         custom: "Tax ID/CNPJ/CPF",

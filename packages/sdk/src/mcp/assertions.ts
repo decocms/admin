@@ -4,33 +4,41 @@ import type { Workspace } from "../path.ts";
 import { QueryResult } from "../storage/index.ts";
 import type { AppContext, UserPrincipal } from "./context.ts";
 
-type WithUser<TAppContext extends AppContext = AppContext> = Omit<
-  TAppContext,
-  "user"
-> & {
-  user: UserPrincipal;
-};
+type WithUser<TAppContext extends AppContext = AppContext> =
+  & Omit<
+    TAppContext,
+    "user"
+  >
+  & {
+    user: UserPrincipal;
+  };
 
-type WithWorkspace<TAppContext extends AppContext = AppContext> = Omit<
-  TAppContext,
-  "workspace"
-> & {
-  workspace: { root: string; slug: string; value: Workspace };
-};
+type WithWorkspace<TAppContext extends AppContext = AppContext> =
+  & Omit<
+    TAppContext,
+    "workspace"
+  >
+  & {
+    workspace: { root: string; slug: string; value: Workspace };
+  };
 
-type WithKbFileProcessor<TAppContext extends AppContext = AppContext> = Omit<
-  TAppContext,
-  "kbFileProcessor"
-> & {
-  kbFileProcessor: Workflow;
-};
+type WithKbFileProcessor<TAppContext extends AppContext = AppContext> =
+  & Omit<
+    TAppContext,
+    "kbFileProcessor"
+  >
+  & {
+    kbFileProcessor: Workflow;
+  };
 
-export type WithTool<TAppContext extends AppContext = AppContext> = Omit<
-  TAppContext,
-  "tool"
-> & {
-  tool: { name: string };
-};
+export type WithTool<TAppContext extends AppContext = AppContext> =
+  & Omit<
+    TAppContext,
+    "tool"
+  >
+  & {
+    tool: { name: string };
+  };
 
 export function assertHasWorkspace<TContext extends AppContext = AppContext>(
   c: Pick<TContext, "workspace"> | Pick<WithWorkspace<TContext>, "workspace">,
@@ -91,10 +99,9 @@ export const assertWorkspaceResourceAccess = async (
     return c.resourceAccess.grant();
   }
 
-  const resourcesOrContexts =
-    _resourcesOrContexts.length === 0 && c.tool
-      ? [c.tool.name]
-      : _resourcesOrContexts;
+  const resourcesOrContexts = _resourcesOrContexts.length === 0 && c.tool
+    ? [c.tool.name]
+    : _resourcesOrContexts;
 
   // If no resources provided, throw error
   if (resourcesOrContexts.length === 0) {
@@ -205,14 +212,18 @@ export const assertWorkspaceResourceAccess = async (
       }
     } catch (error) {
       errors.push(
-        `Error checking access for resource: ${error instanceof Error ? error.message : String(error)}`,
+        `Error checking access for resource: ${
+          error instanceof Error ? error.message : String(error)
+        }`,
       );
     }
   }
 
   // If we reach here, none of the resources granted access
   throw new ForbiddenError(
-    `Cannot access any of the requested resources in workspace ${c.workspace.value}. Errors: ${errors.join("; ")}`,
+    `Cannot access any of the requested resources in workspace ${c.workspace.value}. Errors: ${
+      errors.join("; ")
+    }`,
   );
 };
 

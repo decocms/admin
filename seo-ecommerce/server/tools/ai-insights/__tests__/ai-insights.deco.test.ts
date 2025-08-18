@@ -1,4 +1,4 @@
-import { describe, it, expect } from "vitest";
+import { describe, expect, it } from "vitest";
 import { runAiInsightsPure } from "../runner";
 
 const baseAudit = {
@@ -17,14 +17,17 @@ const baseAudit = {
 
 describe("AI insights Deco LLM", () => {
   it("uses Deco LLM when token present", async () => {
-    const fetchFn = async () => ({
-      ok: true,
-      status: 200,
-      json: async () => ({
-        model: "deco:test",
-        choices: [ { message: { content: "- Otimizar imagens\n- Melhorar LCP" } } ],
-      }),
-    }) as any;
+    const fetchFn = async () =>
+      ({
+        ok: true,
+        status: 200,
+        json: async () => ({
+          model: "deco:test",
+          choices: [{
+            message: { content: "- Otimizar imagens\n- Melhorar LCP" },
+          }],
+        }),
+      }) as any;
     const res = await runAiInsightsPure(
       { DECO_CHAT_API_TOKEN: "tok-test" },
       { url: baseAudit.url, audit: baseAudit as any, enableLlm: true, fetchFn },

@@ -152,12 +152,12 @@ const DEFAULT_BINDINGS: DecoBinding[] = [
 type MCPResult<T> =
   | T
   | {
-      isError: true;
-      content?: {
-        type: "text";
-        text: string;
-      }[];
-    };
+    isError: true;
+    content?: {
+      type: "text";
+      text: string;
+    }[];
+  };
 
 const unwrapMcpResult = <T extends object>(
   result: MCPResult<T>,
@@ -168,7 +168,7 @@ const unwrapMcpResult = <T extends object>(
   if ("isError" in result && result.isError) {
     const message =
       (Array.isArray(result.content) ? result.content[0]?.text : undefined) ??
-      JSON.stringify(result);
+        JSON.stringify(result);
     throw new Error(opts?.errorMessage?.(message) ?? message);
   }
   return result as T;
@@ -181,7 +181,9 @@ export const genEnv = async ({
   selfUrl,
 }: Options) => {
   console.log(
-    `🛠️ genEnv start (workspace=${workspace ?? "none"}, local=${!!local}, selfUrl=${selfUrl ?? "none"})`,
+    `🛠️ genEnv start (workspace=${
+      workspace ?? "none"
+    }, local=${!!local}, selfUrl=${selfUrl ?? "none"})`,
   );
   const client = await createWorkspaceClient({ workspace, local });
   const apiClient = await createWorkspaceClient({ local });
@@ -207,7 +209,9 @@ export const genEnv = async ({
       } as any);
     }
     console.log(
-      `🔧 Effective bindings: ${effectiveBindings.map((b) => (b as any).name || "unknown").join(", ")}`,
+      `🔧 Effective bindings: ${
+        effectiveBindings.map((b) => (b as any).name || "unknown").join(", ")
+      }`,
     );
 
     const props = await Promise.all(
@@ -263,13 +267,16 @@ export const genEnv = async ({
             name: "INTEGRATIONS_LIST_TOOLS",
             arguments: {
               connection,
-              ignoreCache:
-                "ignoreCache" in binding ? binding.ignoreCache : undefined,
+              ignoreCache: "ignoreCache" in binding
+                ? binding.ignoreCache
+                : undefined,
             },
           })) as any;
         } catch (err) {
           console.warn(
-            `⚠️ INTEGRATIONS_LIST_TOOLS error for ${binding.name}: ${(err as Error).message}`,
+            `⚠️ INTEGRATIONS_LIST_TOOLS error for ${binding.name}: ${
+              (err as Error).message
+            }`,
           );
           tools = { structuredContent: { tools: [] } };
         }
@@ -277,8 +284,7 @@ export const genEnv = async ({
         const integrationUrl = (binding as any).integration_url as
           | string
           | undefined;
-        const shouldAttemptHttpFallback =
-          typeof integrationUrl === "string" &&
+        const shouldAttemptHttpFallback = typeof integrationUrl === "string" &&
           (integrationUrl.startsWith("http://") ||
             integrationUrl.startsWith("https://"));
 
@@ -332,7 +338,9 @@ export const genEnv = async ({
             }
           } catch (e) {
             console.warn(
-              `⚠️ Fallback fetch failed for ${binding.name}: ${(e as Error).message}`,
+              `⚠️ Fallback fetch failed for ${binding.name}: ${
+                (e as Error).message
+              }`,
             );
           }
         }
@@ -346,7 +354,9 @@ export const genEnv = async ({
           );
           // Provide a stub so output file is not fully empty for diagnostics
           if (binding.name === "SELF") {
-            tsTypes += `\n// No tools discovered for SELF (${(binding as any).integration_url})\n`;
+            tsTypes += `\n// No tools discovered for SELF (${
+              (binding as any).integration_url
+            })\n`;
           }
           return null;
         }
@@ -384,14 +394,14 @@ export const genEnv = async ({
               }),
               t.outputSchema
                 ? await compile(
-                    { ...t.outputSchema, title: outputName },
-                    outputName,
-                    {
-                      customName,
-                      additionalProperties: false,
-                      format: false,
-                    },
-                  )
+                  { ...t.outputSchema, title: outputName },
+                  outputName,
+                  {
+                    customName,
+                    additionalProperties: false,
+                    format: false,
+                  },
+                )
                 : undefined,
             ]);
             tsTypes += `
@@ -434,63 +444,77 @@ ${tsTypes}
   }
 
   export const StateSchema = z.object({
-    ${props
-      .filter((p) => p !== null && p[2] !== undefined)
-      .map((prop) => {
-        const [_, __, stateKey] = prop as [
-          string,
-          [string, string, string | undefined, string | undefined][],
-          KeyInfo | undefined,
-        ];
-        return `${stateKey!.key}: z.object({
+    ${
+      props
+        .filter((p) => p !== null && p[2] !== undefined)
+        .map((prop) => {
+          const [_, __, stateKey] = prop as [
+            string,
+            [string, string, string | undefined, string | undefined][],
+            KeyInfo | undefined,
+          ];
+          return `${stateKey!.key}: z.object({
         value: z.string(),
         __type: z.literal("${stateKey!.type}").default("${stateKey!.type}"),
       })`;
-      })
-      .join(",\n")}
+        })
+        .join(",\n")
+    }
   })
 
   export interface Env {
     DECO_CHAT_WORKSPACE: string;
     DECO_CHAT_API_JWT_PUBLIC_KEY: string;
-    ${props
-      .filter((p) => p !== null)
-      .map(([propName, tools]) => {
-        return `${propName}: Mcp<{
-        ${tools
-          .map(([toolName, inputName, outputName, description]) => {
-            const docComment = description
-              ? `/**\n${formatDescription(description)}\n */`
-              : "";
+    ${
+      props
+        .filter((p) => p !== null)
+        .map(([propName, tools]) => {
+          return `${propName}: Mcp<{
+        ${
+            tools
+              .map(([toolName, inputName, outputName, description]) => {
+                const docComment = description
+                  ? `/**\n${formatDescription(description)}\n */`
+                  : "";
 
-            return `${docComment}
-          ${toValidProperty(
-            toolName,
-          )}: (input: ${inputName}) => Promise<${outputName ?? "any"}>;
+                return `${docComment}
+          ${
+                  toValidProperty(
+                    toolName,
+                  )
+                }: (input: ${inputName}) => Promise<${outputName ?? "any"}>;
           `;
-          })
-          .join("")}
+              })
+              .join("")
+          }
       }>;`;
-      })
-      .join("")}
+        })
+        .join("")
+    }
   }
 
   export const Scopes = {
-    ${Object.entries(mapBindingTools)
-      .map(
-        ([bindingName, tools]) =>
-          `${toValidProperty(bindingName)}: {
-      ${tools
+    ${
+      Object.entries(mapBindingTools)
         .map(
-          (toolName) =>
-            `${toValidProperty(toolName)}: "${scopeParser.fromBindingToolToScope(
-              { bindingName, toolName },
-            )}"`,
-        )
-        .join(",\n")}
+          ([bindingName, tools]) =>
+            `${toValidProperty(bindingName)}: {
+      ${
+              tools
+                .map(
+                  (toolName) =>
+                    `${toValidProperty(toolName)}: "${
+                      scopeParser.fromBindingToolToScope(
+                        { bindingName, toolName },
+                      )
+                    }"`,
+                )
+                .join(",\n")
+            }
     }`,
-      )
-      .join(",\n")}
+        )
+        .join(",\n")
+    }
   }
   `);
     if (!tsTypes.trim()) {

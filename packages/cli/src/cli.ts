@@ -178,8 +178,7 @@ const hostingDeploy = new Command("deploy")
       });
       const wranglerConfig = await readWranglerConfig();
       const assetsDirectory = wranglerConfig.assets?.directory;
-      const app =
-        options.app ??
+      const app = options.app ??
         (typeof wranglerConfig.name === "string"
           ? wranglerConfig.name
           : "my-app");
@@ -224,10 +223,9 @@ const hostingPromote = new Command("promote")
       if (!app) {
         try {
           const wranglerConfig = await readWranglerConfig();
-          app =
-            typeof wranglerConfig.name === "string"
-              ? wranglerConfig.name
-              : undefined;
+          app = typeof wranglerConfig.name === "string"
+            ? wranglerConfig.name
+            : undefined;
         } catch {
           // No wrangler config found, app will remain undefined
         }
@@ -393,9 +391,10 @@ const gen = new Command("gen")
         workspace: config.workspace,
         local: config.local,
         bindings: config.bindings,
-        selfUrl:
-          options.self ??
-          `https://${getAppDomain(config.workspace, wranglerConfig.name ?? "my-app")}/mcp`,
+        selfUrl: options.self ??
+          `https://${
+            getAppDomain(config.workspace, wranglerConfig.name ?? "my-app")
+          }/mcp`,
       });
       if (options.output) {
         await writeFile(options.output, env);

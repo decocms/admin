@@ -6,7 +6,7 @@ on:
       - main
       - integrate-seo-ecommerce
     paths:
-      - 'seo-ecommerce/**'
+      - "seo-ecommerce/**"
   workflow_dispatch: {}
 
 jobs:
@@ -78,7 +78,7 @@ jobs:
             if ! git ls-remote seo-ecommerce refs/heads/backup-pre-mirror | grep -q "$PREV_HASH"; then
               git push seo-ecommerce "$PREV_HASH:refs/heads/backup-pre-mirror"
             else
-              echo "Backup branch already has current main hash." 
+              echo "Backup branch already has current main hash."
             fi
           else
             echo "Remote main does not exist yet (first push)."

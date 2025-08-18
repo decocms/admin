@@ -64,8 +64,8 @@ async function makeApiCall(
       headers: {
         ...(options?.token
           ? {
-              Authorization: `Bearer ${options.token}`,
-            }
+            Authorization: `Bearer ${options.token}`,
+          }
           : {}),
         "content-type": "application/json",
         ...config.init?.headers,
@@ -91,9 +91,9 @@ async function makeApiCall(
     const message = error || serializeData(data) || "Internal Server Error";
     const err =
       options?.getErrorByStatusCode?.(response.status, message, traceDebugId) ??
-      new Error(
-        `http error ${response.status} ${config.toolName} ${message} ${traceDebugId}`,
-      );
+        new Error(
+          `http error ${response.status} ${config.toolName} ${message} ${traceDebugId}`,
+        );
 
     throw err;
   }
@@ -109,13 +109,13 @@ export function createMCPClientProxy<T extends Record<string, unknown>>(
 ): T {
   let tools:
     | Promise<
-        {
-          name: string;
-          inputSchema: any;
-          outputSchema?: any;
-          description: string;
-        }[]
-      >
+      {
+        name: string;
+        inputSchema: any;
+        outputSchema?: any;
+        description: string;
+      }[]
+    >
     | undefined;
   return new Proxy<T>({} as T, {
     get(_, name) {
@@ -132,10 +132,9 @@ export function createMCPClientProxy<T extends Record<string, unknown>>(
 
         if (options?.connection) {
           payload = {
-            connection:
-              typeof options.connection === "function"
-                ? await options.connection()
-                : options.connection,
+            connection: typeof options.connection === "function"
+              ? await options.connection()
+              : options.connection,
             params: {
               name: name,
               arguments: args,
@@ -163,15 +162,16 @@ export function createMCPClientProxy<T extends Record<string, unknown>>(
       }
 
       const listToolsFn = async () => {
-        const connection =
-          typeof options?.connection === "function"
-            ? await options.connection()
-            : (options?.connection ?? {
-                type: "HTTP",
-                url: `${options?.decoChatApiUrl ?? `https://api.deco.chat`}${getWorkspace(
-                  options?.workspace,
-                )}/mcp`,
-              });
+        const connection = typeof options?.connection === "function"
+          ? await options.connection()
+          : (options?.connection ?? {
+            type: "HTTP",
+            url: `${options?.decoChatApiUrl ?? `https://api.deco.chat`}${
+              getWorkspace(
+                options?.workspace,
+              )
+            }/mcp`,
+          });
 
         const data = await makeApiCall(
           {
@@ -217,8 +217,8 @@ export function createMCPClientProxy<T extends Record<string, unknown>>(
         return {
           id: tool.name,
           description: tool.description,
-          inputSchema:
-            options?.jsonSchemaToZod?.(tool.inputSchema) ?? tool.inputSchema,
+          inputSchema: options?.jsonSchemaToZod?.(tool.inputSchema) ??
+            tool.inputSchema,
           outputSchema: tool.outputSchema
             ? (options?.jsonSchemaToZod?.(tool.outputSchema) ??
               tool.outputSchema)

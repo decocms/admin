@@ -173,8 +173,9 @@ export const getDecoSiteTools = async (
             new URL(`/live/invoke/${tool.resolveType}`, baseUrl),
             {
               method: "POST",
-              body:
-                typeof context === "string" ? context : JSON.stringify(context),
+              body: typeof context === "string"
+                ? context
+                : JSON.stringify(context),
               headers: {
                 "content-type": "application/json",
                 ...(settings.token && {
@@ -218,12 +219,11 @@ export const mcpServerTools = async (
     );
   }
 
-  const response =
-    mcpServer.connection.type === "Deco"
-      ? await getDecoSiteTools(mcpServer.connection)
-      : mcpServer.connection.type === "INNATE"
-        ? getToolsForInnateIntegration(mcpServer, agent, env)
-        : await getMCPServerTools(mcpServer, agent, signal);
+  const response = mcpServer.connection.type === "Deco"
+    ? await getDecoSiteTools(mcpServer.connection)
+    : mcpServer.connection.type === "INNATE"
+    ? getToolsForInnateIntegration(mcpServer, agent, env)
+    : await getMCPServerTools(mcpServer, agent, signal);
 
   return response;
 };
@@ -335,8 +335,7 @@ export async function listToolsByConnectionType(
     case "INNATE": {
       const mcpClient = MCPClient.forContext({
         ...ctx,
-        workspace:
-          ctx.workspace ??
+        workspace: ctx.workspace ??
           (connection.workspace
             ? fromWorkspaceString(connection.workspace)
             : undefined),

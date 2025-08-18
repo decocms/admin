@@ -24,14 +24,14 @@ import process from "node:process";
 
 type MCPServerConfig =
   | {
-      command: string;
-      args: string[];
-    }
+    command: string;
+    args: string[];
+  }
   | {
-      url: string;
-      type: "http" | "sse";
-      headers?: Record<string, string>;
-    };
+    url: string;
+    type: "http" | "sse";
+    headers?: Record<string, string>;
+  };
 
 export interface MCPConfig {
   mcpServers: Record<string, MCPServerConfig>;

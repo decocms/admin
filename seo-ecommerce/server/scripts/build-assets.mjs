@@ -5,7 +5,7 @@
  */
 import { execSync } from "node:child_process";
 import { logSafe } from "@deco/workers-runtime/logSafe";
-import { existsSync, rmSync, mkdirSync, cpSync } from "node:fs";
+import { cpSync, existsSync, mkdirSync, rmSync } from "node:fs";
 import { writeFileSync } from "node:fs";
 import { join } from "node:path";
 
@@ -39,8 +39,8 @@ logSafe.info("[build-assets] adapter output present", { adapterOutputDir });
 // Write build info file (used for cache bust diagnostics)
 try {
   const buildInfo = {
-    buildId:
-      Date.now().toString(36) + "-" + Math.random().toString(36).slice(2, 8),
+    buildId: Date.now().toString(36) + "-" +
+      Math.random().toString(36).slice(2, 8),
     builtAt: new Date().toISOString(),
   };
   // Write inside server root (optional) and assets directory (required for ASSETS binding)

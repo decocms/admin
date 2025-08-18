@@ -167,9 +167,8 @@ const withDefaultBindings = ({
     ...createWorkspaceDB(ctx),
     forContext: createWorkspaceDB,
   };
-  env["IS_LOCAL"] =
-    (url?.startsWith("http://localhost") ||
-      url?.startsWith("http://127.0.0.1")) ??
+  env["IS_LOCAL"] = (url?.startsWith("http://localhost") ||
+    url?.startsWith("http://127.0.0.1")) ??
     false;
 };
 
@@ -327,8 +326,7 @@ export const withRuntime = <TEnv, TSchema extends z.ZodTypeAny = never>(
       ctx: ExecutionContext,
     ) => {
       const referer = req.headers.get("referer");
-      const isFetchRequest =
-        req.headers.has(DECO_MCP_CLIENT_HEADER) ||
+      const isFetchRequest = req.headers.has(DECO_MCP_CLIENT_HEADER) ||
         req.headers.get("sec-fetch-mode") === "cors";
 
       try {

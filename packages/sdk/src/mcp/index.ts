@@ -206,10 +206,12 @@ export type ToolBinder<
   // deno-lint-ignore no-explicit-any
   TInput = any,
   TReturn extends object | null | boolean = object,
-> = Pick<
-  ToolLike<TName, TInput, TReturn>,
-  "name" | "inputSchema" | "outputSchema"
-> & { opt?: true };
+> =
+  & Pick<
+    ToolLike<TName, TInput, TReturn>,
+    "name" | "inputSchema" | "outputSchema"
+  >
+  & { opt?: true };
 
 const global = createMCPToolsStub({
   tools: GLOBAL_TOOLS,

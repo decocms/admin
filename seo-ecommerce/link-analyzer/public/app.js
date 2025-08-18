@@ -21,7 +21,9 @@ document
       const data = await response.json();
 
       if (response.ok) {
-        resultsDiv.innerHTML = `<h2>Analysis Results</h2><pre>${JSON.stringify(data, null, 2)}</pre>`;
+        resultsDiv.innerHTML = `<h2>Analysis Results</h2><pre>${
+          JSON.stringify(data, null, 2)
+        }</pre>`;
       } else {
         resultsDiv.innerHTML = `<p>Error: ${data.message}</p>`;
       }

@@ -125,9 +125,11 @@ export async function checkForUpdates(): Promise<void> {
       console.log();
       console.log(
         chalk.green(
-          `A new version of deco is available: ${chalk.bold(
-            `v${latestVersion}`,
-          )}`,
+          `A new version of deco is available: ${
+            chalk.bold(
+              `v${latestVersion}`,
+            )
+          }`,
         ),
       );
       console.log(chalk.yellow(`You are on version: v${currentVersion}`));

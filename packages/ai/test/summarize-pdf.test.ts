@@ -1,15 +1,16 @@
 // deno-lint-ignore-file
-import { expect, test, describe, vi, beforeEach } from "vitest";
+import { beforeEach, describe, expect, test, vi } from "vitest";
 import type { MCPClientStub, WorkspaceTools } from "@deco/sdk/mcp";
 import type { Message as AIMessageOriginal } from "ai";
 import {
-  summarizePDFMessages,
   shouldSummarizePDFs,
+  summarizePDFMessages,
 } from "../src/summarize-pdf.ts";
 
 type AIMessage = AIMessageOriginal & {
-  experimental_attachments?: AIMessageOriginal["experimental_attachments"] &
-    {
+  experimental_attachments?:
+    & AIMessageOriginal["experimental_attachments"]
+    & {
       size?: number;
     }[];
 };

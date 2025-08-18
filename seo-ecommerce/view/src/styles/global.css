@@ -6,9 +6,9 @@
 
 @theme {
   /*
-	Configure your Tailwind theme that will be used by Starlight.
-	https://starlight.astro.build/guides/css-and-tailwind/#styling-starlight-with-tailwind
-	*/
+  Configure your Tailwind theme that will be used by Starlight.
+  https://starlight.astro.build/guides/css-and-tailwind/#styling-starlight-with-tailwind
+  */
   /* Your preferred text font. Starlight uses a system font stack by default. */
   --font-sans: "Atkinson Hyperlegible";
   /* Your preferred code font. Starlight uses system monospace fonts by default. */

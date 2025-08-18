@@ -19,23 +19,29 @@ export interface DecoLlmResponse {
   raw?: any;
 }
 
-export async function callDecoLlm(env: DecoLlmEnv, req: DecoLlmRequest, fetchFn: typeof fetch = fetch): Promise<DecoLlmResponse> {
+export async function callDecoLlm(
+  env: DecoLlmEnv,
+  req: DecoLlmRequest,
+  fetchFn: typeof fetch = fetch,
+): Promise<DecoLlmResponse> {
   if (!env.DECO_CHAT_API_TOKEN) throw new Error("Missing DECO_CHAT_API_TOKEN");
   const base = env.DECO_CHAT_API_URL || "https://api.deco.chat";
-  const url = base.replace(/\/$/, '') + "/v1/llm/chat"; // hypothetical endpoint
+  const url = base.replace(/\/$/, "") + "/v1/llm/chat"; // hypothetical endpoint
   const body = {
     model: req.model || "auto",
-    messages: [ { role: "user", content: req.prompt } ],
+    messages: [{ role: "user", content: req.prompt }],
     temperature: req.temperature ?? 0.5,
     max_tokens: req.maxTokens ?? 512,
     workspace: env.DECO_CHAT_WORKSPACE,
   };
   const r = await fetchFn(url, {
-    method: 'POST',
+    method: "POST",
     headers: {
-      'content-type': 'application/json',
-      'authorization': `Bearer ${env.DECO_CHAT_API_TOKEN}`,
-      ...(env.DECO_CHAT_WORKSPACE ? { 'x-workspace': env.DECO_CHAT_WORKSPACE } : {}),
+      "content-type": "application/json",
+      "authorization": `Bearer ${env.DECO_CHAT_API_TOKEN}`,
+      ...(env.DECO_CHAT_WORKSPACE
+        ? { "x-workspace": env.DECO_CHAT_WORKSPACE }
+        : {}),
     },
     body: JSON.stringify(body),
   });
@@ -43,6 +49,7 @@ export async function callDecoLlm(env: DecoLlmEnv, req: DecoLlmRequest, fetchFn:
   const json = await r.json();
   const model = json.model || body.model;
   // Simplify parsing (expect choices array similar to OpenAI style)
-  const txt = json.choices?.map((c: any) => c.message?.content).join('\n') || json.content || '';
+  const txt = json.choices?.map((c: any) => c.message?.content).join("\n") ||
+    json.content || "";
   return { model, content: txt, raw: json };
 }

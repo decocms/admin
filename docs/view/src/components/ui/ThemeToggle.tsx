@@ -30,8 +30,11 @@ export function ThemeToggle() {
   };
 
   const cycleTheme = () => {
-    const nextTheme =
-      theme === "light" ? "dark" : theme === "dark" ? "auto" : "light";
+    const nextTheme = theme === "light"
+      ? "dark"
+      : theme === "dark"
+      ? "auto"
+      : "light";
     setTheme(nextTheme);
     applyTheme(nextTheme);
   };

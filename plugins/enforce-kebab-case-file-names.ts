@@ -1,13 +1,4 @@
-// Minimal ambient types so this file type-checks in Node/TS environments
-declare namespace Deno {
-  namespace lint {
-    // deno-lint-ignore no-explicit-any
-    type Plugin = any;
-  }
-}
-
-// deno-lint-ignore no-explicit-any
-const plugin: any = {
+const plugin = {
   // The name of your plugin. Will be shown in error output
   name: 'enforce-kebab-case-file-names',
   // Object with rules. The property name is the rule name and

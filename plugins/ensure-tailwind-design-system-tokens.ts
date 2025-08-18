@@ -1,14 +1,8 @@
-// Minimal ambient types so this file type-checks in Node/TS environments
-declare namespace Deno {
-  namespace lint {
-    // deno-lint-ignore no-explicit-any
-    type Plugin = any;
-    // deno-lint-ignore no-explicit-any
-    type RuleContext = any;
-    // deno-lint-ignore no-explicit-any
-    type Range = any;
-  }
-}
+// Minimal placeholder types to avoid relying on Deno types at build time
+type LintPlugin = {
+  name: string;
+  rules: Record<string, { create: (context: any) => Record<string, (node: any) => void> }>;
+};
 const BANNED_CLASS_NAMES_CONTAIN_VALUES = [
   '50',
   '100',
@@ -56,15 +50,17 @@ function handleLiteral({
   value,
   range,
 }: {
-  context: any;
+  context: unknown;
   value: string;
-  range: any;
+  range: unknown;
 }) {
+  const ctx = context as { report: (arg: { range: any; message: string }) => void };
+  const rng = range as unknown as { start: { line: number; col: number }; end: { line: number; col: number } };
   const classes = value.split(' ');
   for (const className of classes) {
     if (!isValidDesignSystemToken(className)) {
-      context.report({
-        range,
+      ctx.report({
+        range: rng,
         message:
           `Class "${className}" does not use design system tokens. Please use tokens from the design system.`,
       });
@@ -73,7 +69,7 @@ function handleLiteral({
 }
 
 // Create the lint rule
-const ensureTailwindDesignSystemTokens: Deno.lint.Plugin = {
+const ensureTailwindDesignSystemTokens: LintPlugin = {
   name: 'ensure-tailwind-design-system-tokens',
   rules: {
     'ensure-tailwind-design-system-tokens': {

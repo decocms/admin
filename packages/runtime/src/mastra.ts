@@ -9,8 +9,8 @@ import {
 } from "@mastra/core";
 import { RuntimeContext } from "@mastra/core/di";
 import {
-  createStep as mastraCreateStep,
   createWorkflow,
+  createStep as mastraCreateStep,
   type DefaultEngineType,
   type ExecuteFunction,
   type Step as MastraStep,
@@ -19,7 +19,7 @@ import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import { zodToJsonSchema } from "zod-to-json-schema";
 import type { DefaultEnv } from "./index.ts";
-import { State } from "./state.ts";
+import { createStateValidationTool, State } from "./state.ts";
 export { createWorkflow };
 
 export { cloneStep, cloneWorkflow } from "@mastra/core/workflows";
@@ -232,10 +232,6 @@ export interface CreateMCPServerOptions<
   oauth?: {
     state?: TSchema;
     scopes?: string[];
-    callback?: (
-      env: Env & DefaultEnv<TSchema>,
-      integration: Integration,
-    ) => Promise<void>;
   };
   views?: (
     env: Env & DefaultEnv<TSchema>,
@@ -266,71 +262,14 @@ export interface AppContext<TEnv = any> {
   req?: Request;
 }
 
-interface IntegrationProp {
-  __type: string;
-  value: string;
-}
-const isIntegrationProp = (prop: any): prop is IntegrationProp => {
-  return (
-    prop &&
-    "__type" in prop &&
-    typeof prop.__type === "string" &&
-    "value" in prop &&
-    typeof prop.value === "string"
-  );
-};
-
-const decoChatOAuthToolsFor = <
-  TSchema extends z.ZodTypeAny = never,
-  TEnv = any,
->(
-  env: TEnv & DefaultEnv<TSchema>,
-  {
-    state: schema,
-    scopes,
-    callback,
-  }: CreateMCPServerOptions<any, TSchema>["oauth"] = {},
-) => {
+const decoChatOAuthToolsFor = <TSchema extends z.ZodTypeAny = never>({
+  state: schema,
+  scopes,
+}: CreateMCPServerOptions<any, TSchema>["oauth"] = {}) => {
   const jsonSchema = schema
     ? zodToJsonSchema(schema)
     : { type: "object", properties: {} };
   return [
-    createTool({
-      id: "DECO_CHAT_OAUTH_CALLBACK",
-      description: "Callback for OAuth for Deco Chat",
-      inputSchema: z.any(),
-      outputSchema: z.object({
-        validated: z.boolean().optional(),
-      }),
-      execute: async (c) => {
-        await callback?.(env, c.context);
-        // adds schema refinement for integrations
-        schema?.refine(async (data) => {
-          const promises: Promise<boolean>[] = [];
-          Object.entries(data).forEach(
-            ([_, prop]) => {
-              if (isIntegrationProp(prop)) {
-                promises.push(
-                  env.DECO_CHAT_REQUEST_CONTEXT.fetchIntegrationMetadata(
-                    prop.value,
-                  ).then((res) => {
-                    return res.appName === prop.__type;
-                  }),
-                );
-              }
-            },
-            { message: "Apps types does not match integration ids" },
-          );
-          return (await Promise.all(promises)).every(Boolean);
-        });
-        return {
-          validated:
-            !schema ||
-            (await schema.safeParseAsync(env.DECO_CHAT_REQUEST_CONTEXT.state))
-              .success,
-        };
-      },
-    }),
     createTool({
       id: "DECO_CHAT_OAUTH_START",
       description: "OAuth for Deco Chat",
@@ -488,7 +427,8 @@ export const createMCPServer = <
         .flat() ?? [];
 
     tools.push(...workflowTools);
-    tools.push(...decoChatOAuthToolsFor<TSchema>(bindings, options.oauth));
+    tools.push(...decoChatOAuthToolsFor<TSchema>(options.oauth));
+    tools.push(createStateValidationTool(options.oauth?.state));
 
     tools.push(
       createTool({

@@ -495,29 +495,6 @@ export const getIntegration = createIntegrationManagementTool({
   },
 });
 
-const assertsValidOAuthParams = async (payload: Omit<Integration, "id">) => {
-  try {
-    const oauth = (await MCPClient.INTEGRATIONS_CALL_TOOL({
-      connection: payload.connection,
-      params: {
-        name: "DECO_CHAT_OAUTH_CALLBACK",
-        arguments: payload,
-      },
-    })) as {
-      isError?: boolean;
-      structuredContent: { validated: boolean; reason?: string };
-    };
-    const isInvalid = oauth?.structuredContent?.validated === false;
-    if (isInvalid) {
-      throw new UserInputError(
-        `Invalid OAuth params. ${oauth?.structuredContent?.reason}`,
-      );
-    }
-  } catch {
-    // validate on error
-    // ignore validation on error
-  }
-};
 export const createIntegration = createIntegrationManagementTool({
   name: "INTEGRATIONS_CREATE",
   description: "Create a new integration",
@@ -533,10 +510,6 @@ export const createIntegration = createIntegrationManagementTool({
       workspace: c.workspace.value,
       id: integration.id ? parseId(integration.id).uuid : undefined,
     };
-
-    if (appId) {
-      await assertsValidOAuthParams(baseIntegration);
-    }
 
     const payload = {
       ...baseIntegration,
@@ -586,10 +559,6 @@ export const updateIntegration = createIntegrationManagementTool({
     }
 
     const { name, description, icon, connection, access, appId } = integration;
-
-    if (appId) {
-      await assertsValidOAuthParams(integration);
-    }
 
     const { data, error } = await c.db
       .from("deco_chat_integrations")

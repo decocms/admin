@@ -1,14 +1,21 @@
 import { z } from "zod";
 import { JwtIssuer } from "../../auth/jwt.ts";
+import { StatementSchema } from "../../auth/policy.ts";
 import { userFromJWT } from "../../auth/user.ts";
-import { InternalServerError, NotFoundError } from "../../errors.ts";
+import {
+  InternalServerError,
+  NotFoundError,
+  UserInputError,
+} from "../../errors.ts";
 import type { QueryResult } from "../../storage/index.ts";
 import {
   assertHasWorkspace,
   assertWorkspaceResourceAccess,
 } from "../assertions.ts";
 import { createToolGroup } from "../context.ts";
-import { StatementSchema } from "../../auth/policy.ts";
+import { MCPClient } from "../index.ts";
+import { getIntegration } from "../integrations/api.ts";
+import { getRegistryApp } from "../registry/api.ts";
 
 const SELECT_API_KEY_QUERY = `
   id,
@@ -78,18 +85,80 @@ const policiesSchema = z
   .optional()
   .describe("Policies for the API key");
 
+const AppClaimsSchema = z.object({
+  appName: z.string(),
+  integrationId: z.string(),
+  state: z.any(),
+});
 export const createApiKey = createTool({
   name: "API_KEYS_CREATE",
   description: "Create a new API key",
   inputSchema: z.object({
     name: z.string().describe("The name of the API key"),
     policies: policiesSchema,
-    claims: z.any().optional().describe("Claims to be added to the API key"),
+    claims: AppClaimsSchema.optional().describe(
+      "App Claims to be added to the API key",
+    ),
   }),
   handler: async ({ name, policies, claims }, c) => {
     assertHasWorkspace(c);
     await assertWorkspaceResourceAccess(c);
     const workspace = c.workspace.value;
+
+    // this code ensures that we always validate stat against the app owner before issuing an JWT.
+    if (claims?.appName) {
+      // ensure app schema is well formed
+      const promises: Promise<unknown>[] = [];
+
+      for (const prop of Object.values(claims.state ?? {})) {
+        if (
+          prop &&
+          typeof prop === "object" &&
+          "value" in prop &&
+          typeof prop.value === "string"
+        ) {
+          promises.push(
+            Promise.resolve(
+              getIntegration.handler({
+                id: prop.value,
+              }),
+            ).then((integration) => {
+              // deno-lint-ignore no-explicit-any
+              (prop as any)["__type"] = integration.appName; // ensure it's a binding object
+            }),
+          );
+        }
+      }
+
+      const appPromise = getRegistryApp.handler({
+        name: claims.appName,
+      });
+      await Promise.all(promises);
+
+      // get connection from registry
+
+      const app = await appPromise;
+
+      const validated = (await MCPClient.INTEGRATIONS_CALL_TOOL({
+        connection: app.connection,
+        params: {
+          name: "DECO_CHAT_STATE_VALIDATION",
+          arguments: {
+            state: claims.state,
+          },
+        },
+      })) as {
+        structuredContent: { valid: boolean; reason?: string };
+      };
+      // call state validation tool.
+
+      if (validated.structuredContent.valid === false) {
+        // errors or not valid payloads are considered valid?
+        throw new UserInputError(
+          `Could not validate state ${validated.structuredContent.reason}`,
+        );
+      }
+    }
 
     const db = c.db;
 

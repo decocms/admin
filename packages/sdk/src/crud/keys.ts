@@ -9,7 +9,11 @@ import { MCPClient } from "../fetcher.ts";
 export const createAPIKey = (
   workspace: string,
   params: {
-    claims?: Record<string, unknown>;
+    claims?: {
+      appName: string;
+      integrationId: string;
+      state: unknown;
+    };
     name: string;
     policies: Array<{ effect: "allow" | "deny"; resource: string }>;
   },

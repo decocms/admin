@@ -7,7 +7,11 @@ export const useCreateAPIKey = () => {
 
   return useMutation({
     mutationFn: (params: {
-      claims?: Record<string, unknown>;
+      claims?: {
+        appName: string;
+        integrationId: string;
+        state: unknown;
+      };
       name: string;
       policies: Array<{ effect: "allow" | "deny"; resource: string }>;
     }) => createAPIKey(workspace, params),

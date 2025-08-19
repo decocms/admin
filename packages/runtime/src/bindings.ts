@@ -18,6 +18,7 @@ const normalizeWorkspace = (workspace: string) => {
   }
   return `/shared/${workspace}`;
 };
+
 /**
  * Url: /:workspace.root/:workspace.slug/:integrationId/mcp
  */

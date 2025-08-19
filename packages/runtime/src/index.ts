@@ -108,9 +108,6 @@ export interface RequestContext<TSchema extends z.ZodTypeAny = any> {
   state: z.infer<TSchema>;
   token: string;
   workspace: string;
-  fetchIntegrationMetadata: (
-    integrationId: string,
-  ) => Promise<{ appName: string }>;
   ensureAuthenticated: (options?: {
     workspaceHint?: string;
   }) => User | undefined;
@@ -202,13 +199,6 @@ const AUTHENTICATED = (user?: unknown, workspace?: string) => () => {
   } as User;
 };
 
-const fetchMetadataFn = (workspace: string, apiUrl: string) => {
-  return (integrationId: string) => {
-    return fetch(
-      new URL(`/${workspace}/integrations/${integrationId}/metadata`, apiUrl),
-    ).then((res) => res.json() as Promise<{ appName: string }>);
-  };
-};
 export const withBindings = <TEnv>({
   env: _env,
   server,
@@ -229,31 +219,23 @@ export const withBindings = <TEnv>({
   if (typeof tokenOrContext === "string") {
     const decoded = decodeJwt(tokenOrContext);
     const workspace = decoded.aud as string;
-    const fetchIntegrationMetadata = fetchMetadataFn(workspace, apiUrl);
 
     context = {
       state: decoded.state as Record<string, unknown>,
       token: tokenOrContext,
       workspace,
-      fetchIntegrationMetadata,
       ensureAuthenticated: AUTHENTICATED(decoded.user, workspace),
     } as RequestContext<any>;
   } else if (typeof tokenOrContext === "object") {
     context = tokenOrContext;
     const decoded = decodeJwt(tokenOrContext.token);
     const workspace = decoded.aud as string;
-    const fetchIntegrationMetadata = fetchMetadataFn(workspace, apiUrl);
     context.ensureAuthenticated = AUTHENTICATED(decoded.user, workspace);
-    context.fetchIntegrationMetadata = fetchIntegrationMetadata;
   } else {
     context = {
       state: undefined,
       token: env.DECO_CHAT_API_TOKEN,
       workspace: env.DECO_CHAT_WORKSPACE,
-      fetchIntegrationMetadata: fetchMetadataFn(
-        env.DECO_CHAT_WORKSPACE,
-        apiUrl,
-      ),
       ensureAuthenticated: (options?: { workspaceHint?: string }) => {
         const workspaceHint = options?.workspaceHint ?? env.DECO_CHAT_WORKSPACE;
         const authUri = new URL("/apps/oauth", apiUrl);

@@ -296,14 +296,7 @@ const createMcpServerProxy = async (c: Context) => {
     },
   });
 
-  return {
-    ...mcpServerProxy,
-    metadata: () => {
-      return {
-        appName: integration.appName,
-      };
-    },
-  };
+  return mcpServerProxy;
 };
 
 // Add logger middleware
@@ -373,12 +366,6 @@ app.post("/:root/:slug/:integrationId/mcp", async (c) => {
   const mcpServerProxy = await createMcpServerProxy(c);
 
   return mcpServerProxy.fetch(c.req.raw);
-});
-
-app.post("/:root/:slug/:integrationId/metadata", async (c) => {
-  const mcpServerProxy = await createMcpServerProxy(c);
-
-  return Response.json(mcpServerProxy.metadata());
 });
 
 app.post("/:root/:slug/:integrationId/tools/list", async (c) => {

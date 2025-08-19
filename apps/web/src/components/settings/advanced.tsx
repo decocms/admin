@@ -224,10 +224,8 @@ function AdvancedTab() {
                       defaultValue={form.getValues("temperature") ?? undefined}
                       {...field}
                       onChange={(e) => {
-                        const value = e.target.value;
-                        field.onChange(
-                          value === "" ? "" : parseFloat(value) || value,
-                        );
+                        const value = Number(e.target.value);
+                        field.onChange(Number.isNaN(value) ? 0 : value);
                       }}
                     />
                   </FormControl>

@@ -45,7 +45,13 @@ import { fileURLToPath } from "url";
 import { spawn } from "child_process";
 import { deleteSession, readSession, setToken } from "./lib/session.js";
 import { DECO_CHAT_API_LOCAL } from "./lib/constants.js";
-import { getAppDomain, getConfig, readWranglerConfig } from "./lib/config.js";
+import {
+  getAppDomain,
+  getConfig,
+  readWranglerConfig,
+  getLocal,
+  setLocal,
+} from "./lib/config.js";
 import { loginCommand } from "./commands/auth/login.js";
 import { whoamiCommand } from "./commands/auth/whoami.js";
 import { configureCommand } from "./commands/config/configure.js";
@@ -67,15 +73,6 @@ const __dirname = dirname(__filename);
 // Read package.json for version
 const packageJsonPath = join(__dirname, "../package.json");
 const packageJson = JSON.parse(await readFile(packageJsonPath, "utf-8"));
-
-// Global state for local flag
-let isLocal = false;
-export function setLocal(local: boolean): void {
-  isLocal = local;
-}
-export function getLocal(): boolean {
-  return isLocal;
-}
 
 // Login command implementation
 const login = new Command("login")
@@ -395,7 +392,10 @@ const gen = new Command("gen")
         bindings: config.bindings,
         selfUrl:
           options.self ??
-          `https://${getAppDomain(config.workspace, wranglerConfig.name ?? "my-app")}/mcp`,
+          `https://${getAppDomain(
+            config.workspace,
+            wranglerConfig.name ?? "my-app",
+          )}/mcp`,
       });
       if (options.output) {
         await writeFile(options.output, env);

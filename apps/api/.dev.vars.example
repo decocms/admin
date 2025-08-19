@@ -1,0 +1,50 @@
+# Environment variables for the decocms-api
+
+# Set to 'true' to use local backend services (localhost)
+# Set to 'false' or leave unset to use production backend services
+VITE_USE_LOCAL_BACKEND=true
+
+# Add other environment variables below 
+
+# LLM Providers
+OPENROUTER_API_KEY=
+OPENAI_API_KEY=
+ANTHROPIC_API_KEY=
+
+# Supabase
+SUPABASE_URL=
+SUPABASE_SERVER_TOKEN=
+
+# Turso
+TURSO_ORGANIZATION=
+TURSO_GROUP_DATABASE_TOKEN=
+TURSO_ADMIN_TOKEN=
+
+# Cloudflare
+CF_ACCOUNT_ID=
+CF_API_TOKEN=
+CF_ZONE_ID=
+CF_DISPATCH_NAMESPACE=
+CF_R2_ACCESS_KEY_ID=
+CF_R2_SECRET_ACCESS_KEY=
+
+# Resend (email)
+RESEND_API_KEY=
+
+# Wallet (wallet.webdraw.com, github.com/deco-cx/webdraw - apps/wallet)
+# To be open sourced. Our financial transactions database implementation.
+WALLET_API_KEY=
+
+# Opentelemetry
+OTEL_EXPORTER_OTLP_ENDPOINT=
+OTEL_EXPORTER_OTLP_HEADERS=
+
+# AWS
+AWS_ACCESS_KEY_ID=
+AWS_SECRET_ACCESS_KEY=
+AWS_REGION=
+
+# Internal
+LLMS_ENCRYPTION_KEY=
+DECO_CHAT_API_JWT_PUBLIC_KEY=
+DECO_CHAT_API_JWT_PRIVATE_KEY=

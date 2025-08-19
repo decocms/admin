@@ -185,7 +185,9 @@ function ViewsList() {
   const currentTeam = useCurrentTeam();
   const navigateWorkspace = useNavigateWorkspace();
   const [viewMode, setViewMode] = useViewMode();
-  const { data: views = [], isLoading: isLoadingViews } = useIntegrationViews({});
+  const { data: views = [], isLoading: isLoadingViews } = useIntegrationViews(
+    {},
+  );
   const [searchTerm, setSearchTerm] = useState("");
   const deferredSearchTerm = useDeferredValue(searchTerm);
 

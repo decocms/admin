@@ -3,6 +3,7 @@
 # Set to 'true' to use local backend services (localhost)
 # Set to 'false' or leave unset to use production backend services
 VITE_USE_LOCAL_BACKEND=true
+PORT=3001
 
 # Add other environment variables below 
 
@@ -39,6 +40,9 @@ WALLET_API_KEY=
 OTEL_EXPORTER_OTLP_ENDPOINT=
 OTEL_EXPORTER_OTLP_HEADERS=
 
+# Posthog (analytics)
+POSTHOG_TOKEN=
+
 # AWS
 AWS_ACCESS_KEY_ID=
 AWS_SECRET_ACCESS_KEY=
@@ -48,3 +52,9 @@ AWS_REGION=
 LLMS_ENCRYPTION_KEY=
 DECO_CHAT_API_JWT_PUBLIC_KEY=
 DECO_CHAT_API_JWT_PRIVATE_KEY=
+
+# Stripe (adding credits to the wallet)
+STRIPE_SECRET_KEY=
+
+# CurrencyAPI - currencyapi.com (dealing with different currencies coversion before depositing into the wallet)
+CURRENCY_API_KEY=

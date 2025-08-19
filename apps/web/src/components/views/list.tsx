@@ -12,6 +12,7 @@ import { ListPageHeader } from "../common/list-page-header.tsx";
 import { Table, TableColumn } from "../common/table/index.tsx";
 import { DefaultBreadcrumb, PageLayout } from "../layout.tsx";
 import { useCurrentTeam } from "../sidebar/team-selector";
+import { Spinner } from "@deco/ui/components/spinner.tsx";
 
 export interface ViewWithStatus {
   isAdded: boolean;
@@ -184,7 +185,7 @@ function ViewsList() {
   const currentTeam = useCurrentTeam();
   const navigateWorkspace = useNavigateWorkspace();
   const [viewMode, setViewMode] = useViewMode();
-  const { data: views = [] } = useIntegrationViews({});
+  const { data: views = [], isLoading: isLoadingViews } = useIntegrationViews({});
   const [searchTerm, setSearchTerm] = useState("");
   const deferredSearchTerm = useDeferredValue(searchTerm);
 
@@ -241,6 +242,12 @@ function ViewsList() {
         view={{ viewMode, onChange: setViewMode }}
       />
 
+      {isLoadingViews && (
+        <div className="flex justify-center items-center h-full">
+          <Spinner />
+        </div>
+      )}
+
       {filteredViews.length > 0 && viewMode === "cards" && (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 py-4">
           {filteredViews.map((view) => (
@@ -276,7 +283,7 @@ function ViewsList() {
         <TableView views={filteredViews} onConfigure={handleViewClick} />
       )}
 
-      {filteredViews.length === 0 && (
+      {filteredViews.length === 0 && !isLoadingViews && (
         <EmptyState
           icon="dashboard"
           title="No views found"

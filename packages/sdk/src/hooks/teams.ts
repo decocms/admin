@@ -149,18 +149,12 @@ export function useConnectionViews(
   return data;
 }
 
-export function useIntegrationViews({
-  enabled = true,
-  suspense = true,
-}: {
-  enabled?: boolean;
-  suspense?: boolean;
-}) {
+export function useIntegrationViews({ enabled = true }: { enabled?: boolean }) {
   const { workspace } = useSDK();
-  return (suspense ? useSuspenseQuery : useQuery)({
-    queryKey: enabled ? KEYS.WORKSPACE_VIEWS(workspace) : ["disabled"],
+  return useQuery({
+    queryKey: KEYS.WORKSPACE_VIEWS(workspace),
+    enabled,
     queryFn: async ({ signal }) => {
-      if (!enabled) return [];
       const integrations = await listIntegrations(
         workspace,
         { binder: "View" },

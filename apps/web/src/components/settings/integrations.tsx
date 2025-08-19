@@ -1,8 +1,7 @@
 import {
   type Integration,
-  useKnowledgeListFiles,
-  useUpdateAgent,
   useIntegrationViews,
+  useKnowledgeListFiles,
 } from "@deco/sdk";
 import {
   getExtensionFromContentType,
@@ -25,26 +24,26 @@ import {
 import { Icon } from "@deco/ui/components/icon.tsx";
 import { Input } from "@deco/ui/components/input.tsx";
 import { ScrollArea } from "@deco/ui/components/scroll-area.tsx";
+import { Spinner } from "@deco/ui/components/spinner.tsx";
+import { cn } from "@deco/ui/lib/utils.ts";
 import { useCallback, useDeferredValue, useMemo, useState } from "react";
 import { LEGACY_INTEGRATIONS } from "../../constants.ts";
-import { useNavigateWorkspace } from "../../hooks/use-navigate-workspace.ts";
-import { useAgent } from "../agent/provider.tsx";
 import { useAgentSettingsToolsSet } from "../../hooks/use-agent-settings-tools-set.ts";
-import {
-  AddFileToKnowledgeButton,
-  KnowledgeBaseFileList,
-  type KnowledgeFile,
-} from "../agent/upload-knowledge-asset.tsx";
+import { useNavigateWorkspace } from "../../hooks/use-navigate-workspace.ts";
 import {
   type UploadFile,
   useAgentKnowledgeIntegration,
   useUploadAgentKnowledgeFiles,
 } from "../agent/hooks/use-agent-knowledge.ts";
+import { useAgent } from "../agent/provider.tsx";
+import {
+  AddFileToKnowledgeButton,
+  KnowledgeBaseFileList,
+  type KnowledgeFile,
+} from "../agent/upload-knowledge-asset.tsx";
 import { AppKeys, getConnectionAppKey } from "../integrations/apps.ts";
 import { SelectConnectionDialog } from "../integrations/select-connection-dialog.tsx";
 import { IntegrationListItem } from "../toolsets/selector.tsx";
-import { Spinner } from "@deco/ui/components/spinner.tsx";
-import { ViewWithStatus } from "../views/list.tsx";
 
 const ADVANCED_INTEGRATIONS = [
   ...LEGACY_INTEGRATIONS,
@@ -375,11 +374,9 @@ function AddViewButton() {
   const { data: allViews = [], isLoading: isLoadingViews } =
     useIntegrationViews({
       enabled: open,
-      suspense: false,
     });
   const [searchTerm, setSearchTerm] = useState("");
   const deferredSearchTerm = useDeferredValue(searchTerm);
-  const updateAgentMutation = useUpdateAgent();
 
   // Filter out views that are already added to the agent
   const agentViewUrls = new Set(agent.views?.map((view) => view.url) || []);
@@ -397,22 +394,15 @@ function AddViewButton() {
     );
   }, [availableViews, deferredSearchTerm]);
 
-  const handleViewSelect = async (view: { url: string; title: string }) => {
-    const newAgent = {
-      ...agent,
-      views: [
-        ...(agent.views || []),
-        {
-          url: view.url,
-          name: view.title,
-        },
-      ],
-    };
-    await updateAgentMutation.mutateAsync(newAgent);
-
-    form.reset(newAgent);
-
-    setOpen(false);
+  const handleViewSelect = (view: { url: string; title: string }) => {
+    const newViews = [
+      ...(agent.views || []),
+      {
+        url: view.url,
+        name: view.title,
+      },
+    ];
+    form.setValue("views", newViews, { shouldDirty: true });
   };
 
   const handleOpenChange = (newOpen: boolean) => {
@@ -456,7 +446,7 @@ function AddViewButton() {
               <Spinner />
             </div>
           )}
-          <ScrollArea className="w-full flex-1">
+          <ScrollArea className="w-full flex-1 min-h-0">
             <div className="space-y-2">
               {filteredViews.length === 0 && !isLoadingViews ? (
                 <div className="flex flex-col gap-2 items-center justify-center h-32 text-muted-foreground">
@@ -504,7 +494,6 @@ function AddViewButton() {
 function Views() {
   const { agent, form } = useAgent();
   const agentViews = agent.views || [];
-  const updateAgentMutation = useUpdateAgent();
 
   const handleRemoveView = (viewUrl: string, viewName: string) => {
     const newAgent = {
@@ -513,8 +502,7 @@ function Views() {
         (view) => view.url !== viewUrl && view.name !== viewName,
       ),
     };
-    updateAgentMutation.mutateAsync(newAgent);
-    form.reset(newAgent);
+    form.setValue("views", newAgent.views, { shouldDirty: true });
   };
 
   return (
@@ -526,21 +514,21 @@ function Views() {
         </FormDescription>
         {agentViews.length !== 0 && <AddViewButton />}
       </div>
-      {agentViews.length === 0 ? (
-        <div className="flex flex-col gap-2 items-center justify-center h-full min-h-[200px] rounded-xl bg-muted border border-border border-dashed">
-          <div className="flex flex-col items-center gap-2">
-            <Icon
-              name="dashboard"
-              size={32}
-              className="text-muted-foreground"
-            />
-            <span className="text-sm text-muted-foreground">
-              No views added to this agent
-            </span>
-            <AddViewButton />
-          </div>
+      <div
+        className={cn(
+          "flex flex-col gap-2 items-center justify-center h-full min-h-[200px] rounded-xl bg-muted border border-border border-dashed",
+          agentViews.length !== 0 && "hidden",
+        )}
+      >
+        <div className="flex flex-col items-center gap-2">
+          <Icon name="dashboard" size={32} className="text-muted-foreground" />
+          <span className="text-sm text-muted-foreground">
+            No views added to this agent
+          </span>
+          <AddViewButton />
         </div>
-      ) : (
+      </div>
+      {agentViews.length !== 0 && (
         <div className="space-y-2">
           <div className="grid gap-2">
             {agentViews.map((view) => (

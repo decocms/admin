@@ -1,6 +1,6 @@
 {
   "name": "deco-cli",
-  "version": "0.15.4",
+  "version": "0.15.5",
   "description": "CLI for managing deco.chat apps & projects",
   "license": "MIT",
   "author": "Deco team",

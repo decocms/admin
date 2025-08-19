@@ -197,7 +197,7 @@ const hostingDeploy = new Command("deploy")
     } catch (error) {
       console.error(
         "❌ Deployment failed:",
-        error instanceof Error ? error.message : String(error),
+        error instanceof Error ? error.message : JSON.stringify(error),
       );
       process.exit(1);
     }

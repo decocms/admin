@@ -153,13 +153,12 @@ appLogin.all("/oauth", async (ctx: AppContext) => {
 
   const { data } = await db.auth.signInWithOAuth(credentials);
 
-  if (data.url) {
-    setHeaders(headers, ctx);
-
-    return ctx.redirect(data.url);
+  if (!data.url) {
+    throw new Error("deco.chat auth failed to log in.");
   }
 
-  throw new Error("deco.chat auth failed to log in.");
+  setHeaders(headers, ctx);
+  return ctx.redirect(data.url);
 });
 
 appLogin.all("/magiclink", async (ctx: AppContext) => {

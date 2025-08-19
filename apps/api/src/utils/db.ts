@@ -28,10 +28,21 @@ export const getServerClientOptions = ({
   };
 };
 
+const shouldSetCookieForLocalhost = (url: URL) => {
+  const next = url.searchParams.get("next");
+  if (!next) {
+    return false;
+  }
+
+  const nextUrl = new URL(next);
+  return nextUrl.hostname === "localhost" || nextUrl.hostname === "127.0.0.1";
+};
+
 export const authSetCookie = ({ request }: { request: Request }) => {
   const headers = new Headers();
   const setCookie: SetAllCookies = (cookies) => {
     const url = new URL(request.url);
+    const shouldSetForLocalhost = shouldSetCookieForLocalhost(url);
     const rootDomain = getCookieDomain(url.hostname);
     for (const { name, value, options } of cookies) {
       headers.append(
@@ -40,7 +51,7 @@ export const authSetCookie = ({ request }: { request: Request }) => {
           ...options,
           sameSite: "none", // allow for subdomains.
           secure: true,
-          domain: `.${rootDomain}`,
+          domain: shouldSetForLocalhost ? "localhost" : `.${rootDomain}`,
         }),
       );
     }

@@ -4,6 +4,7 @@ import {
   type Thread,
   useAgents,
   useDeleteThread,
+  useIntegrations,
   useRemoveView,
   useThreads,
   useUpdateThreadTitle,
@@ -25,6 +26,11 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@deco/ui/components/dropdown-menu.tsx";
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@deco/ui/components/collapsible.tsx";
 import { Form } from "@deco/ui/components/form.tsx";
 import { Icon } from "@deco/ui/components/icon.tsx";
 import { Input } from "@deco/ui/components/input.tsx";
@@ -37,6 +43,9 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
+  SidebarMenuSub,
+  SidebarMenuSubButton,
+  SidebarMenuSubItem,
   SidebarSeparator,
   useSidebar,
 } from "@deco/ui/components/sidebar.tsx";
@@ -56,6 +65,7 @@ import { groupThreadsByDate } from "../threads/index.tsx";
 import { SidebarFooter } from "./footer.tsx";
 import { Header as SidebarHeader } from "./header.tsx";
 import { useCurrentTeam } from "./team-selector.tsx";
+import { IntegrationAvatar } from "../common/avatar/integration.tsx";
 
 const editTitleSchema = z.object({
   title: z.string().min(1, "Title is required"),
@@ -408,6 +418,7 @@ SidebarThreads.Skeleton = () => (
 function WorkspaceViews() {
   const workspaceLink = useWorkspaceLink();
   const { isMobile, toggleSidebar } = useSidebar();
+  const { data: integrations } = useIntegrations();
   const team = useCurrentTeam();
   const removeViewMutation = useRemoveView();
   const handleRemoveView = async (view: View) => {
@@ -415,62 +426,188 @@ function WorkspaceViews() {
       viewId: view.id,
     });
   };
-  return team.views.map((item) => {
-    const meta = parseViewMetadata(item);
-    if (!meta) {
-      return null;
+
+  const integrationMap = new Map(
+    integrations?.map((integration) => [integration.id, integration]),
+  );
+
+  const fromIntegration: Record<string, View[]> = {
+    custom: [],
+  };
+  const firstLevelViews: View[] = [];
+
+  // Group views by integration ID
+  team.views.forEach((view) => {
+    const metadata = view.metadata as { integration?: { id: string } };
+    const integrationId = metadata?.integration?.id;
+
+    if (integrationId) {
+      if (!fromIntegration[integrationId]) {
+        fromIntegration[integrationId] = [];
+      }
+      fromIntegration[integrationId].push(view);
+    } else {
+      if (view.type === "custom") {
+        fromIntegration["custom"].push(view);
+        return;
+      }
+      firstLevelViews.push(view);
     }
-    const href = workspaceLink(
-      meta.type === "custom" ? `/views/${item.id}` : meta.path,
-    );
+  });
 
-    return (
-      <SidebarMenuItem key={item.title}>
-        <WithActive to={href}>
-          {({ isActive }) => (
-            <SidebarMenuButton asChild isActive={isActive} tooltip={item.title}>
-              <Link
-                to={href}
-                className="group/item"
-                onClick={() => {
-                  trackEvent("sidebar_navigation_click", {
-                    item: item.title,
-                  });
-                  isMobile && toggleSidebar();
-                }}
-              >
-                <Icon
-                  name={item.icon}
-                  filled={isActive}
-                  className="text-muted-foreground"
-                />
-                <span className="truncate">{item.title}</span>
+  return (
+    <>
+      {firstLevelViews.map((item) => {
+        const meta = parseViewMetadata(item);
+        if (!meta) {
+          return null;
+        }
+        const href = workspaceLink(
+          meta.type === "custom" ? `/views/${item.id}` : meta.path,
+        );
 
-                {meta.type === "custom" && (
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="text-destructive hover:text-destructive ml-auto group-hover/item:block! hidden! p-0.5 h-6"
-                    onClick={(e) => {
-                      e.preventDefault();
-                      e.stopPropagation();
-                      handleRemoveView(item);
+        return (
+          <SidebarMenuItem key={item.title}>
+            <WithActive to={href}>
+              {({ isActive }) => (
+                <SidebarMenuButton
+                  asChild
+                  isActive={isActive}
+                  tooltip={item.title}
+                >
+                  <Link
+                    to={href}
+                    className="group/item"
+                    onClick={() => {
+                      trackEvent("sidebar_navigation_click", {
+                        item: item.title,
+                      });
+                      isMobile && toggleSidebar();
                     }}
                   >
                     <Icon
-                      name="remove"
-                      size={16}
-                      className="text-muted-foreground ml-auto group-hover/item:block! hidden!"
+                      name={item.icon}
+                      filled={isActive}
+                      className="text-muted-foreground"
                     />
-                  </Button>
-                )}
-              </Link>
-            </SidebarMenuButton>
-          )}
-        </WithActive>
-      </SidebarMenuItem>
-    );
-  });
+                    <span className="truncate">{item.title}</span>
+
+                    {meta.type === "custom" && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="text-destructive hover:text-destructive ml-auto group-hover/item:block! hidden! p-0.5 h-6"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          handleRemoveView(item);
+                        }}
+                      >
+                        <Icon
+                          name="remove"
+                          size={16}
+                          className="text-muted-foreground ml-auto group-hover/item:block! hidden!"
+                        />
+                      </Button>
+                    )}
+                  </Link>
+                </SidebarMenuButton>
+              )}
+            </WithActive>
+          </SidebarMenuItem>
+        );
+      })}
+      {Object.entries(fromIntegration).length > 0 && (
+        <>
+          <span className="text-xs text-muted-foreground mt-2 ">APPS</span>
+        </>
+      )}
+      {Object.entries(fromIntegration).map(([integrationId, views]) => {
+        const integration = integrationMap.get(integrationId);
+        return (
+          <SidebarMenuItem key={integrationId}>
+            <Collapsible asChild defaultOpen className="group/collapsible">
+              <div>
+                <CollapsibleTrigger asChild>
+                  <div className="flex items-center gap-2 w-full cursor-pointer py-2">
+                    <IntegrationAvatar
+                      size="xs"
+                      url={integration?.icon}
+                      fallback={integration?.name}
+                    />
+                    <span className="truncate">
+                      {integration?.name ?? "Custom"}
+                    </span>
+                    <Icon
+                      name="chevron_right"
+                      size={16}
+                      className="ml-auto transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90"
+                    />
+                  </div>
+                </CollapsibleTrigger>
+                <CollapsibleContent>
+                  <SidebarMenuSub>
+                    {views.map((view) => {
+                      const meta = parseViewMetadata(view);
+                      if (!meta) return null;
+
+                      const href = workspaceLink(
+                        meta.type === "custom"
+                          ? `/views/${view.id}`
+                          : meta.path,
+                      );
+
+                      return (
+                        <SidebarMenuSubItem key={view.id}>
+                          <SidebarMenuSubButton asChild>
+                            <Link
+                              to={href}
+                              className="group/item"
+                              onClick={() => {
+                                trackEvent("sidebar_navigation_click", {
+                                  item: view.title,
+                                });
+                                isMobile && toggleSidebar();
+                              }}
+                            >
+                              <Icon
+                                name={view.icon}
+                                size={16}
+                                className="text-muted-foreground"
+                              />
+                              <span className="truncate">{view.title}</span>
+                              {meta.type === "custom" && (
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  className="text-destructive hover:text-destructive ml-auto group-hover/item:block! hidden! p-0.5 h-6"
+                                  onClick={(e) => {
+                                    e.preventDefault();
+                                    e.stopPropagation();
+                                    handleRemoveView(view);
+                                  }}
+                                >
+                                  <Icon
+                                    name="remove"
+                                    size={16}
+                                    className="text-muted-foreground ml-auto group-hover/item:block! hidden!"
+                                  />
+                                </Button>
+                              )}
+                            </Link>
+                          </SidebarMenuSubButton>
+                        </SidebarMenuSubItem>
+                      );
+                    })}
+                  </SidebarMenuSub>
+                </CollapsibleContent>
+              </div>
+            </Collapsible>
+          </SidebarMenuItem>
+        );
+      })}
+    </>
+  );
 }
 
 WorkspaceViews.Skeleton = () => (

@@ -72,6 +72,9 @@ export interface AddViewInput {
     icon: string;
     type: "custom";
     url: string;
+    integration: {
+      id: string;
+    };
   };
 }
 

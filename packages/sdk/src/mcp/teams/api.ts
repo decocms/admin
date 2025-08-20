@@ -1014,6 +1014,9 @@ export const addView = createTool({
         icon: z.string().describe("Icon identifier for the view"),
         type: z.literal("custom").describe("Type of view (must be 'custom')"),
         url: z.string().describe("URL for the custom view"),
+        integration: z.object({
+          id: z.string().describe("Integration ID"),
+        }),
       })
       .describe("View configuration to add"),
   }),
@@ -1060,6 +1063,9 @@ export const addView = createTool({
           type: view.type,
           metadata: {
             url: view.url,
+            integration: {
+              id: view.integration?.id,
+            },
           },
           team_id: team.id,
         },

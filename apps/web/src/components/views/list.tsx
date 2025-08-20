@@ -113,6 +113,9 @@ function TogglePin({ view }: { view: ViewWithStatus }) {
           icon: view.icon,
           type: "custom" as const,
           url: view.url,
+          integration: {
+            id: view.integration.id,
+          },
         },
       });
 

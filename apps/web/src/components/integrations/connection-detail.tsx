@@ -1091,6 +1091,9 @@ function ViewsList({ integration }: { integration: Integration }) {
           icon: view.icon,
           type: "custom" as const,
           url: view.url,
+          integration: {
+            id: integration.id,
+          },
         },
       });
 

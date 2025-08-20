@@ -231,7 +231,7 @@ function AddConnectionDialogContent({
   const navigateWorkspace = useNavigateWorkspace();
   const showEmptyState = search.length > 0;
   const { mutateAsync: getRegistryApp } = useGetRegistryApp();
-  const handleAddIntegration = async (appName: string) => {
+  const handleInstallFromRegistry = async (appName: string) => {
     const app = await getRegistryApp({ name: appName ?? "" });
     setInstallingIntegration({
       ...app,
@@ -242,7 +242,7 @@ function AddConnectionDialogContent({
 
   useEffect(() => {
     if (appName) {
-      handleAddIntegration(appName);
+      handleInstallFromRegistry(appName);
     }
   }, [appName]);
   return (

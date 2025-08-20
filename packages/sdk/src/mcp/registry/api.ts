@@ -16,7 +16,7 @@ import {
   assertWorkspaceResourceAccess,
 } from "../assertions.ts";
 import { type AppContext, createToolGroup } from "../context.ts";
-
+export { AppName };
 const DECO_CHAT_APPS_REGISTRY_TABLE = "deco_chat_apps_registry" as const;
 const DECO_CHAT_REGISTRY_SCOPES_TABLE = "deco_chat_registry_scopes" as const;
 const DECO_CHAT_REGISTRY_APPS_TOOLS_TABLE =

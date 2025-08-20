@@ -90,6 +90,33 @@ const AppClaimsSchema = z.object({
   integrationId: z.string(),
   state: z.any(),
 });
+const ensureStateIsWellFormed = async (state: unknown) => {
+  const promises: Promise<unknown>[] = [];
+
+  for (const prop of Object.values(state ?? {})) {
+    if (
+      prop &&
+      typeof prop === "object" &&
+      "value" in prop &&
+      typeof prop.value === "string"
+    ) {
+      promises.push(
+        Promise.resolve(
+          getIntegration.handler({
+            id: prop.value,
+          }),
+        ).then((integration) => {
+          // deno-lint-ignore no-explicit-any
+          (prop as any)["__type"] = integration.appName; // ensure it's a binding object
+        }),
+      );
+    }
+  }
+
+  await Promise.all(promises);
+
+  return state;
+};
 export const createApiKey = createTool({
   name: "API_KEYS_CREATE",
   description: "Create a new API key",
@@ -108,43 +135,22 @@ export const createApiKey = createTool({
     // this code ensures that we always validate stat against the app owner before issuing an JWT.
     if (claims?.appName) {
       // ensure app schema is well formed
-      const promises: Promise<unknown>[] = [];
 
-      for (const prop of Object.values(claims.state ?? {})) {
-        if (
-          prop &&
-          typeof prop === "object" &&
-          "value" in prop &&
-          typeof prop.value === "string"
-        ) {
-          promises.push(
-            Promise.resolve(
-              getIntegration.handler({
-                id: prop.value,
-              }),
-            ).then((integration) => {
-              // deno-lint-ignore no-explicit-any
-              (prop as any)["__type"] = integration.appName; // ensure it's a binding object
-            }),
-          );
-        }
-      }
-
-      const appPromise = getRegistryApp.handler({
-        name: claims.appName,
-      });
-      await Promise.all(promises);
+      const [app, state] = await Promise.all([
+        getRegistryApp.handler({
+          name: claims.appName,
+        }),
+        ensureStateIsWellFormed(claims.state),
+      ]);
 
       // get connection from registry
-
-      const app = await appPromise;
 
       const validated = (await MCPClient.INTEGRATIONS_CALL_TOOL({
         connection: app.connection,
         params: {
           name: "DECO_CHAT_STATE_VALIDATION",
           arguments: {
-            state: claims.state,
+            state,
           },
         },
       })) as {

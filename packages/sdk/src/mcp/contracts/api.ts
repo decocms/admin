@@ -1,5 +1,7 @@
 import { MD5 } from "object-hash";
 import z from "zod";
+import { WebCache } from "../../cache/index.ts";
+import { SWRCache } from "../../cache/swr.ts";
 import { WellKnownMcpGroups } from "../../crud/groups.ts";
 import {
   AppContext,
@@ -20,8 +22,6 @@ import {
   preAuthorizeAmount,
 } from "../wallet/api.ts";
 import { MicroDollar } from "../wallet/microdollar.ts";
-import { SWRCache } from "../../cache/swr.ts";
-import { WebCache } from "../../cache/index.ts";
 
 type ContractContext = WithTool<AppContext> & {
   state: ContractState;
@@ -153,9 +153,10 @@ export const contractRegister = createTool({
     const url = new URL(`/contracts/mcp`, DECO_CHAT_API(c));
     url.searchParams.set("contract", btoa(JSON.stringify(context.contract)));
 
+    const { name, scopeName } = AppName.parse(assignor);
     const app = await publishApp.handler({
-      name: assignor,
-      scopeName: context.author.scope,
+      name,
+      scopeName,
       icon: "https://assets.decocache.com/mcp/10b5e8b4-a4e2-4868-8a7d-8cf9b46f0d79/contract.png",
       description: context.contract.body,
       friendlyName: `A Contract for ${assignor}`,

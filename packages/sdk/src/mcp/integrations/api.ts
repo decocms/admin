@@ -736,7 +736,7 @@ export const DECO_INTEGRATION_OAUTH_START = createIntegrationManagementTool({
     assertHasWorkspace(c);
     await assertWorkspaceResourceAccess(c);
     let connection: MCPConnection;
-    if (provider === "marketplace") {
+    if (provider === MARKETPLACE_PROVIDER) {
       const app = await getRegistryApp.handler({ name: appName });
       connection = app.connection;
     } else {

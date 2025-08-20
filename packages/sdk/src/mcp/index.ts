@@ -20,8 +20,8 @@ import * as apiKeysAPI from "./api-keys/api.ts";
 import * as channelsAPI from "./channels/api.ts";
 import { type AppContext, State, type Tool } from "./context.ts";
 import {
-  contractGet,
   contractAuthorize,
+  contractGet,
   contractRegister,
   contractSettle,
   oauthStart,
@@ -182,6 +182,7 @@ export const WORKSPACE_TOOLS = [
   databasesAPI.runSql,
   databasesAPI.migrate,
   databasesAPI.getMeta,
+  databasesAPI.recovery,
   aiAPI.aiGenerate,
   aiAPI.aiGenerateObject,
   oauthAPI.oauthCodeCreate,

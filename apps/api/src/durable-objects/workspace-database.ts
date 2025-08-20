@@ -23,6 +23,14 @@ export class WorkspaceDatabase extends DurableObject implements IWorkspaceDB {
     return { size: this.sql.databaseSize, [Symbol.dispose]: () => {} };
   }
 
+  async recovery(dt: Date) {
+    const bookmark = await this.ctx.storage.getBookmarkForTime(dt);
+    this.ctx.storage.onNextSessionRestoreBookmark(bookmark);
+    return {
+      [Symbol.dispose]: () => {},
+    };
+  }
+
   exec({ sql, params }: DatatabasesRunSqlInput) {
     return {
       result: [

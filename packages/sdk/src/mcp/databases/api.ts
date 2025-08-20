@@ -102,3 +102,21 @@ export const runSql = createDatabaseTool({
     return { result: responseDO.result };
   },
 });
+
+export const recovery = createDatabaseTool({
+  name: "DATABASES_RECOVERY",
+  description: "Run a SQL query against the workspace database",
+  inputSchema: z.object({
+    dt: z.date().describe("The date to recover to"),
+  }),
+  outputSchema: z.object({
+    success: z.boolean(),
+  }),
+  handler: async ({ dt }, c) => {
+    assertHasWorkspace(c);
+    await assertWorkspaceResourceAccess(c, "DATABASES_RUN_SQL");
+    const db = await workspaceDB(c);
+    using _ = await db.recovery?.(dt);
+    return { success: true };
+  },
+});

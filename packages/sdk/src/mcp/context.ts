@@ -152,6 +152,7 @@ export type IWorkspaceDBExecResult = { result: QueryResult[] } & Disposable;
 export type IWorkspaceDBMeta = { size: number } & Disposable;
 export interface IWorkspaceDB {
   meta?: () => Promise<IWorkspaceDBMeta> | IWorkspaceDBMeta;
+  recovery?: (dt: Date) => Promise<Disposable>;
   exec: (
     args: DatatabasesRunSqlInput,
   ) => Promise<IWorkspaceDBExecResult> | IWorkspaceDBExecResult;

@@ -1,4 +1,3 @@
-import { useMemo } from "react";
 import {
   FormControl,
   FormDescription,
@@ -17,7 +16,6 @@ import {
 import type { FieldPath, FieldValues, UseFormReturn } from "react-hook-form";
 import type { OptionItem } from "../index.tsx";
 import { IntegrationIcon } from "../../integrations/common.tsx";
-import { useMarketplaceIntegrations } from "@deco/sdk";
 import { Button } from "@deco/ui/components/button.tsx";
 import { useOptionsLoader } from "../../../hooks/use-options-loader.ts";
 import { Icon } from "@deco/ui/components/icon.tsx";
@@ -42,7 +40,6 @@ export function TypeSelectField<T extends FieldValues = FieldValues>({
   disabled,
   typeValue,
 }: TypeSelectFieldProps<T>) {
-  const { data: marketplace } = useMarketplaceIntegrations();
   const { data: options, isPending } = useOptionsLoader(typeValue);
   const workspaceLink = useWorkspaceLink();
 
@@ -51,7 +48,7 @@ export function TypeSelectField<T extends FieldValues = FieldValues>({
     (option: OptionItem) => option.value === form.getValues(name as any)?.value,
   );
 
-  const handleAddIntegration = async (
+  const handleAddIntegration = (
     e: React.MouseEvent<HTMLButtonElement>,
   ) => {
     e.preventDefault();

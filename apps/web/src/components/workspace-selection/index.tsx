@@ -1,255 +1,158 @@
-import { Card, CardContent, CardHeader, CardTitle } from "@deco/ui/components/card.tsx";
-import { Button } from "@deco/ui/components/button.tsx";
 import { Icon } from "@deco/ui/components/icon.tsx";
+import { Button } from "@deco/ui/components/button.tsx";
 import { useNavigate } from "react-router";
 import { useUserTeams } from "../sidebar/team-selector.tsx";
 import { Avatar } from "../common/avatar/index.tsx";
-import { Suspense } from "react";
+import { Suspense, useEffect, useState, useMemo } from "react";
 import { Skeleton } from "@deco/ui/components/skeleton.tsx";
-import { SDKProvider } from "@deco/sdk";
+import { SDKProvider, useProfile } from "@deco/sdk";
+import { SplitScreenLayout } from "../login/layout.tsx";
 
 function WorkspaceList() {
   const navigate = useNavigate();
   const teams = useUserTeams();
+  const { data: profile } = useProfile();
+
+  // Get user's first name from profile, same as main-chat.tsx
+  const userName = useMemo(() => {
+    const fullName = profile?.metadata?.full_name || "User";
+    return fullName.split(" ")[0];
+  }, [profile?.metadata?.full_name]);
 
   const handleWorkspaceSelect = (teamSlug: string) => {
     // Navigate to chat for the selected workspace
     navigate(`/${teamSlug}/chat`);
   };
 
-  // Separate personal and team workspaces
-  const personalWorkspaces = teams.filter(team => !team.slug); // Personal workspace has no slug
-  const teamWorkspaces = teams.filter(team => team.slug); // Team workspaces have slugs
+  // For demo purposes, show empty personal workspaces but keep org workspaces
+  const personalWorkspaces: any[] = [];
+  // Put all actual workspaces in team workspaces for now
+  const teamWorkspaces = teams;
 
-  // Add some mock personal/team workspaces for testing scrolling
-  const mockPersonalWorkspaces = [
-    {
-      id: 'personal-1',
-      slug: '',
-      label: 'My Personal Space',
-      avatarUrl: undefined,
-    },
-    {
-      id: 'team-1',
-      slug: 'my-side-project',
-      label: 'My Side Project',
-      avatarUrl: undefined,
-    },
-    {
-      id: 'team-2',
-      slug: 'freelance-work',
-      label: 'Freelance Work',
-      avatarUrl: undefined,
-    },
-    {
-      id: 'team-3',
-      slug: 'hobby-projects',
-      label: 'Hobby Projects',
-      avatarUrl: undefined,
-    }
-  ];
+  const handleCreateWorkspace = () => {
+    // TODO: Implement workspace creation
+    console.log("Create workspace clicked");
+  };
 
-  // Combine real teams with mock data for demo
-  const allPersonalWorkspaces = [...personalWorkspaces, ...mockPersonalWorkspaces.filter(w => !w.slug)];
-  const allTeamWorkspaces = [...teamWorkspaces, ...mockPersonalWorkspaces.filter(w => w.slug)];
-
-  // Mock organization workspaces for demo (more items to test scrolling)
-  const mockOrgWorkspaces = [
-    {
-      id: 'org-1',
-      slug: 'acme-corp',
-      label: 'Acme Corp',
-      avatarUrl: undefined,
-      memberCount: 12,
-    },
-    {
-      id: 'org-2', 
-      slug: 'tech-startup',
-      label: 'Tech Startup',
-      avatarUrl: undefined,
-      memberCount: 8,
-    },
-    {
-      id: 'org-3',
-      slug: 'design-agency',
-      label: 'Design Agency',
-      avatarUrl: undefined,
-      memberCount: 15,
-    },
-    {
-      id: 'org-4',
-      slug: 'marketing-team',
-      label: 'Marketing Team',
-      avatarUrl: undefined,
-      memberCount: 6,
-    },
-    {
-      id: 'org-5',
-      slug: 'dev-collective',
-      label: 'Dev Collective',
-      avatarUrl: undefined,
-      memberCount: 22,
-    },
-    {
-      id: 'org-6',
-      slug: 'consulting-firm',
-      label: 'Consulting Firm',
-      avatarUrl: undefined,
-      memberCount: 18,
-    }
-  ];
-
-  if (teams.length === 0 && allPersonalWorkspaces.length === 0 && allTeamWorkspaces.length === 0) {
-    return (
-      <div className="text-center space-y-4">
-        <p className="text-muted-foreground">
-          No workspaces available. Create your first team to get started.
-        </p>
-        <Button onClick={() => navigate("/chat")}>
-          Get Started
-        </Button>
-      </div>
-    );
-  }
-
-  const WorkspaceCard = ({ workspace, isPersonal = false, isOrg = false }: { workspace: any, isPersonal?: boolean, isOrg?: boolean }) => (
-    <Card 
-      key={workspace.slug || workspace.id} 
-      className="cursor-pointer hover:bg-muted/50 transition-colors h-full"
+  const WorkspaceItem = ({ workspace }: { workspace: any }) => (
+    <button
       onClick={() => handleWorkspaceSelect(workspace.slug)}
+      className="w-full flex items-center justify-between pl-6 pr-3 py-4 rounded-full border border-border hover:bg-muted/50 transition-colors"
     >
-      <CardContent className="p-6">
-        <div className="flex items-center gap-4">
-          <Avatar
-            shape="square"
-            url={workspace.avatarUrl}
-            fallback={workspace.label}
-            objectFit="contain"
-            size="sm"
-          />
-          <div className="flex-1 min-w-0">
-            <h3 className="font-medium truncate">{workspace.label}</h3>
-            <p className="text-sm text-muted-foreground truncate">
-              {isPersonal 
-                ? 'Personal workspace' 
-                : isOrg && workspace.memberCount
-                  ? `@${workspace.slug} • ${workspace.memberCount} members`
-                  : `@${workspace.slug}`
-              }
-            </p>
-          </div>
-        </div>
-      </CardContent>
-    </Card>
+      <div className="flex items-center gap-2">
+        <Avatar
+          url={workspace.avatarUrl}
+          fallback={workspace.label}
+          size="sm"
+          shape="square"
+        />
+        <span className="text-sm font-medium text-foreground">
+          {workspace.label}
+        </span>
+      </div>
+      <Icon name="arrow_forward" className="text-muted-foreground" size={18} />
+    </button>
   );
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 h-full">
-      {/* Personal Workspaces */}
-      <div className="flex flex-col h-full">
-        <div className="flex items-center gap-2 mb-4 px-2">
-          <Icon name="person" className="text-muted-foreground" size={20} />
-          <div>
-            <h2 className="text-lg font-semibold">Personal</h2>
-            <p className="text-sm text-muted-foreground">Your personal workspaces</p>
-          </div>
+    <div className="flex flex-col gap-16 items-start justify-center px-4 py-[140px] h-full w-full max-w-[500px] mx-auto">
+      {/* Welcome Section */}
+      <div className="flex flex-col gap-8 w-full">
+        <div className="flex flex-col gap-2">
+          <h2 className="text-2xl font-semibold text-foreground">
+            Welcome, {userName}
+          </h2>
+          <p className="text-sm text-muted-foreground">
+            Join or create a workspace
+          </p>
         </div>
-        <div className="flex-1 overflow-y-auto px-2 pb-4 max-h-96">
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            {allPersonalWorkspaces.map((workspace) => (
-              <WorkspaceCard key={workspace.id} workspace={workspace} isPersonal />
-            ))}
-            {allTeamWorkspaces.map((workspace) => (
-              <WorkspaceCard key={workspace.id} workspace={workspace} />
-            ))}
-            {/* Fill empty slots if needed */}
-            {(allPersonalWorkspaces.length + allTeamWorkspaces.length) === 0 && (
-              <Card className="border-dashed border-2 border-muted-foreground/25">
-                <CardContent className="p-6 text-center">
-                  <p className="text-sm text-muted-foreground">No personal workspaces</p>
-                </CardContent>
-              </Card>
-            )}
+
+        {/* Personal Workspaces - Create Workspace Card */}
+        <div className="w-full">
+          <div className="bg-input rounded-2xl p-px">
+            <div 
+              onClick={handleCreateWorkspace}
+              className="bg-muted rounded-2xl p-6 cursor-pointer hover:bg-muted/80 transition-colors"
+            >
+              <div className="flex flex-col items-center gap-4 text-center">
+                <div className="w-12 h-12 bg-muted-foreground/10 rounded-full flex items-center justify-center">
+                  <Icon name="plus" size={24} className="text-muted-foreground" />
+                </div>
+                <div className="space-y-2">
+                  <h3 className="text-base font-medium text-foreground">
+                    Create workspace
+                  </h3>
+                  <p className="text-sm text-muted-foreground">
+                    Create your first workspace to get started
+                  </p>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </div>
 
-      {/* Organization Workspaces */}
-      <div className="flex flex-col h-full">
-        <div className="flex items-center gap-2 mb-4 px-2">
-          <Icon name="business" className="text-muted-foreground" size={20} />
-          <div>
-            <h2 className="text-lg font-semibold">Organizations</h2>
-            <p className="text-sm text-muted-foreground">Shared team workspaces</p>
+      {/* Team Workspaces Section - Only show if there are team workspaces */}
+      {teamWorkspaces.length > 0 && (
+        <div className="flex flex-col gap-6 w-full">
+          <div className="flex flex-col gap-2">
+            <h3 className="text-base font-semibold text-foreground">
+              Join your team
+            </h3>
+            <p className="text-sm text-muted-foreground">
+              You have access to the shared workspaces below
+            </p>
+          </div>
+
+          {/* Single Organization Card */}
+          <div className="w-full">
+            <div className="bg-input rounded-2xl p-px">
+              {/* Organization Header */}
+              <div className="flex items-center justify-between px-4 py-2">
+                <span className="text-sm text-foreground">
+                  Workspaces from @deco.cx
+                </span>
+                <span className="text-sm text-foreground/15">
+                  {teamWorkspaces.length}
+                </span>
+              </div>
+              {/* Workspaces List */}
+              <div className="bg-dc-50 rounded-b-2xl p-4">
+                <div className="flex flex-col gap-3 max-h-[280px] overflow-y-auto">
+                  {teamWorkspaces.map((workspace) => (
+                    <WorkspaceItem key={workspace.slug || workspace.id} workspace={workspace} />
+                  ))}
+                </div>
+              </div>
+            </div>
           </div>
         </div>
-        <div className="flex-1 overflow-y-auto px-2 pb-4 max-h-96">
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            {mockOrgWorkspaces.map((workspace) => (
-              <WorkspaceCard key={workspace.id} workspace={workspace} isOrg />
-            ))}
-          </div>
-        </div>
-      </div>
+      )}
     </div>
   );
 }
 
 function WorkspaceListSkeleton() {
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 h-full">
-      {/* Personal Workspaces Skeleton */}
-      <div className="flex flex-col h-full">
-        <div className="flex items-center gap-2 mb-4 px-2">
-          <Skeleton className="h-5 w-5 rounded" />
-          <div>
-            <Skeleton className="h-6 w-20" />
-            <Skeleton className="h-4 w-40 mt-1" />
-          </div>
+    <div className="flex flex-col gap-16 items-start justify-center px-4 py-[140px] h-full w-full max-w-[500px] mx-auto">
+      <div className="flex flex-col gap-8 w-full">
+        <div className="flex flex-col gap-2">
+          <Skeleton className="h-8 w-48" />
+          <Skeleton className="h-5 w-36" />
         </div>
-        <div className="flex-1 overflow-y-auto px-2 pb-4 max-h-96">
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            {Array.from({ length: 2 }).map((_, i) => (
-              <Card key={i}>
-                <CardContent className="p-6">
-                  <div className="flex items-center gap-4">
-                    <Skeleton className="h-10 w-10 rounded" />
-                    <div className="flex-1 space-y-2">
-                      <Skeleton className="h-4 w-24" />
-                      <Skeleton className="h-3 w-20" />
-                    </div>
+        <div className="bg-dc-200 rounded-2xl p-px">
+          <div className="bg-dc-50 rounded-2xl p-4">
+            <div className="flex flex-col gap-3">
+              {Array.from({ length: 3 }).map((_, i) => (
+                <div key={i} className="flex items-center justify-between pl-6 pr-3 py-4 rounded-full border border-border">
+                  <div className="flex items-center gap-2">
+                    <Skeleton className="w-5 h-5 rounded" />
+                    <Skeleton className="h-5 w-32" />
                   </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        </div>
-      </div>
-
-      {/* Organization Workspaces Skeleton */}
-      <div className="flex flex-col h-full">
-        <div className="flex items-center gap-2 mb-4 px-2">
-          <Skeleton className="h-5 w-5 rounded" />
-          <div>
-            <Skeleton className="h-6 w-28" />
-            <Skeleton className="h-4 w-36 mt-1" />
-          </div>
-        </div>
-        <div className="flex-1 overflow-y-auto px-2 pb-4 max-h-96">
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            {Array.from({ length: 2 }).map((_, i) => (
-              <Card key={i}>
-                <CardContent className="p-6">
-                  <div className="flex items-center gap-4">
-                    <Skeleton className="h-10 w-10 rounded" />
-                    <div className="flex-1 space-y-2">
-                      <Skeleton className="h-4 w-24" />
-                      <Skeleton className="h-3 w-20" />
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
+                  <Skeleton className="w-4 h-4" />
+                </div>
+              ))}
+            </div>
           </div>
         </div>
       </div>
@@ -259,21 +162,11 @@ function WorkspaceListSkeleton() {
 
 export function WorkspaceSelectionContent() {
   return (
-    <div className="h-screen flex items-center justify-center bg-background p-6">
-      <Card className="w-full max-w-6xl h-[80vh] flex flex-col">
-        <CardHeader className="text-center pb-6 px-8 pt-8">
-          <CardTitle className="text-2xl">Select Workspace</CardTitle>
-          <p className="text-muted-foreground">
-            Choose a workspace to continue
-          </p>
-        </CardHeader>
-        <CardContent className="flex-1 px-8 pb-8 overflow-hidden">
-          <Suspense fallback={<WorkspaceListSkeleton />}>
-            <WorkspaceList />
-          </Suspense>
-        </CardContent>
-      </Card>
-    </div>
+    <SplitScreenLayout>
+      <Suspense fallback={<WorkspaceListSkeleton />}>
+        <WorkspaceList />
+      </Suspense>
+    </SplitScreenLayout>
   );
 }
 

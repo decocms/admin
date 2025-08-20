@@ -40,6 +40,7 @@ import { useAgent } from "../agent/provider.tsx";
 import { IntegrationIcon } from "../integrations/common.tsx";
 import { SelectConnectionDialog } from "../integrations/select-connection-dialog.tsx";
 import { formatToolName } from "./utils/format-tool-name.ts";
+import { AtSign, Paperclip } from "lucide-react";
 
 interface IntegrationWithTools extends Integration {
   tools?: Array<{
@@ -111,11 +112,13 @@ const useGlobalDrop = (handleFileDrop: (e: DragEvent) => void) => {
 interface ContextResourcesProps {
   uploadedFiles: UploadedFile[];
   setUploadedFiles: React.Dispatch<React.SetStateAction<UploadedFile[]>>;
+  inline?: boolean;
 }
 
 export function ContextResources({
   uploadedFiles,
   setUploadedFiles,
+  inline = false,
 }: ContextResourcesProps) {
   const { agent } = useAgent();
   const { workspace } = useSDK();
@@ -308,11 +311,10 @@ export function ContextResources({
 
   const isDragging = useGlobalDrop(handleFileDrop);
 
-  return (
-    <div className="w-full mx-auto">
-      <FileDropOverlay display={isDragging} />
-      <div className="flex flex-wrap gap-2 mb-4 overflow-visible">
-        {/* File Upload Button */}
+  // Inline mode - only show the buttons
+  if (inline) {
+    return (
+      <>
         <input
           type="file"
           ref={fileInputRef}
@@ -325,12 +327,13 @@ export function ContextResources({
           selectedModel.capabilities.includes("image-upload")) && (
           <Button
             type="button"
-            variant="outline"
+            variant="ghost"
             size="icon"
             title="Upload files"
             onClick={() => fileInputRef.current?.click()}
+            className="h-8 w-8"
           >
-            <Icon name="file_upload" />
+            <Paperclip className="h-4 w-4" />
           </Button>
         )}
         <SelectConnectionDialog
@@ -338,15 +341,24 @@ export function ContextResources({
           trigger={
             <Button
               type="button"
-              variant="outline"
+              variant="ghost"
               size="icon"
               title="Add files or integrations"
+              className="h-8 w-8"
             >
-              <Icon name="alternate_email" />
+              <AtSign className="h-4 w-4" />
             </Button>
           }
         />
+      </>
+    );
+  }
 
+  // Full mode - show everything
+  return (
+    <div className="w-full mx-auto">
+      <FileDropOverlay display={isDragging} />
+      <div className="flex flex-wrap gap-2 mb-4 overflow-visible">
         {/* Integration Items */}
         {integrationsWithTotalTools.map(
           ({ integration, enabledTools, integrationId, totalTools }) => (

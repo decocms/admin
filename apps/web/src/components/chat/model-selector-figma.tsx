@@ -249,7 +249,7 @@ export function ModelSelectorFigma({
       <DropdownMenuTrigger asChild>
         <button className={triggerClasses}>
           <div className="flex items-center gap-2">
-            <ModelLogo model={selectedModel} size={24} />
+            <ModelLogo model={selectedModel} size={16} />
             <span className="text-sm text-foreground font-normal">
               {selectedModel.name}
             </span>

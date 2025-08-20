@@ -15,7 +15,7 @@ export function Header() {
     <SidebarHeader className="px-2 py-0">
       <SidebarMenu>
         <SidebarMenuItem className="w-full">
-          <div className="flex items-center justify-between px-4 py-3 rounded-lg min-w-0 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:px-2">
+          <div className="flex items-center justify-between py-3 rounded-lg min-w-0 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:px-2">
             <div className="flex-1 min-w-0 group-data-[collapsible=icon]:hidden">
               <TeamSelector />
             </div>

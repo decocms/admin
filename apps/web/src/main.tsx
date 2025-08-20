@@ -153,7 +153,11 @@ const ViewsList = lazy(() =>
 );
 
 const DiscoverPage = lazy(() =>
-  wrapWithUILoadingFallback(import("./components/discover/page.tsx").then(m => ({ default: m.DiscoverPage }))),
+  import("./components/discover/page.tsx").then(m => ({ default: m.DiscoverPage })),
+);
+
+const BuilderDetailPage = lazy(() =>
+  import("./components/discover/builder-detail.tsx").then(m => ({ default: m.BuilderDetailPage })),
 );
 
 const WorkspaceSelection = lazy(() =>
@@ -325,7 +329,8 @@ const router = createBrowserRouter([
           },
           { path: "chat", Component: lazy(() => import("./components/onboarding/onboarding-page.tsx")) },
           { path: "discover", Component: DiscoverPage },
-          { path: "discover/item/:itemId", Component: lazy(() => wrapWithUILoadingFallback(import("./components/discover/item-detail.tsx").then(m => ({ default: m.ItemDetailPage })))) },
+          { path: "discover/item/:itemId", Component: lazy(() => import("./components/discover/item-detail.tsx").then(m => ({ default: m.ItemDetailPage }))) },
+          { path: "discover/builder/:builderId", Component: BuilderDetailPage },
           { path: "agents", Component: AgentList },
           { path: "agent/:id/:threadId", Component: AgentDetail },
           { path: "connections", Component: ConnectionsList },

@@ -6,7 +6,7 @@ import type {
   SpeechRecognitionError,
   SpeechRecognitionEvent,
 } from "../../types/speech.d.ts";
-import { Icon } from "@deco/ui/components/icon.tsx";
+import { Mic, Square } from "lucide-react";
 
 interface AudioButtonProps {
   onMessage: (message: string) => void;
@@ -81,18 +81,15 @@ export const AudioButton: React.FC<AudioButtonProps> = ({ onMessage }) => {
   }, [recognition, isListening]);
 
   return (
-    <div className="flex flex-col items-center gap-4">
-      <div className="flex gap-4">
-        <Button
-          type="button"
-          variant={isListening ? "default" : "outline"}
-          size="icon"
-          onClick={toggleListening}
-          className="h-8 w-8"
-        >
-          <Icon filled name={isListening ? "stop" : "mic"} />
-        </Button>
-      </div>
-    </div>
+    <Button
+      type="button"
+      variant="ghost"
+      size="icon"
+      onClick={toggleListening}
+      className="h-8 w-8"
+      title={isListening ? "Stop recording" : "Start voice input"}
+    >
+      {isListening ? <Square className="h-4 w-4" /> : <Mic className="h-4 w-4" />}
+    </Button>
   );
 };

@@ -144,6 +144,14 @@ const themeVariablesSchema = z.object({
     .string()
     .optional()
     .describe("Background color for sidebar navigation (OKLCH/hex format)"),
+  "--sidebar-accent": z
+    .string()
+    .optional()
+    .describe("Accent color for active/hover states in sidebar (OKLCH/hex format)"),
+  "--sidebar-accent-foreground": z
+    .string()
+    .optional()
+    .describe("Text color on sidebar accent elements (OKLCH/hex format)"),
   "--splash": z
     .string()
     .optional()

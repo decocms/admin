@@ -273,7 +273,7 @@ function SidebarTrigger({
       }}
       {...props}
     >
-      <PanelLeftIcon />
+      <PanelLeftIcon className="text-muted-foreground" />
       <span className="sr-only">Toggle Sidebar</span>
     </Button>
   );
@@ -391,7 +391,7 @@ function SidebarGroup({ className, ...props }: React.ComponentProps<"div">) {
       data-slot="sidebar-group"
       data-sidebar="group"
       className={cn(
-        "relative flex w-full min-w-0 flex-col p-2 px-3",
+        "relative flex w-full min-w-0 flex-col p-2 px-1",
         className,
       )}
       {...props}

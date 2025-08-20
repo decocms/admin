@@ -11,15 +11,33 @@ import { Sparkles, Users, Briefcase } from "lucide-react";
 // Mock data for the new design
 const mockFeaturedItems = [
   {
+    id: "deco-cx",
+    name: "deco.cx",
+    description: "Complete e-commerce and content management platform with pages, sections, and loaders.",
+    iconName: "check",
+    iconBg: "bg-primary-light",
+    iconUrl: "/logos/team-agent.png",
+    type: "Platform",
+    typeBg: "bg-primary-light",
+    typeColor: "text-primary-dark",
+    author: "Deco Team",
+    authorImage: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=100&h=100&fit=crop&crop=face",
+    authorBadges: ["badge-01.svg", "badge-02.svg", "badge-03.svg"],
+    downloads: 25420,
+    price: "Free",
+    category: "platform",
+    featured: true
+  },
+  {
     id: "sheets-creator",
     name: "Create Google Spreadsheet",
     description: "Extract website text for AI models with rich formatting.",
-    iconName: "table",
+    iconName: "file_spreadsheet",
     iconBg: "bg-[#d0ec1a]",
     type: "Agent",
     typeBg: "bg-[#a595ff]",
     typeColor: "text-[#151042]",
-    author: "Leandro Borges",
+    author: "Marcus Chen",
     authorImage: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=100&h=100&fit=crop&crop=face",
     authorBadges: ["badge-01.svg", "badge-02.svg"],
     downloads: 6455,
@@ -30,12 +48,12 @@ const mockFeaturedItems = [
     id: "sheets-tool",
     name: "Google Sheets Integration",
     description: "Connect and manipulate Google Sheets directly from your agents.",
-    iconName: "table",
+    iconName: "file_spreadsheet",
     iconBg: "bg-background",
     type: "Tool",
     typeBg: "bg-amber-400",
     typeColor: "text-amber-950",
-    author: "Leandro Borges",
+    author: "Marcus Chen",
     authorImage: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=100&h=100&fit=crop&crop=face",
     authorBadges: ["badge-01.svg", "badge-02.svg"],
     downloads: 6455,
@@ -78,7 +96,7 @@ const mockFeaturedItems = [
     id: "notion-tool",
     name: "Notion Database Manager",
     description: "Create and manage Notion databases seamlessly.",
-    iconName: "notebook",
+    iconName: "book",
     iconBg: "bg-background",
     type: "Tool",
     typeBg: "bg-amber-400",
@@ -94,7 +112,7 @@ const mockFeaturedItems = [
     id: "calendar-agent",
     name: "Smart Calendar Agent",
     description: "Intelligent scheduling and calendar management.",
-    iconName: "calendar",
+    iconName: "schedule",
     iconBg: "bg-[#d0ec1a]",
     type: "Agent",
     typeBg: "bg-[#a595ff]",
@@ -111,7 +129,7 @@ const mockFeaturedItems = [
 const mockBuilders = [
   {
     id: "leandro",
-    name: "Leandro Borges",
+    name: "Marcus Chen",
     role: "Machine Learning Engineer",
     authorImage: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=100&h=100&fit=crop&crop=face",
     authorBadges: ["badge-01.svg", "badge-02.svg"],
@@ -126,7 +144,7 @@ const mockBuilders = [
   },
   {
     id: "rafael",
-    name: "Rafael Valls",
+    name: "Sofia Rodriguez",
     role: "Full Stack Developer",
     authorImage: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&h=100&fit=crop&crop=face",
     authorBadges: ["badge-04.svg"],
@@ -141,7 +159,7 @@ const mockBuilders = [
   },
   {
     id: "guilherme",
-    name: "Guilherme Rodrigues",
+    name: "David Kim",
     role: "AI Engineer",
     authorImage: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=100&h=100&fit=crop&crop=face",
     authorBadges: ["badge-03.svg", "badge-01.svg", "badge-04.svg"],
@@ -161,12 +179,12 @@ const mockAgents = [
     id: "agent1",
     name: "Create Google Spreadsheet",
     description: "Extract website text for AI models with rich formatting.",
-    iconName: "table",
+    iconName: "file_spreadsheet",
     iconBg: "bg-[#d0ec1a]",
     type: "Agent",
     typeBg: "bg-[#a595ff]",
     typeColor: "text-[#151042]",
-    author: "Leandro Borges",
+    author: "Marcus Chen",
     authorImage: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=100&h=100&fit=crop&crop=face",
     authorBadges: ["badge-01.svg", "badge-02.svg"],
     downloads: 6455,
@@ -195,11 +213,11 @@ const mockAgents = [
 const mockFamousAgents = [
   { id: "famous1", name: "Website Content Crawler", description: "Crawl websites and extract text.", iconName: "globe", iconBg: "bg-blue-400", category: "agents" },
   { id: "famous2", name: "Email Assistant", description: "Automated email management.", iconName: "mail", iconBg: "bg-blue-400", category: "agents" },
-  { id: "famous3", name: "Calendar Manager", description: "Smart scheduling assistant.", iconName: "calendar", iconBg: "bg-blue-400", category: "agents" },
-  { id: "famous4", name: "Data Analyzer", description: "Advanced data processing.", iconName: "chart", iconBg: "bg-blue-400", category: "agents" },
+  { id: "famous3", name: "Calendar Manager", description: "Smart scheduling assistant.", iconName: "schedule", iconBg: "bg-blue-400", category: "agents" },
+  { id: "famous4", name: "Data Analyzer", description: "Advanced data processing.", iconName: "trending_up", iconBg: "bg-blue-400", category: "agents" },
   { id: "famous5", name: "Content Generator", description: "AI-powered content creation.", iconName: "edit", iconBg: "bg-blue-400", category: "agents" },
-  { id: "famous6", name: "Task Automator", description: "Workflow automation tool.", iconName: "workflow", iconBg: "bg-blue-400", category: "agents" },
-  { id: "famous7", name: "Document Parser", description: "Extract data from documents.", iconName: "file-text", iconBg: "bg-blue-400", category: "agents" },
+  { id: "famous6", name: "Task Automator", description: "Workflow automation tool.", iconName: "settings", iconBg: "bg-blue-400", category: "agents" },
+  { id: "famous7", name: "Document Parser", description: "Extract data from documents.", iconName: "description", iconBg: "bg-blue-400", category: "agents" },
   { id: "famous8", name: "Social Media Manager", description: "Manage social media posts.", iconName: "share", iconBg: "bg-blue-400", category: "agents" },
   { id: "famous9", name: "Image Processor", description: "AI image analysis and editing.", iconName: "image", iconBg: "bg-blue-400", category: "agents" }
 ];
@@ -215,7 +233,11 @@ function AgentCard({ item }: { item: any }) {
           {/* Header with icon and type badge */}
           <div className="flex items-start justify-between">
             <div className={cn("w-20 h-20 rounded-[15px] flex items-center justify-center shadow-sm", item.iconBg)}>
-              <Icon name={item.iconName} size={32} />
+              {item.iconUrl ? (
+                <img src={item.iconUrl} alt={item.name} className="w-12 h-12 object-contain" />
+              ) : (
+                <Icon name={item.iconName} size={32} />
+              )}
             </div>
             <div className={cn("flex items-center gap-1.5 px-2 py-0.5 rounded-2xl text-sm", item.typeBg, item.typeColor)}>
               <Icon name="wrench" size={14} />
@@ -431,15 +453,6 @@ export function DiscoverPage() {
         icon="compass"
         actionButtons={
           <>
-            <Button variant="ghost" size="sm" className="w-9 h-9 p-0 rounded-xl hover:bg-muted transition-colors">
-              <Icon name="layout-grid" size={18} />
-            </Button>
-            <Button variant="ghost" size="sm" className="w-9 h-9 p-0 rounded-xl hover:bg-muted transition-colors">
-              <Icon name="filter" size={18} />
-            </Button>
-            <Button variant="ghost" size="sm" className="w-9 h-9 p-0 rounded-xl hover:bg-muted transition-colors">
-              <Icon name="settings" size={18} />
-            </Button>
             <Button className="bg-primary text-primary-foreground hover:bg-primary/90 px-3 py-2 rounded-xl text-sm transition-colors">
               Publish an app
             </Button>
@@ -449,22 +462,25 @@ export function DiscoverPage() {
 
       <div className="flex-1 w-full p-6 space-y-16">
         {/* Hero Section */}
-        <div className="relative bg-foreground rounded-[32px] h-[300px] overflow-hidden">
-          <div className="absolute inset-0 bg-gradient-to-br from-foreground/50 to-foreground/80" />
-          <div className="relative z-10 flex flex-col justify-between h-full p-8">
-            <div className="flex items-center gap-2">
-              <Icon name="rocket" size={24} className="text-special" />
-              <span className="text-special font-bold text-sm tracking-tight">Brand</span>
+        <div className="relative bg-[#282524] rounded-[32px] h-[300px] overflow-hidden">
+          <div className="relative z-10 flex items-center justify-between h-full p-8">
+            <div className="flex flex-col justify-between h-full">
+              <div className="flex items-center gap-2">
+                <img src="/deco logo.svg" alt="Deco" className="h-6" />
+              </div>
+              <div>
+                <h2 className="text-white text-[32px] font-normal leading-tight mb-4">
+                  Vibecode<br />
+                  high-performance<br />
+                  storefronts
+                </h2>
+                <Button className="bg-[#d0ec1a] text-[#07401A] hover:bg-[#d0ec1a]/90 px-3 py-2 rounded-xl text-sm transition-colors font-medium">
+                  Install app
+                </Button>
+              </div>
             </div>
-            <div>
-              <h2 className="text-background text-[32px] font-normal leading-tight mb-4">
-                Vibecode<br />
-                high-performance<br />
-                storefronts
-              </h2>
-              <Button className="bg-special text-special-foreground hover:bg-special/90 px-3 py-2 rounded-xl text-sm transition-colors">
-                Install app
-              </Button>
+            <div className="h-full flex items-center">
+              <img src="/bannerimg.png" alt="Banner" className="h-[250px] object-contain" />
             </div>
           </div>
         </div>
@@ -501,7 +517,7 @@ export function DiscoverPage() {
                 )}
                 onClick={() => setSelectedCategory(selectedCategory === "prompts" ? "all" : "prompts")}
               >
-                <Icon name="notebook" size={16} className="mr-2" />
+                <Icon name="book" size={16} className="mr-2" />
                 Prompts
               </Button>
               <Button 
@@ -523,7 +539,7 @@ export function DiscoverPage() {
                 )}
                 onClick={() => setSelectedCategory(selectedCategory === "views" ? "all" : "views")}
               >
-                <Icon name="app-window" size={16} className="mr-2" />
+                <Icon name="web" size={16} className="mr-2" />
                 Views
               </Button>
               <Button 
@@ -534,7 +550,7 @@ export function DiscoverPage() {
                 )}
                 onClick={() => setSelectedCategory(selectedCategory === "workflows" ? "all" : "workflows")}
               >
-                <Icon name="workflow" size={16} className="mr-2" />
+                <Icon name="settings" size={16} className="mr-2" />
                 Workflows
               </Button>
               <Button 
@@ -545,7 +561,7 @@ export function DiscoverPage() {
                 )}
                 onClick={() => setSelectedCategory(selectedCategory === "builders" ? "all" : "builders")}
               >
-                <Icon name="circle-user" size={16} className="mr-2" />
+                <Icon name="person" size={16} className="mr-2" />
                 Builders
               </Button>
             </div>
@@ -643,31 +659,7 @@ export function DiscoverPage() {
             </div>
           )}
 
-        {/* Marketplace Banner */}
-        <div className="bg-special rounded-3xl h-[284px] flex flex-col items-center justify-center relative overflow-hidden">
-          <div className="relative z-10 text-center space-y-6">
-            <h2 className="text-special-foreground text-[32px] font-medium leading-tight tracking-tight">
-              Explore our marketplace of<br />
-              tools, agents, workflows, and more
-            </h2>
-            <div className="w-[458px]">
-              <div className="relative">
-                <Icon name="search" size={16} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground" />
-                <Input
-                  placeholder="Search"
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="pl-10 h-10 rounded-xl bg-background border-border"
-                />
-              </div>
-            </div>
-          </div>
-          {/* Background pattern - simplified */}
-          <div className="absolute inset-0 opacity-20">
-            <div className="absolute right-0 top-0 w-[800px] h-[400px] bg-gradient-to-l from-foreground/20 to-transparent rounded-full transform translate-x-1/2 -translate-y-1/4" />
-            <div className="absolute left-0 bottom-0 w-[800px] h-[400px] bg-gradient-to-r from-foreground/20 to-transparent rounded-full transform -translate-x-1/2 translate-y-1/4" />
-          </div>
-        </div>
+
       </div>
     </div>
   );

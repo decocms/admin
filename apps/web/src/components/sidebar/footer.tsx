@@ -1,4 +1,4 @@
-import { useWorkspaceWalletBalance } from "@deco/sdk";
+import { useWorkspaceWalletBalance, usePlan } from "@deco/sdk";
 import { Icon } from "@deco/ui/components/icon.tsx";
 import {
   ResponsiveDropdown,
@@ -15,32 +15,118 @@ import {
   useSidebar,
 } from "@deco/ui/components/sidebar.tsx";
 import { cn } from "@deco/ui/lib/utils.ts";
-import { Suspense } from "react";
+import { Suspense, useState, useEffect, useRef } from "react";
 import { Link } from "react-router";
 import { trackEvent } from "../../hooks/analytics.ts";
 import { useUser } from "../../hooks/use-user.ts";
 import { UserAvatar } from "../common/avatar/user.tsx";
 import { useWorkspaceLink } from "../../hooks/use-navigate-workspace.ts";
 
+// Custom hook for animating number changes
+function useAnimatedNumber(targetValue: number, duration: number = 1000) {
+  const [displayValue, setDisplayValue] = useState(targetValue);
+  const [isAnimating, setIsAnimating] = useState(false);
+  const animationRef = useRef<number | undefined>(undefined);
+  const startTimeRef = useRef<number | undefined>(undefined);
+  const startValueRef = useRef<number>(targetValue);
+
+  useEffect(() => {
+    if (targetValue === displayValue) return;
+
+    setIsAnimating(true);
+    startValueRef.current = displayValue;
+    startTimeRef.current = Date.now();
+
+    const animate = () => {
+      const now = Date.now();
+      const elapsed = now - (startTimeRef.current || now);
+      const progress = Math.min(elapsed / duration, 1);
+      
+      // Easing function for smooth animation
+      const easeOutCubic = 1 - Math.pow(1 - progress, 3);
+      
+      const currentValue = startValueRef.current + (targetValue - startValueRef.current) * easeOutCubic;
+      setDisplayValue(Math.round(currentValue)); // Round to whole numbers for cleaner animation
+      
+      if (progress < 1) {
+        animationRef.current = requestAnimationFrame(animate);
+      } else {
+        setDisplayValue(targetValue);
+        setIsAnimating(false);
+      }
+    };
+
+    animationRef.current = requestAnimationFrame(animate);
+
+    return () => {
+      if (animationRef.current) {
+        cancelAnimationFrame(animationRef.current);
+      }
+    };
+  }, [targetValue, duration, displayValue]);
+
+  return { displayValue, isAnimating };
+}
+
 function WalletBalance() {
-  const walletBalance = useWorkspaceWalletBalance();
-  const balance = walletBalance.data?.balance ?? 0;
-  const formattedBalance = new Intl.NumberFormat("en-US", {
-    style: "currency",
-    currency: "USD",
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 0,
-  }).format(balance);
+  const { balance } = useWorkspaceWalletBalance();
+  const plan = usePlan();
   const { state } = useSidebar();
+  const [flashAnimation, setFlashAnimation] = useState(false);
+  
+  // Use animated number for smooth counting
+  const numericBalance = typeof balance === 'number' ? balance : 0;
+  const { displayValue: animatedBalance, isAnimating: isCountingUp } = useAnimatedNumber(numericBalance, 800);
+  const formattedBalance = `$${animatedBalance.toLocaleString()}`;
+  
+  // Debug logging
+  useEffect(() => {
+    console.log('[SIDEBAR] Balance changed:', balance, 'Numeric:', numericBalance);
+  }, [balance, numericBalance]);
+
+  // Listen for wallet bonus claimed event
+  useEffect(() => {
+    const handleBonusClaimed = (event: CustomEvent) => {
+      console.log('[SIDEBAR] Bonus claimed event received, starting flash animation');
+      setFlashAnimation(true);
+      setTimeout(() => {
+        console.log('[SIDEBAR] Flash animation timeout, setting to false');
+        setFlashAnimation(false);
+      }, 1200);
+    };
+
+    window.addEventListener('wallet-bonus-claimed', handleBonusClaimed as EventListener);
+    return () => {
+      window.removeEventListener('wallet-bonus-claimed', handleBonusClaimed as EventListener);
+    };
+  }, []);
+
+  // Debug logging for animation state
+  useEffect(() => {
+    console.log('[SIDEBAR] Animation state - flashAnimation:', flashAnimation, 'isCountingUp:', isCountingUp);
+  }, [flashAnimation, isCountingUp]);
 
   return (
     <SidebarMenuItem>
-      <SidebarMenuButton tooltip={`Team Balance: ${formattedBalance}`} className="bg-card hover:bg-card/80 h-auto p-3">
+      <SidebarMenuButton 
+        tooltip={`Team Balance: ${formattedBalance}`} 
+        className={cn(
+          "bg-sidebar-accent hover:bg-sidebar-accent/80 h-auto p-3 transition-all duration-500 ease-out",
+          flashAnimation && "ring-2 ring-primary/50 bg-primary/10 scale-[1.02]"
+        )}
+      >
         <div className="flex flex-col gap-1 flex-1 min-w-0">
-          <span className="text-xs text-muted-foreground">FREE PLAN</span>
+          <span className="text-xs text-muted-foreground">{plan.title.toUpperCase()}</span>
           <div className="flex items-center justify-between w-full">
             <span className="text-sm text-foreground">Team Balance</span>
-            <span className="text-sm text-muted-foreground">{formattedBalance}</span>
+            <span 
+              className={cn(
+                "text-sm text-muted-foreground transition-all duration-500 ease-out font-normal",
+                (flashAnimation || isCountingUp) && "text-primary font-semibold scale-110"
+              )}
+            >
+              {formattedBalance}
+            </span>
           </div>
         </div>
       </SidebarMenuButton>

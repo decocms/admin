@@ -68,6 +68,7 @@ const ICON_MAP: Record<string, keyof typeof LucideIcons> = {
   "email": "Mail",
   "phone": "Phone",
   "call": "Phone",
+  "at-sign": "AtSign",
   
   // Media & Files
   "attach_file": "Paperclip",

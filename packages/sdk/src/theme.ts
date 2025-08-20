@@ -25,6 +25,8 @@ export const THEME_VARIABLES = [
   "--border",
   "--input",
   "--sidebar",
+  "--sidebar-accent",
+  "--sidebar-accent-foreground",
   "--primary-light",
   "--primary-dark",
   "--splash",
@@ -76,6 +78,8 @@ export const DEFAULT_THEME: Theme = {
     "--border": "oklch(92.3% 0.003 48.717)",
     "--input": "oklch(92.3% 0.003 48.717)",
     "--sidebar": "oklch(98.5% 0.001 106.423)",
+    "--sidebar-accent": "oklch(95% 0.002 106.424)",
+    "--sidebar-accent-foreground": "oklch(26.8% 0.007 34.298)",
   },
   font: {
     type: "Google Fonts",

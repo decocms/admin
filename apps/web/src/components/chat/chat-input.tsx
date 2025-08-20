@@ -89,10 +89,11 @@ export function ChatInput({ disabled }: { disabled?: boolean } = {}) {
 
   return (
     <div className="w-full mx-auto">
-      {!isPublic && (
+      {!isPublic && uploadedFiles.length > 0 && (
         <ContextResources
           uploadedFiles={uploadedFiles}
           setUploadedFiles={setUploadedFiles}
+          inline={false}
         />
       )}
       <form
@@ -117,13 +118,20 @@ export function ChatInput({ disabled }: { disabled?: boolean } = {}) {
                   className="border border-b-0 placeholder:text-muted-foreground resize-none focus-visible:ring-0"
                   disabled={isLoading || disabled}
                   allowNewLine={isMobile}
-                  enableToolMentions
+                  enableToolMentions={true}
                 />
               </div>
 
               <div className="flex items-center justify-between h-12 border border-t-0 rounded-b-2xl px-2">
                 <div className="flex items-center gap-2">
-                  {/* File upload is now handled by ContextResources */}
+                  {/* File upload and @ mentions buttons are shown here inline */}
+                  {!isPublic && (
+                    <ContextResources
+                      uploadedFiles={uploadedFiles}
+                      setUploadedFiles={setUploadedFiles}
+                      inline={true}
+                    />
+                  )}
                 </div>
                 <div className="flex items-center gap-2">
                   {showModelSelector && (

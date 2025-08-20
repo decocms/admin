@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Link, useLocation } from "react-router";
 import { cn } from "@deco/ui/lib/utils.ts";
 import { Icon } from "@deco/ui/components/icon.tsx";
@@ -17,6 +17,8 @@ import { trackEvent } from "../../hooks/analytics.ts";
 import { useWorkspaceLink } from "../../hooks/use-navigate-workspace.ts";
 import { SidebarFooter } from "./footer.tsx";
 import { Header as SidebarHeader } from "./header.tsx";
+import { useInstalledApps } from "../../hooks/use-installed-apps.ts";
+import { CreateMcpModal } from "./create-mcp-modal.tsx";
 
 // Component for navigation items with active state
 function NavItem({
@@ -72,7 +74,28 @@ export function AppSidebar() {
   const workspaceLink = useWorkspaceLink();
   const location = useLocation();
   const [appsExpanded, setAppsExpanded] = useState(false);
+  const [createMcpModalOpen, setCreateMcpModalOpen] = useState(false);
   const { state } = useSidebar();
+  const { isAppInstalled } = useInstalledApps();
+  const [isDecoInstalled, setIsDecoInstalled] = useState(false);
+  
+  // Check if deco.cx is installed
+  useEffect(() => {
+    setIsDecoInstalled(isAppInstalled("deco-cx"));
+    
+    // Listen for app installation events
+    const handleAppChange = () => {
+      setIsDecoInstalled(isAppInstalled("deco-cx"));
+    };
+    
+    window.addEventListener("app-installed" as any, handleAppChange);
+    window.addEventListener("app-uninstalled" as any, handleAppChange);
+    
+    return () => {
+      window.removeEventListener("app-installed" as any, handleAppChange);
+      window.removeEventListener("app-uninstalled" as any, handleAppChange);
+    };
+  }, [isAppInstalled]);
   
   // Get current path to determine active state
   const isActive = (path: string) => {
@@ -130,17 +153,28 @@ export function AppSidebar() {
             <SidebarGroupContent>
               <SidebarMenu className="gap-0">
                 <SidebarMenuItem>
-                  <SidebarMenuButton tooltip="MCPs">
-                    <Icon name="layout_grid" size={16} className="text-muted-foreground" />
-                    <span>MCPs</span>
+                  <div className="flex items-center w-full">
+                    <SidebarMenuButton tooltip="MCPs" className="flex-1">
+                      <Icon name="layout_grid" size={16} className="text-muted-foreground" />
+                      <span>MCPs</span>
+                    </SidebarMenuButton>
                     {state === "expanded" && (
-                      <Icon
-                        name="plus"
-                        size={16}
-                        className="text-muted-foreground opacity-50 hover:opacity-100 transition-opacity ml-auto"
-                      />
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setCreateMcpModalOpen(true);
+                          trackEvent("sidebar_mcp_create_click");
+                        }}
+                        className="p-1 rounded hover:bg-accent mr-2"
+                      >
+                        <Icon
+                          name="plus"
+                          size={16}
+                          className="text-muted-foreground opacity-50 hover:opacity-100 transition-opacity"
+                        />
+                      </button>
                     )}
-                  </SidebarMenuButton>
+                  </div>
                 </SidebarMenuItem>
                 
                 {state === "expanded" && (
@@ -181,68 +215,73 @@ export function AppSidebar() {
             </SidebarGroupContent>
           </SidebarGroup>
 
-          {/* APPS Section */}
-          <SidebarGroup>
-            <SidebarGroupLabel>APPS</SidebarGroupLabel>
-            <SidebarGroupContent>
-              <SidebarMenu className="gap-0">
-                {/* deco.cx expandable item */}
-                <SidebarMenuItem>
-                  <SidebarMenuButton
-                    onClick={() => setAppsExpanded(!appsExpanded)}
-                    tooltip="deco.cx"
-                  >
-                    <div className="w-4 h-4 bg-[#d0ec1a] rounded flex items-center justify-center">
-                      <Icon
-                        name="check"
-                        size={10}
-                        className="text-[#07401a]"
+          {/* APPS Section - Only show if deco.cx is installed */}
+          {isDecoInstalled && (
+            <SidebarGroup>
+              <SidebarGroupLabel>APPS</SidebarGroupLabel>
+              <SidebarGroupContent>
+                <SidebarMenu className="gap-0">
+                  {/* deco.cx expandable item */}
+                  <SidebarMenuItem>
+                    <SidebarMenuButton
+                      onClick={() => setAppsExpanded(!appsExpanded)}
+                      tooltip="deco.cx"
+                    >
+                      <img 
+                        src="/logos/team-agent.png" 
+                        alt="deco.cx" 
+                        className="w-4 h-4 rounded object-contain"
                       />
-                    </div>
-                    <span>deco.cx</span>
-                    {state === "expanded" && (
-                      <Icon
-                        name="chevron_down"
-                        size={16}
-                        className={cn(
-                          "text-muted-foreground opacity-50 transition-transform ml-auto",
-                          appsExpanded && "rotate-180"
-                        )}
+                      <span>deco.cx</span>
+                      {state === "expanded" && (
+                        <Icon
+                          name="chevron_down"
+                          size={16}
+                          className={cn(
+                            "text-muted-foreground opacity-50 transition-transform ml-auto",
+                            appsExpanded && "rotate-180"
+                          )}
+                        />
+                      )}
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                  
+                  {/* Expanded items as sub-nav items - only show when sidebar is expanded */}
+                  {appsExpanded && state === "expanded" && (
+                    <>
+                      <SubNavItem
+                        to={workspaceLink("/pages")}
+                        icon="layers"
+                        label="Pages"
+                        onClick={() => trackEvent("sidebar_navigation_click", { item: "Pages" })}
                       />
-                    )}
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-                
-                {/* Expanded items as sub-nav items - only show when sidebar is expanded */}
-                {appsExpanded && state === "expanded" && (
-                  <>
-                    <SubNavItem
-                      to={workspaceLink("/pages")}
-                      icon="layers"
-                      label="Pages"
-                      onClick={() => trackEvent("sidebar_navigation_click", { item: "Pages" })}
-                    />
-                    <SubNavItem
-                      to={workspaceLink("/sections")}
-                      icon="layout_panel_top"
-                      label="Sections"
-                      onClick={() => trackEvent("sidebar_navigation_click", { item: "Sections" })}
-                    />
-                    <SubNavItem
-                      to={workspaceLink("/loaders")}
-                      icon="box"
-                      label="Loaders"
-                      onClick={() => trackEvent("sidebar_navigation_click", { item: "Loaders" })}
-                    />
-                  </>
-                )}
-              </SidebarMenu>
-            </SidebarGroupContent>
-          </SidebarGroup>
+                      <SubNavItem
+                        to={workspaceLink("/sections")}
+                        icon="layout_panel_top"
+                        label="Sections"
+                        onClick={() => trackEvent("sidebar_navigation_click", { item: "Sections" })}
+                      />
+                      <SubNavItem
+                        to={workspaceLink("/loaders")}
+                        icon="box"
+                        label="Loaders"
+                        onClick={() => trackEvent("sidebar_navigation_click", { item: "Loaders" })}
+                      />
+                    </>
+                  )}
+                </SidebarMenu>
+              </SidebarGroupContent>
+            </SidebarGroup>
+          )}
         </SidebarContent>
         
         <SidebarFooter />
       </div>
+      
+      <CreateMcpModal 
+        open={createMcpModalOpen} 
+        onOpenChange={setCreateMcpModalOpen} 
+      />
     </Sidebar>
   );
 }

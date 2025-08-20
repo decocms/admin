@@ -218,7 +218,7 @@ function AddConnectionDialogContent({
       if (!appName) return null;
       return (
         marketplace?.integrations.find(
-          (integration) => integration.id === appName,
+          (integration) => integration.appName === appName,
         ) ?? null
       );
     });

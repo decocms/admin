@@ -48,9 +48,7 @@ export function TypeSelectField<T extends FieldValues = FieldValues>({
     (option: OptionItem) => option.value === form.getValues(name as any)?.value,
   );
 
-  const handleAddIntegration = (
-    e: React.MouseEvent<HTMLButtonElement>,
-  ) => {
+  const handleAddIntegration = (e: React.MouseEvent<HTMLButtonElement>) => {
     e.preventDefault();
     e.stopPropagation();
     globalThis.open(

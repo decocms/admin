@@ -40,7 +40,8 @@ import {
   WellKnownBindings,
 } from "../index.ts";
 import { listKnowledgeBases } from "../knowledge/api.ts";
-import { AppName, getRegistryApp, listRegistryApps } from "../registry/api.ts";
+import { AppName } from "../../common/index.ts";
+import { getRegistryApp, listRegistryApps } from "../registry/api.ts";
 import { createServerClient } from "../utils.ts";
 
 const SELECT_INTEGRATION_QUERY = `

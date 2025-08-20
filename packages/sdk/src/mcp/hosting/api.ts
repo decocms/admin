@@ -25,7 +25,7 @@ import { bundler } from "./bundler.ts";
 import { assertsDomainUniqueness } from "./custom-domains.ts";
 import { type DeployResult, deployToCloudflare } from "./deployment.ts";
 import type { WranglerConfig } from "./wrangler.ts";
-import { AppName } from "../registry/api.ts";
+import { AppName } from "../../common/index.ts";
 const uid = new ShortUniqueId({
   dictionary: "alphanum_lower",
   length: 10,

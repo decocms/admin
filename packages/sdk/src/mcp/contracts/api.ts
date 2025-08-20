@@ -16,7 +16,8 @@ import {
   UserInputError,
   WithTool,
 } from "../index.ts";
-import { AppName, getRegistryApp, publishApp } from "../registry/api.ts";
+import { AppName } from "../../common/index.ts";
+import { getRegistryApp, publishApp } from "../registry/api.ts";
 import {
   commitPreAuthorizedAmount,
   preAuthorizeAmount,

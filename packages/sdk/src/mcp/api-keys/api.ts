@@ -158,7 +158,7 @@ export const createApiKey = createTool({
       };
       // call state validation tool.
 
-      if (validated.structuredContent.valid === false) {
+      if (validated?.structuredContent?.valid === false) {
         // errors or not valid payloads are considered valid?
         throw new UserInputError(
           `Could not validate state ${validated.structuredContent.reason}`,

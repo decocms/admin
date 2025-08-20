@@ -8,7 +8,7 @@ import {
   DialogTrigger,
 } from "@deco/ui/components/dialog.tsx";
 import { Button } from "@deco/ui/components/button.tsx";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Icon } from "@deco/ui/components/icon.tsx";
 import { Input } from "@deco/ui/components/input.tsx";
 import {
@@ -30,6 +30,7 @@ import { OAuthCompletionDialog } from "./oauth-completion-dialog.tsx";
 import { useIntegrationInstallWithModal } from "../../hooks/use-integration-install-with-modal.tsx";
 import { IntegrationOAuthModal } from "../integration-oauth-modal.tsx";
 import { useSearchParams } from "react-router";
+import { useGetRegistryApp } from "@deco/sdk/hooks";
 
 export function ConfirmMarketplaceInstallDialog({
   integration,
@@ -196,14 +197,14 @@ function AddConnectionDialogContent({
   onSelect,
   forceTab,
   myConnectionsEmptyState,
-  installingIntegrationId,
+  appName,
 }: {
   title?: string;
   filter?: (integration: Integration) => boolean;
   onSelect?: (integration: Integration) => void;
   forceTab?: "my-connections" | "new-connection";
   myConnectionsEmptyState?: React.ReactNode;
-  installingIntegrationId?: string;
+  appName?: string;
 }) {
   const [_tab, setTab] = useState<"my-connections" | "new-connection">(
     "my-connections",
@@ -214,10 +215,10 @@ function AddConnectionDialogContent({
   const { data: marketplace } = useMarketplaceIntegrations();
   const [installingIntegration, setInstallingIntegration] =
     useState<MarketplaceIntegration | null>(() => {
-      if (!installingIntegrationId) return null;
+      if (!appName) return null;
       return (
         marketplace?.integrations.find(
-          (integration) => integration.id === installingIntegrationId,
+          (integration) => integration.id === appName,
         ) ?? null
       );
     });
@@ -228,7 +229,20 @@ function AddConnectionDialogContent({
   }>({ open: false, url: "", integrationName: "" });
   const navigateWorkspace = useNavigateWorkspace();
   const showEmptyState = search.length > 0;
+  const { mutateAsync: getRegistryApp } = useGetRegistryApp();
+  const handleAddIntegration = async (appName: string) => {
+    const app = await getRegistryApp({ name: appName ?? "" });
+    setInstallingIntegration({
+      ...app,
+      provider: "registry",
+    });
+  };
 
+  useEffect(() => {
+    if (appName) {
+      handleAddIntegration(appName);
+    }
+  }, [appName]);
   return (
     <DialogContent
       className="p-0 min-w-[80vw] min-h-[80vh] gap-0"
@@ -400,8 +414,8 @@ interface SelectConnectionDialogProps {
 
 export function SelectConnectionDialog(props: SelectConnectionDialogProps) {
   const [query] = useSearchParams();
-  const installingIntegrationId = query.get("installingIntegrationId");
-  const [isOpen, setIsOpen] = useState(!!installingIntegrationId);
+  const appName = query.get("appName");
+  const [isOpen, setIsOpen] = useState(!!appName);
 
   const trigger = useMemo(() => {
     if (props.trigger) {
@@ -427,7 +441,7 @@ export function SelectConnectionDialog(props: SelectConnectionDialogProps) {
           props.onSelect?.(integration);
           setIsOpen(false);
         }}
-        installingIntegrationId={installingIntegrationId ?? undefined}
+        appName={appName ?? undefined}
       />
     </Dialog>
   );

@@ -29,6 +29,10 @@ import {
 import type { Callbacks } from "@deco/sdk/mcp/binder";
 import type { CallTool } from "@deco/sdk/models";
 import { getTwoFirstSegments, type Workspace } from "@deco/sdk/path";
+import {
+  createPosthogServerClient,
+  PosthogServerClient,
+} from "@deco/sdk/posthog";
 import type { Json } from "@deco/sdk/storage";
 import { createServerClient } from "@supabase/ssr";
 import { Cloudflare } from "cloudflare";
@@ -39,10 +43,6 @@ import { isApiDecoChatMCPConnection } from "../mcp.ts";
 import { hooks as cron } from "./cron.ts";
 import type { TriggerData, TriggerRun } from "./services.ts";
 import { hooks as webhook } from "./webhook.ts";
-import {
-  createPosthogServerClient,
-  PosthogServerClient,
-} from "packages/sdk/src/posthog.ts";
 export type { TriggerData };
 
 export const threadOf = (

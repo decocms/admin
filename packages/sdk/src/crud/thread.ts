@@ -71,7 +71,7 @@ export const getThreadMessages = (
   workspace: string,
   threadId: string,
   init: RequestInit = {},
-): Promise<UIMessage[]> =>
+): Promise<{messages: UIMessage[]}> =>
   MCPClient.forWorkspace(workspace).THREADS_GET_MESSAGES(
     { id: threadId },
     init,

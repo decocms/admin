@@ -252,7 +252,7 @@ export const getThreadMessages = createTool({
     const rows = result?.result?.[0]?.results;
 
     if (!rows || error) {
-      return [];
+      return { messages: [] };
     }
 
     const messages = rows
@@ -266,7 +266,7 @@ export const getThreadMessages = createTool({
 
     const uiMessages = list.get.all.ui();
 
-    return uiMessages;
+    return { messages: uiMessages };
   },
 });
 

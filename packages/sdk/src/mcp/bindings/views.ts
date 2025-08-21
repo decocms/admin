@@ -1,7 +1,7 @@
 import { z } from "zod";
 import type { Binder } from "../index.ts";
 
-const listViewsSchema = z.object({
+export const listViewsSchema = z.object({
   views: z.array(
     z.object({
       title: z.string(),

@@ -183,6 +183,7 @@ export const WORKSPACE_TOOLS = [
   databasesAPI.migrate,
   databasesAPI.getMeta,
   databasesAPI.recovery,
+  databasesAPI.viewBinding,
   aiAPI.aiGenerate,
   aiAPI.aiGenerateObject,
   oauthAPI.oauthCodeCreate,

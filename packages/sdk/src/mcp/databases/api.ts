@@ -2,6 +2,7 @@ import z from "zod";
 import { workspaceDB } from "../context.ts";
 import { assertHasWorkspace, assertWorkspaceResourceAccess } from "../index.ts";
 import { createDatabaseTool } from "./tool.ts";
+import { listViewsSchema } from "../bindings/views.ts";
 
 export { getWorkspaceD1Database } from "./d1.ts";
 export { migrate } from "./migration.ts";
@@ -118,5 +119,28 @@ export const recovery = createDatabaseTool({
     const db = await workspaceDB(c);
     using _ = await db.recovery?.(new Date(date));
     return { success: true };
+  },
+});
+
+export const viewBinding = createDatabaseTool({
+  name: "DECO_CHAT_VIEWS_LIST",
+  description: "List views exposed by this MCP",
+  inputSchema: z.void(),
+  outputSchema: listViewsSchema,
+  handler: async (_, c) => {
+    // It's ok to grant access to this tool.
+    // To open the studio the user will be checked for resource access.
+    c.resourceAccess.grant();
+    assertHasWorkspace(c);
+
+    return {
+      views: [
+        {
+          title: "Database",
+          icon: "database",
+          url: `https://api.deco.chat/${c.workspace.root}/${c.workspace.slug}/i:databases-management/studio`,
+        },
+      ],
+    };
   },
 });

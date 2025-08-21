@@ -23,13 +23,6 @@ import { FormControl, FormItem, FormLabel } from "@deco/ui/components/form.tsx";
 import { Icon } from "@deco/ui/components/icon.tsx";
 import { Input } from "@deco/ui/components/input.tsx";
 import { Label } from "@deco/ui/components/label.tsx";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@deco/ui/components/select.tsx";
 import { toast } from "@deco/ui/components/sonner.tsx";
 import { Spinner } from "@deco/ui/components/spinner.tsx";
 import { cn } from "@deco/ui/lib/utils.ts";
@@ -42,6 +35,19 @@ import { DialogTrigger } from "@deco/ui/components/dialog.tsx";
 import { DialogContent } from "@deco/ui/components/dialog.tsx";
 import { Button } from "@deco/ui/components/button.tsx";
 import { Binding, WellKnownBindings } from "@deco/sdk/mcp/bindings";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@deco/ui/components/popover.tsx";
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from "@deco/ui/components/command.tsx";
 
 interface ChannelsProps {
   className?: string;
@@ -565,6 +571,17 @@ function ConnectionChannels({
 }) {
   const { data: availableChannels, isLoading: isLoadingAvailableChannels } =
     useConnectionChannels(binding);
+
+  const [search, setSearch] = useState("");
+  const filteredChannels = useMemo(() => {
+    const list = availableChannels?.channels ?? [];
+    const q = search.trim().toLowerCase();
+    if (!q) return list;
+    return list.filter((channel) =>
+      (channel.label ?? "").toLowerCase().includes(q),
+    );
+  }, [availableChannels?.channels, search]);
+  const [open, setOpen] = useState(false);
   if (isLoadingAvailableChannels) {
     return (
       <div className="w-full flex items-center gap-2">
@@ -580,29 +597,80 @@ function ConnectionChannels({
       <div className="mt-2 w-full">
         {availableChannels?.channels?.length &&
         availableChannels?.channels?.length > 0 ? (
-          <Select
-            onValueChange={(value: string) => {
-              const nameForChannel = availableChannels?.channels?.find(
-                (channel) => channel.value === value,
-              )?.label;
-              setDiscriminator(value);
-              setName(nameForChannel);
-            }}
-            disabled={isLoadingAvailableChannels}
-          >
-            <SelectTrigger className="w-full">
-              <SelectValue placeholder="Select a channel" />
-            </SelectTrigger>
-            <SelectContent className="w-full">
-              {availableChannels?.channels?.map((channel) => {
-                return (
-                  <SelectItem key={channel.value} value={channel.value}>
-                    {channel.label}
-                  </SelectItem>
-                );
-              })}
-            </SelectContent>
-          </Select>
+          <Popover open={open} onOpenChange={setOpen}>
+            <PopoverTrigger asChild>
+              <Button
+                variant="outline"
+                role="combobox"
+                className="w-full justify-between"
+                type="button"
+              >
+                {discriminator
+                  ? (availableChannels?.channels?.find(
+                      (c) => c.value === discriminator,
+                    )?.label ?? discriminator)
+                  : "Select a channel"}
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="p-0 w-[--radix-popover-trigger-width]">
+              <Command>
+                <div className="p-2">
+                  <CommandInput
+                    placeholder="Type to search by value"
+                    value={search}
+                    onValueChange={(val) => {
+                      setSearch(val);
+                      setDiscriminator(val);
+                      setName(val ? val : undefined);
+                    }}
+                  />
+                </div>
+                <CommandList>
+                  <CommandEmpty>No results</CommandEmpty>
+                  <CommandGroup>
+                    {(() => {
+                      const typed = search.trim();
+                      const exists = (availableChannels?.channels ?? []).some(
+                        (c) =>
+                          (c.label ?? "").toLowerCase() === typed.toLowerCase(),
+                      );
+                      return typed && !exists ? (
+                        <CommandItem
+                          key="__custom__"
+                          value={typed}
+                          onSelect={(currentValue) => {
+                            setDiscriminator(currentValue);
+                            setName(currentValue);
+                            setOpen(false);
+                          }}
+                        >
+                          Use "{typed}"
+                        </CommandItem>
+                      ) : null;
+                    })()}
+                    {filteredChannels.map((channel) => (
+                      <CommandItem
+                        key={channel.value}
+                        value={channel.label ?? channel.value}
+                        onSelect={(currentValue) => {
+                          const selected = availableChannels?.channels?.find(
+                            (c) => (c.label ?? "") === currentValue,
+                          );
+                          const finalValue = selected?.value ?? currentValue;
+                          const finalLabel = selected?.label ?? currentValue;
+                          setDiscriminator(finalValue);
+                          setName(finalLabel);
+                          setOpen(false);
+                        }}
+                      >
+                        {channel.label}
+                      </CommandItem>
+                    ))}
+                  </CommandGroup>
+                </CommandList>
+              </Command>
+            </PopoverContent>
+          </Popover>
         ) : (
           <Input
             id="discriminator"

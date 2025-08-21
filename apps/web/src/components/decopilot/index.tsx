@@ -286,11 +286,15 @@ export function DecopilotChat() {
           showEditAgent: false,
         }}
       >
-        <DecopilotHeader
-          isAgentSwitcherOpen={isAgentSwitcherOpen}
-          setIsAgentSwitcherOpen={setIsAgentSwitcherOpen}
-        />
-        <MainChat />
+        <div className="h-[60px]">
+          <DecopilotHeader
+            isAgentSwitcherOpen={isAgentSwitcherOpen}
+            setIsAgentSwitcherOpen={setIsAgentSwitcherOpen}
+          />
+        </div>
+        <div className="h-[calc(100%-60px)]">
+          <MainChat />
+        </div>
       </AgentProvider>
 
       <AgentSwitcherModal

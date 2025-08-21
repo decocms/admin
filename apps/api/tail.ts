@@ -117,19 +117,19 @@ function convertTailLogs(event: TailEvent): any {
                 attributes: [
                   ...(log.traces?.trace_id
                     ? [
-                      {
-                        key: "trace_id",
-                        value: { stringValue: log.traces.trace_id },
-                      },
-                    ]
+                        {
+                          key: "trace_id",
+                          value: { stringValue: log.traces.trace_id },
+                        },
+                      ]
                     : []),
                   ...(log.traces?.span_id
                     ? [
-                      {
-                        key: "span_id",
-                        value: { stringValue: log.traces.span_id },
-                      },
-                    ]
+                        {
+                          key: "span_id",
+                          value: { stringValue: log.traces.span_id },
+                        },
+                      ]
                     : []),
                 ],
               };

@@ -173,7 +173,7 @@ const SelectProject = ({
                     {selectedOption ? (
                       <>
                         <Avatar
-                          url={selectedOption.avatarUrl}
+                          url={selectedOption.avatarUrl as string}
                           fallback={selectedOption.label}
                           size="sm"
                           shape="square"
@@ -193,7 +193,7 @@ const SelectProject = ({
               renderItem={(option, isSelected) => (
                 <div className="flex items-center gap-3 h-12">
                   <Avatar
-                    url={option.avatarUrl}
+                    url={option.avatarUrl as string}
                     fallback={option.label}
                     size="sm"
                     shape="square"

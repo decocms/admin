@@ -218,8 +218,13 @@ function AgentSwitcherModal({
   );
 }
 
-function DecopilotHeader() {
-  const [isAgentSwitcherOpen, setIsAgentSwitcherOpen] = useState(false);
+function DecopilotHeader({
+  isAgentSwitcherOpen,
+  setIsAgentSwitcherOpen,
+}: {
+  isAgentSwitcherOpen: boolean;
+  setIsAgentSwitcherOpen: (open: boolean) => void;
+}) {
   const { agent, chat } = useAgent();
 
   const messages = chat.messages;
@@ -281,7 +286,10 @@ export function DecopilotChat() {
           showEditAgent: false,
         }}
       >
-        <DecopilotHeader />
+        <DecopilotHeader
+          isAgentSwitcherOpen={isAgentSwitcherOpen}
+          setIsAgentSwitcherOpen={setIsAgentSwitcherOpen}
+        />
         <MainChat />
       </AgentProvider>
 

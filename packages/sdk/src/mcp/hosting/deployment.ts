@@ -363,7 +363,7 @@ export async function deployToCloudflare({
     },
     tail_consumers: [
       {
-        service: "hyperdx-tail",
+        service: "deco-chat-api", // self
       },
     ],
     migrations: doMigrations,

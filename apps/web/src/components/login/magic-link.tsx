@@ -50,15 +50,17 @@ function MagicLink() {
   return (
     <SplitScreenLayout>
       <div className="flex flex-col items-center justify-center p-6 h-full">
-        <span className="text-muted-foreground text-center inline-flex items-center gap-1 pb-16">
-          <Icon name="arrow_back" size={16} />
-          <Link
-            to={`/login?next=${next}`}
-            className="text-sm flex items-center gap-1 hover:underline"
-          >
+        <Button
+          variant="ghost"
+          asChild
+          className="text-muted-foreground mb-16"
+          size="sm"
+        >
+          <Link to={`/login?next=${next}`}>
+            <Icon name="arrow_back" size={16} />
             Back to login options
           </Link>
-        </span>
+        </Button>
         {fetcher.data === undefined && !setOnce.current ? (
           <form method="post" onSubmit={handleSubmit}>
             {next ? <input type="hidden" name="next" value={next} /> : null}

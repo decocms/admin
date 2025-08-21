@@ -499,12 +499,17 @@ export const getIntegration = createIntegrationManagementTool({
 export const createIntegration = createIntegrationManagementTool({
   name: "INTEGRATIONS_CREATE",
   description: "Create a new integration",
-  inputSchema: IntegrationSchema.partial().omit({ appName: true }),
+  inputSchema: IntegrationSchema.partial()
+    // TODO(@camudo): Remember why we omit this here and unify install process
+    .omit({ appName: true })
+    .extend({
+      clientIdFromApp: z.string().optional(),
+    }),
   handler: async (_integration, c) => {
     assertHasWorkspace(c);
     await assertWorkspaceResourceAccess(c);
 
-    const { appId, ...integration } = _integration;
+    const { appId, clientIdFromApp, ...integration } = _integration;
     const baseIntegration = {
       ...NEW_INTEGRATION_TEMPLATE,
       ...integration,
@@ -512,9 +517,13 @@ export const createIntegration = createIntegrationManagementTool({
       id: integration.id ? parseId(integration.id).uuid : undefined,
     };
 
+    const fetchedApp = clientIdFromApp
+      ? await getRegistryApp.handler({ name: clientIdFromApp })
+      : undefined;
+
     const payload = {
       ...baseIntegration,
-      app_id: appId ?? undefined,
+      app_id: appId ?? fetchedApp?.id,
     };
 
     const { data, error } =
@@ -768,6 +777,52 @@ export const DECO_INTEGRATION_OAUTH_START = createIntegrationManagementTool({
     };
 
     return oauth.structuredContent;
+  },
+});
+
+export const DECO_GET_APP_SCHEMA = createIntegrationManagementTool({
+  name: "DECO_GET_APP_SCHEMA",
+  description: "Get the schema for a marketplace app",
+  inputSchema: z.object({
+    appName: z.string(),
+  }),
+  outputSchema: z.object({
+    schema: z.unknown(),
+    scopes: z.array(z.string()).optional(),
+  }),
+  handler: async ({ appName }, c) => {
+    // Anyone can get the schema for an app
+    c.resourceAccess.grant();
+    assertHasWorkspace(c);
+
+    const app = await getRegistryApp.handler({ name: appName });
+    const connection = app.connection;
+
+    const result = (await MCPClient.INTEGRATIONS_CALL_TOOL({
+      connection,
+      params: {
+        name: "DECO_CHAT_OAUTH_START",
+        arguments: {
+          returnUrl: "",
+        },
+      },
+    })) as {
+      structuredContent:
+        | { redirectUrl: string }
+        | {
+            stateSchema: unknown;
+            scopes?: string[];
+          };
+    };
+
+    if ("redirectUrl" in result.structuredContent) {
+      throw new Error("Redirect URL returned, but we expected a state schema");
+    }
+
+    return {
+      schema: result.structuredContent.stateSchema,
+      scopes: result.structuredContent.scopes,
+    };
   },
 });
 

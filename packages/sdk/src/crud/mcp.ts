@@ -15,13 +15,17 @@ export const saveIntegration = (workspace: string, integration: Integration) =>
     integration,
   });
 
+export type CreateIntegrationPayload = Partial<Integration> & {
+  clientIdFromApp?: string;
+};
+
 /**
  * Create a new MCP
  * @returns The new MCP
  */
 export const createIntegration = (
   workspace: string,
-  template: Partial<Integration> = {},
+  template: CreateIntegrationPayload = {},
 ) =>
   MCPClient.forWorkspace(workspace).INTEGRATIONS_CREATE({
     id: crypto.randomUUID(),

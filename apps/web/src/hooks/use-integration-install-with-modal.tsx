@@ -1,6 +1,7 @@
 import type { Statement } from "@deco/sdk/auth";
 import {
   AppScope,
+  RegistryApp,
   useCreateAPIKey,
   useCreateIntegration,
   useGetRegistryApp,
@@ -9,8 +10,9 @@ import {
 } from "@deco/sdk/hooks";
 import type { Integration } from "@deco/sdk/models";
 import type { JSONSchema7 } from "json-schema";
-import { useState } from "react";
+import { useCallback, useState } from "react";
 import { useWorkspaceLink } from "./use-navigate-workspace.ts";
+import { useMutation } from "@tanstack/react-query";
 
 // Default policies required for all integrations
 const DEFAULT_INTEGRATION_POLICIES = [
@@ -53,6 +55,83 @@ const getBindingObject = (
   return undefined;
 };
 
+export const useInstallCreatingApiKeyAndIntegration = () => {
+  const createAPIKey = useCreateAPIKey();
+  const createIntegration = useCreateIntegration();
+
+  const mutation = useMutation({
+    mutationFn: async ({
+      clientId,
+      app,
+      formData,
+      scopes,
+      installId: inlineInstallId,
+    }: {
+      clientId: string;
+      app: RegistryApp;
+      formData: Record<string, unknown>;
+      scopes: string[];
+      installId?: string;
+    }) => {
+      const installId = inlineInstallId ?? crypto.randomUUID();
+      const keyName = `${app.name}-${installId}`;
+
+      const appName = clientId;
+
+      const apiKey = await createAPIKey.mutateAsync({
+        claims: {
+          state: formData,
+          integrationId: installId,
+          appName,
+        },
+        name: keyName,
+        policies: [
+          ...DEFAULT_INTEGRATION_POLICIES,
+          ...(scopes?.map((scope: string): Statement => {
+            const { bindingName, toolName } = parseAppScope(scope);
+            const binding = getBindingObject(formData, bindingName);
+            const integrationId = binding?.value;
+            return {
+              effect: "allow" as const,
+              resource: toolName ?? scope,
+              ...(integrationId
+                ? {
+                    matchCondition: {
+                      resource: "is_integration",
+                      integrationId,
+                    },
+                  }
+                : {}),
+            };
+          }) ?? []),
+        ],
+      });
+
+      const integrationData = {
+        id: installId,
+        name: app.friendlyName ?? app.name,
+        description: app.description,
+        icon: app.icon,
+        connection: {
+          ...app.connection,
+          token: apiKey.value,
+          // Merge form data into connection
+          ...formData,
+        }, // Type assertion to handle the connection type
+      };
+
+      const integration = await createIntegration.mutateAsync({
+        ...integrationData,
+        clientIdFromApp: appName,
+      });
+
+      return integration;
+    },
+  });
+
+  return mutation;
+};
+
 export function useIntegrationInstallWithModal() {
   const [installState, setInstallState] = useState<InstallState>({
     isModalOpen: false,
@@ -60,9 +139,10 @@ export function useIntegrationInstallWithModal() {
 
   const getLinkFor = useWorkspaceLink();
   const installMutation = useInstallFromMarketplace();
-  const createIntegration = useCreateIntegration();
-  const createAPIKey = useCreateAPIKey();
   const getRegistryApp = useGetRegistryApp();
+
+  const installCreatingApiKeyAndIntegration =
+    useInstallCreatingApiKeyAndIntegration();
 
   const handleInstall = async (params: {
     appId: string;
@@ -106,65 +186,24 @@ export function useIntegrationInstallWithModal() {
     try {
       // Step 1: Generate API key with required policies
       const installId = installState.integration?.id ?? crypto.randomUUID();
-      const keyName = `${installState.appName}-${installId}`;
       // Step 2: Get marketplace app info
       const marketplaceApp = await getRegistryApp.mutateAsync({
         name: installState.appName,
       });
 
-      const apiKey = await createAPIKey.mutateAsync({
-        claims: {
-          state: formData,
-          integrationId: installId,
-          appName: installState.appName,
-        },
-        name: keyName,
-        policies: [
-          ...DEFAULT_INTEGRATION_POLICIES,
-          ...(installState.scopes?.map((scope: string): Statement => {
-            const { bindingName, toolName } = parseAppScope(scope);
-            const binding = getBindingObject(formData, bindingName);
-            const integrationId = binding?.value;
-            return {
-              effect: "allow" as const,
-              resource: toolName ?? scope,
-              ...(integrationId
-                ? {
-                    matchCondition: {
-                      resource: "is_integration",
-                      integrationId,
-                    },
-                  }
-                : {}),
-            };
-          }) ?? []),
-        ],
+      await installCreatingApiKeyAndIntegration.mutateAsync({
+        clientId: installState.appName,
+        app: marketplaceApp,
+        formData,
+        scopes: installState.scopes ?? [],
+        installId,
       });
-
-      // Step 3: Create integration with marketplace info and API token
-      const integrationData = {
-        id: installId,
-        name: marketplaceApp.friendlyName ?? marketplaceApp.name,
-        description: marketplaceApp.description,
-        icon: marketplaceApp.icon,
-        connection: {
-          ...marketplaceApp.connection,
-          token: apiKey.value,
-          // Merge form data into connection
-          ...formData,
-        }, // Type assertion to handle the connection type
-      };
-
-      await createIntegration.mutateAsync(integrationData);
 
       // Close modal after successful submission
       setInstallState((prev: InstallState) => ({
         ...prev,
         isModalOpen: false,
       }));
-
-      // Step 4: Redirect to the connections page after a brief delay
-      // This ensures all async operations are fully processed before redirect
 
       const redirectPath = getLinkFor(`/connection/unknown:::${installId}`);
       globalThis.location.href = redirectPath;
@@ -234,9 +273,8 @@ export function useIntegrationInstallWithModal() {
       onSubmit: handleModalSubmit,
       onClose: handleModalClose,
       isLoading:
-        createAPIKey.isPending ||
+        installCreatingApiKeyAndIntegration.isPending ||
         getRegistryApp.isPending ||
-        createIntegration.isPending ||
         permissionsLoading,
     },
 

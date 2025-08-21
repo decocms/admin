@@ -431,9 +431,7 @@ function WorkspaceViews() {
     integrations?.map((integration) => [integration.id, integration]),
   );
 
-  const fromIntegration: Record<string, View[]> = {
-    custom: [],
-  };
+  const fromIntegration: Record<string, View[]> = {};
   const firstLevelViews: View[] = [];
 
   // Group views by integration ID
@@ -448,6 +446,9 @@ function WorkspaceViews() {
       fromIntegration[integrationId].push(view);
     } else {
       if (view.type === "custom") {
+        if (!fromIntegration["custom"]) {
+          fromIntegration["custom"] = [];
+        }
         fromIntegration["custom"].push(view);
         return;
       }
@@ -535,7 +536,7 @@ function WorkspaceViews() {
                       url={integration?.icon}
                       fallback={integration?.name}
                     />
-                    <span className="truncate">
+                    <span className="truncate text-foreground">
                       {integration?.name ?? "Custom"}
                     </span>
                     <Icon

@@ -206,6 +206,7 @@ const WELL_KNOWN_DECO_OAUTH_INTEGRATIONS = [
   "airtable",
   "slack",
   "googlecalendar",
+  "googleslides",
   "spotify",
 ];
 

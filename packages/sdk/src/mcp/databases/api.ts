@@ -127,7 +127,7 @@ export const viewBinding = createDatabaseTool({
   description: "List views exposed by this MCP",
   inputSchema: z.void(),
   outputSchema: listViewsSchema,
-  handler: async (_, c) => {
+  handler: (_, c) => {
     // It's ok to grant access to this tool.
     // To open the studio the user will be checked for resource access.
     c.resourceAccess.grant();

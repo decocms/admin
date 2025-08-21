@@ -64,6 +64,7 @@ interface AgentProviderProps {
   uiOptions?: Partial<UiOptions>; // UI configuration options
   toolsets?: Toolset[];
   children: React.ReactNode;
+  additionalTools?: Agent["tools_set"];
 }
 
 interface AgentContextValue {
@@ -133,6 +134,7 @@ export function AgentProvider({
   uiOptions,
   toolsets,
   children,
+  additionalTools,
 }: PropsWithChildren<AgentProviderProps>) {
   const { data: serverAgent } = useAgentData(agentId);
   const isPublic = serverAgent.visibility === "PUBLIC";
@@ -261,7 +263,10 @@ export function AgentProvider({
             instructions: effectiveChatState.instructions,
             bypassOpenRouter,
             sendReasoning: preferences.sendReasoning ?? true,
-            tools: effectiveChatState.tools_set,
+            tools: {
+              ...effectiveChatState.tools_set,
+              ...additionalTools,
+            },
             maxSteps: effectiveChatState.max_steps,
             pdfSummarization: preferences.pdfSummarization ?? true,
             toolsets,

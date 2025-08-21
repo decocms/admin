@@ -82,7 +82,11 @@ export interface View {
   title: string;
   icon: string;
   type: "custom" | "default";
-  metadata: Record<string, unknown>;
+  metadata: Record<string, unknown> & {
+    integration?: {
+      id: string;
+    };
+  };
 }
 
 export type ViewMetadata = z.infer<typeof viewMetadataSchema>;

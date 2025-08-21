@@ -51,6 +51,8 @@ const avatarVariants = cva("border border-border", {
       square: "",
     },
     size: {
+      "3xs": "w-3 h-3 text-xs font-semibold",
+      "2xs": "w-4 h-4 text-xs font-semibold",
       xs: "w-6 h-6 text-sm font-semibold",
       sm: "w-8 h-8 text-lg font-semibold",
       base: "w-10 h-10 text-2xl font-semibold",
@@ -92,6 +94,7 @@ const avatarImageVariants = cva("", {
 // Icon size mapping based on avatar size (in pixels)
 const getIconSize = (size: string): number => {
   const iconSizes = {
+    "2xs": 8, // 8px for 16px avatar
     xs: 12, // 12px for 24px avatar
     sm: 16, // 16px for 32px avatar
     base: 24, // 24px for 40px avatar
@@ -132,7 +135,7 @@ interface BaseAvatarProps extends HTMLAttributes<HTMLDivElement> {
   /**
    * The size of the avatar
    */
-  size?: "xs" | "sm" | "base" | "lg" | "xl" | "2xl" | "3xl";
+  size?: "3xs" | "2xs" | "xs" | "sm" | "base" | "lg" | "xl" | "2xl" | "3xl";
 }
 
 /**

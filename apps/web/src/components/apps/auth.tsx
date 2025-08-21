@@ -648,8 +648,15 @@ const SelectProjectAppInstance = ({
                 integrationId: selectedIntegration.id,
               });
             }}
-            continueDisabled={!selectedIntegration || createOAuthCode.isPending}
-            continueLoading={createOAuthCode.isPending}
+            continueDisabled={
+              !selectedIntegration ||
+              createOAuthCode.isPending ||
+              installCreatingApiKeyAndIntegration.isPending
+            }
+            continueLoading={
+              createOAuthCode.isPending ||
+              installCreatingApiKeyAndIntegration.isPending
+            }
           />
         )}
       </div>

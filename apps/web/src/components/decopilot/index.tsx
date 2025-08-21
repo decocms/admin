@@ -18,7 +18,7 @@ import { DockviewApi } from "dockview-react";
 import { Suspense, useMemo, useState } from "react";
 import { useCurrentAgent } from "../../hooks/use-current-agent.ts";
 import { MainChat } from "../agent/chat.tsx";
-import { AgentProvider } from "../agent/provider.tsx";
+import { AgentProvider, useAgent } from "../agent/provider.tsx";
 import { AgentVisibility } from "../common/agent-visibility.tsx";
 import { AgentAvatar } from "../common/avatar/agent.tsx";
 import { useCurrentTeam } from "../sidebar/team-selector.tsx";
@@ -218,6 +218,35 @@ function AgentSwitcherModal({
   );
 }
 
+function DecopilotHeader() {
+  const [isAgentSwitcherOpen, setIsAgentSwitcherOpen] = useState(false);
+  const { agent, chat } = useAgent();
+
+  const messages = chat.messages;
+
+  const isEmpty = messages.length === 0;
+
+  return (
+    <div className="p-3 border-b flex items-center justify-between">
+      <div className="flex items-center gap-2">
+        {!isEmpty && (
+          <>
+            <AgentAvatar url={agent.avatar} fallback={agent.name} size="sm" />
+            <h2 className="font-medium">{agent.name}</h2>
+          </>
+        )}
+      </div>
+
+      <Dialog open={isAgentSwitcherOpen} onOpenChange={setIsAgentSwitcherOpen}>
+        <DialogTrigger asChild>
+          <div>
+            <AgentGridSwitcher onClick={() => setIsAgentSwitcherOpen(true)} />
+          </div>
+        </DialogTrigger>
+      </Dialog>
+    </div>
+  );
+}
 export function DecopilotChat() {
   const { currentAgentId, setCurrentAgentId } = useCurrentAgent();
   const [isAgentSwitcherOpen, setIsAgentSwitcherOpen] = useState(false);
@@ -233,20 +262,6 @@ export function DecopilotChat() {
 
   return (
     <div className="flex flex-col h-full">
-      <div className="p-3 border-b flex items-center justify-between">
-        <h2 className="font-medium">Main Chat</h2>
-        <Dialog
-          open={isAgentSwitcherOpen}
-          onOpenChange={setIsAgentSwitcherOpen}
-        >
-          <DialogTrigger asChild>
-            <div>
-              <AgentGridSwitcher onClick={() => setIsAgentSwitcherOpen(true)} />
-            </div>
-          </DialogTrigger>
-        </Dialog>
-      </div>
-
       <AgentProvider
         key={currentAgentId}
         agentId={currentAgentId}
@@ -266,6 +281,7 @@ export function DecopilotChat() {
           showEditAgent: false,
         }}
       >
+        <DecopilotHeader />
         <MainChat />
       </AgentProvider>
 

@@ -20,7 +20,7 @@ export function useCurrentAgent() {
 
   useEffect(() => {
     if (typeof window !== "undefined") {
-      const stored = localStorage.getItem(CURRENT_AGENT_KEY + workspace);
+      const stored = localStorage.getItem(`${CURRENT_AGENT_KEY}-${workspace}`);
       if (stored && stored !== currentAgentId) {
         setCurrentAgentIdState(stored);
       }

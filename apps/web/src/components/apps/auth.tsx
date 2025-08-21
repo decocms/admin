@@ -91,14 +91,14 @@ function ShowInstalls({
 
   if (!selectedIntegration) {
     return (
-      <div className="flex flex-col items-center justify-center h-screen">
+      <div className="flex flex-col items-center justify-center">
         <div className="text-center space-y-6">
           <h1 className="text-2xl font-bold">Select an integration</h1>
           <p className="text-muted-foreground">
             Choose which integration to authorize
           </p>
 
-          <div className="w-full max-w-sm">
+          <div className="w-full max-w-sm flex justify-center">
             <Select
               value=""
               onValueChange={(value) =>

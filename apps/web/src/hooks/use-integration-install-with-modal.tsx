@@ -10,7 +10,7 @@ import {
 } from "@deco/sdk/hooks";
 import type { Integration } from "@deco/sdk/models";
 import type { JSONSchema7 } from "json-schema";
-import { useCallback, useState } from "react";
+import { useState } from "react";
 import { useWorkspaceLink } from "./use-navigate-workspace.ts";
 import { useMutation } from "@tanstack/react-query";
 

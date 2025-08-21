@@ -259,7 +259,7 @@ const InlineCreateIntegrationForm = ({
     return { bindingName, toolName };
   };
 
-  const getAppNameFromSchema = (schema: any, bindingName: string) => {
+  const getAppNameFromSchema = (schema: JSONSchema7, bindingName: string) => {
     const binding = schema.properties?.[bindingName];
     if (
       typeof binding === "object" &&
@@ -297,8 +297,7 @@ const InlineCreateIntegrationForm = ({
 
   // Get permission descriptions
   const allScopes = getAllScopes();
-  const { permissions, isLoading: permissionsLoading } =
-    usePermissionDescriptions(allScopes);
+  const { permissions } = usePermissionDescriptions(allScopes);
 
   const shouldShowPermissions = useMemo(() => {
     return permissions.length > 0;

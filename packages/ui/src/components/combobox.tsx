@@ -18,7 +18,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "./popover.tsx";
 export interface ComboboxOption {
   value: string;
   label: string;
-  [key: string]: any; // Allow additional properties for custom rendering
+  [key: string]: unknown; // Allow additional properties for custom rendering
 }
 
 export interface ComboboxProps {

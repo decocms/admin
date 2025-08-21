@@ -52,10 +52,15 @@ interface TailEvent {
 }
 
 function convertTailEventToOTLP(event: TailEvent): any {
+  const [name, version] = event.scriptName.split("--"); // double-dash
   const resourceAttributes = [
     {
       key: "service.name",
-      value: { stringValue: event.scriptName },
+      value: { stringValue: name },
+    },
+    {
+      key: "service.version",
+      value: { stringValue: version },
     },
     {
       key: "ray_id",

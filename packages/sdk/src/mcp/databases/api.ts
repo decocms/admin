@@ -47,14 +47,19 @@ export type DatatabasesRunSqlInput = z.infer<
 export const getMeta = createDatabaseTool({
   name: "DATABASES_GET_META",
   description: "Run a SQL query against the workspace database",
-  inputSchema: z.void(),
+  inputSchema: z.object({
+    _legacy: z
+      .boolean()
+      .optional()
+      .describe("If true, the query will be run against the legacy database"),
+  }),
   outputSchema: z.object({
     bytes: z.number().optional(),
   }),
-  handler: async (_, c) => {
+  handler: async ({ _legacy }, c) => {
     assertHasWorkspace(c);
     await assertWorkspaceResourceAccess(c, "DATABASES_RUN_SQL");
-    const db = await workspaceDB(c);
+    const db = await workspaceDB(c, _legacy);
     const dbMeta = await db.meta?.();
     dbMeta?.[Symbol.dispose]();
     return { bytes: dbMeta?.size };
@@ -109,14 +114,18 @@ export const recovery = createDatabaseTool({
   description: "Run a SQL query against the workspace database",
   inputSchema: z.object({
     date: z.string().describe("The date to recover to"),
+    _legacy: z
+      .boolean()
+      .optional()
+      .describe("If true, the query will be run against the legacy database"),
   }),
   outputSchema: z.object({
     success: z.boolean(),
   }),
-  handler: async ({ date }, c) => {
+  handler: async ({ date, _legacy }, c) => {
     assertHasWorkspace(c);
     await assertWorkspaceResourceAccess(c, "DATABASES_RUN_SQL");
-    const db = await workspaceDB(c);
+    const db = await workspaceDB(c, _legacy);
     using _ = await db.recovery?.(new Date(date));
     return { success: true };
   },

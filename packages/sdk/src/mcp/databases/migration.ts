@@ -216,7 +216,6 @@ export const migrate = createDatabaseTool({
         "_cf_KV",
         "_litestream_seq",
         "_litestream_lock",
-        "mastra_workflow_snapshot",
       ];
       const filteredTables = Array.from(allTables).filter(
         (tableName) =>

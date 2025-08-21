@@ -1,13 +1,14 @@
 // deno-lint-ignore-file no-explicit-any
 export * from "./src/actors.ts";
+export { WorkspaceDatabase } from "./src/durable-objects/workspace-database.ts";
 import { contextStorage } from "@deco/sdk/fetch";
 import { Hosts } from "@deco/sdk/hosts";
 import { instrument } from "@deco/sdk/observability";
+import { env } from "cloudflare:workers";
 import { default as app } from "./src/app.ts";
 import { email } from "./src/email.ts";
 import { KbFileProcessorWorkflow } from "./src/workflows/kb-file-processor-workflow.ts";
-import { env } from "cloudflare:workers";
-export { WorkspaceDatabase } from "./src/durable-objects/workspace-database.ts";
+import { tail } from "./tail.ts";
 
 // Choose instrumented app depending on runtime
 const instrumentedApp = instrument(app);
@@ -69,6 +70,7 @@ globalThis.fetch = async function patchedFetch(
 
 // Default export that wraps app with per-request context initializer
 export default {
+  tail,
   email,
   fetch(request: Request, env: any, ctx: ExecutionContext): Promise<Response> {
     return contextStorage.run({ env, ctx }, async () => {

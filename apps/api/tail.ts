@@ -67,6 +67,42 @@ function convertTailEventToOTLP(event: TailEvent): any {
     },
   ];
 
+  // Create request attributes to be shared across logs and traces
+  const requestAttributes = [
+    {
+      key: "http.url",
+      value: { stringValue: event.event.request.url },
+    },
+    {
+      key: "http.method",
+      value: { stringValue: event.event.request.method },
+    },
+    {
+      key: "ray_id",
+      value: { stringValue: event.rayId },
+    },
+    // Add Cloudflare specific data
+    ...(event.event.request.cf?.colo
+      ? [
+          {
+            key: "cf.colo",
+            value: { stringValue: event.event.request.cf.colo },
+          },
+        ]
+      : []),
+    // Add important headers (excluding sensitive ones)
+    ...Object.entries(event.event.request.headers)
+      .filter(
+        ([key]) =>
+          !key.toLowerCase().includes("authorization") &&
+          !key.toLowerCase().includes("cookie"),
+      )
+      .map(([key, value]) => ({
+        key: `http.request.header.${key.toLowerCase()}`,
+        value: { stringValue: value },
+      })),
+  ];
+
   // Convert traces to OTLP format
   const resourceSpans =
     event.traces && event.traces.length > 0
@@ -86,12 +122,15 @@ function convertTailEventToOTLP(event: TailEvent): any {
                   kind: mapSpanKind(trace.kind),
                   startTimeUnixNano: trace.start_time_ms * 1000000,
                   endTimeUnixNano: trace.end_time_ms * 1000000,
-                  attributes: Object.entries(trace.attributes || {}).map(
-                    ([key, value]) => ({
-                      key,
-                      value: convertAttributeValue(value),
-                    }),
-                  ),
+                  attributes: [
+                    ...Object.entries(trace.attributes || {}).map(
+                      ([key, value]) => ({
+                        key,
+                        value: convertAttributeValue(value),
+                      }),
+                    ),
+                    ...requestAttributes, // Add request info to traces
+                  ],
                 })),
               },
             ],
@@ -115,10 +154,7 @@ function convertTailEventToOTLP(event: TailEvent): any {
                   severityText: log.level,
                   body: { stringValue: log.message },
                   attributes: [
-                    {
-                      key: "ray_id",
-                      value: { stringValue: event.rayId },
-                    },
+                    ...requestAttributes, // Add request info to logs
                     ...(log.traces?.trace_id
                       ? [
                           {
@@ -159,13 +195,10 @@ function convertTailEventToOTLP(event: TailEvent): any {
                   severityText: "ERROR",
                   body: { stringValue: exception.message },
                   attributes: [
+                    ...requestAttributes, // Add request info to exceptions
                     {
                       key: "exception.type",
                       value: { stringValue: exception.name },
-                    },
-                    {
-                      key: "ray_id",
-                      value: { stringValue: event.rayId },
                     },
                   ],
                 })),
@@ -229,33 +262,31 @@ const otelHeadersToObject = (headers: string) => {
   return Object.fromEntries(headersParts);
 };
 
-export default {
-  async tail(
-    events: TailEvent[],
-    env: {
-      OTEL_EXPORTER_OTLP_ENDPOINT: string;
-      OTEL_EXPORTER_OTLP_HEADERS: string;
-    },
-  ): Promise<void> {
-    try {
-      for (const event of events) {
-        // Convert to combined OTLP format
-        const otlpPayload = convertTailEventToOTLP(event);
-
-        // Only send if there's actually data to send
-        if (Object.keys(otlpPayload).length > 0) {
-          await fetch(env.OTEL_EXPORTER_OTLP_ENDPOINT, {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-              ...otelHeadersToObject(env.OTEL_EXPORTER_OTLP_HEADERS),
-            },
-            body: JSON.stringify(otlpPayload),
-          });
-        }
-      }
-    } catch (error) {
-      console.error("Error processing tail events:", error);
-    }
+export async function tail(
+  events: TailEvent[],
+  env: {
+    OTEL_EXPORTER_OTLP_ENDPOINT: string;
+    OTEL_EXPORTER_OTLP_HEADERS: string;
   },
-};
+): Promise<void> {
+  try {
+    for (const event of events) {
+      // Convert to combined OTLP format
+      const otlpPayload = convertTailEventToOTLP(event);
+
+      // Only send if there's actually data to send
+      if (Object.keys(otlpPayload).length > 0) {
+        await fetch(env.OTEL_EXPORTER_OTLP_ENDPOINT, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            ...otelHeadersToObject(env.OTEL_EXPORTER_OTLP_HEADERS),
+          },
+          body: JSON.stringify(otlpPayload),
+        });
+      }
+    }
+  } catch (error) {
+    console.error("Error processing tail events:", error);
+  }
+}

@@ -1,5 +1,6 @@
+import type { Statement } from "@deco/sdk/auth";
 import {
-  RegistryApp,
+  AppScope,
   useCreateAPIKey,
   useCreateIntegration,
   useGetRegistryApp,
@@ -10,8 +11,11 @@ import type { Integration } from "@deco/sdk/models";
 import type { JSONSchema7 } from "json-schema";
 import { useState } from "react";
 import { useWorkspaceLink } from "./use-navigate-workspace.ts";
-import { useMutation } from "@tanstack/react-query";
-import { createPolicyStatements, getAllScopes } from "../utils/scopes.ts";
+
+// Default policies required for all integrations
+const DEFAULT_INTEGRATION_POLICIES = [
+  { effect: "allow" as const, resource: "DATABASES_RUN_SQL" },
+];
 
 interface InstallState {
   isModalOpen: boolean;
@@ -25,62 +29,28 @@ interface InstallState {
   provider?: string;
 }
 
-export const useInstallCreatingApiKeyAndIntegration = () => {
-  const createAPIKey = useCreateAPIKey();
-  const createIntegration = useCreateIntegration();
+const parseAppScope = (scope: string) => {
+  const [bindingName, toolName] = scope.split("::");
+  return { bindingName, toolName };
+};
 
-  const mutation = useMutation({
-    mutationFn: async ({
-      clientId,
-      app,
-      formData,
-      scopes,
-      installId: inlineInstallId,
-    }: {
-      clientId: string;
-      app: RegistryApp;
-      formData: Record<string, unknown>;
-      scopes: string[];
-      installId?: string;
-    }) => {
-      const installId = inlineInstallId ?? crypto.randomUUID();
-      const keyName = `${app.name}-${installId}`;
-
-      const appName = clientId;
-
-      const apiKey = await createAPIKey.mutateAsync({
-        claims: {
-          state: formData,
-          integrationId: installId,
-          appName,
-        },
-        name: keyName,
-        policies: createPolicyStatements(scopes ?? [], formData),
-      });
-
-      const integrationData = {
-        id: installId,
-        name: app.friendlyName ?? app.name,
-        description: app.description,
-        icon: app.icon,
-        connection: {
-          ...app.connection,
-          token: apiKey.value,
-          // Merge form data into connection
-          ...formData,
-        }, // Type assertion to handle the connection type
-      };
-
-      const integration = await createIntegration.mutateAsync({
-        ...integrationData,
-        clientIdFromApp: appName,
-      });
-
-      return integration;
-    },
-  });
-
-  return mutation;
+export interface BindingObject {
+  __type: string;
+  value: string;
+}
+const getBindingObject = (
+  formData: Record<string, unknown>,
+  prop: string,
+): BindingObject | undefined => {
+  if (
+    formData?.[prop] &&
+    typeof formData[prop] === "object" &&
+    "value" in formData[prop] &&
+    typeof formData[prop].value === "string"
+  ) {
+    return formData[prop] as BindingObject;
+  }
+  return undefined;
 };
 
 export function useIntegrationInstallWithModal() {
@@ -90,10 +60,9 @@ export function useIntegrationInstallWithModal() {
 
   const getLinkFor = useWorkspaceLink();
   const installMutation = useInstallFromMarketplace();
+  const createIntegration = useCreateIntegration();
+  const createAPIKey = useCreateAPIKey();
   const getRegistryApp = useGetRegistryApp();
-
-  const installCreatingApiKeyAndIntegration =
-    useInstallCreatingApiKeyAndIntegration();
 
   const handleInstall = async (params: {
     appId: string;
@@ -137,24 +106,65 @@ export function useIntegrationInstallWithModal() {
     try {
       // Step 1: Generate API key with required policies
       const installId = installState.integration?.id ?? crypto.randomUUID();
+      const keyName = `${installState.appName}-${installId}`;
       // Step 2: Get marketplace app info
       const marketplaceApp = await getRegistryApp.mutateAsync({
         name: installState.appName,
       });
 
-      await installCreatingApiKeyAndIntegration.mutateAsync({
-        clientId: installState.appName,
-        app: marketplaceApp,
-        formData,
-        scopes: installState.scopes ?? [],
-        installId,
+      const apiKey = await createAPIKey.mutateAsync({
+        claims: {
+          state: formData,
+          integrationId: installId,
+          appName: installState.appName,
+        },
+        name: keyName,
+        policies: [
+          ...DEFAULT_INTEGRATION_POLICIES,
+          ...(installState.scopes?.map((scope: string): Statement => {
+            const { bindingName, toolName } = parseAppScope(scope);
+            const binding = getBindingObject(formData, bindingName);
+            const integrationId = binding?.value;
+            return {
+              effect: "allow" as const,
+              resource: toolName ?? scope,
+              ...(integrationId
+                ? {
+                    matchCondition: {
+                      resource: "is_integration",
+                      integrationId,
+                    },
+                  }
+                : {}),
+            };
+          }) ?? []),
+        ],
       });
+
+      // Step 3: Create integration with marketplace info and API token
+      const integrationData = {
+        id: installId,
+        name: marketplaceApp.friendlyName ?? marketplaceApp.name,
+        description: marketplaceApp.description,
+        icon: marketplaceApp.icon,
+        connection: {
+          ...marketplaceApp.connection,
+          token: apiKey.value,
+          // Merge form data into connection
+          ...formData,
+        }, // Type assertion to handle the connection type
+      };
+
+      await createIntegration.mutateAsync(integrationData);
 
       // Close modal after successful submission
       setInstallState((prev: InstallState) => ({
         ...prev,
         isModalOpen: false,
       }));
+
+      // Step 4: Redirect to the connections page after a brief delay
+      // This ensures all async operations are fully processed before redirect
 
       const redirectPath = getLinkFor(`/connection/unknown:::${installId}`);
       globalThis.location.href = redirectPath;
@@ -168,11 +178,44 @@ export function useIntegrationInstallWithModal() {
     setInstallState((prev: InstallState) => ({ ...prev, isModalOpen: false }));
   };
 
+  const getAppNameFromSchema = (schema: JSONSchema7, bindingName: string) => {
+    const binding = schema.properties?.[bindingName];
+    if (
+      typeof binding === "object" &&
+      binding !== null &&
+      "properties" in binding
+    ) {
+      const typeProperty = binding.properties?.__type;
+      if (
+        typeof typeProperty === "object" &&
+        typeProperty !== null &&
+        "const" in typeProperty
+      ) {
+        return typeProperty.const as string;
+      }
+    }
+    return undefined;
+  };
+
+  // Get all scopes (default + integration-specific)
+  const getAllScopes = (scopes?: string[]): AppScope[] => {
+    return [
+      ...DEFAULT_INTEGRATION_POLICIES.map((policy) => policy.resource),
+      ...(scopes ?? installState.scopes ?? []),
+    ].map((scope) => {
+      const { bindingName, toolName } = parseAppScope(scope);
+      return {
+        name: toolName ?? scope,
+        app:
+          installState.stateSchema && bindingName
+            ? getAppNameFromSchema(installState.stateSchema, bindingName)
+            : undefined,
+      };
+    });
+  };
+
   // Get dynamic permission descriptions for all scopes
-  const allScopes = getAllScopes(
-    installState.scopes ?? [],
-    installState.stateSchema,
-  );
+  const allScopes = getAllScopes(installState.scopes);
   const { permissions: dynamicPermissions, isLoading: permissionsLoading } =
     usePermissionDescriptions(allScopes);
 
@@ -191,8 +234,9 @@ export function useIntegrationInstallWithModal() {
       onSubmit: handleModalSubmit,
       onClose: handleModalClose,
       isLoading:
-        installCreatingApiKeyAndIntegration.isPending ||
+        createAPIKey.isPending ||
         getRegistryApp.isPending ||
+        createIntegration.isPending ||
         permissionsLoading,
     },
 

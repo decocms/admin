@@ -89,7 +89,7 @@ export function SetupIntegrationModal({
   );
 }
 
-export function VerifiedBadge() {
+function VerifiedBadge() {
   return (
     <div className="relative">
       <div className="absolute bg-primary rounded-full w-2 h-2 top-1 left-1" />

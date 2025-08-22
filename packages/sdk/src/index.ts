@@ -32,7 +32,6 @@ export * from "./hooks/trigger.ts";
 export * from "./hooks/wallet.ts";
 export * from "./hooks/workflows.ts";
 export * from "./hooks/roles.ts";
-export * from "./hooks/registry.ts";
 
 export * from "./models/agent.ts";
 export * from "./models/mcp.ts";

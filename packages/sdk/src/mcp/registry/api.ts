@@ -286,7 +286,7 @@ export const getRegistryApp = createTool({
         .from(DECO_CHAT_APPS_REGISTRY_TABLE)
         .select(SELECT_REGISTRY_APP_WITH_SCOPE_QUERY)
         .eq("id", ctx.id)
-        .maybeSingle();
+        .single();
 
       if (result.error) throw result.error;
       data = result.data;
@@ -297,7 +297,7 @@ export const getRegistryApp = createTool({
         .select(SELECT_REGISTRY_APP_WITH_SCOPE_QUERY)
         .eq(`${DECO_CHAT_REGISTRY_SCOPES_TABLE}.scope_name`, scopeName)
         .eq("name", appName)
-        .maybeSingle();
+        .single();
 
       if (result.error) throw result.error;
       data = result.data;

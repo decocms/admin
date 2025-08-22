@@ -5,7 +5,6 @@ import {
 } from "@tanstack/react-query";
 import {
   createIntegration,
-  CreateIntegrationPayload,
   deleteIntegration,
   listIntegrations,
   loadIntegration,
@@ -30,7 +29,7 @@ export const useCreateIntegration = () => {
   const { workspace } = useSDK();
 
   const create = useMutation({
-    mutationFn: (mcp: CreateIntegrationPayload) =>
+    mutationFn: (mcp: Partial<Integration>) =>
       createIntegration(workspace, mcp),
     onSuccess: (result) => {
       const agents = client.getQueryData<Agent[]>(KEYS.AGENT(workspace));
@@ -304,15 +303,6 @@ export const useInstallFromMarketplace = () => {
   });
 
   return mutation;
-};
-
-export const useMarketplaceAppSchema = (appName: string) => {
-  const { workspace } = useSDK();
-  return useSuspenseQuery({
-    queryKey: ["integrations", "marketplace", appName, "schema"],
-    queryFn: () =>
-      MCPClient.forWorkspace(workspace).DECO_GET_APP_SCHEMA({ appName }),
-  });
 };
 
 export const useCreateOAuthCodeForIntegration = () => {

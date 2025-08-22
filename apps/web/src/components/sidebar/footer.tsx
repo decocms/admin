@@ -1,5 +1,6 @@
 import { useWorkspaceWalletBalance, usePlan } from "@deco/sdk";
 import { Icon } from "@deco/ui/components/icon.tsx";
+import { User, Settings, LogOut } from "lucide-react";
 import {
   ResponsiveDropdown,
   ResponsiveDropdownContent,
@@ -72,7 +73,7 @@ function WalletBalance() {
   const { balance } = useWorkspaceWalletBalance();
   const plan = usePlan();
   const { state } = useSidebar();
-  const [flashAnimation, setFlashAnimation] = useState(false);
+
   
   // Use animated number for smooth counting
   const numericBalance = typeof balance === 'number' ? balance : 0;
@@ -84,27 +85,12 @@ function WalletBalance() {
     console.log('[SIDEBAR] Balance changed:', balance, 'Numeric:', numericBalance);
   }, [balance, numericBalance]);
 
-  // Listen for wallet bonus claimed event
-  useEffect(() => {
-    const handleBonusClaimed = (event: CustomEvent) => {
-      console.log('[SIDEBAR] Bonus claimed event received, starting flash animation');
-      setFlashAnimation(true);
-      setTimeout(() => {
-        console.log('[SIDEBAR] Flash animation timeout, setting to false');
-        setFlashAnimation(false);
-      }, 1200);
-    };
 
-    window.addEventListener('wallet-bonus-claimed', handleBonusClaimed as EventListener);
-    return () => {
-      window.removeEventListener('wallet-bonus-claimed', handleBonusClaimed as EventListener);
-    };
-  }, []);
 
   // Debug logging for animation state
   useEffect(() => {
-    console.log('[SIDEBAR] Animation state - flashAnimation:', flashAnimation, 'isCountingUp:', isCountingUp);
-  }, [flashAnimation, isCountingUp]);
+    console.log('[SIDEBAR] Animation state - isCountingUp:', isCountingUp);
+  }, [isCountingUp]);
 
   return (
     <SidebarMenuItem>
@@ -112,7 +98,7 @@ function WalletBalance() {
         tooltip={`Team Balance: ${formattedBalance}`} 
         className={cn(
           "bg-sidebar-accent hover:bg-sidebar-accent/80 h-auto p-3 transition-all duration-500 ease-out",
-          flashAnimation && "ring-2 ring-primary/50 bg-primary/10 scale-[1.02]"
+
         )}
       >
         <div className="flex flex-col gap-1 flex-1 min-w-0">
@@ -122,7 +108,7 @@ function WalletBalance() {
             <span 
               className={cn(
                 "text-sm text-muted-foreground transition-all duration-500 ease-out font-normal",
-                (flashAnimation || isCountingUp) && "text-primary font-semibold scale-110"
+                isCountingUp && "text-primary font-semibold scale-110"
               )}
             >
               {formattedBalance}
@@ -160,7 +146,7 @@ function LoggedUser() {
             to={workspaceLink("/settings/profile")}
             onClick={() => trackEvent("sidebar_profile_click")}
           >
-            <Icon name="person" size={16} />
+            <User size={16} />
             Profile Settings
           </Link>
         </ResponsiveDropdownItem>
@@ -169,7 +155,7 @@ function LoggedUser() {
             to={workspaceLink("/settings")}
             onClick={() => trackEvent("sidebar_settings_click")}
           >
-            <Icon name="settings" size={16} />
+            <Settings size={16} />
             Settings
           </Link>
         </ResponsiveDropdownItem>
@@ -180,7 +166,7 @@ function LoggedUser() {
             window.location.href = "/logout";
           }}
         >
-          <Icon name="logout" size={16} />
+          <LogOut size={16} />
           Log Out
         </ResponsiveDropdownItem>
       </ResponsiveDropdownContent>

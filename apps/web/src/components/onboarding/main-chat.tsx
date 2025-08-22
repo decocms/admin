@@ -4,49 +4,24 @@ import { Card, CardContent } from "@deco/ui/components/card.tsx";
 import { Button } from "@deco/ui/components/button.tsx";
 import { Icon } from "@deco/ui/components/icon.tsx";
 import { Skeleton } from "@deco/ui/components/skeleton.tsx";
-import { useCurrentTeam, useUpdateTeamTheme, WELL_KNOWN_AGENT_IDS, useWorkspaceWalletBalance, useClaimOnboardingBonus, useProfile, useMarketplaceIntegrations, MCPClient, useSDK } from "@deco/sdk";
+import { useCurrentTeam, WELL_KNOWN_AGENT_IDS, useProfile, useMarketplaceIntegrations, MCPClient, useSDK } from "@deco/sdk";
 import { DECO_CHAT_API } from "@deco/sdk/constants";
 import { motion, AnimatePresence } from "framer-motion";
-import { useQueryClient } from "@tanstack/react-query";
+
 import { AgentProvider } from "../agent/provider.tsx";
 import { ChatInput } from "../chat/chat-input.tsx";
 import { ChatMessages } from "../chat/chat-messages.tsx";
 import { useAgent } from "../agent/provider.tsx";
 import { ModelSelectorFigma } from "../chat/model-selector-figma.tsx";
 import { RichTextArea } from "../chat/rich-text.tsx";
+import { PageHeader } from "../common/page-header.tsx";
 
 
-interface ExtractedTheme {
-  variables: {
-    "--background": string;
-    "--foreground": string;
-    "--primary": string;
-    "--primary-foreground": string;
-    "--secondary": string;
-    "--secondary-foreground": string;
-    "--muted": string;
-    "--muted-foreground": string;
-    "--accent": string;
-    "--accent-foreground": string;
-    "--destructive": string;
-    "--destructive-foreground": string;
-    "--border": string;
-    "--input": string;
-    "--sidebar-accent": string;
-  };
-  isDark: boolean;
-}
+
 
 interface OnboardingState {
   step: "initial" | "chat";
-  extractedTheme?: ExtractedTheme;
-  themeStatus: "loading" | "ready" | "applied" | "skipped";
-  isLoadingTheme: boolean;
-  message: string;
-  companyName?: string;
-  claimedBonus: boolean;
-  isLoadingExtraSuggestions: boolean;
-  hasSeenThemeCard: boolean;
+  quickstartStatus: "visible" | "dismissed";
   cardClicked: boolean;
   companyContext?: {
     industry?: string;
@@ -81,23 +56,15 @@ function MainChatContent() {
   const { data: team } = useCurrentTeam();
   const { data: profile } = useProfile();
   const { workspace } = useSDK();
-  const { mutateAsync: updateTeamTheme, isPending: isUpdatingTheme } = useUpdateTeamTheme();
+
   const { chat, agent } = useAgent();
-  const walletBalance = useWorkspaceWalletBalance();
-  const { mutateAsync: claimBonus, isPending: isClaimingBonus } = useClaimOnboardingBonus();
   const { data: marketplaceIntegrations } = useMarketplaceIntegrations();
   
-  // For development: set forceShowTheme to true to always show the theme card
-  const forceShowTheme = true; // TODO: Set to false for production
+
   
   const [state, setState] = useState<OnboardingState>({
     step: "initial",
-    themeStatus: "loading",
-    isLoadingTheme: true,
-    message: "",
-    claimedBonus: false, // Reset for demo - was: localStorage.getItem(`team-${team?.id}-claimed-bonus`) === "true",
-    isLoadingExtraSuggestions: false,
-    hasSeenThemeCard: forceShowTheme ? false : localStorage.getItem(`team-${team?.id}-seen-theme-card`) === "true",
+    quickstartStatus: "visible",
     cardClicked: false,
   });
 
@@ -116,292 +83,33 @@ function MainChatContent() {
   }, [profile?.metadata?.full_name]);
 
   // Hardcoded company data for demo
-  const getCompanyData = (domain: string) => {
-    const companyData: Record<string, { theme: ExtractedTheme; context: any; companyName: string }> = {
-      "deco.cx": {
-        theme: {
-          variables: {
-            "--background": "#0c0c0c",
-            "--foreground": "#f4f4f5",
-            "--primary": "#d0ec1a",
-            "--primary-foreground": "#0c0c0c",
-            "--secondary": "#1c1c1e",
-            "--secondary-foreground": "#f4f4f5",
-            "--muted": "#1c1c1e",
-            "--muted-foreground": "#a1a1aa",
-            "--accent": "#d0ec1a",
-            "--accent-foreground": "#0c0c0c",
-            "--destructive": "#dc2626",
-            "--destructive-foreground": "#ffffff",
-            "--border": "#2c2c2e",
-            "--input": "#2c2c2e",
-            "--sidebar-accent": "#161618",
-          },
-          isDark: true,
-        },
-        companyName: "Deco",
-        context: {
-          industry: "Developer Tools",
-          description: "A modern platform for building web applications with AI-powered development tools and edge computing capabilities.",
-          businessType: "B2B SaaS",
-          keyActivities: ["web development", "AI tools", "edge computing", "developer experience"]
-        }
-      },
-      "stripe.com": {
-        theme: {
-          variables: {
-            "--background": "#ffffff",
-            "--foreground": "#0a0a0a",
-            "--primary": "#635bff",
-            "--primary-foreground": "#ffffff",
-            "--secondary": "#f6f9fc",
-            "--secondary-foreground": "#0a0a0a",
-            "--muted": "#f6f9fc",
-            "--muted-foreground": "#6b7280",
-            "--accent": "#635bff",
-            "--accent-foreground": "#ffffff",
-            "--destructive": "#dc2626",
-            "--destructive-foreground": "#ffffff",
-            "--border": "#e6ebf1",
-            "--input": "#e6ebf1",
-            "--sidebar-accent": "#f1f5f9",
-          },
-          isDark: false,
-        },
-        companyName: "Stripe",
-        context: {
-          industry: "Financial Technology",
-          description: "A technology company that builds economic infrastructure for the internet, enabling businesses to accept payments and manage their operations online.",
-          businessType: "B2B SaaS",
-          keyActivities: ["payment processing", "financial operations", "e-commerce", "subscription management", "fraud prevention"]
-        }
-      },
-      "linear.app": {
-        theme: {
-          variables: {
-            "--background": "#0d0e11",
-            "--foreground": "#f1f3f4",
-            "--primary": "#5e6ad2",
-            "--primary-foreground": "#ffffff",
-            "--secondary": "#1c1d21",
-            "--secondary-foreground": "#f1f3f4",
-            "--muted": "#1c1d21",
-            "--muted-foreground": "#9ca3af",
-            "--accent": "#5e6ad2",
-            "--accent-foreground": "#ffffff",
-            "--destructive": "#dc2626",
-            "--destructive-foreground": "#ffffff",
-            "--border": "#2d2e33",
-            "--input": "#2d2e33",
-            "--sidebar-accent": "#16171b",
-          },
-          isDark: true,
-        },
-        companyName: "Linear",
-        context: {
-          industry: "Project Management",
-          description: "A streamlined project management tool designed for modern software teams, focusing on speed, simplicity, and powerful workflows.",
-          businessType: "B2B SaaS",
-          keyActivities: ["project management", "issue tracking", "team collaboration", "software development", "workflow automation"]
-        }
-      },
-      "farmrio.com.br": {
-        theme: {
-          variables: {
-            "--background": "#fefefe",
-            "--foreground": "#1a1a1a",
-            "--primary": "#6b8e23",
-            "--primary-foreground": "#ffffff",
-            "--secondary": "#f5f7f0",
-            "--secondary-foreground": "#2d3e1f",
-            "--muted": "#f5f7f0",
-            "--muted-foreground": "#6b7280",
-            "--accent": "#f5f7f0",
-            "--accent-foreground": "#2d3e1f",
-            "--destructive": "#dc2626",
-            "--destructive-foreground": "#ffffff",
-            "--border": "#e8ede0",
-            "--input": "#e8ede0",
-            "--sidebar-accent": "#f0f3ea",
-          },
-          isDark: false,
-        },
-        companyName: "FARM Rio",
-        context: {
-          industry: "Fashion & Lifestyle",
-          description: "A vibrant Brazilian fashion brand known for colorful tropical prints and sustainable practices, celebrating Brazilian culture and nature.",
-          businessType: "B2C Retail",
-          keyActivities: ["fashion design", "retail operations", "sustainability initiatives", "brand collaborations"]
-        }
-      }
-    };
-
-    return companyData[domain] || companyData["deco.cx"];
-  };
-  
-  // Fetch theme on mount
-  useEffect(() => {
-    async function fetchTheme() {
-      // Skip theme loading if user has already seen the theme card
-      if (state.hasSeenThemeCard) {
-        setState(prev => ({
-          ...prev,
-          isLoadingTheme: false,
-          themeStatus: "skipped",
-          isLoadingExtraSuggestions: true,
-        }));
-        
-        // Simulate loading extra suggestions
-        setTimeout(() => {
-          setState(prev => ({
-            ...prev,
-            isLoadingExtraSuggestions: false,
-          }));
-        }, 1500);
-        return;
-      }
-
-      // Use hardcoded company data for demo
-      const companyData = getCompanyData(domain);
-      const extracted = companyData.theme;
-      const companyContext = companyData.context;
-      
-      setState(prev => ({
-        ...prev,
-        isLoadingTheme: false,
-        themeStatus: "ready",
-        extractedTheme: extracted,
-        message: `I noticed you're with ${domain}! I created a custom theme matching your brand.`,
-        companyName: companyData.companyName,
-        companyContext: companyContext,
-      }));
-    }
-    
-    fetchTheme();
-  }, [domain, teamSlug, state.hasSeenThemeCard]);
-  
-  const handleAcceptTheme = async () => {
-    if (!state.extractedTheme) return;
-    
-    try {
-      await updateTeamTheme({
-        teamId: String(team?.id ?? ""),
-        theme: {
-          variables: state.extractedTheme.variables,
-        },
-      });
-      
-      setState(prev => ({
-        ...prev,
-        themeStatus: "applied",
-        isLoadingExtraSuggestions: true,
-      }));
-
-      // Simulate loading extra suggestions
-      setTimeout(() => {
-        setState(prev => ({
-          ...prev,
-          isLoadingExtraSuggestions: false,
-        }));
-      }, 1500);
-    } catch (error) {
-      console.error("[MAIN_CHAT] handleAcceptTheme:error", error);
-    }
-  };
-  
-  const handleSkipTheme = () => {
-    setState(prev => ({
-      ...prev,
-      themeStatus: "skipped",
-      isLoadingExtraSuggestions: true,
-    }));
-
-    // Simulate loading extra suggestions
-    setTimeout(() => {
-      setState(prev => ({
-        ...prev,
-        isLoadingExtraSuggestions: false,
-      }));
-    }, 1500);
-  };
-
-  const queryClient = useQueryClient();
-  
-  const handleClaimBonus = async () => {
-    if (state.claimedBonus || isClaimingBonus) return;
-    
-    try {
-      // For demo purposes, we'll mock the bonus claim
-      // In production, this would call the actual API
-      
-      // Simulate API call delay
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      // Mark as claimed in localStorage
-      localStorage.setItem(`team-${team?.id}-claimed-bonus`, "true");
-      setState(prev => ({
-        ...prev,
-        claimedBonus: true,
-      }));
-      
-      // For demo: manually update the cached balance
-      // In real implementation, refetch() would get the updated balance from API
-      const currentBalance = typeof walletBalance.balance === 'number' ? walletBalance.balance : 0;
-      const newBalance = currentBalance + 2;
-      
-      console.log('[CLAIM_BONUS] Current balance:', currentBalance, 'New balance:', newBalance);
-      console.log('[CLAIM_BONUS] Workspace:', workspace);
-      
-      // Update the query cache directly for demo
-      queryClient.setQueryData(['wallet', workspace], (oldData: any) => {
-        console.log('[CLAIM_BONUS] Old data:', oldData);
-        const newData = {
-          ...oldData,
-          balance: newBalance,
-          balanceExact: newBalance.toString(),
-        };
-        console.log('[CLAIM_BONUS] New data:', newData);
-        return newData;
-      });
-      
-      // Trigger a custom event to animate the sidebar
-      setTimeout(() => {
-        window.dispatchEvent(new CustomEvent('wallet-bonus-claimed', { 
-          detail: { amount: 2 } 
-        }));
-      }, 100);
-      
-    } catch (error) {
-      console.error("Failed to claim bonus:", error);
-      // Could show a toast notification here
-    }
-  };
   
   // Generate AI-powered suggestions based on company context and available integrations
   const [aiSuggestions, setAiSuggestions] = useState<TaskSuggestion[]>([]);
   const [isGeneratingSuggestions, setIsGeneratingSuggestions] = useState(false);
   const generationInProgressRef = useRef(false);
 
-  // Generate AI suggestions when theme is hidden and we have company context
+  // Generate AI suggestions when we have marketplace integrations
   useEffect(() => {
     async function generateAISuggestions() {
-      // Only generate when theme is hidden (applied/skipped) and we have context
-      if (state.themeStatus === "ready" || state.themeStatus === "loading") {
-        console.log("[AI_SUGGESTIONS] Skipping generation - theme still visible", state.themeStatus);
-        return;
-      }
-
-      if (!state.companyContext || !marketplaceIntegrations?.integrations || generationInProgressRef.current) {
-        console.log("[AI_SUGGESTIONS] Skipping generation - missing context or already generating", {
-          hasContext: !!state.companyContext,
+      if (!marketplaceIntegrations?.integrations || generationInProgressRef.current) {
+        console.log("[AI_SUGGESTIONS] Skipping generation - missing integrations or already generating", {
           hasIntegrations: !!marketplaceIntegrations?.integrations,
           isGenerating: generationInProgressRef.current
         });
         return;
       }
 
+      // Use default company context for suggestions
+      const defaultContext = {
+        industry: "Technology",
+        description: "A modern web application with AI-powered tools and integrations",
+        businessType: "B2B SaaS",
+        keyActivities: ["data analysis", "content creation", "automation", "collaboration"]
+      };
+
       console.log("[AI_SUGGESTIONS] Starting AI generation...", {
-        companyContext: state.companyContext,
+        companyContext: defaultContext,
         integrationCount: marketplaceIntegrations.integrations.length,
         teamSlug: team?.slug
       });
@@ -434,10 +142,10 @@ function MainChatContent() {
               content: `Based on the company context and available tools, generate 6 task suggestions for onboarding.
 
 Company Context:
-- Industry: ${state.companyContext.industry}
-- Description: ${state.companyContext.description}
-- Business Type: ${state.companyContext.businessType}
-- Key Activities: ${state.companyContext.keyActivities?.join(', ')}
+- Industry: ${defaultContext.industry}
+- Description: ${defaultContext.description}
+- Business Type: ${defaultContext.businessType}
+- Key Activities: ${defaultContext.keyActivities?.join(', ')}
 
 Available Tools: ${availableTools.map((tool: any) => `${tool.name} (${tool.description || 'No description'})`).join(', ')}
 
@@ -545,7 +253,7 @@ Focus on practical tasks like data analysis, content creation, automation, resea
     }
 
     generateAISuggestions();
-  }, [state.themeStatus, state.companyContext, marketplaceIntegrations, team?.slug]);
+  }, [marketplaceIntegrations, team?.slug]);
 
   // Fallback suggestions if AI generation fails
   const generateFallbackSuggestions = (): TaskSuggestion[] => {
@@ -796,10 +504,37 @@ Please help me with this task. If you need any integrations, please install them
   
   return (
     <div className="flex flex-col h-full">
+      {/* Header with Discord and Documentation buttons */}
+      <PageHeader 
+        title=""
+        actionButtons={
+          <div className="flex items-center gap-2">
+            <Button 
+              variant="secondary" 
+              size="sm" 
+              className="rounded-xl px-3 py-2 bg-muted hover:bg-muted/80 text-muted-foreground"
+              onClick={() => window.open('https://discord.gg/your-server', '_blank')}
+            >
+              Get help on discord
+              <Icon name="arrow_outward" size={18} className="ml-1.5 opacity-50" />
+            </Button>
+            <Button 
+              variant="secondary" 
+              size="sm" 
+              className="rounded-xl px-3 py-2 bg-muted hover:bg-muted/80 text-muted-foreground"
+              onClick={() => window.open('https://docs.deco.cx', '_blank')}
+            >
+              Documentation
+              <Icon name="arrow_outward" size={18} className="ml-1.5 opacity-50" />
+            </Button>
+          </div>
+        }
+      />
+      
       {/* Main content area */}
       <div className={`flex-1 px-4 pt-6 pb-0 ${state.cardClicked ? 'flex flex-col items-center' : 'flex items-center justify-center'}`}>
         <div className={`w-full max-w-[800px] flex flex-col gap-8 ${state.cardClicked ? 'h-full' : ''}`}>
-          {/* Header - Hide after card is clicked */}
+          {/* Welcome Header - Hide after card is clicked */}
           <AnimatePresence>
             {!state.cardClicked && (
               <motion.div 
@@ -818,18 +553,7 @@ Please help me with this task. If you need any integrations, please install them
                 </p>
               </div>
               
-              {/* Claim $2 Button */}
-              {!state.claimedBonus && (
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={handleClaimBonus}
-                  disabled={isClaimingBonus}
-                  className="rounded-xl px-6 py-1.5 border-border text-foreground"
-                >
-                  {isClaimingBonus ? "Claiming..." : "Claim $2"}
-                </Button>
-              )}
+
               </motion.div>
             )}
           </AnimatePresence>
@@ -850,120 +574,87 @@ Please help me with this task. If you need any integrations, please install them
                 exit={{ opacity: 0, y: 20 }}
                 transition={{ duration: 0.3 }}
               >
-            {/* Theme Card - Spans full width when visible */}
-            {(state.themeStatus === "ready" || state.themeStatus === "loading") && (
+            {/* Quickstart Card - Spans left column when visible */}
+            {state.quickstartStatus === "visible" && (
               <motion.div
-                className="col-span-3 row-span-2"
+                className="col-span-1 row-span-2 bg-stone-700 rounded-3xl overflow-hidden flex flex-col"
                 initial={{ opacity: 0, scale: 0.95 }}
                 animate={{ opacity: 1, scale: 1 }}
                 exit={{ opacity: 0, scale: 0.95 }}
                 transition={{ duration: 0.3 }}
               >
-                <Card className="h-full bg-muted border-0 overflow-hidden rounded-3xl">
-                  <div className="flex h-full">
-                    {/* Left Content - Text and Actions */}
-                    <div className="flex flex-col justify-between p-6 flex-1 min-w-0">
-                      <div className="flex flex-col gap-4">
-                        <h3 className="text-lg font-medium text-foreground">Update your theme</h3>
-                        <p className="text-muted-foreground leading-relaxed">
-                          {state.isLoadingTheme 
-                            ? "Analyzing your website colors..." 
-                            : state.message}
-                        </p>
-                        
-                        {!state.isLoadingTheme && state.extractedTheme && (
-                          <div className="flex gap-0 items-center">
-                            {[
-                              state.extractedTheme.variables["--muted-foreground"],
-                              state.extractedTheme.variables["--foreground"], 
-                              state.extractedTheme.variables["--border"],
-                              state.extractedTheme.variables["--background"],
-                              state.extractedTheme.variables["--muted"],
-                              state.extractedTheme.variables["--accent"],
-                              state.extractedTheme.variables["--destructive"],
-                              state.extractedTheme.variables["--primary"],
-                            ].map((color, i) => (
-                              <div 
-                                key={i}
-                                className="w-6 h-6 rounded-[9px] border border-black/10 -mr-1.5 relative z-10"
-                                style={{ 
-                                  backgroundColor: color,
-                                  zIndex: 8 - i 
-                                }}
-                              />
-                            ))}
-                          </div>
-                        )}
+                {/* Close button */}
+                <button
+                  onClick={() => setState(prev => ({ ...prev, quickstartStatus: "dismissed" }))}
+                  className="absolute top-5 right-5 w-4 h-4 text-stone-400 hover:text-stone-200 z-10"
+                >
+                  <Icon name="close" size={16} />
+                </button>
+                
+                {/* Content */}
+                <div className="flex flex-col gap-10 p-6 pt-6 flex-1">
+                  <div className="flex flex-col gap-2">
+                    <p className="text-stone-400 text-xs">Quickstart</p>
+                    <h3 className="text-stone-50 text-lg font-medium">Create App</h3>
+                    <p className="text-stone-400 text-sm leading-relaxed">
+                      To create a new app you will need to use the CLI
+                    </p>
+                  </div>
+                  
+                  {/* Terminal mockup */}
+                  <div className="bg-stone-800 rounded-t-2xl flex-1 flex flex-col">
+                    {/* Terminal header */}
+                    <div className="flex items-center gap-1.5 px-3 py-2.5 border-b border-stone-700">
+                      <div className="flex gap-1">
+                        <div className="w-3 h-3 rounded-full bg-red-500" />
+                        <div className="w-3 h-3 rounded-full bg-yellow-500" />
+                        <div className="w-3 h-3 rounded-full bg-green-500" />
                       </div>
-                      
-                      {/* Actions */}
-                      {!state.isLoadingTheme && (
-                        <div className="flex gap-2">
-                          <Button
-                            variant="outline"
-                            onClick={handleSkipTheme}
-                            disabled={isUpdatingTheme}
-                            className="px-8 py-2 border-border text-foreground rounded-xl"
-                          >
-                            Skip
-                          </Button>
-                          <Button
-                            onClick={handleAcceptTheme}
-                            disabled={isUpdatingTheme}
-                            className="px-8 py-2 bg-foreground text-background rounded-xl"
-                          >
-                            {isUpdatingTheme ? "Applying..." : "Accept theme"}
-                          </Button>
-                        </div>
-                      )}
                     </div>
                     
-                    {/* Right Preview - Overflowing */}
-                    {!state.isLoadingTheme && state.extractedTheme && (
-                      <div className="flex-1 relative flex items-center justify-end overflow-hidden">
-                        <div className="w-[441px] h-[332px] rounded-[15px] border border-border shadow-2xl overflow-hidden translate-x-1/5">
-                          <div className="h-full flex scale-[0.5] origin-top-left bg-background" style={{ width: '200%', height: '200%' }}>
-                            {/* Sidebar */}
-                            <div className="w-[202px] p-4 bg-muted border-r border-border">
-                              <div className="h-10 w-20 rounded mb-8 bg-foreground opacity-20" />
-                              {[...Array(8)].map((_, i) => (
-                                <div key={i} className="flex items-center gap-4 p-4 rounded">
-                                  <div className="w-4 h-4 rounded-sm bg-foreground opacity-20" />
-                                  <div className="h-4 w-16 rounded bg-muted-foreground opacity-20" />
-                                </div>
-                              ))}
-                              <div className="flex items-center gap-4 p-4 rounded" style={{ backgroundColor: 'hsl(var(--accent) / 0.5)' }}>
-                                <div className="w-4 h-4 rounded-sm" style={{ backgroundColor: 'hsl(var(--accent))' }} />
-                                <div className="h-4 w-28 rounded" style={{ backgroundColor: 'hsl(var(--accent))' }} />
-                              </div>
-                            </div>
-                            {/* Main content */}
-                            <div className="flex-1 p-4 bg-background">
-                              <div className="h-14 border-b mb-4 border-border">
-                                <div className="h-10 w-40 rounded bg-foreground opacity-20" />
-                              </div>
-                              <div className="flex gap-4">
-                                <div className="flex-1 h-[800px] border rounded-lg bg-background border-border" />
-                                <div className="flex-1 h-[800px] border rounded-lg bg-background border-border" />
-                              </div>
-                            </div>
-                          </div>
-                        </div>
+                    {/* Terminal content */}
+                    <div className="flex-1 relative overflow-hidden">
+                      {/* Background lines for context */}
+                      <div className="absolute inset-0 p-4 opacity-20">
+                        {[...Array(12)].map((_, i) => (
+                          <div key={i} className="h-2.5 bg-stone-700 rounded mb-1" style={{ width: `${Math.random() * 60 + 40}%` }} />
+                        ))}
                       </div>
-                    )}
+                      
+                      {/* Actual command */}
+                      <div className="absolute bottom-0 left-0 right-0 p-8 flex flex-col gap-1">
+                        <div className="font-mono text-stone-50 text-sm">
+                          <span>deno -A jsr:@</span>
+                          <span className="text-[#d0ec1a]">deco</span>
+                          <span>/cli create</span>
+                        </div>
+                        <p className="text-stone-400 text-xs font-mono">press to copy</p>
+                      </div>
+                    </div>
                   </div>
-                </Card>
+                </div>
+                
+                {/* Learn more button */}
+                <div className="p-4 bg-stone-700">
+                  <Button 
+                    variant="secondary" 
+                    className="w-full bg-stone-50 text-stone-800 hover:bg-stone-100 rounded-xl h-9"
+                    onClick={() => window.open('https://docs.deco.cx', '_blank')}
+                  >
+                    Learn more
+                  </Button>
+                </div>
               </motion.div>
             )}
             
-            {/* Suggestions Grid - Only show after theme is accepted/skipped */}
-            {(state.themeStatus === "applied" || state.themeStatus === "skipped") && Array.from({ length: 6 }).map((_, index) => {
-              // Calculate grid position based on theme visibility
+            {/* Suggestions Grid - Always show task cards */}
+            {Array.from({ length: 6 }).map((_, index) => {
+              // Calculate grid position based on quickstart visibility
               let gridClass = "";
-              const isThemeVisible = state.themeStatus === "ready" || state.themeStatus === "loading";
+              const isQuickstartVisible = state.quickstartStatus === "visible";
               
-              if (isThemeVisible) {
-                // Theme is visible - 2x2 grid on the right
+              if (isQuickstartVisible) {
+                // Quickstart is visible - 2x2 grid on the right
                 const positions = [
                   "col-start-2 row-start-1",
                   "col-start-3 row-start-1", 
@@ -971,10 +662,10 @@ Please help me with this task. If you need any integrations, please install them
                   "col-start-3 row-start-2",
                 ];
                 gridClass = positions[index] || "";
-                // Only show 4 cards when theme is visible
+                // Only show 4 cards when quickstart is visible
                 if (index >= 4) return null;
               } else {
-                // Theme is hidden - 3x2 grid
+                // Quickstart is dismissed - 3x2 grid
                 const positions = [
                   "col-start-1 row-start-1",
                   "col-start-2 row-start-1",

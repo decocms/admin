@@ -329,10 +329,10 @@ pre .astro-code > *:first-child {
   --color-star: var(--star);
 
   /* Light Mode Colors */
-  --background: oklch(1 0 0);
+  --background: oklch(64.5% 0.246 16.439);
   --app-background: oklch(0.9848 0.0013 106.42);
   --foreground: oklch(26.8% 0.007 34.298);
-  --card: oklch(1 0 0);
+  --card: oklch(64.5% 0.246 16.439);
   --card-foreground: oklch(26.8% 0.007 34.298);
   --popover: oklch(1 0 0);
   --popover-foreground: oklch(26.8% 0.007 34.298);

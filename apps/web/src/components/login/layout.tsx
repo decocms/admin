@@ -31,7 +31,7 @@ export function SplitScreenLayout({ children }: { children: React.ReactNode }) {
           {/* Logo at bottom */}
           <div className="relative z-10 flex justify-end">
             <img
-              src="https://assets.decocache.com/decochat/e0d43f1b-8193-4e1f-9992-c94a28342cce/deochatlogo.svg"
+              src="https://assets.decocache.com/decochatweb/97a59aaf-6925-4b29-9f1a-f279589e0545/deco.svg"
               className="h-[60px] w-auto"
               alt="deco logo"
             />

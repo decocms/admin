@@ -140,6 +140,22 @@ const WorkflowDetailPage = lazy(() =>
   wrapWithUILoadingFallback(import("./components/workflows/detail.tsx")),
 );
 
+const ProductCatalogView = lazy(() =>
+  wrapWithUILoadingFallback(import("./components/localhost/components.tsx")),
+);
+
+const CheckoutFlowView = lazy(() =>
+  wrapWithUILoadingFallback(import("./components/localhost/functions.tsx")),
+);
+
+const AdminDashboardView = lazy(() =>
+  wrapWithUILoadingFallback(import("./components/localhost/connect.tsx")),
+);
+
+const AppDetail = lazy(() =>
+  wrapWithUILoadingFallback(import("./components/apps/detail.tsx")),
+);
+
 const AppAuth = lazy(() =>
   wrapWithUILoadingFallback(import("./components/apps/auth.tsx")),
 );
@@ -160,8 +176,10 @@ const BuilderDetailPage = lazy(() =>
   import("./components/discover/builder-detail.tsx").then(m => ({ default: m.BuilderDetailPage })),
 );
 
-const WorkspaceSelection = lazy(() =>
-  import("./components/workspace-selection/index.tsx").then(mod => ({ default: mod.WorkspaceSelectionLayout })),
+
+
+const Organization = lazy(() =>
+  import("./components/organization/index.tsx").then(mod => ({ default: mod.OrganizationLayout })),
 );
 
 function NotFound(): null {
@@ -184,8 +202,8 @@ function Home() {
     return <Navigate to={workspaceLink(DEFAULT_PATH)} replace />;
   }
   
-  // For root path, redirect to workspace selection
-  return <Navigate to="/workspace-selection" replace />;
+  // For root path, redirect to organization
+  return <Navigate to="/organization" replace />;
 }
 
 function ErrorFallback() {
@@ -315,9 +333,10 @@ const router = createBrowserRouter([
         path: "/apps-auth",
         Component: AppAuth,
       },
+
       {
-        path: "/workspace-selection",
-        Component: WorkspaceSelection,
+        path: "/organization",
+        Component: Organization,
       },
       {
         path: "/:teamSlug?",
@@ -353,6 +372,10 @@ const router = createBrowserRouter([
             path: "workflows/:workflowName/instances/:instanceId",
             Component: WorkflowDetailPage,
           },
+          { path: "apps/:appId", Component: AppDetail },
+          { path: "apps/my-ecommerce-app/views/product-catalog", Component: ProductCatalogView },
+          { path: "apps/my-ecommerce-app/views/checkout-flow", Component: CheckoutFlowView },
+          { path: "apps/my-ecommerce-app/views/admin-dashboard", Component: AdminDashboardView },
         ],
       },
       { path: "*", Component: NotFound },

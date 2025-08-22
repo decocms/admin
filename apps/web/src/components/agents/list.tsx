@@ -194,7 +194,7 @@ function Card({ agent }: { agent: Agent }) {
 
   return (
     <UICard
-      className="group cursor-pointer hover:shadow-md transition-shadow flex flex-col rounded-xl p-4 h-full"
+      className="group cursor-pointer hover:bg-accent transition-colors duration-200 ease-out flex flex-col rounded-xl p-4 h-full"
       onClick={() => {
         focusAgent(agent.id, crypto.randomUUID(), {
           history: false,

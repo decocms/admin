@@ -5,6 +5,7 @@ interface InstalledApp {
   name: string;
   icon?: string;
   installedAt: string;
+  status?: "connected" | "pending" | "disconnected";
 }
 
 const INSTALLED_APPS_KEY = "deco_installed_apps";

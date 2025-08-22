@@ -2,6 +2,11 @@ import { SingleFlight, singleFlight } from "../common/singleflight.ts";
 import { contextStorage } from "../fetch.ts";
 import { WebCache } from "./index.ts";
 
+export interface SWRCacheOptions {
+  revalidate?: boolean;
+  singleFlight?: boolean;
+}
+
 /**
  * Stale-While-Revalidate cache wrapper for async functions.
  *
@@ -40,8 +45,15 @@ export class SWRCache<T> {
    * @param revalidate - Whether to revalidate (default: true)
    * @returns Promise<T>
    */
-  cache(fn: () => Promise<T>, key: string, revalidate = true): Promise<T> {
-    return this._sf.do(key, async () => {
+  cache(
+    fn: () => Promise<T>,
+    key: string,
+    { revalidate, singleFlight }: SWRCacheOptions = {
+      revalidate: true,
+      singleFlight: false,
+    },
+  ): Promise<T> {
+    const fetchFn = async () => {
       // Use new metadata-aware method if stale TTL is configured
       if (this._staleTtlSeconds !== undefined) {
         const cached = await this._cache.getWithMetadata(
@@ -85,6 +97,10 @@ export class SWRCache<T> {
         });
 
       return freshPromise();
-    });
+    };
+    if (singleFlight) {
+      return this._sf.do(key, fetchFn);
+    }
+    return fetchFn();
   }
 }

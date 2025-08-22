@@ -1,6 +1,7 @@
 // deno-lint-ignore-file no-explicit-any
 import {
   CallToolResultSchema,
+  MCPTool,
   type DecoConnection,
   type HTTPConnection,
   type Integration,
@@ -9,7 +10,7 @@ import {
 import { createSessionTokenCookie } from "@deco/sdk/auth";
 import { WebCache } from "@deco/sdk/cache";
 import { SWRCache } from "@deco/sdk/cache/swr";
-import { type AppContext, fromWorkspaceString, MCPClient } from "@deco/sdk/mcp";
+import { fromWorkspaceString, MCPClient, type AppContext } from "@deco/sdk/mcp";
 import { slugify } from "@deco/sdk/memory";
 import type { ToolAction } from "@mastra/core";
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
@@ -74,12 +75,15 @@ export const swrListTools = (mcpServer: Integration, signal?: AbortSignal) => {
 };
 
 const getMCPServerTools = async (
-  mcpServer: Integration,
+  mcpServer: Integration & { tools?: MCPTool[] },
   agent: AIAgent,
   signal?: AbortSignal,
 ): Promise<Record<string, ToolAction<any, any, any>>> => {
   try {
-    const { tools } = await swrListTools(mcpServer, signal);
+    const { tools } =
+      mcpServer.tools && mcpServer.tools.length > 0
+        ? { tools: mcpServer.tools }
+        : await swrListTools(mcpServer, signal);
     const mtools: Record<
       string,
       ToolAction<any, any, any>
@@ -308,6 +312,7 @@ const handleMCPResponse = async (client: Client) => {
 
   return { tools: result.tools, instructions, capabilities, version };
 };
+
 export const swrMCPMetadata = (
   mcpServer: Pick<Integration, "connection" | "name">,
   ignoreCache = false,

@@ -152,7 +152,6 @@ export const contractRegister = createTool({
       context.contract as ContractState,
     );
     const url = new URL(`/contracts/mcp`, DECO_CHAT_API(c));
-    url.searchParams.set("contract", btoa(JSON.stringify(context.contract)));
 
     const { name, scopeName } = AppName.parse(assignor);
     const app = await publishApp.handler({

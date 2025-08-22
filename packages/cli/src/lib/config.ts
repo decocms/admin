@@ -48,6 +48,7 @@ const DecoBindingSchema = z.union([
           z.object({
             id: z.string().min(1),
             price: z.union([z.string(), z.number()]),
+            description: z.string().optional(),
           }),
         )
         .min(1),

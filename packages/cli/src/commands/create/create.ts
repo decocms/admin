@@ -216,10 +216,10 @@ export async function createCommand(
   try {
     // Clear the terminal for a clean experience
     console.clear();
-    
+
     // Display the capybara banner
     displayBanner();
-    
+
     let session = await readSession();
     if (!session) {
       console.log("🔐 No session found. Starting authentication process...");
@@ -269,14 +269,19 @@ export async function createCommand(
         workspace = await promptWorkspace(config?.local, workspace);
         console.log(`📁 Selected workspace: ${workspace}`);
       } catch (error) {
-        console.error("❌ Failed to select workspace:", error instanceof Error ? error.message : String(error));
+        console.error(
+          "❌ Failed to select workspace:",
+          error instanceof Error ? error.message : String(error),
+        );
         console.warn(
           "⚠️  Could not select workspace. Continuing without workspace selection.",
         );
         // Continue without workspace
       }
     } else {
-      console.log("⚠️  No authentication session - skipping workspace selection");
+      console.log(
+        "⚠️  No authentication session - skipping workspace selection",
+      );
     }
 
     const targetDir = join(process.cwd(), finalProjectName);

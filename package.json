@@ -45,6 +45,7 @@
     "**/.wrangler",
     "apps/web/public/**",
     "packages/runtime/src/cf-imports.ts",
+    "packages/create-deco/index.js",
     "docs/server/**",
     "docs/view/**"
   ],

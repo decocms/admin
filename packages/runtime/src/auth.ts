@@ -1,3 +1,6 @@
+import { jwtVerify } from "jose";
+import type { DefaultEnv } from "./index.ts";
+
 const DECO_APP_AUTH_COOKIE_NAME = "deco_page_auth";
 
 export interface State {
@@ -28,21 +31,41 @@ const parseCookies = (cookieHeader: string): Record<string, string> => {
   return cookies;
 };
 
-export const getReqToken = (req: Request) => {
-  // First try to get token from Authorization header
-  const authHeader = req.headers.get("Authorization");
-  if (authHeader) {
-    return authHeader.split(" ")[1];
+export const getReqToken = async (req: Request, env: DefaultEnv) => {
+  const token = () => {
+    // First try to get token from Authorization header
+    const authHeader = req.headers.get("Authorization");
+    if (authHeader) {
+      return authHeader.split(" ")[1];
+    }
+
+    // If not found, try to get from cookie
+    const cookieHeader = req.headers.get("Cookie");
+    if (cookieHeader) {
+      const cookies = parseCookies(cookieHeader);
+      return cookies[DECO_APP_AUTH_COOKIE_NAME];
+    }
+
+    return undefined;
+  };
+
+  const authToken = token();
+  if (!authToken) {
+    return undefined;
   }
 
-  // If not found, try to get from cookie
-  const cookieHeader = req.headers.get("Cookie");
-  if (cookieHeader) {
-    const cookies = parseCookies(cookieHeader);
-    return cookies[DECO_APP_AUTH_COOKIE_NAME];
-  }
+  env.DECO_CHAT_API_JWT_PUBLIC_KEY &&
+    (await jwtVerify(
+      authToken,
+      new TextEncoder().encode(env.DECO_CHAT_API_JWT_PUBLIC_KEY),
+      {
+        issuer: "https://api.deco.chat",
+      },
+    ).catch((err) => {
+      console.error(`[auth-token]: error validating: ${err}`);
+    }));
 
-  return undefined;
+  return authToken;
 };
 
 export interface AuthCallbackOptions {

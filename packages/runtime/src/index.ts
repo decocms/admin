@@ -340,7 +340,7 @@ export const withRuntime = <TEnv, TSchema extends z.ZodTypeAny = never>(
         const bindings = withBindings({
           env,
           server,
-          tokenOrContext: getReqToken(req),
+          tokenOrContext: await getReqToken(req, env),
           origin: referer ?? req.headers.get("origin"),
           url: req.url,
         });

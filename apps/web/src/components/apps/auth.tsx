@@ -35,9 +35,9 @@ import { generateDefaultValues } from "../json-schema/utils/generate-default-val
 import {
   useMarketplaceAppSchema,
   usePermissionDescriptions,
-  type AppScope,
 } from "@deco/sdk/hooks";
 import type { JSONSchema7 } from "json-schema";
+import { getAllScopes } from "../../utils/scopes.ts";
 import { VerifiedBadge } from "../integrations/marketplace.tsx";
 
 const preSelectTeam = (
@@ -249,54 +249,8 @@ const InlineCreateIntegrationForm = ({
     defaultValues: schema ? generateDefaultValues(schema) : {},
   });
 
-  // Default policies required for all integrations
-  const DEFAULT_INTEGRATION_POLICIES = [
-    { effect: "allow" as const, resource: "DATABASES_RUN_SQL" },
-  ];
-
-  const parseAppScope = (scope: string) => {
-    const [bindingName, toolName] = scope.split("::");
-    return { bindingName, toolName };
-  };
-
-  const getAppNameFromSchema = (schema: JSONSchema7, bindingName: string) => {
-    const binding = schema.properties?.[bindingName];
-    if (
-      typeof binding === "object" &&
-      binding !== null &&
-      "properties" in binding
-    ) {
-      const typeProperty = binding.properties?.__type;
-      if (
-        typeof typeProperty === "object" &&
-        typeProperty !== null &&
-        "const" in typeProperty
-      ) {
-        return typeProperty.const as string;
-      }
-    }
-    return undefined;
-  };
-
-  // Get all scopes (default + integration-specific)
-  const getAllScopes = (): AppScope[] => {
-    return [
-      ...DEFAULT_INTEGRATION_POLICIES.map((policy) => policy.resource),
-      ...scopes,
-    ].map((scope) => {
-      const { bindingName, toolName } = parseAppScope(scope);
-      return {
-        name: toolName ?? scope,
-        app:
-          schema && bindingName
-            ? getAppNameFromSchema(schema, bindingName)
-            : undefined,
-      };
-    });
-  };
-
   // Get permission descriptions
-  const allScopes = getAllScopes();
+  const allScopes = getAllScopes(scopes, schema);
   const { permissions } = usePermissionDescriptions(allScopes);
 
   const shouldShowPermissions = useMemo(() => {

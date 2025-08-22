@@ -1,10 +1,15 @@
 {
   "name": "@deco/workers-runtime",
-  "version": "0.1.0",
+  "version": "1.0.0",
   "type": "module",
+  "files": [
+    "dist",
+    "package.json",
+    "config-schema.json"
+  ],
   "scripts": {
-    "build": "node esbuild.config.mjs",
-    "dev": "node esbuild.config.mjs --watch",
+    "build": "bun run esbuild.config.ts",
+    "dev": "bun run esbuild.config.ts --watch",
     "clean": "rm -rf dist"
   },
   "dependencies": {
@@ -49,20 +54,14 @@
       "types": "./dist/drizzle.d.ts",
       "import": "./dist/drizzle.js",
       "default": "./dist/drizzle.js"
-    },
-    "./resources": {
-      "types": "./dist/resources.d.ts",
-      "import": "./dist/resources.js",
-      "default": "./dist/resources.js"
     }
   },
   "devDependencies": {
     "esbuild": "^0.25.9",
     "ts-json-schema-generator": "^2.4.0",
-    "typescript": "^5.3.3",
     "wrangler": "^4.13.2"
   },
   "engines": {
-    "node": ">=20.0.0"
+    "node": ">=22.0.0"
   }
 }

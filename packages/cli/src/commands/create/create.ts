@@ -13,6 +13,9 @@ import { slugify } from "../../lib/slugify.js";
 import { promptWorkspace } from "../../lib/prompt-workspace.js";
 import { genEnv } from "../gen/gen.js";
 import { promptIDESetup, writeIDEConfig } from "../../lib/prompt-ide-setup.js";
+import { readSession } from "../../lib/session.js";
+import { loginCommand } from "../auth/login.js";
+import { displayBanner } from "../../lib/banner.js";
 import process from "node:process";
 
 const __filename = fileURLToPath(import.meta.url);
@@ -211,6 +214,30 @@ export async function createCommand(
   config: Partial<Config> = {},
 ): Promise<void> {
   try {
+    // Clear the terminal for a clean experience
+    console.clear();
+    
+    // Display the capybara banner
+    displayBanner();
+    
+    let session = await readSession();
+    if (!session) {
+      console.log("🔐 No session found. Starting authentication process...");
+      try {
+        await loginCommand();
+        console.log("✅ Successfully logged in to deco.chat");
+        session = await readSession();
+      } catch (error) {
+        console.error(
+          "❌ Login failed:",
+          error instanceof Error ? error.message : String(error),
+        );
+        console.warn(
+          "⚠️  Continuing without authentication. You can run 'deco login' later for a better experience.",
+        );
+      }
+    }
+
     const selectedTemplate = DEFAULT_TEMPLATE;
 
     const finalProjectName = slugify(
@@ -235,17 +262,21 @@ export async function createCommand(
         ).projectName,
     );
 
-    // Prompt user to select workspace
+    // Prompt user to select workspace if we have a session
     let workspace: string | undefined = config?.workspace;
-    try {
-      workspace = await promptWorkspace(config?.local, workspace);
-      console.log(`📁 Selected workspace: ${workspace}`);
-    } catch (error) {
-      console.error(error);
-      console.warn(
-        "⚠️  Could not select workspace. Please run 'deco login' to authenticate for a better experience.",
-      );
-      // Continue without workspace
+    if (session) {
+      try {
+        workspace = await promptWorkspace(config?.local, workspace);
+        console.log(`📁 Selected workspace: ${workspace}`);
+      } catch (error) {
+        console.error("❌ Failed to select workspace:", error instanceof Error ? error.message : String(error));
+        console.warn(
+          "⚠️  Could not select workspace. Continuing without workspace selection.",
+        );
+        // Continue without workspace
+      }
+    } else {
+      console.log("⚠️  No authentication session - skipping workspace selection");
     }
 
     const targetDir = join(process.cwd(), finalProjectName);

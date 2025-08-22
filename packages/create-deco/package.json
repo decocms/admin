@@ -1,0 +1,31 @@
+{
+  "name": "create-deco",
+  "version": "1.0.2",
+  "description": "Create a new deco.chat project",
+  "main": "index.js",
+  "bin": {
+    "create-deco": "./index.js"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "create",
+    "deco",
+    "chat",
+    "template",
+    "scaffolding",
+    "cli"
+  ],
+  "author": "Deco team",
+  "license": "MIT",
+  "dependencies": {
+    "deco-cli": "^0.16.1"
+  },
+  "engines": {
+    "node": ">=22.0.0"
+  },
+  "publishConfig": {
+    "access": "public"
+  }
+}

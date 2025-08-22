@@ -8,7 +8,7 @@ import {
   recordToolSuccess,
   toolMetricsSnapshot,
 } from './tools/metrics';
-import { toolFactories } from './tools';
+import { toolFactories } from './tools/index';
 import { analyzeLinks } from './tools/link-analyzer/analyze';
 import { createPageSpeedTool } from './tools/pagespeed';
 import { createSeoAuditTool } from './tools/seo-audit';
@@ -57,16 +57,6 @@ function validateCoreSecrets(env: Env, host: string | null): string[] {
   if (isLocal) return missing;
   // Accept synonym names used across different workflows
   const groups: { keys: string[]; label: string; required: boolean }[] = [
-    {
-      keys: ['CF_API_TOKEN', 'CLOUDFLARE_API_TOKEN'],
-      label: 'CF_API_TOKEN',
-      required: true,
-    },
-    {
-      keys: ['CF_ACCOUNT_ID', 'CLOUDFLARE_ACCOUNT_ID'],
-      label: 'CF_ACCOUNT_ID',
-      required: true,
-    },
     { keys: ['SUPABASE_URL'], label: 'SUPABASE_URL', required: true },
     {
       keys: ['SUPABASE_SERVER_TOKEN'],

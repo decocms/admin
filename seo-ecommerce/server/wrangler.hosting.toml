@@ -7,10 +7,6 @@ compatibility_flags = [ "nodejs_compat" ]
 # Re-added for hosting workspace identification (previous removal caused deploy to switch workspace and fail domain update)
 scope = "alfanet"
 
-[assets]
-directory = "./view-build"
-binding = "ASSETS"
-
 [vars]
 PUBLIC_APP_ORIGIN = "https://seo-ecommercex.deco.page"
 PUBLIC_SUPABASE_URL = "https://bekbempccbkuyrvjuygr.supabase.co"

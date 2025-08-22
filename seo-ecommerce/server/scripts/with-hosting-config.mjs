@@ -16,6 +16,7 @@ const BINDINGS_TO_STRIP = (process.env.STRIP_KV_BINDINGS || 'SEO_CACHE')
   .split(',')
   .map((s) => s.trim())
   .filter(Boolean);
+const STRIP_ASSETS = process.env.STRIP_ASSETS === '1';
 
 function buildHostingConfig(original) {
   // Remove only [[kv_namespaces]] blocks whose binding matches BINDINGS_TO_STRIP
@@ -25,6 +26,16 @@ function buildHostingConfig(original) {
   let i = 0;
   while (i < lines.length) {
     const line = lines[i];
+    if (STRIP_ASSETS && line.trim() === '[assets]') {
+      // Skip entire [assets] table until next section header
+      i++;
+      while (i < lines.length) {
+        const l = lines[i].trim();
+        if (l.startsWith('[')) break;
+        i++;
+      }
+      continue;
+    }
     if (line.trim() === '[[kv_namespaces]]') {
       const block = [line];
       i++;

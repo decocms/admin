@@ -77,12 +77,20 @@ jobs:
           SUPABASE_SERVER_TOKEN: ${{ secrets.SUPABASE_SERVER_TOKEN }}
           CF_API_TOKEN: ${{ secrets.CF_API_TOKEN }}
           CF_ACCOUNT_ID: ${{ secrets.CF_ACCOUNT_ID }}
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
         run: |
-          core=(SUPABASE_URL SUPABASE_SERVER_TOKEN CF_API_TOKEN CF_ACCOUNT_ID)
+          # Allow CF_* or CLOUDFLARE_* naming
+          CF_API=${CF_API_TOKEN:-$CLOUDFLARE_API_TOKEN}
+          CF_ACCOUNT=${CF_ACCOUNT_ID:-$CLOUDFLARE_ACCOUNT_ID}
+          core=(SUPABASE_URL SUPABASE_SERVER_TOKEN)
           optional=(CF_ZONE_ID CF_R2_ACCESS_KEY_ID CF_R2_SECRET_ACCESS_KEY RESEND_API_KEY OPENROUTER_API_KEY WALLET_API_KEY ANTHROPIC_API_KEY OPENAI_API_KEY DEEPSEEK_API_KEY GOOGLE_API_KEY STRIPE_SECRET_KEY STRIPE_WEBHOOK_SECRET CURRENCY_API_KEY LLMS_ENCRYPTION_KEY DECO_CHAT_API_JWT_PUBLIC_KEY DECO_CHAT_API_JWT_PRIVATE_KEY)
           missing_core=()
           missing_opt=()
           for k in "${core[@]}"; do [ -z "${!k}" ] && missing_core+=("$k") || true; done
+          # Check CF api/account via fallbacks
+          [ -z "$CF_API" ] && missing_core+=("CF_API_TOKEN") || true
+          [ -z "$CF_ACCOUNT" ] && missing_core+=("CF_ACCOUNT_ID") || true
           for k in "${optional[@]}"; do [ -z "${!k}" ] && missing_opt+=("$k") || true; done
           if ((${#missing_core[@]})); then
             echo "::error::Missing core secrets: ${missing_core[*]}"; exit 1; fi
@@ -93,8 +101,8 @@ jobs:
       - name: Publish
         uses: cloudflare/wrangler-action@v3
         with:
-          apiToken: ${{ secrets.CF_API_TOKEN }}
-          accountId: ${{ secrets.CF_ACCOUNT_ID }}
+          apiToken: ${{ secrets.CF_API_TOKEN != '' && secrets.CF_API_TOKEN || secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CF_ACCOUNT_ID != '' && secrets.CF_ACCOUNT_ID || secrets.CLOUDFLARE_ACCOUNT_ID }}
           workingDirectory: './apps/api'
           wranglerVersion: '4.29.0'
           secrets: |
@@ -103,6 +111,6 @@ jobs:
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_SERVER_TOKEN: ${{ secrets.SUPABASE_SERVER_TOKEN }}
-          CF_API_TOKEN: ${{ secrets.CF_API_TOKEN }}
-          CF_ACCOUNT_ID: ${{ secrets.CF_ACCOUNT_ID }}
+          CF_API_TOKEN: ${{ secrets.CF_API_TOKEN != '' && secrets.CF_API_TOKEN || secrets.CLOUDFLARE_API_TOKEN }}
+          CF_ACCOUNT_ID: ${{ secrets.CF_ACCOUNT_ID != '' && secrets.CF_ACCOUNT_ID || secrets.CLOUDFLARE_ACCOUNT_ID }}
           CF_DISPATCH_NAMESPACE: 'deco-chat-prod'

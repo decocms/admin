@@ -5,15 +5,16 @@
   "scripts": {},
   "dependencies": {
     "@cloudflare/workers-types": "^4.20250617.0",
-    "zod": "^3.25.67",
+    "@deco/mcp": "npm:@jsr/deco__mcp@0.5.5",
+    "@dmitryrechkin/json-schema-to-zod": "1.0.1",
+    "@mastra/cloudflare-d1": "0.12.4",
     "@mastra/core": "0.12.1",
     "@modelcontextprotocol/sdk": "1.17.1",
-    "@deco/mcp": "npm:@jsr/deco__mcp@0.5.5",
-    "@mastra/cloudflare-d1": "0.12.4",
+    "drizzle-orm": "^0.44.3",
     "jose": "^6.0.11",
-    "zod-to-json-schema": "^3.24.4",
-    "@dmitryrechkin/json-schema-to-zod": "1.0.1",
-    "drizzle-orm": "^0.44.3"
+    "mime-types": "^3.0.1",
+    "zod": "^3.25.67",
+    "zod-to-json-schema": "^3.24.4"
   },
   "exports": {
     ".": "./src/index.ts",
@@ -21,7 +22,8 @@
     "./client": "./src/client.ts",
     "./mastra": "./src/mastra.ts",
     "./drizzle": "./src/drizzle.ts",
-    "./d1": "./src/d1-store.ts"
+    "./d1": "./src/d1-store.ts",
+    "./resources": "./src/resources.ts"
   },
   "devDependencies": {
     "ts-json-schema-generator": "^2.4.0",

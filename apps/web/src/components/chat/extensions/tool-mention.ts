@@ -4,7 +4,15 @@ import { ReactNodeViewRenderer } from "@tiptap/react";
 import { suggestion } from "./tool-suggestion.ts";
 import ToolMentionNode from "./tool-mention-node.tsx";
 
-export const toolMentions = (tools: Tool[]) => {
+export const toolMentions = (args: {
+  tools: Tool[];
+  resourceSearchers: Array<{
+    integration: { id: string; name: string; icon?: string };
+    connection: unknown;
+    searchToolNames: string[];
+  }>;
+}) => {
+  const { tools, resourceSearchers } = args;
   const toolMap = new Map<string, Tool>(tools.map((tool) => [tool.id, tool]));
 
   return Mention.extend({
@@ -51,7 +59,7 @@ export const toolMentions = (tools: Tool[]) => {
       ];
     },
   }).configure({
-    suggestion: suggestion(tools),
+    suggestion: suggestion({ tools, resourceSearchers }),
     renderText({ node }) {
       const tool = toolMap.get(node.attrs.id);
       return tool ? `@${tool.name}` : `@${node.attrs.id}`;

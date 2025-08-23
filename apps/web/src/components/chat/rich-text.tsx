@@ -1,4 +1,5 @@
 import { useIntegrations, type Integration } from "@deco/sdk";
+import { Binding, WellKnownBindings } from "@deco/sdk/mcp/bindings";
 import { cn } from "@deco/ui/lib/utils.ts";
 import Placeholder from "@tiptap/extension-placeholder";
 import { EditorContent, useEditor, type Extensions } from "@tiptap/react";
@@ -92,6 +93,32 @@ export function RichTextArea({
       );
   }, [integrations]);
 
+  const resourceSearchers = useMemo(() => {
+    const SEARCH_TOOL_RE = /^DECO_CHAT_RESOURCES_SEARCH_([A-Z]+)$/;
+    return (integrations as IntegrationWithTools[])
+      .filter((integration) => {
+        const toolsList = integration.tools ?? [];
+        return Binding(WellKnownBindings.Resources as any).isImplementedBy(
+          toolsList.map((t) => ({ name: t.name })) as Array<{ name: string }>,
+        );
+      })
+      .map((integration) => {
+        const searchToolNames = (integration.tools ?? [])
+          .map((t) => t.name)
+          .filter((name) => SEARCH_TOOL_RE.test(name));
+        return {
+          integration: {
+            id: integration.id,
+            name: integration.name,
+            icon: integration.icon,
+          },
+          connection: (integration as Integration).connection,
+          searchToolNames,
+        };
+      })
+      .filter((s) => s.searchToolNames.length > 0);
+  }, [integrations]);
+
   const extensions: Extensions = useMemo(() => {
     const extensions: Extensions = [
       StarterKit,
@@ -107,11 +134,11 @@ export function RichTextArea({
     ];
 
     if (enableToolMentions) {
-      extensions.push(toolMentions(tools));
+      extensions.push(toolMentions({ tools, resourceSearchers }));
     }
 
     return extensions;
-  }, [allowNewLine, placeholder, enableToolMentions, tools]);
+  }, [allowNewLine, placeholder, enableToolMentions, tools, resourceSearchers]);
 
   const editor = useEditor({
     extensions,

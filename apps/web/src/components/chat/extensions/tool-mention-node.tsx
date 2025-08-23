@@ -2,7 +2,7 @@ import { IntegrationAvatar } from "../../common/avatar/integration.tsx";
 import { Badge } from "@deco/ui/components/badge.tsx";
 import { NodeViewWrapper, type ReactNodeViewProps } from "@tiptap/react";
 import { cn } from "@deco/ui/lib/utils.ts";
-import { type ToolOption } from "./tool-suggestion.ts";
+import { type ToolOption, type ResourceOption } from "./tool-suggestion.ts";
 
 export default function ToolMentionNode({
   node,
@@ -11,9 +11,20 @@ export default function ToolMentionNode({
   const label = node.attrs.label;
   const id = node.attrs.id;
 
-  // Try to get the tool data from the extension
-  const items = extension.options.suggestion?.items?.({ query: label }) || [];
-  const toolItem = items.find((item: ToolOption) => item.id === id);
+  // Try to get the item data from the extension (may be tool or resource)
+  const maybeItems = extension.options.suggestion?.items?.({ query: label });
+  const items = Array.isArray(maybeItems) ? maybeItems : [];
+  const item = items.find((it: ToolOption | ResourceOption) => it.id === id) as
+    | ToolOption
+    | ResourceOption
+    | undefined;
+  const isTool = item && (item as ToolOption).type === "tool";
+  const integration = isTool
+    ? (item as ToolOption).tool.integration
+    : (item as ResourceOption | undefined)?.integration;
+  const displayLabel = isTool
+    ? (item as ToolOption).tool.name
+    : ((item as ResourceOption | undefined)?.label ?? label ?? "Unknown");
 
   return (
     <NodeViewWrapper as="span" data-id={id} data-type="tool-mention">
@@ -25,14 +36,12 @@ export default function ToolMentionNode({
         )}
       >
         <IntegrationAvatar
-          url={toolItem?.tool?.integration?.icon}
-          fallback={toolItem?.tool?.integration?.name || "Unknown"}
+          url={integration?.icon}
+          fallback={integration?.name || "Unknown"}
           size="xs"
           className="w-3 h-3"
         />
-        <span className="leading-none">
-          {toolItem?.tool?.name || label || "Unknown tool"}
-        </span>
+        <span className="leading-none">{displayLabel}</span>
       </Badge>
     </NodeViewWrapper>
   );

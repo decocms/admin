@@ -1,12 +1,21 @@
 import type { ToolBinder } from "../index.ts";
 
 export const Binding = <TDefinition extends readonly ToolBinder[]>(
-  binder: TDefinition,
+  binderTools: TDefinition,
 ) => {
   return {
     isImplementedBy: (tools: Pick<ToolBinder, "name">[]) => {
-      return binder.every(
-        (tool) => tool.opt || tools.some((t) => t.name === tool.name),
+      const requiredTools = binderTools
+        .filter((tool) => !tool.opt)
+        .map(
+          (tool) =>
+            typeof tool.name === "string"
+              ? new RegExp(`^${tool.name}$`) // exact match
+              : (tool.name as RegExp), // regex match
+        );
+
+      return requiredTools.every((regexp) =>
+        tools.some((t) => regexp.test(t.name)),
       );
     },
   };

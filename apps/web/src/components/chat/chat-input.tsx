@@ -26,6 +26,8 @@ export function ChatInput({ disabled }: { disabled?: boolean } = {}) {
   const { preferences, setPreferences } = useUserPreferences();
   const model = preferences.defaultModel;
 
+  const canSubmit = !isLoading && input.trim() && !uploadedFiles.some((uf) => uf.status === "uploading");
+
   const handleRichTextChange = (markdown: string) => {
     handleInputChange({
       target: { value: markdown },
@@ -49,7 +51,7 @@ export function ChatInput({ disabled }: { disabled?: boolean } = {}) {
 
   const handleKeyDown = (e: KeyboardEvent<HTMLDivElement>) => {
     if (e.key === "Enter" && !e.shiftKey && !isMobile) {
-      if (!isLoading && input.trim()) {
+      if (canSubmit) {
         e.preventDefault();
         const formEvent = new Event("submit", {
           bubbles: true,
@@ -142,7 +144,7 @@ export function ChatInput({ disabled }: { disabled?: boolean } = {}) {
                   <Button
                     type={isLoading ? "button" : "submit"}
                     size="icon"
-                    disabled={!isLoading && !input.trim()}
+                    disabled={!canSubmit}
                     onClick={isLoading ? stop : undefined}
                     className="h-8 w-8 transition-all hover:opacity-70"
                     title={

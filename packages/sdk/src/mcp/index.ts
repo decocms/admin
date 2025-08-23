@@ -211,14 +211,14 @@ export type ToolLike<
 > = Tool<TName, TInput, TReturn>;
 
 export type ToolBinder<
-  TName extends string = string,
+  TName extends string | RegExp = string,
   // deno-lint-ignore no-explicit-any
   TInput = any,
   TReturn extends object | null | boolean = object,
-> = Pick<
-  ToolLike<TName, TInput, TReturn>,
-  "name" | "inputSchema" | "outputSchema"
-> & { opt?: true };
+> = Pick<ToolLike<string, TInput, TReturn>, "inputSchema" | "outputSchema"> & {
+  opt?: true;
+  name: TName;
+};
 
 const global = createMCPToolsStub({
   tools: GLOBAL_TOOLS,

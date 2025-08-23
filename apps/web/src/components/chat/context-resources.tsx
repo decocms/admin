@@ -40,6 +40,11 @@ import { useAgent } from "../agent/provider.tsx";
 import { IntegrationIcon } from "../integrations/common.tsx";
 import { SelectConnectionDialog } from "../integrations/select-connection-dialog.tsx";
 import { formatToolName } from "./utils/format-tool-name.ts";
+import {
+  onResourceError,
+  onResourceLoaded,
+  onResourceLoading,
+} from "../../utils/events.ts";
 
 interface IntegrationWithTools extends Integration {
   tools?: Array<{
@@ -53,6 +58,7 @@ export interface UploadedFile {
   url?: string;
   status: "uploading" | "done" | "error";
   error?: string;
+  clientId?: string;
 }
 
 const useGlobalDrop = (handleFileDrop: (e: DragEvent) => void) => {
@@ -307,6 +313,71 @@ export function ContextResources({
   }
 
   const isDragging = useGlobalDrop(handleFileDrop);
+
+  // Listen for resource lifecycle events from mentions and manage uploadedFiles
+  useEffect(() => {
+    const offLoading = onResourceLoading(({ detail }) => {
+      if (!detail?.clientId) return;
+      const file = new File([new Blob()], detail.name || "resource", {
+        type: detail.contentType || "application/octet-stream",
+      });
+      setUploadedFiles((prev) => [
+        ...prev,
+        { file, status: "uploading", clientId: detail.clientId },
+      ]);
+    });
+
+    const offLoaded = onResourceLoaded(async ({ detail }) => {
+      if (!detail?.clientId || !detail?.url) return;
+      try {
+        const res = await fetch(detail.url);
+        const blob = await res.blob();
+        const file = new File([blob], detail.name || "resource", {
+          type: detail.contentType || blob.type || "application/octet-stream",
+        });
+        setUploadedFiles((prev) =>
+          prev.map((uf) =>
+            uf.clientId === detail.clientId
+              ? { ...uf, file, url: detail.url, status: "done" }
+              : uf,
+          ),
+        );
+      } catch (err) {
+        setUploadedFiles((prev) =>
+          prev.map((uf) =>
+            uf.clientId === detail.clientId
+              ? {
+                  ...uf,
+                  status: "error",
+                  error: err instanceof Error ? err.message : "Failed to load",
+                }
+              : uf,
+          ),
+        );
+      }
+    });
+
+    const offError = onResourceError(({ detail }) => {
+      if (!detail?.clientId) return;
+      setUploadedFiles((prev) =>
+        prev.map((uf) =>
+          uf.clientId === detail.clientId
+            ? {
+                ...uf,
+                status: "error",
+                error: detail.error || "Failed to read",
+              }
+            : uf,
+        ),
+      );
+    });
+
+    return () => {
+      offLoading();
+      offLoaded();
+      offError();
+    };
+  }, [setUploadedFiles]);
 
   return (
     <div className="w-full mx-auto">

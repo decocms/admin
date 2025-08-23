@@ -2,6 +2,7 @@ import { type Tool } from "../rich-text.tsx";
 import { ReactRenderer } from "@tiptap/react";
 import type { SuggestionOptions } from "@tiptap/suggestion";
 import tippy, { type Instance, type Props } from "tippy.js";
+import { callTool } from "@deco/sdk";
 
 export interface ToolOption {
   id: string;
@@ -11,28 +12,50 @@ export interface ToolOption {
   tool: Tool;
 }
 
-export const suggestion: (
-  tools: Tool[],
-) => Partial<SuggestionOptions<ToolOption>> = (tools) => {
+export interface ResourceOption {
+  id: string;
+  type: "resource";
+  label: string;
+  description?: string;
+  resource: {
+    name: string;
+    title?: string;
+    description?: string;
+    uri: string;
+    mimeType?: string;
+    annotations?: Record<string, string>;
+  };
+  integration: { id: string; name: string; icon?: string };
+  resourceType: string;
+  connection: unknown;
+}
+
+type SuggestionItem = ToolOption | ResourceOption;
+
+export const suggestion: (args: {
+  tools: Tool[];
+  resourceSearchers: Array<{
+    integration: { id: string; name: string; icon?: string };
+    connection: unknown;
+    searchToolNames: string[];
+  }>;
+}) => Partial<SuggestionOptions<SuggestionItem>> = ({
+  tools,
+  resourceSearchers,
+}) => {
   return {
     char: "@",
     items: (props) => {
       const { query } = props;
-
+      const ql = query?.toLowerCase() ?? "";
       const filteredTools = tools.filter((tool) => {
-        const matchesQuery =
-          tool.name.toLowerCase().includes(query?.toLowerCase() ?? "") ||
-          tool.description
-            ?.toLowerCase()
-            .includes(query?.toLowerCase() ?? "") ||
-          tool.integration.name
-            .toLowerCase()
-            .includes(query?.toLowerCase() ?? "");
-
-        return matchesQuery;
+        return (
+          tool.name.toLowerCase().includes(ql) ||
+          tool.description?.toLowerCase().includes(ql) ||
+          tool.integration.name.toLowerCase().includes(ql)
+        );
       });
-
-      return filteredTools
+      const toolItems: ToolOption[] = filteredTools
         .map(
           (tool): ToolOption => ({
             id: tool.id,
@@ -43,10 +66,156 @@ export const suggestion: (
           }),
         )
         .slice(0, 10);
+      return toolItems as SuggestionItem[];
     },
     render: () => {
       let component: ReactRenderer | null = null;
       let popup: Instance<Props>[] | null = null;
+      let activeSerial = 0;
+      let debounceTimer: number | undefined;
+
+      const perIntegrationLimit = 5;
+      const updateProgressively = (
+        baseProps: any,
+        baseItems: SuggestionItem[],
+        query: string,
+      ) => {
+        const mySerial = ++activeSerial;
+        const q = query.trim();
+        if (!q || q.length < 2 || resourceSearchers.length === 0) {
+          component?.updateProps({
+            ...baseProps,
+            items: baseItems,
+            isLoading: false,
+            pendingCategories: [],
+          });
+          return;
+        }
+
+        // Seed with base items immediately
+        component?.updateProps({
+          ...baseProps,
+          items: baseItems,
+          isLoading: true,
+        });
+
+        const accum: ResourceOption[] = [];
+        const pendingCount = new Map<string, number>(); // key = `${serverId}:${resourceType}`
+
+        // Prime pending counts
+        for (const searcher of resourceSearchers) {
+          for (const toolName of searcher.searchToolNames) {
+            const resourceType =
+              toolName.match(/^DECO_CHAT_RESOURCES_SEARCH_([A-Z]+)$/)?.[1] ??
+              "";
+            const key = `${searcher.integration.id}:${resourceType}`;
+            pendingCount.set(key, (pendingCount.get(key) ?? 0) + 1);
+          }
+        }
+        component?.updateProps({
+          ...baseProps,
+          items: baseItems,
+          isLoading: true,
+          pendingCategories: Array.from(pendingCount.keys()),
+        });
+
+        const searches = resourceSearchers.flatMap((searcher) =>
+          searcher.searchToolNames.map((toolName) => {
+            const resourceType =
+              toolName.match(/^DECO_CHAT_RESOURCES_SEARCH_([A-Z]+)$/)?.[1] ??
+              "";
+            const pendingKey = `${searcher.integration.id}:${resourceType}`;
+            return callTool(searcher.connection as any, {
+              name: toolName,
+              arguments: { term: q, limit: perIntegrationLimit },
+            })
+              .then((result: any) => {
+                if (mySerial !== activeSerial) return; // cancelled
+                const structured = result?.structuredContent;
+                const items = structured?.items ?? [];
+                if (!Array.isArray(items)) return;
+                const mapped = items.slice(0, perIntegrationLimit).map(
+                  (r: any): ResourceOption => ({
+                    id: r?.uri ?? `${searcher.integration.id}:${r?.name ?? ""}`,
+                    type: "resource",
+                    label: r?.title ?? r?.name ?? r?.uri ?? "Unknown",
+                    description: r?.description,
+                    resource: {
+                      name: r?.name,
+                      title: r?.title,
+                      description: r?.description,
+                      uri: r?.uri,
+                      mimeType: r?.mimeType,
+                      annotations: r?.annotations,
+                    },
+                    integration: searcher.integration,
+                    resourceType,
+                    connection: searcher.connection,
+                  }),
+                );
+                accum.push(...mapped);
+                if (mySerial !== activeSerial) return; // cancelled
+                const combined = [...accum, ...baseItems].slice(0, 12);
+                component?.updateProps({
+                  ...baseProps,
+                  items: combined,
+                  isLoading: true,
+                  pendingCategories: Array.from(pendingCount.keys()),
+                });
+              })
+              .catch(() => {
+                // ignore
+              })
+              .finally(() => {
+                if (mySerial !== activeSerial) return;
+                const remaining = (pendingCount.get(pendingKey) ?? 1) - 1;
+                if (remaining <= 0) pendingCount.delete(pendingKey);
+                else pendingCount.set(pendingKey, remaining);
+                component?.updateProps({
+                  ...baseProps,
+                  items: [...accum, ...baseItems].slice(0, 12),
+                  isLoading: pendingCount.size > 0,
+                  pendingCategories: Array.from(pendingCount.keys()),
+                });
+              });
+          }),
+        );
+        // Finalize loading state once all searches have settled
+        Promise.allSettled(searches).then(() => {
+          if (mySerial !== activeSerial) return; // cancelled
+          const combined = [...accum, ...baseItems].slice(0, 12);
+          component?.updateProps({
+            ...baseProps,
+            items: combined,
+            isLoading: false,
+            pendingCategories: Array.from(pendingCount.keys()),
+          });
+        });
+      };
+
+      const computeBaseItems = (
+        query: string,
+        toolsArg: Tool[],
+      ): SuggestionItem[] => {
+        const ql = query?.toLowerCase() ?? "";
+        const filtered = toolsArg.filter(
+          (tool) =>
+            tool.name.toLowerCase().includes(ql) ||
+            tool.description?.toLowerCase().includes(ql) ||
+            tool.integration.name.toLowerCase().includes(ql),
+        );
+        return filtered
+          .map(
+            (tool): ToolOption => ({
+              id: tool.id,
+              type: "tool",
+              label: tool.name,
+              description: tool.description,
+              tool,
+            }),
+          )
+          .slice(0, 10);
+      };
 
       return {
         onStart: async (props) => {
@@ -78,15 +247,26 @@ export const suggestion: (
             placement: "top-start",
             maxWidth: 400,
           });
+
+          // Progressive update kick-off
+          const baseItems = computeBaseItems(props.query ?? "", tools);
+          if (debounceTimer) clearTimeout(debounceTimer);
+          debounceTimer = window.setTimeout(() => {
+            updateProgressively(props, baseItems, props.query ?? "");
+          }, 150);
         },
 
         onUpdate(props) {
-          component?.updateProps(props);
-
           popup?.[0]?.setProps({
             // @ts-expect-error - tippy is not well typed
             getReferenceClientRect: props.clientRect,
           });
+
+          const baseItems = computeBaseItems(props.query ?? "", tools);
+          if (debounceTimer) clearTimeout(debounceTimer);
+          debounceTimer = window.setTimeout(() => {
+            updateProgressively(props, baseItems, props.query ?? "");
+          }, 150);
         },
 
         onKeyDown(props) {

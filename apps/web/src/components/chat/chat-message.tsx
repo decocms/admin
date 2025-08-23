@@ -147,7 +147,9 @@ export function ChatMessage({
     minute: "2-digit",
   });
 
-  const attachments = message.experimental_attachments as MessageAttachment[] | undefined;
+  const attachments = message.experimental_attachments as
+    | MessageAttachment[]
+    | undefined;
 
   const handleCopy = async () => {
     const content = message.parts
@@ -264,9 +266,14 @@ export function ChatMessage({
 
           {attachments && attachments.length > 0 && (
             <div className="mt-2 flex flex-wrap gap-2">
-              {attachments.map((attachment: MessageAttachment, index: number) => (
-                <AttachmentCard key={`${message.id}-${index}`} attachment={attachment} />
-              ))}
+              {attachments.map(
+                (attachment: MessageAttachment, index: number) => (
+                  <AttachmentCard
+                    key={`${message.id}-${index}`}
+                    attachment={attachment}
+                  />
+                ),
+              )}
             </div>
           )}
 
@@ -306,10 +313,20 @@ function ImagePart({ image }: { image: string }) {
 }
 
 function AttachmentCard({ attachment }: { attachment: MessageAttachment }) {
-  const contentType = attachment.contentType || (attachment.url.startsWith("data:") ? attachment.url.split(":")[1]?.split(";")[0] : undefined) || "application/octet-stream";
+  const contentType =
+    attachment.contentType ||
+    (attachment.url.startsWith("data:")
+      ? attachment.url.split(":")[1]?.split(";")[0]
+      : undefined) ||
+    "application/octet-stream";
   const isImage = contentType.startsWith("image/");
   const isPDF = contentType.startsWith("application/pdf");
-  const isText = contentType.startsWith("text/") || contentType === "application/json" || contentType.endsWith("+json") || contentType.endsWith("+xml") || contentType === "application/xml";
+  const isText =
+    contentType.startsWith("text/") ||
+    contentType === "application/json" ||
+    contentType.endsWith("+json") ||
+    contentType.endsWith("+xml") ||
+    contentType === "application/xml";
 
   if (isImage) {
     return (
@@ -346,7 +363,9 @@ function AttachmentCard({ attachment }: { attachment: MessageAttachment }) {
             <span className="text-xs text-foreground font-medium truncate max-w-[220px]">
               {attachment.name ?? "PDF Document"}
             </span>
-            <span className="text-[10px] text-muted-foreground truncate max-w-[220px]">{contentType}</span>
+            <span className="text-[10px] text-muted-foreground truncate max-w-[220px]">
+              {contentType}
+            </span>
           </div>
         </div>
       </a>
@@ -354,7 +373,9 @@ function AttachmentCard({ attachment }: { attachment: MessageAttachment }) {
   }
 
   if (isText) {
-    return <TextPreviewCard attachment={attachment} contentType={contentType} />;
+    return (
+      <TextPreviewCard attachment={attachment} contentType={contentType} />
+    );
   }
 
   return (
@@ -372,14 +393,22 @@ function AttachmentCard({ attachment }: { attachment: MessageAttachment }) {
           <span className="text-xs text-foreground font-medium truncate max-w-[220px]">
             {attachment.name ?? "Document"}
           </span>
-          <span className="text-[10px] text-muted-foreground truncate max-w-[220px]">{contentType}</span>
+          <span className="text-[10px] text-muted-foreground truncate max-w-[220px]">
+            {contentType}
+          </span>
         </div>
       </div>
     </a>
   );
 }
 
-function TextPreviewCard({ attachment, contentType }: { attachment: MessageAttachment; contentType: string }) {
+function TextPreviewCard({
+  attachment,
+  contentType,
+}: {
+  attachment: MessageAttachment;
+  contentType: string;
+}) {
   const [text, setText] = useState<string | null>(null);
   const [expanded, setExpanded] = useState(false);
   const [copied, setCopied] = useState(false);
@@ -428,7 +457,9 @@ function TextPreviewCard({ attachment, contentType }: { attachment: MessageAttac
               <span className="text-xs text-foreground font-medium truncate max-w-[260px]">
                 {attachment.name ?? "Text file"}
               </span>
-              <span className="text-[10px] text-muted-foreground truncate max-w-[260px]">{contentType}</span>
+              <span className="text-[10px] text-muted-foreground truncate max-w-[260px]">
+                {contentType}
+              </span>
             </div>
             <div className="flex items-center gap-1">
               <Button
@@ -452,9 +483,19 @@ function TextPreviewCard({ attachment, contentType }: { attachment: MessageAttac
             </div>
           </div>
           {expanded && (
-            <div className={cn("mt-2 rounded-md border border-border bg-background p-2", !text && "text-muted-foreground")}> 
+            <div
+              className={cn(
+                "mt-2 rounded-md border border-border bg-background p-2",
+                !text && "text-muted-foreground",
+              )}
+            >
               {text ? (
-                <pre className={cn("text-xs whitespace-pre-wrap break-words overflow-auto", "max-h-[500px]")}> 
+                <pre
+                  className={cn(
+                    "text-xs whitespace-pre-wrap break-words overflow-auto",
+                    "max-h-[500px]",
+                  )}
+                >
                   {text}
                 </pre>
               ) : (

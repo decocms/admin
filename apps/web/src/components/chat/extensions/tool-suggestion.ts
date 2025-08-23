@@ -131,31 +131,43 @@ export const suggestion: (args: {
             })
               .then((result: unknown) => {
                 if (mySerial !== activeSerial) return; // cancelled
-                const structured = result as { structuredContent?: { items?: unknown[] } };
+                const structured = result as {
+                  structuredContent?: { items?: unknown[] };
+                };
                 const items = structured?.structuredContent?.items ?? [];
                 if (!Array.isArray(items)) return;
-                const mapped = items.slice(0, perIntegrationLimit).map(
-                  (r: unknown): ResourceOption => {
+                const mapped = items
+                  .slice(0, perIntegrationLimit)
+                  .map((r: unknown): ResourceOption => {
                     const resource = r as Record<string, unknown>;
                     return {
-                      id: (resource?.uri as string) ?? `${searcher.integration.id}:${(resource?.name as string) ?? ""}`,
+                      id:
+                        (resource?.uri as string) ??
+                        `${searcher.integration.id}:${(resource?.name as string) ?? ""}`,
                       type: "resource",
-                      label: (resource?.title as string) ?? (resource?.name as string) ?? (resource?.uri as string) ?? "Unknown",
+                      label:
+                        (resource?.title as string) ??
+                        (resource?.name as string) ??
+                        (resource?.uri as string) ??
+                        "Unknown",
                       description: resource?.description as string | undefined,
                       resource: {
                         name: resource?.name as string,
                         title: resource?.title as string | undefined,
-                        description: resource?.description as string | undefined,
+                        description: resource?.description as
+                          | string
+                          | undefined,
                         uri: resource?.uri as string,
                         mimeType: resource?.mimeType as string | undefined,
-                        annotations: resource?.annotations as Record<string, string> | undefined,
+                        annotations: resource?.annotations as
+                          | Record<string, string>
+                          | undefined,
                       },
                       integration: searcher.integration,
                       resourceType,
                       connection: searcher.connection,
                     };
-                  },
-                );
+                  });
                 accum.push(...mapped);
                 if (mySerial !== activeSerial) return; // cancelled
                 const combined = [...accum, ...baseItems].slice(0, 12);
@@ -255,7 +267,11 @@ export const suggestion: (args: {
           const baseItems = computeBaseItems(props.query ?? "", tools);
           if (debounceTimer) clearTimeout(debounceTimer);
           debounceTimer = globalThis.setTimeout(() => {
-            updateProgressively(props as unknown as Record<string, unknown>, baseItems, props.query ?? "");
+            updateProgressively(
+              props as unknown as Record<string, unknown>,
+              baseItems,
+              props.query ?? "",
+            );
           }, 150) as unknown as number;
         },
 
@@ -268,7 +284,11 @@ export const suggestion: (args: {
           const baseItems = computeBaseItems(props.query ?? "", tools);
           if (debounceTimer) clearTimeout(debounceTimer);
           debounceTimer = globalThis.setTimeout(() => {
-            updateProgressively(props as unknown as Record<string, unknown>, baseItems, props.query ?? "");
+            updateProgressively(
+              props as unknown as Record<string, unknown>,
+              baseItems,
+              props.query ?? "",
+            );
           }, 150) as unknown as number;
         },
 

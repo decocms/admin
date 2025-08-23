@@ -76,7 +76,7 @@ export const suggestion: (args: {
 
       const perIntegrationLimit = 5;
       const updateProgressively = (
-        baseProps: any,
+        baseProps: Record<string, unknown>,
         baseItems: SuggestionItem[],
         query: string,
       ) => {
@@ -125,33 +125,36 @@ export const suggestion: (args: {
               toolName.match(/^DECO_CHAT_RESOURCES_SEARCH_([A-Z]+)$/)?.[1] ??
               "";
             const pendingKey = `${searcher.integration.id}:${resourceType}`;
-            return callTool(searcher.connection as any, {
+            return callTool(searcher.connection as never, {
               name: toolName,
               arguments: { term: q, limit: perIntegrationLimit },
             })
-              .then((result: any) => {
+              .then((result: unknown) => {
                 if (mySerial !== activeSerial) return; // cancelled
-                const structured = result?.structuredContent;
-                const items = structured?.items ?? [];
+                const structured = result as { structuredContent?: { items?: unknown[] } };
+                const items = structured?.structuredContent?.items ?? [];
                 if (!Array.isArray(items)) return;
                 const mapped = items.slice(0, perIntegrationLimit).map(
-                  (r: any): ResourceOption => ({
-                    id: r?.uri ?? `${searcher.integration.id}:${r?.name ?? ""}`,
-                    type: "resource",
-                    label: r?.title ?? r?.name ?? r?.uri ?? "Unknown",
-                    description: r?.description,
-                    resource: {
-                      name: r?.name,
-                      title: r?.title,
-                      description: r?.description,
-                      uri: r?.uri,
-                      mimeType: r?.mimeType,
-                      annotations: r?.annotations,
-                    },
-                    integration: searcher.integration,
-                    resourceType,
-                    connection: searcher.connection,
-                  }),
+                  (r: unknown): ResourceOption => {
+                    const resource = r as Record<string, unknown>;
+                    return {
+                      id: (resource?.uri as string) ?? `${searcher.integration.id}:${(resource?.name as string) ?? ""}`,
+                      type: "resource",
+                      label: (resource?.title as string) ?? (resource?.name as string) ?? (resource?.uri as string) ?? "Unknown",
+                      description: resource?.description as string | undefined,
+                      resource: {
+                        name: resource?.name as string,
+                        title: resource?.title as string | undefined,
+                        description: resource?.description as string | undefined,
+                        uri: resource?.uri as string,
+                        mimeType: resource?.mimeType as string | undefined,
+                        annotations: resource?.annotations as Record<string, string> | undefined,
+                      },
+                      integration: searcher.integration,
+                      resourceType,
+                      connection: searcher.connection,
+                    };
+                  },
                 );
                 accum.push(...mapped);
                 if (mySerial !== activeSerial) return; // cancelled
@@ -251,9 +254,9 @@ export const suggestion: (args: {
           // Progressive update kick-off
           const baseItems = computeBaseItems(props.query ?? "", tools);
           if (debounceTimer) clearTimeout(debounceTimer);
-          debounceTimer = window.setTimeout(() => {
-            updateProgressively(props, baseItems, props.query ?? "");
-          }, 150);
+          debounceTimer = globalThis.setTimeout(() => {
+            updateProgressively(props as unknown as Record<string, unknown>, baseItems, props.query ?? "");
+          }, 150) as unknown as number;
         },
 
         onUpdate(props) {
@@ -264,9 +267,9 @@ export const suggestion: (args: {
 
           const baseItems = computeBaseItems(props.query ?? "", tools);
           if (debounceTimer) clearTimeout(debounceTimer);
-          debounceTimer = window.setTimeout(() => {
-            updateProgressively(props, baseItems, props.query ?? "");
-          }, 150);
+          debounceTimer = globalThis.setTimeout(() => {
+            updateProgressively(props as unknown as Record<string, unknown>, baseItems, props.query ?? "");
+          }, 150) as unknown as number;
         },
 
         onKeyDown(props) {

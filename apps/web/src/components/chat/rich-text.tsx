@@ -98,6 +98,7 @@ export function RichTextArea({
     return (integrations as IntegrationWithTools[])
       .filter((integration) => {
         const toolsList = integration.tools ?? [];
+        // deno-lint-ignore no-explicit-any
         return Binding(WellKnownBindings.Resources as any).isImplementedBy(
           toolsList.map((t) => ({ name: t.name })) as Array<{ name: string }>,
         );

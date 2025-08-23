@@ -26,7 +26,10 @@ export function ChatInput({ disabled }: { disabled?: boolean } = {}) {
   const { preferences, setPreferences } = useUserPreferences();
   const model = preferences.defaultModel;
 
-  const canSubmit = !isLoading && input.trim() && !uploadedFiles.some((uf) => uf.status === "uploading");
+  const canSubmit =
+    !isLoading &&
+    input.trim() &&
+    !uploadedFiles.some((uf) => uf.status === "uploading");
 
   const handleRichTextChange = (markdown: string) => {
     handleInputChange({

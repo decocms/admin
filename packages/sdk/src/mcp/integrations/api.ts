@@ -696,6 +696,7 @@ It's always handy to search for installed integrations with no query, since all 
       description: app.description,
       icon: app.icon,
       provider: MARKETPLACE_PROVIDER,
+      metadata: app.metadata,
       verified: app.verified,
     }));
 

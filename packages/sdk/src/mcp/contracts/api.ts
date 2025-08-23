@@ -89,7 +89,7 @@ const ContractClauseExerciseSchema = z.object({
 });
 type ContractClauseExercise = z.infer<typeof ContractClauseExerciseSchema>;
 
-type ContractState = z.infer<typeof ContractStateSchema>;
+export type ContractState = z.infer<typeof ContractStateSchema>;
 
 const totalAmount = (
   clauses: ContractState["clauses"],

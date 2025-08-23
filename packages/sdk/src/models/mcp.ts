@@ -65,6 +65,8 @@ export const IntegrationSchema = z.object({
     DecoConnectionSchema,
     InnateConnectionSchema,
   ]),
+  /** Metadata */
+  metadata: z.record(z.any()).optional().nullable(),
 });
 
 /**

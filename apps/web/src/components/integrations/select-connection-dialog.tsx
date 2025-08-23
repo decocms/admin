@@ -142,7 +142,7 @@ export function ConfirmMarketplaceInstallDialog({
                   name={integration?.friendlyName ?? integration?.name}
                 />
                 <div>
-                  <div className="text-sm text-muted-foreground">
+                  <div className="text-sm text-muted-foreground whitespace-pre-line">
                     {integration?.description}
                   </div>
                 </div>
@@ -180,6 +180,7 @@ export function ConfirmMarketplaceInstallDialog({
           isOpen={modalState.isOpen}
           onClose={modalState.onClose}
           schema={modalState.schema}
+          contract={integration.metadata?.contract}
           integrationName={
             modalState.integrationName || integration?.name || "Integration"
           }

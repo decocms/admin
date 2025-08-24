@@ -255,6 +255,7 @@ function DecopilotHeader({
 export function DecopilotChat() {
   const { currentAgentId, setCurrentAgentId } = useCurrentAgent();
   const [isAgentSwitcherOpen, setIsAgentSwitcherOpen] = useState(false);
+  const [threadId, _setThreadId] = useState(() => crypto.randomUUID());
   const team = useCurrentTeam();
 
   const urlPattern = new URLPattern({ pathname: "/:teamSlug/views/:id" });
@@ -270,7 +271,7 @@ export function DecopilotChat() {
       <AgentProvider
         key={currentAgentId}
         agentId={currentAgentId}
-        threadId="1"
+        threadId={threadId}
         additionalTools={
           integrationId
             ? {

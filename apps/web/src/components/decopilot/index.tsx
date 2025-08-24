@@ -21,7 +21,6 @@ import { MainChat } from "../agent/chat.tsx";
 import { AgentProvider, useAgent } from "../agent/provider.tsx";
 import { AgentVisibility } from "../common/agent-visibility.tsx";
 import { AgentAvatar } from "../common/avatar/agent.tsx";
-import { useCurrentTeam } from "../sidebar/team-selector.tsx";
 
 export const NO_DROP_TARGET = "no-drop-target";
 

@@ -18,9 +18,10 @@ import { RichTextArea } from "./rich-text.tsx";
 import ToolsButton from "./tools-button.tsx";
 
 export function ChatInput({ disabled }: { disabled?: boolean } = {}) {
-  const { chat, uiOptions, isPublic } = useAgent();
+  const { chat, uiOptions } = useAgent();
   const { stop, input, handleInputChange, handleSubmit, status } = chat;
-  const { showModelSelector, showThreadTools } = uiOptions;
+  const { showModelSelector, showThreadTools, showContextResources } =
+    uiOptions;
   const isLoading = status === "submitted" || status === "streaming";
   const [uploadedFiles, setUploadedFiles] = useState<UploadedFile[]>([]);
   const { preferences, setPreferences } = useUserPreferences();
@@ -89,7 +90,7 @@ export function ChatInput({ disabled }: { disabled?: boolean } = {}) {
 
   return (
     <div className="w-full mx-auto">
-      {!isPublic && (
+      {showContextResources && (
         <ContextResources
           uploadedFiles={uploadedFiles}
           setUploadedFiles={setUploadedFiles}

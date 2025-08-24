@@ -52,6 +52,7 @@ interface UiOptions {
   showThreadMessages: boolean;
   showAgentVisibility: boolean;
   showEditAgent: boolean;
+  showContextResources: boolean;
 }
 
 interface AgentProviderProps {
@@ -111,6 +112,7 @@ const DEFAULT_UI_OPTIONS: UiOptions = {
   showThreadMessages: true,
   showAgentVisibility: true,
   showEditAgent: true,
+  showContextResources: true,
 };
 
 const AgentContext = createContext<AgentContextValue | null>(null);

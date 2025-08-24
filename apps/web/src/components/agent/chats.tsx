@@ -118,6 +118,7 @@ function Page() {
               showThreadMessages: false,
               showAgentVisibility: false,
               showEditAgent: false,
+              showContextResources: false,
             }}
           >
             <SidebarProvider

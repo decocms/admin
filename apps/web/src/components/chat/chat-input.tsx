@@ -148,7 +148,7 @@ export function ChatInput({ disabled }: { disabled?: boolean } = {}) {
                   <Button
                     type={isLoading ? "button" : "submit"}
                     size="icon"
-                    disabled={!canSubmit}
+                    disabled={isLoading ? false : !canSubmit}
                     onClick={isLoading ? stop : undefined}
                     className="h-8 w-8 transition-all hover:opacity-70"
                     title={

@@ -1,12 +1,13 @@
 {
   "name": "@deco/workers-runtime",
-  "version": "0.14.0",
+  "version": "0.14.1",
   "exports": {
     ".": "./src/index.ts",
     "./proxy": "./src/proxy.ts",
     "./client": "./src/client.ts",
     "./mastra": "./src/mastra.ts",
     "./drizzle": "./src/drizzle.ts",
-    "./d1": "./src/d1-store.ts"
+    "./d1": "./src/d1-store.ts",
+    "./resources": "./src/resources.ts"
   }
 }

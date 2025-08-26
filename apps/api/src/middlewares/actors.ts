@@ -3,7 +3,7 @@ import { withActors } from "@deco/actors/hono";
 import { Hosts } from "@deco/sdk/hosts";
 import type { Handler } from "hono";
 import { endTime, startTime } from "hono/timing";
-import { AIAgent } from "packages/ai/src/agent.ts";
+import { AIAgent2 } from "packages/ai/src/agent.ts";
 import type { AppEnv } from "../utils/context.ts";
 
 export const runtime = new RuntimeClass();
@@ -43,7 +43,7 @@ export const withActorsMiddleware: Handler<AppEnv> = async (ctx, next) => {
 
       const promise = Promise.withResolvers();
 
-      const aiAgent = new AIAgent(
+      const aiAgent = new AIAgent2(
         {
           metadata,
           // @ts-ignore debugging only

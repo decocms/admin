@@ -346,7 +346,7 @@ export class AIAgent2 extends BaseActor<AgentMetadata> implements IIAgent {
     try {
       const serverTools = await mcpServerTools(
         { ...integration, id: mcpId, name: mcpId },
-        this,
+        this as any,
         signal,
         this.env as any,
       );

@@ -12,16 +12,16 @@ const storage = (() => {
   const map = new Map<string, string>();
 
   return {
-    get: async (key: string) => {
+    get: (key: string) => {
       return map.get(key) ?? null;
     },
-    set: async (key: string, value: string) => {
+    set: (key: string, value: string) => {
       map.set(key, value);
     },
-    delete: async (key: string) => {
+    delete: (key: string) => {
       map.delete(key);
     },
-    put: async (key: string, value: string) => {
+    put: (key: string, value: string) => {
       map.set(key, value);
     },
   };

@@ -1232,6 +1232,8 @@ export class AIAgent2 extends BaseActor<AgentMetadata> implements IIAgent {
           : [],
       );
 
+      const span2 = tracer?.startSpan("my-new-span-for-withToolOverrides");
+
       const toolsets = await this._withToolOverrides(
         options?.tools,
         timings,
@@ -1239,18 +1241,28 @@ export class AIAgent2 extends BaseActor<AgentMetadata> implements IIAgent {
         options?.toolsets,
       );
 
+      span2?.end();
+
+      const span3 = tracer?.startSpan("my-new-span-for-_withAgentOverrides");
+
       const agentOverridesTiming = timings.start("agent-overrides");
       const agent = await this._withAgentOverrides({
         ...options,
         bypassOpenRouter:
           bypassOpenRouter ?? options?.bypassOpenRouter ?? false,
       });
+      span3?.end();
+
       agentOverridesTiming.end();
+
+      const span4 = tracer?.startSpan("my-new-span-for-_withToolOverrides");
 
       const wallet = this.wallet;
       const walletTiming = timings.start("init-wallet");
       const hasBalance = await wallet.canProceed();
       walletTiming.end();
+
+      span4?.end();
 
       if (!hasBalance) {
         this._trackEvent("agent_insufficient_funds_error", {

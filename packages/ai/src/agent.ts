@@ -264,7 +264,11 @@ export class AIAgent2 extends BaseActor<AgentMetadata> implements IIAgent {
       wallet: createWalletClient(this.env.WALLET_API_KEY, actorEnv?.WALLET),
     });
     this.state.blockConcurrencyWhile(async () => {
+      const span = trace.getTracer("agent").startSpan("my-new-span-for-blockConcurrencyWhile");
+
       await this._runWithContext(async () => {
+        const span = trace.getTracer("agent").startSpan("my-new-span-for-_runWithContext");
+
         await this._init().catch((error) => {
           console.error("Error initializing agent", error);
           this._trackEvent("agent_init_error", {
@@ -272,7 +276,11 @@ export class AIAgent2 extends BaseActor<AgentMetadata> implements IIAgent {
           });
           throw error;
         });
+
+        span?.end();
       });
+
+      span?.end();
     });
   }
 
@@ -1159,6 +1167,8 @@ export class AIAgent2 extends BaseActor<AgentMetadata> implements IIAgent {
       const tracer = this.telemetry?.tracer;
       const timings = this.metadata?.timings ?? createServerTimings();
 
+      const span = tracer?.startSpan("my-new-span-for-stream")
+
       const thread = {
         threadId: options?.threadId ?? this._thread.threadId,
         resourceId: options?.resourceId ?? this._thread.resourceId,
@@ -1249,6 +1259,8 @@ export class AIAgent2 extends BaseActor<AgentMetadata> implements IIAgent {
         });
         throw new Error("Insufficient funds");
       }
+
+      span?.end();
 
       const ttfbSpan = tracer?.startSpan("stream-ttfb", {
         attributes: {

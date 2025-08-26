@@ -609,7 +609,7 @@ export class AIAgent2 extends BaseActor<AgentMetadata> implements IIAgent {
     toolsetsFromOptions?: Toolset[],
   ): Promise<ToolsetsInput> {
     const getThreadToolsTiming = timings?.start("get-thread-tools");
-    const tool_set = tools ?? {}; // ?? (await this.getThreadTools(thread));
+    const tool_set = tools ?? (await this.getThreadTools(thread));
     getThreadToolsTiming?.end();
 
     const pickCallableToolsTiming = timings?.start("pick-callable-tools");

@@ -264,10 +264,14 @@ export class AIAgent2 extends BaseActor<AgentMetadata> implements IIAgent {
       wallet: createWalletClient(this.env.WALLET_API_KEY, actorEnv?.WALLET),
     });
     this.state.blockConcurrencyWhile(async () => {
-      const span = trace.getTracer("agent").startSpan("my-new-span-for-blockConcurrencyWhile");
+      const span = trace
+        .getTracer("agent")
+        .startSpan("my-new-span-for-blockConcurrencyWhile");
 
       await this._runWithContext(async () => {
-        const span = trace.getTracer("agent").startSpan("my-new-span-for-_runWithContext");
+        const span = trace
+          .getTracer("agent")
+          .startSpan("my-new-span-for-_runWithContext");
 
         await this._init().catch((error) => {
           console.error("Error initializing agent", error);
@@ -1167,7 +1171,7 @@ export class AIAgent2 extends BaseActor<AgentMetadata> implements IIAgent {
       const tracer = this.telemetry?.tracer;
       const timings = this.metadata?.timings ?? createServerTimings();
 
-      const span = tracer?.startSpan("my-new-span-for-stream")
+      const span = tracer?.startSpan("my-new-span-for-stream");
 
       const thread = {
         threadId: options?.threadId ?? this._thread.threadId,

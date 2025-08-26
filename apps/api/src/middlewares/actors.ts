@@ -52,6 +52,7 @@ export const withActorsMiddleware: Handler<AppEnv> = async (ctx, next) => {
           stub: ctx.var.stub,
           // @ts-ignore debugging only
           storage: storage,
+          // @ts-ignore debugging only
           blockConcurrencyWhile: (cb: () => Promise<void>) => {
             return cb().then(() => {
               // @ts-ignore debugging only

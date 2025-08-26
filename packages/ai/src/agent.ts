@@ -228,7 +228,7 @@ export class AIAgent2 extends BaseActor<AgentMetadata> implements IIAgent {
   private posthog: PosthogServerClient;
 
   constructor(
-    public readonly state: Pick<ActorState, "id" | "stub" | "storage">,
+    public readonly state: ActorState,
     protected actorEnv: any,
   ) {
     super(removeNonSerializableFields(actorEnv));
@@ -1388,7 +1388,7 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
   private posthog: PosthogServerClient;
 
   constructor(
-    public readonly state: Pick<ActorState, "id" | "stub" | "storage">,
+    public readonly state: ActorState,
     protected actorEnv: any,
   ) {
     super(removeNonSerializableFields(actorEnv));

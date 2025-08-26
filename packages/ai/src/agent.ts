@@ -609,7 +609,7 @@ export class AIAgent2 extends BaseActor<AgentMetadata> implements IIAgent {
     toolsetsFromOptions?: Toolset[],
   ): Promise<ToolsetsInput> {
     const getThreadToolsTiming = timings?.start("get-thread-tools");
-    const tool_set = tools ?? (await this.getThreadTools(thread));
+    const tool_set = tools ?? {}; // ?? (await this.getThreadTools(thread));
     getThreadToolsTiming?.end();
 
     const pickCallableToolsTiming = timings?.start("pick-callable-tools");
@@ -1259,11 +1259,11 @@ export class AIAgent2 extends BaseActor<AgentMetadata> implements IIAgent {
 
       agentOverridesTiming.end();
 
-      const span4 = tracer?.startSpan("my-new-span-for-wallet");
+      const span4 = tracer?.startSpan("my-new-span-for-_withToolOverrides");
 
-      // const wallet = this.wallet;
+      const wallet = this.wallet;
       const walletTiming = timings.start("init-wallet");
-      const hasBalance = true; // await wallet.canProceed();
+      const hasBalance = await wallet.canProceed();
       walletTiming.end();
 
       span4?.end();

@@ -526,9 +526,9 @@ export class AIAgent2 extends BaseActor<AgentMetadata> implements IIAgent {
         getTelemetry: () => this.telemetry,
         generateId: () => this._memory.generateId(),
       },
-      // voice: this.env.OPENAI_API_KEY
-      //   ? createAgentOpenAIVoice({ apiKey: this.env.OPENAI_API_KEY })
-      //   : undefined,
+      voice: this.env.OPENAI_API_KEY
+        ? createAgentOpenAIVoice({ apiKey: this.env.OPENAI_API_KEY })
+        : undefined,
     });
   }
 
@@ -641,9 +641,9 @@ export class AIAgent2 extends BaseActor<AgentMetadata> implements IIAgent {
         model: llm,
         instructions:
           this._configuration?.instructions ?? ANONYMOUS_INSTRUCTIONS,
-        // voice: this.env.OPENAI_API_KEY
-        //   ? createAgentOpenAIVoice({ apiKey: this.env.OPENAI_API_KEY })
-        //   : undefined,
+        voice: this.env.OPENAI_API_KEY
+          ? createAgentOpenAIVoice({ apiKey: this.env.OPENAI_API_KEY })
+          : undefined,
         mastra: {
           // @ts-ignore: Mastra requires a logger, but we don't use it
           getLogger: () => undefined,

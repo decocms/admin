@@ -264,15 +264,7 @@ export class AIAgent2 extends BaseActor<AgentMetadata> implements IIAgent {
       wallet: createWalletClient(this.env.WALLET_API_KEY, actorEnv?.WALLET),
     });
     this.state.blockConcurrencyWhile(async () => {
-      const span = trace
-        .getTracer("agent")
-        .startSpan("my-new-span-for-blockConcurrencyWhile");
-
       await this._runWithContext(async () => {
-        const span = trace
-          .getTracer("agent")
-          .startSpan("my-new-span-for-_runWithContext");
-
         await this._init().catch((error) => {
           console.error("Error initializing agent", error);
           this._trackEvent("agent_init_error", {
@@ -280,11 +272,7 @@ export class AIAgent2 extends BaseActor<AgentMetadata> implements IIAgent {
           });
           throw error;
         });
-
-        span?.end();
       });
-
-      span?.end();
     });
   }
 
@@ -1171,8 +1159,6 @@ export class AIAgent2 extends BaseActor<AgentMetadata> implements IIAgent {
       const tracer = this.telemetry?.tracer;
       const timings = this.metadata?.timings ?? createServerTimings();
 
-      const span = tracer?.startSpan("my-new-span-for-stream");
-
       const thread = {
         threadId: options?.threadId ?? this._thread.threadId,
         resourceId: options?.resourceId ?? this._thread.resourceId,
@@ -1236,8 +1222,6 @@ export class AIAgent2 extends BaseActor<AgentMetadata> implements IIAgent {
           : [],
       );
 
-      const span2 = tracer?.startSpan("my-new-span-for-withToolOverrides");
-
       const toolsets = await this._withToolOverrides(
         options?.tools,
         timings,
@@ -1245,28 +1229,18 @@ export class AIAgent2 extends BaseActor<AgentMetadata> implements IIAgent {
         options?.toolsets,
       );
 
-      span2?.end();
-
-      const span3 = tracer?.startSpan("my-new-span-for-_withAgentOverrides");
-
       const agentOverridesTiming = timings.start("agent-overrides");
       const agent = await this._withAgentOverrides({
         ...options,
         bypassOpenRouter:
           bypassOpenRouter ?? options?.bypassOpenRouter ?? false,
       });
-      span3?.end();
-
       agentOverridesTiming.end();
-
-      const span4 = tracer?.startSpan("my-new-span-for-_withToolOverrides");
 
       const wallet = this.wallet;
       const walletTiming = timings.start("init-wallet");
       const hasBalance = await wallet.canProceed();
       walletTiming.end();
-
-      span4?.end();
 
       if (!hasBalance) {
         this._trackEvent("agent_insufficient_funds_error", {
@@ -1275,8 +1249,6 @@ export class AIAgent2 extends BaseActor<AgentMetadata> implements IIAgent {
         });
         throw new Error("Insufficient funds");
       }
-
-      span?.end();
 
       const ttfbSpan = tracer?.startSpan("stream-ttfb", {
         attributes: {

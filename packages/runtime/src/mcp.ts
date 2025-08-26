@@ -136,6 +136,17 @@ export type MCPConnectionProvider =
   | (() => Promise<MCPConnection>)
   | MCPConnection;
 
+export interface MCPClientRaw {
+  callTool: (tool: string, args: unknown) => Promise<unknown>;
+  listTools: () => Promise<
+    {
+      name: string;
+      inputSchema: any;
+      outputSchema?: any;
+      description: string;
+    }[]
+  >;
+}
 export type JSONSchemaToZodConverter = (jsonSchema: any) => z.ZodTypeAny;
 export interface CreateStubAPIOptions {
   decoChatApiUrl?: string;

@@ -12,20 +12,19 @@ import { WebCache } from "@deco/sdk/cache";
 import { SWRCache } from "@deco/sdk/cache/swr";
 import { fromWorkspaceString, MCPClient, type AppContext } from "@deco/sdk/mcp";
 import { slugify } from "@deco/sdk/memory";
+import {
+  createServerClient,
+  createTransport,
+} from "@deco/workers-runtime/mcp-client";
 import type { ToolAction } from "@mastra/core";
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
-import {
-  SSEClientTransport,
-  type SSEClientTransportOptions,
-} from "@modelcontextprotocol/sdk/client/sse.js";
-import { StreamableHTTPClientTransport } from "@modelcontextprotocol/sdk/client/streamableHttp.js";
-import { WebSocketClientTransport } from "@modelcontextprotocol/sdk/client/websocket.js";
 import type { AIAgent, Env } from "./agent.ts";
 import { getTools } from "./deco.ts";
 import { getToolsForInnateIntegration } from "./storage/tools.ts";
 import { createTool } from "./utils/create-tool.ts";
 import { jsonSchemaToModel } from "./utils/json-schema-to-model.ts";
 import { mapToolEntries } from "./utils/tool-entries.ts";
+export { createServerClient, createTransport };
 
 const ApiDecoChatURLs = [
   "https://api.deco.chat",
@@ -230,78 +229,6 @@ export const mcpServerTools = async (
         : await getMCPServerTools(mcpServer, agent, signal);
 
   return response;
-};
-
-export const createServerClient = async (
-  mcpServer: Pick<Integration, "connection" | "name">,
-  signal?: AbortSignal,
-  extraHeaders?: Record<string, string>,
-): Promise<Client> => {
-  const transport = createTransport(mcpServer.connection, signal, extraHeaders);
-
-  if (!transport) {
-    throw new Error("Unknown MCP connection type");
-  }
-
-  const client = new Client({
-    name: mcpServer.name,
-    version: "1.0.0",
-    timeout: 180000, // 3 minutes
-  });
-
-  await client.connect(transport);
-
-  return client;
-};
-
-export const createTransport = (
-  connection: MCPConnection,
-  signal?: AbortSignal,
-  extraHeaders?: Record<string, string>,
-) => {
-  if (connection.type === "Websocket") {
-    return new WebSocketClientTransport(new URL(connection.url));
-  }
-
-  if (connection.type !== "SSE" && connection.type !== "HTTP") {
-    return null;
-  }
-
-  const authHeaders: Record<string, string> = connection.token
-    ? { authorization: `Bearer ${connection.token}` }
-    : {};
-
-  const headers: Record<string, string> = {
-    ...authHeaders,
-    ...(extraHeaders ?? {}),
-    ...("headers" in connection ? connection.headers || {} : {}),
-  };
-
-  if (connection.type === "SSE") {
-    const config: SSEClientTransportOptions = {
-      requestInit: { headers, signal },
-    };
-
-    if (connection.token) {
-      config.eventSourceInit = {
-        fetch: (req, init) => {
-          return fetch(req, {
-            ...init,
-            headers: {
-              ...headers,
-              Accept: "text/event-stream",
-            },
-            signal,
-          });
-        },
-      };
-    }
-
-    return new SSEClientTransport(new URL(connection.url), config);
-  }
-  return new StreamableHTTPClientTransport(new URL(connection.url), {
-    requestInit: { headers, signal },
-  });
 };
 
 const handleMCPResponse = async (client: Client) => {

@@ -391,7 +391,7 @@ app.all("/:root/:slug/i:databases-management/studio", async (c) => {
   return studio(request, ctx.workspaceDO);
 });
 
-app.post("/:root/:slug/:integrationId/tools/call/:tool", async (c) => {
+app.post("/:root/:slug/:integrationId/mcp/tools/call/:tool", async (c) => {
   const mcpServerProxy = await createMcpServerProxy(c);
   const tool = c.req.param("tool");
 

@@ -276,15 +276,15 @@ export class AIAgent2 extends BaseActor<AgentMetadata> implements IIAgent {
     });
   }
 
-  private _trackEvent(event: string, properties: Record<string, unknown> = {}) {
-    this.posthog.trackEvent(event as any, {
-      distinctId: this.metadata?.user?.id ?? this.id,
-      $process_person_profile: this.metadata?.user !== null,
-      actorId: this.id,
-      actorType: "agent",
-      agentId: this.agentId,
-      ...properties,
-    });
+  private _trackEvent(_event: string, _properties: Record<string, unknown> = {}) {
+    // this.posthog.trackEvent(event as any, {
+    //   distinctId: this.metadata?.user?.id ?? this.id,
+    //   $process_person_profile: this.metadata?.user !== null,
+    //   actorId: this.id,
+    //   actorType: "agent",
+    //   agentId: this.agentId,
+    //   ...properties,
+    // });
   }
 
   private _createAppContext(metadata?: AgentMetadata): AppContext {
@@ -1436,15 +1436,15 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
     });
   }
 
-  private _trackEvent(event: string, properties: Record<string, unknown> = {}) {
-    this.posthog.trackEvent(event as any, {
-      distinctId: this.metadata?.user?.id ?? this.id,
-      $process_person_profile: this.metadata?.user !== null,
-      actorId: this.id,
-      actorType: "agent",
-      agentId: this.agentId,
-      ...properties,
-    });
+  private _trackEvent(_event: string, _properties: Record<string, unknown> = {}) {
+    // this.posthog.trackEvent(event as any, {
+    //   distinctId: this.metadata?.user?.id ?? this.id,
+    //   $process_person_profile: this.metadata?.user !== null,
+    //   actorId: this.id,
+    //   actorType: "agent",
+    //   agentId: this.agentId,
+    //   ...properties,
+    // });
   }
 
   private _createAppContext(metadata?: AgentMetadata): AppContext {

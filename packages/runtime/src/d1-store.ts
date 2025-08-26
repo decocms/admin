@@ -25,7 +25,7 @@ export class D1Store extends MastraD1Store {
 
     // Execute each index creation query
     for (const { sql, params } of indexQueries) {
-      this.config.client.query({
+      await this.config.client.query({
         sql,
         params,
       });

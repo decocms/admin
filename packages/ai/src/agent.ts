@@ -206,7 +206,7 @@ const agentWorkingMemoryToWorkingMemoryConfig = (
   return { enabled: true };
 };
 
-@Actor()
+// @Actor()
 export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
   private _maybeAgent?: Agent;
 
@@ -229,7 +229,7 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
   private posthog: PosthogServerClient;
 
   constructor(
-    public readonly state: ActorState,
+    public readonly state: Pick<ActorState, "id" | "stub" | "storage">,
     protected actorEnv: any,
   ) {
     super(removeNonSerializableFields(actorEnv));

@@ -276,7 +276,10 @@ export class AIAgent2 extends BaseActor<AgentMetadata> implements IIAgent {
     });
   }
 
-  private _trackEvent(_event: string, _properties: Record<string, unknown> = {}) {
+  private _trackEvent(
+    _event: string,
+    _properties: Record<string, unknown> = {},
+  ) {
     // this.posthog.trackEvent(event as any, {
     //   distinctId: this.metadata?.user?.id ?? this.id,
     //   $process_person_profile: this.metadata?.user !== null,
@@ -1436,7 +1439,10 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
     });
   }
 
-  private _trackEvent(_event: string, _properties: Record<string, unknown> = {}) {
+  private _trackEvent(
+    _event: string,
+    _properties: Record<string, unknown> = {},
+  ) {
     // this.posthog.trackEvent(event as any, {
     //   distinctId: this.metadata?.user?.id ?? this.id,
     //   $process_person_profile: this.metadata?.user !== null,

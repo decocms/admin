@@ -1,3 +1,4 @@
+// deno-lint-ignore-file no-explicit-any
 import type { ToolExecutionContext } from "@mastra/core";
 import { MCPConnection } from "./connection.ts";
 import { createServerClient } from "./mcp-client.ts";

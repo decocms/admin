@@ -116,7 +116,7 @@ const setupLLMInstance = async (modelId: string, c: AppContext) => {
     llmVault,
   });
 
-  const { llm } = createLLMInstance({
+  const { llmV4: llm } = createLLMInstance({
     ...llmConfig,
     envs: c.envVars as Record<string, string>,
     metadata: {

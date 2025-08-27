@@ -1,6 +1,7 @@
 import { isWellKnownModel, WELL_KNOWN_MODELS } from "@deco/sdk";
 import type { LLMVault } from "@deco/sdk/mcp";
 import type { LanguageModelV1 } from "ai";
+import { LanguageModel } from "ai-v5";
 import { createLLMProvider } from "./llm-provider.ts";
 
 export const DEFAULT_ACCOUNT_ID = "c95fc4cec7fc52453228d9db170c372c";
@@ -68,7 +69,8 @@ export function createLLMInstance({
   envs: Record<string, string>;
   metadata?: Record<string, string>;
 }): {
-  llm: LanguageModelV1;
+  llmV4: LanguageModelV1;
+  llmV5?: LanguageModel;
   tokenLimit: number;
 } {
   const [provider, ...rest] = model.split(":");

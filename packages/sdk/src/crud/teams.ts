@@ -42,9 +42,11 @@ export const getWorkspaceTheme = (
   slug: string,
   init?: RequestInit,
 ): Promise<{ theme?: Theme } | null> =>
-  MCPClient.TEAMS_GET_THEME({ slug }, init) as Promise<{
-    theme?: Theme;
-  } | null>;
+  MCPClient.TEAMS_GET_THEME({ slug }, init) as Promise<
+    {
+      theme?: Theme;
+    } | null
+  >;
 
 export interface UpdateTeamInput {
   id: number;
@@ -105,10 +107,15 @@ export const listAvailableViewsForConnection = async (
   connection: MCPConnection,
 ) => {
   try {
-    const client =
-      MCPClient.forConnection<(typeof WellKnownBindings)["View"]>(connection);
-    const result = await client.DECO_CHAT_VIEWS_LIST({});
-    return result;
+    const result = await MCPClient.INTEGRATIONS_CALL_TOOL({
+      connection,
+      params: {
+        name: "DECO_CHAT_VIEWS_LIST",
+        arguments: {},
+      },
+    });
+
+    return result.structuredContent as { views: View[] };
   } catch (error) {
     console.error("Error listing available views for connection:", error);
     return { views: [] };

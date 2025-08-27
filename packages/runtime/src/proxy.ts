@@ -14,13 +14,14 @@ const getWorkspace = (workspace?: string) => {
 
 let tools:
   | Promise<
-    {
-      name: string;
-      inputSchema: any;
-      outputSchema?: any;
-      description: string;
-    }[] | undefined
-  >
+      | {
+          name: string;
+          inputSchema: any;
+          outputSchema?: any;
+          description: string;
+        }[]
+      | undefined
+    >
   | undefined;
 
 /**
@@ -31,9 +32,9 @@ export function createMCPClientProxy<T extends Record<string, unknown>>(
 ): T {
   const decoChatApiConnection: MCPConnection = {
     type: "HTTP",
-    url: `${options?.decoChatApiUrl ?? `https://api.deco.chat`}${
-      getWorkspace(options?.workspace)
-    }/mcp`,
+    url: `${options?.decoChatApiUrl ?? `https://api.deco.chat`}${getWorkspace(
+      options?.workspace,
+    )}/mcp`,
     token: options?.token,
   };
 
@@ -48,9 +49,10 @@ export function createMCPClientProxy<T extends Record<string, unknown>>(
         throw new Error("Name must be a string");
       }
       async function callToolFn(args: unknown) {
-        const connectionPromise = typeof options?.connection === "function"
-          ? options.connection()
-          : Promise.resolve(options?.connection);
+        const connectionPromise =
+          typeof options?.connection === "function"
+            ? options.connection()
+            : Promise.resolve(options?.connection);
         clientPromise ??= connectionPromise.then((connection) => {
           return createServerClient({
             connection: connection ?? decoChatApiConnection,
@@ -70,9 +72,10 @@ export function createMCPClientProxy<T extends Record<string, unknown>>(
       }
 
       const listToolsFn = async () => {
-        const connectionPromise = typeof options?.connection === "function"
-          ? options.connection()
-          : Promise.resolve(options?.connection);
+        const connectionPromise =
+          typeof options?.connection === "function"
+            ? options.connection()
+            : Promise.resolve(options?.connection);
         clientPromise ??= connectionPromise.then((connection) => {
           return createServerClient({
             connection: connection ?? decoChatApiConnection,

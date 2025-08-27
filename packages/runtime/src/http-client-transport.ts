@@ -9,16 +9,22 @@ export class HTTPClientTransport extends StreamableHTTPClientTransport {
     super(url, opts);
   }
 
-  override async send(message: JSONRPCMessage, options?: any): Promise<void> {
+  override send(
+    message: JSONRPCMessage,
+    options?: {
+      resumptionToken?: string;
+      onresumptiontoken?: (token: string) => void;
+    },
+  ): Promise<void> {
     const mockAction = getMockActionFor(message);
     if (mockAction?.type === "emit") {
       this.onmessage?.(mockAction.message);
-      return;
+      return Promise.resolve();
     }
     if (mockAction?.type === "suppress") {
-      return;
+      return Promise.resolve();
     }
-    return super.send(message as any, options);
+    return super.send(message, options);
   }
 }
 
@@ -27,7 +33,7 @@ type MockAction =
   | { type: "suppress" };
 
 function getMockActionFor(message: JSONRPCMessage): MockAction | null {
-  const m = message as any;
+  const m = message;
   if (!m || typeof m !== "object" || !("method" in m)) return null;
 
   switch (m.method) {
@@ -43,6 +49,7 @@ function getMockActionFor(message: JSONRPCMessage): MockAction | null {
             serverInfo: { name: "deco-chat-server", version: "1.0.0" },
           },
           jsonrpc: m.jsonrpc ?? "2.0",
+          // @ts-expect-error - id is not typed
           id: m.id,
         } as JSONRPCMessage,
       };

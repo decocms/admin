@@ -1,8 +1,7 @@
 import { MCPClient } from "../fetcher.ts";
+import type { MCPConnection } from "../models/mcp.ts";
 import type { Theme } from "../theme.ts";
 import { View } from "../views.ts";
-import type { MCPConnection } from "../models/mcp.ts";
-import { WellKnownBindings } from "../mcp/bindings/index.ts";
 
 export interface Team {
   id: number;
@@ -42,11 +41,9 @@ export const getWorkspaceTheme = (
   slug: string,
   init?: RequestInit,
 ): Promise<{ theme?: Theme } | null> =>
-  MCPClient.TEAMS_GET_THEME({ slug }, init) as Promise<
-    {
-      theme?: Theme;
-    } | null
-  >;
+  MCPClient.TEAMS_GET_THEME({ slug }, init) as Promise<{
+    theme?: Theme;
+  } | null>;
 
 export interface UpdateTeamInput {
   id: number;

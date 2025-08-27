@@ -224,7 +224,7 @@ export const getAgentsUsage = createTool({
       z.object({
         id: z.string(),
         label: z.string().nullish(),
-        total: z.number().nullish(),
+        total: z.number(),
         transactions: z.array(
           z.object({
             id: z.string(),

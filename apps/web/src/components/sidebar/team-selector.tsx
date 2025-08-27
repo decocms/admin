@@ -181,7 +181,7 @@ function TeamsToSwitch({ query }: { query: string }) {
     <div className="flex flex-col gap-2 h-36 overflow-y-auto">
       <div className="flex flex-col gap-2 h-36 overflow-y-auto">
         {filteredTeams.map((team) => (
-          <ResponsiveDropdownItem asChild key={team.slug}>
+          <ResponsiveDropdownItem asChild key={team.slug + team.label}>
             <Link
               to={`/${team.slug}`}
               className="w-full flex items-center gap-2 cursor-pointer"

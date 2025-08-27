@@ -223,15 +223,15 @@ export const getAgentsUsage = createTool({
     items: z.array(
       z.object({
         id: z.string(),
-        label: z.string(),
-        total: z.number(),
+        label: z.string().nullish(),
+        total: z.number().nullish(),
         transactions: z.array(
           z.object({
             id: z.string(),
             timestamp: z.string(),
             amount: z.number(),
-            agentId: z.string(),
-            generatedBy: z.string(),
+            agentId: z.string().nullish(),
+            generatedBy: z.string().nullish(),
           }),
         ),
       }),

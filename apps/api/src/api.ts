@@ -317,6 +317,7 @@ app.use(
       "pragma",
       "x-trace-debug-id",
       "x-deno-isolate-instance-id",
+      "mcp-protocol-version",
     ],
     exposeHeaders: [
       "Content-Type",

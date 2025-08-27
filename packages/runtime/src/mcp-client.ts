@@ -1,11 +1,11 @@
-import { WebSocketClientTransport } from "@modelcontextprotocol/sdk/client/websocket.js";
-import { MCPConnection } from "./connection.ts";
+import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import {
   SSEClientTransport,
   SSEClientTransportOptions,
 } from "@modelcontextprotocol/sdk/client/sse.js";
+import { WebSocketClientTransport } from "@modelcontextprotocol/sdk/client/websocket.js";
+import { MCPConnection } from "./connection.ts";
 import { HTTPClientTransport } from "./http-client-transport.ts";
-import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 
 export const createServerClient = async (
   mcpServer: { connection: MCPConnection; name?: string },
@@ -75,6 +75,6 @@ export const createTransport = (
     return new SSEClientTransport(new URL(connection.url), config);
   }
   return new HTTPClientTransport(new URL(connection.url), {
-    requestInit: { headers, signal },
+    requestInit: { headers, signal, credentials: "include" },
   });
 };

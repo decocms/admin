@@ -12,17 +12,13 @@ const getWorkspace = (workspace?: string) => {
   return workspace ?? "";
 };
 
-let tools:
-  | Promise<
-      | {
-          name: string;
-          inputSchema: any;
-          outputSchema?: any;
-          description: string;
-        }[]
-      | undefined
-    >
-  | undefined;
+const safeParse = (content: string) => {
+  try {
+    return JSON.parse(content as string);
+  } catch {
+    return content;
+  }
+};
 
 /**
  * The base fetcher used to fetch the MCP from API.
@@ -32,11 +28,24 @@ export function createMCPClientProxy<T extends Record<string, unknown>>(
 ): T {
   const decoChatApiConnection: MCPConnection = {
     type: "HTTP",
-    url: `${options?.decoChatApiUrl ?? `https://api.deco.chat`}${getWorkspace(
-      options?.workspace,
-    )}/mcp`,
+    url: new URL(
+      `${getWorkspace(options?.workspace)}/mcp`,
+      options?.decoChatApiUrl ?? `https://api.deco.chat`,
+    ).href,
     token: options?.token,
   };
+
+  let tools:
+    | Promise<
+        | {
+            name: string;
+            inputSchema: any;
+            outputSchema?: any;
+            description: string;
+          }[]
+        | undefined
+      >
+    | undefined;
 
   let clientPromise: Promise<Client> | undefined;
 
@@ -59,13 +68,36 @@ export function createMCPClientProxy<T extends Record<string, unknown>>(
           });
         });
         const client = await clientPromise;
-        const { structuredContent, isError } = await client.callTool({
+        const { structuredContent, isError, content } = await client.callTool({
           name: String(name),
           arguments: args as Record<string, unknown>,
         });
+
         if (isError) {
+          // @ts-expect-error - content is not typed
+          const maybeErrorMessage = content?.[0]?.text;
+          const error =
+            typeof maybeErrorMessage === "string"
+              ? safeParse(maybeErrorMessage)
+              : null;
+
+          const throwableError =
+            error?.code && typeof options?.getErrorByStatusCode === "function"
+              ? options.getErrorByStatusCode(
+                  error.code,
+                  error.message,
+                  error.traceId,
+                )
+              : null;
+
+          if (throwableError) {
+            throw throwableError;
+          }
+
           throw new Error(
-            `Tool ${String(name)} returned an error: ${structuredContent}`,
+            `Tool ${String(name)} returned an error: ${JSON.stringify(
+              structuredContent ?? content,
+            )}`,
           );
         }
         return structuredContent;

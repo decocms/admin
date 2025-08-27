@@ -1,9 +1,7 @@
-// deno-lint-ignore-file no-explicit-any
 import type { ToolExecutionContext } from "@mastra/core";
 import { MCPConnection } from "./connection.ts";
 import { createServerClient } from "./mcp-client.ts";
 import type { CreateStubAPIOptions } from "./mcp.ts";
-import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 
 const getWorkspace = (workspace?: string) => {
   if (workspace && workspace.length > 0 && !workspace.includes("/")) {
@@ -20,6 +18,16 @@ const safeParse = (content: string) => {
   }
 };
 
+const toolsMap = new Map<
+  string,
+  Array<{
+    name: string;
+    inputSchema: any;
+    outputSchema?: any;
+    description: string;
+  }>
+>();
+
 /**
  * The base fetcher used to fetch the MCP from API.
  */
@@ -35,19 +43,18 @@ export function createMCPClientProxy<T extends Record<string, unknown>>(
     token: options?.token,
   };
 
-  let tools:
-    | Promise<
-        | {
-            name: string;
-            inputSchema: any;
-            outputSchema?: any;
-            description: string;
-          }[]
-        | undefined
-      >
-    | undefined;
+  const connectionPromise =
+    (typeof options?.connection === "function"
+      ? options.connection()
+      : Promise.resolve(options?.connection)).then((c) =>
+        c ?? decoChatApiConnection
+      );
 
-  let clientPromise: Promise<Client> | undefined;
+  const clientPromise = connectionPromise.then((connection) =>
+    createServerClient({
+      connection: connection ?? decoChatApiConnection,
+    })
+  );
 
   return new Proxy<T>({} as T, {
     get(_, name) {
@@ -58,15 +65,6 @@ export function createMCPClientProxy<T extends Record<string, unknown>>(
         throw new Error("Name must be a string");
       }
       async function callToolFn(args: unknown) {
-        const connectionPromise =
-          typeof options?.connection === "function"
-            ? options.connection()
-            : Promise.resolve(options?.connection);
-        clientPromise ??= connectionPromise.then((connection) => {
-          return createServerClient({
-            connection: connection ?? decoChatApiConnection,
-          });
-        });
         const client = await clientPromise;
         const { structuredContent, isError, content } = await client.callTool({
           name: String(name),
@@ -76,18 +74,17 @@ export function createMCPClientProxy<T extends Record<string, unknown>>(
         if (isError) {
           // @ts-expect-error - content is not typed
           const maybeErrorMessage = content?.[0]?.text;
-          const error =
-            typeof maybeErrorMessage === "string"
-              ? safeParse(maybeErrorMessage)
-              : null;
+          const error = typeof maybeErrorMessage === "string"
+            ? safeParse(maybeErrorMessage)
+            : null;
 
           const throwableError =
             error?.code && typeof options?.getErrorByStatusCode === "function"
               ? options.getErrorByStatusCode(
-                  error.code,
-                  error.message,
-                  error.traceId,
-                )
+                error.code,
+                error.message,
+                error.traceId,
+              )
               : null;
 
           if (throwableError) {
@@ -95,24 +92,15 @@ export function createMCPClientProxy<T extends Record<string, unknown>>(
           }
 
           throw new Error(
-            `Tool ${String(name)} returned an error: ${JSON.stringify(
-              structuredContent ?? content,
-            )}`,
+            `Tool ${String(name)} returned an error: ${
+              JSON.stringify(structuredContent ?? content)
+            }`,
           );
         }
         return structuredContent;
       }
 
       const listToolsFn = async () => {
-        const connectionPromise =
-          typeof options?.connection === "function"
-            ? options.connection()
-            : Promise.resolve(options?.connection);
-        clientPromise ??= connectionPromise.then((connection) => {
-          return createServerClient({
-            connection: connection ?? decoChatApiConnection,
-          });
-        });
         const client = await clientPromise;
         const { tools } = await client.listTools();
 
@@ -124,12 +112,22 @@ export function createMCPClientProxy<T extends Record<string, unknown>>(
         }[];
       };
 
-      const listToolsOnce = () => {
-        return (tools ??= listToolsFn().catch((error) => {
+      async function listToolsOnce() {
+        try {
+          const conn = await connectionPromise;
+          const key = JSON.stringify(conn);
+
+          if (!toolsMap.has(key)) {
+            const tools = await listToolsFn();
+            toolsMap.set(key, tools);
+          }
+
+          return toolsMap.get(key)!;
+        } catch (error) {
           console.error("Failed to list tools", error);
           return undefined;
-        }));
-      };
+        }
+      }
       callToolFn.asTool = async () => {
         const tools = (await listToolsOnce()) ?? [];
         const tool = tools.find((t) => t.name === name);

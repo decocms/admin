@@ -517,7 +517,7 @@ const SelectProjectAppInstance = ({
   };
 
   return (
-    <div className="flex flex-col items-center justify-start h-full w-full py-6">
+    <div className="flex flex-col items-center justify-start h-full w-full py-6 overflow-y-auto">
       <div className="text-center space-y-6 max-w-md w-full m-auto">
         <div className="flex flex-col items-center gap-4">
           <div className="flex items-center justify-center gap-2">

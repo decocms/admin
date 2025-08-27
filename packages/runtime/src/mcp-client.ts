@@ -75,6 +75,11 @@ export const createTransport = (
     return new SSEClientTransport(new URL(connection.url), config);
   }
   return new HTTPClientTransport(new URL(connection.url), {
-    requestInit: { headers, signal, credentials: "include" },
+    requestInit: {
+      headers,
+      signal,
+      // @ts-ignore - this is a valid option for fetch
+      credentials: "include",
+    },
   });
 };

@@ -301,7 +301,7 @@ const InlineCreateIntegrationForm = ({
             </AccordionTrigger>
             <AccordionContent>
               <div className="pt-2">
-                <div className="border rounded-lg p-4 max-h-[500px] overflow-y-auto">
+                <div className="border rounded-lg p-4 max-h-[300px] overflow-y-auto">
                   <div className="space-y-4">
                     <div className="grid gap-2">
                       {permissions.map((permission, index) => (
@@ -517,8 +517,8 @@ const SelectProjectAppInstance = ({
   };
 
   return (
-    <div className="flex flex-col items-center justify-center h-screen w-full">
-      <div className="text-center space-y-6 max-w-md w-full">
+    <div className="flex flex-col items-center justify-start h-full w-full py-6">
+      <div className="text-center space-y-6 max-w-md w-full m-auto">
         <div className="flex flex-col items-center gap-4">
           <div className="flex items-center justify-center gap-2">
             <div className="relative">

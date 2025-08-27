@@ -4,7 +4,7 @@ import {
   SSEClientTransport,
   SSEClientTransportOptions,
 } from "@modelcontextprotocol/sdk/client/sse.js";
-import { StreamableHTTPClientTransport } from "@modelcontextprotocol/sdk/client/streamableHttp.js";
+import { HTTPClientTransport } from "./http-client-transport.ts";
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 
 export const createServerClient = async (
@@ -18,20 +18,11 @@ export const createServerClient = async (
     throw new Error("Unknown MCP connection type");
   }
 
-  const client = new Client(
-    {
-      name: mcpServer?.name ?? "MCP Client",
-      version: "1.0.0",
-      timeout: 180000, // 3 minutes
-    },
-    {
-      capabilities: {
-        roots: {
-          listChanged: false,
-        },
-      },
-    },
-  );
+  const client = new Client({
+    name: mcpServer?.name ?? "MCP Client",
+    version: "1.0.0",
+    timeout: 180000, // 3 minutes
+  });
 
   await client.connect(transport);
 
@@ -83,8 +74,7 @@ export const createTransport = (
 
     return new SSEClientTransport(new URL(connection.url), config);
   }
-  return new StreamableHTTPClientTransport(new URL(connection.url), {
+  return new HTTPClientTransport(new URL(connection.url), {
     requestInit: { headers, signal },
-    sessionId: undefined,
   });
 };

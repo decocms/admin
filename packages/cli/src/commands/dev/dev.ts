@@ -48,7 +48,7 @@ export async function devCommand(opts: StartDevServerOptions): Promise<void> {
       );
 
       let isGenerating = false;
-      const debounceMs = 500;
+      const debounceMs = 2500;
       let debounceTimer: NodeJS.Timeout | null = null;
 
       const generateTypes = async () => {

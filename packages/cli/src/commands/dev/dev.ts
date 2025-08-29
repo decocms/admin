@@ -2,7 +2,11 @@ import { spawn } from "child_process";
 import { watch } from "fs";
 import { join, resolve } from "path";
 import { writeFile } from "fs/promises";
-import { getConfig, readWranglerConfig, getAppDomain } from "../../lib/config.js";
+import {
+  getConfig,
+  readWranglerConfig,
+  getAppDomain,
+} from "../../lib/config.js";
 import { ensureDevEnvironment } from "../../lib/wrangler.js";
 import { genEnv } from "../gen/gen.js";
 import { link } from "./link.js";
@@ -39,19 +43,23 @@ export async function devCommand(opts: StartDevServerOptions): Promise<void> {
     // 3. Setup gen-watch if requested
     if (opts.genWatch) {
       const watchPath = resolve(opts.genWatch);
-      console.log(`👀 Setting up file watcher for TypeScript files in: ${watchPath}`);
-      
+      console.log(
+        `👀 Setting up file watcher for TypeScript files in: ${watchPath}`,
+      );
+
       let isGenerating = false;
       const debounceMs = 500;
       let debounceTimer: NodeJS.Timeout | null = null;
-      
+
       const generateTypes = async () => {
         if (isGenerating) return;
         isGenerating = true;
-        
+
         try {
-          console.log("🔄 TypeScript file changed, regenerating deco.gen.ts...");
-          
+          console.log(
+            "🔄 TypeScript file changed, regenerating deco.gen.ts...",
+          );
+
           const config = await getConfig();
           const wranglerConfig = await readWranglerConfig();
           const env = await genEnv({
@@ -63,40 +71,48 @@ export async function devCommand(opts: StartDevServerOptions): Promise<void> {
               wranglerConfig.name ?? "my-app",
             )}/mcp`,
           });
-          
+
           const outputPath = join(process.cwd(), "deco.gen.ts");
           await writeFile(outputPath, env);
           console.log(`✅ Generated types written to: ${outputPath}`);
         } catch (error) {
           console.error(
             "❌ Failed to generate types:",
-            error instanceof Error ? error.message : String(error)
+            error instanceof Error ? error.message : String(error),
           );
         } finally {
           isGenerating = false;
         }
       };
-      
+
       // Generate initial types
       await generateTypes();
-      
+
       // Watch for changes
-      const watcher = watch(watchPath, { recursive: true }, (eventType, filename) => {
-        if (filename && filename.endsWith(".ts") && !filename.endsWith(".gen.ts")) {
-          // Debounce to avoid excessive regeneration
-          if (debounceTimer) {
-            clearTimeout(debounceTimer);
+      const watcher = watch(
+        watchPath,
+        { recursive: true },
+        (_eventType, filename) => {
+          if (
+            filename &&
+            filename.endsWith(".ts") &&
+            !filename.endsWith(".gen.ts")
+          ) {
+            // Debounce to avoid excessive regeneration
+            if (debounceTimer) {
+              clearTimeout(debounceTimer);
+            }
+            debounceTimer = setTimeout(generateTypes, debounceMs);
           }
-          debounceTimer = setTimeout(generateTypes, debounceMs);
-        }
-      });
-      
+        },
+      );
+
       // Clean up on exit
       const cleanupWatcher = () => {
         console.log("\n📁 Stopping file watcher...");
         watcher.close();
       };
-      
+
       process.on("SIGINT", cleanupWatcher);
       process.on("SIGTERM", cleanupWatcher);
     }

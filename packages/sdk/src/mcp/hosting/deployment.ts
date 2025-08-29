@@ -522,8 +522,8 @@ export async function deployToCloudflare({
             // deno-lint-ignore no-explicit-any
             max_retries: (consumer as any).max_retries,
           },
-        })
-      )
+        }),
+      ),
     );
   }
 

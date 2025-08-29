@@ -209,7 +209,6 @@ const DEFAULT_HEADERS_FILE = () =>
 `;
 
 async function attachQueueConsumer({
-  c,
   accountId,
   apiToken,
   namespace,
@@ -217,7 +216,6 @@ async function attachQueueConsumer({
   scriptSlug,
   settings,
 }: {
-  c: AppContext;
   accountId: string;
   apiToken: string;
   namespace: string;
@@ -506,7 +504,6 @@ export async function deployToCloudflare({
     await Promise.all(
       queues.consumers.map((consumer) =>
         attachQueueConsumer({
-          c,
           accountId: env.CF_ACCOUNT_ID,
           apiToken: c.envVars.CF_API_TOKEN,
           namespace: env.CF_DISPATCH_NAMESPACE,

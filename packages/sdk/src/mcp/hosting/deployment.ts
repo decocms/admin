@@ -523,7 +523,7 @@ export async function deployToCloudflare({
             max_retries: (consumer as any).max_retries,
           },
         })
-      ),
+      )
     );
   }
 

@@ -457,20 +457,21 @@ function WorkspaceViews() {
 
   // Separate items for organization
   const mcpItems = firstLevelViews.filter((item) =>
-    ["Agents", "Integrations", "Prompts", "Views", "Workflows", "Triggers"].includes(
-      item.title,
-    ),
+    [
+      "Agents",
+      "Integrations",
+      "Prompts",
+      "Views",
+      "Workflows",
+      "Triggers",
+    ].includes(item.title),
   );
-  const otherItems = firstLevelViews.filter(
-    (item) =>
-      [
-        "Monitor",
-      ].includes(item.title),
+  const otherItems = firstLevelViews.filter((item) =>
+    ["Monitor"].includes(item.title),
   );
 
   return (
     <>
-
       {/* MCPs section */}
       {mcpItems.length > 0 && (
         <SidebarMenuItem>
@@ -538,8 +539,8 @@ function WorkspaceViews() {
           </Collapsible>
         </SidebarMenuItem>
       )}
-            {/* Regular items */}
-            {otherItems.map((item) => {
+      {/* Regular items */}
+      {otherItems.map((item) => {
         const meta = parseViewMetadata(item);
         if (!meta) {
           return null;

@@ -2,6 +2,7 @@ import { spawn } from "child_process";
 import { watch } from "fs";
 import { join, resolve } from "path";
 import { writeFile } from "fs/promises";
+import chalk from "chalk";
 import {
   getConfig,
   readWranglerConfig,
@@ -23,7 +24,6 @@ export interface StartDevServerOptions {
 export async function devCommand(opts: StartDevServerOptions): Promise<void> {
   try {
     // 1. Ensure development environment is set up
-    console.log("🔧 Setting up development environment...");
     await ensureDevEnvironment(opts);
 
     // 2. Get configuration
@@ -38,13 +38,15 @@ export async function devCommand(opts: StartDevServerOptions): Promise<void> {
     const app =
       typeof wranglerConfig.name === "string" ? wranglerConfig.name : "my-app";
 
-    console.log(`📦 Starting development server for '${app}'...`);
+    console.log(chalk.gray(`Starting development server for '${app}'...`));
 
     // 3. Setup gen-watch if requested
     if (opts.genWatch) {
       const watchPath = resolve(opts.genWatch);
       console.log(
-        `👀 Setting up file watcher for TypeScript files in: ${watchPath}`,
+        chalk.gray(
+          `Setting up file watcher for TypeScript files in: ${watchPath}`,
+        ),
       );
 
       let isGenerating = false;
@@ -57,7 +59,7 @@ export async function devCommand(opts: StartDevServerOptions): Promise<void> {
 
         try {
           console.log(
-            "🔄 TypeScript file changed, regenerating deco.gen.ts...",
+            chalk.gray("TypeScript file changed, regenerating deco.gen.ts..."),
           );
 
           const config = await getConfig();
@@ -74,10 +76,10 @@ export async function devCommand(opts: StartDevServerOptions): Promise<void> {
 
           const outputPath = join(process.cwd(), "deco.gen.ts");
           await writeFile(outputPath, env);
-          console.log(`✅ Generated types written to: ${outputPath}`);
+          console.log(chalk.blue(`Generated types written to: ${outputPath}`));
         } catch (error) {
           console.error(
-            "❌ Failed to generate types:",
+            chalk.red("Failed to generate types:"),
             error instanceof Error ? error.message : String(error),
           );
         } finally {
@@ -109,7 +111,7 @@ export async function devCommand(opts: StartDevServerOptions): Promise<void> {
 
       // Clean up on exit
       const cleanupWatcher = () => {
-        console.log("\n📁 Stopping file watcher...");
+        console.log(chalk.yellow("\nStopping file watcher..."));
         watcher.close();
       };
 
@@ -130,13 +132,13 @@ export async function devCommand(opts: StartDevServerOptions): Promise<void> {
     // }
 
     // 5. Start development server with tunnel integration
-    console.log("🚀 Starting development server with tunnel...");
+    console.log(chalk.gray("Starting development server with tunnel..."));
 
     // Use link command with wrangler dev as subprocess
     await link({
       port: 8787,
       onBeforeRegister: () => {
-        console.log("🔗 Starting Wrangler development server...");
+        console.log(chalk.gray("Starting Wrangler development server..."));
 
         const wranglerProcess = spawn("npx", ["wrangler", "dev"], {
           stdio: "inherit",
@@ -145,7 +147,7 @@ export async function devCommand(opts: StartDevServerOptions): Promise<void> {
 
         // Handle process termination
         const cleanup = () => {
-          console.log("\n⏹️  Stopping development server...");
+          console.log(chalk.yellow("\nStopping development server..."));
           wranglerProcess.kill("SIGINT");
           process.exit(0);
         };
@@ -154,7 +156,7 @@ export async function devCommand(opts: StartDevServerOptions): Promise<void> {
         process.on("SIGTERM", cleanup);
 
         wranglerProcess.on("error", (error) => {
-          console.error("❌ Failed to start Wrangler:", error.message);
+          console.error(chalk.red("Failed to start Wrangler:"), error.message);
           process.exit(1);
         });
 
@@ -163,7 +165,7 @@ export async function devCommand(opts: StartDevServerOptions): Promise<void> {
     });
   } catch (error) {
     console.error(
-      "❌ Development server failed:",
+      chalk.red("Development server failed:"),
       error instanceof Error ? error.message : String(error),
     );
     process.exit(1);

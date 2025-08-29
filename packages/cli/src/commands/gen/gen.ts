@@ -3,6 +3,10 @@ import { compile } from "json-schema-to-typescript";
 import { generateName } from "json-schema-to-typescript/dist/src/utils.js";
 import { MD5 } from "object-hash";
 import prettier from "prettier";
+import { readFile } from "fs/promises";
+import { existsSync } from "fs";
+import { join } from "path";
+import process from "node:process";
 import { readWranglerConfig, type DecoBinding } from "../../lib/config.js";
 import { createWorkspaceClient } from "../../lib/mcp.js";
 import { parser as scopeParser } from "../../lib/parse-binding-tool.js";
@@ -135,6 +139,64 @@ function isValidJavaScriptPropertyName(name: string): boolean {
   return !RESERVED_KEYWORDS.includes(name);
 }
 
+interface PreservedSelfTypes {
+  tsTypes: string;
+  envProperty: string;
+  scopeProperty?: string;
+}
+
+// Parse existing SELF types from a generated file
+function parseExistingSelfTypes(content: string): PreservedSelfTypes | null {
+  // Look for SELF property in Env interface
+  const envMatch = content.match(
+    /SELF:\s*Mcp<\{([^}]+(?:\{[^}]*\}[^}]*)*)\}>;/s,
+  );
+
+  if (!envMatch) {
+    return null;
+  }
+
+  // Extract TypeScript types related to SELF
+  const selfTypeRegex =
+    /export\s+(?:interface|type)\s+\w*[Ss]elf\w*[^{]*\{[^}]*(?:\{[^}]*\}[^}]*)*\}/gs;
+  const typeMatches = content.match(selfTypeRegex) || [];
+
+  const tsTypes = typeMatches.join("\n\n");
+  const envProperty = `SELF: Mcp<{${envMatch[1]}}>;`;
+
+  // Look for SELF in Scopes object
+  const scopeMatch = content.match(/SELF:\s*\{([^}]+(?:\{[^}]*\}[^}]*)*)\}/s);
+  const scopeProperty = scopeMatch ? `SELF: {${scopeMatch[1]}}` : undefined;
+
+  return {
+    tsTypes,
+    envProperty,
+    scopeProperty,
+  };
+}
+
+// Try to read existing generated file to preserve SELF types
+async function getPreservedSelfTypes(
+  outputPath?: string,
+): Promise<PreservedSelfTypes | null> {
+  const defaultPath = join(process.cwd(), "deco.gen.ts");
+  const filePath = outputPath || defaultPath;
+
+  if (!existsSync(filePath)) {
+    return null;
+  }
+
+  try {
+    const content = await readFile(filePath, "utf-8");
+    return parseExistingSelfTypes(content);
+  } catch (error) {
+    console.warn(
+      `⚠️ Failed to read existing file for SELF type preservation: ${error}`,
+    );
+    return null;
+  }
+}
+
 type KeyInfo = { type: string; key: string };
 
 const CONTRACTS_BINDING = "@deco/contracts";
@@ -184,16 +246,17 @@ const workspaceSlug = (workspace: string) => {
   return workspace;
 };
 
-export const genEnv = async ({
-  workspace,
-  local,
-  bindings,
-  selfUrl,
-}: Options) => {
+export const genEnv = async (
+  { workspace, local, bindings, selfUrl }: Options,
+  outputPath?: string,
+) => {
   const wrangler = await readWranglerConfig();
   const appName = `@${wrangler.scope ?? workspaceSlug(workspace)}/${wrangler.name}`;
   const client = await createWorkspaceClient({ workspace, local });
   const apiClient = await createWorkspaceClient({ local });
+
+  // Try to get preserved SELF types from existing file
+  const preservedSelfTypes = await getPreservedSelfTypes(outputPath);
 
   try {
     const types = new Map<string, number>();
@@ -277,10 +340,19 @@ export const genEnv = async ({
         };
 
         if (!Array.isArray(tools.structuredContent?.tools)) {
-          console.warn(
-            `⚠️ No tools found for integration ${binding.name}. Skipping...`,
-          );
-          return null;
+          // Special handling for SELF binding - try to preserve existing types
+          if (binding.name === "SELF" && preservedSelfTypes) {
+            console.warn(
+              `⚠️ No tools found for SELF integration. Using preserved SELF types from existing file.`,
+            );
+            // Return a special marker to indicate we should use preserved types
+            return { name: "SELF", usePreserved: true };
+          } else {
+            console.warn(
+              `⚠️ No tools found for integration ${binding.name}. Skipping...`,
+            );
+            return null;
+          }
         }
 
         if ("integration_name" in binding || binding.type === "contract") {
@@ -347,9 +419,43 @@ export const genEnv = async ({
       }),
     );
 
+    // Handle preserved SELF types if generation failed
+    let finalProps = props.filter((p) => p !== null && Array.isArray(p)) as [
+      string,
+      [string, string, string | undefined, string | undefined][],
+      KeyInfo | undefined,
+    ][];
+    let finalTsTypes = tsTypes;
+    const finalMapBindingTools = mapBindingTools;
+
+    // Check if we have a preserved SELF marker
+    const selfPreservedIndex = props.findIndex(
+      (p) => p && typeof p === "object" && "usePreserved" in p,
+    );
+    if (selfPreservedIndex !== -1 && preservedSelfTypes) {
+      console.log("📋 Preserving existing SELF types from previous generation");
+
+      // Remove the preserved marker from props
+      finalProps = finalProps.filter(
+        (_, index) => index !== selfPreservedIndex,
+      );
+
+      // Add preserved SELF types to finalTsTypes with comment
+      finalTsTypes = `${tsTypes}
+
+// ===== PRESERVED SELF TYPES =====
+// The following SELF types were preserved from the previous generation
+// because the SELF integration could not be reached during this generation.
+${preservedSelfTypes.tsTypes}
+// ===== END PRESERVED SELF TYPES =====
+`;
+
+      // We'll need to handle the SELF property separately in the template
+    }
+
     return await format(`
     // Generated types - do not edit manually
-${tsTypes}
+${finalTsTypes}
    
   import { z } from "zod";
 
@@ -366,8 +472,8 @@ ${tsTypes}
   }
 
   export const StateSchema = z.object({
-    ${props
-      .filter((p) => p !== null && p[2] !== undefined)
+    ${finalProps
+      .filter((p) => p[2] !== undefined)
       .map((prop) => {
         const [_, __, stateKey] = prop as [
           string,
@@ -385,8 +491,7 @@ ${tsTypes}
   export interface Env {
     DECO_CHAT_WORKSPACE: string;
     DECO_CHAT_API_JWT_PUBLIC_KEY: string;
-    ${props
-      .filter((p) => p !== null)
+    ${finalProps
       .map(([propName, tools]) => {
         return `${propName}: Mcp<{
         ${tools
@@ -404,11 +509,17 @@ ${tsTypes}
           .join("")}
       }>;`;
       })
-      .join("")}
+      .join("")}${
+      selfPreservedIndex !== -1 && preservedSelfTypes
+        ? `
+    // PRESERVED SELF TYPES (from previous generation)
+    ${preservedSelfTypes.envProperty}`
+        : ""
+    }
   }
 
   export const Scopes = {
-    ${Object.entries(mapBindingTools)
+    ${Object.entries(finalMapBindingTools)
       .map(
         ([bindingName, tools]) =>
           `${toValidProperty(bindingName)}: {
@@ -422,7 +533,13 @@ ${tsTypes}
         .join(",\n")}
     }`,
       )
-      .join(",\n")}
+      .join(",\n")}${
+      selfPreservedIndex !== -1 && preservedSelfTypes?.scopeProperty
+        ? `,
+    // PRESERVED SELF SCOPES (from previous generation)
+    ${preservedSelfTypes.scopeProperty}`
+        : ""
+    }
   }
   `);
   } finally {

@@ -62,17 +62,19 @@ export async function devCommand(opts: StartDevServerOptions): Promise<void> {
 
           const config = await getConfig();
           const wranglerConfig = await readWranglerConfig();
-          const env = await genEnv({
-            workspace: config.workspace,
-            local: config.local,
-            bindings: config.bindings,
-            selfUrl: `https://${getAppDomain(
-              config.workspace,
-              wranglerConfig.name ?? "my-app",
-            )}/mcp`,
-          });
-
           const outputPath = join(process.cwd(), "deco.gen.ts");
+          const env = await genEnv(
+            {
+              workspace: config.workspace,
+              local: config.local,
+              bindings: config.bindings,
+              selfUrl: `https://${getAppDomain(
+                config.workspace,
+                wranglerConfig.name ?? "my-app",
+              )}/mcp`,
+            },
+            outputPath,
+          );
           await writeFile(outputPath, env);
           console.log(`✅ Generated types written to: ${outputPath}`);
         } catch (error) {

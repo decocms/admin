@@ -191,13 +191,15 @@ async function customizeTemplate({
       await writeWranglerConfig(newConfig, wranglerRoot || targetDir);
 
       // Generate environment variables file
-      const envContent = await genEnv({
-        workspace: workspace,
-        local: false,
-        bindings: newConfig.deco.bindings || [],
-      });
-
       const outputPath = join(wranglerRoot || targetDir, "deco.gen.ts");
+      const envContent = await genEnv(
+        {
+          workspace: workspace,
+          local: false,
+          bindings: newConfig.deco.bindings || [],
+        },
+        outputPath,
+      );
       await fs.writeFile(outputPath, envContent);
       console.log(`✅ Environment types written to: ${outputPath}`);
     } catch (error) {

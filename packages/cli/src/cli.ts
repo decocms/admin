@@ -391,17 +391,20 @@ const gen = new Command("gen")
     try {
       const wranglerConfig = await readWranglerConfig();
       const config = await getConfig({});
-      const env = await genEnv({
-        workspace: config.workspace,
-        local: config.local,
-        bindings: config.bindings,
-        selfUrl:
-          options.self ??
-          `https://${getAppDomain(
-            config.workspace,
-            wranglerConfig.name ?? "my-app",
-          )}/mcp`,
-      });
+      const env = await genEnv(
+        {
+          workspace: config.workspace,
+          local: config.local,
+          bindings: config.bindings,
+          selfUrl:
+            options.self ??
+            `https://${getAppDomain(
+              config.workspace,
+              wranglerConfig.name ?? "my-app",
+            )}/mcp`,
+        },
+        options.output,
+      );
       if (options.output) {
         await writeFile(options.output, env);
       } else {

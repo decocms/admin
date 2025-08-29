@@ -457,86 +457,19 @@ function WorkspaceViews() {
 
   // Separate items for organization
   const mcpItems = firstLevelViews.filter((item) =>
-    ["Agents", "Integrations", "Prompts", "Views", "Workflows"].includes(
+    ["Agents", "Integrations", "Prompts", "Views", "Workflows", "Triggers"].includes(
       item.title,
     ),
   );
   const otherItems = firstLevelViews.filter(
     (item) =>
-      ![
-        "Agents",
-        "Integrations",
-        "Prompts",
-        "Views",
-        "Workflows",
-        "Triggers",
+      [
+        "Monitor",
       ].includes(item.title),
   );
 
   return (
     <>
-      {/* Regular items */}
-      {otherItems.map((item) => {
-        const meta = parseViewMetadata(item);
-        if (!meta) {
-          return null;
-        }
-        const href = workspaceLink(
-          meta.type === "custom" ? `/views/${item.id}` : meta.path,
-        );
-
-        return (
-          <SidebarMenuItem key={item.title}>
-            <WithActive to={href}>
-              {({ isActive }) => (
-                <SidebarMenuButton
-                  asChild
-                  isActive={isActive}
-                  tooltip={item.title}
-                >
-                  <Link
-                    to={href}
-                    className="group/item"
-                    onClick={() => {
-                      trackEvent("sidebar_navigation_click", {
-                        item: item.title,
-                      });
-                      isMobile && toggleSidebar();
-                    }}
-                  >
-                    <Icon
-                      name={item.icon}
-                      filled={isActive}
-                      size={18}
-                      className="text-muted-foreground/75"
-                    />
-                    <span className="truncate">{item.title}</span>
-
-                    {meta.type === "custom" && (
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        className="text-destructive hover:text-destructive ml-auto group-hover/item:block! hidden! p-0.5 h-6"
-                        onClick={(e) => {
-                          e.preventDefault();
-                          e.stopPropagation();
-                          handleRemoveView(item);
-                        }}
-                      >
-                        <Icon
-                          name="remove"
-                          size={18}
-                          className="text-muted-foreground ml-auto group-hover/item:block! hidden!"
-                        />
-                      </Button>
-                    )}
-                  </Link>
-                </SidebarMenuButton>
-              )}
-            </WithActive>
-          </SidebarMenuItem>
-        );
-      })}
 
       {/* MCPs section */}
       {mcpItems.length > 0 && (
@@ -605,6 +538,68 @@ function WorkspaceViews() {
           </Collapsible>
         </SidebarMenuItem>
       )}
+            {/* Regular items */}
+            {otherItems.map((item) => {
+        const meta = parseViewMetadata(item);
+        if (!meta) {
+          return null;
+        }
+        const href = workspaceLink(
+          meta.type === "custom" ? `/views/${item.id}` : meta.path,
+        );
+
+        return (
+          <SidebarMenuItem key={item.title}>
+            <WithActive to={href}>
+              {({ isActive }) => (
+                <SidebarMenuButton
+                  asChild
+                  isActive={isActive}
+                  tooltip={item.title}
+                >
+                  <Link
+                    to={href}
+                    className="group/item"
+                    onClick={() => {
+                      trackEvent("sidebar_navigation_click", {
+                        item: item.title,
+                      });
+                      isMobile && toggleSidebar();
+                    }}
+                  >
+                    <Icon
+                      name={item.icon}
+                      filled={isActive}
+                      size={18}
+                      className="text-muted-foreground/75"
+                    />
+                    <span className="truncate">{item.title}</span>
+
+                    {meta.type === "custom" && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="text-destructive hover:text-destructive ml-auto group-hover/item:block! hidden! p-0.5 h-6"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          handleRemoveView(item);
+                        }}
+                      >
+                        <Icon
+                          name="remove"
+                          size={18}
+                          className="text-muted-foreground ml-auto group-hover/item:block! hidden!"
+                        />
+                      </Button>
+                    )}
+                  </Link>
+                </SidebarMenuButton>
+              )}
+            </WithActive>
+          </SidebarMenuItem>
+        );
+      })}
       {Object.entries(fromIntegration).map(([integrationId, views]) => {
         const integration = integrationMap.get(integrationId);
         return (

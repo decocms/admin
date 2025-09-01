@@ -19,6 +19,7 @@ import { Suspense, useMemo, useState } from "react";
 import { useCurrentAgent } from "../../hooks/use-current-agent.ts";
 import { MainChat } from "../agent/chat.tsx";
 import { AgentProvider, useAgent } from "../agent/provider.tsx";
+import { useViewAdditionalTools } from "./use-view-additional-tools.ts";
 import { AgentVisibility } from "../common/agent-visibility.tsx";
 import { AgentAvatar } from "../common/avatar/agent.tsx";
 
@@ -255,6 +256,7 @@ export function DecopilotChat() {
   const { currentAgentId, setCurrentAgentId } = useCurrentAgent();
   const [isAgentSwitcherOpen, setIsAgentSwitcherOpen] = useState(false);
   const [threadId, _setThreadId] = useState(() => crypto.randomUUID());
+  const viewAdditionalTools = useViewAdditionalTools();
 
   return (
     <div className="flex flex-col h-full">
@@ -262,6 +264,7 @@ export function DecopilotChat() {
         key={currentAgentId}
         agentId={currentAgentId}
         threadId={threadId}
+        additionalTools={viewAdditionalTools}
         uiOptions={{
           showThreadTools: false,
           showModelSelector: false,

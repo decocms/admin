@@ -1,3 +1,4 @@
+// deno-lint-ignore-file no-explicit-any
 import { useMemo } from "react";
 import { useParams } from "react-router";
 import { useIntegrations } from "@deco/sdk";
@@ -22,7 +23,9 @@ export function useViewAdditionalTools(): Record<string, string[]> | undefined {
     if (!integrationId) return undefined;
     const integration = integrations.find((i) => i.id === integrationId);
     const toolNames = Array.isArray((integration as any)?.tools)
-      ? ((integration as any).tools as Array<{ name: string }>).map((t) => t.name)
+      ? ((integration as any).tools as Array<{ name: string }>).map(
+        (t) => t.name,
+      )
       : [];
     // If no tools metadata available, default to empty array (server: expose all)
     return { [integrationId]: toolNames } as Record<string, string[]>;

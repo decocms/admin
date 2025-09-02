@@ -1,6 +1,6 @@
 {
   "name": "create-deco",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "description": "Create a new deco.chat project",
   "main": "index.js",
   "bin": {
@@ -20,7 +20,7 @@
   "author": "Deco team",
   "license": "MIT",
   "dependencies": {
-    "deco-cli": "^0.16.2"
+    "deco-cli": "^0.17.3"
   },
   "engines": {
     "node": ">=22.0.0"

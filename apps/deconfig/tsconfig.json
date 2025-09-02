@@ -1,5 +1,6 @@
 {
   "compilerOptions": {
+    "types": ["@cloudflare/workers-types"],
     // Deno-like strict type checking
     "strict": true,
     "noImplicitAny": true,
@@ -46,9 +47,6 @@
     "lib": ["ESNext", "DOM", "DOM.Iterable"],
     // Path resolution
     "baseUrl": ".",
-    "paths": {
-      "@deco/*": ["packages/*/src"]
-    },
     // Experimental decorators for compatibility
     "experimentalDecorators": true,
     "emitDecoratorMetadata": true,
@@ -59,19 +57,6 @@
     "resolveJsonModule": true,
     "isolatedModules": true
   },
-  "include": ["apps/**/*", "packages/**/*", "plugins/**/*"],
-  "exclude": [
-    "node_modules",
-    "apps/*/node_modules",
-    "packages/*/node_modules",
-    "**/dist",
-    "**/build",
-    "**/.wrangler",
-    "apps/web/public/**",
-    "packages/runtime/scripts/generate-cf-imports.ts",
-    "packages/runtime/scripts/generate-json-schema.ts",
-    "docs/server/**",
-    "plugins/*",
-    "apps/deconfig/*"
-  ]
+  "include": ["server/**/*.ts", "view/**/*.ts"],
+  "exclude": ["node_modules", "**/dist", "**/build", "**/.wrangler"]
 }

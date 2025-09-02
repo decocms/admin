@@ -171,6 +171,7 @@ function ErrorFallback() {
   const { pathname, search } = useLocation();
   const error = useRouteError();
   const isUnauthorized = error instanceof UnauthorizedError;
+  const workspaceLink = useWorkspaceLink();
 
   useEffect(() => {
     import("./hooks/analytics.ts").then((mod) => mod.trackException(error));
@@ -234,7 +235,7 @@ function ErrorFallback() {
           </>
         }
         buttonProps={{
-          onClick: () => (globalThis.location.href = "/"),
+          onClick: () => (globalThis.location.href = workspaceLink("/")),
           children: "Go back to home",
         }}
       />

@@ -2,16 +2,17 @@
  * DECONFIG-related tools for namespace and file operations.
  *
  * This file contains all tools related to DECONFIG operations including:
- * - Namespace CRUD: create, read, branch, merge, delete
+ * - Namespace CRUD: create, read, list, delete
  * - File CRUD: put, read, delete, list
  * - Advanced operations: diff, watch, transactional writes
  *
- * Namespaces are lazily created - they exist as empty when first accessed.
- * Use CREATE_NAMESPACE only when you need explicit configuration.
- * Default namespace is "main" when not specified.
+ * Namespaces are now managed via workspace database for better scalability
+ * and workspace-level isolation. Each namespace can contain files managed
+ * by the existing Durable Object infrastructure.
  */
 import { createTool } from "@deco/workers-runtime/mastra";
 import { MergeStrategy } from "server/src/namespace.ts";
+import { newNamespacesCRUD } from "server/src/namespaces-db.ts";
 import { z } from "zod";
 import type { Env } from "../main.ts";
 
@@ -24,10 +25,14 @@ const projectFor = (env: Env): string => {
   return workspace;
 };
 
-// Helper function to get namespace RPC (lazy creation)
+// Helper function to get namespace RPC (using namespaceName directly for performance)
 const namespaceRpcFor = async (env: Env, namespaceName: string = "main") => {
   const projectId = projectFor(env);
+
+  // Use namespaceName directly for Durable Object ID for performance
   const namespaceId = `${projectId}-${namespaceName}`;
+
+  // Get or create the Durable Object for file operations
   const namespaceStub = env.NAMESPACE.get(
     env.NAMESPACE.idFromName(namespaceId),
   );
@@ -36,6 +41,7 @@ const namespaceRpcFor = async (env: Env, namespaceName: string = "main") => {
     projectId,
     namespaceName,
   });
+
   return rpc;
 };
 
@@ -56,42 +62,128 @@ export const createNamespaceTool = (env: Env) =>
         .describe(
           "The source namespace to branch from (optional - creates empty namespace if not provided)",
         ),
+      metadata: z
+        .record(z.any())
+        .optional()
+        .describe("Optional metadata for the namespace"),
     }),
     outputSchema: z.object({
       namespaceName: z.string(),
-      projectId: z.string(),
       sourceNamespace: z.string().optional(),
+      createdAt: z.number(),
     }),
     execute: async ({ context }) => {
-      const projectId = projectFor(env);
+      const crud = newNamespacesCRUD(env);
+
+      // Check if namespace already exists
+      if (await crud.namespaceExists(context.namespaceName)) {
+        throw new Error(`Namespace '${context.namespaceName}' already exists`);
+      }
 
       if (context.sourceNamespace) {
-        // Branch from existing namespace
+        // Branching from existing namespace
+        if (!(await crud.namespaceExists(context.sourceNamespace))) {
+          throw new Error(`Source namespace '${context.sourceNamespace}' not found`);
+        }
+
+        // Branch from existing namespace using Durable Object
         const sourceRpc = await namespaceRpcFor(env, context.sourceNamespace);
         using _ = await sourceRpc.branch(context.namespaceName);
 
-        return {
-          namespaceName: context.namespaceName,
-          projectId,
-          sourceNamespace: context.sourceNamespace,
-        };
-      } else {
-        // Create empty namespace
-        const namespaceStub = env.NAMESPACE.get(
-          env.NAMESPACE.idFromName(context.namespaceName),
-        );
-
-        using _ = await namespaceStub.new({
-          projectId,
-          namespaceName: context.namespaceName,
-          origin: null,
-        });
-
-        return {
-          namespaceName: context.namespaceName,
-          projectId,
-        };
       }
+      // Create empty namespace
+      const namespace = await crud.createNamespace({
+        name: context.namespaceName,
+        metadata: context.metadata,
+        origin_namespace: context.sourceNamespace,
+      });
+
+      return {
+        namespaceName: context.namespaceName,
+        sourceNamespace: context.sourceNamespace,
+        createdAt: namespace.created_at,
+      };
+    },
+  });
+
+export const createListNamespacesTool = (env: Env) =>
+  createTool({
+    id: "LIST_NAMESPACES",
+    description: "List all namespaces in the current workspace",
+    inputSchema: z.object({
+      prefix: z
+        .string()
+        .optional()
+        .describe("Optional prefix to filter namespace names"),
+    }),
+    outputSchema: z.object({
+      namespaces: z.array(
+        z.object({
+          name: z.string(),
+          createdAt: z.number(),
+          metadata: z.record(z.any()),
+          originNamespace: z.string().nullable(),
+        }),
+      ),
+      count: z.number(),
+    }),
+    execute: async ({ context }) => {
+      const crud = newNamespacesCRUD(env);
+      const namespaces = await crud.listNamespaces({ prefix: context.prefix });
+
+      const formattedNamespaces = namespaces.map((ns) => ({
+        name: ns.name,
+        createdAt: ns.created_at,
+        metadata: ns.metadata,
+        originNamespace: ns.origin_namespace,
+      }));
+
+      return {
+        namespaces: formattedNamespaces,
+        count: formattedNamespaces.length,
+      };
+    },
+  });
+
+export const createDeleteNamespaceTool = (env: Env) =>
+  createTool({
+    id: "DELETE_NAMESPACE",
+    description:
+      "Delete a namespace and all its files. This operation cannot be undone.",
+    inputSchema: z.object({
+      namespaceName: z.string().describe("The name of the namespace to delete"),
+    }),
+    outputSchema: z.object({
+      deleted: z.boolean(),
+      namespaceName: z.string(),
+      filesDeleted: z.number().optional(),
+    }),
+    execute: async ({ context }) => {
+      const crud = newNamespacesCRUD(env);
+
+      // Check if namespace exists
+      if (!(await crud.namespaceExists(context.namespaceName))) {
+        throw new Error(`Namespace '${context.namespaceName}' not found`);
+      }
+
+      // Get file count before deletion (optional)
+      let filesDeleted = 0;
+      try {
+        const namespaceRpc = await namespaceRpcFor(env, context.namespaceName);
+        const files = await namespaceRpc.getFiles();
+        filesDeleted = Object.keys(files).length;
+      } catch (error) {
+        // Ignore errors getting file count
+      }
+
+      // Delete from database
+      const deleted = await crud.deleteNamespace(context.namespaceName);
+
+      return {
+        deleted,
+        namespaceName: context.namespaceName,
+        filesDeleted,
+      };
     },
   });
 
@@ -193,7 +285,7 @@ export const createDiffNamespaceTool = (env: Env) =>
   });
 
 // =============================================================================
-// FILE CRUD OPERATIONS
+// FILE CRUD OPERATIONS (using namespaceName directly for performance)
 // =============================================================================
 
 const BaseFileOperationInputSchema = z.object({
@@ -342,6 +434,7 @@ const ListFilesOutputSchema = z.object({
   ),
   count: z.number(),
 });
+
 export const createListFilesTool = (env: Env) =>
   createTool({
     id: "LIST_FILES",
@@ -367,6 +460,8 @@ export const createListFilesTool = (env: Env) =>
 export const deconfigTools = [
   // Namespace CRUD
   createNamespaceTool,
+  createListNamespacesTool,
+  createDeleteNamespaceTool,
   createMergeNamespaceTool,
   createDiffNamespaceTool,
 

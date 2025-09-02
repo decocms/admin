@@ -1,0 +1,189 @@
+---
+alwaysApply: true
+---
+
+# Domain Organization and File Size Guidelines
+
+## Domain-Based Architecture
+
+The project follows a **domain-based architecture** for organizing tools and workflows, promoting maintainability, scalability, and clear separation of concerns.
+
+### Directory Structure
+
+```
+server/
+├── tools/
+│   ├── index.ts          # Central export point for all tools
+│   ├── todos.ts          # Todo-related tools
+│   ├── user.ts           # User-related tools
+│   └── [domain].ts       # Additional domain-specific tools
+├── workflows/
+│   ├── index.ts          # Central export point for all workflows
+│   ├── todos.ts          # Todo-related workflows (when needed)
+│   ├── user.ts           # User-related workflows (when needed)
+│   └── [domain].ts       # Additional domain-specific workflows
+└── main.ts               # Imports from tools/index.ts and workflows/index.ts
+```
+
+### Domain Organization Rules
+
+1. **Tools Organization:**
+   - Each domain gets its own file: `server/tools/[domain].ts`
+   - All tools for a domain are exported as an array: `export const [domain]Tools = [...]`
+   - The `server/tools/index.ts` aggregates all domain tools
+   - Import in `main.ts` from `./tools/index.ts`
+
+2. **Workflows Organization:**
+   - Each domain gets its own file: `server/workflows/[domain].ts`
+   - All workflows for a domain are exported as an array: `export const [domain]Workflows = [...]`
+   - The `server/workflows/index.ts` aggregates all domain workflows
+   - Import in `main.ts` from `./workflows/index.ts`
+
+3. **Domain Examples:**
+   - `todos` - Task management functionality
+   - `user` - Authentication and user management
+   - `analytics` - Analytics and reporting
+   - `notifications` - Notification systems
+   - `payments` - Payment processing
+   - `content` - Content management
+   - `integration` - Third-party integrations
+
+### File Organization Pattern
+
+```typescript
+// server/tools/[domain].ts
+/**
+ * [Domain]-related tools for [description].
+ * 
+ * This file contains all tools related to [domain] operations including:
+ * - [Operation 1]
+ * - [Operation 2]
+ * - [Operation 3]
+ */
+import { createTool, createPrivateTool } from "@deco/workers-runtime/mastra";
+import { z } from "zod";
+import type { Env } from "../main.ts";
+
+export const createTool1 = (env: Env) => createTool({
+  // Tool definition
+});
+
+export const createTool2 = (env: Env) => createTool({
+  // Tool definition
+});
+
+// Export all domain-related tools
+export const [domain]Tools = [
+  createTool1,
+  createTool2,
+];
+```
+
+```typescript
+// server/tools/index.ts
+import { todoTools } from "./todos.ts";
+import { userTools } from "./user.ts";
+import { [domain]Tools } from "./[domain].ts";
+
+export const tools = [
+  ...todoTools,
+  ...userTools,
+  ...[domain]Tools,
+];
+
+// Re-export for direct access
+export { todoTools } from "./todos.ts";
+export { userTools } from "./user.ts";
+export { [domain]Tools } from "./[domain].ts";
+```
+
+## File Size Limits
+
+### Maximum File Size: 300 Lines
+
+**All tool and workflow files MUST NOT exceed 300 lines.** This ensures:
+- **Readability**: Files remain manageable and easy to understand
+- **Maintainability**: Easier to modify and debug individual domains
+- **Performance**: Faster loading and processing
+- **Collaboration**: Reduced merge conflicts and easier code reviews
+
+### When a File Exceeds 300 Lines
+
+1. **Split by Subdomain**: Break the domain into smaller subdomains
+   ```
+   server/tools/
+   ├── user/
+   │   ├── index.ts        # Aggregates user subdomains
+   │   ├── auth.ts         # Authentication tools
+   │   ├── profile.ts      # Profile management tools
+   │   └── preferences.ts  # User preferences tools
+   ```
+
+2. **Split by Operation Type**: Separate CRUD operations
+   ```
+   server/tools/
+   ├── todos/
+   │   ├── index.ts        # Aggregates todo operations
+   │   ├── create.ts       # Creation operations
+   │   ├── read.ts         # Read/query operations
+   │   ├── update.ts       # Update operations
+   │   └── delete.ts       # Deletion operations
+   ```
+
+3. **Extract Utilities**: Move shared utilities to separate files
+   ```
+   server/
+   ├── tools/
+   │   ├── todos.ts
+   │   └── utils/
+   │       ├── todo-schemas.ts    # Shared Zod schemas
+   │       ├── todo-helpers.ts    # Helper functions
+   │       └── todo-constants.ts  # Constants and enums
+   ```
+
+### File Size Enforcement
+
+- **Line Count**: Includes comments, imports, and blank lines
+- **Monitoring**: Check file size during code reviews
+- **Refactoring**: When approaching 250 lines, start planning the split
+- **Documentation**: Always document the reason for domain/subdomain splits
+
+## Best Practices
+
+### Domain Definition
+- **Single Responsibility**: Each domain should have a clear, focused purpose
+- **Logical Grouping**: Group related functionality together
+- **Business Logic**: Align domains with business concepts, not technical layers
+- **Scalability**: Consider future growth when defining domains
+
+### Tool Organization
+- **Consistent Naming**: Use `create[Action][Entity]Tool` pattern
+- **Clear Documentation**: Document each tool's purpose and usage
+- **Input/Output Schemas**: Always define clear Zod schemas
+- **Error Handling**: Consistent error patterns across domains
+
+### Import/Export Patterns
+- **Central Aggregation**: Use index.ts files for clean imports
+- **Re-exports**: Provide both aggregated and direct access
+- **Type Safety**: Maintain TypeScript type safety across all imports
+- **Circular Dependencies**: Avoid circular imports between domains
+
+## Migration Guidelines
+
+### When Adding New Domains
+1. Create `server/tools/[domain].ts` with tool definitions
+2. Create `server/workflows/[domain].ts` if workflows are needed
+3. Update `server/tools/index.ts` to include new domain
+4. Update `server/workflows/index.ts` if workflows were added
+5. Ensure file stays under 300 lines
+
+### When Refactoring Existing Code
+1. Identify logical domain boundaries
+2. Extract tools/workflows by domain
+3. Create domain-specific files
+4. Update index files
+5. Update main.ts imports
+6. Test all functionality
+7. Remove old monolithic files
+
+This organization ensures clean, maintainable, and scalable code architecture while enforcing reasonable file size limits for optimal development experience.

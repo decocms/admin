@@ -1,0 +1,576 @@
+---
+alwaysApply: true
+---
+# AI Usage Patterns in Deco Apps
+
+> This guide provides comprehensive patterns for integrating AI functionality in deco applications, including tool proxying, RPC communication, schema design, and practical implementation examples.
+
+---
+
+## 🏗️ Data Flow Architecture
+
+```mermaid
+flowchart TD
+    subgraph Frontend [Frontend React App]
+        A[User Input]
+        B[Schema Generation]
+        C[RPC Call client.AI_GENERATE_OBJECT]
+        D[Process Response]
+    end
+    
+    subgraph Server [Deco Server MCP]
+        E[Proxy Tool AI_GENERATE_OBJECT]
+        F[Call env.DECO_CHAT_WORKSPACE_API.AI_GENERATE_OBJECT]
+    end
+    
+    subgraph External [Deco Platform]
+        G[AI Model Provider]
+    end
+    
+    A --> B
+    B --> C
+    C --> E
+    E --> F
+    F --> G
+    G --> F
+    F --> E
+    E --> D
+```
+
+---
+
+## 🔧 Server Setup: Tool Proxying
+
+### Why Proxy AI Tools?
+
+Deco servers need to **proxy** external AI tools to provide typed interfaces and centralized configuration. This pattern allows:
+
+- **Type Safety**: Generated TypeScript interfaces for frontend
+- **Configuration Management**: Centralized AI model settings
+- **Error Handling**: Consistent error patterns
+- **Rate Limiting**: Server-side request management
+
+### Implementation Pattern
+
+```typescript
+// server/main.ts
+const createAIGenerateObjectTool = (env: Env) =>
+  createTool({
+    id: "AI_GENERATE_OBJECT",
+    description: "Generate structured objects using AI models with JSON schema validation",
+    inputSchema: z.object({
+      messages: z.array(z.object({
+        id: z.string().optional(),
+        role: z.enum(["user", "assistant", "system"]),
+        content: z.string(),
+        createdAt: z.string().optional(),
+        experimental_attachments: z.array(z.object({
+          name: z.string().optional(),
+          contentType: z.string().optional(),
+          url: z.string()
+        })).optional()
+      })),
+      schema: z.record(z.any()),
+      model: z.string().optional(),
+      maxTokens: z.number().optional(),
+      temperature: z.number().optional(),
+      tools: z.record(z.array(z.string())).optional()
+    }),
+    outputSchema: z.object({
+      object: z.record(z.any()).optional(),
+      usage: z.object({
+        promptTokens: z.number(),
+        completionTokens: z.number(),
+        totalTokens: z.number(),
+        transactionId: z.string()
+      }),
+      finishReason: z.string().optional()
+    }),
+    execute: async ({ context }) => {
+      // Proxy to the actual deco platform AI tool
+      return await env.DECO_CHAT_WORKSPACE_API.AI_GENERATE_OBJECT({
+        messages: context.messages,
+        schema: context.schema,
+        model: context.model,
+        maxTokens: context.maxTokens,
+        temperature: context.temperature,
+        tools: context.tools
+      });
+    },
+  });
+
+// Register the tool in withRuntime
+const { Workflow, ...runtime } = withRuntime<Env>({
+  workflows: [/* your workflows */],
+  tools: [/* other tools */, createAIGenerateObjectTool],
+  fetch: fallbackToView("/"),
+});
+```
+
+---
+
+## 📡 Frontend RPC: Correct Usage Patterns
+
+### RPC Client Setup
+
+```typescript
+// view/src/lib/rpc.ts
+import { createClient } from "@deco/workers-runtime/client";
+import type { Env } from "../../../server/deco.gen.ts";
+
+type SelfMCP = Env["SELF"];
+export const client = createClient<SelfMCP>();
+```
+
+### ✅ Correct RPC Call Pattern
+
+```typescript
+const result = await client.AI_GENERATE_OBJECT({
+  messages: [{
+    role: 'user',
+    content: 'Your prompt here'
+  }],
+  schema: yourSchema
+});
+```
+
+### ❌ Common Mistakes
+
+```typescript
+// ❌ WRONG: Using .tools namespace
+const result = await client.tools.AI_GENERATE_OBJECT({...});
+
+// ❌ WRONG: Using .workflows for tools
+const result = await client.workflows.AI_GENERATE_OBJECT({...});
+```
+
+### Why No `.tools` Namespace?
+
+The deco RPC client provides **direct access** to your server's tools as first-class methods. When you register a tool with `id: "AI_GENERATE_OBJECT"`, it becomes available as `client.AI_GENERATE_OBJECT()` directly.
+
+---
+
+## 📋 Schema Design Patterns
+
+### Dynamic Schema Generation
+
+For applications with configurable criteria (like text evaluation), generate schemas dynamically:
+
+```typescript
+// Example: Text evaluation with dynamic criteria
+interface Criterion {
+  id: string;
+  title: string;
+  prompt: string;
+}
+
+const generateEvaluationSchema = (criteria: Criterion[]) => ({
+  type: 'object',
+  properties: criteria.reduce((acc, criterion) => {
+    acc[criterion.id] = {
+      type: 'object',
+      properties: {
+        score: {
+          type: 'number',
+          minimum: 0,
+          maximum: 10,
+          description: 'Score from 0 to 10 for this criterion'
+        },
+        feedback: {
+          type: 'string',
+          description: 'Detailed feedback for this criterion'
+        }
+      },
+      required: ['score', 'feedback']
+    };
+    return acc;
+  }, {} as any),
+  required: criteria.map(c => c.id)
+});
+```
+
+### Static Schema Examples
+
+```typescript
+// Simple categorization
+const categorizationSchema = {
+  type: 'object',
+  properties: {
+    category: {
+      type: 'string',
+      enum: ['positive', 'negative', 'neutral'],
+      description: 'Sentiment category'
+    },
+    confidence: {
+      type: 'number',
+      minimum: 0,
+      maximum: 1,
+      description: 'Confidence score'
+    },
+    reasoning: {
+      type: 'string',
+      description: 'Explanation of the categorization'
+    }
+  },
+  required: ['category', 'confidence', 'reasoning']
+};
+
+// Data extraction
+const extractionSchema = {
+  type: 'object',
+  properties: {
+    entities: {
+      type: 'array',
+      items: {
+        type: 'object',
+        properties: {
+          type: { type: 'string' },
+          value: { type: 'string' },
+          confidence: { type: 'number', minimum: 0, maximum: 1 }
+        },
+        required: ['type', 'value', 'confidence']
+      }
+    },
+    summary: {
+      type: 'string',
+      description: 'Brief summary of extracted information'
+    }
+  },
+  required: ['entities', 'summary']
+};
+```
+
+---
+
+## 🎯 Common AI Usage Patterns
+
+### 1. Text Evaluation with Dynamic Criteria
+
+```typescript
+const evaluateText = async (text: string, criteria: Criterion[]) => {
+  const schema = generateEvaluationSchema(criteria);
+  
+  const prompt = `Evaluate the following text according to the specified criteria:
+
+TEXT:
+${text}
+
+EVALUATION CRITERIA:
+${criteria.map(c => `- ${c.title}: ${c.prompt}`).join('\n')}
+
+For each criterion, provide a score from 0 to 10 and detailed feedback explaining your evaluation.`;
+
+  try {
+    const result = await client.AI_GENERATE_OBJECT({
+      messages: [{
+        role: 'user',
+        content: prompt
+      }],
+      schema
+    });
+
+    if (result.object) {
+      // Process structured response
+      return criteria.map(criterion => ({
+        criterionId: criterion.id,
+        score: result.object[criterion.id]?.score || 0,
+        feedback: result.object[criterion.id]?.feedback || 'No feedback available'
+      }));
+    }
+  } catch (error) {
+    console.error('AI evaluation error:', error);
+    throw new Error('Failed to evaluate text');
+  }
+};
+```
+
+### 2. Content Analysis and Categorization
+
+```typescript
+const analyzeContent = async (content: string) => {
+  const schema = {
+    type: 'object',
+    properties: {
+      sentiment: {
+        type: 'string',
+        enum: ['positive', 'negative', 'neutral'],
+        description: 'Overall sentiment of the content'
+      },
+      topics: {
+        type: 'array',
+        items: { type: 'string' },
+        description: 'Main topics discussed'
+      },
+      urgency: {
+        type: 'string',
+        enum: ['low', 'medium', 'high'],
+        description: 'Urgency level of the content'
+      },
+      actionItems: {
+        type: 'array',
+        items: {
+          type: 'object',
+          properties: {
+            task: { type: 'string' },
+            priority: { type: 'string', enum: ['low', 'medium', 'high'] }
+          },
+          required: ['task', 'priority']
+        },
+        description: 'Extracted action items'
+      },
+      summary: {
+        type: 'string',
+        description: 'Brief summary of the content'
+      }
+    },
+    required: ['sentiment', 'topics', 'urgency', 'summary']
+  };
+
+  const result = await client.AI_GENERATE_OBJECT({
+    messages: [{
+      role: 'system',
+      content: 'You are an expert content analyzer. Analyze the given content and extract structured information.'
+    }, {
+      role: 'user',
+      content: `Analyze this content:\n\n${content}`
+    }],
+    schema,
+    temperature: 0.3 // Lower temperature for consistent analysis
+  });
+
+  return result.object;
+};
+```
+
+### 3. Data Validation and Cleanup
+
+```typescript
+const validateAndCleanData = async (rawData: any[], expectedFields: string[]) => {
+  const schema = {
+    type: 'object',
+    properties: {
+      validRecords: {
+        type: 'array',
+        items: {
+          type: 'object',
+          properties: expectedFields.reduce((acc, field) => {
+            acc[field] = { type: 'string' };
+            return acc;
+          }, {} as any),
+          required: expectedFields
+        },
+        description: 'Clean, validated records'
+      },
+      errors: {
+        type: 'array',
+        items: {
+          type: 'object',
+          properties: {
+            recordIndex: { type: 'number' },
+            issues: { type: 'array', items: { type: 'string' } }
+          },
+          required: ['recordIndex', 'issues']
+        },
+        description: 'Records with validation errors'
+      },
+      statistics: {
+        type: 'object',
+        properties: {
+          totalRecords: { type: 'number' },
+          validRecords: { type: 'number' },
+          errorRecords: { type: 'number' },
+          completionRate: { type: 'number' }
+        },
+        required: ['totalRecords', 'validRecords', 'errorRecords', 'completionRate']
+      }
+    },
+    required: ['validRecords', 'errors', 'statistics']
+  };
+
+  const result = await client.AI_GENERATE_OBJECT({
+    messages: [{
+      role: 'system',
+      content: `You are a data validation expert. Clean and validate the provided data according to the expected schema. Fix minor issues where possible, report major issues as errors.`
+    }, {
+      role: 'user',
+      content: `Expected fields: ${expectedFields.join(', ')}\n\nRaw data:\n${JSON.stringify(rawData, null, 2)}`
+    }],
+    schema,
+    maxTokens: 4000
+  });
+
+  return result.object;
+};
+```
+
+---
+
+## 🛠️ Best Practices
+
+### Error Handling
+
+```typescript
+const callAIWithErrorHandling = async (prompt: string, schema: any) => {
+  try {
+    const result = await client.AI_GENERATE_OBJECT({
+      messages: [{ role: 'user', content: prompt }],
+      schema
+    });
+
+    if (!result.object) {
+      throw new Error('AI did not return structured data');
+    }
+
+    return result.object;
+  } catch (error) {
+    console.error('AI call failed:', error);
+    
+    // Provide fallback or specific error handling
+    if (error instanceof TypeError) {
+      throw new Error('Network error - please check connection');
+    } else if (error.message?.includes('schema')) {
+      throw new Error('Invalid schema provided');
+    } else {
+      throw new Error('AI processing failed - please try again');
+    }
+  }
+};
+```
+
+### Performance Optimization
+
+```typescript
+// Use appropriate model parameters
+const optimizedAICall = async (prompt: string, schema: any, options = {}) => {
+  const defaultOptions = {
+    temperature: 0.1,     // Lower for consistent results
+    maxTokens: 1000,      // Limit based on expected response size
+    model: 'gpt-4o-mini'  // Use appropriate model for task complexity
+  };
+
+  return await client.AI_GENERATE_OBJECT({
+    messages: [{ role: 'user', content: prompt }],
+    schema,
+    ...defaultOptions,
+    ...options
+  });
+};
+```
+
+### Schema Validation
+
+```typescript
+import { z } from 'zod';
+
+// Define expected response shape
+const EvaluationResultSchema = z.record(z.object({
+  score: z.number().min(0).max(10),
+  feedback: z.string().min(1)
+}));
+
+const validateAIResponse = (response: any, criteria: Criterion[]) => {
+  try {
+    // Validate structure
+    const validated = EvaluationResultSchema.parse(response);
+    
+    // Validate completeness
+    const missingCriteria = criteria.filter(c => !validated[c.id]);
+    if (missingCriteria.length > 0) {
+      console.warn('Missing evaluations for:', missingCriteria.map(c => c.title));
+    }
+    
+    return validated;
+  } catch (error) {
+    console.error('Invalid AI response structure:', error);
+    throw new Error('AI returned invalid response format');
+  }
+};
+```
+
+---
+
+## 🧪 Testing AI Integration
+
+### Mock RPC Client for Testing
+
+```typescript
+// tests/mocks/rpc.ts
+export const mockClient = {
+  AI_GENERATE_OBJECT: jest.fn().mockResolvedValue({
+    object: {
+      criterion1: { score: 8, feedback: 'Good clarity' },
+      criterion2: { score: 7, feedback: 'Minor grammar issues' }
+    },
+    usage: {
+      promptTokens: 100,
+      completionTokens: 50,
+      totalTokens: 150,
+      transactionId: 'test-123'
+    }
+  })
+};
+```
+
+### Unit Test Example
+
+```typescript
+// tests/ai-evaluation.test.ts
+import { evaluateText } from '../src/lib/ai-evaluation';
+import { mockClient } from './mocks/rpc';
+
+jest.mock('../src/lib/rpc', () => ({ client: mockClient }));
+
+describe('AI Text Evaluation', () => {
+  it('should evaluate text with multiple criteria', async () => {
+    const criteria = [
+      { id: 'clarity', title: 'Clarity', prompt: 'How clear is the text?' },
+      { id: 'grammar', title: 'Grammar', prompt: 'Check grammar and syntax' }
+    ];
+
+    const result = await evaluateText('Sample text', criteria);
+
+    expect(mockClient.AI_GENERATE_OBJECT).toHaveBeenCalledWith({
+      messages: expect.arrayContaining([
+        expect.objectContaining({
+          role: 'user',
+          content: expect.stringContaining('Sample text')
+        })
+      ]),
+      schema: expect.objectContaining({
+        type: 'object',
+        properties: expect.objectContaining({
+          clarity: expect.any(Object),
+          grammar: expect.any(Object)
+        })
+      })
+    });
+
+    expect(result).toHaveLength(2);
+    expect(result[0]).toEqual({
+      criterionId: 'clarity',
+      score: 8,
+      feedback: 'Good clarity'
+    });
+  });
+});
+```
+
+---
+
+## 🔑 Key Takeaways
+
+1. **Proxy Pattern**: Always proxy external AI tools through your deco server for type safety and centralized configuration
+
+2. **Direct RPC Calls**: Use `client.AI_GENERATE_OBJECT()` directly, not `client.tools.AI_GENERATE_OBJECT()`
+
+3. **Dynamic Schemas**: Generate schemas programmatically based on application state for flexible AI interactions
+
+4. **Error Handling**: Implement comprehensive error handling with meaningful error messages
+
+5. **Type Safety**: Leverage TypeScript and Zod schemas for robust type checking
+
+6. **Performance**: Use appropriate model parameters and response limits for optimal performance
+
+7. **Testing**: Mock RPC calls for reliable unit testing of AI-dependent features
+
+This pattern provides a solid foundation for AI integration in any deco application, ensuring type safety, maintainability, and robust error handling. 

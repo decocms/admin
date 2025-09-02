@@ -1,0 +1,902 @@
+---
+description: Comprehensive guide for developing applications on the deco.chat platform, covering tools, workflows, and best practices
+globs: ["**/*.ts", "**/*.tsx"]
+alwaysApply: true
+---
+
+# deco.chat Platform Development Rules
+
+## 🎯 Overview
+
+deco.chat is a powerful platform for creating MCP (Model Context Protocol) tools and workflows that can automate any kind of workload. This rule file provides comprehensive guidance for developing applications on the deco.chat platform.
+
+## 🚀 Getting Started
+
+### Prerequisites
+- **Deno** installed on your system
+- Access to deco.chat platform
+- Basic TypeScript knowledge
+
+### Initial Setup Commands
+```bash
+# Install CLI
+deno run -A jsr:@deco/cli
+
+# Configure project
+deno run -A jsr:@deco/cli config
+
+# Development
+npm run dev
+
+# Deploy
+npm run deploy
+```
+
+### Project Structure
+```
+project/
+├── main.ts           # Main application
+├── deco.gen.ts       # Auto-generated types
+├── package.json      # Dependencies
+├── wrangler.toml     # Cloudflare config
+└── README.md
+```
+
+## 🔧 Core Concepts
+
+### 1. Environment (Env) Object
+The `env` object contains all available integrations and tools. Each integration is namespaced:
+```typescript
+interface Env {
+  INTEGRATION_NAME: {
+    TOOL_NAME: (input: ToolInput) => Promise<ToolOutput>;
+  };
+  DECO_CHAT_WORKSPACE_API: {
+    // Workspace-specific tools
+  };
+  DECO_CHAT_API: {
+    // Global API tools
+  };
+}
+```
+
+### 2. Tools
+Tools are individual functions that perform specific tasks. They can:
+- Call external APIs
+- Process data
+- Interact with databases
+- Generate content using AI
+
+### 3. Workflows
+Workflows orchestrate multiple tools using Mastra's control flow patterns. They should:
+- **Split I/O operations** into separate steps
+- **Use control flow** for data processing and logic
+- **Keep each step focused** on a single tool invocation
+
+## 📝 Creating Tools
+
+### Core Imports
+```typescript
+import { withRuntime } from "@deco/workers-runtime";
+import {
+  createStepFromTool,
+  createTool,
+  createWorkflow,
+} from "@deco/workers-runtime/mastra";
+import { z } from "zod";
+import { Env } from "./deco.gen";
+```
+
+### Basic Tool Pattern
+```typescript
+const createMyTool = (env: Env) =>
+  createTool({
+    id: "TOOL_ID",
+    description: "Tool description",
+    inputSchema: z.object({
+      param1: z.string(),
+      param2: z.number().optional(),
+    }),
+    outputSchema: z.object({
+      result: z.string(),
+    }),
+    execute: async ({ context }) => {
+      // ONE tool call only
+      const response = await env.INTEGRATION.TOOL({
+        // parameters
+      });
+
+      return { result: response.data };
+    },
+  });
+```
+
+### Tool Best Practices
+1. **Single Responsibility**: Each tool should do one thing well
+2. **Input Validation**: Use Zod schemas to validate inputs
+3. **Error Handling**: Always handle potential errors gracefully
+4. **Type Safety**: Leverage TypeScript for type safety
+
+## 🔄 Creating Workflows
+
+### Workflow Philosophy - GOLDEN RULE
+**IMPORTANT**: Follow this principle for optimal workflow design:
+- **Each step should invoke only ONE tool** from `env.INTEGRATION_NAME.TOOL_NAME`
+- **All data processing, logic, and control flow** should be handled by Mastra workflow operators
+- **Split complex operations** into multiple steps rather than combining them
+
+### Basic Workflow Pattern
+```typescript
+const createMyWorkflow = (env: Env) => {
+  const step1 = createStepFromTool(createTool1(env));
+  const step2 = createStepFromTool(createTool2(env));
+
+  return createWorkflow({
+    id: "WORKFLOW_ID",
+    inputSchema: z.object({ input: z.string() }),
+    outputSchema: z.object({ output: z.string() }),
+  })
+    .then(step1)
+    .map((context) => ({
+      ...context,
+      // Data processing here
+    }))
+    .then(step2)
+    .commit();
+};
+```
+
+### Control Flow Operators
+
+#### 1. Sequential (.then)
+```typescript
+.then(step1)
+.then(step2)
+.then(step3)
+```
+
+#### 2. Parallel (.parallel)
+```typescript
+.parallel([
+  step1,
+  step2,
+  step3
+])
+```
+
+#### 3. Conditional (.branch)
+```typescript
+.branch(
+  (context) => condition,
+  (workflow) => workflow.then(stepIfTrue),
+  (workflow) => workflow.then(stepIfFalse)
+)
+```
+
+#### 4. Data Transformation (.map)
+```typescript
+.map((context) => ({
+  ...context,
+  processedData: context.rawData.toUpperCase(),
+  isValid: context.rawData.length > 0
+}))
+```
+
+#### 5. Looping (.repeat)
+```typescript
+.repeat(
+  (context) => context.items,
+  processItem
+)
+```
+
+## 🔁 Looping with `.dountil`
+
+### What is `.dountil`?
+
+The `.dountil` operator allows you to **repeat a workflow step** (typically a polling or status-checking tool) until a specified condition is met. This is especially useful for workflows that need to wait for an asynchronous task to complete, such as polling an external API or a long-running browser automation.
+
+### How does it work?
+
+- You provide a step (created with `createStepFromTool`) that will be executed repeatedly.
+- You provide a predicate function that receives the **output of the repeated step** (as `inputData`) and returns `true` when the loop should stop.
+
+### Usage Pattern
+
+```typescript
+.then(scrapeStep)
+.dountil(
+  pollTaskStep,
+  async ({ inputData }) => {
+    // inputData is the output of pollTaskStep
+    return inputData.status === "finished";
+  }
+)
+.map(async ({ getStepResult }) => ({
+  // Use getStepResult(pollTaskStep) to access the final output
+  output: getStepResult(pollTaskStep).output,
+  prompt: getStepResult(pollTaskStep).prompt,
+  taskId: getStepResult(pollTaskStep).taskId,
+}))
+```
+
+#### Key Points
+
+- The **first argument** to `.dountil` is the step to repeat.
+- The **second argument** is an async predicate function that receives an object with `inputData`, which is the output of the repeated step.
+- The loop continues until the predicate returns `true`.
+- After `.dountil`, you can use `.map` and `getStepResult(pollTaskStep)` to access the final output.
+
+### Real-World Example
+
+Suppose you want to scrape a website, poll for the scraping task to finish, and then process the result:
+
+```typescript
+const pollTaskStep = createStepFromTool(pollTaskTool);
+
+return createWorkflow({
+  // ...
+})
+  .then(scrapeStep)
+  .dountil(
+    pollTaskStep,
+    async ({ inputData }) => {
+      // inputData is the output of pollTaskStep
+      return inputData.status === "finished";
+    }
+  )
+  .map(async ({ getStepResult }) => ({
+    // getStepResult(pollTaskStep) gives you the final poll result
+    output: getStepResult(pollTaskStep).output,
+    prompt: getStepResult(pollTaskStep).prompt,
+    taskId: getStepResult(pollTaskStep).taskId,
+  }))
+  // ... continue workflow
+```
+
+### Best Practices
+
+- Use `.dountil` for polling or waiting scenarios.
+- Always check the output (`inputData`) of your polling step for the completion condition.
+- Use `.map` and `getStepResult` after `.dountil` to extract the final result for downstream steps.
+
+---
+
+**Summary Table for `.dountil`:**
+
+| Parameter         | Description                                                      |
+|-------------------|------------------------------------------------------------------|
+| Step              | The step to repeat (e.g., polling tool)                         |
+| Predicate         | Function receiving `{ inputData }` (output of the step)          |
+| Loop Exit         | Predicate returns `true` when loop should stop                   |
+| Access Result     | Use `.map` and `getStepResult(step)` after `.dountil`            |
+
+---
+
+**In short:**  
+`.dountil(step, predicate)` repeats `step` until `predicate({ inputData })` returns `true`. Afterward, use `.map` and `getStepResult(step)` to access the final output.
+
+## 🗺️ Data Transformation with `.map` and Accessing Previous Step Results
+
+The `.map` operator allows you to transform, enrich, or combine data between tool steps. Use `.map` to:
+
+- Prepare or reformat data for the next tool
+- Combine results from multiple previous steps
+- Add custom logic or computed fields
+
+### Basic Usage of `.map`
+
+```typescript
+.then(fetchUserData)
+.map(({ inputData }) => ({
+  // Add a computed field
+  ...inputData,
+  isActive: inputData.status === "active",
+}))
+.then(processUser)
+```
+
+### Accessing Previous Step Results with `getStepResult`
+
+When you need to access the output of a specific previous step (not just the immediate last one), use the `getStepResult` function provided in the `.map` context.
+
+```typescript
+const stepA = createStepFromTool(toolA(env));
+const stepB = createStepFromTool(toolB(env));
+
+return createWorkflow({
+  // ...
+})
+  .then(stepA)
+  .then(stepB)
+  .map(({ inputData, getStepResult }) => {
+    const resultA = getStepResult(stepA);
+    const resultB = getStepResult(stepB);
+    return {
+      combined: `${resultA.value} + ${resultB.value}`,
+    };
+  })
+```
+
+- `getStepResult(step)` retrieves the output of any previous step.
+- This is especially useful when you need to merge or reference data from multiple steps.
+
+### Real-World Example
+
+In a workflow that summarizes a YouTube video, you might want to combine the video search result, transcript, and summary into a single output. Here’s how you can do it:
+
+```typescript
+const searchStep = createStepFromTool(createYouTubeSearchTool(env));
+const transcriptStep = createStepFromTool(createYouTubeTranscriptTool(env));
+const summarizeStep = createStepFromTool(createSummarizeTextTool(env));
+
+return createWorkflow({
+  id: "YOUTUBE_VIDEO_SUMMARY",
+  inputSchema: z.object({ query: z.string() }),
+  outputSchema: z.object({
+    videoId: z.string(),
+    title: z.string(),
+    description: z.string(),
+    transcript: z.string(),
+    summary: z.string(),
+  }),
+})
+  .then(searchStep)
+  .map(async ({ inputData }) => ({ videoId: inputData.videoId }))
+  .then(transcriptStep)
+  .map(async ({ inputData, getStepResult }) => {
+    const searchResult = getStepResult(searchStep);
+    return {
+      videoId: searchResult.videoId,
+      title: searchResult.title,
+      description: searchResult.description,
+      transcript: inputData.transcript,
+    };
+  })
+  .then(summarizeStep)
+  .map(async ({ inputData, getStepResult }) => {
+    const searchResult = getStepResult(searchStep);
+    const transcriptResult = getStepResult(transcriptStep);
+    return {
+      videoId: searchResult.videoId,
+      title: searchResult.title,
+      description: searchResult.description,
+      transcript: transcriptResult.transcript,
+      summary: inputData.summary,
+    };
+  })
+  .commit();
+```
+
+### Best Practices
+
+- Use `.map` for all data processing, not inside tool `execute` functions.
+- Use `getStepResult` to keep your workflow logic clear and maintainable.
+- Keep each step focused on a single responsibility and use `.map` to orchestrate data flow between steps.
+
+## 🔌 Integration Usage Patterns
+
+### AI Generation
+```typescript
+const aiResponse = await env.GIMENES.AGENT_GENERATE_TEXT({
+  message: "Your prompt",
+  options: { model: "gpt-4" }
+});
+```
+
+### Database Operations
+```typescript
+const dbResult = await env.DECO_CHAT_WORKSPACE_API.DATABASES_RUN_SQL({
+  sql: "SELECT * FROM table",
+  params: [param1, param2]
+});
+```
+
+### File System Operations
+```typescript
+const fileContent = await env.DECO_CHAT_WORKSPACE_API.FS_READ({
+  path: "/path/to/file",
+  expiresIn: 3600
+});
+```
+
+## 📋 Configuration Files
+
+### wrangler.toml
+```toml
+main = "main.ts"
+compatibility_date = "2025-06-17"
+compatibility_flags = [ "nodejs_compat" ]
+
+[deco]
+app = "your-app"
+workspace = "your-workspace"
+enable_workflows = true
+
+[[deco.bindings]]
+name = "INTEGRATION_NAME"
+type = "mcp"
+integration_id = "your-id"
+
+[[migrations]]
+tag = "v1"
+new_classes = [ "Workflow" ]
+
+[durable_objects]
+[[durable_objects.bindings]]
+name = "DECO_CHAT_WORKFLOW_DO"
+class_name = "Workflow"
+```
+
+### package.json
+```json
+{
+  "scripts": {
+    "dev": "deco dev",
+    "deploy": "wrangler deploy --dry-run --outdir dist && cd dist && deco deploy"
+  },
+  "dependencies": {
+    "@deco/workers-runtime": "npm:@jsr/deco__workers-runtime@^0.2.20",
+    "zod": "^3.24.2"
+  },
+  "devDependencies": {
+    "@deco/cli": "npm:@jsr/deco__cli@^0.5.12"
+  }
+}
+```
+
+## 🎯 Golden Rules
+
+1. **One Tool Per Step**: Each workflow step should call only ONE `env.INTEGRATION.TOOL()`
+2. **Control Flow for Logic**: Use `.map()`, `.branch()`, `.parallel()` for data processing
+3. **Split Complex Operations**: Break down into multiple focused steps
+4. **Validate Inputs**: Always use Zod schemas
+5. **Handle Errors**: Use branching for error scenarios
+6. **Type Safety**: Leverage TypeScript and generated types
+
+## 🔍 Common Patterns
+
+### Data Validation
+```typescript
+.map((context) => ({
+  ...context,
+  isValid: context.data && context.data.length > 0,
+  dataCount: context.data?.length || 0
+}))
+```
+
+### Error Handling
+```typescript
+.branch(
+  (context) => context.isValid,
+  (workflow) => workflow.then(processData),
+  (workflow) => workflow.map((context) => ({
+    ...context,
+    success: false,
+    error: "Invalid data"
+  }))
+)
+```
+
+### Parallel Processing
+```typescript
+.parallel([
+  fetchUserProfile,
+  fetchUserPreferences,
+  fetchUserActivity
+])
+.map((context) => ({
+  ...context,
+  hasCompleteData: context.profile && context.preferences && context.activity
+}))
+```
+
+### Conditional Processing
+```typescript
+.branch(
+  (context) => context.dataType === "users",
+  (workflow) => workflow.then(processUsers),
+  (workflow) => workflow.then(processProducts)
+)
+```
+
+## 🚨 Anti-Patterns to Avoid
+
+### ❌ Multiple Tool Calls in One Step
+```typescript
+// DON'T DO THIS
+execute: async ({ context }) => {
+  const data1 = await env.API1.TOOL1({...});
+  const data2 = await env.API2.TOOL2({...});
+  const data3 = await env.API3.TOOL3({...});
+  return { result: "combined" };
+}
+```
+
+### ❌ Complex Logic in Tools
+```typescript
+// DON'T DO THIS
+execute: async ({ context }) => {
+  const data = await env.API.TOOL({...});
+
+  // Complex processing logic here
+  const processed = data.map(item => ({
+    ...item,
+    calculated: item.value * 2,
+    formatted: item.name.toUpperCase(),
+    validated: item.id > 0
+  })).filter(item => item.validated);
+
+  return { result: processed };
+}
+```
+
+### ✅ Do This Instead
+```typescript
+// Step 1: Fetch data
+const fetchData = createStepFromTool(createFetchTool(env));
+
+// Step 2: Process data (in workflow)
+.then(fetchData)
+.map((context) => ({
+  ...context,
+  processed: context.data.map(item => ({
+    ...item,
+    calculated: item.value * 2,
+    formatted: item.name.toUpperCase(),
+    validated: item.id > 0
+  })).filter(item => item.validated)
+}))
+```
+
+## 📚 Practical Examples
+
+### Example 1: User Data Processing Pipeline
+
+#### ❌ Bad Approach (Don't Do This)
+```typescript
+// DON'T: Combining multiple tool calls in one step
+const createBadUserProcessor = (env: Env) =>
+  createTool({
+    id: "BAD_USER_PROCESSOR",
+    description: "Process user data - BAD EXAMPLE",
+    inputSchema: z.object({ userId: z.string() }),
+    outputSchema: z.object({ result: z.string() }),
+    execute: async ({ context }) => {
+      // Multiple tool calls in one step - AVOID THIS
+      const userData = await env.DECO_CHAT_WORKSPACE_API.DATABASES_RUN_SQL({
+        sql: "SELECT * FROM users WHERE id = ?",
+        params: [context.userId]
+      });
+
+      const aiAnalysis = await env.GIMENES.AGENT_GENERATE_TEXT({
+        message: `Analyze user data: ${JSON.stringify(userData)}`
+      });
+
+      const savedResult = await env.DECO_CHAT_WORKSPACE_API.FS_WRITE({
+        path: `/users/${context.userId}/analysis.json`,
+        content: aiAnalysis.text,
+        contentType: "application/json"
+      });
+
+      return { result: "processed" };
+    },
+  });
+```
+
+#### ✅ Good Approach (Do This)
+```typescript
+// DO: Split into separate steps, use control flow for processing
+const createUserDataWorkflow = (env: Env) => {
+  // Step 1: Fetch user data (ONE tool call)
+  const fetchUserData = createStepFromTool(
+    createTool({
+      id: "FETCH_USER_DATA",
+      description: "Fetch user data from database",
+      inputSchema: z.object({ userId: z.string() }),
+      outputSchema: z.object({ userData: z.any() }),
+      execute: async ({ context }) => {
+        const result = await env.DECO_CHAT_WORKSPACE_API.DATABASES_RUN_SQL({
+          sql: "SELECT * FROM users WHERE id = ?",
+          params: [context.userId]
+        });
+        return { userData: result };
+      },
+    })(env)
+  );
+
+  // Step 2: Analyze with AI (ONE tool call)
+  const analyzeUserData = createStepFromTool(
+    createTool({
+      id: "ANALYZE_USER_DATA",
+      description: "Analyze user data with AI",
+      inputSchema: z.object({ userData: z.any() }),
+      outputSchema: z.object({ analysis: z.string() }),
+      execute: async ({ context }) => {
+        const result = await env.GIMENES.AGENT_GENERATE_TEXT({
+          message: `Analyze this user data: ${JSON.stringify(context.userData)}`
+        });
+        return { analysis: result.text || "" };
+      },
+    })(env)
+  );
+
+  // Step 3: Save results (ONE tool call)
+  const saveAnalysis = createStepFromTool(
+    createTool({
+      id: "SAVE_ANALYSIS",
+      description: "Save analysis to file system",
+      inputSchema: z.object({
+        userId: z.string(),
+        analysis: z.string()
+      }),
+      outputSchema: z.object({ saved: z.boolean() }),
+      execute: async ({ context }) => {
+        await env.DECO_CHAT_WORKSPACE_API.FS_WRITE({
+          path: `/users/${context.userId}/analysis.json`,
+          content: context.analysis,
+          contentType: "application/json"
+        });
+        return { saved: true };
+      },
+    })(env)
+  );
+
+  return createWorkflow({
+    id: "USER_DATA_WORKFLOW",
+    inputSchema: z.object({ userId: z.string() }),
+    outputSchema: z.object({
+      success: z.boolean(),
+      analysis: z.string(),
+      saved: z.boolean()
+    }),
+  })
+    .then(fetchUserData)
+    .map((context) => ({
+      ...context,
+      // Data processing logic here (not in tools)
+      processedUserData: context.userData.results?.[0] || null,
+      hasValidData: context.userData.results?.length > 0
+    }))
+    .branch(
+      (context) => context.hasValidData,
+      (workflow) => workflow
+        .then(analyzeUserData)
+        .map((context) => ({
+          ...context,
+          // More data processing
+          analysisLength: context.analysis.length,
+          isLongAnalysis: context.analysis.length > 500
+        }))
+        .then(saveAnalysis)
+        .map((context) => ({
+          ...context,
+          success: true
+        })),
+      (workflow) => workflow
+        .map((context) => ({
+          ...context,
+          success: false,
+          analysis: "No user data found",
+          saved: false
+        }))
+    )
+    .commit();
+};
+```
+
+### Example 2: Multi-Service Integration
+```typescript
+const createMultiServiceWorkflow = (env: Env) => {
+  // Step 1: Fetch data from external API
+  const fetchExternalData = createStepFromTool(
+    createTool({
+      id: "FETCH_EXTERNAL_DATA",
+      description: "Fetch data from external service",
+      inputSchema: z.object({ query: z.string() }),
+      outputSchema: z.object({ externalData: z.any() }),
+      execute: async ({ context }) => {
+        const result = await env.EXTERNAL_API.GET_DATA({
+          query: context.query
+        });
+        return { externalData: result };
+      },
+    })(env)
+  );
+
+  // Step 2: Process with AI
+  const processWithAI = createStepFromTool(
+    createTool({
+      id: "PROCESS_WITH_AI",
+      description: "Process data with AI",
+      inputSchema: z.object({ data: z.any() }),
+      outputSchema: z.object({ processedData: z.string() }),
+      execute: async ({ context }) => {
+        const result = await env.GIMENES.AGENT_GENERATE_TEXT({
+          message: `Process this data: ${JSON.stringify(context.data)}`
+        });
+        return { processedData: result.text || "" };
+      },
+    })(env)
+  );
+
+  return createWorkflow({
+    id: "MULTI_SERVICE_WORKFLOW",
+    inputSchema: z.object({
+      query: z.string(),
+      userId: z.string()
+    }),
+    outputSchema: z.object({
+      success: z.boolean(),
+      processedData: z.string()
+    }),
+  })
+    .then(fetchExternalData)
+    .map((context) => ({
+      ...context,
+      // Data validation and processing
+      isValidData: context.externalData && context.externalData.length > 0,
+      dataCount: context.externalData?.length || 0
+    }))
+    .branch(
+      (context) => context.isValidData,
+      (workflow) => workflow
+        .then(processWithAI)
+        .map((context) => ({
+          ...context,
+          success: true
+        })),
+      (workflow) => workflow
+        .map((context) => ({
+          ...context,
+          success: false,
+          processedData: "No valid data found"
+        }))
+    )
+    .commit();
+};
+```
+
+### Example 3: Parallel Processing
+```typescript
+const createParallelProcessingWorkflow = (env: Env) => {
+  // Step 1: Fetch user profile
+  const fetchUserProfile = createStepFromTool(
+    createTool({
+      id: "FETCH_USER_PROFILE",
+      description: "Fetch user profile data",
+      inputSchema: z.object({ userId: z.string() }),
+      outputSchema: z.object({ profile: z.any() }),
+      execute: async ({ context }) => {
+        const result = await env.DECO_CHAT_WORKSPACE_API.DATABASES_RUN_SQL({
+          sql: "SELECT * FROM user_profiles WHERE user_id = ?",
+          params: [context.userId]
+        });
+        return { profile: result.results?.[0] };
+      },
+    })(env)
+  );
+
+  // Step 2: Fetch user preferences
+  const fetchUserPreferences = createStepFromTool(
+    createTool({
+      id: "FETCH_USER_PREFERENCES",
+      description: "Fetch user preferences",
+      inputSchema: z.object({ userId: z.string() }),
+      outputSchema: z.object({ preferences: z.any() }),
+      execute: async ({ context }) => {
+        const result = await env.DECO_CHAT_WORKSPACE_API.DATABASES_RUN_SQL({
+          sql: "SELECT * FROM user_preferences WHERE user_id = ?",
+          params: [context.userId]
+        });
+        return { preferences: result.results?.[0] };
+      },
+    })(env)
+  );
+
+  return createWorkflow({
+    id: "PARALLEL_PROCESSING_WORKFLOW",
+    inputSchema: z.object({ userId: z.string() }),
+    outputSchema: z.object({
+      success: z.boolean(),
+      dataSummary: z.any()
+    }),
+  })
+    .parallel([
+      fetchUserProfile,
+      fetchUserPreferences
+    ])
+    .map((context) => ({
+      ...context,
+      // Combine and validate parallel results
+      hasCompleteData: context.profile && context.preferences,
+      dataSummary: {
+        profileComplete: !!context.profile,
+        preferencesComplete: !!context.preferences
+      }
+    }))
+    .branch(
+      (context) => context.hasCompleteData,
+      (workflow) => workflow
+        .map((context) => ({
+          ...context,
+          success: true
+        })),
+      (workflow) => workflow
+        .map((context) => ({
+          ...context,
+          success: false
+        }))
+    )
+    .commit();
+};
+```
+
+## 🔍 Debugging and Testing
+
+### Local Development
+```bash
+# Start with debugging
+deco dev --debug
+
+# Check logs
+deco logs
+
+# Test specific workflow
+deco test workflow-name
+```
+
+### Common Issues
+1. **Type Errors**: Check your Zod schemas and TypeScript types
+2. **Integration Errors**: Verify integration configuration and credentials
+3. **Workflow Errors**: Check step dependencies and data flow
+4. **Deployment Errors**: Verify wrangler.toml configuration
+
+## 📚 Best Practices Summary
+
+### 1. Workflow Design
+- **Keep steps atomic**: Each step should do one thing
+- **Use control flow for logic**: Leverage `.map`, `.branch`, `.parallel`
+- **Separate concerns**: I/O operations vs data processing
+- **Handle errors gracefully**: Use try-catch and proper error schemas
+
+### 2. Tool Design
+- **Validate inputs**: Always use Zod schemas
+- **Provide clear descriptions**: Help users understand what your tool does
+- **Return consistent outputs**: Use predictable data structures
+- **Handle edge cases**: Consider what happens when things go wrong
+
+### 3. Integration Usage
+- **Check documentation**: Each integration has specific parameters
+- **Use TypeScript**: Leverage the generated types for type safety
+- **Handle rate limits**: Be mindful of API limitations
+- **Cache when appropriate**: Avoid unnecessary repeated calls
+
+### 4. Performance
+- **Parallelize when possible**: Use `.parallel` for independent operations
+- **Batch operations**: Group related operations together
+- **Optimize data flow**: Minimize data transformation overhead
+
+## 📖 Additional Resources
+
+- **Mastra Workflows**: https://mastra.ai/en/docs/workflows/control-flow
+- **Data Mapping**: https://mastra.ai/en/docs/workflows/input-data-mapping
+- **deco.chat Documentation**: Platform-specific guides and examples
+- **TypeScript Documentation**: For advanced type usage
+- **Zod Documentation**: For schema validation patterns
+
+## 🎯 Key Takeaways
+
+Remember the core principle: **Each workflow step should invoke only ONE tool, and all other processing should use Mastra's control flow operators**. This approach ensures:
+
+- **Maintainability**: Clear separation of concerns
+- **Testability**: Each step can be tested independently
+- **Scalability**: Easy to modify and extend workflows
+- **Performance**: Optimal execution patterns
+
+Start simple, build incrementally, and leverage the power of deco.chat's integration ecosystem to create powerful automation workflows!
+
+- **Scalability**: Easy to modify and extend workflows
+- **Performance**: Optimal execution patterns
+
+Start simple, build incrementally, and leverage the power of deco.chat's integration ecosystem to create powerful automation workflows!

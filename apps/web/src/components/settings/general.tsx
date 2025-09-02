@@ -33,6 +33,7 @@ import { Avatar } from "../common/avatar/index.tsx";
 import { useCurrentTeam } from "../sidebar/team-selector.tsx";
 import { Icon } from "@deco/ui/components/icon.tsx";
 import { DEFAULT_THEME, THEME_VARIABLES, type ThemeVariable } from "@deco/sdk";
+import { useWorkspaceLink } from "../../hooks/use-navigate-workspace.ts";
 import {
   Tooltip,
   TooltipContent,
@@ -285,6 +286,7 @@ export function GeneralSettings() {
   const isPersonalTeam = !currentTeamSlug;
 
   const { workspace } = useSDK();
+  const workspaceLink = useWorkspaceLink();
   const updateTeam = useUpdateTeam();
   const deleteTeam = useDeleteTeam();
   const writeFile = useWriteFile();
@@ -612,7 +614,7 @@ export function GeneralSettings() {
                                 : Number(currentTeamId) || 0,
                             );
                             // Do not close the dialog automatically
-                            globalThis.location.href = "/";
+                            globalThis.location.href = workspaceLink("/");
                           } catch (err) {
                             setDeleteError(
                               err instanceof Error

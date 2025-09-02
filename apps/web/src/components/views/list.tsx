@@ -1,4 +1,9 @@
-import { useAddView, useRemoveView, useIntegrationViews } from "@deco/sdk";
+import {
+  useAddView,
+  useRemoveView,
+  useIntegrationViews,
+  parseViewMetadata,
+} from "@deco/sdk";
 import { Button } from "@deco/ui/components/button.tsx";
 import { Card, CardContent } from "@deco/ui/components/card.tsx";
 import { Icon } from "@deco/ui/components/icon.tsx";
@@ -194,19 +199,26 @@ function ViewsList() {
   const [searchTerm, setSearchTerm] = useState("");
   const deferredSearchTerm = useDeferredValue(searchTerm);
 
-  const allViews = useMemo(() => {
-    return views.map((view) => {
-      const existingView = currentTeam.views.find((teamView) => {
-        const metadata = teamView.metadata as { url?: string };
-        return metadata?.url === view.url;
-      });
-      return {
-        ...view,
-        isAdded: !!existingView,
-        teamViewId: existingView?.id,
-      };
-    });
-  }, [currentTeam]);
+  const allViews: ViewWithStatus[] = useMemo(() => {
+    const augmented = views
+      .map((view) => {
+        const meta = parseViewMetadata(view);
+        const url = meta?.type === "custom" ? meta.url : undefined;
+        if (!url) return null;
+        const existingView = currentTeam.views.find((teamView) => {
+          const metadata = teamView.metadata as { url?: string };
+          return metadata?.url === url;
+        });
+        return {
+          ...view,
+          url,
+          isAdded: !!existingView,
+          teamViewId: existingView?.id,
+        } as ViewWithStatus;
+      })
+      .filter(Boolean) as ViewWithStatus[];
+    return augmented;
+  }, [currentTeam, views]);
 
   // Filter views based on deferred search term for better performance
   const filteredViews = useMemo(() => {

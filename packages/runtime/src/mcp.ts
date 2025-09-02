@@ -132,9 +132,7 @@ export type MCPClientFetchStub<TDefinition extends readonly ToolBinder[]> = {
     : never;
 };
 
-export type MCPConnectionProvider =
-  | (() => Promise<MCPConnection>)
-  | MCPConnection;
+export type MCPConnectionProvider = MCPConnection;
 
 export interface MCPClientRaw {
   callTool: (tool: string, args: unknown) => Promise<unknown>;

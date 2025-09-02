@@ -21,12 +21,14 @@ const safeParse = (content: string) => {
 
 const toolsMap = new Map<
   string,
-  Array<{
-    name: string;
-    inputSchema: any;
-    outputSchema?: any;
-    description: string;
-  }>
+  Promise<
+    Array<{
+      name: string;
+      inputSchema: any;
+      outputSchema?: any;
+      description: string;
+    }>
+  >
 >();
 
 /**
@@ -35,7 +37,15 @@ const toolsMap = new Map<
 export function createMCPClientProxy<T extends Record<string, unknown>>(
   options?: CreateStubAPIOptions,
 ): T {
-  const decoChatApiConnection: MCPConnection = {
+  if (typeof options?.connection === "function") {
+    // [DEPRECATED] Passing a function as 'connection' is deprecated and will be removed in a future release.
+    // Please provide a connection object instead.
+    throw new Error(
+      "Deprecation Notice: Passing a function as 'connection' is deprecated and will be removed in a future release. Please provide a connection object instead.",
+    );
+  }
+
+  const connection: MCPConnection = options?.connection || {
     type: "HTTP",
     url: new URL(
       `${getWorkspace(options?.workspace)}/mcp`,
@@ -43,18 +53,6 @@ export function createMCPClientProxy<T extends Record<string, unknown>>(
     ).href,
     token: options?.token,
   };
-
-  const connectionPromise = (
-    typeof options?.connection === "function"
-      ? options.connection()
-      : Promise.resolve(options?.connection)
-  ).then((c) => c ?? decoChatApiConnection);
-
-  const clientPromise = connectionPromise.then((connection) =>
-    createServerClient({
-      connection: connection ?? decoChatApiConnection,
-    }),
-  );
 
   return new Proxy<T>({} as T, {
     get(_, name) {
@@ -65,7 +63,8 @@ export function createMCPClientProxy<T extends Record<string, unknown>>(
         throw new Error("Name must be a string");
       }
       async function callToolFn(args: unknown) {
-        const client = await clientPromise;
+        const client = await createServerClient({ connection });
+
         const { structuredContent, isError, content } = await client.callTool({
           name: String(name),
           arguments: args as Record<string, unknown>,
@@ -102,7 +101,7 @@ export function createMCPClientProxy<T extends Record<string, unknown>>(
       }
 
       const listToolsFn = async () => {
-        const client = await clientPromise;
+        const client = await createServerClient({ connection });
         const { tools } = await client.listTools();
 
         return tools as {
@@ -114,19 +113,20 @@ export function createMCPClientProxy<T extends Record<string, unknown>>(
       };
 
       async function listToolsOnce() {
-        try {
-          const conn = await connectionPromise;
-          const key = JSON.stringify(conn);
+        const conn = connection;
+        const key = JSON.stringify(conn);
 
+        try {
           if (!toolsMap.has(key)) {
-            const tools = await listToolsFn();
-            toolsMap.set(key, tools);
+            toolsMap.set(key, listToolsFn());
           }
 
-          return toolsMap.get(key)!;
+          return await toolsMap.get(key)!;
         } catch (error) {
           console.error("Failed to list tools", error);
-          return undefined;
+
+          toolsMap.delete(key);
+          return;
         }
       }
       callToolFn.asTool = async () => {
@@ -135,8 +135,11 @@ export function createMCPClientProxy<T extends Record<string, unknown>>(
         if (!tool) {
           throw new Error(`Tool ${name} not found`);
         }
+
         return {
           ...tool,
+          inputSchema: options?.jsonSchemaToZod?.(tool.inputSchema),
+          outputSchema: options?.jsonSchemaToZod?.(tool.outputSchema),
           id: tool.name,
           execute: ({ context }: ToolExecutionContext<any>) => {
             return callToolFn(context);

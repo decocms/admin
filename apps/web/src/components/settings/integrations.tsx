@@ -395,7 +395,12 @@ function AddViewButton() {
       }
       return acc;
     },
-    [] as Array<{ url: string; title: string; icon: string; integration: { name: string } }>,
+    [] as Array<{
+      url: string;
+      title: string;
+      icon: string;
+      integration: { name: string };
+    }>,
   );
 
   const filteredViews = useMemo(() => {

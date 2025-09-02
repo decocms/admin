@@ -7,15 +7,16 @@
  * - Advanced operations: diff, watch, transactional writes
  *
  * Namespaces are lazily created - they exist as empty when first accessed.
- * Use DECONFIG_CREATE_NAMESPACE only when you need explicit configuration.
+ * Use CREATE_NAMESPACE only when you need explicit configuration.
  * Default namespace is "main" when not specified.
  */
 import { createTool } from "@deco/workers-runtime/mastra";
+import { MergeStrategy } from "server/src/namespace.ts";
 import { z } from "zod";
 import type { Env } from "../main.ts";
 
 // Helper function to get workspace from env
-const getWorkspace = (env: Env): string => {
+const projectFor = (env: Env): string => {
   const workspace = env.DECO_CHAT_REQUEST_CONTEXT?.workspace;
   if (!workspace) {
     throw new Error("No workspace context available");
@@ -24,21 +25,16 @@ const getWorkspace = (env: Env): string => {
 };
 
 // Helper function to get namespace RPC (lazy creation)
-const getNamespaceRpc = async (
-  env: Env,
-  namespaceName: string = "main",
-  pathPrefix?: string,
-) => {
-  const workspace = getWorkspace(env);
-  const namespaceId = `${workspace}-${namespaceName}`;
+const namespaceRpcFor = async (env: Env, namespaceName: string = "main") => {
+  const projectId = projectFor(env);
+  const namespaceId = `${projectId}-${namespaceName}`;
   const namespaceStub = env.NAMESPACE.get(
     env.NAMESPACE.idFromName(namespaceId),
   );
 
   const rpc = await namespaceStub.new({
-    projectId: workspace,
+    projectId,
     namespaceName,
-    pathPrefix: pathPrefix || "",
   });
   return rpc;
 };
@@ -49,85 +45,59 @@ const getNamespaceRpc = async (
 
 export const createNamespaceTool = (env: Env) =>
   createTool({
-    id: "DECONFIG_CREATE_NAMESPACE",
+    id: "CREATE_NAMESPACE",
     description:
-      "Explicitly create a DECONFIG namespace with initial configuration (optional - namespaces are created lazily)",
+      "Create a DECONFIG namespace. If sourceNamespace is provided, creates a branch from that namespace (O(1) operation). Otherwise creates an empty namespace.",
     inputSchema: z.object({
       namespaceName: z.string().describe("The name of the namespace to create"),
-      pathPrefix: z
+      sourceNamespace: z
         .string()
         .optional()
         .describe(
-          "Optional path prefix for scoped operations (e.g., '/src/', '/docs/')",
+          "The source namespace to branch from (optional - creates empty namespace if not provided)",
         ),
-      origin: z
-        .string()
-        .optional()
-        .describe("Origin namespace for tracking lineage"),
     }),
     outputSchema: z.object({
       namespaceName: z.string(),
       projectId: z.string(),
-      pathPrefix: z.string(),
+      sourceNamespace: z.string().optional(),
     }),
     execute: async ({ context }) => {
-      const workspace = getWorkspace(env);
-      const namespaceStub = env.NAMESPACE.get(
-        env.NAMESPACE.idFromName(context.namespaceName),
-      );
+      const projectId = projectFor(env);
 
-      using _ = await namespaceStub.new({
-        projectId: workspace,
-        namespaceName: context.namespaceName,
-        origin: context.origin || null,
-        pathPrefix: context.pathPrefix,
-      });
+      if (context.sourceNamespace) {
+        // Branch from existing namespace
+        const sourceRpc = await namespaceRpcFor(env, context.sourceNamespace);
+        using _ = await sourceRpc.branch(context.namespaceName);
 
-      return {
-        namespaceName: context.namespaceName,
-        projectId: workspace,
-        pathPrefix: context.pathPrefix || "",
-      };
-    },
-  });
+        return {
+          namespaceName: context.namespaceName,
+          projectId,
+          sourceNamespace: context.sourceNamespace,
+        };
+      } else {
+        // Create empty namespace
+        const namespaceStub = env.NAMESPACE.get(
+          env.NAMESPACE.idFromName(context.namespaceName),
+        );
 
-export const createBranchNamespaceTool = (env: Env) =>
-  createTool({
-    id: "DECONFIG_BRANCH_NAMESPACE",
-    description:
-      "Create a new namespace by branching from an existing one (O(1) operation)",
-    inputSchema: z.object({
-      sourceNamespace: z
-        .string()
-        .optional()
-        .default("main")
-        .describe("The source namespace to branch from (defaults to 'main')"),
-      targetNamespace: z.string().describe("The new namespace name"),
-      pathPrefix: z
-        .string()
-        .optional()
-        .describe("Optional path prefix for the new namespace"),
-    }),
-    outputSchema: z.object({
-      sourceNamespace: z.string(),
-      targetNamespace: z.string(),
-      origin: z.string(),
-    }),
-    execute: async ({ context }) => {
-      const sourceRpc = await getNamespaceRpc(env, context.sourceNamespace);
-      using _ = await sourceRpc.branch(context.targetNamespace);
+        using _ = await namespaceStub.new({
+          projectId,
+          namespaceName: context.namespaceName,
+          origin: null,
+        });
 
-      return {
-        sourceNamespace: context.sourceNamespace || "main",
-        targetNamespace: context.targetNamespace,
-        origin: context.sourceNamespace || "main",
-      };
+        return {
+          namespaceName: context.namespaceName,
+          projectId,
+        };
+      }
     },
   });
 
 export const createMergeNamespaceTool = (env: Env) =>
   createTool({
-    id: "DECONFIG_MERGE_NAMESPACE",
+    id: "MERGE_NAMESPACE",
     description:
       "Merge another namespace into the current one with configurable strategy",
     inputSchema: z.object({
@@ -140,10 +110,6 @@ export const createMergeNamespaceTool = (env: Env) =>
       strategy: z
         .enum(["OVERRIDE", "LAST_WRITE_WINS"])
         .describe("Merge strategy"),
-      pathPrefix: z
-        .string()
-        .optional()
-        .describe("Optional path prefix for scoped operations"),
     }),
     outputSchema: z.object({
       filesMerged: z.number(),
@@ -162,14 +128,10 @@ export const createMergeNamespaceTool = (env: Env) =>
         .optional(),
     }),
     execute: async ({ context }) => {
-      const targetRpc = await getNamespaceRpc(
-        env,
-        context.targetNamespace,
-        context.pathPrefix,
-      );
+      const targetRpc = await namespaceRpcFor(env, context.targetNamespace);
       const result = await targetRpc.merge(
         context.sourceNamespace,
-        context.strategy as any,
+        context.strategy as MergeStrategy,
       );
 
       if (!result.success) {
@@ -193,7 +155,7 @@ export const createMergeNamespaceTool = (env: Env) =>
 
 export const createDiffNamespaceTool = (env: Env) =>
   createTool({
-    id: "DECONFIG_DIFF_NAMESPACE",
+    id: "DIFF_NAMESPACE",
     description: "Compare two namespaces and get the differences",
     inputSchema: z.object({
       baseNamespace: z
@@ -202,10 +164,6 @@ export const createDiffNamespaceTool = (env: Env) =>
         .default("main")
         .describe("The base namespace to compare from (defaults to 'main')"),
       compareNamespace: z.string().describe("The namespace to compare against"),
-      pathPrefix: z
-        .string()
-        .optional()
-        .describe("Optional path prefix for scoped comparison"),
     }),
     outputSchema: z.object({
       differences: z.array(
@@ -218,11 +176,7 @@ export const createDiffNamespaceTool = (env: Env) =>
       ),
     }),
     execute: async ({ context }) => {
-      const baseRpc = await getNamespaceRpc(
-        env,
-        context.baseNamespace,
-        context.pathPrefix,
-      );
+      const baseRpc = await namespaceRpcFor(env, context.baseNamespace);
       const diffs = await baseRpc.diff(context.compareNamespace);
 
       const differences = diffs.map((diff: any) => ({
@@ -253,14 +207,14 @@ const BaseFileOperationInputSchema = z.object({
 
 export const createPutFileTool = (env: Env) =>
   createTool({
-    id: "DECONFIG_PUT_FILE",
+    id: "PUT_FILE",
     description:
       "Put a file in a DECONFIG namespace (create or update) with optional conflict detection",
     inputSchema: BaseFileOperationInputSchema.extend({
       content: z
         .string()
         .describe("The file content (will be base64 decoded if needed)"),
-      userMetadata: z
+      metadata: z
         .record(z.any())
         .optional()
         .describe("Additional metadata key-value pairs"),
@@ -270,13 +224,7 @@ export const createPutFileTool = (env: Env) =>
         .describe("Expected change time for conflict detection"),
     }),
     outputSchema: z.object({
-      address: z.string(),
-      hash: z.string(),
-      size: z.number(),
-      mtime: z.number(),
-      ctime: z.number(),
       conflict: z.boolean().optional(),
-      conflictReason: z.string().optional(),
     }),
     execute: async ({ context }) => {
       // Convert content to ArrayBuffer
@@ -291,85 +239,31 @@ export const createPutFileTool = (env: Env) =>
         data = new TextEncoder().encode(context.content).buffer;
       }
 
-      using namespaceRpc = await getNamespaceRpc(env, context.namespace);
+      using namespaceRpc = await namespaceRpcFor(env, context.namespace);
 
-      if (context.expectedCtime) {
-        // Use transactional write with conflict detection
-        const result = await namespaceRpc.transactionalWrite({
-          files: [
-            {
-              path: context.path,
-              content: data,
-              userMetadata: context.userMetadata,
-              expectedCtime: context.expectedCtime,
-            },
-          ],
-          deletions: [],
-        });
+      // Use transactional write (works for both conditional and unconditional writes)
+      const result = await namespaceRpc.transactionalWrite({
+        patches: [
+          {
+            path: context.path,
+            content: data,
+            metadata: context.metadata,
+            expectedCtime: context.expectedCtime, // undefined if no conflict detection needed
+          },
+        ],
+      });
 
-        if (!result.success) {
-          throw new Error("Transactional write failed");
-        }
+      const fileResult = result.results[context.path];
 
-        const appliedFile = result.appliedFiles[0];
-        const skippedFile = result.skippedFiles[0];
-
-        if (skippedFile) {
-          // Conflict detected - return current state
-          const currentMetadata = await namespaceRpc.getFileMetadata(
-            context.path,
-          );
-          return {
-            address: currentMetadata?.address || "",
-            hash: currentMetadata?.address.split(":")[2] || "",
-            size: currentMetadata?.sizeInBytes || 0,
-            mtime: currentMetadata?.mtime || 0,
-            ctime: currentMetadata?.ctime || 0,
-            conflict: true,
-            conflictReason: skippedFile.reason,
-          };
-        }
-
-        if (!appliedFile) {
-          throw new Error("No file was applied in transactional write");
-        }
-
-        return {
-          address: appliedFile.address,
-          hash: appliedFile.address.split(":")[2],
-          size: appliedFile.metadata.sizeInBytes,
-          mtime: appliedFile.metadata.mtime,
-          ctime: appliedFile.metadata.ctime,
-          conflict: false,
-        };
-      } else {
-        // Simple write without conflict detection
-        const address = await namespaceRpc.writeFile(
-          context.path,
-          data,
-          context.userMetadata,
-        );
-        const metadata = await namespaceRpc.getFileMetadata(context.path);
-
-        if (!metadata) {
-          throw new Error("Failed to retrieve file metadata after creation");
-        }
-
-        return {
-          address,
-          hash: address.split(":")[2], // Extract hash from address
-          size: metadata.sizeInBytes,
-          mtime: metadata.mtime,
-          ctime: metadata.ctime,
-          conflict: false,
-        };
-      }
+      return {
+        conflict: fileResult?.success ?? false,
+      };
     },
   });
 
 export const createReadFileTool = (env: Env) =>
   createTool({
-    id: "DECONFIG_READ_FILE",
+    id: "READ_FILE",
     description: "Read a file from a DECONFIG namespace",
     inputSchema: BaseFileOperationInputSchema,
     outputSchema: z.object({
@@ -380,7 +274,7 @@ export const createReadFileTool = (env: Env) =>
       ctime: z.number(),
     }),
     execute: async ({ context }) => {
-      using namespaceRpc = await getNamespaceRpc(env, context.namespace);
+      using namespaceRpc = await namespaceRpcFor(env, context.namespace);
       const fileData = await namespaceRpc.getFile(context.path);
 
       if (!fileData) {
@@ -423,23 +317,15 @@ export const createReadFileTool = (env: Env) =>
 
 export const createDeleteFileTool = (env: Env) =>
   createTool({
-    id: "DECONFIG_DELETE_FILE",
+    id: "DELETE_FILE",
     description: "Delete a file from a DECONFIG namespace",
     inputSchema: BaseFileOperationInputSchema,
     outputSchema: z.object({
       deleted: z.boolean(),
     }),
     execute: async ({ context }) => {
-      using namespaceRpc = await getNamespaceRpc(env, context.namespace);
-
-      const existed = await namespaceRpc.hasFile(context.path);
-      if (!existed) {
-        throw new Error(`File not found: ${context.path}`);
-      }
-
-      await namespaceRpc.deleteFile(context.path);
-
-      return { deleted: true };
+      using namespaceRpc = await namespaceRpcFor(env, context.namespace);
+      return { deleted: await namespaceRpc.deleteFile(context.path) };
     },
   });
 
@@ -458,7 +344,7 @@ const ListFilesOutputSchema = z.object({
 });
 export const createListFilesTool = (env: Env) =>
   createTool({
-    id: "DECONFIG_LIST_FILES",
+    id: "LIST_FILES",
     description:
       "List files in a DECONFIG namespace with optional prefix filtering",
     inputSchema: BaseFileOperationInputSchema.omit({ path: true }).extend({
@@ -466,7 +352,7 @@ export const createListFilesTool = (env: Env) =>
     }),
     outputSchema: ListFilesOutputSchema,
     execute: async ({ context }) => {
-      using namespaceRpc = await getNamespaceRpc(env, context.namespace);
+      using namespaceRpc = await namespaceRpcFor(env, context.namespace);
 
       const files = await namespaceRpc.getFiles(context.prefix);
 
@@ -481,7 +367,6 @@ export const createListFilesTool = (env: Env) =>
 export const deconfigTools = [
   // Namespace CRUD
   createNamespaceTool,
-  createBranchNamespaceTool,
   createMergeNamespaceTool,
   createDiffNamespaceTool,
 

@@ -12,7 +12,7 @@ const BlobAddress = {
   address(projectId: string, hash: string) {
     return `blobs:${Blobs.doName(projectId)}:${hash}` as BlobAddress;
   },
-}
+};
 const Blobs = {
   doName(projectId: string) {
     return `${projectId}-${BLOB_DO}`;
@@ -96,47 +96,53 @@ export interface FileResponse {
 }
 
 /**
+ * A single file patch operation.
+ */
+export interface FilePatch {
+  /** The file path to write or delete */
+  path: FilePath;
+  /** File content - null means deletion, otherwise write operation */
+  content: ReadableStream<Uint8Array> | ArrayBuffer | null;
+  /** Optional user-defined metadata (ignored for deletions) */
+  metadata?: Record<string, any>;
+  /** Expected change time for conditional operations */
+  expectedCtime?: number;
+}
+
+/**
  * Input for transactional write operations.
  */
 export interface TransactionalWriteInput {
-  /** Files to write with conditions */
-  files: Array<{
-    path: FilePath;
-    content: ReadableStream<Uint8Array> | ArrayBuffer;
-    userMetadata?: Record<string, any>;
-    expectedCtime?: number;
-  }>;
-  /** Files to delete with conditions */
-  deletions?: Array<{
-    path: FilePath;
-    expectedCtime?: number;
-  }>;
+  /** Array of file patches - content null means deletion */
+  patches: Array<FilePatch>;
+}
+
+/**
+ * Result of a single file patch operation.
+ */
+export interface FilePatchResult {
+  /** Whether the patch was successfully applied */
+  success: boolean;
+  /** File metadata after the operation (null for deletions, undefined for failed operations) */
+  metadata: FileMetadata | null;
+  /** Blob address where content is stored (only for successful writes) */
+  address?: BlobAddress;
+  /** Reason for failure or conflict resolution */
+  reason?: string;
+  /** Conflict information if applicable */
+  conflict?: {
+    expectedCtime: number;
+    actualCtime: number;
+    resolved: "local" | "remote";
+  };
 }
 
 /**
  * Result of a transactional write operation.
  */
 export interface TransactionalWriteResult {
-  /** Whether the transaction was successful */
-  success: boolean;
-  /** Files that were successfully applied */
-  appliedFiles: Array<{
-    path: FilePath;
-    address: BlobAddress;
-    metadata: FileMetadata;
-  }>;
-  /** Files that were skipped */
-  skippedFiles: Array<{
-    path: FilePath;
-    reason: string;
-  }>;
-  /** Conflicts detected (only when using force mode) */
-  conflicts?: Array<{
-    path: FilePath;
-    expectedCtime: number;
-    actualCtime: number;
-    resolved: "local" | "remote";
-  }>;
+  /** Results for each file patch, keyed by file path */
+  results: Record<FilePath, FilePatchResult>;
 }
 
 /**
@@ -237,28 +243,28 @@ export class NamespaceRpc extends RpcTarget {
    *
    * @param path - The file path to write
    * @param content - ReadableStream containing the file data
-   * @param userMetadata - Optional user-defined metadata
+   * @param metadata - Optional user-defined metadata
    * @returns Promise resolving to the blob address where content was stored
    */
   async writeFile(
     path: FilePath,
     content: ReadableStream<Uint8Array>,
-    userMetadata?: Record<string, any>,
-  ): Promise<BlobAddress>;
+    metadata?: Record<string, any>,
+  ): Promise<FileMetadata>;
 
   /**
    * Write file content from an ArrayBuffer.
    *
    * @param path - The file path to write
    * @param content - ArrayBuffer containing the file data
-   * @param userMetadata - Optional user-defined metadata
+   * @param metadata - Optional user-defined metadata
    * @returns Promise resolving to the blob address where content was stored
    */
   async writeFile(
     path: FilePath,
     content: ArrayBuffer,
-    userMetadata?: Record<string, any>,
-  ): Promise<BlobAddress>;
+    metadata?: Record<string, any>,
+  ): Promise<FileMetadata>;
 
   /**
    * Write file content and store it in the project's blob storage.
@@ -270,20 +276,15 @@ export class NamespaceRpc extends RpcTarget {
    *
    * @param path - The file path to write
    * @param content - The content to write (ReadableStream or ArrayBuffer)
-   * @param userMetadata - Optional user-defined metadata
+   * @param metadata - Optional user-defined metadata
    * @returns Promise resolving to the blob address where content was stored
    */
   async writeFile(
     path: FilePath,
     content: ReadableStream<Uint8Array> | ArrayBuffer,
-    userMetadata: Record<string, any> = {},
-  ): Promise<BlobAddress> {
-    return this.namespace.writeFile(
-      path,
-      content,
-      userMetadata,
-      this.projectId,
-    );
+    metadata: Record<string, any> = {},
+  ): Promise<FileMetadata> {
+    return this.namespace.writeFile(path, content, metadata, this.projectId);
   }
 
   /**
@@ -379,18 +380,15 @@ export class NamespaceRpc extends RpcTarget {
    * Perform multiple conditional writes atomically with prefix support.
    * All blob uploads happen first, then conditions are checked.
    *
-   * @param input - TransactionalWriteInput with files and conditions
+   * @param input - TransactionalWriteInput with patches array
    * @param force - If true, use LAST_WRITE_WINS strategy instead of throwing on conflicts
-   * @returns Promise resolving to TransactionalWriteResult with prefix-stripped paths
+   * @returns Promise resolving to TransactionalWriteResult with results for each patch
    */
   async transactionalWrite(
     input: TransactionalWriteInput,
     force: boolean = false,
   ): Promise<TransactionalWriteResult> {
-    return await this.namespace.transactionalWrite(
-      input,
-      force,
-    );
+    return await this.namespace.transactionalWrite(input, force);
   }
 
   /**
@@ -492,10 +490,10 @@ export class Namespace extends DurableObject<Env> {
   }
 
   /**
- * Get the current tree (active filesystem state).
- * 
- * @returns The current tree mapping file paths to metadata
- */
+   * Get the current tree (active filesystem state).
+   *
+   * @returns The current tree mapping file paths to metadata
+   */
   getCurrentTree(): Tree {
     return this.state.tree;
   }
@@ -817,16 +815,16 @@ export class Namespace extends DurableObject<Env> {
    *
    * @param path - The file path to write
    * @param content - The content to write
-   * @param userMetadata - User-defined metadata
+   * @param metadata - User-defined metadata
    * @param projectId - The project ID for blob addressing
    * @returns Promise resolving to the blob address
    */
   async writeFile(
     path: FilePath,
     content: ReadableStream<Uint8Array> | ArrayBuffer,
-    userMetadata: Record<string, any>,
+    metadata: Record<string, any>,
     projectId: string,
-  ): Promise<BlobAddress> {
+  ): Promise<FileMetadata> {
     // Store content in blob storage using the overloaded put method
     using blobInfo: BlobInfo = await this.blobs.put(content as ArrayBuffer);
 
@@ -837,7 +835,7 @@ export class Namespace extends DurableObject<Env> {
     const now = Date.now();
     const fileMetadata: FileMetadata = {
       address,
-      metadata: userMetadata,
+      metadata,
       sizeInBytes: blobInfo.sizeInBytes,
       mtime: now,
       ctime: now,
@@ -849,7 +847,7 @@ export class Namespace extends DurableObject<Env> {
       deleted: [],
     });
 
-    return address;
+    return fileMetadata;
   }
 
   /**
@@ -878,7 +876,9 @@ export class Namespace extends DurableObject<Env> {
     }
 
     // Get blob content
-    using stream = await this.blobs.getStream(BlobAddress.hash(fileMetadata.address));
+    using stream = await this.blobs.getStream(
+      BlobAddress.hash(fileMetadata.address),
+    );
     return stream;
   }
 
@@ -889,9 +889,7 @@ export class Namespace extends DurableObject<Env> {
    * @param projectId - The project ID for blob addressing
    * @returns Promise resolving to FileResponse or null if not found
    */
-  async getFile(
-    path: FilePath,
-  ): Promise<FileResponse | null> {
+  async getFile(path: FilePath): Promise<FileResponse | null> {
     const metadata = this.getFileMetadata(path);
     if (!metadata) {
       return null;
@@ -1007,12 +1005,12 @@ export class Namespace extends DurableObject<Env> {
   }
 
   /**
-   * Internal method to perform transactional writes using pre-computed trees.
+   * Internal method to perform transactional writes.
    * This allows reuse by both transactionalWrite and merge operations.
    *
    * @param writes - Map of paths to their desired state (FileMetadata or null for delete)
    * @param force - If true, use LAST_WRITE_WINS without throwing conflict errors
-   * @returns Result with applied changes and any conflicts
+   * @returns Results for each file patch
    */
   private async internalTransactionalWrite(
     writes: Record<
@@ -1020,40 +1018,59 @@ export class Namespace extends DurableObject<Env> {
       { metadata: FileMetadata | null; condition?: { expectedCtime: number } }
     >,
     force: boolean = false,
-  ): Promise<{
-    applied: Record<FilePath, FileMetadata | null>;
-    conflicts: Array<{
-      path: FilePath;
-      expectedCtime: number;
-      actualCtime: number;
-      resolved: "local" | "remote";
-    }>;
-  }> {
-    const applied: Record<FilePath, FileMetadata | null> = {};
-    const conflicts: Array<{
-      path: FilePath;
-      expectedCtime: number;
-      actualCtime: number;
-      resolved: "local" | "remote";
-    }> = [];
+  ): Promise<Record<FilePath, FilePatchResult>> {
+    const results: Record<FilePath, FilePatchResult> = {};
+    const toApply: Record<FilePath, FileMetadata | null> = {};
+    const now = Date.now();
 
-    // Check all conditions first (synchronous operation for atomicity)
+    // Process each write operation
     for (const [path, write] of Object.entries(writes)) {
+      const currentFile = this.state.tree[path];
+
+      // If no condition, apply directly
       if (!write.condition) {
-        applied[path] = write.metadata;
+        const finalMetadata =
+          write.metadata === null
+            ? null
+            : {
+                ...write.metadata,
+                ctime: now,
+              };
+        toApply[path] = finalMetadata;
+
+        results[path] = {
+          success: true,
+          metadata: finalMetadata,
+          address: finalMetadata?.address,
+        };
         continue;
       }
 
-      const currentFile = this.state.tree[path];
+      // Check condition
       const actualCtime = currentFile?.ctime || 0;
       const expectedCtime = write.condition.expectedCtime;
       const isConflict = actualCtime !== expectedCtime;
+
       if (!isConflict) {
         // No conflict - apply the change
-        applied[path] = write.metadata;
+        const finalMetadata =
+          write.metadata === null
+            ? null
+            : {
+                ...write.metadata,
+                ctime: now,
+              };
+        toApply[path] = finalMetadata;
+
+        results[path] = {
+          success: true,
+          metadata: finalMetadata,
+          address: finalMetadata?.address,
+        };
         continue;
       }
 
+      // Handle conflict
       if (!force) {
         // Strict mode - throw error on conflict
         throw new Error(
@@ -1067,39 +1084,51 @@ export class Namespace extends DurableObject<Env> {
 
       if (newMtime > currentMtime) {
         // New version is newer - apply it
-        applied[path] = write.metadata;
-        conflicts.push({
-          path,
-          expectedCtime,
-          actualCtime,
-          resolved: "remote",
-        });
+        const finalMetadata =
+          write.metadata === null
+            ? null
+            : {
+                ...write.metadata,
+                ctime: now,
+              };
+        toApply[path] = finalMetadata;
+
+        results[path] = {
+          success: true,
+          metadata: finalMetadata,
+          address: finalMetadata?.address,
+          reason: "Conflict resolved: remote version chosen",
+          conflict: {
+            expectedCtime,
+            actualCtime,
+            resolved: "remote",
+          },
+        };
       } else {
         // Current version is newer or same - keep current
-        conflicts.push({
-          path,
-          expectedCtime,
-          actualCtime,
-          resolved: "local",
-        });
+        results[path] = {
+          success: false,
+          metadata: currentFile || undefined,
+          reason: "Conflict resolved: local version kept",
+          conflict: {
+            expectedCtime,
+            actualCtime,
+            resolved: "local",
+          },
+        };
       }
     }
 
-    // Apply all changes in a single patch if any changes were approved
-    if (Object.keys(applied).length > 0) {
+    // Apply all approved changes in a single patch
+    if (Object.keys(toApply).length > 0) {
       const addedFiles: Record<FilePath, FileMetadata> = {};
       const deletedFiles: FilePath[] = [];
-      const now = Date.now();
 
-      for (const [path, metadata] of Object.entries(applied)) {
+      for (const [path, metadata] of Object.entries(toApply)) {
         if (metadata === null) {
           deletedFiles.push(path);
         } else {
-          // Update ctime since we're modifying the tree
-          addedFiles[path] = {
-            ...metadata,
-            ctime: now,
-          };
+          addedFiles[path] = metadata;
         }
       }
 
@@ -1108,18 +1137,21 @@ export class Namespace extends DurableObject<Env> {
         deleted: deletedFiles,
         metadata: {
           type: force ? "transactionalWrite_force" : "transactionalWrite",
-          conflictCount: conflicts.length,
+          conflictCount: Object.values(results).filter((r) => r.conflict)
+            .length,
         },
       });
     }
 
-    return { applied, conflicts };
+    return results;
   }
 
   private get blobs() {
     const projectId = this.state.projectId;
     if (!projectId) {
-      throw new Error("Cannot get blobs: namespace has no project ID, you may want to call .new() before using it");
+      throw new Error(
+        "Cannot get blobs: namespace has no project ID, you may want to call .new() before using it",
+      );
     }
     return this.env.BLOBS.get(
       this.env.BLOBS.idFromName(Blobs.doName(this.state.projectId!)),
@@ -1130,7 +1162,7 @@ export class Namespace extends DurableObject<Env> {
    * Write multiple files atomically with optional conditions.
    * All blob uploads happen first, then conditions are checked synchronously.
    *
-   * @param input - The transactional write input with files and conditions
+   * @param input - The transactional write input with patches
    * @param force - If true, use LAST_WRITE_WINS strategy instead of throwing on conflicts
    * @returns Promise resolving to TransactionalWriteResult
    */
@@ -1138,9 +1170,12 @@ export class Namespace extends DurableObject<Env> {
     input: TransactionalWriteInput,
     force: boolean = false,
   ): Promise<TransactionalWriteResult> {
+    // Step 1: Separate writes and deletions, upload blobs for writes
+    const writePatches = input.patches.filter((p) => p.content !== null);
+    const deletePatches = input.patches.filter((p) => p.content === null);
 
-    // Step 1: Upload all blobs in batch (regardless of conditions)
-    const contents = input.files.map((file) => file.content);
+    // Upload all blobs in batch (only for write operations)
+    const contents = writePatches.map((patch) => patch.content!);
     using blobInfos = await this.blobs.putBatch(contents);
 
     // Step 2: Prepare writes with blob addresses and conditions
@@ -1150,32 +1185,33 @@ export class Namespace extends DurableObject<Env> {
     > = {};
     const now = Date.now();
 
-    for (let i = 0; i < input.files.length; i++) {
-      const file = input.files[i];
-      const blobInfo = blobInfos[i];
+    // Handle write operations
+    for (let idx = 0; idx < writePatches.length; idx++) {
+      const patch = writePatches[idx];
+      const blobInfo = blobInfos[idx];
 
-      writes[file.path] = {
+      writes[patch.path] = {
         metadata: {
           address: BlobAddress.address(this.state.projectId!, blobInfo.hash),
-          metadata: file.userMetadata || {},
+          metadata: patch.metadata || {},
           sizeInBytes: blobInfo.sizeInBytes,
           mtime: now,
           ctime: now, // Will be updated in internalTransactionalWrite
         },
         condition:
-          file.expectedCtime !== undefined
-            ? { expectedCtime: file.expectedCtime }
+          patch.expectedCtime !== undefined
+            ? { expectedCtime: patch.expectedCtime }
             : undefined,
       };
     }
 
-    // Handle deletions
-    for (const deletion of input.deletions || []) {
-      writes[deletion.path] = {
+    // Handle deletion operations
+    for (const patch of deletePatches) {
+      writes[patch.path] = {
         metadata: null,
         condition:
-          deletion.expectedCtime !== undefined
-            ? { expectedCtime: deletion.expectedCtime }
+          patch.expectedCtime !== undefined
+            ? { expectedCtime: patch.expectedCtime }
             : undefined,
       };
     }
@@ -1184,39 +1220,14 @@ export class Namespace extends DurableObject<Env> {
     const result = await this.internalTransactionalWrite(writes, force);
 
     // Step 4: Transform result to match TransactionalWriteResult interface
-    const appliedFiles: Array<{
-      path: FilePath;
-      address: BlobAddress;
-      metadata: FileMetadata;
-    }> = [];
-    const skippedFiles: Array<{ path: FilePath; reason: string }> = [];
+    const results: Record<FilePath, FilePatchResult> = {};
 
-    for (const [path, metadata] of Object.entries(result.applied)) {
-      if (metadata !== null) {
-        appliedFiles.push({
-          path,
-          address: metadata.address,
-          metadata,
-        });
-      }
+    // Handle all applied operations
+    for (const [path, metadata] of Object.entries(result)) {
+      results[path] = metadata;
     }
 
-    // Add skipped files (conflicts resolved as 'local')
-    for (const conflict of result.conflicts) {
-      if (conflict.resolved === "local") {
-        skippedFiles.push({
-          path: conflict.path,
-          reason: `Conflict resolved: local version newer (ctime ${conflict.actualCtime} vs expected ${conflict.expectedCtime})`,
-        });
-      }
-    }
-
-    return {
-      success: true,
-      appliedFiles,
-      skippedFiles,
-      conflicts: force ? result.conflicts : undefined,
-    };
+    return { results };
   }
 
   /**
@@ -1295,8 +1306,7 @@ export class Namespace extends DurableObject<Env> {
     }
 
     // Step 2: Convert diff entries to transactional write input
-    const files: TransactionalWriteInput["files"] = [];
-    const deletions: TransactionalWriteInput["deletions"] = [];
+    const patches: Array<FilePatch> = [];
     const added: FilePath[] = [];
     const modified: FilePath[] = [];
     const deleted: FilePath[] = [];
@@ -1305,8 +1315,9 @@ export class Namespace extends DurableObject<Env> {
       if (diff.metadata === null) {
         // File should be deleted
         const currentFile = this.state.tree[diff.path];
-        deletions.push({
+        patches.push({
           path: diff.path,
+          content: null, // Deletion
           expectedCtime:
             strategy === MergeStrategy.LAST_WRITE_WINS
               ? currentFile?.ctime
@@ -1322,10 +1333,10 @@ export class Namespace extends DurableObject<Env> {
         // We'll create a dummy content and let transactionalWrite handle the metadata
         const dummyContent = new ArrayBuffer(0);
 
-        files.push({
+        patches.push({
           path: diff.path,
           content: dummyContent,
-          userMetadata: diff.metadata.metadata,
+          metadata: diff.metadata.metadata,
           expectedCtime:
             strategy === MergeStrategy.LAST_WRITE_WINS
               ? currentFile?.ctime
@@ -1365,27 +1376,32 @@ export class Namespace extends DurableObject<Env> {
     const result = await this.internalTransactionalWrite(writes, force);
 
     // Step 4: Transform conflicts to merge format
-    const conflicts: ConflictEntry[] = result.conflicts.map((conflict) => {
-      const localMeta = this.state.tree[conflict.path];
-      const diffEntry = diffs.find((d) => d.path === conflict.path);
-      const remoteMeta = diffEntry?.metadata;
+    const conflicts: ConflictEntry[] = [];
+    for (const [path, res] of Object.entries(result)) {
+      if (res.conflict) {
+        const localMeta = this.state.tree[path];
+        const diffEntry = diffs.find((d) => d.path === path);
+        const remoteMeta = diffEntry?.metadata;
 
-      return {
-        path: conflict.path,
-        localMetadata: localMeta!,
-        remoteMetadata: remoteMeta!,
-        resolved: conflict.resolved,
-      };
-    });
+        conflicts.push({
+          path,
+          localMetadata: localMeta!,
+          remoteMetadata: remoteMeta!,
+          resolved: res.conflict!.resolved,
+        });
+      }
+    }
 
     return {
       success: true,
-      filesMerged: Object.keys(result.applied).length,
+      filesMerged: Object.values(result).filter((r) => r.success).length,
       conflicts:
         strategy === MergeStrategy.LAST_WRITE_WINS ? conflicts : undefined,
-      added: added.filter((path) => result.applied[path] !== undefined),
-      modified: modified.filter((path) => result.applied[path] !== undefined),
-      deleted: deleted.filter((path) => result.applied[path] === null),
+      added: added.filter((path) => result[path]?.success),
+      modified: modified.filter((path) => result[path]?.success),
+      deleted: deleted.filter(
+        (path) => result[path]?.success && result[path]?.metadata === null,
+      ),
     };
   }
 }

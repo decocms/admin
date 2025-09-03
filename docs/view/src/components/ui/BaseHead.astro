@@ -1,5 +1,7 @@
 ---
 const { title } = Astro.props;
+const formattedTitle = title ? `${title} - decoCMS` : 'decoCMS';
 ---
 
-<title>{title}</title>
+<title>{formattedTitle}</title>
+<link rel="icon" type="image/x-icon" href="/favicon.ico">

@@ -9,6 +9,8 @@ import { type Env as DecoEnv, StateSchema } from "./deco.gen.ts";
 
 import { Blobs } from "./src/blobs.ts";
 import { Branch } from "./src/branch.ts";
+import { qsParser } from "./src/utils.ts";
+import { WatchOpts, watchSSE } from "./src/watch.ts";
 import { tools } from "./tools/index.ts";
 import { views } from "./views.ts";
 
@@ -35,27 +37,37 @@ export type Env = DefaultEnv &
     BRANCH: DurableObjectNamespace<Branch>;
   };
 
+const watchParser = qsParser<WatchOpts>({
+  branchName: (value) => value,
+  fromCtime: (value) => +value,
+  pathFilter: (value) => value,
+});
+
 const fallbackToView =
   (viewPath: string = "/") =>
-  async (request: Request, env: Env): Promise<Response> => {
-    try {
-      const url = new URL(request.url);
-      // Redirect root to viewPath
-      if (url.pathname === "/") {
-        url.pathname = viewPath;
-        return Promise.resolve(Response.redirect(url.toString(), 302));
-      }
-      // Serve assets from bound assets
-      return env.ASSETS.fetch(request);
-    } catch (error) {
-      return Promise.resolve(
-        new Response("Internal server error", { status: 500 }),
-      );
+  async (req: Request, env: Env) => {
+    const LOCAL_URL = "http://localhost:4000";
+    const url = new URL(req.url);
+    if (url.pathname === "/watch") {
+      return watchSSE(env, watchParser.parse(url.searchParams));
     }
+    const useDevServer = (
+      req.headers.get("origin") || req.headers.get("host")
+    )?.includes("localhost");
+
+    const request = new Request(
+      useDevServer
+        ? new URL(`${url.pathname}${url.search}`, LOCAL_URL)
+        : new URL(viewPath, req.url),
+      req,
+    );
+
+    return useDevServer ? fetch(request) : env.ASSETS.fetch(request);
   };
 
 const { Workflow, ...runtime } = withRuntime<Env, typeof StateSchema>({
   tools,
+  views,
   fetch: fallbackToView("/"),
 });
 

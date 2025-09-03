@@ -56,7 +56,7 @@ export function newBranchesCRUD(env: Env) {
           input.name,
           now.toString(),
           metadata,
-          input.origin_branch || "NULL",
+          input.origin_branch ?? null!,
         ],
       });
 

@@ -57,6 +57,11 @@
     "resolveJsonModule": true,
     "isolatedModules": true
   },
-  "include": ["server/**/*.ts", "view/**/*.ts"],
+  "include": [
+    "server/**/*.ts",
+    "view/**/*.ts",
+    "server/**/*.tsx",
+    "view/**/*.tsx"
+  ],
   "exclude": ["node_modules", "**/dist", "**/build", "**/.wrangler"]
 }

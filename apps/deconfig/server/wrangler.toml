@@ -3,7 +3,7 @@ name = "deconfig"
 main = "main.ts"
 compatibility_date = "2025-06-17"
 compatibility_flags = [ "nodejs_compat" ]
-scope = "deco-team"
+scope = "deco"
 
 [assets]
 directory = "./view-build"
@@ -14,7 +14,7 @@ binding = "DECONFIG_BLOBS"
 bucket_name = "deconfig-blobs"
 
 [deco]
-workspace = "deco-team"
+workspace = "deco"
 bindings = []
 enable_workflows = true
 local = false

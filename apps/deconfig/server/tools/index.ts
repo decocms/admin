@@ -7,8 +7,9 @@
  */
 
 import { deconfigTools } from "./deconfig.ts";
+import { userTools } from "./user.ts";
 
-export const tools = [...deconfigTools];
+export const tools = [...deconfigTools, ...userTools];
 
 // Re-export for direct access
 export { deconfigTools } from "./deconfig.ts";

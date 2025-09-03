@@ -10,7 +10,7 @@
  * and workspace-level isolation. Each branch can contain files managed
  * by the existing Durable Object infrastructure.
  */
-import { createTool } from "@deco/workers-runtime/mastra";
+import { createPrivateTool as createTool } from "@deco/workers-runtime/mastra";
 import { MergeStrategy, BranchId } from "../src/branch.ts";
 import { newBranchesCRUD } from "../src/branches-db.ts";
 import { z } from "zod";
@@ -26,7 +26,7 @@ const projectFor = (env: Env): string => {
 };
 
 // Helper function to get branch RPC (using branchName directly for performance)
-const branchRpcFor = async (env: Env, branchName: string = "main") => {
+export const branchRpcFor = async (env: Env, branchName: string = "main") => {
   const projectId = projectFor(env);
 
   // Get or create the Durable Object for file operations
@@ -84,8 +84,8 @@ export const createBranchTool = (env: Env) =>
         }
 
         // Branch from existing branch using Durable Object
-        const sourceRpc = await branchRpcFor(env, context.sourceBranch);
-        using _ = await sourceRpc.branch(context.branchName);
+        using sourceRpc = await branchRpcFor(env, context.sourceBranch);
+        await sourceRpc.branch(context.branchName);
       }
       // Create empty branch
       const branch = await crud.createBranch({
@@ -165,7 +165,7 @@ export const createDeleteBranchTool = (env: Env) =>
       // Get file count before deletion (optional)
       let filesDeleted = 0;
       try {
-        const branchRpc = await branchRpcFor(env, context.branchName);
+        using branchRpc = await branchRpcFor(env, context.branchName);
         filesDeleted = await branchRpc.softDelete();
       } catch (error) {
         // Ignore errors getting file count
@@ -215,7 +215,7 @@ export const createMergeBranchTool = (env: Env) =>
         .optional(),
     }),
     execute: async ({ context }) => {
-      const targetRpc = await branchRpcFor(env, context.targetBranch);
+      using targetRpc = await branchRpcFor(env, context.targetBranch);
       const result = await targetRpc.merge(
         context.sourceBranch,
         context.strategy as MergeStrategy,
@@ -263,7 +263,7 @@ export const createDiffBranchTool = (env: Env) =>
       ),
     }),
     execute: async ({ context }) => {
-      const baseRpc = await branchRpcFor(env, context.baseBranch);
+      using baseRpc = await branchRpcFor(env, context.baseBranch);
       const diffs = await baseRpc.diff(context.compareBranch);
 
       const differences = diffs.map((diff: any) => ({

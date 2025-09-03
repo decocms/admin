@@ -64,7 +64,7 @@ import { Agent } from "@mastra/core/agent";
 import type { MastraMemory } from "@mastra/core/memory";
 import { TokenLimiter } from "@mastra/memory/processors";
 import { createServerClient } from "@supabase/ssr";
-import type { CoreMessage, TextPart } from "ai";
+import type { CoreMessage } from "ai";
 import {
   type GenerateObjectResult,
   type GenerateTextResult,
@@ -97,9 +97,9 @@ import { AgentWallet } from "./agent/wallet.ts";
 import { pickCapybaraAvatar } from "./capybaras.ts";
 import { mcpServerTools } from "./mcp.ts";
 import type {
-  AIAgent as IIAgent,
-  GenerateOptions,
   Message as AIMessage,
+  GenerateOptions,
+  AIAgent as IIAgent,
   StreamOptions,
   Thread,
   ThreadQueryOptions,

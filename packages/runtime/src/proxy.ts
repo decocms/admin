@@ -1,5 +1,6 @@
 // deno-lint-ignore-file no-explicit-any
 import type { ToolExecutionContext } from "@mastra/core";
+import { convertJsonSchemaToZod } from "zod-from-json-schema";
 import { MCPConnection } from "./connection.ts";
 import { createServerClient } from "./mcp-client.ts";
 import type { CreateStubAPIOptions } from "./mcp.ts";
@@ -138,9 +139,13 @@ export function createMCPClientProxy<T extends Record<string, unknown>>(
 
         return {
           ...tool,
-          inputSchema: options?.jsonSchemaToZod?.(tool.inputSchema),
-          outputSchema: options?.jsonSchemaToZod?.(tool.outputSchema),
           id: tool.name,
+          inputSchema: tool.inputSchema
+            ? convertJsonSchemaToZod(tool.inputSchema)
+            : undefined,
+          outputSchema: tool.outputSchema
+            ? convertJsonSchemaToZod(tool.outputSchema)
+            : undefined,
           execute: ({ context }: ToolExecutionContext<any>) => {
             return callToolFn(context);
           },

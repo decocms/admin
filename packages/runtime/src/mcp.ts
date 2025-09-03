@@ -4,7 +4,6 @@ import { z } from "zod";
 import type { MCPConnection } from "./connection.ts";
 import type { DefaultEnv } from "./index.ts";
 import { createMCPClientProxy } from "./proxy.ts";
-import { JSONSchemaToZod } from "@dmitryrechkin/json-schema-to-zod";
 
 export interface FetchOptions extends RequestInit {
   path?: string;
@@ -152,7 +151,6 @@ export interface CreateStubAPIOptions {
   token?: string;
   connection?: MCPConnectionProvider;
   debugId?: () => string;
-  jsonSchemaToZod?: JSONSchemaToZodConverter;
   getErrorByStatusCode?: (
     statusCode: number,
     message?: string,
@@ -165,6 +163,5 @@ export function createMCPFetchStub<TDefinition extends readonly ToolBinder[]>(
 ): MCPClientFetchStub<TDefinition> {
   return createMCPClientProxy<MCPClientFetchStub<TDefinition>>({
     ...(options ?? {}),
-    jsonSchemaToZod: (schema) => JSONSchemaToZod.convert(schema),
   });
 }

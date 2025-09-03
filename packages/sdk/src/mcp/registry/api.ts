@@ -81,7 +81,7 @@ const RegistryToolSchema = z.object({
   id: z.string(),
   name: z.string(),
   description: z.string().optional(),
-  inputSchema: z.record(z.unknown()).optional(),
+  inputSchema: z.record(z.unknown()),
   outputSchema: z.record(z.unknown()).optional(),
   metadata: z.record(z.unknown()).optional(),
 });
@@ -291,7 +291,7 @@ export const getRegistryApp = createTool({
       if (result.error) throw result.error;
       data = result.data;
     } else if ("name" in ctx && ctx.name) {
-      const [scopeName, appName] = ctx.name.slice(1).split("/");
+      const { scopeName, name: appName } = AppName.parse(ctx.name);
       const result = await c.db
         .from(DECO_CHAT_APPS_REGISTRY_TABLE)
         .select(SELECT_REGISTRY_APP_WITH_SCOPE_QUERY)

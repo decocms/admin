@@ -43,6 +43,7 @@ import { listKnowledgeBases } from "../knowledge/api.ts";
 import { AppName } from "../../common/index.ts";
 import { getRegistryApp, listRegistryApps } from "../registry/api.ts";
 import { createServerClient } from "../utils.ts";
+import { Json } from "../../storage/index.ts";
 
 const SELECT_INTEGRATION_QUERY = `
           *,
@@ -267,6 +268,18 @@ const virtualIntegrationsFor = (
   ];
 };
 
+const registryToolToMcpTool = (tool: {
+  name: string;
+  description: string | null;
+  input_schema: Json;
+  output_schema: Json;
+}): MCPTool => ({
+  name: tool.name,
+  description: tool.description || undefined,
+  inputSchema: (tool.input_schema as Record<string, unknown>) || {},
+  outputSchema: (tool.output_schema as Record<string, unknown>) || undefined,
+});
+
 // Helper function to extract tools from registry data - shared between list and get
 const extractToolsFromRegistry = (
   integration: QueryResult<
@@ -280,17 +293,7 @@ const extractToolsFromRegistry = (
       ? registryData.deco_chat_apps_registry_tools
       : null;
 
-  return (
-    registryTools?.map(
-      (tool): MCPTool => ({
-        name: tool.name,
-        description: tool.description || undefined,
-        inputSchema: (tool.input_schema as Record<string, unknown>) || {},
-        outputSchema:
-          (tool.output_schema as Record<string, unknown>) || undefined,
-      }),
-    ) || null
-  );
+  return registryTools?.map(registryToolToMcpTool) || null;
 };
 
 export const listIntegrations = createIntegrationManagementTool({
@@ -495,6 +498,10 @@ export const getIntegration = createIntegrationManagementTool({
     return { ...baseIntegration, tools };
   },
 });
+
+export type IntegrationWithTools = Awaited<
+  ReturnType<(typeof getIntegration)["handler"]>
+>;
 
 export const createIntegration = createIntegrationManagementTool({
   name: "INTEGRATIONS_CREATE",

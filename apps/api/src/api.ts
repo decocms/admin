@@ -21,6 +21,9 @@ import {
   withMCPErrorHandling,
   WORKSPACE_TOOLS,
   wrapToolFn,
+  getIntegration,
+  type IntegrationWithTools,
+  getRegistryApp,
 } from "@deco/sdk/mcp";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { type Context, Hono } from "hono";
@@ -45,7 +48,6 @@ import {
   ListToolsRequestSchema,
   ListToolsResult,
 } from "@modelcontextprotocol/sdk/types.js";
-import { getIntegration } from "packages/sdk/src/mcp/integrations/api.ts";
 import { createPosthogServerClient } from "packages/sdk/src/posthog.ts";
 import { studio } from "@outerbase/browsable-durable-object";
 
@@ -274,7 +276,47 @@ const proxy = (
   };
 };
 
-const createMcpServerProxy = async (c: Context) => {
+const createMcpServerProxyForIntegration = async (
+  c: Context,
+  fetchIntegration: () => Promise<
+    Pick<IntegrationWithTools, "connection" | "tools" | "id">
+  >,
+) => {
+  const ctx = honoCtxToAppCtx(c);
+
+  const integration = await fetchIntegration();
+
+  const mcpServerProxy = proxy(integration.connection, {
+    tools: integration.tools
+      ? { tools: integration.tools as ListToolsResult["tools"] }
+      : undefined,
+    middlewares: {
+      callTool: [withMCPAuthorization(ctx, { integrationId: integration.id })],
+    },
+  });
+
+  return mcpServerProxy;
+};
+
+const createMcpServerProxyForAppName = (c: Context) => {
+  const ctx = honoCtxToAppCtx(c);
+
+  const appName = c.req.param("appName");
+  const fetchIntegration = async () => {
+    using _ = ctx.resourceAccess.grant();
+    const integration = await State.run(ctx, () =>
+      getRegistryApp.handler({ name: appName }),
+    );
+
+    return {
+      ...integration,
+      tools: integration.tools ?? [],
+    };
+  };
+
+  return createMcpServerProxyForIntegration(c, fetchIntegration);
+};
+const createMcpServerProxy = (c: Context) => {
   const ctx = honoCtxToAppCtx(c);
 
   const integrationId = c.req.param("integrationId");
@@ -285,18 +327,7 @@ const createMcpServerProxy = async (c: Context) => {
     );
   };
 
-  const integration = await fetchIntegration();
-
-  const mcpServerProxy = proxy(integration.connection, {
-    tools: integration.tools
-      ? { tools: integration.tools as ListToolsResult["tools"] }
-      : undefined,
-    middlewares: {
-      callTool: [withMCPAuthorization(ctx, { integrationId })],
-    },
-  });
-
-  return mcpServerProxy;
+  return createMcpServerProxyForIntegration(c, fetchIntegration);
 };
 
 // Add logger middleware
@@ -365,6 +396,12 @@ app.post(
 
 app.post("/:root/:slug/:integrationId/mcp", async (c) => {
   const mcpServerProxy = await createMcpServerProxy(c);
+
+  return mcpServerProxy.fetch(c.req.raw);
+});
+
+app.post("/apps/mcp", async (c) => {
+  const mcpServerProxy = await createMcpServerProxyForAppName(c);
 
   return mcpServerProxy.fetch(c.req.raw);
 });

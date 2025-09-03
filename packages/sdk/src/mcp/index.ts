@@ -42,6 +42,11 @@ import * as teamsAPI from "./teams/api.ts";
 import * as threadsAPI from "./threads/api.ts";
 import * as triggersAPI from "./triggers/api.ts";
 import * as walletAPI from "./wallet/api.ts";
+export {
+  getIntegration,
+  type IntegrationWithTools,
+} from "./integrations/api.ts";
+export { getRegistryApp } from "./registry/api.ts";
 
 export type { ContractState } from "./contracts/api.ts";
 

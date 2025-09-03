@@ -20,6 +20,20 @@ const normalizeWorkspace = (workspace: string) => {
 };
 
 /**
+ * Url: /apps/mcp?appName=$appName
+ */
+const createAppsUrl = ({
+  appName,
+  decoChatApiUrl,
+}: {
+  appName: string;
+  decoChatApiUrl?: string;
+}) =>
+  new URL(
+    `/apps/mcp?appName=${appName}`,
+    decoChatApiUrl ?? "https://api.deco.chat",
+  ).href;
+/**
  * Url: /:workspace.root/:workspace.slug/:integrationId/mcp
  */
 const createIntegrationsUrl = ({
@@ -40,6 +54,18 @@ export const workspaceClient = (
   ctx: WorkspaceClientContext,
 ): ReturnType<(typeof MCPClient)["forWorkspace"]> => {
   return MCPClient.forWorkspace(ctx.workspace, ctx.token);
+};
+
+const mcpClientForAppName = (appName: string, decoChatApiUrl?: string) => {
+  const mcpConnection: MCPConnection = {
+    type: "HTTP",
+    url: createAppsUrl({
+      appName,
+      decoChatApiUrl,
+    }),
+  };
+
+  return MCPClient.forConnection(mcpConnection);
 };
 
 const mcpClientForIntegrationId = (
@@ -71,7 +97,8 @@ function mcpClientFromState(binding: BindingBase, env: DefaultEnv) {
       ? bindingFromState.value
       : undefined;
   if (typeof integrationId !== "string") {
-    return null;
+    // in case of a binding to an app name, we need to use the new apps/mcp endpoint which will proxy the request to the app but without any token
+    return mcpClientForAppName(binding.name, env.DECO_CHAT_API_URL);
   }
   return mcpClientForIntegrationId(integrationId, ctx, env.DECO_CHAT_API_URL);
 }

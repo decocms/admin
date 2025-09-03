@@ -1,64 +1,62 @@
 /**
- * Database CRUD operations for DECONFIG namespaces.
+ * Database CRUD operations for DECONFIG branches.
  * Simple, straightforward database operations without complex validation.
  */
 import type { Env } from "../main.ts";
 
-export interface NamespaceRecord {
+export interface BranchRecord {
   name: string;
   created_at: number;
   metadata: Record<string, any>;
-  origin_namespace: string | null;
+  origin_branch: string | null;
 }
 
-export interface CreateNamespaceInput {
+export interface CreateBranchInput {
   name: string;
   metadata?: Record<string, any>;
-  origin_namespace?: string;
+  origin_branch?: string | null;
 }
 
-export interface ListNamespacesInput {
+export interface ListBranchesInput {
   prefix?: string;
 }
 
-export function newNamespacesCRUD(env: Env) {
+export function newBranchesCRUD(env: Env) {
   // Initialize table on first use
   const initTable = async () => {
     await env.DECO_CHAT_WORKSPACE_DB.query({
-      sql: `CREATE TABLE IF NOT EXISTS DECONFIG_NAMESPACES (
+      sql: `CREATE TABLE IF NOT EXISTS DECONFIG_BRANCHES (
         name TEXT PRIMARY KEY,
         created_at INTEGER NOT NULL,
         metadata TEXT NOT NULL DEFAULT '{}',
-        origin_namespace TEXT
+        origin_branch TEXT
       )`,
       params: [],
     });
 
     await env.DECO_CHAT_WORKSPACE_DB.query({
-      sql: `CREATE INDEX IF NOT EXISTS idx_namespaces_created_at 
-            ON DECONFIG_NAMESPACES (created_at)`,
+      sql: `CREATE INDEX IF NOT EXISTS idx_branches_created_at 
+            ON DECONFIG_BRANCHES (created_at)`,
       params: [],
     });
   };
 
   return {
-    async createNamespace(
-      input: CreateNamespaceInput,
-    ): Promise<NamespaceRecord> {
+    async createBranch(input: CreateBranchInput): Promise<BranchRecord> {
       await initTable();
 
       const now = Date.now();
       const metadata = JSON.stringify(input.metadata || {});
 
       await env.DECO_CHAT_WORKSPACE_DB.query({
-        sql: `INSERT INTO DECONFIG_NAMESPACES 
-              (name, created_at, metadata, origin_namespace) 
+        sql: `INSERT INTO DECONFIG_BRANCHES 
+              (name, created_at, metadata, origin_branch) 
               VALUES (?, ?, ?, ?)`,
         params: [
           input.name,
           now.toString(),
           metadata,
-          input.origin_namespace || "NULL",
+          input.origin_branch || "NULL",
         ],
       });
 
@@ -66,28 +64,26 @@ export function newNamespacesCRUD(env: Env) {
         name: input.name,
         created_at: now,
         metadata: input.metadata || {},
-        origin_namespace: input.origin_namespace || null,
+        origin_branch: input.origin_branch || null,
       };
     },
 
-    async deleteNamespace(namespaceName: string): Promise<boolean> {
+    async deleteBranch(branchName: string): Promise<boolean> {
       await initTable();
 
       const result = await env.DECO_CHAT_WORKSPACE_DB.query({
-        sql: `DELETE FROM DECONFIG_NAMESPACES WHERE name = ?`,
-        params: [namespaceName],
+        sql: `DELETE FROM DECONFIG_BRANCHES WHERE name = ?`,
+        params: [branchName],
       });
 
       return (result.result[0]?.meta?.changes || 0) > 0;
     },
 
-    async listNamespaces(
-      input: ListNamespacesInput = {},
-    ): Promise<NamespaceRecord[]> {
+    async listBranches(input: ListBranchesInput = {}): Promise<BranchRecord[]> {
       await initTable();
 
-      let sql = `SELECT name, created_at, metadata, origin_namespace 
-                 FROM DECONFIG_NAMESPACES`;
+      let sql = `SELECT name, created_at, metadata, origin_branch 
+                 FROM DECONFIG_BRANCHES`;
       const params: string[] = [];
 
       if (input.prefix) {
@@ -128,30 +124,30 @@ export function newNamespacesCRUD(env: Env) {
         const nameValue = Array.isArray(row) ? row[0] : row.name;
         const createdAtValue = Array.isArray(row) ? row[1] : row.created_at;
         const metadataValue = Array.isArray(row) ? row[2] : row.metadata;
-        const originNamespaceValue = Array.isArray(row)
+        const originBranchValue = Array.isArray(row)
           ? row[3]
-          : row.origin_namespace;
+          : row.origin_branch;
 
         return {
           name: nameValue,
           created_at: parseInt(createdAtValue || 0),
           metadata: JSON.parse(metadataValue || "{}"),
-          origin_namespace:
-            originNamespaceValue === "NULL" || !originNamespaceValue
+          origin_branch:
+            originBranchValue === "NULL" || !originBranchValue
               ? null
-              : originNamespaceValue,
+              : originBranchValue,
         };
       });
     },
 
-    async getNamespace(namespaceName: string): Promise<NamespaceRecord | null> {
+    async getBranch(branchName: string): Promise<BranchRecord | null> {
       await initTable();
 
       const result = await env.DECO_CHAT_WORKSPACE_DB.query({
-        sql: `SELECT name, created_at, metadata, origin_namespace 
-              FROM DECONFIG_NAMESPACES 
+        sql: `SELECT name, created_at, metadata, origin_branch 
+              FROM DECONFIG_BRANCHES 
               WHERE name = ?`,
-        params: [namespaceName],
+        params: [branchName],
       });
 
       // Handle different possible result structures
@@ -166,31 +162,39 @@ export function newNamespacesCRUD(env: Env) {
         }
       }
 
-      if (rows.length === 0) return null;
+      // If still empty, try the result directly
+      if (
+        rows.length === 0 &&
+        (result as any).results &&
+        Array.isArray((result as any).results)
+      ) {
+        rows = (result as any).results;
+      }
 
-      const row = rows[0] as any;
-      // Handle both array and object formats
+      if (rows.length === 0) {
+        return null;
+      }
+
+      const row = rows[0];
       const nameValue = Array.isArray(row) ? row[0] : row.name;
       const createdAtValue = Array.isArray(row) ? row[1] : row.created_at;
       const metadataValue = Array.isArray(row) ? row[2] : row.metadata;
-      const originNamespaceValue = Array.isArray(row)
-        ? row[3]
-        : row.origin_namespace;
+      const originBranchValue = Array.isArray(row) ? row[3] : row.origin_branch;
 
       return {
         name: nameValue,
         created_at: parseInt(createdAtValue || 0),
         metadata: JSON.parse(metadataValue || "{}"),
-        origin_namespace:
-          originNamespaceValue === "NULL" || !originNamespaceValue
+        origin_branch:
+          originBranchValue === "NULL" || !originBranchValue
             ? null
-            : originNamespaceValue,
+            : originBranchValue,
       };
     },
 
-    async namespaceExists(namespaceName: string): Promise<boolean> {
-      const namespace = await this.getNamespace(namespaceName);
-      return namespace !== null;
+    async branchExists(branchName: string): Promise<boolean> {
+      const branch = await this.getBranch(branchName);
+      return branch !== null;
     },
   };
 }

@@ -1,10 +1,10 @@
 import { createRoute, type RootRoute } from "@tanstack/react-router";
-import { NamespaceManager } from "../components/namespace-manager";
+import { BranchManager } from "../components/branch-manager";
 
 function HomePage() {
   return (
     <div className="min-h-screen bg-gray-50">
-      <NamespaceManager />
+      <BranchManager />
     </div>
   );
 }

@@ -4,7 +4,7 @@ import type { BlobInfo } from "./blobs";
 
 const BLOB_DO = "blob-1";
 
-export const NamespaceId = {
+export const BranchId = {
   build(name: string, projectId: string) {
     return `${projectId}-${name}`;
   },
@@ -36,7 +36,7 @@ export type FilePath = string;
 export type BlobAddress = `${"blobs"}:${string}:${string}`;
 
 /**
- * Metadata for a file in the namespace tree.
+ * Metadata for a file in the branch tree.
  */
 export interface FileMetadata {
   /** Blob address where the file content is stored */
@@ -75,18 +75,18 @@ export interface TreePatch {
 }
 
 /**
- * The complete state of a namespace including its current tree and metadata.
+ * The complete state of a branch including its current tree and metadata.
  */
-export interface NamespaceState {
-  /** Name of the origin namespace, or null if no origin */
+export interface BranchState {
+  /** Name of the origin branch, or null if no origin */
   origin: string | null;
   /** Current tree state (always up-to-date) */
   tree: Tree;
   /** Current patch ID (for ordering) */
   seq: number;
-  /** Project ID that owns this namespace */
+  /** Project ID that owns this branch */
   projectId: string | null;
-  /** Name/ID of this namespace */
+  /** Name/ID of this branch */
   name: string | null;
 }
 
@@ -177,8 +177,8 @@ export interface FileChangeEvent {
 }
 
 /**
- * A single diff entry describing how this namespace (B) should change
- * to match another namespace (A). If metadata is null, B should delete the path.
+ * A single diff entry describing how this branch (B) should change
+ * to match another branch (A). If metadata is null, B should delete the path.
  */
 export interface DiffEntry {
   path: FilePath;
@@ -186,7 +186,7 @@ export interface DiffEntry {
 }
 
 /**
- * Merge strategy for combining two namespace trees.
+ * Merge strategy for combining two branch trees.
  */
 export enum MergeStrategy {
   /** Override all conflicts with remote version */
@@ -196,7 +196,7 @@ export enum MergeStrategy {
 }
 
 /**
- * A conflict entry when merging namespaces.
+ * A conflict entry when merging branches.
  * Represents a file that was changed locally but also changed remotely
  * with a newer modification time.
  */
@@ -230,14 +230,14 @@ export interface MergeResult {
 }
 
 /**
- * RpcTarget for Namespace operations with project context.
+ * RpcTarget for Branch operations with project context.
  *
- * This pattern allows the namespace to access its project ID and blob storage
+ * This pattern allows the branch to access its project ID and blob storage
  * while maintaining clean RPC interfaces.
  */
-export class NamespaceRpc extends RpcTarget {
+export class BranchRpc extends RpcTarget {
   constructor(
-    private namespace: Namespace,
+    private branchDO: Branch,
     private projectId: string,
   ) {
     super();
@@ -276,7 +276,7 @@ export class NamespaceRpc extends RpcTarget {
    *
    * This method:
    * 1. Stores the content in the project's blob storage
-   * 2. Updates the namespace tree with the blob address
+   * 2. Updates the branch tree with the blob address
    * 3. Returns the blob address for reference
    *
    * @param path - The file path to write
@@ -289,7 +289,7 @@ export class NamespaceRpc extends RpcTarget {
     content: ReadableStream<Uint8Array> | ArrayBuffer,
     metadata: Record<string, any> = {},
   ): Promise<FileMetadata> {
-    return this.namespace.writeFile(path, content, metadata, this.projectId);
+    return this.branchDO.writeFile(path, content, metadata, this.projectId);
   }
 
   /**
@@ -299,7 +299,7 @@ export class NamespaceRpc extends RpcTarget {
    * @returns Promise resolving to FileMetadata if file exists, null otherwise
    */
   async getFileMetadata(path: FilePath): Promise<FileMetadata | null> {
-    return this.namespace.getFileMetadata(path);
+    return this.branchDO.getFileMetadata(path);
   }
 
   /**
@@ -311,7 +311,7 @@ export class NamespaceRpc extends RpcTarget {
   async getFileStream(
     path: FilePath,
   ): Promise<ReadableStream<Uint8Array> | null> {
-    return this.namespace.getFileStream(path);
+    return this.branchDO.getFileStream(path);
   }
 
   /**
@@ -321,16 +321,16 @@ export class NamespaceRpc extends RpcTarget {
    * @returns Promise resolving to FileResponse with stream and metadata, or null if not found
    */
   async getFile(path: FilePath): Promise<FileResponse | null> {
-    return this.namespace.getFile(path);
+    return this.branchDO.getFile(path);
   }
 
   /**
-   * List files in the namespace tree.
+   * List files in the branch tree.
    * If prefix is provided, only files starting with that prefix are returned.
-   * Returns paths with namespace prefix removed for clean display.
+   * Returns paths with branch prefix removed for clean display.
    *
    * @param prefix - Optional path prefix to filter by (e.g., "components/", "utils/")
-   * @returns Promise resolving to array of file paths (without namespace prefix)
+   * @returns Promise resolving to array of file paths (without branch prefix)
    */
   async listFiles(prefix?: string): Promise<FilePath[]> {
     const tree = await this.getFiles(prefix);
@@ -338,15 +338,15 @@ export class NamespaceRpc extends RpcTarget {
   }
 
   /**
-   * Get files with their metadata from the namespace tree.
+   * Get files with their metadata from the branch tree.
    * If prefix is provided, only files starting with that prefix are returned.
-   * Returns tree with namespace prefix removed for clean display.
+   * Returns tree with branch prefix removed for clean display.
    *
    * @param prefix - Optional path prefix to filter by (e.g., "components/", "utils/")
-   * @returns Promise resolving to Tree (Record<FilePath, FileMetadata>) without namespace prefix
+   * @returns Promise resolving to Tree (Record<FilePath, FileMetadata>) without branch prefix
    */
   async getFiles(prefix?: string): Promise<Tree> {
-    return this.namespace.listFiles(prefix);
+    return this.branchDO.listFiles(prefix);
   }
 
   /**
@@ -356,7 +356,7 @@ export class NamespaceRpc extends RpcTarget {
    * @returns Promise resolving to true if file exists, false otherwise
    */
   async hasFile(path: FilePath): Promise<boolean> {
-    return this.namespace.hasFile(path);
+    return this.branchDO.hasFile(path);
   }
 
   /**
@@ -366,19 +366,19 @@ export class NamespaceRpc extends RpcTarget {
    * @returns Promise resolving to true if file was deleted, false if it didn't exist
    */
   async deleteFile(path: FilePath): Promise<boolean> {
-    return this.namespace.deleteFile(path);
+    return this.branchDO.deleteFile(path);
   }
 
   /**
-   * Create a new namespace branch from the current namespace.
-   * The new namespace will have the current tree as its initial state
-   * and this namespace as its origin.
+   * Create a new branch from the current branch.
+   * The new branch will have the current tree as its initial state
+   * and this branch as its origin.
    *
-   * @param newNamespaceId - The ID for the new namespace
-   * @returns Promise resolving to RPC stub for the new namespace
+   * @param newBranchId - The ID for the new branch
+   * @returns Promise resolving to RPC stub for the new branch
    */
-  async branch(newNamespaceId: string): Promise<Rpc.Stub<NamespaceRpc>> {
-    return this.namespace.branch(newNamespaceId);
+  async branch(newBranchId: string): Promise<Rpc.Stub<BranchRpc>> {
+    return this.branchDO.branch(newBranchId);
   }
 
   /**
@@ -393,101 +393,101 @@ export class NamespaceRpc extends RpcTarget {
     input: TransactionalWriteInput,
     force: boolean = false,
   ): Promise<TransactionalWriteResult> {
-    return await this.namespace.transactionalWrite(input, force);
+    return await this.branchDO.transactionalWrite(input, force);
   }
 
   /**
-   * Get the origin namespace name.
+   * Get the origin branch name.
    *
-   * @returns Promise resolving to the origin namespace name, or null if no origin
+   * @returns Promise resolving to the origin branch name, or null if no origin
    */
   async getOrigin(): Promise<string | null> {
-    return this.namespace.getOrigin();
+    return this.branchDO.getOrigin();
   }
 
   /**
-   * Set the origin namespace.
+   * Set the origin branch.
    *
-   * @param origin - The origin namespace name, or null for no origin
+   * @param origin - The origin branch name, or null for no origin
    */
   async setOrigin(origin: string | null): Promise<void> {
-    return this.namespace.setOrigin(origin);
+    return this.branchDO.setOrigin(origin);
   }
 
   /**
-   * Watch for file changes (SSE byte stream), forwarding the underlying Namespace stream.
+   * Watch for file changes (SSE byte stream), forwarding the underlying Branch stream.
    * Applies this RPC's path prefix to the optional pathFilter.
    */
   watch(options: WatchOptions = {}): ReadableStream<Uint8Array> {
-    return this.namespace.watch(options);
+    return this.branchDO.watch(options);
   }
 
   /**
-   * Compute diff of this namespace (B) against another (A).
+   * Compute diff of this branch (B) against another (A).
    * Returns the list of changes needed for B to match A.
    * If this RPC has a pathPrefix, results are filtered to that prefix
    * and paths are returned without the prefix.
    */
-  async diff(otherNamespaceId: string): Promise<DiffEntry[]> {
-    return await this.namespace.diff(otherNamespaceId);
+  async diff(otherBranchId: string): Promise<DiffEntry[]> {
+    return await this.branchDO.diff(otherBranchId);
   }
 
   /**
-   * Merge another namespace into this one using diff + transactionalWrite pattern.
+   * Merge another branch into this one using diff + transactionalWrite pattern.
    * If this RPC has a pathPrefix, only files matching the prefix are affected
    * and paths in the result are returned without the prefix.
    *
-   * @param otherNamespaceId - The namespace to merge from
+   * @param otherBranchId - The branch to merge from
    * @param strategy - The merge strategy to use
    * @returns Promise resolving to MergeResult with prefix-filtered paths
    */
   async merge(
-    otherNamespaceId: string,
+    otherBranchId: string,
     strategy: MergeStrategy,
   ): Promise<MergeResult> {
-    return await this.namespace.merge(otherNamespaceId, strategy);
+    return await this.branchDO.merge(otherBranchId, strategy);
   }
 
   /**
-   * Soft delete the namespace by clearing all files from the current tree.
-   * This preserves the namespace structure, history, and allows for potential recovery.
-   * The namespace will appear empty but can still be branched from or have new files added.
+   * Soft delete the branch by clearing all files from the current tree.
+   * This preserves the branch structure, history, and allows for potential recovery.
+   * The branch will appear empty but can still be branched from or have new files added.
    *
    * @returns Promise resolving to the number of files that were deleted
    */
   async softDelete(): Promise<number> {
-    return await this.namespace.softDelete();
+    return await this.branchDO.softDelete();
   }
 }
 
 /**
- * Configuration for creating a new namespace.
+ * Configuration for creating a new branch.
  */
-export interface NamespaceConfig {
-  /** The project ID that owns this namespace */
+export interface BranchConfig {
+  /** The project ID that owns this branch */
   projectId: string;
-  /** Optional namespace name (defaults to auto-generated) */
-  namespaceName?: string;
+  /** Optional branch name (defaults to auto-generated) */
+  branchName?: string;
   /** Initial tree state (for efficient branching) */
   tree?: Tree;
-  /** Origin namespace name (for tracking lineage) */
+  /** Origin branch name (for tracking lineage) */
   origin?: string | null;
 }
 
 /**
- * Namespace Durable Object for managing versioned file trees.
+ * Branch Durable Object for managing versioned file trees.
  *
- * Each namespace maintains:
- * - An origin (parent namespace or null)
+ * Each branch maintains:
+ * - An origin (parent branch or null)
  * - A history of trees (git-like commits)
  * - Current in-memory state with SQLite persistence
  *
- * Operations are O(1) for namespace cloning and efficient for file operations.
- * Must be accessed through NamespaceRpc with project context.
+ * Operations are O(1) for branch cloning and efficient for file operations.
+ * Must be accessed through BranchRpc with project context.
  */
-export class Namespace extends DurableObject<Env> {
+export class Branch extends DurableObject<Env> {
   private sql: SqlStorage;
-  private state: NamespaceState = {
+  private state: BranchState = {
     origin: null,
     tree: {},
     seq: 0,
@@ -514,14 +514,14 @@ export class Namespace extends DurableObject<Env> {
     return this.state.tree;
   }
   /**
-   * Initialize a new namespace with configuration.
+   * Initialize a new branch with configuration.
    *
-   * @param config - NamespaceConfig containing all initialization parameters
-   * @returns Promise resolving to NamespaceRpc for interacting with the namespace
+   * @param config - BranchConfig containing all initialization parameters
+   * @returns Promise resolving to BranchRpc for interacting with the branch
    */
-  new(config: NamespaceConfig): NamespaceRpc {
+  new(config: BranchConfig): BranchRpc {
     this.state.projectId ??= config.projectId;
-    this.state.name ??= config.namespaceName ?? null;
+    this.state.name ??= config.branchName ?? null;
 
     // If we have an initial tree, create the first patch
     if (config.tree && Object.keys(config.tree).length > 0) {
@@ -533,17 +533,17 @@ export class Namespace extends DurableObject<Env> {
       this.saveState();
     }
 
-    return new NamespaceRpc(this, config.projectId);
+    return new BranchRpc(this, config.projectId);
   }
 
   /**
-   * Initialize the SQLite storage schema for namespace state.
+   * Initialize the SQLite storage schema for branch state.
    * Creates the state table if it doesn't exist.
    * @private
    */
   private initializeStorage() {
     this.sql.exec(`
-      CREATE TABLE IF NOT EXISTS namespace_state (
+      CREATE TABLE IF NOT EXISTS branch_state (
         id INTEGER PRIMARY KEY CHECK (id = 1),
         state_json TEXT NOT NULL
       )
@@ -788,13 +788,13 @@ export class Namespace extends DurableObject<Env> {
   }
 
   /**
-   * Load the namespace state from SQLite into memory.
+   * Load the branch state from SQLite into memory.
    * If no state exists, initialize with empty state.
    * @private
    */
   private loadState() {
     const result = this.sql.exec(
-      "SELECT state_json FROM namespace_state WHERE id = 1",
+      "SELECT state_json FROM branch_state WHERE id = 1",
     );
     const { value } = result.next();
 
@@ -820,14 +820,14 @@ export class Namespace extends DurableObject<Env> {
   private saveState() {
     const stateJson = JSON.stringify(this.state);
     this.sql.exec(
-      "INSERT OR REPLACE INTO namespace_state (id, state_json) VALUES (1, ?)",
+      "INSERT OR REPLACE INTO branch_state (id, state_json) VALUES (1, ?)",
       stateJson,
     );
   }
 
   /**
    * Write file content and store it in blob storage.
-   * Internal method called by NamespaceRpc.
+   * Internal method called by BranchRpc.
    *
    * @param path - The file path to write
    * @param content - The content to write
@@ -971,18 +971,18 @@ export class Namespace extends DurableObject<Env> {
   }
 
   /**
-   * Get the origin namespace name.
+   * Get the origin branch name.
    *
-   * @returns The origin namespace name, or null if no origin
+   * @returns The origin branch name, or null if no origin
    */
   getOrigin(): string | null {
     return this.state.origin;
   }
 
   /**
-   * Set the origin namespace.
+   * Set the origin branch.
    *
-   * @param origin - The origin namespace name, or null for no origin
+   * @param origin - The origin branch name, or null for no origin
    */
   async setOrigin(origin: string | null): Promise<void> {
     this.state.origin = origin;
@@ -990,9 +990,9 @@ export class Namespace extends DurableObject<Env> {
   }
 
   /**
-   * Soft delete the namespace by clearing all files from the current tree.
-   * This preserves the namespace structure, history, and allows for potential recovery.
-   * The namespace will appear empty but can still be branched from or have new files added.
+   * Soft delete the branch by clearing all files from the current tree.
+   * This preserves the branch structure, history, and allows for potential recovery.
+   * The branch will appear empty but can still be branched from or have new files added.
    *
    * @returns Promise resolving to the number of files that were deleted
    */
@@ -1022,36 +1022,36 @@ export class Namespace extends DurableObject<Env> {
   }
 
   /**
-   * Create a new namespace by branching from this one.
-   * The new namespace will have this namespace's current tree as its initial state.
+   * Create a new branch by branching from this one.
+   * The new branch will have this branch's current tree as its initial state.
    *
-   * @param newNamespaceId - The ID for the new namespace
-   * @returns Promise resolving to NamespaceRpc for the new namespace
+   * @param newBranchId - The ID for the new branch
+   * @returns Promise resolving to BranchRpc for the new branch
    */
-  async branch(newNamespaceId: string): Promise<Rpc.Stub<NamespaceRpc>> {
+  async branch(newBranchId: string): Promise<Rpc.Stub<BranchRpc>> {
     if (!this.state.projectId) {
-      throw new Error("Cannot branch: namespace has no project ID");
+      throw new Error("Cannot branch: branch has no project ID");
     }
 
-    // Get current tree snapshot for the new namespace
+    // Get current tree snapshot for the new branch
     const currentTree = { ...this.state.tree };
 
-    // Create new namespace stub
-    const newNamespaceStub = this.env.NAMESPACE.get(
-      this.env.NAMESPACE.idFromName(
-        NamespaceId.build(newNamespaceId, this.state.projectId),
+    // Create new branch stub
+    const newBranchStub = this.env.BRANCH.get(
+      this.env.BRANCH.idFromName(
+        BranchId.build(newBranchId, this.state.projectId),
       ),
     );
 
-    // Initialize new namespace with current tree and this namespace as origin
-    using newNamespaceRpc = await newNamespaceStub.new({
+    // Initialize new branch with current tree and this branch as origin
+    using newBranchRpc = await newBranchStub.new({
       projectId: this.state.projectId,
-      namespaceName: newNamespaceId,
+      branchName: newBranchId,
       tree: currentTree,
-      origin: this.state.name || newNamespaceId,
+      origin: this.state.name || newBranchId,
     });
 
-    return newNamespaceRpc;
+    return newBranchRpc;
   }
 
   /**
@@ -1208,7 +1208,7 @@ export class Namespace extends DurableObject<Env> {
     const projectId = this.state.projectId;
     if (!projectId) {
       throw new Error(
-        "Cannot get blobs: namespace has no project ID, you may want to call .new() before using it",
+        "Cannot get blobs: branch has no project ID, you may want to call .new() before using it",
       );
     }
     return this.env.BLOBS.get(
@@ -1289,16 +1289,16 @@ export class Namespace extends DurableObject<Env> {
   }
 
   /**
-   * Compute diff against another namespace's current tree.
+   * Compute diff against another branch's current tree.
    * Semantics: B.diff(A) = changes B must apply to become A.
    * - For paths present in A but not in B, include A's metadata (add).
    * - For paths present in both but with different content/metadata, include A's metadata (modify).
    * - For paths present in B but not in A, include metadata = null (delete).
    */
-  async diff(otherNamespaceId: string): Promise<DiffEntry[]> {
-    const otherStub = this.env.NAMESPACE.get(
-      this.env.NAMESPACE.idFromName(
-        NamespaceId.build(otherNamespaceId, this.state.projectId!),
+  async diff(otherBranchId: string): Promise<DiffEntry[]> {
+    const otherStub = this.env.BRANCH.get(
+      this.env.BRANCH.idFromName(
+        BranchId.build(otherBranchId, this.state.projectId!),
       ),
     );
     using otherTree = await otherStub.getCurrentTree();
@@ -1340,18 +1340,18 @@ export class Namespace extends DurableObject<Env> {
   }
 
   /**
-   * Merge another namespace into this one using diff + transactionalWrite pattern.
+   * Merge another branch into this one using diff + transactionalWrite pattern.
    *
-   * @param otherNamespaceId - The namespace to merge from
+   * @param otherBranchId - The branch to merge from
    * @param strategy - The merge strategy to use
    * @returns Promise resolving to MergeResult
    */
   async merge(
-    otherNamespaceId: string,
+    otherBranchId: string,
     strategy: MergeStrategy,
   ): Promise<MergeResult> {
-    // Step 1: Get the diff between this namespace and the other
-    const diffs = await this.diff(otherNamespaceId);
+    // Step 1: Get the diff between this branch and the other
+    const diffs = await this.diff(otherBranchId);
 
     if (diffs.length === 0) {
       // No differences - nothing to merge

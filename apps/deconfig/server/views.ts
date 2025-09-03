@@ -13,7 +13,7 @@ import type { CreateMCPServerOptions } from "@deco/workers-runtime/mastra";
 export const views: CreateMCPServerOptions<Env, typeof StateSchema>["views"] =
   () => [
     {
-      title: "DECONFIG Namespace Manager",
+      title: "DECONFIG Branch Manager",
       icon: "folder_managed", // Available icons: https://fonts.google.com/icons?selected=Material+Icons
       url: "https://deconfig.deco.page/", // This will point to the built Astro view
     },

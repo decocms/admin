@@ -1,30 +1,30 @@
-import { useListNamespaces } from "../hooks/useNamespaces.ts";
+import { useListBranches } from "../hooks/useBranches.ts";
 
-interface NamespaceSelectorProps {
+interface BranchSelectorProps {
   value?: string;
   onValueChange: (value: string) => void;
   placeholder?: string;
   disabled?: boolean;
 }
 
-export function NamespaceSelector({
+export function BranchSelector({
   value,
   onValueChange,
-  placeholder = "Select namespace...",
+  placeholder = "Select branch...",
   disabled = false,
-}: NamespaceSelectorProps) {
-  const { data: namespacesData, isLoading } = useListNamespaces();
+}: BranchSelectorProps) {
+  const { data: branchesData, isLoading } = useListBranches();
 
   if (isLoading) {
     return (
       <div className="flex items-center space-x-2">
         <div className="h-4 w-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
-        <span className="text-sm text-gray-500">Loading namespaces...</span>
+        <span className="text-sm text-gray-500">Loading branches...</span>
       </div>
     );
   }
 
-  const namespaces = namespacesData?.namespaces || [];
+  const branches = branchesData?.branches || [];
 
   return (
     <select
@@ -36,10 +36,10 @@ export function NamespaceSelector({
       <option value="" disabled>
         {placeholder}
       </option>
-      {namespaces.map((namespace) => (
-        <option key={namespace.name} value={namespace.name}>
-          {namespace.name}
-          {namespace.originNamespace && ` (from ${namespace.originNamespace})`}
+      {branches.map((branch) => (
+        <option key={branch.name} value={branch.name}>
+          {branch.name}
+          {branch.originBranch && ` (from ${branch.originBranch})`}
         </option>
       ))}
     </select>

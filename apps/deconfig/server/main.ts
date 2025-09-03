@@ -8,13 +8,13 @@ import { DefaultEnv, withRuntime } from "@deco/workers-runtime";
 import { type Env as DecoEnv, StateSchema } from "./deco.gen.ts";
 
 import { Blobs } from "./src/blobs.ts";
-import { Namespace } from "./src/namespace.ts";
+import { Branch } from "./src/branch.ts";
 import { tools } from "./tools/index.ts";
 import { views } from "./views.ts";
 
 // Export Durable Objects
 export { Blobs } from "./src/blobs.ts";
-export { Namespace } from "./src/namespace.ts";
+export { Branch } from "./src/branch.ts";
 
 /**
  * This Env type is the main context object that is passed to
@@ -32,36 +32,32 @@ export type Env = DefaultEnv &
     DECONFIG_BLOBS: R2Bucket;
     // Durable Object bindings
     BLOBS: DurableObjectNamespace<Blobs>;
-    NAMESPACE: DurableObjectNamespace<Namespace>;
+    BRANCH: DurableObjectNamespace<Branch>;
   };
 
 const fallbackToView =
   (viewPath: string = "/") =>
-  async (req: Request, env: Env) => {
-    const LOCAL_URL = "http://localhost:4000";
-    const url = new URL(req.url);
-    const useDevServer = (
-      req.headers.get("origin") || req.headers.get("host")
-    )?.includes("localhost");
-
-    const request = new Request(
-      useDevServer
-        ? new URL(`${url.pathname}${url.search}`, LOCAL_URL)
-        : new URL(viewPath, req.url),
-      req,
-    );
-
-    return useDevServer ? fetch(request) : env.ASSETS.fetch(request);
+  async (request: Request, env: Env): Promise<Response> => {
+    try {
+      const url = new URL(request.url);
+      // Redirect root to viewPath
+      if (url.pathname === "/") {
+        url.pathname = viewPath;
+        return Promise.resolve(Response.redirect(url.toString(), 302));
+      }
+      // Serve assets from bound assets
+      return env.ASSETS.fetch(request);
+    } catch (error) {
+      return Promise.resolve(
+        new Response("Internal server error", { status: 500 }),
+      );
+    }
   };
 
 const { Workflow, ...runtime } = withRuntime<Env, typeof StateSchema>({
-  oauth: {
-    scopes: ["DATABASES_RUN_SQL"],
-    state: StateSchema,
-  },
-  views,
   tools,
   fetch: fallbackToView("/"),
 });
+
 export { Workflow };
 export default runtime;

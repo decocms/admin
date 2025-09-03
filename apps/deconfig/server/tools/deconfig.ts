@@ -1,18 +1,18 @@
 /**
- * DECONFIG-related tools for namespace and file operations.
+ * DECONFIG-related tools for branch and file operations.
  *
  * This file contains all tools related to DECONFIG operations including:
- * - Namespace CRUD: create, read, list, delete
+ * - Branch CRUD: create, read, list, delete
  * - File CRUD: put, read, delete, list
  * - Advanced operations: diff, watch, transactional writes
  *
- * Namespaces are now managed via workspace database for better scalability
- * and workspace-level isolation. Each namespace can contain files managed
+ * Branches are now managed via workspace database for better scalability
+ * and workspace-level isolation. Each branch can contain files managed
  * by the existing Durable Object infrastructure.
  */
 import { createTool } from "@deco/workers-runtime/mastra";
-import { MergeStrategy, NamespaceId } from "../src/namespace.ts";
-import { newNamespacesCRUD } from "../src/namespaces-db.ts";
+import { MergeStrategy, BranchId } from "../src/branch.ts";
+import { newBranchesCRUD } from "../src/branches-db.ts";
 import { z } from "zod";
 import type { Env } from "../main.ts";
 
@@ -25,177 +25,175 @@ const projectFor = (env: Env): string => {
   return workspace;
 };
 
-// Helper function to get namespace RPC (using namespaceName directly for performance)
-const namespaceRpcFor = async (env: Env, namespaceName: string = "main") => {
+// Helper function to get branch RPC (using branchName directly for performance)
+const branchRpcFor = async (env: Env, branchName: string = "main") => {
   const projectId = projectFor(env);
 
   // Get or create the Durable Object for file operations
-  const namespaceStub = env.NAMESPACE.get(
-    env.NAMESPACE.idFromName(NamespaceId.build(namespaceName, projectId)),
+  const branchStub = env.BRANCH.get(
+    env.BRANCH.idFromName(BranchId.build(branchName, projectId)),
   );
 
-  const rpc = await namespaceStub.new({
+  const rpc = await branchStub.new({
     projectId,
-    namespaceName,
+    branchName,
   });
 
   return rpc;
 };
 
 // =============================================================================
-// NAMESPACE CRUD OPERATIONS
+// BRANCH CRUD OPERATIONS
 // =============================================================================
 
-export const createNamespaceTool = (env: Env) =>
+export const createBranchTool = (env: Env) =>
   createTool({
-    id: "CREATE_NAMESPACE",
+    id: "CREATE_BRANCH",
     description:
-      "Create a DECONFIG namespace. If sourceNamespace is provided, creates a branch from that namespace (O(1) operation). Otherwise creates an empty namespace.",
+      "Create a DECONFIG branch. If sourceBranch is provided, creates a branch from that branch (O(1) operation). Otherwise creates an empty branch.",
     inputSchema: z.object({
-      namespaceName: z.string().describe("The name of the namespace to create"),
-      sourceNamespace: z
+      branchName: z.string().describe("The name of the branch to create"),
+      sourceBranch: z
         .string()
         .optional()
         .describe(
-          "The source namespace to branch from (optional - creates empty namespace if not provided)",
+          "The source branch to branch from (optional - creates empty branch if not provided)",
         ),
       metadata: z
         .record(z.any())
         .optional()
-        .describe("Optional metadata for the namespace"),
+        .describe("Optional metadata for the branch"),
     }),
     outputSchema: z.object({
-      namespaceName: z.string(),
-      sourceNamespace: z.string().optional(),
+      branchName: z.string(),
+      sourceBranch: z.string().optional(),
       createdAt: z.number(),
     }),
     execute: async ({ context }) => {
-      const crud = newNamespacesCRUD(env);
+      const crud = newBranchesCRUD(env);
 
-      // Check if namespace already exists
-      if (await crud.namespaceExists(context.namespaceName)) {
-        throw new Error(`Namespace '${context.namespaceName}' already exists`);
+      // Check if branch already exists
+      if (await crud.branchExists(context.branchName)) {
+        throw new Error(`Branch '${context.branchName}' already exists`);
       }
 
-      if (context.sourceNamespace) {
-        // Branching from existing namespace
-        if (!(await crud.namespaceExists(context.sourceNamespace))) {
-          throw new Error(
-            `Source namespace '${context.sourceNamespace}' not found`,
-          );
+      if (context.sourceBranch) {
+        // Branching from existing branch
+        if (!(await crud.branchExists(context.sourceBranch))) {
+          throw new Error(`Source branch '${context.sourceBranch}' not found`);
         }
 
-        // Branch from existing namespace using Durable Object
-        const sourceRpc = await namespaceRpcFor(env, context.sourceNamespace);
-        using _ = await sourceRpc.branch(context.namespaceName);
+        // Branch from existing branch using Durable Object
+        const sourceRpc = await branchRpcFor(env, context.sourceBranch);
+        using _ = await sourceRpc.branch(context.branchName);
       }
-      // Create empty namespace
-      const namespace = await crud.createNamespace({
-        name: context.namespaceName,
+      // Create empty branch
+      const branch = await crud.createBranch({
+        name: context.branchName,
         metadata: context.metadata,
-        origin_namespace: context.sourceNamespace,
+        origin_branch: context.sourceBranch,
       });
 
       return {
-        namespaceName: context.namespaceName,
-        sourceNamespace: context.sourceNamespace,
-        createdAt: namespace.created_at,
+        branchName: context.branchName,
+        sourceBranch: context.sourceBranch,
+        createdAt: branch.created_at,
       };
     },
   });
 
-export const createListNamespacesTool = (env: Env) =>
+export const createListBranchesTool = (env: Env) =>
   createTool({
-    id: "LIST_NAMESPACES",
-    description: "List all namespaces in the current workspace",
+    id: "LIST_BRANCHES",
+    description: "List all branches in the current workspace",
     inputSchema: z.object({
       prefix: z
         .string()
         .optional()
-        .describe("Optional prefix to filter namespace names"),
+        .describe("Optional prefix to filter branch names"),
     }),
     outputSchema: z.object({
-      namespaces: z.array(
+      branches: z.array(
         z.object({
           name: z.string(),
           createdAt: z.number(),
           metadata: z.record(z.any()),
-          originNamespace: z.string().nullable(),
+          originBranch: z.string().nullable(),
         }),
       ),
       count: z.number(),
     }),
     execute: async ({ context }) => {
-      const crud = newNamespacesCRUD(env);
-      const namespaces = await crud.listNamespaces({ prefix: context.prefix });
+      const crud = newBranchesCRUD(env);
+      const branches = await crud.listBranches({ prefix: context.prefix });
 
-      const formattedNamespaces = namespaces.map((ns) => ({
-        name: ns.name,
-        createdAt: ns.created_at,
-        metadata: ns.metadata,
-        originNamespace: ns.origin_namespace,
+      const formattedBranches = branches.map((br) => ({
+        name: br.name,
+        createdAt: br.created_at,
+        metadata: br.metadata,
+        originBranch: br.origin_branch,
       }));
 
       return {
-        namespaces: formattedNamespaces,
-        count: formattedNamespaces.length,
+        branches: formattedBranches,
+        count: formattedBranches.length,
       };
     },
   });
 
-export const createDeleteNamespaceTool = (env: Env) =>
+export const createDeleteBranchTool = (env: Env) =>
   createTool({
-    id: "DELETE_NAMESPACE",
+    id: "DELETE_BRANCH",
     description:
-      "Delete a namespace and all its files. This operation cannot be undone.",
+      "Delete a branch and all its files. This operation cannot be undone.",
     inputSchema: z.object({
-      namespaceName: z.string().describe("The name of the namespace to delete"),
+      branchName: z.string().describe("The name of the branch to delete"),
     }),
     outputSchema: z.object({
       deleted: z.boolean(),
-      namespaceName: z.string(),
+      branchName: z.string(),
       filesDeleted: z.number().optional(),
     }),
     execute: async ({ context }) => {
-      const crud = newNamespacesCRUD(env);
+      const crud = newBranchesCRUD(env);
 
-      // Check if namespace exists
-      if (!(await crud.namespaceExists(context.namespaceName))) {
-        throw new Error(`Namespace '${context.namespaceName}' not found`);
+      // Check if branch exists
+      if (!(await crud.branchExists(context.branchName))) {
+        throw new Error(`Branch '${context.branchName}' not found`);
       }
 
       // Get file count before deletion (optional)
       let filesDeleted = 0;
       try {
-        const namespaceRpc = await namespaceRpcFor(env, context.namespaceName);
-        filesDeleted = await namespaceRpc.softDelete();
+        const branchRpc = await branchRpcFor(env, context.branchName);
+        filesDeleted = await branchRpc.softDelete();
       } catch (error) {
         // Ignore errors getting file count
       }
 
       // Delete from database
-      const deleted = await crud.deleteNamespace(context.namespaceName);
+      const deleted = await crud.deleteBranch(context.branchName);
 
       return {
         deleted,
-        namespaceName: context.namespaceName,
+        branchName: context.branchName,
         filesDeleted,
       };
     },
   });
 
-export const createMergeNamespaceTool = (env: Env) =>
+export const createMergeBranchTool = (env: Env) =>
   createTool({
-    id: "MERGE_NAMESPACE",
+    id: "MERGE_BRANCH",
     description:
-      "Merge another namespace into the current one with configurable strategy",
+      "Merge another branch into the current one with configurable strategy",
     inputSchema: z.object({
-      targetNamespace: z
+      targetBranch: z
         .string()
         .optional()
         .default("main")
-        .describe("The namespace to merge into (defaults to 'main')"),
-      sourceNamespace: z.string().describe("The namespace to merge from"),
+        .describe("The branch to merge into (defaults to 'main')"),
+      sourceBranch: z.string().describe("The branch to merge from"),
       strategy: z
         .enum(["OVERRIDE", "LAST_WRITE_WINS"])
         .describe("Merge strategy"),
@@ -217,9 +215,9 @@ export const createMergeNamespaceTool = (env: Env) =>
         .optional(),
     }),
     execute: async ({ context }) => {
-      const targetRpc = await namespaceRpcFor(env, context.targetNamespace);
+      const targetRpc = await branchRpcFor(env, context.targetBranch);
       const result = await targetRpc.merge(
-        context.sourceNamespace,
+        context.sourceBranch,
         context.strategy as MergeStrategy,
       );
 
@@ -242,17 +240,17 @@ export const createMergeNamespaceTool = (env: Env) =>
     },
   });
 
-export const createDiffNamespaceTool = (env: Env) =>
+export const createDiffBranchTool = (env: Env) =>
   createTool({
-    id: "DIFF_NAMESPACE",
-    description: "Compare two namespaces and get the differences",
+    id: "DIFF_BRANCH",
+    description: "Compare two branches and get the differences",
     inputSchema: z.object({
-      baseNamespace: z
+      baseBranch: z
         .string()
         .optional()
         .default("main")
-        .describe("The base namespace to compare from (defaults to 'main')"),
-      compareNamespace: z.string().describe("The namespace to compare against"),
+        .describe("The base branch to compare from (defaults to 'main')"),
+      compareBranch: z.string().describe("The branch to compare against"),
     }),
     outputSchema: z.object({
       differences: z.array(
@@ -265,8 +263,8 @@ export const createDiffNamespaceTool = (env: Env) =>
       ),
     }),
     execute: async ({ context }) => {
-      const baseRpc = await namespaceRpcFor(env, context.baseNamespace);
-      const diffs = await baseRpc.diff(context.compareNamespace);
+      const baseRpc = await branchRpcFor(env, context.baseBranch);
+      const diffs = await baseRpc.diff(context.compareBranch);
 
       const differences = diffs.map((diff: any) => ({
         path: diff.path,
@@ -282,23 +280,23 @@ export const createDiffNamespaceTool = (env: Env) =>
   });
 
 // =============================================================================
-// FILE CRUD OPERATIONS (using namespaceName directly for performance)
+// FILE CRUD OPERATIONS (using branchName directly for performance)
 // =============================================================================
 
 const BaseFileOperationInputSchema = z.object({
-  namespace: z
+  branch: z
     .string()
     .optional()
     .default("main")
-    .describe("The namespace name (defaults to 'main')"),
-  path: z.string().describe("The file path within the namespace"),
+    .describe("The branch name (defaults to 'main')"),
+  path: z.string().describe("The file path within the branch"),
 });
 
 export const createPutFileTool = (env: Env) =>
   createTool({
     id: "PUT_FILE",
     description:
-      "Put a file in a DECONFIG namespace (create or update) with optional conflict detection",
+      "Put a file in a DECONFIG branch (create or update) with optional conflict detection",
     inputSchema: BaseFileOperationInputSchema.extend({
       content: z
         .string()
@@ -328,10 +326,10 @@ export const createPutFileTool = (env: Env) =>
         data = new TextEncoder().encode(context.content).buffer;
       }
 
-      using namespaceRpc = await namespaceRpcFor(env, context.namespace);
+      using branchRpc = await branchRpcFor(env, context.branch);
 
       // Use transactional write (works for both conditional and unconditional writes)
-      const result = await namespaceRpc.transactionalWrite({
+      const result = await branchRpc.transactionalWrite({
         patches: [
           {
             path: context.path,
@@ -353,7 +351,7 @@ export const createPutFileTool = (env: Env) =>
 export const createReadFileTool = (env: Env) =>
   createTool({
     id: "READ_FILE",
-    description: "Read a file from a DECONFIG namespace",
+    description: "Read a file from a DECONFIG branch",
     inputSchema: BaseFileOperationInputSchema,
     outputSchema: z.object({
       content: z.string().describe("File content (base64 encoded)"),
@@ -363,8 +361,8 @@ export const createReadFileTool = (env: Env) =>
       ctime: z.number(),
     }),
     execute: async ({ context }) => {
-      using namespaceRpc = await namespaceRpcFor(env, context.namespace);
-      const fileData = await namespaceRpc.getFile(context.path);
+      using branchRpc = await branchRpcFor(env, context.branch);
+      const fileData = await branchRpc.getFile(context.path);
 
       if (!fileData) {
         throw new Error(`File not found: ${context.path}`);
@@ -407,14 +405,14 @@ export const createReadFileTool = (env: Env) =>
 export const createDeleteFileTool = (env: Env) =>
   createTool({
     id: "DELETE_FILE",
-    description: "Delete a file from a DECONFIG namespace",
+    description: "Delete a file from a DECONFIG branch",
     inputSchema: BaseFileOperationInputSchema,
     outputSchema: z.object({
       deleted: z.boolean(),
     }),
     execute: async ({ context }) => {
-      using namespaceRpc = await namespaceRpcFor(env, context.namespace);
-      return { deleted: await namespaceRpc.deleteFile(context.path) };
+      using branchRpc = await branchRpcFor(env, context.branch);
+      return { deleted: await branchRpc.deleteFile(context.path) };
     },
   });
 
@@ -436,15 +434,15 @@ export const createListFilesTool = (env: Env) =>
   createTool({
     id: "LIST_FILES",
     description:
-      "List files in a DECONFIG namespace with optional prefix filtering",
+      "List files in a DECONFIG branch with optional prefix filtering",
     inputSchema: BaseFileOperationInputSchema.omit({ path: true }).extend({
       prefix: z.string().optional().describe("Optional prefix to filter files"),
     }),
     outputSchema: ListFilesOutputSchema,
     execute: async ({ context }) => {
-      using namespaceRpc = await namespaceRpcFor(env, context.namespace);
+      using branchRpc = await branchRpcFor(env, context.branch);
 
-      const files = await namespaceRpc.getFiles(context.prefix);
+      const files = await branchRpc.getFiles(context.prefix);
 
       return {
         files,
@@ -455,12 +453,12 @@ export const createListFilesTool = (env: Env) =>
 
 // Export all DECONFIG-related tools
 export const deconfigTools = [
-  // Namespace CRUD
-  createNamespaceTool,
-  createListNamespacesTool,
-  createDeleteNamespaceTool,
-  createMergeNamespaceTool,
-  createDiffNamespaceTool,
+  // Branch CRUD
+  createBranchTool,
+  createListBranchesTool,
+  createDeleteBranchTool,
+  createMergeBranchTool,
+  createDiffBranchTool,
 
   // File CRUD
   createPutFileTool,

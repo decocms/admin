@@ -1,23 +1,19 @@
 import { useState } from "react";
-import {
-  useListFiles,
-  useReadFile,
-  usePutFile,
-} from "../hooks/useNamespaces.ts";
+import { useListFiles, useReadFile, usePutFile } from "../hooks/useBranches.ts";
 import { Button } from "./ui/button";
 
 interface FileExplorerProps {
-  namespace: string;
+  branch: string;
 }
 
-export function FileExplorer({ namespace }: FileExplorerProps) {
+export function FileExplorer({ branch }: FileExplorerProps) {
   const [selectedFile, setSelectedFile] = useState<string | null>(null);
   const [fileContent, setFileContent] = useState<string | null>(null);
   const [isCreating, setIsCreating] = useState(false);
   const [newFileName, setNewFileName] = useState("");
   const [newFileContent, setNewFileContent] = useState("");
 
-  const { data: filesData, isLoading } = useListFiles(namespace);
+  const { data: filesData, isLoading } = useListFiles(branch);
   const readFile = useReadFile();
   const putFile = usePutFile();
 
@@ -31,12 +27,10 @@ export function FileExplorer({ namespace }: FileExplorerProps) {
       return;
     }
 
-    setSelectedFile(filePath);
-    setFileContent(null);
-
     try {
+      setSelectedFile(filePath);
       const result = await readFile.mutateAsync({
-        namespace,
+        branch,
         path: filePath,
       });
 
@@ -45,7 +39,7 @@ export function FileExplorer({ namespace }: FileExplorerProps) {
       setFileContent(decodedContent);
     } catch (error) {
       console.error("Failed to read file:", error);
-      setFileContent("Error: Failed to read file content");
+      setFileContent("Error reading file");
     }
   };
 
@@ -53,16 +47,12 @@ export function FileExplorer({ namespace }: FileExplorerProps) {
     if (!newFileName.trim()) return;
 
     try {
-      // Encode content as base64
-      const encodedContent = btoa(newFileContent);
-
       await putFile.mutateAsync({
-        namespace,
+        branch,
         path: newFileName.trim(),
-        content: encodedContent,
+        content: btoa(newFileContent), // Encode as base64
       });
 
-      // Reset form
       setNewFileName("");
       setNewFileContent("");
       setIsCreating(false);
@@ -74,7 +64,7 @@ export function FileExplorer({ namespace }: FileExplorerProps) {
   if (isLoading) {
     return (
       <div className="flex items-center justify-center p-4">
-        <div className="h-4 w-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
+        <div className="h-6 w-6 border-2 border-current border-t-transparent rounded-full animate-spin" />
         <span className="ml-2">Loading files...</span>
       </div>
     );
@@ -82,108 +72,92 @@ export function FileExplorer({ namespace }: FileExplorerProps) {
 
   return (
     <div className="space-y-4">
-      {/* Add File Button - Always visible */}
-      <div className="flex justify-between items-center">
-        <h3 className="text-lg font-medium">Files</h3>
-        <Button
-          onClick={() => setIsCreating(true)}
-          disabled={isCreating}
-          className="flex items-center space-x-2"
-        >
-          <span className="text-lg">+</span>
-          <span>Add File</span>
-        </Button>
-      </div>
+      {/* File List */}
+      <div>
+        <div className="flex items-center justify-between mb-3">
+          <h3 className="font-medium">Files ({fileList.length})</h3>
+          <Button
+            size="sm"
+            onClick={() => setIsCreating(!isCreating)}
+            variant={isCreating ? "secondary" : "default"}
+          >
+            {isCreating ? "Cancel" : "New File"}
+          </Button>
+        </div>
 
-      {/* Create File Form */}
-      {isCreating && (
-        <div className="border rounded-lg p-4 space-y-4 bg-gray-50">
-          <h4 className="font-medium">Create New File</h4>
+        {/* Create File Form */}
+        {isCreating && (
+          <div className="mb-4 p-3 border rounded bg-gray-50 space-y-3">
+            <div>
+              <label className="block text-sm font-medium mb-1">
+                File Path
+              </label>
+              <input
+                type="text"
+                value={newFileName}
+                onChange={(e) => setNewFileName(e.target.value)}
+                className="w-full px-3 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+                placeholder="e.g. config/settings.json"
+              />
+            </div>
 
-          <div>
-            <label className="block text-sm font-medium mb-1">File Path</label>
-            <input
-              type="text"
-              value={newFileName}
-              onChange={(e) => setNewFileName(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-200 rounded-md focus:outline-none focus:ring-2 focus:ring-gray-900"
-              placeholder="e.g., config.json, docs/readme.md"
-            />
-          </div>
+            <div>
+              <label className="block text-sm font-medium mb-1">Content</label>
+              <textarea
+                value={newFileContent}
+                onChange={(e) => setNewFileContent(e.target.value)}
+                rows={6}
+                className="w-full px-3 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+                placeholder="File content..."
+              />
+            </div>
 
-          <div>
-            <label className="block text-sm font-medium mb-1">
-              File Content
-            </label>
-            <textarea
-              value={newFileContent}
-              onChange={(e) => setNewFileContent(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-200 rounded-md focus:outline-none focus:ring-2 focus:ring-gray-900 font-mono text-sm"
-              rows={10}
-              placeholder="Enter file content..."
-            />
-          </div>
-
-          <div className="flex space-x-2">
             <Button
               onClick={handleCreateFile}
               disabled={!newFileName.trim() || putFile.isPending}
+              size="sm"
             >
               {putFile.isPending ? "Creating..." : "Create File"}
             </Button>
-            <Button
-              variant="outline"
-              onClick={() => {
-                setIsCreating(false);
-                setNewFileName("");
-                setNewFileContent("");
-              }}
-            >
-              Cancel
-            </Button>
           </div>
-        </div>
-      )}
+        )}
 
-      {/* File List */}
-      <div className="grid gap-2">
         {fileList.length === 0 ? (
-          <div className="text-center p-8 text-gray-500">
-            No files found in this namespace
-          </div>
+          <p className="text-gray-500 text-center py-8">
+            No files in this branch
+          </p>
         ) : (
-          fileList.map(([filePath, fileInfo]) => (
-            <div
-              key={filePath}
-              className={`border rounded p-3 cursor-pointer hover:bg-gray-50 ${
-                selectedFile === filePath ? "bg-blue-50 border-blue-200" : ""
-              }`}
-              onClick={() => handleFileClick(filePath)}
-            >
-              <div className="flex items-center justify-between">
-                <h4 className="font-medium">{filePath}</h4>
-                <span className="text-sm text-gray-500">
-                  {Math.round(fileInfo.sizeInBytes / 1024)}KB
-                </span>
+          <div className="space-y-2">
+            {fileList.map(([path, metadata]) => (
+              <div
+                key={path}
+                className={`border rounded p-3 cursor-pointer transition-colors ${
+                  selectedFile === path
+                    ? "bg-blue-50 border-blue-200"
+                    : "hover:bg-gray-50"
+                }`}
+                onClick={() => handleFileClick(path)}
+              >
+                <div className="flex items-center justify-between">
+                  <span className="font-medium">{path}</span>
+                  <span className="text-sm text-gray-500">
+                    {(metadata.sizeInBytes / 1024).toFixed(1)} KB
+                  </span>
+                </div>
+                <div className="text-sm text-gray-500 mt-1">
+                  Modified: {new Date(metadata.mtime).toLocaleString()}
+                </div>
               </div>
-              <div className="flex items-center space-x-4 text-sm text-gray-500 mt-1">
-                <span>
-                  Modified: {new Date(fileInfo.mtime).toLocaleString()}
-                </span>
-                <span>
-                  Created: {new Date(fileInfo.ctime).toLocaleString()}
-                </span>
-              </div>
-            </div>
-          ))
+            ))}
+          </div>
         )}
       </div>
 
-      {/* File Content */}
+      {/* File Content Viewer */}
       {selectedFile && (
         <div className="border rounded-lg p-4">
           <div className="flex items-center justify-between mb-3">
-            <h3 className="font-medium">Content of: {selectedFile}</h3>
+            <h3 className="font-medium">Content: {selectedFile}</h3>
             <Button
               variant="outline"
               size="sm"
@@ -197,16 +171,14 @@ export function FileExplorer({ namespace }: FileExplorerProps) {
           </div>
 
           {readFile.isPending ? (
-            <div className="flex items-center justify-center p-8">
+            <div className="flex items-center justify-center p-4">
               <div className="h-4 w-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
-              <span className="ml-2">Loading file content...</span>
+              <span className="ml-2">Loading content...</span>
             </div>
           ) : (
-            <div className="bg-gray-50 border rounded p-3 max-h-96 overflow-auto">
-              <pre className="text-sm whitespace-pre-wrap font-mono">
-                {fileContent || "No content available"}
-              </pre>
-            </div>
+            <pre className="bg-gray-50 p-3 rounded text-sm overflow-auto max-h-96 whitespace-pre-wrap">
+              {fileContent}
+            </pre>
           )}
         </div>
       )}

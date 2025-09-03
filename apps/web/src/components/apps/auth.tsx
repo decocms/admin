@@ -20,7 +20,7 @@ import { AppsAuthLayout, OAuthSearchParams } from "./layout.tsx";
 import { useRegistryApp, type RegistryApp } from "@deco/sdk";
 import { IntegrationAvatar } from "../common/avatar/integration.tsx";
 import { ErrorBoundary } from "../../error-boundary.tsx";
-import { useInstallCreatingApiKeyAndIntegration } from "../../hooks/use-integration-install-with-modal.tsx";
+import { useInstallCreatingApiKeyAndIntegration } from "../../hooks/use-integration-install.tsx";
 import { FormProvider, useForm } from "react-hook-form";
 import { Badge } from "@deco/ui/components/badge.tsx";
 import { Separator } from "@deco/ui/components/separator.tsx";

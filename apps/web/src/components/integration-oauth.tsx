@@ -1,5 +1,4 @@
-import { FormProvider, useForm } from "react-hook-form";
-import { Button } from "@deco/ui/components/button.tsx";
+import { FormProvider, useForm, UseFormReturn } from "react-hook-form";
 import { Badge } from "@deco/ui/components/badge.tsx";
 import { Separator } from "@deco/ui/components/separator.tsx";
 import { Alert, AlertDescription } from "@deco/ui/components/alert.tsx";
@@ -8,6 +7,7 @@ import JsonSchemaForm from "./json-schema/index.tsx";
 import { generateDefaultValues } from "./json-schema/utils/generate-default-values.ts";
 import type { ContractState } from "@deco/sdk/mcp";
 import { MicroDollar } from "@deco/sdk/mcp/wallet";
+import { RefObject } from "react";
 
 interface Permission {
   scope: string;
@@ -56,32 +56,21 @@ export function IntegrationPermissions({
   );
 }
 
+interface IntegrationBindingFormProps {
+  schema: JSONSchema7;
+  formRef: RefObject<UseFormReturn<any> | null>;
+}
+const noop = () => {};
 function IntegrationBindingForm({
   schema,
-  onSubmit,
-  isLoading,
-  integrationName,
-}: {
-  schema: JSONSchema7;
-  onSubmit: (data: Record<string, unknown>) => Promise<void>;
-  isLoading: boolean;
-  integrationName: string;
-}) {
+  formRef,
+}: IntegrationBindingFormProps) {
   const form = useForm({
     defaultValues: generateDefaultValues(schema),
   });
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    const data = form.getValues();
+  formRef.current = form;
 
-    try {
-      await onSubmit(data);
-    } catch (error) {
-      console.error("Error submitting OAuth form:", error);
-      // TODO: Show error to user
-    }
-  };
   return (
     <div>
       <h3 className="text-lg font-semibold mb-4">Configuration</h3>
@@ -89,31 +78,18 @@ function IntegrationBindingForm({
         <JsonSchemaForm
           schema={schema}
           form={form}
-          onSubmit={handleSubmit}
-          submitButton={
-            <Button
-              type="submit"
-              disabled={form.formState.isSubmitting || isLoading}
-              className="w-full"
-            >
-              {form.formState.isSubmitting || isLoading
-                ? "Installing..."
-                : `Install ${integrationName}`}
-            </Button>
-          }
+          onSubmit={noop}
+          submitButton={null}
         />
       </FormProvider>
     </div>
   );
 }
 
-interface IntegrationOauthProps {
+interface IntegrationOauthProps extends IntegrationBindingFormProps {
   permissions: Permission[];
   integrationName: string;
   contract?: ContractState;
-  schema: JSONSchema7;
-  onSubmit: (data: Record<string, unknown>) => Promise<void>;
-  isLoading: boolean;
 }
 
 export function IntegrationOauth({
@@ -121,8 +97,7 @@ export function IntegrationOauth({
   integrationName,
   contract,
   schema,
-  onSubmit,
-  isLoading,
+  formRef,
 }: IntegrationOauthProps) {
   return (
     <div className="space-y-6 py-4">
@@ -146,9 +121,7 @@ export function IntegrationOauth({
       {/* Configuration Form */}
       <IntegrationBindingForm
         schema={schema}
-        onSubmit={onSubmit}
-        isLoading={isLoading}
-        integrationName={integrationName}
+        formRef={formRef}
       />
     </div>
   );

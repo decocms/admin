@@ -14,18 +14,16 @@ import {
 import { Icon } from "@deco/ui/components/icon.tsx";
 import { Input } from "@deco/ui/components/input.tsx";
 import { cn } from "@deco/ui/lib/utils.ts";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, useRef } from "react";
 import { useSearchParams } from "react-router";
 import { trackEvent } from "../../hooks/analytics.ts";
 import { useCreateCustomConnection } from "../../hooks/use-create-custom-connection.ts";
-import { useIntegrationInstallWithModal } from "../../hooks/use-integration-install-with-modal.tsx";
+import { useIntegrationInstall } from "../../hooks/use-integration-install.tsx";
 import {
   useNavigateWorkspace,
   useWorkspaceLink,
 } from "../../hooks/use-navigate-workspace.ts";
-import {
-  IntegrationOauth,
-} from "../integration-oauth-modal.tsx";
+import { IntegrationOauth } from "../integration-oauth.tsx";
 import { IntegrationIcon } from "./common.tsx";
 import { InstalledConnections } from "./installed-connections.tsx";
 import {
@@ -34,6 +32,7 @@ import {
   type MarketplaceIntegration,
 } from "./marketplace.tsx";
 import { OAuthCompletionDialog } from "./oauth-completion-dialog.tsx";
+import { UseFormReturn } from "react-hook-form";
 
 export function ConfirmMarketplaceInstallDialog({
   integration,
@@ -51,9 +50,10 @@ export function ConfirmMarketplaceInstallDialog({
   }) => void;
 }) {
   const open = !!integration;
-  const { install, modalState, isLoading } = useIntegrationInstallWithModal(
+  const { install, integrationState, isLoading } = useIntegrationInstall(
     integration?.name,
   );
+  const formRef = useRef<UseFormReturn<any>>(null);
   const buildWorkspaceUrl = useWorkspaceLink();
   const navigateWorkspace = useNavigateWorkspace();
   const handleConnect = async () => {
@@ -64,13 +64,14 @@ export function ConfirmMarketplaceInstallDialog({
       globalThis.location.origin,
     );
 
+    const formData = formRef.current?.getValues() ?? null;
     try {
       const result = await install({
         appId: integration.id,
         appName: integration.name,
         provider: integration.provider,
         returnUrl: returnUrl.href,
-      });
+      }, formData);
 
       if (typeof result.integration?.id !== "string") {
         console.error(
@@ -93,6 +94,12 @@ export function ConfirmMarketplaceInstallDialog({
           authorizeOauthUrl: result.redirectUrl,
         });
         setIntegration(null);
+      } else if (result.stateSchema) {
+        onConfirm({
+          connection: result.integration,
+          authorizeOauthUrl: null,
+        });
+        setIntegration(null);
       } else if (!result.stateSchema) {
         let link = `/connection/${integration.provider}:::${integration.name}`;
         const isDecoApp = integration.name.startsWith("@deco/");
@@ -112,20 +119,6 @@ export function ConfirmMarketplaceInstallDialog({
         data: integration,
         error,
       });
-    }
-  };
-
-  const handleModalComplete = async (formData: Record<string, unknown>) => {
-    // Handle the form submission from the modal
-    await modalState.onSubmit(formData);
-
-    // After successful form submission, call onConfirm with the integration
-    if (modalState.integration) {
-      onConfirm({
-        connection: modalState.integration,
-        authorizeOauthUrl: null,
-      });
-      setIntegration(null);
     }
   };
 
@@ -169,21 +162,21 @@ export function ConfirmMarketplaceInstallDialog({
             </div>
           </DialogDescription>
         </DialogHeader>
-        {modalState.schema && (
-        <IntegrationOauth
-          permissions={modalState.permissions}
-          integrationName={integration.name}
-          schema={modalState.schema}
-          onSubmit={handleModalComplete}
-          isLoading={modalState.isLoading}
-        />
-      )}
+        {integrationState.schema && (
+          <IntegrationOauth
+            permissions={integrationState.permissions}
+            integrationName={integration.name}
+            schema={integrationState.schema}
+            formRef={formRef}
+          />
+        )}
         <DialogFooter>
-          {isLoading ? (
-            <Button disabled={isLoading}>Connecting...</Button>
-          ) : (
-            <Button onClick={handleConnect}>Connect</Button>
-          )}
+          <Button
+            onClick={isLoading ? undefined : handleConnect}
+            disabled={isLoading}
+          >
+            {isLoading ? "Connecting..." : "Connect"}
+          </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>

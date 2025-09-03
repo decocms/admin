@@ -1,7 +1,12 @@
 import type { MCPConnection } from "./connection.ts";
 import type { DefaultEnv, RequestContext } from "./index.ts";
 import { MCPClient } from "./mcp.ts";
-import type { BindingBase, ContractBinding, MCPBinding, MCPIntegrationNameBinding } from "./wrangler.ts";
+import type {
+  BindingBase,
+  ContractBinding,
+  MCPBinding,
+  MCPIntegrationNameBinding,
+} from "./wrangler.ts";
 
 interface IntegrationContext {
   integrationId: string;
@@ -87,7 +92,10 @@ const mcpClientForIntegrationId = (
   return MCPClient.forConnection(mcpConnection);
 };
 
-function mcpClientFromState(binding: BindingBase | MCPIntegrationNameBinding, env: DefaultEnv) {
+function mcpClientFromState(
+  binding: BindingBase | MCPIntegrationNameBinding,
+  env: DefaultEnv,
+) {
   const ctx = env.DECO_CHAT_REQUEST_CONTEXT;
   const bindingFromState = ctx?.state?.[binding.name];
   const integrationId =

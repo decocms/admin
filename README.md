@@ -216,7 +216,7 @@ Build **React + Tailwind** frontends served by the same Cloudflare Worker.
 
 ---
 
-## How to Contribute
+## How to Contribute (WIP)
 
 We welcome contributions! Check out [`CONTRIBUTING.md`](./CONTRIBUTING.md) for
 guidelines and tips.

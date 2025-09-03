@@ -83,10 +83,11 @@ export const loginCommand = () => {
             clearTimeout(timeout);
           }
 
-          res.writeHead(302, {
-            Location: "https://deco.chat/local-login-success",
+          const html = await fetch("https://deco.chat/local-login-success.html").then(res => res.text());
+          res.writeHead(200, {
+            "Content-Type": "text/html",
           });
-          res.end();
+          res.end(html);
 
           // Close server after successful authentication
           server.close(() => resolve());

@@ -9,7 +9,9 @@ const __dirname = dirname(__filename);
 
 // Read package.json for version
 const decoCliPackageJsonPath = join(__dirname, "../../package.json");
-const decoCliPackageJson = JSON.parse(await readFile(decoCliPackageJsonPath, "utf-8"));
+const decoCliPackageJson = JSON.parse(
+  await readFile(decoCliPackageJsonPath, "utf-8"),
+);
 
 /**
  * Displays a simple DECO ASCII art banner

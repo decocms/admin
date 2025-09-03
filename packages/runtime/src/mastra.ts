@@ -9,14 +9,15 @@ import {
 } from "@mastra/core";
 import { RuntimeContext } from "@mastra/core/di";
 import {
-  createWorkflow,
   createStep as mastraCreateStep,
+  createWorkflow,
   type DefaultEngineType,
   type ExecuteFunction,
   type Step as MastraStep,
 } from "@mastra/core/workflows";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
+import { ViewsListOutputSchema } from "./views.ts";
 import { zodToJsonSchema } from "zod-to-json-schema";
 import type { DefaultEnv } from "./index.ts";
 import { createStateValidationTool, State } from "./state.ts";
@@ -219,6 +220,8 @@ export interface ViewExport {
   title: string;
   icon: string;
   url: string;
+  tools?: string[];
+  rules?: string[];
 }
 
 export interface Integration {
@@ -435,17 +438,15 @@ export const createMCPServer = <
         id: `DECO_CHAT_VIEWS_LIST`,
         description: "List views exposed by this MCP",
         inputSchema: z.any(),
-        outputSchema: z.object({
-          views: z.array(
-            z.object({
-              title: z.string(),
-              icon: z.string(),
-              url: z.string(),
-            }),
-          ),
-        }),
+        outputSchema: ViewsListOutputSchema,
         execute: async () => ({
-          views: (await options.views?.(bindings)) ?? [],
+          views: ((await options.views?.(bindings)) ?? []).map((v) => ({
+            title: v.title,
+            icon: v.icon,
+            url: v.url,
+            tools: v.tools ?? [],
+            rules: v.rules ?? [],
+          })),
         }),
       }),
     );

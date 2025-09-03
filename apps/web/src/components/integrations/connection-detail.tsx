@@ -52,7 +52,6 @@ import {
 } from "@deco/ui/components/form.tsx";
 import { useForm } from "react-hook-form";
 import { useUpdateIntegration, useWriteFile } from "@deco/sdk";
-import { parseViewMetadata } from "@deco/sdk";
 import { trackEvent } from "../../hooks/analytics.ts";
 import { Card } from "@deco/ui/components/card.tsx";
 import {
@@ -1092,28 +1091,21 @@ function ViewsList({ integration }: { integration: Integration }) {
     if (!views || views.length === 0 || !currentTeam.views) return [];
 
     return views.map((view) => {
-      const meta = parseViewMetadata(view);
-      const viewUrl = meta?.type === "custom" ? meta.url : undefined;
       const existingView = currentTeam.views.find((teamView) => {
         const metadata = teamView.metadata as { url?: string };
-        return metadata?.url === viewUrl;
+        return metadata?.url === view.url;
       });
 
       return {
         ...view,
-        url: viewUrl,
         isAdded: !!existingView,
         teamViewId: existingView?.id,
       };
     });
   }, [views, currentTeam.views]);
 
-  const handleAddView = async (view: (typeof viewsWithStatus)[0]) => {
+  const handleAddView = async (view: (typeof views)[0]) => {
     try {
-      if (!view.url) {
-        toast.error("Invalid view: missing URL");
-        return;
-      }
       await addViewMutation.mutateAsync({
         view: {
           id: crypto.randomUUID(),
@@ -1121,6 +1113,8 @@ function ViewsList({ integration }: { integration: Integration }) {
           icon: view.icon,
           type: "custom" as const,
           url: view.url,
+          tools: view.tools,
+          rules: view.rules,
           integration: {
             id: integration.id,
           },
@@ -1201,7 +1195,7 @@ function ViewsList({ integration }: { integration: Integration }) {
             <div className="space-y-2">
               {viewsWithStatus.map((view) => (
                 <div
-                  key={view.url || view.id}
+                  key={view.url}
                   className="flex items-center justify-between p-3 border border-border rounded-lg bg-background"
                 >
                   <div className="flex items-center gap-3 flex-1 min-w-0">

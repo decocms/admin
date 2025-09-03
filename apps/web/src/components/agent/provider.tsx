@@ -1,21 +1,5 @@
 import type { LanguageModelV1FinishReason } from "@ai-sdk/provider";
 import { useChat } from "@ai-sdk/react";
-import { zodResolver } from "@hookform/resolvers/zod";
-import {
-  createContext,
-  useCallback,
-  useContext,
-  useMemo,
-  useRef,
-  useState,
-  type PropsWithChildren,
-  type RefObject,
-} from "react";
-import { useForm, type UseFormReturn } from "react-hook-form";
-import { useBlocker } from "react-router";
-import { toast } from "sonner";
-
-import type { Toolset } from "@deco/ai";
 import {
   AgentSchema,
   DECO_CHAT_API,
@@ -40,11 +24,27 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@deco/ui/components/alert-dialog.tsx";
+import { zodResolver } from "@hookform/resolvers/zod";
 import type { UIMessage } from "ai";
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useMemo,
+  useRef,
+  useState,
+  useEffect,
+  type PropsWithChildren,
+  type RefObject,
+} from "react";
+import { useForm, type UseFormReturn } from "react-hook-form";
+import { useBlocker } from "react-router";
+import { toast } from "sonner";
 import { trackEvent } from "../../hooks/analytics.ts";
 import { useCreateAgent } from "../../hooks/use-create-agent.ts";
 import { useUserPreferences } from "../../hooks/use-user-preferences.ts";
 import { IMAGE_REGEXP, openPreviewPanel } from "../chat/utils/preview.ts";
+import { onRulesUpdated } from "../../utils/events.ts";
 
 interface UiOptions {
   showThreadTools: boolean;
@@ -63,7 +63,6 @@ interface AgentProviderProps {
   initialMessages?: UIMessage[];
   chatOptions?: Record<string, unknown>; // Additional useChat options
   uiOptions?: Partial<UiOptions>; // UI configuration options
-  toolsets?: Toolset[];
   children: React.ReactNode;
   additionalTools?: Agent["tools_set"];
 }
@@ -134,7 +133,6 @@ export function AgentProvider({
   initialMessages,
   chatOptions,
   uiOptions,
-  toolsets,
   children,
   additionalTools,
 }: PropsWithChildren<AgentProviderProps>) {
@@ -150,6 +148,7 @@ export function AgentProvider({
     useState<LanguageModelV1FinishReason | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
   const correlationIdRef = useRef<string | null>(null);
+  const latestRulesRef = useRef<string[] | null>(null);
 
   const mergedUiOptions = { ...DEFAULT_UI_OPTIONS, ...uiOptions };
 
@@ -162,9 +161,25 @@ export function AgentProvider({
     WELL_KNOWN_AGENTS[agentId as keyof typeof WELL_KNOWN_AGENTS],
   );
 
+  // Subscribe to rules updates
+  useEffect(() => {
+    const off = onRulesUpdated((ev) => {
+      latestRulesRef.current = ev.detail.rules ?? [];
+    });
+    return () => off();
+  }, []);
+
+  // Merge additionalTools into serverAgent tools_set
+  const mergedToolsSet = useMemo<Agent["tools_set"]>(() => {
+    return {
+      ...(serverAgent.tools_set ?? {}),
+      ...(additionalTools ?? {}),
+    };
+  }, [serverAgent.tools_set, additionalTools]);
+
   // Form state - for editing agent settings
   const form = useForm({
-    defaultValues: serverAgent,
+    defaultValues: { ...serverAgent, tools_set: mergedToolsSet },
     resolver: zodResolver(AgentSchema),
   });
 
@@ -254,6 +269,18 @@ export function AgentProvider({
 
       const bypassOpenRouter = !preferences.useOpenRouter;
 
+      // Collect persisted rules from latest state provided via events
+      const rules = latestRulesRef.current;
+
+      // Merge rules into annotations on the outgoing message so we send a single
+      // message with annotations (files + rules) instead of separate system messages
+      if (lastMessage) {
+        lastMessage.annotations = [
+          ...(lastMessage?.annotations ?? []),
+          ...(rules?.map((r) => ({ role: "system", content: r })) ?? []),
+        ].filter(Boolean);
+      }
+
       return {
         metadata: { threadId: threadId ?? agentId },
         args: [
@@ -265,13 +292,9 @@ export function AgentProvider({
             instructions: effectiveChatState.instructions,
             bypassOpenRouter,
             sendReasoning: preferences.sendReasoning ?? true,
-            tools: {
-              ...effectiveChatState.tools_set,
-              ...additionalTools,
-            },
+            tools: effectiveChatState.tools_set,
             maxSteps: effectiveChatState.max_steps,
             pdfSummarization: preferences.pdfSummarization ?? true,
-            toolsets,
             smoothStream:
               preferences.smoothStream !== false
                 ? { delayInMs: 25, chunk: "word" }

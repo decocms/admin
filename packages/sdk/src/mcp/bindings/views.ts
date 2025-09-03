@@ -1,20 +1,14 @@
+import { ViewsListOutputSchema } from "@deco/workers-runtime/views";
 import { z } from "zod";
 import type { Binder } from "../index.ts";
-
-export const listViewsSchema = z.object({
-  views: z.array(
-    z.object({
-      title: z.string(),
-      icon: z.string(),
-      url: z.string(),
-    }),
-  ),
-});
 
 export const VIEW_BINDING_SCHEMA = [
   {
     name: "DECO_CHAT_VIEWS_LIST" as const,
     inputSchema: z.any(),
-    outputSchema: listViewsSchema,
+    outputSchema: ViewsListOutputSchema,
   },
 ] as const satisfies Binder;
+
+// Re-export for existing imports expecting listViewsSchema
+export const listViewsSchema = ViewsListOutputSchema;

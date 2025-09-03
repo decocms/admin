@@ -70,6 +70,8 @@ export const viewMetadataSchema = z.discriminatedUnion("type", [
   z.object({
     type: z.literal("custom"),
     url: z.string(),
+    tools: z.array(z.string()).default([]),
+    rules: z.array(z.string()).default([]),
   }),
   z.object({
     type: z.literal("default"),

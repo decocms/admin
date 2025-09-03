@@ -56,26 +56,25 @@ export const getPublicChatLink = (agentId: string, workspace: Workspace) => {
 function Page() {
   const [params] = useSearchParams();
 
-  const { agentId, workspace, threadId, toolsets } = useMemo(() => {
+  const { agentId, workspace, threadId, additionalTools } = useMemo(() => {
     const workspace = params.get("workspace") as Workspace | null;
     const agentId = params.get("agentId");
     const threadId = params.get("threadId") ?? crypto.randomUUID();
-    const toolsets = params.getAll("toolsets").map((toolset) => {
-      const [mcpUrl, connectionType = "HTTP"] = toolset.split(",");
-
-      return {
-        connection: {
-          type: connectionType as "HTTP" | "SSE",
-          url: mcpUrl,
-        },
-        filters: [],
-      };
-    });
+    // Preserve backward-compat for URLs using toolsets param by mapping to additionalTools.
+    const toolsets = params.getAll("toolsets");
+    const additionalTools = toolsets.length
+      ? Object.fromEntries(
+          toolsets.map((t) => {
+            const [integrationId] = t.split(",");
+            return [integrationId, [] as string[]];
+          }),
+        )
+      : undefined;
     if (!workspace || !agentId) {
       throw new Error("Missing required params, workspace, agentId, threadId");
     }
 
-    return { workspace, agentId, threadId, toolsets };
+    return { workspace, agentId, threadId, additionalTools };
   }, [params]);
 
   const chatKey = useMemo(() => `${agentId}-${threadId}`, [agentId, threadId]);
@@ -111,7 +110,7 @@ function Page() {
           <AgentProvider
             agentId={agentId}
             threadId={threadId}
-            toolsets={toolsets}
+            additionalTools={additionalTools}
             uiOptions={{
               showThreadTools: false,
               showModelSelector: false,

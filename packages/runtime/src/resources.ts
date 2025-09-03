@@ -26,7 +26,9 @@ const ResourceBinaryContentSchema = ResourceSchema.extend({
 
 // Tool Input/Output Schemas
 export const ResourcesReadInputSchema = z.object({
-  uri: z.string().url(),
+  uri: z.string().url().describe(
+    "The URI of the resource to read. It's important to add the url scheme. Use file:// for files. Use https:// or http:// for remote files",
+  ),
 });
 
 export const ResourcesReadOutputSchema = z.union([
@@ -35,7 +37,7 @@ export const ResourcesReadOutputSchema = z.union([
 ]);
 
 export const ResourceSearchInputSchema = z.object({
-  term: z.string(),
+  term: z.string().describe("The term to search for"),
   cursor: z.string().optional(),
   limit: z.number().positive().optional(),
 });

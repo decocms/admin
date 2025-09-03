@@ -23,6 +23,7 @@ type EventMap = {
   "deco:resource-loading": ResourceLoadingDetail;
   "deco:resource-loaded": ResourceLoadedDetail;
   "deco:resource-error": ResourceErrorDetail;
+  "deco:rules-updated": { rules: string[] };
 };
 
 // Generic helper to add a typed listener
@@ -72,4 +73,14 @@ export function dispatchResourceLoaded(detail: ResourceLoadedDetail) {
 
 export function dispatchResourceError(detail: ResourceErrorDetail) {
   dispatchEvent("deco:resource-error", detail);
+}
+
+export function onRulesUpdated(
+  listener: (event: CustomEvent<{ rules: string[] }>) => void,
+) {
+  return onEvent("deco:rules-updated", listener);
+}
+
+export function dispatchRulesUpdated(detail: { rules: string[] }) {
+  dispatchEvent("deco:rules-updated", detail);
 }

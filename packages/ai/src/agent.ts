@@ -15,10 +15,6 @@ import type { JSONSchema7 } from "@ai-sdk/provider";
 import type { ActorState, InvokeMiddlewareOptions } from "@deco/actors";
 import { Actor } from "@deco/actors";
 import type { Agent as Configuration } from "@deco/sdk";
-import {
-  type PosthogServerClient,
-  createPosthogServerClient,
-} from "@deco/sdk/posthog";
 import { type AuthMetadata, BaseActor } from "@deco/sdk/actors";
 import { JwtIssuer, SUPABASE_URL } from "@deco/sdk/auth";
 import {
@@ -55,6 +51,10 @@ import {
   type Workspace,
 } from "@deco/sdk/path";
 import {
+  createPosthogServerClient,
+  type PosthogServerClient,
+} from "@deco/sdk/posthog";
+import {
   createServerTimings,
   type ServerTimingsBuilder,
 } from "@deco/sdk/timings";
@@ -64,13 +64,13 @@ import { Agent } from "@mastra/core/agent";
 import type { MastraMemory } from "@mastra/core/memory";
 import { TokenLimiter } from "@mastra/memory/processors";
 import { createServerClient } from "@supabase/ssr";
-import type { TextPart } from "ai";
+import type { CoreMessage, TextPart } from "ai";
 import {
-  smoothStream,
   type GenerateObjectResult,
   type GenerateTextResult,
   type LanguageModelUsage,
   type Message,
+  smoothStream,
 } from "ai";
 import { Cloudflare } from "cloudflare";
 import { getRuntimeKey } from "hono/adapter";
@@ -588,6 +588,43 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
     );
   }
 
+  // Build additional context from message.annotations, supporting explicit role/content
+  private _annotationsToContext(payload: AIMessage[]): CoreMessage[] {
+    return payload.flatMap((message) =>
+      Array.isArray(message.annotations)
+        ? message.annotations.map((annotation) => {
+            if (
+              typeof annotation === "string" ||
+              typeof annotation === "number" ||
+              typeof annotation === "boolean"
+            ) {
+              return {
+                role: "user" as const,
+                content: String(annotation),
+              } as CoreMessage;
+            }
+
+            if (
+              annotation &&
+              !Array.isArray(annotation) &&
+              typeof annotation.role === "string" &&
+              typeof annotation.content === "string"
+            ) {
+              return {
+                role: annotation.role,
+                content: annotation.content,
+              } as CoreMessage;
+            }
+
+            return {
+              role: "user" as const,
+              content: JSON.stringify(annotation),
+            } as CoreMessage;
+          })
+        : [],
+    );
+  }
+
   private async _withToolOverrides(
     tools?: Record<string, string[]>,
     timings?: ServerTimingsBuilder,
@@ -1070,6 +1107,24 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
       throw new Error("Insufficient funds");
     }
 
+    // Build additional context from annotations (same approach used in stream())
+    const annotationsContextForObject = payload.flatMap((message) =>
+      Array.isArray(message.annotations)
+        ? (message.annotations as unknown[]).map((annotation) => ({
+            role: "user" as const,
+            content:
+              typeof annotation === "string"
+                ? annotation
+                : [
+                    {
+                      type: "text",
+                      text: JSON.stringify(annotation),
+                    } as TextPart,
+                  ],
+          }))
+        : [],
+    );
+
     const aiMessages = await Promise.all(
       payload.map((msg) =>
         convertToAIMessage({ message: msg, agent: this._agent }),
@@ -1077,6 +1132,7 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
     );
     const result = (await this._agent.generate(aiMessages, {
       ...this.thread,
+      context: annotationsContextForObject,
       output: jsonSchema,
       maxSteps: this._maxSteps(),
       maxTokens: this._maxTokens(),
@@ -1126,8 +1182,27 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
       ),
     );
 
+    // Build additional context from annotations (same approach used in stream())
+    const annotationsContext = payload.flatMap((message) =>
+      Array.isArray(message.annotations)
+        ? (message.annotations as unknown[]).map((annotation) => ({
+            role: "user" as const,
+            content:
+              typeof annotation === "string"
+                ? annotation
+                : [
+                    {
+                      type: "text",
+                      text: JSON.stringify(annotation),
+                    } as TextPart,
+                  ],
+          }))
+        : [],
+    );
+
     const result = (await agent.generate(aiMessages, {
       ...this.thread,
+      context: annotationsContext,
       maxSteps: this._maxSteps(options?.maxSteps),
       maxTokens: this._maxTokens(),
       instructions: options?.instructions,
@@ -1194,27 +1269,8 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
         payload = processedMessages as typeof payload;
       }
 
-      /*
-       * Additional context from the payload, through annotations (converting to a CoreMessage-like object)
-       * TODO (@0xHericles) We should find a way to extend the Message Object
-       * See https://github.com/vercel/ai/discussions/3284
-       */
-      const context = payload.flatMap((message) =>
-        Array.isArray(message.annotations)
-          ? message.annotations.map((annotation) => ({
-              role: "user" as const,
-              content:
-                typeof annotation === "string"
-                  ? annotation
-                  : [
-                      {
-                        type: "text",
-                        text: JSON.stringify(annotation),
-                      } as TextPart,
-                    ],
-            }))
-          : [],
-      );
+      // Additional context from annotations
+      const context = this._annotationsToContext(payload);
 
       const toolsets = await this._withToolOverrides(
         options?.tools,

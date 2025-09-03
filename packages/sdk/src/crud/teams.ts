@@ -71,6 +71,8 @@ export interface AddViewInput {
     icon: string;
     type: "custom";
     url: string;
+    tools?: string[];
+    rules?: string[];
     integration: {
       id: string;
     };
@@ -112,7 +114,20 @@ export const listAvailableViewsForConnection = async (
       },
     });
 
-    return result.structuredContent as { views: View[] };
+    if (typeof result.error === "string") {
+      console.error(result.error);
+      return { views: [] };
+    }
+
+    return result.structuredContent as {
+      views: Array<{
+        title: string;
+        icon: string;
+        url: string;
+        tools?: string[];
+        rules?: string[];
+      }>;
+    };
   } catch (error) {
     console.error("Error listing available views for connection:", error);
     return { views: [] };

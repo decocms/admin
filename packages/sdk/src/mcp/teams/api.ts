@@ -366,8 +366,9 @@ const getMatchConditionForTool = (
   if (
     resourceGroup &&
     integrationId === getIntegrationIdForGroup(resourceGroup)
-  )
+  ) {
     return {};
+  }
 
   return {
     matchCondition: {
@@ -1036,6 +1037,14 @@ export const addView = createTool({
         icon: z.string().describe("Icon identifier for the view"),
         type: z.literal("custom").describe("Type of view (must be 'custom')"),
         url: z.string().describe("URL for the custom view"),
+        tools: z
+          .array(z.string())
+          .optional()
+          .describe("Optional list of tool names to enable for this view"),
+        rules: z
+          .array(z.string())
+          .optional()
+          .describe("Optional list of textual rules to persist in context"),
         integration: z.object({
           id: z.string().describe("Integration ID"),
         }),
@@ -1085,6 +1094,8 @@ export const addView = createTool({
           type: view.type,
           metadata: {
             url: view.url,
+            tools: view.tools ?? [],
+            rules: view.rules ?? [],
             integration: {
               id: view.integration?.id,
             },

@@ -2,7 +2,6 @@ import {
   type Integration,
   useIntegrationViews,
   useKnowledgeListFiles,
-  parseViewMetadata,
 } from "@deco/sdk";
 import {
   getExtensionFromContentType,
@@ -381,26 +380,8 @@ function AddViewButton() {
 
   // Filter out views that are already added to the agent
   const agentViewUrls = new Set(agent.views?.map((view) => view.url) || []);
-  const availableViews = allViews.reduce(
-    (acc, view) => {
-      const meta = parseViewMetadata(view);
-      const url = meta?.type === "custom" ? meta.url : undefined;
-      if (url && !agentViewUrls.has(url)) {
-        acc.push({
-          url,
-          title: view.title,
-          icon: view.icon,
-          integration: { name: view.integration.name },
-        });
-      }
-      return acc;
-    },
-    [] as Array<{
-      url: string;
-      title: string;
-      icon: string;
-      integration: { name: string };
-    }>,
+  const availableViews = allViews.filter(
+    (view) => !agentViewUrls.has(view.url),
   );
 
   const filteredViews = useMemo(() => {

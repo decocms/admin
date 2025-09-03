@@ -45,6 +45,7 @@ import {
   onResourceLoaded,
   onResourceLoading,
 } from "../../utils/events.ts";
+import { useCurrentView } from "../decopilot/use-current-view.ts";
 
 interface IntegrationWithTools extends Integration {
   tools?: Array<{
@@ -314,6 +315,54 @@ export function ContextResources({
 
   const isDragging = useGlobalDrop(handleFileDrop);
 
+  const { view, meta } = useCurrentView();
+  const appliedViewRef = useRef<string | null>(null);
+  const [persistedRules, setPersistedRules] = useState<
+    Array<{ id: string; text: string }>
+  >([]);
+
+  useEffect(() => {
+    if (!view || !meta || meta.type !== "custom") {
+      appliedViewRef.current = null;
+      return;
+    }
+
+    if (appliedViewRef.current === view.id) {
+      return;
+    }
+
+    // Seed rules once per view; keep persistent until user removes
+    const rules = meta.rules ?? [];
+    if (rules.length && appliedViewRef.current !== view.id) {
+      setPersistedRules((prev) => {
+        const haveAny = prev.some((r) =>
+          r.id.startsWith(`view-rule-${view.id}-`),
+        );
+        if (haveAny) return prev;
+        const seeded = rules.map((text, idx) => ({
+          id: `view-rule-${view.id}-${idx}`,
+          text,
+        }));
+        return [...prev, ...seeded];
+      });
+    }
+
+    appliedViewRef.current = view.id;
+  }, [view?.id, meta, setUploadedFiles]);
+
+  const removeRule = (id: string) => {
+    setPersistedRules((prev) => prev.filter((r) => r.id !== id));
+  };
+
+  // Expose rules to rest of app via custom event (AgentProvider listens)
+  useEffect(() => {
+    const rules = persistedRules.map((r) => r.text);
+    // Avoid dispatch storms: minimal debounce not necessary here; list is small
+    import("../../utils/events.ts").then(({ dispatchRulesUpdated }) =>
+      dispatchRulesUpdated({ rules }),
+    );
+  }, [persistedRules]);
+
   // Listen for resource lifecycle events from mentions and manage uploadedFiles
   useEffect(() => {
     const offLoading = onResourceLoading(({ detail }) => {
@@ -383,6 +432,7 @@ export function ContextResources({
     <div className="w-full mx-auto">
       <FileDropOverlay display={isDragging} />
       <div className="flex flex-wrap gap-2 mb-4 overflow-visible">
+        {/* rules now rendered after add button below */}
         {/* File Upload Button */}
         <input
           type="file"
@@ -417,6 +467,38 @@ export function ContextResources({
             </Button>
           }
         />
+
+        {persistedRules.map((rule) => (
+          <div key={rule.id} className="relative group">
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="icon"
+                  title="View rule"
+                >
+                  <Icon name="rule" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent className="max-w-xs break-words">
+                {rule.text.length > 160
+                  ? `${rule.text.slice(0, 160)}…`
+                  : rule.text}
+              </TooltipContent>
+            </Tooltip>
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              onClick={() => removeRule(rule.id)}
+              className="absolute -top-1 -right-1 h-4 w-4 opacity-0 group-hover:opacity-100 transition-opacity rounded-full shadow-sm bg-primary text-primary-foreground hover:bg-primary/50 hover:text-sidebar"
+              title="Remove rule"
+            >
+              <Icon name="close" size={10} />
+            </Button>
+          </div>
+        ))}
 
         {/* Integration Items */}
         {integrationsWithTotalTools.map(

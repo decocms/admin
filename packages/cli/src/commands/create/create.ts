@@ -17,6 +17,7 @@ import { readSession } from "../../lib/session.js";
 import { loginCommand } from "../auth/login.js";
 import { displayBanner } from "../../lib/banner.js";
 import process from "node:process";
+import { packageJson } from "../../cli.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -218,7 +219,7 @@ export async function createCommand(
     console.clear();
 
     // Display the capybara banner
-    displayBanner();
+    displayBanner({ version: packageJson.version });
 
     let session = await readSession();
     if (!session) {

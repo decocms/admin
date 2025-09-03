@@ -72,7 +72,7 @@ const __dirname = dirname(__filename);
 
 // Read package.json for version
 const packageJsonPath = join(__dirname, "../package.json");
-const packageJson = JSON.parse(await readFile(packageJsonPath, "utf-8"));
+export const packageJson = JSON.parse(await readFile(packageJsonPath, "utf-8"));
 
 // Login command implementation
 const login = new Command("login")

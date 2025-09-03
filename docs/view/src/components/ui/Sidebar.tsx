@@ -4,6 +4,7 @@ import { Icon } from "../../components/atoms/Icon.tsx";
 import { LanguageSelector } from "./LanguageSelector.tsx";
 import { ThemeToggle } from "./ThemeToggle.tsx";
 
+
 // GitHub Stars Component
 function GitHubStars() {
   const [stars, setStars] = useState<number | null>(null);

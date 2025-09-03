@@ -306,6 +306,13 @@ const editUrl = doc
           class="flex min-h-full py-8 lg:py-16 px-4 lg:px-8 gap-x-8 lg:pt-16"
         >
           <article class="flex-1 max-w-none min-w-0">
+            <!-- AI Search Component -->
+            <div class="mb-8">
+              <div id="article-search">
+                <!-- AI Search will be mounted here -->
+              </div>
+            </div>
+            
             <slot />
 
             {/* Edit button */}
@@ -343,6 +350,7 @@ const editUrl = doc
       import React from "react";
       import { LanguageSelector } from "../components/ui/LanguageSelector";
       import { ThemeToggle } from "../components/ui/ThemeToggle";
+      import { AISearch } from "../components/ui/AISearch";
       import { createRoot } from "react-dom/client";
 
       // Mount language selector and theme toggle in mobile header
@@ -360,6 +368,19 @@ const editUrl = doc
             }),
             React.createElement(ThemeToggle),
           ])
+        );
+      }
+
+      // Mount AI Search in article
+      const articleSearchContainer = document.getElementById("article-search");
+      if (articleSearchContainer) {
+        const searchRoot = createRoot(articleSearchContainer);
+        searchRoot.render(
+          React.createElement(AISearch, {
+            locale:
+              document.querySelector("nav")?.getAttribute("data-locale") ||
+              "en",
+          })
         );
       }
     </script>

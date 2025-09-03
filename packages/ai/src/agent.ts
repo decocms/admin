@@ -1107,29 +1107,14 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
       throw new Error("Insufficient funds");
     }
 
-    // Build additional context from annotations (same approach used in stream())
-    const annotationsContextForObject = payload.flatMap((message) =>
-      Array.isArray(message.annotations)
-        ? (message.annotations as unknown[]).map((annotation) => ({
-            role: "user" as const,
-            content:
-              typeof annotation === "string"
-                ? annotation
-                : [
-                    {
-                      type: "text",
-                      text: JSON.stringify(annotation),
-                    } as TextPart,
-                  ],
-          }))
-        : [],
-    );
-
     const aiMessages = await Promise.all(
       payload.map((msg) =>
         convertToAIMessage({ message: msg, agent: this._agent }),
       ),
     );
+
+    // Build additional context from annotations using the same helper as stream()
+    const annotationsContextForObject = this._annotationsToContext(aiMessages);
     const result = (await this._agent.generate(aiMessages, {
       ...this.thread,
       context: annotationsContextForObject,
@@ -1182,23 +1167,8 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
       ),
     );
 
-    // Build additional context from annotations (same approach used in stream())
-    const annotationsContext = payload.flatMap((message) =>
-      Array.isArray(message.annotations)
-        ? (message.annotations as unknown[]).map((annotation) => ({
-            role: "user" as const,
-            content:
-              typeof annotation === "string"
-                ? annotation
-                : [
-                    {
-                      type: "text",
-                      text: JSON.stringify(annotation),
-                    } as TextPart,
-                  ],
-          }))
-        : [],
-    );
+    // Build additional context from annotations using the same helper as stream() and generateObject()
+    const annotationsContext = this._annotationsToContext(aiMessages);
 
     const result = (await agent.generate(aiMessages, {
       ...this.thread,

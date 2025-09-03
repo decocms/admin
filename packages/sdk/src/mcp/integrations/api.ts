@@ -66,8 +66,8 @@ const mapIntegration = (
 ) => {
   let appName: undefined | string;
   const registryName = integration.deco_chat_apps_registry?.name;
-  const appScope = integration.deco_chat_apps_registry
-    ?.deco_chat_registry_scopes?.scope_name;
+  const appScope =
+    integration.deco_chat_apps_registry?.deco_chat_registry_scopes?.scope_name;
   if (registryName && appScope) {
     appName = AppName.build(appScope, registryName);
   }
@@ -88,7 +88,8 @@ export const parseId = (id: string) => {
 const formatId = (type: "i" | "a", uuid: string) => `${type}:${uuid}`;
 
 const agentAsIntegrationFor =
-  (workspace: string, token?: string) => (agent: Agent): Integration => ({
+  (workspace: string, token?: string) =>
+  (agent: Agent): Integration => ({
     id: formatId("a", agent.id),
     icon: agent.avatar,
     name: agent.name,
@@ -104,8 +105,7 @@ const createIntegrationManagementTool = createToolGroup("Integration", {
   name: "Integration Management",
   description:
     "Install, authorize, and manage third-party integrations and their tools.",
-  icon:
-    "https://assets.decocache.com/mcp/2ead84c2-2890-4d37-b61c-045f4760f2f7/Integration-Management.png",
+  icon: "https://assets.decocache.com/mcp/2ead84c2-2890-4d37-b61c-045f4760f2f7/Integration-Management.png",
 });
 export const callTool = createIntegrationManagementTool({
   name: "INTEGRATIONS_CALL_TOOL",
@@ -223,9 +223,8 @@ const virtualIntegrationsFor = (
 
   const integrationGroups = Object.entries(getGroups()).map(
     ([group, { name, description, icon, workspace }]) => {
-      const url = workspace === false
-        ? new URL(decoChatMcp)
-        : new URL(workspaceMcp);
+      const url =
+        workspace === false ? new URL(decoChatMcp) : new URL(workspaceMcp);
       url.searchParams.set("group", group);
       return {
         id: formatId("i", group),
@@ -260,8 +259,7 @@ const virtualIntegrationsFor = (
           url: url.href,
           token,
         },
-        icon:
-          "https://assets.decocache.com/mcp/1b6e79a9-7830-459c-a1a6-ba83e7e58cbe/Knowledge-Base.png",
+        icon: "https://assets.decocache.com/mcp/1b6e79a9-7830-459c-a1a6-ba83e7e58cbe/Knowledge-Base.png",
         workspace,
         created_at: new Date().toISOString(),
       };
@@ -288,8 +286,8 @@ const extractToolsFromRegistry = (
         name: tool.name,
         description: tool.description || undefined,
         inputSchema: (tool.input_schema as Record<string, unknown>) || {},
-        outputSchema: (tool.output_schema as Record<string, unknown>) ||
-          undefined,
+        outputSchema:
+          (tool.output_schema as Record<string, unknown>) || undefined,
       }),
     ) || null
   );
@@ -326,9 +324,10 @@ export const listIntegrations = createIntegrationManagementTool({
         error.message || "Failed to list integrations",
       );
     }
-    const roles = c.workspace.root === "users"
-      ? []
-      : await c.policy.getUserRoles(c.user.id as string, c.workspace.slug);
+    const roles =
+      c.workspace.root === "users"
+        ? []
+        : await c.policy.getUserRoles(c.user.id as string, c.workspace.slug);
     const userRoles: string[] = roles?.map((role) => role?.name);
 
     // TODO: This is a temporary solution to filter integrations and agents by access.
@@ -405,7 +404,8 @@ export const getIntegration = createIntegrationManagementTool({
     const isInnate =
       INNATE_INTEGRATIONS[id as keyof typeof INNATE_INTEGRATIONS];
 
-    const canAccess = isInnate ||
+    const canAccess =
+      isInnate ||
       (await assertWorkspaceResourceAccess(c)
         .then(() => true)
         .catch(() => false));
@@ -426,21 +426,22 @@ export const getIntegration = createIntegrationManagementTool({
     }
     assertHasWorkspace(c);
 
-    const selectPromise = type === "i"
-      ? c.db
-        .from("deco_chat_integrations")
-        .select(SELECT_INTEGRATION_QUERY)
-        .eq("id", uuid)
-        .eq("workspace", c.workspace.value)
-        .single()
-        .then((r) => r)
-      : c.db
-        .from("deco_chat_agents")
-        .select("*")
-        .eq("id", uuid)
-        .eq("workspace", c.workspace.value)
-        .single()
-        .then((r) => r);
+    const selectPromise =
+      type === "i"
+        ? c.db
+            .from("deco_chat_integrations")
+            .select(SELECT_INTEGRATION_QUERY)
+            .eq("id", uuid)
+            .eq("workspace", c.workspace.value)
+            .single()
+            .then((r) => r)
+        : c.db
+            .from("deco_chat_agents")
+            .select("*")
+            .eq("id", uuid)
+            .eq("workspace", c.workspace.value)
+            .single()
+            .then((r) => r);
 
     const knowledgeBases = await listKnowledgeBases.handler({});
 
@@ -525,18 +526,19 @@ export const createIntegration = createIntegrationManagementTool({
       app_id: appId ?? fetchedApp?.id,
     };
 
-    const { data, error } = "id" in payload && payload.id
-      ? await c.db
-        .from("deco_chat_integrations")
-        .upsert(payload)
-        .eq("workspace", c.workspace.value)
-        .select()
-        .single()
-      : await c.db
-        .from("deco_chat_integrations")
-        .insert(payload)
-        .select()
-        .single();
+    const { data, error } =
+      "id" in payload && payload.id
+        ? await c.db
+            .from("deco_chat_integrations")
+            .upsert(payload)
+            .eq("workspace", c.workspace.value)
+            .select()
+            .single()
+        : await c.db
+            .from("deco_chat_integrations")
+            .insert(payload)
+            .select()
+            .single();
 
     if (error) {
       throw new InternalServerError(error.message);
@@ -649,8 +651,7 @@ const virtualInstallableIntegrations = () => {
       name: "Agents Email",
       group: WellKnownMcpGroups.Email,
       description: "Manage your agents email",
-      icon:
-        "https://assets.decocache.com/mcp/65334e3f-17b4-470f-b644-5d226c565db9/email-integration.png",
+      icon: "https://assets.decocache.com/mcp/65334e3f-17b4-470f-b644-5d226c565db9/email-integration.png",
       provider: DECO_PROVIDER,
     },
   ];
@@ -771,9 +772,9 @@ export const DECO_INTEGRATION_OAUTH_START = createIntegrationManagementTool({
       structuredContent:
         | { redirectUrl: string }
         | {
-          stateSchema: unknown;
-          scopes?: string[];
-        };
+            stateSchema: unknown;
+            scopes?: string[];
+          };
     };
 
     return oauth.structuredContent;
@@ -810,9 +811,9 @@ export const DECO_GET_APP_SCHEMA = createIntegrationManagementTool({
       structuredContent:
         | { redirectUrl: string }
         | {
-          stateSchema: unknown;
-          scopes?: string[];
-        };
+            stateSchema: unknown;
+            scopes?: string[];
+          };
     };
 
     if ("redirectUrl" in result.structuredContent) {
@@ -919,7 +920,8 @@ export const DECO_INTEGRATION_INSTALL = createIntegrationManagementTool({
           result.structuredContent,
         );
 
-        const id = parsed.installId ??
+        const id =
+          parsed.installId ??
           (parsed.data?.connection as { token?: string })?.token ??
           crypto.randomUUID();
 

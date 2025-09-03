@@ -55,26 +55,26 @@ function buildTree(docs: any[]): TreeNode[] {
       if (a.type !== b.type) {
         return a.type === "file" ? -1 : 1;
       }
-      
+
       // For files only - custom ordering
       if (a.type === "file" && b.type === "file") {
         // Force introduction to be first regardless of filename
         if (a.name.includes("introduction")) return -1;
         if (b.name.includes("introduction")) return 1;
-        
+
         // Then getting-started
         if (a.name.includes("getting-started")) return -1;
         if (b.name.includes("getting-started")) return 1;
-        
-        // Then cli-reference  
+
+        // Then cli-reference
         if (a.name.includes("cli-reference")) return -1;
         if (b.name.includes("cli-reference")) return 1;
       }
-      
+
       // Default alphabetical
       return a.name.localeCompare(b.name);
     });
-    
+
     return sorted.map((node) => ({
       ...node,
       children: sortTree(node.children),

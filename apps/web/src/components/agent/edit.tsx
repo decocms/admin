@@ -117,7 +117,7 @@ const TABS: Record<string, Tab> = {
   },
   integrations: {
     Component: ToolsAndKnowledgeTab,
-    title: "Context",
+    title: "Tools",
     initialOpen: "within",
   },
   triggers: {

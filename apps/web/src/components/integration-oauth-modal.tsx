@@ -1,11 +1,5 @@
 import { FormProvider, useForm } from "react-hook-form";
 import { Button } from "@deco/ui/components/button.tsx";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from "@deco/ui/components/dialog.tsx";
 import { Badge } from "@deco/ui/components/badge.tsx";
 import { Separator } from "@deco/ui/components/separator.tsx";
 import { Alert, AlertDescription } from "@deco/ui/components/alert.tsx";
@@ -14,32 +8,65 @@ import JsonSchemaForm from "./json-schema/index.tsx";
 import { generateDefaultValues } from "./json-schema/utils/generate-default-values.ts";
 import type { ContractState } from "@deco/sdk/mcp";
 import { MicroDollar } from "@deco/sdk/mcp/wallet";
+
 interface Permission {
   scope: string;
   description: string;
 }
 
-interface IntegrationOAuthModalProps {
-  isOpen: boolean;
-  onClose: () => void;
-  schema: JSONSchema7;
-  contract?: ContractState;
+interface IntegrationPermissionsProps {
   integrationName: string;
   permissions: Permission[];
-  onSubmit: (data: Record<string, unknown>) => Promise<void>;
-  isLoading?: boolean;
 }
 
-export function IntegrationOAuthModal({
-  isOpen,
-  onClose,
-  schema,
-  contract,
+export function IntegrationPermissions({
   integrationName,
   permissions,
+}: IntegrationPermissionsProps) {
+  return (
+    <div className="space-y-4">
+      <Alert>
+        <AlertDescription>
+          <strong>{integrationName}</strong> will have access to the following
+          permissions:
+        </AlertDescription>
+      </Alert>
+
+      <div className="grid gap-2">
+        {permissions.map((permission, index) => (
+          <div
+            key={index}
+            className="flex items-center gap-3 p-3 rounded-lg bg-muted/50"
+          >
+            <div className="flex-shrink-0 text-success">✓</div>
+            <div className="flex-1">
+              <div className="text-sm font-medium">
+                {permission.description}
+              </div>
+              <div className="text-xs text-muted-foreground">
+                <Badge variant="outline" className="text-xs">
+                  {permission.scope}
+                </Badge>
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function IntegrationBindingForm({
+  schema,
   onSubmit,
-  isLoading = false,
-}: IntegrationOAuthModalProps) {
+  isLoading,
+  integrationName,
+}: {
+  schema: JSONSchema7;
+  onSubmit: (data: Record<string, unknown>) => Promise<void>;
+  isLoading: boolean;
+  integrationName: string;
+}) {
   const form = useForm({
     defaultValues: generateDefaultValues(schema),
   });
@@ -50,88 +77,80 @@ export function IntegrationOAuthModal({
 
     try {
       await onSubmit(data);
-      onClose();
     } catch (error) {
       console.error("Error submitting OAuth form:", error);
       // TODO: Show error to user
     }
   };
-
   return (
-    <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle>Install {integrationName}</DialogTitle>
-        </DialogHeader>
+    <div>
+      <h3 className="text-lg font-semibold mb-4">Configuration</h3>
+      <FormProvider {...form}>
+        <JsonSchemaForm
+          schema={schema}
+          form={form}
+          onSubmit={handleSubmit}
+          submitButton={
+            <Button
+              type="submit"
+              disabled={form.formState.isSubmitting || isLoading}
+              className="w-full"
+            >
+              {form.formState.isSubmitting || isLoading
+                ? "Installing..."
+                : `Install ${integrationName}`}
+            </Button>
+          }
+        />
+      </FormProvider>
+    </div>
+  );
+}
 
-        <div className="space-y-6 py-4">
-          {/* Permissions Section */}
-          {permissions.length > 0 && (
-            <div className="space-y-4">
-              <Alert>
-                <AlertDescription>
-                  <strong>{integrationName}</strong> will have access to the
-                  following permissions:
-                </AlertDescription>
-              </Alert>
+interface IntegrationOauthProps {
+  permissions: Permission[];
+  integrationName: string;
+  contract?: ContractState;
+  schema: JSONSchema7;
+  onSubmit: (data: Record<string, unknown>) => Promise<void>;
+  isLoading: boolean;
+}
 
-              <div className="grid gap-2">
-                {permissions.map((permission, index) => (
-                  <div
-                    key={index}
-                    className="flex items-center gap-3 p-3 rounded-lg bg-muted/50"
-                  >
-                    <div className="flex-shrink-0 text-success">✓</div>
-                    <div className="flex-1">
-                      <div className="text-sm font-medium">
-                        {permission.description}
-                      </div>
-                      <div className="text-xs text-muted-foreground">
-                        <Badge variant="outline" className="text-xs">
-                          {permission.scope}
-                        </Badge>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
+export function IntegrationOauth({
+  permissions,
+  integrationName,
+  contract,
+  schema,
+  onSubmit,
+  isLoading,
+}: IntegrationOauthProps) {
+  return (
+    <div className="space-y-6 py-4">
+      {/* Permissions Section */}
+      {permissions.length > 0 && (
+        <IntegrationPermissions
+          integrationName={integrationName}
+          permissions={permissions}
+        />
+      )}
 
-          {contract && contract.clauses.length > 0 && (
-            <>
-              <Separator />
-              <ContractClauses contract={contract} />
-            </>
-          )}
-
+      {contract && contract.clauses.length > 0 && (
+        <>
           <Separator />
+          <ContractClauses contract={contract} />
+        </>
+      )}
 
-          {/* Configuration Form */}
-          <div>
-            <h3 className="text-lg font-semibold mb-4">Configuration</h3>
-            <FormProvider {...form}>
-              <JsonSchemaForm
-                schema={schema}
-                form={form}
-                onSubmit={handleSubmit}
-                submitButton={
-                  <Button
-                    type="submit"
-                    disabled={form.formState.isSubmitting || isLoading}
-                    className="w-full"
-                  >
-                    {form.formState.isSubmitting || isLoading
-                      ? "Installing..."
-                      : `Install ${integrationName}`}
-                  </Button>
-                }
-              />
-            </FormProvider>
-          </div>
-        </div>
-      </DialogContent>
-    </Dialog>
+      <Separator />
+
+      {/* Configuration Form */}
+      <IntegrationBindingForm
+        schema={schema}
+        onSubmit={onSubmit}
+        isLoading={isLoading}
+        integrationName={integrationName}
+      />
+    </div>
   );
 }
 

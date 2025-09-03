@@ -4,6 +4,7 @@ import {
   useCreateIntegration,
   useGetRegistryApp,
   useInstallFromMarketplace,
+  useMarketplaceAppSchema,
   usePermissionDescriptions,
 } from "@deco/sdk/hooks";
 import type { Integration } from "@deco/sdk/models";
@@ -83,11 +84,12 @@ export const useInstallCreatingApiKeyAndIntegration = () => {
   return mutation;
 };
 
-export function useIntegrationInstallWithModal() {
+export function useIntegrationInstallWithModal(appName?: string) {
   const [installState, setInstallState] = useState<InstallState>({
     isModalOpen: false,
   });
 
+  const { data: appSchema } = useMarketplaceAppSchema(appName);
   const getLinkFor = useWorkspaceLink();
   const installMutation = useInstallFromMarketplace();
   const getRegistryApp = useGetRegistryApp();
@@ -165,10 +167,12 @@ export function useIntegrationInstallWithModal() {
     setInstallState((prev: InstallState) => ({ ...prev, isModalOpen: false }));
   };
 
+  const appStateSchema = installState.stateSchema ?? appSchema?.schema as JSONSchema7;
+  const appStateScopes = installState.scopes ?? appSchema?.scopes ?? [];
   // Get dynamic permission descriptions for all scopes
   const allScopes = getAllScopes(
-    installState.scopes ?? [],
-    installState.stateSchema,
+    appStateScopes,
+    appStateSchema,
   );
   const { permissions: dynamicPermissions, isLoading: permissionsLoading } =
     usePermissionDescriptions(allScopes);
@@ -180,8 +184,8 @@ export function useIntegrationInstallWithModal() {
     // Modal state and handlers
     modalState: {
       isOpen: installState.isModalOpen,
-      schema: installState.stateSchema,
-      scopes: installState.scopes,
+      schema: appStateSchema,
+      scopes: appStateScopes,
       permissions: dynamicPermissions,
       integrationName: installState.integrationName,
       integration: installState.integration,

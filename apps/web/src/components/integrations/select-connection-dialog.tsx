@@ -23,7 +23,9 @@ import {
   useNavigateWorkspace,
   useWorkspaceLink,
 } from "../../hooks/use-navigate-workspace.ts";
-import { IntegrationOAuthModal } from "../integration-oauth-modal.tsx";
+import {
+  IntegrationOauth,
+} from "../integration-oauth-modal.tsx";
 import { IntegrationIcon } from "./common.tsx";
 import { InstalledConnections } from "./installed-connections.tsx";
 import {
@@ -49,7 +51,9 @@ export function ConfirmMarketplaceInstallDialog({
   }) => void;
 }) {
   const open = !!integration;
-  const { install, modalState, isLoading } = useIntegrationInstallWithModal();
+  const { install, modalState, isLoading } = useIntegrationInstallWithModal(
+    integration?.name,
+  );
   const buildWorkspaceUrl = useWorkspaceLink();
   const navigateWorkspace = useNavigateWorkspace();
   const handleConnect = async () => {
@@ -165,6 +169,15 @@ export function ConfirmMarketplaceInstallDialog({
             </div>
           </DialogDescription>
         </DialogHeader>
+        {modalState.schema && (
+        <IntegrationOauth
+          permissions={modalState.permissions}
+          integrationName={integration.name}
+          schema={modalState.schema}
+          onSubmit={handleModalComplete}
+          isLoading={modalState.isLoading}
+        />
+      )}
         <DialogFooter>
           {isLoading ? (
             <Button disabled={isLoading}>Connecting...</Button>
@@ -173,22 +186,6 @@ export function ConfirmMarketplaceInstallDialog({
           )}
         </DialogFooter>
       </DialogContent>
-
-      {/* Modal for JSON Schema form */}
-      {modalState.schema && (
-        <IntegrationOAuthModal
-          isOpen={modalState.isOpen}
-          onClose={modalState.onClose}
-          schema={modalState.schema}
-          contract={integration.metadata?.contract}
-          integrationName={
-            modalState.integrationName || integration?.name || "Integration"
-          }
-          permissions={modalState.permissions || []}
-          onSubmit={handleModalComplete}
-          isLoading={modalState.isLoading}
-        />
-      )}
     </Dialog>
   );
 }

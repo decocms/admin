@@ -21,10 +21,10 @@ local = false
 
 [[migrations]]
 tag = "v2"
-new_classes = [ "Blobs", "Namespace" ]
+new_sqlite_classes = [ "Blobs", "Namespace" ]
 
 [[migrations]]
-tag = "v2"
+tag = "v1"
 new_classes = [ "Workflow" ]
 
 [durable_objects]

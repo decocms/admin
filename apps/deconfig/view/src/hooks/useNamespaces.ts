@@ -8,7 +8,8 @@ import type {
   LIST_NAMESPACESOutput,
   MERGE_NAMESPACEInput,
   MERGE_NAMESPACEOutput,
-  READ_FILEInput
+  READ_FILEInput,
+  PUT_FILEInput,
 } from "../../../server/deco.gen";
 import { client } from "../lib/rpc";
 
@@ -29,9 +30,10 @@ export const useListNamespaces = (prefix?: string) => {
 // Create namespace
 export const useCreateNamespace = () => {
   const queryClient = useQueryClient();
-  
+
   return useMutation({
-    mutationFn: (input: CREATE_NAMESPACEInput) => client.CREATE_NAMESPACE(input),
+    mutationFn: (input: CREATE_NAMESPACEInput) =>
+      client.CREATE_NAMESPACE(input),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["namespaces"] });
     },
@@ -41,9 +43,10 @@ export const useCreateNamespace = () => {
 // Delete namespace
 export const useDeleteNamespace = () => {
   const queryClient = useQueryClient();
-  
+
   return useMutation({
-    mutationFn: (input: DELETE_NAMESPACEInput) => client.DELETE_NAMESPACE(input),
+    mutationFn: (input: DELETE_NAMESPACEInput) =>
+      client.DELETE_NAMESPACE(input),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["namespaces"] });
       queryClient.invalidateQueries({ queryKey: ["files"] });
@@ -54,7 +57,7 @@ export const useDeleteNamespace = () => {
 // Merge namespaces
 export const useMergeNamespace = () => {
   const queryClient = useQueryClient();
-  
+
   return useMutation({
     mutationFn: (input: MERGE_NAMESPACEInput) => client.MERGE_NAMESPACE(input),
     onSuccess: () => {
@@ -85,4 +88,18 @@ export const useReadFile = () => {
   return useMutation({
     mutationFn: (input: READ_FILEInput) => client.READ_FILE(input),
   });
-}; 
+};
+
+// Put/Create file
+export const usePutFile = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (input: PUT_FILEInput) => client.PUT_FILE(input),
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({
+        queryKey: ["files", { namespace: variables.namespace }],
+      });
+    },
+  });
+};

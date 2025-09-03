@@ -1,0 +1,34 @@
+name: Deploy Docs
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - "apps/deconfig/**"
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Bun
+        uses: oven-sh/setup-bun@v2
+
+      - name: Install Deco CLI
+        run: bun install -g deco-cli
+
+      - name: Install dependencies
+        run: |
+          cd apps/deconfig
+          bun install
+
+      - name: Deploy
+        run: |
+          cd apps/deconfig
+          bun run deploy
+        env:
+          DECO_DEPLOY_TOKEN: ${{ secrets.DECO_DEPLOY_TOKEN }}

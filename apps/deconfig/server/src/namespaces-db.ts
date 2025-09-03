@@ -42,7 +42,9 @@ export function newNamespacesCRUD(env: Env) {
   };
 
   return {
-    async createNamespace(input: CreateNamespaceInput): Promise<NamespaceRecord> {
+    async createNamespace(
+      input: CreateNamespaceInput,
+    ): Promise<NamespaceRecord> {
       await initTable();
 
       const now = Date.now();
@@ -52,7 +54,12 @@ export function newNamespacesCRUD(env: Env) {
         sql: `INSERT INTO DECONFIG_NAMESPACES 
               (name, created_at, metadata, origin_namespace) 
               VALUES (?, ?, ?, ?)`,
-        params: [input.name, now.toString(), metadata, input.origin_namespace || ""],
+        params: [
+          input.name,
+          now.toString(),
+          metadata,
+          input.origin_namespace || "NULL",
+        ],
       });
 
       return {
@@ -63,18 +70,20 @@ export function newNamespacesCRUD(env: Env) {
       };
     },
 
-    async deleteNamespace(name: string): Promise<boolean> {
+    async deleteNamespace(namespaceName: string): Promise<boolean> {
       await initTable();
 
       const result = await env.DECO_CHAT_WORKSPACE_DB.query({
         sql: `DELETE FROM DECONFIG_NAMESPACES WHERE name = ?`,
-        params: [name],
+        params: [namespaceName],
       });
 
       return (result.result[0]?.meta?.changes || 0) > 0;
     },
 
-    async listNamespaces(input: ListNamespacesInput = {}): Promise<NamespaceRecord[]> {
+    async listNamespaces(
+      input: ListNamespacesInput = {},
+    ): Promise<NamespaceRecord[]> {
       await initTable();
 
       let sql = `SELECT name, created_at, metadata, origin_namespace 
@@ -93,39 +102,94 @@ export function newNamespacesCRUD(env: Env) {
         params,
       });
 
-      const rows = result.result[0]?.results || [];
-      return rows.map((row: any) => ({
-        name: row[0],
-        created_at: parseInt(row[1]),
-        metadata: JSON.parse(row[2] || "{}"),
-        origin_namespace: row[3] || null,
-      }));
+      // Handle different possible result structures
+      let rows: any[] = [];
+
+      if (result.result && result.result.length > 0) {
+        const firstResult = result.result[0];
+        if (firstResult?.results && Array.isArray(firstResult.results)) {
+          rows = firstResult.results;
+        } else if (Array.isArray(firstResult)) {
+          rows = firstResult;
+        }
+      }
+
+      // If still empty, try the result directly
+      if (
+        rows.length === 0 &&
+        (result as any).results &&
+        Array.isArray((result as any).results)
+      ) {
+        rows = (result as any).results;
+      }
+
+      return rows.map((row: any) => {
+        // Handle both array and object formats
+        const nameValue = Array.isArray(row) ? row[0] : row.name;
+        const createdAtValue = Array.isArray(row) ? row[1] : row.created_at;
+        const metadataValue = Array.isArray(row) ? row[2] : row.metadata;
+        const originNamespaceValue = Array.isArray(row)
+          ? row[3]
+          : row.origin_namespace;
+
+        return {
+          name: nameValue,
+          created_at: parseInt(createdAtValue || 0),
+          metadata: JSON.parse(metadataValue || "{}"),
+          origin_namespace:
+            originNamespaceValue === "NULL" || !originNamespaceValue
+              ? null
+              : originNamespaceValue,
+        };
+      });
     },
 
-    async getNamespace(name: string): Promise<NamespaceRecord | null> {
+    async getNamespace(namespaceName: string): Promise<NamespaceRecord | null> {
       await initTable();
 
       const result = await env.DECO_CHAT_WORKSPACE_DB.query({
         sql: `SELECT name, created_at, metadata, origin_namespace 
               FROM DECONFIG_NAMESPACES 
               WHERE name = ?`,
-        params: [name],
+        params: [namespaceName],
       });
 
-      const rows = result.result[0]?.results || [];
+      // Handle different possible result structures
+      let rows: any[] = [];
+
+      if (result.result && result.result.length > 0) {
+        const firstResult = result.result[0];
+        if (firstResult?.results && Array.isArray(firstResult.results)) {
+          rows = firstResult.results;
+        } else if (Array.isArray(firstResult)) {
+          rows = firstResult;
+        }
+      }
+
       if (rows.length === 0) return null;
 
       const row = rows[0] as any;
+      // Handle both array and object formats
+      const nameValue = Array.isArray(row) ? row[0] : row.name;
+      const createdAtValue = Array.isArray(row) ? row[1] : row.created_at;
+      const metadataValue = Array.isArray(row) ? row[2] : row.metadata;
+      const originNamespaceValue = Array.isArray(row)
+        ? row[3]
+        : row.origin_namespace;
+
       return {
-        name: row[0],
-        created_at: parseInt(row[1]),
-        metadata: JSON.parse(row[2] || "{}"),
-        origin_namespace: row[3] || null,
+        name: nameValue,
+        created_at: parseInt(createdAtValue || 0),
+        metadata: JSON.parse(metadataValue || "{}"),
+        origin_namespace:
+          originNamespaceValue === "NULL" || !originNamespaceValue
+            ? null
+            : originNamespaceValue,
       };
     },
 
-    async namespaceExists(name: string): Promise<boolean> {
-      const namespace = await this.getNamespace(name);
+    async namespaceExists(namespaceName: string): Promise<boolean> {
+      const namespace = await this.getNamespace(namespaceName);
       return namespace !== null;
     },
   };

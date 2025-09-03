@@ -4,6 +4,11 @@ import type { BlobInfo } from "./blobs";
 
 const BLOB_DO = "blob-1";
 
+export const NamespaceId = {
+  build(name: string, projectId: string) {
+    return `${projectId}-${name}`;
+  },
+};
 const BlobAddress = {
   hash(address: string) {
     const [_, __, hash] = address.split(":");
@@ -441,6 +446,17 @@ export class NamespaceRpc extends RpcTarget {
     strategy: MergeStrategy,
   ): Promise<MergeResult> {
     return await this.namespace.merge(otherNamespaceId, strategy);
+  }
+
+  /**
+   * Soft delete the namespace by clearing all files from the current tree.
+   * This preserves the namespace structure, history, and allows for potential recovery.
+   * The namespace will appear empty but can still be branched from or have new files added.
+   *
+   * @returns Promise resolving to the number of files that were deleted
+   */
+  async softDelete(): Promise<number> {
+    return await this.namespace.softDelete();
   }
 }
 
@@ -974,6 +990,38 @@ export class Namespace extends DurableObject<Env> {
   }
 
   /**
+   * Soft delete the namespace by clearing all files from the current tree.
+   * This preserves the namespace structure, history, and allows for potential recovery.
+   * The namespace will appear empty but can still be branched from or have new files added.
+   *
+   * @returns Promise resolving to the number of files that were deleted
+   */
+  async softDelete(): Promise<number> {
+    const currentTree = this.state.tree;
+    const fileCount = Object.keys(currentTree).length;
+
+    if (fileCount === 0) {
+      // Already empty
+      return 0;
+    }
+
+    // Create a patch that deletes all current files
+    const allFilePaths = Object.keys(currentTree);
+
+    this.patch({
+      added: {},
+      deleted: allFilePaths,
+      metadata: {
+        type: "softDelete",
+        deletedFileCount: fileCount,
+        timestamp: Date.now(),
+      },
+    });
+
+    return fileCount;
+  }
+
+  /**
    * Create a new namespace by branching from this one.
    * The new namespace will have this namespace's current tree as its initial state.
    *
@@ -990,7 +1038,9 @@ export class Namespace extends DurableObject<Env> {
 
     // Create new namespace stub
     const newNamespaceStub = this.env.NAMESPACE.get(
-      this.env.NAMESPACE.idFromName(newNamespaceId),
+      this.env.NAMESPACE.idFromName(
+        NamespaceId.build(newNamespaceId, this.state.projectId),
+      ),
     );
 
     // Initialize new namespace with current tree and this namespace as origin
@@ -1018,10 +1068,12 @@ export class Namespace extends DurableObject<Env> {
       { metadata: FileMetadata | null; condition?: { expectedCtime: number } }
     >,
     force: boolean = false,
+    timestamp?: number, // Accept timestamp from caller to ensure consistency
+    preserveTimestamps: boolean = false, // If true, don't update ctime for merge operations
   ): Promise<Record<FilePath, FilePatchResult>> {
     const results: Record<FilePath, FilePatchResult> = {};
     const toApply: Record<FilePath, FileMetadata | null> = {};
-    const now = Date.now();
+    const now = timestamp ?? Date.now(); // Use provided timestamp or generate new one
 
     // Process each write operation
     for (const [path, write] of Object.entries(writes)) {
@@ -1032,10 +1084,12 @@ export class Namespace extends DurableObject<Env> {
         const finalMetadata =
           write.metadata === null
             ? null
-            : {
-                ...write.metadata,
-                ctime: now,
-              };
+            : preserveTimestamps
+              ? write.metadata // Preserve original timestamps for merge operations
+              : {
+                  ...write.metadata,
+                  ctime: now,
+                };
         toApply[path] = finalMetadata;
 
         results[path] = {
@@ -1056,10 +1110,12 @@ export class Namespace extends DurableObject<Env> {
         const finalMetadata =
           write.metadata === null
             ? null
-            : {
-                ...write.metadata,
-                ctime: now,
-              };
+            : preserveTimestamps
+              ? write.metadata // Preserve original timestamps for merge operations
+              : {
+                  ...write.metadata,
+                  ctime: now,
+                };
         toApply[path] = finalMetadata;
 
         results[path] = {
@@ -1087,10 +1143,12 @@ export class Namespace extends DurableObject<Env> {
         const finalMetadata =
           write.metadata === null
             ? null
-            : {
-                ...write.metadata,
-                ctime: now,
-              };
+            : preserveTimestamps
+              ? write.metadata // Preserve original timestamps for merge operations
+              : {
+                  ...write.metadata,
+                  ctime: now,
+                };
         toApply[path] = finalMetadata;
 
         results[path] = {
@@ -1217,7 +1275,7 @@ export class Namespace extends DurableObject<Env> {
     }
 
     // Step 3: Apply writes using internal method
-    const result = await this.internalTransactionalWrite(writes, force);
+    const result = await this.internalTransactionalWrite(writes, force, now);
 
     // Step 4: Transform result to match TransactionalWriteResult interface
     const results: Record<FilePath, FilePatchResult> = {};
@@ -1239,7 +1297,9 @@ export class Namespace extends DurableObject<Env> {
    */
   async diff(otherNamespaceId: string): Promise<DiffEntry[]> {
     const otherStub = this.env.NAMESPACE.get(
-      this.env.NAMESPACE.idFromName(otherNamespaceId),
+      this.env.NAMESPACE.idFromName(
+        NamespaceId.build(otherNamespaceId, this.state.projectId!),
+      ),
     );
     using otherTree = await otherStub.getCurrentTree();
     const thisTree = this.state.tree;
@@ -1373,7 +1433,13 @@ export class Namespace extends DurableObject<Env> {
       };
     }
 
-    const result = await this.internalTransactionalWrite(writes, force);
+    // For merge operations, preserve original file timestamps
+    const result = await this.internalTransactionalWrite(
+      writes,
+      force,
+      undefined,
+      true,
+    );
 
     // Step 4: Transform conflicts to merge format
     const conflicts: ConflictEntry[] = [];

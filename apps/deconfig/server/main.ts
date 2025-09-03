@@ -37,22 +37,22 @@ export type Env = DefaultEnv &
 
 const fallbackToView =
   (viewPath: string = "/") =>
-    async (req: Request, env: Env) => {
-      const LOCAL_URL = "http://localhost:4000";
-      const url = new URL(req.url);
-      const useDevServer = (
-        req.headers.get("origin") || req.headers.get("host")
-      )?.includes("localhost");
+  async (req: Request, env: Env) => {
+    const LOCAL_URL = "http://localhost:4000";
+    const url = new URL(req.url);
+    const useDevServer = (
+      req.headers.get("origin") || req.headers.get("host")
+    )?.includes("localhost");
 
-      const request = new Request(
-        useDevServer
-          ? new URL(`${url.pathname}${url.search}`, LOCAL_URL)
-          : new URL(viewPath, req.url),
-        req,
-      );
+    const request = new Request(
+      useDevServer
+        ? new URL(`${url.pathname}${url.search}`, LOCAL_URL)
+        : new URL(viewPath, req.url),
+      req,
+    );
 
-      return useDevServer ? fetch(request) : env.ASSETS.fetch(request);
-    };
+    return useDevServer ? fetch(request) : env.ASSETS.fetch(request);
+  };
 
 const { Workflow, ...runtime } = withRuntime<Env, typeof StateSchema>({
   oauth: {

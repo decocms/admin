@@ -1,4 +1,4 @@
-import { useListNamespaces } from "../hooks/useNamespaces";
+import { useListNamespaces } from "../hooks/useNamespaces.ts";
 
 interface NamespaceSelectorProps {
   value?: string;
@@ -44,4 +44,4 @@ export function NamespaceSelector({
       ))}
     </select>
   );
-} 
+}

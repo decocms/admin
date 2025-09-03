@@ -11,8 +11,8 @@
  * by the existing Durable Object infrastructure.
  */
 import { createTool } from "@deco/workers-runtime/mastra";
-import { MergeStrategy } from "server/src/namespace.ts";
-import { newNamespacesCRUD } from "server/src/namespaces-db.ts";
+import { MergeStrategy, NamespaceId } from "../src/namespace.ts";
+import { newNamespacesCRUD } from "../src/namespaces-db.ts";
 import { z } from "zod";
 import type { Env } from "../main.ts";
 
@@ -29,12 +29,9 @@ const projectFor = (env: Env): string => {
 const namespaceRpcFor = async (env: Env, namespaceName: string = "main") => {
   const projectId = projectFor(env);
 
-  // Use namespaceName directly for Durable Object ID for performance
-  const namespaceId = `${projectId}-${namespaceName}`;
-
   // Get or create the Durable Object for file operations
   const namespaceStub = env.NAMESPACE.get(
-    env.NAMESPACE.idFromName(namespaceId),
+    env.NAMESPACE.idFromName(NamespaceId.build(namespaceName, projectId)),
   );
 
   const rpc = await namespaceStub.new({
@@ -83,13 +80,14 @@ export const createNamespaceTool = (env: Env) =>
       if (context.sourceNamespace) {
         // Branching from existing namespace
         if (!(await crud.namespaceExists(context.sourceNamespace))) {
-          throw new Error(`Source namespace '${context.sourceNamespace}' not found`);
+          throw new Error(
+            `Source namespace '${context.sourceNamespace}' not found`,
+          );
         }
 
         // Branch from existing namespace using Durable Object
         const sourceRpc = await namespaceRpcFor(env, context.sourceNamespace);
         using _ = await sourceRpc.branch(context.namespaceName);
-
       }
       // Create empty namespace
       const namespace = await crud.createNamespace({
@@ -170,8 +168,7 @@ export const createDeleteNamespaceTool = (env: Env) =>
       let filesDeleted = 0;
       try {
         const namespaceRpc = await namespaceRpcFor(env, context.namespaceName);
-        const files = await namespaceRpc.getFiles();
-        filesDeleted = Object.keys(files).length;
+        filesDeleted = await namespaceRpc.softDelete();
       } catch (error) {
         // Ignore errors getting file count
       }

@@ -23,7 +23,9 @@ export function NamespaceManager() {
   const [mergeSourceNamespace, setMergeSourceNamespace] = useState("");
   const [diffBaseNamespace, setDiffBaseNamespace] = useState("");
   const [diffCompareNamespace, setDiffCompareNamespace] = useState("");
-  const [mergeStrategy, setMergeStrategy] = useState<"OVERRIDE" | "LAST_WRITE_WINS">("OVERRIDE");
+  const [mergeStrategy, setMergeStrategy] = useState<
+    "OVERRIDE" | "LAST_WRITE_WINS"
+  >("OVERRIDE");
 
   // Results
   const [diffResult, setDiffResult] = useState<NamespaceDiff[] | null>(null);
@@ -54,7 +56,11 @@ export function NamespaceManager() {
   };
 
   const handleDeleteNamespace = async (namespaceName: string) => {
-    if (!confirm(`Are you sure you want to delete namespace "${namespaceName}"? This cannot be undone.`)) {
+    if (
+      !confirm(
+        `Are you sure you want to delete namespace "${namespaceName}"? This cannot be undone.`,
+      )
+    ) {
       return;
     }
 
@@ -116,10 +122,7 @@ export function NamespaceManager() {
 
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
           {namespaces.map((namespace) => (
-            <div
-              key={namespace.name}
-              className="border rounded p-3 space-y-2"
-            >
+            <div key={namespace.name} className="border rounded p-3 space-y-2">
               <div className="flex items-center justify-between">
                 <h3 className="font-medium">{namespace.name}</h3>
                 <Button
@@ -186,7 +189,9 @@ export function NamespaceManager() {
               <div className="flex space-x-2">
                 <Button
                   onClick={handleCreateNamespace}
-                  disabled={!newNamespaceName.trim() || createNamespace.isPending}
+                  disabled={
+                    !newNamespaceName.trim() || createNamespace.isPending
+                  }
                 >
                   {createNamespace.isPending ? "Creating..." : "Create"}
                 </Button>
@@ -240,7 +245,9 @@ export function NamespaceManager() {
           </label>
           <select
             value={mergeStrategy}
-            onChange={(e) => setMergeStrategy(e.target.value as "OVERRIDE" | "LAST_WRITE_WINS")}
+            onChange={(e) =>
+              setMergeStrategy(e.target.value as "OVERRIDE" | "LAST_WRITE_WINS")
+            }
             className="px-3 py-2 border border-gray-200 rounded-md focus:outline-none focus:ring-2 focus:ring-gray-900"
           >
             <option value="OVERRIDE">Override</option>
@@ -258,12 +265,14 @@ export function NamespaceManager() {
 
         {mergeResult && (
           <div className="mt-4 p-3 bg-green-50 border border-green-200 rounded">
-            <p className="font-medium text-green-800">Merge completed successfully!</p>
+            <p className="font-medium text-green-800">
+              Merge completed successfully!
+            </p>
             <p className="text-sm text-green-700">
-              Files merged: {mergeResult.filesMerged} |
-              Added: {mergeResult.added.length} |
-              Modified: {mergeResult.modified.length} |
-              Deleted: {mergeResult.deleted.length}
+              Files merged: {mergeResult.filesMerged} | Added:{" "}
+              {mergeResult.added.length} | Modified:{" "}
+              {mergeResult.modified.length} | Deleted:{" "}
+              {mergeResult.deleted.length}
             </p>
           </div>
         )}
@@ -313,14 +322,18 @@ export function NamespaceManager() {
                 <p className="text-gray-500">No differences found</p>
               ) : (
                 diffResult.map((diff, index) => (
-                  <div key={index} className="flex items-center space-x-2 text-sm">
+                  <div
+                    key={index}
+                    className="flex items-center space-x-2 text-sm"
+                  >
                     <span
-                      className={`px-2 py-1 rounded text-xs font-medium ${diff.type === "added"
-                        ? "bg-green-100 text-green-800"
-                        : diff.type === "modified"
-                          ? "bg-yellow-100 text-yellow-800"
-                          : "bg-red-100 text-red-800"
-                        }`}
+                      className={`px-2 py-1 rounded text-xs font-medium ${
+                        diff.type === "added"
+                          ? "bg-green-100 text-green-800"
+                          : diff.type === "modified"
+                            ? "bg-yellow-100 text-yellow-800"
+                            : "bg-red-100 text-red-800"
+                      }`}
                     >
                       {diff.type.toUpperCase()}
                     </span>
@@ -340,10 +353,7 @@ export function NamespaceManager() {
             <h2 className="text-lg font-semibold">
               Files in "{selectedNamespace}"
             </h2>
-            <Button
-              variant="outline"
-              onClick={() => setSelectedNamespace("")}
-            >
+            <Button variant="outline" onClick={() => setSelectedNamespace("")}>
               Close
             </Button>
           </div>
@@ -353,4 +363,4 @@ export function NamespaceManager() {
       )}
     </div>
   );
-} 
+}

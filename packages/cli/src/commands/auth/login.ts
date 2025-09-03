@@ -83,7 +83,9 @@ export const loginCommand = () => {
             clearTimeout(timeout);
           }
 
-          const html = await fetch("https://deco.chat/local-login-success.html").then(res => res.text());
+          const html = await fetch(
+            "https://deco.chat/local-login-success.html",
+          ).then((res) => res.text());
           res.writeHead(200, {
             "Content-Type": "text/html",
           });

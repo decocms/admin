@@ -1,7 +1,7 @@
 import type { MCPConnection } from "./connection.ts";
 import type { DefaultEnv, RequestContext } from "./index.ts";
 import { MCPClient } from "./mcp.ts";
-import type { BindingBase, ContractBinding, MCPBinding } from "./wrangler.ts";
+import type { BindingBase, ContractBinding, MCPBinding, MCPIntegrationNameBinding } from "./wrangler.ts";
 
 interface IntegrationContext {
   integrationId: string;
@@ -87,7 +87,7 @@ const mcpClientForIntegrationId = (
   return MCPClient.forConnection(mcpConnection);
 };
 
-function mcpClientFromState(binding: BindingBase, env: DefaultEnv) {
+function mcpClientFromState(binding: BindingBase | MCPIntegrationNameBinding, env: DefaultEnv) {
   const ctx = env.DECO_CHAT_REQUEST_CONTEXT;
   const bindingFromState = ctx?.state?.[binding.name];
   const integrationId =
@@ -96,9 +96,9 @@ function mcpClientFromState(binding: BindingBase, env: DefaultEnv) {
     "value" in bindingFromState
       ? bindingFromState.value
       : undefined;
-  if (typeof integrationId !== "string") {
+  if (typeof integrationId !== "string" && "integration_name" in binding) {
     // in case of a binding to an app name, we need to use the new apps/mcp endpoint which will proxy the request to the app but without any token
-    return mcpClientForAppName(binding.name, env.DECO_CHAT_API_URL);
+    return mcpClientForAppName(binding.integration_name, env.DECO_CHAT_API_URL);
   }
   return mcpClientForIntegrationId(integrationId, ctx, env.DECO_CHAT_API_URL);
 }

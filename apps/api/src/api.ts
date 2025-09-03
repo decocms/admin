@@ -301,7 +301,7 @@ const createMcpServerProxyForIntegration = async (
 const createMcpServerProxyForAppName = (c: Context) => {
   const ctx = honoCtxToAppCtx(c);
 
-  const appName = c.req.param("appName");
+  const appName = c.req.query("appName");
   const fetchIntegration = async () => {
     using _ = ctx.resourceAccess.grant();
     const integration = await State.run(ctx, () =>

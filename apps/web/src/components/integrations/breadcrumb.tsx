@@ -39,7 +39,6 @@ export function IntegrationPageLayout({ tabs }: { tabs: Record<string, Tab> }) {
               const key = getConnectionAppKey(integration);
               const appKey = AppKeys.build(key);
               navigateWorkspace(`/connection/${appKey}`);
-              console.log("integration", integration);
             }}
           />
         }

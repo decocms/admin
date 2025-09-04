@@ -232,7 +232,8 @@ export const deleteAgent = createTool({
 
     await assertWorkspaceResourceAccess(c);
 
-    const { error } = await c.db.from("deco_chat_agents")
+    const { error } = await c.db
+      .from("deco_chat_agents")
       .delete()
       .eq("id", id)
       .eq("workspace", c.workspace.value);

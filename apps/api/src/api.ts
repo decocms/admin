@@ -50,6 +50,7 @@ import {
 } from "@modelcontextprotocol/sdk/types.js";
 import { createPosthogServerClient } from "packages/sdk/src/posthog.ts";
 import { studio } from "@outerbase/browsable-durable-object";
+import { WELL_KNOWN_ORIGINS } from "packages/sdk/src/hosts.ts";
 
 export const app = new Hono<AppEnv>();
 export const honoCtxToAppCtx = (c: Context<AppEnv>): AppContext => {
@@ -341,7 +342,10 @@ app.use(logger());
 // Enable CORS for all routes on api.decocms.com and localhost
 app.use(
   cors({
-    origin: (origin) => origin,
+    origin: (origin) =>
+      WELL_KNOWN_ORIGINS.includes(origin as (typeof WELL_KNOWN_ORIGINS)[number])
+        ? origin
+        : null,
     maxAge: 86400, // one day
     allowMethods: ["HEAD", "GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
     allowHeaders: [

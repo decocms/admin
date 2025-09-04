@@ -9,5 +9,6 @@ export const Hosts = {
 
 export const WELL_KNOWN_ORIGINS = [
   `http://${Hosts.LOCALHOST}`,
+  `https://${Hosts.WEB_APP}`,
   `https://${Hosts.WEB_APP_LEGACY}`,
 ] as const;

@@ -444,7 +444,7 @@ export async function deployToCloudflare({
   if (envVars) {
     const promises = [];
     for (const [key, value] of Object.entries(envVars)) {
-      value &&
+      value != null &&
         promises.push(
           c.cf.workersForPlatforms.dispatch.namespaces.scripts.secrets.update(
             env.CF_DISPATCH_NAMESPACE,

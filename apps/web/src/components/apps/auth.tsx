@@ -60,7 +60,7 @@ const preSelectTeam = (
   };
 
   const parentUrl = getParentUrl();
-  if (parentUrl && !workspace_hint) {
+  if (parentUrl) {
     const workspacePattern = new URLPattern({ pathname: "/:root/*" });
     const workspaceMatch = workspacePattern.exec({ pathname: parentUrl });
 

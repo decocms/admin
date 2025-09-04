@@ -48,6 +48,27 @@ const preSelectTeam = (
     return teams[0];
   }
 
+  const getParentUrl = () => {
+    try {
+      if (globalThis.self !== globalThis.top) {
+        return globalThis.top?.location.href;
+      }
+    } catch (_) {
+      return null;
+    }
+    return null;
+  };
+
+  const parentUrl = getParentUrl();
+  if (parentUrl && !workspace_hint) {
+    const workspacePattern = new URLPattern({ pathname: "/:root/*" });
+    const workspaceMatch = workspacePattern.exec({ pathname: parentUrl });
+
+    if (workspaceMatch?.pathname?.groups?.root) {
+      workspace_hint = workspaceMatch.pathname.groups.root;
+    }
+  }
+
   if (!workspace_hint) {
     return null;
   }

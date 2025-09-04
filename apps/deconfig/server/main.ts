@@ -13,11 +13,18 @@ import { qsParser } from "./src/utils.ts";
 import { WatchOpts, watchSSE } from "./src/watch.ts";
 import { tools } from "./tools/index.ts";
 import { views } from "./views.ts";
+import z from "zod";
 
 // Export Durable Objects
 export { Blobs } from "./src/blobs.ts";
 export { Branch } from "./src/branch.ts";
 
+const Schema = StateSchema.extend({
+  pathPrefix: z
+    .string()
+    .optional()
+    .describe("The path prefix for this deconfig installation"),
+});
 /**
  * This Env type is the main context object that is passed to
  * all of your Application.
@@ -25,7 +32,7 @@ export { Branch } from "./src/branch.ts";
  * It includes all of the generated types from your
  * Deco bindings, along with the default ones.
  */
-export type Env = DefaultEnv &
+export type Env = DefaultEnv<typeof Schema> &
   DecoEnv & {
     ASSETS: {
       fetch: (request: Request) => Promise<Response>;
@@ -65,7 +72,11 @@ const fallbackToView =
     return useDevServer ? fetch(request) : env.ASSETS.fetch(request);
   };
 
-const { Workflow, ...runtime } = withRuntime<Env, typeof StateSchema>({
+const { Workflow, ...runtime } = withRuntime<Env, typeof Schema>({
+  oauth: {
+    scopes: ["DATABASES_RUN_SQL"],
+    state: Schema,
+  },
   tools,
   views,
   fetch: fallbackToView("/"),

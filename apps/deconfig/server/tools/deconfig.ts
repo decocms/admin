@@ -11,10 +11,10 @@
  * by the existing Durable Object infrastructure.
  */
 import { createPrivateTool as createTool } from "@deco/workers-runtime/mastra";
-import { MergeStrategy, BranchId } from "../src/branch.ts";
-import { newBranchesCRUD } from "../src/branches-db.ts";
 import { z } from "zod";
 import type { Env } from "../main.ts";
+import { BranchId, MergeStrategy } from "../src/branch.ts";
+import { newBranchesCRUD } from "../src/branches-db.ts";
 
 // Helper function to get workspace from env
 const projectFor = (env: Env): string => {
@@ -282,22 +282,35 @@ export const createDiffBranchTool = (env: Env) =>
 // =============================================================================
 // FILE CRUD OPERATIONS (using branchName directly for performance)
 // =============================================================================
-
-const BaseFileOperationInputSchema = z.object({
-  branch: z
-    .string()
-    .optional()
-    .default("main")
-    .describe("The branch name (defaults to 'main')"),
-  path: z.string().describe("The file path within the branch"),
-});
+const normalizePath = (path: string) => {
+  return path.startsWith("/") ? path : `/${path}`;
+};
+const BaseFileOperationInputSchema = (env: Env) =>
+  z.object({
+    branch: z
+      .string()
+      .optional()
+      .default("main")
+      .describe("The branch name (defaults to 'main')"),
+    path: z
+      .string()
+      .describe("The file path within the branch")
+      .transform((arg) => {
+        const pathPrefix = env.DECO_CHAT_REQUEST_CONTEXT.state.pathPrefix;
+        const argPath = normalizePath(arg);
+        if (pathPrefix) {
+          return normalizePath(`${pathPrefix}${argPath}`);
+        }
+        return argPath;
+      }),
+  });
 
 export const createPutFileTool = (env: Env) =>
   createTool({
     id: "PUT_FILE",
     description:
       "Put a file in a DECONFIG branch (create or update) with optional conflict detection",
-    inputSchema: BaseFileOperationInputSchema.extend({
+    inputSchema: BaseFileOperationInputSchema(env).extend({
       content: z
         .string()
         .describe("The file content (will be base64 decoded if needed)"),
@@ -352,7 +365,7 @@ export const createReadFileTool = (env: Env) =>
   createTool({
     id: "READ_FILE",
     description: "Read a file from a DECONFIG branch",
-    inputSchema: BaseFileOperationInputSchema,
+    inputSchema: BaseFileOperationInputSchema(env),
     outputSchema: z.object({
       content: z.string().describe("File content (base64 encoded)"),
       address: z.string(),
@@ -406,7 +419,7 @@ export const createDeleteFileTool = (env: Env) =>
   createTool({
     id: "DELETE_FILE",
     description: "Delete a file from a DECONFIG branch",
-    inputSchema: BaseFileOperationInputSchema,
+    inputSchema: BaseFileOperationInputSchema(env),
     outputSchema: z.object({
       deleted: z.boolean(),
     }),
@@ -435,9 +448,14 @@ export const createListFilesTool = (env: Env) =>
     id: "LIST_FILES",
     description:
       "List files in a DECONFIG branch with optional prefix filtering",
-    inputSchema: BaseFileOperationInputSchema.omit({ path: true }).extend({
-      prefix: z.string().optional().describe("Optional prefix to filter files"),
-    }),
+    inputSchema: BaseFileOperationInputSchema(env)
+      .omit({ path: true })
+      .extend({
+        prefix: z
+          .string()
+          .optional()
+          .describe("Optional prefix to filter files"),
+      }),
     outputSchema: ListFilesOutputSchema,
     execute: async ({ context }) => {
       using branchRpc = await branchRpcFor(env, context.branch);

@@ -24,7 +24,7 @@ export interface ListBranchesInput {
 export function newBranchesCRUD(env: Env) {
   // Initialize table on first use
   const initTable = async () => {
-    await env.DECO_WORKSPACE_DB.query({
+    await env.DECO_CHAT_WORKSPACE_DB.query({
       sql: `CREATE TABLE IF NOT EXISTS DECONFIG_BRANCHES (
         name TEXT PRIMARY KEY,
         created_at INTEGER NOT NULL,
@@ -34,7 +34,7 @@ export function newBranchesCRUD(env: Env) {
       params: [],
     });
 
-    await env.DECO_WORKSPACE_DB.query({
+    await env.DECO_CHAT_WORKSPACE_DB.query({
       sql: `CREATE INDEX IF NOT EXISTS idx_branches_created_at 
             ON DECONFIG_BRANCHES (created_at)`,
       params: [],
@@ -48,7 +48,7 @@ export function newBranchesCRUD(env: Env) {
       const now = Date.now();
       const metadata = JSON.stringify(input.metadata || {});
 
-      await env.DECO_WORKSPACE_DB.query({
+      await env.DECO_CHAT_WORKSPACE_DB.query({
         sql: `INSERT INTO DECONFIG_BRANCHES 
               (name, created_at, metadata, origin_branch) 
               VALUES (?, ?, ?, ?)`,
@@ -71,7 +71,7 @@ export function newBranchesCRUD(env: Env) {
     async deleteBranch(branchName: string): Promise<boolean> {
       await initTable();
 
-      const result = await env.DECO_WORKSPACE_DB.query({
+      const result = await env.DECO_CHAT_WORKSPACE_DB.query({
         sql: `DELETE FROM DECONFIG_BRANCHES WHERE name = ?`,
         params: [branchName],
       });
@@ -93,7 +93,7 @@ export function newBranchesCRUD(env: Env) {
 
       sql += ` ORDER BY created_at DESC`;
 
-      const result = await env.DECO_WORKSPACE_DB.query({
+      const result = await env.DECO_CHAT_WORKSPACE_DB.query({
         sql,
         params,
       });
@@ -143,7 +143,7 @@ export function newBranchesCRUD(env: Env) {
     async getBranch(branchName: string): Promise<BranchRecord | null> {
       await initTable();
 
-      const result = await env.DECO_WORKSPACE_DB.query({
+      const result = await env.DECO_CHAT_WORKSPACE_DB.query({
         sql: `SELECT name, created_at, metadata, origin_branch 
               FROM DECONFIG_BRANCHES 
               WHERE name = ?`,

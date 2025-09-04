@@ -30,7 +30,7 @@ export const createGetUserTool = (env: Env) =>
       email: z.string(),
     }),
     execute: async () => {
-      const user = env.DECO_REQUEST_CONTEXT.ensureAuthenticated();
+      const user = env.DECO_CHAT_REQUEST_CONTEXT.ensureAuthenticated();
 
       if (!user) {
         throw new Error("User not found");

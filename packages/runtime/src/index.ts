@@ -37,6 +37,10 @@ export interface WorkspaceDB {
   }) => Promise<{ result: QueryResult[] }>;
 }
 
+export interface DeprecatedEnv {
+  
+}
+
 export interface DefaultEnv<TSchema extends z.ZodTypeAny = any> {
   DECO_REQUEST_CONTEXT: RequestContext<TSchema>;
   DECO_APP_NAME: string;

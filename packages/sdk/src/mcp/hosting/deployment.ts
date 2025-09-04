@@ -266,7 +266,7 @@ export async function deployToCloudflare({
       class_name: binding.class_name,
     })) ?? [];
   const hasAnyDoAsideWorkflows = durableObjects.some(
-    (durableObject) => "DECO_CHAT_WORKFLOW_DO" !== durableObject.name,
+    (durableObject) => "DECO_CHAT_WORKFLOW_DO" !== durableObject.name && "DECO_WORKFLOW_DO" !== durableObject.name,
   );
 
   const deploymentId = hasAnyDoAsideWorkflows ? undefined : uid.rnd();
@@ -297,16 +297,30 @@ export async function deployToCloudflare({
     ),
   );
 
-  const envVars: Record<string, string | undefined> = {
-    ..._envVars,
-    ...vars,
+  const decoEnvVars = {
+    DECO_APP_DEPLOYMENT_ID: deploymentId,
+    DECO_APP_ENTRYPOINT: Entrypoint.build(scriptSlug, deploymentId),
+  };
+
+  // Backwards compatibility
+  const deprecatedEnvVars = {
     DECO_CHAT_APP_DEPLOYMENT_ID: deploymentId,
     DECO_CHAT_APP_ENTRYPOINT: Entrypoint.build(scriptSlug, deploymentId),
   };
 
+  const envVars: Record<string, string | undefined> = {
+    ..._envVars,
+    ...vars,
+    ...deprecatedEnvVars,
+    ...decoEnvVars,
+  };
+
   const decoBindings = deco?.bindings ?? [];
   if (decoBindings.length > 0) {
-    envVars["DECO_CHAT_BINDINGS"] = WorkersMCPBindings.stringify(decoBindings);
+    const bindingsString = WorkersMCPBindings.stringify(decoBindings);
+    envVars["DECO_BINDINGS"] = bindingsString;
+    // Backwards compatibility
+    envVars["DECO_CHAT_BINDINGS"] = bindingsString;
   }
 
   const { bindings } =

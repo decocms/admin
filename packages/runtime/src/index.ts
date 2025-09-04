@@ -24,6 +24,7 @@ import { State } from "./state.ts";
 import type { WorkflowDO } from "./workflow.ts";
 import { Workflow } from "./workflow.ts";
 import type { Binding, ContractBinding, MCPBinding } from "./wrangler.ts";
+import { DeprecatedEnv } from "./deprecated.ts";
 export {
   createMCPFetchStub,
   type CreateStubAPIOptions,
@@ -37,11 +38,7 @@ export interface WorkspaceDB {
   }) => Promise<{ result: QueryResult[] }>;
 }
 
-export interface DeprecatedEnv {
-  
-}
-
-export interface DefaultEnv<TSchema extends z.ZodTypeAny = any> {
+export interface DefaultEnv<TSchema extends z.ZodTypeAny = any> extends DeprecatedEnv<TSchema> {
   DECO_REQUEST_CONTEXT: RequestContext<TSchema>;
   DECO_APP_NAME: string;
   DECO_APP_SLUG: string;
@@ -171,12 +168,21 @@ const withDefaultBindings = ({
       },
     },
   );
-  env["DECO_API"] = MCPClient;
-  env["DECO_WORKSPACE_API"] = client;
-  env["DECO_WORKSPACE_DB"] = {
+
+  const workspaceDbBinding = {
     ...createWorkspaceDB(ctx),
     forContext: createWorkspaceDB,
   };
+
+  env["DECO_API"] = MCPClient;
+  env["DECO_WORKSPACE_API"] = client;
+  env["DECO_WORKSPACE_DB"] = workspaceDbBinding;
+
+  // Backwards compatibility
+  env["DECO_CHAT_API"] = MCPClient;
+  env["DECO_CHAT_WORKSPACE_API"] = client;
+  env["DECO_CHAT_WORKSPACE_DB"] = workspaceDbBinding;
+
   env["IS_LOCAL"] =
     (url?.startsWith("http://localhost") ||
       url?.startsWith("http://127.0.0.1")) ??
@@ -259,6 +265,8 @@ export const withBindings = <TEnv>({
   }
 
   env.DECO_REQUEST_CONTEXT = context;
+  // Backwards compatibility
+  env.DECO_CHAT_REQUEST_CONTEXT = context;
   const bindings = WorkersMCPBindings.parse(env.DECO_BINDINGS);
 
   for (const binding of bindings) {

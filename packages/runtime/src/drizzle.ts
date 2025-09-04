@@ -26,7 +26,7 @@ const mapPostResult = ({ result }: { result: QueryResult[] }) => {
 export function drizzle<
   TSchema extends Record<string, unknown> = Record<string, never>,
 >(
-  { DECO_WORKSPACE_DB: DECO_CHAT_WORKSPACE_DB }: Pick<DefaultEnv, "DECO_CHAT_WORKSPACE_DB">,
+  { DECO_WORKSPACE_DB }: Pick<DefaultEnv, "DECO_WORKSPACE_DB">,
   config?: DrizzleConfig<TSchema>,
 ) {
   return drizzleProxy((sql, params, method) => {
@@ -35,7 +35,7 @@ export function drizzle<
     // When the method is get, you should return a value as {rows: string[]}.
     // Otherwise, you should return {rows: string[][]}.
     const asRows = method === "get" ? mapGetResult : mapPostResult;
-    return DECO_CHAT_WORKSPACE_DB.query({
+    return DECO_WORKSPACE_DB.query({
       sql,
       params,
     }).then((result) => ({ rows: asRows(result) }));

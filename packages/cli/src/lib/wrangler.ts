@@ -74,23 +74,42 @@ export async function getEnvVars(projectRoot?: string) {
   );
 
   const workspace = config.workspace ?? session?.workspace;
+
+  const decoEnvVars = {
+    DECO_WORKSPACE: workspace || "",
+    DECO_API_TOKEN: session?.access_token ?? "",
+    DECO_BINDINGS: encodedBindings,
+    DECO_APP_ENTRYPOINT: "http://localhost:8787",
+  };
+
+  // Backwards compatibility
+  const deprecatedEnvVars = {
+    DECO_CHAT_WORKSPACE: decoEnvVars.DECO_WORKSPACE,
+    DECO_CHAT_API_TOKEN: decoEnvVars.DECO_API_TOKEN,
+    DECO_CHAT_BINDINGS: decoEnvVars.DECO_BINDINGS,
+    DECO_CHAT_APP_ENTRYPOINT: decoEnvVars.DECO_APP_ENTRYPOINT,
+  };
+
   const env: Record<string, string> = {
     ...currentEnvVars,
-    DECO_CHAT_WORKSPACE: workspace || "",
-    DECO_CHAT_API_TOKEN: session?.access_token ?? "",
-    DECO_CHAT_BINDINGS: encodedBindings,
-    DECO_CHAT_APP_ENTRYPOINT: "http://localhost:8787",
+    ...deprecatedEnvVars,
+    ...decoEnvVars,
   };
 
   const { name, scope } = wrangler;
   if (name && workspace) {
     const [_, slug] = workspace.split("/");
-    env.DECO_CHAT_APP_NAME = `@${scope ?? slug}/${name}`;
+    const appName = `@${scope ?? slug}/${name}`;
+    env.DECO_APP_NAME = appName;
+    env.DECO_CHAT_APP_NAME = appName;
   }
 
   if (config.local) {
-    env.DECO_CHAT_API_URL = "http://localhost:3001";
+    const apiUrl = "http://localhost:3001";
+    env.DECO_API_URL = apiUrl;
+    env.DECO_CHAT_API_URL = apiUrl;
   } else {
+    delete env.DECO_API_URL;
     delete env.DECO_CHAT_API_URL;
   }
 

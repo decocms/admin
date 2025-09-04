@@ -106,7 +106,7 @@ const buildInvokeUrl = (
   payload?: InvokePayload,
 ): URL => {
   const invoke = new URL(
-    `https://${Hosts.API_LEGACY}/actors/${Trigger.name}/invoke/${method}`,
+    `https://${Hosts.API}/actors/${Trigger.name}/invoke/${method}`,
   );
   invoke.searchParams.set("deno_isolate_instance_id", triggerId);
 

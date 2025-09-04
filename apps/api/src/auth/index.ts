@@ -126,7 +126,7 @@ appLogin.all("/oauth", async (ctx: AppContext) => {
     const origin =
       ctx.req.header("referer") ||
       ctx.req.header("origin") ||
-      "https://decocms.com";
+      "https://admin.decocms.com";
     return ctx.redirect(origin);
   }
 
@@ -233,7 +233,7 @@ appAuth.all("/callback/magiclink", async (ctx: AppContext) => {
       url.searchParams.get("next") ||
       (url.host.includes("localhost")
         ? "http://localhost:3000"
-        : "https://decocms.com");
+        : "https://admin.decocms.com");
     const tokenHash = url.searchParams.get("tokenHash");
     const type = url.searchParams.get("type") as EmailOtpType | null;
 

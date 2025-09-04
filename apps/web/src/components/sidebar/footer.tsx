@@ -1,5 +1,5 @@
 import {
-  DECO_CHAT_API,
+  DECO_CMS_API_URL,
   UnauthorizedError,
   useInvites,
   usePlan,
@@ -311,7 +311,7 @@ function LoggedUser() {
   const [profileOpen, setProfileOpen] = useState(false);
 
   const logoutUrl = useMemo(() => {
-    const url = new URL(DECO_CHAT_API);
+    const url = new URL(DECO_CMS_API_URL);
     url.pathname = "/auth/logout";
 
     const next = new URL(location.pathname, globalThis.location.origin);

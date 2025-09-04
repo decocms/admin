@@ -91,7 +91,7 @@ function Page() {
             variant: "outline",
             children: "Create your agent at deco CMS",
             onClick: () => {
-              location.href = "https://decocms.com";
+              location.href = "https://admin.decocms.com";
             },
           }}
         />

@@ -8,7 +8,7 @@ import { useEffect } from "react";
  * previous values are restored exactly as they were before the hook ran.
  */
 export interface DocumentMetadataOptions {
-  /** Full document title (e.g. "Foo | decocms.com"). */
+  /** Full document title (e.g. "Foo | deco CMS"). */
   title?: string;
   /** Plain description, used for SEO + social previews. */
   description?: string;

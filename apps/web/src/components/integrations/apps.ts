@@ -50,7 +50,7 @@ export const AppKeys = {
 };
 
 export const WELL_KNOWN_DECO_CMS_APP_KEY = AppKeys.build({
-  appId: "decocms.com",
+  appId: "admin.decocms.com",
   provider: "deco",
 });
 

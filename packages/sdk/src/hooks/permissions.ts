@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { DECO_CHAT_API } from "../constants.ts";
+import { DECO_CMS_API_URL } from "../constants.ts";
 import { MCPClient } from "../fetcher.ts";
 import { KEYS } from "./api.ts";
 import { useSDK } from "./store.tsx";
@@ -48,7 +48,7 @@ export function usePermissionDescriptions(scopes: AppScope[]): {
       const result = await MCPClient.INTEGRATIONS_LIST_TOOLS({
         connection: {
           type: "HTTP",
-          url: `${DECO_CHAT_API}/${workspace}/mcp`,
+          url: `${DECO_CMS_API_URL}/${workspace}/mcp`,
         },
       });
       return result;

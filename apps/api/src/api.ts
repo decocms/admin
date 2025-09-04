@@ -1,6 +1,6 @@
 import { HttpServerTransport } from "@deco/mcp/http";
 import { createServerClient } from "@deco/ai/mcp";
-import { DECO_CHAT_WEB, MCPConnection, WellKnownMcpGroups } from "@deco/sdk";
+import { DECO_CMS_WEB_URL, MCPConnection, WellKnownMcpGroups } from "@deco/sdk";
 import { DECO_CHAT_KEY_ID, getKeyPair } from "@deco/sdk/auth";
 import {
   AGENT_TOOLS,
@@ -523,7 +523,7 @@ app.post("/webhooks/stripe", handleStripeWebhook);
 // Apps oauth
 app.get("/apps/oauth", (c) => {
   const url = new URL(c.req.raw.url);
-  const target = new URL(DECO_CHAT_WEB);
+  const target = new URL(DECO_CMS_WEB_URL);
   target.pathname = "/apps-auth";
   target.search = url.search;
 

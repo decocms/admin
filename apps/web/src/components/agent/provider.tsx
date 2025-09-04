@@ -2,7 +2,7 @@ import type { LanguageModelV1FinishReason } from "@ai-sdk/provider";
 import { useChat } from "@ai-sdk/react";
 import {
   AgentSchema,
-  DECO_CHAT_API,
+  DECO_CMS_API_URL,
   dispatchMessages,
   getTraceDebugId,
   Toolset,
@@ -252,7 +252,7 @@ export function AgentProvider({
       "x-deno-isolate-instance-id": agentRoot,
       "x-trace-debug-id": getTraceDebugId(),
     },
-    api: new URL("/actors/AIAgent/invoke/stream", DECO_CHAT_API).href,
+    api: new URL("/actors/AIAgent/invoke/stream", DECO_CMS_API_URL).href,
     experimental_prepareRequestBody: ({ messages }) => {
       dispatchMessages({ messages, threadId, agentId });
       const lastMessage = messages.at(-1);

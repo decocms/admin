@@ -26,11 +26,11 @@ if (isLocalhost && import.meta.env?.VITE_USE_LOCAL_BACKEND === undefined) {
 
 export const SUPABASE_URL = "https://auth.deco.cx";
 
-export const DECO_CHAT_WEB = LOCAL_DEBUGGER
+export const DECO_CMS_WEB_URL = LOCAL_DEBUGGER
   ? "http://localhost:3000"
-  : "https://decocms.com";
+  : "https://admin.decocms.com";
 
-export const DECO_CHAT_API = LOCAL_DEBUGGER
+export const DECO_CMS_API_URL = LOCAL_DEBUGGER
   ? "http://localhost:3001"
   : "https://api.decocms.com";
 

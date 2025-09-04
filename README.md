@@ -76,17 +76,11 @@ bun create deco
 
 > This will prompt you to log in or to create an account on [decocms.com](https://decocms.com). 
 
-4. Create a new project
+2. Enter the project directory and start the dev server
 
 ```
-deco create              # create new project, select workspace and choose template
-cd my-project
-npm install              # or bun, deno, pnpm
-```
-
-4. Start the dev server
-
-```
+cd <my-project-directory>
+npm install
 npm run dev               # → http://localhost:8787 (hot reload)
 ```
 

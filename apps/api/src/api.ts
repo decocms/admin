@@ -338,7 +338,7 @@ const createMcpServerProxy = (c: Context) => {
 // Add logger middleware
 app.use(logger());
 
-// Enable CORS for all routes on api.deco.chat and localhost
+// Enable CORS for all routes on api.decocms.com and localhost
 app.use(
   cors({
     origin: (origin) => origin,

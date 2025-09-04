@@ -18,7 +18,7 @@ import { newBranchesCRUD } from "../src/branches-db.ts";
 
 // Helper function to get workspace from env
 const projectFor = (env: Env): string => {
-  const workspace = env.DECO_CHAT_REQUEST_CONTEXT?.workspace;
+  const workspace = env.DECO_REQUEST_CONTEXT?.workspace;
   if (!workspace) {
     throw new Error("No workspace context available");
   }
@@ -297,7 +297,7 @@ const BaseFileOperationInputSchema = (env: Env) =>
       .string()
       .describe("The file path within the branch")
       .transform((arg) => {
-        const pathPrefix = env.DECO_CHAT_REQUEST_CONTEXT?.state?.pathPrefix;
+        const pathPrefix = env.DECO_REQUEST_CONTEXT?.state?.pathPrefix;
         const argPath = normalizePath(arg);
         if (pathPrefix) {
           return normalizePath(`${pathPrefix}${argPath}`);

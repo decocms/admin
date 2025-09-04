@@ -27,6 +27,7 @@ import { mapToolEntries } from "./utils/tool-entries.ts";
 export { createServerClient, createTransport };
 
 const ApiDecoChatURLs = [
+  "https://api.decocms.com",
   "https://api.deco.chat",
   "http://localhost:3001",
   "https://mcp-admin.wppagent.com",
@@ -209,7 +210,7 @@ export const mcpServerTools = async (
     return {};
   }
 
-  // Propagate req token to api.deco.chat integration
+  // Propagate req token to api.decocms.com integration
   if (isApiDecoChatMCPConnection(mcpServer.connection)) {
     mcpServer.connection = patchApiDecoChatTokenHTTPConnection(
       mcpServer.connection,

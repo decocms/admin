@@ -52,7 +52,7 @@ export function createMCPFetchStub<TDefinition extends readonly ToolBinder[]>(
 ): MCPClientFetchStub<TDefinition> {
   return createMCPClientProxy<MCPClientFetchStub<TDefinition>>({
     ...options,
-    decoChatApiUrl: DECO_CHAT_API,
+    decoCmsApiUrl: DECO_CHAT_API,
     debugId: getTraceDebugId,
     getErrorByStatusCode,
   });

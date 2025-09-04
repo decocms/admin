@@ -8,7 +8,7 @@ import type {
 import { Hono } from "hono";
 import { honoCtxToAppCtx } from "../api.ts";
 import {
-  DECO_CHAT_API,
+  DECO_CMS_API,
   getEnv,
   type HonoAppContext as AppContext,
   type Principal,
@@ -98,7 +98,7 @@ export const createMagicLinkEmail = async (ctx: AppContext) => {
     // includes a condition to insert it (/auth/callback/magiclink)
     const redirectTo = url.host.includes("localhost")
       ? "http://localhost:3001/"
-      : "https://api.deco.chat/";
+      : "https://api.decocms.com/";
 
     await db.auth.signInWithOtp({
       email,
@@ -126,7 +126,7 @@ appLogin.all("/oauth", async (ctx: AppContext) => {
     const origin =
       ctx.req.header("referer") ||
       ctx.req.header("origin") ||
-      "https://deco.chat";
+      "https://decocms.com";
     return ctx.redirect(origin);
   }
 
@@ -136,7 +136,7 @@ appLogin.all("/oauth", async (ctx: AppContext) => {
   const provider = (url.searchParams.get("provider") ?? "google") as Provider;
   const redirectTo = new URL(
     AUTH_CALLBACK_OAUTH,
-    DECO_CHAT_API(honoCtxToAppCtx(ctx)),
+    DECO_CMS_API(honoCtxToAppCtx(ctx)),
   );
 
   const next = url.searchParams.get("next");
@@ -154,7 +154,7 @@ appLogin.all("/oauth", async (ctx: AppContext) => {
   const { data } = await db.auth.signInWithOAuth(credentials);
 
   if (!data.url) {
-    throw new Error("deco.chat auth failed to log in.");
+    throw new Error("decocms.com auth failed to log in.");
   }
 
   setHeaders(headers, ctx);
@@ -178,7 +178,7 @@ appLogin.all("/magiclink", async (ctx: AppContext) => {
       ? AUTH_URL_CLI
       : url.host.includes("localhost")
         ? "http://localhost:3001/"
-        : "https://api.deco.chat/";
+        : "https://api.decocms.com/";
 
     await db.auth.signInWithOtp({
       email,
@@ -233,7 +233,7 @@ appAuth.all("/callback/magiclink", async (ctx: AppContext) => {
       url.searchParams.get("next") ||
       (url.host.includes("localhost")
         ? "http://localhost:3000"
-        : "https://deco.chat");
+        : "https://decocms.com");
     const tokenHash = url.searchParams.get("tokenHash");
     const type = url.searchParams.get("type") as EmailOtpType | null;
 

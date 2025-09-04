@@ -102,7 +102,7 @@ export const Workflow = (
         bindedWorkflows.map((w) => [w.workflow.id, w.workflow]),
       );
       const d1Storage = new D1Store({
-        client: bindings.DECO_CHAT_WORKSPACE_DB,
+        client: bindings.DECO_WORKSPACE_DB,
       });
       const mastra = new Mastra({
         storage: d1Storage,
@@ -112,7 +112,7 @@ export const Workflow = (
         telemetry: {
           enabled: true,
           serviceName: `app-${
-            this.env.DECO_CHAT_SCRIPT_SLUG ?? this.env.DECO_CHAT_APP_SLUG
+            this.env.DECO_CHAT_SCRIPT_SLUG ?? this.env.DECO_APP_SLUG
           }`,
         },
       });

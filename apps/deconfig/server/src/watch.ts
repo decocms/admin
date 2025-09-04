@@ -13,7 +13,7 @@ export interface WatchOpts extends WatchOptions {
  * @returns An SSE stream of changes
  */
 export const watchSSE = async (env: Env, options?: WatchOpts) => {
-  env.DECO_CHAT_REQUEST_CONTEXT.ensureAuthenticated();
+  env.DECO_REQUEST_CONTEXT.ensureAuthenticated();
   const branch = await branchRpcFor(env, options?.branchName);
 
   const watchStream = await branch.watch(options);

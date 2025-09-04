@@ -26,7 +26,7 @@ const mapPostResult = ({ result }: { result: QueryResult[] }) => {
 export function drizzle<
   TSchema extends Record<string, unknown> = Record<string, never>,
 >(
-  { DECO_CHAT_WORKSPACE_DB }: Pick<DefaultEnv, "DECO_CHAT_WORKSPACE_DB">,
+  { DECO_WORKSPACE_DB: DECO_CHAT_WORKSPACE_DB }: Pick<DefaultEnv, "DECO_CHAT_WORKSPACE_DB">,
   config?: DrizzleConfig<TSchema>,
 ) {
   return drizzleProxy((sql, params, method) => {

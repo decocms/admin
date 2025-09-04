@@ -1,6 +1,6 @@
 # create-deco
 
-A simple wrapper package that allows users to create new deco.chat projects using the standard `npm create` pattern.
+A simple wrapper package that allows users to create new deco projects using the standard `npm create` pattern.
 
 ## Usage
 
@@ -32,4 +32,4 @@ This package is a thin wrapper around the `create` command from `deco-cli`. When
 
 ## Related packages
 
-- [`deco-cli`](../cli) - The main CLI tool for deco.chat
+- [`deco-cli`](../cli) - The main CLI tool for deco

@@ -1,12 +1,13 @@
 export const Hosts = {
-  API: "api.deco.chat",
+  API: "api.decocms.com",
+  WEB_APP: "admin.decocms.com",
   APPS: "deco.page",
-  FS: "fs.deco.chat",
-  Chat: "deco.chat",
   LOCALHOST: "localhost:3000",
+  API_LEGACY: "api.deco.chat",
+  WEB_APP_LEGACY: "deco.chat",
 } as const;
 
 export const WELL_KNOWN_ORIGINS = [
   `http://${Hosts.LOCALHOST}`,
-  `https://${Hosts.Chat}`,
+  `https://${Hosts.WEB_APP_LEGACY}`,
 ] as const;

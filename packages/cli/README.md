@@ -1,7 +1,7 @@
 # Deco CLI Reference
 
 The Deco CLI is your interface for managing AI-native projects built with
-[deco.chat](https://deco.chat).
+[decocms.com](https://decocms.com).
 
 Official docs: https://docs.deco.page/
 

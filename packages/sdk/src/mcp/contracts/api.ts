@@ -7,7 +7,7 @@ import {
   AppContext,
   createTool,
   createToolFactory,
-  DECO_CHAT_API,
+  DECO_CMS_API,
   State,
 } from "../context.ts";
 import {
@@ -151,7 +151,7 @@ export const contractRegister = createTool({
       appName,
       context.contract as ContractState,
     );
-    const url = new URL(`/contracts/mcp`, DECO_CHAT_API(c));
+    const url = new URL(`/contracts/mcp`, DECO_CMS_API(c));
 
     const { name, scopeName } = AppName.parse(assignor);
     const app = await publishApp.handler({

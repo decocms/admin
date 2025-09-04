@@ -75,7 +75,7 @@ export function getInviteEmailTemplate({
               
               <!-- Description -->
               <p style="font-size: 14px; color: #78726e; line-height: 1.5; margin: 0 0 32px 0;">
-                Gain control and visibility over all AI use in your company. Replace your complex stack with deco.chat, your open-source AI platform.
+                Gain control and visibility over all AI use in your company. Replace your complex stack with deco CMS, your open-source AI platform.
               </p>
               
               <!-- CTA Button -->
@@ -83,7 +83,7 @@ export function getInviteEmailTemplate({
                 <table cellpadding="0" cellspacing="0" border="0">
                   <tr>
                     <td style="text-align: center;">
-                      <a href="https://deco.chat/invites" class="button" style="display: inline-block; background-color: #d0ec1a; color: #07401a; font-size: 16px; font-weight: 400; text-decoration: none; padding: 18px 32px; border-radius: 16px; min-width: 155px; text-align: center;">
+                      <a href="https://decocms.com/invites" class="button" style="display: inline-block; background-color: #d0ec1a; color: #07401a; font-size: 16px; font-weight: 400; text-decoration: none; padding: 18px 32px; border-radius: 16px; min-width: 155px; text-align: center;">
                         Accept invite
                       </a>
                     </td>
@@ -101,7 +101,7 @@ export function getInviteEmailTemplate({
         <table style="width: 100%; background-color: #e7e5e4; border-radius: 30px;" cellpadding="0" cellspacing="0" border="0">
           <tr>
             <td style="padding: 40px; text-align: center;">
-              <a href="https://deco.chat/about" style="color: #000000; font-size: 13px; text-decoration: underline; margin-right: 16px;">About us</a>
+              <a href="https://decocms.com/about" style="color: #000000; font-size: 13px; text-decoration: underline; margin-right: 16px;">About us</a>
               <span style="color: #000000; font-size: 13px;">Made with ❤️ in Brazil</span>
             </td>
           </tr>

@@ -214,7 +214,7 @@ const localhost =
 const DEFAULT_HEADERS_FILE = () =>
   `# Default headers for static assets
 /*
-  Content-Security-Policy: frame-ancestors 'self' https://deco.chat/ ${localhost}
+  Content-Security-Policy: frame-ancestors 'self' https://deco.chat/ https://decocms.com/ ${localhost}
   X-Deco-Worker-Cdn: 1
 `;
 

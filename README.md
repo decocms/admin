@@ -1,8 +1,8 @@
 <img width="2400" height="750" alt="image" src="https://github.com/user-attachments/assets/bdd09426-554a-49fe-9f93-8e46652fdefd" />
 
-# deco.chat
+# decocms.com
 
-**deco.chat** is an open-source foundation for building AI-native software.\
+**decocms** is an open-source foundation for building AI-native software.\
 We equip developers, engineers, and AI enthusiasts with robust tools to rapidly
 prototype, develop, and deploy AI-powered applications.
 
@@ -10,7 +10,7 @@ prototype, develop, and deploy AI-powered applications.
 
 > [!TIP]
 > If you have questions or want to learn more, please join our discord
-> community: https://deco.chat/discord
+> community: https://decocms.com/discord
 
 ## Who is it for?
 
@@ -18,7 +18,7 @@ prototype, develop, and deploy AI-powered applications.
 - **Agentic engineers** deploying scalable, secure, and sustainable production
   systems
 
-## Why deco.chat?
+## Why deco CMS?
 
 Our goal is simple: empower teams with Generative AI by giving builders the
 tools to create AI applications that scale beyond the initial demo and into the
@@ -62,24 +62,19 @@ Views can call server-side tools via typed RPC.
 
 ### Quick Start
 
-1. Install the CLI
+1. Create your project
 
 ```
-npm i -g deco-cli
+npm create deco
 ```
 
 or
 
 ```
-bun i -g deco-cli
+bun create deco
 ```
 
-2. Log in to [deco.chat](https://deco.chat). Don’t have an account? Sign up
-   first.
-
-```
-deco login
-```
+> This will prompt you to log in or to create an account on [decocms.com](https://decocms.com). 
 
 4. Create a new project
 
@@ -195,7 +190,7 @@ Build **React + Tailwind** frontends served by the same Cloudflare Worker.
 
 ## Development Flow
 
-1. Add an integration via the [deco.chat dashboard](https://deco.chat)
+1. Add an integration via the [decocms.com dashboard](https://decocms.com)
    _(improved UX coming soon)_
 2. Run `npm run gen` → updates `deco.gen.ts` with typed clients
 3. Write tools in `server/main.ts`

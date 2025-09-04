@@ -264,10 +264,10 @@ const envSchema = z.object({
 export const getEnv = (ctx: AppContext): EnvVars =>
   envSchema.parse(ctx.envVars);
 
-export const DECO_CHAT_API = (ctx: AppContext) =>
+export const DECO_CMS_API = (ctx: AppContext) =>
   getEnv(ctx).VITE_USE_LOCAL_BACKEND === "true"
     ? "http://localhost:3001"
-    : "https://api.deco.chat";
+    : "https://api.decocms.com";
 
 type ToolCallResultSuccess<T> = {
   isError: false;

@@ -201,7 +201,7 @@ function FormProvider(props: Props & { agentId: string; threadId: string }) {
   const tabs = useTabsForAgent(agent, TABS);
 
   useDocumentMetadata({
-    title: agent ? `${agent.name} | deco.chat` : undefined,
+    title: agent ? `${agent.name} | decocms.com` : undefined,
     description: agent
       ? (agent.description ?? agent.instructions ?? "")
       : undefined,

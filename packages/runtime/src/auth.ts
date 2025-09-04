@@ -56,9 +56,9 @@ export const getReqToken = async (req: Request, env: DefaultEnv) => {
     return undefined;
   }
 
-  env.DECO_CHAT_API_JWT_PUBLIC_KEY &&
-    (await jwtVerify(authToken, parseJWK(env.DECO_CHAT_API_JWT_PUBLIC_KEY), {
-      issuer: "https://api.deco.chat",
+  env.DECO_API_JWT_PUBLIC_KEY &&
+    (await jwtVerify(authToken, parseJWK(env.DECO_API_JWT_PUBLIC_KEY), {
+      issuer: "https://api.decocms.com",
     }).catch((err) => {
       console.error(`[auth-token]: error validating: ${err}`);
     }));
@@ -96,7 +96,7 @@ export const handleAuthCallback = async (
 
   try {
     // Exchange code for token
-    const apiUrl = options.apiUrl ?? "https://api.deco.chat";
+    const apiUrl = options.apiUrl ?? "https://api.decocms.com";
     const exchangeResponse = await fetch(`${apiUrl}/apps/code-exchange`, {
       method: "POST",
       headers: {

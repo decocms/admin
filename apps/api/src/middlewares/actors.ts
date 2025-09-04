@@ -7,7 +7,7 @@ import type { AppEnv } from "../utils/context.ts";
 
 export const runtime = new RuntimeClass();
 
-const actorsRoutePath = `/${Hosts.API}/actors`;
+const actorsRoutePath = `/${Hosts.API_LEGACY}/actors`;
 const actorsRoute = withActors(runtime, actorsRoutePath);
 
 export const withActorsMiddleware: Handler<AppEnv> = async (ctx, next) => {

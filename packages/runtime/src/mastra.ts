@@ -74,7 +74,7 @@ export function createPrivateTool<
     opts.execute = ((input, options) => {
       const env = input.runtimeContext.get("env") as DefaultEnv;
       if (env) {
-        env.DECO_CHAT_REQUEST_CONTEXT.ensureAuthenticated();
+        env.DECO_REQUEST_CONTEXT.ensureAuthenticated();
       }
       return execute(input, options);
     }) as TExecute;
@@ -311,15 +311,15 @@ const createWorkflowTools = <TEnv = any, TSchema extends z.ZodTypeAny = never>(
       const store = State.getStore();
       const runId =
         store?.req?.headers.get("x-deco-chat-run-id") ?? crypto.randomUUID();
-      const workflowDO = bindings.DECO_CHAT_WORKFLOW_DO.get(
-        bindings.DECO_CHAT_WORKFLOW_DO.idFromName(runId),
+      const workflowDO = bindings.DECO_WORKFLOW_DO.get(
+        bindings.DECO_WORKFLOW_DO.idFromName(runId),
       );
 
       using result = await workflowDO.start({
         workflowId: workflow.id,
         args: args.context,
         runId,
-        ctx: bindings.DECO_CHAT_REQUEST_CONTEXT,
+        ctx: bindings.DECO_REQUEST_CONTEXT,
       });
       return { id: result.runId };
     },
@@ -332,14 +332,14 @@ const createWorkflowTools = <TEnv = any, TSchema extends z.ZodTypeAny = never>(
     outputSchema: z.object({ cancelled: z.boolean() }),
     execute: async (args) => {
       const runId = args.context.runId;
-      const workflowDO = bindings.DECO_CHAT_WORKFLOW_DO.get(
-        bindings.DECO_CHAT_WORKFLOW_DO.idFromName(runId),
+      const workflowDO = bindings.DECO_WORKFLOW_DO.get(
+        bindings.DECO_WORKFLOW_DO.idFromName(runId),
       );
 
       using _ = await workflowDO.cancel({
         workflowId: workflow.id,
         runId,
-        ctx: bindings.DECO_CHAT_REQUEST_CONTEXT,
+        ctx: bindings.DECO_REQUEST_CONTEXT,
       });
 
       return { cancelled: true };
@@ -357,8 +357,8 @@ const createWorkflowTools = <TEnv = any, TSchema extends z.ZodTypeAny = never>(
     outputSchema: z.object({ resumed: z.boolean() }),
     execute: async (args) => {
       const runId = args.context.runId;
-      const workflowDO = bindings.DECO_CHAT_WORKFLOW_DO.get(
-        bindings.DECO_CHAT_WORKFLOW_DO.idFromName(runId),
+      const workflowDO = bindings.DECO_WORKFLOW_DO.get(
+        bindings.DECO_WORKFLOW_DO.idFromName(runId),
       );
 
       using _ = await workflowDO.resume({
@@ -366,7 +366,7 @@ const createWorkflowTools = <TEnv = any, TSchema extends z.ZodTypeAny = never>(
         runId,
         resumeData: args.context.resumeData,
         stepId: args.context.stepId,
-        ctx: bindings.DECO_CHAT_REQUEST_CONTEXT,
+        ctx: bindings.DECO_REQUEST_CONTEXT,
       });
 
       return { resumed: true };

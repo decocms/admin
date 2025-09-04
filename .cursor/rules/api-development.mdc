@@ -3,9 +3,9 @@ description:
 globs: 
 alwaysApply: false
 ---
-# How to Add New API to deco.chat System
+# How to Add New API to decocms.com System
 
-This guide provides a step-by-step process for adding new APIs to the deco.chat system, following established patterns and best practices.
+This guide provides a step-by-step process for adding new APIs to the decocms system, following established patterns and best practices.
 
 ## Prerequisites
 

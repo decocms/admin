@@ -11,7 +11,7 @@ function Login() {
 
   const filteredProviders = providers.filter((provider) => {
     // Disable email provider when &cli=true is present
-    // Note: CLI login with email redirects incorrectly to admin.deco.cx instead of the deco.chat
+    // Note: CLI login with email redirects incorrectly to admin.deco.cx instead of the decocms.com
     // TODO: A better solution
     if (cli && provider.name === "Email") {
       return false;

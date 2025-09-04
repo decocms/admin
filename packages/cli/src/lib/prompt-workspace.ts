@@ -8,7 +8,7 @@
  * 4. Presents a searchable select prompt to the user
  * 5. Returns the selected team slug as the workspace
  *
- * @param local - Whether to use local deco.chat instance
+ * @param local - Whether to use local decocms.com instance
  * @param current - Current workspace to use as default
  * @returns Promise<string> - The selected team slug
  * @throws Error if no session is found or no teams are available

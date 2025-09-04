@@ -244,7 +244,7 @@ export function UserButton() {
             <span className="text-sm text-slate-300">
               Logged in with{" "}
               <a
-                href="https://deco.chat/"
+                href="https://decocms.com/"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="text-blue-400 hover:text-blue-300 underline"

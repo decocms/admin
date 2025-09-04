@@ -82,7 +82,7 @@ export async function sendInviteEmail(
       Authorization: `Bearer ${RESEND_API_KEY}`,
     },
     body: JSON.stringify({
-      from: "deco.chat <noreply@deco.chat>",
+      from: "decocms.com <noreply@decocms.com>",
       to: [invited_email],
       subject: "Team invitation",
       html: generateEmailBody(htmlProps),

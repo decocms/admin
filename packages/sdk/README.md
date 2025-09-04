@@ -1,6 +1,6 @@
 # @deco/sdk
 
-The official SDK for building applications with deco.chat's AI capabilities and
+The official SDK for building applications with decocms.com's AI capabilities and
 integrations.
 
 ## Overview

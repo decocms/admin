@@ -225,7 +225,7 @@ export async function createCommand(
       console.log("🔐 No session found. Starting authentication process...");
       try {
         await loginCommand();
-        console.log("✅ Successfully logged in to deco.chat");
+        console.log("✅ Successfully logged in to decocms.com");
         session = await readSession();
       } catch (error) {
         console.error(

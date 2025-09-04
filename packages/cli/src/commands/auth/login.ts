@@ -122,7 +122,9 @@ export const loginCommand = () => {
       // Windows requires using cmd.exe because 'start' is a built-in command
       const command =
         process.platform === "win32" && browser === "start"
-          ? spawn("cmd", ["/c", "start", DECO_CMS_LOGIN_URL], { detached: true })
+          ? spawn("cmd", ["/c", "start", DECO_CMS_LOGIN_URL], {
+              detached: true,
+            })
           : spawn(browser, [DECO_CMS_LOGIN_URL], { detached: true });
 
       command.unref(); // Don't keep process alive

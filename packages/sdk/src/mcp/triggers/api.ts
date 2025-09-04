@@ -84,7 +84,10 @@ interface WebhookOptions {
 }
 
 const webhookURLFrom = ({ id, workspace, passphrase }: WebhookOptions) => {
-  const url = new URL(`${workspace}/triggers/${id}`, `https://${Hosts.API_LEGACY}`);
+  const url = new URL(
+    `${workspace}/triggers/${id}`,
+    `https://${Hosts.API_LEGACY}`,
+  );
 
   if (passphrase) {
     url.searchParams.set("passphrase", passphrase);

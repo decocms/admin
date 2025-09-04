@@ -97,7 +97,8 @@ const agentAsIntegrationFor =
     description: agent.description,
     connection: {
       type: "HTTP",
-      url: new URL(`${workspace}/agents/${agent.id}/mcp`, DECO_CMS_API_URL).href,
+      url: new URL(`${workspace}/agents/${agent.id}/mcp`, DECO_CMS_API_URL)
+        .href,
       token,
     },
   });

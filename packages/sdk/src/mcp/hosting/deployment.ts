@@ -266,7 +266,9 @@ export async function deployToCloudflare({
       class_name: binding.class_name,
     })) ?? [];
   const hasAnyDoAsideWorkflows = durableObjects.some(
-    (durableObject) => "DECO_CHAT_WORKFLOW_DO" !== durableObject.name && "DECO_WORKFLOW_DO" !== durableObject.name,
+    (durableObject) =>
+      "DECO_CHAT_WORKFLOW_DO" !== durableObject.name &&
+      "DECO_WORKFLOW_DO" !== durableObject.name,
   );
 
   const deploymentId = hasAnyDoAsideWorkflows ? undefined : uid.rnd();

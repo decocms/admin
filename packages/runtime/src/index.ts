@@ -38,7 +38,8 @@ export interface WorkspaceDB {
   }) => Promise<{ result: QueryResult[] }>;
 }
 
-export interface DefaultEnv<TSchema extends z.ZodTypeAny = any> extends DeprecatedEnv<TSchema> {
+export interface DefaultEnv<TSchema extends z.ZodTypeAny = any>
+  extends DeprecatedEnv<TSchema> {
   DECO_REQUEST_CONTEXT: RequestContext<TSchema>;
   DECO_APP_NAME: string;
   DECO_APP_SLUG: string;
@@ -252,10 +253,8 @@ export const withBindings = <TEnv>({
         authUri.searchParams.set("client_id", env.DECO_APP_NAME);
         authUri.searchParams.set(
           "redirect_uri",
-          new URL(
-            AUTH_CALLBACK_ENDPOINT,
-            origin ?? env.DECO_APP_ENTRYPOINT,
-          ).href,
+          new URL(AUTH_CALLBACK_ENDPOINT, origin ?? env.DECO_APP_ENTRYPOINT)
+            .href,
         );
         workspaceHint &&
           authUri.searchParams.set("workspace_hint", workspaceHint);

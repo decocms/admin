@@ -5,6 +5,7 @@ import {
   DECO_CHAT_API,
   dispatchMessages,
   getTraceDebugId,
+  Toolset,
   useAgentData,
   useAgentRoot,
   useIntegrations,
@@ -65,6 +66,7 @@ interface AgentProviderProps {
   uiOptions?: Partial<UiOptions>; // UI configuration options
   children: React.ReactNode;
   additionalTools?: Agent["tools_set"];
+  toolsets?: Toolset[];
 }
 
 interface AgentContextValue {
@@ -135,6 +137,7 @@ export function AgentProvider({
   uiOptions,
   children,
   additionalTools,
+  toolsets,
 }: PropsWithChildren<AgentProviderProps>) {
   const { data: serverAgent } = useAgentData(agentId);
   const isPublic = serverAgent.visibility === "PUBLIC";
@@ -295,6 +298,7 @@ export function AgentProvider({
             tools: effectiveChatState.tools_set,
             maxSteps: effectiveChatState.max_steps,
             pdfSummarization: preferences.pdfSummarization ?? true,
+            toolsets,
             smoothStream:
               preferences.smoothStream !== false
                 ? { delayInMs: 25, chunk: "word" }

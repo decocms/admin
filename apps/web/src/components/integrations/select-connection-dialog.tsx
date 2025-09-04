@@ -390,10 +390,10 @@ function AddConnectionDialogContent({
                 integrationName: installingIntegration?.name || "the service",
                 connection: connection,
               });
-            }else{
+            } else {
               onSelect?.(connection);
             }
-          }else{
+          } else {
             onSelect?.(connection);
           }
         }}
@@ -402,13 +402,11 @@ function AddConnectionDialogContent({
       <OAuthCompletionDialog
         open={oauthCompletionDialog.open}
         onOpenChange={(open) => {
-          setOauthCompletionDialog((prev) => ({ ...prev, open }))
-          if(oauthCompletionDialog.connection){
+          setOauthCompletionDialog((prev) => ({ ...prev, open }));
+          if (oauthCompletionDialog.connection) {
             onSelect?.(oauthCompletionDialog.connection);
           }
-        }
-          
-        }
+        }}
         authorizeOauthUrl={oauthCompletionDialog.url}
         integrationName={oauthCompletionDialog.integrationName}
       />

@@ -32,15 +32,17 @@ export function IntegrationPageLayout({ tabs }: { tabs: Record<string, Tab> }) {
             items={[{ label: "Integrations", link: "/connections" }]}
           />
         }
-        actionButtons={<SelectConnectionDialog 
-          forceTab="new-connection" 
-          onSelect={(integration) => {
-            const key = getConnectionAppKey(integration);
-            const appKey = AppKeys.build(key);
-            navigateWorkspace(`/connection/${appKey}`);
-            console.log("integration", integration);
-          }}
-        />}
+        actionButtons={
+          <SelectConnectionDialog
+            forceTab="new-connection"
+            onSelect={(integration) => {
+              const key = getConnectionAppKey(integration);
+              const appKey = AppKeys.build(key);
+              navigateWorkspace(`/connection/${appKey}`);
+              console.log("integration", integration);
+            }}
+          />
+        }
         tabs={tabs}
       />
       <AlertDialog open={!!error} onOpenChange={() => setError(null)}>

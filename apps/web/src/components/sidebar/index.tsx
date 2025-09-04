@@ -57,7 +57,7 @@ import { Link, useMatch } from "react-router";
 import { z } from "zod";
 import { trackEvent } from "../../hooks/analytics.ts";
 import { useUser } from "../../hooks/use-user.ts";
-import { useWorkspaceLink } from "../../hooks/use-navigate-workspace.ts";
+import { useNavigateWorkspace, useWorkspaceLink } from "../../hooks/use-navigate-workspace.ts";
 import { useFocusChat } from "../agents/hooks.ts";
 import { AgentAvatar } from "../common/avatar/agent.tsx";
 import { groupThreadsByDate } from "../threads/index.tsx";
@@ -420,7 +420,17 @@ function WorkspaceViews() {
   const { data: integrations } = useIntegrations();
   const team = useCurrentTeam();
   const removeViewMutation = useRemoveView();
+  const navigateWorkspace = useNavigateWorkspace();
+  
   const handleRemoveView = async (view: View) => {
+    const isUserInView = globalThis.location.pathname.includes(`/views/${view.id}`);
+    if(isUserInView){
+      navigateWorkspace("/");
+      await removeViewMutation.mutateAsync({
+        viewId: view.id,
+      });
+      return;
+    }
     await removeViewMutation.mutateAsync({
       viewId: view.id,
     });

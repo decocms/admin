@@ -7,6 +7,7 @@ import { generateDefaultValues } from "./json-schema/utils/generate-default-valu
 import type { ContractState } from "@deco/sdk/mcp";
 import { MicroDollar } from "@deco/sdk/mcp/wallet";
 import { RefObject } from "react";
+import { Icon } from "@deco/ui/components/icon.tsx";
 
 interface Permission {
   scope: string;
@@ -23,27 +24,19 @@ export function IntegrationPermissions({
   permissions,
 }: IntegrationPermissionsProps) {
   return (
-    <div className="space-y-4">
-      <div className="grid gap-2">
-        {permissions.map((permission, index) => (
-          <div
-            key={index}
-            className="flex items-center gap-3 p-3 rounded-lg bg-muted/50"
-          >
-            <div className="flex-shrink-0 text-success">✓</div>
-            <div className="flex-1">
-              <div className="text-sm font-medium">
-                {permission.description}
-              </div>
-              <div className="text-xs text-muted-foreground">
-                <Badge variant="outline" className="text-xs">
-                  {permission.scope}
-                </Badge>
-              </div>
+    <div className="divide-y">
+      {permissions.map((permission, index) => (
+        <div key={index} className="p-4 flex items-center gap-3">
+          <div className="flex-1 flex flex-col gap-2">
+            <div className="text-sm font-medium">{permission.description}</div>
+            <div className="text-xs text-muted-foreground">
+              {permission.scope}
             </div>
           </div>
-        ))}
-      </div>
+
+          <Icon name="check_circle" className="flex-shrink-0 text-success" />
+        </div>
+      ))}
     </div>
   );
 }

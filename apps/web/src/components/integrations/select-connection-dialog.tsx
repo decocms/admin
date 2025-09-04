@@ -84,6 +84,24 @@ function CurrentTeamIcon() {
   );
 }
 
+function IntegrationNotVerifiedAlert() {
+  return (
+    <Alert className="border-base bg-muted/10 text-base-foreground">
+      <Icon name="warning" size={16} className="text-base-foreground" />
+      <AlertDescription>
+        <div className="flex items-center gap-2">
+          <span className="font-medium">Third-party integration</span>
+        </div>
+        <p className="mt-1 text-sm">
+          This integration is provided by a third party and is not maintained by
+          deco.
+          <br />
+        </p>
+      </AlertDescription>
+    </Alert>
+  );
+}
+
 function IntegrationWorkspaceIcon({
   integration,
 }: {
@@ -213,8 +231,6 @@ export function ConfirmMarketplaceInstallDialog({
     }
   }, [open]);
 
-  if (!integration) return null;
-
   const hasRequirements =
     integrationState.schema &&
     Object.keys(integrationState.schema.properties || {}).length > 0;
@@ -231,6 +247,8 @@ export function ConfirmMarketplaceInstallDialog({
     setCurrentStep("permissions");
   };
 
+  if (!integration) return null;
+
   return (
     <Dialog open={open} onOpenChange={() => setIntegration(null)}>
       <DialogContent className="lg:!w-210 lg:!max-w-210 lg:min-h-135 lg:max-h-[80vh] flex flex-col">
@@ -245,9 +263,6 @@ export function ConfirmMarketplaceInstallDialog({
           <PermissionsStep
             integration={integration}
             integrationState={integrationState}
-            onContinue={handleContinueFromPermissions}
-            isLoading={isLoading}
-            hasRequirements={hasRequirements}
           />
         )}
 
@@ -257,14 +272,11 @@ export function ConfirmMarketplaceInstallDialog({
             integration={integration}
             schema={integrationState.schema}
             formRef={formRef}
-            onBack={handleBack}
-            onConnect={handleConnect}
-            isLoading={isLoading}
           />
         )}
         <DialogFooter>
           {currentStep !== "permissions" && (
-            <Button variant="outline" onClick={handleBack}>
+            <Button variant="outline" disabled={isLoading} onClick={handleBack}>
               Back
             </Button>
           )}
@@ -279,7 +291,7 @@ export function ConfirmMarketplaceInstallDialog({
             disabled={isLoading}
           >
             {isLoading
-              ? "Loading..."
+              ? "Connecting..."
               : hasRequirements
                 ? "Continue"
                 : "Connect"}
@@ -294,17 +306,11 @@ export function ConfirmMarketplaceInstallDialog({
 function PermissionsStep({
   integration,
   integrationState,
-  onContinue,
-  isLoading,
-  hasRequirements,
 }: {
   integration: MarketplaceIntegration;
   integrationState: {
     permissions?: Array<{ scope: string; description: string }>;
   };
-  onContinue: () => void;
-  isLoading: boolean;
-  hasRequirements: boolean;
 }) {
   return (
     <GridContainer>
@@ -315,31 +321,17 @@ function PermissionsStep({
           <IntegrationWorkspaceIcon integration={integration} />
 
           {/* Permissions description */}
-          <h3 className="text-lg font-semibold">
-            {integration.friendlyName ?? integration.name} will have access to
-            the following permissions:
+          <h3 className="text-xl text-base-foreground">
+            <span className="font-bold">
+              {integration.friendlyName ?? integration.name}
+            </span>{" "}
+            will have access to the following permissions:
           </h3>
         </div>
 
         {/* Warning at bottom left */}
         <div className="mt-auto">
-          {!integration.verified && (
-            <Alert className="border-base bg-muted/10 text-base-foreground">
-              <Icon name="warning" size={16} className="text-base-foreground" />
-              <AlertDescription>
-                <div className="flex items-center gap-2">
-                  <span className="font-medium">Third-party integration</span>
-                </div>
-                <p className="mt-1 text-sm">
-                  This integration is provided by a third party and is not
-                  maintained by deco.
-                  <br />
-                  Provider:{" "}
-                  <span className="font-medium">{integration.provider}</span>
-                </p>
-              </AlertDescription>
-            </Alert>
-          )}
+          {!integration.verified && <IntegrationNotVerifiedAlert />}
         </div>
       </GridLeftColumn>
 
@@ -375,40 +367,32 @@ function RequirementsStep({
   integration,
   schema,
   formRef,
-  onBack,
-  onConnect,
-  isLoading,
 }: {
   integration: MarketplaceIntegration;
   schema: JSONSchema7;
   formRef: React.RefObject<UseFormReturn<Record<string, unknown>> | null>;
-  onBack: () => void;
-  onConnect: () => void;
-  isLoading: boolean;
 }) {
   return (
     <GridContainer>
       {/* Left side: App title and instructions */}
       <GridLeftColumn>
-        <div className="space-y-6">
+        <div className="space-y-8">
           <IntegrationWorkspaceIcon integration={integration} />
           {/* App title */}
           <div className="space-y-2">
-            <h2 className="text-2xl font-bold">
-              Connect to {integration.friendlyName ?? integration.name}
-            </h2>
-            <h3 className="text-lg font-semibold">
+            <h3 className="text-xl text-base-foreground">
               Add required tools for{" "}
-              {integration.friendlyName ?? integration.name} or choose from
-              connected ones
+              <span className="font-bold">
+                {integration.friendlyName ?? integration.name}
+              </span>{" "}
+              or choose from connected ones
             </h3>
           </div>
+        </div>
 
-          {/* App description */}
-          <div className="text-sm text-muted-foreground">
-            Configure the required integrations and tools for this app to
-            function properly.
-          </div>
+        {/* Warning at bottom left */}
+        <div className="mt-auto">
+          {!integration.verified && <IntegrationNotVerifiedAlert />}
         </div>
       </GridLeftColumn>
 

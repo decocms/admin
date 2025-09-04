@@ -4,6 +4,7 @@ import type { WorkspaceDB } from "./index.ts";
 import type { WorkflowDO } from "./workflow.ts";
 import type { z } from "zod";
 
+// deno-lint-ignore no-explicit-any
 export interface DeprecatedEnv<TSchema extends z.ZodTypeAny = any> {
   /**
    * @deprecated Use DECO_REQUEST_CONTEXT instead

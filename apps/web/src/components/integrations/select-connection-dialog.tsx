@@ -5,7 +5,6 @@ import { Button } from "@deco/ui/components/button.tsx";
 import {
   Dialog,
   DialogContent,
-  DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogTitle,
@@ -13,6 +12,8 @@ import {
 } from "@deco/ui/components/dialog.tsx";
 import { Icon } from "@deco/ui/components/icon.tsx";
 import { Input } from "@deco/ui/components/input.tsx";
+import { ScrollArea } from "@deco/ui/components/scroll-area.tsx";
+import { Alert, AlertDescription } from "@deco/ui/components/alert.tsx";
 import { cn } from "@deco/ui/lib/utils.ts";
 import { useEffect, useMemo, useState, useRef } from "react";
 import { useSearchParams } from "react-router";
@@ -23,7 +24,10 @@ import {
   useNavigateWorkspace,
   useWorkspaceLink,
 } from "../../hooks/use-navigate-workspace.ts";
-import { IntegrationOauth } from "../integration-oauth.tsx";
+import {
+  IntegrationPermissions,
+  IntegrationBindingForm,
+} from "../integration-oauth.tsx";
 import { IntegrationIcon } from "./common.tsx";
 import { InstalledConnections } from "./installed-connections.tsx";
 import {
@@ -33,6 +37,52 @@ import {
 } from "./marketplace.tsx";
 import { OAuthCompletionDialog } from "./oauth-completion-dialog.tsx";
 import { UseFormReturn } from "react-hook-form";
+import type { JSONSchema7 } from "json-schema";
+import { useCurrentTeam } from "../sidebar/team-selector.tsx";
+import { Avatar } from "../common/avatar/index.tsx";
+
+function CurrentTeamIcon() {
+  const { avatarUrl, label } = useCurrentTeam();
+  return (
+    <Avatar
+      shape="square"
+      url={avatarUrl}
+      fallback={label}
+      objectFit="contain"
+      size="lg"
+    />
+  );
+}
+
+function IntegrationWorkspaceIcon({
+  integration,
+}: {
+  integration: MarketplaceIntegration | null;
+}) {
+  return (
+    <div className="flex items-center gap-2">
+      {/* Left app icon */}
+      <div className="w-12 h-12 rounded-lg flex items-center justify-center">
+        <IntegrationIcon
+          icon={integration?.icon}
+          name={integration?.friendlyName ?? integration?.name}
+          size="lg"
+        />
+      </div>
+      {/* Right workspace icon */}
+      <div className="w-12 h-12 rounded-lg flex items-center justify-center">
+        <CurrentTeamIcon />
+      </div>
+
+      {/* Connection arrow */}
+      <div className="flex items-center justify-center absolute -translate-x-1/2 ml-13 w-6 h-6 bg-white border rounded-lg">
+        <Icon name="sync_alt" size={16} className="text-muted-foreground" />
+      </div>
+    </div>
+  );
+}
+
+type DialogStep = "permissions" | "requirements";
 
 export function ConfirmMarketplaceInstallDialog({
   integration,
@@ -53,9 +103,10 @@ export function ConfirmMarketplaceInstallDialog({
   const { install, integrationState, isLoading } = useIntegrationInstall(
     integration?.name,
   );
-  const formRef = useRef<UseFormReturn<any>>(null);
+  const formRef = useRef<UseFormReturn<Record<string, unknown>> | null>(null);
   const buildWorkspaceUrl = useWorkspaceLink();
   const navigateWorkspace = useNavigateWorkspace();
+  const [currentStep, setCurrentStep] = useState<DialogStep>("permissions");
   const handleConnect = async () => {
     if (!integration) return;
 
@@ -66,12 +117,15 @@ export function ConfirmMarketplaceInstallDialog({
 
     const formData = formRef.current?.getValues() ?? null;
     try {
-      const result = await install({
-        appId: integration.id,
-        appName: integration.name,
-        provider: integration.provider,
-        returnUrl: returnUrl.href,
-      }, formData);
+      const result = await install(
+        {
+          appId: integration.id,
+          appName: integration.name,
+          provider: integration.provider,
+          returnUrl: returnUrl.href,
+        },
+        formData,
+      );
 
       if (typeof result.integration?.id !== "string") {
         console.error(
@@ -122,64 +176,230 @@ export function ConfirmMarketplaceInstallDialog({
     }
   };
 
+  // Reset step when dialog closes/opens
+  useEffect(() => {
+    if (open) {
+      setCurrentStep("permissions");
+    }
+  }, [open]);
+
   if (!integration) return null;
+
+  const hasRequirements =
+    integrationState.schema &&
+    Object.keys(integrationState.schema.properties || {}).length > 0;
+
+  const handleContinueFromPermissions = () => {
+    if (hasRequirements) {
+      setCurrentStep("requirements");
+    } else {
+      handleConnect();
+    }
+  };
+
+  const handleBack = () => {
+    setCurrentStep("permissions");
+  };
 
   return (
     <Dialog open={open} onOpenChange={() => setIntegration(null)}>
-      <DialogContent>
+      <DialogContent className="!w-210 !max-w-210 max-h-[80vh]">
         <DialogHeader>
           <DialogTitle>
             Connect to {integration.friendlyName ?? integration.name}
           </DialogTitle>
-          <DialogDescription>
-            <div className="mt-4">
-              <div className="grid grid-cols-[80px_1fr] items-start gap-4">
-                <IntegrationIcon
-                  icon={integration?.icon}
-                  name={integration?.friendlyName ?? integration?.name}
-                />
-                <div>
-                  <div className="text-sm text-muted-foreground whitespace-pre-line">
-                    {integration?.description}
-                  </div>
-                </div>
-              </div>
-              {!integration.verified && (
-                <div className="mt-4 p-3 bg-accent border border-border rounded-xl text-sm">
-                  <div className="flex items-center gap-2">
-                    <Icon name="info" size={16} />
-                    <span className="font-medium">Third-party integration</span>
-                  </div>
-                  <p className="mt-1">
-                    This integration is provided by a third party and is not
-                    maintained by deco.
-                    <br />
-                    Provider:{" "}
-                    <span className="font-medium">{integration.provider}</span>
-                  </p>
-                </div>
-              )}
-            </div>
-          </DialogDescription>
         </DialogHeader>
-        {integrationState.schema && (
-          <IntegrationOauth
-            permissions={integrationState.permissions}
-            integrationName={integration.name}
-            schema={integrationState.schema}
-            formRef={formRef}
+
+        {/* Step 1: Permissions */}
+        {currentStep === "permissions" && (
+          <PermissionsStep
+            integration={integration}
+            integrationState={integrationState}
+            onContinue={handleContinueFromPermissions}
+            isLoading={isLoading}
+            hasRequirements={hasRequirements}
           />
         )}
-        <DialogFooter>
-          <Button
-            onClick={isLoading ? undefined : handleConnect}
-            disabled={isLoading}
-          >
-            {isLoading ? "Connecting..." : "Connect"}
-          </Button>
-        </DialogFooter>
+
+        {/* Step 2: Requirements */}
+        {currentStep === "requirements" && integrationState.schema && (
+          <RequirementsStep
+            integration={integration}
+            schema={integrationState.schema}
+            formRef={formRef}
+            onBack={handleBack}
+            onConnect={handleConnect}
+            isLoading={isLoading}
+          />
+        )}
       </DialogContent>
     </Dialog>
+  );
+}
+
+// Step 1: Permissions
+function PermissionsStep({
+  integration,
+  integrationState,
+  onContinue,
+  isLoading,
+  hasRequirements,
+}: {
+  integration: MarketplaceIntegration;
+  integrationState: {
+    permissions?: Array<{ scope: string; description: string }>;
+  };
+  onContinue: () => void;
+  isLoading: boolean;
+  hasRequirements: boolean;
+}) {
+  return (
+    <>
+      <div className="flex-1 min-h-0">
+        <div className="grid grid-cols-2 gap-6 h-full">
+          {/* Left side: App icons, connection, and warning */}
+          <div className="flex flex-col justify-between">
+            {/* App icons with connection arrow */}
+            <div className="space-y-6">
+              <IntegrationWorkspaceIcon integration={integration} />
+
+              {/* Permissions description */}
+              <div className="text-center">
+                <h3 className="text-lg font-semibold">
+                  {integration.friendlyName ?? integration.name} will have
+                  access to the following permissions:
+                </h3>
+              </div>
+            </div>
+
+            {/* Warning at bottom left */}
+            <div className="mt-auto">
+              {!integration.verified && (
+                <Alert className="border-warning bg-warning/10 text-warning-foreground">
+                  <Icon name="warning" size={16} className="text-warning" />
+                  <AlertDescription>
+                    <div className="flex items-center gap-2">
+                      <span className="font-medium">
+                        Third-party integration
+                      </span>
+                    </div>
+                    <p className="mt-1 text-sm">
+                      This integration is provided by a third party and is not
+                      maintained by deco.
+                      <br />
+                      Provider:{" "}
+                      <span className="font-medium">
+                        {integration.provider}
+                      </span>
+                    </p>
+                  </AlertDescription>
+                </Alert>
+              )}
+            </div>
+          </div>
+
+          {/* Right side: Scrollable permissions */}
+          <div className="border-l pl-6">
+            <ScrollArea className="h-[400px] pr-4">
+              {integrationState.permissions &&
+              integrationState.permissions.length > 0 ? (
+                <IntegrationPermissions
+                  integrationName={integration.name}
+                  permissions={integrationState.permissions}
+                />
+              ) : (
+                <div className="flex items-center justify-center h-32 text-muted-foreground">
+                  <div className="text-center">
+                    <Icon
+                      name="check_circle"
+                      size={48}
+                      className="mx-auto mb-2 text-success"
+                    />
+                    <p>No special permissions required</p>
+                  </div>
+                </div>
+              )}
+            </ScrollArea>
+          </div>
+        </div>
+      </div>
+
+      <DialogFooter>
+        <Button
+          onClick={isLoading ? undefined : onContinue}
+          disabled={isLoading}
+        >
+          {isLoading ? "Loading..." : hasRequirements ? "Continue" : "Connect"}
+        </Button>
+      </DialogFooter>
+    </>
+  );
+}
+
+// Step 2: Requirements
+function RequirementsStep({
+  integration,
+  schema,
+  formRef,
+  onBack,
+  onConnect,
+  isLoading,
+}: {
+  integration: MarketplaceIntegration;
+  schema: JSONSchema7;
+  formRef: React.RefObject<UseFormReturn<Record<string, unknown>> | null>;
+  onBack: () => void;
+  onConnect: () => void;
+  isLoading: boolean;
+}) {
+  return (
+    <>
+      <div className="flex-1 min-h-0">
+        <div className="grid grid-cols-2 gap-6 h-full">
+          {/* Left side: App title and instructions */}
+          <div className="space-y-6">
+            <IntegrationWorkspaceIcon integration={integration} />
+            {/* App title */}
+            <div className="space-y-2">
+              <h2 className="text-2xl font-bold">
+                Connect to {integration.friendlyName ?? integration.name}
+              </h2>
+              <h3 className="text-lg font-semibold">
+                Add required tools for{" "}
+                {integration.friendlyName ?? integration.name} or choose from
+                connected ones
+              </h3>
+            </div>
+
+            {/* App description */}
+            <div className="text-sm text-muted-foreground">
+              Configure the required integrations and tools for this app to
+              function properly.
+            </div>
+          </div>
+
+          {/* Right side: Configuration form */}
+          <div className="border-l pl-6">
+            <div className="space-y-6">
+              <h3 className="text-lg font-semibold">Configuration</h3>
+              <IntegrationBindingForm schema={schema} formRef={formRef} />
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <DialogFooter className="flex justify-between">
+        <Button variant="outline" onClick={onBack}>
+          Back
+        </Button>
+        <Button
+          onClick={isLoading ? undefined : onConnect}
+          disabled={isLoading}
+        >
+          {isLoading ? "Connecting..." : "Continue"}
+        </Button>
+      </DialogFooter>
+    </>
   );
 }
 

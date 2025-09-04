@@ -9,7 +9,7 @@ import {
 } from "@deco/sdk/hooks";
 import type { Integration } from "@deco/sdk/models";
 import type { JSONSchema7 } from "json-schema";
-import { useState } from "react";
+import { useState as _useState } from "react";
 import { useWorkspaceLink } from "./use-navigate-workspace.ts";
 import { useMutation } from "@tanstack/react-query";
 import { createPolicyStatements, getAllScopes } from "../utils/scopes.ts";

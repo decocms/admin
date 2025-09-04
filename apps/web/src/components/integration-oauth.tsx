@@ -1,7 +1,6 @@
 import { FormProvider, useForm, UseFormReturn } from "react-hook-form";
 import { Badge } from "@deco/ui/components/badge.tsx";
 import { Separator } from "@deco/ui/components/separator.tsx";
-import { Alert, AlertDescription } from "@deco/ui/components/alert.tsx";
 import type { JSONSchema7 } from "json-schema";
 import JsonSchemaForm from "./json-schema/index.tsx";
 import { generateDefaultValues } from "./json-schema/utils/generate-default-values.ts";
@@ -20,18 +19,11 @@ interface IntegrationPermissionsProps {
 }
 
 export function IntegrationPermissions({
-  integrationName,
+  integrationName: _integrationName,
   permissions,
 }: IntegrationPermissionsProps) {
   return (
     <div className="space-y-4">
-      <Alert>
-        <AlertDescription>
-          <strong>{integrationName}</strong> will have access to the following
-          permissions:
-        </AlertDescription>
-      </Alert>
-
       <div className="grid gap-2">
         {permissions.map((permission, index) => (
           <div
@@ -58,10 +50,10 @@ export function IntegrationPermissions({
 
 interface IntegrationBindingFormProps {
   schema: JSONSchema7;
-  formRef: RefObject<UseFormReturn<any> | null>;
+  formRef: RefObject<UseFormReturn<unknown> | null>;
 }
 const noop = () => {};
-function IntegrationBindingForm({
+export function IntegrationBindingForm({
   schema,
   formRef,
 }: IntegrationBindingFormProps) {

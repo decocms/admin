@@ -21,9 +21,11 @@ const bindingIsEqual = (a: DoBinding, b: DoBinding): boolean => {
   return a.class_name === b.class_name;
 };
 const bindingsAreEqual = (a: DoBinding[], b: DoBinding[]): boolean => {
+  const aSorted = a.sort((a, b) => a.class_name.localeCompare(b.class_name));
+  const bSorted = b.sort((a, b) => a.class_name.localeCompare(b.class_name));
   return (
-    a.length === b.length &&
-    a.every((binding, index) => bindingIsEqual(binding, b[index]))
+    aSorted.length === bSorted.length &&
+    aSorted.every((binding, index) => bindingIsEqual(binding, bSorted[index]))
   );
 };
 const applyMigration =
@@ -37,7 +39,6 @@ const applyMigration =
 
     if ("new_classes" in migration) {
       bindingsResult = [
-        ...bindings,
         ...(migration.new_classes?.map((className) => ({
           class_name: className,
           name: className,
@@ -54,7 +55,7 @@ const applyMigration =
 
     if ("new_sqlite_classes" in migration) {
       bindingsResult = [
-        ...bindings,
+        ...bindingsResult,
         ...(migration.new_sqlite_classes?.map((className) => ({
           class_name: className,
           name: className,
@@ -70,9 +71,12 @@ const applyMigration =
     }
 
     if ("deleted_classes" in migration) {
-      bindingsResult = bindings.filter(
-        (binding) => !migration.deleted_classes.includes(binding.class_name),
-      );
+      bindingsResult = [
+        ...bindingsResult,
+        ...bindings.filter(
+          (binding) => !migration.deleted_classes.includes(binding.class_name),
+        ),
+      ];
       if (shouldRunMigration) {
         stepMigration.deleted_classes = [
           ...(stepMigration.deleted_classes ?? []),
@@ -89,10 +93,13 @@ const applyMigration =
         },
         {} as Record<string, string>,
       );
-      bindingsResult = bindings.map((binding) => ({
-        ...binding,
-        class_name: renamedClasses[binding.class_name] ?? binding.class_name,
-      }));
+      bindingsResult = [
+        ...bindingsResult,
+        ...bindings.map((binding) => ({
+          ...binding,
+          class_name: renamedClasses[binding.class_name] ?? binding.class_name,
+        })),
+      ];
       if (shouldRunMigration) {
         stepMigration.renamed_classes = [
           ...(stepMigration.renamed_classes ?? []),

@@ -686,7 +686,10 @@ Important Notes:
     hosts: z.array(z.string()).describe("The hosts of the app"),
     id: z.string().describe("The id of the app"),
     workspace: z.string().describe("The workspace of the app"),
-    deploymentId: z.string().describe("The deployment id of the app"),
+    deploymentId: z
+      .string()
+      .describe("The deployment id of the app")
+      .optional(),
   }),
   handler: async (
     {

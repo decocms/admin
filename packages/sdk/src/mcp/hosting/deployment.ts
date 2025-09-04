@@ -266,10 +266,10 @@ export async function deployToCloudflare({
       class_name: binding.class_name,
     })) ?? [];
   const hasAnyDoAsideWorkflows = durableObjects.some(
-    (durableObject) => "Workflow" === durableObject.class_name,
+    (durableObject) => "DECO_CHAT_WORKFLOW_DO" !== durableObject.name,
   );
 
-  const deploymentId = hasAnyDoAsideWorkflows ? uid.rnd() : undefined;
+  const deploymentId = hasAnyDoAsideWorkflows ? undefined : uid.rnd();
   const scriptSlug = Entrypoint.id(wranglerName, deploymentId);
   await Promise.all(
     (routes ?? []).map(

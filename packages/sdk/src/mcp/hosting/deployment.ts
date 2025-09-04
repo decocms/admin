@@ -306,8 +306,8 @@ export async function deployToCloudflare({
 
   // Backwards compatibility
   const deprecatedEnvVars = {
-    DECO_CHAT_APP_DEPLOYMENT_ID: deploymentId,
-    DECO_CHAT_APP_ENTRYPOINT: Entrypoint.build(scriptSlug, deploymentId),
+    DECO_CHAT_APP_DEPLOYMENT_ID: decoEnvVars.DECO_APP_DEPLOYMENT_ID,
+    DECO_CHAT_APP_ENTRYPOINT: decoEnvVars.DECO_APP_ENTRYPOINT,
   };
 
   const envVars: Record<string, string | undefined> = {

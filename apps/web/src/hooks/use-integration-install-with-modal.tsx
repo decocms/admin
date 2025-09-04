@@ -117,9 +117,6 @@ export function useIntegrationInstallWithModal() {
           appName: params.appName,
           provider: params.provider,
         });
-      } else if (result.redirectUrl) {
-        // Handle redirect URL as before
-        globalThis.location.href = result.redirectUrl;
       }
 
       return result;

@@ -228,7 +228,8 @@ function AddConnectionDialogContent({
     open: boolean;
     url: string;
     integrationName: string;
-  }>({ open: false, url: "", integrationName: "" });
+    connection: Integration | null;
+  }>({ open: false, url: "", integrationName: "", connection: null });
   const navigateWorkspace = useNavigateWorkspace();
   const showEmptyState = search.length > 0;
   const { mutateAsync: getRegistryApp } = useGetRegistryApp();
@@ -380,7 +381,6 @@ function AddConnectionDialogContent({
         integration={installingIntegration}
         setIntegration={setInstallingIntegration}
         onConfirm={({ connection, authorizeOauthUrl }) => {
-          onSelect?.(connection);
           if (authorizeOauthUrl) {
             const popup = globalThis.open(authorizeOauthUrl, "_blank");
             if (!popup || popup.closed || typeof popup.closed === "undefined") {
@@ -388,16 +388,26 @@ function AddConnectionDialogContent({
                 open: true,
                 url: authorizeOauthUrl,
                 integrationName: installingIntegration?.name || "the service",
+                connection: connection,
               });
+            }else{
+              onSelect?.(connection);
             }
+          }else{
+            onSelect?.(connection);
           }
         }}
       />
 
       <OAuthCompletionDialog
         open={oauthCompletionDialog.open}
-        onOpenChange={(open) =>
+        onOpenChange={(open) => {
           setOauthCompletionDialog((prev) => ({ ...prev, open }))
+          if(oauthCompletionDialog.connection){
+            onSelect?.(oauthCompletionDialog.connection);
+          }
+        }
+          
         }
         authorizeOauthUrl={oauthCompletionDialog.url}
         integrationName={oauthCompletionDialog.integrationName}

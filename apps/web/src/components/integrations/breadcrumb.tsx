@@ -16,9 +16,12 @@ import type { ViewModeSwitcherProps } from "../common/view-mode-switcher.tsx";
 import type { Tab } from "../dock/index.tsx";
 import { DefaultBreadcrumb, PageLayout } from "../layout.tsx";
 import { SelectConnectionDialog } from "./select-connection-dialog.tsx";
+import { useNavigateWorkspace } from "../../hooks/use-navigate-workspace.ts";
+import { AppKeys, getConnectionAppKey } from "./apps.ts";
 
 export function IntegrationPageLayout({ tabs }: { tabs: Record<string, Tab> }) {
   const [error, setError] = useState<string | null>(null);
+  const navigateWorkspace = useNavigateWorkspace();
 
   return (
     <>
@@ -29,7 +32,15 @@ export function IntegrationPageLayout({ tabs }: { tabs: Record<string, Tab> }) {
             items={[{ label: "Integrations", link: "/connections" }]}
           />
         }
-        actionButtons={<SelectConnectionDialog forceTab="new-connection" />}
+        actionButtons={<SelectConnectionDialog 
+          forceTab="new-connection" 
+          onSelect={(integration) => {
+            const key = getConnectionAppKey(integration);
+            const appKey = AppKeys.build(key);
+            navigateWorkspace(`/connection/${appKey}`);
+            console.log("integration", integration);
+          }}
+        />}
         tabs={tabs}
       />
       <AlertDialog open={!!error} onOpenChange={() => setError(null)}>

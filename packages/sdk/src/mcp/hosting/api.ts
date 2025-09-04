@@ -852,8 +852,15 @@ Important Notes:
         .REGISTRY_PUBLISH_APP({
           name: scriptSlug,
           scopeName: wranglerConfig?.scope ?? c.workspace.slug,
-          description: `App ${scriptSlug} by deco workers for workspace ${workspace}`,
-          icon: "https://assets.decocache.com/mcp/09e44283-f47d-4046-955f-816d227c626f/app.png",
+          description:
+            wranglerConfig?.description ??
+            `App ${scriptSlug} by deco workers for workspace ${workspace}`,
+          friendlyName:
+            wranglerConfig?.friendly_name ??
+            `App ${scriptSlug} by deco workers for workspace ${workspace}`,
+          icon:
+            wranglerConfig?.icon ??
+            "https://assets.decocache.com/mcp/09e44283-f47d-4046-955f-816d227c626f/app.png",
           ...wranglerConfig.deco?.integration,
           unlisted: isUnlisted,
           connection: Entrypoint.mcp(data.entrypoint),

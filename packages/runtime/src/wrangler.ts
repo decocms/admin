@@ -81,6 +81,9 @@ export interface Route {
 
 export interface WranglerConfig {
   name: string;
+  icon?: string;
+  friendly_name?: string;
+  description?: string;
   main?: string;
   scope?: string;
   main_module?: string;

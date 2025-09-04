@@ -84,7 +84,7 @@ export const MCPClient = new Proxy(
           createMCPFetchStub<[]>({
             workspace,
             token,
-            decoCmsApiUrl: (env as DefaultEnv).DECO_API_URL,
+            decoChatApiUrl: (env as DefaultEnv).DECO_CHAT_API_URL,
           });
       }
       if (name === "forConnection") {
@@ -93,7 +93,7 @@ export const MCPClient = new Proxy(
         ) =>
           createMCPFetchStub<TDefinition>({
             connection,
-            decoCmsApiUrl: (env as DefaultEnv).DECO_API_URL,
+            decoChatApiUrl: (env as DefaultEnv).DECO_CHAT_API_URL,
           });
       }
       return global[name as keyof typeof global];
@@ -146,7 +146,7 @@ export interface MCPClientRaw {
 }
 export type JSONSchemaToZodConverter = (jsonSchema: any) => z.ZodTypeAny;
 export interface CreateStubAPIOptions {
-  decoCmsApiUrl?: string;
+  decoChatApiUrl?: string;
   workspace?: string;
   token?: string;
   connection?: MCPConnectionProvider;

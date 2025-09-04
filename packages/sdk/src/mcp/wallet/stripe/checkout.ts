@@ -160,7 +160,7 @@ const handleWorkspaceWalletDeposit: ProductHandler<
         price_data: {
           currency: "brl",
           product_data: {
-            name: "Deco Wallet Credits",
+            name: "Deco.chat Credits",
           },
           unit_amount: unitAmount,
         },

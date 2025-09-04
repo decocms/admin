@@ -44,7 +44,7 @@ import { dirname, join } from "path";
 import { fileURLToPath } from "url";
 import { spawn } from "child_process";
 import { deleteSession, readSession, setToken } from "./lib/session.js";
-import { DECO_CMS_API_LOCAL } from "./lib/constants.js";
+import { DECO_CHAT_API_LOCAL } from "./lib/constants.js";
 import {
   getAppDomain,
   getConfig,
@@ -76,11 +76,11 @@ const packageJson = JSON.parse(await readFile(packageJsonPath, "utf-8"));
 
 // Login command implementation
 const login = new Command("login")
-  .description("Log in to admin.decocms.com and retrieve tokens for CLI usage.")
+  .description("Log in to deco.chat and retrieve tokens for CLI usage.")
   .action(async () => {
     try {
       await loginCommand();
-      console.log("✅ Successfully logged in to admin.decocms.com");
+      console.log("✅ Successfully logged in to deco.chat");
     } catch (error) {
       console.error(
         "❌ Login failed:",
@@ -92,7 +92,7 @@ const login = new Command("login")
 
 // Placeholder for logout command implementation
 const logout = new Command("logout")
-  .description("Log out of admin.decocms.com and remove local session data.")
+  .description("Log out of deco.chat and remove local session data.")
   .action(async () => {
     try {
       await deleteSession();
@@ -445,7 +445,7 @@ const program = new Command()
   )
   .option(
     "-l, --local",
-    `Deploy the app locally (Needs admin.decocms.com running at ${DECO_CMS_API_LOCAL})`,
+    `Deploy the app locally (Needs deco.chat running at ${DECO_CHAT_API_LOCAL})`,
     () => {
       setLocal(true);
     },

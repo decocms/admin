@@ -2,8 +2,7 @@ import { createServerClient } from "@supabase/ssr";
 import { JwtIssuer } from "./jwt.ts";
 
 const Hosts = {
-  API: "api.decocms.com",
-  API_LEGACY: "api.deco.chat",
+  API: "api.deco.chat",
   APPS: "deco.page",
 } as const;
 
@@ -40,8 +39,7 @@ export default {
             env?.DECO_CHAT_API?.fetch(req, opts) ?? fetch(req, opts)
         : fetch;
       const isAuthorized = typeof req.headers.get("Authorization") === "string";
-      const isApiHost = host === Hosts.API || host === Hosts.API_LEGACY;
-      if (!isApiHost || isAuthorized) {
+      if (host !== Hosts.API || isAuthorized) {
         // just forward the request to the target url
         return fetcher(req);
       }

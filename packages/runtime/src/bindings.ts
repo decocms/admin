@@ -11,7 +11,7 @@ import type {
 interface IntegrationContext {
   integrationId: string;
   workspace: string;
-  decoCmsApiUrl?: string;
+  decoChatApiUrl?: string;
 }
 
 const normalizeWorkspace = (workspace: string) => {
@@ -36,7 +36,7 @@ const createAppsUrl = ({
 }) =>
   new URL(
     `/apps/mcp?appName=${appName}`,
-    decoChatApiUrl ?? "https://api.decocms.com",
+    decoChatApiUrl ?? "https://api.deco.chat",
   ).href;
 /**
  * Url: /:workspace.root/:workspace.slug/:integrationId/mcp
@@ -44,11 +44,11 @@ const createAppsUrl = ({
 const createIntegrationsUrl = ({
   integrationId,
   workspace,
-  decoCmsApiUrl,
+  decoChatApiUrl,
 }: IntegrationContext) =>
   new URL(
     `${normalizeWorkspace(workspace)}/${integrationId}/mcp`,
-    decoCmsApiUrl ?? "https://api.decocms.com",
+    decoChatApiUrl ?? "https://api.deco.chat",
   ).href;
 
 type WorkspaceClientContext = Omit<
@@ -83,7 +83,7 @@ const mcpClientForIntegrationId = (
     url: createIntegrationsUrl({
       integrationId,
       workspace: ctx.workspace,
-      decoCmsApiUrl: decoChatApiUrl,
+      decoChatApiUrl,
     }),
     token: ctx.token,
   };
@@ -96,7 +96,7 @@ function mcpClientFromState(
   binding: BindingBase | MCPIntegrationNameBinding,
   env: DefaultEnv,
 ) {
-  const ctx = env.DECO_REQUEST_CONTEXT;
+  const ctx = env.DECO_CHAT_REQUEST_CONTEXT;
   const bindingFromState = ctx?.state?.[binding.name];
   const integrationId =
     bindingFromState &&
@@ -106,9 +106,9 @@ function mcpClientFromState(
       : undefined;
   if (typeof integrationId !== "string" && "integration_name" in binding) {
     // in case of a binding to an app name, we need to use the new apps/mcp endpoint which will proxy the request to the app but without any token
-    return mcpClientForAppName(binding.integration_name, env.DECO_API_URL);
+    return mcpClientForAppName(binding.integration_name, env.DECO_CHAT_API_URL);
   }
-  return mcpClientForIntegrationId(integrationId, ctx, env.DECO_API_URL);
+  return mcpClientForIntegrationId(integrationId, ctx, env.DECO_CHAT_API_URL);
 }
 
 export const createContractBinding = (
@@ -131,9 +131,9 @@ export const createIntegrationBinding = (
   return mcpClientForIntegrationId(
     integrationId,
     {
-      workspace: env.DECO_WORKSPACE,
-      token: env.DECO_API_TOKEN,
+      workspace: env.DECO_CHAT_WORKSPACE,
+      token: env.DECO_CHAT_API_TOKEN,
     },
-    env.DECO_API_URL,
+    env.DECO_CHAT_API_URL,
   );
 };

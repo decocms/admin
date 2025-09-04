@@ -289,7 +289,7 @@ export function ContextResources({
         content: new Uint8Array(buffer),
       });
 
-      const url = `https://${Hosts.API_LEGACY}/files/${workspace}/${path}`; // does not work when running locally
+      const url = `https://${Hosts.API}/files/${workspace}/${path}`; // does not work when running locally
 
       setUploadedFiles((prev) =>
         prev.map((uf) =>

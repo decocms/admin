@@ -310,7 +310,7 @@ function WorkflowEmptyState() {
             <p>
               Install the CLI to create workflows.{" "}
               <a
-                href="https://docs.decocms.com"
+                href="https://docs.deco.chat"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="text-primary hover:underline"

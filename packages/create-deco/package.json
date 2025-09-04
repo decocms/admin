@@ -1,7 +1,7 @@
 {
   "name": "create-deco",
-  "version": "1.0.7",
-  "description": "Create a new deco app",
+  "version": "1.0.6",
+  "description": "Create a new deco.chat project",
   "main": "index.js",
   "bin": {
     "create-deco": "./index.js"
@@ -12,7 +12,7 @@
   "keywords": [
     "create",
     "deco",
-    "app",
+    "chat",
     "template",
     "scaffolding",
     "cli"

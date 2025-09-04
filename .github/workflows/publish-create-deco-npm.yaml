@@ -88,6 +88,6 @@ jobs:
             ```
 
             ### Usage
-            Create a new deco project with integrated authentication and workspace selection.
+            Create a new deco.chat project with integrated authentication and workspace selection.
           draft: false
           prerelease: false

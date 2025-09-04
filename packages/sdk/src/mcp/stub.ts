@@ -1,4 +1,4 @@
-import { DECO_CMS_API_URL, getTraceDebugId } from "../constants.ts";
+import { DECO_CHAT_API, getTraceDebugId } from "../constants.ts";
 import { getErrorByStatusCode } from "../errors.ts";
 import type { MCPConnection } from "../models/mcp.ts";
 import type { AppContext } from "./context.ts";
@@ -52,7 +52,7 @@ export function createMCPFetchStub<TDefinition extends readonly ToolBinder[]>(
 ): MCPClientFetchStub<TDefinition> {
   return createMCPClientProxy<MCPClientFetchStub<TDefinition>>({
     ...options,
-    decoCmsApiUrl: DECO_CMS_API_URL,
+    decoChatApiUrl: DECO_CHAT_API,
     debugId: getTraceDebugId,
     getErrorByStatusCode,
   });

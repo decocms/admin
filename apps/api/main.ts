@@ -15,7 +15,7 @@ const instrumentedApp = instrument(app);
 
 // Domains we consider "self"
 const SELF_DOMAINS: string[] = [
-  Hosts.API_LEGACY,
+  Hosts.API,
   // @ts-expect-error env is not typed
   ...(env.VITE_USE_LOCAL_BACKEND ? [] : [Hosts.APPS]),
   // @ts-expect-error env is not typed

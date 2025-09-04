@@ -7,12 +7,7 @@ import {
 import { Hosts } from "../../hosts.ts";
 import { DEBUG_QS, REQUEST_CONTEXT_KEY } from "../constants.ts";
 
-const ALLOWED_HOSTS: string[] = [
-  Hosts.API,
-  Hosts.WEB_APP,
-  Hosts.API_LEGACY,
-  Hosts.WEB_APP_LEGACY,
-];
+const ALLOWED_HOSTS: string[] = [Hosts.FS, Hosts.API, Hosts.Chat];
 
 export const reqCorrelationId = (req: Request) => {
   const url = new URL(req.url);

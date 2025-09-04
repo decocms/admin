@@ -93,7 +93,7 @@ export async function verifyJWT<
   return payload as JwtPayloadWithClaims<TClaims>;
 }
 
-const DECO_CHAT_ISSUER = "https://api.decocms.com";
+const DECO_CHAT_ISSUER = "https://api.deco.chat";
 
 export type JwtPayloadWithClaims<
   TClaims extends Record<string, unknown> = Record<string, unknown>,

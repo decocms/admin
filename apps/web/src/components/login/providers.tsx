@@ -1,4 +1,4 @@
-import { AUTH_URL_CLI, DECO_CMS_API_URL } from "@deco/sdk";
+import { AUTH_URL_CLI, DECO_CHAT_API } from "@deco/sdk";
 
 interface Options {
   next?: string | null;
@@ -18,7 +18,7 @@ export const providers: Provider[] = [
     iconURL:
       "https://assets.decocache.com/webdraw/eb7480aa-a68b-4ce4-98ff-36aa121762a7/google.svg",
     authURL: ({ next, cli }) => {
-      const url = new URL(cli ? AUTH_URL_CLI : DECO_CMS_API_URL);
+      const url = new URL(cli ? AUTH_URL_CLI : DECO_CHAT_API);
       url.pathname = "/login/oauth";
       url.searchParams.set("provider", "google");
       if (next) {
@@ -32,7 +32,7 @@ export const providers: Provider[] = [
     iconURL:
       "https://assets.decocache.com/webdraw/5f999dcb-c8a6-4572-948c-9996ef1d502f/github.svg",
     authURL: ({ next, cli }) => {
-      const url = new URL(cli ? AUTH_URL_CLI : DECO_CMS_API_URL);
+      const url = new URL(cli ? AUTH_URL_CLI : DECO_CHAT_API);
       url.pathname = "/login/oauth";
       url.searchParams.set("provider", "github");
       if (next) {

@@ -1,6 +1,6 @@
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { StreamableHTTPClientTransport } from "@modelcontextprotocol/sdk/client/streamableHttp.js";
-import { DECO_CMS_API_LOCAL, DECO_CMS_API_PROD } from "./constants.js";
+import { DECO_CHAT_API_LOCAL, DECO_CHAT_API_PROD } from "./constants.js";
 import { getRequestAuthHeaders } from "./session.js";
 
 interface Options {
@@ -9,7 +9,7 @@ interface Options {
 }
 export const workspaceClientParams = async ({ workspace, local }: Options) => {
   const headers = await getRequestAuthHeaders();
-  const api = local ? DECO_CMS_API_LOCAL : DECO_CMS_API_PROD;
+  const api = local ? DECO_CHAT_API_LOCAL : DECO_CHAT_API_PROD;
 
   const url = new URL(
     !workspace || workspace.startsWith("/")

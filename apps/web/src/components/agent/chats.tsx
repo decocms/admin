@@ -89,9 +89,9 @@ function Page() {
           description="The agent you’re trying to access is no longer publicly available. Its visibility may have changed or it might have been removed."
           buttonProps={{
             variant: "outline",
-            children: "Create your agent at deco CMS",
+            children: "Create your agent at deco.chat",
             onClick: () => {
-              location.href = "https://admin.decocms.com";
+              location.href = "https://deco.chat";
             },
           }}
         />

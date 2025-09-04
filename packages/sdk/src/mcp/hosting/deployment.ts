@@ -214,7 +214,7 @@ const localhost =
 const DEFAULT_HEADERS_FILE = () =>
   `# Default headers for static assets
 /*
-  Content-Security-Policy: frame-ancestors 'self' https://deco.chat/ https://admin.decocms.com/ ${localhost}
+  Content-Security-Policy: frame-ancestors 'self' https://deco.chat/ ${localhost}
   X-Deco-Worker-Cdn: 1
 `;
 
@@ -266,9 +266,7 @@ export async function deployToCloudflare({
       class_name: binding.class_name,
     })) ?? [];
   const hasAnyDoAsideWorkflows = durableObjects.some(
-    (durableObject) =>
-      "DECO_CHAT_WORKFLOW_DO" !== durableObject.name &&
-      "DECO_WORKFLOW_DO" !== durableObject.name,
+    (durableObject) => "DECO_CHAT_WORKFLOW_DO" !== durableObject.name,
   );
 
   const deploymentId = hasAnyDoAsideWorkflows ? undefined : uid.rnd();
@@ -299,30 +297,16 @@ export async function deployToCloudflare({
     ),
   );
 
-  const decoEnvVars = {
-    DECO_APP_DEPLOYMENT_ID: deploymentId,
-    DECO_APP_ENTRYPOINT: Entrypoint.build(scriptSlug, deploymentId),
-  };
-
-  // Backwards compatibility
-  const deprecatedEnvVars = {
-    DECO_CHAT_APP_DEPLOYMENT_ID: decoEnvVars.DECO_APP_DEPLOYMENT_ID,
-    DECO_CHAT_APP_ENTRYPOINT: decoEnvVars.DECO_APP_ENTRYPOINT,
-  };
-
   const envVars: Record<string, string | undefined> = {
     ..._envVars,
     ...vars,
-    ...deprecatedEnvVars,
-    ...decoEnvVars,
+    DECO_CHAT_APP_DEPLOYMENT_ID: deploymentId,
+    DECO_CHAT_APP_ENTRYPOINT: Entrypoint.build(scriptSlug, deploymentId),
   };
 
   const decoBindings = deco?.bindings ?? [];
   if (decoBindings.length > 0) {
-    const bindingsString = WorkersMCPBindings.stringify(decoBindings);
-    envVars["DECO_BINDINGS"] = bindingsString;
-    // Backwards compatibility
-    envVars["DECO_CHAT_BINDINGS"] = bindingsString;
+    envVars["DECO_CHAT_BINDINGS"] = WorkersMCPBindings.stringify(decoBindings);
   }
 
   const { bindings } =

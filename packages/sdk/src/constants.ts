@@ -26,13 +26,13 @@ if (isLocalhost && import.meta.env?.VITE_USE_LOCAL_BACKEND === undefined) {
 
 export const SUPABASE_URL = "https://auth.deco.cx";
 
-export const DECO_CMS_WEB_URL = LOCAL_DEBUGGER
+export const DECO_CHAT_WEB = LOCAL_DEBUGGER
   ? "http://localhost:3000"
-  : "https://admin.decocms.com";
+  : "https://deco.chat";
 
-export const DECO_CMS_API_URL = LOCAL_DEBUGGER
+export const DECO_CHAT_API = LOCAL_DEBUGGER
   ? "http://localhost:3001"
-  : "https://api.decocms.com";
+  : "https://api.deco.chat";
 
 export const AUTH_PORT_CLI = 3457;
 export const AUTH_URL_CLI = `http://localhost:${AUTH_PORT_CLI}`;

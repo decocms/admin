@@ -45,7 +45,7 @@ export const pickCapybaraAvatar = (id?: number) => {
     id ?? Math.floor(WELL_KNOWN_CAPYBARA_AVATARS.length * Math.random());
   const url = WELL_KNOWN_CAPYBARA_AVATARS[index];
 
-  const avatar = new URL("/image-optimize", "https://admin.decocms.com");
+  const avatar = new URL("/image-optimize", "https://deco.chat");
   avatar.searchParams.set("src", url);
   avatar.searchParams.set("width", "128");
   avatar.searchParams.set("height", "128");

@@ -24,7 +24,6 @@ import { State } from "./state.ts";
 import type { WorkflowDO } from "./workflow.ts";
 import { Workflow } from "./workflow.ts";
 import type { Binding, ContractBinding, MCPBinding } from "./wrangler.ts";
-import { DeprecatedEnv } from "./deprecated.ts";
 export {
   createMCPFetchStub,
   type CreateStubAPIOptions,
@@ -38,20 +37,19 @@ export interface WorkspaceDB {
   }) => Promise<{ result: QueryResult[] }>;
 }
 
-export interface DefaultEnv<TSchema extends z.ZodTypeAny = any>
-  extends DeprecatedEnv<TSchema> {
-  DECO_REQUEST_CONTEXT: RequestContext<TSchema>;
-  DECO_APP_NAME: string;
-  DECO_APP_SLUG: string;
-  DECO_APP_ENTRYPOINT: string;
-  DECO_API_URL?: string;
-  DECO_WORKSPACE: string;
-  DECO_API_JWT_PUBLIC_KEY: string;
-  DECO_APP_DEPLOYMENT_ID: string;
-  DECO_BINDINGS: string;
-  DECO_API_TOKEN: string;
-  DECO_WORKFLOW_DO: DurableObjectNamespace<WorkflowDO>;
-  DECO_WORKSPACE_DB: WorkspaceDB & {
+export interface DefaultEnv<TSchema extends z.ZodTypeAny = any> {
+  DECO_CHAT_REQUEST_CONTEXT: RequestContext<TSchema>;
+  DECO_CHAT_APP_NAME: string;
+  DECO_CHAT_APP_SLUG: string;
+  DECO_CHAT_APP_ENTRYPOINT: string;
+  DECO_CHAT_API_URL?: string;
+  DECO_CHAT_WORKSPACE: string;
+  DECO_CHAT_API_JWT_PUBLIC_KEY: string;
+  DECO_CHAT_APP_DEPLOYMENT_ID: string;
+  DECO_CHAT_BINDINGS: string;
+  DECO_CHAT_API_TOKEN: string;
+  DECO_CHAT_WORKFLOW_DO: DurableObjectNamespace<WorkflowDO>;
+  DECO_CHAT_WORKSPACE_DB: WorkspaceDB & {
     forContext: (ctx: RequestContext) => WorkspaceDB;
   };
   IS_LOCAL: boolean;
@@ -169,21 +167,12 @@ const withDefaultBindings = ({
       },
     },
   );
-
-  const workspaceDbBinding = {
+  env["DECO_CHAT_API"] = MCPClient;
+  env["DECO_CHAT_WORKSPACE_API"] = client;
+  env["DECO_CHAT_WORKSPACE_DB"] = {
     ...createWorkspaceDB(ctx),
     forContext: createWorkspaceDB,
   };
-
-  env["DECO_API"] = MCPClient;
-  env["DECO_WORKSPACE_API"] = client;
-  env["DECO_WORKSPACE_DB"] = workspaceDbBinding;
-
-  // Backwards compatibility
-  env["DECO_CHAT_API"] = MCPClient;
-  env["DECO_CHAT_WORKSPACE_API"] = client;
-  env["DECO_CHAT_WORKSPACE_DB"] = workspaceDbBinding;
-
   env["IS_LOCAL"] =
     (url?.startsWith("http://localhost") ||
       url?.startsWith("http://127.0.0.1")) ??
@@ -225,7 +214,7 @@ export const withBindings = <TEnv>({
 }): TEnv => {
   const env = _env as DefaultEnv<any>;
 
-  const apiUrl = env.DECO_API_URL ?? "https://api.decocms.com";
+  const apiUrl = env.DECO_CHAT_API_URL ?? "https://api.deco.chat";
   let context;
   if (typeof tokenOrContext === "string") {
     const decoded = decodeJwt(tokenOrContext);
@@ -245,16 +234,18 @@ export const withBindings = <TEnv>({
   } else {
     context = {
       state: undefined,
-      token: env.DECO_API_TOKEN,
-      workspace: env.DECO_WORKSPACE,
+      token: env.DECO_CHAT_API_TOKEN,
+      workspace: env.DECO_CHAT_WORKSPACE,
       ensureAuthenticated: (options?: { workspaceHint?: string }) => {
-        const workspaceHint = options?.workspaceHint ?? env.DECO_WORKSPACE;
+        const workspaceHint = options?.workspaceHint ?? env.DECO_CHAT_WORKSPACE;
         const authUri = new URL("/apps/oauth", apiUrl);
-        authUri.searchParams.set("client_id", env.DECO_APP_NAME);
+        authUri.searchParams.set("client_id", env.DECO_CHAT_APP_NAME);
         authUri.searchParams.set(
           "redirect_uri",
-          new URL(AUTH_CALLBACK_ENDPOINT, origin ?? env.DECO_APP_ENTRYPOINT)
-            .href,
+          new URL(
+            AUTH_CALLBACK_ENDPOINT,
+            origin ?? env.DECO_CHAT_APP_ENTRYPOINT,
+          ).href,
         );
         workspaceHint &&
           authUri.searchParams.set("workspace_hint", workspaceHint);
@@ -263,10 +254,8 @@ export const withBindings = <TEnv>({
     };
   }
 
-  env.DECO_REQUEST_CONTEXT = context;
-  // Backwards compatibility
   env.DECO_CHAT_REQUEST_CONTEXT = context;
-  const bindings = WorkersMCPBindings.parse(env.DECO_BINDINGS);
+  const bindings = WorkersMCPBindings.parse(env.DECO_CHAT_BINDINGS);
 
   for (const binding of bindings) {
     env[binding.name] = creatorByType[binding.type](binding as any, env);
@@ -275,7 +264,7 @@ export const withBindings = <TEnv>({
   withDefaultBindings({
     env,
     server,
-    ctx: env.DECO_REQUEST_CONTEXT,
+    ctx: env.DECO_CHAT_REQUEST_CONTEXT,
     url,
   });
 
@@ -296,12 +285,12 @@ export const withRuntime = <TEnv, TSchema extends z.ZodTypeAny = never>(
     const url = new URL(req.url);
     if (url.pathname === AUTH_CALLBACK_ENDPOINT) {
       return handleAuthCallback(req, {
-        apiUrl: env.DECO_API_URL,
-        appName: env.DECO_APP_NAME,
+        apiUrl: env.DECO_CHAT_API_URL,
+        appName: env.DECO_CHAT_APP_NAME,
       });
     }
     if (url.pathname === AUTH_START_ENDPOINT) {
-      env.DECO_REQUEST_CONTEXT.ensureAuthenticated();
+      env.DECO_CHAT_REQUEST_CONTEXT.ensureAuthenticated();
       const redirectTo = new URL("/", url);
       const next = url.searchParams.get("next");
       return Response.redirect(next ?? redirectTo, 302);

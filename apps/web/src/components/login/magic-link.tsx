@@ -8,7 +8,7 @@ import {
   QueryClientProvider,
   useMutation,
 } from "@tanstack/react-query";
-import { DECO_CMS_API_URL } from "@deco/sdk";
+import { DECO_CHAT_API } from "@deco/sdk";
 import type { FormEventHandler } from "react";
 import { useEffect, useRef, useState } from "react";
 import { SplitScreenLayout } from "./layout.tsx";
@@ -16,7 +16,7 @@ import { SplitScreenLayout } from "./layout.tsx";
 const useSendMagicLink = () => {
   const create = useMutation({
     mutationFn: (prop: { email: string; cli: boolean }) =>
-      fetch(new URL("/login/magiclink", DECO_CMS_API_URL), {
+      fetch(new URL("/login/magiclink", DECO_CHAT_API), {
         method: "POST",
         body: JSON.stringify(prop),
       })

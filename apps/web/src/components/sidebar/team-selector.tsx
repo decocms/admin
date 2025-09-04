@@ -297,7 +297,7 @@ export function TeamSelector() {
   const { id: teamId, label, avatarUrl } = useCurrentTeam();
 
   useDocumentMetadata({
-    title: label ? `${label} | deco CMS` : undefined,
+    title: label ? `${label} | deco.chat` : undefined,
     favicon: avatarUrl,
   });
 

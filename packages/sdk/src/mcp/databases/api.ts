@@ -147,7 +147,7 @@ export const viewBinding = createDatabaseTool({
         {
           title: "Database",
           icon: "database",
-          url: `https://api.decocms.com/${c.workspace.root}/${c.workspace.slug}/i:databases-management/studio`,
+          url: `https://api.deco.chat/${c.workspace.root}/${c.workspace.slug}/i:databases-management/studio`,
         },
       ],
     };

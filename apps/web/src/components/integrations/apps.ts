@@ -49,8 +49,8 @@ export const AppKeys = {
   },
 };
 
-export const WELL_KNOWN_DECO_CMS_APP_KEY = AppKeys.build({
-  appId: "admin.decocms.com",
+export const WELL_KNOWN_DECO_CHAT_APP_KEY = AppKeys.build({
+  appId: "deco.chat",
   provider: "deco",
 });
 
@@ -60,11 +60,11 @@ export const WELL_KNOWN_KNOWLEDGE_BASE_APP_KEY = AppKeys.build({
 });
 
 export const WELL_KNOWN_APPS: Record<string, GroupedApp> = {
-  [WELL_KNOWN_DECO_CMS_APP_KEY]: {
-    id: WELL_KNOWN_DECO_CMS_APP_KEY,
-    name: "Deco CMS",
+  [WELL_KNOWN_DECO_CHAT_APP_KEY]: {
+    id: WELL_KNOWN_DECO_CHAT_APP_KEY,
+    name: "Deco Chat",
     icon: "https://assets.decocache.com/mcp/306fcf27-d5dd-4d8c-8ddd-567d763372ee/decochat.png",
-    description: "Native deco CMS tools.",
+    description: "Native deco.chat tools.",
     instances: 1,
     usedBy: [],
   },
@@ -80,7 +80,7 @@ export const WELL_KNOWN_APPS: Record<string, GroupedApp> = {
 
 export function isWellKnownApp(appKey: string): boolean {
   return (
-    WELL_KNOWN_DECO_CMS_APP_KEY === appKey ||
+    WELL_KNOWN_DECO_CHAT_APP_KEY === appKey ||
     WELL_KNOWN_KNOWLEDGE_BASE_APP_KEY === appKey
   );
 }
@@ -88,7 +88,7 @@ export function isWellKnownApp(appKey: string): boolean {
 export function getConnectionAppKey(connection: Integration): AppKey {
   try {
     if (WellKnownMcpGroupIds.some((id) => connection.id.startsWith(id))) {
-      return AppKeys.parse(WELL_KNOWN_DECO_CMS_APP_KEY);
+      return AppKeys.parse(WELL_KNOWN_DECO_CHAT_APP_KEY);
     }
 
     if (

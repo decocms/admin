@@ -539,7 +539,7 @@ export const inviteTeamMembers = createTool({
     await Promise.all(requestPromises || []);
 
     return {
-      message: `Invite sent to their home screen. Ask them to log in at https://admin.decocms.com`,
+      message: `Invite sent to their home screen. Ask them to log in at https://deco.chat`,
     };
   },
 });

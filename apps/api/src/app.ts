@@ -27,10 +27,10 @@ const normalizeHost = (req: Request) => {
   }
   return (
     {
-      [Hosts.API_LEGACY]: Hosts.API_LEGACY,
-      localhost: Hosts.API_LEGACY,
-      "localhost:3001": Hosts.API_LEGACY,
-      "localhost:8000": Hosts.API_LEGACY,
+      [Hosts.API]: Hosts.API,
+      localhost: Hosts.API,
+      "localhost:3001": Hosts.API,
+      "localhost:8000": Hosts.API,
     }[host] ?? Hosts.APPS
   );
 };
@@ -45,6 +45,5 @@ export const app = new Hono<AppEnv>({
 app.use(timing({ crossOrigin: true, total: true }));
 
 app.route(`/${Hosts.API}`, api);
-app.route(`/${Hosts.API_LEGACY}`, api);
 app.route(`/${Hosts.APPS}`, apps);
 export default app;

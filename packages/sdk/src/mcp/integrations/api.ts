@@ -12,7 +12,7 @@ import {
   type Agent,
   AgentSchema,
   BindingsSchema,
-  DECO_CMS_API_URL,
+  DECO_CHAT_API,
   INNATE_INTEGRATIONS,
   type Integration,
   IntegrationSchema,
@@ -97,8 +97,7 @@ const agentAsIntegrationFor =
     description: agent.description,
     connection: {
       type: "HTTP",
-      url: new URL(`${workspace}/agents/${agent.id}/mcp`, DECO_CMS_API_URL)
-        .href,
+      url: new URL(`${workspace}/agents/${agent.id}/mcp`, DECO_CHAT_API).href,
       token,
     },
   });
@@ -192,7 +191,7 @@ const virtualIntegrationsFor = (
   token?: string,
 ) => {
   // Create a virtual User Management integration
-  const decoChatMcp = new URL("/mcp", DECO_CMS_API_URL);
+  const decoChatMcp = new URL("/mcp", DECO_CHAT_API);
   const userManagementIntegration = {
     id: formatId("i", "user-management"),
     name: "User Management",
@@ -206,7 +205,7 @@ const virtualIntegrationsFor = (
     workspace,
     created_at: new Date().toISOString(),
   };
-  const workspaceMcp = new URL(`${workspace}/mcp`, DECO_CMS_API_URL);
+  const workspaceMcp = new URL(`${workspace}/mcp`, DECO_CHAT_API);
 
   // Create a virtual Workspace Management integration
   const workspaceManagementIntegration = {
@@ -887,7 +886,7 @@ export const DECO_INTEGRATION_INSTALL = createIntegrationManagementTool({
     if (virtual) {
       const workspaceMcp = new URL(
         `${c.workspace.value}/${virtual.group}/mcp`,
-        DECO_CMS_API_URL,
+        DECO_CHAT_API,
       );
       workspaceMcp.searchParams.set("group", virtual.group);
 

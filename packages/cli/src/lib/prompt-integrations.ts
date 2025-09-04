@@ -8,7 +8,7 @@
  * 4. Presents a multiple select prompt to the user with search functionality
  * 5. Returns the selected integration bindings as an array
  *
- * @param local - Whether to use local decocms.com instance
+ * @param local - Whether to use local deco.chat instance
  * @param workspace - The workspace to fetch integrations from
  * @returns Promise<DecoBinding[]> - The selected integration bindings
  * @throws Error if no session is found or no integrations are available

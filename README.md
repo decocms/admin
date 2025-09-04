@@ -1,8 +1,8 @@
 <img width="2400" height="750" alt="image" src="https://github.com/user-attachments/assets/bdd09426-554a-49fe-9f93-8e46652fdefd" />
 
-# decocms.com
+# deco.chat
 
-**decocms** is an open-source foundation for building AI-native software.\
+**deco.chat** is an open-source foundation for building AI-native software.\
 We equip developers, engineers, and AI enthusiasts with robust tools to rapidly
 prototype, develop, and deploy AI-powered applications.
 
@@ -10,7 +10,7 @@ prototype, develop, and deploy AI-powered applications.
 
 > [!TIP]
 > If you have questions or want to learn more, please join our discord
-> community: https://decocms.com/discord
+> community: https://deco.chat/discord
 
 ## Who is it for?
 
@@ -18,7 +18,7 @@ prototype, develop, and deploy AI-powered applications.
 - **Agentic engineers** deploying scalable, secure, and sustainable production
   systems
 
-## Why deco CMS?
+## Why deco.chat?
 
 Our goal is simple: empower teams with Generative AI by giving builders the
 tools to create AI applications that scale beyond the initial demo and into the
@@ -62,25 +62,36 @@ Views can call server-side tools via typed RPC.
 
 ### Quick Start
 
-1. Create your project
+1. Install the CLI
 
 ```
-npm create deco
+npm i -g deco-cli
 ```
 
 or
 
 ```
-bun create deco
+bun i -g deco-cli
 ```
 
-> This will prompt you to log in or to create an account on [decocms.com](https://decocms.com). 
-
-2. Enter the project directory and start the dev server
+2. Log in to [deco.chat](https://deco.chat). Don’t have an account? Sign up
+   first.
 
 ```
-cd <my-project-directory>
-npm install
+deco login
+```
+
+4. Create a new project
+
+```
+deco create              # create new project, select workspace and choose template
+cd my-project
+npm install              # or bun, deno, pnpm
+```
+
+4. Start the dev server
+
+```
 npm run dev               # → http://localhost:8787 (hot reload)
 ```
 
@@ -184,7 +195,7 @@ Build **React + Tailwind** frontends served by the same Cloudflare Worker.
 
 ## Development Flow
 
-1. Add an integration via the [decocms.com dashboard](https://decocms.com)
+1. Add an integration via the [deco.chat dashboard](https://deco.chat)
    _(improved UX coming soon)_
 2. Run `npm run gen` → updates `deco.gen.ts` with typed clients
 3. Write tools in `server/main.ts`

@@ -2,7 +2,7 @@ import { createServer, IncomingMessage, ServerResponse } from "http";
 import { URL } from "url";
 import { spawn } from "child_process";
 import type { Provider } from "@supabase/supabase-js";
-import { AUTH_PORT_CLI, DECO_CMS_LOGIN_URL } from "../../lib/constants.js";
+import { AUTH_PORT_CLI, DECO_CHAT_LOGIN } from "../../lib/constants.js";
 import { saveSession } from "../../lib/session.js";
 import { createClient } from "../../lib/supabase.js";
 import process from "node:process";
@@ -84,7 +84,7 @@ export const loginCommand = () => {
           }
 
           const html = await fetch(
-            "https://admin.decocms.com/local-login-success.html",
+            "https://deco.chat/local-login-success.html",
           ).then((res) => res.text());
           res.writeHead(200, {
             "Content-Type": "text/html",
@@ -122,10 +122,8 @@ export const loginCommand = () => {
       // Windows requires using cmd.exe because 'start' is a built-in command
       const command =
         process.platform === "win32" && browser === "start"
-          ? spawn("cmd", ["/c", "start", DECO_CMS_LOGIN_URL], {
-              detached: true,
-            })
-          : spawn(browser, [DECO_CMS_LOGIN_URL], { detached: true });
+          ? spawn("cmd", ["/c", "start", DECO_CHAT_LOGIN], { detached: true })
+          : spawn(browser, [DECO_CHAT_LOGIN], { detached: true });
 
       command.unref(); // Don't keep process alive
 
@@ -139,7 +137,7 @@ export const loginCommand = () => {
         console.log(
           "📋 If your browser didn't open automatically, please click the following link:",
         );
-        console.log(`\n   ${DECO_CMS_LOGIN_URL}\n`);
+        console.log(`\n   ${DECO_CHAT_LOGIN}\n`);
         console.log("Waiting for authentication to complete...\n");
       }, 1000); // Small delay to let browser opening attempt complete
     });

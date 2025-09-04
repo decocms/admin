@@ -1,5 +1,4 @@
 import { D1Store } from "@deco/workers-runtime/d1";
-import { default as ShortUniqueId } from "short-unique-id";
 import { parse as parseToml } from "smol-toml";
 import { z } from "zod";
 import { JwtIssuer } from "../../auth/jwt.ts";
@@ -26,10 +25,6 @@ import { assertsDomainUniqueness } from "./custom-domains.ts";
 import { type DeployResult, deployToCloudflare } from "./deployment.ts";
 import type { WranglerConfig } from "./wrangler.ts";
 import { AppName } from "../../common/index.ts";
-const uid = new ShortUniqueId({
-  dictionary: "alphanum_lower",
-  length: 10,
-});
 
 const SCRIPT_FILE_NAME = "script.mjs";
 export const HOSTING_APPS_DOMAIN = ".deco.page";
@@ -148,7 +143,7 @@ interface UpdateDatabaseArgs {
   c: AppContext;
   workspace: string;
   scriptSlug: string;
-  deploymentId: string;
+  deploymentId?: string;
   result: DeployResult;
   wranglerConfig: WranglerConfig;
   force?: boolean;
@@ -197,6 +192,13 @@ async function updateDatabase({
   }
   if (!app) {
     throw new Error("Failed to create or update app.");
+  }
+  // FIXME Current limitation: Apps that uses DOs can't have custom domains.
+  // That's because DurableObjects states are stored in the worker, meaning that new instances are created for each deployment.
+  // So the durable object state is lost.
+  // @author @mcandeia
+  if (!deploymentId) {
+    return Mappers.toApp(app);
   }
 
   // Create new deployment record with manual deployment ID
@@ -791,8 +793,6 @@ Important Notes:
         sub: `app:${appName}`,
         aud: workspace,
       });
-      // using a shorter version than uuid to get friendlier urls
-      const deploymentId = uid.rnd();
 
       const appEnvVars = {
         DECO_CHAT_WORKSPACE: workspace,
@@ -800,8 +800,6 @@ Important Notes:
         DECO_CHAT_API_JWT_PUBLIC_KEY: keyPair?.public,
         DECO_CHAT_APP_SLUG: scriptSlug,
         DECO_CHAT_APP_NAME: appName,
-        DECO_CHAT_APP_DEPLOYMENT_ID: deploymentId,
-        DECO_CHAT_APP_ENTRYPOINT: Entrypoint.build(scriptSlug, deploymentId),
       };
 
       await Promise.all(
@@ -812,11 +810,10 @@ Important Notes:
         ),
       );
 
-      const result = await deployToCloudflare({
+      const { deploymentId, ...result } = await deployToCloudflare({
         c,
         wranglerConfig,
         mainModule: bundle ? SCRIPT_FILE_NAME : entrypoint,
-        deploymentId,
         bundledCode,
         assets: assetFiles,
         _envVars: { ...envVars, ...appEnvVars },
@@ -866,7 +863,10 @@ Important Notes:
         });
       return {
         entrypoint: data.entrypoint,
-        hosts: [data.entrypoint, Entrypoint.build(data.slug!, deploymentId)],
+        hosts: [
+          data.entrypoint,
+          ...(deploymentId ? [Entrypoint.build(data.slug!, deploymentId)] : []),
+        ],
         id: data.id,
         workspace: data.workspace,
         deploymentId,

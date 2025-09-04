@@ -11,10 +11,16 @@ import { assertsDomainOwnership } from "./custom-domains.ts";
 import { polyfill } from "./fs-polyfill.ts";
 import { isDoBinding, migrationDiff } from "./migrations.ts";
 import type { Contract, WranglerConfig } from "./wrangler.ts";
+import ShortUniqueId from "short-unique-id";
+const uid = new ShortUniqueId({
+  dictionary: "alphanum_lower",
+  length: 10,
+});
 
 const METADATA_FILE_NAME = "metadata.json";
 // Common types and utilities
 export type DeployResult = {
+  deploymentId?: string;
   etag?: string;
   id?: string;
   contracts?: Contract[];
@@ -218,7 +224,6 @@ export async function deployToCloudflare({
   bundledCode,
   assets,
   _envVars,
-  deploymentId,
   wranglerConfig: {
     name: wranglerName,
     compatibility_flags,
@@ -243,22 +248,28 @@ export async function deployToCloudflare({
   c: AppContext;
   wranglerConfig: WranglerConfig;
   mainModule: string;
-  deploymentId: string;
   bundledCode: Record<string, File>;
   assets: Record<string, string>;
   _envVars?: Record<string, string>;
 }): Promise<DeployResult> {
   assertHasWorkspace(c);
   const env = getEnv(c);
-  const envVars = {
-    ..._envVars,
-    ...vars,
-  };
+
   const zoneId = env.CF_ZONE_ID;
   if (!zoneId) {
     throw new Error("CF_ZONE_ID is not set");
   }
+  const durableObjects =
+    durable_objects?.bindings?.map((binding) => ({
+      type: "durable_object_namespace" as const,
+      name: binding.name,
+      class_name: binding.class_name,
+    })) ?? [];
+  const hasAnyDoAsideWorkflows = durableObjects.some(
+    (durableObject) => "Workflow" === durableObject.class_name,
+  );
 
+  const deploymentId = hasAnyDoAsideWorkflows ? uid.rnd() : undefined;
   const scriptSlug = Entrypoint.id(wranglerName, deploymentId);
   await Promise.all(
     (routes ?? []).map(
@@ -285,6 +296,13 @@ export async function deployToCloudflare({
         }),
     ),
   );
+
+  const envVars: Record<string, string | undefined> = {
+    ..._envVars,
+    ...vars,
+    DECO_CHAT_APP_DEPLOYMENT_ID: deploymentId,
+    DECO_CHAT_APP_ENTRYPOINT: Entrypoint.build(scriptSlug, deploymentId),
+  };
 
   const decoBindings = deco?.bindings ?? [];
   if (decoBindings.length > 0) {
@@ -426,22 +444,24 @@ export async function deployToCloudflare({
   if (envVars) {
     const promises = [];
     for (const [key, value] of Object.entries(envVars)) {
-      promises.push(
-        c.cf.workersForPlatforms.dispatch.namespaces.scripts.secrets.update(
-          env.CF_DISPATCH_NAMESPACE,
-          scriptSlug,
-          {
-            account_id: env.CF_ACCOUNT_ID,
-            name: key,
-            text: value,
-            type: "secret_text",
-          },
-        ),
-      );
+      value &&
+        promises.push(
+          c.cf.workersForPlatforms.dispatch.namespaces.scripts.secrets.update(
+            env.CF_DISPATCH_NAMESPACE,
+            scriptSlug,
+            {
+              account_id: env.CF_ACCOUNT_ID,
+              name: key,
+              text: value,
+              type: "secret_text",
+            },
+          ),
+        );
     }
     await Promise.all(promises);
   }
   return {
+    deploymentId,
     etag: result.etag,
     id: result.id,
     contracts: decoBindings

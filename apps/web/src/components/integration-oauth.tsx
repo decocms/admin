@@ -64,17 +64,14 @@ export function IntegrationBindingForm({
   formRef.current = form;
 
   return (
-    <div>
-      <h3 className="text-lg font-semibold mb-4">Configuration</h3>
-      <FormProvider {...form}>
-        <JsonSchemaForm
-          schema={schema}
-          form={form}
-          onSubmit={noop}
-          submitButton={null}
-        />
-      </FormProvider>
-    </div>
+    <FormProvider {...form}>
+      <JsonSchemaForm
+        schema={schema}
+        form={form}
+        onSubmit={noop}
+        submitButton={null}
+      />
+    </FormProvider>
   );
 }
 
@@ -111,10 +108,7 @@ export function IntegrationOauth({
       <Separator />
 
       {/* Configuration Form */}
-      <IntegrationBindingForm
-        schema={schema}
-        formRef={formRef}
-      />
+      <IntegrationBindingForm schema={schema} formRef={formRef} />
     </div>
   );
 }

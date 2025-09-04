@@ -41,6 +41,36 @@ import type { JSONSchema7 } from "json-schema";
 import { useCurrentTeam } from "../sidebar/team-selector.tsx";
 import { Avatar } from "../common/avatar/index.tsx";
 
+function GridRightColumn({ children }: { children: React.ReactNode }) {
+  return (
+    <div data-right-column className="col-span-6 py-4">
+      {children}
+    </div>
+  );
+}
+
+function GridLeftColumn({ children }: { children: React.ReactNode }) {
+  return (
+    <div
+      data-left-column
+      className="flex flex-col justify-between col-span-4 py-4 pr-4"
+    >
+      {children}
+    </div>
+  );
+}
+
+function GridContainer({ children }: { children: React.ReactNode }) {
+  return (
+    <div
+      data-grid-container
+      className="flex-1 grid grid-cols-10 gap-6 h-full divide-x border-b"
+    >
+      {children}
+    </div>
+  );
+}
+
 function CurrentTeamIcon() {
   const { avatarUrl, label } = useCurrentTeam();
   return (
@@ -203,7 +233,7 @@ export function ConfirmMarketplaceInstallDialog({
 
   return (
     <Dialog open={open} onOpenChange={() => setIntegration(null)}>
-      <DialogContent className="!w-210 !max-w-210 max-h-[80vh]">
+      <DialogContent className="lg:!w-210 lg:!max-w-210 lg:min-h-135 lg:max-h-[80vh] flex flex-col">
         <DialogHeader>
           <DialogTitle>
             Connect to {integration.friendlyName ?? integration.name}
@@ -232,6 +262,29 @@ export function ConfirmMarketplaceInstallDialog({
             isLoading={isLoading}
           />
         )}
+        <DialogFooter>
+          {currentStep !== "permissions" && (
+            <Button variant="outline" onClick={handleBack}>
+              Back
+            </Button>
+          )}
+          <Button
+            onClick={
+              isLoading
+                ? undefined
+                : currentStep === "permissions"
+                  ? handleContinueFromPermissions
+                  : handleConnect
+            }
+            disabled={isLoading}
+          >
+            {isLoading
+              ? "Loading..."
+              : hasRequirements
+                ? "Continue"
+                : "Connect"}
+          </Button>
+        </DialogFooter>
       </DialogContent>
     </Dialog>
   );
@@ -254,85 +307,66 @@ function PermissionsStep({
   hasRequirements: boolean;
 }) {
   return (
-    <>
-      <div className="flex-1 min-h-0">
-        <div className="grid grid-cols-2 gap-6 h-full">
-          {/* Left side: App icons, connection, and warning */}
-          <div className="flex flex-col justify-between">
-            {/* App icons with connection arrow */}
-            <div className="space-y-6">
-              <IntegrationWorkspaceIcon integration={integration} />
+    <GridContainer>
+      {/* Left side: App icons, connection, and warning */}
+      <GridLeftColumn>
+        {/* App icons with connection arrow */}
+        <div className="space-y-8">
+          <IntegrationWorkspaceIcon integration={integration} />
 
-              {/* Permissions description */}
+          {/* Permissions description */}
+          <h3 className="text-lg font-semibold">
+            {integration.friendlyName ?? integration.name} will have access to
+            the following permissions:
+          </h3>
+        </div>
+
+        {/* Warning at bottom left */}
+        <div className="mt-auto">
+          {!integration.verified && (
+            <Alert className="border-base bg-muted/10 text-base-foreground">
+              <Icon name="warning" size={16} className="text-base-foreground" />
+              <AlertDescription>
+                <div className="flex items-center gap-2">
+                  <span className="font-medium">Third-party integration</span>
+                </div>
+                <p className="mt-1 text-sm">
+                  This integration is provided by a third party and is not
+                  maintained by deco.
+                  <br />
+                  Provider:{" "}
+                  <span className="font-medium">{integration.provider}</span>
+                </p>
+              </AlertDescription>
+            </Alert>
+          )}
+        </div>
+      </GridLeftColumn>
+
+      {/* Right side: Scrollable permissions */}
+      <GridRightColumn>
+        <ScrollArea className="h-[400px] pr-4">
+          {integrationState.permissions &&
+          integrationState.permissions.length > 0 ? (
+            <IntegrationPermissions
+              integrationName={integration.name}
+              permissions={integrationState.permissions}
+            />
+          ) : (
+            <div className="flex items-center justify-center h-32 text-muted-foreground">
               <div className="text-center">
-                <h3 className="text-lg font-semibold">
-                  {integration.friendlyName ?? integration.name} will have
-                  access to the following permissions:
-                </h3>
+                <Icon
+                  name="check_circle"
+                  size={48}
+                  className="mx-auto mb-2 text-success"
+                />
+                <p>No special permissions required</p>
               </div>
             </div>
-
-            {/* Warning at bottom left */}
-            <div className="mt-auto">
-              {!integration.verified && (
-                <Alert className="border-warning bg-warning/10 text-warning-foreground">
-                  <Icon name="warning" size={16} className="text-warning" />
-                  <AlertDescription>
-                    <div className="flex items-center gap-2">
-                      <span className="font-medium">
-                        Third-party integration
-                      </span>
-                    </div>
-                    <p className="mt-1 text-sm">
-                      This integration is provided by a third party and is not
-                      maintained by deco.
-                      <br />
-                      Provider:{" "}
-                      <span className="font-medium">
-                        {integration.provider}
-                      </span>
-                    </p>
-                  </AlertDescription>
-                </Alert>
-              )}
-            </div>
-          </div>
-
-          {/* Right side: Scrollable permissions */}
-          <div className="border-l pl-6">
-            <ScrollArea className="h-[400px] pr-4">
-              {integrationState.permissions &&
-              integrationState.permissions.length > 0 ? (
-                <IntegrationPermissions
-                  integrationName={integration.name}
-                  permissions={integrationState.permissions}
-                />
-              ) : (
-                <div className="flex items-center justify-center h-32 text-muted-foreground">
-                  <div className="text-center">
-                    <Icon
-                      name="check_circle"
-                      size={48}
-                      className="mx-auto mb-2 text-success"
-                    />
-                    <p>No special permissions required</p>
-                  </div>
-                </div>
-              )}
-            </ScrollArea>
-          </div>
-        </div>
-      </div>
-
-      <DialogFooter>
-        <Button
-          onClick={isLoading ? undefined : onContinue}
-          disabled={isLoading}
-        >
-          {isLoading ? "Loading..." : hasRequirements ? "Continue" : "Connect"}
-        </Button>
-      </DialogFooter>
-    </>
+          )}
+        </ScrollArea>
+      </GridRightColumn>
+    </GridContainer>
   );
 }
 
@@ -353,53 +387,36 @@ function RequirementsStep({
   isLoading: boolean;
 }) {
   return (
-    <>
-      <div className="flex-1 min-h-0">
-        <div className="grid grid-cols-2 gap-6 h-full">
-          {/* Left side: App title and instructions */}
-          <div className="space-y-6">
-            <IntegrationWorkspaceIcon integration={integration} />
-            {/* App title */}
-            <div className="space-y-2">
-              <h2 className="text-2xl font-bold">
-                Connect to {integration.friendlyName ?? integration.name}
-              </h2>
-              <h3 className="text-lg font-semibold">
-                Add required tools for{" "}
-                {integration.friendlyName ?? integration.name} or choose from
-                connected ones
-              </h3>
-            </div>
-
-            {/* App description */}
-            <div className="text-sm text-muted-foreground">
-              Configure the required integrations and tools for this app to
-              function properly.
-            </div>
+    <GridContainer>
+      {/* Left side: App title and instructions */}
+      <GridLeftColumn>
+        <div className="space-y-6">
+          <IntegrationWorkspaceIcon integration={integration} />
+          {/* App title */}
+          <div className="space-y-2">
+            <h2 className="text-2xl font-bold">
+              Connect to {integration.friendlyName ?? integration.name}
+            </h2>
+            <h3 className="text-lg font-semibold">
+              Add required tools for{" "}
+              {integration.friendlyName ?? integration.name} or choose from
+              connected ones
+            </h3>
           </div>
 
-          {/* Right side: Configuration form */}
-          <div className="border-l pl-6">
-            <div className="space-y-6">
-              <h3 className="text-lg font-semibold">Configuration</h3>
-              <IntegrationBindingForm schema={schema} formRef={formRef} />
-            </div>
+          {/* App description */}
+          <div className="text-sm text-muted-foreground">
+            Configure the required integrations and tools for this app to
+            function properly.
           </div>
         </div>
-      </div>
+      </GridLeftColumn>
 
-      <DialogFooter className="flex justify-between">
-        <Button variant="outline" onClick={onBack}>
-          Back
-        </Button>
-        <Button
-          onClick={isLoading ? undefined : onConnect}
-          disabled={isLoading}
-        >
-          {isLoading ? "Connecting..." : "Continue"}
-        </Button>
-      </DialogFooter>
-    </>
+      {/* Right side: Configuration form */}
+      <GridRightColumn>
+        <IntegrationBindingForm schema={schema} formRef={formRef} />
+      </GridRightColumn>
+    </GridContainer>
   );
 }
 

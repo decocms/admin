@@ -79,7 +79,7 @@ function CurrentTeamIcon() {
       url={avatarUrl}
       fallback={label}
       objectFit="contain"
-      size="lg"
+      size="xl"
     />
   );
 }
@@ -110,21 +110,22 @@ function IntegrationWorkspaceIcon({
   return (
     <div className="flex items-center gap-2">
       {/* Left app icon */}
-      <div className="w-12 h-12 rounded-lg flex items-center justify-center">
+      <div className="rounded-lg flex items-center justify-center">
         <IntegrationIcon
           icon={integration?.icon}
           name={integration?.friendlyName ?? integration?.name}
-          size="lg"
+          size="xl"
         />
       </div>
+
       {/* Right workspace icon */}
-      <div className="w-12 h-12 rounded-lg flex items-center justify-center">
+      <div className="rounded-lg flex items-center justify-center">
         <CurrentTeamIcon />
       </div>
 
       {/* Connection arrow */}
-      <div className="flex items-center justify-center absolute -translate-x-1/2 ml-13 w-6 h-6 bg-white border rounded-lg">
-        <Icon name="sync_alt" size={16} className="text-muted-foreground" />
+      <div className="flex items-center justify-center absolute -translate-x-4 ml-17 w-8 h-8 bg-white border rounded-lg">
+        <Icon name="sync_alt" size={24} className="text-muted-foreground" />
       </div>
     </div>
   );

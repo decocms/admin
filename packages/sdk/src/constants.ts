@@ -311,8 +311,8 @@ When user asks for a prompt, you should use the PROMPTS_GET tool to get the actu
   },
   decopilotAgent: {
     ...NEW_AGENT_TEMPLATE,
-    max_steps: 20,
-    max_tokens: 16384,
+    max_steps: 30,
+    max_tokens: 64000,
     memory: { last_messages: 8 },
     id: "decopilotAgent",
     name: "Decopilot",

@@ -84,7 +84,8 @@ export const useInstallCreatingApiKeyAndIntegration = () => {
 };
 
 export function useIntegrationInstall(appName?: string) {
-  const { data: appSchema } = useMarketplaceAppSchema(appName);
+  const { data: appSchema, isLoading: appSchemaLoading } =
+    useMarketplaceAppSchema(appName);
   const getLinkFor = useWorkspaceLink();
   const installMutation = useInstallFromMarketplace();
   const getRegistryApp = useGetRegistryApp();
@@ -183,6 +184,7 @@ export function useIntegrationInstall(appName?: string) {
       integrationName: installMutation.variables?.appName,
       integration: installMutation.data?.integration,
       isLoading:
+        appSchemaLoading ||
         installCreatingApiKeyAndIntegration.isPending ||
         getRegistryApp.isPending ||
         permissionsLoading,

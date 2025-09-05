@@ -283,13 +283,13 @@ export function ConfirmMarketplaceInstallDialog({
           )}
           <Button
             onClick={
-              isLoading
+              isLoading || integrationState.isLoading
                 ? undefined
                 : currentStep === "permissions"
                   ? handleContinueFromPermissions
                   : handleConnect
             }
-            disabled={isLoading}
+            disabled={isLoading || integrationState.isLoading}
           >
             {isLoading
               ? "Connecting..."

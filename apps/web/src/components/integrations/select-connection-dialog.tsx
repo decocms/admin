@@ -12,7 +12,6 @@ import {
 } from "@deco/ui/components/dialog.tsx";
 import { Icon } from "@deco/ui/components/icon.tsx";
 import { Input } from "@deco/ui/components/input.tsx";
-import { ScrollArea } from "@deco/ui/components/scroll-area.tsx";
 import { cn } from "@deco/ui/lib/utils.ts";
 import { useEffect, useMemo, useState, useRef } from "react";
 import { useSearchParams } from "react-router";
@@ -23,10 +22,7 @@ import {
   useNavigateWorkspace,
   useWorkspaceLink,
 } from "../../hooks/use-navigate-workspace.ts";
-import {
-  IntegrationPermissions,
-  IntegrationBindingForm,
-} from "../integration-oauth.tsx";
+import { IntegrationBindingForm } from "../integration-oauth.tsx";
 import { IntegrationIcon } from "./common.tsx";
 import { InstalledConnections } from "./installed-connections.tsx";
 import {
@@ -60,7 +56,8 @@ function IntegrationWorkspaceIconForMarketplace({
   );
 }
 
-type DialogStep = "permissions" | "requirements";
+type DialogStep = "dependency";
+const INITIAL_STEP = "dependency";
 
 export function ConfirmMarketplaceInstallDialog({
   integration,
@@ -84,7 +81,22 @@ export function ConfirmMarketplaceInstallDialog({
   const formRef = useRef<UseFormReturn<Record<string, unknown>> | null>(null);
   const buildWorkspaceUrl = useWorkspaceLink();
   const navigateWorkspace = useNavigateWorkspace();
-  const [currentStep, setCurrentStep] = useState<DialogStep>("permissions");
+  const [currentStep, setCurrentStep] = useState<DialogStep>(INITIAL_STEP);
+  const [currentDependencyIndex, setCurrentDependencyIndex] = useState(0);
+  const [dependencyFormData, setDependencyFormData] = useState<
+    Record<string, Record<string, unknown>>
+  >({});
+
+  const maybeAppDependencyList = useMemo(
+    () =>
+      integrationState.schema?.properties
+        ? Object.keys(integrationState.schema?.properties ?? {})
+        : null,
+    [integrationState.schema],
+  );
+
+  const totalSteps = maybeAppDependencyList ? maybeAppDependencyList.length : 1;
+
   const handleConnect = async () => {
     if (!integration) return;
 
@@ -93,7 +105,9 @@ export function ConfirmMarketplaceInstallDialog({
       globalThis.location.origin,
     );
 
-    const formData = formRef.current?.getValues() ?? null;
+    // Combine all dependency form data with main form data
+    const mainFormData = formRef.current?.getValues() ?? {};
+    const combinedFormData = { ...mainFormData, ...dependencyFormData };
     try {
       const result = await install(
         {
@@ -102,7 +116,7 @@ export function ConfirmMarketplaceInstallDialog({
           provider: integration.provider,
           returnUrl: returnUrl.href,
         },
-        formData,
+        combinedFormData,
       );
 
       if (typeof result.integration?.id !== "string") {
@@ -157,49 +171,68 @@ export function ConfirmMarketplaceInstallDialog({
   // Reset step when dialog closes/opens
   useEffect(() => {
     if (open) {
-      setCurrentStep("permissions");
+      setCurrentStep(INITIAL_STEP);
+      setCurrentDependencyIndex(0);
+      setDependencyFormData({});
     }
   }, [open]);
 
-  const hasRequirements =
-    integrationState.schema &&
-    Object.keys(integrationState.schema.properties || {}).length > 0;
+  const handleNextDependency = () => {
+    // for cases where the app doesn't have dependencies (schema doesn't exist)
+    if (!integrationState.schema) {
+      handleConnect();
+      return;
+    }
 
-  const handleContinueFromPermissions = () => {
-    if (hasRequirements) {
-      setCurrentStep("requirements");
+    if (!maybeAppDependencyList) return;
+
+    // Save current dependency form data
+    const currentFormData = formRef.current?.getValues() ?? {};
+    const currentDependencyName =
+      maybeAppDependencyList[currentDependencyIndex];
+    setDependencyFormData((prev) => ({
+      ...prev,
+      [currentDependencyName]: currentFormData,
+    }));
+
+    if (currentDependencyIndex < maybeAppDependencyList.length - 1) {
+      // Move to next dependency
+      setCurrentDependencyIndex((prev) => prev + 1);
     } else {
+      // All dependencies configured, install the main app
       handleConnect();
     }
   };
 
   const handleBack = () => {
-    setCurrentStep("permissions");
+    if (currentDependencyIndex > 0) {
+      setCurrentDependencyIndex((prev) => prev - 1);
+    }
   };
 
   if (!integration) return null;
 
   return (
     <Dialog open={open} onOpenChange={() => setIntegration(null)}>
-      <DialogContent className="!p-0 overflow-hidden lg:!w-210 lg:!max-w-210 lg:min-h-135 lg:max-h-[80vh] flex flex-col">
-        {/* Step 1: Permissions */}
-        {currentStep === "permissions" && (
-          <PermissionsStep
+      <DialogContent className="!p-0 overflow-hidden lg:!w-210 lg:!max-w-210 min-h-135 lg:max-h-[80vh] flex flex-col">
+        {/* Dependency Steps */}
+        {currentStep === "dependency" && (
+          <DependencyStep
             integration={integration}
+            dependencyName={maybeAppDependencyList?.[currentDependencyIndex]}
+            dependencySchema={
+              integrationState.schema?.properties?.[
+                maybeAppDependencyList?.[currentDependencyIndex] ?? 0
+              ] as JSONSchema7
+            }
+            currentStep={currentDependencyIndex + 1}
+            totalSteps={totalSteps}
+            formRef={formRef}
             integrationState={integrationState}
           />
         )}
-
-        {/* Step 2: Requirements */}
-        {currentStep === "requirements" && integrationState.schema && (
-          <RequirementsStep
-            integration={integration}
-            schema={integrationState.schema}
-            formRef={formRef}
-          />
-        )}
         <DialogFooter>
-          {currentStep !== "permissions" && (
+          {currentDependencyIndex > 0 && (
             <Button variant="outline" disabled={isLoading} onClick={handleBack}>
               Back
             </Button>
@@ -208,17 +241,16 @@ export function ConfirmMarketplaceInstallDialog({
             onClick={
               isLoading || integrationState.isLoading
                 ? undefined
-                : currentStep === "permissions"
-                  ? handleContinueFromPermissions
-                  : handleConnect
+                : handleNextDependency
             }
             disabled={isLoading || integrationState.isLoading}
           >
             {isLoading
               ? "Connecting..."
-              : hasRequirements
+              : currentDependencyIndex <
+                  (maybeAppDependencyList?.length ?? 0) - 1
                 ? "Continue"
-                : "Connect"}
+                : "Allow access"}
           </Button>
         </DialogFooter>
       </DialogContent>
@@ -226,30 +258,65 @@ export function ConfirmMarketplaceInstallDialog({
   );
 }
 
-// Step 1: Permissions
-function PermissionsStep({
+// Dependency Configuration Step
+function DependencyStep({
   integration,
+  dependencyName,
+  dependencySchema,
+  currentStep,
+  totalSteps,
+  formRef,
   integrationState,
 }: {
   integration: MarketplaceIntegration;
+  dependencyName?: string;
+  dependencySchema?: JSONSchema7;
+  currentStep: number;
+  totalSteps: number;
+  formRef: React.RefObject<UseFormReturn<Record<string, unknown>> | null>;
   integrationState: {
     permissions?: Array<{ scope: string; description: string }>;
   };
 }) {
+  const { data: marketplace } = useMarketplaceIntegrations();
+  const dependencyIntegration = useMemo(() => {
+    if (!dependencySchema) return null;
+    const name = (dependencySchema.properties?.__type as JSONSchema7)?.const as
+      | string
+      | undefined;
+    if (typeof name !== "string") return null;
+
+    return (
+      marketplace?.integrations.find(
+        (integration) => integration.name === name,
+      ) as MarketplaceIntegration | null ?? null
+    );
+  }, [dependencySchema]);
+  // Create a schema for just this dependency
+  const dependencyFormSchema: JSONSchema7 | null =
+    dependencySchema && dependencyName !== undefined
+      ? {
+          type: "object",
+          properties: {
+            [dependencyName]: dependencySchema,
+          },
+          required: [dependencyName],
+        }
+      : null;
+
   return (
     <GridContainer>
-      {/* Left side: App icons, connection, and warning */}
+      {/* Left side: App icons and info */}
       <GridLeftColumn>
         <div className="pb-4 px-4 h-full">
           <IntegrationWorkspaceIconForMarketplace integration={integration} />
 
-          {/* Permissions description */}
           <div className="h-full flex flex-col justify-between pt-16">
             <h3 className="text-xl text-base-foreground">
               <span className="font-bold">
                 {integration.friendlyName ?? integration.name}
               </span>{" "}
-              will have access to the following permissions:
+              needs access to the following permissions:
             </h3>
 
             {/* Warning at bottom left */}
@@ -260,57 +327,79 @@ function PermissionsStep({
         </div>
       </GridLeftColumn>
 
-      {/* Right side: Scrollable permissions */}
+      {/* Right side: Dependency configuration */}
       <GridRightColumn>
-        <ScrollArea className="h-[400px] pr-4">
-          <IntegrationPermissions
-            integrationName={integration.name}
-            permissions={integrationState.permissions}
-          />
-        </ScrollArea>
-      </GridRightColumn>
-    </GridContainer>
-  );
-}
+        <div className="flex flex-col gap-2 h-full pr-4 pt-4">
+          {/* Header with step indicator */}
+          <div className="flex items-center justify-between py-2 border-b">
+            <div className="font-mono text-sm text-foreground uppercase tracking-wide">
+              connect requirements
+            </div>
+            {totalSteps > 1 && (
+              <div className="flex items-center gap-2.5">
+                <div className="font-mono text-sm uppercase text-foreground">
+                  <span className="text-muted-foreground">{currentStep}</span> /{" "}
+                  {totalSteps}
+                </div>
+              </div>
+            )}
+          </div>
 
-// Step 2: Requirements
-function RequirementsStep({
-  integration,
-  schema,
-  formRef,
-}: {
-  integration: MarketplaceIntegration;
-  schema: JSONSchema7;
-  formRef: React.RefObject<UseFormReturn<Record<string, unknown>> | null>;
-}) {
-  return (
-    <GridContainer>
-      {/* Left side: App title and instructions */}
-      <GridLeftColumn>
-        <div className="pb-4 px-4 h-full">
-          <IntegrationWorkspaceIconForMarketplace integration={integration} />
-          {/* App title */}
+          {/* Dependency integration info */}
+          <div className="flex flex-col gap-5 py-2">
+            {/* Configuration Form */}
+            {dependencyFormSchema && (
+              <div className="flex-1">
+                {dependencyIntegration && (
+                  <div className="flex items-center gap-2">
+                    <IntegrationIcon
+                      icon={dependencyIntegration?.icon}
+                      name={
+                        dependencyIntegration?.friendlyName ??
+                        dependencyIntegration?.name
+                      }
+                      size="lg"
+                    />
+                    {dependencyIntegration?.friendlyName ??
+                      dependencyIntegration?.name}
+                  </div>
+                )}
+                <IntegrationBindingForm
+                  schema={dependencyFormSchema}
+                  formRef={formRef}
+                />
+              </div>
+            )}
 
-          <div className="h-full flex flex-col justify-between pt-16">
-            <h3 className="text-xl text-base-foreground">
-              Add required tools for{" "}
-              <span className="font-bold">
-                {integration.friendlyName ?? integration.name}
-              </span>{" "}
-              or choose from connected ones
-            </h3>
-
-            {/* Warning at bottom left */}
-            <div className="mt-auto">
-              <WalletBalanceAlert />
+            {/* Permissions Section */}
+            <div className="flex flex-col gap-2">
+              <div className="font-mono text-sm text-secondary-foreground uppercase">
+                permissions
+              </div>
+              <div className="flex flex-col gap-4">
+                {integrationState.permissions?.map((permission, index) => (
+                  <div key={index} className="flex gap-4 items-start px-2 py-3">
+                    <div className="flex gap-2.5 h-5 items-center justify-start">
+                      <Icon
+                        name="check_circle"
+                        size={20}
+                        className="text-success flex-shrink-0"
+                      />
+                    </div>
+                    <div className="flex flex-col gap-1">
+                      <div className="text-sm font-medium text-foreground">
+                        {permission.scope}
+                      </div>
+                      <div className="text-sm text-muted-foreground">
+                        {permission.description}
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
             </div>
           </div>
         </div>
-      </GridLeftColumn>
-
-      {/* Right side: Configuration form */}
-      <GridRightColumn>
-        <IntegrationBindingForm schema={schema} formRef={formRef} />
       </GridRightColumn>
     </GridContainer>
   );

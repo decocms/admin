@@ -18,7 +18,6 @@ import type { OptionItem } from "../index.tsx";
 import { IntegrationIcon } from "../../integrations/common.tsx";
 import { Button } from "@deco/ui/components/button.tsx";
 import { useOptionsLoader } from "../../../hooks/use-options-loader.ts";
-import { Icon } from "@deco/ui/components/icon.tsx";
 import { useMarketplaceIntegrations } from "@deco/sdk";
 import { ConfirmMarketplaceInstallDialog } from "../../integrations/select-connection-dialog.tsx";
 import type { MarketplaceIntegration } from "../../integrations/marketplace";
@@ -75,12 +74,8 @@ export function TypeSelectField<T extends FieldValues = FieldValues>({
   }: {
     connection: Integration;
   }) => {
-    // Update the form with the selected integration
-    // Use the same format as the existing onValueChange
-    const fakeField = {
-      onChange: (value: any) => form.setValue(name as FieldPath<T>, value),
-    };
-    fakeField.onChange({ value: connection.id });
+    // deno-lint-ignore no-explicit-any
+    form.setValue(name as FieldPath<T>, { value: connection.id } as any);
     setInstallingIntegration(null);
   };
 
@@ -155,7 +150,7 @@ export function TypeSelectField<T extends FieldValues = FieldValues>({
                   </SelectContent>
                 </Select>
                 <Button onClick={handleAddIntegration} variant="special">
-                  <Icon name="add" size={16} />
+                  Connect account
                 </Button>
               </div>
             </div>

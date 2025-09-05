@@ -19,11 +19,22 @@ export function WalletBalanceAlertLayout({
   const displayBalance = isLoading ? "Loading..." : balance || "$0.00";
 
   return (
-    <Alert className="bg-amber-100 border-amber-200 rounded-2xl p-1">
+    <Alert
+      // deno-lint-ignore ensure-tailwind-design-system-tokens/ensure-tailwind-design-system-tokens
+      className="bg-amber-100 border-amber-200 rounded-2xl p-1"
+    >
       <div className="flex flex-col h-full">
         <div className="flex items-center gap-2 px-3 py-2.5">
-          <Icon name="info" size={20} className="text-amber-600" />
-          <AlertDescription className="text-amber-600 text-sm uppercase tracking-wide">
+          <Icon
+            name="info"
+            size={20}
+            // deno-lint-ignore ensure-tailwind-design-system-tokens/ensure-tailwind-design-system-tokens
+            className="text-amber-600"
+          />
+          <AlertDescription
+            // deno-lint-ignore ensure-tailwind-design-system-tokens/ensure-tailwind-design-system-tokens
+            className="text-amber-600 text-sm uppercase tracking-wide"
+          >
             {title}
           </AlertDescription>
         </div>
@@ -34,13 +45,13 @@ export function WalletBalanceAlertLayout({
               <Icon
                 name="account_balance_wallet"
                 size={20}
-                className="text-stone-600"
+                className="text-black"
               />
-              <span className="text-sm font-medium text-stone-800">
+              <span className="text-sm font-medium text-foreground">
                 {balanceLabel}
               </span>
             </div>
-            <div className="text-lg font-normal text-stone-500">
+            <div className="text-lg font-normal text-muted-foreground">
               {displayBalance}
             </div>
           </div>
@@ -54,13 +65,15 @@ export function WalletBalanceAlertLayout({
 function WalletBalanceWithData() {
   const { balance, isRefetching } = useWorkspaceWalletBalance();
 
-  return <WalletBalanceAlertLayout balance={balance} isLoading={isRefetching} />;
+  return (
+    <WalletBalanceAlertLayout balance={balance} isLoading={isRefetching} />
+  );
 }
 
 // Main component with Suspense boundary
 export function WalletBalanceAlert() {
   return (
-    <Suspense fallback={<WalletBalanceAlertLayout isLoading={true} />}>
+    <Suspense fallback={<WalletBalanceAlertLayout isLoading />}>
       <WalletBalanceWithData />
     </Suspense>
   );

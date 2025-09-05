@@ -15,10 +15,12 @@ export function GridRightColumn({ children }: { children: React.ReactNode }) {
 
 export function GridLeftColumn({ children }: { children: React.ReactNode }) {
   return (
-    <div
-      data-left-column
-      className="flex flex-col justify-between col-span-4 py-4 pr-4"
-    >
+    <div data-left-column className="flex flex-col col-span-4">
+      <img
+        src="/img/oauth-modal-banner.png?v=0"
+        alt="OAuth Modal Banner"
+        className="w-full object-cover"
+      />
       {children}
     </div>
   );
@@ -72,25 +74,3 @@ export function IntegrationWorkspaceIcon({
   );
 }
 
-export function IntegrationNotVerifiedAlert() {
-  return (
-    <div className="border-base bg-muted/10 text-base-foreground p-4 rounded-lg">
-      <div className="flex items-start gap-3">
-        <Icon
-          name="warning"
-          size={16}
-          className="text-base-foreground mt-0.5"
-        />
-        <div>
-          <div className="flex items-center gap-2">
-            <span className="font-medium">Third-party integration</span>
-          </div>
-          <p className="mt-1 text-sm">
-            This integration is provided by a third party and is not maintained
-            by deco.
-          </p>
-        </div>
-      </div>
-    </div>
-  );
-}

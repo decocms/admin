@@ -37,27 +37,12 @@ import {
 import { OAuthCompletionDialog } from "./oauth-completion-dialog.tsx";
 import { UseFormReturn } from "react-hook-form";
 import type { JSONSchema7 } from "json-schema";
-import { useCurrentTeam } from "../sidebar/team-selector.tsx";
-import { Avatar } from "../common/avatar/index.tsx";
 import {
   GridContainer,
   GridLeftColumn,
   GridRightColumn,
-  IntegrationNotVerifiedAlert,
 } from "./shared-components.tsx";
-
-function CurrentTeamIcon() {
-  const { avatarUrl, label } = useCurrentTeam();
-  return (
-    <Avatar
-      shape="square"
-      url={avatarUrl}
-      fallback={label}
-      objectFit="contain"
-      size="xl"
-    />
-  );
-}
+import { WalletBalanceAlert } from "../common/wallet-balance-alert.tsx";
 
 function IntegrationWorkspaceIconForMarketplace({
   integration,
@@ -65,25 +50,12 @@ function IntegrationWorkspaceIconForMarketplace({
   integration: MarketplaceIntegration | null;
 }) {
   return (
-    <div className="flex items-center gap-2">
-      {/* Left app icon */}
-      <div className="rounded-lg flex items-center justify-center">
-        <IntegrationIcon
-          icon={integration?.icon}
-          name={integration?.friendlyName ?? integration?.name}
-          size="xl"
-        />
-      </div>
-
-      {/* Right workspace icon */}
-      <div className="rounded-lg flex items-center justify-center">
-        <CurrentTeamIcon />
-      </div>
-
-      {/* Connection arrow */}
-      <div className="flex items-center justify-center absolute -translate-x-4 ml-17 w-8 h-8 bg-white border rounded-lg">
-        <Icon name="sync_alt" size={24} className="text-muted-foreground" />
-      </div>
+    <div className="absolute -translate-y-1/2">
+      <IntegrationIcon
+        icon={integration?.icon}
+        name={integration?.friendlyName ?? integration?.name}
+        size="xl"
+      />
     </div>
   );
 }
@@ -209,13 +181,7 @@ export function ConfirmMarketplaceInstallDialog({
 
   return (
     <Dialog open={open} onOpenChange={() => setIntegration(null)}>
-      <DialogContent className="lg:!w-210 lg:!max-w-210 lg:min-h-135 lg:max-h-[80vh] flex flex-col">
-        <DialogHeader>
-          <DialogTitle>
-            Connect to {integration.friendlyName ?? integration.name}
-          </DialogTitle>
-        </DialogHeader>
-
+      <DialogContent className="!p-0 overflow-hidden lg:!w-210 lg:!max-w-210 lg:min-h-135 lg:max-h-[80vh] flex flex-col">
         {/* Step 1: Permissions */}
         {currentStep === "permissions" && (
           <PermissionsStep
@@ -274,22 +240,23 @@ function PermissionsStep({
     <GridContainer>
       {/* Left side: App icons, connection, and warning */}
       <GridLeftColumn>
-        {/* App icons with connection arrow */}
-        <div className="space-y-8">
+        <div className="pb-4 px-4 h-full">
           <IntegrationWorkspaceIconForMarketplace integration={integration} />
 
           {/* Permissions description */}
-          <h3 className="text-xl text-base-foreground">
-            <span className="font-bold">
-              {integration.friendlyName ?? integration.name}
-            </span>{" "}
-            will have access to the following permissions:
-          </h3>
-        </div>
+          <div className="h-full flex flex-col justify-between pt-16">
+            <h3 className="text-xl text-base-foreground">
+              <span className="font-bold">
+                {integration.friendlyName ?? integration.name}
+              </span>{" "}
+              will have access to the following permissions:
+            </h3>
 
-        {/* Warning at bottom left */}
-        <div className="mt-auto">
-          {!integration.verified && <IntegrationNotVerifiedAlert />}
+            {/* Warning at bottom left */}
+            <div>
+              <WalletBalanceAlert />
+            </div>
+          </div>
         </div>
       </GridLeftColumn>
 
@@ -320,10 +287,11 @@ function RequirementsStep({
     <GridContainer>
       {/* Left side: App title and instructions */}
       <GridLeftColumn>
-        <div className="space-y-8">
+        <div className="pb-4 px-4 h-full">
           <IntegrationWorkspaceIconForMarketplace integration={integration} />
           {/* App title */}
-          <div className="space-y-2">
+
+          <div className="h-full flex flex-col justify-between pt-16">
             <h3 className="text-xl text-base-foreground">
               Add required tools for{" "}
               <span className="font-bold">
@@ -331,12 +299,12 @@ function RequirementsStep({
               </span>{" "}
               or choose from connected ones
             </h3>
-          </div>
-        </div>
 
-        {/* Warning at bottom left */}
-        <div className="mt-auto">
-          {!integration.verified && <IntegrationNotVerifiedAlert />}
+            {/* Warning at bottom left */}
+            <div className="mt-auto">
+              <WalletBalanceAlert />
+            </div>
+          </div>
         </div>
       </GridLeftColumn>
 

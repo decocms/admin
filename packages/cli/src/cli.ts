@@ -65,6 +65,12 @@ import { genEnv } from "./commands/gen/gen.js";
 import { upgradeCommand } from "./commands/update/upgrade.js";
 import { updateCommand } from "./commands/update/update.js";
 import { addCommand } from "./commands/add/add.js";
+import {
+  callToolCommand,
+  autocompleteIntegrations,
+} from "./commands/tools/call-tool.js";
+import { completionCommand } from "./commands/completion/completion.js";
+import { installCompletionCommand } from "./commands/completion/install.js";
 import { detectRuntime } from "./lib/runtime.js";
 
 const __filename = fileURLToPath(import.meta.url);
@@ -370,6 +376,111 @@ const add = new Command("add")
     }
   });
 
+// Call-tool command implementation
+const callTool = new Command("call-tool")
+  .description("Call a tool on an integration using MCP protocol.")
+  .argument("<tool>", "Name of the tool to call")
+  .option(
+    "-i, --integration <integration>",
+    "Integration ID to call the tool on",
+  )
+  .option("-p, --payload <payload>", "JSON payload to send to the tool")
+  .option(
+    "--set <key=value>",
+    "Set a key-value pair in the payload (can be used multiple times)",
+    (value, previous: string[] | undefined) => {
+      return previous ? [...previous, value] : [value];
+    },
+  )
+  .option("-w, --workspace <workspace>", "Workspace name")
+  .configureHelp({
+    subcommandTerm: (cmd) => cmd.name(), // for auto-completion
+  })
+  .action(async (toolName, options) => {
+    // Validate required integration parameter
+    if (!options.integration) {
+      console.error(
+        "❌ Integration ID is required. Use -i or --integration flag.",
+      );
+
+      // Show available integrations for user convenience
+      try {
+        console.log("🔍 Available integrations:");
+        const integrations = await autocompleteIntegrations("");
+        if (integrations.length > 0) {
+          integrations.slice(0, 10).forEach((id) => console.log(`  • ${id}`));
+          if (integrations.length > 10) {
+            console.log(`  ... and ${integrations.length - 10} more`);
+          }
+        } else {
+          console.log(
+            "  No integrations found. Run 'deco add' to add integrations.",
+          );
+        }
+      } catch {
+        console.log("  Run 'deco add' to add integrations.");
+      }
+
+      process.exit(1);
+    }
+
+    try {
+      await callToolCommand(toolName, {
+        integration: options.integration,
+        payload: options.payload,
+        set: options.set,
+        workspace: options.workspace,
+      });
+    } catch (error) {
+      console.error(
+        "❌ Tool call failed:",
+        error instanceof Error ? error.message : String(error),
+      );
+      process.exit(1);
+    }
+  });
+
+// Completion command implementation (internal command)
+const completion = new Command("completion")
+  .description("Generate shell completions (internal command)")
+  .argument("<type>", "Type of completion to generate")
+  .option("--current <current>", "Current word being completed")
+  .option("--previous <previous>", "Previous word in command line")
+  .option("--line <line>", "Full command line")
+  .action(async (type, options) => {
+    try {
+      await completionCommand(type, {
+        current: options.current,
+        previous: options.previous,
+        line: options.line,
+      });
+    } catch {
+      // Silently fail for completions
+    }
+  });
+
+// Install completion command
+const installCompletion = new Command("install-completion")
+  .description("Install shell completion scripts")
+  .argument(
+    "[shell]",
+    "Target shell (bash, zsh). Auto-detected if not specified",
+  )
+  .option("-o, --output <path>", "Output path for completion script")
+  .action(async (shell, options) => {
+    try {
+      await installCompletionCommand(shell, {
+        output: options.output,
+      });
+    } catch (error) {
+      console.error(
+        "❌ Failed to install completion:",
+        error instanceof Error ? error.message : String(error),
+      );
+      process.exit(1);
+    }
+  });
+
 // Hosting parent command
 const hosting = new Command("hosting")
   .description("Manage hosting apps in a workspace.")
@@ -463,10 +574,13 @@ const program = new Command()
   .addCommand(dev)
   .addCommand(configure)
   .addCommand(add)
+  .addCommand(callTool)
   .addCommand(upgrade)
   .addCommand(update)
   .addCommand(linkCmd)
   .addCommand(gen)
-  .addCommand(create);
+  .addCommand(create)
+  .addCommand(completion)
+  .addCommand(installCompletion);
 
 program.parse();

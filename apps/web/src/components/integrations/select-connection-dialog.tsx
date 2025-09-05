@@ -13,7 +13,6 @@ import {
 import { Icon } from "@deco/ui/components/icon.tsx";
 import { Input } from "@deco/ui/components/input.tsx";
 import { ScrollArea } from "@deco/ui/components/scroll-area.tsx";
-import { Alert, AlertDescription } from "@deco/ui/components/alert.tsx";
 import { cn } from "@deco/ui/lib/utils.ts";
 import { useEffect, useMemo, useState, useRef } from "react";
 import { useSearchParams } from "react-router";
@@ -40,36 +39,12 @@ import { UseFormReturn } from "react-hook-form";
 import type { JSONSchema7 } from "json-schema";
 import { useCurrentTeam } from "../sidebar/team-selector.tsx";
 import { Avatar } from "../common/avatar/index.tsx";
-
-function GridRightColumn({ children }: { children: React.ReactNode }) {
-  return (
-    <div data-right-column className="col-span-6 py-4">
-      {children}
-    </div>
-  );
-}
-
-function GridLeftColumn({ children }: { children: React.ReactNode }) {
-  return (
-    <div
-      data-left-column
-      className="flex flex-col justify-between col-span-4 py-4 pr-4"
-    >
-      {children}
-    </div>
-  );
-}
-
-function GridContainer({ children }: { children: React.ReactNode }) {
-  return (
-    <div
-      data-grid-container
-      className="flex-1 grid grid-cols-10 gap-6 h-full divide-x border-b"
-    >
-      {children}
-    </div>
-  );
-}
+import {
+  GridContainer,
+  GridLeftColumn,
+  GridRightColumn,
+  IntegrationNotVerifiedAlert,
+} from "./shared-components.tsx";
 
 function CurrentTeamIcon() {
   const { avatarUrl, label } = useCurrentTeam();
@@ -84,25 +59,7 @@ function CurrentTeamIcon() {
   );
 }
 
-function IntegrationNotVerifiedAlert() {
-  return (
-    <Alert className="border-base bg-muted/10 text-base-foreground">
-      <Icon name="warning" size={16} className="text-base-foreground" />
-      <AlertDescription>
-        <div className="flex items-center gap-2">
-          <span className="font-medium">Third-party integration</span>
-        </div>
-        <p className="mt-1 text-sm">
-          This integration is provided by a third party and is not maintained by
-          deco.
-          <br />
-        </p>
-      </AlertDescription>
-    </Alert>
-  );
-}
-
-function IntegrationWorkspaceIcon({
+function IntegrationWorkspaceIconForMarketplace({
   integration,
 }: {
   integration: MarketplaceIntegration | null;
@@ -319,7 +276,7 @@ function PermissionsStep({
       <GridLeftColumn>
         {/* App icons with connection arrow */}
         <div className="space-y-8">
-          <IntegrationWorkspaceIcon integration={integration} />
+          <IntegrationWorkspaceIconForMarketplace integration={integration} />
 
           {/* Permissions description */}
           <h3 className="text-xl text-base-foreground">
@@ -339,24 +296,10 @@ function PermissionsStep({
       {/* Right side: Scrollable permissions */}
       <GridRightColumn>
         <ScrollArea className="h-[400px] pr-4">
-          {integrationState.permissions &&
-          integrationState.permissions.length > 0 ? (
-            <IntegrationPermissions
-              integrationName={integration.name}
-              permissions={integrationState.permissions}
-            />
-          ) : (
-            <div className="flex items-center justify-center h-32 text-muted-foreground">
-              <div className="text-center">
-                <Icon
-                  name="check_circle"
-                  size={48}
-                  className="mx-auto mb-2 text-success"
-                />
-                <p>No special permissions required</p>
-              </div>
-            </div>
-          )}
+          <IntegrationPermissions
+            integrationName={integration.name}
+            permissions={integrationState.permissions}
+          />
         </ScrollArea>
       </GridRightColumn>
     </GridContainer>
@@ -378,7 +321,7 @@ function RequirementsStep({
       {/* Left side: App title and instructions */}
       <GridLeftColumn>
         <div className="space-y-8">
-          <IntegrationWorkspaceIcon integration={integration} />
+          <IntegrationWorkspaceIconForMarketplace integration={integration} />
           {/* App title */}
           <div className="space-y-2">
             <h3 className="text-xl text-base-foreground">

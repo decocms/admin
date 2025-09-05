@@ -1,5 +1,4 @@
 import { FormProvider, useForm, UseFormReturn } from "react-hook-form";
-import { Badge } from "@deco/ui/components/badge.tsx";
 import { Separator } from "@deco/ui/components/separator.tsx";
 import type { JSONSchema7 } from "json-schema";
 import JsonSchemaForm from "./json-schema/index.tsx";
@@ -16,13 +15,28 @@ interface Permission {
 
 interface IntegrationPermissionsProps {
   integrationName: string;
-  permissions: Permission[];
+  permissions?: Permission[];
 }
 
 export function IntegrationPermissions({
   integrationName: _integrationName,
   permissions,
 }: IntegrationPermissionsProps) {
+  if (!permissions || permissions.length === 0) {
+    return (
+      <div className="flex items-center justify-center h-32 text-muted-foreground">
+        <div className="text-center">
+          <Icon
+            name="check_circle"
+            size={48}
+            className="mx-auto mb-2 text-success"
+          />
+          <p>No special permissions required</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="divide-y">
       {permissions.map((permission, index) => (
@@ -43,14 +57,14 @@ export function IntegrationPermissions({
 
 interface IntegrationBindingFormProps {
   schema: JSONSchema7;
-  formRef: RefObject<UseFormReturn<unknown> | null>;
+  formRef: RefObject<UseFormReturn<Record<string, unknown>> | null>;
 }
 const noop = () => {};
 export function IntegrationBindingForm({
   schema,
   formRef,
 }: IntegrationBindingFormProps) {
-  const form = useForm({
+  const form = useForm<Record<string, unknown>>({
     defaultValues: generateDefaultValues(schema),
   });
 

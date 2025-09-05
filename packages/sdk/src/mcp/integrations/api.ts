@@ -192,10 +192,7 @@ const virtualIntegrationsFor = (
   token?: string,
 ) => {
   // Create a virtual User Management integration
-  const legacyApiUrl = "https://api.deco.chat";
-  // const decoChatMcp = new URL("/mcp", DECO_CMS_API_URL);
-  // Point to legacy API for now
-  const decoChatMcp = new URL("/mcp", legacyApiUrl);
+  const decoChatMcp = new URL("/mcp", DECO_CMS_API_URL);
   const userManagementIntegration = {
     id: formatId("i", "user-management"),
     name: "User Management",
@@ -209,7 +206,7 @@ const virtualIntegrationsFor = (
     workspace,
     created_at: new Date().toISOString(),
   };
-  const workspaceMcp = new URL(`${workspace}/mcp`, legacyApiUrl);
+  const workspaceMcp = new URL(`${workspace}/mcp`, DECO_CMS_API_URL);
 
   // Create a virtual Workspace Management integration
   const workspaceManagementIntegration = {

@@ -225,7 +225,7 @@ export const withBindings = <TEnv>({
 }): TEnv => {
   const env = _env as DefaultEnv<any>;
 
-  const apiUrl = env.DECO_API_URL ?? "https://api.deco.chat";
+  const apiUrl = env.DECO_API_URL ?? "https://api.decocms.com";
   let context;
   if (typeof tokenOrContext === "string") {
     const decoded = decodeJwt(tokenOrContext);

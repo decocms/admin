@@ -32,13 +32,11 @@ import { toast } from "@deco/ui/components/sonner.tsx";
 import { cn } from "@deco/ui/lib/utils.ts";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useParams } from "react-router";
-import { DefaultBreadcrumb, PageLayout } from "../layout.tsx";
+import { DefaultBreadcrumb, PageLayout } from "../layout/project.tsx";
 import { useCurrentTeam } from "../sidebar/team-selector.tsx";
 import {
   AppKeys,
-  getConnectionAppKey,
-  isWellKnownApp,
-  useGroupedApp,
+  getConnectionAppKey, isWellKnownApp, useGroupedApp
 } from "./apps.ts";
 import { IntegrationIcon } from "./common.tsx";
 

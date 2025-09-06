@@ -7,7 +7,7 @@ import {
   type User,
   useSDK,
   useTeamMembers,
-  useTeams,
+  useOrganizations,
   useUpdatePrompt,
   type Workspace,
 } from "@deco/sdk";
@@ -42,7 +42,7 @@ export default function HistoryTab() {
   const user = useUser();
   const params = useParams();
   const resolvedOrgSlug = params.org;
-  const { data: teams } = useTeams();
+  const { data: teams } = useOrganizations();
   const orgId = useMemo(
     () => teams?.find((t) => t.slug === resolvedOrgSlug)?.id ?? null,
     [teams, resolvedOrgSlug],

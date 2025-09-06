@@ -1,6 +1,8 @@
 import {
-  findConnectionView, NotFoundError, useConnectionViews,
-  useIntegrations
+  findConnectionView,
+  NotFoundError,
+  useConnectionViews,
+  useIntegrations,
 } from "@deco/sdk";
 import { Button } from "@deco/ui/components/button.tsx";
 import { Icon } from "@deco/ui/components/icon.tsx";

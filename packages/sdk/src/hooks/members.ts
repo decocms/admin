@@ -19,7 +19,7 @@ import {
   updateMemberRole,
 } from "../crud/members.ts";
 import { KEYS } from "./api.ts";
-import { useTeams } from "./teams.ts";
+import { useOrganizations } from "./teams.ts";
 import { type User, useSDK } from "../index.ts";
 
 type TeamMembers = Awaited<ReturnType<typeof getTeamMembers>>;
@@ -57,7 +57,7 @@ export const useTeamMembers = (
  * @param currentTeamSlug - The slug of the current team
  */
 export const useTeamMembersBySlug = (currentTeamSlug: string | null) => {
-  const { data: teams } = useTeams();
+  const { data: teams } = useOrganizations();
   const teamId = useMemo(
     () => teams?.find((t) => t.slug === currentTeamSlug)?.id ?? null,
     [teams, currentTeamSlug],

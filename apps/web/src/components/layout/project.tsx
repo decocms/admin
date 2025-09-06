@@ -33,6 +33,8 @@ import Docked, { useDock, type Tab } from "../dock/index.tsx";
 import { ProfileModalProvider, useProfileModal } from "../profile-modal.tsx";
 import { AppSidebar } from "../sidebar/index.tsx";
 import { WithWorkspaceTheme } from "../theme.tsx";
+import { useIsMobile } from "@deco/ui/hooks/use-mobile.ts";
+import { ErrorBoundary } from "../../error-boundary.tsx";
 
 export function BaseRouteLayout({ children }: { children: ReactNode }) {
   const user = useUser();
@@ -222,6 +224,25 @@ export function PageLayout({
   );
 }
 
+function BreadcrumbSidebarToggle() {
+  const { toggleSidebar, open, isMobile } = useSidebar();
+
+  if (open) {
+    return null;
+  }
+
+  return (
+    <Button
+      variant="ghost"
+      size="icon"
+      onClick={() => toggleSidebar()}
+      className={cn(isMobile && "hidden", "size-8")}
+    >
+      <Icon name="dock_to_right" className="text-muted-foreground" />
+    </Button>
+  );
+}
+
 interface BreadcrumbItem {
   label: string | ReactNode;
   link?: string;
@@ -234,21 +255,14 @@ export function DefaultBreadcrumb({
   items: BreadcrumbItem[];
   useWorkspaceLink?: boolean;
 }) {
-  const { toggleSidebar, open, isMobile } = useSidebar();
+  const isMobile = useIsMobile();
   const withWorkspace = useWorkspaceLink();
 
   return (
     <div className="flex items-center gap-3 pl-2">
-      {!open && (
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={() => toggleSidebar()}
-          className={cn(isMobile && "hidden", "size-8")}
-        >
-          <Icon name="dock_to_right" className="text-muted-foreground" />
-        </Button>
-      )}
+      <ErrorBoundary fallback={null}>
+        <BreadcrumbSidebarToggle />
+      </ErrorBoundary>
 
       <Breadcrumb>
         <BreadcrumbList>

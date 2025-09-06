@@ -1,5 +1,10 @@
 import type { ThreadFilterOptions } from "@deco/sdk";
-import { useAgents, useAuditEvents, useTeamMembers, useTeams } from "@deco/sdk";
+import {
+  useAgents,
+  useAuditEvents,
+  useTeamMembers,
+  useOrganizations,
+} from "@deco/sdk";
 import {
   Alert,
   AlertDescription,
@@ -100,7 +105,7 @@ export function AuditListContent({
   const currentCursor =
     getSafeCursor(searchParams.get(CURSOR_PAGINATION_SEARCH_PARAM)) ??
     undefined;
-  const { data: teams } = useTeams();
+  const { data: teams } = useOrganizations();
   const resolvedOrgSlug = params.org;
   const orgId = teams?.find((t) => t.slug === resolvedOrgSlug)?.id ?? null;
   const members = orgId !== null ? useTeamMembers(orgId).data.members : [];

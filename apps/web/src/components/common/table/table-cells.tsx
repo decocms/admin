@@ -1,4 +1,4 @@
-import { useAgents, useTeamMembers, useTeams } from "@deco/sdk";
+import { useAgents, useTeamMembers, useOrganizations } from "@deco/sdk";
 import { WELL_KNOWN_AGENT_IDS } from "@deco/sdk/constants";
 import {
   Tooltip,
@@ -68,7 +68,7 @@ function UserInfo({
   const user = useUser();
   const params = useParams();
   const resolvedOrgSlug = params.org;
-  const { data: teams } = useTeams();
+  const { data: teams } = useOrganizations();
   const orgId = useMemo(
     () => teams?.find((t) => t.slug === resolvedOrgSlug)?.id ?? null,
     [teams, resolvedOrgSlug],

@@ -1,4 +1,4 @@
-import { useTeams } from "@deco/sdk";
+import { useOrganizations } from "@deco/sdk";
 import { Icon } from "@deco/ui/components/icon.tsx";
 import { Input } from "@deco/ui/components/input.tsx";
 import { Suspense, useState } from "react";
@@ -10,6 +10,7 @@ import { OrgAvatars, OrgMemberCount } from "./members";
 import { DefaultBreadcrumb, PageLayout } from "../layout/project";
 import { Button } from "@deco/ui/components/button.tsx";
 import { CreateOrganizationDialog } from "../sidebar/create-team-dialog";
+import { TopbarLayout } from "../layout/home";
 
 function OrganizationCard({
   name,
@@ -63,7 +64,7 @@ function OrganizationCard({
 }
 
 function Organizations({ query }: { query?: string }) {
-  const teams = useTeams({ searchQuery: query });
+  const teams = useOrganizations({ searchQuery: query });
 
   if (teams.data?.length === 0) {
     return <Organizations.Empty />;
@@ -135,16 +136,22 @@ function MyOrganizations() {
       <div className="p-8 flex flex-col gap-4 w-full">
         <DecoDayBanner />
         <div className="flex items-center justify-between">
-          <Input
-            className="max-w-xs"
-            placeholder="Search organizations..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-          />
-          <Button variant="special" onClick={() => setIsCreateDialogOpen(true)}>
-            <Icon name="add" size={16} />
-            <span>New organization</span>
-          </Button>
+          <h2 className="text-xl font-medium">My organizations</h2>
+          <div className="flex items-center gap-2">
+            <Input
+              className="max-w-xs"
+              placeholder="Search"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+            />
+            <Button
+              variant="special"
+              onClick={() => setIsCreateDialogOpen(true)}
+            >
+              <Icon name="add" size={16} />
+              <span>New organization</span>
+            </Button>
+          </div>
         </div>
         <div className="@container overflow-y-auto max-h-[calc(100vh-12rem)] pb-28">
           <ErrorBoundary fallback={<Organizations.Error />}>
@@ -165,21 +172,8 @@ function MyOrganizations() {
 
 export function Home() {
   return (
-    <PageLayout
-      hideViewsButton
-      tabs={{
-        myOrganizations: {
-          title: "My Organizations",
-          Component: MyOrganizations,
-          initialOpen: true,
-        },
-      }}
-      breadcrumb={
-        <DefaultBreadcrumb
-          items={[{ label: "My Organizations", link: "/" }]}
-          useWorkspaceLink={false}
-        />
-      }
-    />
+    <TopbarLayout breadcrumb={[{ label: "Organizations", link: "/" }]}>
+      <MyOrganizations />
+    </TopbarLayout>
   );
 }

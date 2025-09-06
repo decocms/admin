@@ -29,7 +29,7 @@ import { listIntegrations } from "../crud/mcp.ts";
 /**
  * Hook to fetch teams - searching is done client-side for now.
  */
-export const useTeams = (options: { searchQuery?: string } = {}) => {
+export const useOrganizations = (options: { searchQuery?: string } = {}) => {
   const search = options.searchQuery ?? "";
 
   const queryResult = useSuspenseQuery({
@@ -67,7 +67,7 @@ export const useProjects = (options: {
   searchQuery?: string;
   org: string;
 }): Project[] => {
-  const teams = useTeams();
+  const teams = useOrganizations();
   const search = options.searchQuery ?? "";
   const org = teams.data.find((team) => team.slug === options.org);
 

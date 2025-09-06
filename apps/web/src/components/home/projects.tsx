@@ -1,4 +1,4 @@
-import { useProjects } from "@deco/sdk";
+import { useOrganizations, useProjects } from "@deco/sdk";
 import { Icon } from "@deco/ui/components/icon.tsx";
 import { Input } from "@deco/ui/components/input.tsx";
 import {
@@ -6,14 +6,16 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@deco/ui/components/tooltip.tsx";
-import { Suspense, useState } from "react";
-import { Link, useParams } from "react-router";
+import { Suspense, useMemo, useState } from "react";
+import { Link, useNavigate, useParams } from "react-router";
 import { ErrorBoundary } from "../../error-boundary";
 import { Button } from "@deco/ui/components/button.tsx";
 import { Avatar } from "../common/avatar";
 import { DecoDayBanner } from "../common/event/deco-day";
 import { OrgAvatars, OrgMemberCount } from "./members";
 import { DefaultBreadcrumb, PageLayout } from "../layout/project";
+import { TopbarLayout } from "../layout/home";
+import { Combobox } from "@deco/ui/components/combobox.tsx";
 
 function ProjectCard({
   name,
@@ -82,7 +84,7 @@ function Projects({ query, org }: { query?: string; org: string }) {
           name={project.name}
           slug={project.slug}
           url={`/${project.org.slug}/${project.slug}`}
-          avatarUrl={project.org.avatar_url || ""}
+          avatarUrl={project.avatar_url || project.org.avatar_url || ""}
           teamId={project.org.id}
         />
       ))}
@@ -140,23 +142,26 @@ function OrgProjectListContent() {
       <div className="p-8 flex flex-col gap-4 w-full">
         <DecoDayBanner />
         <div className="flex items-center justify-between">
-          <Input
-            className="max-w-xs"
-            placeholder="Search projects..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-          />
-          <Tooltip>
-            <TooltipTrigger>
-              <Button variant="special" disabled>
-                <Icon name="add" size={16} />
-                <span>New project</span>
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent>
-              <p>Multiple projects in a single organization is coming soon</p>
-            </TooltipContent>
-          </Tooltip>
+          <h2 className="text-xl font-medium">Projects</h2>
+          <div className="flex items-center gap-2">
+            <Input
+              className="max-w-xs"
+              placeholder="Search projects..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+            />
+            <Tooltip>
+              <TooltipTrigger>
+                <Button variant="special" disabled>
+                  <Icon name="add" size={16} />
+                  <span>New project</span>
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>Multiple projects in a single organization is coming soon</p>
+              </TooltipContent>
+            </Tooltip>
+          </div>
         </div>
         <div className="@container overflow-y-auto max-h-[calc(100vh-12rem)] pb-8">
           <ErrorBoundary fallback={<Projects.Error />}>
@@ -170,28 +175,65 @@ function OrgProjectListContent() {
   );
 }
 
+function BreadcrumbOrgSwitcher() {
+  const { org } = useParams();
+  const organizations = useOrganizations();
+  const navigate = useNavigate();
+
+  const currentOrg = useMemo(
+    () => organizations.data?.find((organization) => organization.slug === org),
+    [organizations.data, org],
+  );
+
+  return (
+    <Combobox
+      options={organizations.data?.map((organization) => ({
+        value: organization.slug,
+        label: organization.name,
+      }))}
+      value={org ?? ""}
+      onChange={(value) => {
+        navigate(`/${value}`);
+      }}
+      renderTrigger={() => (
+        <div className="flex items-center gap-2 cursor-pointer hover:bg-sidebar px-2 py-1 rounded-md">
+          <Avatar
+            url={currentOrg?.avatar_url}
+            fallback={currentOrg?.name ?? org}
+            size="xs"
+            objectFit="contain"
+          />
+          <span>{currentOrg?.name ?? org}</span>
+          <Icon name="expand_all" size={16} className="opacity-50" />
+        </div>
+      )}
+      contentClassName="min-w-[200px]"
+    />
+  );
+}
+
+BreadcrumbOrgSwitcher.Skeleton = () => (
+  <div className="h-4 w-16 bg-stone-100 rounded-full animate-pulse"></div>
+);
+
 export function OrgProjectList() {
   const { org } = useParams();
 
   return (
-    <PageLayout
-      hideViewsButton
-      tabs={{
-        orgProjectList: {
-          title: "Projects",
-          Component: OrgProjectListContent,
-          initialOpen: true,
+    <TopbarLayout
+      breadcrumb={[
+        { label: "Organizations", link: "/" },
+        {
+          label: (
+            <Suspense fallback={<BreadcrumbOrgSwitcher.Skeleton />}>
+              <BreadcrumbOrgSwitcher />
+            </Suspense>
+          ),
+          link: `/${org}`,
         },
-      }}
-      breadcrumb={
-        <DefaultBreadcrumb
-          items={[
-            { label: "My Organizations", link: "/" },
-            { label: org ?? "", link: `/${org}` },
-          ]}
-          useWorkspaceLink={false}
-        />
-      }
-    />
+      ]}
+    >
+      <OrgProjectListContent />
+    </TopbarLayout>
   );
 }

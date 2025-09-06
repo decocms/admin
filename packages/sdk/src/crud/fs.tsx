@@ -1,7 +1,8 @@
 import { MCPClient } from "../fetcher.ts";
+import { Workspace } from "../workspace.ts";
 
 interface ListOptions {
-  workspace: string;
+  workspace: Workspace;
   root: string;
 }
 
@@ -15,7 +16,7 @@ export const listFiles = async ({ workspace, root }: ListOptions) => {
 
 interface WriteOptions {
   path: string;
-  workspace: string;
+  workspace: Workspace;
   content: Uint8Array;
   contentType: string;
   expiresIn?: number;
@@ -55,7 +56,7 @@ export const writeFile = async ({
 };
 
 interface ReadOptions {
-  workspace: string;
+  workspace: Workspace;
   path: string;
   expiresIn?: number;
 }
@@ -74,7 +75,7 @@ export const readFile = async ({ workspace, path, expiresIn }: ReadOptions) => {
 };
 
 interface DeleteOptions {
-  workspace: string;
+  workspace: Workspace;
   path: string;
 }
 

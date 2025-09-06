@@ -25,4 +25,8 @@ export const Workspaces = {
     }
     return { org, project };
   },
+  adaptToShared: (workspace: Workspace): string => {
+    const [org] = workspace.split("/");
+    return `shared/${org}`;
+  },
 } as const;

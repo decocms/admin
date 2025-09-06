@@ -2,6 +2,7 @@ import { MCPClient } from "../fetcher.ts";
 import type { WellKnownBindings } from "../mcp/index.ts";
 import type { Channel } from "../models/channels.ts";
 import type { MCPConnection } from "../models/mcp.ts";
+import { Workspace } from "../workspace.ts";
 export type { Channel };
 
 /**
@@ -11,7 +12,7 @@ export type { Channel };
  * @returns Array of channels
  */
 export const listChannels = (
-  workspace: string,
+  workspace: Workspace,
   signal?: AbortSignal,
 ): Promise<{ channels: Channel[] }> =>
   MCPClient.forWorkspace(workspace).CHANNELS_LIST({}, { signal });
@@ -23,7 +24,7 @@ export const listChannels = (
  * @returns The created channel
  */
 export const createChannel = (
-  workspace: string,
+  workspace: Workspace,
   channel: {
     discriminator: string;
     integrationId: string;
@@ -41,7 +42,7 @@ export const createChannel = (
  * @returns The channel
  */
 export const getChannel = (
-  workspace: string,
+  workspace: Workspace,
   id: string,
   signal?: AbortSignal,
 ): Promise<Channel> =>
@@ -55,7 +56,7 @@ export const getChannel = (
  * @returns The updated channel
  */
 export const joinChannel = (
-  workspace: string,
+  workspace: Workspace,
   channelId: string,
   agentId: string,
 ): Promise<Channel> =>
@@ -68,7 +69,7 @@ export const joinChannel = (
  * List available channels for a given connection
  */
 export const listAvailableChannelsForConnection = (
-  workspace: string,
+  workspace: Workspace,
   connection: MCPConnection,
 ) =>
   MCPClient.forConnection<(typeof WellKnownBindings)["Channel"]>(
@@ -84,7 +85,7 @@ export const listAvailableChannelsForConnection = (
  * @returns The updated channel
  */
 export const leaveChannel = (
-  workspace: string,
+  workspace: Workspace,
   channelId: string,
   agentId: string,
 ): Promise<Channel> =>
@@ -99,7 +100,7 @@ export const leaveChannel = (
  * @param channelId - The ID of the channel to delete
  * @returns Delete response with id and agentId
  */
-export const deleteChannel = (workspace: string, channelId: string) =>
+export const deleteChannel = (workspace: Workspace, channelId: string) =>
   MCPClient.forWorkspace(workspace).CHANNELS_DELETE({
     id: channelId,
   });

@@ -1,4 +1,5 @@
 import { MCPClient } from "../fetcher.ts";
+import { Workspace } from "../workspace.ts";
 
 /**
  * Create an API key
@@ -7,7 +8,7 @@ import { MCPClient } from "../fetcher.ts";
  * @returns The created API key
  */
 export const createAPIKey = (
-  workspace: string,
+  workspace: Workspace,
   params: {
     claims?: {
       appName: string;

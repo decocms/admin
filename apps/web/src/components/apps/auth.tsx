@@ -671,7 +671,10 @@ function AppsOAuth({
     );
   }
 
-  const workspace = Workspaces.from({ org: selectedOrgSlug, project: selectedProject });
+  const workspace = Workspaces.from({
+    org: selectedOrgSlug,
+    project: selectedProject,
+  });
 
   return (
     <SDKProvider workspace={workspace}>

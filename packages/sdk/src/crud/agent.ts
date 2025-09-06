@@ -1,6 +1,7 @@
 import { MCPClient } from "../fetcher.ts";
 import { type Agent, AgentSchema } from "../models/agent.ts";
 import { stub } from "../stub.ts";
+import { Workspace, Workspaces } from "../workspace.ts";
 
 /**
  * Update an agent
@@ -8,8 +9,8 @@ import { stub } from "../stub.ts";
  * @param agent - The agent to update
  * @returns The updated agent
  */
-export const updateAgent = async (workspace: string, agent: Agent) => {
-  const agentRoot = `/${workspace}/Agents/${agent.id}`;
+export const updateAgent = async (workspace: Workspace, agent: Agent) => {
+  const agentRoot = `/${Workspaces.adaptToShared(workspace)}/Agents/${agent.id}`;
 
   // deno-lint-ignore no-explicit-any
   const agentStub = stub<any>("AIAgent").new(agentRoot);
@@ -23,7 +24,7 @@ export const updateAgent = async (workspace: string, agent: Agent) => {
  * Create a new agent
  * @returns The new agent
  */
-export const createAgent = (workspace: string, template: Partial<Agent> = {}) =>
+export const createAgent = (workspace: Workspace, template: Partial<Agent> = {}) =>
   MCPClient.forWorkspace(workspace).AGENTS_CREATE({
     id: crypto.randomUUID(),
     ...template,
@@ -35,14 +36,14 @@ export const createAgent = (workspace: string, template: Partial<Agent> = {}) =>
  * @returns The agent
  */
 export const loadAgent = (
-  workspace: string,
+  workspace: Workspace,
   agentId: string,
   signal?: AbortSignal,
 ): Promise<Agent> =>
   MCPClient.forWorkspace(workspace).AGENTS_GET({ id: agentId }, { signal });
 
 export const listAgents = (
-  workspace: string,
+  workspace: Workspace,
   signal?: AbortSignal,
 ): Promise<Agent[]> =>
   MCPClient.forWorkspace(workspace)
@@ -54,7 +55,7 @@ export const listAgents = (
  * @param workspace - The workspace of the agent
  * @param agentId - The id of the agent to delete
  */
-export const deleteAgent = (workspace: string, agentId: string) =>
+export const deleteAgent = (workspace: Workspace, agentId: string) =>
   MCPClient.forWorkspace(workspace).AGENTS_DELETE({ id: agentId });
 
 /**

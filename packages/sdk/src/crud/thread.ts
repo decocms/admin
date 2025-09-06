@@ -1,5 +1,6 @@
 import type { UIMessage } from "ai";
 import { MCPClient } from "../fetcher.ts";
+import { Workspace } from "../workspace.ts";
 
 export interface ThreadFilterOptions {
   agentId?: string;
@@ -37,7 +38,7 @@ export interface Metadata {
 }
 
 export const listThreads = (
-  workspace: string,
+  workspace: Workspace,
   options: ThreadFilterOptions,
   init?: RequestInit,
 ) => MCPClient.forWorkspace(workspace).THREADS_LIST(options, init);
@@ -52,7 +53,7 @@ export interface ThreadDetails {
 }
 
 export const getThread = (
-  workspace: string,
+  workspace: Workspace,
   threadId: string,
   init: RequestInit = {},
 ): Promise<ThreadDetails> =>
@@ -68,7 +69,7 @@ export interface ThreadMessage {
 }
 
 export const getThreadMessages = (
-  workspace: string,
+  workspace: Workspace,
   threadId: string,
   init: RequestInit = {},
 ): Promise<{ messages: UIMessage[] }> =>
@@ -82,14 +83,14 @@ export interface ThreadTools {
 }
 
 export const getThreadTools = (
-  workspace: string,
+  workspace: Workspace,
   threadId: string,
   init: RequestInit = {},
 ): Promise<ThreadTools> =>
   MCPClient.forWorkspace(workspace).THREADS_GET_TOOLS({ id: threadId }, init);
 
 export const updateThreadTitle = (
-  workspace: string,
+  workspace: Workspace,
   threadId: string,
   title: string,
   init: RequestInit = {},
@@ -100,7 +101,7 @@ export const updateThreadTitle = (
   ) as Promise<ThreadDetails>;
 
 export const updateThreadMetadata = (
-  workspace: string,
+  workspace: Workspace,
   threadId: string,
   metadata: Record<string, unknown>,
   init: RequestInit = {},

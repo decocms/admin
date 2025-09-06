@@ -1,4 +1,5 @@
 import { MCPClient } from "../fetcher.ts";
+import { Workspace } from "../workspace.ts";
 
 export interface WorkflowStartParams {
   workflowName: string;
@@ -14,13 +15,13 @@ export interface WorkflowDeleteParams {
   workflowName: string;
 }
 
-export function listWorkflowNames(workspace: string, signal?: AbortSignal) {
+export function listWorkflowNames(workspace: Workspace, signal?: AbortSignal) {
   const client = MCPClient.forWorkspace(workspace);
   return client.HOSTING_APP_WORKFLOWS_LIST_NAMES({}, { signal });
 }
 
 export function listWorkflowRuns(
-  workspace: string,
+  workspace: Workspace,
   page = 1,
   per_page = 25,
   workflowName?: string,
@@ -38,7 +39,7 @@ export function listWorkflowRuns(
 }
 
 export function getWorkflowStatus(
-  workspace: string,
+  workspace: Workspace,
   params: WorkflowStatusParams,
   signal?: AbortSignal,
 ) {

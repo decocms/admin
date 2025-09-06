@@ -2,7 +2,12 @@ import { Button } from "@deco/ui/components/button.tsx";
 import { cn } from "@deco/ui/lib/utils.ts";
 import { Navigate, useParams, useSearchParams } from "react-router";
 import { DefaultBreadcrumb, PageLayout } from "../layout.tsx";
-import { isWellKnownApp, useGroupedApp } from "./apps.ts";
+import {
+  AppKeys,
+  getConnectionAppKey,
+  isWellKnownApp,
+  useGroupedApp,
+} from "./apps.ts";
 import { IntegrationIcon } from "./common.tsx";
 import { Skeleton } from "@deco/ui/components/skeleton.tsx";
 import {
@@ -70,8 +75,12 @@ import { formatToolName } from "../chat/utils/format-tool-name.ts";
 import { ToolCallForm } from "./tool-call-form.tsx";
 import { ToolCallResult } from "./tool-call-result.tsx";
 import type { MCPToolCallResult } from "./types.ts";
-import { useWorkspaceLink } from "../../hooks/use-navigate-workspace.ts";
-import { ConfirmMarketplaceInstallDialog } from "./select-connection-dialog.tsx";
+import { useNavigateWorkspace } from "../../hooks/use-navigate-workspace.ts";
+import {
+  ConfirmMarketplaceInstallDialog,
+  OauthModalContextProvider,
+  OauthModalState,
+} from "./select-connection-dialog.tsx";
 import type { MarketplaceIntegration } from "./marketplace.tsx";
 import { OAuthCompletionDialog } from "./oauth-completion-dialog.tsx";
 import { ScrollArea, ScrollBar } from "@deco/ui/components/scroll-area.tsx";
@@ -172,6 +181,7 @@ function ConfigureConnectionInstanceForm({
   defaultConnection?: MCPConnection;
 }) {
   const isReadOnly = !instance;
+
   const form = useForm<Integration>({
     defaultValues: {
       id: instance?.id || crypto.randomUUID(),
@@ -187,6 +197,11 @@ function ConfigureConnectionInstanceForm({
       access: instance?.access || null,
     },
   });
+
+  useEffect(() => {
+    form.reset(instance);
+  }, [instance]);
+
   const numberOfChanges = Object.keys(form.formState.dirtyFields).length;
   const updateIntegration = useUpdateIntegration();
   const isSaving = updateIntegration.isPending;
@@ -322,7 +337,9 @@ function ConfigureConnectionInstanceForm({
               />
               <div className="ml-auto">
                 <ConnectionInstanceActions
-                  onDelete={() => setDeletingId(instance?.id)}
+                  onDelete={() => {
+                    setDeletingId(instance?.id);
+                  }}
                 />
               </div>
             </div>
@@ -461,68 +478,6 @@ function ConfigureConnectionInstanceForm({
   );
 }
 
-function ConnectionInstanceItem({ instance }: { instance: Integration }) {
-  const { connectionId: queryStringConnectionId } = useStartConfiguringOpen();
-
-  const { deletingId, performDelete, setDeletingId, isDeletionPending } =
-    useRemoveConnection();
-  const instanceRef = useRef<HTMLDivElement>(null);
-  // Smooth scroll to this instance when connectionId matches
-  useEffect(() => {
-    setTimeout(() => {
-      if (queryStringConnectionId === instance.id && instanceRef.current) {
-        instanceRef.current?.scrollIntoView({
-          behavior: "smooth",
-          block: "center",
-        });
-      }
-    }, 100);
-  }, [queryStringConnectionId, instance.id]);
-
-  // todo: make a useIntegrationAgents() hook
-  const agentsUsedBy: {
-    id: string;
-    avatar: string;
-    name: string;
-  }[] = [];
-  const extraCount = 0;
-
-  return (
-    <div ref={instanceRef} className="w-full" id={`connection-${instance.id}`}>
-      <ConfigureConnectionInstanceForm
-        instance={instance}
-        setDeletingId={setDeletingId}
-      />
-      {deletingId && (
-        <RemoveConnectionAlert
-          open={deletingId !== null}
-          onOpenChange={() => setDeletingId(null)}
-          isDeleting={isDeletionPending}
-          onDelete={performDelete}
-        />
-      )}
-    </div>
-  );
-}
-
-function Instances({
-  data,
-}: {
-  data: ReturnType<typeof useGroupedApp>;
-  onTestTools: (connectionId: string) => void;
-}) {
-  return (
-    <div className="w-full flex flex-col items-center gap-4">
-      <h6 className="text-sm text-muted-foreground font-medium w-full">
-        Instances
-      </h6>
-      {data.instances.map((instance) => (
-        <ConnectionInstanceItem key={instance.id} instance={instance} />
-      ))}
-    </div>
-  );
-}
-
 const MAX_DESCRIPTION_LENGTH = 180;
 
 function Overview({
@@ -535,13 +490,17 @@ function Overview({
   showInstallButton: boolean;
 }) {
   const isWellKnown = isWellKnownApp(appKey);
+  const navigateWorkspace = useNavigateWorkspace();
   const [installingIntegration, setInstallingIntegration] =
     useState<MarketplaceIntegration | null>(null);
-  const [oauthCompletionDialog, setOauthCompletionDialog] = useState<{
-    open: boolean;
-    url: string;
-    integrationName: string;
-  }>({ open: false, url: "", integrationName: "" });
+  const [oauthCompletionDialog, setOauthCompletionDialog] =
+    useState<OauthModalState>({
+      open: false,
+      url: "",
+      integrationName: "",
+      openIntegrationOnFinish: true,
+      connection: null,
+    });
   const hasBigDescription = useMemo(() => {
     return (
       data.info?.description &&
@@ -549,8 +508,6 @@ function Overview({
     );
   }, [data.info?.description]);
   const [isExpanded, setIsExpanded] = useState(!hasBigDescription);
-
-  console.log("data.info", data.info);
 
   const handleAddConnection = () => {
     setInstallingIntegration({
@@ -602,23 +559,42 @@ function Overview({
           <span className="hidden md:inline">Install app</span>
         </Button>
       ) : null}
-
-      <ConfirmMarketplaceInstallDialog
-        integration={installingIntegration}
-        setIntegration={setInstallingIntegration}
-        onConfirm={({ authorizeOauthUrl }) => {
-          if (authorizeOauthUrl) {
-            const popup = globalThis.open(authorizeOauthUrl, "_blank");
-            if (!popup || popup.closed || typeof popup.closed === "undefined") {
-              setOauthCompletionDialog({
-                open: true,
-                url: authorizeOauthUrl,
-                integrationName: installingIntegration?.name || "the service",
-              });
+      <OauthModalContextProvider.Provider
+        value={{ onOpenOauthModal: setOauthCompletionDialog }}
+      >
+        <ConfirmMarketplaceInstallDialog
+          integration={installingIntegration}
+          setIntegration={setInstallingIntegration}
+          onConfirm={({ authorizeOauthUrl, connection }) => {
+            function onSelect() {
+              const key = getConnectionAppKey(connection);
+              const appKey = AppKeys.build(key);
+              navigateWorkspace(`/connection/${appKey}`);
             }
-          }
-        }}
-      />
+
+            if (authorizeOauthUrl) {
+              const popup = globalThis.open(authorizeOauthUrl, "_blank");
+              if (
+                !popup ||
+                popup.closed ||
+                typeof popup.closed === "undefined"
+              ) {
+                setOauthCompletionDialog({
+                  openIntegrationOnFinish: true,
+                  open: true,
+                  url: authorizeOauthUrl,
+                  integrationName: installingIntegration?.name || "the service",
+                  connection: connection,
+                });
+              } else {
+                onSelect();
+              }
+            } else {
+              onSelect();
+            }
+          }}
+        />
+      </OauthModalContextProvider.Provider>
 
       <OAuthCompletionDialog
         open={oauthCompletionDialog.open}
@@ -862,7 +838,6 @@ function ToolsInspector({
   const connection = selectedIntegration?.connection || data?.info?.connection;
 
   const tools = useTools(connection as MCPConnection, ignoreCache.current);
-  console.log("tools", tools.data);
 
   // Update selected integration when selectedConnectionId changes
   useEffect(() => {
@@ -1246,8 +1221,10 @@ const InstanceSelectItem = ({ instance }: { instance: Integration }) => {
   );
 };
 
-function AppDetail({ appKey }: { appKey: string }) {
-  const workspaceLink = useWorkspaceLink();
+function AppDetail() {
+  const { appKey: _appKey } = useParams();
+  const navigateWorkspace = useNavigateWorkspace();
+  const appKey = _appKey!;
   const data = useGroupedApp({
     appKey,
   });
@@ -1267,17 +1244,11 @@ function AppDetail({ appKey }: { appKey: string }) {
   const { setDeletingId, deletingId, isDeletionPending, performDelete } =
     useRemoveConnection();
 
-  console.log("selectedIntegration", selectedIntegration);
-
-  const [
-    selectedToolInspectorConnectionId,
-    setSelectedToolInspectorConnectionId,
-  ] = useState<string>();
-
   return (
     <div className="grid grid-cols-6 gap-6 p-6 h-full">
       <div className="col-span-2 bg-card rounded-xl p-4 flex flex-col gap-4 h-full">
         <Overview
+          key={appKey}
           data={data}
           appKey={appKey}
           showInstallButton={!data.instances || data.instances?.length === 0}
@@ -1310,7 +1281,12 @@ function AppDetail({ appKey }: { appKey: string }) {
             open={deletingId !== null}
             onOpenChange={() => setDeletingId(null)}
             isDeleting={isDeletionPending}
-            onDelete={performDelete}
+            onDelete={(arg) => {
+              performDelete(arg);
+              if (data.info.provider === "custom") {
+                navigateWorkspace("/discover");
+              }
+            }}
           />
         )}
       </div>
@@ -1336,19 +1312,19 @@ function AppDetail({ appKey }: { appKey: string }) {
             <ToolsInspector
               data={data}
               readOnly={!data.instances || data.instances?.length === 0}
-              selectedConnectionId={selectedToolInspectorConnectionId}
+              selectedConnectionId={selectedIntegrationId ?? undefined}
             />
           </TabsContent>
           <TabsContent value="views" className="mt-4">
             <ViewBindingSection
               data={data}
-              selectedConnectionId={selectedToolInspectorConnectionId}
+              selectedConnectionId={selectedIntegrationId ?? undefined}
             />
           </TabsContent>
           <TabsContent value="workflows" className="mt-4">
             <ToolsInspector
               data={data}
-              selectedConnectionId={selectedToolInspectorConnectionId}
+              selectedConnectionId={selectedIntegrationId ?? undefined}
               startsWith="DECO_CHAT_WORKFLOWS"
             />
           </TabsContent>
@@ -1365,6 +1341,8 @@ export default function Page() {
     appKey,
   });
 
+  const isInstalled = app.instances?.length > 0;
+
   const { info } = app;
 
   return (
@@ -1372,7 +1350,7 @@ export default function Page() {
       hideViewsButton
       tabs={{
         main: {
-          Component: () => <AppDetail appKey={appKey} />,
+          Component: () => <AppDetail />,
           title: "Overview",
           initialOpen: true,
         },
@@ -1380,7 +1358,10 @@ export default function Page() {
       breadcrumb={
         <DefaultBreadcrumb
           items={[
-            { label: "Integrations", link: "/connections" },
+            // This behavior is strange, it will be fixed once we have different pages for discover and integrations
+            isInstalled
+              ? { label: "Integrations", link: "/connections" }
+              : { label: "Discover", link: "/discover" },
             ...(info?.name
               ? [
                   {

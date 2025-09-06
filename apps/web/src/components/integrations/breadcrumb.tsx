@@ -18,6 +18,7 @@ import { DefaultBreadcrumb, PageLayout } from "../layout.tsx";
 import { SelectConnectionDialog } from "./select-connection-dialog.tsx";
 import { useNavigateWorkspace } from "../../hooks/use-navigate-workspace.ts";
 import { AppKeys, getConnectionAppKey } from "./apps.ts";
+import { Button } from "@deco/ui/components/button.tsx";
 
 export function IntegrationPageLayout({ tabs }: { tabs: Record<string, Tab> }) {
   const [error, setError] = useState<string | null>(null);
@@ -33,14 +34,12 @@ export function IntegrationPageLayout({ tabs }: { tabs: Record<string, Tab> }) {
           />
         }
         actionButtons={
-          <SelectConnectionDialog
-            forceTab="new-connection"
-            onSelect={(integration) => {
-              const key = getConnectionAppKey(integration);
-              const appKey = AppKeys.build(key);
-              navigateWorkspace(`/connection/${appKey}`);
-            }}
-          />
+          <Button
+            variant="special"
+            onClick={() => navigateWorkspace("/discover")}
+          >
+            Discover Apps
+          </Button>
         }
         tabs={tabs}
       />

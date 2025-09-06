@@ -50,7 +50,7 @@ import {
 import { WalletBalanceAlert } from "../common/wallet-balance-alert.tsx";
 import { ScrollArea } from "@deco/ui/components/scroll-area.tsx";
 
-interface OauthModalState {
+export interface OauthModalState {
   open: boolean;
   url: string;
   integrationName: string;
@@ -60,7 +60,7 @@ interface OauthModalState {
 interface OauthModalContextType {
   onOpenOauthModal: Dispatch<SetStateAction<OauthModalState>>;
 }
-const OauthModalContextProvider = createContext<
+export const OauthModalContextProvider = createContext<
   OauthModalContextType | undefined
 >(undefined);
 export const useOauthModalContext = () => {
@@ -107,7 +107,7 @@ export function ConfirmMarketplaceInstallDialog({
     authorizeOauthUrl: string | null;
   }) => void;
 }) {
-  const open = !!integration;
+  const open = useMemo(() => !!integration, [integration]);
   const { install, integrationState, isLoading } = useIntegrationInstall(
     integration?.name,
   );
@@ -188,6 +188,7 @@ export function ConfirmMarketplaceInstallDialog({
           link = `/connection/deco:::${integration.friendlyName}`;
         }
         navigateWorkspace(link);
+        setIntegration(null);
       }
     } catch (error) {
       trackEvent("integration_install", {
@@ -232,8 +233,6 @@ export function ConfirmMarketplaceInstallDialog({
 
   if (!integration) return null;
 
-  console.log("integration", integration);
-
   return (
     <Dialog open={open} onOpenChange={() => setIntegration(null)}>
       <DialogContent className="!p-0 overflow-hidden lg:!w-220 lg:!max-w-220 min-h-135 lg:max-h-[80vh] flex flex-col">
@@ -268,7 +267,7 @@ export function ConfirmMarketplaceInstallDialog({
             }
             disabled={isLoading || integrationState.isLoading}
           >
-            {isLoading
+            {isLoading || integrationState.isLoading
               ? "Connecting..."
               : currentDependencyIndex <
                   (maybeAppDependencyList?.length ?? 0) - 1

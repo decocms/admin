@@ -1354,7 +1354,7 @@ export default function Page() {
           items={[
             // This behavior is strange, it will be fixed once we have different pages for discover and integrations
             isInstalled
-              ? { label: "Integrations", link: "/connections" }
+              ? { label: "My Apps", link: "/connections" }
               : { label: "Discover", link: "/discover" },
             ...(info?.name
               ? [

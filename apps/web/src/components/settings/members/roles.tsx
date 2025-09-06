@@ -365,7 +365,7 @@ function RoleToolsPanel({
       {currentView === "integrations" ? (
         <>
           <Input
-            placeholder="Search integrations..."
+            placeholder="Search apps..."
             value={toolsSearch}
             onChange={handleToolsSearchChange}
             className="w-full"

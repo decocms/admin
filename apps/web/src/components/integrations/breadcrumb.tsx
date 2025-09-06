@@ -28,7 +28,7 @@ export function IntegrationPageLayout({ tabs }: { tabs: Record<string, Tab> }) {
         hideViewsButton
         breadcrumb={
           <DefaultBreadcrumb
-            items={[{ label: "Integrations", link: "/connections" }]}
+            items={[{ label: "My Apps", link: "/connections" }]}
           />
         }
         actionButtons={
@@ -111,7 +111,7 @@ export const Header = ({
         onClick: () => {},
       }}
       input={{
-        placeholder: "Search integration",
+        placeholder: "Search apps",
         value: query,
         onChange: (e) => setQuery(e.target.value),
       }}

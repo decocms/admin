@@ -112,6 +112,12 @@ export function TypeSelectField<T extends FieldValues = FieldValues>({
               {options?.length > 0 ? (
                 <Select
                   onValueChange={(value: string) => {
+
+                    if (value === "__connect_account__") {
+                      handleAddIntegration();
+                      return;
+                    }
+
                     // Update the form with an object containing the selected value
                     const selectedOption = options.find(
                       (option: OptionItem) => option.value === value,
@@ -163,7 +169,6 @@ export function TypeSelectField<T extends FieldValues = FieldValues>({
                     <SelectItem
                       key="__connect_account__"
                       value="__connect_account__"
-                      onClick={handleAddIntegration}
                     >
                       <span className="flex items-center justify-center w-8 h-8">
                         <Icon name="add" size={24} />

@@ -474,9 +474,18 @@ export const getTeam = createTool({
       throw new NotFoundError("Team not found or user does not have access");
     }
 
+    if (teamData.personal && !teamData.personal_owner_id) {
+      throw new InternalServerError(
+        "Team is personal but personal_owner_id is not set",
+      );
+    }
+
+    const workspace = teamData.personal
+      ? `/users/${teamData.personal_owner_id}`
+      : `/shared/${slug}`;
     await ensureMonthlyPlanCreditsReward({
       slug,
-      workspace: `/shared/${slug}`,
+      workspace,
       context: c,
     });
 
@@ -507,7 +516,9 @@ export const getTeam = createTool({
     };
 
     try {
-      const workspace = `/shared/${slug}`;
+      const workspace = teamData.personal
+        ? `/users/${teamData.personal_owner_id}`
+        : `/shared/${slug}`;
       const signedUrlCreator = buildSignedUrlCreator({
         c,
         existingBucketName: getWorkspaceBucketName(workspace),
@@ -665,7 +676,9 @@ export const updateTeam = createTool({
 
     if (updateError) throw updateError;
 
-    const workspace = `/shared/${updatedTeam.slug}`;
+    const workspace = updatedTeam.personal
+      ? `/users/${updatedTeam.personal_owner_id}`
+      : `/shared/${updatedTeam.slug}`;
     const signedUrlCreator = buildSignedUrlCreator({
       c,
       existingBucketName: getWorkspaceBucketName(workspace),
@@ -736,6 +749,8 @@ export const listTeams = createTool({
         slug,
         theme,
         created_at,
+        personal,
+        personal_owner_id,
         members!inner (
           id,
           user_id,
@@ -758,7 +773,11 @@ export const listTeams = createTool({
       teamsWithoutAvatar.map(async (team) => {
         const signedUrlCreator = buildSignedUrlCreator({
           c,
-          existingBucketName: getWorkspaceBucketName(`/shared/${team.slug}`),
+          existingBucketName: getWorkspaceBucketName(
+            team.personal
+              ? `/users/${team.personal_owner_id}`
+              : `/shared/${team.slug}`,
+          ),
         });
         return {
           ...team,
@@ -783,7 +802,7 @@ export const getWorkspaceTheme = createTool({
 
     const { data: team, error } = await c.db
       .from("teams")
-      .select("theme")
+      .select("theme, personal, personal_owner_id")
       .eq("slug", slug)
       .maybeSingle();
 
@@ -795,9 +814,17 @@ export const getWorkspaceTheme = createTool({
       return { theme: {} };
     }
 
+    if (team?.personal && !team.personal_owner_id) {
+      throw new InternalServerError(
+        "Team is personal but personal_owner_id is not set",
+      );
+    }
+
     const signedUrlCreator = buildSignedUrlCreator({
       c,
-      existingBucketName: getWorkspaceBucketName(`/shared/${slug}`),
+      existingBucketName: getWorkspaceBucketName(
+        team?.personal ? `/users/${team.personal_owner_id}` : `/shared/${slug}`,
+      ),
     });
 
     const theme = {

@@ -13,7 +13,6 @@ import { Button } from "@deco/ui/components/button.tsx";
 import { Avatar } from "../common/avatar";
 import { DecoDayBanner } from "../common/event/deco-day";
 import { OrgAvatars, OrgMemberCount } from "./members";
-import { DefaultBreadcrumb, PageLayout } from "../layout/project";
 import { TopbarLayout } from "../layout/home";
 import { Combobox } from "@deco/ui/components/combobox.tsx";
 

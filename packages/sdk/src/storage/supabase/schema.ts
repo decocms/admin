@@ -1091,7 +1091,9 @@ export type Database = {
           created_at: string | null;
           icon: string;
           id: string;
+          integration_id: string | null;
           metadata: Json | null;
+          name: string | null;
           team_id: number;
           title: string;
           type: string;
@@ -1100,7 +1102,9 @@ export type Database = {
           created_at?: string | null;
           icon: string;
           id?: string;
+          integration_id?: string | null;
           metadata?: Json | null;
+          name?: string | null;
           team_id: number;
           title: string;
           type: string;
@@ -1109,7 +1113,9 @@ export type Database = {
           created_at?: string | null;
           icon?: string;
           id?: string;
+          integration_id?: string | null;
           metadata?: Json | null;
+          name?: string | null;
           team_id?: number;
           title?: string;
           type?: string;
@@ -2971,6 +2977,8 @@ export type Database = {
           created_at: string | null;
           id: number;
           name: string;
+          personal: boolean;
+          personal_owner_id: string | null;
           plan: string | null;
           plan_id: string;
           slug: string | null;
@@ -2981,6 +2989,8 @@ export type Database = {
           created_at?: string | null;
           id?: number;
           name: string;
+          personal?: boolean;
+          personal_owner_id?: string | null;
           plan?: string | null;
           plan_id?: string;
           slug?: string | null;
@@ -2991,6 +3001,8 @@ export type Database = {
           created_at?: string | null;
           id?: number;
           name?: string;
+          personal?: boolean;
+          personal_owner_id?: string | null;
           plan?: string | null;
           plan_id?: string;
           slug?: string | null;
@@ -2998,6 +3010,13 @@ export type Database = {
           theme?: Json | null;
         };
         Relationships: [
+          {
+            foreignKeyName: "teams_personal_owner_id_fkey";
+            columns: ["personal_owner_id"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["user_id"];
+          },
           {
             foreignKeyName: "teams_plan_id_fkey";
             columns: ["plan_id"];

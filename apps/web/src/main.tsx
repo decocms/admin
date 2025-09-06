@@ -50,9 +50,9 @@ const HomeLayout = lazy(() =>
   })),
 );
 
-const Home = lazy(() =>
-  import("./components/home/home.tsx").then((mod) => ({
-    default: mod.Home,
+const OrgList = lazy(() =>
+  import("./components/home/organizations.tsx").then((mod) => ({
+    default: mod.OrgList,
   })),
 );
 
@@ -287,7 +287,7 @@ const router = createBrowserRouter([
       {
         path: "/",
         Component: HomeLayout,
-        children: [{ index: true, Component: Home }],
+        children: [{ index: true, Component: OrgList }],
       },
       {
         path: "/:org",

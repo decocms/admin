@@ -1,0 +1,1 @@
+alter table teams add column if not exists personal boolean not null default false;

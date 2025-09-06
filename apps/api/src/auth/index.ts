@@ -1,5 +1,5 @@
 import { getUserBySupabaseCookie } from "@deco/sdk/auth";
-import { createSupabaseClient } from "@deco/sdk/storage";
+import { Client, createSupabaseClient } from "@deco/sdk/storage";
 import type {
   EmailOtpType,
   Provider,
@@ -11,18 +11,22 @@ import {
   DECO_CMS_API,
   getEnv,
   type HonoAppContext as AppContext,
-  type Principal,
 } from "../utils/context.ts";
 import { getCookies, setHeaders } from "../utils/cookie.ts";
 import { authSetCookie, getServerClientOptions } from "../utils/db.ts";
-import { assertPrincipalIsUser } from "./assertions.ts";
 import { AUTH_URL_CLI } from "../../../../packages/sdk/src/constants.ts";
+import {
+  createWalletClient,
+  WellKnownTransactions,
+} from "@deco/sdk/mcp/wallet";
+import { InternalServerError, assertPrincipalIsUser } from "@deco/sdk/mcp";
+import { WELL_KNOWN_PLANS } from "@deco/sdk";
 
 const AUTH_CALLBACK_OAUTH = "/auth/callback/oauth";
-const ENSURE_DEFAULT_PROJECT_ENDPOINT = "/auth/ensure-default-project";
+const ENSURE_USER_ASSERTIONS_ENDPOINT = "/auth/ensure-user-assertions";
 
-const withDefaultProjectEnsuring = (next: string, apiUrl: string) => {
-  const newUrl = new URL(ENSURE_DEFAULT_PROJECT_ENDPOINT, apiUrl);
+const withUserAssertionsEnsuring = (next: string, apiUrl: string) => {
+  const newUrl = new URL(ENSURE_USER_ASSERTIONS_ENDPOINT, apiUrl);
   newUrl.searchParams.set("next", next);
   return newUrl.toString();
 };
@@ -53,7 +57,7 @@ const createDbAndHeadersForRequest = (ctx: AppContext) => {
 // TODO: add LRU Cache
 export const getUser = async (
   ctx: AppContext,
-): Promise<Principal | undefined> => {
+): Promise<SupaUser | undefined> => {
   const {
     SUPABASE_URL,
     SUPABASE_SERVER_TOKEN,
@@ -230,7 +234,7 @@ appAuth.all("/callback/oauth", async (ctx: AppContext) => {
 
     setHeaders(headers, ctx);
 
-    const uri = withDefaultProjectEnsuring(
+    const uri = withUserAssertionsEnsuring(
       next,
       DECO_CMS_API(honoCtxToAppCtx(ctx), url.host.includes("deco.chat")),
     );
@@ -275,7 +279,7 @@ appAuth.all("/callback/magiclink", async (ctx: AppContext) => {
 
     setHeaders(headers, ctx);
 
-    const uri = withDefaultProjectEnsuring(
+    const uri = withUserAssertionsEnsuring(
       next,
       DECO_CMS_API(honoCtxToAppCtx(ctx), url.host.includes("deco.chat")),
     );
@@ -301,17 +305,183 @@ appAuth.all("/logout", async (ctx: AppContext) => {
   return ctx.redirect(redirectUrl);
 });
 
-async function assertUserHasDefaultProject(ctx: AppContext) {
-  const { db } = createDbAndHeadersForRequest(ctx);
-  const user = await db.auth.getUser();
+async function ensureFreeTwoDollarsTransaction({
+  wallet,
+  personalWorkspace,
+}: {
+  wallet: ReturnType<typeof createWalletClient>;
+  personalWorkspace: string;
+}) {
+  const freeTwoDollars = {
+    type: "WorkspaceGenCreditReward" as const,
+    amount: "2_000000",
+    workspace: personalWorkspace,
+    transactionId: WellKnownTransactions.freeTwoDollars(
+      encodeURIComponent(personalWorkspace),
+    ),
+  };
+
+  const freeTwoDollarsResponse = await wallet["PUT /transactions/:id"](
+    { id: freeTwoDollars.transactionId },
+    {
+      body: freeTwoDollars,
+    },
+  );
+
+  if (!freeTwoDollarsResponse.ok) {
+    console.error(
+      "Failed to create free two dollars transaction",
+      freeTwoDollarsResponse,
+      await freeTwoDollarsResponse.text(),
+    );
+  }
 }
 
-appAuth.all("/ensure-default-project", async (ctx: AppContext) => {
+export function slugifyForOrg(input: string): string {
+  // Lowercase and replace all non-alphanumeric with underscores
+  return input.toLowerCase()
+    .replace(/[^a-z0-9]/g, "_")
+    // Collapse multiple underscores
+    .replace(/_+/g, "_")
+    .replace(/^_+|_+$/g, "");
+}
+
+async function ensureUserOrg({
+  db,
+  user,
+}: {
+  db: Client;
+  user: SupaUser;
+}): Promise<{ created: boolean }> {
+  const { data: existingOrg, error: existingOrgError } = await db
+    .from("teams")
+    .select("id")
+    .eq("personal_owner_id", user.id)
+    .eq("personal", true)
+    .maybeSingle();
+
+  if (existingOrg) {
+    return { created: false };
+  }
+
+  if (existingOrgError) {
+    console.error("Failed to read existing org", existingOrgError);
+    throw new InternalServerError("Failed to get existing org");
+  }
+
+  const userFirstName =
+    user.user_metadata.full_name?.split(" ")?.[0] ??
+    user.email?.split("@")?.[0];
+
+  const orgName = userFirstName ? `${userFirstName}'s org` : "Personal org";
+  const slugFromUser = userFirstName
+    ? slugifyForOrg(userFirstName)
+    : "personal";
+
+  let slug = slugFromUser;
+  let validSlug = false;
+
+  while (!validSlug) {
+    const { data: existingTeam, error: slugError } = await db
+      .from("teams")
+      .select("id")
+      .eq("slug", slug)
+      .maybeSingle();
+
+    if (slugError) {
+      console.error("Failed to read existing team", slugError);
+      throw new InternalServerError("Failed to create valid user org slug");
+    }
+
+    if (existingTeam) {
+      const randomFourChars = crypto.randomUUID().slice(0, 4);
+      slug = `${slugFromUser}-${randomFourChars}`;
+    } else {
+      validSlug = true;
+    }
+  }
+
+  const { data: team, error } = await db.from("teams").insert({
+    name: orgName,
+    slug,
+    personal_owner_id: user.id,
+    plan_id: WELL_KNOWN_PLANS.FREE,
+    personal: true,
+  }).select().single();
+
+  if (error) {
+    console.error("Failed to create team", error);
+    throw new InternalServerError("Failed to create team");
+  }
+
+  const { data: member, error: addMemberError } = await db.from("members").insert([{
+    team_id: team.id,
+    user_id: user.id,
+    admin: true,
+  }]).select().single();
+
+  if (addMemberError) {
+    console.error("Failed to add member to team", addMemberError);
+    throw new InternalServerError("Failed to add member to team");
+  }
+
+  const WELL_KNOWN_ADMIN_ROLE_ID = 4;
+
+  const { error: roleError } = await db.from("member_roles").insert([{
+    member_id: member.id,
+    role_id: WELL_KNOWN_ADMIN_ROLE_ID,
+  }]);
+
+  if (roleError) {
+    console.error("Failed to add role to member", roleError);
+    throw new InternalServerError("Failed to add role to member");
+  }
+
+  return { created: true };
+}
+
+async function assertUserHasPersonalOrg(ctx: AppContext) {
+  const user = await getUser(ctx);
+  const db = ctx.get("db");
+
+  if (!ctx.env.WALLET_API_KEY) {
+    throw new InternalServerError("WALLET_API_KEY is not set");
+  }
+
+  if (!user?.id) {
+    throw new InternalServerError("User ID is not set");
+  }
+
+  const result = await ensureUserOrg({
+    db,
+    user,
+  });
+
+  if (!result.created) {
+    return;
+  }
+
+  const personalWorkspace = `/users/${user.id}`;
+  const wallet = createWalletClient(ctx.env.WALLET_API_KEY);
+
+  await ensureFreeTwoDollarsTransaction({
+    wallet,
+    personalWorkspace,
+  });
+}
+
+appAuth.all("/ensure-user-assertions", async (ctx: AppContext) => {
   const url = new URL(ctx.req.url);
   const nextDefault = new URL("/", url.origin).toString();
   const redirectUrl = url.searchParams.get("next") ?? nextDefault;
 
-  await assertUserHasDefaultProject(ctx);
+  const assertions = [assertUserHasPersonalOrg];
+
+  try {
+    await Promise.all(assertions.map((assertion) => assertion(ctx)));
+  } catch (error) {
+    console.error("Failed to run user assertions on login", error);
+  }
 
   return ctx.redirect(redirectUrl);
 });

@@ -21,10 +21,12 @@ export function OrgAvatars({ teamId }: { teamId: number }) {
 
 OrgAvatars.Skeleton = () => (
   <div className="flex items-center">
-    <div className="h-6 w-6 bg-stone-200 rounded-full animate-pulse" />
-    <div className="h-6 w-6 bg-stone-200 rounded-full animate-pulse -ml-2" />
-    <div className="h-6 w-6 bg-stone-200 rounded-full animate-pulse -ml-2" />
-    <div className="h-6 w-6 bg-stone-200 rounded-full animate-pulse -ml-2" />
+    {Array.from({ length: 4 }).map((_, index) => (
+      <div
+        key={index}
+        className="h-6 w-6 bg-stone-200 rounded-full animate-pulse -ml-2 first:ml-0"
+      />
+    ))}
   </div>
 );
 

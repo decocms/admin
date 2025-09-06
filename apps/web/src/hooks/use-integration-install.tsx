@@ -121,9 +121,6 @@ export function useIntegrationInstall(appName?: string) {
         if (formData) {
           await setupAppOauth(formData, installState);
         }
-      } else if (result.redirectUrl) {
-        // Handle redirect URL as before
-        globalThis.location.href = result.redirectUrl;
       }
 
       return result;

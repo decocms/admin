@@ -13,7 +13,16 @@ import {
 import { Icon } from "@deco/ui/components/icon.tsx";
 import { Input } from "@deco/ui/components/input.tsx";
 import { cn } from "@deco/ui/lib/utils.ts";
-import { useEffect, useMemo, useState, useRef } from "react";
+import {
+  useEffect,
+  useMemo,
+  useState,
+  useRef,
+  createContext,
+  useContext,
+  Dispatch,
+  SetStateAction,
+} from "react";
 import { useSearchParams } from "react-router";
 import { trackEvent } from "../../hooks/analytics.ts";
 import { useCreateCustomConnection } from "../../hooks/use-create-custom-connection.ts";
@@ -39,6 +48,29 @@ import {
   GridRightColumn,
 } from "./shared-components.tsx";
 import { WalletBalanceAlert } from "../common/wallet-balance-alert.tsx";
+
+interface OauthModalState {
+  open: boolean;
+  url: string;
+  integrationName: string;
+  connection: Integration | null;
+  openIntegrationOnFinish: boolean;
+}
+interface OauthModalContextType {
+  onOpenOauthModal: Dispatch<SetStateAction<OauthModalState>>;
+}
+const OauthModalContextProvider = createContext<
+  OauthModalContextType | undefined
+>(undefined);
+export const useOauthModalContext = () => {
+  const context = useContext(OauthModalContextProvider);
+  if (!context) {
+    throw new Error(
+      "useOauthModalContext must be used within a OauthModalContextProvider",
+    );
+  }
+  return context;
+};
 
 function IntegrationWorkspaceIconForMarketplace({
   integration,
@@ -444,12 +476,14 @@ function AddConnectionDialogContent({
         ) ?? null
       );
     });
-  const [oauthCompletionDialog, setOauthCompletionDialog] = useState<{
-    open: boolean;
-    url: string;
-    integrationName: string;
-    connection: Integration | null;
-  }>({ open: false, url: "", integrationName: "", connection: null });
+  const [oauthCompletionDialog, setOauthCompletionDialog] =
+    useState<OauthModalState>({
+      open: false,
+      url: "",
+      integrationName: "",
+      connection: null,
+      openIntegrationOnFinish: true,
+    });
   const navigateWorkspace = useNavigateWorkspace();
   const showEmptyState = search.length > 0;
   const { mutateAsync: getRegistryApp } = useGetRegistryApp();
@@ -597,33 +631,45 @@ function AddConnectionDialogContent({
           )}
         </div>
       </div>
-      <ConfirmMarketplaceInstallDialog
-        integration={installingIntegration}
-        setIntegration={setInstallingIntegration}
-        onConfirm={({ connection, authorizeOauthUrl }) => {
-          if (authorizeOauthUrl) {
-            const popup = globalThis.open(authorizeOauthUrl, "_blank");
-            if (!popup || popup.closed || typeof popup.closed === "undefined") {
-              setOauthCompletionDialog({
-                open: true,
-                url: authorizeOauthUrl,
-                integrationName: installingIntegration?.name || "the service",
-                connection: connection,
-              });
+      <OauthModalContextProvider.Provider
+        value={{ onOpenOauthModal: setOauthCompletionDialog }}
+      >
+        <ConfirmMarketplaceInstallDialog
+          integration={installingIntegration}
+          setIntegration={setInstallingIntegration}
+          onConfirm={({ connection, authorizeOauthUrl }) => {
+            if (authorizeOauthUrl) {
+              const popup = globalThis.open(authorizeOauthUrl, "_blank");
+              if (
+                !popup ||
+                popup.closed ||
+                typeof popup.closed === "undefined"
+              ) {
+                setOauthCompletionDialog({
+                  openIntegrationOnFinish: true,
+                  open: true,
+                  url: authorizeOauthUrl,
+                  integrationName: installingIntegration?.name || "the service",
+                  connection: connection,
+                });
+              } else {
+                onSelect?.(connection);
+              }
             } else {
               onSelect?.(connection);
             }
-          } else {
-            onSelect?.(connection);
-          }
-        }}
-      />
+          }}
+        />
+      </OauthModalContextProvider.Provider>
 
       <OAuthCompletionDialog
         open={oauthCompletionDialog.open}
         onOpenChange={(open) => {
           setOauthCompletionDialog((prev) => ({ ...prev, open }));
-          if (oauthCompletionDialog.connection) {
+          if (
+            oauthCompletionDialog.connection &&
+            oauthCompletionDialog.openIntegrationOnFinish
+          ) {
             onSelect?.(oauthCompletionDialog.connection);
           }
         }}

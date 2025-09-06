@@ -18,7 +18,10 @@ import { IntegrationIcon } from "../../integrations/common.tsx";
 import { Button } from "@deco/ui/components/button.tsx";
 import { useOptionsLoader } from "../../../hooks/use-options-loader.ts";
 import { useMarketplaceIntegrations } from "@deco/sdk";
-import { ConfirmMarketplaceInstallDialog } from "../../integrations/select-connection-dialog.tsx";
+import {
+  ConfirmMarketplaceInstallDialog,
+  useOauthModalContext,
+} from "../../integrations/select-connection-dialog.tsx";
 import type { MarketplaceIntegration } from "../../integrations/marketplace";
 import { useState } from "react";
 import type { Integration } from "@deco/sdk";
@@ -41,7 +44,12 @@ export function TypeSelectField<T extends FieldValues = FieldValues>({
   disabled,
   typeValue,
 }: TypeSelectFieldProps<T>) {
-  const { data: options, isPending } = useOptionsLoader(typeValue);
+  const {
+    data: options,
+    isPending,
+    refetch: refetchOptions,
+  } = useOptionsLoader(typeValue);
+  const { onOpenOauthModal } = useOauthModalContext();
   const { data: marketplace } = useMarketplaceIntegrations();
   const [installingIntegration, setInstallingIntegration] =
     useState<MarketplaceIntegration | null>(null);
@@ -67,11 +75,27 @@ export function TypeSelectField<T extends FieldValues = FieldValues>({
     }
   };
 
-  const handleIntegrationSelect = ({
+  const handleIntegrationSelect = async ({
     connection,
+    authorizeOauthUrl,
   }: {
     connection: Integration;
+    authorizeOauthUrl: string | null;
   }) => {
+    const refetchOptionsPromise = refetchOptions();
+    if (authorizeOauthUrl) {
+      const popup = globalThis.open(authorizeOauthUrl, "_blank");
+      if (!popup || popup.closed || typeof popup.closed === "undefined") {
+        onOpenOauthModal({
+          openIntegrationOnFinish: false,
+          open: true,
+          url: authorizeOauthUrl,
+          integrationName: installingIntegration?.name || "the service",
+          connection: connection,
+        });
+      }
+    }
+    await refetchOptionsPromise;
     // deno-lint-ignore no-explicit-any
     form.setValue(name as FieldPath<T>, { value: connection.id } as any);
     setInstallingIntegration(null);

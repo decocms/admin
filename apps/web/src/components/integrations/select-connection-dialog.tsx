@@ -48,6 +48,7 @@ import {
   GridRightColumn,
 } from "./shared-components.tsx";
 import { WalletBalanceAlert } from "../common/wallet-balance-alert.tsx";
+import { ScrollArea } from "@deco/ui/components/scroll-area.tsx";
 
 interface OauthModalState {
   open: boolean;
@@ -115,9 +116,6 @@ export function ConfirmMarketplaceInstallDialog({
   const navigateWorkspace = useNavigateWorkspace();
   const [currentStep, setCurrentStep] = useState<DialogStep>(INITIAL_STEP);
   const [currentDependencyIndex, setCurrentDependencyIndex] = useState(0);
-  const [dependencyFormData, setDependencyFormData] = useState<
-    Record<string, Record<string, unknown>>
-  >({});
 
   const maybeAppDependencyList = useMemo(
     () =>
@@ -139,7 +137,6 @@ export function ConfirmMarketplaceInstallDialog({
 
     // Combine all dependency form data with main form data
     const mainFormData = formRef.current?.getValues() ?? {};
-    const combinedFormData = { ...mainFormData, ...dependencyFormData };
     try {
       const result = await install(
         {
@@ -148,7 +145,7 @@ export function ConfirmMarketplaceInstallDialog({
           provider: integration.provider,
           returnUrl: returnUrl.href,
         },
-        combinedFormData,
+        mainFormData,
       );
 
       if (typeof result.integration?.id !== "string") {
@@ -205,7 +202,6 @@ export function ConfirmMarketplaceInstallDialog({
     if (open) {
       setCurrentStep(INITIAL_STEP);
       setCurrentDependencyIndex(0);
-      setDependencyFormData({});
     }
   }, [open]);
 
@@ -217,15 +213,6 @@ export function ConfirmMarketplaceInstallDialog({
     }
 
     if (!maybeAppDependencyList) return;
-
-    // Save current dependency form data
-    const currentFormData = formRef.current?.getValues() ?? {};
-    const currentDependencyName =
-      maybeAppDependencyList[currentDependencyIndex];
-    setDependencyFormData((prev) => ({
-      ...prev,
-      [currentDependencyName]: currentFormData,
-    }));
 
     if (currentDependencyIndex < maybeAppDependencyList.length - 1) {
       // Move to next dependency
@@ -416,7 +403,7 @@ function DependencyStep({
               <div className="font-mono text-sm text-secondary-foreground uppercase">
                 permissions
               </div>
-              <div className="flex flex-col gap-4">
+              <ScrollArea className="h-100">
                 {permissionsFromThisDependency?.map((permission, index) => (
                   <div key={index} className="flex gap-4 items-start px-2 py-3">
                     <div className="flex gap-2.5 h-5 items-center justify-start">
@@ -436,7 +423,7 @@ function DependencyStep({
                     </div>
                   </div>
                 ))}
-              </div>
+              </ScrollArea>
             </div>
           </div>
         </div>

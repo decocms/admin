@@ -161,7 +161,7 @@ export function TypeSelectField<T extends FieldValues = FieldValues>({
 
                     <div className="border-t h-px" />
                     <SelectItem
-                      key={"__connect_account__"}
+                      key="__connect_account__"
                       value="__connect_account__"
                       onClick={handleAddIntegration}
                     >

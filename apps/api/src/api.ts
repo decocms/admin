@@ -433,7 +433,7 @@ app.all("/:root/:slug/i:databases-management/studio", async (c) => {
     resource: "DATABASES_RUN_SQL",
   });
 
-  // The DO id can be overridden by the client, both on the URL 
+  // The DO id can be overridden by the client, both on the URL
   // for GET requests and on the body "id" property for POST requests
   // i've forked the library to add the ability to enforce the id
   return studio(c.req.raw, ctx.workspaceDO, {

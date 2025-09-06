@@ -111,8 +111,6 @@ export function useContractsCommits({
     queryFn: () => getContractsCommits(workspace, range),
   });
 
-  console.log({contractsCommits});
-
   return contractsCommits;
 }
 

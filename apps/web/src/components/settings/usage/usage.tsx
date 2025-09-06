@@ -38,7 +38,7 @@ const useAgentsMergedWithWellKnown = () => {
   };
 };
 
-export type UsageType = "agent" | "thread" | "user" | "contracts";
+export type UsageType = "agent" | "thread" | "user" | "contract";
 export type TimeRange = "day" | "week" | "month";
 
 const labelsByUsageType = {
@@ -54,9 +54,9 @@ const labelsByUsageType = {
     title: "Users active",
     plural: "users",
   },
-  contracts: {
+  contract: {
     title: "Contracts",
-    plural: "contracts",
+    plural: "commits",
   },
 } as const;
 
@@ -121,7 +121,7 @@ export function Usage() {
         return createUserChartData(threadUsage, teamMembers || [], timeRange);
       case "thread":
         return createThreadChartData(threadUsage, timeRange);
-      case "contracts":
+      case "contract":
         return createContractsCommitsChartData(
           contractsCommits.items,
           timeRange,
@@ -148,7 +148,7 @@ export function Usage() {
   ]);
 
   const totals = useMemo(() => {
-    if (usageType === "contracts") {
+    if (usageType === "contract") {
       // For contracts, calculate the actual total cost from the filtered data
       let totalCost = 0;
       const filteredContracts =
@@ -287,7 +287,7 @@ export function Usage() {
           </Suspense>
         )}
 
-        {usageType === "contracts" && (
+        {usageType === "contract" && (
           <Suspense fallback={<Skeleton className="w-full h-[400px]" />}>
             <ContractsTable
               contractsUsage={contractsCommits.items || []}

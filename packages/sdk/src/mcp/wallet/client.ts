@@ -400,6 +400,7 @@ export interface WalletAPI {
         id: string;
         amount: number;
         contractId: string;
+        callerApp?: string;
         clauses: {
           clauseId: string;
           amount: number;

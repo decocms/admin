@@ -395,6 +395,7 @@ export const getContractsCommits = createTool({
         id: z.string(),
         amount: z.number(),
         contractId: z.string(),
+        callerApp: z.string().nullish(),
         clauses: z.array(
           z.object({
             clauseId: z.string(),

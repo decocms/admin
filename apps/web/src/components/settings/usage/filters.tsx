@@ -42,7 +42,7 @@ export function UsageFilters({
           <SelectItem value="agent">Usage by agent</SelectItem>
           <SelectItem value="user">Usage by user</SelectItem>
           <SelectItem value="thread">Usage by thread</SelectItem>
-          <SelectItem value="contracts">Usage by contracts</SelectItem>
+          <SelectItem value="contract">Usage by contract</SelectItem>
         </SelectContent>
       </Select>
 
@@ -57,7 +57,7 @@ export function UsageFilters({
         </SelectContent>
       </Select>
 
-      {usageType === "contracts" && setContractId && (
+      {usageType === "contract" && setContractId && (
         <Select
           value={contractId ?? "__all__"}
           onValueChange={(val) => setContractId(val === "__all__" ? null : val)}
@@ -77,7 +77,7 @@ export function UsageFilters({
         </Select>
       )}
 
-      {usageType === "contracts" && setClauseId && (
+      {usageType === "contract" && setClauseId && (
         <Select
           value={clauseId ?? "__all__"}
           onValueChange={(val) => setClauseId(val === "__all__" ? null : val)}

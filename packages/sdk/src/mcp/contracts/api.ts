@@ -271,6 +271,7 @@ export const contractSettle = createContractTool({
 
     const state = c.state;
     const contractId = c.user.integrationId;
+    const callerApp = c.callerApp;
 
     let amount = MicroDollar.ZERO;
     if ("amount" in context && context.amount !== undefined) {
@@ -279,14 +280,15 @@ export const contractSettle = createContractTool({
       amount = totalAmount(state.clauses, context.clauses);
     }
 
-    console.log({amount, contractId, context});
-
     await State.run(c, () =>
       commitPreAuthorizedAmount.handler({
         contractId,
         identifier: context.transactionId,
         amount: amount.toMicrodollarString(),
         vendorId: context.vendorId,
+        metadata: callerApp ? {
+          callerApp,
+        } : undefined,
       }),
     );
 

@@ -1,5 +1,5 @@
 /**
- * Workspace is a github-like slug string that identifies a project in an organization.
+ * a ProjectLocator is a github-like slug string that identifies a project in an organization.
  *
  * format: <org-slug>/<project-slug>
  */

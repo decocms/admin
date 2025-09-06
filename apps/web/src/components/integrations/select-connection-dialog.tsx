@@ -41,7 +41,7 @@ import {
 } from "./marketplace.tsx";
 import { OAuthCompletionDialog } from "./oauth-completion-dialog.tsx";
 import { UseFormReturn } from "react-hook-form";
-import type { JSONSchema7 } from "json-schema";
+import type { JSONSchema7, JSONSchema7Definition } from "json-schema";
 import {
   GridContainer,
   GridLeftColumn,
@@ -49,6 +49,9 @@ import {
 } from "./shared-components.tsx";
 import { WalletBalanceAlert } from "../common/wallet-balance-alert.tsx";
 import { ScrollArea } from "@deco/ui/components/scroll-area.tsx";
+
+const isDependency = (property: JSONSchema7Definition) =>
+  typeof property === "object" && property.properties?.__type;
 
 export interface OauthModalState {
   open: boolean;
@@ -89,9 +92,6 @@ function IntegrationWorkspaceIconForMarketplace({
   );
 }
 
-type DialogStep = "dependency";
-const INITIAL_STEP = "dependency";
-
 export function ConfirmMarketplaceInstallDialog({
   integration,
   setIntegration,
@@ -114,19 +114,66 @@ export function ConfirmMarketplaceInstallDialog({
   const formRef = useRef<UseFormReturn<Record<string, unknown>> | null>(null);
   const buildWorkspaceUrl = useWorkspaceLink();
   const navigateWorkspace = useNavigateWorkspace();
-  const [currentStep, setCurrentStep] = useState<DialogStep>(INITIAL_STEP);
-  const [currentDependencyIndex, setCurrentDependencyIndex] = useState(0);
+  const [stepIndex, setStepIndex] = useState(0);
 
-  const maybeAppDependencyList = useMemo(
-    () =>
-      // TODO: Find a better approach to identify the app dependencies
-      integrationState.schema?.properties
-        ? Object.keys(integrationState.schema?.properties ?? {})
-        : null,
-    [integrationState.schema],
-  );
+  const { dependencies: maybeAppDependencyList, app: maybeAppList } =
+    useMemo(() => {
+      if (!integrationState.schema?.properties)
+        return { dependencies: null, app: null };
 
-  const totalSteps = maybeAppDependencyList ? maybeAppDependencyList.length : 1;
+      const result = { dependencies: [] as string[], app: [] as string[] };
+
+      for (const propertyEntry of Object.entries(
+        integrationState.schema.properties,
+      )) {
+        const [name, property] = propertyEntry;
+        if (isDependency(property)) {
+          result.dependencies.push(name);
+        } else {
+          result.app.push(name);
+        }
+      }
+      return result;
+    }, [integrationState.schema]);
+
+  const dependenciesSteps = maybeAppDependencyList?.length
+    ? maybeAppDependencyList.length
+    : 0;
+  const appSteps = maybeAppList?.length ? 1 : 0;
+  const totalSteps = dependenciesSteps + appSteps;
+  const isDepencencyStep = stepIndex < dependenciesSteps;
+
+  const currentSchema = useMemo<JSONSchema7 | undefined>(() => {
+    if (isDepencencyStep) {
+      const dependencyName = maybeAppDependencyList?.[stepIndex] ?? "";
+      const dependencySchema =
+        integrationState.schema?.properties?.[dependencyName] ?? {};
+      return {
+        type: "object",
+        properties: {
+          [dependencyName]: dependencySchema,
+        },
+        required: [dependencyName],
+      } satisfies JSONSchema7;
+    } else {
+      const properties: Record<string, JSONSchema7Definition> =
+        maybeAppList?.reduce(
+          (acc, app) => {
+            acc[app] = integrationState.schema?.properties?.[
+              app
+            ] as JSONSchema7Definition;
+            return acc;
+          },
+          {} as Record<string, JSONSchema7Definition>,
+        ) ?? {};
+
+      return {
+        type: "object",
+        properties,
+        required: maybeAppList ? maybeAppList : undefined,
+      } satisfies JSONSchema7;
+    }
+  }, [totalSteps, stepIndex, integrationState.schema]);
 
   const handleConnect = async () => {
     if (!integration) return;
@@ -202,8 +249,7 @@ export function ConfirmMarketplaceInstallDialog({
   // Reset step when dialog closes/opens
   useEffect(() => {
     if (open) {
-      setCurrentStep(INITIAL_STEP);
-      setCurrentDependencyIndex(0);
+      setStepIndex(0);
     }
   }, [open]);
 
@@ -216,18 +262,18 @@ export function ConfirmMarketplaceInstallDialog({
 
     if (!maybeAppDependencyList) return;
 
-    if (currentDependencyIndex < maybeAppDependencyList.length - 1) {
+    if (stepIndex < totalSteps - 1) {
       // Move to next dependency
-      setCurrentDependencyIndex((prev) => prev + 1);
+      setStepIndex((prev) => prev + 1);
     } else {
-      // All dependencies configured, install the main app
+      // All dependencies and apps configured, install the main app
       handleConnect();
     }
   };
 
   const handleBack = () => {
-    if (currentDependencyIndex > 0) {
-      setCurrentDependencyIndex((prev) => prev - 1);
+    if (stepIndex > 0) {
+      setStepIndex((prev) => prev - 1);
     }
   };
 
@@ -235,27 +281,21 @@ export function ConfirmMarketplaceInstallDialog({
 
   return (
     <Dialog open={open} onOpenChange={() => setIntegration(null)}>
-      <DialogContent className="!p-0 lg:!w-220 lg:!max-w-220 flex flex-col">
+      <DialogContent className="!p-0 lg:!w-220 lg:!max-w-220 flex flex-col overflow-y-hidden">
         {/* Dependency Steps */}
-        {currentStep === "dependency" && (
-          <div className="min-h-135 max-h-135 h-full lg:max-h-[60vh]">
-            <DependencyStep
-              integration={integration}
-              dependencyName={maybeAppDependencyList?.[currentDependencyIndex]}
-              dependencySchema={
-                integrationState.schema?.properties?.[
-                  maybeAppDependencyList?.[currentDependencyIndex] ?? 0
-                ] as JSONSchema7
-              }
-              currentStep={currentDependencyIndex + 1}
-              totalSteps={totalSteps}
-              formRef={formRef}
-              integrationState={integrationState}
-            />
-          </div>
-        )}
+        <div className="min-h-135 max-h-135 h-full lg:max-h-[60vh]">
+          <DependencyStep
+            integration={integration}
+            dependencyName={maybeAppDependencyList?.[stepIndex]}
+            dependencySchema={currentSchema}
+            currentStep={stepIndex + 1}
+            totalSteps={totalSteps}
+            formRef={formRef}
+            integrationState={integrationState}
+          />
+        </div>
         <DialogFooter className="px-4 pb-4">
-          {currentDependencyIndex > 0 && (
+          {stepIndex > 0 && (
             <Button variant="outline" disabled={isLoading} onClick={handleBack}>
               Back
             </Button>
@@ -271,8 +311,7 @@ export function ConfirmMarketplaceInstallDialog({
           >
             {isLoading || integrationState.isLoading
               ? "Connecting..."
-              : currentDependencyIndex <
-                  (maybeAppDependencyList?.length ?? 0) - 1
+              : stepIndex < totalSteps - 1
                 ? "Continue"
                 : "Allow access"}
           </Button>
@@ -304,10 +343,14 @@ function DependencyStep({
 }) {
   const { data: marketplace } = useMarketplaceIntegrations();
   const dependencyIntegration = useMemo(() => {
-    if (!dependencySchema) return null;
-    const name = (dependencySchema.properties?.__type as JSONSchema7)?.const as
-      | string
-      | undefined;
+    if (!dependencySchema || !dependencyName) return null;
+
+    const internalSchema = dependencySchema.properties?.[dependencyName];
+    const name =
+      typeof internalSchema === "object" &&
+      ((internalSchema?.properties?.__type as JSONSchema7)?.const as
+        | string
+        | undefined);
     if (typeof name !== "string") return null;
 
     return (
@@ -315,7 +358,7 @@ function DependencyStep({
         (integration) => integration.name === name,
       ) as MarketplaceIntegration | null) ?? null
     );
-  }, [dependencySchema]);
+  }, [dependencySchema, dependencyName]);
   const permissionsFromThisDependency = useMemo(
     () =>
       integrationState.permissions?.filter(
@@ -323,17 +366,8 @@ function DependencyStep({
       ),
     [dependencyIntegration?.name, integrationState.permissions],
   );
-  // Create a schema for just this dependency
-  const dependencyFormSchema: JSONSchema7 | null =
-    dependencySchema && dependencyName !== undefined
-      ? {
-          type: "object",
-          properties: {
-            [dependencyName]: dependencySchema,
-          },
-          required: [dependencyName],
-        }
-      : null;
+
+  const schema = dependencySchema;
 
   return (
     <GridContainer className="min-h-135 max-h-135 lg:min-h-[60vh] lg:max-h-[60vh]">
@@ -380,7 +414,7 @@ function DependencyStep({
           {/* Dependency integration info */}
           <div className="flex-grow flex flex-col gap-5 py-2">
             {/* Configuration Form */}
-            {dependencyFormSchema && (
+            {schema && (
               <div className="flex justify-between items-center gap-2">
                 {dependencyIntegration && (
                   <div className="flex items-center gap-2">
@@ -396,10 +430,7 @@ function DependencyStep({
                       dependencyIntegration?.name}
                   </div>
                 )}
-                <IntegrationBindingForm
-                  schema={dependencyFormSchema}
-                  formRef={formRef}
-                />
+                <IntegrationBindingForm schema={schema} formRef={formRef} />
               </div>
             )}
 

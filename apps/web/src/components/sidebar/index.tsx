@@ -474,7 +474,7 @@ function WorkspaceViews() {
   const mcpItems = firstLevelViews.filter((item) =>
     [
       "Agents",
-      "Integrations",
+      "My Apps",
       "Prompts",
       "Views",
       "Workflows",
@@ -513,9 +513,7 @@ function WorkspaceViews() {
                     const meta = parseViewMetadata(item);
                     if (!meta) return null;
 
-                    // Special handling for Integrations -> Tools
-                    const displayTitle =
-                      item.title === "Integrations" ? "Tools" : item.title;
+                    const displayTitle = item.title;
                     const href =
                       item.title === "Integrations"
                         ? workspaceLink("/connections")
@@ -713,6 +711,7 @@ export function AppSidebar() {
   const { state, toggleSidebar, isMobile } = useSidebar();
   const isCollapsed = state === "collapsed";
   const focusChat = useFocusChat();
+  const navigateWorkspace = useNavigateWorkspace();
 
   return (
     <Sidebar variant="sidebar">
@@ -742,6 +741,21 @@ export function AppSidebar() {
                         className="text-muted-foreground/75"
                       />
                       <span className="truncate">New chat</span>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                  <SidebarMenuItem>
+                    <SidebarMenuButton
+                      className="cursor-pointer"
+                      onClick={() => {
+                        navigateWorkspace("/discover");
+                      }}
+                    >
+                      <Icon
+                        name="storefront"
+                        size={18}
+                        className="text-muted-foreground/75"
+                      />
+                      <span className="truncate">Discover</span>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
 

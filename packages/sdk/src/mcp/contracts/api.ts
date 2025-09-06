@@ -7,6 +7,7 @@ import {
   AppContext,
   createTool,
   createToolFactory,
+  createToolGroup,
   DECO_CMS_API,
   State,
 } from "../context.ts";
@@ -278,6 +279,8 @@ export const contractSettle = createContractTool({
       amount = totalAmount(state.clauses, context.clauses);
     }
 
+    console.log({amount, contractId, context});
+
     await State.run(c, () =>
       commitPreAuthorizedAmount.handler({
         contractId,
@@ -289,6 +292,27 @@ export const contractSettle = createContractTool({
 
     return {
       transactionId: context.transactionId,
+    };
+  },
+});
+
+export const createPublicContractTool = createToolGroup("Contracts", {
+  name: "Contracts",
+  description: "Manage smart contracts",
+  icon: "https://assets.decocache.com/mcp/10b5e8b4-a4e2-4868-8a7d-8cf9b46f0d79/contract.png",
+});
+
+export const contractsList = createPublicContractTool({
+  name: "CONTRACTS_LIST_TOOLS",
+  description: "List tools for a given contract",
+  inputSchema: z.object({}),
+  outputSchema: z.object({
+    tools: z.array(z.object({ name: z.string(), description: z.string() })),
+  }),
+  handler: async (_, c) => {
+    c.resourceAccess.grant();
+    return {
+      tools: [],
     };
   },
 });

@@ -1,10 +1,3 @@
-import { useMemo, useState } from "react";
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from "@deco/ui/components/card.tsx";
 import {
   Accordion,
   AccordionContent,
@@ -13,9 +6,11 @@ import {
 } from "@deco/ui/components/accordion.tsx";
 import { Badge } from "@deco/ui/components/badge.tsx";
 import { Button } from "@deco/ui/components/button.tsx";
+import { Card, CardContent } from "@deco/ui/components/card.tsx";
 import { Icon } from "@deco/ui/components/icon.tsx";
 import { ScrollArea } from "@deco/ui/components/scroll-area.tsx";
 import { Separator } from "@deco/ui/components/separator.tsx";
+import { useMemo, useState } from "react";
 import { Preview } from "./render-preview.tsx";
 
 interface FileArg {

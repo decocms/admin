@@ -106,6 +106,7 @@ const SimpleFeaturedCard = ({
 const Marketplace = () => {
   const [search, setSearch] = useState("");
   const { data: integrations } = useMarketplaceIntegrations();
+  const navigateWorkspace = useNavigateWorkspace();
 
   const featuredIntegrations = integrations?.integrations.filter(
     (integration) => FEATURED.includes(integration.name),
@@ -164,7 +165,9 @@ const Marketplace = () => {
             const appKey = AppKeys.build(key);
             return (
               <a
-                href={`/connection/${appKey}`}
+                onClick={() => {
+                  navigateWorkspace(`/connection/${appKey}`);
+                }}
                 key={item.appName}
                 className="relative rounded-xl cursor-pointer overflow-hidden"
               >

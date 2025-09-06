@@ -5,7 +5,7 @@ import {
   IWorkspaceDB,
   IWorkspaceDBMeta,
 } from "@deco/sdk/mcp";
-import { Browsable } from "@outerbase/browsable-durable-object";
+import { Browsable } from "outerbase-browsable-do-enforced";
 
 @Browsable()
 export class WorkspaceDatabase extends DurableObject implements IWorkspaceDB {

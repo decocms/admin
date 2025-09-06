@@ -52,7 +52,7 @@ import {
   ListToolsResult,
 } from "@modelcontextprotocol/sdk/types.js";
 import { createPosthogServerClient } from "packages/sdk/src/posthog.ts";
-import { studio } from "@outerbase/browsable-durable-object";
+import { studio } from "outerbase-browsable-do-enforced";
 
 export const app = new Hono<AppEnv>();
 export const honoCtxToAppCtx = (c: Context<AppEnv>): AppContext => {
@@ -433,30 +433,13 @@ app.all("/:root/:slug/i:databases-management/studio", async (c) => {
     resource: "DATABASES_RUN_SQL",
   });
 
-  // The DO id can be overridden by the client, so we need to enforce it
-  // It can be overriden both on the URL for GET requests and on the body
-  // "id" property for POST requests
-  // https://github.com/outerbase/browsable-durable-object/blob/main/src/index.ts#L405
-
-  // Enforce tenant ID on the url
-  const safeUrl = new URL(c.req.raw.url);
-  safeUrl.searchParams.set("id", `/${root}/${slug}`);
-
-  // Enforce tenant ID on the body
-  let safeBody: { id: string } | undefined;
-  if (c.req.raw.method !== "GET") {
-    safeBody = await c.req.raw.json<{ id: string }>();
-    safeBody.id = `/${root}/${slug}`;
-  }
-
-  // Create the final request
-  const request = new Request(safeUrl.toString(), {
-    body: safeBody ? JSON.stringify(safeBody) : null,
-    headers: c.req.raw.headers,
-    method: c.req.raw.method,
+  // The DO id can be overridden by the client, both on the URL 
+  // for GET requests and on the body "id" property for POST requests
+  // i've forked the library to add the ability to enforce the id
+  return studio(c.req.raw, ctx.workspaceDO, {
+    disableHomepage: true,
+    enforceId: `/${root}/${slug}`,
   });
-
-  return studio(request, ctx.workspaceDO);
 });
 
 app.post("/:root/:slug/:integrationId/tools/call/:tool", async (c) => {

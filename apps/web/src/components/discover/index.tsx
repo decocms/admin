@@ -158,7 +158,7 @@ const Marketplace = () => {
         <div className="flex flex-col gap-4 col-span-4">
           {highlights.map((item) => {
             if (!item.id) {
-              return <></>;
+              return null;
             }
             const key = getConnectionAppKey(item as Integration);
             const appKey = AppKeys.build(key);

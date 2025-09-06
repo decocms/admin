@@ -664,7 +664,7 @@ const virtualInstallableIntegrations = () => {
       connection: {
         type: "HTTP",
         url: "https://mcp.deco.site/mcp/messages",
-      },
+      } as MCPConnection,
     },
   ];
 };
@@ -710,7 +710,7 @@ It's always handy to search for installed integrations with no query, since all 
       provider: MARKETPLACE_PROVIDER,
       metadata: app.metadata,
       verified: app.verified,
-      connection: app.connection || {},
+      connection: app.connection || { type: "HTTP", url: "" } as MCPConnection,
     }));
 
     const virtualIntegrations = virtualInstallableIntegrations();

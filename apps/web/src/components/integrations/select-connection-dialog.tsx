@@ -232,6 +232,8 @@ export function ConfirmMarketplaceInstallDialog({
 
   if (!integration) return null;
 
+  console.log("integration", integration);
+
   return (
     <Dialog open={open} onOpenChange={() => setIntegration(null)}>
       <DialogContent className="!p-0 overflow-hidden lg:!w-220 lg:!max-w-220 min-h-135 lg:max-h-[80vh] flex flex-col">

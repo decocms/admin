@@ -493,14 +493,9 @@ function WorkspaceViews() {
 
   // Separate items for organization
   const mcpItems = firstLevelViews.filter((item) =>
-    [
-      "Agents",
-      "My Apps",
-      "Prompts",
-      "Views",
-      "Workflows",
-      "Triggers",
-    ].includes(item.title),
+    ["Agents", "My Apps", "Prompts", "Views", "Workflows", "Triggers"].includes(
+      item.title,
+    ),
   );
   const otherItems = firstLevelViews.filter((item) =>
     ["Monitor"].includes(item.title),

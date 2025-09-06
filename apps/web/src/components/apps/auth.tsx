@@ -353,7 +353,7 @@ const InlineCreateIntegrationForm = ({
       )}
 
       {/* Configuration Form */}
-      {shouldShowForm && (
+      {shouldShowForm && schema && (
         <>
           <Separator />
           <div>

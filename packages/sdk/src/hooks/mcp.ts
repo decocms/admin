@@ -315,7 +315,9 @@ export const useMarketplaceAppSchema = (appName?: string) => {
   return useQuery({
     queryKey: ["integrations", "marketplace", appName, "schema"],
     queryFn: () =>
-     canRunQuery ? MCPClient.forWorkspace(workspace).DECO_GET_APP_SCHEMA({ appName }) : null,
+      canRunQuery
+        ? MCPClient.forWorkspace(workspace).DECO_GET_APP_SCHEMA({ appName })
+        : null,
     enabled: canRunQuery,
   });
 };

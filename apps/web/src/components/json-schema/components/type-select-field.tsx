@@ -53,7 +53,10 @@ export function TypeSelectField<T extends FieldValues = FieldValues>({
     refetch: refetchOptions,
   } = useOptionsLoader(typeValue);
   // TODO (@igorbrasileiro): remove fallback when we migrate to the new oauth modal
-  const { onOpenOauthModal, ...oauthModalContext } = useOauthModalContext() ?? { onOpenOauthModal: () => {}, base: true };
+  const { onOpenOauthModal, ...oauthModalContext } = useOauthModalContext() ?? {
+    onOpenOauthModal: () => {},
+    base: true,
+  };
   const { data: marketplace } = useMarketplaceIntegrations();
   const [installingIntegration, setInstallingIntegration] =
     useState<MarketplaceIntegration | null>(null);
@@ -112,7 +115,7 @@ export function TypeSelectField<T extends FieldValues = FieldValues>({
         name={name as unknown as FieldPath<T>}
         render={({ field }) => (
           <FormItem className="space-y-2">
-            {'base' in oauthModalContext && oauthModalContext.base && (
+            {"base" in oauthModalContext && oauthModalContext.base && (
               <FormLabel>
                 {title}
                 {isRequired && <span className="text-destructive ml-1">*</span>}

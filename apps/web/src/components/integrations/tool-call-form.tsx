@@ -18,6 +18,7 @@ interface ToolCallFormProps {
   onCancel: () => void;
   isLoading: boolean;
   rawMode: boolean;
+  readOnly?: boolean;
 }
 
 // Helper function to properly serialize Error objects
@@ -66,6 +67,7 @@ export function ToolCallForm({
   onCancel,
   isLoading,
   rawMode,
+  readOnly,
 }: ToolCallFormProps) {
   const [payload, setPayload] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -148,7 +150,7 @@ export function ToolCallForm({
             <Button
               onClick={handleRawSubmit}
               className="flex-1 gap-2"
-              disabled={isLoading}
+              disabled={isLoading || readOnly}
             >
               {isLoading ? (
                 <>
@@ -183,7 +185,7 @@ export function ToolCallForm({
               <Button
                 type="submit"
                 className="flex-1 gap-2"
-                disabled={isLoading}
+                disabled={isLoading || readOnly}
               >
                 {isLoading ? (
                   <>

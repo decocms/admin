@@ -33,6 +33,7 @@ export interface GroupedApp {
   provider?: string;
   usedBy: { avatarUrl: string }[];
   connection?: MCPConnection;
+  verified?: boolean;
 }
 
 export interface AppKey {
@@ -277,15 +278,13 @@ export function useGroupedApp({ appKey }: { appKey: string }) {
       return wellKnownApp;
     }
 
-    const marketplaceApp = marketplace?.integrations?.find(
-      (app) => {
-        const key = getConnectionAppKey(app);
-        const appKeyToCompare = AppKeys.build(key);
-        if(appKeyToCompare === appKey){
-          return true;
-        }
-      },
-    );
+    const marketplaceApp = marketplace?.integrations?.find((app) => {
+      const key = getConnectionAppKey(app);
+      const appKeyToCompare = AppKeys.build(key);
+      if (appKeyToCompare === appKey) {
+        return true;
+      }
+    });
 
     if (marketplaceApp) {
       return {
@@ -295,6 +294,7 @@ export function useGroupedApp({ appKey }: { appKey: string }) {
         description: marketplaceApp.description,
         provider: marketplaceApp.provider,
         connection: marketplaceApp.connection,
+        verified: marketplaceApp.verified,
       };
     }
 

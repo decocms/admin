@@ -127,12 +127,15 @@ export function ConfirmMarketplaceInstallDialog({
 
   if (!integration) return null;
 
+  console.log("integration", integration);
+
   return (
     <Dialog open={open} onOpenChange={() => setIntegration(null)}>
       <DialogContent>
         <DialogHeader>
           <DialogTitle>
-            Connect to {integration.friendlyName ?? integration.name}
+            Connect to {integration.friendlyName ?? integration.name}{" "}
+            {integration.id}!!
           </DialogTitle>
           <DialogDescription>
             <div className="mt-4">

@@ -18,8 +18,7 @@ import {
 import { useMemo } from "react";
 import { IntegrationIcon } from "./common.tsx";
 
-export interface MarketplaceIntegration
-  extends Omit<Integration, "connection"> {
+export interface MarketplaceIntegration extends Integration {
   provider: string;
   friendlyName?: string;
   verified?: boolean;
@@ -161,6 +160,7 @@ export const NEW_CUSTOM_CONNECTION: MarketplaceIntegration = {
   description: "Create a new integration with any MCP server",
   icon: "",
   provider: "deco",
+  connection: { type: "HTTP", url: "" },
 };
 
 export function Marketplace({

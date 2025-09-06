@@ -180,7 +180,13 @@ export const useIntegrations = ({ isPublic }: { isPublic?: boolean } = {}) => {
 };
 
 interface IntegrationsResult {
-  integrations: Array<Integration & { provider: string; friendlyName?: string; verified?: boolean }>;
+  integrations: Array<
+    Integration & {
+      provider: string;
+      friendlyName?: string;
+      verified?: boolean;
+    }
+  >;
 }
 
 export const useMarketplaceIntegrations = () => {

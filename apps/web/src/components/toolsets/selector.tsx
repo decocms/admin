@@ -81,7 +81,7 @@ export function IntegrationListItem({
   const enabledCount = allTools.filter((tool) =>
     toolsSet[integration.id]?.includes(tool.name),
   ).length;
-  const isAll = enabledCount === total && total > 0;
+  const isAll = total > 0;
   const isEmpty = !isLoading && allTools.length === 0;
 
   // Helper function to check if a tool matches the search term

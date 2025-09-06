@@ -59,7 +59,7 @@ export const DEFAULT_THEME: Theme = {
     "--foreground": "oklch(26.8% 0.007 34.298)",
     "--primary-light": "#d0ec1a",
     "--primary-dark": "#07401a",
-    "--card": "oklch(0.9848 0.0013 106.42)",
+    "--card": "oklch(97.8% 0.001 106.423)",
     "--card-foreground": "oklch(26.8% 0.007 34.298)",
     "--popover": "oklch(1 0 0)",
     "--popover-foreground": "oklch(26.8% 0.007 34.298)",

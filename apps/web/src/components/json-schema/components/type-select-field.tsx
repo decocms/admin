@@ -110,7 +110,6 @@ export function TypeSelectField<T extends FieldValues = FieldValues>({
     setInstallingIntegration(null);
   };
 
-  console.log("options", form.getValues(name as unknown as FieldPath<T>));
   return (
     <>
       <FormField

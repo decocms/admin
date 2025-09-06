@@ -178,6 +178,7 @@ const Marketplace = () => {
                     url={item.icon}
                     fallback={item.friendlyName ?? item.name}
                     size="lg"
+                    className="border-none"
                   />
                   <h3 className="flex gap-2 items-center text-3xl text-white">
                     {item.name || item.friendlyName || item.appName}

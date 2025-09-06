@@ -8,17 +8,15 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@deco/ui/components/alert-dialog.tsx";
+import { Button } from "@deco/ui/components/button.tsx";
 import { Icon } from "@deco/ui/components/icon.tsx";
 import { useState } from "react";
 import { useMatch } from "react-router";
+import { useNavigateWorkspace } from "../../hooks/use-navigate-workspace.ts";
 import { ListPageHeader } from "../common/list-page-header.tsx";
 import type { ViewModeSwitcherProps } from "../common/view-mode-switcher.tsx";
 import type { Tab } from "../dock/index.tsx";
 import { DefaultBreadcrumb, PageLayout } from "../layout.tsx";
-import { SelectConnectionDialog } from "./select-connection-dialog.tsx";
-import { useNavigateWorkspace } from "../../hooks/use-navigate-workspace.ts";
-import { AppKeys, getConnectionAppKey } from "./apps.ts";
-import { Button } from "@deco/ui/components/button.tsx";
 
 export function IntegrationPageLayout({ tabs }: { tabs: Record<string, Tab> }) {
   const [error, setError] = useState<string | null>(null);

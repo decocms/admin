@@ -1,30 +1,5 @@
-import { Button } from "@deco/ui/components/button.tsx";
-import { cn } from "@deco/ui/lib/utils.ts";
-import { Navigate, useParams, useSearchParams } from "react-router";
-import { DefaultBreadcrumb, PageLayout } from "../layout.tsx";
 import {
-  AppKeys,
-  getConnectionAppKey,
-  isWellKnownApp,
-  useGroupedApp,
-} from "./apps.ts";
-import { IntegrationIcon } from "./common.tsx";
-import { Skeleton } from "@deco/ui/components/skeleton.tsx";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@deco/ui/components/select.tsx";
-import { Icon } from "@deco/ui/components/icon.tsx";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@deco/ui/components/dropdown-menu.tsx";
-import {
+  buildAddViewPayload, findPinnedView,
   type Integration,
   listTools,
   type MCPConnection,
@@ -35,18 +10,45 @@ import {
   useToolCall,
   useTools,
 } from "@deco/sdk";
-import { useEffect, useMemo, useRef, useState } from "react";
 import { Binding, WellKnownBindings } from "@deco/sdk/mcp/bindings";
-import { buildAddViewPayload, findPinnedView } from "@deco/sdk";
-import { useCurrentTeam } from "../sidebar/team-selector.tsx";
-import { toast } from "@deco/ui/components/sonner.tsx";
-
+import { Button } from "@deco/ui/components/button.tsx";
 import {
-  RemoveConnectionAlert,
-  useRemoveConnection,
-} from "./remove-connection.tsx";
-import { Input } from "@deco/ui/components/input.tsx";
-import { PasswordInput } from "@deco/ui/components/password-input.tsx";
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@deco/ui/components/dropdown-menu.tsx";
+import { Icon } from "@deco/ui/components/icon.tsx";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@deco/ui/components/select.tsx";
+import { Skeleton } from "@deco/ui/components/skeleton.tsx";
+import { toast } from "@deco/ui/components/sonner.tsx";
+import { cn } from "@deco/ui/lib/utils.ts";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { useParams } from "react-router";
+import { DefaultBreadcrumb, PageLayout } from "../layout.tsx";
+import { useCurrentTeam } from "../sidebar/team-selector.tsx";
+import {
+  AppKeys,
+  getConnectionAppKey,
+  isWellKnownApp,
+  useGroupedApp,
+} from "./apps.ts";
+import { IntegrationIcon } from "./common.tsx";
+
+import { useUpdateIntegration, useWriteFile } from "@deco/sdk";
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@deco/ui/components/accordion.tsx";
+import { Card } from "@deco/ui/components/card.tsx";
 import {
   Form,
   FormControl,
@@ -55,35 +57,33 @@ import {
   FormLabel,
   FormMessage,
 } from "@deco/ui/components/form.tsx";
-import { useForm } from "react-hook-form";
-import { useUpdateIntegration, useWriteFile } from "@deco/sdk";
-import { trackEvent } from "../../hooks/analytics.ts";
-import { Card } from "@deco/ui/components/card.tsx";
-import {
-  Accordion,
-  AccordionContent,
-  AccordionItem,
-  AccordionTrigger,
-} from "@deco/ui/components/accordion.tsx";
+import { Input } from "@deco/ui/components/input.tsx";
+import { PasswordInput } from "@deco/ui/components/password-input.tsx";
+import { ScrollArea, ScrollBar } from "@deco/ui/components/scroll-area.tsx";
 import {
   Tabs,
   TabsContent,
   TabsList,
   TabsTrigger,
 } from "@deco/ui/components/tabs.tsx";
-import { formatToolName } from "../chat/utils/format-tool-name.ts";
-import { ToolCallForm } from "./tool-call-form.tsx";
-import { ToolCallResult } from "./tool-call-result.tsx";
-import type { MCPToolCallResult } from "./types.ts";
+import { useForm } from "react-hook-form";
+import { trackEvent } from "../../hooks/analytics.ts";
 import { useNavigateWorkspace } from "../../hooks/use-navigate-workspace.ts";
+import { formatToolName } from "../chat/utils/format-tool-name.ts";
+import type { MarketplaceIntegration } from "./marketplace.tsx";
+import { OAuthCompletionDialog } from "./oauth-completion-dialog.tsx";
+import {
+  RemoveConnectionAlert,
+  useRemoveConnection,
+} from "./remove-connection.tsx";
 import {
   ConfirmMarketplaceInstallDialog,
   OauthModalContextProvider,
   OauthModalState,
 } from "./select-connection-dialog.tsx";
-import type { MarketplaceIntegration } from "./marketplace.tsx";
-import { OAuthCompletionDialog } from "./oauth-completion-dialog.tsx";
-import { ScrollArea, ScrollBar } from "@deco/ui/components/scroll-area.tsx";
+import { ToolCallForm } from "./tool-call-form.tsx";
+import { ToolCallResult } from "./tool-call-result.tsx";
+import type { MCPToolCallResult } from "./types.ts";
 
 function ConnectionInstanceActions({ onDelete }: { onDelete: () => void }) {
   return (
@@ -106,12 +106,6 @@ function ConnectionInstanceActions({ onDelete }: { onDelete: () => void }) {
 }
 
 const ICON_FILE_PATH = "assets/integrations";
-
-function useStartConfiguringOpen() {
-  const [searchParams] = useSearchParams();
-  const connectionId = searchParams.get("edit");
-  return { connectionId };
-}
 
 function useIconFilename() {
   function generate(originalFile: File) {

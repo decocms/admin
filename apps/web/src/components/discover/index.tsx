@@ -1,21 +1,20 @@
-import type { Tab } from "../dock/index.tsx";
+import {
+    type Integration,
+    MCPConnection,
+    useMarketplaceIntegrations,
+} from "@deco/sdk";
+import { Button } from "@deco/ui/components/button.tsx";
+import { Input } from "@deco/ui/components/input.tsx";
 import { useMemo, useState } from "react";
 import { useParams } from "react-router";
-import { DefaultBreadcrumb, PageLayout } from "../layout";
-import { Input } from "@deco/ui/components/input.tsx";
-import { Button } from "@deco/ui/components/button.tsx";
-import {
-  type Integration,
-  MCPConnection,
-  useMarketplaceIntegrations,
-} from "@deco/sdk";
-import { VerifiedBadge } from "../integrations/marketplace.tsx";
 import { useNavigateWorkspace } from "../../hooks/use-navigate-workspace.ts";
+import type { Tab } from "../dock/index.tsx";
 import {
-  AppKeys,
-  getConnectionAppKey,
-  useGroupedApps,
+    AppKeys,
+    getConnectionAppKey
 } from "../integrations/apps.ts";
+import { VerifiedBadge } from "../integrations/marketplace.tsx";
+import { DefaultBreadcrumb, PageLayout } from "../layout";
 
 // For the future, it should be controlled in a view
 const HIGHLIGHTS = [

@@ -28,6 +28,8 @@ import { useState } from "react";
 import type { Integration } from "@deco/sdk";
 import { Icon } from "@deco/ui/components/icon.tsx";
 
+const CONNECT_ACCOUNT_VALUE = "__connect_account__";
+
 interface TypeSelectFieldProps<T extends FieldValues = FieldValues> {
   name: string;
   title: string;
@@ -108,6 +110,7 @@ export function TypeSelectField<T extends FieldValues = FieldValues>({
     setInstallingIntegration(null);
   };
 
+  console.log("options", form.getValues(name as unknown as FieldPath<T>));
   return (
     <>
       <FormField
@@ -125,7 +128,8 @@ export function TypeSelectField<T extends FieldValues = FieldValues>({
               {options?.length > 0 ? (
                 <Select
                   onValueChange={(value: string) => {
-                    if (value === "__connect_account__") {
+                    if (value === CONNECT_ACCOUNT_VALUE) {
+                      field.onChange({ value: "" });
                       handleAddIntegration();
                       return;
                     }
@@ -138,7 +142,7 @@ export function TypeSelectField<T extends FieldValues = FieldValues>({
                       field.onChange({ value: selectedOption.value });
                     }
                   }}
-                  defaultValue={field.value?.value}
+                  value={field.value?.value || ""}
                   disabled={disabled}
                 >
                   <FormControl>
@@ -179,8 +183,8 @@ export function TypeSelectField<T extends FieldValues = FieldValues>({
 
                     <div className="border-t h-px" />
                     <SelectItem
-                      key="__connect_account__"
-                      value="__connect_account__"
+                      key={CONNECT_ACCOUNT_VALUE}
+                      value={CONNECT_ACCOUNT_VALUE}
                     >
                       <span className="flex items-center justify-center w-8 h-8">
                         <Icon name="add" size={24} />

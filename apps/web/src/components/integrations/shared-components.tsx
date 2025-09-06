@@ -37,10 +37,7 @@ export function GridContainer({
   return (
     <div
       data-grid-container
-      className={cn(
-        "grid grid-cols-10 gap-6 divide-x border-b",
-        className,
-      )}
+      className={cn("grid grid-cols-10 gap-6 divide-x border-b", className)}
     >
       {children}
     </div>

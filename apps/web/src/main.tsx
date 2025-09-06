@@ -155,6 +155,10 @@ const LegacyViewRedirect = lazy(() =>
   wrapWithUILoadingFallback(import("./components/views/legacy-redirect.tsx")),
 );
 
+const Discover = lazy(() =>
+  wrapWithUILoadingFallback(import("./components/discover/index.tsx")),
+);
+
 function NotFound(): null {
   throw new NotFoundError("The path was not found");
 }
@@ -328,6 +332,7 @@ const router = createBrowserRouter([
           { path: "prompts", Component: ListPrompts },
           { path: "prompt/:id", Component: PromptDetail },
           { path: "workflows", Component: WorkflowListPage },
+          { path: "discover", Component: Discover },
           {
             path: "workflows/:workflowName/instances/:instanceId",
             Component: WorkflowDetailPage,

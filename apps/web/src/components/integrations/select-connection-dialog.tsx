@@ -690,7 +690,7 @@ export function SelectConnectionDialog(props: SelectConnectionDialogProps) {
 
     return (
       <Button variant="special">
-        <span className="hidden md:inline">Add integration</span>
+        <span className="hidden md:inline">Install Apps</span>
       </Button>
     );
   }, [props.trigger]);

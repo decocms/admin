@@ -661,6 +661,10 @@ const virtualInstallableIntegrations = () => {
       description: "Manage your agents email",
       icon: "https://assets.decocache.com/mcp/65334e3f-17b4-470f-b644-5d226c565db9/email-integration.png",
       provider: DECO_PROVIDER,
+      connection: {
+        type: "HTTP",
+        url: "https://mcp.deco.site/mcp/messages",
+      },
     },
   ];
 };
@@ -680,7 +684,7 @@ It's always handy to search for installed integrations with no query, since all 
   outputSchema: z.object({
     integrations: z
       .array(
-        IntegrationSchema.omit({ connection: true }).and(
+        IntegrationSchema.and(
           z.object({
             provider: z.string(),
             friendlyName: z.string().optional(),
@@ -706,6 +710,7 @@ It's always handy to search for installed integrations with no query, since all 
       provider: MARKETPLACE_PROVIDER,
       metadata: app.metadata,
       verified: app.verified,
+      connection: app.connection || {},
     }));
 
     const virtualIntegrations = virtualInstallableIntegrations();

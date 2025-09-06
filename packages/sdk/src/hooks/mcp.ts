@@ -181,7 +181,7 @@ export const useIntegrations = ({ isPublic }: { isPublic?: boolean } = {}) => {
 };
 
 interface IntegrationsResult {
-  integrations: Array<Omit<Integration, "connection"> & { provider: string }>;
+  integrations: Array<Integration & { provider: string; friendlyName?: string; verified?: boolean }>;
 }
 
 export const useMarketplaceIntegrations = () => {

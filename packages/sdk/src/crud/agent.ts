@@ -1,7 +1,7 @@
 import { MCPClient } from "../fetcher.ts";
 import { type Agent, AgentSchema } from "../models/agent.ts";
 import { stub } from "../stub.ts";
-import { Workspace, Workspaces } from "../locator.ts";
+import { ProjectLocator, Locator } from "../locator.ts";
 
 /**
  * Update an agent
@@ -9,8 +9,8 @@ import { Workspace, Workspaces } from "../locator.ts";
  * @param agent - The agent to update
  * @returns The updated agent
  */
-export const updateAgent = async (workspace: Workspace, agent: Agent) => {
-  const agentRoot = `/${Workspaces.adaptToShared(workspace)}/Agents/${agent.id}`;
+export const updateAgent = async (workspace: ProjectLocator, agent: Agent) => {
+  const agentRoot = `/${Locator.adaptToShared(workspace)}/Agents/${agent.id}`;
 
   // deno-lint-ignore no-explicit-any
   const agentStub = stub<any>("AIAgent").new(agentRoot);
@@ -25,7 +25,7 @@ export const updateAgent = async (workspace: Workspace, agent: Agent) => {
  * @returns The new agent
  */
 export const createAgent = (
-  workspace: Workspace,
+  workspace: ProjectLocator,
   template: Partial<Agent> = {},
 ) =>
   MCPClient.forWorkspace(workspace).AGENTS_CREATE({
@@ -39,14 +39,14 @@ export const createAgent = (
  * @returns The agent
  */
 export const loadAgent = (
-  workspace: Workspace,
+  workspace: ProjectLocator,
   agentId: string,
   signal?: AbortSignal,
 ): Promise<Agent> =>
   MCPClient.forWorkspace(workspace).AGENTS_GET({ id: agentId }, { signal });
 
 export const listAgents = (
-  workspace: Workspace,
+  workspace: ProjectLocator,
   signal?: AbortSignal,
 ): Promise<Agent[]> =>
   MCPClient.forWorkspace(workspace)
@@ -58,7 +58,7 @@ export const listAgents = (
  * @param workspace - The workspace of the agent
  * @param agentId - The id of the agent to delete
  */
-export const deleteAgent = (workspace: Workspace, agentId: string) =>
+export const deleteAgent = (workspace: ProjectLocator, agentId: string) =>
   MCPClient.forWorkspace(workspace).AGENTS_DELETE({ id: agentId });
 
 /**

@@ -1,7 +1,7 @@
 import type { Model } from "../constants.ts";
 import { MCPClient } from "../fetcher.ts";
 import type { CreateModelInput } from "../mcp/models/api.ts";
-import { Workspace } from "../locator.ts";
+import { ProjectLocator } from "../locator.ts";
 
 export interface ListModelsInput {
   excludeDisabled?: boolean;
@@ -9,7 +9,7 @@ export interface ListModelsInput {
 }
 
 export const listModels = (
-  workspace: Workspace,
+  workspace: ProjectLocator,
   options: ListModelsInput = {},
   init?: RequestInit,
 ) =>
@@ -18,13 +18,13 @@ export const listModels = (
     .then((res) => res.items);
 
 export const getModel = (
-  workspace: Workspace,
+  workspace: ProjectLocator,
   id: string,
   init?: RequestInit,
 ) => MCPClient.forWorkspace(workspace).MODELS_GET({ id }, init);
 
 export const createModel = (
-  workspace: Workspace,
+  workspace: ProjectLocator,
   input: CreateModelInput,
   init?: RequestInit,
 ) => MCPClient.forWorkspace(workspace).MODELS_CREATE(input, init);
@@ -40,13 +40,13 @@ export interface UpdateModelInput {
 }
 
 export const updateModel = (
-  workspace: Workspace,
+  workspace: ProjectLocator,
   input: UpdateModelInput,
   init?: RequestInit,
 ) => MCPClient.forWorkspace(workspace).MODELS_UPDATE(input, init);
 
 export const deleteModel = (
-  workspace: Workspace,
+  workspace: ProjectLocator,
   id: string,
   init?: RequestInit,
 ): Promise<{ success: boolean }> =>

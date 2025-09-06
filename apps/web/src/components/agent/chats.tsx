@@ -1,4 +1,4 @@
-import { SDKProvider, UnauthorizedError, type Workspace } from "@deco/sdk";
+import { SDKProvider, UnauthorizedError, type ProjectLocator } from "@deco/sdk";
 import { ScrollArea } from "@deco/ui/components/scroll-area.tsx";
 import { SidebarInset, SidebarProvider } from "@deco/ui/components/sidebar.tsx";
 import { Spinner } from "@deco/ui/components/spinner.tsx";
@@ -45,7 +45,7 @@ const TABS = {
   },
 };
 
-export const getPublicChatLink = (agentId: string, workspace: Workspace) => {
+export const getPublicChatLink = (agentId: string, workspace: ProjectLocator) => {
   const url = new URL("/chats", globalThis.location.href);
   url.searchParams.set("agentId", agentId);
   url.searchParams.set("workspace", workspace);
@@ -57,7 +57,7 @@ function Page() {
   const [params] = useSearchParams();
 
   const { agentId, workspace, threadId, toolsets } = useMemo(() => {
-    const workspace = params.get("workspace") as Workspace | null;
+    const workspace = params.get("workspace") as ProjectLocator | null;
     const agentId = params.get("agentId");
     const threadId = params.get("threadId") ?? crypto.randomUUID();
     const toolsets = params.getAll("toolsets").map((toolset) => {

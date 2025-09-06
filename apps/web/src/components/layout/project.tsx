@@ -35,7 +35,7 @@ import { AppSidebar } from "../sidebar/index.tsx";
 import { WithWorkspaceTheme } from "../theme.tsx";
 import { useIsMobile } from "@deco/ui/hooks/use-mobile.ts";
 import { ErrorBoundary } from "../../error-boundary.tsx";
-import { Workspaces } from "@deco/sdk";
+import { Locator } from "@deco/sdk";
 
 export function BaseRouteLayout({ children }: { children: ReactNode }) {
   // remove?
@@ -47,7 +47,7 @@ export function BaseRouteLayout({ children }: { children: ReactNode }) {
   }
 
   return (
-    <SDKProvider workspace={Workspaces.from({ org, project })}>
+    <SDKProvider workspace={Locator.from({ org, project })}>
       {children}
       <Toaster />
     </SDKProvider>

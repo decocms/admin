@@ -1,7 +1,7 @@
 import { MCPClient } from "../fetcher.ts";
 import type { MCPConnection } from "../models/mcp.ts";
 import type { Theme } from "../theme.ts";
-import { Workspace } from "../locator.ts";
+import { ProjectLocator } from "../locator.ts";
 import { View } from "../views.ts";
 
 export interface Team {
@@ -81,7 +81,7 @@ export interface AddViewInput {
 }
 
 export const addView = (
-  workspace: Workspace,
+  workspace: ProjectLocator,
   input: AddViewInput,
   init?: RequestInit,
 ): Promise<View> =>
@@ -94,7 +94,7 @@ export interface RemoveViewInput {
 }
 
 export const removeView = (
-  workspace: Workspace,
+  workspace: ProjectLocator,
   input: RemoveViewInput,
   init?: RequestInit,
 ): Promise<{ success: boolean }> =>

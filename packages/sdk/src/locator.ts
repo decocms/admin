@@ -4,29 +4,29 @@
  * format: <org-slug>/<project-slug>
  */
 
-export type Workspace = `${string}/${string}`;
+export type ProjectLocator = `${string}/${string}`;
 
-export const Workspaces = {
-  from({ org, project }: { org: string; project: string }): Workspace {
+export const Locator = {
+  from({ org, project }: { org: string; project: string }): ProjectLocator {
     if (org.includes("/") || project.includes("/")) {
       throw new Error("Org or project cannot contain slashes");
     }
 
     if (org === "shared" || org === "users") {
-      console.warn(`Deprecated workspace usage detected: ${org}/${project}`);
+      console.warn(`Deprecated locator usage detected: ${org}/${project}`);
     }
 
-    return `${org}/${project}` as Workspace;
+    return `${org}/${project}` as ProjectLocator;
   },
-  parse(workspace: Workspace): { org: string; project: string } {
-    const [org, project] = workspace.split("/");
+  parse(locator: ProjectLocator): { org: string; project: string } {
+    const [org, project] = locator.split("/");
     if (org === "shared" || org === "users") {
-      console.warn(`Deprecated workspace usage detected: ${org}/${project}`);
+      console.warn(`Deprecated locator usage detected: ${org}/${project}`);
     }
     return { org, project };
   },
-  adaptToShared: (workspace: Workspace): string => {
-    const [org] = workspace.split("/");
+  adaptToShared: (locator: ProjectLocator): string => {
+    const [org] = locator.split("/");
     return `shared/${org}`;
   },
 } as const;

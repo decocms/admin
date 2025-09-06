@@ -1,11 +1,11 @@
 import { MCPClient } from "../fetcher.ts";
-import { Workspace } from "../locator.ts";
+import { ProjectLocator } from "../locator.ts";
 
-export const getWalletAccount = (workspace: Workspace) =>
+export const getWalletAccount = (workspace: ProjectLocator) =>
   MCPClient.forWorkspace(workspace).GET_WALLET_ACCOUNT({});
 
 export const getThreadsUsage = (
-  workspace: Workspace,
+  workspace: ProjectLocator,
   range: "day" | "week" | "month",
 ) =>
   MCPClient.forWorkspace(workspace).GET_THREADS_USAGE({
@@ -13,7 +13,7 @@ export const getThreadsUsage = (
   });
 
 export const getAgentsUsage = (
-  workspace: Workspace,
+  workspace: ProjectLocator,
   range: "day" | "week" | "month",
 ) =>
   MCPClient.forWorkspace(workspace).GET_AGENTS_USAGE({
@@ -21,7 +21,7 @@ export const getAgentsUsage = (
   });
 
 export const getBillingHistory = (
-  workspace: Workspace,
+  workspace: ProjectLocator,
   range: "day" | "week" | "month" | "year",
 ) =>
   MCPClient.forWorkspace(workspace).GET_BILLING_HISTORY({
@@ -34,7 +34,7 @@ export const createWalletCheckoutSession = ({
   successUrl,
   cancelUrl,
 }: {
-  workspace: Workspace;
+  workspace: ProjectLocator;
   amountUSDCents: number;
   successUrl: string;
   cancelUrl: string;
@@ -49,7 +49,7 @@ export const redeemWalletVoucher = ({
   workspace,
   voucher,
 }: {
-  workspace: Workspace;
+  workspace: ProjectLocator;
   voucher: string;
 }) =>
   MCPClient.forWorkspace(workspace).REDEEM_VOUCHER({
@@ -60,14 +60,14 @@ export const createWalletVoucher = ({
   workspace,
   amount,
 }: {
-  workspace: Workspace;
+  workspace: ProjectLocator;
   amount: number;
 }) =>
   MCPClient.forWorkspace(workspace).CREATE_VOUCHER({
     amount,
   });
 
-export const getWorkspacePlan = async (workspace: Workspace) => {
+export const getWorkspacePlan = async (workspace: ProjectLocator) => {
   const plan = await MCPClient.forWorkspace(workspace).GET_WORKSPACE_PLAN({});
 
   return plan;

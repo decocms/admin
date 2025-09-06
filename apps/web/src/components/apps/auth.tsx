@@ -38,7 +38,7 @@ import {
 import type { JSONSchema7 } from "json-schema";
 import { getAllScopes } from "../../utils/scopes.ts";
 import { VerifiedBadge } from "../integrations/marketplace.tsx";
-import { Workspaces } from "@deco/sdk";
+import { Locator } from "@deco/sdk";
 
 const preSelectTeam = (
   teams: CurrentTeam[],
@@ -528,7 +528,7 @@ const SelectProjectAppInstance = ({
   }) => {
     const { redirectTo } = await createOAuthCode.mutateAsync({
       integrationId,
-      workspace: Workspaces.from({ org: org.slug, project }),
+      workspace: Locator.from({ org: org.slug, project }),
       redirectUri,
       state,
     });
@@ -671,7 +671,7 @@ function AppsOAuth({
     );
   }
 
-  const workspace = Workspaces.from({
+  const workspace = Locator.from({
     org: selectedOrgSlug,
     project: selectedProject,
   });

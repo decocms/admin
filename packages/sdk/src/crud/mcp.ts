@@ -4,14 +4,14 @@ import {
   type Integration,
   IntegrationSchema,
 } from "../models/mcp.ts";
-import { Workspace } from "../locator.ts";
+import { ProjectLocator } from "../locator.ts";
 
 /**
  * Save an MCP to the file system
  * @param integration - The MCP to save
  */
 export const saveIntegration = (
-  workspace: Workspace,
+  workspace: ProjectLocator,
   integration: Integration,
 ) =>
   MCPClient.forWorkspace(workspace).INTEGRATIONS_UPDATE({
@@ -28,7 +28,7 @@ export type CreateIntegrationPayload = Partial<Integration> & {
  * @returns The new MCP
  */
 export const createIntegration = (
-  workspace: Workspace,
+  workspace: ProjectLocator,
   template: CreateIntegrationPayload = {},
 ) =>
   MCPClient.forWorkspace(workspace).INTEGRATIONS_CREATE({
@@ -46,7 +46,7 @@ export const createIntegration = (
  * @returns The MCP
  */
 export const loadIntegration = (
-  workspace: Workspace,
+  workspace: ProjectLocator,
   mcpId: string,
   signal?: AbortSignal,
 ): Promise<Integration> =>
@@ -57,7 +57,7 @@ export interface ListIntegrationsFilter {
 }
 
 export const listIntegrations = (
-  workspace: Workspace,
+  workspace: ProjectLocator,
   filter?: ListIntegrationsFilter,
   signal?: AbortSignal,
 ): Promise<Integration[]> =>
@@ -69,7 +69,7 @@ export const listIntegrations = (
  * Delete an MCP from the file system
  * @param mcpId - The id of the MCP to delete
  */
-export const deleteIntegration = (workspace: Workspace, mcpId: string) =>
+export const deleteIntegration = (workspace: ProjectLocator, mcpId: string) =>
   MCPClient.forWorkspace(workspace).INTEGRATIONS_DELETE({
     id: mcpId,
   });
@@ -81,7 +81,7 @@ export const deleteIntegration = (workspace: Workspace, mcpId: string) =>
  * @returns The registry app
  */
 export const getRegistryApp = (
-  workspace: Workspace,
+  workspace: ProjectLocator,
   params: { name: string },
 ) => MCPClient.forWorkspace(workspace).REGISTRY_GET_APP(params);
 

@@ -1,9 +1,9 @@
 import { MCPClient } from "../fetcher.ts";
-import type { Integration, Workspace } from "../index.ts";
+import type { Integration, ProjectLocator } from "../index.ts";
 import type { WorkspaceTools } from "../mcp/index.ts";
 
 interface FromWorkspace {
-  workspace: Workspace;
+  workspace: ProjectLocator;
 }
 
 interface ForConnection {
@@ -11,7 +11,7 @@ interface ForConnection {
 }
 
 const getClientFor = (
-  workspace: Workspace,
+  workspace: ProjectLocator,
   connection?: Integration["connection"],
 ) => {
   return connection

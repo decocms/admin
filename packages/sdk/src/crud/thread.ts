@@ -1,6 +1,6 @@
 import type { UIMessage } from "ai";
 import { MCPClient } from "../fetcher.ts";
-import { Workspace } from "../locator.ts";
+import { ProjectLocator } from "../locator.ts";
 
 export interface ThreadFilterOptions {
   agentId?: string;
@@ -38,7 +38,7 @@ export interface Metadata {
 }
 
 export const listThreads = (
-  workspace: Workspace,
+  workspace: ProjectLocator,
   options: ThreadFilterOptions,
   init?: RequestInit,
 ) => MCPClient.forWorkspace(workspace).THREADS_LIST(options, init);
@@ -53,7 +53,7 @@ export interface ThreadDetails {
 }
 
 export const getThread = (
-  workspace: Workspace,
+  workspace: ProjectLocator,
   threadId: string,
   init: RequestInit = {},
 ): Promise<ThreadDetails> =>
@@ -69,7 +69,7 @@ export interface ThreadMessage {
 }
 
 export const getThreadMessages = (
-  workspace: Workspace,
+  workspace: ProjectLocator,
   threadId: string,
   init: RequestInit = {},
 ): Promise<{ messages: UIMessage[] }> =>
@@ -83,14 +83,14 @@ export interface ThreadTools {
 }
 
 export const getThreadTools = (
-  workspace: Workspace,
+  workspace: ProjectLocator,
   threadId: string,
   init: RequestInit = {},
 ): Promise<ThreadTools> =>
   MCPClient.forWorkspace(workspace).THREADS_GET_TOOLS({ id: threadId }, init);
 
 export const updateThreadTitle = (
-  workspace: Workspace,
+  workspace: ProjectLocator,
   threadId: string,
   title: string,
   init: RequestInit = {},
@@ -101,7 +101,7 @@ export const updateThreadTitle = (
   ) as Promise<ThreadDetails>;
 
 export const updateThreadMetadata = (
-  workspace: Workspace,
+  workspace: ProjectLocator,
   threadId: string,
   metadata: Record<string, unknown>,
   init: RequestInit = {},

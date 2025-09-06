@@ -19,7 +19,7 @@ import { applyDisplayNameToIntegration } from "../utils/integration-display-name
 import { KEYS } from "./api.ts";
 import { type MCPTool } from "./index.ts";
 import { useSDK } from "./store.tsx";
-import { Workspace } from "../locator.ts";
+import { ProjectLocator } from "../locator.ts";
 
 interface IntegrationToolsResult {
   integration: Integration;
@@ -333,7 +333,7 @@ export const useCreateOAuthCodeForIntegration = () => {
   const mutation = useMutation({
     mutationFn: async (params: {
       integrationId: string;
-      workspace: Workspace;
+      workspace: ProjectLocator;
       redirectUri: string;
       state?: string;
     }) => {

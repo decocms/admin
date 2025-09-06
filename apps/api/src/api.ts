@@ -4,7 +4,7 @@ import {
   DECO_CMS_WEB_URL,
   MCPConnection,
   WellKnownMcpGroups,
-  Workspaces,
+  Locator,
 } from "@deco/sdk";
 import { DECO_CHAT_KEY_ID, getKeyPair } from "@deco/sdk/auth";
 import {
@@ -71,7 +71,7 @@ export const honoCtxToAppCtx = (c: Context<AppEnv>): AppContext => {
       ? {
           root: "shared",
           slug: org,
-          value: `/${Workspaces.adaptToShared(Workspaces.from({ org, project }))}`,
+          value: `/${Locator.adaptToShared(Locator.from({ org, project }))}`,
         }
       : undefined;
 

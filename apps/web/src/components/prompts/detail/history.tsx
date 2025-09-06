@@ -9,7 +9,7 @@ import {
   useTeamMembers,
   useOrganizations,
   useUpdatePrompt,
-  type Workspace,
+  type ProjectLocator,
 } from "@deco/sdk";
 import {
   Avatar,
@@ -138,7 +138,7 @@ export function HistoryCard({
   length: number;
   teamId: number | null;
   teamMembersMap: Map<string, TeamMember>;
-  workspace: Workspace;
+  workspace: ProjectLocator;
   refetch: () => void;
 }) {
   const updatePrompt = useUpdatePrompt();

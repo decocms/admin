@@ -12,7 +12,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@deco/ui/components/select.tsx";
-import { AgentAvatar } from "../common/avatar/agent.tsx";
 import { Icon } from "@deco/ui/components/icon.tsx";
 import {
   DropdownMenu,
@@ -75,6 +74,7 @@ import { useWorkspaceLink } from "../../hooks/use-navigate-workspace.ts";
 import { ConfirmMarketplaceInstallDialog } from "./select-connection-dialog.tsx";
 import type { MarketplaceIntegration } from "./marketplace.tsx";
 import { OAuthCompletionDialog } from "./oauth-completion-dialog.tsx";
+import { ScrollArea, ScrollBar } from "@deco/ui/components/scroll-area.tsx";
 
 function ConnectionInstanceActions({ onDelete }: { onDelete: () => void }) {
   return (
@@ -889,87 +889,94 @@ function ToolsInspector({
   );
 
   return (
-    <div ref={toolsRef} className="w-full flex flex-col items-center gap-4">
-      <div className="w-full flex items-center justify-between">
-        <Input
-          placeholder="Search tools..."
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          className="max-w-xs"
-        />
-        <Button
-          variant="outline"
-          onClick={() => {
-            ignoreCache.current = true;
-            tools.refetch();
-            ignoreCache.current = false;
-          }}
-        >
-          Refresh
-        </Button>
-      </div>
+    <ScrollArea className="h-[calc(100vh-10rem)]">
+      <div ref={toolsRef} className="w-full flex flex-col items-center gap-4">
+        <div className="w-full flex items-center justify-between">
+          <Input
+            placeholder="Search tools..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="max-w-xs"
+          />
+          <Button
+            variant="outline"
+            onClick={() => {
+              ignoreCache.current = true;
+              tools.refetch();
+              ignoreCache.current = false;
+            }}
+          >
+            Refresh
+          </Button>
+        </div>
 
-      <div className="flex flex-col gap-4 w-full min-h-[80vh]">
-        {tools.isLoading ? (
-          Array.from({ length: 8 }).map((_, idx) => (
-            <Skeleton key={idx} className="rounded-lg w-full h-[76px]" />
-          ))
-        ) : tools.isError ? (
-          "url" in connection && connection.url.includes("example.com") ? (
-            <div className="flex flex-col items-center justify-center p-8 text-center space-y-3">
-              <div className="w-12 h-12 rounded-full bg-muted/50 flex items-center justify-center">
-                <Icon name="tune" size={24} className="text-muted-foreground" />
+        <div className="flex flex-col gap-4 w-full min-h-[80vh]">
+          {tools.isLoading ? (
+            Array.from({ length: 8 }).map((_, idx) => (
+              <Skeleton key={idx} className="rounded-lg w-full h-[76px]" />
+            ))
+          ) : tools.isError ? (
+            "url" in connection && connection.url.includes("example.com") ? (
+              <div className="flex flex-col items-center justify-center p-8 text-center space-y-3">
+                <div className="w-12 h-12 rounded-full bg-muted/50 flex items-center justify-center">
+                  <Icon
+                    name="tune"
+                    size={24}
+                    className="text-muted-foreground"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <h3 className="text-sm font-medium text-foreground">
+                    Configuration Required
+                  </h3>
+                  <p className="text-sm text-muted-foreground max-w-sm">
+                    This connection needs to be configured before tools can be
+                    tested. Please update the connection details above.
+                  </p>
+                </div>
               </div>
-              <div className="space-y-1">
-                <h3 className="text-sm font-medium text-foreground">
-                  Configuration Required
+            ) : (
+              <div className="flex flex-col items-center justify-center p-8 text-center">
+                <img
+                  src="/img/error-state-connection-tools.svg"
+                  className="h-64 mb-4"
+                />
+                <h3 className="text-2xl font-semibold text-foreground mb-2">
+                  Unable to list connection tools
                 </h3>
-                <p className="text-sm text-muted-foreground max-w-sm">
-                  This connection needs to be configured before tools can be
-                  tested. Please update the connection details above.
-                </p>
+                <div className="p-3 bg-destructive/5 border border-destructive/20 rounded-lg text-left mb-4">
+                  <pre className="text-xs text-destructive whitespace-pre-wrap break-words">
+                    Error: {tools.error?.message || "Unknown error occurred"}
+                  </pre>
+                </div>
+                <Button
+                  onClick={() => {
+                    ignoreCache.current = true;
+                    tools.refetch();
+                    ignoreCache.current = false;
+                  }}
+                >
+                  <Icon name="refresh" size={16} />
+                  Refresh
+                </Button>
               </div>
-            </div>
+            )
           ) : (
-            <div className="flex flex-col items-center justify-center p-8 text-center">
-              <img
-                src="/img/error-state-connection-tools.svg"
-                className="h-64 mb-4"
-              />
-              <h3 className="text-2xl font-semibold text-foreground mb-2">
-                Unable to list connection tools
-              </h3>
-              <div className="p-3 bg-destructive/5 border border-destructive/20 rounded-lg text-left mb-4">
-                <pre className="text-xs text-destructive whitespace-pre-wrap break-words">
-                  Error: {tools.error?.message || "Unknown error occurred"}
-                </pre>
-              </div>
-              <Button
-                onClick={() => {
-                  ignoreCache.current = true;
-                  tools.refetch();
-                  ignoreCache.current = false;
-                }}
-              >
-                <Icon name="refresh" size={16} />
-                Refresh
-              </Button>
-            </div>
-          )
-        ) : (
-          filteredTools.map((tool) =>
-            connection ? (
-              <Tool
-                key={tool.name}
-                connection={connection}
-                tool={tool}
-                readOnly={readOnly}
-              />
-            ) : null,
-          )
-        )}
+            filteredTools.map((tool) =>
+              connection ? (
+                <Tool
+                  key={tool.name}
+                  connection={connection}
+                  tool={tool}
+                  readOnly={readOnly}
+                />
+              ) : null,
+            )
+          )}
+        </div>
       </div>
-    </div>
+      <ScrollBar orientation="vertical" />
+    </ScrollArea>
   );
 }
 
@@ -1307,8 +1314,12 @@ function AppDetail({ appKey }: { appKey: string }) {
           />
         )}
       </div>
-      <div className="col-span-4">
-        <Tabs defaultValue="tools" orientation="horizontal" className="w-full">
+      <div className="col-span-4 h-full">
+        <Tabs
+          defaultValue="tools"
+          orientation="horizontal"
+          className="w-full h-full"
+        >
           <TabsList>
             <TabsTrigger value="tools" className="px-4">
               Tools
@@ -1321,7 +1332,7 @@ function AppDetail({ appKey }: { appKey: string }) {
             </TabsTrigger>
           </TabsList>
 
-          <TabsContent value="tools" className="mt-4">
+          <TabsContent value="tools" className="mt-4 h-full">
             <ToolsInspector
               data={data}
               readOnly={!data.instances || data.instances?.length === 0}

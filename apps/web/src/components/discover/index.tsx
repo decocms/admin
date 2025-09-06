@@ -17,14 +17,18 @@ import {
   useGroupedApps,
 } from "../integrations/apps.ts";
 
+// For the future, it should be controlled in a view
 const HIGHLIGHTS = [
   {
     appName: "@admin-deco/admin-cx",
+    name: "deco sites",
+    description: "Vibecode high-performance websites",
     banner:
       "https://assets.decocache.com/starting/997a782f-3036-4e23-a75e-ffa9c32bd2d5/58bebf51abe94574a84fef328ca3412fcc5f8ccf.png",
   },
 ];
 
+// For the future, it should be controlled in a view
 const FEATURED = [
   "@decocms/perplexity",
   "@deco/airtable",
@@ -119,8 +123,8 @@ const Marketplace = () => {
         (integration) => integration.name === highlight.appName,
       );
       return {
-        ...highlight,
         ...integration,
+        ...highlight,
       };
     });
   }, [integrations]);
@@ -163,9 +167,15 @@ const Marketplace = () => {
                 alt={item.appName || ""}
                 className="w-full h-full object-cover"
               />
-              <div className="absolute bottom-6 left-6">
-                <h3 className="text-3xl text-white">
-                  {item.friendlyName || item.appName}
+              <div className="absolute flex flex-col gap-1 bottom-6 left-6">
+                <img
+                  src={item.icon}
+                  alt={item.name}
+                  className="w-12 h-12 object-cover rounded-xl mb-1"
+                />
+                <h3 className="flex gap-2 items-center text-3xl text-white">
+                  {item.name || item.friendlyName || item.appName}
+                  <VerifiedBadge />
                 </h3>
                 <p className="text-sm text-white">{item.description}</p>
               </div>

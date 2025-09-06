@@ -1,7 +1,7 @@
 import {
-    type Integration,
-    MCPConnection,
-    useMarketplaceIntegrations,
+  type Integration,
+  MCPConnection,
+  useMarketplaceIntegrations,
 } from "@deco/sdk";
 import { Button } from "@deco/ui/components/button.tsx";
 import { Input } from "@deco/ui/components/input.tsx";
@@ -9,12 +9,10 @@ import { useMemo, useState } from "react";
 import { useParams } from "react-router";
 import { useNavigateWorkspace } from "../../hooks/use-navigate-workspace.ts";
 import type { Tab } from "../dock/index.tsx";
-import {
-    AppKeys,
-    getConnectionAppKey
-} from "../integrations/apps.ts";
+import { AppKeys, getConnectionAppKey } from "../integrations/apps.ts";
 import { VerifiedBadge } from "../integrations/marketplace.tsx";
 import { DefaultBreadcrumb, PageLayout } from "../layout";
+import { IntegrationAvatar } from "../common/avatar/integration.tsx";
 
 // For the future, it should be controlled in a view
 const HIGHLIGHTS = [
@@ -59,10 +57,10 @@ const FeaturedCard = ({
       }}
       className="flex flex-col gap-2 p-4 bg-card relative rounded-xl cursor-pointer overflow-hidden"
     >
-      <img
-        src={integration.icon}
-        alt={integration.name}
-        className="w-12 h-12 object-cover rounded-xl border "
+      <IntegrationAvatar
+        url={integration.icon}
+        fallback={integration.friendlyName ?? integration.name}
+        size="lg"
       />
       <h3 className="text-sm flex gap-1 items-center">
         {integration.friendlyName || integration.name}
@@ -88,10 +86,10 @@ const SimpleFeaturedCard = ({
       }}
       className="flex gap-2 py-2 cursor-pointer overflow-hidden items-center"
     >
-      <img
-        src={integration.icon}
-        alt={integration.name}
-        className="w-12 h-12 object-cover rounded-xl border "
+      <IntegrationAvatar
+        url={integration.icon}
+        fallback={integration.friendlyName ?? integration.name}
+        size="lg"
       />
       <div className="flex flex-col gap-1">
         <h3 className="text-sm flex gap-1 items-center">
@@ -129,8 +127,10 @@ const Marketplace = () => {
   }, [integrations]);
 
   const filteredIntegrations = useMemo(() => {
-    return integrations?.integrations.filter((integration) =>
-      integration.name.toLowerCase().includes(search.toLowerCase()),
+    return integrations?.integrations.filter(
+      (integration) =>
+        integration.name.toLowerCase().includes(search.toLowerCase()) ||
+        integration.friendlyName?.toLowerCase().includes(search.toLowerCase()),
     );
   }, [integrations, search]);
 
@@ -144,7 +144,7 @@ const Marketplace = () => {
           onChange={(e) => setSearch(e.target.value)}
         />
         {search && (
-          <div className="z-10 p-4 bg-white w-[370px] absolute left-0 top-[calc(100%+8px)] rounded-xl">
+          <div className="z-20 p-4 bg-white w-[370px] absolute left-0 top-[calc(100%+8px)] rounded-xl">
             {filteredIntegrations.slice(0, 7).map((integration) => (
               <SimpleFeaturedCard
                 key={"search-" + integration.id}
@@ -156,36 +156,44 @@ const Marketplace = () => {
       </div>
       <div className="grid grid-cols-6 gap-8">
         <div className="flex flex-col gap-4 col-span-4">
-          {highlights.map((item) => (
-            <div
-              key={item.appName}
-              className="relative rounded-xl cursor-pointer overflow-hidden"
-            >
-              <img
-                src={item.banner}
-                alt={item.appName || ""}
-                className="w-full h-full object-cover"
-              />
-              <div className="absolute flex flex-col gap-1 bottom-6 left-6">
-                <img
-                  src={item.icon}
-                  alt={item.name}
-                  className="w-12 h-12 object-cover rounded-xl mb-1"
-                />
-                <h3 className="flex gap-2 items-center text-3xl text-white">
-                  {item.name || item.friendlyName || item.appName}
-                  <VerifiedBadge />
-                </h3>
-                <p className="text-sm text-white">{item.description}</p>
-              </div>
-              <Button
-                className="absolute bottom-6 right-6 hover:bg-primary-light!"
-                variant="special"
+          {highlights.map((item) => {
+            if (!item.id) {
+              return <></>;
+            }
+            const key = getConnectionAppKey(item as Integration);
+            const appKey = AppKeys.build(key);
+            return (
+              <a
+                href={`/connection/${appKey}`}
+                key={item.appName}
+                className="relative rounded-xl cursor-pointer overflow-hidden"
               >
-                See app
-              </Button>
-            </div>
-          ))}
+                <img
+                  src={item.banner}
+                  alt={item.appName || ""}
+                  className="w-full h-full object-cover"
+                />
+                <div className="absolute flex flex-col gap-1 bottom-6 left-6">
+                  <IntegrationAvatar
+                    url={item.icon}
+                    fallback={item.friendlyName ?? item.name}
+                    size="lg"
+                  />
+                  <h3 className="flex gap-2 items-center text-3xl text-white">
+                    {item.name || item.friendlyName || item.appName}
+                    <VerifiedBadge />
+                  </h3>
+                  <p className="text-sm text-white">{item.description}</p>
+                </div>
+                <Button
+                  className="absolute bottom-6 right-6 hover:bg-primary-light!"
+                  variant="special"
+                >
+                  See app
+                </Button>
+              </a>
+            );
+          })}
 
           <h2 className="text-lg font-medium">
             Featured Apps

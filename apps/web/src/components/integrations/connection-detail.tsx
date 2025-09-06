@@ -1,5 +1,6 @@
 import {
-  buildAddViewPayload, findPinnedView,
+  buildAddViewPayload,
+  findPinnedView,
   type Integration,
   listTools,
   type MCPConnection,

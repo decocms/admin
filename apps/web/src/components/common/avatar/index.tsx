@@ -67,7 +67,7 @@ const avatarVariants = cva("border border-border", {
     { shape: "square", size: "xs", class: "rounded-lg" },
     { shape: "square", size: "sm", class: "rounded-xl" },
     { shape: "square", size: "base", class: "rounded-xl" },
-    { shape: "square", size: "lg", class: "rounded-2xl" },
+    { shape: "square", size: "lg", class: "rounded-xl" },
     { shape: "square", size: "xl", class: "rounded-2xl" },
     { shape: "square", size: "2xl", class: "rounded-3xl" },
     { shape: "square", size: "3xl", class: "rounded-[40px]" },

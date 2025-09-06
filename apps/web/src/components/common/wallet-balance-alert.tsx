@@ -13,7 +13,7 @@ interface WalletBalanceAlertProps {
 export function WalletBalanceAlertLayout({
   balance,
   isLoading = false,
-  title = "This app uses your wallet",
+  title = "This app may use your wallet",
   balanceLabel = "Your current balance",
 }: WalletBalanceAlertProps) {
   const displayBalance = isLoading ? "Loading..." : balance || "$0.00";

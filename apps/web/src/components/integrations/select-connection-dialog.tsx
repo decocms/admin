@@ -119,6 +119,7 @@ export function ConfirmMarketplaceInstallDialog({
 
   const maybeAppDependencyList = useMemo(
     () =>
+      // TODO: Find a better approach to identify the app dependencies
       integrationState.schema?.properties
         ? Object.keys(integrationState.schema?.properties ?? {})
         : null,
@@ -347,6 +348,7 @@ function DependencyStep({
             </h3>
 
             {/* Warning at bottom left */}
+            {/* TODO: identify when integration consume from wallet */}
             <div>
               <WalletBalanceAlert />
             </div>

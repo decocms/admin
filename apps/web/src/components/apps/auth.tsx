@@ -10,7 +10,7 @@ import { Button } from "@deco/ui/components/button.tsx";
 import { Icon } from "@deco/ui/components/icon.tsx";
 import { Spinner } from "@deco/ui/components/spinner.tsx";
 import { Combobox } from "@deco/ui/components/combobox.tsx";
-import { useMemo, useState, Suspense, useRef } from "react";
+import { useEffect, useMemo, useState, Suspense } from "react";
 import { ChevronsUpDown, Check } from "lucide-react";
 import { cn } from "@deco/ui/lib/utils.ts";
 import { useUser } from "../../hooks/use-user.ts";
@@ -21,7 +21,17 @@ import { useRegistryApp, type RegistryApp } from "@deco/sdk";
 import { IntegrationAvatar } from "../common/avatar/integration.tsx";
 import { ErrorBoundary } from "../../error-boundary.tsx";
 import { useInstallCreatingApiKeyAndIntegration } from "../../hooks/use-integration-install.tsx";
-import { UseFormReturn } from "react-hook-form";
+import { FormProvider, useForm } from "react-hook-form";
+import { Badge } from "@deco/ui/components/badge.tsx";
+import { Separator } from "@deco/ui/components/separator.tsx";
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@deco/ui/components/accordion.tsx";
+import JsonSchemaForm from "../json-schema/index.tsx";
+import { generateDefaultValues } from "../json-schema/utils/generate-default-values.ts";
 import {
   useMarketplaceAppSchema,
   usePermissionDescriptions,
@@ -29,13 +39,6 @@ import {
 import type { JSONSchema7 } from "json-schema";
 import { getAllScopes } from "../../utils/scopes.ts";
 import { VerifiedBadge } from "../integrations/marketplace.tsx";
-import {
-  IntegrationPermissions,
-  IntegrationBindingForm,
-} from "../integration-oauth.tsx";
-import { ScrollArea } from "@deco/ui/components/scroll-area.tsx";
-
-type InlineFormStep = "permissions" | "requirements";
 
 const preSelectTeam = (
   teams: CurrentTeam[],
@@ -259,11 +262,13 @@ const InlineCreateIntegrationForm = ({
   onBack: () => void;
   backEnabled: boolean;
 }) => {
-  const { data, isLoading } = useMarketplaceAppSchema(appName);
+  const { data } = useMarketplaceAppSchema(appName);
   const scopes = data?.scopes ?? [];
-  const schema = data?.schema as JSONSchema7;
-  const [currentStep, setCurrentStep] = useState<InlineFormStep>("permissions");
-  const formRef = useRef<UseFormReturn<Record<string, unknown>> | null>(null);
+  const schema = data?.schema as JSONSchema7 | undefined;
+
+  const form = useForm({
+    defaultValues: schema ? generateDefaultValues(schema) : {},
+  });
 
   // Get permission descriptions
   const allScopes = getAllScopes(scopes, schema);
@@ -277,92 +282,111 @@ const InlineCreateIntegrationForm = ({
     return schema?.properties && Object.keys(schema.properties).length > 0;
   }, [schema]);
 
-  const handleContinueFromPermissions = () => {
-    if (shouldShowForm) {
-      setCurrentStep("requirements");
-    } else {
-      handleFormSubmit();
+  // Update form defaults when schema changes
+  useEffect(() => {
+    if (schema) {
+      form.reset(generateDefaultValues(schema));
     }
-  };
+  }, [schema, form]);
 
-  const handleBack = () => {
-    setCurrentStep("permissions");
-  };
-
-  const handleFormSubmit = async () => {
-    const formData = formRef.current?.getValues() ?? {};
+  const handleFormSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const formData = form.getValues();
     await onFormSubmit({
       formData,
       scopes,
     });
   };
 
-  if (isLoading) {
-    return (
-      <div className="flex flex-col items-center space-y-4 w-full">
-        <Spinner size="sm" />
-        <p className="text-sm text-muted-foreground">
-          Loading app permissions...
-        </p>
-      </div>
-    );
-  }
+  return (
+    <div className="flex flex-col space-y-6 w-full">
+      {!shouldShowForm && !shouldShowPermissions && (
+        <div className="flex flex-col items-center justify-center h-screen">
+          <p className="text-sm text-muted-foreground">
+            No configuration required
+          </p>
+        </div>
+      )}
 
-  // If no permissions and no form, show simple continue
-  if (!shouldShowPermissions && !shouldShowForm) {
-    return (
-      <div className="flex flex-col items-center justify-center h-screen">
-        <p className="text-sm text-muted-foreground mb-4">
-          No configuration required
-        </p>
+      {/* Permissions Section */}
+      {shouldShowPermissions && (
+        <Accordion type="single" collapsible defaultValue="permissions">
+          <AccordionItem value="permissions">
+            <AccordionTrigger className="text-sm">
+              <div className="flex items-center gap-2">
+                <span>Permissions Required</span>
+                <Badge variant="secondary" className="text-xs">
+                  {permissions.length}
+                </Badge>
+              </div>
+            </AccordionTrigger>
+            <AccordionContent>
+              <div className="pt-2">
+                <div className="border rounded-lg p-4 max-h-[300px] overflow-y-auto">
+                  <div className="space-y-4">
+                    <div className="grid gap-2">
+                      {permissions.map((permission, index) => (
+                        <div
+                          key={index}
+                          className="flex items-center gap-3 p-3 rounded-lg bg-muted/50"
+                        >
+                          <div className="flex-shrink-0 text-success">✓</div>
+                          <div className="flex-1">
+                            <div className="text-sm font-medium">
+                              {permission.description}
+                            </div>
+                            <div className="text-xs text-muted-foreground">
+                              <Badge variant="outline" className="text-xs">
+                                {permission.scope}
+                              </Badge>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </AccordionContent>
+          </AccordionItem>
+        </Accordion>
+      )}
+
+      {/* Configuration Form */}
+      {shouldShowForm && (
+        <>
+          <Separator />
+          <div>
+            <h3 className="text-lg font-semibold mb-4">Configuration</h3>
+            <FormProvider {...form}>
+              <JsonSchemaForm
+                schema={schema}
+                form={form}
+                onSubmit={handleFormSubmit}
+                submitButton={
+                  <FooterButtons
+                    backLabel={backEnabled ? "Back" : "Change project"}
+                    onClickBack={onBack}
+                    onClickContinue={handleFormSubmit}
+                    continueDisabled={form.formState.isSubmitting}
+                    continueLoading={form.formState.isSubmitting}
+                  />
+                }
+              />
+            </FormProvider>
+          </div>
+        </>
+      )}
+
+      {shouldShowForm ? null : (
         <FooterButtons
           backLabel={backEnabled ? "Back" : "Change project"}
           onClickBack={onBack}
           onClickContinue={handleFormSubmit}
-          continueDisabled={false}
-          continueLoading={false}
+          continueDisabled={form.formState.isSubmitting}
+          continueLoading={form.formState.isSubmitting}
         />
-      </div>
-    );
-  }
-
-  return (
-    <div className="flex flex-col space-y-6 w-full text-left">
-      {/* Step 1: Permissions */}
-      {currentStep === "permissions" && shouldShowPermissions && (
-        <ScrollArea className="h-[400px] pr-4">
-          <IntegrationPermissions
-            permissions={permissions}
-            integrationName={appName}
-          />
-        </ScrollArea>
       )}
-
-      {/* Step 2: Requirements/Configuration */}
-      {currentStep === "requirements" && shouldShowForm && schema && (
-        <IntegrationBindingForm schema={schema} formRef={formRef} />
-      )}
-
-      {/* Footer buttons */}
-      <div className="pt-4 flex items-center justify-center gap-2 w-full">
-        <Button
-          variant="outline"
-          onClick={currentStep !== "permissions" ? handleBack : onBack}
-          className="w-1/2"
-        >
-          Back
-        </Button>
-        <Button
-          className="w-1/2"
-          onClick={
-            currentStep === "permissions"
-              ? handleContinueFromPermissions
-              : handleFormSubmit
-          }
-        >
-          {shouldShowForm ? "Continue" : "Connect"}
-        </Button>
-      </div>
     </div>
   );
 };

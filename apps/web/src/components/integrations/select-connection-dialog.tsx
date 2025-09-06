@@ -66,7 +66,7 @@ const OauthModalContextProvider = createContext<
 export const useOauthModalContext = () => {
   const context = useContext(OauthModalContextProvider);
   if (!context) {
-    throw new Error(
+    console.warn(
       "useOauthModalContext must be used within a OauthModalContextProvider",
     );
   }

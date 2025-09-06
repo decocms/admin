@@ -3,6 +3,7 @@ import {
   FormDescription,
   FormField,
   FormItem,
+  FormLabel,
   FormMessage,
 } from "@deco/ui/components/form.tsx";
 import {
@@ -43,13 +44,16 @@ export function TypeSelectField<T extends FieldValues = FieldValues>({
   form,
   disabled,
   typeValue,
+  title,
+  isRequired,
 }: TypeSelectFieldProps<T>) {
   const {
     data: options,
     isPending,
     refetch: refetchOptions,
   } = useOptionsLoader(typeValue);
-  const { onOpenOauthModal } = useOauthModalContext();
+  // TODO (@igorbrasileiro): remove fallback when we migrate to the new oauth modal
+  const { onOpenOauthModal, ...oauthModalContext } = useOauthModalContext() ?? { onOpenOauthModal: () => {}, base: true };
   const { data: marketplace } = useMarketplaceIntegrations();
   const [installingIntegration, setInstallingIntegration] =
     useState<MarketplaceIntegration | null>(null);
@@ -86,7 +90,7 @@ export function TypeSelectField<T extends FieldValues = FieldValues>({
     if (authorizeOauthUrl) {
       const popup = globalThis.open(authorizeOauthUrl, "_blank");
       if (!popup || popup.closed || typeof popup.closed === "undefined") {
-        onOpenOauthModal({
+        onOpenOauthModal?.({
           openIntegrationOnFinish: false,
           open: true,
           url: authorizeOauthUrl,
@@ -108,11 +112,16 @@ export function TypeSelectField<T extends FieldValues = FieldValues>({
         name={name as unknown as FieldPath<T>}
         render={({ field }) => (
           <FormItem className="space-y-2">
+            {'base' in oauthModalContext && oauthModalContext.base && (
+              <FormLabel>
+                {title}
+                {isRequired && <span className="text-destructive ml-1">*</span>}
+              </FormLabel>
+            )}
             <div className="flex items-center gap-4">
               {options?.length > 0 ? (
                 <Select
                   onValueChange={(value: string) => {
-
                     if (value === "__connect_account__") {
                       handleAddIntegration();
                       return;

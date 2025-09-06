@@ -10,7 +10,10 @@ import { Workspace } from "../workspace.ts";
  * Save an MCP to the file system
  * @param integration - The MCP to save
  */
-export const saveIntegration = (workspace: Workspace, integration: Integration) =>
+export const saveIntegration = (
+  workspace: Workspace,
+  integration: Integration,
+) =>
   MCPClient.forWorkspace(workspace).INTEGRATIONS_UPDATE({
     id: integration.id,
     integration,
@@ -77,8 +80,10 @@ export const deleteIntegration = (workspace: Workspace, mcpId: string) =>
  * @param params - Registry app parameters
  * @returns The registry app
  */
-export const getRegistryApp = (workspace: Workspace, params: { name: string }) =>
-  MCPClient.forWorkspace(workspace).REGISTRY_GET_APP(params);
+export const getRegistryApp = (
+  workspace: Workspace,
+  params: { name: string },
+) => MCPClient.forWorkspace(workspace).REGISTRY_GET_APP(params);
 
 /**
  * Validate an MCP against the Zod schema

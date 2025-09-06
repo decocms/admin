@@ -17,8 +17,11 @@ export const listModels = (
     .MODELS_LIST(options, init)
     .then((res) => res.items);
 
-export const getModel = (workspace: Workspace, id: string, init?: RequestInit) =>
-  MCPClient.forWorkspace(workspace).MODELS_GET({ id }, init);
+export const getModel = (
+  workspace: Workspace,
+  id: string,
+  init?: RequestInit,
+) => MCPClient.forWorkspace(workspace).MODELS_GET({ id }, init);
 
 export const createModel = (
   workspace: Workspace,

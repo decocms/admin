@@ -8,8 +8,10 @@ export const getTrigger = (workspace: Workspace, id: string) =>
 export const listAllTriggers = (workspace: Workspace, agentId?: string) =>
   MCPClient.forWorkspace(workspace).TRIGGERS_LIST({ agentId });
 
-export const createTrigger = (workspace: Workspace, trigger: CreateTriggerInput) =>
-  MCPClient.forWorkspace(workspace).TRIGGERS_CREATE({ trigger });
+export const createTrigger = (
+  workspace: Workspace,
+  trigger: CreateTriggerInput,
+) => MCPClient.forWorkspace(workspace).TRIGGERS_CREATE({ trigger });
 
 export const deleteTrigger = (workspace: Workspace, triggerId: string) =>
   MCPClient.forWorkspace(workspace).TRIGGERS_DELETE({ id: triggerId });

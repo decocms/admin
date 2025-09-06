@@ -24,7 +24,10 @@ export const updateAgent = async (workspace: Workspace, agent: Agent) => {
  * Create a new agent
  * @returns The new agent
  */
-export const createAgent = (workspace: Workspace, template: Partial<Agent> = {}) =>
+export const createAgent = (
+  workspace: Workspace,
+  template: Partial<Agent> = {},
+) =>
   MCPClient.forWorkspace(workspace).AGENTS_CREATE({
     id: crypto.randomUUID(),
     ...template,

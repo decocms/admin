@@ -7,5 +7,7 @@ import { Workspace } from "../workspace.ts";
  * @param params - Registry app parameters
  * @returns The registry app
  */
-export const getRegistryApp = (workspace: Workspace, params: { name: string }) =>
-  MCPClient.forWorkspace(workspace).REGISTRY_GET_APP(params);
+export const getRegistryApp = (
+  workspace: Workspace,
+  params: { name: string },
+) => MCPClient.forWorkspace(workspace).REGISTRY_GET_APP(params);

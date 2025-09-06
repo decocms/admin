@@ -1,6 +1,11 @@
 import { HttpServerTransport } from "@deco/mcp/http";
 import { createServerClient } from "@deco/ai/mcp";
-import { DECO_CMS_WEB_URL, MCPConnection, WellKnownMcpGroups } from "@deco/sdk";
+import {
+  DECO_CMS_WEB_URL,
+  MCPConnection,
+  WellKnownMcpGroups,
+  Workspaces,
+} from "@deco/sdk";
 import { DECO_CHAT_KEY_ID, getKeyPair } from "@deco/sdk/auth";
 import {
   AGENT_TOOLS,
@@ -57,9 +62,18 @@ import { studio } from "outerbase-browsable-do-enforced";
 export const app = new Hono<AppEnv>();
 export const honoCtxToAppCtx = (c: Context<AppEnv>): AppContext => {
   const envs = env(c);
-  const slug = c.req.param("slug");
-  const root = c.req.param("root");
-  const workspace = `/${root}/${slug}`;
+
+  const org = c.req.param("root");
+  const project = c.req.param("slug");
+
+  const ctxWorkspace =
+    org && project
+      ? {
+          root: "shared",
+          slug: org,
+          value: `/${Workspaces.adaptToShared(Workspaces.from({ org, project }))}`,
+        }
+      : undefined;
 
   const policyClient = PolicyClient.getInstance(c.var.db);
   const authorizationClient = new AuthorizationClient(policyClient);
@@ -74,7 +88,7 @@ export const honoCtxToAppCtx = (c: Context<AppEnv>): AppContext => {
     token: c.req.header("Authorization")?.replace("Bearer ", ""),
     kbFileProcessor: c.env.KB_FILE_PROCESSOR,
     workspaceDO: c.env.WORKSPACE_DB,
-    workspace: slug && root ? { root, slug, value: workspace } : undefined,
+    workspace: ctxWorkspace,
     posthog: createPosthogServerClient({
       apiKey: envs.POSTHOG_API_KEY,
       apiHost: envs.POSTHOG_API_HOST,

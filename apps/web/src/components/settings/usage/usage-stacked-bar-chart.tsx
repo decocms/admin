@@ -284,8 +284,14 @@ const buildThreadStack = createStackBuilder<ThreadChartTransaction>({
 
 const buildContractsCommitsStack =
   createStackBuilder<ContractsCommitsChartTransaction>({
-    getKey: (transaction) => transaction.contractId,
-    getName: (transaction) => transaction.contractId,
+    getKey: (transaction) =>
+      transaction.callerApp
+        ? `${transaction.contractId}-${transaction.callerApp}`
+        : transaction.contractId,
+    getName: (transaction) =>
+      transaction.callerApp
+        ? `${transaction.integrationName} (${transaction.callerApp})`
+        : transaction.integrationName,
     getAvatar: () => "",
     getType: () => "contracts",
     getAdditionalData: () => ({}),
@@ -632,6 +638,8 @@ interface ContractsCommitsChartTransaction {
   timestamp: string;
   amount: number;
   contractId: string;
+  integrationName: string;
+  callerApp?: string;
   clauses: {
     clauseId: string;
     amount: number;
@@ -642,6 +650,7 @@ interface ContractsCommitsChartTransaction {
 export function createContractsCommitsChartData(
   contractsCommits: ContractsCommitsItem[],
   timeRange: TimeRange,
+  integrations: { id: string; name: string }[],
   clauseId?: string,
   contractId?: string,
 ): UsageChartData {
@@ -661,6 +670,12 @@ export function createContractsCommitsChartData(
       return;
     }
 
+    // Find the integration for this contract
+    const integration = integrations.find(
+      (integration) => integration.id === contract.contractId,
+    );
+    const integrationName = integration?.name || contract.contractId;
+
     // If a clauseId is selected, we need to calculate the actual cost for that clause
     // Note: The chart doesn't have access to clause prices from CONTRACT_GET,
     // so we'll use the raw amount for now. The table shows the correct calculated cost.
@@ -674,6 +689,8 @@ export function createContractsCommitsChartData(
           timestamp: contract.timestamp,
           amount: amountForClause,
           contractId: contract.contractId,
+          integrationName,
+          callerApp: contract.callerApp ?? undefined,
           clauses: contract.clauses,
           type: contract.type,
         });
@@ -683,6 +700,8 @@ export function createContractsCommitsChartData(
         timestamp: contract.timestamp,
         amount: contract.amount,
         contractId: contract.contractId,
+        integrationName,
+        callerApp: contract.callerApp || undefined,
         clauses: contract.clauses,
         type: contract.type,
       });

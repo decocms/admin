@@ -2,6 +2,7 @@ import {
   useAgents,
   useAuditEvents,
   useContractsCommits,
+  useIntegrations,
   useUsagePerAgent,
   useUsagePerThread,
   WELL_KNOWN_AGENTS,
@@ -68,6 +69,7 @@ export function Usage() {
   );
   const [selectedClauseId, setSelectedClauseId] = useState<string | null>(null);
   const agents = useAgentsMergedWithWellKnown();
+  const { data: integrations } = useIntegrations();
   const agentUsage = useUsagePerAgent({
     range: timeRange,
   });
@@ -125,6 +127,7 @@ export function Usage() {
         return createContractsCommitsChartData(
           contractsCommits.items,
           timeRange,
+          integrations || [],
           selectedClauseId || undefined,
           selectedContractId || undefined,
         );
@@ -143,6 +146,7 @@ export function Usage() {
     teamMembers,
     timeRange,
     contractsCommits.items,
+    integrations,
     selectedClauseId,
     selectedContractId,
   ]);

@@ -224,9 +224,7 @@ export function ContractsTable({
         />
       )}
       {selectedContract && !selectedContract.integration?.connection && (
-        <Dialog
-          onOpenChange={(open) => !open && setSelectedContract(null)}
-        >
+        <Dialog onOpenChange={(open) => !open && setSelectedContract(null)}>
           <DialogContent>
             <DialogHeader>
               <DialogTitle>Contract Details</DialogTitle>

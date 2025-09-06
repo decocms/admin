@@ -41,11 +41,9 @@ export const getWorkspaceTheme = (
   slug: string,
   init?: RequestInit,
 ): Promise<{ theme?: Theme } | null> =>
-  MCPClient.TEAMS_GET_THEME({ slug }, init) as Promise<
-    {
-      theme?: Theme;
-    } | null
-  >;
+  MCPClient.TEAMS_GET_THEME({ slug }, init) as Promise<{
+    theme?: Theme;
+  } | null>;
 
 export interface UpdateTeamInput {
   id: number;
@@ -128,8 +126,7 @@ export const listAvailableViewsForConnection = async (
     });
 
     if (typeof result.isError === "boolean" && result.isError) {
-      const message = result.structuredContent ??
-        result.content?.[0]?.text;
+      const message = result.structuredContent ?? result.content?.[0]?.text;
       throw new Error(JSON.stringify(message));
     }
 

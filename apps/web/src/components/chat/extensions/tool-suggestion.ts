@@ -103,13 +103,6 @@ export const suggestion: (args: {
         const pendingCount = new Map<string, number>(); // key = `${serverId}:${resourceType}`
 
         // Prime pending counts
-        for (const searcher of resourceSearchers) {
-          for (const toolName of searcher.searchToolNames) {
-            const resourceType = "";
-            const key = `${searcher.integration.id}:${resourceType}`;
-            pendingCount.set(key, (pendingCount.get(key) ?? 0) + 1);
-          }
-        }
         component?.updateProps({
           ...baseProps,
           items: baseItems,
@@ -146,7 +139,9 @@ export const suggestion: (args: {
                     return {
                       id:
                         (resource?.uri as string) ??
-                        `${searcher.integration.id}:${(resource?.name as string) ?? ""}`,
+                        `${searcher.integration.id}:${
+                          (resource?.name as string) ?? ""
+                        }`,
                       type: "resource",
                       label:
                         (resource?.title as string) ??

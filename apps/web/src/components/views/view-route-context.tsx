@@ -27,5 +27,3 @@ export function useViewRoute(): ViewRouteContextValue {
   if (!ctx) return {};
   return ctx;
 }
-
-

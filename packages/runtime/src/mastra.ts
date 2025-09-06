@@ -483,7 +483,7 @@ export const createMCPServer = <
           description: "Read a resource by uri (name + uri)",
           inputSchema: ResourcesReadInputSchema,
           outputSchema: ResourcesReadOutputSchema,
-          execute: async ({ context }) => {
+          execute: ({ context }) => {
             const fn = readHandlers.get(context.name);
             if (!fn) {
               throw new Error(`READ not implemented for ${context.name}`);
@@ -498,7 +498,7 @@ export const createMCPServer = <
           description: "Search resources (name + term)",
           inputSchema: ResourceSearchInputSchema,
           outputSchema: ResourceSearchOutputSchema,
-          execute: async ({ context }) => {
+          execute: ({ context }) => {
             const fn = searchHandlers.get(context.name);
             if (!fn) {
               throw new Error(`SEARCH not implemented for ${context.name}`);
@@ -514,7 +514,7 @@ export const createMCPServer = <
           description: "Create a resource (name + content)",
           inputSchema: ResourceCreateInputSchema,
           outputSchema: ResourceCreateOutputSchema,
-          execute: async ({ context }) => {
+          execute: ({ context }) => {
             const fn = createHandlers.get(context.name);
             if (!fn) {
               throw new Error(`CREATE not implemented for ${context.name}`);
@@ -529,7 +529,7 @@ export const createMCPServer = <
           description: "Update a resource (name + uri)",
           inputSchema: ResourceUpdateInputSchema,
           outputSchema: ResourceUpdateOutputSchema,
-          execute: async ({ context }) => {
+          execute: ({ context }) => {
             const fn = updateHandlers.get(context.name);
             if (!fn) {
               throw new Error(`UPDATE not implemented for ${context.name}`);
@@ -544,7 +544,7 @@ export const createMCPServer = <
           description: "Delete a resource (name + uri)",
           inputSchema: ResourceDeleteInputSchema,
           outputSchema: ResourceDeleteOutputSchema,
-          execute: async ({ context }) => {
+          execute: ({ context }) => {
             const fn = deleteHandlers.get(context.name);
             if (!fn) {
               throw new Error(`DELETE not implemented for ${context.name}`);
@@ -559,17 +559,18 @@ export const createMCPServer = <
           description: "List resource types",
           inputSchema: z.object({}),
           outputSchema: ResourcesListOutputSchema,
-          execute: async () => ({
-            resources: resolvedResources.map((r) => ({
-              name: r.name,
-              icon: r.icon,
-              title: r.title,
-              description: r.description ?? "",
-              hasCreate: Boolean(createHandlers.get(r.name)),
-              hasUpdate: Boolean(updateHandlers.get(r.name)),
-              hasDelete: Boolean(deleteHandlers.get(r.name)),
-            })),
-          }),
+          execute: () =>
+            Promise.resolve({
+              resources: resolvedResources.map((r) => ({
+                name: r.name,
+                icon: r.icon,
+                title: r.title,
+                description: r.description ?? "",
+                hasCreate: Boolean(createHandlers.get(r.name)),
+                hasUpdate: Boolean(updateHandlers.get(r.name)),
+                hasDelete: Boolean(deleteHandlers.get(r.name)),
+              })),
+            }),
         }),
       );
     }
@@ -643,7 +644,9 @@ export const createMCPServer = <
               })();
 
               const defaultListRules: string[] = [
-                `You are viewing the ${r.title ?? r.name} resources list. Resources are changeable via Resource tools (DECO_CHAT_RESOURCES_*). Use the appropriate tools to read, search, create, update, or delete items; do not fabricate data.`,
+                `You are viewing the ${
+                  r.title ?? r.name
+                } resources list. Resources are changeable via Resource tools (DECO_CHAT_RESOURCES_*). Use the appropriate tools to read, search, create, update, or delete items; do not fabricate data.`,
               ];
 
               const list = [

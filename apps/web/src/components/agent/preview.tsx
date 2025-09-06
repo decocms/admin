@@ -8,11 +8,9 @@ import {
   useMemo,
   useState,
 } from "react";
-import { useSearchParams } from "react-router";
+import { useParams } from "react-router";
 import { ALLOWANCES } from "../../constants.ts";
 import { IMAGE_REGEXP } from "../chat/utils/preview.ts";
-import { InternalResourceList } from "../views/internal-resource-list.tsx";
-import { useParams } from "react-router";
 import type { Tab } from "../dock/index.tsx";
 
 type Props = DetailedHTMLProps<
@@ -22,8 +20,6 @@ type Props = DetailedHTMLProps<
 
 function Preview(props: Props) {
   const isImageLike = props.src && IMAGE_REGEXP.test(props.src);
-  const isInternal = false;
-  const [searchParams] = useSearchParams();
 
   if (isImageLike) {
     return (
@@ -48,7 +44,7 @@ function Preview(props: Props) {
   );
 }
 
-function InternalResourceDetail({ name, uri }: { name: string; uri: string }) {
+function _InternalResourceDetail({ name, uri }: { name: string; uri: string }) {
   const { integrationId } = useParams();
   if (!integrationId) return null;
   return (
@@ -87,8 +83,14 @@ function InternalResourceDetailWithIntegration({
       const result = (await callTool(target as never, {
         name: "DECO_CHAT_RESOURCES_READ",
         arguments: { name, uri },
-      })) as { structuredContent?: any };
-      const sc = result.structuredContent as any;
+      })) as {
+        structuredContent?: {
+          data?: string;
+          type?: "text" | "blob";
+          mimeType?: string;
+        } | null;
+      };
+      const sc = result.structuredContent ?? null;
       setContent(sc ?? null);
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e));

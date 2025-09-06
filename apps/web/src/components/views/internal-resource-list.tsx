@@ -24,7 +24,6 @@ import { useViewMode } from "@deco/ui/hooks/use-view-mode.ts";
 import { useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "react-router";
 import { useNavigateWorkspace } from "../../hooks/use-navigate-workspace.ts";
-import { ALLOWANCES } from "../../constants.ts";
 import { EmptyState } from "../common/empty-state.tsx";
 import { ListPageHeader } from "../common/list-page-header.tsx";
 import { Table, type TableColumn } from "../common/table/index.tsx";
@@ -80,12 +79,22 @@ export function InternalResourceListWithIntegration({
       const result = (await callTool(integration?.connection, {
         name: "DECO_CHAT_RESOURCES_SEARCH",
         arguments: { name, term, limit: 50 },
-      })) as { structuredContent?: { items?: unknown[] } };
-      const itemsRaw =
-        (result.structuredContent as { items?: unknown[] })?.items ?? [];
-      const mapped = (itemsRaw as Array<any>).map((r) => ({
+      })) as {
+        structuredContent?: {
+          items?: Array<{
+            name?: string;
+            uri: string;
+            title?: string;
+            description?: string;
+            mimeType?: string;
+            thumbnail?: string;
+          }>;
+        };
+      };
+      const itemsRaw = result.structuredContent?.items ?? [];
+      const mapped = itemsRaw.map((r) => ({
         name: r?.name ?? name,
-        uri: r?.uri,
+        uri: r.uri,
         title: r?.title,
         description: r?.description,
         mimeType: r?.mimeType,
@@ -117,7 +126,7 @@ export function InternalResourceListWithIntegration({
           };
         };
         const resources = result.structuredContent?.resources ?? [];
-        const res = (resources as Array<any>).find((r) => r?.name === name);
+        const res = resources.find((r) => r?.name === name);
         setCaps({
           hasCreate: Boolean(res?.hasCreate),
           hasDelete: Boolean(res?.hasDelete),
@@ -128,7 +137,7 @@ export function InternalResourceListWithIntegration({
     })();
   }, [integration?.connection, name]);
 
-  const uri = useMemo(() => searchParams.get("uri") ?? "", [searchParams]);
+  const _uri = useMemo(() => searchParams.get("uri") ?? "", [searchParams]);
 
   // Inline detail state removed in favor of navigation
 
@@ -148,11 +157,7 @@ export function InternalResourceListWithIntegration({
           }>;
         };
       };
-      const views = (result.structuredContent?.views ?? []) as Array<{
-        name?: string;
-        url?: string;
-        resourceName?: string;
-      }>;
+      const views = result.structuredContent?.views ?? [];
       const selected = views.find((v) => v.resourceName === name);
       const targetViewName = selected?.name ?? `${name.toUpperCase()}_DETAIL`;
       const targetUrl = selected?.url
@@ -173,11 +178,12 @@ export function InternalResourceListWithIntegration({
 
   async function createItem() {
     if (!caps.hasCreate) return;
-    const resourceName = window.prompt("Name (unique)") ?? "";
+    const resourceName = globalThis.prompt("Name (unique)") ?? "";
     if (!resourceName) return;
-    const title = window.prompt("Title (optional)") ?? undefined;
-    const description = window.prompt("Description (optional)") ?? undefined;
-    const data = window.prompt("Content (text)");
+    const title = globalThis.prompt("Title (optional)") ?? undefined;
+    const description =
+      globalThis.prompt("Description (optional)") ?? undefined;
+    const data = globalThis.prompt("Content (text)");
     if (data == null) return;
     setLoading(true);
     try {
@@ -197,7 +203,7 @@ export function InternalResourceListWithIntegration({
     }
   }
 
-  async function deleteItem(row: { uri: string }) {
+  function deleteItem(row: { uri: string }) {
     if (!caps.hasDelete) return;
     setDeleteTarget({ uri: row.uri });
   }
@@ -264,7 +270,7 @@ export function InternalResourceListWithIntegration({
           description: it.description,
           content: {
             data: sc.data ?? "",
-            type: (sc.type as any) ?? "text",
+            type: (sc.type as "text" | "blob" | undefined) ?? "text",
             mimeType: sc.mimeType,
           },
         },
@@ -290,7 +296,7 @@ export function InternalResourceListWithIntegration({
         value: q,
         onChange: (e) =>
           setSearchParams({ q: (e.target as HTMLInputElement).value }),
-        onKeyDown: (e: any) => {
+        onKeyDown: (e) => {
           if (e.key === "Enter")
             runSearch((e.target as HTMLInputElement).value);
         },
@@ -401,22 +407,22 @@ export function InternalResourceListWithIntegration({
               {
                 id: "title",
                 header: "Title",
-                render: (row: any) => row.title ?? "—",
+                render: (row) => row.title ?? "—",
               },
               {
                 id: "uri",
                 header: "URI",
-                render: (row: any) => truncateUri(row.uri),
+                render: (row) => truncateUri(row.uri),
               },
               {
                 id: "type",
                 header: "Type",
-                render: (row: any) => row.mimeType ?? "",
+                render: (row) => row.mimeType ?? "",
               },
               {
                 id: "actions",
                 header: "",
-                render: (row: any) => (
+                render: (row) => (
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
                       <Button
@@ -461,10 +467,14 @@ export function InternalResourceListWithIntegration({
                   </DropdownMenu>
                 ),
               },
-            ] as TableColumn<any>[]
+            ] as TableColumn<{
+              uri: string;
+              title?: string;
+              mimeType?: string;
+            }>[]
           }
           data={items}
-          onRowClick={(row: any) => openItem(row)}
+          onRowClick={(row) => openItem(row)}
         />
       )}
 

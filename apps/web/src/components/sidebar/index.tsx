@@ -453,7 +453,7 @@ function WorkspaceViews() {
       firstLevelViews: [],
     };
 
-    const views = (team?.views ?? []) as Array<any>;
+    const views = (team?.views ?? []) as View[];
     for (const view of views) {
       const integrationId = view.integrationId as string | undefined;
       if (integrationId) {
@@ -480,14 +480,14 @@ function WorkspaceViews() {
 
   function buildViewHrefFromView(view: View): string {
     if (view.type === "custom") {
-      if ((view as any)?.name) {
-        return workspaceLink(`/views/${(view as any).integrationId}/${(view as any).name}`);
+      if (view?.name) {
+        return workspaceLink(`/views/${view.integrationId}/${view.name}`);
       }
-      const rawUrl = (view as any)?.metadata?.url as string | undefined;
+      const rawUrl = view?.metadata?.url as string | undefined;
       const qs = rawUrl ? `?viewUrl=${encodeURIComponent(rawUrl)}` : "";
-      return workspaceLink(`/views/${(view as any).integrationId}/index${qs}`);
+      return workspaceLink(`/views/${view.integrationId}/index${qs}`);
     }
-    const path = (view as any)?.metadata?.path as string | undefined;
+    const path = view?.metadata?.path as string | undefined;
     return workspaceLink(path ?? "/");
   }
 
@@ -527,7 +527,7 @@ function WorkspaceViews() {
                 <SidebarMenuSub>
                   {mcpItems.map((item) => {
                     const displayTitle = item.title;
-                    const href = buildViewHrefFromView(item as any as View);
+                    const href = buildViewHrefFromView(item as View);
 
                     return (
                       <SidebarMenuSubItem key={item.title}>
@@ -560,7 +560,7 @@ function WorkspaceViews() {
       )}
       {/* Regular items */}
       {otherItems.map((item) => {
-        const href = buildViewHrefFromView(item as any as View);
+        const href = buildViewHrefFromView(item as View);
 
         return (
           <SidebarMenuItem key={item.title}>
@@ -641,8 +641,8 @@ function WorkspaceViews() {
                 </CollapsibleTrigger>
                 <CollapsibleContent>
                   <SidebarMenuSub>
-                    {views.map((view: any) => {
-                      const href = buildViewHrefFromView(view as any as View);
+                    {views.map((view: View) => {
+                      const href = buildViewHrefFromView(view as View);
 
                       return (
                         <SidebarMenuSubItem key={view.id}>

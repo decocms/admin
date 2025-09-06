@@ -16,14 +16,16 @@ export function useView(
 ): IntegrationViewItem | undefined {
   const { data: integration } = useIntegration(integrationId || "");
   const { data: connectionViews } = useConnectionViews(
-    integration ? { id: integration.id, connection: integration.connection } : null,
+    integration
+      ? { id: integration.id, connection: integration.connection }
+      : null,
   );
 
   return useMemo(() => {
     if (!viewName) return undefined;
     const views = connectionViews?.views ?? [];
-    return views.find((v: any) => v.name === viewName) as IntegrationViewItem | undefined;
+    return views.find((v) => v.name === viewName) as
+      | IntegrationViewItem
+      | undefined;
   }, [connectionViews, viewName]);
 }
-
-

@@ -14,10 +14,11 @@ export default function LegacyViewRedirect() {
 
   const legacy = team.views.find((v) => v.id === id);
   const meta = legacy ? parseViewMetadata(legacy) : null;
-  const integId = (legacy?.metadata as any)?.integration?.id as
-    | string
-    | undefined;
-  const vName = (legacy?.metadata as any)?.viewName as string | undefined;
+  const integId = (
+    legacy?.metadata as { integration?: { id?: string } } | null | undefined
+  )?.integration?.id;
+  const vName = (legacy?.metadata as { viewName?: string } | null | undefined)
+    ?.viewName;
 
   if (legacy && meta?.type === "custom" && integId) {
     return (
@@ -30,5 +31,3 @@ export default function LegacyViewRedirect() {
 
   throw new NotFoundError("View not found");
 }
-
-

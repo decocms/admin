@@ -71,8 +71,8 @@ export function findConnectionView<T extends BasicViewLike>(
   const list = views ?? [];
   const { viewName, url } = opts;
   if (viewName === "index" && url) {
-    const byUrl = list.find((v) => (v as any)?.url === url);
+    const byUrl = list.find((v) => v?.url === url);
     if (byUrl) return byUrl;
   }
-  return list.find((v) => (v as any)?.name === viewName);
+  return list.find((v) => v?.name === viewName);
 }

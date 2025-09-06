@@ -135,14 +135,12 @@ export function useConnectionViews(
 
   const data = hook({
     queryKey: KEYS.TEAM_VIEWS(workspace, integration?.id ?? "null"),
-    queryFn: async () => {
+    queryFn: () => {
       if (!integration) {
         return { views: [] };
       }
 
-      return listAvailableViewsForConnection(
-        integration.connection,
-      );
+      return listAvailableViewsForConnection(integration.connection);
     },
   });
 

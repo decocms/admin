@@ -152,9 +152,7 @@ const ViewsList = lazy(() =>
 );
 
 const LegacyViewRedirect = lazy(() =>
-  wrapWithUILoadingFallback(
-    import("./components/views/legacy-redirect.tsx"),
-  ),
+  wrapWithUILoadingFallback(import("./components/views/legacy-redirect.tsx")),
 );
 
 function NotFound(): null {

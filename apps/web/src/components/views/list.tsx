@@ -1,4 +1,10 @@
-import { useAddView, useRemoveView, useIntegrationViews, buildAddViewPayload, findPinnedView } from "@deco/sdk";
+import {
+  useAddView,
+  useRemoveView,
+  useIntegrationViews,
+  buildAddViewPayload,
+  findPinnedView,
+} from "@deco/sdk";
 import { Button } from "@deco/ui/components/button.tsx";
 import { Card, CardContent } from "@deco/ui/components/card.tsx";
 import { Icon } from "@deco/ui/components/icon.tsx";
@@ -196,7 +202,7 @@ function ViewsList() {
   const allViews = useMemo(() => {
     return views.map((view) => {
       const existingView = findPinnedView(
-        currentTeam.views as any,
+        currentTeam.views,
         view.integration.id,
         { name: view.name },
       );
@@ -231,7 +237,9 @@ function ViewsList() {
   const handleViewClick = (view: ViewWithStatus) => {
     // Navigate to dynamic view; workspace prefix is added by hook
     const qs = view.url ? `?viewUrl=${encodeURIComponent(view.url)}` : "";
-    navigateWorkspace(`/views/${view.integration.id}/${view.name ?? "index"}${qs}`);
+    navigateWorkspace(
+      `/views/${view.integration.id}/${view.name ?? "index"}${qs}`,
+    );
   };
 
   return (

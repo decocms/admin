@@ -321,7 +321,9 @@ export function ContextResources({
   // Context provider dispatches rules; we only display and allow removal locally.
   const { view } = useViewRoute();
   const viewRules = (view as IntegrationViewItem | undefined)?.rules ?? [];
-  const [persistedRules, setPersistedRules] = useState<Array<{ id: string; text: string }>>(
+  const [persistedRules, setPersistedRules] = useState<
+    Array<{ id: string; text: string }>
+  >(
     (viewRules as string[]).map((text: string, idx: number) => ({
       id: `view-rule-initial-${idx}`,
       text,

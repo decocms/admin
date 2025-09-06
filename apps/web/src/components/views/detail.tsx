@@ -1,4 +1,9 @@
-import { NotFoundError, useConnectionViews, useIntegrations, findConnectionView } from "@deco/sdk";
+import {
+  NotFoundError,
+  useConnectionViews,
+  useIntegrations,
+  findConnectionView,
+} from "@deco/sdk";
 import { Button } from "@deco/ui/components/button.tsx";
 import { Icon } from "@deco/ui/components/icon.tsx";
 import { createContext, useContext, useMemo } from "react";
@@ -12,10 +17,21 @@ import { dispatchRulesUpdated } from "../../utils/events.ts";
 
 interface ViewDetailContextValue {
   integrationId?: string;
-  integration?: any;
+  integration?: {
+    id: string;
+    name: string;
+    icon?: string;
+    description?: string;
+    connection?: { type?: string; url?: string };
+  };
   resolvedUrl: string;
   embeddedName?: string;
-  view?: any;
+  view?: {
+    title?: string;
+    icon?: string;
+    url?: string;
+    rules?: string[];
+  };
 }
 
 const ViewDetailContext = createContext<ViewDetailContextValue | undefined>(
@@ -44,14 +60,12 @@ function PreviewTab() {
   }
 
   const relativeTo =
-    integration?.connection.type === "HTTP"
-      ? (integration?.connection.url ?? "")
+    integration?.connection?.type === "HTTP"
+      ? (integration?.connection?.url ?? "")
       : "";
   const src = new URL(resolvedUrl, relativeTo).href;
 
-  return (
-    <Preview src={src} title={(view as any)?.title || "Untitled view"} />
-  );
+  return <Preview src={src} title={view?.title || "Untitled view"} />;
 }
 
 const TABS: Record<string, Tab> = {
@@ -80,7 +94,7 @@ export default function ViewDetail() {
     return findConnectionView(connectionViews?.views, { viewName, url });
   }, [connectionViews, viewName, url]);
 
-  const resolvedUrl = url || (connectionViewMatch as any)?.url || "";
+  const resolvedUrl = url || connectionViewMatch?.url || "";
   const isEmbeddedList = resolvedUrl?.startsWith("internal://resource/list?");
   const isEmbeddedDetail = resolvedUrl?.startsWith(
     "internal://resource/detail?",
@@ -106,7 +120,7 @@ export default function ViewDetail() {
   const tabs = TABS;
 
   // Seed rules for this view when present (no effect outside view routes)
-  const rules = ((connectionViewMatch as any)?.rules ?? []) as string[];
+  const rules = (connectionViewMatch?.rules ?? []) as string[];
   if (rules.length) {
     // Single dispatch based on current render; upstream keeps last update
     dispatchRulesUpdated({ rules });
@@ -116,7 +130,7 @@ export default function ViewDetail() {
     <ViewRouteProvider
       integrationId={integrationId}
       viewName={viewName}
-      view={connectionViewMatch as any}
+      view={connectionViewMatch}
     >
       <ViewDetailContext.Provider
         value={{
@@ -124,7 +138,7 @@ export default function ViewDetail() {
           integration,
           resolvedUrl,
           embeddedName,
-          view: connectionViewMatch as any,
+          view: connectionViewMatch,
         }}
       >
         <PageLayout
@@ -132,34 +146,34 @@ export default function ViewDetail() {
           hideViewsButton
           tabs={tabs}
           breadcrumb={
-          <DefaultBreadcrumb
-            items={[
-              {
-                label: (
-                  <div className="flex items-center gap-2">
-                    <Icon
-                      name={(connectionViewMatch as any)?.icon || "dashboard"}
-                      className="w-4 h-4"
-                    />
-                    <span>{(connectionViewMatch as any)?.title}</span>
-                    <Link to={resolvedUrl ?? "#"} target="_blank">
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                        }}
-                        className="text-muted-foreground hover:text-primary-dark"
-                        title="Open view"
-                      >
-                        <Icon name="open_in_new" className="w-4 h-4" />
-                      </Button>
-                    </Link>
-                  </div>
-                ),
-              },
-            ]}
-          />
+            <DefaultBreadcrumb
+              items={[
+                {
+                  label: (
+                    <div className="flex items-center gap-2">
+                      <Icon
+                        name={connectionViewMatch?.icon || "dashboard"}
+                        className="w-4 h-4"
+                      />
+                      <span>{connectionViewMatch?.title}</span>
+                      <Link to={resolvedUrl ?? "#"} target="_blank">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                          }}
+                          className="text-muted-foreground hover:text-primary-dark"
+                          title="Open view"
+                        >
+                          <Icon name="open_in_new" className="w-4 h-4" />
+                        </Button>
+                      </Link>
+                    </div>
+                  ),
+                },
+              ]}
+            />
           }
           actionButtons={undefined}
         />

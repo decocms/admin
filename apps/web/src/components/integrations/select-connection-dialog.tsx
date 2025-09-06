@@ -214,7 +214,7 @@ export function ConfirmMarketplaceInstallDialog({
 
   return (
     <Dialog open={open} onOpenChange={() => setIntegration(null)}>
-      <DialogContent className="!p-0 overflow-hidden lg:!w-210 lg:!max-w-210 min-h-135 lg:max-h-[80vh] flex flex-col">
+      <DialogContent className="!p-0 overflow-hidden lg:!w-220 lg:!max-w-220 min-h-135 lg:max-h-[80vh] flex flex-col">
         {/* Dependency Steps */}
         {currentStep === "dependency" && (
           <DependencyStep
@@ -231,13 +231,14 @@ export function ConfirmMarketplaceInstallDialog({
             integrationState={integrationState}
           />
         )}
-        <DialogFooter>
+        <DialogFooter className="px-4 pb-4">
           {currentDependencyIndex > 0 && (
             <Button variant="outline" disabled={isLoading} onClick={handleBack}>
               Back
             </Button>
           )}
           <Button
+            variant="special"
             onClick={
               isLoading || integrationState.isLoading
                 ? undefined
@@ -275,7 +276,7 @@ function DependencyStep({
   totalSteps: number;
   formRef: React.RefObject<UseFormReturn<Record<string, unknown>> | null>;
   integrationState: {
-    permissions?: Array<{ scope: string; description: string }>;
+    permissions?: Array<{ scope: string; description: string; app?: string }>;
   };
 }) {
   const { data: marketplace } = useMarketplaceIntegrations();
@@ -287,11 +288,18 @@ function DependencyStep({
     if (typeof name !== "string") return null;
 
     return (
-      marketplace?.integrations.find(
+      (marketplace?.integrations.find(
         (integration) => integration.name === name,
-      ) as MarketplaceIntegration | null ?? null
+      ) as MarketplaceIntegration | null) ?? null
     );
   }, [dependencySchema]);
+  const permissionsFromThisDependency = useMemo(
+    () =>
+      integrationState.permissions?.filter(
+        (permission) => permission.app === dependencyIntegration?.name,
+      ),
+    [dependencyIntegration?.name, integrationState.permissions],
+  );
   // Create a schema for just this dependency
   const dependencyFormSchema: JSONSchema7 | null =
     dependencySchema && dependencyName !== undefined
@@ -377,7 +385,7 @@ function DependencyStep({
                 permissions
               </div>
               <div className="flex flex-col gap-4">
-                {integrationState.permissions?.map((permission, index) => (
+                {permissionsFromThisDependency?.map((permission, index) => (
                   <div key={index} className="flex gap-4 items-start px-2 py-3">
                     <div className="flex gap-2.5 h-5 items-center justify-start">
                       <Icon

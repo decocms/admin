@@ -3,7 +3,6 @@ import {
   FormDescription,
   FormField,
   FormItem,
-  FormLabel,
   FormMessage,
 } from "@deco/ui/components/form.tsx";
 import {
@@ -23,6 +22,7 @@ import { ConfirmMarketplaceInstallDialog } from "../../integrations/select-conne
 import type { MarketplaceIntegration } from "../../integrations/marketplace";
 import { useState } from "react";
 import type { Integration } from "@deco/sdk";
+import { Icon } from "@deco/ui/components/icon.tsx";
 
 interface TypeSelectFieldProps<T extends FieldValues = FieldValues> {
   name: string;
@@ -36,10 +36,8 @@ interface TypeSelectFieldProps<T extends FieldValues = FieldValues> {
 
 export function TypeSelectField<T extends FieldValues = FieldValues>({
   name,
-  title,
   description,
   form,
-  isRequired,
   disabled,
   typeValue,
 }: TypeSelectFieldProps<T>) {
@@ -53,9 +51,9 @@ export function TypeSelectField<T extends FieldValues = FieldValues>({
     (option: OptionItem) => option.value === form.getValues(name as any)?.value,
   );
 
-  const handleAddIntegration = (e: React.MouseEvent<HTMLButtonElement>) => {
-    e.preventDefault();
-    e.stopPropagation();
+  const handleAddIntegration = (e?: React.MouseEvent) => {
+    e?.preventDefault();
+    e?.stopPropagation();
 
     // TODO: handle type for contracts
 
@@ -86,12 +84,8 @@ export function TypeSelectField<T extends FieldValues = FieldValues>({
         name={name as unknown as FieldPath<T>}
         render={({ field }) => (
           <FormItem className="space-y-2">
-            <FormLabel>
-              {title}
-              {isRequired && <span className="text-destructive ml-1">*</span>}
-            </FormLabel>
             <div className="flex items-center gap-4">
-              <div className="flex items-center gap-4">
+              {options?.length > 0 ? (
                 <Select
                   onValueChange={(value: string) => {
                     // Update the form with an object containing the selected value
@@ -103,15 +97,11 @@ export function TypeSelectField<T extends FieldValues = FieldValues>({
                     }
                   }}
                   defaultValue={field.value?.value}
-                  disabled={disabled || isPending}
+                  disabled={disabled}
                 >
                   <FormControl>
                     <SelectTrigger className="h-11">
-                      <SelectValue
-                        placeholder={
-                          isPending ? "Loading..." : "Select an integration"
-                        }
-                      >
+                      <SelectValue placeholder="Select an integration">
                         {field.value?.value && selectedOption && (
                           <div className="flex items-center gap-3">
                             <IntegrationIcon
@@ -129,11 +119,7 @@ export function TypeSelectField<T extends FieldValues = FieldValues>({
                   </FormControl>
                   <SelectContent>
                     {options.map((option: OptionItem) => (
-                      <SelectItem
-                        key={option.value}
-                        value={option.value}
-                        className="py-3"
-                      >
+                      <SelectItem key={option.value} value={option.value}>
                         <div className="flex items-center gap-3 w-full">
                           <IntegrationIcon
                             icon={option.icon}
@@ -147,12 +133,29 @@ export function TypeSelectField<T extends FieldValues = FieldValues>({
                         </div>
                       </SelectItem>
                     ))}
+
+                    <div className="border-t h-px" />
+                    <SelectItem
+                      key={"__connect_account__"}
+                      value="__connect_account__"
+                      onClick={handleAddIntegration}
+                    >
+                      <span className="flex items-center justify-center w-8 h-8">
+                        <Icon name="add" size={24} />
+                      </span>
+                      <span className="font-medium text-sm">Create new</span>
+                    </SelectItem>
                   </SelectContent>
                 </Select>
-                <Button onClick={handleAddIntegration} variant="special">
+              ) : (
+                <Button
+                  disabled={isPending}
+                  onClick={handleAddIntegration}
+                  variant="special"
+                >
                   Connect account
                 </Button>
-              </div>
+              )}
             </div>
             {description && (
               <FormDescription className="text-xs text-muted-foreground">

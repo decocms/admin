@@ -357,7 +357,7 @@ function DependencyStep({
           <div className="flex flex-col gap-5 py-2">
             {/* Configuration Form */}
             {dependencyFormSchema && (
-              <div className="flex-1">
+              <div className="flex-1 flex justify-between items-center gap-2">
                 {dependencyIntegration && (
                   <div className="flex items-center gap-2">
                     <IntegrationIcon

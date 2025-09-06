@@ -1,5 +1,5 @@
 import {
-  Client,
+  Client as BaseClient,
   ClientOptions,
 } from "@modelcontextprotocol/sdk/client/index.js";
 import {
@@ -19,11 +19,11 @@ import { HTTPClientTransport } from "./http-client-transport.ts";
 /**
  * WARNNING: This is a hack to prevent schema compilation errors.
  * More info at: https://github.com/modelcontextprotocol/typescript-sdk/issues/923
- * 
+ *
  * Make sure to keep this updated with the right version of the SDK.
  * https://github.com/modelcontextprotocol/typescript-sdk/blob/bf817939917277a4c59f2e19e7b44b8dd7ff140c/src/client/index.ts#L480
  */
-class CustomClient extends Client {
+class Client extends BaseClient {
   constructor(_clientInfo: Implementation, options?: ClientOptions) {
     super(_clientInfo, options);
   }
@@ -53,7 +53,7 @@ export const createServerClient = async (
     throw new Error("Unknown MCP connection type");
   }
 
-  const client = new CustomClient({
+  const client = new Client({
     name: mcpServer?.name ?? "MCP Client",
     version: "1.0.0",
     timeout: 180000, // 3 minutes

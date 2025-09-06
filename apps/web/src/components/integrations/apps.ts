@@ -34,6 +34,7 @@ export interface GroupedApp {
   usedBy: { avatarUrl: string }[];
   connection?: MCPConnection;
   verified?: boolean;
+  friendlyName?: string;
 }
 
 export interface AppKey {
@@ -295,6 +296,7 @@ export function useGroupedApp({ appKey }: { appKey: string }) {
         provider: marketplaceApp.provider,
         connection: marketplaceApp.connection,
         verified: marketplaceApp.verified,
+        friendlyName: marketplaceApp.friendlyName,
       };
     }
 

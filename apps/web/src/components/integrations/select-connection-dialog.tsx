@@ -134,8 +134,7 @@ export function ConfirmMarketplaceInstallDialog({
       <DialogContent>
         <DialogHeader>
           <DialogTitle>
-            Connect to {integration.friendlyName ?? integration.name}{" "}
-            {integration.id}!!
+            Connect to {integration.friendlyName ?? integration.name}
           </DialogTitle>
           <DialogDescription>
             <div className="mt-4">

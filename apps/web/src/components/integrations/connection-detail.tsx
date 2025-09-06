@@ -79,7 +79,7 @@ function ConnectionInstanceActions({ onDelete }: { onDelete: () => void }) {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button variant="ghost" size="icon" className="ml-2">
+        <Button variant="ghost" size="icon">
           <Icon name="more_horiz" size={16} />
         </Button>
       </DropdownMenuTrigger>
@@ -560,6 +560,7 @@ function Overview({
       icon: data.info?.icon ?? "",
       verified: data.info?.verified ?? false,
       connection: data.info?.connection ?? { type: "HTTP", url: "" },
+      friendlyName: data.info?.friendlyName ?? "",
     });
   };
 
@@ -885,8 +886,6 @@ function ToolsInspector({
         ? tool.name.toLowerCase().startsWith(startsWith.toLowerCase())
         : true),
   );
-
-  console.log("filteredTools", filteredTools);
 
   return (
     <div ref={toolsRef} className="w-full flex flex-col items-center gap-4">

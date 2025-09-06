@@ -84,7 +84,7 @@ export function ContractsTable({
           parsedCost = contract.amount;
         }
         return {
-          color: color(contract.id),
+          color: color(contract.contractId),
           totalCost: parsedCost,
           clauses: contract.clauses,
           contractId: contract.contractId,

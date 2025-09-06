@@ -1074,109 +1074,111 @@ function ViewsList({ integration }: { integration: Integration }) {
   }
 
   return (
-    <div className="w-full p-4 flex flex-col items-center gap-4">
-      <h6 className="text-sm text-muted-foreground font-medium w-full">
-        Views available from this integration
-      </h6>
-      <div className="w-full p-4 border border-border rounded-xl bg-muted/30">
-        <div className="flex items-center gap-3 mb-4">
-          <div className="w-10 h-10 bg-success/10 rounded-full flex items-center justify-center">
-            <Icon name="layers" size={20} className="text-success" />
-          </div>
-          <div>
-            <h3 className="text-sm font-medium text-foreground">
-              {integration.name}
-            </h3>
-            <p className="text-sm text-muted-foreground">
-              This integration provides custom views that can be added to your
-              workspace.
-            </p>
-          </div>
-        </div>
-
-        <div className="space-y-3">
-          <div className="flex items-center gap-2 text-sm">
-            <Icon name="info" size={16} className="text-muted-foreground" />
-            <span className="text-muted-foreground">
-              Available views: {views.length}
-            </span>
-          </div>
-
-          {viewsWithStatus.length === 0 ? (
-            <div className="text-sm text-muted-foreground text-center py-4">
-              No views available from this integration
+    <ScrollArea className="h-[calc(100vh-10rem)]">
+      <div className="w-full p-4 flex flex-col items-center gap-4">
+        <h6 className="text-sm text-muted-foreground font-medium w-full">
+          Views available from this integration
+        </h6>
+        <div className="w-full p-4 border border-border rounded-xl bg-muted/30">
+          <div className="flex items-center gap-3 mb-4">
+            <div className="w-10 h-10 bg-success/10 rounded-full flex items-center justify-center">
+              <Icon name="layers" size={20} className="text-success" />
             </div>
-          ) : (
-            <div className="space-y-2">
-              {viewsWithStatus.map((view) => (
-                <div
-                  key={view.name ?? view.url ?? view.title}
-                  className="flex items-center justify-between p-3 border border-border rounded-lg bg-background"
-                >
-                  <div className="flex items-center gap-3 flex-1 min-w-0">
-                    {view.icon && (
-                      <Icon
-                        name={view.icon}
-                        size={24}
-                        className="flex-shrink-0"
-                      />
-                    )}
-                    <div className="min-w-0 flex-1">
-                      <h4 className="text-sm font-medium truncate">
-                        {view.title}
-                      </h4>
-                      {view.url && (
-                        <p className="text-xs text-muted-foreground truncate">
-                          {view.url}
-                        </p>
+            <div>
+              <h3 className="text-sm font-medium text-foreground">
+                {integration.name}
+              </h3>
+              <p className="text-sm text-muted-foreground">
+                This integration provides custom views that can be added to your
+                workspace.
+              </p>
+            </div>
+          </div>
+
+          <div className="space-y-3">
+            <div className="flex items-center gap-2 text-sm">
+              <Icon name="info" size={16} className="text-muted-foreground" />
+              <span className="text-muted-foreground">
+                Available views: {views.length}
+              </span>
+            </div>
+
+            {viewsWithStatus.length === 0 ? (
+              <div className="text-sm text-muted-foreground text-center py-4">
+                No views available from this integration
+              </div>
+            ) : (
+              <div className="space-y-2">
+                {viewsWithStatus.map((view) => (
+                  <div
+                    key={view.name ?? view.url ?? view.title}
+                    className="flex items-center justify-between p-3 border border-border rounded-lg bg-background"
+                  >
+                    <div className="flex items-center gap-3 flex-1 min-w-0">
+                      {view.icon && (
+                        <Icon
+                          name={view.icon}
+                          size={24}
+                          className="flex-shrink-0"
+                        />
+                      )}
+                      <div className="min-w-0 flex-1">
+                        <h4 className="text-sm font-medium truncate">
+                          {view.title}
+                        </h4>
+                        {view.url && (
+                          <p className="text-xs text-muted-foreground truncate">
+                            {view.url}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-2 flex-shrink-0">
+                      {view.isAdded && (
+                        <div className="flex items-center gap-1 text-xs text-success">
+                          <Icon name="check_circle" size={14} />
+                          <span>Added</span>
+                        </div>
+                      )}
+
+                      {view.isAdded ? (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="text-destructive hover:text-destructive"
+                          onClick={() => handleRemoveView(view)}
+                          disabled={removeViewMutation.isPending}
+                        >
+                          {removeViewMutation.isPending ? (
+                            <Icon name="hourglass_empty" size={14} />
+                          ) : (
+                            <Icon name="remove" size={14} />
+                          )}
+                        </Button>
+                      ) : (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleAddView(view)}
+                          disabled={addViewMutation.isPending}
+                        >
+                          {addViewMutation.isPending ? (
+                            <Icon name="hourglass_empty" size={14} />
+                          ) : (
+                            <Icon name="add" size={14} />
+                          )}
+                        </Button>
                       )}
                     </div>
                   </div>
-
-                  <div className="flex items-center gap-2 flex-shrink-0">
-                    {view.isAdded && (
-                      <div className="flex items-center gap-1 text-xs text-success">
-                        <Icon name="check_circle" size={14} />
-                        <span>Added</span>
-                      </div>
-                    )}
-
-                    {view.isAdded ? (
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        className="text-destructive hover:text-destructive"
-                        onClick={() => handleRemoveView(view)}
-                        disabled={removeViewMutation.isPending}
-                      >
-                        {removeViewMutation.isPending ? (
-                          <Icon name="hourglass_empty" size={14} />
-                        ) : (
-                          <Icon name="remove" size={14} />
-                        )}
-                      </Button>
-                    ) : (
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => handleAddView(view)}
-                        disabled={addViewMutation.isPending}
-                      >
-                        {addViewMutation.isPending ? (
-                          <Icon name="hourglass_empty" size={14} />
-                        ) : (
-                          <Icon name="add" size={14} />
-                        )}
-                      </Button>
-                    )}
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
+                ))}
+              </div>
+            )}
+          </div>
         </div>
       </div>
-    </div>
+    </ScrollArea>
   );
 }
 
@@ -1303,20 +1305,20 @@ function AppDetail() {
             </TabsTrigger>
           </TabsList>
 
-          <TabsContent value="tools" className="mt-4 h-full">
+          <TabsContent value="tools">
             <ToolsInspector
               data={data}
               readOnly={!data.instances || data.instances?.length === 0}
               selectedConnectionId={selectedIntegrationId ?? undefined}
             />
           </TabsContent>
-          <TabsContent value="views" className="mt-4">
+          <TabsContent value="views">
             <ViewBindingSection
               data={data}
               selectedConnectionId={selectedIntegrationId ?? undefined}
             />
           </TabsContent>
-          <TabsContent value="workflows" className="mt-4">
+          <TabsContent value="workflows">
             <ToolsInspector
               data={data}
               selectedConnectionId={selectedIntegrationId ?? undefined}

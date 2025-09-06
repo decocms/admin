@@ -3,6 +3,7 @@ import { Avatar } from "../common/avatar/index.tsx";
 import { IntegrationAvatar } from "../common/avatar/integration.tsx";
 import type { RegistryApp } from "@deco/sdk";
 import type { CurrentTeam } from "../sidebar/team-selector.tsx";
+import { cn } from "@deco/ui/lib/utils.ts";
 
 // Grid components to match marketplace dialog layout
 export function GridRightColumn({ children }: { children: React.ReactNode }) {
@@ -26,11 +27,20 @@ export function GridLeftColumn({ children }: { children: React.ReactNode }) {
   );
 }
 
-export function GridContainer({ children }: { children: React.ReactNode }) {
+export function GridContainer({
+  children,
+  className,
+}: {
+  children: React.ReactNode;
+  className?: string;
+}) {
   return (
     <div
       data-grid-container
-      className="flex-1 grid grid-cols-10 gap-6 h-full divide-x border-b"
+      className={cn(
+        "grid grid-cols-10 gap-6 divide-x border-b",
+        className,
+      )}
     >
       {children}
     </div>

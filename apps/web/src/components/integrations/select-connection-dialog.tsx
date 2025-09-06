@@ -235,22 +235,24 @@ export function ConfirmMarketplaceInstallDialog({
 
   return (
     <Dialog open={open} onOpenChange={() => setIntegration(null)}>
-      <DialogContent className="!p-0 overflow-hidden lg:!w-220 lg:!max-w-220 min-h-135 lg:max-h-[80vh] flex flex-col">
+      <DialogContent className="!p-0 lg:!w-220 lg:!max-w-220 flex flex-col">
         {/* Dependency Steps */}
         {currentStep === "dependency" && (
-          <DependencyStep
-            integration={integration}
-            dependencyName={maybeAppDependencyList?.[currentDependencyIndex]}
-            dependencySchema={
-              integrationState.schema?.properties?.[
-                maybeAppDependencyList?.[currentDependencyIndex] ?? 0
-              ] as JSONSchema7
-            }
-            currentStep={currentDependencyIndex + 1}
-            totalSteps={totalSteps}
-            formRef={formRef}
-            integrationState={integrationState}
-          />
+          <div className="min-h-135 max-h-135 h-full lg:max-h-[60vh]">
+            <DependencyStep
+              integration={integration}
+              dependencyName={maybeAppDependencyList?.[currentDependencyIndex]}
+              dependencySchema={
+                integrationState.schema?.properties?.[
+                  maybeAppDependencyList?.[currentDependencyIndex] ?? 0
+                ] as JSONSchema7
+              }
+              currentStep={currentDependencyIndex + 1}
+              totalSteps={totalSteps}
+              formRef={formRef}
+              integrationState={integrationState}
+            />
+          </div>
         )}
         <DialogFooter className="px-4 pb-4">
           {currentDependencyIndex > 0 && (
@@ -334,7 +336,7 @@ function DependencyStep({
       : null;
 
   return (
-    <GridContainer>
+    <GridContainer className="min-h-135 max-h-135 lg:min-h-[60vh] lg:max-h-[60vh]">
       {/* Left side: App icons and info */}
       <GridLeftColumn>
         <div className="pb-4 px-4 h-full">
@@ -359,7 +361,7 @@ function DependencyStep({
 
       {/* Right side: Dependency configuration */}
       <GridRightColumn>
-        <div className="flex flex-col gap-2 h-full pr-4 pt-4">
+        <div className="h-full flex flex-col gap-2 pr-4 pt-4">
           {/* Header with step indicator */}
           <div className="flex items-center justify-between py-2 border-b">
             <div className="font-mono text-sm text-foreground uppercase tracking-wide">
@@ -376,10 +378,10 @@ function DependencyStep({
           </div>
 
           {/* Dependency integration info */}
-          <div className="flex flex-col gap-5 py-2">
+          <div className="flex-grow flex flex-col gap-5 py-2">
             {/* Configuration Form */}
             {dependencyFormSchema && (
-              <div className="flex-1 flex justify-between items-center gap-2">
+              <div className="flex justify-between items-center gap-2">
                 {dependencyIntegration && (
                   <div className="flex items-center gap-2">
                     <IntegrationIcon
@@ -402,11 +404,11 @@ function DependencyStep({
             )}
 
             {/* Permissions Section */}
-            <div className="flex flex-col gap-2">
+            <div className="flex-grow flex flex-col gap-2">
               <div className="font-mono text-sm text-secondary-foreground uppercase">
                 permissions
               </div>
-              <ScrollArea className="h-100">
+              <ScrollArea className="flex-grow h-0">
                 {permissionsFromThisDependency?.map((permission, index) => (
                   <div key={index} className="flex gap-4 items-start px-2 py-3">
                     <div className="flex gap-2.5 h-5 items-center justify-start">

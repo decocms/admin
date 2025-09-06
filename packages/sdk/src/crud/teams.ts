@@ -41,9 +41,11 @@ export const getWorkspaceTheme = (
   slug: string,
   init?: RequestInit,
 ): Promise<{ theme?: Theme } | null> =>
-  MCPClient.TEAMS_GET_THEME({ slug }, init) as Promise<{
-    theme?: Theme;
-  } | null>;
+  MCPClient.TEAMS_GET_THEME({ slug }, init) as Promise<
+    {
+      theme?: Theme;
+    } | null
+  >;
 
 export interface UpdateTeamInput {
   id: number;
@@ -70,7 +72,7 @@ export interface AddViewInput {
     title: string;
     icon: string;
     type: "custom";
-    url: string;
+    name: string;
     tools?: string[];
     rules?: string[];
     integration: {
@@ -102,9 +104,20 @@ export const removeView = (
     success: boolean;
   }>;
 
+type ViewListItem = {
+  name?: string;
+  title: string;
+  icon: string;
+  url: string;
+  mimeTypePattern?: string;
+  resourceName?: string;
+  rules?: string[];
+  tools?: string[];
+};
+
 export const listAvailableViewsForConnection = async (
   connection: MCPConnection,
-) => {
+): Promise<{ views: ViewListItem[] }> => {
   try {
     const result = await MCPClient.INTEGRATIONS_CALL_TOOL({
       connection,
@@ -114,19 +127,19 @@ export const listAvailableViewsForConnection = async (
       },
     });
 
-    if (typeof result.error === "string") {
-      console.error(result.error);
-      return { views: [] };
+    if (typeof result.isError === "boolean" && result.isError) {
+      const message = result.structuredContent ??
+        result.content?.[0]?.text;
+      throw new Error(JSON.stringify(message));
     }
 
-    return result.structuredContent as {
-      views: Array<{
-        title: string;
-        icon: string;
-        url: string;
-        tools?: string[];
-        rules?: string[];
-      }>;
+    const viewsList = result.structuredContent as { views: ViewListItem[] };
+
+    return {
+      views: (viewsList?.views ?? []).map((view) => ({
+        ...view,
+        name: view.name ?? view.title,
+      })),
     };
   } catch (error) {
     console.error("Error listing available views for connection:", error);

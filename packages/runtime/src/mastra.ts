@@ -18,6 +18,19 @@ import {
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import { ViewsListOutputSchema } from "./views.ts";
+import {
+  ResourceCreateInputSchema,
+  ResourceCreateOutputSchema,
+  ResourceDeleteInputSchema,
+  ResourceDeleteOutputSchema,
+  ResourceSearchInputSchema,
+  ResourceSearchOutputSchema,
+  ResourcesListOutputSchema,
+  ResourcesReadInputSchema,
+  ResourcesReadOutputSchema,
+  ResourceUpdateInputSchema,
+  ResourceUpdateOutputSchema,
+} from "./resources.ts";
 import { zodToJsonSchema } from "zod-to-json-schema";
 import type { DefaultEnv } from "./index.ts";
 import { createStateValidationTool, State } from "./state.ts";
@@ -239,6 +252,41 @@ export interface CreateMCPServerOptions<
   views?: (
     env: Env & DefaultEnv<TSchema>,
   ) => Promise<ViewExport[]> | ViewExport[];
+  resources?: Array<
+    (env: Env & DefaultEnv<TSchema>) => {
+      name: string;
+      icon: string;
+      title: string;
+      description?: string;
+      tools: {
+        read: (args: { uri: string }) => Promise<unknown>;
+        search: (args: {
+          term: string;
+          cursor?: string;
+          limit?: number;
+        }) => Promise<unknown>;
+        create?: (
+          args: z.infer<typeof ResourceCreateInputSchema>,
+        ) => Promise<unknown>;
+        update?: (
+          args: z.infer<typeof ResourceUpdateInputSchema>,
+        ) => Promise<unknown>;
+        delete?: (
+          args: z.infer<typeof ResourceDeleteInputSchema>,
+        ) => Promise<unknown>;
+      };
+      views?: {
+        list?: { url?: string; tools?: string[]; rules?: string[] };
+        detail?: {
+          url?: string;
+          mimeTypePattern?: string;
+          resourceName?: string;
+          tools?: string[];
+          rules?: string[];
+        };
+      };
+    }
+  >;
   tools?: Array<
     (
       env: Env & DefaultEnv<TSchema>,
@@ -405,6 +453,127 @@ export const createMCPServer = <
       { capabilities: { tools: {} } },
     );
 
+    // Resolve resources first; build resource tools; append later
+    const resolvedResources = await Promise.all(
+      options.resources?.map((r) => r(bindings)) ?? [],
+    );
+    const readHandlers = new Map<
+      string,
+      (a: { uri: string }) => Promise<any>
+    >();
+    const searchHandlers = new Map<
+      string,
+      (a: { term: string; cursor?: string; limit?: number }) => Promise<any>
+    >();
+    const createHandlers = new Map<string, (a: any) => Promise<any>>();
+    const updateHandlers = new Map<string, (a: any) => Promise<any>>();
+    const deleteHandlers = new Map<string, (a: any) => Promise<any>>();
+    for (const r of resolvedResources) {
+      if (r?.tools?.read) readHandlers.set(r.name, r.tools.read);
+      if (r?.tools?.search) searchHandlers.set(r.name, r.tools.search);
+      if (r?.tools?.create) createHandlers.set(r.name, r.tools.create);
+      if (r?.tools?.update) updateHandlers.set(r.name, r.tools.update);
+      if (r?.tools?.delete) deleteHandlers.set(r.name, r.tools.delete);
+    }
+    const resourceTools: ReturnType<typeof createTool>[] = [];
+    if (resolvedResources.length > 0) {
+      resourceTools.push(
+        createTool({
+          id: "DECO_CHAT_RESOURCES_READ",
+          description: "Read a resource by uri (name + uri)",
+          inputSchema: ResourcesReadInputSchema,
+          outputSchema: ResourcesReadOutputSchema,
+          execute: async ({ context }) => {
+            const fn = readHandlers.get(context.name);
+            if (!fn) {
+              throw new Error(`READ not implemented for ${context.name}`);
+            }
+            return fn({ uri: context.uri });
+          },
+        }),
+      );
+      resourceTools.push(
+        createTool({
+          id: "DECO_CHAT_RESOURCES_SEARCH",
+          description: "Search resources (name + term)",
+          inputSchema: ResourceSearchInputSchema,
+          outputSchema: ResourceSearchOutputSchema,
+          execute: async ({ context }) => {
+            const fn = searchHandlers.get(context.name);
+            if (!fn) {
+              throw new Error(`SEARCH not implemented for ${context.name}`);
+            }
+            const { term, cursor, limit } = context;
+            return fn({ term, cursor, limit });
+          },
+        }),
+      );
+      resourceTools.push(
+        createTool({
+          id: "DECO_CHAT_RESOURCES_CREATE",
+          description: "Create a resource (name + content)",
+          inputSchema: ResourceCreateInputSchema,
+          outputSchema: ResourceCreateOutputSchema,
+          execute: async ({ context }) => {
+            const fn = createHandlers.get(context.name);
+            if (!fn) {
+              throw new Error(`CREATE not implemented for ${context.name}`);
+            }
+            return fn(context as any);
+          },
+        }),
+      );
+      resourceTools.push(
+        createTool({
+          id: "DECO_CHAT_RESOURCES_UPDATE",
+          description: "Update a resource (name + uri)",
+          inputSchema: ResourceUpdateInputSchema,
+          outputSchema: ResourceUpdateOutputSchema,
+          execute: async ({ context }) => {
+            const fn = updateHandlers.get(context.name);
+            if (!fn) {
+              throw new Error(`UPDATE not implemented for ${context.name}`);
+            }
+            return fn(context as any);
+          },
+        }),
+      );
+      resourceTools.push(
+        createTool({
+          id: "DECO_CHAT_RESOURCES_DELETE",
+          description: "Delete a resource (name + uri)",
+          inputSchema: ResourceDeleteInputSchema,
+          outputSchema: ResourceDeleteOutputSchema,
+          execute: async ({ context }) => {
+            const fn = deleteHandlers.get(context.name);
+            if (!fn) {
+              throw new Error(`DELETE not implemented for ${context.name}`);
+            }
+            return fn(context as any);
+          },
+        }),
+      );
+      resourceTools.push(
+        createTool({
+          id: "DECO_CHAT_RESOURCES_LIST",
+          description: "List resource types",
+          inputSchema: z.object({}),
+          outputSchema: ResourcesListOutputSchema,
+          execute: async () => ({
+            resources: resolvedResources.map((r) => ({
+              name: r.name,
+              icon: r.icon,
+              title: r.title,
+              description: r.description ?? "",
+              hasCreate: Boolean(createHandlers.get(r.name)),
+              hasUpdate: Boolean(updateHandlers.get(r.name)),
+              hasDelete: Boolean(deleteHandlers.get(r.name)),
+            })),
+          }),
+        }),
+      );
+    }
+
     const tools = await Promise.all(
       options.tools?.map(async (tool) => {
         const toolResult = tool(bindings);
@@ -439,17 +608,82 @@ export const createMCPServer = <
         description: "List views exposed by this MCP",
         inputSchema: z.any(),
         outputSchema: ViewsListOutputSchema,
-        execute: async () => ({
-          views: ((await options.views?.(bindings)) ?? []).map((v) => ({
+        execute: async () => {
+          const base = ((await options.views?.(bindings)) ?? []).map((v) => ({
+            id: undefined,
+            // Stable machine name for routing: UPPERCASE + underscores
+            name: v.title.toUpperCase().replace(/[^A-Z0-9]/g, "_"),
             title: v.title,
+            description: undefined,
             icon: v.icon,
             url: v.url,
             tools: v.tools ?? [],
             rules: v.rules ?? [],
-          })),
-        }),
+          }));
+          const resourceViews = resolvedResources
+            .map((r) => {
+              const listUrl =
+                r.views?.list?.url ??
+                `internal://resource/list?name=${encodeURIComponent(r.name)}`;
+
+              // Default CRUD tool ids for resources
+              const defaultListTools: string[] = (() => {
+                const base = [
+                  "DECO_CHAT_RESOURCES_LIST",
+                  "DECO_CHAT_RESOURCES_READ",
+                  "DECO_CHAT_RESOURCES_SEARCH",
+                ];
+                const canCreate = Boolean(createHandlers.get(r.name));
+                const canUpdate = Boolean(updateHandlers.get(r.name));
+                const canDelete = Boolean(deleteHandlers.get(r.name));
+                if (canCreate) base.push("DECO_CHAT_RESOURCES_CREATE");
+                if (canUpdate) base.push("DECO_CHAT_RESOURCES_UPDATE");
+                if (canDelete) base.push("DECO_CHAT_RESOURCES_DELETE");
+                return base;
+              })();
+
+              const defaultListRules: string[] = [
+                `You are viewing the ${r.title ?? r.name} resources list. Resources are changeable via Resource tools (DECO_CHAT_RESOURCES_*). Use the appropriate tools to read, search, create, update, or delete items; do not fabricate data.`,
+              ];
+
+              const list = [
+                {
+                  name: `${r.name.toUpperCase()}_LIST`,
+                  title: `${r.name} List`,
+                  description: r.description,
+                  icon: r.icon,
+                  url: listUrl,
+                  tools: r.views?.list?.tools ?? defaultListTools,
+                  rules: r.views?.list?.rules ?? defaultListRules,
+                },
+              ];
+              const detailUrl =
+                r.views?.detail?.url ??
+                `internal://resource/detail?name=${encodeURIComponent(r.name)}`;
+              const detail = [
+                {
+                  name: `${r.name.toUpperCase()}_DETAIL`,
+                  title: `${r.name} Detail`,
+                  description: r.description,
+                  icon: r.icon,
+                  url: detailUrl,
+                  mimeTypePattern: r.views?.detail?.mimeTypePattern,
+                  resourceName: r.views?.detail?.resourceName ?? r.name,
+                  tools: r.views?.detail?.tools ?? [],
+                  rules: r.views?.detail?.rules ?? [],
+                },
+              ];
+              return [...list, ...detail];
+            })
+            .flat();
+
+          return { views: [...base, ...resourceViews] };
+        },
       }),
     );
+
+    // Finally append resource tools after other tools are collected
+    tools.push(...resourceTools);
 
     for (const tool of tools) {
       server.registerTool(

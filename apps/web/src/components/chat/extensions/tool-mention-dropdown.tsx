@@ -65,13 +65,16 @@ export default forwardRef<
         // Fire-and-forget to avoid blocking selection UX
         (async () => {
           try {
-            const toolName = `DECO_CHAT_RESOURCES_READ_${resource.resourceType}`;
             const result = (await callTool(resource.connection as never, {
-              name: toolName,
-              arguments: { uri: resource.resource.uri },
+              name: "DECO_CHAT_RESOURCES_READ",
+              arguments: {
+                name: resource.resourceType,
+                uri: resource.resource.uri,
+              },
             })) as { structuredContent?: unknown };
 
             const sc = result?.structuredContent as
+              | { mimeType?: string; data?: string; type?: "text" | "blob" }
               | { mimeType?: string; text?: string }
               | { mimeType?: string; blob?: string };
             if (!sc) {

@@ -151,6 +151,12 @@ const ViewsList = lazy(() =>
   wrapWithUILoadingFallback(import("./components/views/list.tsx")),
 );
 
+const LegacyViewRedirect = lazy(() =>
+  wrapWithUILoadingFallback(
+    import("./components/views/legacy-redirect.tsx"),
+  ),
+);
+
 function NotFound(): null {
   throw new NotFoundError("The path was not found");
 }
@@ -317,7 +323,10 @@ const router = createBrowserRouter([
           { path: "audits", Component: AuditList },
           { path: "audit/:id", Component: AuditDetail },
           { path: "views", Component: ViewsList },
-          { path: "views/:id", Component: ViewDetail },
+          // New dynamic route: /:teamSlug/views/:integrationId/:viewName
+          { path: "views/:integrationId/:viewName", Component: ViewDetail },
+          // Legacy route redirects to the new dynamic route
+          { path: "views/:id", Component: LegacyViewRedirect },
           { path: "prompts", Component: ListPrompts },
           { path: "prompt/:id", Component: PromptDetail },
           { path: "workflows", Component: WorkflowListPage },

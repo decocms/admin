@@ -45,7 +45,9 @@ import {
   onResourceLoaded,
   onResourceLoading,
 } from "../../utils/events.ts";
-import { useCurrentView } from "../decopilot/use-current-view.ts";
+import type { IntegrationViewItem } from "../decopilot/use-view.ts";
+import { useViewRoute } from "../views/view-route-context.tsx";
+// Rules now derived from the current integration view item
 
 interface IntegrationWithTools extends Integration {
   tools?: Array<{
@@ -315,40 +317,16 @@ export function ContextResources({
 
   const isDragging = useGlobalDrop(handleFileDrop);
 
-  const { view, meta } = useCurrentView();
-  const appliedViewRef = useRef<string | null>(null);
-  const [persistedRules, setPersistedRules] = useState<
-    Array<{ id: string; text: string }>
-  >([]);
-
-  useEffect(() => {
-    if (!view || !meta || meta.type !== "custom") {
-      appliedViewRef.current = null;
-      return;
-    }
-
-    if (appliedViewRef.current === view.id) {
-      return;
-    }
-
-    // Seed rules once per view; keep persistent until user removes
-    const rules = meta.rules ?? [];
-    if (rules.length && appliedViewRef.current !== view.id) {
-      setPersistedRules((prev) => {
-        const haveAny = prev.some((r) =>
-          r.id.startsWith(`view-rule-${view.id}-`),
-        );
-        if (haveAny) return prev;
-        const seeded = rules.map((text, idx) => ({
-          id: `view-rule-${view.id}-${idx}`,
-          text,
-        }));
-        return [...prev, ...seeded];
-      });
-    }
-
-    appliedViewRef.current = view.id;
-  }, [view?.id, meta, setUploadedFiles]);
+  // Rules for the chat now come from the current route context.
+  // Context provider dispatches rules; we only display and allow removal locally.
+  const { view } = useViewRoute();
+  const viewRules = (view as IntegrationViewItem | undefined)?.rules ?? [];
+  const [persistedRules, setPersistedRules] = useState<Array<{ id: string; text: string }>>(
+    (viewRules as string[]).map((text: string, idx: number) => ({
+      id: `view-rule-initial-${idx}`,
+      text,
+    })),
+  );
 
   const removeRule = (id: string) => {
     setPersistedRules((prev) => prev.filter((r) => r.id !== id));

@@ -33,6 +33,7 @@ import {
 } from "@deco/sdk";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Binding, WellKnownBindings } from "@deco/sdk/mcp/bindings";
+import { buildAddViewPayload, findPinnedView } from "@deco/sdk";
 import { useCurrentTeam } from "../sidebar/team-selector.tsx";
 import { toast } from "@deco/ui/components/sonner.tsx";
 
@@ -1082,43 +1083,42 @@ function ViewsList({ integration }: { integration: Integration }) {
   const addViewMutation = useAddView();
   const removeViewMutation = useRemoveView();
 
-  const { data: viewsData, isLoading: isLoadingViews } =
-    useConnectionViews(integration);
+  const { data: viewsData, isLoading: isLoadingViews } = useConnectionViews(
+    integration,
+    false,
+  );
   const views = viewsData?.views || [];
 
-  // Check which views are already added to the team
+  // Check which views are already added to the team (by integrationId + name)
   const viewsWithStatus = useMemo(() => {
     if (!views || views.length === 0 || !currentTeam.views) return [];
 
     return views.map((view) => {
-      const existingView = currentTeam.views.find((teamView) => {
-        const metadata = teamView.metadata as { url?: string };
-        return metadata?.url === view.url;
+      const existingView = findPinnedView(currentTeam.views, integration.id, {
+        name: view.name,
+        url: view.url,
       });
 
       return {
         ...view,
         isAdded: !!existingView,
         teamViewId: existingView?.id,
-      };
+      } as typeof view & { isAdded: boolean; teamViewId?: string };
     });
-  }, [views, currentTeam.views]);
+  }, [views, currentTeam.views, integration.id]);
 
   const handleAddView = async (view: (typeof views)[0]) => {
     try {
       await addViewMutation.mutateAsync({
-        view: {
-          id: crypto.randomUUID(),
-          title: view.title,
-          icon: view.icon,
-          type: "custom" as const,
-          url: view.url,
-          tools: view.tools,
-          rules: view.rules,
-          integration: {
-            id: integration.id,
+        view: buildAddViewPayload({
+          view: {
+            name: view.name,
+            title: view.title,
+            icon: view.icon,
+            url: view.url,
           },
-        },
+          integrationId: integration.id,
+        }),
       });
 
       toast.success(`View "${view.title}" added successfully`);
@@ -1195,7 +1195,7 @@ function ViewsList({ integration }: { integration: Integration }) {
             <div className="space-y-2">
               {viewsWithStatus.map((view) => (
                 <div
-                  key={view.url}
+                  key={view.name ?? view.url ?? view.title}
                   className="flex items-center justify-between p-3 border border-border rounded-lg bg-background"
                 >
                   <div className="flex items-center gap-3 flex-1 min-w-0">

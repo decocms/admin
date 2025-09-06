@@ -105,9 +105,7 @@ export const suggestion: (args: {
         // Prime pending counts
         for (const searcher of resourceSearchers) {
           for (const toolName of searcher.searchToolNames) {
-            const resourceType =
-              toolName.match(/^DECO_CHAT_RESOURCES_SEARCH_([A-Z]+)$/)?.[1] ??
-              "";
+            const resourceType = "";
             const key = `${searcher.integration.id}:${resourceType}`;
             pendingCount.set(key, (pendingCount.get(key) ?? 0) + 1);
           }
@@ -127,7 +125,12 @@ export const suggestion: (args: {
             const pendingKey = `${searcher.integration.id}:${resourceType}`;
             return callTool(searcher.connection as never, {
               name: toolName,
-              arguments: { term: q, limit: perIntegrationLimit },
+              // NOTE: we no longer know resourceType from tool name; this path likely needs updated
+              arguments: {
+                name: resourceType,
+                term: q,
+                limit: perIntegrationLimit,
+              },
             })
               .then((result: unknown) => {
                 if (mySerial !== activeSerial) return; // cancelled

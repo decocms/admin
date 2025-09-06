@@ -16,6 +16,8 @@ interface Props<TChiplet extends Chiplet> {
   };
   input?: InputHTMLAttributes<HTMLInputElement>;
   view?: ComponentProps<typeof ViewModeSwitcher>;
+  actionsLeft?: ReactNode;
+  actionsRight?: ReactNode;
 }
 
 interface Chiplet {
@@ -63,6 +65,8 @@ export function ListPageHeader<TChiplet extends Chiplet>({
   filter,
   input,
   view,
+  actionsLeft,
+  actionsRight,
 }: Props<TChiplet>) {
   return (
     <div className="w-full grid grid-cols-1 md:grid-cols-2 gap-2">
@@ -74,10 +78,12 @@ export function ListPageHeader<TChiplet extends Chiplet>({
             onClick={filter.onClick as (item: Chiplet) => void}
           />
         ))}
+        {actionsLeft}
       </div>
       <div className="flex items-center gap-2 justify-self-auto md:justify-self-end p-1">
         {view && <ViewModeSwitcher {...view} />}
         {input && <Input className="w-80 text-sm" {...input} />}
+        {actionsRight}
       </div>
     </div>
   );

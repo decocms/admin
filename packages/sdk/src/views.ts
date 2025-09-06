@@ -3,7 +3,7 @@ import { z } from "zod";
 export const DEFAULT_VIEWS: View[] = [
   {
     id: "connections",
-    title: "Integrations",
+    title: "Tools",
     icon: "linked_services",
     type: "default",
     metadata: {
@@ -69,7 +69,8 @@ export const DEFAULT_VIEWS: View[] = [
 export const viewMetadataSchema = z.discriminatedUnion("type", [
   z.object({
     type: z.literal("custom"),
-    url: z.string(),
+    // Custom views can either directly provide a URL or reference an integration view by name
+    url: z.string().optional(),
     tools: z.array(z.string()).default([]),
     rules: z.array(z.string()).default([]),
   }),
@@ -84,10 +85,13 @@ export interface View {
   title: string;
   icon: string;
   type: "custom" | "default";
-  metadata: Record<string, unknown> & {
-    integration?: {
-      id: string;
-    };
+  // For custom views pinned in teams
+  integrationId?: string;
+  name?: string;
+  // For default views only
+  metadata?: {
+    path: string;
+    url?: string;
   };
 }
 

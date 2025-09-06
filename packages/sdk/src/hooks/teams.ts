@@ -128,21 +128,21 @@ export function useRemoveView() {
 
 export function useConnectionViews(
   integration: { id: string; connection: MCPConnection } | null,
+  suspense = true,
 ) {
   const { workspace } = useSDK();
+  const hook = suspense ? useSuspenseQuery : useQuery;
 
-  const data = useQuery({
+  const data = hook({
     queryKey: KEYS.TEAM_VIEWS(workspace, integration?.id ?? "null"),
     queryFn: async () => {
-      if (!integration) return { views: [] };
-      const result = await listAvailableViewsForConnection(
-        integration.connection,
-      ).catch((error) => {
-        console.error(error);
+      if (!integration) {
         return { views: [] };
-      });
+      }
 
-      return result;
+      return listAvailableViewsForConnection(
+        integration.connection,
+      );
     },
   });
 
@@ -163,10 +163,7 @@ export function useIntegrationViews({ enabled = true }: { enabled?: boolean }) {
       const promises = integrations.map(async (integration) => {
         const result = await listAvailableViewsForConnection(
           integration.connection,
-        ).catch((error) => {
-          console.error(error);
-          return { views: [] };
-        });
+        );
         return result.views.map((view) => ({
           ...view,
           integration: {

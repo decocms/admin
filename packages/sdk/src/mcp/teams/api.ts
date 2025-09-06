@@ -420,23 +420,22 @@ async function assignRoleToMembers(
       members.map((m) => m.user_id),
     );
 
-  const memberRolePromises =
-    dbMembers?.map(
-      async (member: {
-        profiles: { email: string } | null;
-        user_id: string | null;
-      }) => {
-        const action = members.find(
-          (m) => m.user_id === member.user_id,
-        )?.action;
-        if (!member.profiles?.email || !action) return;
+  const memberRolePromises = dbMembers?.map(
+    async (member: {
+      profiles: { email: string } | null;
+      user_id: string | null;
+    }) => {
+      const action = members.find(
+        (m) => m.user_id === member.user_id,
+      )?.action;
+      if (!member.profiles?.email || !action) return;
 
-        return await c.policy.updateUserRole(teamId, member.profiles.email, {
-          roleId,
-          action,
-        });
-      },
-    ) ?? [];
+      return await c.policy.updateUserRole(teamId, member.profiles.email, {
+        roleId,
+        action,
+      });
+    },
+  ) ?? [];
 
   await Promise.all(memberRolePromises);
 }
@@ -461,7 +460,9 @@ export const getTeam = createTool({
           title,
           icon,
           type,
-          metadata
+          metadata,
+          integration_id,
+          name
         )
       `)
       .eq("slug", slug)
@@ -478,13 +479,21 @@ export const getTeam = createTool({
       context: c,
     });
 
+    const rawViews = (teamData.deco_chat_views as any[]) || [];
+    const mappedViews = rawViews.map((v) => ({
+      ...v,
+      // New columns with backward-compat
+      integrationId: v.integration_id ?? v.metadata?.integration?.id,
+      name: v.name ?? v.metadata?.viewName,
+    }));
+
     const teamWithoutAvatar: Omit<TeamWithViews, "avatar_url"> = {
       id: teamData.id,
       name: teamData.name,
       slug,
       theme: teamData.theme as Theme,
       created_at: teamData.created_at as string,
-      views: (teamData.deco_chat_views as View[]) || [],
+      views: (mappedViews as View[]) || [],
     };
 
     try {
@@ -1001,11 +1010,10 @@ export const getTeamRole = createTool({
       }
 
       // Extract member user IDs with grant action (existing members have granted access)
-      const members =
-        memberRoles?.map((mr) => ({
-          user_id: mr.members.user_id,
-          action: "grant" as const,
-        })) || [];
+      const members = memberRoles?.map((mr) => ({
+        user_id: mr.members.user_id,
+        action: "grant" as const,
+      })) || [];
 
       return {
         id: roleWithPolicies.id,
@@ -1036,7 +1044,8 @@ export const addView = createTool({
         title: z.string().describe("Display title for the view"),
         icon: z.string().describe("Icon identifier for the view"),
         type: z.literal("custom").describe("Type of view (must be 'custom')"),
-        url: z.string().describe("URL for the custom view"),
+        // Integration-specific view machine name
+        name: z.string().describe("Integration-specific view name"),
         tools: z
           .array(z.string())
           .optional()
@@ -1092,14 +1101,8 @@ export const addView = createTool({
           title: view.title,
           icon: view.icon,
           type: view.type,
-          metadata: {
-            url: view.url,
-            tools: view.tools ?? [],
-            rules: view.rules ?? [],
-            integration: {
-              id: view.integration?.id,
-            },
-          },
+          integration_id: view.integration?.id,
+          name: view.name,
           team_id: team.id,
         },
       ])

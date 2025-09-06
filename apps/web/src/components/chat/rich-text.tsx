@@ -94,7 +94,7 @@ export function RichTextArea({
   }, [integrations]);
 
   const resourceSearchers = useMemo(() => {
-    const SEARCH_TOOL_RE = /^DECO_CHAT_RESOURCES_SEARCH_([A-Z]+)$/;
+    const SEARCH_TOOL_RE = /^DECO_CHAT_RESOURCES_SEARCH$/;
     return (integrations as IntegrationWithTools[])
       .filter((integration) => {
         const toolsList = integration.tools ?? [];

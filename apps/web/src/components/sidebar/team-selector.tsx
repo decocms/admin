@@ -51,6 +51,7 @@ export function useCurrentTeam(): CurrentTeam & { views: View[] } {
   if (!teamSlug) {
     return userTeam;
   }
+
   return {
     avatarUrl: teamData?.avatar_url,
     label: teamData?.name || teamSlug || "",

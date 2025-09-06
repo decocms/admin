@@ -1,6 +1,5 @@
 import {
   type Agent,
-  parseViewMetadata,
   type Thread,
   useAgents,
   useDeleteThread,
@@ -51,7 +50,7 @@ import {
 import { Skeleton } from "@deco/ui/components/skeleton.tsx";
 import { cn } from "@deco/ui/lib/utils.ts";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { type ReactNode, Suspense, useRef, useState } from "react";
+import { type ReactNode, Suspense, useMemo, useRef, useState } from "react";
 import { useForm } from "react-hook-form";
 import { Link, useMatch } from "react-router";
 import { z } from "zod";
@@ -445,41 +444,58 @@ function WorkspaceViews() {
     integrations?.map((integration) => [integration.id, integration]),
   );
 
-  const fromIntegration: Record<string, View[]> = {};
-  const firstLevelViews: View[] = [];
+  const { fromIntegration, firstLevelViews } = useMemo(() => {
+    const result: {
+      fromIntegration: Record<string, View[]>;
+      firstLevelViews: View[];
+    } = {
+      fromIntegration: {},
+      firstLevelViews: [],
+    };
 
-  // Group views by integration ID
-  team.views.forEach((view) => {
-    const metadata = view.metadata as { integration?: { id: string } };
-    const integrationId = metadata?.integration?.id;
-
-    if (integrationId) {
-      if (!fromIntegration[integrationId]) {
-        fromIntegration[integrationId] = [];
-      }
-      fromIntegration[integrationId].push(view);
-    } else {
-      if (view.type === "custom") {
-        if (!fromIntegration["custom"]) {
-          fromIntegration["custom"] = [];
+    const views = (team?.views ?? []) as Array<any>;
+    for (const view of views) {
+      const integrationId = view.integrationId as string | undefined;
+      if (integrationId) {
+        if (!result.fromIntegration[integrationId]) {
+          result.fromIntegration[integrationId] = [];
         }
-        fromIntegration["custom"].push(view);
-        return;
+        result.fromIntegration[integrationId].push(view);
+        continue;
       }
-      firstLevelViews.push(view);
+
+      if (view.type === "custom") {
+        if (!result.fromIntegration["custom"]) {
+          result.fromIntegration["custom"] = [];
+        }
+        result.fromIntegration["custom"].push(view);
+        continue;
+      }
+
+      result.firstLevelViews.push(view);
     }
-  });
+
+    return result;
+  }, [team?.views]);
+
+  function buildViewHrefFromView(view: View): string {
+    if (view.type === "custom") {
+      if ((view as any)?.name) {
+        return workspaceLink(`/views/${(view as any).integrationId}/${(view as any).name}`);
+      }
+      const rawUrl = (view as any)?.metadata?.url as string | undefined;
+      const qs = rawUrl ? `?viewUrl=${encodeURIComponent(rawUrl)}` : "";
+      return workspaceLink(`/views/${(view as any).integrationId}/index${qs}`);
+    }
+    const path = (view as any)?.metadata?.path as string | undefined;
+    return workspaceLink(path ?? "/");
+  }
 
   // Separate items for organization
   const mcpItems = firstLevelViews.filter((item) =>
-    [
-      "Agents",
-      "Integrations",
-      "Prompts",
-      "Views",
-      "Workflows",
-      "Triggers",
-    ].includes(item.title),
+    ["Agents", "Tools", "Prompts", "Views", "Workflows", "Triggers"].includes(
+      item.title,
+    ),
   );
   const otherItems = firstLevelViews.filter((item) =>
     ["Monitor"].includes(item.title),
@@ -510,20 +526,8 @@ function WorkspaceViews() {
               <CollapsibleContent>
                 <SidebarMenuSub>
                   {mcpItems.map((item) => {
-                    const meta = parseViewMetadata(item);
-                    if (!meta) return null;
-
-                    // Special handling for Integrations -> Tools
-                    const displayTitle =
-                      item.title === "Integrations" ? "Tools" : item.title;
-                    const href =
-                      item.title === "Integrations"
-                        ? workspaceLink("/connections")
-                        : workspaceLink(
-                            meta.type === "custom"
-                              ? `/views/${item.id}`
-                              : meta.path,
-                          );
+                    const displayTitle = item.title;
+                    const href = buildViewHrefFromView(item as any as View);
 
                     return (
                       <SidebarMenuSubItem key={item.title}>
@@ -556,13 +560,7 @@ function WorkspaceViews() {
       )}
       {/* Regular items */}
       {otherItems.map((item) => {
-        const meta = parseViewMetadata(item);
-        if (!meta) {
-          return null;
-        }
-        const href = workspaceLink(
-          meta.type === "custom" ? `/views/${item.id}` : meta.path,
-        );
+        const href = buildViewHrefFromView(item as any as View);
 
         return (
           <SidebarMenuItem key={item.title}>
@@ -591,7 +589,7 @@ function WorkspaceViews() {
                     />
                     <span className="truncate">{item.title}</span>
 
-                    {meta.type === "custom" && (
+                    {item.type === "custom" && (
                       <Button
                         variant="outline"
                         size="sm"
@@ -618,6 +616,7 @@ function WorkspaceViews() {
       })}
       {Object.entries(fromIntegration).map(([integrationId, views]) => {
         const integration = integrationMap.get(integrationId);
+
         return (
           <SidebarMenuItem key={integrationId}>
             <Collapsible asChild defaultOpen className="group/collapsible">
@@ -642,15 +641,8 @@ function WorkspaceViews() {
                 </CollapsibleTrigger>
                 <CollapsibleContent>
                   <SidebarMenuSub>
-                    {views.map((view) => {
-                      const meta = parseViewMetadata(view);
-                      if (!meta) return null;
-
-                      const href = workspaceLink(
-                        meta.type === "custom"
-                          ? `/views/${view.id}`
-                          : meta.path,
-                      );
+                    {views.map((view: any) => {
+                      const href = buildViewHrefFromView(view as any as View);
 
                       return (
                         <SidebarMenuSubItem key={view.id}>
@@ -671,7 +663,7 @@ function WorkspaceViews() {
                                 className="text-muted-foreground/75"
                               />
                               <span className="truncate">{view.title}</span>
-                              {meta.type === "custom" && (
+                              {view.type === "custom" && (
                                 <Icon
                                   name="unpin"
                                   size={18}

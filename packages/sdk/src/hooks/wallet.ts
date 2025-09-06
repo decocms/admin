@@ -91,7 +91,7 @@ export function useContractsPreAuthorizations({
     queryFn: () => getContractsPreAuthorizations(workspace, range),
   });
 
-  console.log({contractsPreAuthorizations});
+  console.log({ contractsPreAuthorizations });
 
   return contractsPreAuthorizations;
 }

@@ -76,7 +76,7 @@ const mcpClientForAppName = (appName: string, decoChatApiUrl?: string) => {
 const mcpClientForIntegrationId = (
   integrationId: string,
   ctx: WorkspaceClientContext,
-  decoChatApiUrl?: string,
+  _decoChatApiUrl?: string,
   appName?: string,
 ) => {
   const mcpConnection: MCPConnection = {

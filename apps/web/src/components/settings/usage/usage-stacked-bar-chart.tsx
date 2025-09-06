@@ -6,7 +6,7 @@ import type {
   ThreadUsage,
 } from "@deco/sdk";
 import { ChartBarStack } from "./stacked-bar-chart.tsx";
-import { TimeRange } from "./usage.tsx";
+import type { TimeRange } from "./usage.tsx";
 import { color } from "./util.ts";
 
 export interface UsageChartData {

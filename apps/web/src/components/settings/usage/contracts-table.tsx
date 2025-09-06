@@ -8,7 +8,12 @@ import {
 import type { ContractState } from "@deco/sdk/mcp";
 import { MicroDollar } from "@deco/sdk/mcp/wallet";
 import { Table, type TableColumn } from "../../common/table/index.tsx";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@deco/ui/components/dialog.tsx";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@deco/ui/components/dialog.tsx";
 import { Button } from "@deco/ui/components/button.tsx";
 import { Spinner } from "@deco/ui/components/spinner.tsx";
 import { color } from "./util.ts";
@@ -219,13 +224,16 @@ export function ContractsTable({
         />
       )}
       {selectedContract && !selectedContract.integration?.connection && (
-        <Dialog open={true} onOpenChange={(open) => !open && setSelectedContract(null)}>
+        <Dialog
+          onOpenChange={(open) => !open && setSelectedContract(null)}
+        >
           <DialogContent>
             <DialogHeader>
               <DialogTitle>Contract Details</DialogTitle>
             </DialogHeader>
             <div className="text-center py-8 text-muted-foreground">
-              No integration connection found for this contract. Cannot load detailed information.
+              No integration connection found for this contract. Cannot load
+              detailed information.
             </div>
           </DialogContent>
         </Dialog>
@@ -303,7 +311,9 @@ function ContractDetailsDialog({
     clauses: { id: string; price: string | number; description?: string }[];
   } | null;
   isLoadingDetails: boolean;
-  onLoadDetails: (details: { clauses: { id: string; price: string | number; description?: string }[] }) => void;
+  onLoadDetails: (details: {
+    clauses: { id: string; price: string | number; description?: string }[];
+  }) => void;
   setIsLoadingDetails: (loading: boolean) => void;
 }) {
   const callTool = useToolCall(selectedContract.integration.connection);
@@ -315,13 +325,18 @@ function ContractDetailsDialog({
         name: "CONTRACT_GET",
         arguments: {},
       });
-            
+
       // Extract from structuredContent instead of direct result
-      const typed = result as { structuredContent?: { contract?: ContractState } };
-      
-      const clauses: { id: string; price: string | number; description?: string }[] =
-        typed?.structuredContent?.contract?.clauses || [];
-      
+      const typed = result as {
+        structuredContent?: { contract?: ContractState };
+      };
+
+      const clauses: {
+        id: string;
+        price: string | number;
+        description?: string;
+      }[] = typed?.structuredContent?.contract?.clauses || [];
+
       onLoadDetails({ clauses });
     } catch (error) {
       console.error("CONTRACT_GET error", error);
@@ -347,18 +362,23 @@ function ContractDetailsDialog({
   }
 
   return (
-    <Dialog open={!!selectedContract} onOpenChange={(open) => !open && onClose()}>
+    <Dialog
+      open={!!selectedContract}
+      onOpenChange={(open) => !open && onClose()}
+    >
       <DialogContent className="max-w-2xl">
         <DialogHeader>
           <DialogTitle>
             Contract Details: {selectedContract.integration.name}
           </DialogTitle>
         </DialogHeader>
-        
+
         <div className="space-y-4">
           <div>
             <h4 className="font-medium mb-2">Contract ID</h4>
-            <p className="text-sm text-muted-foreground">{selectedContract.contractId}</p>
+            <p className="text-sm text-muted-foreground">
+              {selectedContract.contractId}
+            </p>
           </div>
 
           {!contractDetails && !isLoadingDetails && (
@@ -382,13 +402,19 @@ function ContractDetailsDialog({
                   <div className="text-center py-4 text-muted-foreground">
                     No clauses found in this contract.
                     <br />
-                    <span className="text-xs">This integration may not have defined specific pricing clauses.</span>
+                    <span className="text-xs">
+                      This integration may not have defined specific pricing
+                      clauses.
+                    </span>
                   </div>
                 ) : (
                   contractDetails.clauses.map((clause, index) => {
                     const priceDisplay = formatPrice(clause.price);
                     return (
-                      <div key={index} className="flex items-center justify-between p-3 border rounded-lg">
+                      <div
+                        key={index}
+                        className="flex items-center justify-between p-3 border rounded-lg"
+                      >
                         <div className="flex flex-col">
                           <span className="font-medium">{clause.id}</span>
                           {clause.description && (
@@ -398,7 +424,7 @@ function ContractDetailsDialog({
                           )}
                         </div>
                         <div className="text-sm text-muted-foreground">
-                          {priceDisplay || 'Price not available'}
+                          {priceDisplay || "Price not available"}
                         </div>
                       </div>
                     );
@@ -412,4 +438,3 @@ function ContractDetailsDialog({
     </Dialog>
   );
 }
-

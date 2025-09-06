@@ -1,10 +1,8 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { createContext, type PropsWithChildren, use } from "react";
-
-export type Workspace = `users/${string}` | `shared/${string}`;
+import { Workspace } from "../workspace";
 
 interface State {
-  /** The context of the account, i.e. users/123 or shared/teamId */
   workspace: Workspace;
 }
 

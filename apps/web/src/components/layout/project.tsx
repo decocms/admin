@@ -1,4 +1,4 @@
-import { SDKProvider, type Workspace } from "@deco/sdk";
+import { SDKProvider } from "@deco/sdk";
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -35,15 +35,19 @@ import { AppSidebar } from "../sidebar/index.tsx";
 import { WithWorkspaceTheme } from "../theme.tsx";
 import { useIsMobile } from "@deco/ui/hooks/use-mobile.ts";
 import { ErrorBoundary } from "../../error-boundary.tsx";
+import { Workspaces } from "@deco/sdk";
 
 export function BaseRouteLayout({ children }: { children: ReactNode }) {
-  const user = useUser();
-  const { org } = useParams();
+  // remove?
+  useUser();
+  const { org, project } = useParams();
 
-  const rootContext: Workspace = org ? `shared/${org}` : `users/${user?.id}`;
+  if (!org || !project) {
+    throw new Error("No organization or project found");
+  }
 
   return (
-    <SDKProvider workspace={rootContext}>
+    <SDKProvider workspace={Workspaces.from({ org, project })}>
       {children}
       <Toaster />
     </SDKProvider>

@@ -29,27 +29,12 @@ export interface CurrentTeam {
   theme: Theme | undefined;
 }
 
-function useUserTeam(): CurrentTeam & { views: View[] } {
-  const user = useUser();
-  const avatarUrl = user?.metadata?.avatar_url ?? undefined;
-  const name = user?.metadata?.full_name || user?.email;
-  const label = `${name.split(" ")[0]}'s team`;
-  return {
-    avatarUrl,
-    label,
-    id: user?.id ?? "",
-    slug: "",
-    theme: undefined,
-    views: withDefaultViews([]),
-  };
-}
-
 export function useCurrentTeam(): CurrentTeam & { views: View[] } {
   const { org } = useParams();
-  const userTeam = useUserTeam();
   const { data: teamData } = useTeam(org);
+
   if (!org) {
-    return userTeam;
+    throw new Error("No organization found");
   }
 
   return {
@@ -64,19 +49,15 @@ export function useCurrentTeam(): CurrentTeam & { views: View[] } {
 
 export function useUserTeams() {
   const { data: teams } = useOrganizations();
-  const personalTeam = useUserTeam();
   const { slug: currentSlug } = useCurrentTeam();
 
-  const allTeams: CurrentTeam[] = [
-    personalTeam,
-    ...teams.map((team) => ({
-      avatarUrl: team.avatar_url,
-      slug: team.slug,
-      label: team.name,
-      id: team.id,
-      theme: team.theme,
-    })),
-  ];
+  const allTeams: CurrentTeam[] = teams.map((team) => ({
+    avatarUrl: team.avatar_url,
+    slug: team.slug,
+    label: team.name,
+    id: team.id,
+    theme: team.theme,
+  }));
 
   const teamsWithoutCurrentTeam = allTeams.filter(
     (team) => team.slug !== currentSlug,

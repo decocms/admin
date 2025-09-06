@@ -5,6 +5,9 @@ import { Button } from "@deco/ui/components/button.tsx";
 const DECO_DAY_START_DATE = new Date("2025-09-08T14:00:00");
 const DECO_DAY_END_DATE = new Date("2025-09-08T18:00:00");
 
+const YOUTUBE_LIVE_URL =
+  "https://www.youtube.com/live/rsbs-aGj8Io?si=JCKwQHRRiKhtGiHf";
+
 const CountdownBox = ({ value, label }: { value: string; label: string }) => (
   <div className="flex flex-col items-center justify-center gap-2">
     <div className="text-xl @min-xl:text-3xl font-medium text-foreground">
@@ -26,7 +29,7 @@ const LinkWrapper = ({
   className?: string;
 }) => (
   <a
-    href="https://deco.day"
+    href={YOUTUBE_LIVE_URL}
     target="_blank"
     rel="noopener noreferrer"
     className={cn(
@@ -44,7 +47,7 @@ const Upcoming = () => {
 
   return (
     <a
-      href="https://deco.day"
+      href={YOUTUBE_LIVE_URL}
       target="_blank"
       rel="noopener noreferrer"
       className={cn(

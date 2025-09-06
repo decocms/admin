@@ -19,6 +19,7 @@ import { applyDisplayNameToIntegration } from "../utils/integration-display-name
 import { KEYS } from "./api.ts";
 import { type MCPTool } from "./index.ts";
 import { useSDK } from "./store.tsx";
+import { Workspace } from "../workspace.ts";
 
 interface IntegrationToolsResult {
   integration: Integration;
@@ -332,7 +333,7 @@ export const useCreateOAuthCodeForIntegration = () => {
   const mutation = useMutation({
     mutationFn: async (params: {
       integrationId: string;
-      workspace: string;
+      workspace: Workspace;
       redirectUri: string;
       state?: string;
     }) => {

@@ -307,17 +307,17 @@ appAuth.all("/logout", async (ctx: AppContext) => {
 
 async function ensureFreeTwoDollarsTransaction({
   wallet,
-  personalWorkspace,
+  walletWorkspace,
 }: {
   wallet: ReturnType<typeof createWalletClient>;
-  personalWorkspace: string;
+  walletWorkspace: string;
 }) {
   const freeTwoDollars = {
     type: "WorkspaceGenCreditReward" as const,
     amount: "2_000000",
-    workspace: personalWorkspace,
+    workspace: walletWorkspace,
     transactionId: WellKnownTransactions.freeTwoDollars(
-      encodeURIComponent(personalWorkspace),
+      encodeURIComponent(walletWorkspace),
     ),
   };
 
@@ -339,34 +339,36 @@ async function ensureFreeTwoDollarsTransaction({
 
 export function slugifyForOrg(input: string): string {
   // Lowercase and replace all non-alphanumeric with underscores
-  return input.toLowerCase()
-    .replace(/[^a-z0-9]/g, "_")
-    // Collapse multiple underscores
-    .replace(/_+/g, "_")
-    .replace(/^_+|_+$/g, "");
+  return (
+    input
+      .toLowerCase()
+      .replace(/[^a-z0-9]/g, "_")
+      // Collapse multiple underscores
+      .replace(/_+/g, "_")
+      .replace(/^_+|_+$/g, "")
+  );
 }
 
-async function ensureUserOrg({
+async function ensureHasAnyOrg({
   db,
   user,
 }: {
   db: Client;
   user: SupaUser;
-}): Promise<{ created: boolean }> {
+}): Promise<{ created: boolean; slug: string | null }> {
   const { data: existingOrg, error: existingOrgError } = await db
     .from("teams")
-    .select("id")
-    .eq("personal_owner_id", user.id)
-    .eq("personal", true)
-    .maybeSingle();
+    .select("id, members(id, user_id)")
+    .eq("members.user_id", user.id)
+    .is("members.deleted_at", null);
 
-  if (existingOrg) {
-    return { created: false };
+  if (existingOrg && existingOrg.length > 0) {
+    return { created: false, slug: null };
   }
 
   if (existingOrgError) {
-    console.error("Failed to read existing org", existingOrgError);
-    throw new InternalServerError("Failed to get existing org");
+    console.error("Failed to read existing orgs", existingOrgError);
+    throw new InternalServerError("Failed to get existing orgs");
   }
 
   const userFirstName =
@@ -401,24 +403,32 @@ async function ensureUserOrg({
     }
   }
 
-  const { data: team, error } = await db.from("teams").insert({
-    name: orgName,
-    slug,
-    personal_owner_id: user.id,
-    plan_id: WELL_KNOWN_PLANS.FREE,
-    personal: true,
-  }).select().single();
+  const { data: team, error } = await db
+    .from("teams")
+    .insert({
+      name: orgName,
+      slug,
+      plan_id: WELL_KNOWN_PLANS.FREE,
+    })
+    .select()
+    .single();
 
   if (error) {
     console.error("Failed to create team", error);
     throw new InternalServerError("Failed to create team");
   }
 
-  const { data: member, error: addMemberError } = await db.from("members").insert([{
-    team_id: team.id,
-    user_id: user.id,
-    admin: true,
-  }]).select().single();
+  const { data: member, error: addMemberError } = await db
+    .from("members")
+    .insert([
+      {
+        team_id: team.id,
+        user_id: user.id,
+        admin: true,
+      },
+    ])
+    .select()
+    .single();
 
   if (addMemberError) {
     console.error("Failed to add member to team", addMemberError);
@@ -427,17 +437,19 @@ async function ensureUserOrg({
 
   const WELL_KNOWN_ADMIN_ROLE_ID = 4;
 
-  const { error: roleError } = await db.from("member_roles").insert([{
-    member_id: member.id,
-    role_id: WELL_KNOWN_ADMIN_ROLE_ID,
-  }]);
+  const { error: roleError } = await db.from("member_roles").insert([
+    {
+      member_id: member.id,
+      role_id: WELL_KNOWN_ADMIN_ROLE_ID,
+    },
+  ]);
 
   if (roleError) {
     console.error("Failed to add role to member", roleError);
     throw new InternalServerError("Failed to add role to member");
   }
 
-  return { created: true };
+  return { created: true, slug: team.slug };
 }
 
 async function assertUserHasPersonalOrg(ctx: AppContext) {
@@ -452,7 +464,7 @@ async function assertUserHasPersonalOrg(ctx: AppContext) {
     throw new InternalServerError("User ID is not set");
   }
 
-  const result = await ensureUserOrg({
+  const result = await ensureHasAnyOrg({
     db,
     user,
   });
@@ -461,12 +473,12 @@ async function assertUserHasPersonalOrg(ctx: AppContext) {
     return;
   }
 
-  const personalWorkspace = `/users/${user.id}`;
+  const walletWorkspace = `/shared/${result.slug}`;
   const wallet = createWalletClient(ctx.env.WALLET_API_KEY);
 
   await ensureFreeTwoDollarsTransaction({
     wallet,
-    personalWorkspace,
+    walletWorkspace,
   });
 }
 

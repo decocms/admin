@@ -4,7 +4,6 @@ import {
   SDKProvider,
   useCreateOAuthCodeForIntegration,
   useIntegrations,
-  type Workspace,
 } from "@deco/sdk";
 import { Button } from "@deco/ui/components/button.tsx";
 import { Icon } from "@deco/ui/components/icon.tsx";
@@ -39,6 +38,7 @@ import {
 import type { JSONSchema7 } from "json-schema";
 import { getAllScopes } from "../../utils/scopes.ts";
 import { VerifiedBadge } from "../integrations/marketplace.tsx";
+import { Workspaces } from "@deco/sdk";
 
 const preSelectTeam = (
   teams: CurrentTeam[],
@@ -140,16 +140,16 @@ const NoProjectFound = () => {
   );
 };
 
-const SelectProject = ({
+const SelectOrganization = ({
   registryApp,
-  teams,
-  setTeam,
+  orgs,
+  setOrg,
 }: {
   registryApp: RegistryApp;
-  teams: CurrentTeam[];
-  setTeam: (team: CurrentTeam | null) => void;
+  orgs: CurrentTeam[];
+  setOrg: (team: CurrentTeam | null) => void;
 }) => {
-  const [selectedTeam, setSelectedTeam] = useState<CurrentTeam | null>(null);
+  const [selectedOrg, setSelectedOrg] = useState<CurrentTeam | null>(null);
 
   return (
     <div className="flex flex-col items-center justify-center h-screen">
@@ -173,16 +173,14 @@ const SelectProject = ({
           </p>
           <div className="w-full">
             <Combobox
-              options={teams.map((team) => ({
+              options={orgs.map((team) => ({
                 value: team.slug,
                 label: team.label,
                 avatarUrl: team.avatarUrl,
               }))}
-              value={selectedTeam?.slug ?? ""}
+              value={selectedOrg?.slug ?? ""}
               onChange={(value) =>
-                setSelectedTeam(
-                  teams.find((team) => team.slug === value) ?? null,
-                )
+                setSelectedOrg(orgs.find((team) => team.slug === value) ?? null)
               }
               placeholder="Select a project"
               width="w-full"
@@ -235,8 +233,8 @@ const SelectProject = ({
 
         <Button
           className="w-full"
-          disabled={!selectedTeam}
-          onClick={() => setTeam(selectedTeam)}
+          disabled={!selectedOrg}
+          onClick={() => setOrg(selectedOrg)}
         >
           Continue
         </Button>
@@ -479,16 +477,16 @@ const FooterButtons = ({
 
 const SelectProjectAppInstance = ({
   app,
+  org,
   project,
-  workspace,
   selectAnotherProject,
   clientId,
   redirectUri,
   state,
 }: {
   app: RegistryApp;
-  project: CurrentTeam;
-  workspace: Workspace;
+  org: CurrentTeam;
+  project: string;
   selectAnotherProject: () => void;
   clientId: string;
   redirectUri: string;
@@ -530,7 +528,7 @@ const SelectProjectAppInstance = ({
   }) => {
     const { redirectTo } = await createOAuthCode.mutateAsync({
       integrationId,
-      workspace,
+      workspace: Workspaces.from({ org: org.slug, project }),
       redirectUri,
       state,
     });
@@ -545,8 +543,8 @@ const SelectProjectAppInstance = ({
             <div className="relative">
               <Avatar
                 shape="square"
-                url={project.avatarUrl}
-                fallback={project.label}
+                url={org.avatarUrl}
+                fallback={org.label}
                 objectFit="contain"
                 size="xl"
               />
@@ -645,40 +643,43 @@ function AppsOAuth({
   workspace_hint,
 }: OAuthSearchParams) {
   const { data: registryApp } = useRegistryApp({ clientId: client_id });
-  const teams = useUserTeams();
-  const user = useUser();
-  const [team, setTeam] = useState<CurrentTeam | null>(
-    preSelectTeam(teams, workspace_hint),
+  const orgs = useUserTeams();
+  const [org, setOrg] = useState<CurrentTeam | null>(
+    preSelectTeam(orgs, workspace_hint),
   );
 
-  const selectedWorkspace = useMemo(() => {
-    if (!team) {
+  const selectedOrgSlug = useMemo(() => {
+    if (!org) {
       return null;
     }
-    return team.id === user.id ? `users/${user.id}` : `shared/${team.slug}`;
-  }, [team]);
+    return org.slug;
+  }, [org]);
 
-  if (!teams || teams.length === 0) {
+  const selectedProject = "default";
+
+  if (!orgs || orgs.length === 0) {
     return <NoProjectFound />;
   }
 
-  if (!selectedWorkspace || !team) {
+  if (!selectedOrgSlug || !org) {
     return (
-      <SelectProject
+      <SelectOrganization
         registryApp={registryApp}
-        teams={teams}
-        setTeam={setTeam}
+        orgs={orgs}
+        setOrg={setOrg}
       />
     );
   }
 
+  const workspace = Workspaces.from({ org: selectedOrgSlug, project: selectedProject });
+
   return (
-    <SDKProvider workspace={selectedWorkspace as Workspace}>
+    <SDKProvider workspace={workspace}>
       <SelectProjectAppInstance
         app={registryApp}
-        project={team}
-        workspace={selectedWorkspace as Workspace}
-        selectAnotherProject={() => setTeam(null)}
+        org={org}
+        project={selectedProject}
+        selectAnotherProject={() => setOrg(null)}
         clientId={client_id}
         redirectUri={redirect_uri}
         state={state}

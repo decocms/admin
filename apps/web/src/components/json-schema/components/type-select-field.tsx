@@ -103,13 +103,14 @@ export function TypeSelectField<T extends FieldValues = FieldValues>({
                     <SelectTrigger className="h-11">
                       <SelectValue placeholder="Select an integration">
                         {field.value?.value && selectedOption && (
-                          <div className="flex items-center gap-3">
+                          <div className="flex items-center gap-3 max-w-50">
                             <IntegrationIcon
                               icon={selectedOption.icon}
                               name={selectedOption.label}
                               size="sm"
+                              className="flex-shrink-0"
                             />
-                            <span className="font-medium">
+                            <span className="font-medium truncate min-w-0 flex-1">
                               {selectedOption.label}
                             </span>
                           </div>
@@ -117,17 +118,17 @@ export function TypeSelectField<T extends FieldValues = FieldValues>({
                       </SelectValue>
                     </SelectTrigger>
                   </FormControl>
-                  <SelectContent>
+                  <SelectContent align="end" side="bottom">
                     {options.map((option: OptionItem) => (
                       <SelectItem key={option.value} value={option.value}>
-                        <div className="flex items-center gap-3 w-full">
+                        <div className="flex items-center gap-3 max-w-50">
                           <IntegrationIcon
                             icon={option.icon}
                             name={option.label}
                             size="sm"
                             className="flex-shrink-0"
                           />
-                          <span className="font-medium text-sm">
+                          <span className="font-medium text-sm truncate min-w-0 flex-1">
                             {option.label}
                           </span>
                         </div>

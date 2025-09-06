@@ -2,7 +2,7 @@ import { listPrompts } from "../crud/prompts.ts";
 import type { MCPClient } from "../fetcher.ts";
 import type { Prompt } from "../index.ts";
 import { unescapeHTML } from "./html.ts";
-import { Workspace } from "../workspace.ts";
+import { Workspace } from "../locator.ts";
 
 export const MENTION_REGEX =
   /<span\s+[^>]*data-id=["']?([^"'\s>]+)["']?\s+[^>]*data-mention-type=["']?([^"'\s>]+)["']?[^>]*>.*?<\/span>/g;

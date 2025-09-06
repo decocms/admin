@@ -1,7 +1,7 @@
 import { MCPClient } from "../fetcher.ts";
 import { type Agent, AgentSchema } from "../models/agent.ts";
 import { stub } from "../stub.ts";
-import { Workspace, Workspaces } from "../workspace.ts";
+import { Workspace, Workspaces } from "../locator.ts";
 
 /**
  * Update an agent

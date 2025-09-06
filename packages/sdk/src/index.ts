@@ -1,5 +1,5 @@
 export * from "./constants.ts";
-export * from "./workspace.ts";
+export * from "./locator.ts";
 export * from "./plan.ts";
 
 export * from "./crud/teams.ts";

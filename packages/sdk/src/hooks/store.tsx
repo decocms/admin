@@ -1,6 +1,6 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { createContext, type PropsWithChildren, use } from "react";
-import { Workspace } from "../workspace";
+import { Workspace } from "../locator";
 
 interface State {
   workspace: Workspace;

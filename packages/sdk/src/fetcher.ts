@@ -6,7 +6,7 @@ import type {
 } from "./mcp/index.ts";
 import { createMCPFetchStub } from "./mcp/stub.ts";
 import type { MCPConnection } from "./models/mcp.ts";
-import { Workspace } from "./workspace.ts";
+import { Workspace } from "./locator.ts";
 
 export interface FetchOptions extends RequestInit {
   path?: string;

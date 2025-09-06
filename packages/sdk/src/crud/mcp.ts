@@ -4,7 +4,7 @@ import {
   type Integration,
   IntegrationSchema,
 } from "../models/mcp.ts";
-import { Workspace } from "../workspace.ts";
+import { Workspace } from "../locator.ts";
 
 /**
  * Save an MCP to the file system

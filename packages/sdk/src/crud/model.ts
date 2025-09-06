@@ -1,7 +1,7 @@
 import type { Model } from "../constants.ts";
 import { MCPClient } from "../fetcher.ts";
 import type { CreateModelInput } from "../mcp/models/api.ts";
-import { Workspace } from "../workspace.ts";
+import { Workspace } from "../locator.ts";
 
 export interface ListModelsInput {
   excludeDisabled?: boolean;

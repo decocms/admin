@@ -1,6 +1,6 @@
 import { MCPClient } from "../fetcher.ts";
 import type { Prompt, PromptVersion } from "../models/index.ts";
-import { Workspace } from "../workspace.ts";
+import { Workspace } from "../locator.ts";
 
 export const listPrompts = (
   workspace: Workspace,

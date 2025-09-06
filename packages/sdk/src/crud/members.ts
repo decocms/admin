@@ -1,6 +1,6 @@
 import { MCPClient } from "../fetcher.ts";
 import type { User } from "./user.ts";
-import { Workspace } from "../workspace.ts";
+import { Workspace } from "../locator.ts";
 
 interface Roles {
   name: string;

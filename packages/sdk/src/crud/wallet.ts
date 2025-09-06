@@ -1,5 +1,5 @@
 import { MCPClient } from "../fetcher.ts";
-import { Workspace } from "../workspace.ts";
+import { Workspace } from "../locator.ts";
 
 export const getWalletAccount = (workspace: Workspace) =>
   MCPClient.forWorkspace(workspace).GET_WALLET_ACCOUNT({});

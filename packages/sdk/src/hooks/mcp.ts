@@ -19,7 +19,7 @@ import { applyDisplayNameToIntegration } from "../utils/integration-display-name
 import { KEYS } from "./api.ts";
 import { type MCPTool } from "./index.ts";
 import { useSDK } from "./store.tsx";
-import { Workspace } from "../workspace.ts";
+import { Workspace } from "../locator.ts";
 
 interface IntegrationToolsResult {
   integration: Integration;

@@ -1,7 +1,7 @@
 import { MCPClient } from "../fetcher.ts";
 import type { MCPConnection } from "../models/mcp.ts";
 import type { Theme } from "../theme.ts";
-import { Workspace } from "../workspace.ts";
+import { Workspace } from "../locator.ts";
 import { View } from "../views.ts";
 
 export interface Team {

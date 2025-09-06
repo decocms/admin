@@ -2,7 +2,7 @@ import { MCPClient } from "../fetcher.ts";
 import type { WellKnownBindings } from "../mcp/index.ts";
 import type { Channel } from "../models/channels.ts";
 import type { MCPConnection } from "../models/mcp.ts";
-import { Workspace } from "../workspace.ts";
+import { Workspace } from "../locator.ts";
 export type { Channel };
 
 /**

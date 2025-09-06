@@ -1,6 +1,6 @@
 import type { UIMessage } from "ai";
 import { MCPClient } from "../fetcher.ts";
-import { Workspace } from "../workspace.ts";
+import { Workspace } from "../locator.ts";
 
 export interface ThreadFilterOptions {
   agentId?: string;

@@ -1,6 +1,6 @@
 import { MCPClient } from "../fetcher.ts";
 import type { CreateTriggerInput } from "../models/trigger.ts";
-import { Workspace } from "../workspace.ts";
+import { Workspace } from "../locator.ts";
 
 export const getTrigger = (workspace: Workspace, id: string) =>
   MCPClient.forWorkspace(workspace).TRIGGERS_GET({ id });

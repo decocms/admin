@@ -84,10 +84,9 @@ export const addView = (
   input: AddViewInput,
   init?: RequestInit,
 ): Promise<View> =>
-  MCPClient.forWorkspace(workspace).TEAMS_ADD_VIEW(
-    input,
-    init,
-  ) as Promise<View>;
+  MCPClient.forWorkspace(workspace)
+    .TEAMS_ADD_VIEW(input, init)
+    .then((v) => v as unknown as View);
 
 export interface RemoveViewInput {
   viewId: string;
@@ -126,11 +125,14 @@ export const listAvailableViewsForConnection = async (
     });
 
     if (typeof result.isError === "boolean" && result.isError) {
-      const message = result.structuredContent ?? result.content?.[0]?.text;
+      const firstContent = Array.isArray(result.content)
+        ? result.content[0]?.text
+        : undefined;
+      const message = result.structuredContent ?? firstContent;
       throw new Error(JSON.stringify(message));
     }
 
-    const viewsList = result.structuredContent as { views: ViewListItem[] };
+    const viewsList = result.structuredContent as { views?: ViewListItem[] };
 
     return {
       views: (viewsList?.views ?? []).map((view) => ({

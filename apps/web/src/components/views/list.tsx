@@ -23,6 +23,7 @@ import { Spinner } from "@deco/ui/components/spinner.tsx";
 export interface ViewWithStatus {
   isAdded: boolean;
   teamViewId?: string;
+  name?: string;
   url?: string;
   title: string;
   icon: string;

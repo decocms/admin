@@ -432,9 +432,30 @@ app.all("/:root/:slug/i:databases-management/studio", async (c) => {
   await assertWorkspaceResourceAccess(ctx, {
     resource: "DATABASES_RUN_SQL",
   });
-  const url = new URL(c.req.raw.url);
-  url.searchParams.set("id", `/${root}/${slug}`);
-  const request = new Request(url.toString(), c.req.raw);
+
+  // The DO id can be overridden by the client, so we need to enforce it
+  // It can be overriden both on the URL for GET requests and on the body
+  // "id" property for POST requests
+  // https://github.com/outerbase/browsable-durable-object/blob/main/src/index.ts#L405
+
+  // Enforce tenant ID on the url
+  const safeUrl = new URL(c.req.raw.url);
+  safeUrl.searchParams.set("id", `/${root}/${slug}`);
+
+  // Enforce tenant ID on the body
+  let safeBody: { id: string } | undefined;
+  if (c.req.raw.method !== "GET") {
+    safeBody = await c.req.raw.json<{ id: string }>();
+    safeBody.id = `/${root}/${slug}`;
+  }
+
+  // Create the final request
+  const request = new Request(safeUrl.toString(), {
+    body: safeBody ? JSON.stringify(safeBody) : null,
+    headers: c.req.raw.headers,
+    method: c.req.raw.method,
+  });
+
   return studio(request, ctx.workspaceDO);
 });
 

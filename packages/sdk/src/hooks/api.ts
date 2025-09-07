@@ -65,6 +65,7 @@ export const KEYS = {
     options.resourceId,
   ],
   TEAMS: () => ["teams"],
+  PROJECTS: (org: string) => ["projects", org],
   TEAM: (slug: string) => ["team", slug],
   TEAM_THEME: (slug: string) => ["team-theme", slug],
   TEAM_VIEWS: (locator: ProjectLocator, integrationId: string) => [

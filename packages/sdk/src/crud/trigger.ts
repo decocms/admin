@@ -19,10 +19,8 @@ export const deleteTrigger = (locator: ProjectLocator, triggerId: string) =>
 export const activateTrigger = (locator: ProjectLocator, triggerId: string) =>
   MCPClient.forLocator(locator).TRIGGERS_ACTIVATE({ id: triggerId });
 
-export const deactivateTrigger = (
-  locator: ProjectLocator,
-  triggerId: string,
-) => MCPClient.forLocator(locator).TRIGGERS_DEACTIVATE({ id: triggerId });
+export const deactivateTrigger = (locator: ProjectLocator, triggerId: string) =>
+  MCPClient.forLocator(locator).TRIGGERS_DEACTIVATE({ id: triggerId });
 
 export const updateTrigger = (
   locator: ProjectLocator,

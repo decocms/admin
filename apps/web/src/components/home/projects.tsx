@@ -80,7 +80,7 @@ function Projects({ query, org }: { query?: string; org: string }) {
       {projects.map((project) => (
         <ProjectCard
           key={project.id}
-          name={project.name}
+          name={project.title}
           slug={project.slug}
           url={`/${project.org.slug}/${project.slug}`}
           avatarUrl={project.avatar_url || project.org.avatar_url || ""}

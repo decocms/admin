@@ -906,6 +906,44 @@ export type Database = {
         };
         Relationships: [];
       };
+      deco_chat_projects: {
+        Row: {
+          created_at: string | null;
+          description: string | null;
+          icon: string | null;
+          id: string;
+          org_id: number;
+          slug: string;
+          title: string;
+        };
+        Insert: {
+          created_at?: string | null;
+          description?: string | null;
+          icon?: string | null;
+          id?: string;
+          org_id: number;
+          slug: string;
+          title: string;
+        };
+        Update: {
+          created_at?: string | null;
+          description?: string | null;
+          icon?: string | null;
+          id?: string;
+          org_id?: number;
+          slug?: string;
+          title?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "deco_chat_projects_org_id_fkey";
+            columns: ["org_id"];
+            isOneToOne: false;
+            referencedRelation: "teams";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       deco_chat_prompts: {
         Row: {
           content: string;
@@ -2977,8 +3015,6 @@ export type Database = {
           created_at: string | null;
           id: number;
           name: string;
-          personal: boolean;
-          personal_owner_id: string | null;
           plan: string | null;
           plan_id: string;
           slug: string | null;
@@ -2989,8 +3025,6 @@ export type Database = {
           created_at?: string | null;
           id?: number;
           name: string;
-          personal?: boolean;
-          personal_owner_id?: string | null;
           plan?: string | null;
           plan_id?: string;
           slug?: string | null;
@@ -3001,8 +3035,6 @@ export type Database = {
           created_at?: string | null;
           id?: number;
           name?: string;
-          personal?: boolean;
-          personal_owner_id?: string | null;
           plan?: string | null;
           plan_id?: string;
           slug?: string | null;
@@ -3010,13 +3042,6 @@ export type Database = {
           theme?: Json | null;
         };
         Relationships: [
-          {
-            foreignKeyName: "teams_personal_owner_id_fkey";
-            columns: ["personal_owner_id"];
-            isOneToOne: false;
-            referencedRelation: "profiles";
-            referencedColumns: ["user_id"];
-          },
           {
             foreignKeyName: "teams_plan_id_fkey";
             columns: ["plan_id"];

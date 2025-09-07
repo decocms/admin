@@ -25,6 +25,7 @@ import { DEFAULT_THEME } from "../theme.ts";
 import { useSDK } from "./store.tsx";
 import { MCPConnection } from "../models/index.ts";
 import { listIntegrations } from "../crud/mcp.ts";
+import { listProjects } from "../crud/projects.ts";
 
 /**
  * Hook to fetch teams - searching is done client-side for now.
@@ -52,10 +53,10 @@ export const useOrganizations = (options: { searchQuery?: string } = {}) => {
 };
 
 export interface Project {
-  id: number;
-  name: string;
+  id: string;
+  title: string;
   slug: string;
-  avatar_url?: string;
+  avatar_url: string | null;
   org: {
     id: number;
     slug: string;
@@ -67,30 +68,15 @@ export const useProjects = (options: {
   searchQuery?: string;
   org: string;
 }): Project[] => {
-  const teams = useOrganizations();
+  const query = useSuspenseQuery({
+    queryKey: KEYS.PROJECTS(options.org),
+    queryFn: () => listProjects(options.org),
+  });
   const search = options.searchQuery ?? "";
-  const org = teams.data.find((team) => team.slug === options.org);
 
-  if (!org) {
-    throw new Error(`Organization ${options.org} not found`);
-  }
-
-  const projects = [
-    {
-      id: 1,
-      name: `${org.name} Default Project`,
-      slug: "default",
-      org: {
-        id: org.id,
-        slug: org.slug,
-        avatar_url: org.avatar_url,
-      },
-    },
-  ];
-
-  const filtered = projects.filter(
+  const filtered = query.data.filter(
     (project) =>
-      project.name.toLowerCase().includes(search.toLowerCase()) ||
+      project.title.toLowerCase().includes(search.toLowerCase()) ||
       project.slug.toLowerCase().includes(search.toLowerCase()),
   );
 

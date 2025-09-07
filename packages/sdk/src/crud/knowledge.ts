@@ -66,7 +66,10 @@ interface CreateKnowledgeParams extends FromWorkspace {
   name: string;
 }
 
-export const createKnowledge = ({ locator: locator, name }: CreateKnowledgeParams) =>
+export const createKnowledge = ({
+  locator: locator,
+  name,
+}: CreateKnowledgeParams) =>
   MCPClient.forLocator(locator).KNOWLEDGE_BASE_CREATE({
     name,
   });

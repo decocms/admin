@@ -332,9 +332,7 @@ export const useCreateOAuthCodeForIntegration = () => {
     }) => {
       const { integrationId, workspace, redirectUri, state } = params;
 
-      const { code } = await MCPClient.forLocator(
-        workspace,
-      ).OAUTH_CODE_CREATE({
+      const { code } = await MCPClient.forLocator(workspace).OAUTH_CODE_CREATE({
         integrationId,
       });
 

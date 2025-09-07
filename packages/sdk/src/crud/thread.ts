@@ -73,10 +73,7 @@ export const getThreadMessages = (
   threadId: string,
   init: RequestInit = {},
 ): Promise<{ messages: UIMessage[] }> =>
-  MCPClient.forLocator(locator).THREADS_GET_MESSAGES(
-    { id: threadId },
-    init,
-  );
+  MCPClient.forLocator(locator).THREADS_GET_MESSAGES({ id: threadId }, init);
 
 export interface ThreadTools {
   tools_set: Record<string, string[]>;

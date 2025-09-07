@@ -67,10 +67,16 @@ export const honoCtxToAppCtx = (c: Context<AppEnv>): AppContext => {
   const project = c.req.param("project") ?? c.req.param("slug");
   const locator = org && project ? Locator.from({ org, project }) : undefined;
 
+  const user = c.get("user");
+  const uid = user?.id as string | undefined;
+
+  const root = project === "personal" && uid ? "users" : "shared";
+  const slug = root === "users" && uid ? uid : org;
+
   const ctxWorkspace = locator
     ? {
-        root: "shared",
-        slug: org,
+        root,
+        slug,
         value: `/${Locator.adaptToShared(locator)}`,
       }
     : undefined;

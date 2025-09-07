@@ -47,8 +47,7 @@ export const useWriteFile = () => {
       content: Uint8Array;
       contentType: string;
       metadata?: Record<string, string | string[]>;
-    }) =>
-      writeFile({ path, locator: locator, content, contentType, metadata }),
+    }) => writeFile({ path, locator: locator, content, contentType, metadata }),
     onMutate: async ({ path, content, contentType, metadata }) => {
       // Cancel any outgoing refetches
       await queryClient.cancelQueries({ queryKey: KEYS.FILE(locator, path) });

@@ -70,16 +70,17 @@ export const honoCtxToAppCtx = (c: Context<AppEnv>): AppContext => {
   const user = c.get("user");
   const uid = user?.id as string | undefined;
 
-  const root = project === "personal" && uid ? "users" : "shared";
-  const slug = root === "users" && uid ? uid : org;
+  const oldWorkspaceValue = locator ? Locator.adaptToRootSlug(locator, uid) : undefined;
 
-  const ctxWorkspace = locator
-    ? {
-        root,
-        slug,
-        value: Locator.adaptToRootSlug(locator, uid),
-      }
-    : undefined;
+  let ctxWorkspace = undefined;
+  if (oldWorkspaceValue) {
+    const [_, root, slug] = oldWorkspaceValue.split("/");
+    ctxWorkspace = {
+      root,
+      slug,
+      value: oldWorkspaceValue,
+    };
+  }
 
   const ctxLocator = locator
     ? {

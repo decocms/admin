@@ -46,6 +46,12 @@ export const Locator = {
     const normalized = locator.startsWith("/") ? locator.slice(1) : locator;
     const [org, project] = normalized.split("/");
 
+    const usesOldSchema = org === "shared" || org === "users";
+
+    if (usesOldSchema) {
+      return `/${org}/${project}`;
+    }
+
     if (project === "personal" && userId) {
       return `/users/${userId}`;
     }

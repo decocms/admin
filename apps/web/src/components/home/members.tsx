@@ -1,21 +1,32 @@
 // deno-lint-ignore-file ensure-tailwind-design-system-tokens/ensure-tailwind-design-system-tokens
-import { useTeamMembers } from "@deco/sdk";
 import { Avatar } from "../common/avatar";
+import { useLazyTeamMembers } from "../../hooks/use-lazy-team-members";
 
 export function OrgAvatars({ teamId }: { teamId: number }) {
-  const members = useTeamMembers(teamId ?? null);
+  const {
+    data: members,
+    isLoading,
+    elementRef,
+  } = useLazyTeamMembers(teamId ?? null);
+
   return (
-    <div className="flex items-center">
-      {members.data.members.slice(0, 4).map((member) => (
-        <Avatar
-          key={member.id}
-          url={member.profiles.metadata.avatar_url}
-          fallback={member.profiles.metadata.full_name}
-          shape="circle"
-          className="w-6 h-6 border border-border -ml-2 first:ml-0"
-          size="sm"
-        />
-      ))}
+    <div ref={elementRef} className="flex items-center">
+      {isLoading ? (
+        <OrgAvatars.Skeleton />
+      ) : (
+        members?.members
+          .slice(0, 3)
+          .map((member) => (
+            <Avatar
+              key={member.id}
+              url={member.profiles.metadata.avatar_url}
+              fallback={member.profiles.metadata.full_name}
+              shape="circle"
+              className="w-6 h-6 border border-border -ml-2 first:ml-0"
+              size="sm"
+            />
+          ))
+      )}
     </div>
   );
 }
@@ -32,8 +43,21 @@ OrgAvatars.Skeleton = () => (
 );
 
 export const OrgMemberCount = ({ teamId }: { teamId: number }) => {
-  const members = useTeamMembers(teamId ?? null);
-  return <div className="text-xs">{members.data.members.length} members</div>;
+  const {
+    data: members,
+    isLoading,
+    elementRef,
+  } = useLazyTeamMembers(teamId ?? null);
+
+  return (
+    <div ref={elementRef} className="text-xs">
+      {isLoading ? (
+        <OrgMemberCount.Skeleton />
+      ) : (
+        `${members?.members.length || 0} members`
+      )}
+    </div>
+  );
 };
 
 OrgMemberCount.Skeleton = () => (

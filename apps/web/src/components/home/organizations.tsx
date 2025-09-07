@@ -45,18 +45,14 @@ function OrganizationCard({
           />
         </div>
         <div className="flex flex-col gap-[2px]">
-          <h3 className="text-sm text-muted-foreground">@{slug}</h3>
-          <p className="font-medium">{name}</p>
+          <h3 className="text-sm text-muted-foreground truncate">@{slug}</h3>
+          <p className="font-medium truncate">{name}</p>
         </div>
       </div>
       <div className="p-4 border-t border-border flex justify-between items-center">
         <ErrorBoundary fallback={<div className="w-full h-8"></div>}>
-          <Suspense fallback={<OrgAvatars.Skeleton />}>
-            <OrgAvatars teamId={teamId} />
-          </Suspense>
-          <Suspense fallback={<OrgMemberCount.Skeleton />}>
-            <OrgMemberCount teamId={teamId} />
-          </Suspense>
+          <OrgAvatars teamId={teamId} />
+          <OrgMemberCount teamId={teamId} />
         </ErrorBoundary>
       </div>
     </Link>

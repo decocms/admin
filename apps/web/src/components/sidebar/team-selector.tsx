@@ -13,7 +13,6 @@ import {
 import { SidebarMenuButton } from "@deco/ui/components/sidebar.tsx";
 import { Suspense, useState } from "react";
 import { Link, useParams } from "react-router";
-import { useUser } from "../../hooks/use-user.ts";
 import { useWorkspaceLink } from "../../hooks/use-navigate-workspace.ts";
 import { Avatar } from "../common/avatar/index.tsx";
 import { CreateOrganizationDialog } from "./create-team-dialog.tsx";

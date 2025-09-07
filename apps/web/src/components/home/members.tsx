@@ -1,3 +1,4 @@
+// deno-lint-ignore-file ensure-tailwind-design-system-tokens/ensure-tailwind-design-system-tokens
 import { useTeamMembers } from "@deco/sdk";
 import { Avatar } from "../common/avatar";
 

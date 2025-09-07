@@ -58,18 +58,4 @@ export const Locator = {
 
     return `/shared/${org}`;
   },
-  /**
-   * @deprecated We are moving out of /root/slug format
-   */
-  adaptToShared: (locator: ProjectLocator): string => {
-    const [org] = locator.split("/");
-    return `shared/${org}`;
-  },
-  /**
-   * @deprecated We are moving out of /root/slug format
-   */
-  fromShared: (deprecatedSharedFormatWorkspace: string): ProjectLocator => {
-    const [org] = deprecatedSharedFormatWorkspace.split("/");
-    return `${org}/default`;
-  },
 } as const;

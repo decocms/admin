@@ -1067,7 +1067,7 @@ function ViewsList({ integration }: { integration: Integration }) {
 
   if (isLoadingViews) {
     return (
-      <div className="w-full p-4 flex flex-col items-center gap-4">
+      <div className="w-full flex flex-col items-center gap-4">
         <div className="w-full flex items-center justify-center p-4">
           <Skeleton className="h-4 w-32" />
         </div>
@@ -1077,7 +1077,7 @@ function ViewsList({ integration }: { integration: Integration }) {
 
   return (
     <ScrollArea className="h-[calc(100vh-10rem)]">
-      <div className="w-full p-4 flex flex-col items-center gap-4">
+      <div className="w-full flex flex-col items-center gap-4">
         <h6 className="text-sm text-muted-foreground font-medium w-full">
           Views available from this integration
         </h6>
@@ -1129,7 +1129,7 @@ function ViewsList({ integration }: { integration: Integration }) {
                           {view.title}
                         </h4>
                         {view.url && (
-                          <p className="text-xs text-muted-foreground truncate">
+                          <p className="text-xs text-muted-foreground ">
                             {view.url}
                           </p>
                         )}
@@ -1293,7 +1293,7 @@ function AppDetail() {
         <Tabs
           defaultValue="tools"
           orientation="horizontal"
-          className="w-full h-full"
+          className="w-full h-full gap-4"
         >
           <TabsList>
             <TabsTrigger value="tools" className="px-4">

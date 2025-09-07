@@ -110,7 +110,7 @@ function Page() {
           </div>
         }
       >
-        <SDKProvider workspace={workspace}>
+        <SDKProvider locator={workspace}>
           <AgentProvider
             agentId={agentId}
             threadId={threadId}

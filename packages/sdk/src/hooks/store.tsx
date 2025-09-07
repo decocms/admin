@@ -3,7 +3,7 @@ import { createContext, type PropsWithChildren, use } from "react";
 import { ProjectLocator } from "../locator";
 
 interface State {
-  workspace: ProjectLocator;
+  locator: ProjectLocator;
 }
 
 const client = new QueryClient({

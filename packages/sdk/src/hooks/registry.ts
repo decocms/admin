@@ -3,10 +3,10 @@ import { getRegistryApp } from "../crud/registry.ts";
 import { useSDK } from "./store.tsx";
 
 export const useGetRegistryApp = () => {
-  const { workspace } = useSDK();
+  const { locator } = useSDK();
 
   return useMutation({
-    mutationFn: (params: { name: string }) => getRegistryApp(workspace, params),
+    mutationFn: (params: { name: string }) => getRegistryApp(locator, params),
   });
 };
 
@@ -24,13 +24,13 @@ export type RegistryApp = Awaited<ReturnType<typeof getRegistryApp>>;
  * @param params - Object containing clientId in format @scope/app-name
  */
 export const useRegistryApp = (params: { clientId: string }) => {
-  const { workspace } = useSDK();
+  const { locator } = useSDK();
 
   return useSuspenseQuery({
-    queryKey: ["registry-app", workspace, params.clientId],
+    queryKey: ["registry-app", locator, params.clientId],
     queryFn: async () => {
       try {
-        return await getRegistryApp(workspace, { name: params.clientId });
+        return await getRegistryApp(locator, { name: params.clientId });
       } catch (error) {
         console.error(error);
         if (error instanceof Error && error.message.includes("not found")) {

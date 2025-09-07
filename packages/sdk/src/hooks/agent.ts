@@ -22,18 +22,18 @@ import { useSDK } from "./store.tsx";
 
 export const useCreateAgent = () => {
   const client = useQueryClient();
-  const { workspace } = useSDK();
+  const { locator } = useSDK();
 
   const create = useMutation({
-    mutationFn: (agent: Partial<Agent>) => createAgent(workspace, agent),
+    mutationFn: (agent: Partial<Agent>) => createAgent(locator, agent),
     onSuccess: (result) => {
       // update item
-      const itemKey = KEYS.AGENT(workspace, result.id);
+      const itemKey = KEYS.AGENT(locator, result.id);
       client.cancelQueries({ queryKey: itemKey });
       client.setQueryData<Agent>(itemKey, result);
 
       // update list
-      const listKey = KEYS.AGENT(workspace);
+      const listKey = KEYS.AGENT(locator);
       client.cancelQueries({ queryKey: listKey });
       client.setQueryData<Agent[]>(listKey, (old) =>
         !old ? [result] : [result, ...old],
@@ -46,18 +46,18 @@ export const useCreateAgent = () => {
 
 export const useUpdateAgent = () => {
   const client = useQueryClient();
-  const { workspace } = useSDK();
+  const { locator } = useSDK();
 
   const update = useMutation({
-    mutationFn: (agent: Agent) => updateAgent(workspace, agent),
+    mutationFn: (agent: Agent) => updateAgent(locator, agent),
     onSuccess: (result) => {
       // update item
-      const itemKey = KEYS.AGENT(workspace, result.id);
+      const itemKey = KEYS.AGENT(locator, result.id);
       client.cancelQueries({ queryKey: itemKey });
       client.setQueryData<Agent>(itemKey, result);
 
       // update list
-      const listKey = KEYS.AGENT(workspace);
+      const listKey = KEYS.AGENT(locator);
       client.cancelQueries({ queryKey: listKey });
       client.setQueryData<Agent[]>(listKey, (old) =>
         !old ? [result] : old.map((a) => (a.id === result.id ? result : a)),
@@ -70,26 +70,26 @@ export const useUpdateAgent = () => {
 
 export const useRemoveAgent = () => {
   const client = useQueryClient();
-  const { workspace } = useSDK();
+  const { locator } = useSDK();
 
   const remove = useMutation({
-    mutationFn: (id: string) => deleteAgent(workspace, id),
+    mutationFn: (id: string) => deleteAgent(locator, id),
     onSuccess: (_, id) => {
       // Remove the individual agent from cache
-      const itemKey = KEYS.AGENT(workspace, id);
+      const itemKey = KEYS.AGENT(locator, id);
       client.cancelQueries({ queryKey: itemKey });
       client.removeQueries({ queryKey: itemKey });
 
       // Update the list
-      const listKey = KEYS.AGENT(workspace);
+      const listKey = KEYS.AGENT(locator);
       client.cancelQueries({ queryKey: listKey });
       client.setQueryData<Agent[]>(listKey, (old) =>
         !old ? [] : old.filter((agent) => agent.id !== id),
       );
 
       // Invalidate triggers
-      client.invalidateQueries({ queryKey: KEYS.TRIGGERS(workspace) });
-      client.invalidateQueries({ queryKey: KEYS.TRIGGERS(workspace, id) });
+      client.invalidateQueries({ queryKey: KEYS.TRIGGERS(locator) });
+      client.invalidateQueries({ queryKey: KEYS.TRIGGERS(locator, id) });
     },
   });
 
@@ -98,11 +98,11 @@ export const useRemoveAgent = () => {
 
 /** Hook for fetching agent data from server */
 export const useAgentData = (id: string) => {
-  const { workspace } = useSDK();
+  const { locator } = useSDK();
 
   const data = useSuspenseQuery({
-    queryKey: KEYS.AGENT(workspace, id),
-    queryFn: ({ signal }) => loadAgent(workspace, id, signal),
+    queryKey: KEYS.AGENT(locator, id),
+    queryFn: ({ signal }) => loadAgent(locator, id, signal),
     retry: (failureCount, error) =>
       error instanceof InternalServerError && failureCount < 2,
     staleTime: 5 * 60 * 1000, // 5 minutes
@@ -114,16 +114,16 @@ export const useAgentData = (id: string) => {
 
 /** Hook for listing all agents */
 export const useAgents = () => {
-  const { workspace } = useSDK();
+  const { locator } = useSDK();
   const client = useQueryClient();
 
   const data = useSuspenseQuery({
-    queryKey: KEYS.AGENT(workspace),
+    queryKey: KEYS.AGENT(locator),
     queryFn: async ({ signal }) => {
-      const items = await listAgents(workspace, signal);
+      const items = await listAgents(locator, signal);
 
       for (const item of items) {
-        const itemKey = KEYS.AGENT(workspace, item.id);
+        const itemKey = KEYS.AGENT(locator, item.id);
         client.cancelQueries({ queryKey: itemKey });
         client.setQueryData<Agent>(itemKey, item);
       }
@@ -136,11 +136,11 @@ export const useAgents = () => {
 };
 
 export const useAgentRoot = (agentId: string) => {
-  const { workspace } = useSDK();
+  const { locator } = useSDK();
 
   const root = useMemo(
-    () => `/${workspace}/Agents/${agentId}`,
-    [workspace, agentId],
+    () => `/${locator}/Agents/${agentId}`,
+    [locator, agentId],
   );
 
   return root;

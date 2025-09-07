@@ -145,8 +145,8 @@ export function useDeleteTeam() {
 }
 
 export function useWorkspaceTheme() {
-  const { workspace } = useSDK();
-  const slug = workspace.split("/")[1] ?? "";
+  const { locator } = useSDK();
+  const slug = locator.split("/")[1] ?? "";
   return useQuery({
     queryKey: KEYS.TEAM_THEME(slug),
     queryFn: async () => {
@@ -162,11 +162,11 @@ export function useWorkspaceTheme() {
 
 export function useAddView() {
   const client = useQueryClient();
-  const { workspace } = useSDK();
-  const slug = workspace.split("/")[1] ?? "";
+  const { locator } = useSDK();
+  const slug = locator.split("/")[1] ?? "";
 
   return useMutation({
-    mutationFn: (input: AddViewInput) => addView(workspace, input),
+    mutationFn: (input: AddViewInput) => addView(locator, input),
     onSuccess: () => {
       // Invalidate team data to refresh views
       client.invalidateQueries({ queryKey: KEYS.TEAM(slug) });
@@ -176,11 +176,11 @@ export function useAddView() {
 
 export function useRemoveView() {
   const client = useQueryClient();
-  const { workspace } = useSDK();
-  const slug = workspace.split("/")[1] ?? "";
+  const { locator } = useSDK();
+  const slug = locator.split("/")[1] ?? "";
 
   return useMutation({
-    mutationFn: (input: RemoveViewInput) => removeView(workspace, input),
+    mutationFn: (input: RemoveViewInput) => removeView(locator, input),
     onSuccess: () => {
       // Invalidate team data to refresh views
       client.invalidateQueries({ queryKey: KEYS.TEAM(slug) });
@@ -192,11 +192,11 @@ export function useConnectionViews(
   integration: { id: string; connection: MCPConnection } | null,
   suspense = true,
 ) {
-  const { workspace } = useSDK();
+  const { locator } = useSDK();
   const hook = suspense ? useSuspenseQuery : useQuery;
 
   const data = hook({
-    queryKey: KEYS.TEAM_VIEWS(workspace, integration?.id ?? "null"),
+    queryKey: KEYS.TEAM_VIEWS(locator, integration?.id ?? "null"),
     queryFn: () => {
       if (!integration) {
         return { views: [] };
@@ -210,13 +210,13 @@ export function useConnectionViews(
 }
 
 export function useIntegrationViews({ enabled = true }: { enabled?: boolean }) {
-  const { workspace } = useSDK();
+  const { locator } = useSDK();
   return useQuery({
-    queryKey: KEYS.WORKSPACE_VIEWS(workspace),
+    queryKey: KEYS.WORKSPACE_VIEWS(locator),
     enabled,
     queryFn: async ({ signal }) => {
       const integrations = await listIntegrations(
-        workspace,
+        locator,
         { binder: "View" },
         signal,
       );

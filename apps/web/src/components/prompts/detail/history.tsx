@@ -34,7 +34,7 @@ import { useFormContext } from "./context.ts";
 
 export default function HistoryTab() {
   const { id } = useParams();
-  const { workspace } = useSDK();
+  const { locator } = useSDK();
   const { data: versions, refetch } = usePromptVersions(id ?? "");
   const { form, prompt, setSelectedPrompt, promptVersion, setPromptVersion } =
     useFormContext();
@@ -109,7 +109,7 @@ export default function HistoryTab() {
                 length={filteredVersions.length}
                 user={user}
                 teamMembersMap={teamMembersMap}
-                workspace={workspace}
+                workspace={locator}
                 teamId={orgId}
                 refetch={refetch}
               />

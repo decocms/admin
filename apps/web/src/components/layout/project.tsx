@@ -47,7 +47,7 @@ export function BaseRouteLayout({ children }: { children: ReactNode }) {
   }
 
   return (
-    <SDKProvider workspace={Locator.from({ org, project })}>
+    <SDKProvider locator={Locator.from({ org, project })}>
       {children}
       <Toaster />
     </SDKProvider>

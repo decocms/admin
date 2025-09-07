@@ -83,12 +83,12 @@ export const useDuplicateAgent = (agent: Agent | null) => {
 };
 
 const useCopyLink = (agentId: string) => {
-  const { workspace } = useSDK();
+  const { locator } = useSDK();
 
   const copyLink = useCallback(() => {
-    const link = getPublicChatLink(agentId, workspace);
+    const link = getPublicChatLink(agentId, locator);
     navigator.clipboard.writeText(link);
-  }, [agentId, workspace]);
+  }, [agentId, locator]);
 
   return copyLink;
 };

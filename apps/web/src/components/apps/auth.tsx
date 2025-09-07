@@ -12,7 +12,6 @@ import { Combobox } from "@deco/ui/components/combobox.tsx";
 import { useEffect, useMemo, useState, Suspense } from "react";
 import { ChevronsUpDown, Check } from "lucide-react";
 import { cn } from "@deco/ui/lib/utils.ts";
-import { useUser } from "../../hooks/use-user.ts";
 import { Avatar } from "../common/avatar/index.tsx";
 import { type CurrentTeam, useUserTeams } from "../sidebar/team-selector.tsx";
 import { AppsAuthLayout, OAuthSearchParams } from "./layout.tsx";
@@ -677,7 +676,7 @@ function AppsOAuth({
   });
 
   return (
-    <SDKProvider workspace={workspace}>
+    <SDKProvider locator={workspace}>
       <SelectProjectAppInstance
         app={registryApp}
         org={org}

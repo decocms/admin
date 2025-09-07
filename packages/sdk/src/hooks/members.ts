@@ -132,7 +132,7 @@ export const useRejectInvite = () => {
  */
 export const useInviteTeamMember = () => {
   const queryClient = useQueryClient();
-  const { workspace } = useSDK();
+  const { locator } = useSDK();
 
   return useMutation({
     mutationFn: ({
@@ -144,7 +144,7 @@ export const useInviteTeamMember = () => {
         email: string;
         roles: Array<{ id: number; name: string }>;
       }>;
-    }) => inviteTeamMembers(teamId, invitees, workspace),
+    }) => inviteTeamMembers(teamId, invitees, locator),
     onSuccess: (_, { teamId }) => {
       const membersKey = KEYS.TEAM_MEMBERS(teamId);
       queryClient.invalidateQueries({ queryKey: membersKey });

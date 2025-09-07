@@ -4,44 +4,44 @@ import type { ProjectLocator } from "../index.ts";
 import type { Binder } from "../models/mcp.ts";
 
 export const KEYS = {
-  FILE: (workspace: string, path: string) => ["file", workspace, path],
-  AGENT: (workspace: ProjectLocator, agentId?: string) => [
+  FILE: (locator: ProjectLocator, path: string) => ["file", locator, path],
+  AGENT: (locator: ProjectLocator, agentId?: string) => [
     "agent",
-    workspace,
+    locator,
     agentId,
   ],
-  INTEGRATION: (workspace: ProjectLocator, integrationId?: string) => [
+  INTEGRATION: (locator: ProjectLocator, integrationId?: string) => [
     "integration",
-    workspace,
+    locator,
     integrationId,
   ],
   INTEGRATION_TOOLS: (
-    workspace: ProjectLocator,
+    locator: ProjectLocator,
     integrationId: string,
     binder?: Binder,
   ) => [
     "integration-tools",
-    workspace,
+    locator,
     integrationId,
     ...(binder ? [binder] : []),
   ],
-  CHANNELS: (workspace: ProjectLocator, channelId?: string) => [
+  CHANNELS: (locator: ProjectLocator, channelId?: string) => [
     "channels",
-    workspace,
+    locator,
     channelId,
   ],
-  BINDINGS: (workspace: ProjectLocator, binder: Binder) => [
+  BINDINGS: (locator: ProjectLocator, binder: Binder) => [
     "bindings",
-    workspace,
+    locator,
     binder,
   ],
-  THREADS: (workspace: ProjectLocator, options?: ThreadFilterOptions) => {
+  THREADS: (locator: ProjectLocator, options?: ThreadFilterOptions) => {
     if (!options) {
-      return ["threads", workspace];
+      return ["threads", locator];
     }
     return [
       "threads",
-      workspace,
+      locator,
       options.agentId,
       options.resourceId,
       options.orderBy,
@@ -49,15 +49,15 @@ export const KEYS = {
       options.limit,
     ];
   },
-  TOOLS: (workspace: ProjectLocator, agentId: string, threadId: string) => [
+  TOOLS: (locator: ProjectLocator, agentId: string, threadId: string) => [
     "tools",
-    workspace,
+    locator,
     agentId,
     threadId,
   ],
-  AUDITS: (workspace: ProjectLocator, options: ThreadFilterOptions) => [
+  AUDITS: (locator: ProjectLocator, options: ThreadFilterOptions) => [
     "audit",
-    workspace,
+    locator,
     options.agentId,
     options.orderBy,
     options.cursor,
@@ -67,114 +67,111 @@ export const KEYS = {
   TEAMS: () => ["teams"],
   TEAM: (slug: string) => ["team", slug],
   TEAM_THEME: (slug: string) => ["team-theme", slug],
-  TEAM_VIEWS: (workspace: ProjectLocator, integrationId: string) => [
+  TEAM_VIEWS: (locator: ProjectLocator, integrationId: string) => [
     "team-views",
-    workspace,
+    locator,
     integrationId,
   ],
-  WORKSPACE_VIEWS: (workspace: ProjectLocator) => [
-    "workspace-views",
-    workspace,
-  ],
+  WORKSPACE_VIEWS: (locator: ProjectLocator) => ["workspace-views", locator],
   TEAM_MEMBERS: (slugOrId: string | number) => ["taem", slugOrId, "members"],
   TEAM_ROLES: (teamId: number) => ["team", teamId, "roles"],
   MY_INVITES: () => ["my_invites"],
-  MODELS: (workspace: ProjectLocator, options?: ListModelsInput) => [
+  MODELS: (locator: ProjectLocator, options?: ListModelsInput) => [
     "models",
-    workspace,
+    locator,
     options?.excludeDisabled || false,
     options?.excludeAuto || false,
   ],
-  MODEL: (workspace: ProjectLocator, id: string) => ["model", workspace, id],
-  TRIGGERS: (workspace: ProjectLocator, agentId = "") => [
+  MODEL: (locator: ProjectLocator, id: string) => ["model", locator, id],
+  TRIGGERS: (locator: ProjectLocator, agentId = "") => [
     "triggers",
-    workspace,
+    locator,
     agentId,
   ],
-  TRIGGER: (workspace: ProjectLocator, triggerId: string) => [
+  TRIGGER: (locator: ProjectLocator, triggerId: string) => [
     "trigger",
-    workspace,
+    locator,
     triggerId,
   ],
-  THREAD: (workspace: ProjectLocator, threadId: string) => [
+  THREAD: (locator: ProjectLocator, threadId: string) => [
     "thread",
-    workspace,
+    locator,
     threadId,
   ],
-  THREAD_MESSAGES: (workspace: ProjectLocator, threadId: string) => [
+  THREAD_MESSAGES: (locator: ProjectLocator, threadId: string) => [
     "thread-messages",
-    workspace,
+    locator,
     threadId,
   ],
-  THREAD_TOOLS: (workspace: ProjectLocator, threadId: string) => [
+  THREAD_TOOLS: (locator: ProjectLocator, threadId: string) => [
     "thread-tools",
-    workspace,
+    locator,
     threadId,
   ],
   PROFILE: () => ["profile"],
   PROMPTS: (
-    workspace: ProjectLocator,
+    locator: ProjectLocator,
     ids?: string[],
     resolveMentions?: boolean,
     excludeIds?: string[],
   ) => [
     "prompts",
-    workspace,
+    locator,
     ...(ids ? ids.sort() : []),
     `${resolveMentions ?? false}`,
     ...(excludeIds ? excludeIds.sort() : []),
   ],
-  PROMPT: (workspace: ProjectLocator, id: string) => ["prompts", workspace, id],
+  PROMPT: (locator: ProjectLocator, id: string) => ["prompts", locator, id],
   PROMPTS_SEARCH: (
-    workspace: ProjectLocator,
+    locator: ProjectLocator,
     query: string,
     limit: number = 10,
     offset: number = 0,
-  ) => ["prompts", workspace, query, limit, offset],
-  PROMPT_VERSIONS: (workspace: ProjectLocator, id: string) => [
+  ) => ["prompts", locator, query, limit, offset],
+  PROMPT_VERSIONS: (locator: ProjectLocator, id: string) => [
     "prompt-versions",
-    workspace,
+    locator,
     id,
   ],
-  WALLET: (workspace: ProjectLocator) => ["wallet", workspace],
+  WALLET: (locator: ProjectLocator) => ["wallet", locator],
   WALLET_USAGE_AGENTS: (
-    workspace: ProjectLocator,
+    locator: ProjectLocator,
     range: "day" | "week" | "month",
-  ) => ["wallet-usage-agents", workspace, range],
+  ) => ["wallet-usage-agents", locator, range],
   WALLET_USAGE_THREADS: (
-    workspace: ProjectLocator,
+    locator: ProjectLocator,
     range: "day" | "week" | "month",
-  ) => ["wallet-usage-threads", workspace, range],
+  ) => ["wallet-usage-threads", locator, range],
   WALLET_BILLING_HISTORY: (
-    workspace: ProjectLocator,
+    locator: ProjectLocator,
     range: "day" | "week" | "month" | "year",
-  ) => ["wallet-billing-history", workspace, range],
-  WORKSPACE_PLAN: (workspace: ProjectLocator) => ["workspace-plan", workspace],
-  WORKFLOWS: (workspace: ProjectLocator, page?: number, per_page?: number) => [
+  ) => ["wallet-billing-history", locator, range],
+  WORKSPACE_PLAN: (locator: ProjectLocator) => ["workspace-plan", locator],
+  WORKFLOWS: (locator: ProjectLocator, page?: number, per_page?: number) => [
     "workflows",
-    workspace,
+    locator,
     page,
     per_page,
   ],
-  WORKFLOW: (workspace: ProjectLocator, workflowName: string) => [
+  WORKFLOW: (locator: ProjectLocator, workflowName: string) => [
     "workflow",
-    workspace,
+    locator,
     workflowName,
   ],
   WORKFLOW_INSTANCES: (
-    workspace: ProjectLocator,
+    locator: ProjectLocator,
     workflowName: string,
     page?: number,
     per_page?: number,
-  ) => ["workflow-instances", workspace, workflowName, page, per_page],
+  ) => ["workflow-instances", locator, workflowName, page, per_page],
   WORKFLOW_STATUS: (
-    workspace: ProjectLocator,
+    locator: ProjectLocator,
     workflowName: string,
     instanceId: string,
-  ) => ["workflow-status", workspace, workflowName, instanceId],
-  KNOWLEDGE_FILES: (workspace: ProjectLocator, connectionUrl: string) => [
+  ) => ["workflow-status", locator, workflowName, instanceId],
+  KNOWLEDGE_FILES: (locator: ProjectLocator, connectionUrl: string) => [
     "knowledge_files",
-    workspace,
+    locator,
     connectionUrl,
   ],
 };

@@ -3,7 +3,7 @@ import { createAPIKey } from "../crud/keys.ts";
 import { useSDK } from "./store.tsx";
 
 export const useCreateAPIKey = () => {
-  const { workspace } = useSDK();
+  const { locator } = useSDK();
 
   return useMutation({
     mutationFn: (params: {
@@ -14,6 +14,6 @@ export const useCreateAPIKey = () => {
       };
       name: string;
       policies: Array<{ effect: "allow" | "deny"; resource: string }>;
-    }) => createAPIKey(workspace, params),
+    }) => createAPIKey(locator, params),
   });
 };

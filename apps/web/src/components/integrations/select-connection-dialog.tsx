@@ -1,6 +1,5 @@
-import { useMarketplaceIntegrations, type Integration } from "@deco/sdk";
+import { getRegistryApp, useMarketplaceIntegrations, type Integration } from "@deco/sdk";
 import { AppName } from "@deco/sdk/common";
-import { useGetRegistryApp } from "@deco/sdk/hooks";
 import { Button } from "@deco/ui/components/button.tsx";
 import {
   Dialog,
@@ -509,7 +508,6 @@ function AddConnectionDialogContent({
     });
   const navigateWorkspace = useNavigateWorkspace();
   const showEmptyState = search.length > 0;
-  const { mutateAsync: getRegistryApp } = useGetRegistryApp();
   const handleInstallFromRegistry = async (appName: string) => {
     const app = await getRegistryApp({ name: appName ?? "" });
     setInstallingIntegration({

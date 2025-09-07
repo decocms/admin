@@ -84,6 +84,7 @@ export const GLOBAL_TOOLS = [
   profilesAPI.updateProfile,
   integrationsAPI.callTool,
   integrationsAPI.listTools,
+  registryAPI.getRegistryApp,
 ] as const;
 
 // Tools tied to an specific workspace
@@ -121,7 +122,6 @@ export const PROJECT_TOOLS = [
   hostingAPI.listWorkflowNames,
   hostingAPI.listWorkflowRuns,
   hostingAPI.getWorkflowStatus,
-  registryAPI.getRegistryApp,
   registryAPI.listRegistryApps,
   registryAPI.listPublishedApps,
   registryAPI.listRegistryScopes,

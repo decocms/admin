@@ -2,7 +2,6 @@ import {
   RegistryApp,
   useCreateAPIKey,
   useCreateIntegration,
-  useGetRegistryApp,
   useInstallFromMarketplace,
   useMarketplaceAppSchema,
   usePermissionDescriptions,
@@ -13,6 +12,7 @@ import { useState as _useState } from "react";
 import { useWorkspaceLink } from "./use-navigate-workspace.ts";
 import { useMutation } from "@tanstack/react-query";
 import { createPolicyStatements, getAllScopes } from "../utils/scopes.ts";
+import { getRegistryApp } from "@deco/sdk";
 
 interface InstallState {
   scopes?: string[];
@@ -88,7 +88,6 @@ export function useIntegrationInstall(appName?: string) {
     useMarketplaceAppSchema(appName);
   const getLinkFor = useWorkspaceLink();
   const installMutation = useInstallFromMarketplace();
-  const getRegistryApp = useGetRegistryApp();
 
   const installCreatingApiKeyAndIntegration =
     useInstallCreatingApiKeyAndIntegration();
@@ -142,7 +141,7 @@ export function useIntegrationInstall(appName?: string) {
       // Step 1: Generate API key with required policies
       const installId = installState.integration?.id ?? crypto.randomUUID();
       // Step 2: Get marketplace app info
-      const marketplaceApp = await getRegistryApp.mutateAsync({
+      const marketplaceApp = await getRegistryApp({
         name: installState.appName,
       });
 
@@ -183,15 +182,14 @@ export function useIntegrationInstall(appName?: string) {
       isLoading:
         appSchemaLoading ||
         installCreatingApiKeyAndIntegration.isPending ||
-        getRegistryApp.isPending ||
         permissionsLoading,
     },
 
     // Mutation state
     isLoading:
       installMutation.isPending ||
-      installCreatingApiKeyAndIntegration.isPending ||
-      getRegistryApp.isPending,
+      installCreatingApiKeyAndIntegration.isPending,
+
     error: installMutation.error,
   };
 }

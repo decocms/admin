@@ -3,7 +3,7 @@ import { z } from "zod";
 import { Icon } from "@deco/ui/components/icon.tsx";
 import { Button } from "@deco/ui/components/button.tsx";
 import { SplitScreenLayout } from "../login/layout.tsx";
-import { BaseRouteLayout } from "../layout/project.tsx";
+import { DecoQueryClientProvider } from "@deco/sdk";
 
 export const OAuthSearchParamsSchema = z.object({
   client_id: z.string(),
@@ -51,17 +51,17 @@ export function AppsAuthLayout({ children }: AppsAuthLayoutProps) {
 
   if (!result.success) {
     return (
-      <BaseRouteLayout>
+      <DecoQueryClientProvider>
         <SplitScreenLayout>
           <ErrorPanel />
         </SplitScreenLayout>
-      </BaseRouteLayout>
+      </DecoQueryClientProvider>
     );
   }
 
   return (
-    <BaseRouteLayout>
+    <DecoQueryClientProvider>
       <SplitScreenLayout>{children(result.data)}</SplitScreenLayout>
-    </BaseRouteLayout>
+    </DecoQueryClientProvider>
   );
 }

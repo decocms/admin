@@ -1,5 +1,4 @@
 import { MCPClient } from "../fetcher.ts";
-import { ProjectLocator } from "../locator.ts";
 
 /**
  * Get a registry app
@@ -8,6 +7,5 @@ import { ProjectLocator } from "../locator.ts";
  * @returns The registry app
  */
 export const getRegistryApp = (
-  locator: ProjectLocator,
   params: { name: string },
-) => MCPClient.forLocator(locator).REGISTRY_GET_APP(params);
+) => MCPClient.REGISTRY_GET_APP(params);

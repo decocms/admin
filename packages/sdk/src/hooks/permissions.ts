@@ -68,12 +68,12 @@ export function usePermissionDescriptions(scopes: AppScope[]): {
     isLoading: isRegistryLoading,
     error: registryError,
   } = useQuery({
-    queryKey: ["registry-apps", locator, uniqueApps],
+    queryKey: ["registry-apps", uniqueApps],
     queryFn: async () => {
       const results = await Promise.all(
         uniqueApps.map(async (appName) => {
           try {
-            const result = await getRegistryApp(locator, { name: appName });
+            const result = await getRegistryApp({ name: appName });
             return { appName, data: result, error: null };
           } catch (error) {
             return { appName, data: null, error };

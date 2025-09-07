@@ -17,7 +17,7 @@ export const useOptionsLoader = (type: string) => {
       const installedIntegrations = await listIntegrations(locator);
 
       // Try to get registry app information for the type to understand what we're looking for
-      const registryApp = await getRegistryApp(locator, { name: type });
+      const registryApp = await getRegistryApp({ name: type });
 
       // Filter integrations based on the type
       const matchingIntegrations = installedIntegrations.filter(

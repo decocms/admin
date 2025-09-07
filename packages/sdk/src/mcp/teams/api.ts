@@ -740,6 +740,7 @@ export const listTeams = createTool({
           admin
         )
       `)
+      .not("slug", "is", null)
       .eq("members.user_id", user.id)
       .is("members.deleted_at", null);
 

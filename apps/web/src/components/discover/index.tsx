@@ -158,10 +158,7 @@ const Marketplace = () => {
             </div>
           )}
         </div>
-        <Button
-          variant="outline"
-          onClick={createCustomConnection}
-        >
+        <Button variant="outline" onClick={createCustomConnection}>
           Create Custom App
         </Button>
       </div>

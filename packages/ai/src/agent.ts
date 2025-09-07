@@ -299,7 +299,7 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
       stub: this.state.stub as AppContext["stub"],
       workspaceDO: this.actorEnv.WORKSPACE_DB,
       cookie: metadata?.userCookie ?? undefined,
-      workspace: fromWorkspaceString(this.workspace),
+      workspace: fromWorkspaceString(this.workspace, metadata?.user?.id),
       resourceAccess: createResourceAccess(),
       cf: new Cloudflare({ apiToken: this.env.CF_API_TOKEN }),
       policy: policyClient,

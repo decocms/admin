@@ -200,6 +200,8 @@ export class Trigger {
       isLocal: true,
       workspaceDO: this.actorEnv.WORKSPACE_DB,
       stub: this.state.stub as AppContext["stub"],
+      // i suspect triggers on old root/slug format for
+      // root == "users" will not work anymore
       workspace: fromWorkspaceString(this.workspace),
       resourceAccess: createResourceAccess(),
       cf: new Cloudflare({ apiToken: this.env.CF_API_TOKEN }),

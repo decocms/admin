@@ -238,13 +238,17 @@ export const createGlobalForContext = (context?: AppContext): typeof global => {
 };
 export const fromWorkspaceString = (
   _workspace: string,
+  userId?: string,
 ): AppContext["workspace"] => {
-  const workspace: string = _workspace.startsWith("/")
-    ? _workspace
-    : `/${_workspace}`;
-  const [_, root, slug] = workspace.split("/");
+  const normalized = _workspace.startsWith("/") ? _workspace : `/${_workspace}`;
+
+  const [_, org, project] = normalized.split("/");
+
+  const root = project === "personal" && userId ? "users" : "shared";
+  const slug = root === "users" && userId ? userId : org;
+
   return {
-    value: workspace,
+    value: normalized,
     root,
     slug,
   };

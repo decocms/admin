@@ -38,7 +38,7 @@ export const createTeam = (
   init?: RequestInit,
 ): Promise<Team> => MCPClient.TEAMS_CREATE(input, init) as Promise<Team>;
 
-export const getWorkspaceTheme = (
+export const getOrgTheme = (
   slug: string,
   init?: RequestInit,
 ): Promise<{ theme?: Theme } | null> =>

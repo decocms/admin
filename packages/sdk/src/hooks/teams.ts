@@ -11,7 +11,7 @@ import {
   type CreateTeamInput,
   deleteTeam,
   getTeam,
-  getWorkspaceTheme,
+  getOrgTheme,
   listAvailableViewsForConnection,
   listTeams,
   removeView,
@@ -26,6 +26,7 @@ import { useSDK } from "./store.tsx";
 import { MCPConnection } from "../models/index.ts";
 import { listIntegrations } from "../crud/mcp.ts";
 import { listProjects } from "../crud/projects.ts";
+import { Locator } from "../locator.ts";
 
 /**
  * Hook to fetch teams - searching is done client-side for now.
@@ -85,7 +86,7 @@ export const useProjects = (options: {
 
 export const useTeam = (slug: string = "") => {
   return useSuspenseQuery({
-    queryKey: KEYS.TEAM(slug),
+    queryKey: KEYS.ORGANIZATION(slug),
     retry: (failureCount, error) =>
       error instanceof InternalServerError && failureCount < 2,
     queryFn: ({ signal }) => {
@@ -132,11 +133,12 @@ export function useDeleteTeam() {
 
 export function useWorkspaceTheme() {
   const { locator } = useSDK();
-  const slug = locator.split("/")[1] ?? "";
+  const { org } = Locator.parse(locator);
+
   return useQuery({
-    queryKey: KEYS.TEAM_THEME(slug),
+    queryKey: KEYS.TEAM_THEME(org),
     queryFn: async () => {
-      const data = await getWorkspaceTheme(slug);
+      const data = await getOrgTheme(org);
       const theme = data?.theme ?? {};
       return {
         ...DEFAULT_THEME,
@@ -149,13 +151,13 @@ export function useWorkspaceTheme() {
 export function useAddView() {
   const client = useQueryClient();
   const { locator } = useSDK();
-  const slug = locator.split("/")[1] ?? "";
 
   return useMutation({
     mutationFn: (input: AddViewInput) => addView(locator, input),
     onSuccess: () => {
+      const { org } = Locator.parse(locator);
       // Invalidate team data to refresh views
-      client.invalidateQueries({ queryKey: KEYS.TEAM(slug) });
+      client.invalidateQueries({ queryKey: KEYS.ORGANIZATION(org) });
     },
   });
 }
@@ -163,13 +165,13 @@ export function useAddView() {
 export function useRemoveView() {
   const client = useQueryClient();
   const { locator } = useSDK();
-  const slug = locator.split("/")[1] ?? "";
 
   return useMutation({
     mutationFn: (input: RemoveViewInput) => removeView(locator, input),
     onSuccess: () => {
+      const { org } = Locator.parse(locator);
       // Invalidate team data to refresh views
-      client.invalidateQueries({ queryKey: KEYS.TEAM(slug) });
+      client.invalidateQueries({ queryKey: KEYS.ORGANIZATION(org) });
     },
   });
 }

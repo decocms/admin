@@ -530,7 +530,9 @@ function Overview({
           size="xl"
         />
         <div className="flex flex-col gap-1">
-          <h5 className="text-xl font-medium">{data.info?.name}</h5>
+          <h5 className="text-xl font-medium">
+            {data.info?.friendlyName || data.info?.name}
+          </h5>
           <p className="text-sm text-muted-foreground whitespace-pre-line">
             {description}
           </p>
@@ -1250,7 +1252,7 @@ function AppDetail() {
           appKey={appKey}
           showInstallButton={!data.instances || data.instances?.length === 0}
         />
-        {data.instances?.length > 0 && (
+        {data.instances?.length > 1 && (
           <Select
             value={selectedIntegration?.id}
             onValueChange={(value) => {
@@ -1369,7 +1371,7 @@ export default function Page() {
                           name={info.name}
                           size="xs"
                         />
-                        <span>{info.name}</span>
+                        <span>{info.friendlyName || info.name}</span>
                       </div>
                     ),
                   },

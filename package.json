@@ -48,7 +48,8 @@
     "packages/create-deco/index.js",
     "docs/server/**",
     "docs/view/**",
-    "apps/deconfig/**"
+    "apps/deconfig/**",
+    "apps/mesh"
   ],
   "lock": false,
   "unstable": [

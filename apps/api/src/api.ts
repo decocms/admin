@@ -77,7 +77,7 @@ export const honoCtxToAppCtx = (c: Context<AppEnv>): AppContext => {
     ? {
         root,
         slug,
-        value: `/${Locator.adaptToShared(locator)}`,
+        value: `/${root}/${slug}`,
       }
     : undefined;
 

@@ -248,7 +248,7 @@ export const fromWorkspaceString = (
   const slug = root === "users" && userId ? userId : org;
 
   return {
-    value: normalized,
+    value: `/${root}/${slug}`,
     root,
     slug,
   };

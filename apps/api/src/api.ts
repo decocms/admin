@@ -24,7 +24,7 @@ import {
   type ToolLike,
   withMCPAuthorization,
   withMCPErrorHandling,
-  WORKSPACE_TOOLS,
+  PROJECT_TOOLS,
   wrapToolFn,
   getIntegration,
   type IntegrationWithTools,
@@ -121,7 +121,7 @@ const mapMCPErrorToHTTPExceptionOrThrow = (err: Error) => {
 const createMCPHandlerFor = (
   tools:
     | typeof GLOBAL_TOOLS
-    | typeof WORKSPACE_TOOLS
+    | typeof PROJECT_TOOLS
     | typeof EMAIL_TOOLS
     | typeof AGENT_TOOLS
     | typeof CONTRACTS_TOOLS,
@@ -410,7 +410,7 @@ app.use(withActorsMiddlewareLegacy);
 app.post(`/contracts/mcp`, createMCPHandlerFor(CONTRACTS_TOOLS));
 
 app.all("/mcp", createMCPHandlerFor(GLOBAL_TOOLS));
-app.all("/:org/:project/mcp", createMCPHandlerFor(WORKSPACE_TOOLS));
+app.all("/:org/:project/mcp", createMCPHandlerFor(PROJECT_TOOLS));
 app.all("/:org/:project/agents/:agentId/mcp", createMCPHandlerFor(AGENT_TOOLS));
 
 // Tool call endpoint handlers
@@ -418,7 +418,7 @@ app.post("/tools/call/:tool", createToolCallHandlerFor(GLOBAL_TOOLS));
 
 app.post(
   "/:org/:project/tools/call/:tool",
-  createToolCallHandlerFor(WORKSPACE_TOOLS),
+  createToolCallHandlerFor(PROJECT_TOOLS),
 );
 
 app.post(

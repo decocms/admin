@@ -19,7 +19,7 @@ export function VoucherDialog() {
   const queryClient = useQueryClient();
 
   const { mutate: redeemVoucher, isPending } = useMutation({
-    mutationFn: () => redeemWalletVoucher({ workspace: locator, voucher }),
+    mutationFn: () => redeemWalletVoucher({ locator: locator, voucher }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["wallet"] });
       setIsOpen(false);

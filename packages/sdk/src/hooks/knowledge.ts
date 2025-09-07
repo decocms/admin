@@ -21,7 +21,7 @@ export const useCreateKnowledge = () => {
 
   return useMutation({
     mutationFn: ({ name }: { name: string }) =>
-      createKnowledge({ workspace: locator, name }),
+      createKnowledge({ locator: locator, name }),
   });
 };
 
@@ -45,7 +45,7 @@ export const useKnowledgeAddFile = () => {
       connection,
     }: AddFileToKnowledgeParams) =>
       knowledgeAddFile({
-        workspace: locator,
+        locator: locator,
         fileUrl,
         metadata,
         path,
@@ -74,7 +74,7 @@ export const useKnowledgeDeleteFile = () => {
 
   return useMutation({
     mutationFn: ({ connection, fileUrl }: KnowledgeDeleteFileParams) =>
-      knowledgeDeleteFile({ workspace: locator, fileUrl, connection }),
+      knowledgeDeleteFile({ locator: locator, fileUrl, connection }),
     onSuccess: (_, { fileUrl, connection }) => {
       const connectionUrl = getConnectionUrl({ connection });
       const knowledgeFilesKey = KEYS.KNOWLEDGE_FILES(locator, connectionUrl);
@@ -100,7 +100,7 @@ export const useKnowledgeListFiles = (params: KnowledgeListFilesParams) => {
     queryKey: KEYS.KNOWLEDGE_FILES(locator, connectionUrl),
     queryFn: () =>
       "connection" in params
-        ? knowledgeListFiles({ workspace: locator, connection })
+        ? knowledgeListFiles({ locator: locator, connection })
         : [],
     enabled: hasConnection ? !!connectionUrl : true,
   });

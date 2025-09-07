@@ -41,7 +41,7 @@ import {
   PolicyClient,
   serializeError,
   SupabaseLLMVault,
-  type WorkspaceTools,
+  type ProjectTools,
 } from "@deco/sdk/mcp";
 import type { AgentMemoryConfig } from "@deco/sdk/memory";
 import { AgentMemory, slugify, toAlphanumericId } from "@deco/sdk/memory";
@@ -132,7 +132,7 @@ export interface AgentMetadata extends AuthMetadata {
   wallet?: Promise<AgentWallet>;
   userCookie?: string | null;
   timings?: ServerTimingsBuilder;
-  mcpClient?: MCPClientStub<WorkspaceTools>;
+  mcpClient?: MCPClientStub<ProjectTools>;
   toolsets?: Toolset[];
 }
 
@@ -223,7 +223,7 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
   private agentId: string;
   private wallet: AgentWallet;
   private db: Awaited<ReturnType<typeof createServerClient>>;
-  private agentScoppedMcpClient: MCPClientStub<WorkspaceTools>;
+  private agentScoppedMcpClient: MCPClientStub<ProjectTools>;
   private llmVault?: LLMVault;
   private telemetry?: Telemetry;
   private posthog: PosthogServerClient;

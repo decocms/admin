@@ -109,9 +109,9 @@ export const inviteTeamMembers = (
     email: string;
     roles: Array<{ id: number; name: string }>;
   }>,
-  workspace: ProjectLocator,
+  locator: ProjectLocator,
 ): Promise<{ message: string }> =>
-  MCPClient.forWorkspace(workspace).TEAM_MEMBERS_INVITE({
+  MCPClient.forLocator(locator).TEAM_MEMBERS_INVITE({
     teamId: teamId.toString(),
     invitees,
   });

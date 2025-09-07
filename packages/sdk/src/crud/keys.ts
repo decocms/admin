@@ -3,12 +3,12 @@ import { ProjectLocator } from "../locator.ts";
 
 /**
  * Create an API key
- * @param workspace - The workspace
+ * @param locator - The workspace
  * @param params - API key parameters
  * @returns The created API key
  */
 export const createAPIKey = (
-  workspace: ProjectLocator,
+  locator: ProjectLocator,
   params: {
     claims?: {
       appName: string;
@@ -18,4 +18,4 @@ export const createAPIKey = (
     name: string;
     policies: Array<{ effect: "allow" | "deny"; resource: string }>;
   },
-) => MCPClient.forWorkspace(workspace).API_KEYS_CREATE(params);
+) => MCPClient.forLocator(locator).API_KEYS_CREATE(params);

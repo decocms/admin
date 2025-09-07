@@ -81,11 +81,11 @@ export interface AddViewInput {
 }
 
 export const addView = (
-  workspace: ProjectLocator,
+  locator: ProjectLocator,
   input: AddViewInput,
   init?: RequestInit,
 ): Promise<View> =>
-  MCPClient.forWorkspace(workspace)
+  MCPClient.forLocator(locator)
     .TEAMS_ADD_VIEW(input, init)
     .then((v) => v as unknown as View);
 
@@ -94,11 +94,11 @@ export interface RemoveViewInput {
 }
 
 export const removeView = (
-  workspace: ProjectLocator,
+  locator: ProjectLocator,
   input: RemoveViewInput,
   init?: RequestInit,
 ): Promise<{ success: boolean }> =>
-  MCPClient.forWorkspace(workspace).TEAMS_REMOVE_VIEW(input, init) as Promise<{
+  MCPClient.forLocator(locator).TEAMS_REMOVE_VIEW(input, init) as Promise<{
     success: boolean;
   }>;
 

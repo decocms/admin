@@ -47,7 +47,7 @@ export function toMention(id: string, type: Mentionables = "prompt") {
 export async function resolveMentions(
   content: string,
   workspace: ProjectLocator,
-  client?: ReturnType<(typeof MCPClient)["forWorkspace"]>,
+  client?: ReturnType<(typeof MCPClient)["forLocator"]>,
   options?: {
     /**
      * The id of the parent prompt. If provided, the resolution will skip the parent id to avoid infinite recursion.

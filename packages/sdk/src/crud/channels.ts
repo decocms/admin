@@ -7,24 +7,24 @@ export type { Channel };
 
 /**
  * List all channels in a workspace
- * @param workspace - The workspace to list channels from
+ * @param locator - Project locator
  * @param signal - Optional AbortSignal for cancellation
  * @returns Array of channels
  */
 export const listChannels = (
-  workspace: ProjectLocator,
+  locator: ProjectLocator,
   signal?: AbortSignal,
 ): Promise<{ channels: Channel[] }> =>
-  MCPClient.forWorkspace(workspace).CHANNELS_LIST({}, { signal });
+  MCPClient.forLocator(locator).CHANNELS_LIST({}, { signal });
 
 /**
  * Create a new channel
- * @param workspace - The workspace to create the channel in
+ * @param locator - Project locator
  * @param channel - The channel data to create
  * @returns The created channel
  */
 export const createChannel = (
-  workspace: ProjectLocator,
+  locator: ProjectLocator,
   channel: {
     discriminator: string;
     integrationId: string;
@@ -32,35 +32,35 @@ export const createChannel = (
     name?: string;
   },
 ): Promise<Channel> =>
-  MCPClient.forWorkspace(workspace).CHANNELS_CREATE(channel);
+  MCPClient.forLocator(locator).CHANNELS_CREATE(channel);
 
 /**
  * Get a channel by ID
- * @param workspace - The workspace of the channel
+ * @param locator - Project locator
  * @param id - The ID of the channel to get
  * @param signal - Optional AbortSignal for cancellation
  * @returns The channel
  */
 export const getChannel = (
-  workspace: ProjectLocator,
+  locator: ProjectLocator,
   id: string,
   signal?: AbortSignal,
 ): Promise<Channel> =>
-  MCPClient.forWorkspace(workspace).CHANNELS_GET({ id }, { signal });
+  MCPClient.forLocator(locator).CHANNELS_GET({ id }, { signal });
 
 /**
  * Make a agent join the channel
- * @param workspace - The workspace of the channel
+ * @param locator - Project locator
  * @param channelId - The ID of the channel to join
  * @param agentId - The ID of the agent to join the channel
  * @returns The updated channel
  */
 export const joinChannel = (
-  workspace: ProjectLocator,
+  locator: ProjectLocator,
   channelId: string,
   agentId: string,
 ): Promise<Channel> =>
-  MCPClient.forWorkspace(workspace).CHANNELS_JOIN({
+  MCPClient.forLocator(locator).CHANNELS_JOIN({
     id: channelId,
     agentId,
   });
@@ -69,38 +69,38 @@ export const joinChannel = (
  * List available channels for a given connection
  */
 export const listAvailableChannelsForConnection = (
-  workspace: ProjectLocator,
+  locator: ProjectLocator,
   connection: MCPConnection,
 ) =>
   MCPClient.forConnection<(typeof WellKnownBindings)["Channel"]>(
     connection,
   ).DECO_CHAT_CHANNELS_LIST({
-    workspace,
+    workspace: locator,
   });
 
 /**
  * Remove an agent from a channel
- * @param workspace - The workspace of the channel
+ * @param locator - Project locator
  * @param channelId - The ID of the channel to leave
  * @returns The updated channel
  */
 export const leaveChannel = (
-  workspace: ProjectLocator,
+  locator: ProjectLocator,
   channelId: string,
   agentId: string,
 ): Promise<Channel> =>
-  MCPClient.forWorkspace(workspace).CHANNELS_LEAVE({
+  MCPClient.forLocator(locator).CHANNELS_LEAVE({
     id: channelId,
     agentId: agentId,
   });
 
 /**
  * Delete a channel
- * @param workspace - The workspace of the channel
+ * @param locator - Project locator
  * @param channelId - The ID of the channel to delete
  * @returns Delete response with id and agentId
  */
-export const deleteChannel = (workspace: ProjectLocator, channelId: string) =>
-  MCPClient.forWorkspace(workspace).CHANNELS_DELETE({
+export const deleteChannel = (locator: ProjectLocator, channelId: string) =>
+  MCPClient.forLocator(locator).CHANNELS_DELETE({
     id: channelId,
   });

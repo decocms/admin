@@ -86,7 +86,7 @@ export const GLOBAL_TOOLS = [
 ] as const;
 
 // Tools tied to an specific workspace
-export const WORKSPACE_TOOLS = [
+export const PROJECT_TOOLS = [
   teamsAPI.addView,
   teamsAPI.removeView,
   membersAPI.inviteTeamMembers,
@@ -207,7 +207,7 @@ export const AGENT_TOOLS = [
 export const AI_TOOLS = [aiAPI.aiGenerate] as const;
 
 export type GlobalTools = typeof GLOBAL_TOOLS;
-export type WorkspaceTools = typeof WORKSPACE_TOOLS;
+export type ProjectTools = typeof PROJECT_TOOLS;
 export type ToolLike<
   TName extends string = string,
   // deno-lint-ignore no-explicit-any
@@ -253,13 +253,13 @@ export const MCPClient = new Proxy(
   {} as typeof global & {
     forContext: (
       ctx: Omit<AppContext, "user"> & { user?: AppContext["user"] },
-    ) => MCPClientStub<WorkspaceTools>;
+    ) => MCPClientStub<ProjectTools>;
   },
   {
     get(_, name) {
       if (name === "forContext") {
         return (ctx: AppContext) =>
-          createMCPToolsStub({ tools: WORKSPACE_TOOLS, context: ctx });
+          createMCPToolsStub({ tools: PROJECT_TOOLS, context: ctx });
       }
       return global[name as keyof typeof global];
     },

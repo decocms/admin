@@ -24,7 +24,7 @@ import {
   MCPClient,
   type MCPClientStub,
   PolicyClient,
-  type WorkspaceTools,
+  type ProjectTools,
 } from "@deco/sdk/mcp";
 import type { Callbacks } from "@deco/sdk/mcp/binder";
 import type { CallTool } from "@deco/sdk/models";
@@ -77,7 +77,7 @@ export interface TriggerMetadata {
 
 function mapTriggerToTriggerData(
   trigger: NonNullable<
-    Awaited<ReturnType<MCPClientStub<WorkspaceTools>["TRIGGERS_GET"]>>
+    Awaited<ReturnType<MCPClientStub<ProjectTools>["TRIGGERS_GET"]>>
   >,
 ): TriggerData {
   return {
@@ -126,7 +126,7 @@ const buildInvokeUrl = (
 @Actor()
 export class Trigger {
   public metadata?: TriggerMetadata;
-  public mcpClient: MCPClientStub<WorkspaceTools>;
+  public mcpClient: MCPClientStub<ProjectTools>;
 
   protected data: TriggerData | null = null;
   protected hooks: TriggerHooks<TriggerData> | null = null;

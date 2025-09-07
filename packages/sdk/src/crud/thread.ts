@@ -38,10 +38,10 @@ export interface Metadata {
 }
 
 export const listThreads = (
-  workspace: ProjectLocator,
+  locator: ProjectLocator,
   options: ThreadFilterOptions,
   init?: RequestInit,
-) => MCPClient.forWorkspace(workspace).THREADS_LIST(options, init);
+) => MCPClient.forLocator(locator).THREADS_LIST(options, init);
 
 export interface ThreadDetails {
   id: string;
@@ -53,11 +53,11 @@ export interface ThreadDetails {
 }
 
 export const getThread = (
-  workspace: ProjectLocator,
+  locator: ProjectLocator,
   threadId: string,
   init: RequestInit = {},
 ): Promise<ThreadDetails> =>
-  MCPClient.forWorkspace(workspace).THREADS_GET({ id: threadId }, init);
+  MCPClient.forLocator(locator).THREADS_GET({ id: threadId }, init);
 
 export interface ThreadMessage {
   id: string;
@@ -69,11 +69,11 @@ export interface ThreadMessage {
 }
 
 export const getThreadMessages = (
-  workspace: ProjectLocator,
+  locator: ProjectLocator,
   threadId: string,
   init: RequestInit = {},
 ): Promise<{ messages: UIMessage[] }> =>
-  MCPClient.forWorkspace(workspace).THREADS_GET_MESSAGES(
+  MCPClient.forLocator(locator).THREADS_GET_MESSAGES(
     { id: threadId },
     init,
   );
@@ -83,30 +83,30 @@ export interface ThreadTools {
 }
 
 export const getThreadTools = (
-  workspace: ProjectLocator,
+  locator: ProjectLocator,
   threadId: string,
   init: RequestInit = {},
 ): Promise<ThreadTools> =>
-  MCPClient.forWorkspace(workspace).THREADS_GET_TOOLS({ id: threadId }, init);
+  MCPClient.forLocator(locator).THREADS_GET_TOOLS({ id: threadId }, init);
 
 export const updateThreadTitle = (
-  workspace: ProjectLocator,
+  locator: ProjectLocator,
   threadId: string,
   title: string,
   init: RequestInit = {},
 ): Promise<ThreadDetails> =>
-  MCPClient.forWorkspace(workspace).THREADS_UPDATE_TITLE(
+  MCPClient.forLocator(locator).THREADS_UPDATE_TITLE(
     { threadId, title },
     init,
   ) as Promise<ThreadDetails>;
 
 export const updateThreadMetadata = (
-  workspace: ProjectLocator,
+  locator: ProjectLocator,
   threadId: string,
   metadata: Record<string, unknown>,
   init: RequestInit = {},
 ): Promise<ThreadDetails> =>
-  MCPClient.forWorkspace(workspace).THREADS_UPDATE_METADATA(
+  MCPClient.forLocator(locator).THREADS_UPDATE_METADATA(
     { threadId, metadata },
     init,
   ) as Promise<ThreadDetails>;

@@ -8,7 +8,7 @@ export const useFile = (path: string) => {
 
   return useQuery({
     queryKey: KEYS.FILE(locator, path),
-    queryFn: () => readFile({ workspace: locator, path }),
+    queryFn: () => readFile({ locator: locator, path }),
   });
 };
 
@@ -19,7 +19,7 @@ export const useReadFile = () => {
   return (path: string, { expiresIn }: { expiresIn?: number } = {}) =>
     queryClient.fetchQuery({
       queryKey: KEYS.FILE(locator, path),
-      queryFn: () => readFile({ workspace: locator, path, expiresIn }),
+      queryFn: () => readFile({ locator: locator, path, expiresIn }),
     });
 };
 
@@ -28,7 +28,7 @@ export const useFiles = ({ root }: { root: string }) => {
 
   return useQuery({
     queryKey: KEYS.FILE(locator, root),
-    queryFn: () => listFiles({ workspace: locator, root }),
+    queryFn: () => listFiles({ locator: locator, root }),
   });
 };
 
@@ -48,7 +48,7 @@ export const useWriteFile = () => {
       contentType: string;
       metadata?: Record<string, string | string[]>;
     }) =>
-      writeFile({ path, workspace: locator, content, contentType, metadata }),
+      writeFile({ path, locator: locator, content, contentType, metadata }),
     onMutate: async ({ path, content, contentType, metadata }) => {
       // Cancel any outgoing refetches
       await queryClient.cancelQueries({ queryKey: KEYS.FILE(locator, path) });
@@ -97,7 +97,7 @@ export const useDeleteFile = () => {
 
   return useMutation({
     mutationFn: ({ path }: DeleteFileParams) =>
-      deleteFile({ workspace: locator, path }),
+      deleteFile({ locator: locator, path }),
     onSuccess: (_, { root }) => {
       if (!root) return;
 

@@ -193,7 +193,7 @@ export const useMarketplaceIntegrations = () => {
   return useSuspenseQuery<IntegrationsResult>({
     queryKey: ["integrations", "marketplace"],
     queryFn: () =>
-      MCPClient.forWorkspace(locator)
+      MCPClient.forLocator(locator)
         .DECO_INTEGRATIONS_SEARCH({ query: "" })
         .then((r: IntegrationsResult | string) =>
           typeof r === "string" ? { integrations: [] } : r,
@@ -241,7 +241,7 @@ export const useInstallFromMarketplace = () => {
       provider: string;
       appId?: string;
     }) => {
-      const result: { installationId: string } = await MCPClient.forWorkspace(
+      const result: { installationId: string } = await MCPClient.forLocator(
         locator,
       ).DECO_INTEGRATION_INSTALL({ id: appName, provider, appId });
 
@@ -254,7 +254,7 @@ export const useInstallFromMarketplace = () => {
           provider === "deco") ||
         provider === "marketplace"
       ) {
-        const result = await MCPClient.forWorkspace(
+        const result = await MCPClient.forLocator(
           locator,
         ).DECO_INTEGRATION_OAUTH_START({
           appName: appName,
@@ -316,7 +316,7 @@ export const useMarketplaceAppSchema = (appName?: string) => {
     queryKey: ["integrations", "marketplace", appName, "schema"],
     queryFn: () =>
       canRunQuery
-        ? MCPClient.forWorkspace(locator).DECO_GET_APP_SCHEMA({ appName })
+        ? MCPClient.forLocator(locator).DECO_GET_APP_SCHEMA({ appName })
         : null,
     enabled: canRunQuery,
   });
@@ -332,7 +332,7 @@ export const useCreateOAuthCodeForIntegration = () => {
     }) => {
       const { integrationId, workspace, redirectUri, state } = params;
 
-      const { code } = await MCPClient.forWorkspace(
+      const { code } = await MCPClient.forLocator(
         workspace,
       ).OAUTH_CODE_CREATE({
         integrationId,

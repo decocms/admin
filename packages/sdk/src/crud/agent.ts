@@ -5,12 +5,12 @@ import { ProjectLocator, Locator } from "../locator.ts";
 
 /**
  * Update an agent
- * @param workspace - The workspace of the agent
+ * @param locator - Project locator
  * @param agent - The agent to update
  * @returns The updated agent
  */
-export const updateAgent = async (workspace: ProjectLocator, agent: Agent) => {
-  const agentRoot = `/${Locator.adaptToShared(workspace)}/Agents/${agent.id}`;
+export const updateAgent = async (locator: ProjectLocator, agent: Agent) => {
+  const agentRoot = `/${Locator.adaptToShared(locator)}/Agents/${agent.id}`;
 
   // deno-lint-ignore no-explicit-any
   const agentStub = stub<any>("AIAgent").new(agentRoot);
@@ -22,44 +22,48 @@ export const updateAgent = async (workspace: ProjectLocator, agent: Agent) => {
 
 /**
  * Create a new agent
+ * @param locator - Project locator
+ * @param template - The template for the agent
  * @returns The new agent
  */
 export const createAgent = (
-  workspace: ProjectLocator,
+  locator: ProjectLocator,
   template: Partial<Agent> = {},
 ) =>
-  MCPClient.forWorkspace(workspace).AGENTS_CREATE({
+  MCPClient.forLocator(locator).AGENTS_CREATE({
     id: crypto.randomUUID(),
     ...template,
   });
 
 /**
  * Load an agent from the file system
+ * @param locator - Project locator
  * @param agentId - The id of the agent to load
+ * @param signal - The signal to abort the request
  * @returns The agent
  */
 export const loadAgent = (
-  workspace: ProjectLocator,
+  locator: ProjectLocator,
   agentId: string,
   signal?: AbortSignal,
 ): Promise<Agent> =>
-  MCPClient.forWorkspace(workspace).AGENTS_GET({ id: agentId }, { signal });
+  MCPClient.forLocator(locator).AGENTS_GET({ id: agentId }, { signal });
 
 export const listAgents = (
-  workspace: ProjectLocator,
+  locator: ProjectLocator,
   signal?: AbortSignal,
 ): Promise<Agent[]> =>
-  MCPClient.forWorkspace(workspace)
+  MCPClient.forLocator(locator)
     .AGENTS_LIST({}, { signal })
     .then((res) => res.items) as Promise<Agent[]>;
 
 /**
  * Delete an agent from the file system
- * @param workspace - The workspace of the agent
+ * @param locator - The locator of the agent
  * @param agentId - The id of the agent to delete
  */
-export const deleteAgent = (workspace: ProjectLocator, agentId: string) =>
-  MCPClient.forWorkspace(workspace).AGENTS_DELETE({ id: agentId });
+export const deleteAgent = (locator: ProjectLocator, agentId: string) =>
+  MCPClient.forLocator(locator).AGENTS_DELETE({ id: agentId });
 
 /**
  * Validate an agent against the Zod schema

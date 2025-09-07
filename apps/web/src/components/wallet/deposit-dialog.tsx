@@ -75,7 +75,7 @@ export function DepositDialog() {
   const createCheckoutSession = useMutation({
     mutationFn: (amountInCents: number) =>
       createWalletCheckoutSession({
-        workspace: locator,
+        locator: locator,
         amountUSDCents: amountInCents,
         successUrl: `${location.origin}${workspaceLink("/monitor/billing?deposit_success=true")}`,
         cancelUrl: `${location.origin}${workspaceLink("/monitor/billing?deposit_success=false")}`,

@@ -45,7 +45,10 @@ const TABS = {
   },
 };
 
-export const getPublicChatLink = (agentId: string, workspace: ProjectLocator) => {
+export const getPublicChatLink = (
+  agentId: string,
+  workspace: ProjectLocator,
+) => {
   const url = new URL("/chats", globalThis.location.href);
   url.searchParams.set("agentId", agentId);
   url.searchParams.set("workspace", workspace);

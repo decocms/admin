@@ -29,4 +29,8 @@ export const Locator = {
     const [org] = locator.split("/");
     return `shared/${org}`;
   },
+  fromShared: (deprecatedSharedFormatWorkspace: string): ProjectLocator => {
+    const [org] = deprecatedSharedFormatWorkspace.split("/");
+    return `${org}/default`;
+  },
 } as const;

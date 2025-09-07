@@ -15,7 +15,10 @@ export interface WorkflowDeleteParams {
   workflowName: string;
 }
 
-export function listWorkflowNames(workspace: ProjectLocator, signal?: AbortSignal) {
+export function listWorkflowNames(
+  workspace: ProjectLocator,
+  signal?: AbortSignal,
+) {
   const client = MCPClient.forWorkspace(workspace);
   return client.HOSTING_APP_WORKFLOWS_LIST_NAMES({}, { signal });
 }

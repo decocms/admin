@@ -19,8 +19,10 @@ export const deleteTrigger = (workspace: ProjectLocator, triggerId: string) =>
 export const activateTrigger = (workspace: ProjectLocator, triggerId: string) =>
   MCPClient.forWorkspace(workspace).TRIGGERS_ACTIVATE({ id: triggerId });
 
-export const deactivateTrigger = (workspace: ProjectLocator, triggerId: string) =>
-  MCPClient.forWorkspace(workspace).TRIGGERS_DEACTIVATE({ id: triggerId });
+export const deactivateTrigger = (
+  workspace: ProjectLocator,
+  triggerId: string,
+) => MCPClient.forWorkspace(workspace).TRIGGERS_DEACTIVATE({ id: triggerId });
 
 export const updateTrigger = (
   workspace: ProjectLocator,

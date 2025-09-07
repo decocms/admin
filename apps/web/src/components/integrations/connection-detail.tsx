@@ -36,7 +36,9 @@ import { DefaultBreadcrumb, PageLayout } from "../layout/project.tsx";
 import { useCurrentTeam } from "../sidebar/team-selector.tsx";
 import {
   AppKeys,
-  getConnectionAppKey, isWellKnownApp, useGroupedApp
+  getConnectionAppKey,
+  isWellKnownApp,
+  useGroupedApp,
 } from "./apps.ts";
 import { IntegrationIcon } from "./common.tsx";
 

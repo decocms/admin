@@ -11,7 +11,7 @@ import { useNavigateWorkspace } from "../../hooks/use-navigate-workspace.ts";
 import type { Tab } from "../dock/index.tsx";
 import { AppKeys, getConnectionAppKey } from "../integrations/apps.ts";
 import { VerifiedBadge } from "../integrations/marketplace.tsx";
-import { DefaultBreadcrumb, PageLayout } from "../layout";
+import { DefaultBreadcrumb, PageLayout } from "../layout/project.tsx";
 import { IntegrationAvatar } from "../common/avatar/integration.tsx";
 
 // For the future, it should be controlled in a view

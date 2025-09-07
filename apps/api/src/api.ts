@@ -63,17 +63,25 @@ export const app = new Hono<AppEnv>();
 export const honoCtxToAppCtx = (c: Context<AppEnv>): AppContext => {
   const envs = env(c);
 
-  const org = c.req.param("root");
-  const project = c.req.param("slug");
+  const org = c.req.param("org") ?? c.req.param("root");
+  const project = c.req.param("project") ?? c.req.param("slug");
+  const locator = org && project ? Locator.from({ org, project }) : undefined;
 
-  const ctxWorkspace =
-    org && project
-      ? {
-          root: "shared",
-          slug: org,
-          value: `/${Locator.adaptToShared(Locator.from({ org, project }))}`,
-        }
-      : undefined;
+  const ctxWorkspace = locator
+    ? {
+        root: "shared",
+        slug: org,
+        value: `/${Locator.adaptToShared(locator)}`,
+      }
+    : undefined;
+
+  const ctxLocator = locator
+    ? {
+        org,
+        project,
+        value: locator,
+      }
+    : undefined;
 
   const policyClient = PolicyClient.getInstance(c.var.db);
   const authorizationClient = new AuthorizationClient(policyClient);
@@ -89,6 +97,7 @@ export const honoCtxToAppCtx = (c: Context<AppEnv>): AppContext => {
     kbFileProcessor: c.env.KB_FILE_PROCESSOR,
     workspaceDO: c.env.WORKSPACE_DB,
     workspace: ctxWorkspace,
+    locator: ctxLocator,
     posthog: createPosthogServerClient({
       apiKey: envs.POSTHOG_API_KEY,
       apiHost: envs.POSTHOG_API_HOST,
@@ -401,23 +410,23 @@ app.use(withActorsMiddlewareLegacy);
 app.post(`/contracts/mcp`, createMCPHandlerFor(CONTRACTS_TOOLS));
 
 app.all("/mcp", createMCPHandlerFor(GLOBAL_TOOLS));
-app.all("/:root/:slug/mcp", createMCPHandlerFor(WORKSPACE_TOOLS));
-app.all("/:root/:slug/agents/:agentId/mcp", createMCPHandlerFor(AGENT_TOOLS));
+app.all("/:org/:project/mcp", createMCPHandlerFor(WORKSPACE_TOOLS));
+app.all("/:org/:project/agents/:agentId/mcp", createMCPHandlerFor(AGENT_TOOLS));
 
 // Tool call endpoint handlers
 app.post("/tools/call/:tool", createToolCallHandlerFor(GLOBAL_TOOLS));
 
 app.post(
-  "/:root/:slug/tools/call/:tool",
+  "/:org/:project/tools/call/:tool",
   createToolCallHandlerFor(WORKSPACE_TOOLS),
 );
 
 app.post(
-  `/:root/:slug/${WellKnownMcpGroups.Email}/mcp`,
+  `/:org/:project/${WellKnownMcpGroups.Email}/mcp`,
   createMCPHandlerFor(EMAIL_TOOLS),
 );
 
-app.post("/:root/:slug/:integrationId/mcp", async (c) => {
+app.post("/:org/:project/:integrationId/mcp", async (c) => {
   const mcpServerProxy = await createMcpServerProxy(c);
 
   return mcpServerProxy.fetch(c.req.raw);
@@ -429,7 +438,7 @@ app.post("/apps/mcp", async (c) => {
   return mcpServerProxy.fetch(c.req.raw);
 });
 
-app.post("/:root/:slug/:integrationId/tools/list", async (c) => {
+app.post("/:org/:project/:integrationId/tools/list", async (c) => {
   const mcpServerProxy = await createMcpServerProxy(c);
 
   return c.json(
@@ -439,24 +448,26 @@ app.post("/:root/:slug/:integrationId/tools/list", async (c) => {
   );
 });
 
-app.all("/:root/:slug/i:databases-management/studio", async (c) => {
-  const root = c.req.param("root");
-  const slug = c.req.param("slug");
+app.all("/:org/:project/i:databases-management/studio", async (c) => {
+  const org = c.req.param("org");
+  const project = c.req.param("project");
   const ctx = honoCtxToAppCtx(c);
   await assertWorkspaceResourceAccess(ctx, {
     resource: "DATABASES_RUN_SQL",
   });
+
+  const locator = Locator.from({ org, project });
 
   // The DO id can be overridden by the client, both on the URL
   // for GET requests and on the body "id" property for POST requests
   // i've forked the library to add the ability to enforce the id
   return studio(c.req.raw, ctx.workspaceDO, {
     disableHomepage: true,
-    enforceId: `/${root}/${slug}`,
+    enforceId: `/${Locator.adaptToShared(locator)}`,
   });
 });
 
-app.post("/:root/:slug/:integrationId/tools/call/:tool", async (c) => {
+app.post("/:org/:project/:integrationId/tools/call/:tool", async (c) => {
   const mcpServerProxy = await createMcpServerProxy(c);
   const tool = c.req.param("tool");
 
@@ -472,33 +483,35 @@ app.post("/:root/:slug/:integrationId/tools/call/:tool", async (c) => {
 });
 
 app.post(
-  "/:root/:slug/tools/call/agents/:agentId/:tool",
+  "/:org/:project/tools/call/agents/:agentId/:tool",
   createToolCallHandlerFor(AGENT_TOOLS),
 );
 
 app.post("/apps/code-exchange", handleCodeExchange);
 
-app.post("/:root/:slug/triggers/:id", handleTrigger);
+app.post("/:org/:project/triggers/:id", handleTrigger);
 
 // Login and auth routes
 Object.entries(loginRoutes).forEach(([route, honoApp]) => {
   app.route(route, honoApp);
 });
 
-app.get("/files/:root/:slug/:path{.+}", async (c) => {
-  const root = c.req.param("root");
-  const slug = c.req.param("slug");
+app.get("/files/:org/:project/:path{.+}", async (c) => {
+  const org = c.req.param("org");
+  const project = c.req.param("project");
   const filePath = c.req.param("path");
 
   if (!filePath) {
     throw new HTTPException(400, { message: "File path is required" });
   }
 
-  const workspace = `/${root}/${slug}`;
+  const locator = Locator.from({ org, project });
 
   const appCtx = honoCtxToAppCtx(c);
 
-  const bucketName = getWorkspaceBucketName(workspace);
+  const bucketName = getWorkspaceBucketName(
+    `/${Locator.adaptToShared(locator)}`,
+  );
   const url = await getPresignedReadUrl_WITHOUT_CHECKING_AUTHORIZATION({
     c: appCtx,
     existingBucketName: bucketName,

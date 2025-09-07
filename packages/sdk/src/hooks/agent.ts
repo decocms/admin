@@ -44,12 +44,12 @@ export const useCreateAgent = () => {
   return create;
 };
 
-export const useUpdateAgent = () => {
+export const useUpdateAgent = (userId?: string) => {
   const client = useQueryClient();
   const { locator } = useSDK();
 
   const update = useMutation({
-    mutationFn: (agent: Agent) => updateAgent(locator, agent),
+    mutationFn: (agent: Agent) => updateAgent(locator, agent, userId),
     onSuccess: (result) => {
       // update item
       const itemKey = KEYS.AGENT(locator, result.id);

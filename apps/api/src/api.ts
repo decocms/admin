@@ -77,7 +77,7 @@ export const honoCtxToAppCtx = (c: Context<AppEnv>): AppContext => {
     ? {
         root,
         slug,
-        value: `/${root}/${slug}`,
+        value: Locator.adaptToRootSlug(locator, uid),
       }
     : undefined;
 
@@ -458,6 +458,7 @@ app.all("/:org/:project/i:databases-management/studio", async (c) => {
   const org = c.req.param("org");
   const project = c.req.param("project");
   const ctx = honoCtxToAppCtx(c);
+  const uid = ctx.user.id as string | undefined;
   await assertWorkspaceResourceAccess(ctx, {
     resource: "DATABASES_RUN_SQL",
   });
@@ -469,7 +470,7 @@ app.all("/:org/:project/i:databases-management/studio", async (c) => {
   // i've forked the library to add the ability to enforce the id
   return studio(c.req.raw, ctx.workspaceDO, {
     disableHomepage: true,
-    enforceId: `/${Locator.adaptToShared(locator)}`,
+    enforceId: Locator.adaptToRootSlug(locator, uid),
   });
 });
 
@@ -514,9 +515,10 @@ app.get("/files/:org/:project/:path{.+}", async (c) => {
   const locator = Locator.from({ org, project });
 
   const appCtx = honoCtxToAppCtx(c);
+  const uid = appCtx.user.id as string | undefined;
 
   const bucketName = getWorkspaceBucketName(
-    `/${Locator.adaptToShared(locator)}`,
+    Locator.adaptToRootSlug(locator, uid),
   );
   const url = await getPresignedReadUrl_WITHOUT_CHECKING_AUTHORIZATION({
     c: appCtx,

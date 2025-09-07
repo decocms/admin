@@ -39,6 +39,22 @@ export const Locator = {
   /**
    * @deprecated We are moving out of /root/slug format
    */
+  adaptToRootSlug: (
+    locator: string,
+    userId?: string,
+  ): `/${string}/${string}` => {
+    const normalized = locator.startsWith("/") ? locator.slice(1) : locator;
+    const [org, project] = normalized.split("/");
+
+    if (project === "personal" && userId) {
+      return `/users/${userId}`;
+    }
+
+    return `/shared/${org}`;
+  },
+  /**
+   * @deprecated We are moving out of /root/slug format
+   */
   adaptToShared: (locator: ProjectLocator): string => {
     const [org] = locator.split("/");
     return `shared/${org}`;

@@ -130,11 +130,15 @@ const Marketplace = () => {
   }, [integrations]);
 
   const filteredIntegrations = useMemo(() => {
-    return integrations?.integrations.filter(
-      (integration) =>
-        integration.name.toLowerCase().includes(search.toLowerCase()) ||
-        integration.friendlyName?.toLowerCase().includes(search.toLowerCase()),
-    );
+    return integrations?.integrations
+      ?.filter(
+        (integration) =>
+          integration.name.toLowerCase().includes(search.toLowerCase()) ||
+          integration.friendlyName
+            ?.toLowerCase()
+            .includes(search.toLowerCase()),
+      )
+      ?.slice(0, 7);
   }, [integrations, search]);
 
   return (
@@ -149,7 +153,7 @@ const Marketplace = () => {
           />
           {search && (
             <div className="z-20 p-4 bg-white w-[370px] absolute left-0 top-[calc(100%+8px)] rounded-xl">
-              {filteredIntegrations.slice(0, 7).map((integration) => (
+              {filteredIntegrations?.map((integration) => (
                 <SimpleFeaturedCard
                   key={"search-" + integration.id}
                   integration={integration}

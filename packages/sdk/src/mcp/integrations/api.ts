@@ -355,7 +355,11 @@ export const listIntegrations = createIntegrationManagementTool({
 
     // Build the result with all integrations
     const baseResult = [
-      ...virtualIntegrationsFor(c.locator.value, knowledgeBases.names ?? [], c.token),
+      ...virtualIntegrationsFor(
+        c.locator.value,
+        knowledgeBases.names ?? [],
+        c.token,
+      ),
       ...filteredIntegrations.map(mapIntegration),
       ...filteredAgents
         .map((item) => AgentSchema.safeParse(item)?.data)

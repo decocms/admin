@@ -70,7 +70,9 @@ export const honoCtxToAppCtx = (c: Context<AppEnv>): AppContext => {
   const user = c.get("user");
   const uid = user?.id as string | undefined;
 
-  const oldWorkspaceValue = locator ? Locator.adaptToRootSlug(locator, uid) : undefined;
+  const oldWorkspaceValue = locator
+    ? Locator.adaptToRootSlug(locator, uid)
+    : undefined;
 
   let ctxWorkspace = undefined;
   if (oldWorkspaceValue) {

@@ -159,6 +159,13 @@ const Marketplace = () => {
                   integration={integration}
                 />
               ))}
+              {
+                filteredIntegrations?.length === 0 && (
+                  <div className="text-sm text-muted-foreground">
+                    No integrations found
+                  </div>
+                )
+              }
             </div>
           )}
         </div>

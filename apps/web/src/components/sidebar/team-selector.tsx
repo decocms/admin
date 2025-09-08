@@ -125,7 +125,9 @@ CurrentTeamDropdownOptions.Skeleton = () => (
 function TeamsToSwitch({ query }: { query: string }) {
   const { org: currentTeamSlug } = useParams();
   const { data: orgs } = useOrganizations();
-  const availableTeamsToSwitch = orgs.filter((org) => org.slug !== currentTeamSlug);
+  const availableTeamsToSwitch = orgs.filter(
+    (org) => org.slug !== currentTeamSlug,
+  );
 
   const filteredTeams = availableTeamsToSwitch.filter(
     (team) =>

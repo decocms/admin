@@ -6,6 +6,5 @@ import { MCPClient } from "../fetcher.ts";
  * @param params - Registry app parameters
  * @returns The registry app
  */
-export const getRegistryApp = (
-  params: { name: string },
-) => MCPClient.REGISTRY_GET_APP(params);
+export const getRegistryApp = (params: { name: string }) =>
+  MCPClient.REGISTRY_GET_APP(params);

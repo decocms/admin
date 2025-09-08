@@ -1,4 +1,8 @@
-import { getRegistryApp, useMarketplaceIntegrations, type Integration } from "@deco/sdk";
+import {
+  getRegistryApp,
+  useMarketplaceIntegrations,
+  type Integration,
+} from "@deco/sdk";
 import { AppName } from "@deco/sdk/common";
 import { Button } from "@deco/ui/components/button.tsx";
 import {

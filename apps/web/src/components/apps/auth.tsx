@@ -40,10 +40,7 @@ import { getAllScopes } from "../../utils/scopes.ts";
 import { VerifiedBadge } from "../integrations/marketplace.tsx";
 import { Locator } from "@deco/sdk";
 
-const preSelectTeam = (
-  teams: Team[],
-  workspace_hint: string | undefined,
-) => {
+const preSelectTeam = (teams: Team[], workspace_hint: string | undefined) => {
   if (teams.length === 1) {
     return teams[0];
   }

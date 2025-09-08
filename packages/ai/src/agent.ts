@@ -291,6 +291,8 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
   private _createAppContext(metadata?: AgentMetadata): AppContext {
     const policyClient = PolicyClient.getInstance(this.db);
     const { org, project } = Locator.parse(this.workspace);
+    const locatorValue = Locator.from({ org, project });
+    const workspace = fromWorkspaceString(this.workspace, metadata?.user?.id);
 
     return {
       params: {},
@@ -301,8 +303,8 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
       stub: this.state.stub as AppContext["stub"],
       workspaceDO: this.actorEnv.WORKSPACE_DB,
       cookie: metadata?.userCookie ?? undefined,
-      workspace: fromWorkspaceString(this.workspace, metadata?.user?.id),
-      locator: { org, project, value: this.workspace },
+      workspace,
+      locator: { org, project, value: locatorValue },
       resourceAccess: createResourceAccess(),
       cf: new Cloudflare({ apiToken: this.env.CF_API_TOKEN }),
       policy: policyClient,

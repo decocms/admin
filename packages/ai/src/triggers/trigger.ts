@@ -43,6 +43,7 @@ import { isApiDecoChatMCPConnection } from "../mcp.ts";
 import { hooks as cron } from "./cron.ts";
 import type { TriggerData, TriggerRun } from "./services.ts";
 import { hooks as webhook } from "./webhook.ts";
+import { Locator } from "@deco/sdk";
 export type { TriggerData };
 
 export const threadOf = (
@@ -191,6 +192,11 @@ export class Trigger {
   private _createContext(): AppContext {
     const policyClient = PolicyClient.getInstance(this.db);
     const authorizationClient = new AuthorizationClient(policyClient);
+
+    const workspace = fromWorkspaceString(this.workspace);
+    const { org, project } = Locator.parse(this.workspace);
+    const locatorValue = Locator.from({ org, project });
+
     return {
       params: {},
       envVars: this.env,
@@ -202,7 +208,8 @@ export class Trigger {
       stub: this.state.stub as AppContext["stub"],
       // i suspect triggers on old root/slug format for
       // root == "users" will not work anymore
-      workspace: fromWorkspaceString(this.workspace),
+      workspace,
+      locator: { org, project, value: locatorValue },
       resourceAccess: createResourceAccess(),
       cf: new Cloudflare({ apiToken: this.env.CF_API_TOKEN }),
       policy: policyClient,

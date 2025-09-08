@@ -1,4 +1,5 @@
-<img width="2400" height="750" alt="image" src="https://github.com/user-attachments/assets/bdd09426-554a-49fe-9f93-8e46652fdefd" />
+<img width="2400" height="750" alt="image" src="https://github.com/user-attachments/assets/d3e36c98-4609-46d3-b39f-7ee1c6d77432" />
+
 
 # decocms.com
 

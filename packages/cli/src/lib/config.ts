@@ -128,7 +128,7 @@ const readConfigFile = async (cwd?: string) => {
 };
 
 const DECO_CHAT_WORKFLOW_BINDING = {
-  name: "DECO_CHAT_WORKFLOW_DO",
+  name: "DECO_WORKFLOW_DO",
   class_name: "Workflow",
 };
 
@@ -159,7 +159,9 @@ export const writeWranglerConfig = async (
 
 export const addWorkflowDO = async () => {
   const wranglerConfig = await readWranglerConfig(process.cwd());
-  const currentDOs = wranglerConfig.durable_objects?.bindings ?? [];
+  const currentDOs = (wranglerConfig.durable_objects?.bindings ?? []).filter(
+    (b) => b.name !== "DECO_CHAT_WORKFLOW_DO",
+  );
   const isWorkflowMigration = (m: { new_classes?: string[] }) =>
     m.new_classes?.includes(DECO_CHAT_WORKFLOW_BINDING.class_name);
 

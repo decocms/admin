@@ -359,7 +359,7 @@ const createWorkflowTools = <TEnv = any, TSchema extends z.ZodTypeAny = never>(
     execute: async (args) => {
       const store = State.getStore();
       const runId =
-        store?.req?.headers.get("x-deco-chat-run-id") ?? crypto.randomUUID();
+        store?.req?.headers?.get("x-deco-chat-run-id") ?? crypto.randomUUID();
       const workflowDO = bindings.DECO_WORKFLOW_DO.get(
         bindings.DECO_WORKFLOW_DO.idFromName(runId),
       );

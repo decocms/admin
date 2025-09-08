@@ -83,9 +83,17 @@ export function applyDisplayNameToIntegration(
   integration: Integration,
   agents?: Agent[],
 ): IntegrationWithDisplayName {
-  const providers = createNameProviders(agents);
+  // First priority: user-defined alias
+  if (integration.alias?.trim()) {
+    return {
+      ...integration,
+      name: integration.alias.trim(),
+      _name: integration.name,
+    };
+  }
 
-  // Try each provider in order
+  // Second priority: provider-based custom names
+  const providers = createNameProviders(agents);
   for (const provider of providers) {
     if (provider.canHandle(integration)) {
       const customName = provider.getDisplayName(integration);

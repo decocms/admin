@@ -47,6 +47,8 @@ export const IntegrationSchema = z.object({
   id: z.string(),
   /** Human-readable name of the integration */
   name: z.string(),
+  /** Custom user-defined alias/display name for the integration instance */
+  alias: z.string().optional().nullable(),
   /** Brief description of the integration's functionality */
   description: z.string().optional(),
   /** URL to the integration's icon */

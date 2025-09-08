@@ -181,6 +181,7 @@ function ConfigureConnectionInstanceForm({
     defaultValues: {
       id: instance?.id || crypto.randomUUID(),
       name: instance?.name || "",
+      alias: instance?.alias || "",
       description: instance?.description || "",
       icon: instance?.icon || "",
       connection: instance?.connection ||
@@ -338,6 +339,24 @@ function ConfigureConnectionInstanceForm({
                 />
               </div>
             </div>
+            <FormField
+              control={form.control}
+              name="alias"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Display Name (Optional)</FormLabel>
+                  <FormControl>
+                    <Input
+                      className="bg-background"
+                      placeholder="Custom name to identify this instance (e.g., 'Production DB', 'Dev Environment')"
+                      {...field}
+                      value={field.value || ""}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
           )}
           <div className="space-y-2">
             <div className="space-y-4">

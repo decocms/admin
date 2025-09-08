@@ -547,7 +547,7 @@ function Overview({
           )}
         </div>
       </div>
-      {!isWellKnown && data.info?.provider !== "custom" && showInstallButton ? (
+      {!isWellKnown && data.info?.provider !== "custom" ? (
         <Button
           variant="special"
           className="w-full"

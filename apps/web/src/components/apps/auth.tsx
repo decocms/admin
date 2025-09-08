@@ -4,6 +4,7 @@ import {
   SDKProvider,
   useCreateOAuthCodeForIntegration,
   useIntegrations,
+  type Team,
 } from "@deco/sdk";
 import { Button } from "@deco/ui/components/button.tsx";
 import { Icon } from "@deco/ui/components/icon.tsx";
@@ -13,7 +14,6 @@ import { useEffect, useMemo, useState, Suspense } from "react";
 import { ChevronsUpDown, Check } from "lucide-react";
 import { cn } from "@deco/ui/lib/utils.ts";
 import { Avatar } from "../common/avatar/index.tsx";
-import { type CurrentTeam, useUserTeams } from "../sidebar/team-selector.tsx";
 import { AppsAuthLayout, OAuthSearchParams } from "./layout.tsx";
 import { useRegistryApp, type RegistryApp } from "@deco/sdk";
 import { IntegrationAvatar } from "../common/avatar/integration.tsx";
@@ -32,6 +32,7 @@ import JsonSchemaForm from "../json-schema/index.tsx";
 import { generateDefaultValues } from "../json-schema/utils/generate-default-values.ts";
 import {
   useMarketplaceAppSchema,
+  useOrganizations,
   usePermissionDescriptions,
 } from "@deco/sdk/hooks";
 import type { JSONSchema7 } from "json-schema";
@@ -40,7 +41,7 @@ import { VerifiedBadge } from "../integrations/marketplace.tsx";
 import { Locator } from "@deco/sdk";
 
 const preSelectTeam = (
-  teams: CurrentTeam[],
+  teams: Team[],
   workspace_hint: string | undefined,
 ) => {
   if (teams.length === 1) {
@@ -145,10 +146,10 @@ const SelectOrganization = ({
   setOrg,
 }: {
   registryApp: RegistryApp;
-  orgs: CurrentTeam[];
-  setOrg: (team: CurrentTeam | null) => void;
+  orgs: Team[];
+  setOrg: (team: Team | null) => void;
 }) => {
-  const [selectedOrg, setSelectedOrg] = useState<CurrentTeam | null>(null);
+  const [selectedOrg, setSelectedOrg] = useState<Team | null>(null);
 
   return (
     <div className="flex flex-col items-center justify-center h-screen">
@@ -174,8 +175,8 @@ const SelectOrganization = ({
             <Combobox
               options={orgs.map((team) => ({
                 value: team.slug,
-                label: team.label,
-                avatarUrl: team.avatarUrl,
+                label: team.name,
+                avatarUrl: team.avatar_url,
               }))}
               value={selectedOrg?.slug ?? ""}
               onChange={(value) =>
@@ -484,7 +485,7 @@ const SelectProjectAppInstance = ({
   state,
 }: {
   app: RegistryApp;
-  org: CurrentTeam;
+  org: Team;
   project: string;
   selectAnotherProject: () => void;
   clientId: string;
@@ -542,8 +543,8 @@ const SelectProjectAppInstance = ({
             <div className="relative">
               <Avatar
                 shape="square"
-                url={org.avatarUrl}
-                fallback={org.label}
+                url={org.avatar_url}
+                fallback={org.name}
                 objectFit="contain"
                 size="xl"
               />
@@ -642,8 +643,8 @@ function AppsOAuth({
   workspace_hint,
 }: OAuthSearchParams) {
   const { data: registryApp } = useRegistryApp({ clientId: client_id });
-  const orgs = useUserTeams();
-  const [org, setOrg] = useState<CurrentTeam | null>(
+  const { data: orgs } = useOrganizations();
+  const [org, setOrg] = useState<Team | null>(
     preSelectTeam(orgs, workspace_hint),
   );
 

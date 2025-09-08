@@ -46,25 +46,6 @@ export function useCurrentTeam(): CurrentTeam & { views: View[] } {
   };
 }
 
-export function useUserTeams() {
-  const { data: teams } = useOrganizations();
-  const { slug: currentSlug } = useCurrentTeam();
-
-  const allTeams: CurrentTeam[] = teams.map((team) => ({
-    avatarUrl: team.avatar_url,
-    slug: team.slug,
-    label: team.name,
-    id: team.id,
-    theme: team.theme,
-  }));
-
-  const teamsWithoutCurrentTeam = allTeams.filter(
-    (team) => team.slug !== currentSlug,
-  );
-
-  return teamsWithoutCurrentTeam;
-}
-
 function CurrentTeamDropdownTrigger() {
   const { avatarUrl, label } = useCurrentTeam();
 
@@ -142,11 +123,13 @@ CurrentTeamDropdownOptions.Skeleton = () => (
 );
 
 function TeamsToSwitch({ query }: { query: string }) {
-  const availableTeamsToSwitch = useUserTeams();
+  const { org: currentTeamSlug } = useParams();
+  const { data: orgs } = useOrganizations();
+  const availableTeamsToSwitch = orgs.filter((org) => org.slug !== currentTeamSlug);
 
   const filteredTeams = availableTeamsToSwitch.filter(
     (team) =>
-      team.label.toLowerCase().includes(query.toLowerCase()) ||
+      team.name.toLowerCase().includes(query.toLowerCase()) ||
       team.slug?.toLowerCase().includes(query.toLowerCase()),
   );
 
@@ -162,19 +145,19 @@ function TeamsToSwitch({ query }: { query: string }) {
     <div className="flex flex-col gap-2 h-36 overflow-y-auto">
       <div className="flex flex-col gap-2 h-36 overflow-y-auto">
         {filteredTeams.map((team) => (
-          <ResponsiveDropdownItem asChild key={team.slug + team.label}>
+          <ResponsiveDropdownItem asChild key={team.slug + team.name}>
             <Link
               to={`/${team.slug}`}
               className="w-full flex items-center gap-2 cursor-pointer"
             >
               <Avatar
                 shape="square"
-                url={team.avatarUrl}
-                fallback={team.label}
+                url={team.avatar_url}
+                fallback={team.name}
                 objectFit="contain"
                 size="xs"
               />
-              <span className="md:text-sm">{team.label}</span>
+              <span className="md:text-sm">{team.name}</span>
             </Link>
           </ResponsiveDropdownItem>
         ))}

@@ -23,43 +23,43 @@ export const usePrompts = (input?: {
   resolveMentions?: boolean;
   excludeIds?: string[];
 }) => {
-  const { workspace } = useSDK();
+  const { locator } = useSDK();
   return useSuspenseQuery({
     queryKey: KEYS.PROMPTS(
-      workspace,
+      locator,
       input?.ids,
       input?.resolveMentions,
       input?.excludeIds,
     ),
-    queryFn: ({ signal }) => listPrompts(workspace, input, { signal }),
+    queryFn: ({ signal }) => listPrompts(locator, input, { signal }),
     retry: (failureCount, error) =>
       error instanceof InternalServerError && failureCount < 2,
   });
 };
 
 export const usePrompt = (id: string = "") => {
-  const { workspace } = useSDK();
+  const { locator } = useSDK();
   return useSuspenseQuery({
-    queryKey: KEYS.PROMPT(workspace, id),
+    queryKey: KEYS.PROMPT(locator, id),
     retry: (failureCount, error) =>
       error instanceof InternalServerError && failureCount < 2,
     queryFn: ({ signal }) => {
       if (!id.length) {
         return null;
       }
-      return getPrompt(workspace, id, { signal });
+      return getPrompt(locator, id, { signal });
     },
   });
 };
 
 export function useCreatePrompt() {
-  const { workspace } = useSDK();
+  const { locator } = useSDK();
   const client = useQueryClient();
   return useMutation({
-    mutationFn: (input: CreatePromptInput) => createPrompt(workspace, input),
+    mutationFn: (input: CreatePromptInput) => createPrompt(locator, input),
     onSuccess: (result) => {
       client.invalidateQueries({
-        queryKey: KEYS.PROMPTS(workspace).slice(0, 2),
+        queryKey: KEYS.PROMPTS(locator).slice(0, 2),
       });
       client.setQueryData(["prompt", result.id], result);
     },
@@ -67,16 +67,16 @@ export function useCreatePrompt() {
 }
 
 export function useUpdatePrompt() {
-  const { workspace } = useSDK();
+  const { locator } = useSDK();
   const client = useQueryClient();
   return useMutation({
-    mutationFn: (input: UpdatePromptInput) => updatePrompt(workspace, input),
+    mutationFn: (input: UpdatePromptInput) => updatePrompt(locator, input),
     onSuccess: (result) => {
       client.invalidateQueries({
-        queryKey: KEYS.PROMPTS(workspace).slice(0, 2),
+        queryKey: KEYS.PROMPTS(locator).slice(0, 2),
       });
       client.invalidateQueries({
-        queryKey: KEYS.PROMPT_VERSIONS(workspace, result.id),
+        queryKey: KEYS.PROMPT_VERSIONS(locator, result.id),
       });
       client.setQueryData(["prompt", result.id], result);
     },
@@ -84,13 +84,13 @@ export function useUpdatePrompt() {
 }
 
 export function useDeletePrompt() {
-  const { workspace } = useSDK();
+  const { locator } = useSDK();
   const client = useQueryClient();
   return useMutation({
-    mutationFn: (id: string) => deletePrompt(workspace, id),
+    mutationFn: (id: string) => deletePrompt(locator, id),
     onSuccess: () => {
       client.invalidateQueries({
-        queryKey: KEYS.PROMPTS(workspace).slice(0, 2),
+        queryKey: KEYS.PROMPTS(locator).slice(0, 2),
       });
     },
   });
@@ -101,11 +101,11 @@ export function useSearchPrompts(
   limit: number = 10,
   offset: number = 0,
 ) {
-  const { workspace } = useSDK();
+  const { locator } = useSDK();
   return useSuspenseQuery({
-    queryKey: KEYS.PROMPTS_SEARCH(workspace, query, limit, offset),
+    queryKey: KEYS.PROMPTS_SEARCH(locator, query, limit, offset),
     queryFn: ({ signal }) =>
-      searchPrompts(workspace, { query, limit, offset }, { signal }),
+      searchPrompts(locator, { query, limit, offset }, { signal }),
     retry: (failureCount, error) =>
       error instanceof InternalServerError && failureCount < 2,
   });
@@ -116,10 +116,10 @@ export function usePromptVersions(
   limit: number = 10,
   offset: number = 0,
 ) {
-  const { workspace } = useSDK();
+  const { locator } = useSDK();
   return useSuspenseQuery({
-    queryKey: KEYS.PROMPT_VERSIONS(workspace, id),
+    queryKey: KEYS.PROMPT_VERSIONS(locator, id),
     queryFn: ({ signal }) =>
-      getPromptVersions(workspace, { id, limit, offset }, { signal }),
+      getPromptVersions(locator, { id, limit, offset }, { signal }),
   });
 }

@@ -4,11 +4,11 @@ import { KEYS } from "./api.ts";
 import { useSDK } from "./store.tsx";
 
 export const useAuditEvents = (options: ThreadFilterOptions = {}) => {
-  const { workspace } = useSDK();
+  const { locator } = useSDK();
 
   return useQuery({
-    queryKey: KEYS.AUDITS(workspace, options),
-    queryFn: ({ signal }) => listThreads(workspace, options, { signal }),
+    queryKey: KEYS.AUDITS(locator, options),
+    queryFn: ({ signal }) => listThreads(locator, options, { signal }),
     staleTime: 0,
     gcTime: 0,
   });

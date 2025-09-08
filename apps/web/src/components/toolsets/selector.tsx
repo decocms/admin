@@ -220,6 +220,7 @@ export function IntegrationListItem({
                   checked={isAll}
                   onClick={(e) => {
                     e.stopPropagation();
+                    e.preventDefault();
                     handleAll(!isAll);
                   }}
                   disabled={isLoading}

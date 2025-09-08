@@ -2,6 +2,7 @@ import { listPrompts } from "../crud/prompts.ts";
 import type { MCPClient } from "../fetcher.ts";
 import type { Prompt } from "../index.ts";
 import { unescapeHTML } from "./html.ts";
+import { ProjectLocator } from "../locator.ts";
 
 export const MENTION_REGEX =
   /<span\s+[^>]*data-id=["']?([^"'\s>]+)["']?\s+[^>]*data-mention-type=["']?([^"'\s>]+)["']?[^>]*>.*?<\/span>/g;
@@ -45,8 +46,8 @@ export function toMention(id: string, type: Mentionables = "prompt") {
 // TODO: Resolve all types of mentions
 export async function resolveMentions(
   content: string,
-  workspace: string,
-  client?: ReturnType<(typeof MCPClient)["forWorkspace"]>,
+  workspace: ProjectLocator,
+  client?: ReturnType<(typeof MCPClient)["forLocator"]>,
   options?: {
     /**
      * The id of the parent prompt. If provided, the resolution will skip the parent id to avoid infinite recursion.

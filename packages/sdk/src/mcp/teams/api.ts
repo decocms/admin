@@ -507,10 +507,9 @@ export const getTeam = createTool({
     };
 
     try {
-      const workspace = `/shared/${slug}`;
       const signedUrlCreator = buildSignedUrlCreator({
         c,
-        existingBucketName: getWorkspaceBucketName(workspace),
+        existingBucketName: getWorkspaceBucketName(`/shared/${slug}`),
       });
       return {
         ...teamWithoutAvatar,
@@ -665,10 +664,9 @@ export const updateTeam = createTool({
 
     if (updateError) throw updateError;
 
-    const workspace = `/shared/${updatedTeam.slug}`;
     const signedUrlCreator = buildSignedUrlCreator({
       c,
-      existingBucketName: getWorkspaceBucketName(workspace),
+      existingBucketName: getWorkspaceBucketName(`/shared/${updatedTeam.slug}`),
     });
 
     return {
@@ -742,6 +740,7 @@ export const listTeams = createTool({
           admin
         )
       `)
+      .not("slug", "is", null)
       .eq("members.user_id", user.id)
       .is("members.deleted_at", null);
 
@@ -1175,5 +1174,52 @@ export const removeView = createTool({
     if (deleteError) throw deleteError;
 
     return { success: true };
+  },
+});
+
+export const listProjects = createTool({
+  name: "PROJECTS_LIST",
+  description: "List projects for an organization",
+  inputSchema: z.object({
+    org: z.string(),
+  }),
+  handler: async (props, c) => {
+    c.resourceAccess.grant();
+
+    assertPrincipalIsUser(c);
+    const user = c.user;
+
+    const { org } = props;
+    const { data, error } = await c.db
+      .from("deco_chat_projects")
+      .select(
+        "*, teams!inner(id, name, slug, theme, members!inner(id, user_id, admin, deleted_at))",
+      )
+      .eq("teams.slug", org)
+      .eq("teams.members.user_id", user.id)
+      .is("teams.members.deleted_at", null);
+
+    if (error) throw error;
+
+    return {
+      items: data.map((project) => {
+        if (typeof project.teams.slug !== "string") {
+          throw new InternalServerError("Team slug is not a string");
+        }
+
+        return {
+          id: project.id,
+          title: project.title,
+          slug: project.slug,
+          avatar_url: project.icon,
+          org: {
+            id: project.teams.id,
+            slug: project.teams.slug,
+            avatar_url: ((project.teams.theme as Theme) || null)?.picture,
+          },
+          memberCount: project.teams.members.length,
+        };
+      }),
+    };
   },
 });

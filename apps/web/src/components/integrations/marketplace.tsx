@@ -18,8 +18,7 @@ import {
 import { useMemo } from "react";
 import { IntegrationIcon } from "./common.tsx";
 
-export interface MarketplaceIntegration
-  extends Omit<Integration, "connection"> {
+export interface MarketplaceIntegration extends Integration {
   provider: string;
   friendlyName?: string;
   verified?: boolean;
@@ -91,7 +90,7 @@ export function SetupIntegrationModal({
 
 export function VerifiedBadge() {
   return (
-    <div className="relative">
+    <div className="relative w-4 h-4">
       <div className="absolute bg-primary rounded-full w-2 h-2 top-1 left-1" />
       <Tooltip>
         <TooltipTrigger asChild>
@@ -161,6 +160,7 @@ export const NEW_CUSTOM_CONNECTION: MarketplaceIntegration = {
   description: "Create a new integration with any MCP server",
   icon: "",
   provider: "deco",
+  connection: { type: "HTTP", url: "" },
 };
 
 export function Marketplace({

@@ -493,7 +493,7 @@ function WorkspaceViews() {
 
   // Separate items for organization
   const mcpItems = firstLevelViews.filter((item) =>
-    ["Agents", "Tools", "Prompts", "Views", "Workflows", "Triggers"].includes(
+    ["Agents", "My Apps", "Prompts", "Views", "Workflows", "Triggers"].includes(
       item.title,
     ),
   );
@@ -705,6 +705,7 @@ export function AppSidebar() {
   const { state, toggleSidebar, isMobile } = useSidebar();
   const isCollapsed = state === "collapsed";
   const focusChat = useFocusChat();
+  const navigateWorkspace = useNavigateWorkspace();
 
   return (
     <Sidebar variant="sidebar">
@@ -734,6 +735,21 @@ export function AppSidebar() {
                         className="text-muted-foreground/75"
                       />
                       <span className="truncate">New chat</span>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                  <SidebarMenuItem>
+                    <SidebarMenuButton
+                      className="cursor-pointer"
+                      onClick={() => {
+                        navigateWorkspace("/discover");
+                      }}
+                    >
+                      <Icon
+                        name="storefront"
+                        size={18}
+                        className="text-muted-foreground/75"
+                      />
+                      <span className="truncate">Discover</span>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
 

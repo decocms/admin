@@ -2,19 +2,19 @@ import {
   RegistryApp,
   useCreateAPIKey,
   useCreateIntegration,
-  useGetRegistryApp,
   useInstallFromMarketplace,
+  useMarketplaceAppSchema,
   usePermissionDescriptions,
 } from "@deco/sdk/hooks";
 import type { Integration } from "@deco/sdk/models";
 import type { JSONSchema7 } from "json-schema";
-import { useState } from "react";
+import { useState as _useState } from "react";
 import { useWorkspaceLink } from "./use-navigate-workspace.ts";
 import { useMutation } from "@tanstack/react-query";
 import { createPolicyStatements, getAllScopes } from "../utils/scopes.ts";
+import { getRegistryApp } from "@deco/sdk";
 
 interface InstallState {
-  isModalOpen: boolean;
   scopes?: string[];
   stateSchema?: JSONSchema7;
   integrationName?: string;
@@ -83,24 +83,24 @@ export const useInstallCreatingApiKeyAndIntegration = () => {
   return mutation;
 };
 
-export function useIntegrationInstallWithModal() {
-  const [installState, setInstallState] = useState<InstallState>({
-    isModalOpen: false,
-  });
-
+export function useIntegrationInstall(appName?: string) {
+  const { data: appSchema, isLoading: appSchemaLoading } =
+    useMarketplaceAppSchema(appName);
   const getLinkFor = useWorkspaceLink();
   const installMutation = useInstallFromMarketplace();
-  const getRegistryApp = useGetRegistryApp();
 
   const installCreatingApiKeyAndIntegration =
     useInstallCreatingApiKeyAndIntegration();
 
-  const handleInstall = async (params: {
-    appId: string;
-    appName: string;
-    provider: string;
-    returnUrl: string;
-  }) => {
+  const handleInstall = async (
+    params: {
+      appId: string;
+      appName: string;
+      provider: string;
+      returnUrl: string;
+    },
+    formData: Record<string, unknown> | null,
+  ) => {
     try {
       const result = await installMutation.mutateAsync(params);
 
@@ -108,15 +108,18 @@ export function useIntegrationInstallWithModal() {
       if (result.stateSchema) {
         const scopes = result.scopes || [];
 
-        setInstallState({
-          isModalOpen: true,
+        const installState: InstallState = {
           stateSchema: result.stateSchema as JSONSchema7,
           scopes: scopes,
           integrationName: params.appName,
           integration: result.integration,
           appName: params.appName,
           provider: params.provider,
-        });
+        };
+
+        if (formData) {
+          await setupAppOauth(formData, installState);
+        }
       }
 
       return result;
@@ -126,7 +129,10 @@ export function useIntegrationInstallWithModal() {
     }
   };
 
-  const handleModalSubmit = async (formData: Record<string, unknown>) => {
+  const setupAppOauth = async (
+    formData: Record<string, unknown>,
+    installState: InstallState,
+  ) => {
     if (!installState.appName || !installState.provider) {
       throw new Error("Missing app name or provider");
     }
@@ -135,7 +141,7 @@ export function useIntegrationInstallWithModal() {
       // Step 1: Generate API key with required policies
       const installId = installState.integration?.id ?? crypto.randomUUID();
       // Step 2: Get marketplace app info
-      const marketplaceApp = await getRegistryApp.mutateAsync({
+      const marketplaceApp = await getRegistryApp({
         name: installState.appName,
       });
 
@@ -147,12 +153,6 @@ export function useIntegrationInstallWithModal() {
         installId,
       });
 
-      // Close modal after successful submission
-      setInstallState((prev: InstallState) => ({
-        ...prev,
-        isModalOpen: false,
-      }));
-
       const redirectPath = getLinkFor(`/connection/unknown:::${installId}`);
       globalThis.location.href = redirectPath;
     } catch (error) {
@@ -161,15 +161,10 @@ export function useIntegrationInstallWithModal() {
     }
   };
 
-  const handleModalClose = () => {
-    setInstallState((prev: InstallState) => ({ ...prev, isModalOpen: false }));
-  };
-
+  const integrationSchema = appSchema?.schema as JSONSchema7;
+  const integrationScopes = appSchema?.scopes ?? [];
   // Get dynamic permission descriptions for all scopes
-  const allScopes = getAllScopes(
-    installState.scopes ?? [],
-    installState.stateSchema,
-  );
+  const allScopes = getAllScopes(integrationScopes, integrationSchema);
   const { permissions: dynamicPermissions, isLoading: permissionsLoading } =
     usePermissionDescriptions(allScopes);
 
@@ -177,24 +172,24 @@ export function useIntegrationInstallWithModal() {
     // Install function
     install: handleInstall,
 
-    // Modal state and handlers
-    modalState: {
-      isOpen: installState.isModalOpen,
-      schema: installState.stateSchema,
-      scopes: installState.scopes,
+    // // Modal state and handlers
+    integrationState: {
+      schema: integrationSchema,
+      scopes: integrationScopes,
       permissions: dynamicPermissions,
-      integrationName: installState.integrationName,
-      integration: installState.integration,
-      onSubmit: handleModalSubmit,
-      onClose: handleModalClose,
+      integrationName: installMutation.variables?.appName,
+      integration: installMutation.data?.integration,
       isLoading:
+        appSchemaLoading ||
         installCreatingApiKeyAndIntegration.isPending ||
-        getRegistryApp.isPending ||
         permissionsLoading,
     },
 
     // Mutation state
-    isLoading: installMutation.isPending,
+    isLoading:
+      installMutation.isPending ||
+      installCreatingApiKeyAndIntegration.isPending,
+
     error: installMutation.error,
   };
 }

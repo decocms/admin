@@ -797,12 +797,25 @@ Important Notes:
         aud: workspace,
       });
 
+      const decoEnvVars = {
+        DECO_WORKSPACE: workspace,
+        DECO_API_TOKEN: token,
+        DECO_API_JWT_PUBLIC_KEY: keyPair?.public,
+        DECO_APP_SLUG: scriptSlug,
+        DECO_APP_NAME: appName,
+      };
+
+      const deprecatedEnvVars = {
+        DECO_CHAT_WORKSPACE: decoEnvVars.DECO_WORKSPACE,
+        DECO_CHAT_API_TOKEN: decoEnvVars.DECO_API_TOKEN,
+        DECO_CHAT_API_JWT_PUBLIC_KEY: decoEnvVars.DECO_API_JWT_PUBLIC_KEY,
+        DECO_CHAT_APP_SLUG: decoEnvVars.DECO_APP_SLUG,
+        DECO_CHAT_APP_NAME: decoEnvVars.DECO_APP_NAME,
+      };
+
       const appEnvVars = {
-        DECO_CHAT_WORKSPACE: workspace,
-        DECO_CHAT_API_TOKEN: token,
-        DECO_CHAT_API_JWT_PUBLIC_KEY: keyPair?.public,
-        DECO_CHAT_APP_SLUG: scriptSlug,
-        DECO_CHAT_APP_NAME: appName,
+        ...deprecatedEnvVars,
+        ...decoEnvVars,
       };
 
       await Promise.all(

@@ -26,7 +26,7 @@ export function usePermissionDescriptions(scopes: AppScope[]): {
   isLoading: boolean;
   error: Error | null;
 } {
-  const { workspace } = useSDK();
+  const { locator } = useSDK();
 
   // Separate scopes by whether they have an app or not
   const workspaceScopes = scopes.filter((scope) => !scope.app);
@@ -39,7 +39,7 @@ export function usePermissionDescriptions(scopes: AppScope[]): {
     error: workspaceError,
   } = useQuery({
     queryKey: [
-      ...KEYS.INTEGRATION_TOOLS(workspace, "workspace-management"),
+      ...KEYS.INTEGRATION_TOOLS(locator, "workspace-management"),
       "permission-descriptions",
       "workspace",
     ],
@@ -48,7 +48,7 @@ export function usePermissionDescriptions(scopes: AppScope[]): {
       const result = await MCPClient.INTEGRATIONS_LIST_TOOLS({
         connection: {
           type: "HTTP",
-          url: `${DECO_CMS_API_URL}/${workspace}/mcp`,
+          url: `${DECO_CMS_API_URL}/${locator}/mcp`,
         },
       });
       return result;
@@ -68,12 +68,12 @@ export function usePermissionDescriptions(scopes: AppScope[]): {
     isLoading: isRegistryLoading,
     error: registryError,
   } = useQuery({
-    queryKey: ["registry-apps", workspace, uniqueApps],
+    queryKey: ["registry-apps", uniqueApps],
     queryFn: async () => {
       const results = await Promise.all(
         uniqueApps.map(async (appName) => {
           try {
-            const result = await getRegistryApp(workspace, { name: appName });
+            const result = await getRegistryApp({ name: appName });
             return { appName, data: result, error: null };
           } catch (error) {
             return { appName, data: null, error };
@@ -110,6 +110,7 @@ export function usePermissionDescriptions(scopes: AppScope[]): {
           return {
             scope: scope.name,
             description: tool.description,
+            app: scope.app,
           };
         }
       }

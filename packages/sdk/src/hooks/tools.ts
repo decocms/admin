@@ -33,8 +33,12 @@ const INITIAL_DATA: ToolsData = { tools: [], instructions: "" };
 export const listTools = (
   connection: MCPConnection,
   init?: RequestInit,
+  ignoreCache?: boolean,
 ): Promise<ToolsData> =>
-  MCPClient.INTEGRATIONS_LIST_TOOLS({ connection }, init) as Promise<ToolsData>;
+  MCPClient.INTEGRATIONS_LIST_TOOLS(
+    { connection, ignoreCache },
+    init,
+  ) as Promise<ToolsData>;
 
 export const callTool = (
   connection: MCPConnection,
@@ -46,7 +50,7 @@ export const callTool = (
     params: toolCallArgs as any,
   });
 
-export function useTools(connection: MCPConnection) {
+export function useTools(connection: MCPConnection, ignoreCache?: boolean) {
   const response = useQuery({
     retry: false,
     queryKey: [
@@ -59,7 +63,7 @@ export function useTools(connection: MCPConnection) {
         // deno-lint-ignore no-explicit-any
         (connection as any).name,
     ],
-    queryFn: ({ signal }) => listTools(connection, { signal }),
+    queryFn: ({ signal }) => listTools(connection, { signal }, ignoreCache),
   });
 
   return {

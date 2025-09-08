@@ -1,29 +1,30 @@
 import { MCPClient } from "../fetcher.ts";
+import { ProjectLocator } from "../locator.ts";
 
-export const getWalletAccount = (workspace: string) =>
-  MCPClient.forWorkspace(workspace).GET_WALLET_ACCOUNT({});
+export const getWalletAccount = (locator: ProjectLocator) =>
+  MCPClient.forLocator(locator).GET_WALLET_ACCOUNT({});
 
 export const getThreadsUsage = (
-  workspace: string,
+  locator: ProjectLocator,
   range: "day" | "week" | "month",
 ) =>
-  MCPClient.forWorkspace(workspace).GET_THREADS_USAGE({
+  MCPClient.forLocator(locator).GET_THREADS_USAGE({
     range,
   });
 
 export const getAgentsUsage = (
-  workspace: string,
+  locator: ProjectLocator,
   range: "day" | "week" | "month",
 ) =>
-  MCPClient.forWorkspace(workspace).GET_AGENTS_USAGE({
+  MCPClient.forLocator(locator).GET_AGENTS_USAGE({
     range,
   });
 
 export const getBillingHistory = (
-  workspace: string,
+  locator: ProjectLocator,
   range: "day" | "week" | "month" | "year",
 ) =>
-  MCPClient.forWorkspace(workspace).GET_BILLING_HISTORY({
+  MCPClient.forLocator(locator).GET_BILLING_HISTORY({
     range,
   });
 
@@ -44,46 +45,46 @@ export const getContractsCommits = (
   });
 
 export const createWalletCheckoutSession = ({
-  workspace,
+  locator,
   amountUSDCents,
   successUrl,
   cancelUrl,
 }: {
-  workspace: string;
+  locator: ProjectLocator;
   amountUSDCents: number;
   successUrl: string;
   cancelUrl: string;
 }) =>
-  MCPClient.forWorkspace(workspace).CREATE_CHECKOUT_SESSION({
+  MCPClient.forLocator(locator).CREATE_CHECKOUT_SESSION({
     amountUSDCents,
     successUrl,
     cancelUrl,
   });
 
 export const redeemWalletVoucher = ({
-  workspace,
+  locator,
   voucher,
 }: {
-  workspace: string;
+  locator: ProjectLocator;
   voucher: string;
 }) =>
-  MCPClient.forWorkspace(workspace).REDEEM_VOUCHER({
+  MCPClient.forLocator(locator).REDEEM_VOUCHER({
     voucher,
   });
 
 export const createWalletVoucher = ({
-  workspace,
+  locator,
   amount,
 }: {
-  workspace: string;
+  locator: ProjectLocator;
   amount: number;
 }) =>
-  MCPClient.forWorkspace(workspace).CREATE_VOUCHER({
+  MCPClient.forLocator(locator).CREATE_VOUCHER({
     amount,
   });
 
-export const getWorkspacePlan = async (workspace: string) => {
-  const plan = await MCPClient.forWorkspace(workspace).GET_WORKSPACE_PLAN({});
+export const getWorkspacePlan = async (locator: ProjectLocator) => {
+  const plan = await MCPClient.forLocator(locator).GET_WORKSPACE_PLAN({});
 
   return plan;
 };

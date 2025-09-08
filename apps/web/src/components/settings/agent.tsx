@@ -264,9 +264,9 @@ function SettingsTab() {
             <FormField
               name="visibility"
               render={({ field }) => {
-                const { workspace } = useSDK();
+                const { locator } = useSDK();
                 const isPublic = field.value === "PUBLIC";
-                const publicLink = getPublicChatLink(agent.id, workspace);
+                const publicLink = getPublicChatLink(agent.id, locator);
 
                 return (
                   <FormItem>

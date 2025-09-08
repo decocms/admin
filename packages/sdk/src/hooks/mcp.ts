@@ -1,5 +1,6 @@
 import {
   useMutation,
+  useQuery,
   useQueryClient,
   useSuspenseQuery,
 } from "@tanstack/react-query";
@@ -18,6 +19,7 @@ import { applyDisplayNameToIntegration } from "../utils/integration-display-name
 import { KEYS } from "./api.ts";
 import { type MCPTool } from "./index.ts";
 import { useSDK } from "./store.tsx";
+import { ProjectLocator } from "../locator.ts";
 
 interface IntegrationToolsResult {
   integration: Integration;
@@ -27,22 +29,22 @@ interface IntegrationToolsResult {
 
 export const useCreateIntegration = () => {
   const client = useQueryClient();
-  const { workspace } = useSDK();
+  const { locator } = useSDK();
 
   const create = useMutation({
     mutationFn: (mcp: CreateIntegrationPayload) =>
-      createIntegration(workspace, mcp),
+      createIntegration(locator, mcp),
     onSuccess: (result) => {
-      const agents = client.getQueryData<Agent[]>(KEYS.AGENT(workspace));
+      const agents = client.getQueryData<Agent[]>(KEYS.AGENT(locator));
       const processedResult = applyDisplayNameToIntegration(result, agents);
 
       // update item
-      const itemKey = KEYS.INTEGRATION(workspace, result.id);
+      const itemKey = KEYS.INTEGRATION(locator, result.id);
       client.cancelQueries({ queryKey: itemKey });
       client.setQueryData<Integration>(itemKey, processedResult);
 
       // update list
-      const listKey = KEYS.INTEGRATION(workspace);
+      const listKey = KEYS.INTEGRATION(locator);
       client.cancelQueries({ queryKey: listKey });
       client.setQueryData<Integration[]>(listKey, (old) =>
         !old ? [processedResult] : [processedResult, ...old],
@@ -61,21 +63,21 @@ export const useUpdateIntegration = ({
   onSuccess?: (result: Integration) => void;
 } = {}) => {
   const client = useQueryClient();
-  const { workspace } = useSDK();
+  const { locator } = useSDK();
 
   const update = useMutation({
-    mutationFn: (mcp: Integration) => saveIntegration(workspace, mcp),
+    mutationFn: (mcp: Integration) => saveIntegration(locator, mcp),
     onSuccess: (result) => {
-      const agents = client.getQueryData<Agent[]>(KEYS.AGENT(workspace));
+      const agents = client.getQueryData<Agent[]>(KEYS.AGENT(locator));
       const processedResult = applyDisplayNameToIntegration(result, agents);
 
       // Update the individual MCP in cache
-      const itemKey = KEYS.INTEGRATION(workspace, result.id);
+      const itemKey = KEYS.INTEGRATION(locator, result.id);
       client.cancelQueries({ queryKey: itemKey });
       client.setQueryData<Integration>(itemKey, processedResult);
 
       // Update the list
-      const listKey = KEYS.INTEGRATION(workspace);
+      const listKey = KEYS.INTEGRATION(locator);
       client.cancelQueries({ queryKey: listKey });
       client.setQueryData<Integration[]>(listKey, (old) =>
         !old
@@ -95,18 +97,18 @@ export const useUpdateIntegration = ({
 
 export const useRemoveIntegration = () => {
   const client = useQueryClient();
-  const { workspace } = useSDK();
+  const { locator } = useSDK();
 
   const remove = useMutation({
-    mutationFn: (id: string) => deleteIntegration(workspace, id),
+    mutationFn: (id: string) => deleteIntegration(locator, id),
     onSuccess: (_, id) => {
       // Remove the individual MCP from cache
-      const itemKey = KEYS.INTEGRATION(workspace, id);
+      const itemKey = KEYS.INTEGRATION(locator, id);
       client.cancelQueries({ queryKey: itemKey });
       client.removeQueries({ queryKey: itemKey });
 
       // Update the list
-      const listKey = KEYS.INTEGRATION(workspace);
+      const listKey = KEYS.INTEGRATION(locator);
       client.cancelQueries({ queryKey: listKey });
       client.setQueryData<Integration[]>(listKey, (old) =>
         !old ? [] : old.filter((mcp) => mcp.id !== id),
@@ -119,11 +121,11 @@ export const useRemoveIntegration = () => {
 
 /** Hook for crud-like operations on MCPs */
 export const useIntegration = (id: string) => {
-  const { workspace } = useSDK();
+  const { locator } = useSDK();
 
   const data = useSuspenseQuery({
-    queryKey: KEYS.INTEGRATION(workspace, id),
-    queryFn: ({ signal }) => loadIntegration(workspace, id, signal),
+    queryKey: KEYS.INTEGRATION(locator, id),
+    queryFn: ({ signal }) => loadIntegration(locator, id, signal),
     retry: (failureCount, error) =>
       error instanceof InternalServerError && failureCount < 2,
   });
@@ -132,15 +134,11 @@ export const useIntegration = (id: string) => {
 };
 
 export const useBindingIntegrations = (binder: Binder) => {
-  const { workspace } = useSDK();
+  const { locator } = useSDK();
   return useSuspenseQuery({
-    queryKey: KEYS.INTEGRATION(workspace, binder),
+    queryKey: KEYS.INTEGRATION(locator, binder),
     queryFn: async ({ signal }) => {
-      const integrations = await listIntegrations(
-        workspace,
-        { binder },
-        signal,
-      );
+      const integrations = await listIntegrations(locator, { binder }, signal);
       return integrations;
     },
   });
@@ -148,25 +146,25 @@ export const useBindingIntegrations = (binder: Binder) => {
 
 /** Hook for listing all MCPs */
 export const useIntegrations = ({ isPublic }: { isPublic?: boolean } = {}) => {
-  const { workspace } = useSDK();
+  const { locator } = useSDK();
   const client = useQueryClient();
 
   const data = useSuspenseQuery({
-    queryKey: KEYS.INTEGRATION(workspace),
+    queryKey: KEYS.INTEGRATION(locator),
 
     queryFn: async ({ signal }) => {
       if (isPublic) {
         return [];
       }
-      const items = await listIntegrations(workspace, {}, signal);
+      const items = await listIntegrations(locator, {}, signal);
 
-      const agents = client.getQueryData<Agent[]>(KEYS.AGENT(workspace));
+      const agents = client.getQueryData<Agent[]>(KEYS.AGENT(locator));
       const processedItems = items.map((item) =>
         applyDisplayNameToIntegration(item, agents),
       );
 
       for (const item of processedItems) {
-        const itemKey = KEYS.INTEGRATION(workspace, item.id);
+        const itemKey = KEYS.INTEGRATION(locator, item.id);
 
         client.cancelQueries({ queryKey: itemKey });
         client.setQueryData<Integration>(itemKey, item);
@@ -180,16 +178,22 @@ export const useIntegrations = ({ isPublic }: { isPublic?: boolean } = {}) => {
 };
 
 interface IntegrationsResult {
-  integrations: Array<Omit<Integration, "connection"> & { provider: string }>;
+  integrations: Array<
+    Integration & {
+      provider: string;
+      friendlyName?: string;
+      verified?: boolean;
+    }
+  >;
 }
 
 export const useMarketplaceIntegrations = () => {
-  const { workspace } = useSDK();
+  const { locator } = useSDK();
 
   return useSuspenseQuery<IntegrationsResult>({
     queryKey: ["integrations", "marketplace"],
     queryFn: () =>
-      MCPClient.forWorkspace(workspace)
+      MCPClient.forLocator(locator)
         .DECO_INTEGRATIONS_SEARCH({ query: "" })
         .then((r: IntegrationsResult | string) =>
           typeof r === "string" ? { integrations: [] } : r,
@@ -213,7 +217,7 @@ const WELL_KNOWN_DECO_OAUTH_INTEGRATIONS = [
 ];
 
 export const useInstallFromMarketplace = () => {
-  const { workspace } = useSDK();
+  const { locator } = useSDK();
   const client = useQueryClient();
 
   const mutation = useMutation<
@@ -237,14 +241,11 @@ export const useInstallFromMarketplace = () => {
       provider: string;
       appId?: string;
     }) => {
-      const result: { installationId: string } = await MCPClient.forWorkspace(
-        workspace,
+      const result: { installationId: string } = await MCPClient.forLocator(
+        locator,
       ).DECO_INTEGRATION_INSTALL({ id: appName, provider, appId });
 
-      const integration = await loadIntegration(
-        workspace,
-        result.installationId,
-      );
+      const integration = await loadIntegration(locator, result.installationId);
 
       let redirectUrl: string | null = null;
 
@@ -253,8 +254,8 @@ export const useInstallFromMarketplace = () => {
           provider === "deco") ||
         provider === "marketplace"
       ) {
-        const result = await MCPClient.forWorkspace(
-          workspace,
+        const result = await MCPClient.forLocator(
+          locator,
         ).DECO_INTEGRATION_OAUTH_START({
           appName: appName,
           returnUrl,
@@ -284,19 +285,19 @@ export const useInstallFromMarketplace = () => {
         return;
       }
 
-      const agents = client.getQueryData<Agent[]>(KEYS.AGENT(workspace));
+      const agents = client.getQueryData<Agent[]>(KEYS.AGENT(locator));
       const processedIntegration = applyDisplayNameToIntegration(
         integration,
         agents,
       );
 
       // update item
-      const itemKey = KEYS.INTEGRATION(workspace, integration.id);
+      const itemKey = KEYS.INTEGRATION(locator, integration.id);
       client.cancelQueries({ queryKey: itemKey });
       client.setQueryData<Integration>(itemKey, processedIntegration);
 
       // update list
-      const listKey = KEYS.INTEGRATION(workspace);
+      const listKey = KEYS.INTEGRATION(locator);
       client.cancelQueries({ queryKey: listKey });
       client.setQueryData<Integration[]>(listKey, (old) =>
         !old ? [processedIntegration] : [processedIntegration, ...old],
@@ -307,12 +308,17 @@ export const useInstallFromMarketplace = () => {
   return mutation;
 };
 
-export const useMarketplaceAppSchema = (appName: string) => {
-  const { workspace } = useSDK();
-  return useSuspenseQuery({
+export const useMarketplaceAppSchema = (appName?: string) => {
+  const { locator } = useSDK();
+  const canRunQuery = !!appName;
+
+  return useQuery({
     queryKey: ["integrations", "marketplace", appName, "schema"],
     queryFn: () =>
-      MCPClient.forWorkspace(workspace).DECO_GET_APP_SCHEMA({ appName }),
+      canRunQuery
+        ? MCPClient.forLocator(locator).DECO_GET_APP_SCHEMA({ appName })
+        : null,
+    enabled: canRunQuery,
   });
 };
 
@@ -320,15 +326,13 @@ export const useCreateOAuthCodeForIntegration = () => {
   const mutation = useMutation({
     mutationFn: async (params: {
       integrationId: string;
-      workspace: string;
+      workspace: ProjectLocator;
       redirectUri: string;
       state?: string;
     }) => {
       const { integrationId, workspace, redirectUri, state } = params;
 
-      const { code } = await MCPClient.forWorkspace(
-        workspace,
-      ).OAUTH_CODE_CREATE({
+      const { code } = await MCPClient.forLocator(workspace).OAUTH_CODE_CREATE({
         integrationId,
       });
 

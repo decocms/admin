@@ -1,29 +1,27 @@
 import { MCPClient } from "../fetcher.ts";
 import type { Prompt, PromptVersion } from "../models/index.ts";
+import { ProjectLocator } from "../locator.ts";
 
 export const listPrompts = (
-  workspace: string,
+  locator: ProjectLocator,
   input?: {
     ids?: string[];
     resolveMentions?: boolean;
     excludeIds?: string[];
   },
   init?: RequestInit,
-  client?: ReturnType<(typeof MCPClient)["forWorkspace"]>,
+  client?: ReturnType<(typeof MCPClient)["forLocator"]>,
 ): Promise<Prompt[]> =>
-  (client ?? MCPClient.forWorkspace(workspace))
+  (client ?? MCPClient.forLocator(locator))
     .PROMPTS_LIST(input || {}, init)
     .then((res) => res.items) as Promise<Prompt[]>;
 
 export const getPrompt = (
-  workspace: string,
+  locator: ProjectLocator,
   id: string,
   init?: RequestInit,
 ): Promise<Prompt> =>
-  MCPClient.forWorkspace(workspace).PROMPTS_GET(
-    { id },
-    init,
-  ) as Promise<Prompt>;
+  MCPClient.forLocator(locator).PROMPTS_GET({ id }, init) as Promise<Prompt>;
 
 export interface CreatePromptInput {
   name: string;
@@ -33,14 +31,11 @@ export interface CreatePromptInput {
 }
 
 export const createPrompt = (
-  workspace: string,
+  locator: ProjectLocator,
   input: CreatePromptInput,
   init?: RequestInit,
 ): Promise<Prompt> =>
-  MCPClient.forWorkspace(workspace).PROMPTS_CREATE(
-    input,
-    init,
-  ) as Promise<Prompt>;
+  MCPClient.forLocator(locator).PROMPTS_CREATE(input, init) as Promise<Prompt>;
 
 export interface UpdatePromptInput {
   id: string;
@@ -50,21 +45,18 @@ export interface UpdatePromptInput {
 }
 
 export const updatePrompt = (
-  workspace: string,
+  locator: ProjectLocator,
   input: UpdatePromptInput,
   init?: RequestInit,
 ): Promise<Prompt> =>
-  MCPClient.forWorkspace(workspace).PROMPTS_UPDATE(
-    input,
-    init,
-  ) as Promise<Prompt>;
+  MCPClient.forLocator(locator).PROMPTS_UPDATE(input, init) as Promise<Prompt>;
 
 export const deletePrompt = (
-  workspace: string,
+  locator: ProjectLocator,
   id: string,
   init?: RequestInit,
 ): Promise<{ success: boolean }> =>
-  MCPClient.forWorkspace(workspace).PROMPTS_DELETE({ id }, init) as Promise<{
+  MCPClient.forLocator(locator).PROMPTS_DELETE({ id }, init) as Promise<{
     success: boolean;
   }>;
 
@@ -75,11 +67,11 @@ interface SearchPromptsInput {
 }
 
 export const searchPrompts = (
-  workspace: string,
+  locator: ProjectLocator,
   input: SearchPromptsInput,
   init?: RequestInit,
 ): Promise<Prompt[]> =>
-  MCPClient.forWorkspace(workspace).PROMPTS_SEARCH(input, init) as Promise<
+  MCPClient.forLocator(locator).PROMPTS_SEARCH(input, init) as Promise<
     Prompt[]
   >;
 
@@ -90,14 +82,13 @@ interface GetPromptVersionsInput {
 }
 
 export const getPromptVersions = (
-  workspace: string,
+  locator: ProjectLocator,
   input: GetPromptVersionsInput,
   init?: RequestInit,
 ): Promise<PromptVersion[]> =>
-  MCPClient.forWorkspace(workspace).PROMPTS_GET_VERSIONS(
-    input,
-    init,
-  ) as Promise<PromptVersion[]>;
+  MCPClient.forLocator(locator).PROMPTS_GET_VERSIONS(input, init) as Promise<
+    PromptVersion[]
+  >;
 
 interface RenamePromptVersionInput {
   id: string;
@@ -105,11 +96,11 @@ interface RenamePromptVersionInput {
 }
 
 export const renamePromptVersion = (
-  workspace: string,
+  locator: ProjectLocator,
   input: RenamePromptVersionInput,
   init?: RequestInit,
 ): Promise<PromptVersion> =>
-  MCPClient.forWorkspace(workspace).PROMPTS_RENAME_VERSION(
+  MCPClient.forLocator(locator).PROMPTS_RENAME_VERSION(
     input,
     init,
   ) as Promise<PromptVersion>;

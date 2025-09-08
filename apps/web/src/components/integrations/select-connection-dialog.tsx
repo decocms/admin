@@ -1,11 +1,13 @@
-import { useMarketplaceIntegrations, type Integration } from "@deco/sdk";
+import {
+  getRegistryApp,
+  useMarketplaceIntegrations,
+  type Integration,
+} from "@deco/sdk";
 import { AppName } from "@deco/sdk/common";
-import { useGetRegistryApp } from "@deco/sdk/hooks";
 import { Button } from "@deco/ui/components/button.tsx";
 import {
   Dialog,
   DialogContent,
-  DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogTitle,
@@ -14,16 +16,25 @@ import {
 import { Icon } from "@deco/ui/components/icon.tsx";
 import { Input } from "@deco/ui/components/input.tsx";
 import { cn } from "@deco/ui/lib/utils.ts";
-import { useEffect, useMemo, useState } from "react";
+import {
+  useEffect,
+  useMemo,
+  useState,
+  useRef,
+  createContext,
+  useContext,
+  Dispatch,
+  SetStateAction,
+} from "react";
 import { useSearchParams } from "react-router";
 import { trackEvent } from "../../hooks/analytics.ts";
 import { useCreateCustomConnection } from "../../hooks/use-create-custom-connection.ts";
-import { useIntegrationInstallWithModal } from "../../hooks/use-integration-install-with-modal.tsx";
+import { useIntegrationInstall } from "../../hooks/use-integration-install.tsx";
 import {
   useNavigateWorkspace,
   useWorkspaceLink,
 } from "../../hooks/use-navigate-workspace.ts";
-import { IntegrationOAuthModal } from "../integration-oauth-modal.tsx";
+import { IntegrationBindingForm } from "../integration-oauth.tsx";
 import { IntegrationIcon } from "./common.tsx";
 import { InstalledConnections } from "./installed-connections.tsx";
 import {
@@ -32,6 +43,57 @@ import {
   type MarketplaceIntegration,
 } from "./marketplace.tsx";
 import { OAuthCompletionDialog } from "./oauth-completion-dialog.tsx";
+import { UseFormReturn } from "react-hook-form";
+import type { JSONSchema7, JSONSchema7Definition } from "json-schema";
+import {
+  GridContainer,
+  GridLeftColumn,
+  GridRightColumn,
+} from "./shared-components.tsx";
+import { WalletBalanceAlert } from "../common/wallet-balance-alert.tsx";
+import { ScrollArea } from "@deco/ui/components/scroll-area.tsx";
+
+const isDependency = (property: JSONSchema7Definition) =>
+  typeof property === "object" && property.properties?.__type;
+
+export interface OauthModalState {
+  open: boolean;
+  url: string;
+  integrationName: string;
+  connection: Integration | null;
+  openIntegrationOnFinish: boolean;
+}
+interface OauthModalContextType {
+  onOpenOauthModal: Dispatch<SetStateAction<OauthModalState>>;
+}
+export const OauthModalContextProvider = createContext<
+  OauthModalContextType | undefined
+>(undefined);
+export const useOauthModalContext = () => {
+  const context = useContext(OauthModalContextProvider);
+  if (!context) {
+    console.warn(
+      "useOauthModalContext must be used within a OauthModalContextProvider",
+    );
+  }
+  return context;
+};
+
+function IntegrationWorkspaceIconForMarketplace({
+  integration,
+}: {
+  integration: MarketplaceIntegration | null;
+}) {
+  return (
+    <div className="absolute -translate-y-1/2">
+      <IntegrationIcon
+        icon={integration?.icon}
+        name={integration?.friendlyName ?? integration?.name}
+        size="xl"
+      />
+    </div>
+  );
+}
 
 export function ConfirmMarketplaceInstallDialog({
   integration,
@@ -48,10 +110,74 @@ export function ConfirmMarketplaceInstallDialog({
     authorizeOauthUrl: string | null;
   }) => void;
 }) {
-  const open = !!integration;
-  const { install, modalState, isLoading } = useIntegrationInstallWithModal();
+  const open = useMemo(() => !!integration, [integration]);
+  const { install, integrationState, isLoading } = useIntegrationInstall(
+    integration?.name,
+  );
+  const formRef = useRef<UseFormReturn<Record<string, unknown>> | null>(null);
   const buildWorkspaceUrl = useWorkspaceLink();
   const navigateWorkspace = useNavigateWorkspace();
+  const [stepIndex, setStepIndex] = useState(0);
+
+  const { dependencies: maybeAppDependencyList, app: maybeAppList } =
+    useMemo(() => {
+      if (!integrationState.schema?.properties)
+        return { dependencies: null, app: null };
+
+      const result = { dependencies: [] as string[], app: [] as string[] };
+
+      for (const propertyEntry of Object.entries(
+        integrationState.schema.properties,
+      )) {
+        const [name, property] = propertyEntry;
+        if (isDependency(property)) {
+          result.dependencies.push(name);
+        } else {
+          result.app.push(name);
+        }
+      }
+      return result;
+    }, [integrationState.schema]);
+
+  const dependenciesSteps = maybeAppDependencyList?.length
+    ? maybeAppDependencyList.length
+    : 0;
+  const appSteps = maybeAppList?.length ? 1 : 0;
+  const totalSteps = dependenciesSteps + appSteps;
+  const isDepencencyStep = stepIndex < dependenciesSteps;
+
+  const currentSchema = useMemo<JSONSchema7 | undefined>(() => {
+    if (isDepencencyStep) {
+      const dependencyName = maybeAppDependencyList?.[stepIndex] ?? "";
+      const dependencySchema =
+        integrationState.schema?.properties?.[dependencyName] ?? {};
+      return {
+        type: "object",
+        properties: {
+          [dependencyName]: dependencySchema,
+        },
+        required: [dependencyName],
+      } satisfies JSONSchema7;
+    } else {
+      const properties: Record<string, JSONSchema7Definition> =
+        maybeAppList?.reduce(
+          (acc, app) => {
+            acc[app] = integrationState.schema?.properties?.[
+              app
+            ] as JSONSchema7Definition;
+            return acc;
+          },
+          {} as Record<string, JSONSchema7Definition>,
+        ) ?? {};
+
+      return {
+        type: "object",
+        properties,
+        required: maybeAppList ? maybeAppList : undefined,
+      } satisfies JSONSchema7;
+    }
+  }, [totalSteps, stepIndex, integrationState.schema]);
+
   const handleConnect = async () => {
     if (!integration) return;
 
@@ -60,13 +186,18 @@ export function ConfirmMarketplaceInstallDialog({
       globalThis.location.origin,
     );
 
+    // Combine all dependency form data with main form data
+    const mainFormData = formRef.current?.getValues() ?? {};
     try {
-      const result = await install({
-        appId: integration.id,
-        appName: integration.name,
-        provider: integration.provider,
-        returnUrl: returnUrl.href,
-      });
+      const result = await install(
+        {
+          appId: integration.id,
+          appName: integration.name,
+          provider: integration.provider,
+          returnUrl: returnUrl.href,
+        },
+        mainFormData,
+      );
 
       if (typeof result.integration?.id !== "string") {
         console.error(
@@ -89,6 +220,12 @@ export function ConfirmMarketplaceInstallDialog({
           authorizeOauthUrl: result.redirectUrl,
         });
         setIntegration(null);
+      } else if (result.stateSchema) {
+        onConfirm({
+          connection: result.integration,
+          authorizeOauthUrl: null,
+        });
+        setIntegration(null);
       } else if (!result.stateSchema) {
         let link = `/connection/${integration.provider}:::${integration.name}`;
         const isDecoApp = integration.name.startsWith("@deco/");
@@ -101,6 +238,7 @@ export function ConfirmMarketplaceInstallDialog({
           link = `/connection/deco:::${integration.friendlyName}`;
         }
         navigateWorkspace(link);
+        setIntegration(null);
       }
     } catch (error) {
       trackEvent("integration_install", {
@@ -111,17 +249,34 @@ export function ConfirmMarketplaceInstallDialog({
     }
   };
 
-  const handleModalComplete = async (formData: Record<string, unknown>) => {
-    // Handle the form submission from the modal
-    await modalState.onSubmit(formData);
+  // Reset step when dialog closes/opens
+  useEffect(() => {
+    if (open) {
+      setStepIndex(0);
+    }
+  }, [open]);
 
-    // After successful form submission, call onConfirm with the integration
-    if (modalState.integration) {
-      onConfirm({
-        connection: modalState.integration,
-        authorizeOauthUrl: null,
-      });
-      setIntegration(null);
+  const handleNextDependency = () => {
+    // for cases where the app doesn't have dependencies (schema doesn't exist)
+    if (!integrationState.schema) {
+      handleConnect();
+      return;
+    }
+
+    if (!maybeAppDependencyList) return;
+
+    if (stepIndex < totalSteps - 1) {
+      // Move to next dependency
+      setStepIndex((prev) => prev + 1);
+    } else {
+      // All dependencies and apps configured, install the main app
+      handleConnect();
+    }
+  };
+
+  const handleBack = () => {
+    if (stepIndex > 0) {
+      setStepIndex((prev) => prev - 1);
     }
   };
 
@@ -129,67 +284,190 @@ export function ConfirmMarketplaceInstallDialog({
 
   return (
     <Dialog open={open} onOpenChange={() => setIntegration(null)}>
-      <DialogContent>
-        <DialogHeader>
-          <DialogTitle>
-            Connect to {integration.friendlyName ?? integration.name}
-          </DialogTitle>
-          <DialogDescription>
-            <div className="mt-4">
-              <div className="grid grid-cols-[80px_1fr] items-start gap-4">
-                <IntegrationIcon
-                  icon={integration?.icon}
-                  name={integration?.friendlyName ?? integration?.name}
-                />
-                <div>
-                  <div className="text-sm text-muted-foreground whitespace-pre-line">
-                    {integration?.description}
-                  </div>
-                </div>
-              </div>
-              {!integration.verified && (
-                <div className="mt-4 p-3 bg-accent border border-border rounded-xl text-sm">
-                  <div className="flex items-center gap-2">
-                    <Icon name="info" size={16} />
-                    <span className="font-medium">Third-party integration</span>
-                  </div>
-                  <p className="mt-1">
-                    This integration is provided by a third party and is not
-                    maintained by deco.
-                    <br />
-                    Provider:{" "}
-                    <span className="font-medium">{integration.provider}</span>
-                  </p>
-                </div>
-              )}
-            </div>
-          </DialogDescription>
-        </DialogHeader>
-        <DialogFooter>
-          {isLoading ? (
-            <Button disabled={isLoading}>Connecting...</Button>
-          ) : (
-            <Button onClick={handleConnect}>Connect</Button>
+      <DialogContent className="!p-0 lg:!w-220 lg:!max-w-220 flex flex-col overflow-y-hidden">
+        {/* Dependency Steps */}
+        <div className="min-h-135 max-h-135 h-full lg:max-h-[60vh]">
+          <DependencyStep
+            integration={integration}
+            dependencyName={maybeAppDependencyList?.[stepIndex]}
+            dependencySchema={currentSchema}
+            currentStep={stepIndex + 1}
+            totalSteps={totalSteps}
+            formRef={formRef}
+            integrationState={integrationState}
+          />
+        </div>
+        <DialogFooter className="px-4 pb-4">
+          {stepIndex > 0 && (
+            <Button variant="outline" disabled={isLoading} onClick={handleBack}>
+              Back
+            </Button>
           )}
+          <Button
+            variant="special"
+            onClick={
+              isLoading || integrationState.isLoading
+                ? undefined
+                : handleNextDependency
+            }
+            disabled={isLoading || integrationState.isLoading}
+          >
+            {isLoading || integrationState.isLoading
+              ? "Connecting..."
+              : stepIndex < totalSteps - 1
+                ? "Continue"
+                : "Allow access"}
+          </Button>
         </DialogFooter>
       </DialogContent>
-
-      {/* Modal for JSON Schema form */}
-      {modalState.schema && (
-        <IntegrationOAuthModal
-          isOpen={modalState.isOpen}
-          onClose={modalState.onClose}
-          schema={modalState.schema}
-          contract={integration.metadata?.contract}
-          integrationName={
-            modalState.integrationName || integration?.name || "Integration"
-          }
-          permissions={modalState.permissions || []}
-          onSubmit={handleModalComplete}
-          isLoading={modalState.isLoading}
-        />
-      )}
     </Dialog>
+  );
+}
+
+// Dependency Configuration Step
+function DependencyStep({
+  integration,
+  dependencyName,
+  dependencySchema,
+  currentStep,
+  totalSteps,
+  formRef,
+  integrationState,
+}: {
+  integration: MarketplaceIntegration;
+  dependencyName?: string;
+  dependencySchema?: JSONSchema7;
+  currentStep: number;
+  totalSteps: number;
+  formRef: React.RefObject<UseFormReturn<Record<string, unknown>> | null>;
+  integrationState: {
+    permissions?: Array<{ scope: string; description: string; app?: string }>;
+  };
+}) {
+  const { data: marketplace } = useMarketplaceIntegrations();
+  const dependencyIntegration = useMemo(() => {
+    if (!dependencySchema || !dependencyName) return null;
+
+    const internalSchema = dependencySchema.properties?.[dependencyName];
+    const name =
+      typeof internalSchema === "object" &&
+      ((internalSchema?.properties?.__type as JSONSchema7)?.const as
+        | string
+        | undefined);
+    if (typeof name !== "string") return null;
+
+    return (
+      (marketplace?.integrations.find(
+        (integration) => integration.name === name,
+      ) as MarketplaceIntegration | null) ?? null
+    );
+  }, [dependencySchema, dependencyName]);
+  const permissionsFromThisDependency = useMemo(
+    () =>
+      integrationState.permissions?.filter(
+        (permission) => permission.app === dependencyIntegration?.name,
+      ),
+    [dependencyIntegration?.name, integrationState.permissions],
+  );
+
+  const schema = dependencySchema;
+
+  return (
+    <GridContainer className="min-h-135 max-h-135 lg:min-h-[60vh] lg:max-h-[60vh]">
+      {/* Left side: App icons and info */}
+      <GridLeftColumn>
+        <div className="pb-4 px-4 h-full">
+          <IntegrationWorkspaceIconForMarketplace integration={integration} />
+
+          <div className="h-full flex flex-col justify-between pt-16">
+            <h3 className="text-xl text-base-foreground">
+              <span className="font-bold">
+                {integration.friendlyName ?? integration.name}
+              </span>{" "}
+              needs access to the following permissions:
+            </h3>
+
+            {/* Warning at bottom left */}
+            {/* TODO: identify when integration consume from wallet */}
+            <div>
+              <WalletBalanceAlert />
+            </div>
+          </div>
+        </div>
+      </GridLeftColumn>
+
+      {/* Right side: Dependency configuration */}
+      <GridRightColumn>
+        <div className="h-full flex flex-col gap-2 pr-4 pt-4">
+          {/* Header with step indicator */}
+          <div className="flex items-center justify-between py-2 border-b">
+            <div className="font-mono text-sm text-foreground uppercase tracking-wide">
+              connect requirements
+            </div>
+            {totalSteps > 1 && (
+              <div className="flex items-center gap-2.5">
+                <div className="font-mono text-sm uppercase text-foreground">
+                  <span className="text-muted-foreground">{currentStep}</span> /{" "}
+                  {totalSteps}
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Dependency integration info */}
+          <div className="flex-grow flex flex-col gap-5 py-2">
+            {/* Configuration Form */}
+            {schema && (
+              <div className="flex justify-between items-center gap-2">
+                {dependencyIntegration && (
+                  <div className="flex items-center gap-2">
+                    <IntegrationIcon
+                      icon={dependencyIntegration?.icon}
+                      name={
+                        dependencyIntegration?.friendlyName ??
+                        dependencyIntegration?.name
+                      }
+                      size="lg"
+                    />
+                    {dependencyIntegration?.friendlyName ??
+                      dependencyIntegration?.name}
+                  </div>
+                )}
+                <IntegrationBindingForm schema={schema} formRef={formRef} />
+              </div>
+            )}
+
+            {/* Permissions Section */}
+            <div className="flex-grow flex flex-col gap-2">
+              <div className="font-mono text-sm text-secondary-foreground uppercase">
+                permissions
+              </div>
+              <ScrollArea className="flex-grow h-0">
+                {permissionsFromThisDependency?.map((permission, index) => (
+                  <div key={index} className="flex gap-4 items-start px-2 py-3">
+                    <div className="flex gap-2.5 h-5 items-center justify-start">
+                      <Icon
+                        name="check_circle"
+                        size={20}
+                        className="text-success flex-shrink-0"
+                      />
+                    </div>
+                    <div className="flex flex-col gap-1">
+                      <div className="text-sm font-medium text-foreground">
+                        {permission.scope}
+                      </div>
+                      <div className="text-sm text-muted-foreground">
+                        {permission.description}
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </ScrollArea>
+            </div>
+          </div>
+        </div>
+      </GridRightColumn>
+    </GridContainer>
   );
 }
 
@@ -224,15 +502,16 @@ function AddConnectionDialogContent({
         ) ?? null
       );
     });
-  const [oauthCompletionDialog, setOauthCompletionDialog] = useState<{
-    open: boolean;
-    url: string;
-    integrationName: string;
-    connection: Integration | null;
-  }>({ open: false, url: "", integrationName: "", connection: null });
+  const [oauthCompletionDialog, setOauthCompletionDialog] =
+    useState<OauthModalState>({
+      open: false,
+      url: "",
+      integrationName: "",
+      connection: null,
+      openIntegrationOnFinish: true,
+    });
   const navigateWorkspace = useNavigateWorkspace();
   const showEmptyState = search.length > 0;
-  const { mutateAsync: getRegistryApp } = useGetRegistryApp();
   const handleInstallFromRegistry = async (appName: string) => {
     const app = await getRegistryApp({ name: appName ?? "" });
     setInstallingIntegration({
@@ -377,33 +656,45 @@ function AddConnectionDialogContent({
           )}
         </div>
       </div>
-      <ConfirmMarketplaceInstallDialog
-        integration={installingIntegration}
-        setIntegration={setInstallingIntegration}
-        onConfirm={({ connection, authorizeOauthUrl }) => {
-          if (authorizeOauthUrl) {
-            const popup = globalThis.open(authorizeOauthUrl, "_blank");
-            if (!popup || popup.closed || typeof popup.closed === "undefined") {
-              setOauthCompletionDialog({
-                open: true,
-                url: authorizeOauthUrl,
-                integrationName: installingIntegration?.name || "the service",
-                connection: connection,
-              });
+      <OauthModalContextProvider.Provider
+        value={{ onOpenOauthModal: setOauthCompletionDialog }}
+      >
+        <ConfirmMarketplaceInstallDialog
+          integration={installingIntegration}
+          setIntegration={setInstallingIntegration}
+          onConfirm={({ connection, authorizeOauthUrl }) => {
+            if (authorizeOauthUrl) {
+              const popup = globalThis.open(authorizeOauthUrl, "_blank");
+              if (
+                !popup ||
+                popup.closed ||
+                typeof popup.closed === "undefined"
+              ) {
+                setOauthCompletionDialog({
+                  openIntegrationOnFinish: true,
+                  open: true,
+                  url: authorizeOauthUrl,
+                  integrationName: installingIntegration?.name || "the service",
+                  connection: connection,
+                });
+              } else {
+                onSelect?.(connection);
+              }
             } else {
               onSelect?.(connection);
             }
-          } else {
-            onSelect?.(connection);
-          }
-        }}
-      />
+          }}
+        />
+      </OauthModalContextProvider.Provider>
 
       <OAuthCompletionDialog
         open={oauthCompletionDialog.open}
         onOpenChange={(open) => {
           setOauthCompletionDialog((prev) => ({ ...prev, open }));
-          if (oauthCompletionDialog.connection) {
+          if (
+            oauthCompletionDialog.connection &&
+            oauthCompletionDialog.openIntegrationOnFinish
+          ) {
             onSelect?.(oauthCompletionDialog.connection);
           }
         }}
@@ -435,7 +726,7 @@ export function SelectConnectionDialog(props: SelectConnectionDialogProps) {
 
     return (
       <Button variant="special">
-        <span className="hidden md:inline">Add integration</span>
+        <span className="hidden md:inline">Install Apps</span>
       </Button>
     );
   }, [props.trigger]);

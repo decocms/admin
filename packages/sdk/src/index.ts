@@ -1,4 +1,5 @@
 export * from "./constants.ts";
+export * from "./locator.ts";
 export * from "./plan.ts";
 
 export * from "./crud/teams.ts";
@@ -15,6 +16,7 @@ export * from "./crud/user.ts";
 export * from "./crud/wallet.ts";
 export * from "./crud/workflows.ts";
 export * from "./crud/roles.ts";
+export * from "./crud/registry.ts";
 
 export * from "./hooks/agent.ts";
 export * from "./hooks/audit.ts";

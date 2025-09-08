@@ -30,62 +30,62 @@ export type {
 };
 
 export const useModels = (options: ListModelsInput = {}) => {
-  const { workspace } = useSDK();
+  const { locator } = useSDK();
   return useSuspenseQuery({
-    queryKey: KEYS.MODELS(workspace, options),
-    queryFn: ({ signal }) => listModels(workspace, options, { signal }),
+    queryKey: KEYS.MODELS(locator, options),
+    queryFn: ({ signal }) => listModels(locator, options, { signal }),
     retry: (failureCount, error) =>
       error instanceof InternalServerError && failureCount < 2,
   });
 };
 
 export const useModel = (id: string) => {
-  const { workspace } = useSDK();
+  const { locator } = useSDK();
   return useSuspenseQuery({
-    queryKey: KEYS.MODEL(workspace, id),
+    queryKey: KEYS.MODEL(locator, id),
     retry: (failureCount, error) =>
       error instanceof InternalServerError && failureCount < 2,
-    queryFn: ({ signal }) => getModel(workspace, id, { signal }),
+    queryFn: ({ signal }) => getModel(locator, id, { signal }),
   });
 };
 
 export function useCreateModel() {
-  const { workspace } = useSDK();
+  const { locator } = useSDK();
   const client = useQueryClient();
   return useMutation({
-    mutationFn: (input: CreateModelInput) => createModel(workspace, input),
+    mutationFn: (input: CreateModelInput) => createModel(locator, input),
     onSuccess: (result) => {
       client.invalidateQueries({
-        queryKey: KEYS.MODELS(workspace).slice(0, 2),
+        queryKey: KEYS.MODELS(locator).slice(0, 2),
       });
-      client.setQueryData(KEYS.MODELS(workspace), result);
-      client.setQueryData(KEYS.MODEL(workspace, result.id), result);
+      client.setQueryData(KEYS.MODELS(locator), result);
+      client.setQueryData(KEYS.MODEL(locator, result.id), result);
     },
   });
 }
 
 export function useUpdateModel() {
-  const { workspace } = useSDK();
+  const { locator } = useSDK();
   const client = useQueryClient();
   return useMutation({
-    mutationFn: (input: UpdateModelInput) => updateModel(workspace, input),
+    mutationFn: (input: UpdateModelInput) => updateModel(locator, input),
     onSuccess: (result) => {
       client.invalidateQueries({
-        queryKey: KEYS.MODELS(workspace).slice(0, 2),
+        queryKey: KEYS.MODELS(locator).slice(0, 2),
       });
-      client.setQueryData(KEYS.MODEL(workspace, result.id), result);
+      client.setQueryData(KEYS.MODEL(locator, result.id), result);
     },
   });
 }
 
 export function useDeleteModel() {
-  const { workspace } = useSDK();
+  const { locator } = useSDK();
   const client = useQueryClient();
   return useMutation({
-    mutationFn: (id: string) => deleteModel(workspace, id),
+    mutationFn: (id: string) => deleteModel(locator, id),
     onSuccess: () => {
       client.invalidateQueries({
-        queryKey: KEYS.MODELS(workspace).slice(0, 2),
+        queryKey: KEYS.MODELS(locator).slice(0, 2),
       });
     },
   });

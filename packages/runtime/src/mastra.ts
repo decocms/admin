@@ -245,6 +245,7 @@ export interface CreateMCPServerOptions<
   Env = any,
   TSchema extends z.ZodTypeAny = never,
 > {
+  before?: (env: Env & DefaultEnv<TSchema>) => Promise<void> | void;
   oauth?: {
     state?: TSchema;
     scopes?: string[];
@@ -448,6 +449,8 @@ export const createMCPServer = <
   options: CreateMCPServerOptions<TEnv, TSchema>,
 ): MCPServer<TEnv, TSchema> => {
   const createServer = async (bindings: TEnv & DefaultEnv<TSchema>) => {
+    await options.before?.(bindings);
+
     const server = new McpServer(
       { name: "@deco/mcp-api", version: "1.0.0" },
       { capabilities: { tools: {} } },

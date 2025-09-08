@@ -1,9 +1,9 @@
 import { MCPClient } from "../fetcher.ts";
-import type { Integration, Workspace } from "../index.ts";
-import type { WorkspaceTools } from "../mcp/index.ts";
+import type { Integration, ProjectLocator } from "../index.ts";
+import type { ProjectTools } from "../mcp/index.ts";
 
 interface FromWorkspace {
-  workspace: Workspace;
+  locator: ProjectLocator;
 }
 
 interface ForConnection {
@@ -11,12 +11,12 @@ interface ForConnection {
 }
 
 const getClientFor = (
-  workspace: Workspace,
+  locator: ProjectLocator,
   connection?: Integration["connection"],
 ) => {
   return connection
-    ? MCPClient.forConnection<WorkspaceTools>(connection)
-    : MCPClient.forWorkspace(workspace);
+    ? MCPClient.forConnection<ProjectTools>(connection)
+    : MCPClient.forLocator(locator);
 };
 
 interface KnowledgeAddFileParams extends FromWorkspace, ForConnection {
@@ -28,13 +28,13 @@ interface KnowledgeAddFileParams extends FromWorkspace, ForConnection {
 
 export const knowledgeAddFile = ({
   fileUrl,
-  workspace,
+  locator: locator,
   metadata,
   path,
   filename,
   connection,
 }: KnowledgeAddFileParams) =>
-  getClientFor(workspace, connection).KNOWLEDGE_BASE_ADD_FILE({
+  getClientFor(locator, connection).KNOWLEDGE_BASE_ADD_FILE({
     fileUrl,
     metadata,
     path,
@@ -44,10 +44,10 @@ export const knowledgeAddFile = ({
 interface KnowledgeListFilesParams extends FromWorkspace, ForConnection {}
 
 export const knowledgeListFiles = ({
-  workspace,
+  locator: locator,
   connection,
 }: KnowledgeListFilesParams) =>
-  getClientFor(workspace, connection)
+  getClientFor(locator, connection)
     .KNOWLEDGE_BASE_LIST_FILES({})
     .then((res) => res.items);
 
@@ -56,17 +56,20 @@ interface KnowledgeDeleteFileParams extends FromWorkspace, ForConnection {
 }
 
 export const knowledgeDeleteFile = ({
-  workspace,
+  locator: locator,
   connection,
   fileUrl,
 }: KnowledgeDeleteFileParams) =>
-  getClientFor(workspace, connection).KNOWLEDGE_BASE_DELETE_FILE({ fileUrl });
+  getClientFor(locator, connection).KNOWLEDGE_BASE_DELETE_FILE({ fileUrl });
 
 interface CreateKnowledgeParams extends FromWorkspace {
   name: string;
 }
 
-export const createKnowledge = ({ workspace, name }: CreateKnowledgeParams) =>
-  MCPClient.forWorkspace(workspace).KNOWLEDGE_BASE_CREATE({
+export const createKnowledge = ({
+  locator: locator,
+  name,
+}: CreateKnowledgeParams) =>
+  MCPClient.forLocator(locator).KNOWLEDGE_BASE_CREATE({
     name,
   });

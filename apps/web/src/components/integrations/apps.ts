@@ -11,6 +11,7 @@
  */
 import {
   type Integration,
+  MCPConnection,
   useIntegrations,
   useMarketplaceIntegrations,
   WELL_KNOWN_KNOWLEDGE_BASE_CONNECTION_ID_STARTSWITH,
@@ -31,6 +32,9 @@ export interface GroupedApp {
   instances: number;
   provider?: string;
   usedBy: { avatarUrl: string }[];
+  connection?: MCPConnection;
+  verified?: boolean;
+  friendlyName?: string;
 }
 
 export interface AppKey {
@@ -275,13 +279,13 @@ export function useGroupedApp({ appKey }: { appKey: string }) {
       return wellKnownApp;
     }
 
-    const marketplaceApp = marketplace?.integrations?.find(
-      (app) =>
-        AppKeys.build({
-          appId: app.id,
-          provider: app.provider,
-        }) === appKey,
-    );
+    const marketplaceApp = marketplace?.integrations?.find((app) => {
+      const key = getConnectionAppKey(app);
+      const appKeyToCompare = AppKeys.build(key);
+      if (appKeyToCompare === appKey) {
+        return true;
+      }
+    });
 
     if (marketplaceApp) {
       return {
@@ -290,6 +294,9 @@ export function useGroupedApp({ appKey }: { appKey: string }) {
         icon: marketplaceApp.icon,
         description: marketplaceApp.description,
         provider: marketplaceApp.provider,
+        connection: marketplaceApp.connection,
+        verified: marketplaceApp.verified,
+        friendlyName: marketplaceApp.friendlyName,
       };
     }
 

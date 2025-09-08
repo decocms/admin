@@ -8,16 +8,15 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@deco/ui/components/alert-dialog.tsx";
+import { Button } from "@deco/ui/components/button.tsx";
 import { Icon } from "@deco/ui/components/icon.tsx";
 import { useState } from "react";
 import { useMatch } from "react-router";
+import { useNavigateWorkspace } from "../../hooks/use-navigate-workspace.ts";
 import { ListPageHeader } from "../common/list-page-header.tsx";
 import type { ViewModeSwitcherProps } from "../common/view-mode-switcher.tsx";
 import type { Tab } from "../dock/index.tsx";
-import { DefaultBreadcrumb, PageLayout } from "../layout.tsx";
-import { SelectConnectionDialog } from "./select-connection-dialog.tsx";
-import { useNavigateWorkspace } from "../../hooks/use-navigate-workspace.ts";
-import { AppKeys, getConnectionAppKey } from "./apps.ts";
+import { DefaultBreadcrumb, PageLayout } from "../layout/project.tsx";
 
 export function IntegrationPageLayout({ tabs }: { tabs: Record<string, Tab> }) {
   const [error, setError] = useState<string | null>(null);
@@ -29,18 +28,16 @@ export function IntegrationPageLayout({ tabs }: { tabs: Record<string, Tab> }) {
         hideViewsButton
         breadcrumb={
           <DefaultBreadcrumb
-            items={[{ label: "Integrations", link: "/connections" }]}
+            items={[{ label: "My Apps", link: "/connections" }]}
           />
         }
         actionButtons={
-          <SelectConnectionDialog
-            forceTab="new-connection"
-            onSelect={(integration) => {
-              const key = getConnectionAppKey(integration);
-              const appKey = AppKeys.build(key);
-              navigateWorkspace(`/connection/${appKey}`);
-            }}
-          />
+          <Button
+            variant="special"
+            onClick={() => navigateWorkspace("/discover")}
+          >
+            Discover Apps
+          </Button>
         }
         tabs={tabs}
       />
@@ -72,8 +69,8 @@ export const Header = ({
   viewMode: ViewModeSwitcherProps["viewMode"];
   setViewMode: (viewMode: ViewModeSwitcherProps["viewMode"]) => void;
 }) => {
-  const teamConnectionsViewActive = useMatch({
-    path: `:teamSlug?/connections`,
+  const projectConnectionsViewActive = useMatch({
+    path: `:org/:project/connections`,
   });
 
   const { data: installedIntegrations } = useIntegrations();
@@ -84,11 +81,11 @@ export const Header = ({
       filter={{
         items: [
           {
-            active: !!teamConnectionsViewActive,
+            active: !!projectConnectionsViewActive,
             label: (
               <span className="flex items-center gap-2">
                 <Icon name="groups" size={16} />
-                Team
+                Project
               </span>
             ),
             id: "connected",
@@ -98,7 +95,7 @@ export const Header = ({
               ).length ?? 0,
           },
           {
-            active: !teamConnectionsViewActive,
+            active: !projectConnectionsViewActive,
             disabled: true,
             tooltip: "Coming soon",
             label: (
@@ -114,7 +111,7 @@ export const Header = ({
         onClick: () => {},
       }}
       input={{
-        placeholder: "Search integration",
+        placeholder: "Search apps",
         value: query,
         onChange: (e) => setQuery(e.target.value),
       }}

@@ -1,5 +1,6 @@
 import { MCPClient } from "../fetcher.ts";
 import type { User } from "./user.ts";
+import { ProjectLocator } from "../locator.ts";
 
 interface Roles {
   name: string;
@@ -108,9 +109,9 @@ export const inviteTeamMembers = (
     email: string;
     roles: Array<{ id: number; name: string }>;
   }>,
-  workspace: string,
+  locator: ProjectLocator,
 ): Promise<{ message: string }> =>
-  MCPClient.forWorkspace(workspace).TEAM_MEMBERS_INVITE({
+  MCPClient.forLocator(locator).TEAM_MEMBERS_INVITE({
     teamId: teamId.toString(),
     invitees,
   });

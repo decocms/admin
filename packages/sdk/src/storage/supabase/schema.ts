@@ -906,6 +906,44 @@ export type Database = {
         };
         Relationships: [];
       };
+      deco_chat_projects: {
+        Row: {
+          created_at: string | null;
+          description: string | null;
+          icon: string | null;
+          id: string;
+          org_id: number;
+          slug: string;
+          title: string;
+        };
+        Insert: {
+          created_at?: string | null;
+          description?: string | null;
+          icon?: string | null;
+          id?: string;
+          org_id: number;
+          slug: string;
+          title: string;
+        };
+        Update: {
+          created_at?: string | null;
+          description?: string | null;
+          icon?: string | null;
+          id?: string;
+          org_id?: number;
+          slug?: string;
+          title?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "deco_chat_projects_org_id_fkey";
+            columns: ["org_id"];
+            isOneToOne: false;
+            referencedRelation: "teams";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       deco_chat_prompts: {
         Row: {
           content: string;
@@ -1091,7 +1129,9 @@ export type Database = {
           created_at: string | null;
           icon: string;
           id: string;
+          integration_id: string | null;
           metadata: Json | null;
+          name: string | null;
           team_id: number;
           title: string;
           type: string;
@@ -1100,7 +1140,9 @@ export type Database = {
           created_at?: string | null;
           icon: string;
           id?: string;
+          integration_id?: string | null;
           metadata?: Json | null;
+          name?: string | null;
           team_id: number;
           title: string;
           type: string;
@@ -1109,7 +1151,9 @@ export type Database = {
           created_at?: string | null;
           icon?: string;
           id?: string;
+          integration_id?: string | null;
           metadata?: Json | null;
+          name?: string | null;
           team_id?: number;
           title?: string;
           type?: string;

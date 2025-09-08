@@ -271,7 +271,10 @@ export async function listToolsByConnectionType(
         workspace:
           ctx.workspace ??
           (connection.workspace
-            ? fromWorkspaceString(connection.workspace)
+            ? fromWorkspaceString(
+                connection.workspace,
+                ctx.user?.id as string | undefined,
+              )
             : undefined),
       });
 

@@ -216,7 +216,7 @@ function SelectorDialog({
             placeholder={
               selectedIntegration
                 ? `Search ${selectedIntegration.name} tools...`
-                : "Search integrations..."
+                : "Search apps..."
             }
             value={search}
             onChange={(e) => setSearch(e.target.value)}

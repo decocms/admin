@@ -8,6 +8,7 @@ import { Picker } from "./chat-picker.tsx";
 import { useAgent } from "../agent/provider.tsx";
 import { AgentCard } from "./tools/agent-card.tsx";
 import { Preview } from "./tools/render-preview.tsx";
+import { HostingAppDeploy } from "./tools/hosting-app-deploy.tsx";
 import { formatToolName } from "./utils/format-tool-name.ts";
 
 interface ConfirmOption {
@@ -202,6 +203,11 @@ function CustomToolUI({
   isLastMessage?: boolean;
 }) {
   const { select } = useAgent();
+  const result = (tool.result ?? {}) as Record<string, unknown>;
+
+  if (tool.toolName === "HOSTING_APP_DEPLOY") {
+    return <HostingAppDeploy tool={tool} />;
+  }
 
   if (tool.state !== "result" || !tool.result) return null;
 
@@ -209,28 +215,21 @@ function CustomToolUI({
     case "RENDER": {
       return (
         <Preview
-          content={tool.result.content as "url" | "html"}
-          title={tool.result.title as string}
+          content={result.content as "url" | "html"}
+          title={result.title as string}
         />
       );
     }
-    case "HOSTING_APP_DEPLOY": {
-      return (
-        <Preview
-          content={tool.result.content as "url" | "html"}
-          title={tool.result.title as string}
-        />
-      );
-    }
+
     case "CONFIGURE":
     case "AGENT_CREATE": {
       return (
         <div className="animate-in slide-in-from-bottom duration-300">
           <AgentCard
-            id={tool.result.id as string}
-            name={tool.result.name as string}
-            description={tool.result.description as string}
-            avatar={tool.result.avatar as string}
+            id={result.id as string}
+            name={result.name as string}
+            description={result.description as string}
+            avatar={result.avatar as string}
             displayLink={tool.toolName === "AGENT_CREATE"}
           />
         </div>
@@ -238,16 +237,14 @@ function CustomToolUI({
     }
     case "SHOW_PICKER":
     case "CONFIRM": {
-      const options = (tool.result.options as ConfirmOption[]).map(
-        (option) => ({
-          id: option.value,
-          ...option,
-        }),
-      );
+      const options = (result.options as ConfirmOption[]).map((option) => ({
+        id: option.value,
+        ...option,
+      }));
 
       return (
         <Picker
-          question={tool.result.question as string}
+          question={result.question as string}
           options={options}
           onSelect={(value) => select(tool.toolCallId, value)}
           disabled={!isLastMessage}

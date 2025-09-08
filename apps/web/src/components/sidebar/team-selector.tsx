@@ -1,4 +1,4 @@
-import { useTeam, useTeams } from "@deco/sdk";
+import { useTeam, useOrganizations } from "@deco/sdk";
 import { Button } from "@deco/ui/components/button.tsx";
 import { Icon } from "@deco/ui/components/icon.tsx";
 import { Input } from "@deco/ui/components/input.tsx";
@@ -13,10 +13,9 @@ import {
 import { SidebarMenuButton } from "@deco/ui/components/sidebar.tsx";
 import { Suspense, useState } from "react";
 import { Link, useParams } from "react-router";
-import { useUser } from "../../hooks/use-user.ts";
 import { useWorkspaceLink } from "../../hooks/use-navigate-workspace.ts";
 import { Avatar } from "../common/avatar/index.tsx";
-import { CreateTeamDialog } from "./create-team-dialog.tsx";
+import { CreateOrganizationDialog } from "./create-team-dialog.tsx";
 import { InviteTeamMembersDialog } from "../common/invite-team-members-dialog.tsx";
 import { type Theme, type View, withDefaultViews } from "@deco/sdk";
 import { useDocumentMetadata } from "../../hooks/use-document-metadata.ts";
@@ -29,60 +28,22 @@ export interface CurrentTeam {
   theme: Theme | undefined;
 }
 
-function useUserTeam(): CurrentTeam & { views: View[] } {
-  const user = useUser();
-  const avatarUrl = user?.metadata?.avatar_url ?? undefined;
-  const name = user?.metadata?.full_name || user?.email;
-  const label = `${name.split(" ")[0]}'s team`;
-  return {
-    avatarUrl,
-    label,
-    id: user?.id ?? "",
-    slug: "",
-    theme: undefined,
-    views: withDefaultViews([]),
-  };
-}
-
 export function useCurrentTeam(): CurrentTeam & { views: View[] } {
-  const { teamSlug } = useParams();
-  const userTeam = useUserTeam();
-  const { data: teamData } = useTeam(teamSlug);
-  if (!teamSlug) {
-    return userTeam;
+  const { org } = useParams();
+  const { data: teamData } = useTeam(org);
+
+  if (!org) {
+    throw new Error("No organization found");
   }
 
   return {
     avatarUrl: teamData?.avatar_url,
-    label: teamData?.name || teamSlug || "",
+    label: teamData?.name || org || "",
     id: teamData?.id ?? "",
-    slug: teamData?.slug ?? teamSlug ?? "",
+    slug: teamData?.slug ?? org ?? "",
     theme: teamData?.theme,
     views: withDefaultViews(teamData?.views ?? []),
   };
-}
-
-export function useUserTeams() {
-  const { data: teams } = useTeams();
-  const personalTeam = useUserTeam();
-  const { slug: currentSlug } = useCurrentTeam();
-
-  const allTeams: CurrentTeam[] = [
-    personalTeam,
-    ...teams.map((team) => ({
-      avatarUrl: team.avatar_url,
-      slug: team.slug,
-      label: team.name,
-      id: team.id,
-      theme: team.theme,
-    })),
-  ];
-
-  const teamsWithoutCurrentTeam = allTeams.filter(
-    (team) => team.slug !== currentSlug,
-  );
-
-  return teamsWithoutCurrentTeam;
 }
 
 function CurrentTeamDropdownTrigger() {
@@ -162,11 +123,15 @@ CurrentTeamDropdownOptions.Skeleton = () => (
 );
 
 function TeamsToSwitch({ query }: { query: string }) {
-  const availableTeamsToSwitch = useUserTeams();
+  const { org: currentTeamSlug } = useParams();
+  const { data: orgs } = useOrganizations();
+  const availableTeamsToSwitch = orgs.filter(
+    (org) => org.slug !== currentTeamSlug,
+  );
 
   const filteredTeams = availableTeamsToSwitch.filter(
     (team) =>
-      team.label.toLowerCase().includes(query.toLowerCase()) ||
+      team.name.toLowerCase().includes(query.toLowerCase()) ||
       team.slug?.toLowerCase().includes(query.toLowerCase()),
   );
 
@@ -182,19 +147,19 @@ function TeamsToSwitch({ query }: { query: string }) {
     <div className="flex flex-col gap-2 h-36 overflow-y-auto">
       <div className="flex flex-col gap-2 h-36 overflow-y-auto">
         {filteredTeams.map((team) => (
-          <ResponsiveDropdownItem asChild key={team.slug + team.label}>
+          <ResponsiveDropdownItem asChild key={team.slug + team.name}>
             <Link
               to={`/${team.slug}`}
               className="w-full flex items-center gap-2 cursor-pointer"
             >
               <Avatar
                 shape="square"
-                url={team.avatarUrl}
-                fallback={team.label}
+                url={team.avatar_url}
+                fallback={team.name}
                 objectFit="contain"
                 size="xs"
               />
-              <span className="md:text-sm">{team.label}</span>
+              <span className="md:text-sm">{team.name}</span>
             </Link>
           </ResponsiveDropdownItem>
         ))}
@@ -309,6 +274,17 @@ export function TeamSelector() {
           <CurrentTeamDropdownTrigger />
         </Suspense>
         <ResponsiveDropdownContent align="start" className="md:w-[240px]">
+          <ResponsiveDropdownItem asChild>
+            <Link
+              to="/"
+              className="w-full flex items-center gap-2 cursor-pointer"
+            >
+              <span className="grid place-items-center p-1">
+                <Icon name="home" size={18} className="text-muted-foreground" />
+              </span>
+              <span className="md:text-sm">Home</span>
+            </Link>
+          </ResponsiveDropdownItem>
           <Suspense fallback={<CurrentTeamDropdownOptions.Skeleton />}>
             <CurrentTeamDropdownOptions
               onRequestInvite={() => setIsInviteDialogOpen(true)}
@@ -318,7 +294,7 @@ export function TeamSelector() {
           <SwitchTeam onRequestCreateTeam={() => setIsCreateDialogOpen(true)} />
         </ResponsiveDropdownContent>
       </ResponsiveDropdown>
-      <CreateTeamDialog
+      <CreateOrganizationDialog
         open={isCreateDialogOpen}
         onOpenChange={setIsCreateDialogOpen}
       />

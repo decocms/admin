@@ -43,7 +43,7 @@ import { EmptyState } from "../common/empty-state.tsx";
 import { ListPageHeader } from "../common/list-page-header.tsx";
 import { Table } from "../common/table/index.tsx";
 import type { Tab } from "../dock/index.tsx";
-import { DefaultBreadcrumb, PageLayout } from "../layout.tsx";
+import { DefaultBreadcrumb, PageLayout } from "../layout/project.tsx";
 import { useFocusChat } from "./hooks.ts";
 import { useViewMode } from "@deco/ui/hooks/use-view-mode.ts";
 
@@ -83,12 +83,12 @@ export const useDuplicateAgent = (agent: Agent | null) => {
 };
 
 const useCopyLink = (agentId: string) => {
-  const { workspace } = useSDK();
+  const { locator } = useSDK();
 
   const copyLink = useCallback(() => {
-    const link = getPublicChatLink(agentId, workspace);
+    const link = getPublicChatLink(agentId, locator);
     navigator.clipboard.writeText(link);
-  }, [agentId, workspace]);
+  }, [agentId, locator]);
 
   return copyLink;
 };

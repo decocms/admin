@@ -285,7 +285,7 @@ export function GeneralSettings() {
   // If slug is empty, it's a personal team
   const isPersonalTeam = !currentTeamSlug;
 
-  const { workspace } = useSDK();
+  const { locator } = useSDK();
   const workspaceLink = useWorkspaceLink();
   const updateTeam = useUpdateTeam();
   const deleteTeam = useDeleteTeam();
@@ -380,7 +380,7 @@ export function GeneralSettings() {
         },
       },
     });
-    clearThemeCache(workspace);
+    clearThemeCache(locator);
     form.reset(data);
 
     // Show toast with refresh button if theme variables were changed

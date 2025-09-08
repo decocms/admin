@@ -752,6 +752,10 @@ export const DECO_INTEGRATION_OAUTH_START = createIntegrationManagementTool({
       .describe(
         "The install id of the integration to start the OAuth flow for",
       ),
+    integrationId: z
+      .string()
+      .optional()
+      .describe("The id of the integration to start the OAuth flow for"),
     provider: z
       .string()
       .optional()
@@ -766,7 +770,10 @@ export const DECO_INTEGRATION_OAUTH_START = createIntegrationManagementTool({
       scopes: z.array(z.string()).optional(),
     }),
   ]),
-  handler: async ({ appName, returnUrl, installId, provider }, c) => {
+  handler: async (
+    { appName, returnUrl, installId, provider, integrationId },
+    c,
+  ) => {
     assertHasWorkspace(c);
     await assertWorkspaceResourceAccess(c);
     let connection: MCPConnection;
@@ -787,6 +794,7 @@ export const DECO_INTEGRATION_OAUTH_START = createIntegrationManagementTool({
       params: {
         name: "DECO_CHAT_OAUTH_START",
         arguments: {
+          integrationId,
           installId,
           returnUrl,
         },

@@ -1,14 +1,14 @@
 ---
 title: Integrations
-description: Learn how to connect external services and APIs in deco.chat
+description: Learn how to connect external services and APIs in deco
 icon: Link
 ---
 
-One of the most powerful aspects of deco.chat is how easily you can connect to external services – this could be anything from a SaaS API to a database or file storage. Integrations allow your agent to do things like: send emails, query your company database, fetch documents from Google Drive, or incorporate knowledge from PDFs and websites.
+One of the most powerful aspects of deco is how easily you can connect to external services – this could be anything from a SaaS API to a database or file storage. Integrations allow your agent to do things like: send emails, query your company database, fetch documents from Google Drive, or incorporate knowledge from PDFs and websites.
 
 ## Connecting External APIs
 
-Many common integrations are available out-of-the-box in deco.chat's integration library (for example, Slack, Gmail, Notion, Stripe, etc.). These can be added via the deco.chat UI (under the "Tools" or "Integrations" section). When you "Add Integration" and configure it (often OAuth or API keys), those integration's tools become available in your environment object `Env`. For instance, after adding Gmail and granting access, your Cloudflare Worker can call `env.GMAIL.sendEmail` as we saw earlier. The `deco.gen.ts` will have the types for `GMAIL.sendEmail` (and any other Gmail tools provided).
+Many common integrations are available out-of-the-box in deco's integration library (for example, Slack, Gmail, Notion, Stripe, etc.). These can be added via the deco UI (under the "Tools" or "Integrations" section). When you "Add Integration" and configure it (often OAuth or API keys), those integration's tools become available in your environment object `Env`. For instance, after adding Gmail and granting access, your Cloudflare Worker can call `env.GMAIL.sendEmail` as we saw earlier. The `deco.gen.ts` will have the types for `GMAIL.sendEmail` (and any other Gmail tools provided).
 
 If there isn't a built-in integration for what you need, you have two options:
 
@@ -28,7 +28,7 @@ If your agent needs to read/write data, you can integrate with databases:
 
 ## Knowledge Base Integration
 
-The Knowledge Base is a special integration for unstructured data. In the deco.chat UI, you can upload documents (PDFs, text, etc.) to your workspace's knowledge base. The platform will index these (e.g., split into chunks, vectorize them) so that agents can retrieve information from them when responding. From a developer perspective, once a document is uploaded:
+The Knowledge Base is a special integration for unstructured data. In the deco UI, you can upload documents (PDFs, text, etc.) to your workspace's knowledge base. The platform will index these (e.g., split into chunks, vectorize them) so that agents can retrieve information from them when responding. From a developer perspective, once a document is uploaded:
 
 - The agent's context will automatically include relevant snippets from these docs when the agent is asked about something related. (You might not need to write code for this – it's handled by the platform's retrieval-augmented generation system.)
 

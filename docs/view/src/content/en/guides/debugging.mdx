@@ -1,6 +1,6 @@
 ---
 title: Debugging and Tips
-description: Common issues and debugging strategies for deco.chat development
+description: Common issues and debugging strategies for deco development
 icon: Bug
 ---
 
@@ -18,7 +18,7 @@ If TypeScript is complaining, check your schemas and types. A common mistake is 
 
 If a tool that calls an external integration fails, verify the integration setup:
 
-- Did you connect the service in the deco.chat UI and grant permissions?
+- Did you connect the service in the deco UI and grant permissions?
 - Are your API keys or credentials correct and not expired?
 - Check the `env` usage: e.g., `env.GMAIL.sendEmail` will only exist if the Gmail integration is configured in that workspace. If it's undefined, the integration may not be added or the `deco.gen.ts` is outdated.
 - Look at the error message or status code from the external API (you can catch errors in your tool and log `e.response` etc.). It might be a 401 (auth issue), 400 (bad request payload), etc. Adjust your code or config accordingly.
@@ -64,7 +64,7 @@ Build your agent piece by piece. Test each tool individually (you can call tools
 
 ## Community and Support
 
-If you're stuck, the deco.chat community (Discord or forums) can be helpful. Also, Cloudflare Workers documentation is relevant since many issues might actually be generic Workers issues (like how do I store a secret, etc.). Don't hesitate to consult Cloudflare's docs for Workers specifics.
+If you're stuck, the deco community (Discord or forums) can be helpful. Also, Cloudflare Workers documentation is relevant since many issues might actually be generic Workers issues (like how do I store a secret, etc.). Don't hesitate to consult Cloudflare's docs for Workers specifics.
 
 ## Key Tips Recap
 

@@ -1,10 +1,10 @@
 ---
 title: Deployment
-description: Learn how to deploy your deco.chat applications to production
+description: Learn how to deploy your deco applications to production
 icon: Rocket
 ---
 
-When you're ready to share your agent with the world (or your team), you'll deploy it to Cloudflare Workers via the deco.chat CLI. Deployment in deco.chat is remarkably simple compared to traditional apps – since your entire stack (front and back) is serverless and lives at Cloudflare's edge, going to production is often just one command.
+When you're ready to share your agent with the world (or your team), you'll deploy it to Cloudflare Workers via the deco CLI. Deployment in deco is remarkably simple compared to traditional apps – since your entire stack (front and back) is serverless and lives at Cloudflare's edge, going to production is often just one command.
 
 ## Build and Deploy Process
 
@@ -26,7 +26,7 @@ When `deco deploy` finishes, your app will be live at a URL, likely something li
 
 - **Durable Objects**: If you need longer-running or stateful interactions (like maintaining a conversation state beyond the context provided by deco by default), you might use Durable Objects. These are like single-instance workers that can hold state. Deco's advanced libs (like the actors library) can help if needed. But for many use cases, storing state in the agent's conversation history or a database is sufficient.
 
-- **Cron Triggers**: deco.chat's platform supports agent triggers (as seen in the intro video) – e.g., running an agent daily at 9am. Under the hood, this may use Workers Cron Triggers. If you set up triggers via the UI, ensure you deploy after scheduling them so the Worker has the trigger configured in `wrangler.toml`.
+- **Cron Triggers**: deco's platform supports agent triggers (as seen in the intro video) – e.g., running an agent daily at 9am. Under the hood, this may use Workers Cron Triggers. If you set up triggers via the UI, ensure you deploy after scheduling them so the Worker has the trigger configured in `wrangler.toml`.
 
 - **Limits**: Keep an eye on your usage. Cloudflare's free tier is generous but has limits on request count, etc. If your agent is going to be heavily used, consider enabling billing or at least monitoring usage in the Cloudflare dashboard.
 

@@ -67,7 +67,7 @@ export const useInstallCreatingApiKeyAndIntegration = () => {
           ...app.connection,
           token: apiKey.value,
           // Merge form data into connection
-          ...formData,
+          state: formData,
         }, // Type assertion to handle the connection type
       };
 
@@ -153,7 +153,19 @@ export function useIntegrationInstall(appName?: string) {
         installId,
       });
 
-      const redirectPath = getLinkFor(`/connection/unknown:::${installId}`);
+      const integration = installState.integration;
+      const connection = integration?.connection;
+      const isHTTP = connection?.type === "HTTP";
+      const isWellKnownMCP =
+        isHTTP &&
+        connection?.url.includes("mcp.deco.site") &&
+        integration?.name; // weak check FIXME @author Marcos V. Candeia.
+
+      const redirectPath = getLinkFor(
+        isWellKnownMCP
+          ? `/connection/deco:::${integration.name}`
+          : `/connection/unknown:::${installId}`,
+      );
       globalThis.location.href = redirectPath;
     } catch (error) {
       console.error("Failed to complete setup:", error);

@@ -209,7 +209,10 @@ const virtualIntegrationsFor = (
     workspace: Locator.adaptToRootSlug(locator),
     created_at: new Date().toISOString(),
   };
-  const workspaceMcp = new URL(`/${locator}/mcp`, DECO_CMS_API_URL);
+  const workspaceMcp = new URL(
+    `/${locator.startsWith("/") ? locator.slice(1) : locator}/mcp`,
+    DECO_CMS_API_URL,
+  );
 
   // Create a virtual Workspace Management integration
   const workspaceManagementIntegration = {

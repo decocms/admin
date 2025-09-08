@@ -286,7 +286,7 @@ export function ConfirmMarketplaceInstallDialog({
     <Dialog open={open} onOpenChange={() => setIntegration(null)}>
       <DialogContent className="!p-0 lg:!w-220 lg:!max-w-220 flex flex-col overflow-y-hidden">
         {/* Dependency Steps */}
-        <div className="min-h-135 max-h-135 h-full lg:max-h-[60vh]">
+        <div className="min-h-135 max-h-135 h-full lg:max-h-[60vh] border-b">
           <DependencyStep
             integration={integration}
             dependencyName={maybeAppDependencyList?.[stepIndex]}
@@ -373,7 +373,7 @@ function DependencyStep({
   const schema = dependencySchema;
 
   return (
-    <GridContainer className="min-h-135 max-h-135 lg:min-h-[60vh] lg:max-h-[60vh]">
+    <GridContainer className="lg:max-h-[60vh] max-h-135 min-h-135">
       {/* Left side: App icons and info */}
       <GridLeftColumn>
         <div className="pb-4 px-4 h-full">
@@ -417,26 +417,27 @@ function DependencyStep({
           {/* Dependency integration info */}
           <div className="flex-grow flex flex-col gap-5 py-2">
             {/* Configuration Form */}
-            {schema && (
-              <div className="flex justify-between items-center gap-2">
-                {dependencyIntegration && (
-                  <div className="flex items-center gap-2">
-                    <IntegrationIcon
-                      icon={dependencyIntegration?.icon}
-                      name={
-                        dependencyIntegration?.friendlyName ??
-                        dependencyIntegration?.name
-                      }
-                      size="lg"
-                    />
-                    {dependencyIntegration?.friendlyName ??
-                      dependencyIntegration?.name}
-                  </div>
-                )}
-                <IntegrationBindingForm schema={schema} formRef={formRef} />
-              </div>
-            )}
-
+            <div className="max-h-[200px] overflow-y-auto">
+              {schema && (
+                <div className="flex justify-between items-center gap-2">
+                  {dependencyIntegration && (
+                    <div className="flex items-center gap-2">
+                      <IntegrationIcon
+                        icon={dependencyIntegration?.icon}
+                        name={
+                          dependencyIntegration?.friendlyName ??
+                          dependencyIntegration?.name
+                        }
+                        size="lg"
+                      />
+                      {dependencyIntegration?.friendlyName ??
+                        dependencyIntegration?.name}
+                    </div>
+                  )}
+                  <IntegrationBindingForm schema={schema} formRef={formRef} />
+                </div>
+              )}
+            </div>
             {/* Permissions Section */}
             <div className="flex-grow flex flex-col gap-2">
               <div className="font-mono text-sm text-secondary-foreground uppercase">

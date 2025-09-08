@@ -676,24 +676,30 @@ export function createContractsCommitsChartData(
     );
     const integrationName = integration?.name || contract.contractId;
 
-    // If a clauseId is selected, we need to calculate the actual cost for that clause
-    // Note: The chart doesn't have access to clause prices from CONTRACT_GET,
-    // so we'll use the raw amount for now. The table shows the correct calculated cost.
+    // If a clauseId is selected, calculate the proportional cost from the total contract amount
+    // This matches the calculation logic used in the contracts table
     if (clauseId) {
       const clause = (contract.clauses || []).find(
         (c) => c.clauseId === clauseId,
       );
-      const amountForClause = clause ? clause.amount : 0;
-      if (amountForClause > 0) {
-        allTransactions.push({
-          timestamp: contract.timestamp,
-          amount: amountForClause,
-          contractId: contract.contractId,
-          integrationName,
-          callerApp: contract.callerApp ?? undefined,
-          clauses: contract.clauses,
-          type: contract.type,
-        });
+      if (clause) {
+        const totalTokensInContract = (contract.clauses || []).reduce(
+          (sum, c) => sum + c.amount,
+          0,
+        );
+        if (totalTokensInContract > 0) {
+          const proportionalAmount =
+            (clause.amount / totalTokensInContract) * contract.amount;
+          allTransactions.push({
+            timestamp: contract.timestamp,
+            amount: proportionalAmount,
+            contractId: contract.contractId,
+            integrationName,
+            callerApp: contract.callerApp ?? undefined,
+            clauses: contract.clauses,
+            type: contract.type,
+          });
+        }
       }
     } else {
       allTransactions.push({

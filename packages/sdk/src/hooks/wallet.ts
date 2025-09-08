@@ -1,7 +1,6 @@
 import {
   getAgentsUsage,
   getBillingHistory,
-  getContractsPreAuthorizations,
   getContractsCommits,
   getThreadsUsage,
   getWalletAccount,
@@ -78,24 +77,6 @@ export function useBillingHistory({
 
 export type BillingHistoryItem = Awaited<
   ReturnType<typeof useBillingHistory>
->["items"][number];
-
-export function useContractsPreAuthorizations({
-  range,
-}: {
-  range: "day" | "week" | "month" | "year";
-}) {
-  const { locator } = useSDK();
-  const { data: contractsPreAuthorizations } = useSuspenseQuery({
-    queryKey: KEYS.WALLET_CONTRACTS_PRE_AUTHORIZATIONS(locator, range),
-    queryFn: () => getContractsPreAuthorizations(locator, range),
-  });
-
-  return contractsPreAuthorizations;
-}
-
-export type ContractsPreAuthorizationsItem = Awaited<
-  ReturnType<typeof useContractsPreAuthorizations>
 >["items"][number];
 
 export function useContractsCommits({

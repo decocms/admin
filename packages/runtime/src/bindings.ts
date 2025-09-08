@@ -76,7 +76,7 @@ const mcpClientForAppName = (appName: string, decoChatApiUrl?: string) => {
 const mcpClientForIntegrationId = (
   integrationId: string,
   ctx: WorkspaceClientContext,
-  _decoChatApiUrl?: string,
+  decoChatApiUrl?: string,
   appName?: string,
 ) => {
   const mcpConnection: MCPConnection = {
@@ -84,7 +84,7 @@ const mcpClientForIntegrationId = (
     url: createIntegrationsUrl({
       integrationId,
       workspace: ctx.workspace,
-      decoCmsApiUrl: "http://localhost:3001",
+      decoCmsApiUrl: decoChatApiUrl,
     }),
     token: ctx.token,
     headers: appName ? { "x-caller-app": appName } : undefined,

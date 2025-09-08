@@ -28,14 +28,6 @@ export const getBillingHistory = (
     range,
   });
 
-export const getContractsPreAuthorizations = (
-  locator: ProjectLocator,
-  range: "day" | "week" | "month" | "year",
-) =>
-  MCPClient.forLocator(locator).GET_CONTRACTS_PRE_AUTHORIZATIONS({
-    range,
-  });
-
 export const getContractsCommits = (
   locator: ProjectLocator,
   range: "day" | "week" | "month" | "year",

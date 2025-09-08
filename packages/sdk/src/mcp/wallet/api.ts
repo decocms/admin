@@ -155,37 +155,6 @@ const BillingHistory = {
   },
 };
 
-const ContractsPreAuthorizations = {
-  fetch: async (
-    wallet: ClientOf<WalletAPI>,
-    workspace: string,
-    range: "day" | "week" | "month" | "year",
-  ) => {
-    const historyResponse = await wallet["GET /contracts/pre-authorizations"]({
-      workspace: encodeURIComponent(workspace),
-      range,
-    });
-
-    if (!historyResponse.ok) {
-      throw new Error("Failed to fetch billing history");
-    }
-
-    return historyResponse.json();
-  },
-  format: (
-    history: WalletAPI["GET /contracts/pre-authorizations"]["response"],
-  ) => {
-    return {
-      items: history.items.map((item) => {
-        return {
-          ...item,
-          amount: MicroDollar.fromMicrodollarString(item.amount).display(),
-        };
-      }),
-    };
-  },
-};
-
 const ContractsCommits = {
   fetch: async (
     wallet: ClientOf<WalletAPI>,
@@ -326,7 +295,6 @@ export const getBillingHistory = createTool({
     ),
   }),
   handler: async ({ range }, c) => {
-    c.resourceAccess.grant();
     assertHasWorkspace(c);
 
     await assertWorkspaceResourceAccess(c);
@@ -339,47 +307,6 @@ export const getBillingHistory = createTool({
       range,
     );
     return BillingHistory.format(history);
-  },
-});
-
-export const getContractsPreAuthorizations = createTool({
-  name: "GET_CONTRACTS_PRE_AUTHORIZATIONS",
-  description: "Get the billing history for the current tenant's wallet",
-  inputSchema: z.object({
-    range: z.enum(["day", "week", "month", "year"]),
-  }),
-  outputSchema: z.object({
-    items: z.array(
-      z.object({
-        id: z.string(),
-        amount: z.string(),
-        clauses: z.array(
-          z.object({
-            clauseId: z.string(),
-            amount: z.number(),
-          }),
-        ),
-        timestamp: z.string(),
-        type: z.string(),
-      }),
-    ),
-  }),
-  handler: async ({ range }, c) => {
-    c.resourceAccess.grant();
-    assertHasWorkspace(c);
-
-    await assertWorkspaceResourceAccess(c);
-
-    const wallet = getWalletClient(c);
-
-    const history = await ContractsPreAuthorizations.fetch(
-      wallet,
-      c.workspace.value,
-      range,
-    );
-
-    const formatted = ContractsPreAuthorizations.format(history);
-    return formatted;
   },
 });
 
@@ -408,7 +335,7 @@ export const getContractsCommits = createTool({
     ),
   }),
   handler: async ({ range }, c) => {
-    c.resourceAccess.grant();
+    c.resourceAccess.grant(); 
     assertHasWorkspace(c);
 
     await assertWorkspaceResourceAccess(c);

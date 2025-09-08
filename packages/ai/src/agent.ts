@@ -14,7 +14,7 @@
 import type { JSONSchema7 } from "@ai-sdk/provider";
 import type { ActorState, InvokeMiddlewareOptions } from "@deco/actors";
 import { Actor } from "@deco/actors";
-import type { Agent as Configuration } from "@deco/sdk";
+import { type Agent as Configuration, Locator } from "@deco/sdk";
 import { type AuthMetadata, BaseActor } from "@deco/sdk/actors";
 import { JwtIssuer, SUPABASE_URL } from "@deco/sdk/auth";
 import {
@@ -39,9 +39,9 @@ import {
   MCPClient,
   type MCPClientStub,
   PolicyClient,
+  type ProjectTools,
   serializeError,
   SupabaseLLMVault,
-  type ProjectTools,
 } from "@deco/sdk/mcp";
 import type { AgentMemoryConfig } from "@deco/sdk/memory";
 import { AgentMemory, slugify, toAlphanumericId } from "@deco/sdk/memory";
@@ -97,9 +97,9 @@ import { AgentWallet } from "./agent/wallet.ts";
 import { pickCapybaraAvatar } from "./capybaras.ts";
 import { mcpServerTools } from "./mcp.ts";
 import type {
-  Message as AIMessage,
-  GenerateOptions,
   AIAgent as IIAgent,
+  GenerateOptions,
+  Message as AIMessage,
   StreamOptions,
   Thread,
   ThreadQueryOptions,
@@ -290,6 +290,8 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
 
   private _createAppContext(metadata?: AgentMetadata): AppContext {
     const policyClient = PolicyClient.getInstance(this.db);
+    const { org, project } = Locator.parse(this.workspace);
+
     return {
       params: {},
       envVars: this.env as any,
@@ -300,6 +302,7 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
       workspaceDO: this.actorEnv.WORKSPACE_DB,
       cookie: metadata?.userCookie ?? undefined,
       workspace: fromWorkspaceString(this.workspace, metadata?.user?.id),
+      locator: { org, project, value: this.workspace },
       resourceAccess: createResourceAccess(),
       cf: new Cloudflare({ apiToken: this.env.CF_API_TOKEN }),
       policy: policyClient,

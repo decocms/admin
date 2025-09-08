@@ -243,6 +243,16 @@ export const fromWorkspaceString = (
 ): AppContext["workspace"] => {
   const normalized = _workspace.startsWith("/") ? _workspace : `/${_workspace}`;
 
+  if (normalized.startsWith("/users") || normalized.startsWith("/shared")) {
+    return {
+      value: normalized,
+      root: normalized.startsWith("/users") ? "users" : "shared",
+      slug: normalized.startsWith("/users")
+        ? normalized.split("/")[1]
+        : normalized.split("/")[2],
+    };
+  }
+
   const [_, org, project] = normalized.split("/");
 
   const root = project === "personal" && userId ? "users" : "shared";

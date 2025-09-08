@@ -335,7 +335,7 @@ export const getContractsCommits = createTool({
     ),
   }),
   handler: async ({ range }, c) => {
-    c.resourceAccess.grant(); 
+    c.resourceAccess.grant();
     assertHasWorkspace(c);
 
     await assertWorkspaceResourceAccess(c);

@@ -29,18 +29,18 @@ export const getBillingHistory = (
   });
 
 export const getContractsPreAuthorizations = (
-  workspace: string,
+  locator: ProjectLocator,
   range: "day" | "week" | "month" | "year",
 ) =>
-  MCPClient.forWorkspace(workspace).GET_CONTRACTS_PRE_AUTHORIZATIONS({
+  MCPClient.forLocator(locator).GET_CONTRACTS_PRE_AUTHORIZATIONS({
     range,
   });
 
 export const getContractsCommits = (
-  workspace: string,
+  locator: ProjectLocator,
   range: "day" | "week" | "month" | "year",
 ) =>
-  MCPClient.forWorkspace(workspace).GET_CONTRACTS_COMMITS({
+  MCPClient.forLocator(locator).GET_CONTRACTS_COMMITS({
     range,
   });
 

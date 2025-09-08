@@ -85,13 +85,11 @@ export function useContractsPreAuthorizations({
 }: {
   range: "day" | "week" | "month" | "year";
 }) {
-  const { workspace } = useSDK();
+  const { locator } = useSDK();
   const { data: contractsPreAuthorizations } = useSuspenseQuery({
-    queryKey: KEYS.WALLET_CONTRACTS_PRE_AUTHORIZATIONS(workspace, range),
-    queryFn: () => getContractsPreAuthorizations(workspace, range),
+    queryKey: KEYS.WALLET_CONTRACTS_PRE_AUTHORIZATIONS(locator, range),
+    queryFn: () => getContractsPreAuthorizations(locator, range),
   });
-
-  console.log({ contractsPreAuthorizations });
 
   return contractsPreAuthorizations;
 }
@@ -105,10 +103,10 @@ export function useContractsCommits({
 }: {
   range: "day" | "week" | "month" | "year";
 }) {
-  const { workspace } = useSDK();
+  const { locator } = useSDK();
   const { data: contractsCommits } = useSuspenseQuery({
-    queryKey: KEYS.WALLET_CONTRACTS_COMMITS(workspace, range),
-    queryFn: () => getContractsCommits(workspace, range),
+    queryKey: KEYS.WALLET_CONTRACTS_COMMITS(locator, range),
+    queryFn: () => getContractsCommits(locator, range),
   });
 
   return contractsCommits;

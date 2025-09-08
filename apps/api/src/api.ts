@@ -95,7 +95,7 @@ export const honoCtxToAppCtx = (c: Context<AppEnv>): AppContext => {
   const policyClient = PolicyClient.getInstance(c.var.db);
   const authorizationClient = new AuthorizationClient(policyClient);
 
-  const appContext = {
+  return {
     ...c.var,
     params: { ...c.req.query(), ...c.req.param() },
     envVars: envs,
@@ -113,7 +113,6 @@ export const honoCtxToAppCtx = (c: Context<AppEnv>): AppContext => {
       apiHost: envs.POSTHOG_API_HOST,
     }),
   };
-  return appContext;
 };
 
 const mapMCPErrorToHTTPExceptionOrThrow = (err: Error) => {

@@ -23,6 +23,29 @@ export const getWorkspaceBucketName = (workspace: string) =>
     .replace(/-+/g, "-")
     .replace(/^-|-$/g, "")}`;
 
+const ensureBucketCorsConfiguration = async (
+  c: AppContext,
+  bucketName: string,
+) => {
+  const { cf } = c;
+  const env = getEnv(c);
+
+  await cf.r2.buckets.cors.update(bucketName, {
+    account_id: env.CF_ACCOUNT_ID,
+    rules: [
+      {
+        maxAgeSeconds: 3600,
+        exposeHeaders: ["etag"],
+        allowed: {
+          methods: ["GET", "PUT"],
+          origins: [...WELL_KNOWN_ORIGINS],
+          headers: ["origin", "content-type"],
+        },
+      },
+    ],
+  });
+};
+
 export const ensureBucketExists = async (c: AppContext, bucketName: string) => {
   const { cf } = c;
   const env = getEnv(c);
@@ -31,6 +54,10 @@ export const ensureBucketExists = async (c: AppContext, bucketName: string) => {
     await cf.r2.buckets.get(bucketName, {
       account_id: env.CF_ACCOUNT_ID,
     });
+
+    // We can remove this after some time. This is for ensuring
+    // existing buckets have the correct cors configuration.
+    await ensureBucketCorsConfiguration(c, bucketName);
   } catch (error) {
     if ((error as unknown as { status: number })?.status !== 404) {
       throw error;
@@ -42,21 +69,7 @@ export const ensureBucketExists = async (c: AppContext, bucketName: string) => {
       account_id: env.CF_ACCOUNT_ID,
     });
 
-    // Set cors
-    await cf.r2.buckets.cors.update(bucketName, {
-      account_id: env.CF_ACCOUNT_ID,
-      rules: [
-        {
-          maxAgeSeconds: 3600,
-          exposeHeaders: ["etag"],
-          allowed: {
-            methods: ["GET", "PUT"],
-            origins: [...WELL_KNOWN_ORIGINS],
-            headers: ["origin", "content-type"],
-          },
-        },
-      ],
-    });
+    await ensureBucketCorsConfiguration(c, bucketName);
   }
 };
 

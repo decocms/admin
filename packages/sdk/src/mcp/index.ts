@@ -247,9 +247,7 @@ export const fromWorkspaceString = (
     return {
       value: normalized,
       root: normalized.startsWith("/users") ? "users" : "shared",
-      slug: normalized.startsWith("/users")
-        ? normalized.split("/")[1]
-        : normalized.split("/")[2],
+      slug: normalized.split("/")[2],
     };
   }
 

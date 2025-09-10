@@ -47,6 +47,7 @@ import type { AgentMemoryConfig } from "@deco/sdk/memory";
 import { AgentMemory, slugify, toAlphanumericId } from "@deco/sdk/memory";
 import { trace } from "@deco/sdk/observability";
 import {
+  getTwoFirstSegments,
   getTwoFirstSegments as getWorkspace,
   type Workspace,
 } from "@deco/sdk/path";
@@ -78,7 +79,7 @@ import jsonSchemaToZod from "json-schema-to-zod";
 import process from "node:process";
 import { Readable } from "node:stream";
 import { z } from "zod";
-import type { MCPConnection } from "../../sdk/src/index.ts";
+import type { MCPConnection, ProjectLocator } from "../../sdk/src/index.ts";
 import { createWalletClient } from "../../sdk/src/mcp/wallet/index.ts";
 import { resolveMentions } from "../../sdk/src/utils/prompt-mentions.ts";
 import { convertToAIMessage } from "./agent/ai-message.ts";
@@ -216,7 +217,7 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
    */
   protected callableToolSet: ToolsetsInput = {};
 
-  public workspace: Workspace;
+  public locator: ProjectLocator;
   private id: string;
   public _configuration?: Configuration;
   private agentMemoryConfig: AgentMemoryConfig;
@@ -224,7 +225,6 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
   private wallet: AgentWallet;
   private db: Awaited<ReturnType<typeof createServerClient>>;
   private agentScoppedMcpClient: MCPClientStub<ProjectTools>;
-  private llmVault?: LLMVault;
   private telemetry?: Telemetry;
   private posthog: PosthogServerClient;
 
@@ -239,19 +239,12 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
       ...process.env,
       ...this.env,
     };
-    this.workspace = getWorkspace(this.state.id);
+    this.locator = Locator.asFirstTwoSegmentsOf(this.state.id);
     this.agentMemoryConfig = null as unknown as AgentMemoryConfig;
     this.agentId = this.state.id.split("/").pop() ?? "";
     this.db = createServerClient(SUPABASE_URL, this.env.SUPABASE_SERVER_TOKEN, {
       cookies: { getAll: () => [] },
     });
-    this.llmVault = this.env.LLMS_ENCRYPTION_KEY
-      ? new SupabaseLLMVault(
-          this.db,
-          this.env.LLMS_ENCRYPTION_KEY,
-          this.workspace,
-        )
-      : undefined;
     this.posthog = createPosthogServerClient({
       apiKey: this.env.POSTHOG_API_KEY,
       apiHost: this.env.POSTHOG_API_HOST,
@@ -261,7 +254,6 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
     this.wallet = new AgentWallet({
       agentId: this.id,
       agentPath: this.state.id,
-      workspace: this.workspace,
       wallet: createWalletClient(this.env.WALLET_API_KEY, actorEnv?.WALLET),
     });
     this.state.blockConcurrencyWhile(async () => {
@@ -277,6 +269,20 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
     });
   }
 
+  private get workspace() {
+    return Locator.adaptToRootSlug(this.locator, this.metadata?.user?.id);
+  }
+
+  private get llmVault() {
+    return this.env.LLMS_ENCRYPTION_KEY
+      ? new SupabaseLLMVault(
+          this.db,
+          this.env.LLMS_ENCRYPTION_KEY,
+          this.workspace,
+        )
+      : undefined;
+  }
+
   private _trackEvent(event: string, properties: Record<string, unknown> = {}) {
     this.posthog.trackEvent(event as any, {
       distinctId: this.metadata?.user?.id ?? this.id,
@@ -290,9 +296,8 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
 
   private _createAppContext(metadata?: AgentMetadata): AppContext {
     const policyClient = PolicyClient.getInstance(this.db);
-    const { org, project } = Locator.parse(this.workspace);
-    const locatorValue = Locator.from({ org, project });
-    const workspace = fromWorkspaceString(this.workspace, metadata?.user?.id);
+    const workspace = fromWorkspaceString(this.workspace);
+    const { org, project } = Locator.parse(this.locator);
 
     return {
       params: {},
@@ -304,7 +309,11 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
       workspaceDO: this.actorEnv.WORKSPACE_DB,
       cookie: metadata?.userCookie ?? undefined,
       workspace,
-      locator: { org, project, value: locatorValue },
+      locator: {
+        org,
+        project,
+        value: this.locator,
+      },
       resourceAccess: createResourceAccess(),
       cf: new Cloudflare({ apiToken: this.env.CF_API_TOKEN }),
       policy: policyClient,
@@ -514,7 +523,7 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
     // Process instructions to replace prompt mentions
     const processedInstructions = await resolveMentions(
       config.instructions,
-      this.workspace,
+      this.locator,
       this.metadata?.mcpClient,
     );
 
@@ -755,6 +764,7 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
       threadId,
       model,
       modelId,
+      workspace: this.workspace,
     });
   }
 
@@ -1103,7 +1113,7 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
     payload: AIMessage[],
     jsonSchema: JSONSchema7,
   ): Promise<GenerateObjectResult<TObject>> {
-    const hasBalance = await this.wallet.canProceed();
+    const hasBalance = await this.wallet.canProceed(this.workspace);
     if (!hasBalance) {
       this._trackEvent("agent_insufficient_funds_error", {
         error: "Insufficient funds for generateObject",
@@ -1142,7 +1152,7 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
     payload: AIMessage[],
     options?: GenerateOptions,
   ): Promise<GenerateTextResult<any, any>> {
-    const hasBalance = await this.wallet.canProceed();
+    const hasBalance = await this.wallet.canProceed(this.workspace);
     if (!hasBalance) {
       this._trackEvent("agent_insufficient_funds_error", {
         error: "Insufficient funds for generate",
@@ -1263,7 +1273,7 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
 
       const wallet = this.wallet;
       const walletTiming = timings.start("init-wallet");
-      const hasBalance = await wallet.canProceed();
+      const hasBalance = await wallet.canProceed(this.workspace);
       walletTiming.end();
 
       if (!hasBalance) {

@@ -263,7 +263,7 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
     });
   }
 
-  private get workspace() {
+  public get workspace() {
     return Locator.adaptToRootSlug(this.locator, this.metadata?.user?.id);
   }
 

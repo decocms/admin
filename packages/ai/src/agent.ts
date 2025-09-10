@@ -47,7 +47,6 @@ import type { AgentMemoryConfig } from "@deco/sdk/memory";
 import { AgentMemory, slugify, toAlphanumericId } from "@deco/sdk/memory";
 import { trace } from "@deco/sdk/observability";
 import {
-  getTwoFirstSegments as getWorkspace,
   type Workspace,
 } from "@deco/sdk/path";
 import {
@@ -239,7 +238,8 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
       ...process.env,
       ...this.env,
     };
-    this.workspace = getWorkspace(this.state.id);
+
+    this.workspace = Locator.adaptToRootSlug(this.state.id) as Workspace;
     this.agentMemoryConfig = null as unknown as AgentMemoryConfig;
     this.agentId = this.state.id.split("/").pop() ?? "";
     this.db = createServerClient(SUPABASE_URL, this.env.SUPABASE_SERVER_TOKEN, {
@@ -247,10 +247,10 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
     });
     this.llmVault = this.env.LLMS_ENCRYPTION_KEY
       ? new SupabaseLLMVault(
-          this.db,
-          this.env.LLMS_ENCRYPTION_KEY,
-          this.workspace,
-        )
+        this.db,
+        this.env.LLMS_ENCRYPTION_KEY,
+        this.workspace,
+      )
       : undefined;
     this.posthog = createPosthogServerClient({
       apiKey: this.env.POSTHOG_API_KEY,

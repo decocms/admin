@@ -92,9 +92,9 @@ import { AgentWallet } from "./agent/wallet.ts";
 import { pickCapybaraAvatar } from "./capybaras.ts";
 import { mcpServerTools } from "./mcp.ts";
 import type {
-  AIAgent as IIAgent,
-  GenerateOptions,
   Message as AIMessage,
+  GenerateOptions,
+  AIAgent as IIAgent,
   StreamOptions,
   Thread,
   ThreadQueryOptions,
@@ -313,6 +313,8 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
       policy: policyClient,
       authorization: new AuthorizationClient(policyClient),
       posthog: this.posthog,
+      branchDO: this.actorEnv.BRANCH,
+      blobsDO: this.actorEnv.BLOBS,
     };
   }
 

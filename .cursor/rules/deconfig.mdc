@@ -1,7 +1,7 @@
 ---
 description: 
-globs: 
-alwaysApply: true
+globs: packages/sdk/src/mcp/deconfig/**
+alwaysApply: false
 ---
 This project is **DECONFIG**, a git-like, versioned configuration manager filesystem built on top of **Cloudflare Durable Objects**.
 

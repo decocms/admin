@@ -1,8 +1,8 @@
-import { type JWTPayload } from "@deco/sdk/auth";
+import { JwtIssuer, type JWTPayload } from "@deco/sdk/auth";
 import type { Context } from "hono";
 import { HTTPException } from "hono/http-exception";
 import { honoCtxToAppCtx } from "../api.ts";
-import { issuerFromContext, type AppEnv } from "../utils/context.ts";
+import type { AppEnv } from "../utils/context.ts";
 
 const tryParseUser = (user: unknown) => {
   if (typeof user === "string") {
@@ -30,7 +30,16 @@ export const handleCodeExchange = async (c: Context<AppEnv>) => {
     }
 
     const { claims } = data as unknown as { claims: JWTPayload };
-    const issuer = await issuerFromContext(appCtx);
+
+    const keyPair =
+      appCtx.envVars.DECO_CHAT_API_JWT_PRIVATE_KEY &&
+      appCtx.envVars.DECO_CHAT_API_JWT_PUBLIC_KEY
+        ? {
+            public: appCtx.envVars.DECO_CHAT_API_JWT_PUBLIC_KEY,
+            private: appCtx.envVars.DECO_CHAT_API_JWT_PRIVATE_KEY,
+          }
+        : undefined;
+    const issuer = await JwtIssuer.forKeyPair(keyPair);
     const token = await issuer.issue({
       ...claims,
       user: "user" in claims ? tryParseUser(claims.user) : undefined,

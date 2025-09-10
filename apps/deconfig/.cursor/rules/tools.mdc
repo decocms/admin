@@ -1,0 +1,507 @@
+---
+description:
+alwaysApply: true
+---
+# Deco MCP Tools Development Guide
+
+## Tool Architecture
+
+Tools are functions that the MCP (Model Context Protocol) can call. They represent discrete operations that can be executed independently or as part of workflows.
+
+## Basic Tool Pattern
+
+```typescript
+// server/main.ts structure
+import { withRuntime } from "@deco/workers-runtime";
+import { createTool } from "@deco/workers-runtime";
+import { z } from "zod";
+
+// Define tools (functions the MCP can call)
+const createMyTool = (env: Env) => createTool({
+  id: "MY_TOOL",
+  description: "Tool description",
+  inputSchema: z.object({ /* input schema */ }),
+  outputSchema: z.object({ /* output schema */ }),
+  execute: async ({ context }) => {
+    // Tool logic here
+    return { /* result */ };
+  },
+});
+
+// Setup runtime with tools
+const { Workflow, ...runtime } = withRuntime<Env>({
+  workflows: [/* workflows */],
+  tools: [createMyTool],
+  fetch: fallbackToView("/"), // Serves frontend assets
+});
+
+export { Workflow };
+export default runtime;
+```
+
+## Accessing Request Headers (Cloudflare Workers)
+
+When you need to extract headers from the incoming request (e.g., GitHub webhooks, authentication headers), use the `runtimeContext` parameter:
+
+```typescript
+const createWebhookTool = (env: Env) => createTool({
+  id: "PROCESS_WEBHOOK",
+  description: "Process incoming webhook with headers",
+  inputSchema: z.object({
+    payload: z.any(),
+  }),
+  outputSchema: z.object({
+    success: z.boolean(),
+    headers: z.record(z.string()),
+  }),
+  execute: async ({ context, runtimeContext }) => {
+    // Extract the request from runtime context
+    const req = runtimeContext.get("req") as Request | undefined;
+
+    if (!req) {
+      throw new Error("Request not found to access headers");
+    }
+
+    // Extract headers from the request (Cloudflare Workers compatible)
+    const deliveryId = req.headers.get("x-github-delivery");
+    const eventType = req.headers.get("x-github-event") || "unknown";
+    const signature = req.headers.get("x-hub-signature-256");
+    const hookId = req.headers.get("x-github-hook-id");
+    const contentType = req.headers.get("content-type");
+    const userAgent = req.headers.get("user-agent");
+
+    // Process the webhook with header information
+    console.log("Webhook received:", {
+      deliveryId,
+      eventType,
+      signature,
+      hookId,
+    });
+
+    // Your webhook processing logic here
+    const result = await processWebhook(context.payload, {
+      eventType,
+      signature,
+      // ... other header data
+    });
+
+    return {
+      success: true,
+      headers: {
+        deliveryId: deliveryId || "",
+        eventType,
+        signature: signature || "",
+        hookId: hookId || "",
+      },
+    };
+  },
+});
+```
+
+### Common Header Patterns
+
+```typescript
+// Authentication headers
+const authToken = req.headers.get("authorization");
+const apiKey = req.headers.get("x-api-key");
+
+// Request metadata
+const contentType = req.headers.get("content-type");
+const userAgent = req.headers.get("user-agent");
+const origin = req.headers.get("origin");
+const referer = req.headers.get("referer");
+
+// Custom headers
+const customHeader = req.headers.get("x-custom-header");
+
+// IP and forwarding headers (Cloudflare specific)
+const cfConnectingIp = req.headers.get("cf-connecting-ip");
+const xForwardedFor = req.headers.get("x-forwarded-for");
+const xRealIp = req.headers.get("x-real-ip");
+```
+
+## Database Operations in Tools
+
+### Database Connection Pattern
+
+**🔥 CRITICAL: Always use `getDb(env)` function**
+
+```typescript
+import { getDb } from "./db.ts";
+import { eq } from "drizzle-orm";
+import { myTable } from "./schema.ts";
+
+// ✅ CORRECT: Always use getDb(env) in tools
+export const createMyDatabaseTool = (env: Env) =>
+  createTool({
+    id: "MY_DATABASE_TOOL",
+    description: "Interact with database",
+    inputSchema: z.object({ /* input schema */ }),
+    outputSchema: z.object({ /* output schema */ }),
+    execute: async ({ context }) => {
+      // ALWAYS get database connection this way
+      const db = await getDb(env);
+      
+      // Perform database operations
+      const result = await db.select().from(myTable);
+      return { result };
+    },
+  });
+```
+
+**❌ NEVER do direct database connections:**
+```typescript
+// DON'T DO THIS - Never create direct connections
+const db = drizzle(env);  // ❌ Missing migrations
+const db = new Database(); // ❌ Wrong approach
+```
+
+### Database Operations Patterns
+
+**1. Create (Insert):**
+```typescript
+execute: async ({ context }) => {
+  const db = await getDb(env);
+  
+  const newRecord = await db.insert(myTable).values({
+    title: context.title,
+    completed: 0,
+  }).returning({ id: myTable.id });
+  
+  return { id: newRecord[0].id };
+}
+```
+
+**2. Read (Select):**
+```typescript
+execute: async ({ context }) => {
+  const db = await getDb(env);
+  
+  // Select all
+  const allRecords = await db.select().from(myTable);
+  
+  // Select with conditions
+  const filteredRecords = await db.select()
+    .from(myTable)
+    .where(eq(myTable.completed, 1));
+  
+  // Select single record
+  const singleRecord = await db.select()
+    .from(myTable)
+    .where(eq(myTable.id, context.id))
+    .limit(1);
+  
+  return { records: allRecords };
+}
+```
+
+**3. Update:**
+```typescript
+execute: async ({ context }) => {
+  const db = await getDb(env);
+  
+  // Check if record exists first
+  const existing = await db.select()
+    .from(myTable)
+    .where(eq(myTable.id, context.id))
+    .limit(1);
+  
+  if (existing.length === 0) {
+    throw new Error("Record not found");
+  }
+  
+  const updated = await db.update(myTable)
+    .set({ title: context.newTitle })
+    .where(eq(myTable.id, context.id))
+    .returning();
+  
+  return { updated: updated[0] };
+}
+```
+
+**4. Delete:**
+```typescript
+execute: async ({ context }) => {
+  const db = await getDb(env);
+  
+  // Verify record exists before deletion
+  const existing = await db.select()
+    .from(myTable)
+    .where(eq(myTable.id, context.id))
+    .limit(1);
+  
+  if (existing.length === 0) {
+    throw new Error("Record not found");
+  }
+  
+  await db.delete(myTable).where(eq(myTable.id, context.id));
+  
+  return { success: true, deletedId: context.id };
+}
+```
+
+## Error Handling in Tools
+
+```typescript
+// Basic error handling pattern
+execute: async ({ context }) => {
+  const result = await someAsyncOperation(context);
+  if (!result.ok) {
+    throw new Error("Descriptive error message")
+  }
+  return result;
+}
+
+// With database operations
+execute: async ({ context }) => {
+  const db = await getDb(env);
+  
+  try {
+    const result = await db.select().from(myTable);
+    return { result };
+  } catch (error) {
+    console.error("Database error:", error);
+    throw new Error("Failed to fetch data");
+  }
+}
+
+// Validation before operations
+execute: async ({ context }) => {
+  const db = await getDb(env);
+  
+  // Always check if records exist before update/delete
+  const existing = await db.select()
+    .from(myTable)
+    .where(eq(myTable.id, context.id))
+    .limit(1);
+
+  if (existing.length === 0) {
+    throw new Error("Record not found");
+  }
+  
+  // Proceed with operation...
+}
+```
+
+## Development Workflow for Tools
+
+### When Adding New Tools:
+
+1. **Add tool definition in `server/main.ts`**
+   ```typescript
+   const createNewTool = (env: Env) => createTool({
+     id: "NEW_TOOL",
+     description: "What this tool does",
+     inputSchema: z.object({ /* inputs */ }),
+     outputSchema: z.object({ /* outputs */ }),
+     execute: async ({ context }) => { /* logic */ },
+   });
+   ```
+
+2. **Include in `withRuntime` tools array**
+   ```typescript
+   const { Workflow, ...runtime } = withRuntime<Env>({
+     workflows: [/* ... */],
+     tools: [createNewTool, /* other tools */],
+     fetch: fallbackToView("/"),
+   });
+   ```
+
+3. **Run `npm run gen`** to update external integration types
+
+4. **Start server with `npm run dev`** and copy the development URL from logs
+
+5. **Run `DECO_SELF_URL=<your-dev-url> npm run gen:self`** to generate self-types
+
+6. **Create TanStack Query hooks in `view/src/hooks/`** to wrap RPC calls
+   ```typescript
+   // view/src/hooks/useNewTool.ts
+   import { useMutation } from "@tanstack/react-query";
+   import { client } from "../lib/rpc";
+
+   export const useNewTool = () => {
+     return useMutation({
+       mutationFn: (input: { /* input type */ }) => client.NEW_TOOL(input),
+     });
+   };
+   ```
+
+7. **Use the hooks in components** instead of calling `client.YOUR_TOOL()` directly
+
+## Advanced Tool Patterns
+
+### Tools with File Operations
+
+```typescript
+const createFileTool = (env: Env) => createTool({
+  id: "PROCESS_FILE",
+  description: "Process uploaded file",
+  inputSchema: z.object({
+    fileData: z.string(), // Base64 encoded
+    fileName: z.string(),
+    mimeType: z.string(),
+  }),
+  outputSchema: z.object({
+    processed: z.boolean(),
+    result: z.any(),
+  }),
+  execute: async ({ context }) => {
+    // Decode base64 file data
+    const buffer = Buffer.from(context.fileData, 'base64');
+    
+    // Process the file
+    const result = await processFile(buffer, {
+      name: context.fileName,
+      type: context.mimeType,
+    });
+    
+    return {
+      processed: true,
+      result,
+    };
+  },
+});
+```
+
+### Tools with External API Calls
+
+```typescript
+const createApiTool = (env: Env) => createTool({
+  id: "CALL_EXTERNAL_API",
+  description: "Call external API",
+  inputSchema: z.object({
+    endpoint: z.string(),
+    method: z.enum(["GET", "POST", "PUT", "DELETE"]),
+    body: z.any().optional(),
+  }),
+  outputSchema: z.object({
+    status: z.number(),
+    data: z.any(),
+  }),
+  execute: async ({ context }) => {
+    const response = await fetch(context.endpoint, {
+      method: context.method,
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${env.API_KEY}`, // From environment
+      },
+      body: context.body ? JSON.stringify(context.body) : undefined,
+    });
+    
+    const data = await response.json();
+    
+    if (!response.ok) {
+      throw new Error(`API call failed: ${response.statusText}`);
+    }
+    
+    return {
+      status: response.status,
+      data,
+    };
+  },
+});
+```
+
+### Tools with Caching
+
+```typescript
+const createCachedTool = (env: Env) => createTool({
+  id: "CACHED_OPERATION",
+  description: "Operation with caching",
+  inputSchema: z.object({
+    key: z.string(),
+    forceRefresh: z.boolean().optional(),
+  }),
+  outputSchema: z.object({
+    data: z.any(),
+    fromCache: z.boolean(),
+  }),
+  execute: async ({ context }) => {
+    const cacheKey = `cache:${context.key}`;
+    
+    // Check cache if not forcing refresh
+    if (!context.forceRefresh) {
+      const cached = await env.KV.get(cacheKey);
+      if (cached) {
+        return {
+          data: JSON.parse(cached),
+          fromCache: true,
+        };
+      }
+    }
+    
+    // Perform expensive operation
+    const data = await expensiveOperation(context.key);
+    
+    // Store in cache with TTL
+    await env.KV.put(cacheKey, JSON.stringify(data), {
+      expirationTtl: 3600, // 1 hour
+    });
+    
+    return {
+      data,
+      fromCache: false,
+    };
+  },
+});
+```
+
+## Tool Best Practices
+
+1. **Always validate inputs** - Use Zod schemas for type safety
+2. **Handle errors gracefully** - Provide meaningful error messages
+3. **Check existence before operations** - Especially for updates/deletes
+4. **Use environment variables** - For API keys and configuration
+5. **Log important operations** - For debugging and monitoring
+6. **Keep tools focused** - Each tool should do one thing well
+7. **Document thoroughly** - Clear descriptions help AI agents use your tools
+8. **Test edge cases** - Handle null values, empty arrays, etc.
+9. **Use transactions for multi-step operations** - Ensure data consistency
+10. **Consider rate limiting** - For external API calls or expensive operations
+
+## Tool Testing
+
+```typescript
+// Example test for a tool
+describe("MY_TOOL", () => {
+  it("should process input correctly", async () => {
+    const env = getMockEnv();
+    const tool = createMyTool(env);
+    
+    const result = await tool.execute({
+      context: {
+        input: "test value",
+      },
+      runtimeContext: new Map(),
+    });
+    
+    expect(result).toEqual({
+      output: "expected value",
+    });
+  });
+  
+  it("should handle errors", async () => {
+    const env = getMockEnv();
+    const tool = createMyTool(env);
+    
+    await expect(
+      tool.execute({
+        context: { input: null },
+        runtimeContext: new Map(),
+      })
+    ).rejects.toThrow("Input is required");
+  });
+});
+```
+
+## Summary
+
+Tools are the building blocks of your MCP server. They:
+- Execute discrete operations
+- Can access request headers via `runtimeContext`
+- Should always use `getDb(env)` for database operations
+- Must handle errors gracefully
+- Can be composed into workflows
+- Should be wrapped in TanStack Query hooks for frontend usage
+
+Focus on creating well-defined, focused tools that do one thing well, and compose them together to build powerful applications.

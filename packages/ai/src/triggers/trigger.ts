@@ -215,8 +215,6 @@ export class Trigger {
       policy: policyClient,
       authorization: authorizationClient,
       posthog: this.posthog,
-      branchDO: this.actorEnv.BRANCH,
-      blobsDO: this.actorEnv.BLOBS,
     };
   }
 

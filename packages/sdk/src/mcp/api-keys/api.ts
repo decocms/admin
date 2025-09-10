@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { JwtIssuer } from "../../auth/jwt.ts";
 import { StatementSchema } from "../../auth/policy.ts";
 import { userFromJWT } from "../../auth/user.ts";
 import {
@@ -10,7 +11,6 @@ import type { QueryResult } from "../../storage/index.ts";
 import {
   assertHasWorkspace,
   assertWorkspaceResourceAccess,
-  issuerFromContext,
 } from "../assertions.ts";
 import { createToolGroup } from "../context.ts";
 import { MCPClient } from "../index.ts";
@@ -183,8 +183,16 @@ export const createApiKey = createTool({
     if (error) {
       throw new InternalServerError(error.message);
     }
+    const keyPair =
+      c.envVars.DECO_CHAT_API_JWT_PRIVATE_KEY &&
+      c.envVars.DECO_CHAT_API_JWT_PUBLIC_KEY
+        ? {
+            public: c.envVars.DECO_CHAT_API_JWT_PUBLIC_KEY,
+            private: c.envVars.DECO_CHAT_API_JWT_PRIVATE_KEY,
+          }
+        : undefined;
 
-    const issuer = await issuerFromContext(c);
+    const issuer = await JwtIssuer.forKeyPair(keyPair);
     const value = await issuer.issue({
       ...claims,
       sub: `api-key:${apiKey.id}`,
@@ -231,8 +239,16 @@ export const reissueApiKey = createTool({
     }
 
     // Generate new JWT token with the provided claims
+    const keyPair =
+      c.envVars.DECO_CHAT_API_JWT_PRIVATE_KEY &&
+      c.envVars.DECO_CHAT_API_JWT_PUBLIC_KEY
+        ? {
+            public: c.envVars.DECO_CHAT_API_JWT_PUBLIC_KEY,
+            private: c.envVars.DECO_CHAT_API_JWT_PRIVATE_KEY,
+          }
+        : undefined;
 
-    const issuer = await issuerFromContext(c);
+    const issuer = await JwtIssuer.forKeyPair(keyPair);
     const value = await issuer.issue({
       ...claims,
       sub: `api-key:${apiKey.id}`,

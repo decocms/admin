@@ -1,4 +1,5 @@
 import { DurableObject } from "cloudflare:workers";
+import type { Env } from "../main";
 
 /**
  * Information about a stored blob including its content hash and size.
@@ -19,7 +20,7 @@ export interface BlobInfo {
 export class Blobs extends DurableObject {
   private sql: SqlStorage;
 
-  constructor(state: DurableObjectState, env: unknown) {
+  constructor(state: DurableObjectState, env: Env) {
     super(state, env);
     this.sql = this.ctx.storage.sql;
     this.initializeStorage();
@@ -27,6 +28,7 @@ export class Blobs extends DurableObject {
 
   /**
    * Initialize the SQLite storage schema for blobs.
+   * Creates the blobs table if it doesn't exist.
    * @private
    */
   private initializeStorage() {
@@ -42,6 +44,8 @@ export class Blobs extends DurableObject {
   /**
    * Calculate SHA-256 hash of the given buffer.
    * @private
+   * @param buffer - The buffer to hash
+   * @returns Promise resolving to the hex-encoded hash string
    */
   private async calculateHash(buffer: ArrayBuffer): Promise<string> {
     const hashBuffer = await crypto.subtle.digest("SHA-256", buffer);
@@ -51,16 +55,34 @@ export class Blobs extends DurableObject {
 
   /**
    * Store blob content from a ReadableStream and return its info.
+   * The content will be hashed using SHA-256 and stored by that hash.
+   *
+   * @param content - ReadableStream containing the blob data
+   * @returns Promise resolving to BlobInfo with hash and size
    */
   async put(content: ReadableStream<Uint8Array>): Promise<BlobInfo>;
 
   /**
    * Store blob content from an ArrayBuffer and return its info.
+   * The content will be hashed using SHA-256 and stored by that hash.
+   *
+   * @param content - ArrayBuffer containing the blob data
+   * @returns Promise resolving to BlobInfo with hash and size
    */
   async put(content: ArrayBuffer): Promise<BlobInfo>;
 
   /**
    * Store blob content and return its calculated hash and size.
+   *
+   * This method accepts either ReadableStream or ArrayBuffer content,
+   * calculates the SHA-256 hash, stores the content by that hash,
+   * and returns both the hash and size information.
+   *
+   * The operation is idempotent - storing the same content multiple times
+   * will return the same hash and won't create duplicates.
+   *
+   * @param content - The content to store (ReadableStream or ArrayBuffer)
+   * @returns Promise resolving to BlobInfo containing the hash and size
    */
   async put(
     content: ReadableStream<Uint8Array> | ArrayBuffer,
@@ -115,8 +137,14 @@ export class Blobs extends DurableObject {
 
   /**
    * Retrieve blob content as a ReadableStream by its hash.
+   *
+   * This method provides streaming access to the blob content, which is
+   * memory-efficient for large blobs and provides automatic flow control.
+   *
+   * @param hash - The SHA-256 hash of the blob to retrieve
+   * @returns Promise resolving to ReadableStream of the content, or null if not found
    */
-  getStream(hash: string): ReadableStream<Uint8Array> | null {
+  async getStream(hash: string): Promise<ReadableStream<Uint8Array> | null> {
     const result = this.sql.exec(
       "SELECT content FROM blobs WHERE hash = ?",
       hash,
@@ -139,8 +167,14 @@ export class Blobs extends DurableObject {
 
   /**
    * Retrieve blob content as an ArrayBuffer by its hash.
+   *
+   * This method provides direct access to the blob content as a buffer,
+   * which is convenient for small blobs that can fit in memory.
+   *
+   * @param hash - The SHA-256 hash of the blob to retrieve
+   * @returns Promise resolving to ArrayBuffer of the content, or null if not found
    */
-  getBuffer(hash: string): ArrayBuffer | null {
+  async getBuffer(hash: string): Promise<ArrayBuffer | null> {
     const result = this.sql.exec(
       "SELECT content FROM blobs WHERE hash = ?",
       hash,
@@ -154,23 +188,42 @@ export class Blobs extends DurableObject {
 
   /**
    * Retrieve blob content as a ReadableStream by its hash (default method).
+   *
+   * This is the default get method that returns streaming content for
+   * optimal performance and memory usage.
+   *
+   * @param hash - The SHA-256 hash of the blob to retrieve
+   * @returns Promise resolving to ReadableStream of the content, or null if not found
    */
-  get(hash: string): ReadableStream<Uint8Array> | null {
+  async get(hash: string): Promise<ReadableStream<Uint8Array> | null> {
     return this.getStream(hash);
   }
 
   /**
    * Check if a blob exists by its hash.
+   *
+   * This is a lightweight operation that only checks for existence
+   * without transferring any content.
+   *
+   * @param hash - The SHA-256 hash to check
+   * @returns Promise resolving to true if the blob exists, false otherwise
    */
-  has(hash: string): boolean {
+  async has(hash: string): Promise<boolean> {
     const result = this.sql.exec("SELECT 1 FROM blobs WHERE hash = ?", hash);
     return !!result.one();
   }
 
   /**
    * Get blob metadata without transferring the content.
+   *
+   * This method returns the hash and size information for a blob
+   * without actually retrieving the blob content, making it very
+   * efficient for metadata queries.
+   *
+   * @param hash - The SHA-256 hash of the blob
+   * @returns Promise resolving to BlobInfo with hash and size, or null if not found
    */
-  getInfo(hash: string): BlobInfo | null {
+  async getInfo(hash: string): Promise<BlobInfo | null> {
     const result = this.sql.exec(
       "SELECT LENGTH(content) as size FROM blobs WHERE hash = ?",
       hash,
@@ -187,6 +240,10 @@ export class Blobs extends DurableObject {
 
   /**
    * Store multiple blobs in a single batch operation.
+   * This is more efficient than individual put operations when uploading many files.
+   *
+   * @param contents - Array of content to store (ReadableStream or ArrayBuffer)
+   * @returns Promise resolving to array of BlobInfo with hash and size for each blob
    */
   async putBatch(
     contents: (ReadableStream<Uint8Array> | ArrayBuffer)[],

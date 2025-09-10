@@ -1,21 +1,41 @@
 import { DurableObject, RpcTarget } from "cloudflare:workers";
-import type { Blobs as BlobsDO } from "./blobs.ts";
-
-// Simple environment interface for DECONFIG DurableObjects
-interface DeconfigEnv {
-  // References to other DECONFIG DOs
-  BRANCH: DurableObjectNamespace<Branch>;
-  BLOBS: DurableObjectNamespace<BlobsDO>;
-}
+import type { Env } from "../main";
+import type { BlobInfo } from "./blobs";
 
 const BLOB_DO = "blob-1";
+async function streamToBase64(
+  stream: ReadableStream<Uint8Array>,
+): Promise<string> {
+  const reader = stream.getReader();
+  const chunks: Uint8Array[] = [];
 
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    if (value) chunks.push(value);
+  }
+
+  // Flatten chunks into a single Uint8Array
+  const totalLength = chunks.reduce((acc, chunk) => acc + chunk.length, 0);
+  const combined = new Uint8Array(totalLength);
+  let offset = 0;
+  for (const chunk of chunks) {
+    combined.set(chunk, offset);
+    offset += chunk.length;
+  }
+
+  // Convert Uint8Array → binary string → base64
+  let binary = "";
+  for (let i = 0; i < combined.length; i++) {
+    binary += String.fromCharCode(combined[i]);
+  }
+  return btoa(binary);
+}
 export const BranchId = {
   build(name: string, projectId: string) {
     return `${projectId}-${name}`;
   },
 };
-
 const BlobAddress = {
   hash(address: string) {
     const [_, __, hash] = address.split(":");
@@ -25,7 +45,6 @@ const BlobAddress = {
     return `blobs:${Blobs.doName(projectId)}:${hash}` as BlobAddress;
   },
 };
-
 const Blobs = {
   doName(projectId: string) {
     return `${projectId}-${BLOB_DO}`;
@@ -50,7 +69,6 @@ export interface FileMetadata {
   /** Blob address where the file content is stored */
   address: BlobAddress;
   /** User-defined metadata (arbitrary key-value pairs) */
-  // deno-lint-ignore no-explicit-any
   metadata: Record<string, any>;
   /** Size of the file content in bytes */
   sizeInBytes: number;
@@ -80,7 +98,7 @@ export interface TreePatch {
   /** Files that were deleted (just the paths) */
   deleted: FilePath[];
   /** Optional patch metadata (commit message, author, etc.) */
-  metadata?: Record<string, unknown>;
+  metadata?: Record<string, any>;
 }
 
 /**
@@ -118,7 +136,7 @@ export interface FilePatch {
   /** File content - null means deletion, otherwise write operation */
   content: ReadableStream<Uint8Array> | ArrayBuffer | null;
   /** Optional user-defined metadata (ignored for deletions) */
-  metadata?: Record<string, unknown>;
+  metadata?: Record<string, any>;
   /** Expected change time for conditional operations */
   expectedCtime?: number;
 }
@@ -169,7 +187,7 @@ export interface WatchOptions {
   pathFilter?: string;
 }
 
-/**
+/**q
  * File change event sent through the watch stream.
  */
 export interface FileChangeEvent {
@@ -239,20 +257,6 @@ export interface MergeResult {
 }
 
 /**
- * Configuration for creating a new branch.
- */
-export interface BranchConfig {
-  /** The project ID that owns this branch */
-  projectId: string;
-  /** Optional branch name (defaults to auto-generated) */
-  branchName?: string;
-  /** Initial tree state (for efficient branching) */
-  tree?: Tree;
-  /** Origin branch name (for tracking lineage) */
-  origin?: string | null;
-}
-
-/**
  * RpcTarget for Branch operations with project context.
  *
  * This pattern allows the branch to access its project ID and blob storage
@@ -268,116 +272,178 @@ export class BranchRpc extends RpcTarget {
 
   /**
    * Write file content from a ReadableStream.
+   *
+   * @param path - The file path to write
+   * @param content - ReadableStream containing the file data
+   * @param metadata - Optional user-defined metadata
+   * @returns Promise resolving to the blob address where content was stored
    */
   async writeFile(
     path: FilePath,
     content: ReadableStream<Uint8Array>,
-    metadata?: Record<string, unknown>,
+    metadata?: Record<string, any>,
   ): Promise<FileMetadata>;
 
   /**
    * Write file content from an ArrayBuffer.
+   *
+   * @param path - The file path to write
+   * @param content - ArrayBuffer containing the file data
+   * @param metadata - Optional user-defined metadata
+   * @returns Promise resolving to the blob address where content was stored
    */
   async writeFile(
     path: FilePath,
     content: ArrayBuffer,
-    metadata?: Record<string, unknown>,
+    metadata?: Record<string, any>,
   ): Promise<FileMetadata>;
 
   /**
    * Write file content and store it in the project's blob storage.
+   *
+   * This method:
+   * 1. Stores the content in the project's blob storage
+   * 2. Updates the branch tree with the blob address
+   * 3. Returns the blob address for reference
+   *
+   * @param path - The file path to write
+   * @param content - The content to write (ReadableStream or ArrayBuffer)
+   * @param metadata - Optional user-defined metadata
+   * @returns Promise resolving to the blob address where content was stored
    */
-  writeFile(
+  async writeFile(
     path: FilePath,
     content: ReadableStream<Uint8Array> | ArrayBuffer,
-    metadata: Record<string, unknown> = {},
+    metadata: Record<string, any> = {},
   ): Promise<FileMetadata> {
     return this.branchDO.writeFile(path, content, metadata, this.projectId);
   }
 
   /**
    * Get file metadata by path.
+   *
+   * @param path - The file path to look up
+   * @returns Promise resolving to FileMetadata if file exists, null otherwise
    */
-  getFileMetadata(path: FilePath): FileMetadata | null {
+  async getFileMetadata(path: FilePath): Promise<FileMetadata | null> {
     return this.branchDO.getFileMetadata(path);
   }
 
   /**
    * Get file content as a ReadableStream.
+   *
+   * @param path - The file path to retrieve
+   * @returns Promise resolving to ReadableStream of content, or null if not found
    */
-  getFileStream(path: FilePath): Promise<ReadableStream<Uint8Array> | null> {
+  async getFileStream(
+    path: FilePath,
+  ): Promise<ReadableStream<Uint8Array> | null> {
     return this.branchDO.getFileStream(path);
   }
 
   /**
    * Get both file content and metadata.
+   *
+   * @param path - The file path to retrieve
+   * @returns Promise resolving to FileResponse with stream and metadata, or null if not found
    */
-  getFile(path: FilePath): Promise<FileResponse | null> {
+  async getFile(path: FilePath): Promise<FileResponse | null> {
     return this.branchDO.getFile(path);
   }
 
   /**
    * List files in the branch tree.
+   * If prefix is provided, only files starting with that prefix are returned.
+   * Returns paths with branch prefix removed for clean display.
+   *
+   * @param prefix - Optional path prefix to filter by (e.g., "components/", "utils/")
+   * @returns Promise resolving to array of file paths (without branch prefix)
    */
-  listFiles(prefix?: string): FilePath[] {
-    const tree = this.getFiles(prefix);
+  async listFiles(prefix?: string): Promise<FilePath[]> {
+    const tree = await this.getFiles(prefix);
     return Object.keys(tree);
   }
 
   /**
    * Get files with their metadata from the branch tree.
+   * If prefix is provided, only files starting with that prefix are returned.
+   * Returns tree with branch prefix removed for clean display.
+   *
+   * @param prefix - Optional path prefix to filter by (e.g., "components/", "utils/")
+   * @returns Promise resolving to Tree (Record<FilePath, FileMetadata>) without branch prefix
    */
-  getFiles(prefix?: string): Tree {
+  async getFiles(prefix?: string): Promise<Tree> {
     return this.branchDO.listFiles(prefix);
   }
 
   /**
    * Check if a file exists in the current tree.
+   *
+   * @param path - The file path to check
+   * @returns Promise resolving to true if file exists, false otherwise
    */
-  hasFile(path: FilePath): boolean {
+  async hasFile(path: FilePath): Promise<boolean> {
     return this.branchDO.hasFile(path);
   }
 
   /**
    * Delete a file from the current tree.
+   *
+   * @param path - The file path to delete
+   * @returns Promise resolving to true if file was deleted, false if it didn't exist
    */
-  deleteFile(path: FilePath): boolean {
+  async deleteFile(path: FilePath): Promise<boolean> {
     return this.branchDO.deleteFile(path);
   }
 
   /**
    * Create a new branch from the current branch.
+   * The new branch will have the current tree as its initial state
+   * and this branch as its origin.
+   *
+   * @param newBranchId - The ID for the new branch
+   * @returns Promise resolving to RPC stub for the new branch
    */
-  branch(newBranchId: string): Promise<Rpc.Stub<BranchRpc>> {
+  async branch(newBranchId: string): Promise<Rpc.Stub<BranchRpc>> {
     return this.branchDO.branch(newBranchId);
   }
 
   /**
    * Perform multiple conditional writes atomically with prefix support.
+   * All blob uploads happen first, then conditions are checked.
+   *
+   * @param input - TransactionalWriteInput with patches array
+   * @param force - If true, use LAST_WRITE_WINS strategy instead of throwing on conflicts
+   * @returns Promise resolving to TransactionalWriteResult with results for each patch
    */
-  transactionalWrite(
+  async transactionalWrite(
     input: TransactionalWriteInput,
     force: boolean = false,
   ): Promise<TransactionalWriteResult> {
-    return this.branchDO.transactionalWrite(input, force);
+    return await this.branchDO.transactionalWrite(input, force);
   }
 
   /**
    * Get the origin branch name.
+   *
+   * @returns Promise resolving to the origin branch name, or null if no origin
    */
-  getOrigin(): string | null {
+  async getOrigin(): Promise<string | null> {
     return this.branchDO.getOrigin();
   }
 
   /**
    * Set the origin branch.
+   *
+   * @param origin - The origin branch name, or null for no origin
    */
-  setOrigin(origin: string | null): void {
+  async setOrigin(origin: string | null): Promise<void> {
     return this.branchDO.setOrigin(origin);
   }
 
   /**
-   * Watch for file changes (SSE byte stream).
+   * Watch for file changes (SSE byte stream), forwarding the underlying Branch stream.
+   * Applies this RPC's path prefix to the optional pathFilter.
    */
   watch(options: WatchOptions = {}): ReadableStream<Uint8Array> {
     return this.branchDO.watch(options);
@@ -385,6 +451,9 @@ export class BranchRpc extends RpcTarget {
 
   /**
    * Compute diff of this branch (B) against another (A).
+   * Returns the list of changes needed for B to match A.
+   * If this RPC has a pathPrefix, results are filtered to that prefix
+   * and paths are returned without the prefix.
    */
   async diff(otherBranchId: string): Promise<DiffEntry[]> {
     return await this.branchDO.diff(otherBranchId);
@@ -392,6 +461,12 @@ export class BranchRpc extends RpcTarget {
 
   /**
    * Merge another branch into this one using diff + transactionalWrite pattern.
+   * If this RPC has a pathPrefix, only files matching the prefix are affected
+   * and paths in the result are returned without the prefix.
+   *
+   * @param otherBranchId - The branch to merge from
+   * @param strategy - The merge strategy to use
+   * @returns Promise resolving to MergeResult with prefix-filtered paths
    */
   async merge(
     otherBranchId: string,
@@ -402,10 +477,28 @@ export class BranchRpc extends RpcTarget {
 
   /**
    * Soft delete the branch by clearing all files from the current tree.
+   * This preserves the branch structure, history, and allows for potential recovery.
+   * The branch will appear empty but can still be branched from or have new files added.
+   *
+   * @returns Promise resolving to the number of files that were deleted
    */
-  softDelete(): number {
-    return this.branchDO.softDelete();
+  async softDelete(): Promise<number> {
+    return await this.branchDO.softDelete();
   }
+}
+
+/**
+ * Configuration for creating a new branch.
+ */
+export interface BranchConfig {
+  /** The project ID that owns this branch */
+  projectId: string;
+  /** Optional branch name (defaults to auto-generated) */
+  branchName?: string;
+  /** Initial tree state (for efficient branching) */
+  tree?: Tree;
+  /** Origin branch name (for tracking lineage) */
+  origin?: string | null;
 }
 
 /**
@@ -419,7 +512,7 @@ export class BranchRpc extends RpcTarget {
  * Operations are O(1) for branch cloning and efficient for file operations.
  * Must be accessed through BranchRpc with project context.
  */
-export class Branch extends DurableObject<DeconfigEnv> {
+export class Branch extends DurableObject<Env> {
   private sql: SqlStorage;
   private state: BranchState = {
     origin: null,
@@ -432,7 +525,7 @@ export class Branch extends DurableObject<DeconfigEnv> {
   // Watch infrastructure
   private watchers = new Set<ReadableStreamDefaultController<Uint8Array>>();
 
-  constructor(state: DurableObjectState, env: DeconfigEnv) {
+  constructor(state: DurableObjectState, env: Env) {
     super(state, env);
     this.sql = this.ctx.storage.sql;
     this.initializeStorage();
@@ -441,13 +534,17 @@ export class Branch extends DurableObject<DeconfigEnv> {
 
   /**
    * Get the current tree (active filesystem state).
+   *
+   * @returns The current tree mapping file paths to metadata
    */
   getCurrentTree(): Tree {
     return this.state.tree;
   }
-
   /**
    * Initialize a new branch with configuration.
+   *
+   * @param config - BranchConfig containing all initialization parameters
+   * @returns Promise resolving to BranchRpc for interacting with the branch
    */
   new(config: BranchConfig): BranchRpc {
     this.state.projectId ??= config.projectId;
@@ -468,6 +565,7 @@ export class Branch extends DurableObject<DeconfigEnv> {
 
   /**
    * Initialize the SQLite storage schema for branch state.
+   * Creates the state table if it doesn't exist.
    * @private
    */
   private initializeStorage() {
@@ -492,6 +590,10 @@ export class Branch extends DurableObject<DeconfigEnv> {
 
   /**
    * Watch for file changes in real-time.
+   * Returns a ReadableStream of Server-Sent Events (SSE) formatted as bytes.
+   *
+   * @param options - Watch options including fromCtime and pathFilter
+   * @returns ReadableStream of SSE-formatted bytes
    */
   watch(options: WatchOptions = {}): ReadableStream<Uint8Array> {
     let controller: ReadableStreamDefaultController<Uint8Array>;
@@ -499,14 +601,18 @@ export class Branch extends DurableObject<DeconfigEnv> {
     const stream = new ReadableStream<Uint8Array>({
       start: (ctrl) => {
         controller = ctrl;
+
+        // Add to watchers set
         this.watchers.add(controller);
 
+        // If fromCtime is provided, send latest changes if newer
         if (options.fromCtime !== undefined) {
           this.sendHistoricalChanges(controller, options);
         }
       },
 
       cancel: () => {
+        // Remove from watchers when stream is cancelled
         if (controller) {
           this.watchers.delete(controller);
         }
@@ -526,6 +632,7 @@ export class Branch extends DurableObject<DeconfigEnv> {
   ) {
     if (typeof options.fromCtime !== "number") return;
 
+    // Query patches newer than fromCtime
     const result = this.sql.exec(
       "SELECT id, timestamp, added_json, deleted_json FROM patches WHERE timestamp > ? ORDER BY id",
       options.fromCtime,
@@ -590,7 +697,8 @@ export class Branch extends DurableObject<DeconfigEnv> {
 
     try {
       controller.enqueue(bytes);
-    } catch {
+    } catch (error) {
+      // Controller might be closed, remove from watchers
       this.watchers.delete(controller);
     }
   }
@@ -607,7 +715,7 @@ export class Branch extends DurableObject<DeconfigEnv> {
     // Create events for added/modified files
     for (const [path, metadata] of Object.entries(patch.added)) {
       events.push({
-        type: "added",
+        type: "added", // We could enhance this to detect 'modified' vs 'added'
         path,
         metadata,
         timestamp: patch.timestamp,
@@ -653,11 +761,14 @@ export class Branch extends DurableObject<DeconfigEnv> {
 
   /**
    * Apply a patch to the current tree and store it in the database.
+   * This method is synchronous since all operations are local.
+   *
+   * @param patchData - The patch data containing changes to apply
    */
   patch(patchData: {
     added: Record<FilePath, FileMetadata>;
     deleted: FilePath[];
-    metadata?: Record<string, unknown>;
+    metadata?: Record<string, any>;
   }): void {
     const now = Date.now();
 
@@ -705,6 +816,7 @@ export class Branch extends DurableObject<DeconfigEnv> {
 
   /**
    * Load the branch state from SQLite into memory.
+   * If no state exists, initialize with empty state.
    * @private
    */
   private loadState() {
@@ -719,7 +831,7 @@ export class Branch extends DurableObject<DeconfigEnv> {
       // Initialize empty state
       this.state = {
         origin: null,
-        tree: {},
+        tree: {}, // Start with one empty tree
         seq: 0,
         projectId: null,
         name: null,
@@ -742,15 +854,22 @@ export class Branch extends DurableObject<DeconfigEnv> {
 
   /**
    * Write file content and store it in blob storage.
+   * Internal method called by BranchRpc.
+   *
+   * @param path - The file path to write
+   * @param content - The content to write
+   * @param metadata - User-defined metadata
+   * @param projectId - The project ID for blob addressing
+   * @returns Promise resolving to the blob address
    */
   async writeFile(
     path: FilePath,
     content: ReadableStream<Uint8Array> | ArrayBuffer,
-    metadata: Record<string, unknown>,
+    metadata: Record<string, any>,
     projectId: string,
   ): Promise<FileMetadata> {
     // Store content in blob storage using the overloaded put method
-    using blobInfo = await this.blobs.put(content as ArrayBuffer);
+    using blobInfo: BlobInfo = await this.blobs.put(content as ArrayBuffer);
 
     // Create blob address
     const address: BlobAddress = BlobAddress.address(projectId, blobInfo.hash);
@@ -776,6 +895,9 @@ export class Branch extends DurableObject<DeconfigEnv> {
 
   /**
    * Get file metadata by path.
+   *
+   * @param path - The file path to look up
+   * @returns FileMetadata if file exists, null otherwise
    */
   getFileMetadata(path: FilePath): FileMetadata | null {
     return this.state.tree[path] || null;
@@ -783,6 +905,10 @@ export class Branch extends DurableObject<DeconfigEnv> {
 
   /**
    * Get file content as a ReadableStream.
+   *
+   * @param path - The file path to retrieve
+   * @param projectId - The project ID for blob addressing
+   * @returns Promise resolving to ReadableStream or null if not found
    */
   async getFileStream(
     path: FilePath,
@@ -801,6 +927,10 @@ export class Branch extends DurableObject<DeconfigEnv> {
 
   /**
    * Get both file content and metadata.
+   *
+   * @param path - The file path to retrieve
+   * @param projectId - The project ID for blob addressing
+   * @returns Promise resolving to FileResponse or null if not found
    */
   async getFile(path: FilePath): Promise<FileResponse | null> {
     const metadata = this.getFileMetadata(path);
@@ -818,8 +948,11 @@ export class Branch extends DurableObject<DeconfigEnv> {
 
   /**
    * Delete a file from the current tree.
+   *
+   * @param path - The file path to delete
+   * @returns true if file was deleted, false if it didn't exist
    */
-  deleteFile(path: FilePath): boolean {
+  async deleteFile(path: FilePath): Promise<boolean> {
     const currentTree = this.state.tree;
 
     if (!(path in currentTree)) {
@@ -837,6 +970,9 @@ export class Branch extends DurableObject<DeconfigEnv> {
 
   /**
    * List files that start with the given prefix.
+   *
+   * @param prefix - The path prefix to filter by (e.g., "/src/", "/docs/readme")
+   * @returns Tree object containing file paths and their metadata matching the prefix
    */
   listFiles(prefix?: string): Tree {
     const currentTree = this.state.tree;
@@ -852,6 +988,9 @@ export class Branch extends DurableObject<DeconfigEnv> {
 
   /**
    * Check if a file exists in the current tree.
+   *
+   * @param path - The file path to check
+   * @returns true if file exists, false otherwise
    */
   hasFile(path: FilePath): boolean {
     const currentTree = this.state.tree;
@@ -860,6 +999,8 @@ export class Branch extends DurableObject<DeconfigEnv> {
 
   /**
    * Get the origin branch name.
+   *
+   * @returns The origin branch name, or null if no origin
    */
   getOrigin(): string | null {
     return this.state.origin;
@@ -867,20 +1008,27 @@ export class Branch extends DurableObject<DeconfigEnv> {
 
   /**
    * Set the origin branch.
+   *
+   * @param origin - The origin branch name, or null for no origin
    */
-  setOrigin(origin: string | null): void {
+  async setOrigin(origin: string | null): Promise<void> {
     this.state.origin = origin;
     this.saveState();
   }
 
   /**
    * Soft delete the branch by clearing all files from the current tree.
+   * This preserves the branch structure, history, and allows for potential recovery.
+   * The branch will appear empty but can still be branched from or have new files added.
+   *
+   * @returns Promise resolving to the number of files that were deleted
    */
-  softDelete(): number {
+  async softDelete(): Promise<number> {
     const currentTree = this.state.tree;
     const fileCount = Object.keys(currentTree).length;
 
     if (fileCount === 0) {
+      // Already empty
       return 0;
     }
 
@@ -902,6 +1050,10 @@ export class Branch extends DurableObject<DeconfigEnv> {
 
   /**
    * Create a new branch by branching from this one.
+   * The new branch will have this branch's current tree as its initial state.
+   *
+   * @param newBranchId - The ID for the new branch
+   * @returns Promise resolving to BranchRpc for the new branch
    */
   async branch(newBranchId: string): Promise<Rpc.Stub<BranchRpc>> {
     if (!this.state.projectId) {
@@ -912,8 +1064,8 @@ export class Branch extends DurableObject<DeconfigEnv> {
     const currentTree = { ...this.state.tree };
 
     // Create new branch stub
-    const newBranchStub = this.env.BRANCH!.get(
-      this.env.BRANCH!.idFromName(
+    const newBranchStub = this.env.BRANCH.get(
+      this.env.BRANCH.idFromName(
         BranchId.build(newBranchId, this.state.projectId),
       ),
     );
@@ -931,19 +1083,24 @@ export class Branch extends DurableObject<DeconfigEnv> {
 
   /**
    * Internal method to perform transactional writes.
+   * This allows reuse by both transactionalWrite and merge operations.
+   *
+   * @param writes - Map of paths to their desired state (FileMetadata or null for delete)
+   * @param force - If true, use LAST_WRITE_WINS without throwing conflict errors
+   * @returns Results for each file patch
    */
-  private internalTransactionalWrite(
+  private async internalTransactionalWrite(
     writes: Record<
       FilePath,
       { metadata: FileMetadata | null; condition?: { expectedCtime: number } }
     >,
     force: boolean = false,
-    timestamp?: number,
-    preserveTimestamps: boolean = false,
-  ): Record<FilePath, FilePatchResult> {
+    timestamp?: number, // Accept timestamp from caller to ensure consistency
+    preserveTimestamps: boolean = false, // If true, don't update ctime for merge operations
+  ): Promise<Record<FilePath, FilePatchResult>> {
     const results: Record<FilePath, FilePatchResult> = {};
     const toApply: Record<FilePath, FileMetadata | null> = {};
-    const now = timestamp ?? Date.now();
+    const now = timestamp ?? Date.now(); // Use provided timestamp or generate new one
 
     // Process each write operation
     for (const [path, write] of Object.entries(writes)) {
@@ -955,7 +1112,7 @@ export class Branch extends DurableObject<DeconfigEnv> {
           write.metadata === null
             ? null
             : preserveTimestamps
-              ? write.metadata
+              ? write.metadata // Preserve original timestamps for merge operations
               : {
                   ...write.metadata,
                   ctime: now,
@@ -981,7 +1138,7 @@ export class Branch extends DurableObject<DeconfigEnv> {
           write.metadata === null
             ? null
             : preserveTimestamps
-              ? write.metadata
+              ? write.metadata // Preserve original timestamps for merge operations
               : {
                   ...write.metadata,
                   ctime: now,
@@ -998,6 +1155,7 @@ export class Branch extends DurableObject<DeconfigEnv> {
 
       // Handle conflict
       if (!force) {
+        // Strict mode - throw error on conflict
         throw new Error(
           `Conflict on ${path}: expected ctime ${expectedCtime}, got ${actualCtime}`,
         );
@@ -1013,7 +1171,7 @@ export class Branch extends DurableObject<DeconfigEnv> {
           write.metadata === null
             ? null
             : preserveTimestamps
-              ? write.metadata
+              ? write.metadata // Preserve original timestamps for merge operations
               : {
                   ...write.metadata,
                   ctime: now,
@@ -1080,13 +1238,18 @@ export class Branch extends DurableObject<DeconfigEnv> {
         "Cannot get blobs: branch has no project ID, you may want to call .new() before using it",
       );
     }
-    return this.env.BLOBS!.get(
-      this.env.BLOBS!.idFromName(Blobs.doName(this.state.projectId!)),
+    return this.env.BLOBS.get(
+      this.env.BLOBS.idFromName(Blobs.doName(this.state.projectId!)),
     );
   }
 
   /**
    * Write multiple files atomically with optional conditions.
+   * All blob uploads happen first, then conditions are checked synchronously.
+   *
+   * @param input - The transactional write input with patches
+   * @param force - If true, use LAST_WRITE_WINS strategy instead of throwing on conflicts
+   * @returns Promise resolving to TransactionalWriteResult
    */
   async transactionalWrite(
     input: TransactionalWriteInput,
@@ -1118,7 +1281,7 @@ export class Branch extends DurableObject<DeconfigEnv> {
           metadata: patch.metadata || {},
           sizeInBytes: blobInfo.sizeInBytes,
           mtime: now,
-          ctime: now,
+          ctime: now, // Will be updated in internalTransactionalWrite
         },
         condition:
           patch.expectedCtime !== undefined
@@ -1139,7 +1302,7 @@ export class Branch extends DurableObject<DeconfigEnv> {
     }
 
     // Step 3: Apply writes using internal method
-    const result = this.internalTransactionalWrite(writes, force, now);
+    const result = await this.internalTransactionalWrite(writes, force, now);
 
     // Step 4: Transform result to match TransactionalWriteResult interface
     const results: Record<FilePath, FilePatchResult> = {};
@@ -1154,10 +1317,14 @@ export class Branch extends DurableObject<DeconfigEnv> {
 
   /**
    * Compute diff against another branch's current tree.
+   * Semantics: B.diff(A) = changes B must apply to become A.
+   * - For paths present in A but not in B, include A's metadata (add).
+   * - For paths present in both but with different content/metadata, include A's metadata (modify).
+   * - For paths present in B but not in A, include metadata = null (delete).
    */
   async diff(otherBranchId: string): Promise<DiffEntry[]> {
-    const otherStub = this.env.BRANCH!.get(
-      this.env.BRANCH!.idFromName(
+    const otherStub = this.env.BRANCH.get(
+      this.env.BRANCH.idFromName(
         BranchId.build(otherBranchId, this.state.projectId!),
       ),
     );
@@ -1171,14 +1338,14 @@ export class Branch extends DurableObject<DeconfigEnv> {
     const diffs: DiffEntry[] = [];
 
     for (const path of allPaths) {
-      // deno-lint-ignore no-explicit-any
-      const aMeta = otherTree[path] as any as FileMetadata; // desired
-      const bMeta = thisTree[path] as FileMetadata; // current
+      const aMeta = otherTree[path]; // desired
+      const bMeta = thisTree[path]; // current
 
       if (!aMeta && !bMeta) continue;
 
       if (aMeta && !bMeta) {
-        diffs.push({ path, metadata: aMeta });
+        // @ts-ignore - TODO: fix this
+        diffs.push({ path, metadata: aMeta } as DiffEntry);
         continue;
       }
 
@@ -1192,7 +1359,7 @@ export class Branch extends DurableObject<DeconfigEnv> {
         JSON.stringify(aMeta!.metadata) === JSON.stringify(bMeta!.metadata);
 
       if (!(equalAddress && equalUserMeta)) {
-        diffs.push({ path, metadata: aMeta! });
+        diffs.push({ path, metadata: aMeta! as FileMetadata });
       }
     }
 
@@ -1201,6 +1368,10 @@ export class Branch extends DurableObject<DeconfigEnv> {
 
   /**
    * Merge another branch into this one using diff + transactionalWrite pattern.
+   *
+   * @param otherBranchId - The branch to merge from
+   * @param strategy - The merge strategy to use
+   * @returns Promise resolving to MergeResult
    */
   async merge(
     otherBranchId: string,
@@ -1210,6 +1381,7 @@ export class Branch extends DurableObject<DeconfigEnv> {
     const diffs = await this.diff(otherBranchId);
 
     if (diffs.length === 0) {
+      // No differences - nothing to merge
       return {
         success: true,
         filesMerged: 0,
@@ -1221,14 +1393,56 @@ export class Branch extends DurableObject<DeconfigEnv> {
     }
 
     // Step 2: Convert diff entries to transactional write input
+    const patches: Array<FilePatch> = [];
     const added: FilePath[] = [];
     const modified: FilePath[] = [];
     const deleted: FilePath[] = [];
+
+    for (const diff of diffs) {
+      if (diff.metadata === null) {
+        // File should be deleted
+        const currentFile = this.state.tree[diff.path];
+        patches.push({
+          path: diff.path,
+          content: null, // Deletion
+          expectedCtime:
+            strategy === MergeStrategy.LAST_WRITE_WINS
+              ? currentFile?.ctime
+              : undefined,
+        });
+        deleted.push(diff.path);
+      } else {
+        // File should be added/modified
+        const currentFile = this.state.tree[diff.path];
+        const isNewFile = !currentFile;
+
+        // For merge, we don't have actual content to upload since blobs already exist
+        // We'll create a dummy content and let transactionalWrite handle the metadata
+        const dummyContent = new ArrayBuffer(0);
+
+        patches.push({
+          path: diff.path,
+          content: dummyContent,
+          metadata: diff.metadata.metadata,
+          expectedCtime:
+            strategy === MergeStrategy.LAST_WRITE_WINS
+              ? currentFile?.ctime
+              : undefined,
+        });
+
+        if (isNewFile) {
+          added.push(diff.path);
+        } else {
+          modified.push(diff.path);
+        }
+      }
+    }
 
     // Step 3: Apply changes using transactionalWrite with force flag
     const force = strategy === MergeStrategy.LAST_WRITE_WINS;
 
     // We need a special version of transactionalWrite that doesn't upload blobs
+    // since we're just applying existing blob addresses from the diff
     const writes: Record<
       FilePath,
       { metadata: FileMetadata | null; condition?: { expectedCtime: number } }
@@ -1244,21 +1458,10 @@ export class Branch extends DurableObject<DeconfigEnv> {
             ? { expectedCtime: currentFile.ctime }
             : undefined,
       };
-
-      if (diff.metadata === null) {
-        deleted.push(diff.path);
-      } else {
-        const isNewFile = !currentFile;
-        if (isNewFile) {
-          added.push(diff.path);
-        } else {
-          modified.push(diff.path);
-        }
-      }
     }
 
     // For merge operations, preserve original file timestamps
-    const result = this.internalTransactionalWrite(
+    const result = await this.internalTransactionalWrite(
       writes,
       force,
       undefined,

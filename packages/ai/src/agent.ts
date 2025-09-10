@@ -35,7 +35,6 @@ import {
   AuthorizationClient,
   createResourceAccess,
   fromWorkspaceString,
-  type LLMVault,
   MCPClient,
   type MCPClientStub,
   PolicyClient,
@@ -46,11 +45,6 @@ import {
 import type { AgentMemoryConfig } from "@deco/sdk/memory";
 import { AgentMemory, slugify, toAlphanumericId } from "@deco/sdk/memory";
 import { trace } from "@deco/sdk/observability";
-import {
-  getTwoFirstSegments,
-  getTwoFirstSegments as getWorkspace,
-  type Workspace,
-} from "@deco/sdk/path";
 import {
   createPosthogServerClient,
   type PosthogServerClient,

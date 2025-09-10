@@ -1,4 +1,5 @@
 export const WellKnownMcpGroups = {
+  Sandbox: "code-sandbox",
   FS: "file-system",
   Hosting: "hosting",
   Registry: "registry-management",

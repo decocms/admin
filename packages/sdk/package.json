@@ -4,6 +4,7 @@
   "type": "module",
   "private": true,
   "dependencies": {
+    "@deco/cf-sandbox": "workspace:*",
     "@mastra/cloudflare-d1": "0.12.4",
     "@mastra/rag": "1.0.6",
     "@deco/workers-runtime": "^0.1.0",

@@ -5,17 +5,19 @@ export * from "./bindings/binder.ts";
 export * from "./context.ts";
 export {
   getPresignedReadUrl_WITHOUT_CHECKING_AUTHORIZATION,
-  getWorkspaceBucketName,
+  getWorkspaceBucketName
 } from "./fs/api.ts";
 export { HOSTING_APPS_DOMAIN } from "./hosting/api.ts";
 export * from "./middlewares.ts";
 export * from "./models/llm-vault.ts";
 export * from "./wallet/stripe/webhook.ts";
 
+export type { ContractState, ContractState } from "./contracts/api.ts";
+export { Blobs, Branch } from "./deconfig/api.ts";
 export { EMAIL_TOOLS } from "./email/api.ts";
 export {
   getIntegration,
-  type IntegrationWithTools,
+  type IntegrationWithTools
 } from "./integrations/api.ts";
 export { getRegistryApp } from "./registry/api.ts";
 import { Locator } from "../locator.ts";
@@ -44,6 +46,7 @@ import * as oauthAPI from "./oauth/api.ts";
 import * as profilesAPI from "./profiles/api.ts";
 import * as promptsAPI from "./prompts/api.ts";
 import * as registryAPI from "./registry/api.ts";
+import * as sandboxAPI from "./sandbox/api.ts";
 import type { CreateStubHandlerOptions, MCPClientStub } from "./stub.ts";
 import * as teamsAPI from "./teams/api.ts";
 import * as threadsAPI from "./threads/api.ts";
@@ -204,6 +207,8 @@ export const PROJECT_TOOLS = [
   contractRegister,
   // DECONFIG tools
   ...deconfigAPI.DECONFIG_TOOLS,
+  // SANDBOX tools
+  ...sandboxAPI,
 ] as const;
 
 export const AGENT_TOOLS = [
@@ -347,6 +352,11 @@ export function createMCPToolsStub<TDefinition extends readonly ToolLike[]>(
   );
 }
 
-export { AuthorizationClient, PolicyClient } from "../auth/policy.ts";
+export { AuthorizationClient, AuthorizationClient, PolicyClient, PolicyClient } from "../auth/policy.ts";
+export { FileProcessor } from "../mcp/file-processor.ts";
+export type { DatatabasesRunSqlInput } from "./databases/api.ts";
+  PolicyClient,
+  PolicyClient,
+} from "../auth/policy.ts";
 export { FileProcessor } from "../mcp/file-processor.ts";
 export type { DatatabasesRunSqlInput } from "./databases/api.ts";

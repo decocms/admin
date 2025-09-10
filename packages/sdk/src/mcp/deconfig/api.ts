@@ -16,10 +16,22 @@ import {
   assertHasWorkspace,
   assertWorkspaceResourceAccess,
 } from "../assertions.ts";
-import { createToolGroup, workspaceDB, type AppContext } from "../context.ts";
+import {
+  createTool,
+  createToolFactory,
+  workspaceDB,
+  type AppContext,
+} from "../context.ts";
+import { withProject } from "../index.ts";
 import type { BranchRpc, ConflictEntry, DiffEntry } from "./branch.ts";
 import { newBranchesCRUD, type BranchRecord } from "./branches-db.ts";
 
+interface DeconfigState {
+  pathPrefix?: string;
+}
+type DeconfigContext = WithTool<AppContext> & {
+  state: DeconfigState;
+};
 // Types from branch.ts - simplified for MCP usage
 export const BranchId = {
   build(name: string, projectId: string) {
@@ -34,10 +46,10 @@ export enum MergeStrategy {
 
 // Helper function to get workspace from context
 const projectFor = (c: WithTool<AppContext>): string => {
-  if (!c.workspace?.value) {
-    throw new Error("No workspace context available");
+  if (!c.locator?.project) {
+    throw new Error("No project context available");
   }
-  return c.workspace.value;
+  return c.locator.project;
 };
 
 // Helper function to get branch RPC (using branchName directly for performance)
@@ -58,12 +70,29 @@ export const branchRpcFor = async (
   return rpc;
 };
 
-const createDeconfigTool = createToolGroup("Deconfig", {
-  name: "DECONFIG - Versioned Configuration Management",
-  description:
-    "Git-like versioned configuration management with branches, files, and real-time collaboration.",
-  icon: "https://assets.decocache.com/mcp/24cfa17a-a0a8-40dc-9313-b4c3bdb63af6/deconfig_v1.png",
-});
+const createDeconfigTool = createToolFactory<DeconfigContext>(
+  (c) => {
+    let state: DeconfigState = {};
+    if ("state" in c && typeof c.state === "object" && c.state) {
+      state = c.state as DeconfigState;
+    }
+
+    if ("aud" in c.user && typeof c.user.aud === "string") {
+      c = withProject(c, c.user.aud, c.user.sub);
+    }
+    return {
+      ...(c as WithTool<AppContext>),
+      state,
+    };
+  },
+  "Deconfig",
+  {
+    name: "DECONFIG - Versioned Configuration Management",
+    description:
+      "Git-like versioned configuration management with branches, files, and real-time collaboration.",
+    icon: "https://assets.decocache.com/mcp/24cfa17a-a0a8-40dc-9313-b4c3bdb63af6/deconfig_v1.png",
+  },
+);
 
 // =============================================================================
 // BRANCH CRUD OPERATIONS
@@ -339,6 +368,15 @@ const normalizePath = (path: string) => {
   return path.endsWith("/") ? path.slice(0, -1) : path; // remove trailing slash
 };
 
+const withPathPrefix = (c: DeconfigContext, path: string) => {
+  const normalized = normalizePath(path);
+  const prefix = c.state.pathPrefix;
+  if (prefix) {
+    return `${normalizePath(prefix)}${normalized}`;
+  }
+  return normalized;
+};
+
 export const putFile = createDeconfigTool({
   name: "PUT_FILE",
   description:
@@ -374,6 +412,7 @@ export const putFile = createDeconfigTool({
     conflict: z.boolean().optional(),
   }),
   handler: async ({ branch, path, content, metadata, expectedCtime }, c) => {
+    path = withPathPrefix(c, path);
     assertHasWorkspace(c);
     await assertWorkspaceResourceAccess(c);
 
@@ -446,6 +485,7 @@ export const readFile = createDeconfigTool({
   }),
   outputSchema: z.object({}),
   handler: async ({ branch, path, format }, c) => {
+    path = withPathPrefix(c, path);
     assertHasWorkspace(c);
     await assertWorkspaceResourceAccess(c);
 
@@ -532,6 +572,7 @@ export const deleteFile = createDeconfigTool({
     deleted: z.boolean(),
   }),
   handler: async ({ branch, path }, c) => {
+    path = withPathPrefix(c, path);
     assertHasWorkspace(c);
     await assertWorkspaceResourceAccess(c);
 
@@ -569,6 +610,9 @@ export const listFiles = createDeconfigTool({
   }),
   outputSchema: listFilesOutputSchema,
   handler: async ({ branch, prefix }, c) => {
+    if (prefix) {
+      prefix = withPathPrefix(c, prefix);
+    }
     assertHasWorkspace(c);
     await assertWorkspaceResourceAccess(c);
 
@@ -580,6 +624,34 @@ export const listFiles = createDeconfigTool({
       files,
       count: Object.keys(files).length,
     } as unknown as z.infer<typeof listFilesOutputSchema>;
+  },
+});
+
+export const oauthStart = createTool({
+  name: "DECO_CHAT_OAUTH_START",
+  description: "Start the OAuth flow for the contract app.",
+  inputSchema: z.object({
+    returnUrl: z.string(),
+  }),
+  outputSchema: z.object({
+    stateSchema: z.any(),
+    scopes: z.array(z.string()).optional(),
+  }),
+  handler: (_, c) => {
+    c.resourceAccess.grant();
+    return {
+      stateSchema: {
+        type: "object",
+        properties: {
+          pathPrefix: {
+            type: "string",
+            description: "The path prefix to use for the database",
+          },
+        },
+        required: [],
+      },
+      scopes: ["DATABASES_RUN_SQL"],
+    };
   },
 });
 
@@ -599,5 +671,5 @@ export const DECONFIG_TOOLS = [
   listFiles,
 ] as const;
 
-export { Branch } from "./branch.ts";
 export { Blobs } from "./blobs.ts";
+export { Branch } from "./branch.ts";

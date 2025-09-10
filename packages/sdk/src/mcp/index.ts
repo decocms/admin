@@ -18,6 +18,7 @@ export {
   type IntegrationWithTools,
 } from "./integrations/api.ts";
 export { getRegistryApp } from "./registry/api.ts";
+import { Locator } from "../locator.ts";
 import * as agentAPI from "./agent/api.ts";
 import * as agentsAPI from "./agents/api.ts";
 import * as aiAPI from "./ai/api.ts";
@@ -242,6 +243,20 @@ export const createGlobalForContext = (context?: AppContext): typeof global => {
     context,
   });
 };
+
+export const withProject = (
+  context: AppContext,
+  projectValue: string,
+  userId?: string,
+): AppContext => {
+  const { org, project } = Locator.parse(projectValue as `${string}/${string}`);
+  return {
+    ...context,
+    locator: { org, project, value: Locator.from({ org, project }) },
+    workspace: fromWorkspaceString(projectValue, userId),
+  };
+};
+
 export const fromWorkspaceString = (
   _workspace: string,
   userId?: string,

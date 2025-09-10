@@ -23,9 +23,11 @@ import {
   getWorkspaceBucketName,
   GLOBAL_TOOLS,
   type IntegrationWithTools,
+  issuerFromContext,
   ListToolsMiddleware,
   PolicyClient,
   PROJECT_TOOLS,
+  IntegrationSub as ProxySub,
   type ToolLike,
   withMCPAuthorization,
   withMCPErrorHandling,
@@ -57,6 +59,7 @@ import { type AppContext, type AppEnv, State } from "./utils/context.ts";
 import { handleStripeWebhook } from "./webhooks/stripe.ts";
 import { handleTrigger } from "./webhooks/trigger.ts";
 
+const PROXY_TOKEN_HEADER = "X-Proxy-Auth";
 export const app = new Hono<AppEnv>();
 export const honoCtxToAppCtx = (c: Context<AppEnv>): AppContext => {
   const envs = env(c);
@@ -98,13 +101,14 @@ export const honoCtxToAppCtx = (c: Context<AppEnv>): AppContext => {
     params: { ...c.req.query(), ...c.req.param() },
     envVars: envs,
     cookie: c.req.header("Cookie"),
+    // token issued by the MCP Proxy server to identify the caller as deco api
+    proxyToken: c.req.header(PROXY_TOKEN_HEADER)?.replace("Bearer ", ""),
     callerApp: c.var.callerApp,
     policy: policyClient,
     authorization: authorizationClient,
     token: c.req.header("Authorization")?.replace("Bearer ", ""),
     kbFileProcessor: c.env.KB_FILE_PROCESSOR,
     workspaceDO: c.env.WORKSPACE_DB,
-    // DECONFIG DurableObjects
     branchDO: c.env.BRANCH,
     blobsDO: c.env.BLOBS,
     workspace: ctxWorkspace,
@@ -239,6 +243,7 @@ const createToolCallHandlerFor = <
 };
 
 interface ProxyOptions {
+  proxyToken?: string;
   tools?: ListToolsResult | null;
   middlewares?: Partial<{
     listTools: ListToolsMiddleware[];
@@ -248,9 +253,14 @@ interface ProxyOptions {
 
 const proxy = (
   mcpConnection: MCPConnection,
-  { middlewares, tools }: ProxyOptions = {},
+  { middlewares, tools, proxyToken }: ProxyOptions = {},
   callerApp?: string,
 ) => {
+  const extraHeaders = proxyToken
+    ? {
+        [PROXY_TOKEN_HEADER]: proxyToken,
+      }
+    : undefined;
   const createMcpClient = async () => {
     const client = await createServerClient(
       {
@@ -260,9 +270,10 @@ const proxy = (
       undefined,
       callerApp
         ? {
+            ...extraHeaders,
             "x-caller-app": callerApp,
           }
-        : undefined,
+        : extraHeaders,
     );
 
     const listTools = compose(
@@ -331,11 +342,19 @@ const createMcpServerProxyForIntegration = async (
   const ctx = honoCtxToAppCtx(c);
   const callerApp = ctx.callerApp;
 
-  const integration = await fetchIntegration();
+  const [integration, issuer] = await Promise.all([
+    fetchIntegration(),
+    issuerFromContext(ctx),
+  ]);
+
+  const token = await issuer.issue({
+    sub: ProxySub.build(integration.id),
+  });
 
   const mcpServerProxy = proxy(
     integration.connection,
     {
+      proxyToken: token,
       tools: integration.tools
         ? { tools: integration.tools as ListToolsResult["tools"] }
         : undefined,

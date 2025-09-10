@@ -185,6 +185,7 @@ export interface Vars {
   tool?: { name: string };
   cookie?: string;
   token?: string;
+  proxyToken?: string;
   callerApp?: string;
   db: Client;
   user: Principal;

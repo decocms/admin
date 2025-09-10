@@ -1,6 +1,8 @@
 // deno-lint-ignore-file no-explicit-any
 export * from "./src/actors.ts";
 export { WorkspaceDatabase } from "./src/durable-objects/workspace-database.ts";
+// DECONFIG DurableObjects (re-exported from SDK)
+export { Branch, Blobs } from "./src/durable-objects/deconfig.ts";
 import { contextStorage } from "@deco/sdk/fetch";
 import { Hosts } from "@deco/sdk/hosts";
 import { instrument } from "@deco/sdk/observability";

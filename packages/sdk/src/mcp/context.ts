@@ -17,14 +17,16 @@ import type {
 } from "../auth/policy.ts";
 import { type WellKnownMcpGroup, WellKnownMcpGroups } from "../crud/groups.ts";
 import { ForbiddenError, type HttpError } from "../errors.ts";
+import { ProjectLocator } from "../locator.ts";
 import { trace } from "../observability/index.ts";
 import { PosthogServerClient } from "../posthog.ts";
 import { type WithTool } from "./assertions.ts";
 import type { ResourceAccess } from "./auth/index.ts";
 import { DatatabasesRunSqlInput, QueryResult } from "./databases/api.ts";
+import { Blobs } from "./deconfig/blobs.ts";
+import { Branch } from "./deconfig/branch.ts";
 import { addGroup, type GroupIntegration } from "./groups.ts";
 import { generateUUIDv5, toAlphanumericId } from "./slugify.ts";
-import { ProjectLocator } from "../locator.ts";
 
 export type UserPrincipal = Pick<SupaUser, "id" | "email" | "is_anonymous">;
 
@@ -194,6 +196,9 @@ export interface Vars {
   immutableRes?: boolean;
   kbFileProcessor?: Workflow;
   workspaceDO: WorkspaceDO;
+  // DECONFIG DurableObjects
+  branchDO: DurableObjectNamespace<Branch>;
+  blobsDO: DurableObjectNamespace<Blobs>;
   posthog: PosthogServerClient;
   stub: <
     Constructor extends ActorConstructor<Trigger> | ActorConstructor<AIAgent>,

@@ -2,18 +2,25 @@
  * Database CRUD operations for DECONFIG branches.
  * Simple, straightforward database operations without complex validation.
  */
-import type { Env } from "../main.ts";
+import type { IWorkspaceDB } from "../context.ts";
 
 export interface BranchRecord {
   name: string;
   created_at: number;
-  metadata: Record<string, any>;
+  metadata: Record<string, unknown>;
   origin_branch: string | null;
+}
+
+interface Row {
+  name: string;
+  created_at: string;
+  metadata: string;
+  origin_branch: string;
 }
 
 export interface CreateBranchInput {
   name: string;
-  metadata?: Record<string, any>;
+  metadata?: Record<string, unknown>;
   origin_branch?: string | null;
 }
 
@@ -21,10 +28,10 @@ export interface ListBranchesInput {
   prefix?: string;
 }
 
-export function newBranchesCRUD(env: Env) {
+export function newBranchesCRUD(db: IWorkspaceDB) {
   // Initialize table on first use
   const initTable = async () => {
-    await env.DECO_CHAT_WORKSPACE_DB.query({
+    await db.exec({
       sql: `CREATE TABLE IF NOT EXISTS DECONFIG_BRANCHES (
         name TEXT PRIMARY KEY,
         created_at INTEGER NOT NULL,
@@ -34,7 +41,7 @@ export function newBranchesCRUD(env: Env) {
       params: [],
     });
 
-    await env.DECO_CHAT_WORKSPACE_DB.query({
+    await db.exec({
       sql: `CREATE INDEX IF NOT EXISTS idx_branches_created_at 
             ON DECONFIG_BRANCHES (created_at)`,
       params: [],
@@ -48,7 +55,7 @@ export function newBranchesCRUD(env: Env) {
       const now = Date.now();
       const metadata = JSON.stringify(input.metadata || {});
 
-      await env.DECO_CHAT_WORKSPACE_DB.query({
+      await db.exec({
         sql: `INSERT INTO DECONFIG_BRANCHES 
               (name, created_at, metadata, origin_branch) 
               VALUES (?, ?, ?, ?)`,
@@ -71,7 +78,7 @@ export function newBranchesCRUD(env: Env) {
     async deleteBranch(branchName: string): Promise<boolean> {
       await initTable();
 
-      const result = await env.DECO_CHAT_WORKSPACE_DB.query({
+      const result = await db.exec({
         sql: `DELETE FROM DECONFIG_BRANCHES WHERE name = ?`,
         params: [branchName],
       });
@@ -93,33 +100,24 @@ export function newBranchesCRUD(env: Env) {
 
       sql += ` ORDER BY created_at DESC`;
 
-      const result = await env.DECO_CHAT_WORKSPACE_DB.query({
+      const result = await db.exec({
         sql,
         params,
       });
 
       // Handle different possible result structures
-      let rows: any[] = [];
+      let rows: Row[] = [];
 
       if (result.result && result.result.length > 0) {
         const firstResult = result.result[0];
         if (firstResult?.results && Array.isArray(firstResult.results)) {
-          rows = firstResult.results;
+          rows = firstResult.results as Row[];
         } else if (Array.isArray(firstResult)) {
           rows = firstResult;
         }
       }
 
-      // If still empty, try the result directly
-      if (
-        rows.length === 0 &&
-        (result as any).results &&
-        Array.isArray((result as any).results)
-      ) {
-        rows = (result as any).results;
-      }
-
-      return rows.map((row: any) => {
+      return rows.map((row: Row) => {
         // Handle both array and object formats
         const nameValue = Array.isArray(row) ? row[0] : row.name;
         const createdAtValue = Array.isArray(row) ? row[1] : row.created_at;
@@ -143,7 +141,7 @@ export function newBranchesCRUD(env: Env) {
     async getBranch(branchName: string): Promise<BranchRecord | null> {
       await initTable();
 
-      const result = await env.DECO_CHAT_WORKSPACE_DB.query({
+      const result = await db.exec({
         sql: `SELECT name, created_at, metadata, origin_branch 
               FROM DECONFIG_BRANCHES 
               WHERE name = ?`,
@@ -151,24 +149,15 @@ export function newBranchesCRUD(env: Env) {
       });
 
       // Handle different possible result structures
-      let rows: any[] = [];
+      let rows: Row[] = [];
 
       if (result.result && result.result.length > 0) {
         const firstResult = result.result[0];
         if (firstResult?.results && Array.isArray(firstResult.results)) {
-          rows = firstResult.results;
+          rows = firstResult.results as Row[];
         } else if (Array.isArray(firstResult)) {
           rows = firstResult;
         }
-      }
-
-      // If still empty, try the result directly
-      if (
-        rows.length === 0 &&
-        (result as any).results &&
-        Array.isArray((result as any).results)
-      ) {
-        rows = (result as any).results;
       }
 
       if (rows.length === 0) {

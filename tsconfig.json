@@ -71,7 +71,6 @@
     "packages/runtime/scripts/generate-cf-imports.ts",
     "packages/runtime/scripts/generate-json-schema.ts",
     "docs/server/**",
-    "plugins/*",
-    "apps/deconfig/*"
+    "plugins/*"
   ]
 }

@@ -13,6 +13,11 @@ export * from "./models/llm-vault.ts";
 export * from "./wallet/stripe/webhook.ts";
 
 export { EMAIL_TOOLS } from "./email/api.ts";
+export {
+  getIntegration,
+  type IntegrationWithTools,
+} from "./integrations/api.ts";
+export { getRegistryApp } from "./registry/api.ts";
 import * as agentAPI from "./agent/api.ts";
 import * as agentsAPI from "./agents/api.ts";
 import * as aiAPI from "./ai/api.ts";
@@ -27,6 +32,7 @@ import {
   oauthStart,
 } from "./contracts/api.ts";
 import * as databasesAPI from "./databases/api.ts";
+import * as deconfigAPI from "./deconfig/api.ts";
 import * as fsAPI from "./fs/api.ts";
 import * as hostingAPI from "./hosting/api.ts";
 import * as integrationsAPI from "./integrations/api.ts";
@@ -42,14 +48,11 @@ import * as teamsAPI from "./teams/api.ts";
 import * as threadsAPI from "./threads/api.ts";
 import * as triggersAPI from "./triggers/api.ts";
 import * as walletAPI from "./wallet/api.ts";
-export {
-  getIntegration,
-  type IntegrationWithTools,
-} from "./integrations/api.ts";
-export { getRegistryApp } from "./registry/api.ts";
 
 export type { ContractState } from "./contracts/api.ts";
+export { Blobs, Branch } from "./deconfig/api.ts";
 
+export const DECONFIG_TOOLS = deconfigAPI.DECONFIG_TOOLS;
 export const CONTRACTS_TOOLS = [
   contractGet,
   contractAuthorize,
@@ -198,6 +201,8 @@ export const PROJECT_TOOLS = [
   aiAPI.aiGenerateObject,
   oauthAPI.oauthCodeCreate,
   contractRegister,
+  // DECONFIG tools
+  ...deconfigAPI.DECONFIG_TOOLS,
 ] as const;
 
 export const AGENT_TOOLS = [

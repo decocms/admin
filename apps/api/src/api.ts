@@ -1,10 +1,10 @@
-import { HttpServerTransport } from "@deco/mcp/http";
 import { createServerClient } from "@deco/ai/mcp";
+import { HttpServerTransport } from "@deco/mcp/http";
 import {
   DECO_CMS_WEB_URL,
+  Locator,
   MCPConnection,
   WellKnownMcpGroups,
-  Locator,
 } from "@deco/sdk";
 import { DECO_CHAT_KEY_ID, getKeyPair } from "@deco/sdk/auth";
 import {
@@ -15,22 +15,28 @@ import {
   compose,
   CONTRACTS_TOOLS,
   createMCPToolsStub,
+  DECONFIG_TOOLS,
   EMAIL_TOOLS,
+  getIntegration,
   getPresignedReadUrl_WITHOUT_CHECKING_AUTHORIZATION,
+  getRegistryApp,
   getWorkspaceBucketName,
   GLOBAL_TOOLS,
+  type IntegrationWithTools,
   ListToolsMiddleware,
   PolicyClient,
+  PROJECT_TOOLS,
   type ToolLike,
   withMCPAuthorization,
   withMCPErrorHandling,
-  PROJECT_TOOLS,
   wrapToolFn,
-  getIntegration,
-  type IntegrationWithTools,
-  getRegistryApp,
 } from "@deco/sdk/mcp";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
+import {
+  CallToolRequestSchema,
+  ListToolsRequestSchema,
+  ListToolsResult,
+} from "@modelcontextprotocol/sdk/types.js";
 import { type Context, Hono } from "hono";
 import { env, getRuntimeKey } from "hono/adapter";
 import { cors } from "hono/cors";
@@ -38,6 +44,8 @@ import { HTTPException } from "hono/http-exception";
 import { logger } from "hono/logger";
 import { endTime, startTime } from "hono/timing";
 import type { ContentfulStatusCode } from "hono/utils/http-status";
+import { studio } from "outerbase-browsable-do-enforced";
+import { createPosthogServerClient } from "packages/sdk/src/posthog.ts";
 import { z } from "zod";
 import { ROUTES as loginRoutes } from "./auth/index.ts";
 import { withActorsStubMiddleware } from "./middlewares/actors-stub.ts";
@@ -51,13 +59,6 @@ import { handleCodeExchange } from "./oauth/code.ts";
 import { type AppContext, type AppEnv, State } from "./utils/context.ts";
 import { handleStripeWebhook } from "./webhooks/stripe.ts";
 import { handleTrigger } from "./webhooks/trigger.ts";
-import {
-  CallToolRequestSchema,
-  ListToolsRequestSchema,
-  ListToolsResult,
-} from "@modelcontextprotocol/sdk/types.js";
-import { createPosthogServerClient } from "packages/sdk/src/posthog.ts";
-import { studio } from "outerbase-browsable-do-enforced";
 
 export const app = new Hono<AppEnv>();
 export const honoCtxToAppCtx = (c: Context<AppEnv>): AppContext => {
@@ -106,6 +107,9 @@ export const honoCtxToAppCtx = (c: Context<AppEnv>): AppContext => {
     token: c.req.header("Authorization")?.replace("Bearer ", ""),
     kbFileProcessor: c.env.KB_FILE_PROCESSOR,
     workspaceDO: c.env.WORKSPACE_DB,
+    // DECONFIG DurableObjects
+    branchDO: c.env.BRANCH,
+    blobsDO: c.env.BLOBS,
     workspace: ctxWorkspace,
     locator: ctxLocator,
     posthog: createPosthogServerClient({
@@ -134,7 +138,8 @@ const createMCPHandlerFor = (
     | typeof PROJECT_TOOLS
     | typeof EMAIL_TOOLS
     | typeof AGENT_TOOLS
-    | typeof CONTRACTS_TOOLS,
+    | typeof CONTRACTS_TOOLS
+    | typeof DECONFIG_TOOLS,
 ) => {
   return async (c: Context) => {
     const group = c.req.query("group");
@@ -433,6 +438,7 @@ app.use(withActorsMiddleware);
 app.use(withActorsMiddlewareLegacy);
 
 app.post(`/contracts/mcp`, createMCPHandlerFor(CONTRACTS_TOOLS));
+app.post(`/deconfig/mcp`, createMCPHandlerFor(DECONFIG_TOOLS));
 
 app.all("/mcp", createMCPHandlerFor(GLOBAL_TOOLS));
 app.all("/:org/:project/mcp", createMCPHandlerFor(PROJECT_TOOLS));

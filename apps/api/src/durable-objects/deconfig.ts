@@ -8,23 +8,3 @@
 
 // Re-export the Blobs DurableObject
 export { Blobs, Branch } from "@deco/sdk/mcp";
-
-// Re-export types that might be useful
-export type { BlobInfo } from "../../../../packages/sdk/src/mcp/deconfig/blobs.ts";
-
-export type {
-  Branch as BranchType,
-  BranchRpc,
-  BranchConfig,
-  FileMetadata,
-  Tree,
-  FilePath,
-  BlobAddress,
-  DiffEntry,
-  ConflictEntry,
-  MergeResult,
-  MergeStrategy,
-  TransactionalWriteInput,
-  TransactionalWriteResult,
-  WatchOptions,
-} from "../../../../packages/sdk/src/mcp/deconfig/branch.ts";

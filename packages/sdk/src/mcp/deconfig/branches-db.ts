@@ -105,17 +105,7 @@ export function newBranchesCRUD(db: IWorkspaceDB) {
         params,
       });
 
-      // Handle different possible result structures
-      let rows: Row[] = [];
-
-      if (result.result && result.result.length > 0) {
-        const firstResult = result.result[0];
-        if (firstResult?.results && Array.isArray(firstResult.results)) {
-          rows = firstResult.results as Row[];
-        } else if (Array.isArray(firstResult)) {
-          rows = firstResult;
-        }
-      }
+      const rows = ((result.result?.[0]?.results as unknown[]) ?? []) as Row[];
 
       return rows.map((row: Row) => {
         // Handle both array and object formats
@@ -148,17 +138,7 @@ export function newBranchesCRUD(db: IWorkspaceDB) {
         params: [branchName],
       });
 
-      // Handle different possible result structures
-      let rows: Row[] = [];
-
-      if (result.result && result.result.length > 0) {
-        const firstResult = result.result[0];
-        if (firstResult?.results && Array.isArray(firstResult.results)) {
-          rows = firstResult.results as Row[];
-        } else if (Array.isArray(firstResult)) {
-          rows = firstResult;
-        }
-      }
+      const rows = ((result.result?.[0]?.results as unknown[]) ?? []) as Row[];
 
       if (rows.length === 0) {
         return null;

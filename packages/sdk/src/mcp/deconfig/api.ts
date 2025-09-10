@@ -62,7 +62,7 @@ const createDeconfigTool = createToolGroup("Deconfig", {
   name: "DECONFIG - Versioned Configuration Management",
   description:
     "Git-like versioned configuration management with branches, files, and real-time collaboration.",
-  icon: "https://assets.decocache.com/mcp/deconfig-icon.png",
+  icon: "https://assets.decocache.com/mcp/24cfa17a-a0a8-40dc-9313-b4c3bdb63af6/deconfig_v1.png",
 });
 
 // =============================================================================
@@ -352,12 +352,15 @@ export const putFile = createDeconfigTool({
     path: z.string().describe("The file path within the branch"),
     content: z
       .union([
-        z
-          .string()
-          .describe("String content (will be base64 decoded if needed)"),
+        z.string().describe("Plain text string content"),
+        z.object({
+          base64: z.string().describe("Base64 encoded content"),
+        }),
         z.array(z.number()).describe("Array of bytes (0-255)"),
       ])
-      .describe("The file content as string or array of bytes"),
+      .describe(
+        "The file content as plain string, base64 object, or array of bytes",
+      ),
     metadata: z
       .record(z.any())
       .optional()
@@ -383,17 +386,22 @@ export const putFile = createDeconfigTool({
     if (Array.isArray(content)) {
       // Handle array of bytes
       data = new Uint8Array(content).buffer;
-    } else {
-      // Handle string content
+    } else if (typeof content === "string") {
+      // Handle plain string content
+      data = new TextEncoder().encode(content).buffer;
+    } else if (typeof content === "object" && "base64" in content) {
+      // Handle base64 object
       try {
-        // Try to decode as base64 first
-        data = Uint8Array.from(atob(content), (c: string) =>
+        data = Uint8Array.from(atob(content.base64), (c: string) =>
           c.charCodeAt(0),
         ).buffer;
-      } catch {
-        // If not base64, treat as regular string
-        data = new TextEncoder().encode(content).buffer;
+      } catch (error) {
+        throw new Error(
+          `Invalid base64 content: ${error instanceof Error ? error.message : String(error)}`,
+        );
       }
+    } else {
+      throw new Error("Invalid content type");
     }
 
     using branchRpc = await branchRpcFor(c, branch);
@@ -428,15 +436,16 @@ export const readFile = createDeconfigTool({
       .default("main")
       .describe("The branch name (defaults to 'main')"),
     path: z.string().describe("The file path within the branch"),
+    format: z
+      .enum(["base64", "byteArray", "plainString", "json"])
+      .optional()
+      .default("base64")
+      .describe(
+        "Return format: 'base64' (default), 'byteArray', 'plainString', or 'json'",
+      ),
   }),
-  outputSchema: z.object({
-    content: z.string().describe("File content (base64 encoded)"),
-    address: z.string(),
-    metadata: z.record(z.string(), z.any()),
-    mtime: z.number(),
-    ctime: z.number(),
-  }),
-  handler: async ({ branch, path }, c) => {
+  outputSchema: z.object({}),
+  handler: async ({ branch, path, format }, c) => {
     assertHasWorkspace(c);
     await assertWorkspaceResourceAccess(c);
 
@@ -449,7 +458,7 @@ export const readFile = createDeconfigTool({
       throw new Error(`File not found: ${normalizedPath}`);
     }
 
-    // Convert ReadableStream to base64
+    // Convert ReadableStream to bytes
     const reader = fileData.stream.getReader();
     const chunks: Uint8Array[] = [];
     let done = false;
@@ -470,7 +479,32 @@ export const readFile = createDeconfigTool({
       offset += chunk.length;
     }
 
-    const content = btoa(String.fromCharCode(...combined));
+    // Process content based on requested format
+    let content: string | number[] | unknown;
+
+    switch (format) {
+      case "base64":
+        content = btoa(String.fromCharCode(...combined));
+        break;
+      case "byteArray":
+        content = Array.from(combined);
+        break;
+      case "plainString":
+        content = new TextDecoder().decode(combined);
+        break;
+      case "json":
+        try {
+          const text = new TextDecoder().decode(combined);
+          content = JSON.parse(text);
+        } catch (error) {
+          throw new Error(
+            `Invalid JSON content: ${error instanceof Error ? error.message : String(error)}`,
+          );
+        }
+        break;
+      default:
+        content = btoa(String.fromCharCode(...combined)); // fallback to base64
+    }
 
     return {
       content,
@@ -508,6 +542,20 @@ export const deleteFile = createDeconfigTool({
   },
 });
 
+const listFilesOutputSchema = z.object({
+  files: z.record(
+    z.string(),
+    z.object({
+      address: z.string(),
+      metadata: z.record(z.string(), z.any()),
+      sizeInBytes: z.number(),
+      mtime: z.number(),
+      ctime: z.number(),
+    }),
+  ),
+  count: z.number(),
+});
+
 export const listFiles = createDeconfigTool({
   name: "LIST_FILES",
   description: "List files in a DECONFIG branch with optional prefix filtering",
@@ -519,19 +567,7 @@ export const listFiles = createDeconfigTool({
       .describe("The branch name (defaults to 'main')"),
     prefix: z.string().optional().describe("Optional prefix to filter files"),
   }),
-  outputSchema: z.object({
-    files: z.record(
-      z.string(),
-      z.object({
-        address: z.string(),
-        metadata: z.record(z.string(), z.any()),
-        sizeInBytes: z.number(),
-        mtime: z.number(),
-        ctime: z.number(),
-      }),
-    ),
-    count: z.number(),
-  }),
+  outputSchema: listFilesOutputSchema,
   handler: async ({ branch, prefix }, c) => {
     assertHasWorkspace(c);
     await assertWorkspaceResourceAccess(c);
@@ -543,7 +579,7 @@ export const listFiles = createDeconfigTool({
     return {
       files,
       count: Object.keys(files).length,
-    };
+    } as unknown as z.infer<typeof listFilesOutputSchema>;
   },
 });
 

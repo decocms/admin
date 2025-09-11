@@ -603,7 +603,7 @@ export const createTeam = createTool({
     if (roleError) throw roleError;
 
     // Insert default project
-    const { data: project, error: projectError } = await c.db
+    const { error: projectError } = await c.db
       .from("deco_chat_projects")
       .insert([
         {

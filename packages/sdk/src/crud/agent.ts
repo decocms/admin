@@ -6,12 +6,8 @@ import { ProjectLocator, Locator } from "../locator.ts";
 // TODO(camudo): fix this, this will only work on personal migrated
 // projects when the user talking to the agent are the owner of the projects.
 // few users will land on this edge case but im commenting here to remember it.
-export const updateAgent = async (
-  locator: ProjectLocator,
-  agent: Agent,
-  userId?: string,
-) => {
-  const agentRoot = `${Locator.adaptToRootSlug(locator, userId)}/Agents/${agent.id}`;
+export const updateAgent = async (locator: ProjectLocator, agent: Agent) => {
+  const agentRoot = `${Locator.adaptToRootSlug(locator)}/Agents/${agent.id}`;
 
   // deno-lint-ignore no-explicit-any
   const agentStub = stub<any>("AIAgent").new(agentRoot);

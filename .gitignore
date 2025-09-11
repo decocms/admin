@@ -40,3 +40,4 @@ dist
 kv
 kv-shm
 kv-wal
+.specstory/**

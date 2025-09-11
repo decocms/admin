@@ -226,6 +226,11 @@ function Docked({ hideViewsButton, onReady, ...props }: Props) {
         }
       }
 
+      // Ensure chat is the focused tab on mobile when available
+      if (isMobile) {
+        event.api.getPanel("chat")?.api.setActive();
+      }
+
       setOpenPanels(initialPanels);
 
       const disposable = event.api.onDidLayoutChange(() => {

@@ -198,5 +198,10 @@
     .one-tab .dv-scrollable {
       @apply grow-0!;
     }
+
+    /* Keep dockview defaults; minimal tweak: ensure horizontal overflow shows */
+    .dv-tabs-container .dv-scrollable {
+      overflow-x: auto;
+    }
   }
 }

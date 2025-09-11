@@ -9,6 +9,111 @@ import { installBuffer } from "./builtins/buffer.ts";
 import { installConsole, Log } from "./builtins/console.ts";
 import { getQuickJS } from "./quickjs.ts";
 
+/**
+ * Extracts a meaningful error message from various error types.
+ * Handles Error objects, objects with message properties, and other types.
+ * Includes stack traces when available for better debugging.
+ * @param error - The error to extract a message from
+ * @returns A meaningful error message string with stack trace if available
+ */
+function extractErrorMessage(error: unknown): string {
+  if (error === null || error === undefined) {
+    return "Unknown error";
+  }
+
+  // Handle Error instances
+  if (error instanceof Error) {
+    const message = error.message || error.name || "Error";
+    // Include stack trace if available and not too long
+    if (error.stack && error.stack.length < 2000) {
+      return `${message}\n${error.stack}`;
+    }
+    return message;
+  }
+
+  // Handle objects with message property
+  if (typeof error === "object" && error !== null) {
+    const errorObj = error as Record<string, unknown>;
+
+    // Try common error message properties
+    let message = "";
+    if (typeof errorObj.message === "string" && errorObj.message) {
+      message = errorObj.message;
+    } else if (typeof errorObj.error === "string" && errorObj.error) {
+      message = errorObj.error;
+    } else if (
+      typeof errorObj.description === "string" && errorObj.description
+    ) {
+      message = errorObj.description;
+    } else if (typeof errorObj.reason === "string" && errorObj.reason) {
+      message = errorObj.reason;
+    }
+
+    // If we found a message, check for stack trace
+    if (message) {
+      if (
+        typeof errorObj.stack === "string" && errorObj.stack &&
+        errorObj.stack.length < 2000
+      ) {
+        return `${message}\n${errorObj.stack}`;
+      }
+      return message;
+    }
+
+    // Try to stringify the object if it has meaningful properties
+    try {
+      const stringified = JSON.stringify(errorObj, null, 2);
+      // Only use JSON if it's not just "{}" and has reasonable length
+      if (stringified !== "{}" && stringified.length < 500) {
+        // If there's a stack trace, append it after the JSON
+        if (
+          typeof errorObj.stack === "string" && errorObj.stack &&
+          errorObj.stack.length < 2000
+        ) {
+          return `${stringified}\n\nStack trace:\n${errorObj.stack}`;
+        }
+        return stringified;
+      }
+    } catch {
+      // JSON.stringify failed, continue to other methods
+    }
+
+    // Try toString method
+    if (typeof errorObj.toString === "function") {
+      try {
+        const stringified = errorObj.toString();
+        if (stringified !== "[object Object]") {
+          return stringified;
+        }
+      } catch {
+        // toString failed, continue
+      }
+    }
+
+    // Last resort: show object keys if available
+    const keys = Object.keys(errorObj);
+    if (keys.length > 0) {
+      return `Error object with keys: ${keys.join(", ")}`;
+    }
+  }
+
+  // Handle primitive types
+  if (typeof error === "string") {
+    return error;
+  }
+
+  if (typeof error === "number" || typeof error === "boolean") {
+    return String(error);
+  }
+
+  // Last resort
+  try {
+    return String(error);
+  } catch {
+    return "Unknown error (could not convert to string)";
+  }
+}
+
 export { Scope } from "quickjs-emscripten-core";
 
 /**
@@ -149,7 +254,9 @@ function toQuickJS(ctx: QuickJSContext, value: unknown): QuickJSHandle {
       return obj;
     case "function":
       // Create a host function bridge that can be called from guest context
-      const functionId = `__hostFn_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+      const functionId = `__hostFn_${Date.now()}_${
+        Math.random().toString(36).substr(2, 9)
+      }`;
 
       // Store the function in a way that can be accessed from guest context
       // We'll create a proxy function that calls the original function
@@ -167,11 +274,11 @@ function toQuickJS(ctx: QuickJSContext, value: unknown): QuickJSHandle {
             const result = (value as Function)(...jsArgs);
 
             // Handle promises returned by host functions
-            if (result && typeof result.then === 'function') {
+            if (result && typeof result.then === "function") {
               // The function returned a promise, we need to handle it asynchronously
               // Create a deferred promise that will be resolved in the guest context
               const deferredPromise = ctx.newPromise();
-              
+
               // Start the async operation
               result
                 .then((resolvedValue: unknown) => {
@@ -182,8 +289,10 @@ function toQuickJS(ctx: QuickJSContext, value: unknown): QuickJSHandle {
                     // Execute pending jobs to propagate the promise resolution
                     ctx.runtime.executePendingJobs();
                   } catch (e) {
-                    const errorMsg = e instanceof Error ? e.message : String(e);
-                    const errorHandle = ctx.newString(`Promise resolution error: ${errorMsg}`);
+                    const errorMsg = extractErrorMessage(e);
+                    const errorHandle = ctx.newString(
+                      `Promise resolution error: ${errorMsg}`,
+                    );
                     deferredPromise.reject(errorHandle);
                     errorHandle.dispose();
                     // Execute pending jobs to propagate the promise rejection
@@ -191,21 +300,23 @@ function toQuickJS(ctx: QuickJSContext, value: unknown): QuickJSHandle {
                   }
                 })
                 .catch((error: unknown) => {
-                  const errorMsg = error instanceof Error ? error.message : String(error);
-                  const errorHandle = ctx.newString(`Promise rejection: ${errorMsg}`);
+                  const errorMsg = extractErrorMessage(error);
+                  const errorHandle = ctx.newString(
+                    `Promise rejection: ${errorMsg}`,
+                  );
                   deferredPromise.reject(errorHandle);
                   errorHandle.dispose();
                   // Execute pending jobs to propagate the promise rejection
                   ctx.runtime.executePendingJobs();
                 });
-              
+
               return deferredPromise.handle;
             } else {
               // The function returned a synchronous value
               return toQuickJS(ctx, result);
             }
           } catch (e) {
-            const msg = e instanceof Error ? e.message : String(e);
+            const msg = extractErrorMessage(e);
             return ctx.newString(`HostFunctionError: ${msg}`);
           }
         },
@@ -239,7 +350,7 @@ function applyHostFunctions(
         const result = fn(...jsArgs);
         return toQuickJS(ctx, result);
       } catch (e) {
-        const msg = e instanceof Error ? e.message : String(e);
+        const msg = extractErrorMessage(e);
         return ctx.newString(`HostError: ${msg}`);
       }
     });
@@ -295,7 +406,7 @@ export async function createSandboxRuntime(
 
     const createFunction = <T = unknown>(
       ...args: string[]
-    ): ((...args: unknown[]) => Promise<EvaluationResult<T>>) => {
+    ): (...args: unknown[]) => Promise<EvaluationResult<T>> => {
       const fnBody = args.pop();
       const argNames = args;
 
@@ -309,24 +420,21 @@ export async function createSandboxRuntime(
       setDeadline(ctxOptions.interruptAfterMs);
 
       // Create the bridge function code
-      const bridgeFunctionName = `__bridge_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+      const bridgeFunctionName = "__MAIN__";
       const bridgeCode = `
         function ${bridgeFunctionName}(${argNames.join(", ")}) {
-          return (async (${argNames.join(", ")}) => {
-            ${fnBody}
-          })(${argNames.join(", ")});
+          ${fnBody}
         }
       `;
 
       // Compile the bridge function to validate syntax
-      const compileResult = ctx.evalCode(bridgeCode, "bridge.js", {
+      const compileResult = ctx.evalCode(bridgeCode, "index.js", {
         strict: true,
         strip: true,
-        compileOnly: true,
       });
 
       if (compileResult.error) {
-        const errorMsg = ctx.dump(compileResult.error);
+        const errorMsg = extractErrorMessage(ctx.dump(compileResult.error));
         compileResult.error.dispose();
         throw new Error(`Compilation error: ${errorMsg}`);
       }
@@ -341,13 +449,6 @@ export async function createSandboxRuntime(
         setDeadline(ctxOptions.interruptAfterMs);
 
         try {
-          // Evaluate the bridge function (now we know it compiles)
-          const bridgeEvalResult = ctx.evalCode(bridgeCode, "bridge.js", {
-            strict: true,
-            strip: true,
-          });
-          const bridgeUnwrapped = ctx.unwrapResult(bridgeEvalResult);
-
           // Get the bridge function from the global scope
           const bridgeFn = ctx.getProp(ctx.global, bridgeFunctionName);
           if (ctx.typeof(bridgeFn) === "undefined") {
@@ -369,7 +470,7 @@ export async function createSandboxRuntime(
           );
 
           if (callResult.error) {
-            const errorMsg = ctx.dump(callResult.error);
+            const errorMsg = extractErrorMessage(ctx.dump(callResult.error));
             throw new Error(`Guest execution error: ${errorMsg}`);
           }
 
@@ -382,7 +483,7 @@ export async function createSandboxRuntime(
 
           const awaited = await promise;
           if (awaited.error) {
-            const errorMsg = ctx.dump(awaited.error);
+            const errorMsg = extractErrorMessage(ctx.dump(awaited.error));
             throw new Error(`Promise rejection: ${errorMsg}`);
           }
 

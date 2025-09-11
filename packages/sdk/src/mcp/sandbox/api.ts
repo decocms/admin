@@ -1,11 +1,30 @@
 import { createSandboxRuntime } from "@deco/cf-sandbox";
+import { ValidationError, Validator } from "jsonschema";
 import z from "zod";
 import { createToolGroup } from "../context.ts";
+
+// Cache for compiled validators
+const validatorCache = new Map<string, Validator>();
+
+function validate(instance: unknown, schema: Record<string, unknown>) {
+  const schemaKey = JSON.stringify(schema);
+  let validator = validatorCache.get(schemaKey);
+
+  if (!validator) {
+    validator = new Validator();
+    validator.addSchema(schema);
+
+    validatorCache.set(schemaKey, validator);
+  }
+
+  return validator.validate(instance, schema);
+}
 
 export const createTool = createToolGroup("Sandbox", {
   name: "Code Sandbox",
   description: "Run JavaScript code",
-  icon: "https://assets.decocache.com/mcp/de7e81f6-bf2b-4bf5-a96c-867682f7d2ca/Team--User-Management.png",
+  icon:
+    "https://assets.decocache.com/mcp/de7e81f6-bf2b-4bf5-a96c-867682f7d2ca/Team--User-Management.png",
 });
 
 export const runScript = createTool({
@@ -49,23 +68,34 @@ export const runScript = createTool({
   },
 });
 
-const SANDBOX_CREATE_TOOL_DESCRIPTION = `Create a new tool in the sandbox.
+const SANDBOX_CREATE_TOOL_DESCRIPTION =
+  `Create a new tool in the sandbox with JSON Schema validation.
 example, create a greeting tool pass the following arguments:
 
 {
   name: "Greeting",
   description: "Greet the user",
   inputSchema: {
-    name: "string",
+    "type": "object",
+    "properties": {
+      "name": { "type": "string" }
+    },
+    "required": ["name"]
   },
   outputSchema: {
-    greeting: "string",
+    "type": "object",
+    "properties": {
+      "greeting": { "type": "string" }
+    },
+    "required": ["greeting"]
   },
   execute: "async (inputSchema, ctx) => ({ greeting: "Hello, " + inputSchema.name });"    // this is the function body
 }
 
 The execute has this exact signature:
 async (inputSchema: typeof inputSchema, ctx: unknown): Promise<typeof outputSchema> => {}
+
+Note: Both inputSchema and outputSchema must be valid JSON Schema objects. Input and output data will be validated against these schemas when the tool is created and executed.
 `;
 
 const ToolDefinitionSchema = z.object({
@@ -140,14 +170,23 @@ export const sandboxCreateTool = createTool({
 
 export const getTool = createTool({
   name: "SANDBOX_GET_TOOL",
-  description: "Delete a tool in the sandbox",
+  description: "Get a tool from the sandbox",
   inputSchema: z.object({ name: z.string().describe("The name of the tool") }),
-  outputSchema: ToolDefinitionSchema,
-  handler: async ({ name }, c) => {
+  outputSchema: z.object({
+    tool: ToolDefinitionSchema.optional().describe(
+      "The tool definition if found",
+    ),
+    found: z.boolean().describe("Whether the tool was found"),
+  }),
+  handler: ({ name }, c) => {
     c.resourceAccess.grant();
     // await assertWorkspaceResourceAccess(c);
 
-    return store.get(name);
+    const tool = store.get(name);
+    return {
+      tool: tool || undefined,
+      found: !!tool,
+    };
   },
 });
 
@@ -158,7 +197,7 @@ export const deleteTool = createTool({
   outputSchema: z.object({
     message: z.string().describe("The message of the tool"),
   }),
-  handler: async ({ name }, c) => {
+  handler: ({ name }, c) => {
     c.resourceAccess.grant();
     // await assertWorkspaceResourceAccess(c);
 
@@ -199,6 +238,17 @@ export const sandboxRunTool = createTool({
     const tenantId = c.locator?.value ?? "default";
 
     try {
+      // Validate input against the tool's input schema
+      const inputValidation = validate(input, tool.inputSchema);
+      if (!inputValidation.valid) {
+        return {
+          error: `Input validation failed: ${
+            inputValidation.errors?.join(", ")
+          }`,
+          logs: [],
+        };
+      }
+
       const runtime = await createSandboxRuntime(tenantId, {
         memoryLimitBytes: 64 * 1024 * 1024, // 64MB
         stackSizeBytes: 1 << 20, // 1MB,
@@ -226,6 +276,18 @@ export const sandboxRunTool = createTool({
         return { error: result.error, logs: result.logs };
       }
 
+      // Validate output against the tool's output schema
+      const outputValidation = validate(result.value, tool.outputSchema);
+
+      if (!outputValidation.valid) {
+        return {
+          error: `Output validation failed: ${
+            outputValidation.errors?.join(", ")
+          }`,
+          logs: result.logs || [],
+        };
+      }
+
       return { result: result.value, logs: result.logs };
     } catch (error) {
       return {
@@ -240,7 +302,7 @@ export const sandboxListTools = createTool({
   description: "List all tools in the sandbox",
   inputSchema: z.object({}),
   outputSchema: z.object({ tools: z.array(ToolDefinitionSchema) }),
-  handler: async (_, c) => {
+  handler: (_, c) => {
     c.resourceAccess.grant();
     // await assertWorkspaceResourceAccess(c);
 

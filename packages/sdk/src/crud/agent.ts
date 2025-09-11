@@ -7,7 +7,7 @@ import { ProjectLocator, Locator } from "../locator.ts";
 // projects when the user talking to the agent are the owner of the projects.
 // few users will land on this edge case but im commenting here to remember it.
 export const updateAgent = async (locator: ProjectLocator, agent: Agent) => {
-  const agentRoot = `${Locator.adaptToRootSlug(locator)}/Agents/${agent.id}`;
+  const agentRoot = `/${locator}/Agents/${agent.id}`;
 
   // deno-lint-ignore no-explicit-any
   const agentStub = stub<any>("AIAgent").new(agentRoot);

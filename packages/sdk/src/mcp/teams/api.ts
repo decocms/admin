@@ -531,7 +531,6 @@ export const createTeam = createTool({
   inputSchema: z.object({
     name: z.string(),
     slug: z.string().optional(),
-    stripe_subscription_id: z.string().optional(),
   }),
 
   /**
@@ -545,7 +544,7 @@ export const createTeam = createTool({
     c.resourceAccess.grant();
 
     assertPrincipalIsUser(c);
-    const { name, slug, stripe_subscription_id } = props;
+    const { name, slug } = props;
     const user = c.user;
 
     // Enforce unique slug if provided
@@ -564,7 +563,7 @@ export const createTeam = createTool({
     // Create the team
     const { data: team, error: createError } = await c.db
       .from("teams")
-      .insert([{ name: sanitizeTeamName(name), slug, stripe_subscription_id }])
+      .insert([{ name: sanitizeTeamName(name), slug }])
       .select()
       .single();
 
@@ -603,6 +602,18 @@ export const createTeam = createTool({
 
     if (roleError) throw roleError;
 
+    // Insert default project
+    const { data: project, error: projectError } = await c.db.from("deco_chat_projects").insert([
+      {
+        org_id: team.id,
+        slug: "default",
+        title: `${team.name} Default project`,
+        description: `${team.name}'s Default project`,
+      }
+    ]);
+
+    if (projectError) throw projectError;
+
     return team;
   },
 });
@@ -615,7 +626,6 @@ export const updateTeam = createTool({
     data: z.object({
       name: z.string().optional().describe("Team name"),
       slug: z.string().optional().describe("Team URL slug"),
-      stripe_subscription_id: z.string().optional(),
       theme: enhancedThemeSchema.optional(),
     }),
   }),

@@ -47,11 +47,12 @@ const createIntegrationsUrl = ({
   workspace,
   decoCmsApiUrl,
   branch,
-}: IntegrationContext) =>
-  new URL(
-    `${normalizeWorkspace(workspace)}/${integrationId}/mcp?${branch ? `branch=${branch}` : ""}`,
-    decoCmsApiUrl ?? "https://api.decocms.com",
-  ).href;
+}: IntegrationContext) => {
+  const base = `${normalizeWorkspace(workspace)}/${integrationId}/mcp`;
+  const url = new URL(base, decoCmsApiUrl ?? "https://api.decocms.com");
+  branch && url.searchParams.set("branch", branch);
+  return url.href;
+};
 
 type WorkspaceClientContext = Omit<
   RequestContext,

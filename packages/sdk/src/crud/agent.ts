@@ -1,7 +1,7 @@
 import { MCPClient } from "../fetcher.ts";
 import { type Agent, AgentSchema } from "../models/agent.ts";
 import { stub } from "../stub.ts";
-import { ProjectLocator, Locator } from "../locator.ts";
+import { ProjectLocator } from "../locator.ts";
 
 // TODO(camudo): fix this, this will only work on personal migrated
 // projects when the user talking to the agent are the owner of the projects.

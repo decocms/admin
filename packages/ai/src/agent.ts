@@ -1225,7 +1225,7 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
   private async resolveThreadTitle(
     firstMessageContent: string,
     thread: { threadId: string; resourceId: string },
-  ): Promise<string> {
+  ): Promise<string | undefined> {
     try {
       const existing = await this._memory
         .getThreadById(thread)
@@ -1243,8 +1243,7 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
       }
       return generated;
     } catch {
-      // If anything fails, generate and proceed without persisting
-      return await this.generateThreadTitle(firstMessageContent);
+      // returns undefined so mastra can generate a title
     }
   }
 

@@ -1201,7 +1201,6 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
   }
 
   async generateThreadTitle(content: string) {
-    console.log("generateThreadTitle", content);
     const mcpClient = this.metadata?.mcpClient ?? this.agentScoppedMcpClient;
     const result = await mcpClient.AI_GENERATE({
       model: "openai:gpt-4.1-nano",

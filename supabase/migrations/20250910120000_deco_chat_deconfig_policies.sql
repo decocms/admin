@@ -17,14 +17,14 @@ ON CONFLICT (id) DO NOTHING;
 
 -- Associate DECONFIG view policy with all roles (1=owner, 3=member, 4=admin)
 INSERT INTO "public"."role_policies" ("id", "created_at", "role_id", "policy_id") VALUES 
-('357', '2025-09-10 12:00:00.000000+00', '1', '70'),
-('358', '2025-09-10 12:00:00.000000+00', '3', '70'),
-('359', '2025-09-10 12:00:00.000000+00', '4', '70')
+('381', '2025-09-10 12:00:00.000000+00', '1', '70'),
+('383', '2025-09-10 12:00:00.000000+00', '3', '70'),
+('384', '2025-09-10 12:00:00.000000+00', '4', '70')
 ON CONFLICT (id) DO NOTHING;
 
 -- Associate DECONFIG management policy with owner (1) and admin (4)
 -- DECONFIG operations can affect configuration and deployment, requiring elevated permissions
 INSERT INTO "public"."role_policies" ("id", "created_at", "role_id", "policy_id") VALUES 
-('360', '2025-09-10 12:00:00.000000+00', '1', '71'),
-('361', '2025-09-10 12:00:00.000000+00', '4', '71')
+('382', '2025-09-10 12:00:00.000000+00', '1', '71'),
+('385', '2025-09-10 12:00:00.000000+00', '4', '71')
 ON CONFLICT (id) DO NOTHING; 

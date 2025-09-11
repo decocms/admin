@@ -31,7 +31,7 @@ export interface ListBranchesInput {
 export function newBranchesCRUD(db: IWorkspaceDB) {
   // Initialize table on first use
   const initTable = async () => {
-    await db.exec({
+    using _ = await db.exec({
       sql: `CREATE TABLE IF NOT EXISTS DECONFIG_BRANCHES (
         name TEXT PRIMARY KEY,
         created_at INTEGER NOT NULL,
@@ -41,7 +41,7 @@ export function newBranchesCRUD(db: IWorkspaceDB) {
       params: [],
     });
 
-    await db.exec({
+    using __ = await db.exec({
       sql: `CREATE INDEX IF NOT EXISTS idx_branches_created_at 
             ON DECONFIG_BRANCHES (created_at)`,
       params: [],
@@ -55,7 +55,7 @@ export function newBranchesCRUD(db: IWorkspaceDB) {
       const now = Date.now();
       const metadata = JSON.stringify(input.metadata || {});
 
-      await db.exec({
+      using _ = await db.exec({
         sql: `INSERT INTO DECONFIG_BRANCHES 
               (name, created_at, metadata, origin_branch) 
               VALUES (?, ?, ?, ?)`,
@@ -78,7 +78,7 @@ export function newBranchesCRUD(db: IWorkspaceDB) {
     async deleteBranch(branchName: string): Promise<boolean> {
       await initTable();
 
-      const result = await db.exec({
+      using result = await db.exec({
         sql: `DELETE FROM DECONFIG_BRANCHES WHERE name = ?`,
         params: [branchName],
       });
@@ -100,7 +100,7 @@ export function newBranchesCRUD(db: IWorkspaceDB) {
 
       sql += ` ORDER BY created_at DESC`;
 
-      const result = await db.exec({
+      using result = await db.exec({
         sql,
         params,
       });
@@ -131,7 +131,7 @@ export function newBranchesCRUD(db: IWorkspaceDB) {
     async getBranch(branchName: string): Promise<BranchRecord | null> {
       await initTable();
 
-      const result = await db.exec({
+      using result = await db.exec({
         sql: `SELECT name, created_at, metadata, origin_branch 
               FROM DECONFIG_BRANCHES 
               WHERE name = ?`,

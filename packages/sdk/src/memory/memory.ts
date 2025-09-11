@@ -8,10 +8,10 @@ import { MemoryProcessor } from "@mastra/core/memory";
 import { Memory as MastraMemory } from "@mastra/memory";
 import type { TextPart, ToolCallPart } from "ai";
 import { workspaceDB, WorkspaceDO } from "../mcp/context.ts";
-import { slugify, slugifyForDNS, toAlphanumericId } from "../mcp/slugify.ts";
+import { slugify, slugifyForDNS, toAlphanumericId, type SlugifyOptions } from "../mcp/slugify.ts";
 import { LibSQLFactory, type LibSQLFactoryOpts } from "./libsql.ts";
 
-export { slugify, slugifyForDNS, toAlphanumericId };
+export { slugify, slugifyForDNS, toAlphanumericId, type SlugifyOptions };
 type CreateThreadOpts = Parameters<MastraMemory["createThread"]>[0];
 
 interface WorkspaceMemoryConfig extends SharedMemoryConfig {

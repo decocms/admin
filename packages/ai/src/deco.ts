@@ -21,10 +21,7 @@ const idFromDefinition = (definition: string) => {
 
 const RESOLVABLE_DEFINITION = "#/definitions/Resolvable";
 
-// Add slugify helper function
-const slugify = (name: string) => {
-  return name.replace(/[./]/g, "-").replace(/[^a-zA-Z0-9_-]/g, "");
-};
+import { slugify } from "@deco/sdk/memory";
 
 export function dereferenceSchema(
   schema: JSONSchema7 | undefined,
@@ -164,7 +161,7 @@ export const getTools = (schemas?: any): Tool[] => {
     let toolName =
       (funcDefinition as { name?: string })?.name ??
       (inputSchema as { name?: string })?.name ??
-      slugify(resolveType);
+      slugify(resolveType, { case: 'preserve', separator: '-' });
     let idx = 1;
 
     while (toolNames.has(toolName) && toolNames.get(toolName) !== resolveType) {

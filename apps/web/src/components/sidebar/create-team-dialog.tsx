@@ -1,4 +1,5 @@
 import { useCreateTeam } from "@deco/sdk";
+import { slugify } from "@deco/sdk/memory";
 import {
   AlertDialog,
   AlertDialogCancel,
@@ -24,16 +25,6 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
-
-// Simple slugify function for client-side use
-function slugify(input: string): string {
-  return input
-    .toLowerCase()
-    .trim()
-    .replace(/[^a-z0-9\s_-]+/g, "")
-    .replace(/[\s_-]+/g, "-")
-    .replace(/^-+|-+$/g, "");
-}
 
 const createOrgSchema = z.object({
   name: z.string().min(2, "Team name is required"),
@@ -61,7 +52,7 @@ export function CreateOrganizationDialog({
 
   // Compute slug from name
   const nameValue = form.watch("name");
-  const slug = slugify(nameValue || "");
+  const slug = slugify(nameValue || "", { case: 'lower', separator: '-' });
 
   async function onSubmit(data: z.infer<typeof createOrgSchema>) {
     setError(null);

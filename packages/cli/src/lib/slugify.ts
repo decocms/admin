@@ -1,3 +1,5 @@
+import { slugify as baseSlugify } from "@deco/sdk/memory";
+
 /**
  * Converts a string into a URL-safe slug.
  * - Lowercases the string
@@ -9,12 +11,7 @@
  * @returns The slugified string
  */
 export function slugify(input: string): string {
-  return input
-    .toLowerCase()
-    .replace(/[\s_]+/g, "-") // Replace spaces and underscores with dashes
-    .replace(/[^a-z0-9-]/g, "") // Remove all non-alphanumeric except dashes
-    .replace(/-+/g, "-") // Collapse multiple dashes
-    .replace(/^-+|-+$/g, ""); // Trim leading/trailing dashes
+  return baseSlugify(input, { case: 'lower', separator: '-' });
 }
 
 export function sanitizeConstantName(input: string): string {

@@ -81,10 +81,68 @@ export const slugifyForDNS = (name: string) => {
 };
 
 /**
- * Slugifies a string by converting it to uppercase and replacing all non-alphanumeric characters with a dash.
+ * Configuration options for slugify function
+ */
+export interface SlugifyOptions {
+  /** Case transformation: 'lower', 'upper', or 'preserve' */
+  case?: 'lower' | 'upper' | 'preserve';
+  /** Separator character to use for replacing non-alphanumeric characters */
+  separator?: '-' | '_';
+  /** If true, removes all non-alphanumeric characters completely */
+  alphanumericOnly?: boolean;
+}
+
+/**
+ * Unified slugify function that handles different casing and separator requirements.
  * @param input The string to slugify.
+ * @param options Configuration options for slugification.
  * @returns The slugified string.
  */
-export function slugify(input: string): string {
-  return input.toUpperCase().replace(/[^A-Z0-9]/g, "_");
+export function slugify(input: string, options: SlugifyOptions = {}): string {
+  const {
+    case: caseTransform = 'lower',
+    separator = '-',
+    alphanumericOnly = false,
+  } = options;
+
+  let result = input.trim();
+
+  // Apply case transformation first
+  switch (caseTransform) {
+    case 'lower':
+      result = result.toLowerCase();
+      break;
+    case 'upper':
+      result = result.toUpperCase();
+      break;
+    case 'preserve':
+      // Keep original case
+      break;
+  }
+
+  if (alphanumericOnly) {
+    // Remove all non-alphanumeric characters
+    result = result.replace(/[^a-zA-Z0-9]/g, '');
+  } else {
+    // Replace spaces, dashes, underscores, dots, slashes with separator
+    result = result.replace(/[\s_\-/.]+/g, separator);
+    
+    // Remove all other non-alphanumeric characters (except our separator)
+    const separatorRegex = separator === '-' 
+      ? /[^a-zA-Z0-9\-]/g 
+      : /[^a-zA-Z0-9_]/g;
+    result = result.replace(separatorRegex, '');
+    
+    // Collapse multiple separators
+    const multipleSeparatorRegex = separator === '-' ? /-+/g : /_+/g;
+    result = result.replace(multipleSeparatorRegex, separator);
+    
+    // Remove leading/trailing separators
+    const trimRegex = separator === '-' 
+      ? /^-+|-+$/g 
+      : /^_+|_+$/g;
+    result = result.replace(trimRegex, '');
+  }
+
+  return result;
 }

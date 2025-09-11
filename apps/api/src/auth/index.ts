@@ -1,4 +1,5 @@
 import { getUserBySupabaseCookie } from "@deco/sdk/auth";
+import { slugify } from "@deco/sdk/memory";
 import { Client, createSupabaseClient } from "@deco/sdk/storage";
 import type {
   EmailOtpType,
@@ -338,15 +339,7 @@ async function ensureFreeTwoDollarsTransaction({
 }
 
 export function slugifyForOrg(input: string): string {
-  // Lowercase and replace all non-alphanumeric with underscores
-  return (
-    input
-      .toLowerCase()
-      .replace(/[^a-z0-9]/g, "_")
-      // Collapse multiple underscores
-      .replace(/_+/g, "_")
-      .replace(/^_+|_+$/g, "")
-  );
+  return slugify(input, { case: 'lower', separator: '_' });
 }
 
 async function ensureHasAnyOrg({

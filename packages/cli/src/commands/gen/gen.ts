@@ -3,6 +3,7 @@ import { compile } from "json-schema-to-typescript";
 import { generateName } from "json-schema-to-typescript/dist/src/utils.js";
 import { MD5 } from "object-hash";
 import prettier from "prettier";
+import { slugify } from "@deco/sdk/memory";
 import { readWranglerConfig, type DecoBinding } from "../../lib/config.js";
 import { createWorkspaceClient } from "../../lib/mcp.js";
 import { parser as scopeParser } from "../../lib/parse-binding-tool.js";
@@ -37,10 +38,6 @@ const formatDescription = (desc: string | undefined) => {
       .join("\n")
   );
 };
-
-function slugify(name: string) {
-  return name.replace(/[^a-zA-Z0-9]/g, "").toLowerCase();
-}
 
 export function format(content: string): Promise<string> {
   try {
@@ -303,7 +300,7 @@ export const genEnv = async ({
               if (typeof typeName !== "string") {
                 return undefined;
               }
-              const key = slugify(typeName);
+              const key = slugify(typeName, { case: 'lower', alphanumericOnly: true });
               const count = types.get(key) ?? 0;
               types.set(key, count + 1);
               return count ? `${typeName}_${count}` : typeName;

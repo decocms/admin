@@ -273,6 +273,7 @@ export async function listToolsByConnectionType(
           (connection.workspace
             ? fromWorkspaceString(
                 connection.workspace,
+                ctx.locator?.branch ?? "main",
                 ctx.user?.id as string | undefined,
               )
             : undefined),

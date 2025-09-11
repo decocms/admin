@@ -60,6 +60,7 @@ const createContractTool = createToolFactory<ContractContext>(
       state,
       workspace: fromWorkspaceString(
         c.user.aud!,
+        c.locator?.branch ?? c.workspace?.branch ?? "main",
         c.user?.id as string | undefined,
       ),
     };

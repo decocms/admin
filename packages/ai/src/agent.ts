@@ -221,6 +221,7 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
   private agentScoppedMcpClient: MCPClientStub<ProjectTools>;
   private telemetry?: Telemetry;
   private posthog: PosthogServerClient;
+  private branch: string = "main"; // TODO(@mcandeia) for now only main branch is supported
 
   constructor(
     public readonly state: ActorState,
@@ -290,7 +291,7 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
 
   private _createAppContext(metadata?: AgentMetadata): AppContext {
     const policyClient = PolicyClient.getInstance(this.db);
-    const workspace = fromWorkspaceString(this.workspace);
+    const workspace = fromWorkspaceString(this.workspace, this.branch);
     const { org, project } = Locator.parse(this.locator);
 
     return {
@@ -307,6 +308,7 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
         org,
         project,
         value: this.locator,
+        branch: this.branch,
       },
       resourceAccess: createResourceAccess(),
       cf: new Cloudflare({ apiToken: this.env.CF_API_TOKEN }),

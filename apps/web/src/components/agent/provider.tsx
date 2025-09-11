@@ -46,7 +46,6 @@ import { useCreateAgent } from "../../hooks/use-create-agent.ts";
 import { useUserPreferences } from "../../hooks/use-user-preferences.ts";
 import { IMAGE_REGEXP, openPreviewPanel } from "../chat/utils/preview.ts";
 import { onRulesUpdated } from "../../utils/events.ts";
-import { useUser } from "../../hooks/use-user.ts";
 
 interface UiOptions {
   showThreadTools: boolean;

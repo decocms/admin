@@ -202,7 +202,9 @@ export const contractAuthorize = createContractTool({
       !("integrationId" in c.user) ||
       typeof c.user.integrationId !== "string"
     ) {
-      throw new ForbiddenError("Integration ID not found");
+      throw new ForbiddenError(
+        "Could not authorize charge for unknown integration",
+      );
     }
 
     const state = c.state;
@@ -269,7 +271,9 @@ export const contractSettle = createContractTool({
       !("integrationId" in c.user) ||
       typeof c.user.integrationId !== "string"
     ) {
-      throw new ForbiddenError("Integration ID not found");
+      throw new ForbiddenError(
+        "Could not settle charge for unknown integration",
+      );
     }
 
     const state = c.state;

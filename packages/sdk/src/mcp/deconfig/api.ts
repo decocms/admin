@@ -18,14 +18,14 @@ import {
   assertWorkspaceResourceAccess,
 } from "../assertions.ts";
 import {
+  type AppContext,
   createTool,
   createToolFactory,
   workspaceDB,
-  type AppContext,
 } from "../context.ts";
 import { withProject } from "../index.ts";
 import type { BranchRpc, ConflictEntry, DiffEntry } from "./branch.ts";
-import { newBranchesCRUD, type BranchRecord } from "./branches-db.ts";
+import { type BranchRecord, newBranchesCRUD } from "./branches-db.ts";
 
 interface DeconfigState {
   pathPrefix?: string;
@@ -93,12 +93,13 @@ const createDeconfigTool = createToolFactory<DeconfigContext>(
       state,
     };
   },
-  "Deconfig",
+  WellKnownMcpGroups["Deconfig"],
   {
-    name: "DECONFIG - Versioned Configuration Management",
+    name: "Deconfig",
     description:
       "Git-like versioned configuration management with branches, files, and real-time collaboration.",
-    icon: "https://assets.decocache.com/mcp/24cfa17a-a0a8-40dc-9313-b4c3bdb63af6/deconfig_v1.png",
+    icon:
+      "https://assets.decocache.com/mcp/24cfa17a-a0a8-40dc-9313-b4c3bdb63af6/deconfig_v1.png",
   },
 );
 
@@ -431,16 +432,17 @@ export const putFile = createDeconfigTool({
       data = new Uint8Array(content).buffer;
     } else if (typeof content === "string") {
       // Handle plain string content
-      data = new TextEncoder().encode(content).buffer;
+      data = new TextEncoder().encode(content).buffer as ArrayBuffer;
     } else if (typeof content === "object" && "base64" in content) {
       // Handle base64 object
       try {
         data = Uint8Array.from(atob(content.base64), (c: string) =>
-          c.charCodeAt(0),
-        ).buffer;
+          c.charCodeAt(0)).buffer;
       } catch (error) {
         throw new Error(
-          `Invalid base64 content: ${error instanceof Error ? error.message : String(error)}`,
+          `Invalid base64 content: ${
+            error instanceof Error ? error.message : String(error)
+          }`,
         );
       }
     } else {
@@ -483,7 +485,13 @@ export const readFile = createDeconfigTool({
         "Return format: 'base64' (default), 'byteArray', 'plainString', or 'json'",
       ),
   }),
-  outputSchema: z.object({}),
+  outputSchema: z.object({
+    content: z.any(),
+    address: z.string(),
+    metadata: z.record(z.any()),
+    mtime: z.number(),
+    ctime: z.number(),
+  }),
   handler: async ({ branch, path, format }, c) => {
     path = withPathPrefix(c, path);
     assertHasWorkspace(c);
@@ -538,7 +546,9 @@ export const readFile = createDeconfigTool({
           content = JSON.parse(text);
         } catch (error) {
           throw new Error(
-            `Invalid JSON content: ${error instanceof Error ? error.message : String(error)}`,
+            `Invalid JSON content: ${
+              error instanceof Error ? error.message : String(error)
+            }`,
           );
         }
         break;
@@ -662,6 +672,23 @@ export const DECONFIG_TOOLS = [
   deleteFile,
   listFiles,
 ] as const;
+
+/**
+ * Converts a string into a URL-safe slug.
+ * - Lowercases the string
+ * - Replaces spaces and underscores with dashes
+ * - Removes non-alphanumeric characters (except dashes)
+ * - Trims leading/trailing dashes
+ *
+ * @param input - The string to slugify
+ * @returns The slugified string
+ */
+export function slugify(input: string): string {
+  return input
+    .toLowerCase()
+    .replace(/[\s_]+/g, "-") // Replace spaces and underscores with dashes
+    .replace(/[^a-z0-9-]/g, ""); // Remove all non-alphanumeric except leading/trailing dashes
+}
 
 export { Blobs } from "./blobs.ts";
 export { Branch } from "./branch.ts";

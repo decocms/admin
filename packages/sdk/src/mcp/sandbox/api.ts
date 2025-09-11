@@ -1,7 +1,11 @@
 import { createSandboxRuntime } from "@deco/cf-sandbox";
-import { ValidationError, Validator } from "jsonschema";
+import { Validator } from "jsonschema";
 import z from "zod";
 import { createToolGroup } from "../context.ts";
+import { slugify } from "../deconfig/api.ts";
+import { MCPClient } from "../index.ts";
+
+const BRANCH = "main";
 
 // Cache for compiled validators
 const validatorCache = new Map<string, Validator>();
@@ -27,7 +31,7 @@ export const createTool = createToolGroup("Sandbox", {
     "https://assets.decocache.com/mcp/de7e81f6-bf2b-4bf5-a96c-867682f7d2ca/Team--User-Management.png",
 });
 
-export const runScript = createTool({
+const runScript = createTool({
   name: "SANDBOX_RUN_SCRIPT",
   description: "Javascript code to run in a sandbox",
   inputSchema: z.object({ code: z.string() }),
@@ -114,9 +118,9 @@ const ToolDefinitionSchema = z.object({
     .describe("The JavaScript function to execute when the tool is called"),
 });
 
-const store = new Map<string, z.infer<typeof ToolDefinitionSchema>>();
+// Store is now handled via file operations in /src/tools/ directory
 
-export const sandboxCreateTool = createTool({
+const sandboxCreateTool = createTool({
   name: "SANDBOX_UPSERT_TOOL",
   description: SANDBOX_CREATE_TOOL_DESCRIPTION,
   inputSchema: ToolDefinitionSchema,
@@ -149,13 +153,24 @@ export const sandboxCreateTool = createTool({
         `return (${execute})(inputSchema, ctx);`,
       );
 
-      // Store the tool if validation passes
-      store.set(name, {
+      // Store the tool as JSON file if validation passes
+      const toolData = {
         name,
         description,
         inputSchema,
         outputSchema,
         execute,
+      };
+
+      const toolFileName = slugify(name);
+      const toolPath = `/src/tools/${toolFileName}.json`;
+
+      const client = MCPClient.forContext(c);
+
+      await client.PUT_FILE({
+        branch: BRANCH,
+        path: toolPath,
+        content: JSON.stringify(toolData, null, 2),
       });
 
       return { message: "Tool created and validated successfully" };
@@ -168,7 +183,7 @@ export const sandboxCreateTool = createTool({
   },
 });
 
-export const getTool = createTool({
+const getTool = createTool({
   name: "SANDBOX_GET_TOOL",
   description: "Get a tool from the sandbox",
   inputSchema: z.object({ name: z.string().describe("The name of the tool") }),
@@ -178,35 +193,69 @@ export const getTool = createTool({
     ),
     found: z.boolean().describe("Whether the tool was found"),
   }),
-  handler: ({ name }, c) => {
+  handler: async ({ name }, c) => {
     c.resourceAccess.grant();
     // await assertWorkspaceResourceAccess(c);
 
-    const tool = store.get(name);
-    return {
-      tool: tool || undefined,
-      found: !!tool,
-    };
+    try {
+      const toolFileName = slugify(name);
+      const toolPath = `/src/tools/${toolFileName}.json`;
+
+      const client = MCPClient.forContext(c);
+      const result = await client.READ_FILE({
+        branch: BRANCH,
+        path: toolPath,
+        format: "json",
+      }) as {
+        content: any;
+        address: string;
+        metadata: any;
+        mtime: number;
+        ctime: number;
+      };
+
+      return {
+        tool: result.content as z.infer<typeof ToolDefinitionSchema>,
+        found: true,
+      };
+    } catch (error) {
+      return {
+        tool: undefined,
+        found: false,
+      };
+    }
   },
 });
 
-export const deleteTool = createTool({
+const deleteTool = createTool({
   name: "SANDBOX_DELETE_TOOL",
   description: "Delete a tool in the sandbox",
   inputSchema: z.object({ name: z.string().describe("The name of the tool") }),
   outputSchema: z.object({
     message: z.string().describe("The message of the tool"),
   }),
-  handler: ({ name }, c) => {
+  handler: async ({ name }, c) => {
     c.resourceAccess.grant();
     // await assertWorkspaceResourceAccess(c);
 
-    store.delete(name);
-    return { message: "Tool deleted successfully" };
+    try {
+      const toolFileName = slugify(name);
+      const toolPath = `/src/tools/${toolFileName}.json`;
+
+      const client = MCPClient.forContext(c);
+      await client.DELETE_FILE({
+        branch: BRANCH,
+        path: toolPath,
+      });
+
+      return { message: "Tool deleted successfully" };
+    } catch (error) {
+      return { message: "Tool deletion failed" };
+    }
   },
 });
 
-export const sandboxRunTool = createTool({
+const sandboxRunTool = createTool({
   name: "SANDBOX_RUN_TOOL",
   description: "Run a tool in the sandbox",
   inputSchema: z.object({
@@ -230,8 +279,26 @@ export const sandboxRunTool = createTool({
     c.resourceAccess.grant();
     // await assertWorkspaceResourceAsccess(c);
 
-    const tool = store.get(name);
-    if (!tool) {
+    let tool: z.infer<typeof ToolDefinitionSchema>;
+    try {
+      const toolFileName = slugify(name);
+      const toolPath = `/src/tools/${toolFileName}.json`;
+
+      const client = MCPClient.forContext(c);
+      const result = await client.READ_FILE({
+        branch: BRANCH,
+        path: toolPath,
+        format: "json",
+      }) as {
+        content: any;
+        address: string;
+        metadata: any;
+        mtime: number;
+        ctime: number;
+      };
+
+      tool = result.content as z.infer<typeof ToolDefinitionSchema>;
+    } catch (error) {
       return { error: "Tool not found" };
     }
 
@@ -297,17 +364,60 @@ export const sandboxRunTool = createTool({
   },
 });
 
-export const sandboxListTools = createTool({
+const sandboxListTools = createTool({
   name: "SANDBOX_LIST_TOOLS",
   description: "List all tools in the sandbox",
   inputSchema: z.object({}),
   outputSchema: z.object({ tools: z.array(ToolDefinitionSchema) }),
-  handler: (_, c) => {
+  handler: async (_, c) => {
     c.resourceAccess.grant();
     // await assertWorkspaceResourceAccess(c);
 
-    return {
-      tools: Array.from(store.values()),
-    };
+    try {
+      const client = MCPClient.forContext(c);
+      const result = await client.LIST_FILES({
+        branch: BRANCH,
+        prefix: "/src/tools/",
+      });
+
+      const tools: z.infer<typeof ToolDefinitionSchema>[] = [];
+
+      for (const [filePath, fileInfo] of Object.entries(result.files)) {
+        if (filePath.endsWith(".json")) {
+          try {
+            const toolResult = await client.READ_FILE({
+              branch: BRANCH,
+              path: filePath,
+              format: "json",
+            }) as {
+              content: any;
+              address: string;
+              metadata: any;
+              mtime: number;
+              ctime: number;
+            };
+            tools.push(
+              toolResult.content as z.infer<typeof ToolDefinitionSchema>,
+            );
+          } catch (error) {
+            // Skip files that can't be read as valid tool JSON
+            console.warn(`Failed to read tool file ${filePath}:`, error);
+          }
+        }
+      }
+
+      return { tools };
+    } catch (error) {
+      return { tools: [] };
+    }
   },
 });
+
+export const SANDBOX_TOOLS = [
+  runScript,
+  sandboxCreateTool,
+  getTool,
+  deleteTool,
+  sandboxRunTool,
+  sandboxListTools,
+];

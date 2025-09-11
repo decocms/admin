@@ -4,7 +4,7 @@
  * format: <org-slug>/<project-slug>
  */
 
-type LocatorStructured = {
+export type LocatorStructured = {
   org: string;
   project: string;
 };

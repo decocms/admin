@@ -247,6 +247,7 @@ export const createGlobalForContext = (context?: AppContext): typeof global => {
 export const withProject = (
   context: AppContext,
   projectValue: string,
+  branch: string,
   userId?: string,
 ): AppContext => {
   const { org, project } = Locator.parse(
@@ -254,13 +255,14 @@ export const withProject = (
   );
   return {
     ...context,
-    locator: { org, project, value: Locator.from({ org, project }) },
-    workspace: fromWorkspaceString(projectValue, userId),
+    locator: { org, project, value: Locator.from({ org, project }), branch },
+    workspace: fromWorkspaceString(projectValue, branch, userId),
   };
 };
 
 export const fromWorkspaceString = (
   _workspace: string,
+  branch: string,
   userId?: string,
 ): AppContext["workspace"] => {
   const normalized = _workspace.startsWith("/") ? _workspace : `/${_workspace}`;
@@ -270,6 +272,7 @@ export const fromWorkspaceString = (
       value: normalized,
       root: normalized.startsWith("/users") ? "users" : "shared",
       slug: normalized.split("/")[2],
+      branch,
     };
   }
 
@@ -282,7 +285,13 @@ export const fromWorkspaceString = (
     value: `/${root}/${slug}`,
     root,
     slug,
+    branch,
   };
+};
+
+export type DeconfigClient = MCPClientStub<typeof DECONFIG_TOOLS>;
+export const createDeconfigClientForContext = (context: AppContext) => {
+  return createMCPToolsStub({ tools: DECONFIG_TOOLS, context });
 };
 
 export const MCPClient = new Proxy(

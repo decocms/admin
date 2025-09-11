@@ -17,14 +17,19 @@ type WithWorkspace<TAppContext extends AppContext = AppContext> = Omit<
   TAppContext,
   "workspace"
 > & {
-  workspace: { root: string; slug: string; value: Workspace };
+  workspace: { root: string; slug: string; value: Workspace; branch: string };
 };
 
 type WithLocator<TAppContext extends AppContext = AppContext> = Omit<
   TAppContext,
   "locator"
 > & {
-  locator: { org: string; project: string; value: ProjectLocator };
+  locator: {
+    org: string;
+    project: string;
+    value: ProjectLocator;
+    branch: string;
+  };
 };
 
 type WithKbFileProcessor<TAppContext extends AppContext = AppContext> = Omit<

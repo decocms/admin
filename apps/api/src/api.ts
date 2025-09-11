@@ -75,10 +75,16 @@ export const honoCtxToAppCtx = (c: Context<AppEnv>): AppContext => {
     ? Locator.adaptToRootSlug(locator, uid)
     : undefined;
 
+  const branch =
+    c.req.param("branch") ??
+    c.req.query("branch") ??
+    c.req.header("x-deco-branch") ??
+    "main";
   let ctxWorkspace = undefined;
   if (oldWorkspaceValue) {
     const [_, root, slug] = oldWorkspaceValue.split("/");
     ctxWorkspace = {
+      branch,
       root,
       slug,
       value: oldWorkspaceValue,
@@ -90,6 +96,7 @@ export const honoCtxToAppCtx = (c: Context<AppEnv>): AppContext => {
         org,
         project,
         value: locator,
+        branch,
       }
     : undefined;
 
@@ -103,7 +110,7 @@ export const honoCtxToAppCtx = (c: Context<AppEnv>): AppContext => {
     cookie: c.req.header("Cookie"),
     // token issued by the MCP Proxy server to identify the caller as deco api
     proxyToken: c.req.header(PROXY_TOKEN_HEADER)?.replace("Bearer ", ""),
-    callerApp: c.var.callerApp,
+    callerApp: c.req.header("x-caller-app"),
     policy: policyClient,
     authorization: authorizationClient,
     token: c.req.header("Authorization")?.replace("Bearer ", ""),
@@ -244,6 +251,7 @@ const createToolCallHandlerFor = <
 
 interface ProxyOptions {
   proxyToken?: string;
+  headers?: Record<string, string>;
   tools?: ListToolsResult | null;
   middlewares?: Partial<{
     listTools: ListToolsMiddleware[];
@@ -253,14 +261,8 @@ interface ProxyOptions {
 
 const proxy = (
   mcpConnection: MCPConnection,
-  { middlewares, tools, proxyToken }: ProxyOptions = {},
-  callerApp?: string,
+  { middlewares, tools, headers }: ProxyOptions = {},
 ) => {
-  const extraHeaders = proxyToken
-    ? {
-        [PROXY_TOKEN_HEADER]: proxyToken,
-      }
-    : undefined;
   const createMcpClient = async () => {
     const client = await createServerClient(
       {
@@ -268,12 +270,7 @@ const proxy = (
         name: "proxy",
       },
       undefined,
-      callerApp
-        ? {
-            ...extraHeaders,
-            "x-caller-app": callerApp,
-          }
-        : extraHeaders,
+      headers,
     );
 
     const listTools = compose(
@@ -351,21 +348,18 @@ const createMcpServerProxyForIntegration = async (
     sub: ProxySub.build(integration.id),
   });
 
-  const mcpServerProxy = proxy(
-    integration.connection,
-    {
-      proxyToken: token,
-      tools: integration.tools
-        ? { tools: integration.tools as ListToolsResult["tools"] }
-        : undefined,
-      middlewares: {
-        callTool: [
-          withMCPAuthorization(ctx, { integrationId: integration.id }),
-        ],
-      },
+  const mcpServerProxy = proxy(integration.connection, {
+    headers: {
+      ...(callerApp ? { "x-caller-app": callerApp } : {}),
+      [PROXY_TOKEN_HEADER]: token,
     },
-    callerApp,
-  );
+    tools: integration.tools
+      ? { tools: integration.tools as ListToolsResult["tools"] }
+      : undefined,
+    middlewares: {
+      callTool: [withMCPAuthorization(ctx, { integrationId: integration.id })],
+    },
+  });
 
   return mcpServerProxy;
 };
@@ -473,6 +467,12 @@ app.post(
 );
 
 app.post("/:org/:project/:integrationId/mcp", async (c) => {
+  const mcpServerProxy = await createMcpServerProxy(c);
+
+  return mcpServerProxy.fetch(c.req.raw);
+});
+
+app.post("/:org/:project/:branch/:integrationId/mcp", async (c) => {
   const mcpServerProxy = await createMcpServerProxy(c);
 
   return mcpServerProxy.fetch(c.req.raw);

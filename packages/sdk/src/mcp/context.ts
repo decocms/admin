@@ -174,10 +174,12 @@ export interface Vars {
     root: string;
     slug: string;
     value: string;
+    branch: string;
   };
   locator?: {
     org: string;
     project: string;
+    branch: string;
     value: ProjectLocator;
   };
   resourceAccess: ResourceAccess;

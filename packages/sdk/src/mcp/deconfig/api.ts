@@ -57,8 +57,10 @@ const projectFor = (c: WithTool<AppContext>): string => {
 // Helper function to get branch RPC (using branchName directly for performance)
 export const branchRpcFor = async (
   c: WithTool<AppContext>,
-  branchName: string = "main",
+  branchName?: string,
 ): Promise<Rpc.Stub<BranchRpc>> => {
+  assertHasWorkspace(c);
+  branchName ??= c.locator?.branch ?? c.workspace?.branch;
   const projectId = projectFor(c);
   const branchStub = c.branchDO.get(
     c.branchDO.idFromName(BranchId.build(branchName, projectId)),
@@ -84,7 +86,7 @@ const createDeconfigTool = createToolFactory<DeconfigContext>(
       typeof c.user.aud === "string" &&
       c.user.iss === DECO_CHAT_ISSUER
     ) {
-      c = withProject(c, c.user.aud, c.user.sub);
+      c = withProject(c, c.user.aud, c.locator?.branch ?? "main", c.user.sub);
     }
     return {
       ...(c as WithTool<AppContext>),
@@ -388,11 +390,7 @@ export const putFile = createDeconfigTool({
   description:
     "Put a file in a DECONFIG branch (create or update) with optional conflict detection",
   inputSchema: z.object({
-    branch: z
-      .string()
-      .optional()
-      .default("main")
-      .describe("The branch name (defaults to 'main')"),
+    branch: z.string().optional().describe("The branch name"),
     path: z.string().describe("The file path within the branch"),
     content: z
       .union([
@@ -475,11 +473,7 @@ export const readFile = createDeconfigTool({
   name: "READ_FILE",
   description: "Read a file from a DECONFIG branch",
   inputSchema: z.object({
-    branch: z
-      .string()
-      .optional()
-      .default("main")
-      .describe("The branch name (defaults to 'main')"),
+    branch: z.string().optional().describe("The branch name"),
     path: z.string().describe("The file path within the branch"),
     format: z
       .enum(["base64", "byteArray", "plainString", "json"])
@@ -567,11 +561,7 @@ export const deleteFile = createDeconfigTool({
   name: "DELETE_FILE",
   description: "Delete a file from a DECONFIG branch",
   inputSchema: z.object({
-    branch: z
-      .string()
-      .optional()
-      .default("main")
-      .describe("The branch name (defaults to 'main')"),
+    branch: z.string().optional().describe("The branch name"),
     path: z.string().describe("The file path within the branch"),
   }),
   outputSchema: z.object({
@@ -607,11 +597,7 @@ export const listFiles = createDeconfigTool({
   name: "LIST_FILES",
   description: "List files in a DECONFIG branch with optional prefix filtering",
   inputSchema: z.object({
-    branch: z
-      .string()
-      .optional()
-      .default("main")
-      .describe("The branch name (defaults to 'main')"),
+    branch: z.string().optional().describe("The branch name"),
     prefix: z.string().optional().describe("Optional prefix to filter files"),
   }),
   outputSchema: listFilesOutputSchema,

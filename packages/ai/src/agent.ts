@@ -1200,6 +1200,55 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
     return result;
   }
 
+  async generateThreadTitle(content: string) {
+    console.log("generateThreadTitle", content);
+    const mcpClient = this.metadata?.mcpClient ?? this.agentScoppedMcpClient;
+    const result = await mcpClient.AI_GENERATE({
+      model: "openai:gpt-4.1-nano",
+      messages: [
+        {
+          role: "user",
+          content: `Generate a title for the thread that started with the following user message:
+            <Rule>Make it short and concise</Rule>
+            <Rule>Make it a single sentence</Rule>
+            <Rule>Keep the same language as the user message</Rule>
+            <Rule>Return ONLY THE TITLE! NO OTHER TEXT!</Rule>
+
+            <UserMessage>
+              ${content}
+            </UserMessage>`,
+        },
+      ],
+    });
+    return result.text;
+  }
+
+  private async resolveThreadTitle(
+    firstMessageContent: string,
+    thread: { threadId: string; resourceId: string },
+  ): Promise<string> {
+    try {
+      const existing = await this._memory
+        .getThreadById(thread)
+        .catch(() => null);
+
+      if (existing?.title) {
+        return existing.title;
+      }
+
+      const generated = await this.generateThreadTitle(firstMessageContent);
+      if (existing) {
+        await this._memory.saveThread({
+          thread: { ...existing, title: generated },
+        });
+      }
+      return generated;
+    } catch {
+      // If anything fails, generate and proceed without persisting
+      return await this.generateThreadTitle(firstMessageContent);
+    }
+  }
+
   async stream(
     payload: AIMessage[],
     options?: StreamOptions,
@@ -1347,6 +1396,14 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
             threadId: thread.threadId,
             model: options?.model ?? this._configuration?.model,
           });
+        },
+        memory: {
+          ...this.memory,
+          thread: {
+            title: await this.resolveThreadTitle(aiMessages[0].content, thread),
+            id: thread.threadId,
+          },
+          resource: thread.resourceId,
         },
         onFinish: (result) => {
           assertConfiguration(this._configuration);

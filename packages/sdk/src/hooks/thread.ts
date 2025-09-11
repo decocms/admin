@@ -79,35 +79,81 @@ export const useThreads = (partialOptions: ThreadFilterOptions = {}) => {
       firstMessage: string;
       threadId: string;
     }) => {
-      const [result] = await Promise.all([
-        MCPClient.forLocator(locator).AI_GENERATE({
-          // This can break if the workspace disabled 4.1-nano.
-          // TODO: Implement something like a model price/quality/speed hinting system.
-          model: "openai:gpt-4.1-nano",
-          messages: [
-            {
-              role: "user",
-              content: `Generate a title for the thread that started with the following user message:
-                <Rule>Make it short and concise</Rule>
-                <Rule>Make it a single sentence</Rule>
-                <Rule>Keep the same language as the user message</Rule>
-                <Rule>Return ONLY THE TITLE! NO OTHER TEXT!</Rule>
+      try {
+        const [result] = await Promise.all([
+          MCPClient.forLocator(locator).AI_GENERATE({
+            // Fallback to gpt-3.5-turbo if 4.1-nano is not available
+            model: "openai:gpt-4o-mini",
+            messages: [
+              {
+                role: "user",
+                content: `Generate a title for the thread that started with the following user message:
+                  <Rule>Make it short and concise</Rule>
+                  <Rule>Make it a single sentence</Rule>
+                  <Rule>Keep the same language as the user message</Rule>
+                  <Rule>Return ONLY THE TITLE! NO OTHER TEXT!</Rule>
 
-                <UserMessage>
-                  ${_firstMessage}
-                </UserMessage>`,
-            },
-          ],
-        }),
-        // ensure at least 2 seconds delay to avoid UI flickering.
-        new Promise((resolve) =>
-          setTimeout(resolve, TITLE_GENERATION_MIN_DELAY_MS),
-        ),
-      ]);
-      updateThreadTitle.mutate({ threadId, title: result.text, stream: true });
+                  <UserMessage>
+                    ${_firstMessage}
+                  </UserMessage>`,
+              },
+            ],
+          }),
+          // ensure at least 2 seconds delay to avoid UI flickering.
+          new Promise((resolve) =>
+            setTimeout(resolve, TITLE_GENERATION_MIN_DELAY_MS),
+          ),
+        ]);
+        
+        if (result.text && result.text.trim()) {
+          updateThreadTitle.mutate({ threadId, title: result.text.trim(), stream: true });
+        } else {
+          // Fallback to a smart title based on message content
+          const fallbackTitle = generateFallbackTitle(_firstMessage);
+          updateThreadTitle.mutate({ threadId, title: fallbackTitle, stream: true });
+        }
+      } catch (error) {
+        console.warn("Failed to generate AI title, using fallback:", error);
+        // Fallback to a smart title based on message content
+        const fallbackTitle = generateFallbackTitle(_firstMessage);
+        updateThreadTitle.mutate({ threadId, title: fallbackTitle, stream: true });
+      }
     },
     [updateThreadTitle, locator],
   );
+
+  const generateFallbackTitle = (message: string): string => {
+    if (!message || typeof message !== "string") {
+      return "New conversation";
+    }
+    
+    // Clean up the message and create a meaningful title
+    const cleanMessage = message.trim().replace(/\s+/g, ' ');
+    
+    // If message is very short, use it as-is
+    if (cleanMessage.length <= 30) {
+      return cleanMessage;
+    }
+    
+    // Try to find a good breaking point (end of sentence, word boundary, etc.)
+    const sentences = cleanMessage.split(/[.!?]+/);
+    if (sentences[0] && sentences[0].length <= 50) {
+      return sentences[0].trim();
+    }
+    
+    // Fall back to first 40 characters at word boundary
+    const words = cleanMessage.split(' ');
+    let title = '';
+    for (const word of words) {
+      if ((title + ' ' + word).length <= 40) {
+        title += (title ? ' ' : '') + word;
+      } else {
+        break;
+      }
+    }
+    
+    return title || cleanMessage.slice(0, 40).trim() + '...';
+  };
 
   const effect = useCallback(
     ({
@@ -131,10 +177,9 @@ export const useThreads = (partialOptions: ThreadFilterOptions = {}) => {
             return oldData;
           }
 
-          const temporaryTitle =
-            typeof messages[0]?.content === "string"
-              ? messages[0].content.slice(0, 20)
-              : "New chat";
+          const temporaryTitle = generateFallbackTitle(
+            typeof messages[0]?.content === "string" ? messages[0].content : ""
+          );
 
           generateThreadTitle({ firstMessage: messages[0].content, threadId });
 

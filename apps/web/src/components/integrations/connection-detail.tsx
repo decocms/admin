@@ -85,6 +85,7 @@ import {
 import { ToolCallForm } from "./tool-call-form.tsx";
 import { ToolCallResult } from "./tool-call-result.tsx";
 import type { MCPToolCallResult } from "./types.ts";
+import { Label } from "@deco/ui/components/label.tsx";
 
 function ConnectionInstanceActions({
   onDelete,
@@ -327,97 +328,101 @@ function ConfigureConnectionInstanceForm({
     }, [] as Integration[]);
   }, [data.instances]);
 
+  const isInstalled = data?.instances?.length > 0;
+
   return (
     <>
-      <div className="w-full flex flex-col-reverse items-start justify-between gap-4">
-        <div className="flex flex-col items-start gap-4 order-1">
-          <IntegrationIcon
-            icon={data.info?.icon}
-            name={data.info?.name}
-            size="xl"
-          />
-          <div className="flex flex-col gap-1">
-            <h5 className="text-xl font-medium">
-              {data.info?.friendlyName || data.info?.name}
-            </h5>
-            <p className="text-sm text-muted-foreground whitespace-pre-line">
-              {description}
-            </p>
-            {hasBigDescription && (
-              <Button
-                className="w-fit mt-2"
-                variant="special"
-                onClick={() => setIsExpanded(!isExpanded)}
-              >
-                {isExpanded ? "Show less" : "Show more"}
-              </Button>
-            )}
+      {!isEditing && (
+        <div className="w-full flex items-start justify-between gap-4">
+          <div className="flex items-center gap-4">
+            <IntegrationIcon
+              icon={data.info?.icon}
+              name={data.info?.name}
+              size="xl"
+            />
+            <div className="flex flex-col gap-1">
+              <h5 className="text-xl font-medium">
+                {data.info?.friendlyName || data.info?.name}
+              </h5>
+              <p className="text-sm text-muted-foreground whitespace-pre-line">
+                {description}
+              </p>
+              {hasBigDescription && (
+                <Button
+                  className="w-fit mt-2"
+                  variant="special"
+                  onClick={() => setIsExpanded(!isExpanded)}
+                >
+                  {isExpanded ? "Show less" : "Show more"}
+                </Button>
+              )}
+            </div>
           </div>
-        </div>
-        {!isWellKnown &&
-        data.info?.provider !== "custom" &&
-        (!data.instances || data.instances?.length === 0) ? (
-          <Button
-            variant="special"
-            className="w-full"
-            onClick={handleAddConnection}
+          {!isWellKnown &&
+          data.info?.provider !== "custom" &&
+          (!data.instances || data.instances?.length === 0) ? (
+            <Button
+              variant="special"
+              className="w-[250px]"
+              onClick={handleAddConnection}
+            >
+              <span className="hidden md:inline">Install app</span>
+            </Button>
+          ) : null}
+          <OauthModalContextProvider.Provider
+            value={{ onOpenOauthModal: setOauthCompletionDialog }}
           >
-            <span className="hidden md:inline">Install app</span>
-          </Button>
-        ) : null}
-        <OauthModalContextProvider.Provider
-          value={{ onOpenOauthModal: setOauthCompletionDialog }}
-        >
-          <ConfirmMarketplaceInstallDialog
-            integration={installingIntegration}
-            setIntegration={setInstallingIntegration}
-            onConfirm={({ authorizeOauthUrl, connection }) => {
-              function onSelect() {
-                const key = getConnectionAppKey(connection);
-                const appKey = AppKeys.build(key);
-                navigateWorkspace(`/connection/${appKey}`);
-              }
-
-              if (authorizeOauthUrl) {
-                const popup = globalThis.open(authorizeOauthUrl, "_blank");
-                if (
-                  !popup ||
-                  popup.closed ||
-                  typeof popup.closed === "undefined"
-                ) {
-                  setOauthCompletionDialog({
-                    openIntegrationOnFinish: true,
-                    open: true,
-                    url: authorizeOauthUrl,
-                    integrationName:
-                      installingIntegration?.name || "the service",
-                    connection: connection,
-                  });
-                } else {
-                  onSelect();
+            <ConfirmMarketplaceInstallDialog
+              integration={installingIntegration}
+              setIntegration={setInstallingIntegration}
+              onConfirm={({ authorizeOauthUrl, connection }) => {
+                function onSelect() {
+                  const key = getConnectionAppKey(connection);
+                  const appKey = AppKeys.build(key);
+                  navigateWorkspace(`/connection/${appKey}`);
                 }
-              }
-            }}
+
+                if (authorizeOauthUrl) {
+                  const popup = globalThis.open(authorizeOauthUrl, "_blank");
+                  if (
+                    !popup ||
+                    popup.closed ||
+                    typeof popup.closed === "undefined"
+                  ) {
+                    setOauthCompletionDialog({
+                      openIntegrationOnFinish: true,
+                      open: true,
+                      url: authorizeOauthUrl,
+                      integrationName:
+                        installingIntegration?.name || "the service",
+                      connection: connection,
+                    });
+                  } else {
+                    onSelect();
+                  }
+                }
+              }}
+            />
+          </OauthModalContextProvider.Provider>
+
+          <OAuthCompletionDialog
+            open={oauthCompletionDialog.open}
+            onOpenChange={(open) =>
+              setOauthCompletionDialog((prev) => ({ ...prev, open }))
+            }
+            authorizeOauthUrl={oauthCompletionDialog.url}
+            integrationName={oauthCompletionDialog.integrationName}
           />
-        </OauthModalContextProvider.Provider>
+        </div>
+      )}
 
-        <OAuthCompletionDialog
-          open={oauthCompletionDialog.open}
-          onOpenChange={(open) =>
-            setOauthCompletionDialog((prev) => ({ ...prev, open }))
-          }
-          authorizeOauthUrl={oauthCompletionDialog.url}
-          integrationName={oauthCompletionDialog.integrationName}
-        />
-      </div>
-
-      <div className="w-full flex flex-col gap-6">
-        <Form {...form}>
-          <form
-            onSubmit={form.handleSubmit(onSubmit)}
-            className="flex flex-col gap-6"
-          >
-            {!isReadOnly && (
+      {isInstalled && (
+        <div className="w-full flex flex-col gap-6">
+          <Form {...form}>
+            <form
+              onSubmit={form.handleSubmit(onSubmit)}
+              className="flex flex-col gap-6"
+            >
               <div className="flex items-end gap-4">
                 {isEditing && (
                   <FormField
@@ -486,41 +491,50 @@ function ConfigureConnectionInstanceForm({
                   />
                 )}
                 {!isEditing && (
-                  <Select
-                    value={selectedIntegration?.id}
-                    onValueChange={(value) => {
-                      if (value === "create-new") {
-                        handleAddConnection();
-                        return;
-                      }
-                      setSelectedIntegrationId(value);
-                    }}
-                  >
-                    <SelectTrigger className="w-full">
-                      <SelectValue placeholder="Select connection" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {deduplicatedInstances?.map((instance) => (
-                        <InstanceSelectItem
-                          key={instance.id}
-                          instance={instance}
-                        />
-                      ))}
-                      <SelectItem
-                        key="create-new"
-                        value="create-new"
-                        className="cursor-pointer"
-                      >
-                        <Icon name="add" size={16} className="flex-shrink-0" />
-                        Create new
-                      </SelectItem>
-                    </SelectContent>
-                  </Select>
+                  <div className="flex flex-col items-start gap-1">
+                    <Label className="text-sm text-muted-foreground">
+                      Instances
+                    </Label>
+                    <Select
+                      value={selectedIntegration?.id}
+                      onValueChange={(value) => {
+                        if (value === "create-new") {
+                          handleAddConnection();
+                          return;
+                        }
+                        setSelectedIntegrationId(value);
+                      }}
+                    >
+                      <SelectTrigger className="w-[300px]">
+                        <SelectValue placeholder="Select instance" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {deduplicatedInstances?.map((instance) => (
+                          <InstanceSelectItem
+                            key={instance.id}
+                            instance={instance}
+                          />
+                        ))}
+                        <SelectItem
+                          key="create-new"
+                          value="create-new"
+                          className="cursor-pointer"
+                        >
+                          <Icon
+                            name="add"
+                            size={16}
+                            className="flex-shrink-0"
+                          />
+                          Create new
+                        </SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
                 )}
                 <div className="ml-auto">
                   <ConnectionInstanceActions
                     onDelete={() => {
-                      setDeletingId(instance?.id);
+                      setDeletingId(instance?.id ?? null);
                     }}
                     onEdit={() => {
                       setIsEditing(!isEditing);
@@ -528,144 +542,157 @@ function ConfigureConnectionInstanceForm({
                   />
                 </div>
               </div>
-            )}
-            <div className="space-y-2">
-              <div className="space-y-4">
-                <FormField
-                  control={form.control}
-                  name="connection.type"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Connection Type</FormLabel>
-                      <Select
-                        onValueChange={(value: MCPConnection["type"]) => {
-                          field.onChange(value);
-                          handleConnectionTypeChange(value);
-                        }}
-                        defaultValue={field.value}
-                        value={field.value}
-                      >
-                        <FormControl>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Select a connection type" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          <SelectItem value="HTTP">HTTP</SelectItem>
-                          <SelectItem value="SSE">
-                            Server-Sent Events (SSE)
-                          </SelectItem>
-                          <SelectItem value="Websocket">WebSocket</SelectItem>
-                          <SelectItem value="Deco">Deco</SelectItem>
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                {["SSE", "HTTP"].includes(connection.type) && (
-                  <>
+              {isEditing && (
+                <div className="space-y-2">
+                  <div className="space-y-4">
                     <FormField
                       control={form.control}
-                      name="connection.url"
+                      name="connection.type"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>{connection.type} URL</FormLabel>
-                          <FormControl>
-                            <Input
-                              placeholder="https://example.com/messages"
-                              {...field}
-                            />
-                          </FormControl>
+                          <FormLabel>Connection Type</FormLabel>
+                          <Select
+                            onValueChange={(value: MCPConnection["type"]) => {
+                              field.onChange(value);
+                              handleConnectionTypeChange(value);
+                            }}
+                            defaultValue={field.value}
+                            value={field.value}
+                          >
+                            <FormControl>
+                              <SelectTrigger>
+                                <SelectValue placeholder="Select a connection type" />
+                              </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                              <SelectItem value="HTTP">HTTP</SelectItem>
+                              <SelectItem value="SSE">
+                                Server-Sent Events (SSE)
+                              </SelectItem>
+                              <SelectItem value="Websocket">
+                                WebSocket
+                              </SelectItem>
+                              <SelectItem value="Deco">Deco</SelectItem>
+                            </SelectContent>
+                          </Select>
                           <FormMessage />
                         </FormItem>
                       )}
                     />
-                    <FormField
-                      control={form.control}
-                      name="connection.token"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Token</FormLabel>
-                          <span className="text-[10px] text-muted-foreground ml-1">
-                            optional
-                          </span>
-                          <FormControl>
-                            <PasswordInput placeholder="token" {...field} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                  </>
-                )}
 
-                {connection.type === "Websocket" && (
-                  <FormField
-                    control={form.control}
-                    name="connection.url"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>WebSocket URL</FormLabel>
-                        <FormControl>
-                          <Input
-                            placeholder="wss://example.com/ws"
-                            {...field}
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
+                    {["SSE", "HTTP"].includes(connection.type) && (
+                      <>
+                        <FormField
+                          control={form.control}
+                          name="connection.url"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>{connection.type} URL</FormLabel>
+                              <FormControl>
+                                <Input
+                                  placeholder="https://example.com/messages"
+                                  {...field}
+                                />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                        <FormField
+                          control={form.control}
+                          name="connection.token"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Token</FormLabel>
+                              <span className="text-[10px] text-muted-foreground ml-1">
+                                optional
+                              </span>
+                              <FormControl>
+                                <PasswordInput placeholder="token" {...field} />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                      </>
                     )}
-                  />
-                )}
 
-                {connection.type === "Deco" && (
-                  <>
-                    <FormField
-                      control={form.control}
-                      name="connection.tenant"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Tenant ID</FormLabel>
-                          <FormControl>
-                            <Input placeholder="tenant-id" {...field} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    <FormField
-                      control={form.control}
-                      name="connection.token"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Token</FormLabel>
-                          <span className="text-[10px] text-muted-foreground ml-1">
-                            optional
-                          </span>
-                          <FormControl>
-                            <PasswordInput placeholder="token" {...field} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                  </>
-                )}
-              </div>
-            </div>
-            <div className="flex justify-end gap-2">
-              <Button
-                type="submit"
-                disabled={isSaving || numberOfChanges === 0}
-              >
-                Save
-              </Button>
-            </div>
-          </form>
-        </Form>
-      </div>
+                    {connection.type === "Websocket" && (
+                      <FormField
+                        control={form.control}
+                        name="connection.url"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>WebSocket URL</FormLabel>
+                            <FormControl>
+                              <Input
+                                placeholder="wss://example.com/ws"
+                                {...field}
+                              />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    )}
+
+                    {connection.type === "Deco" && (
+                      <>
+                        <FormField
+                          control={form.control}
+                          name="connection.tenant"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Tenant ID</FormLabel>
+                              <FormControl>
+                                <Input placeholder="tenant-id" {...field} />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                        <FormField
+                          control={form.control}
+                          name="connection.token"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Token</FormLabel>
+                              <span className="text-[10px] text-muted-foreground ml-1">
+                                optional
+                              </span>
+                              <FormControl>
+                                <PasswordInput placeholder="token" {...field} />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                      </>
+                    )}
+                  </div>
+                </div>
+              )}
+              {isEditing && (
+                <div className="flex justify-end gap-2">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => setIsEditing(false)}
+                  >
+                    Cancel
+                  </Button>
+                  <Button
+                    type="submit"
+                    disabled={isSaving || numberOfChanges === 0}
+                  >
+                    Save
+                  </Button>
+                </div>
+              )}
+            </form>
+          </Form>
+        </div>
+      )}
     </>
   );
 }
@@ -928,7 +955,7 @@ function ToolsInspector({
   );
 
   return (
-    <ScrollArea className="h-[calc(100vh-10rem)]">
+    <ScrollArea className="h-full min-h-0">
       <div ref={toolsRef} className="w-full flex flex-col items-center gap-4">
         <div className="w-full flex items-center justify-between">
           <Input
@@ -949,7 +976,7 @@ function ToolsInspector({
           </Button>
         </div>
 
-        <div className="flex flex-col gap-4 w-full min-h-[80vh]">
+        <div className="flex flex-col gap-4 w-full pb-4">
           {tools.isLoading ? (
             Array.from({ length: 8 }).map((_, idx) => (
               <Skeleton key={idx} className="rounded-lg w-full h-[76px]" />
@@ -1143,7 +1170,7 @@ function ViewsList({ integration }: { integration: Integration }) {
   }
 
   return (
-    <ScrollArea className="h-[calc(100vh-10rem)]">
+    <ScrollArea className="h-full">
       <div className="w-full flex flex-col items-center gap-4">
         <h6 className="text-sm text-muted-foreground font-medium w-full">
           Views available from this integration
@@ -1311,8 +1338,8 @@ function AppDetail() {
     useRemoveConnection();
 
   return (
-    <div className="grid grid-cols-6 gap-6 p-6 h-full">
-      <div className="col-span-2 bg-card rounded-xl p-4 flex flex-col gap-4 h-full">
+    <div className="flex flex-col gap-6 p-6 h-full">
+      <div className="w-full bg-card flex flex-col gap-4 border-b pb-6">
         <ConfigureConnectionInstanceForm
           appKey={appKey}
           key={selectedIntegration?.id}
@@ -1338,11 +1365,11 @@ function AppDetail() {
           />
         )}
       </div>
-      <div className="col-span-4 h-full">
+      <div className="flex-grow w-full min-h-0">
         <Tabs
           defaultValue="tools"
           orientation="horizontal"
-          className="w-full h-full gap-4"
+          className="w-full gap-4 h-[90%]"
         >
           <TabsList>
             <TabsTrigger value="tools" className="px-4">

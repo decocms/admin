@@ -7,12 +7,15 @@ interface Options {
   workspace?: string;
   local?: boolean;
   integrationId?: string;
+  pathname?: string;
 }
 export const workspaceClientParams = async ({
   workspace,
   local,
   integrationId,
+  pathname,
 }: Options) => {
+  pathname ??= "/mcp";
   const headers = await getRequestAuthHeaders();
   const api = local ? DECO_CMS_API_LOCAL : DECO_CMS_API_PROD;
 
@@ -22,13 +25,13 @@ export const workspaceClientParams = async ({
     const workspacePath = workspace.startsWith("/")
       ? workspace
       : `/shared/${workspace}`;
-    path = `${workspacePath}/${integrationId}/mcp`;
+    path = `${workspacePath}/${integrationId}${pathname}`;
   } else {
     // Workspace MCP endpoint: /:root/:slug/mcp
     path =
       !workspace || workspace.startsWith("/")
-        ? `${workspace ?? ""}/mcp`
-        : `/shared/${workspace}/mcp`;
+        ? `${workspace ?? ""}${pathname}`
+        : `/shared/${workspace}${pathname}`;
   }
 
   const url = new URL(path, api);

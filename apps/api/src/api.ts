@@ -449,7 +449,7 @@ app.use(withActorsMiddleware);
 
 app.post(`/contracts/mcp`, createMCPHandlerFor(CONTRACTS_TOOLS));
 app.post(`/deconfig/mcp`, createMCPHandlerFor(DECONFIG_TOOLS));
-app.post(`/:org/:project/deconfig/watch`, (ctx) => {
+app.get(`/:org/:project/deconfig/watch`, (ctx) => {
   const appCtx = honoCtxToAppCtx(ctx);
   return watchSSE(appCtx, {
     branchName: ctx.req.query("branch"),

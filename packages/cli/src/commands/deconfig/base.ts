@@ -1,5 +1,5 @@
-import { createWorkspaceClient, workspaceClientParams } from "../../lib/mcp.js";
 import { Buffer } from "node:buffer";
+import { createWorkspaceClient, workspaceClientParams } from "../../lib/mcp.js";
 
 export interface FileChangeEvent {
   type: "added" | "modified" | "deleted";
@@ -152,6 +152,7 @@ export async function watch(
   const { headers, url: baseUrl } = await workspaceClientParams({
     workspace,
     local,
+    pathname: "/deconfig/watch",
   });
 
   // Build SSE URL
@@ -163,7 +164,10 @@ export async function watch(
     searchParams.set("pathFilter", pathFilter);
   }
 
-  const sseUrl = `${baseUrl}/deconfig/watch?${searchParams.toString()}`;
+  const sseUrlObj = new URL(baseUrl);
+  sseUrlObj.search = searchParams.toString();
+
+  const sseUrl = sseUrlObj.href;
 
   // Set up SSE connection with retry logic
   let retryCount = 0;

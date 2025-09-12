@@ -15,7 +15,9 @@ export class WorkspaceDatabase
   private sql: SqlStorage;
 
   constructor(
-    protected override ctx: DurableObjectState,
+    // @ts-ignore: This is a workaround to fix the type error
+    // deno-lint-ignore ban-types
+    protected override ctx: DurableObjectState<{}>,
     protected override env: Bindings,
   ) {
     super(ctx, env);

@@ -7,7 +7,8 @@ export interface BufferBuiltin {
 export function base64Encode(input: string): string {
   const bytes = new TextEncoder().encode(input);
   let binary = "";
-  for (let i = 0; i < bytes.length; i++) binary += String.fromCharCode(bytes[i]);
+  for (let i = 0; i < bytes.length; i++)
+    binary += String.fromCharCode(bytes[i]);
   if (typeof (globalThis as any).btoa === "function") {
     return (globalThis as any).btoa(binary);
   }
@@ -39,7 +40,7 @@ export function installBuffer(ctx: QuickJSContext): BufferBuiltin {
     }
   });
   handles.push(atobFn);
-  
+
   const btoaFn = ctx.newFunction("btoa", (input: QuickJSHandle) => {
     try {
       const text = String(ctx.dump(input) ?? "");
@@ -53,15 +54,14 @@ export function installBuffer(ctx: QuickJSContext): BufferBuiltin {
 
   const bufferObj = ctx.newObject();
   handles.push(bufferObj);
-  
+
   ctx.setProp(bufferObj, "atob", atobFn);
   ctx.setProp(bufferObj, "btoa", btoaFn);
   ctx.setProp(ctx.global, "Buffer", bufferObj);
 
   return {
     [Symbol.dispose]() {
-      handles.forEach(handle => handle.dispose());
-    }
+      handles.forEach((handle) => handle.dispose());
+    },
   };
 }
-

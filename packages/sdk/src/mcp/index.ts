@@ -47,12 +47,12 @@ export { Blobs, Branch } from "./deconfig/api.ts";
 export { EMAIL_TOOLS } from "./email/api.ts";
 export {
   getPresignedReadUrl_WITHOUT_CHECKING_AUTHORIZATION,
-  getWorkspaceBucketName
+  getWorkspaceBucketName,
 } from "./fs/api.ts";
 export { HOSTING_APPS_DOMAIN } from "./hosting/api.ts";
 export {
   getIntegration,
-  type IntegrationWithTools
+  type IntegrationWithTools,
 } from "./integrations/api.ts";
 export * from "./middlewares.ts";
 export * from "./models/llm-vault.ts";

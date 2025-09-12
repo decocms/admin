@@ -32,12 +32,10 @@ function validate(instance: unknown, schema: Record<string, unknown>) {
 export const createTool = createToolGroup("Sandbox", {
   name: "Code Sandbox",
   description: "Run JavaScript code",
-  icon:
-    "https://assets.decocache.com/mcp/de7e81f6-bf2b-4bf5-a96c-867682f7d2ca/Team--User-Management.png",
+  icon: "https://assets.decocache.com/mcp/de7e81f6-bf2b-4bf5-a96c-867682f7d2ca/Team--User-Management.png",
 });
 
-const SANDBOX_CREATE_TOOL_DESCRIPTION =
-  `Create a new tool in the sandbox with JSON Schema validation.
+const SANDBOX_CREATE_TOOL_DESCRIPTION = `Create a new tool in the sandbox with JSON Schema validation.
 example, create a greeting tool pass the following arguments:
 
 {
@@ -137,9 +135,10 @@ const sandboxCreateTool = createTool({
   inputSchema: ToolDefinitionSchema,
   outputSchema: z.object({
     success: z.boolean().describe("Whether the tool was created successfully"),
-    error: z.string().optional().describe(
-      "Compilation or validation error if any",
-    ),
+    error: z
+      .string()
+      .optional()
+      .describe("Compilation or validation error if any"),
   }),
   handler: async (
     { name, description, inputSchema, outputSchema, execute },
@@ -348,11 +347,11 @@ const getTool = createTool({
       const toolPath = `/src/tools/${toolFileName}.json`;
 
       const client = MCPClient.forContext(c);
-      const result = await client.READ_FILE({
+      const result = (await client.READ_FILE({
         branch,
         path: toolPath,
         format: "json",
-      }) as {
+      })) as {
         content: any;
         address: string;
         metadata: any;
@@ -393,11 +392,11 @@ const deleteTool = createTool({
 
       // First, get the tool to find the function file
       try {
-        const toolResult = await client.READ_FILE({
+        const toolResult = (await client.READ_FILE({
           branch,
           path: toolPath,
           format: "json",
-        }) as {
+        })) as {
           content: any;
           address: string;
           metadata: any;
@@ -452,11 +451,11 @@ const sandboxListTools = createTool({
       for (const [filePath, fileInfo] of Object.entries(result.files)) {
         if (filePath.endsWith(".json")) {
           try {
-            const toolResult = await client.READ_FILE({
+            const toolResult = (await client.READ_FILE({
               branch,
               path: filePath,
               format: "json",
-            }) as {
+            })) as {
               content: any;
               address: string;
               metadata: any;

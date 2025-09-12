@@ -102,9 +102,10 @@ export async function createSandboxRuntime(
   );
   const runtime = await getOrCreateRuntime(runtimeId, options);
 
-  const createContext = (
-    { interruptAfterMs, ...intrinsics }: SandboxContextOptions = {},
-  ): SandboxContext => {
+  const createContext = ({
+    interruptAfterMs,
+    ...intrinsics
+  }: SandboxContextOptions = {}): SandboxContext => {
     const ctx = runtime.newContext({
       intrinsics: { ...DefaultIntrinsics, ...intrinsics },
     });

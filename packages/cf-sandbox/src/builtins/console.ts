@@ -29,11 +29,11 @@ export function installConsole(ctx: QuickJSContext): ConsoleBuiltin {
 
   const consoleObj = ctx.newObject();
   handles.push(consoleObj);
-  
+
   const log = makeLog("log");
   const warn = makeLog("warn");
   const error = makeLog("error");
-  
+
   ctx.setProp(consoleObj, "log", log);
   ctx.setProp(consoleObj, "warn", warn);
   ctx.setProp(consoleObj, "error", error);
@@ -42,7 +42,7 @@ export function installConsole(ctx: QuickJSContext): ConsoleBuiltin {
   return {
     logs,
     [Symbol.dispose]() {
-      handles.forEach(handle => handle.dispose());
-    }
+      handles.forEach((handle) => handle.dispose());
+    },
   };
 }

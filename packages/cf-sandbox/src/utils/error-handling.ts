@@ -10,7 +10,7 @@ export function inspect(value: unknown): string {
   if (value === null) {
     return "null";
   }
-  
+
   if (value === undefined) {
     return "undefined";
   }
@@ -35,9 +35,7 @@ export function inspect(value: unknown): string {
       message = obj.message;
     } else if (typeof obj.error === "string" && obj.error) {
       message = obj.error;
-    } else if (
-      typeof obj.description === "string" && obj.description
-    ) {
+    } else if (typeof obj.description === "string" && obj.description) {
       message = obj.description;
     } else if (typeof obj.reason === "string" && obj.reason) {
       message = obj.reason;
@@ -46,7 +44,8 @@ export function inspect(value: unknown): string {
     // If we found a message, check for stack trace
     if (message) {
       if (
-        typeof obj.stack === "string" && obj.stack &&
+        typeof obj.stack === "string" &&
+        obj.stack &&
         obj.stack.length < 2000
       ) {
         return `${message}\n${obj.stack}`;
@@ -61,7 +60,8 @@ export function inspect(value: unknown): string {
       if (stringified !== "{}" && stringified.length < 1000) {
         // If there's a stack trace, append it after the JSON
         if (
-          typeof obj.stack === "string" && obj.stack &&
+          typeof obj.stack === "string" &&
+          obj.stack &&
           obj.stack.length < 2000
         ) {
           return `${stringified}\n\nStack trace:\n${obj.stack}`;
@@ -89,7 +89,7 @@ export function inspect(value: unknown): string {
     if (keys.length > 0) {
       return `Object with keys: ${keys.join(", ")}`;
     }
-    
+
     return "[object Object]";
   }
 
@@ -121,4 +121,3 @@ export function inspect(value: unknown): string {
     return "Unknown value (could not convert to string)";
   }
 }
-

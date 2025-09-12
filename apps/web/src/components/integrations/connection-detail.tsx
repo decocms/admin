@@ -372,7 +372,7 @@ function ConfigureConnectionInstanceForm({
             integration={installingIntegration}
             setIntegration={setInstallingIntegration}
             onConfirm={({ authorizeOauthUrl, connection }) => {
-              console.log("onConfirm", authorizeOauthUrl, connection);
+
               function onSelect() {
                 const key = getConnectionAppKey(connection);
                 const appKey = AppKeys.build(key);

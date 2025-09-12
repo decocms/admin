@@ -161,12 +161,11 @@ export function useIntegrationInstall(appName?: string) {
         connection?.url.includes("mcp.deco.site") &&
         integration?.name; // weak check FIXME @author Marcos V. Candeia.
 
-      const redirectPath = getLinkFor(
-        isWellKnownMCP
-          ? `/connection/deco:::${integration.name}`
-          : `/connection/unknown:::${installId}`,
-      );
-      globalThis.location.href = redirectPath;
+      if (!isWellKnownMCP) {
+        const redirectPath = getLinkFor(`/connection/unknown:::${installId}`);
+        globalThis.location.href = redirectPath;
+        return;
+      }
     } catch (error) {
       console.error("Failed to complete setup:", error);
       throw error;

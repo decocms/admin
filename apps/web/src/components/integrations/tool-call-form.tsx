@@ -54,7 +54,7 @@ export function RawJsonView({ json }: { json: unknown }) {
       >
         <Icon name={copied ? "check" : "content_copy"} size={16} />
       </Button>
-      <pre className="p-2 rounded-xl max-h-[200px] border border-border bg-muted text-xs overflow-auto">
+      <pre className="p-2 rounded-xl max-h-[200px] border border-border bg-muted text-xs overflow-auto max-w-full whitespace-pre-wrap break-words">
         {serializedJson}
       </pre>
     </div>

@@ -291,6 +291,8 @@ export const getBillingHistory = createTool({
         amount: z.string(),
         timestamp: z.string(),
         type: z.string(),
+        contractId: z.string().nullish(),
+        callerApp: z.string().nullish(),
       }),
     ),
   }),

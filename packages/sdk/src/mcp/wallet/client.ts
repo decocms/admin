@@ -366,6 +366,8 @@ export interface WalletAPI {
         amount: string;
         timestamp: string;
         type: TransactionType;
+        contractId?: string;
+        callerApp?: string;
       }[];
     };
   };

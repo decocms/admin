@@ -16,7 +16,7 @@ export interface BlobInfo {
  * Blobs are stored by their SHA-256 hash, ensuring content integrity and
  * automatic deduplication. The same content will always produce the same hash.
  */
-export class Blobs extends DurableObject {
+export class Blobs extends DurableObject<unknown> {
   private sql: SqlStorage;
 
   constructor(state: DurableObjectState, env: unknown) {

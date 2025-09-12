@@ -1,118 +1,35 @@
 import {
+  DefaultIntrinsics,
+  Intrinsics,
   type QuickJSContext,
-  type QuickJSHandle,
   QuickJSRuntime,
-  type QuickJSWASMModule,
-  Scope,
 } from "quickjs-emscripten-core";
-import { installBuffer } from "./builtins/buffer.ts";
-import { installConsole, Log } from "./builtins/console.ts";
 import { getQuickJS } from "./quickjs.ts";
 
-/**
- * Extracts a meaningful error message from various error types.
- * Handles Error objects, objects with message properties, and other types.
- * Includes stack traces when available for better debugging.
- * @param error - The error to extract a message from
- * @returns A meaningful error message string with stack trace if available
- */
-function extractErrorMessage(error: unknown): string {
-  if (error === null || error === undefined) {
-    return "Unknown error";
-  }
+// Export utilities
+export { callFunction } from "./utils/call-function.ts";
+export { inspect } from "./utils/error-handling.ts";
+export { toQuickJS } from "./utils/to-quickjs.ts";
 
-  // Handle Error instances
-  if (error instanceof Error) {
-    const message = error.message || error.name || "Error";
-    // Include stack trace if available and not too long
-    if (error.stack && error.stack.length < 2000) {
-      return `${message}\n${error.stack}`;
-    }
-    return message;
-  }
+// Export built-ins
+export { installBuffer, installConsole } from "./builtins/index.ts";
 
-  // Handle objects with message property
-  if (typeof error === "object" && error !== null) {
-    const errorObj = error as Record<string, unknown>;
+// Export types
+export type { EvaluationResult, Log } from "./types.ts";
 
-    // Try common error message properties
-    let message = "";
-    if (typeof errorObj.message === "string" && errorObj.message) {
-      message = errorObj.message;
-    } else if (typeof errorObj.error === "string" && errorObj.error) {
-      message = errorObj.error;
-    } else if (
-      typeof errorObj.description === "string" && errorObj.description
-    ) {
-      message = errorObj.description;
-    } else if (typeof errorObj.reason === "string" && errorObj.reason) {
-      message = errorObj.reason;
-    }
-
-    // If we found a message, check for stack trace
-    if (message) {
-      if (
-        typeof errorObj.stack === "string" && errorObj.stack &&
-        errorObj.stack.length < 2000
-      ) {
-        return `${message}\n${errorObj.stack}`;
-      }
-      return message;
-    }
-
-    // Try to stringify the object if it has meaningful properties
-    try {
-      const stringified = JSON.stringify(errorObj, null, 2);
-      // Only use JSON if it's not just "{}" and has reasonable length
-      if (stringified !== "{}" && stringified.length < 500) {
-        // If there's a stack trace, append it after the JSON
-        if (
-          typeof errorObj.stack === "string" && errorObj.stack &&
-          errorObj.stack.length < 2000
-        ) {
-          return `${stringified}\n\nStack trace:\n${errorObj.stack}`;
-        }
-        return stringified;
-      }
-    } catch {
-      // JSON.stringify failed, continue to other methods
-    }
-
-    // Try toString method
-    if (typeof errorObj.toString === "function") {
-      try {
-        const stringified = errorObj.toString();
-        if (stringified !== "[object Object]") {
-          return stringified;
-        }
-      } catch {
-        // toString failed, continue
-      }
-    }
-
-    // Last resort: show object keys if available
-    const keys = Object.keys(errorObj);
-    if (keys.length > 0) {
-      return `Error object with keys: ${keys.join(", ")}`;
-    }
-  }
-
-  // Handle primitive types
-  if (typeof error === "string") {
-    return error;
-  }
-
-  if (typeof error === "number" || typeof error === "boolean") {
-    return String(error);
-  }
-
-  // Last resort
-  try {
-    return String(error);
-  } catch {
-    return "Unknown error (could not convert to string)";
-  }
-}
+// Export QuickJS types
+export type {
+  DefaultIntrinsics,
+  Intrinsics,
+  JSValue,
+  JSValueConst,
+  JSValueConstPointer,
+  JSValuePointer,
+  QuickJSContext,
+  QuickJSHandle,
+  QuickJSRuntime,
+  QuickJSWASMModule,
+} from "quickjs-emscripten-core";
 
 export { Scope } from "quickjs-emscripten-core";
 
@@ -140,394 +57,92 @@ export interface SandboxRuntimeOptions {
   stackSizeBytes?: number;
 }
 
-export interface SandboxContextOptions {
+export interface SandboxContextOptions extends Intrinsics {
   interruptAfterMs?: number;
-  globals?: Record<string, unknown>;
 }
 
-export interface EvaluationResult<T = unknown> {
-  value?: T;
-  error?: unknown;
-  logs: Array<{ type: "log" | "warn" | "error"; content: string }>;
-}
-
-export interface HostFunctionDefinition {
-  name: string;
-  /** Synchronous host function. Values are converted via ctx.dump. */
-  fn: (...args: unknown[]) => unknown;
-}
+// EvaluationResult is now imported from types.ts
 
 export interface SandboxRuntime {
-  tenantId: string;
-  addHostFunction: (def: HostFunctionDefinition) => void;
-  createContext: (options?: SandboxContextOptions) => SandboxContext;
+  runtimeId: string;
+  newContext: (options?: SandboxContextOptions) => SandboxContext;
   [Symbol.dispose]: () => void;
 }
 
-export interface SandboxContext {
-  /**
-   * Creates a function that will be run in the sandbox context
-   * This function uses the same signature of new Function in JavaScript
-   * with the difference that it is always async in nature.
-   *
-   * @example
-   * const fn = context.createFunction("a", "b", "return a + b");
-   * const result = await fn(1, 2);
-   * console.log(result.value); // 3
-   */
-  createFunction: <T = unknown>(
-    ...args: string[]
-  ) => (...args: unknown[]) => Promise<EvaluationResult<T>>;
+export type SandboxContext = QuickJSContext;
 
-  [Symbol.dispose]: () => void;
-}
+const runtimes = new Map<string, Promise<QuickJSRuntime>>();
 
-type TenantRuntime = {
-  runtime: QuickJSRuntime;
-  hostFns: HostFunctionDefinition[];
-};
-
-const tenants = new Map<string, Promise<TenantRuntime>>();
-
-async function getOrCreateTenant(
-  tenantId: string,
+async function getOrCreateRuntime(
+  runtimeId: string,
   options: SandboxRuntimeOptions,
-): Promise<TenantRuntime> {
-  let promise = tenants.get(tenantId);
+) {
+  let promise = runtimes.get(runtimeId);
   if (!promise) {
     promise = (async () => {
-      const endTenantCreation = timings(
-        `Creating tenant runtime for ${tenantId}`,
-      );
       const QuickJS = await getQuickJS();
       const runtime = QuickJS.newRuntime({
         maxStackSizeBytes: options.stackSizeBytes,
         memoryLimitBytes: options.memoryLimitBytes,
       });
-      endTenantCreation();
-      return { runtime, hostFns: [] } as TenantRuntime;
+
+      return runtime;
     })();
-    tenants.set(tenantId, promise);
+    runtimes.set(runtimeId, promise);
   }
   return promise;
 }
 
-// builtins moved to ./builtins
-
-function installGlobals(
-  ctx: QuickJSContext,
-  globals?: Record<string, unknown>,
-) {
-  if (!globals) return;
-  for (const [key, value] of Object.entries(globals)) {
-    const handle = toQuickJS(ctx, value);
-    ctx.setProp(ctx.global, key, handle);
-  }
-}
-
-function toQuickJS(ctx: QuickJSContext, value: unknown): QuickJSHandle {
-  switch (typeof value) {
-    case "string":
-      return ctx.newString(value);
-    case "number":
-      return ctx.newNumber(value);
-    case "boolean":
-      return value ? ctx.true : ctx.false;
-    case "undefined":
-      return ctx.undefined;
-    case "object":
-      if (value === null) return ctx.null;
-      if (Array.isArray(value)) {
-        const arr = ctx.newArray();
-        value.forEach((v, i) => {
-          const hv = toQuickJS(ctx, v);
-          ctx.setProp(arr, String(i), hv);
-        });
-        return arr;
-      }
-      // plain object
-      const obj = ctx.newObject();
-      for (const [k, v] of Object.entries(value as Record<string, unknown>)) {
-        const hv = toQuickJS(ctx, v);
-        ctx.setProp(obj, k, hv);
-      }
-      return obj;
-    case "function":
-      // Create a host function bridge that can be called from guest context
-      const functionId = `__hostFn_${Date.now()}_${
-        Math.random().toString(36).substr(2, 9)
-      }`;
-
-      // Store the function in a way that can be accessed from guest context
-      // We'll create a proxy function that calls the original function
-      const proxyFn = ctx.newFunction(
-        functionId,
-        (...args: QuickJSHandle[]) => {
-          try {
-            // Convert QuickJS arguments back to JavaScript values
-            const jsArgs = args.map((h) => {
-              const dumped = ctx.dump(h);
-              return dumped;
-            });
-
-            // Call the original function
-            const result = (value as Function)(...jsArgs);
-
-            // Handle promises returned by host functions
-            if (result && typeof result.then === "function") {
-              // The function returned a promise, we need to handle it asynchronously
-              // Create a deferred promise that will be resolved in the guest context
-              const deferredPromise = ctx.newPromise();
-
-              // Start the async operation
-              result
-                .then((resolvedValue: unknown) => {
-                  try {
-                    const quickJSValue = toQuickJS(ctx, resolvedValue);
-                    deferredPromise.resolve(quickJSValue);
-                    quickJSValue.dispose();
-                    // Execute pending jobs to propagate the promise resolution
-                    ctx.runtime.executePendingJobs();
-                  } catch (e) {
-                    const errorMsg = extractErrorMessage(e);
-                    const errorHandle = ctx.newString(
-                      `Promise resolution error: ${errorMsg}`,
-                    );
-                    deferredPromise.reject(errorHandle);
-                    errorHandle.dispose();
-                    // Execute pending jobs to propagate the promise rejection
-                    ctx.runtime.executePendingJobs();
-                  }
-                })
-                .catch((error: unknown) => {
-                  const errorMsg = extractErrorMessage(error);
-                  const errorHandle = ctx.newString(
-                    `Promise rejection: ${errorMsg}`,
-                  );
-                  deferredPromise.reject(errorHandle);
-                  errorHandle.dispose();
-                  // Execute pending jobs to propagate the promise rejection
-                  ctx.runtime.executePendingJobs();
-                });
-
-              return deferredPromise.handle;
-            } else {
-              // The function returned a synchronous value
-              return toQuickJS(ctx, result);
-            }
-          } catch (e) {
-            const msg = extractErrorMessage(e);
-            return ctx.newString(`HostFunctionError: ${msg}`);
-          }
-        },
-      );
-
-      return proxyFn;
-    case "bigint":
-      // Convert BigInt to string for serialization
-      return ctx.newString(value.toString());
-    case "symbol":
-      // Convert Symbol to string description
-      return ctx.newString(value.toString());
-    default:
-      // For any other type, try to convert to string
-      try {
-        return ctx.newString(String(value));
-      } catch {
-        return ctx.undefined;
-      }
-  }
-}
-
-function applyHostFunctions(
-  ctx: QuickJSContext,
-  defs: HostFunctionDefinition[],
-) {
-  for (const { name, fn } of defs) {
-    const qjsFn = ctx.newFunction(name, (...args: QuickJSHandle[]) => {
-      try {
-        const jsArgs = args.map((h) => ctx.dump(h));
-        const result = fn(...jsArgs);
-        return toQuickJS(ctx, result);
-      } catch (e) {
-        const msg = extractErrorMessage(e);
-        return ctx.newString(`HostError: ${msg}`);
-      }
-    });
-    ctx.setProp(ctx.global, name, qjsFn);
-  }
-}
-
 export async function createSandboxRuntime(
-  tenantId: string,
+  runtimeId: string,
   options: SandboxRuntimeOptions = {},
 ): Promise<SandboxRuntime> {
   const endSandboxCreation = timings(
-    `Creating sandbox runtime for ${tenantId}`,
+    `Creating sandbox runtime for ${runtimeId}`,
   );
-  const tenant = await getOrCreateTenant(tenantId, options);
-
-  const addHostFunction = (def: HostFunctionDefinition) => {
-    tenant.hostFns.push(def);
-  };
+  const runtime = await getOrCreateRuntime(runtimeId, options);
 
   const createContext = (
-    ctxOptions: SandboxContextOptions = {},
+    { interruptAfterMs, ...intrinsics }: SandboxContextOptions = {},
   ): SandboxContext => {
-    const endContextCreation = timings(
-      `Creating context for tenant ${tenantId}`,
-    );
-    const ctx = tenant.runtime.newContext();
-
-    // Builtin modules
-    const [logs] = [installConsole, installBuffer].map((h) => h(ctx)) as [
-      Log[],
-      void,
-    ];
+    const ctx = runtime.newContext({
+      intrinsics: { ...DefaultIntrinsics, ...intrinsics },
+    });
 
     // Interrupt control (per-execution deadline)
     let deadline = 0;
     const setDeadline = (ms?: number) => {
       deadline = ms ? Date.now() + ms : 0;
     };
-    tenant.runtime.setInterruptHandler(() => {
+
+    // Set up interrupt handler for this context
+    runtime.setInterruptHandler(() => {
       const shouldInterrupt = deadline > 0 && Date.now() > deadline;
       if (shouldInterrupt) {
         console.warn(
-          `[cf-sandbox] Execution interrupted due to deadline for tenantId: ${tenantId}`,
+          `[cf-sandbox] Execution interrupted due to deadline for runtimeId: ${runtimeId}`,
         );
       }
       return shouldInterrupt;
     });
 
-    applyHostFunctions(ctx, tenant.hostFns);
-    installGlobals(ctx, ctxOptions.globals);
-    endContextCreation();
+    // Set initial deadline if provided
+    if (interruptAfterMs) {
+      setDeadline(interruptAfterMs);
+    }
 
-    const createFunction = <T = unknown>(
-      ...args: string[]
-    ): (...args: unknown[]) => Promise<EvaluationResult<T>> => {
-      const fnBody = args.pop();
-      const argNames = args;
-
-      if (!fnBody) {
-        throw new Error("Function body is required");
-      }
-
-      const endCompilation = timings(
-        `Compiling function for tenant ${tenantId}`,
-      );
-      setDeadline(ctxOptions.interruptAfterMs);
-
-      // Create the bridge function code
-      const bridgeFunctionName = "__MAIN__";
-      const bridgeCode = `
-        function ${bridgeFunctionName}(${argNames.join(", ")}) {
-          ${fnBody}
-        }
-      `;
-
-      // Compile the bridge function to validate syntax
-      const compileResult = ctx.evalCode(bridgeCode, "index.js", {
-        strict: true,
-        strip: true,
-      });
-
-      if (compileResult.error) {
-        const errorMsg = extractErrorMessage(ctx.dump(compileResult.error));
-        compileResult.error.dispose();
-        throw new Error(`Compilation error: ${errorMsg}`);
-      }
-
-      compileResult.value.dispose();
-      endCompilation();
-
-      return async (...hostArgs: unknown[]): Promise<EvaluationResult<T>> => {
-        const endEvaluation = timings(
-          `Evaluating function for tenant ${tenantId}`,
-        );
-        setDeadline(ctxOptions.interruptAfterMs);
-
-        try {
-          // Get the bridge function from the global scope
-          const bridgeFn = ctx.getProp(ctx.global, bridgeFunctionName);
-          if (ctx.typeof(bridgeFn) === "undefined") {
-            throw new Error("Failed to create bridge function");
-          }
-
-          // Convert host arguments to QuickJS values
-          const quickJSArgs: QuickJSHandle[] = [];
-          for (const arg of hostArgs) {
-            const qjsArg = toQuickJS(ctx, arg);
-            quickJSArgs.push(qjsArg);
-          }
-
-          // Call the bridge function with the converted arguments
-          const callResult = ctx.callFunction(
-            bridgeFn,
-            ctx.undefined,
-            ...quickJSArgs,
-          );
-
-          if (callResult.error) {
-            const errorMsg = extractErrorMessage(ctx.dump(callResult.error));
-            throw new Error(`Guest execution error: ${errorMsg}`);
-          }
-
-          const unwrappedResult = ctx.unwrapResult(callResult);
-
-          // Handle the promise result
-          const promise = ctx.resolvePromise(unwrappedResult);
-
-          ctx.runtime.executePendingJobs();
-
-          const awaited = await promise;
-          if (awaited.error) {
-            const errorMsg = extractErrorMessage(ctx.dump(awaited.error));
-            throw new Error(`Promise rejection: ${errorMsg}`);
-          }
-
-          const resolvedPromise = ctx.unwrapResult(awaited);
-
-          const value = ctx.dump(resolvedPromise);
-
-          // Clean up the bridge function from global scope
-          ctx.setProp(ctx.global, bridgeFunctionName, ctx.undefined);
-
-          endEvaluation();
-          return { value, logs };
-        } catch (e) {
-          console.error(e);
-          throw e;
-        } finally {
-          // Pump any pending jobs (Promises)
-          tenant.runtime.executePendingJobs();
-          setDeadline(0);
-        }
-      };
-    };
-
-    const dispose = () => ctx.dispose();
-
-    return {
-      createFunction,
-
-      [Symbol.dispose]: dispose,
-    };
+    return ctx;
   };
 
   const dispose = () => {
-    tenant.runtime.dispose();
-    tenants.delete(tenantId);
+    runtime.dispose();
+    runtimes.delete(runtimeId);
   };
 
   endSandboxCreation();
   return {
-    tenantId,
-    addHostFunction,
-    createContext: createContext,
+    runtimeId,
+    newContext: createContext,
     [Symbol.dispose]: dispose,
   };
 }
-
-export type { QuickJSWASMModule };

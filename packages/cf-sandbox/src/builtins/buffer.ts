@@ -1,5 +1,8 @@
 import type { QuickJSContext, QuickJSHandle } from "quickjs-emscripten-core";
-import { Scope } from "quickjs-emscripten-core";
+
+export interface BufferBuiltin {
+  [Symbol.dispose]: () => void;
+}
 
 export function base64Encode(input: string): string {
   const bytes = new TextEncoder().encode(input);
@@ -23,36 +26,42 @@ export function base64Decode(input: string): string {
   return new TextDecoder().decode(bytes);
 }
 
-export function installBuffer(ctx: QuickJSContext) {
-  Scope.withScope((scope) => {
-    const atobFn = scope.manage(ctx.newFunction("atob", (input: QuickJSHandle) => {
-      return Scope.withScope((fnScope) => {
-        try {
-          const text = String(ctx.dump(input) ?? "");
-          const decoded = base64Decode(text);
-          return fnScope.manage(ctx.newString(decoded));
-        } finally {
-          input.dispose();
-        }
-      });
-    }));
-    
-    const btoaFn = scope.manage(ctx.newFunction("btoa", (input: QuickJSHandle) => {
-      return Scope.withScope((fnScope) => {
-        try {
-          const text = String(ctx.dump(input) ?? "");
-          const encoded = base64Encode(text);
-          return fnScope.manage(ctx.newString(encoded));
-        } finally {
-          input.dispose();
-        }
-      });
-    }));
+export function installBuffer(ctx: QuickJSContext): BufferBuiltin {
+  const handles: QuickJSHandle[] = [];
 
-    const bufferObj = scope.manage(ctx.newObject());
-    ctx.setProp(bufferObj, "atob", atobFn);
-    ctx.setProp(bufferObj, "btoa", btoaFn);
-    ctx.setProp(ctx.global, "Buffer", bufferObj);
+  const atobFn = ctx.newFunction("atob", (input: QuickJSHandle) => {
+    try {
+      const text = String(ctx.dump(input) ?? "");
+      const decoded = base64Decode(text);
+      return ctx.newString(decoded);
+    } finally {
+      input.dispose();
+    }
   });
+  handles.push(atobFn);
+  
+  const btoaFn = ctx.newFunction("btoa", (input: QuickJSHandle) => {
+    try {
+      const text = String(ctx.dump(input) ?? "");
+      const encoded = base64Encode(text);
+      return ctx.newString(encoded);
+    } finally {
+      input.dispose();
+    }
+  });
+  handles.push(btoaFn);
+
+  const bufferObj = ctx.newObject();
+  handles.push(bufferObj);
+  
+  ctx.setProp(bufferObj, "atob", atobFn);
+  ctx.setProp(bufferObj, "btoa", btoaFn);
+  ctx.setProp(ctx.global, "Buffer", bufferObj);
+
+  return {
+    [Symbol.dispose]() {
+      handles.forEach(handle => handle.dispose());
+    }
+  };
 }
 

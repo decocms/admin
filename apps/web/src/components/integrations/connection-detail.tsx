@@ -198,8 +198,6 @@ function ConfigureConnectionInstanceForm({
 }) {
   const [isEditing, setIsEditing] = useState(false);
 
-  const isReadOnly = !instance;
-
   const form = useForm<Integration>({
     defaultValues: {
       id: instance?.id || crypto.randomUUID(),

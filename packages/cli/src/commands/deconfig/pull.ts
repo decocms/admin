@@ -110,8 +110,8 @@ export async function pullCommand(options: PullOptions): Promise<void> {
     const toUpdate: string[] = [];
     const toDelete: string[] = [];
 
-    // Check remote files against local files
-    for (const [remoteFilePath] of Object.entries(result.files)) {
+    // Check remote files against local files using remote blob hash
+    for (const [remoteFilePath, remoteMeta] of Object.entries(result.files)) {
       if (pathFilter && !remoteFilePath.startsWith(pathFilter)) {
         continue;
       }
@@ -120,24 +120,10 @@ export async function pullCommand(options: PullOptions): Promise<void> {
       if (!localFile) {
         toDownload.push(remoteFilePath);
       } else {
-        // Compare by downloading and checking hash (since we don't have remote hash)
-        try {
-          const remoteContent = await fetchFileContent(
-            remoteFilePath,
-            branchName,
-            workspace,
-            local,
-          );
-          const remoteHash = getBufferHash(remoteContent);
-
-          if (localFile.hash !== remoteHash) {
-            toUpdate.push(remoteFilePath);
-          }
-        } catch (error) {
-          console.warn(
-            `⚠️  Could not compare ${remoteFilePath}: ${error instanceof Error ? error.message : String(error)}`,
-          );
-          toUpdate.push(remoteFilePath); // Err on the side of updating
+        const parts = (remoteMeta.address || "").split(":");
+        const remoteHash = parts.length >= 3 ? parts[2] : "";
+        if (!remoteHash || localFile.hash !== remoteHash) {
+          toUpdate.push(remoteFilePath);
         }
 
         // Remove from local files map (files remaining will be deleted)

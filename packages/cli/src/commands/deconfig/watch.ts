@@ -5,12 +5,14 @@ interface WatchCommandOptions {
   path?: string;
   branch: string;
   fromCtime?: number;
+  workspace?: string;
+  local?: boolean;
 }
 
 export async function watchCommand(
   options: WatchCommandOptions,
 ): Promise<void> {
-  const { path: pathFilter, branch, fromCtime } = options;
+  const { path: pathFilter, branch, fromCtime, workspace, local } = options;
 
   console.log(`👀 Watching branch "${branch}" for changes`);
   if (pathFilter) {
@@ -53,6 +55,8 @@ export async function watchCommand(
         branchName: branch,
         pathFilter,
         fromCtime,
+        workspace,
+        local,
       },
       logChanges,
     );

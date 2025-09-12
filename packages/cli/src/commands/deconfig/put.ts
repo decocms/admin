@@ -9,10 +9,20 @@ interface PutOptions {
   file?: string;
   content?: string;
   metadata?: string;
+  workspace?: string;
+  local?: boolean;
 }
 
 export async function putCommand(options: PutOptions): Promise<void> {
-  const { path: filePath, branch, file, content, metadata } = options;
+  const {
+    path: filePath,
+    branch,
+    file,
+    content,
+    metadata,
+    workspace,
+    local,
+  } = options;
 
   console.log(`📤 Putting file "${filePath}" to branch "${branch}"`);
 
@@ -52,7 +62,14 @@ export async function putCommand(options: PutOptions): Promise<void> {
     }
 
     // Put file content
-    await putFileContent(filePath, fileContent, branch, parsedMetadata);
+    await putFileContent(
+      filePath,
+      fileContent,
+      branch,
+      parsedMetadata,
+      workspace,
+      local,
+    );
 
     const size = Buffer.isBuffer(fileContent)
       ? fileContent.length

@@ -8,16 +8,18 @@ interface GetOptions {
   path: string;
   branch: string;
   output?: string;
+  workspace?: string;
+  local?: boolean;
 }
 
 export async function getCommand(options: GetOptions): Promise<void> {
-  const { path: filePath, branch, output } = options;
+  const { path: filePath, branch, output, workspace, local } = options;
 
   console.log(`📥 Getting file "${filePath}" from branch "${branch}"`);
 
   try {
     // Fetch file content
-    const content = await fetchFileContent(filePath, branch);
+    const content = await fetchFileContent(filePath, branch, workspace, local);
 
     if (output) {
       // Save to specified output file

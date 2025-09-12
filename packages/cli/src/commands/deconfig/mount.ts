@@ -8,6 +8,8 @@ interface MountOptions {
   path: string;
   fromCtime?: number;
   pathFilter?: string;
+  workspace?: string;
+  local?: boolean;
 }
 
 // File system syncer implementation
@@ -71,7 +73,14 @@ function createFileSystemSyncer(localPath: string) {
 }
 
 export async function mountCommand(options: MountOptions): Promise<void> {
-  const { branchName, path: localPath, fromCtime, pathFilter } = options;
+  const {
+    branchName,
+    path: localPath,
+    fromCtime,
+    pathFilter,
+    workspace,
+    local,
+  } = options;
 
   console.log(`🔗 Mounting branch "${branchName}" to local path: ${localPath}`);
 
@@ -102,6 +111,8 @@ export async function mountCommand(options: MountOptions): Promise<void> {
         branchName,
         fromCtime,
         pathFilter,
+        workspace,
+        local,
       },
       syncer,
     );

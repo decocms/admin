@@ -71,6 +71,7 @@ import {
 } from "./commands/tools/call-tool.js";
 import { completionCommand } from "./commands/completion/completion.js";
 import { installCompletionCommand } from "./commands/completion/install.js";
+import {
   mountCommand,
   getCommand,
   putCommand,
@@ -538,12 +539,18 @@ const deconfigGet = new Command("get")
   .argument("<path>", "File path to get")
   .requiredOption("-b, --branch <branchName>", "Branch name")
   .option("-o, --output <file>", "Output file (defaults to stdout)")
+  .option("-w, --workspace <workspace>", "Workspace name")
   .action(async (path, options) => {
     try {
+      const config = await getConfig({
+        inlineOptions: { workspace: options.workspace },
+      });
       await getCommand({
         path,
         branch: options.branch,
         output: options.output,
+        workspace: config.workspace,
+        local: config.local,
       });
     } catch (error) {
       console.error(
@@ -562,14 +569,20 @@ const deconfigPut = new Command("put")
   .option("-f, --file <file>", "Local file to upload")
   .option("-c, --content <content>", "Content to upload")
   .option("-m, --metadata <metadata>", "Metadata JSON string")
+  .option("-w, --workspace <workspace>", "Workspace name")
   .action(async (path, options) => {
     try {
+      const config = await getConfig({
+        inlineOptions: { workspace: options.workspace },
+      });
       await putCommand({
         path,
         branch: options.branch,
         file: options.file,
         content: options.content,
         metadata: options.metadata,
+        workspace: config.workspace,
+        local: config.local,
       });
     } catch (error) {
       console.error(
@@ -591,12 +604,18 @@ const deconfigWatch = new Command("watch")
     (value) => parseInt(value),
     1,
   )
+  .option("-w, --workspace <workspace>", "Workspace name")
   .action(async (options) => {
     try {
+      const config = await getConfig({
+        inlineOptions: { workspace: options.workspace },
+      });
       await watchCommand({
         branch: options.branch,
         path: options.path,
         fromCtime: options.fromCtime,
+        workspace: config.workspace,
+        local: config.local,
       });
     } catch (error) {
       console.error(
@@ -621,13 +640,19 @@ const deconfigMount = new Command("mount")
     1,
   )
   .option("--path-filter <filter>", "Filter files by path pattern")
+  .option("-w, --workspace <workspace>", "Workspace name")
   .action(async (options) => {
     try {
+      const config = await getConfig({
+        inlineOptions: { workspace: options.workspace },
+      });
       await mountCommand({
         branchName: options.branch,
         path: options.path,
         fromCtime: options.fromCtime,
         pathFilter: options.pathFilter,
+        workspace: config.workspace,
+        local: config.local,
       });
     } catch (error) {
       console.error(
@@ -699,7 +724,7 @@ const program = new Command()
   .addCommand(linkCmd)
   .addCommand(gen)
   .addCommand(create)
-  .addCommand(deconfig);
+  .addCommand(deconfig)
   .addCommand(completion)
   .addCommand(installCompletion);
 

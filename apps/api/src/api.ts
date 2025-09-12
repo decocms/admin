@@ -32,6 +32,7 @@ import {
   withMCPAuthorization,
   withMCPErrorHandling,
   wrapToolFn,
+  watchSSE,
 } from "@deco/sdk/mcp";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import {
@@ -448,6 +449,14 @@ app.use(withActorsMiddleware);
 
 app.post(`/contracts/mcp`, createMCPHandlerFor(CONTRACTS_TOOLS));
 app.post(`/deconfig/mcp`, createMCPHandlerFor(DECONFIG_TOOLS));
+app.post(`/:org/:project/deconfig/watch`, (ctx) => {
+  const appCtx = honoCtxToAppCtx(ctx);
+  return watchSSE(appCtx, {
+    branchName: ctx.req.query("branch"),
+    pathFilter: ctx.req.query("pathFilter"),
+    fromCtime: +(ctx.req.query("fromCtime") ?? "1"),
+  });
+});
 
 app.all("/mcp", createMCPHandlerFor(GLOBAL_TOOLS));
 app.all("/:org/:project/mcp", createMCPHandlerFor(PROJECT_TOOLS));

@@ -1,4 +1,4 @@
-import { readSession } from "../../lib/session.js";
+import { createWorkspaceClient, workspaceClientParams } from "../../lib/mcp.js";
 import { Buffer } from "node:buffer";
 
 export interface FileChangeEvent {
@@ -23,7 +23,8 @@ export interface WatchOptions {
   branchName: string;
   pathFilter?: string;
   fromCtime?: number;
-  url?: string;
+  workspace?: string;
+  local?: boolean;
 }
 
 /**
@@ -32,40 +33,39 @@ export interface WatchOptions {
 export async function fetchFileContent(
   filePath: string,
   branchName: string,
-  baseUrl: string = "https://deconfig.deco.page",
+  workspace?: string,
+  local?: boolean,
 ): Promise<Buffer> {
   try {
-    // Get authentication headers
-    const session = await readSession();
-
-    console.log(`${baseUrl}/mcp/call-tool/READ_FILE`, session?.access_token);
-    // Call the READ_FILE tool via MCP
-    const response = await fetch(`${baseUrl}/mcp/call-tool/READ_FILE`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${session?.access_token}`,
-      },
-      body: JSON.stringify({
-        branch: branchName,
-        path: filePath,
-      }),
+    // Create workspace client for deconfig tools
+    const client = await createWorkspaceClient({
+      workspace,
+      local,
     });
 
-    if (!response.ok) {
-      throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+    // Call the READ_FILE tool via MCP
+    const response = await client.callTool({
+      name: "READ_FILE",
+      arguments: {
+        branch: branchName,
+        path: filePath,
+      },
+    });
+
+    if (response.isError) {
+      const errorMessage = Array.isArray(response.content)
+        ? response.content[0]?.text || "Failed to read file"
+        : "Failed to read file";
+      throw new Error(errorMessage);
     }
 
-    const result: {
-      error?: { message: string };
-      result?: { content: string };
-    } = await response.json();
-    if (result.error || !result.result) {
-      throw new Error(result.error?.message || "Failed to read file");
+    const result = response.structuredContent as { content: string };
+    if (!result || !result.content) {
+      throw new Error("No content returned from READ_FILE tool");
     }
 
     // Decode base64 content to Buffer
-    return Buffer.from(result.result.content, "base64");
+    return Buffer.from(result.content, "base64");
   } catch (error) {
     console.error(
       `❌ Failed to fetch content for ${filePath}:`,
@@ -83,11 +83,15 @@ export async function putFileContent(
   content: Buffer | string,
   branchName: string,
   metadata?: Record<string, unknown>,
-  baseUrl: string = "https://deconfig.deco.page",
+  workspace?: string,
+  local?: boolean,
 ): Promise<void> {
   try {
-    // Get authentication headers
-    const session = await readSession();
+    // Create workspace client for deconfig tools
+    const client = await createWorkspaceClient({
+      workspace,
+      local,
+    });
 
     // Convert content to base64
     const base64Content = Buffer.isBuffer(content)
@@ -95,31 +99,21 @@ export async function putFileContent(
       : Buffer.from(content).toString("base64");
 
     // Call the PUT_FILE tool via MCP
-    const response = await fetch(`${baseUrl}/mcp/call-tool/PUT_FILE`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${session?.access_token}`,
-      },
-      body: JSON.stringify({
+    const response = await client.callTool({
+      name: "PUT_FILE",
+      arguments: {
         branch: branchName,
         path: filePath,
-        content: base64Content,
+        content: { base64: base64Content },
         metadata,
-      }),
+      },
     });
 
-    if (!response.ok) {
-      throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-    }
-
-    const result: {
-      error?: { message: string };
-      result?: { success: boolean };
-    } = await response.json();
-
-    if (result.error || !result?.result) {
-      throw new Error(result.error?.message || "Failed to put file");
+    if (response.isError) {
+      const errorMessage = Array.isArray(response.content)
+        ? response.content[0]?.text || "Failed to put file"
+        : "Failed to put file";
+      throw new Error(errorMessage);
     }
   } catch (error) {
     console.error(
@@ -141,13 +135,20 @@ export async function watch(
     branchName,
     fromCtime = 1,
     pathFilter,
-    url = "https://deconfig.deco.page",
+    workspace,
+    local = false,
   } = options;
 
   console.log(`📡 Watching branch "${branchName}" for changes...`);
   if (pathFilter) {
     console.log(`   🔍 Path filter: ${pathFilter}`);
   }
+
+  // Get workspace client params for authentication headers
+  const { headers, url: baseUrl } = await workspaceClientParams({
+    workspace,
+    local,
+  });
 
   // Build SSE URL
   const searchParams = new URLSearchParams();
@@ -158,7 +159,7 @@ export async function watch(
     searchParams.set("pathFilter", pathFilter);
   }
 
-  const sseUrl = `${url}/watch?${searchParams.toString()}`;
+  const sseUrl = `${baseUrl}/deconfig/watch?${searchParams.toString()}`;
 
   // Set up SSE connection with retry logic
   let retryCount = 0;
@@ -169,15 +170,12 @@ export async function watch(
     console.log(`🔄 Connecting to SSE stream... (attempt ${retryCount + 1})`);
 
     try {
-      // Get authentication headers
-      const authHeaders = await readSession();
-
       // Use fetch with ReadableStream for Node.js compatibility
       const response = await fetch(sseUrl, {
         headers: {
           Accept: "text/event-stream",
           "Cache-Control": "no-cache",
-          Authorization: `Bearer ${authHeaders?.access_token}`,
+          ...headers,
         },
       });
 
@@ -217,7 +215,7 @@ export async function watch(
             if (line.trim()) {
               console.log(`📝 Processing line: ${JSON.stringify(line)}`);
             }
-            await processSSELine(line, branchName, url, callback);
+            await processSSELine(line, branchName, workspace, local, callback);
           }
         }
       } catch (error) {
@@ -256,7 +254,8 @@ export async function watch(
 async function processSSELine(
   line: string,
   branchName: string,
-  baseUrl: string,
+  workspace: string | undefined,
+  local: boolean,
   callback: (event: FileChangeEventWithContent) => Promise<void> | void,
 ): Promise<void> {
   if (!line.trim()) return;
@@ -288,7 +287,8 @@ async function processSSELine(
           eventWithContent.content = await fetchFileContent(
             event.path,
             branchName,
-            baseUrl,
+            workspace,
+            local,
           );
           console.log(
             `✅ Fetched content: ${eventWithContent.content?.length} bytes`,

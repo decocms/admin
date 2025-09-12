@@ -49,7 +49,7 @@ import * as teamsAPI from "./teams/api.ts";
 import * as threadsAPI from "./threads/api.ts";
 import * as triggersAPI from "./triggers/api.ts";
 import * as walletAPI from "./wallet/api.ts";
-
+export { watchSSE } from "./deconfig/watch-sse.ts";
 export type { ContractState } from "./contracts/api.ts";
 export { Blobs, Branch } from "./deconfig/api.ts";
 

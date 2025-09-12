@@ -11,6 +11,7 @@
  * by the existing Durable Object infrastructure.
  */
 import { z } from "zod";
+import { DECO_CHAT_ISSUER } from "../../auth/jwt.ts";
 import type { WithTool } from "../assertions.ts";
 import {
   assertHasWorkspace,
@@ -25,7 +26,6 @@ import {
 import { withProject } from "../index.ts";
 import type { BranchRpc, ConflictEntry, DiffEntry } from "./branch.ts";
 import { newBranchesCRUD, type BranchRecord } from "./branches-db.ts";
-import { DECO_CHAT_ISSUER } from "../../auth/jwt.ts";
 
 interface DeconfigState {
   pathPrefix?: string;
@@ -46,7 +46,7 @@ export enum MergeStrategy {
 }
 
 // Helper function to get workspace from context
-const projectFor = (c: WithTool<AppContext>): string => {
+const projectFor = (c: AppContext): string => {
   const workspace = c.workspace?.value;
   if (!workspace) {
     throw new Error("No project context available");
@@ -56,7 +56,7 @@ const projectFor = (c: WithTool<AppContext>): string => {
 
 // Helper function to get branch RPC (using branchName directly for performance)
 export const branchRpcFor = async (
-  c: WithTool<AppContext>,
+  c: AppContext,
   branchName?: string,
 ): Promise<Rpc.Stub<BranchRpc>> => {
   assertHasWorkspace(c);

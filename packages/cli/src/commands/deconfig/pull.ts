@@ -10,7 +10,6 @@ import process from "node:process";
 import { fetchFileContent } from "./base.js";
 import { walk } from "../../lib/fs.js";
 import { createHash } from "crypto";
-import { Buffer } from "node:buffer";
 
 interface PullOptions {
   branchName: string;
@@ -28,10 +27,6 @@ function getFileHash(filePath: string): string {
   } catch {
     return "";
   }
-}
-
-function getBufferHash(buffer: Buffer): string {
-  return createHash("sha256").update(buffer).digest("hex");
 }
 
 export async function pullCommand(options: PullOptions): Promise<void> {

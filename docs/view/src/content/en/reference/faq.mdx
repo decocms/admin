@@ -15,14 +15,6 @@ import { Accordion } from "../../../components/ui/Accordion";
   <Accordion title="Do I need a front-end?" icon="Monitor" client:load>
     No. You can deploy server-only projects for API-first use cases.
   </Accordion>
-
-  <Accordion title="How do I store secrets?" icon="Lock" client:load>
-    Cloudflare environment variables → they surface in `env.INTEGRATION_NAME`.
-  </Accordion>
-
-  <Accordion title="Where are logs?" icon="FileText" client:load>
-    `deco logs` locally, or Cloudflare Dash → Workers → Logs.
-  </Accordion>
 </AccordionGroup>
 
 ## Development Questions
@@ -40,14 +32,6 @@ import { Accordion } from "../../../components/ui/Accordion";
     2. Run `npm run gen` to get typed interfaces
     3. Use `env.INTEGRATION_NAME.method()` in your tools
   </Accordion>
-
-  <Accordion title="How do I deploy my app?" icon="Rocket" client:load>
-    Run `deco deploy` to deploy to Cloudflare Workers. The CLI will handle building and publishing.
-  </Accordion>
-
-  <Accordion title="How do I debug my workflows?" icon="Bug" client:load>
-    Use `console.log` in your tools and workflow steps. Check the terminal output during development or use `wrangler tail` for production logs.
-  </Accordion>
 </AccordionGroup>
 
 ## Technical Questions
@@ -58,15 +42,8 @@ import { Accordion } from "../../../components/ui/Accordion";
   </Accordion>
 
   <Accordion title="Can I use my own database?" icon="Database" client:load>
-    Yes. You can use Cloudflare D1, Workers KV, or connect to external databases via HTTP APIs.
-  </Accordion>
-
-  <Accordion title="How do I handle authentication?" icon="Shield" client:load>
-    Store API keys as Cloudflare environment variables. They'll be available in your `env` object.
-  </Accordion>
-
-  <Accordion title="What are the Cloudflare Workers limits?" icon="Gauge" client:load >
-    Free tier: 50ms CPU time per request. Paid tiers: up to 30s with Workers Unbound. Check the [Cloudflare Workers documentation](https://developers.cloudflare.com/workers/) for current limits.
+    Yes. You can use Cloudflare D1, Workers KV, or connect to external databases like 
+    Supabase or Planetscale via HTTP APIs.
   </Accordion>
 </AccordionGroup>
 
@@ -79,10 +56,6 @@ import { Accordion } from "../../../components/ui/Accordion";
 
   <Accordion title="Can I create custom integrations?" icon="Code" client:load>
     Yes, you can write custom tools that call any HTTP API using `fetch`.
-  </Accordion>
-
-  <Accordion title="How do I use the Knowledge Base?" icon="BookOpen" client:load>
-    Upload documents via the deco UI. The platform will index them and make them available to your agents automatically.
   </Accordion>
 </AccordionGroup>
 
@@ -100,15 +73,5 @@ import { Accordion } from "../../../components/ui/Accordion";
     1. Make sure you called `.commit()` at the end
     2. Check that all steps are properly chained
     3. Verify your input/output schemas match
-  </Accordion>
-
-  <Accordion title="The RPC client doesn't have my new tool" icon="RefreshCw" client:load>
-    Run `DECO_SELF_URL=<your-dev-url> npm run gen:self` to generate types for your own tools.
-  </Accordion>
-
-  <Accordion title="Deployment failed" icon="XCircle" client:load>
-    1. Check your Cloudflare credentials
-    2. Ensure the frontend builds without errors
-    3. Verify your `wrangler.toml` configuration
   </Accordion>
 </AccordionGroup>

@@ -1,41 +1,48 @@
 ---
-title: Reference and Resources
+title: Useful Resources
 description: Useful links and resources for deco development
 icon: Library
 ---
 
-Here is a collection of useful links and resources decoeco.chat and its ecosystem:
+Here is a collection of useful links and resources regarding deco and its ecosystem:
 
 ## Core Documentation
 
-- **deco Source (GitHub):** The platform's code is open-source. Check out the [deco.cx/chat repository on GitHub](https://github.com/deco-cx/chat) for the core codebase. It's a great reference to understand how things work under the hood, and you can even contribute or browse issues for insight.
-
-- **Deco CLI Documentation:** For details on CLI commands and options, see the **Deco CLI Reference** on the JSR package registry (which includes all commands and usage examples). This is essentially the README for `@deco/cli` and is kept up-to-date with the latest CLI version.
+- **Deco source (GitHub):** The platform's code is open-source. Check out the [deco.cx/chat repository on GitHub](https://github.com/deco-cx/chat) for the core codebase. It's a great reference to understand how things work under the hood, and you can even contribute or browse issues for insight.
 
 ## Framework Documentation
 
-- **Mastra Framework Docs:** deco builds on the Mastra agent framework. To dive deeper into workflow patterns, agent design, and advanced features, visit the [Mastra Documentation](https://mastra.ai/en/docs/workflows/control-flow). Key sections include the Workflows guide and API reference, which explain the `.then()`/`.parallel()`/`.branch()`/... syntax in detail.
+- **Mastra Framework Docs:** deco currently builds on top of the Mastra agent framework. 
+To dive deeper into workflow patterns, agent design, and advanced features, visit the 
+[Mastra Documentation](https://mastra.ai/en/docs/workflows/control-flow). 
+Key sections include the Workflows guide and API reference, which explain the 
+`.then()`/`.parallel()`/`.branch()`/... syntax in detail.
 
-- **Zod Documentation:** All input/output schemas in deco are defined with Zod. The [Zod official documentation](https://zod.dev/) is an excellent resource to learn about schema definitions, parsing, and error handling.
+- **Zod Documentation:** All input/output schemas in deco are defined with Zod. 
+The [Zod official documentation](https://zod.dev/) is an excellent resource to learn about schema definitions, 
+parsing, and error handling.
 
 ## Examples and Templates
 
-- **Example Projects (deco Apps):** The deco.cx organization has an **apps** repository containing open-source MCP apps that power deco. These can serve as real-world examples. You may find sample tools, workflows, and usage of various integrations there. It's a helpful way to see how a larger project is structured beyond the templates.
+- **Default template source code (deco-create):** This is the repo cloned to your machine when initializing a new app: [Deco create](https://github.com/deco-cx/deco-create)
 
 ## Infrastructure
 
-- **Cloudflare Workers Docs:** Since your agent runs on Workers, the [Cloudflare Workers documentation](https://developers.cloudflare.com/workers/) can be useful. Topics like environment variables, Durable Objects, Cron Triggers, and Wrangler are covered there.
+- **Cloudflare Workers Docs:** Since your agent runs on Workers, the 
+[Cloudflare Workers documentation](https://developers.cloudflare.com/workers/) can be useful. 
+Topics like accessible Web APIs, Durable Objects, Cron Triggers, and Wrangler are covered there.
 
-- **Mastra GitHub & Examples:** If you're curious, the Mastra framework's source and example workflows are available (check the Mastra docs site for links). There are community examples like conditional branching and human-in-the-loop workflows that illustrate best practices.
+- **Mastra GitHub & Examples:** If you're curious, the Mastra framework's source and example 
+workflows are available (check the Mastra docs site for links). There are community examples 
+like conditional branching and human-in-the-loop workflows that illustrate best practices.
 
 ## Community
 
-- **deco Community & Support:** Engage with other developers building on deco. Often, others have solved similar problems or can provide guidance on tricky integrations.
-
-- **GitHub Repos for Integrations:** Some integrations might have their own repos or reference docs (e.g., deco-cx/actors library for Durable Object actors, or deco-cx/vibeflare for a CMS integration). Explore the deco-cx GitHub organization for these ancillary projects.
+- **deco Community & Support:** Engage with other developers building on deco. Often, others
+have solved similar problems or can provide guidance on tricky integrations. [join our Discord here](https://deco.cx/discord)
 
 ## Additional Resources
 
 - **deco.camp:** Become an Agentic Engineer: [https://deco.camp/](https://deco.camp/)
 
-- **deco Platform:** For enterprise features like SOC 2, SSO, FinOps console, or SLA: [https://decocms.com](https://decocms.com/)
+- **deco CMS homepage:** For enterprise features like SOC 2, SSO, FinOps console, or SLA: [https://decocms.com](https://decocms.com/)

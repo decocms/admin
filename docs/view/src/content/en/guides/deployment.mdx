@@ -4,35 +4,45 @@ description: Learn how to deploy your deco applications to production
 icon: Rocket
 ---
 
-When you're ready to share your agent with the world (or your team), you'll deploy it to Cloudflare Workers via the deco CLI. Deployment in deco is remarkably simple compared to traditional apps – since your entire stack (front and back) is serverless and lives at Cloudflare's edge, going to production is often just one command.
+When you're ready to share your app with the world (or your team), you'll deploy it to Cloudflare Workers via the deco CLI. 
+Deployment in deco is remarkably simple compared to traditional apps – since your entire stack is serverless 
+and lives at Cloudflare's edge, going to production is often just one command.
+
+On the default template, all it takes is to run `npm run deploy` at the root of your project.
 
 ## Build and Deploy Process
 
 ### 1. Build the frontend
 
-The `npm run deploy` script will typically run `npm run build` in the `/view` directory to produce optimized static files (if you have a frontend). This yields an `dist/` or `build/` folder with your HTML, JS, CSS assets ready for production.
+The `npm run deploy` script will typically run `npm run build` in the `/view` directory to produce optimized 
+static files (if you have a frontend). This yields an `dist/` or `build/` folder with your HTML, JS, CSS assets ready for production.
 
-### 2. Publish the worker
+### 2. Building the worker and uploading view assets
 
-After building the view, the deploy script triggers the Cloudflare Workers publish. Under the hood this might call `wrangler publish` or use the deco CLI's deployment API. It takes your `server/main.ts` (and bundled dependencies) and uploads it to Cloudflare, along with the static assets (which get uploaded to Workers KV or as an asset bundle). The `wrangler.toml` is used to find account IDs, project names, and any bindings.
+After building the view, the deploy script triggers the Cloudflare Workers build. Under the hood this
+will call `wrangler build` or use the deco CLI's deployment API directly with Typescript. It takes your `server/main.ts` 
+(and bundled dependencies) and uploads it to Cloudflare, along with the static assets (which get uploaded to Workers KV or 
+as an asset bundle). The `wrangler.toml` is used to identify your project and bindings configuration.
 
-When `deco deploy` finishes, your app will be live at a URL, likely something like `https://<app>.<workspace>.deco.app` or a `workers.dev` subdomain (the exact pattern may depend on your configuration). The CLI or output will show the deployed address.
+This will require that you're locally authenticated (you can always run `npx deco-cli login`) on your own machine;
+But can also be done by passing in an API token with permission to access the `HOSTING_APP_DEPLOY` resource on your project, often
+useful for running automated CI/CD deployment.
+
+> The api token can be specified on the `deco deploy -t` argument.
+
+When `deco deploy` finishes, your app will be live at a URL, likely something like 
+`https://<app-name>.deco.page`. The CLI or output will show the deployed address.
 
 ## Cloudflare Workers Runtime Notes
 
-- Your code runs on Cloudflare's global edge network. It means low latency access for users around the world and automatic scaling. It also means some constraints: e.g., CPU time per request is limited (50ms by default for free tier, 50ms+ and up to 30s for paid with "Workers Unbound" – the exact policy may vary).
+- Your code runs on Cloudflare's global edge network. It means low latency access for users around the world and automatic scaling. 
 
-- If your workflows or tools do heavy computation or wait on external APIs, that's okay – just be mindful to use asynchronous waits properly (which you likely are, since most I/O is via `await` calls). Cloudflare will suspend the worker during fetch waits so it doesn't count against CPU time heavily.
-
-- **Durable Objects**: If you need longer-running or stateful interactions (like maintaining a conversation state beyond the context provided by deco by default), you might use Durable Objects. These are like single-instance workers that can hold state. Deco's advanced libs (like the actors library) can help if needed. But for many use cases, storing state in the agent's conversation history or a database is sufficient.
-
-- **Cron Triggers**: deco's platform supports agent triggers (as seen in the intro video) – e.g., running an agent daily at 9am. Under the hood, this may use Workers Cron Triggers. If you set up triggers via the UI, ensure you deploy after scheduling them so the Worker has the trigger configured in `wrangler.toml`.
-
-- **Limits**: Keep an eye on your usage. Cloudflare's free tier is generous but has limits on request count, etc. If your agent is going to be heavily used, consider enabling billing or at least monitoring usage in the Cloudflare dashboard.
+- If your workflows or tools do heavy computation or wait on external APIs, that's okay – just be mindful to use asynchronous waits properly 
+(which you likely are, since most I/O is via `await` calls). Cloudflare will suspend the worker during fetch waits so it doesn't count against CPU time heavily.
 
 ## Custom Domains
 
-If you want to serve the app on your own domain (e.g., `ai.mycompany.com`), you can set up Cloudflare DNS for that domain and map it to the worker (using Cloudflare's custom domains for Workers feature). This is outside the scope of deco specific docs, but worth mentioning. Alternatively, you can frame the deco app within another site or just use the provided URL.
+> Guide Coming Soon
 
 ## Post-Deploy Testing
 
@@ -41,10 +51,9 @@ Always test your deployed agent as a user would:
 - Open the production URL, ensure the frontend loads.
 - Try interacting with the agent (the Worker should be live and responding).
 - Check that integrations (which might have different credentials in prod) work as expected.
-- Use `deco hosting list -w <workspace>` to see your deployed apps if needed.
 
 ## Rollbacks and Updates
 
-If something goes wrong, you can update your code and deploy again. Cloudflare doesn't have a built-in version rollback via CLI, but since deployments are fast, you can re-deploy an earlier stable version of your code. It's wise to use version control (git) for your project so you can revert changes locally and redeploy.
-
-Your continuous integration (CI) could also be set up to deploy on git pushes, but the deco CLI simplifies things enough that manual deploys are okay for many cases. In a team, just ensure only one person deploys at a time to avoid clashing versions.
+If something goes wrong, you can update your code and deploy again. We doen't have a built-in version rollback via 
+CLI, but since deployments are fast, you can re-deploy an earlier stable version of your code. It's wise to use version 
+control (git) for your project so you can revert changes locally and redeploy.

@@ -1,0 +1,76 @@
+---
+title: Construindo Views
+description: Aprenda como construir frontends React personalizados no deco
+icon: Globe
+---
+
+Se você deseja fornecer uma interface de usuário personalizada para seus agentes (por exemplo, um dashboard web ou uma UI de chat), a estrutura de projeto do deco suporta um frontend completo **React + Tailwind** que coexiste com o backend. Veja como funciona a camada de view:
+
+## Stack Frontend
+
+A view do Deco é construída com [React](https://react.dev/) (uma biblioteca de UI popular) e [Tailwind CSS](https://tailwindcss.com/) (um framework CSS utility-first para estilização). O template usa Vite para bundling e TanStack Router para roteamento (em vez do React Router).
+
+## Configurando a View
+
+Se você usou um template com view, o básico já deve estar configurado:
+
+- O CSS é gerenciado pelo Tailwind (verifique `tailwind.config.js` se presente, e estilos globais podem ser aplicados via CSS index ou dentro dos componentes).
+
+- Roteamento: O template provavelmente tem um `routes/index.tsx` para a rota home, e arquivos de rota adicionais. Novas páginas podem ser criadas adicionando novos arquivos em `src/routes` e conectando-os ao router em `main.tsx` (como mostrado no exemplo do template).
+
+- Gerenciamento de estado: Não especificamente incluído pelo deco por padrão, mas como este é um app React, você pode usar React context ou bibliotecas como Zustand, etc., se necessário. Para apps simples, você pode não precisar de nenhum estado global além do que React Query ou as chamadas RPC fornecem.
+
+## Chamadas RPC da View para o Servidor
+
+O arquivo `src/lib/rpc.ts` fornece um cliente que é sua porta de entrada para chamar funções backend do frontend. Isso é configurado via biblioteca `@deco/workers-runtime/client` e usa os tipos do seu `deco.gen.ts`. Na prática:
+
+- Para chamar uma Tool da UI, você faz: `await client.TOOL_ID(input)`.
+- Para chamar um Workflow, faça: `await client.WORKFLOW_ID(input)`.
+
+O cliente fará uma requisição HTTP para o endpoint MCP do seu Worker por baixo dos panos, e retornará o resultado JSON como uma promise. Isso é super conveniente – não há necessidade de escrever manualmente lógica de fetch ou endpoints de API para suas próprias tools. Apenas certifique-se de que seu servidor de desenvolvimento esteja rodando (para que as chamadas passem localmente), ou se deployado, o mesmo código do cliente chamará o endpoint de produção.
+
+Por exemplo, imagine que você tem uma tool `HELLO_TOOL` como anteriormente. Em um componente React você pode ter:
+
+```tsx
+import { client } from "../lib/rpc";
+
+function GreetingButton() {
+  const [message, setMessage] = useState("");
+  const sayHello = async () => {
+    const result = await client.HELLO_TOOL({ name: "Deco" });
+    setMessage(result.greeting);
+  };
+  return (
+    <div>
+      <button onClick={sayHello}>Say Hello</button>
+      {message && <p>{message}</p>}
+    </div>
+  );
+}
+```
+
+Clicar no botão invocará a `HELLO_TOOL` do Cloudflare Worker e exibirá a saudação. O cliente RPC lida com o roteamento da chamada para o endpoint correto.
+
+## Roteamento e Navegação
+
+O template usa **TanStack Router**, que é um router type-safe similar em espírito ao React Router. Rotas são definidas como funções que criam objetos de rota. Por exemplo, um `MyPage.tsx` pode exportar `export default (parentRoute) => createRoute({...})` que é então importado em `main.tsx` e adicionado à árvore de rotas. Você pode organizar rotas aninhadas, layouts, e assim por diante. Os detalhes exatos não são cruciais para começar – apenas saiba que para adicionar uma nova página, você provavelmente:
+
+1. Cria um novo arquivo no diretório `routes/`, define o componente e a rota.
+2. Importa e inclui essa rota na árvore de rotas em `main.tsx`.
+3. Adiciona um link de navegação ou navegação programática conforme necessário.
+
+## Componentes de UI
+
+Tailwind torna a estilização mais fácil usando classes diretamente no JSX. Você pode ter componentes pré-feitos (botões, formulários, etc.) em `src/components`. Sinta-se livre para construir os seus próprios ou integrar um design system. O importante é que o frontend pode ser qualquer app React; o deco não impõe muito além da configuração RPC. Então você pode usar bibliotecas React (gráficos, modais, etc.) como normalmente faria.
+
+## Conectando a Tools/Workflows
+
+Cobrimos o uso de RPC. Vale a pena notar que porque o cliente RPC é gerado a partir dos seus tipos, se você adicionar uma nova tool e executar novamente `npm run gen`, seu `client` automaticamente terá o novo método. Isso previne chamar algo que não existe. Se você tentar chamar uma tool que não listou em `withRuntime` no servidor, o compilador TypeScript reclamará (e em runtime seria 404). Então sempre atualize a geração após adicionar novas capacidades, e atualize sua UI adequadamente.
+
+## Hot Reload & Desenvolvimento
+
+Durante `npm run dev`, se você editar um componente React, HMR (Hot Module Reloading) atualizará no navegador sem um refresh completo. Se você editar código do servidor (uma tool/workflow), o Worker reiniciará (o CLI/script dev lida com isso) e você pode precisar atualizar a página ou executar novamente a ação. Verifique o terminal para quaisquer erros no lado do servidor durante o desenvolvimento.
+
+Em resumo, construir a view é como construir qualquer app web React, mas com a vantagem de que seu backend está apenas a uma chamada de função de distância via cliente. Isso significa que você não precisa configurar endpoints REST ou GraphQL separados para sua lógica de AI – está tudo unificado.
+
+_(Se você prefere não ter uma view personalizada, você pode ignorar/remover a pasta `/view`. Agentes também podem ser usados puramente via API ou a interface web do deco. Mas para aplicações personalizadas, a view é onde você cria experiências sob medida para usuários finais.)_

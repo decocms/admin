@@ -73,10 +73,7 @@ export type SandboxContext = QuickJSContext;
 
 const runtimes = new Map<string, Promise<QuickJSRuntime>>();
 
-async function getOrCreateRuntime(
-  runtimeId: string,
-  options: SandboxRuntimeOptions,
-) {
+function getOrCreateRuntime(runtimeId: string, options: SandboxRuntimeOptions) {
   let promise = runtimes.get(runtimeId);
   if (!promise) {
     promise = (async () => {

@@ -8,7 +8,7 @@ import {
 
 let quickJSSingleton: Promise<QuickJSWASMModule> | undefined;
 
-export async function getQuickJS() {
+export function getQuickJS() {
   quickJSSingleton ??= newQuickJSWASMModuleFromVariant(
     newVariant(variant, { wasmModule }),
   );

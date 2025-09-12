@@ -2,7 +2,6 @@ import {
   callFunction,
   createSandboxRuntime,
   inspect,
-  installBuffer,
   installConsole,
   QuickJSHandle,
 } from "@deco/cf-sandbox";
@@ -100,7 +99,6 @@ export const evalCodeAndReturnDefaultHandle = async (
 
   // Install built-ins
   const guestConsole = installConsole(ctx);
-  const guestBuffer = installBuffer(ctx);
 
   // Validate the function by evaluating it as an ES module
   const result = ctx.evalCode(code, "index.js", {
@@ -124,7 +122,6 @@ export const evalCodeAndReturnDefaultHandle = async (
     ctx,
     defaultHandle,
     guestConsole,
-    guestBuffer,
     [Symbol.dispose]: ctx.dispose.bind(ctx),
   };
 };
@@ -260,7 +257,7 @@ const sandboxRunTool = createTool({
       });
 
       tool = result.content as z.infer<typeof ToolDefinitionSchema>;
-    } catch (error) {
+    } catch {
       return { error: "Tool not found" };
     }
 
@@ -347,23 +344,17 @@ const getTool = createTool({
       const toolPath = `/src/tools/${toolFileName}.json`;
 
       const client = MCPClient.forContext(c);
-      const result = (await client.READ_FILE({
+      const result = await client.READ_FILE({
         branch,
         path: toolPath,
         format: "json",
-      })) as {
-        content: any;
-        address: string;
-        metadata: any;
-        mtime: number;
-        ctime: number;
-      };
+      });
 
       return {
         tool: result.content as z.infer<typeof ToolDefinitionSchema>,
         found: true,
       };
-    } catch (error) {
+    } catch {
       return {
         tool: undefined,
         found: false,
@@ -392,17 +383,11 @@ const deleteTool = createTool({
 
       // First, get the tool to find the function file
       try {
-        const toolResult = (await client.READ_FILE({
+        const toolResult = await client.READ_FILE({
           branch,
           path: toolPath,
           format: "json",
-        })) as {
-          content: any;
-          address: string;
-          metadata: any;
-          mtime: number;
-          ctime: number;
-        };
+        });
 
         const tool = toolResult.content;
         if (tool.execute && tool.execute.startsWith("file://")) {
@@ -412,7 +397,7 @@ const deleteTool = createTool({
             path: functionPath,
           });
         }
-      } catch (error) {
+      } catch {
         // Tool file might not exist, continue with deletion
       }
 
@@ -423,7 +408,7 @@ const deleteTool = createTool({
       });
 
       return { message: "Tool deleted successfully" };
-    } catch (error) {
+    } catch {
       return { message: "Tool deletion failed" };
     }
   },
@@ -448,20 +433,14 @@ const sandboxListTools = createTool({
 
       const tools: z.infer<typeof ToolDefinitionSchema>[] = [];
 
-      for (const [filePath, fileInfo] of Object.entries(result.files)) {
+      for (const filePath of Object.keys(result.files)) {
         if (filePath.endsWith(".json")) {
           try {
-            const toolResult = (await client.READ_FILE({
+            const toolResult = await client.READ_FILE({
               branch,
               path: filePath,
               format: "json",
-            })) as {
-              content: any;
-              address: string;
-              metadata: any;
-              mtime: number;
-              ctime: number;
-            };
+            });
             tools.push(
               toolResult.content as z.infer<typeof ToolDefinitionSchema>,
             );
@@ -473,7 +452,7 @@ const sandboxListTools = createTool({
       }
 
       return { tools };
-    } catch (error) {
+    } catch {
       return { tools: [] };
     }
   },

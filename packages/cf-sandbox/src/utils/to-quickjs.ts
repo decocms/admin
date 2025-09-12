@@ -3,15 +3,19 @@ import { inspect } from "./error-handling.ts";
 
 export function toQuickJS(ctx: QuickJSContext, value: unknown): QuickJSHandle {
   switch (typeof value) {
-    case "string":
+    case "string": {
       return ctx.newString(value);
-    case "number":
+    }
+    case "number": {
       return ctx.newNumber(value);
-    case "boolean":
+    }
+    case "boolean": {
       return value ? ctx.true : ctx.false;
-    case "undefined":
+    }
+    case "undefined": {
       return ctx.undefined;
-    case "object":
+    }
+    case "object": {
       if (value === null) return ctx.null;
       if (Array.isArray(value)) {
         const arr = ctx.newArray();
@@ -28,7 +32,8 @@ export function toQuickJS(ctx: QuickJSContext, value: unknown): QuickJSHandle {
         ctx.setProp(obj, k, hv);
       }
       return obj;
-    case "function":
+    }
+    case "function": {
       // Create a host function bridge that can be called from guest context
       const functionId = `__hostFn_${Date.now()}_${Math.random()
         .toString(36)
@@ -47,7 +52,7 @@ export function toQuickJS(ctx: QuickJSContext, value: unknown): QuickJSHandle {
             });
 
             // Call the original function
-            const result = (value as Function)(...jsArgs);
+            const result = value(...jsArgs);
 
             // Handle promises returned by host functions
             if (result && typeof result.then === "function") {
@@ -99,18 +104,22 @@ export function toQuickJS(ctx: QuickJSContext, value: unknown): QuickJSHandle {
       );
 
       return proxyFn;
-    case "bigint":
+    }
+    case "bigint": {
       // Convert BigInt to string for serialization
       return ctx.newString(value.toString());
-    case "symbol":
+    }
+    case "symbol": {
       // Convert Symbol to string description
       return ctx.newString(value.toString());
-    default:
+    }
+    default: {
       // For any other type, try to convert to string
       try {
         return ctx.newString(String(value));
       } catch {
         return ctx.undefined;
       }
+    }
   }
 }

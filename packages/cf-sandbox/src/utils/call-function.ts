@@ -1,7 +1,7 @@
 import type { QuickJSContext, QuickJSHandle } from "quickjs-emscripten-core";
 import { toQuickJS } from "./to-quickjs.ts";
 
-export async function callFunction(
+export function callFunction(
   ctx: QuickJSContext,
   fn: QuickJSHandle,
   thisArg?: unknown,

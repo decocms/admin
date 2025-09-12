@@ -38,7 +38,7 @@ export * from "./assertions.ts";
 export { createResourceAccess } from "./auth/index.ts";
 export * from "./bindings/binder.ts";
 export * from "./context.ts";
-export type { ContractState, ContractState } from "./contracts/api.ts";
+export type { ContractState } from "./contracts/api.ts";
 export type { DatatabasesRunSqlInput } from "./databases/api.ts";
 export { Blobs, Branch } from "./deconfig/api.ts";
 export { watchSSE } from "./deconfig/watch-sse.ts";

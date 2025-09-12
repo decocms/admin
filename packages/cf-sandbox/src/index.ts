@@ -12,7 +12,7 @@ export { inspect } from "./utils/error-handling.ts";
 export { toQuickJS } from "./utils/to-quickjs.ts";
 
 // Export built-ins
-export { installBuffer, installConsole } from "./builtins/index.ts";
+export { installConsole, installFetch } from "./builtins/index.ts";
 
 // Export types
 export type { EvaluationResult, Log } from "./types.ts";

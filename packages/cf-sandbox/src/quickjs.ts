@@ -1,4 +1,5 @@
 import variant from "@jitl/quickjs-wasmfile-release-sync";
+// @ts-ignore - WASM module import
 import wasmModule from "@jitl/quickjs-wasmfile-release-sync/dist/emscripten-module.wasm";
 import {
   newQuickJSWASMModuleFromVariant,

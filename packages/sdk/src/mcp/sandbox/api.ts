@@ -7,9 +7,17 @@ import {
 } from "@deco/cf-sandbox";
 import { Validator } from "jsonschema";
 import z from "zod";
-import { createToolGroup } from "../context.ts";
+import { createToolGroup, MCPClientStub } from "../context.ts";
 import { slugify } from "../deconfig/api.ts";
-import { assertWorkspaceResourceAccess, MCPClient } from "../index.ts";
+import {
+  assertWorkspaceResourceAccess,
+  MCPClient,
+  ProjectTools,
+} from "../index.ts";
+
+// Utility functions for consistent naming
+const toolNameSlugify = (txt: string) => slugify(txt).toUpperCase();
+const fileNameSlugify = (txt: string) => slugify(txt).toLowerCase();
 
 // Cache for compiled validators
 const validatorCache = new Map<string, Validator>();
@@ -26,6 +34,34 @@ function validate(instance: unknown, schema: Record<string, unknown>) {
   }
 
   return validator.validate(instance, schema);
+}
+
+/**
+ * Reads a tool definition from the workspace
+ * @param name - The name of the tool
+ * @param client - The MCP client
+ * @param branch - The branch to read from
+ * @returns The tool definition or null if not found
+ */
+async function readTool(
+  name: string,
+  client: ReturnType<typeof MCPClient.forContext>,
+  branch?: string,
+): Promise<z.infer<typeof ToolDefinitionSchema> | null> {
+  try {
+    const toolFileName = fileNameSlugify(name);
+    const toolPath = `/src/tools/${toolFileName}.json`;
+
+    const result = await client.READ_FILE({
+      branch,
+      path: toolPath,
+      format: "json",
+    });
+
+    return result.content as z.infer<typeof ToolDefinitionSchema>;
+  } catch {
+    return null;
+  }
 }
 
 export const createTool = createToolGroup("Sandbox", {
@@ -65,6 +101,18 @@ The execute should be a complete ES module with a default export function that h
 async (input: typeof inputSchema, ctx: unknown): Promise<typeof outputSchema> => {}
 
 Note: Both inputSchema and outputSchema must be valid JSON Schema objects. Input and output data will be validated against these schemas when the tool is created and executed.
+
+Tools can call other tools using the env object from the ctx variable. For this, follow the format of the example below:
+async (input: typeof inputSchema, ctx: unknown): Promise<typeof outputSchema> => {
+  // some code
+  const response = await ctx.env.<INTEGRATION_ID>.<TOOL_NAME>(<tool_arguments>);
+  // some more code
+  ...
+}
+
+INTEGRATION_ID is the ID of the integration that the tool belongs to (you can retrieve it with the INTEGRATIONS_LIST tool)
+TOOL_NAME is the name of the tool to call from that integration (you can retrieve it with the INTEGRATIONS_LIST tool)
+tool_arguments is the arguments to pass to the tool
 `;
 
 const ToolDefinitionSchema = z.object({
@@ -146,9 +194,8 @@ const sandboxCreateTool = createTool({
     const runtimeId = c.locator?.value ?? "default";
     const branch = c.locator?.branch;
     const client = MCPClient.forContext(c);
-    const slugName = slugify(name);
-    const filename = slugName.toLowerCase();
-    const toolName = slugName.toUpperCase();
+    const filename = fileNameSlugify(name);
+    const toolName = toolNameSlugify(name);
 
     try {
       // Determine if execute is a file:// URL or inline code
@@ -218,6 +265,74 @@ const sandboxCreateTool = createTool({
   },
 });
 
+// Transform current workspace as callable integration environment
+const asEnv = async (client: MCPClientStub<ProjectTools>) => {
+  const { items } = await client.INTEGRATIONS_LIST({});
+
+  const env: Record<
+    string,
+    Record<string, (args: unknown) => Promise<unknown>>
+  > = {};
+
+  for (const item of items) {
+    // @ts-expect-error Somehow tools are not typed
+    const tools = item.tools;
+
+    if (!Array.isArray(tools)) {
+      continue;
+    }
+
+    env[item.id] = Object.fromEntries(
+      // deno-lint-ignore no-explicit-any
+      tools.map((tool: any) => [
+        tool.name,
+        async (args: unknown) => {
+          const inputValidation = validate(args, tool.inputSchema);
+
+          if (!inputValidation.valid) {
+            throw new Error(
+              `Input validation failed: ${inspect(inputValidation)}`,
+            );
+          }
+
+          const response = await client.INTEGRATIONS_CALL_TOOL({
+            connection: item.connection,
+            params: {
+              name: tool.name,
+              arguments: args as Record<string, unknown>,
+            },
+          });
+
+          if (response.isError) {
+            throw new Error(
+              `Tool ${tool.name} returned an error: ${inspect(response)}`,
+            );
+          }
+
+          if (response.structuredContent && tool.outputSchema) {
+            const outputValidation = validate(
+              response.structuredContent,
+              tool.outputSchema,
+            );
+
+            if (!outputValidation.valid) {
+              throw new Error(
+                `Output validation failed: ${inspect(outputValidation)}`,
+              );
+            }
+
+            return response.structuredContent;
+          }
+
+          return response.structuredContent || response.content;
+        },
+      ]),
+    );
+  }
+
+  return env;
+};
+
 const sandboxRunTool = createTool({
   name: "SANDBOX_RUN_TOOL",
   description: "Run a tool in the sandbox",
@@ -245,19 +360,10 @@ const sandboxRunTool = createTool({
     const branch = c.locator?.branch;
     const client = MCPClient.forContext(c);
 
-    let tool: z.infer<typeof ToolDefinitionSchema>;
-    try {
-      const toolFileName = slugify(name);
-      const toolPath = `/src/tools/${toolFileName}.json`;
+    const envPromise = asEnv(client);
 
-      const result = await client.READ_FILE({
-        branch,
-        path: toolPath,
-        format: "json",
-      });
-
-      tool = result.content as z.infer<typeof ToolDefinitionSchema>;
-    } catch {
+    const tool = await readTool(name, client, branch);
+    if (!tool) {
       return { error: "Tool not found" };
     }
 
@@ -294,15 +400,7 @@ const sandboxRunTool = createTool({
         defaultHandle,
         undefined,
         input,
-        {
-          env: {
-            get: async () => {
-              const response = await fetch("https://example.com");
-              const data = await response.text();
-              return data;
-            },
-          },
-        },
+        { env: await envPromise },
       );
 
       const callResult = ctx.dump(ctx.unwrapResult(callHandle));
@@ -329,37 +427,19 @@ const getTool = createTool({
   description: "Get a tool from the sandbox",
   inputSchema: z.object({ name: z.string().describe("The name of the tool") }),
   outputSchema: z.object({
-    tool: ToolDefinitionSchema.optional().describe(
-      "The tool definition if found",
+    tool: ToolDefinitionSchema.nullable().describe(
+      "The tool definition. Null if not found",
     ),
-    found: z.boolean().describe("Whether the tool was found"),
   }),
   handler: async ({ name }, c) => {
     await assertWorkspaceResourceAccess(c);
 
     const branch = c.locator?.branch;
+    const client = MCPClient.forContext(c);
 
-    try {
-      const toolFileName = slugify(name);
-      const toolPath = `/src/tools/${toolFileName}.json`;
+    const tool = await readTool(name, client, branch);
 
-      const client = MCPClient.forContext(c);
-      const result = await client.READ_FILE({
-        branch,
-        path: toolPath,
-        format: "json",
-      });
-
-      return {
-        tool: result.content as z.infer<typeof ToolDefinitionSchema>,
-        found: true,
-      };
-    } catch {
-      return {
-        tool: undefined,
-        found: false,
-      };
-    }
+    return { tool: tool ?? null };
   },
 });
 
@@ -376,32 +456,11 @@ const deleteTool = createTool({
     const branch = c.locator?.branch;
 
     try {
-      const toolFileName = slugify(name);
+      const toolFileName = fileNameSlugify(name);
       const toolPath = `/src/tools/${toolFileName}.json`;
 
       const client = MCPClient.forContext(c);
 
-      // First, get the tool to find the function file
-      try {
-        const toolResult = await client.READ_FILE({
-          branch,
-          path: toolPath,
-          format: "json",
-        });
-
-        const tool = toolResult.content;
-        if (tool.execute && tool.execute.startsWith("file://")) {
-          const functionPath = tool.execute.replace("file://", "");
-          await client.DELETE_FILE({
-            branch,
-            path: functionPath,
-          });
-        }
-      } catch {
-        // Tool file might not exist, continue with deletion
-      }
-
-      // Delete the tool metadata file
       await client.DELETE_FILE({
         branch,
         path: toolPath,
@@ -435,18 +494,13 @@ const sandboxListTools = createTool({
 
       for (const filePath of Object.keys(result.files)) {
         if (filePath.endsWith(".json")) {
-          try {
-            const toolResult = await client.READ_FILE({
-              branch,
-              path: filePath,
-              format: "json",
-            });
-            tools.push(
-              toolResult.content as z.infer<typeof ToolDefinitionSchema>,
-            );
-          } catch (error) {
-            // Skip files that can't be read as valid tool JSON
-            console.warn(`Failed to read tool file ${filePath}:`, error);
+          // Extract tool name from file path (e.g., "/src/tools/greeting.json" -> "greeting")
+          const toolName = filePath
+            .replace("/src/tools/", "")
+            .replace(".json", "");
+          const tool = await readTool(toolName, client, branch);
+          if (tool) {
+            tools.push(tool);
           }
         }
       }

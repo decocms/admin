@@ -67,7 +67,7 @@ async function readTool(
 export const createTool = createToolGroup("Sandbox", {
   name: "Code Sandbox",
   description: "Run JavaScript code",
-  icon: "https://assets.decocache.com/mcp/de7e81f6-bf2b-4bf5-a96c-867682f7d2ca/Team--User-Management.png",
+  icon: "https://assets.decocache.com/mcp/81d602bb-45e2-4361-b52a-23379520a34d/sandbox.png",
 });
 
 const SANDBOX_CREATE_TOOL_DESCRIPTION = `Create a new tool in the sandbox with JSON Schema validation.

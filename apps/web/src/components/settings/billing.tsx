@@ -410,14 +410,14 @@ function TransactionsTable() {
       if (aStr > bStr) return sortDirection === "asc" ? 1 : -1;
       return 0;
     });
-  }, [sortKey, sortDirection]);
+  }, [history.items, sortKey, sortDirection]);
 
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <h3 className="text-lg font-semibold">Billing history</h3>
         <p className="text-sm text-muted-foreground">
-          Your subscription payments and wallet top-ups
+          Your subscription payments, wallet top-ups and contract revenue
         </p>
       </div>
       <Table

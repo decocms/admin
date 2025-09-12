@@ -1,88 +1,20 @@
-import { existsSync, mkdirSync, writeFileSync, unlinkSync } from "fs";
+import { existsSync, mkdirSync, writeFileSync } from "fs";
 import { join, dirname } from "path";
 import process from "node:process";
-import { watch, type FileChangeEventWithContent } from "./base.js";
+import { fetchFileContent } from "./base.js";
 
-interface MountOptions {
+interface CloneOptions {
   branchName: string;
   path: string;
-  fromCtime?: number;
   pathFilter?: string;
   workspace?: string;
   local?: boolean;
 }
 
-// File system syncer implementation
-function createFileSystemSyncer(localPath: string) {
-  return (event: FileChangeEventWithContent): void => {
-    const localFilePath = join(
-      localPath,
-      event.path.startsWith("/") ? event.path.slice(1) : event.path,
-    );
+export async function cloneCommand(options: CloneOptions): Promise<void> {
+  const { branchName, path: localPath, pathFilter, workspace, local } = options;
 
-    console.log(`📝 ${event.type.toUpperCase()}: ${event.path}`);
-
-    switch (event.type) {
-      case "added":
-      case "modified":
-        if (event.content) {
-          try {
-            // Ensure directory exists
-            const dir = dirname(localFilePath);
-            if (!existsSync(dir)) {
-              mkdirSync(dir, { recursive: true });
-            }
-
-            // Write to local filesystem
-            writeFileSync(localFilePath, event.content);
-
-            console.log(
-              `   ✅ Synced to: ${localFilePath} (${event.content.length} bytes)`,
-            );
-          } catch (error) {
-            console.error(
-              `   ❌ Failed to sync ${event.path}:`,
-              error instanceof Error ? error.message : String(error),
-            );
-          }
-        } else {
-          console.warn(`   ⚠️  No content available for ${event.path}`);
-        }
-        break;
-
-      case "deleted":
-        try {
-          if (existsSync(localFilePath)) {
-            unlinkSync(localFilePath);
-            console.log(`   🗑️  Deleted: ${localFilePath}`);
-          } else {
-            console.log(`   ℹ️  File already deleted: ${localFilePath}`);
-          }
-        } catch (error) {
-          console.error(
-            `   ❌ Failed to delete ${event.path}:`,
-            error instanceof Error ? error.message : String(error),
-          );
-        }
-        break;
-
-      default:
-        console.warn(`   ⚠️  Unknown event type: ${event.type}`);
-    }
-  };
-}
-
-export async function mountCommand(options: MountOptions): Promise<void> {
-  const {
-    branchName,
-    path: localPath,
-    fromCtime,
-    pathFilter,
-    workspace,
-    local,
-  } = options;
-
-  console.log(`🔗 Mounting branch "${branchName}" to local path: ${localPath}`);
+  console.log(`📥 Cloning branch "${branchName}" to local path: ${localPath}`);
 
   // Ensure local directory exists
   if (!existsSync(localPath)) {
@@ -90,31 +22,82 @@ export async function mountCommand(options: MountOptions): Promise<void> {
     console.log(`📁 Created local directory: ${localPath}`);
   }
 
-  // Create a file system syncer
-  const syncer = createFileSystemSyncer(localPath);
+  // Get list of files from the branch
+  const { createWorkspaceClient } = await import("../../lib/mcp.js");
+  const client = await createWorkspaceClient({ workspace, local });
 
-  // Handle graceful shutdown
-  process.on("SIGINT", () => {
-    console.log("\n🛑 Received SIGINT, shutting down gracefully...");
-    process.exit(0);
-  });
-
-  process.on("SIGTERM", () => {
-    console.log("\n🛑 Received SIGTERM, shutting down gracefully...");
-    process.exit(0);
-  });
-
-  // Start watching with the syncer
   try {
-    await watch(
-      {
-        branchName,
-        fromCtime,
-        pathFilter,
-        workspace,
-        local,
+    const response = await client.callTool({
+      name: "LIST_FILES",
+      arguments: {
+        branch: branchName,
+        prefix: pathFilter,
       },
-      syncer,
+    });
+
+    if (response.isError) {
+      const errorMessage = Array.isArray(response.content)
+        ? response.content[0]?.text || "Failed to list files"
+        : "Failed to list files";
+      throw new Error(errorMessage);
+    }
+
+    const result = response.structuredContent as {
+      files: Record<
+        string,
+        {
+          address: string;
+          metadata: Record<string, unknown>;
+          mtime: number;
+          ctime: number;
+        }
+      >;
+      count: number;
+    };
+
+    console.log(`📋 Found ${result.count} files to clone`);
+
+    // Download each file
+    for (const [filePath] of Object.entries(result.files)) {
+      const localFilePath = join(
+        localPath,
+        filePath.startsWith("/") ? filePath.slice(1) : filePath,
+      );
+
+      try {
+        console.log(`📥 Downloading: ${filePath}`);
+
+        // Fetch file content
+        const content = await fetchFileContent(
+          filePath,
+          branchName,
+          workspace,
+          local,
+        );
+
+        // Ensure directory exists
+        const dir = dirname(localFilePath);
+        if (!existsSync(dir)) {
+          mkdirSync(dir, { recursive: true });
+        }
+
+        // Write to local filesystem
+        writeFileSync(localFilePath, content);
+
+        console.log(
+          `   ✅ Cloned to: ${localFilePath} (${content.length} bytes)`,
+        );
+      } catch (error) {
+        console.error(
+          `   ❌ Failed to clone ${filePath}:`,
+          error instanceof Error ? error.message : String(error),
+        );
+        // Continue with other files
+      }
+    }
+
+    console.log(
+      `🎉 Clone completed! Downloaded ${result.count} files to ${localPath}`,
     );
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : String(error);
@@ -123,14 +106,17 @@ export async function mountCommand(options: MountOptions): Promise<void> {
       errorMessage.includes("Session not found") ||
       errorMessage.includes("Session expired")
     ) {
-      console.error("💥 Mount failed: Authentication required");
+      console.error("💥 Clone failed: Authentication required");
       console.error(
         "   Please run 'deco login' first to authenticate with deco.chat",
       );
     } else {
-      console.error("💥 Mount failed:", errorMessage);
+      console.error("💥 Clone failed:", errorMessage);
     }
 
     process.exit(1);
+  } finally {
+    // Always close the client connection
+    await client.close();
   }
 }

@@ -72,10 +72,12 @@ import {
 import { completionCommand } from "./commands/completion/completion.js";
 import { installCompletionCommand } from "./commands/completion/install.js";
 import {
-  mountCommand,
+  cloneCommand,
   getCommand,
   putCommand,
   watchCommand,
+  pushCommand,
+  pullCommand,
 } from "./commands/deconfig/index.js";
 import { detectRuntime } from "./lib/runtime.js";
 
@@ -626,19 +628,11 @@ const deconfigWatch = new Command("watch")
     }
   });
 
-// Mount command for deconfig
-const deconfigMount = new Command("mount")
-  .description(
-    "Mount a deconfig branch to a local directory and watch for changes.",
-  )
-  .requiredOption("-b, --branch <branchName>", "Branch name to mount")
-  .requiredOption("--path <path>", "Local directory path to sync files to")
-  .option(
-    "--from-ctime <ctime>",
-    "Start watching from this ctime",
-    (value) => parseInt(value),
-    1,
-  )
+// Clone command for deconfig
+const deconfigClone = new Command("clone")
+  .description("Clone a deconfig branch to a local directory.")
+  .requiredOption("-b, --branch <branchName>", "Branch name to clone")
+  .requiredOption("--path <path>", "Local directory path to clone files to")
   .option("--path-filter <filter>", "Filter files by path pattern")
   .option("-w, --workspace <workspace>", "Workspace name")
   .action(async (options) => {
@@ -646,17 +640,76 @@ const deconfigMount = new Command("mount")
       const config = await getConfig({
         inlineOptions: { workspace: options.workspace },
       });
-      await mountCommand({
+      await cloneCommand({
         branchName: options.branch,
         path: options.path,
-        fromCtime: options.fromCtime,
         pathFilter: options.pathFilter,
         workspace: config.workspace,
         local: config.local,
       });
     } catch (error) {
       console.error(
-        "❌ Mount failed:",
+        "❌ Clone failed:",
+        error instanceof Error ? error.message : String(error),
+      );
+      process.exit(1);
+    }
+  });
+
+// Push command for deconfig
+const deconfigPush = new Command("push")
+  .description("Push local files to a deconfig branch.")
+  .requiredOption("-b, --branch <branchName>", "Branch name to push to")
+  .requiredOption("--path <path>", "Local directory path to push files from")
+  .option("--path-filter <filter>", "Filter files by path pattern")
+  .option("--dry-run", "Show what would be pushed without making changes")
+  .option("-w, --workspace <workspace>", "Workspace name")
+  .action(async (options) => {
+    try {
+      const config = await getConfig({
+        inlineOptions: { workspace: options.workspace },
+      });
+      await pushCommand({
+        branchName: options.branch,
+        path: options.path,
+        pathFilter: options.pathFilter,
+        dryRun: options.dryRun,
+        workspace: config.workspace,
+        local: config.local,
+      });
+    } catch (error) {
+      console.error(
+        "❌ Push failed:",
+        error instanceof Error ? error.message : String(error),
+      );
+      process.exit(1);
+    }
+  });
+
+// Pull command for deconfig
+const deconfigPull = new Command("pull")
+  .description("Pull changes from a deconfig branch to local directory.")
+  .requiredOption("-b, --branch <branchName>", "Branch name to pull from")
+  .requiredOption("--path <path>", "Local directory path to pull files to")
+  .option("--path-filter <filter>", "Filter files by path pattern")
+  .option("--dry-run", "Show what would be changed without making changes")
+  .option("-w, --workspace <workspace>", "Workspace name")
+  .action(async (options) => {
+    try {
+      const config = await getConfig({
+        inlineOptions: { workspace: options.workspace },
+      });
+      await pullCommand({
+        branchName: options.branch,
+        path: options.path,
+        pathFilter: options.pathFilter,
+        dryRun: options.dryRun,
+        workspace: config.workspace,
+        local: config.local,
+      });
+    } catch (error) {
+      console.error(
+        "❌ Pull failed:",
         error instanceof Error ? error.message : String(error),
       );
       process.exit(1);
@@ -669,7 +722,9 @@ const deconfig = new Command("deconfig")
   .addCommand(deconfigGet)
   .addCommand(deconfigPut)
   .addCommand(deconfigWatch)
-  .addCommand(deconfigMount);
+  .addCommand(deconfigClone)
+  .addCommand(deconfigPush)
+  .addCommand(deconfigPull);
 
 // Main CLI program
 const program = new Command()

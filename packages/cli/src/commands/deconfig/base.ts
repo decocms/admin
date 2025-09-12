@@ -36,13 +36,12 @@ export async function fetchFileContent(
   workspace?: string,
   local?: boolean,
 ): Promise<Buffer> {
-  try {
-    // Create workspace client for deconfig tools
-    const client = await createWorkspaceClient({
-      workspace,
-      local,
-    });
+  const client = await createWorkspaceClient({
+    workspace,
+    local,
+  });
 
+  try {
     // Call the READ_FILE tool via MCP
     const response = await client.callTool({
       name: "READ_FILE",
@@ -72,6 +71,9 @@ export async function fetchFileContent(
       error instanceof Error ? error.message : String(error),
     );
     throw error;
+  } finally {
+    // Always close the client connection
+    await client.close();
   }
 }
 
@@ -86,13 +88,12 @@ export async function putFileContent(
   workspace?: string,
   local?: boolean,
 ): Promise<void> {
-  try {
-    // Create workspace client for deconfig tools
-    const client = await createWorkspaceClient({
-      workspace,
-      local,
-    });
+  const client = await createWorkspaceClient({
+    workspace,
+    local,
+  });
 
+  try {
     // Convert content to base64
     const base64Content = Buffer.isBuffer(content)
       ? content.toString("base64")
@@ -121,6 +122,9 @@ export async function putFileContent(
       error instanceof Error ? error.message : String(error),
     );
     throw error;
+  } finally {
+    // Always close the client connection
+    await client.close();
   }
 }
 

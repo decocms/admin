@@ -150,8 +150,9 @@ function ContractProfitCard() {
     return history.items
       .filter((item) => item.type === "CommitPreAuthorized")
       .reduce((total, item) => {
-        // Remove the $ sign and convert to number for calculation
-        const amount = parseFloat(item.amount.replace("$", ""));
+        // Sanitize amount string by removing all non-numeric characters except dot and minus
+        const amountStr = item.amount.replace(/[^0-9.-]/g, "");
+        const amount = Number(amountStr);
         return total + amount;
       }, 0);
   }, [history.items]);

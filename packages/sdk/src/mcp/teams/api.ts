@@ -1242,10 +1242,26 @@ export const listRecentProjects = createTool({
   inputSchema: z.object({
     limit: z.number().optional().default(6),
   }),
+  outputSchema: z.object({
+    items: z.array(
+      z.object({
+        id: z.union([z.string(), z.number()]),
+        title: z.string(),
+        slug: z.string(),
+        avatar_url: z.string().nullable(),
+        org: z.object({
+          id: z.number(),
+          slug: z.string(),
+          avatar_url: z.string().nullable().optional(),
+        }),
+        last_accessed_at: z.string().optional(),
+      }),
+    ),
+  }),
   handler: async (props, c) => {
+    assertPrincipalIsUser(c);
     c.resourceAccess.grant();
 
-    assertPrincipalIsUser(c);
     const user = c.user;
     const { limit } = props;
 
@@ -1361,7 +1377,7 @@ export const listRecentProjects = createTool({
               avatar_url: projectAvatar ?? orgAvatar ?? null,
               org: {
                 id: project.teams.id,
-                slug: project.teams.slug,
+                slug: String(project.teams.slug || ""),
                 avatar_url: orgAvatar,
               },
               last_accessed_at:

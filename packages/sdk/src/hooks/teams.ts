@@ -26,6 +26,7 @@ import { useSDK } from "./store.tsx";
 import { MCPConnection } from "../models/index.ts";
 import { listIntegrations } from "../crud/mcp.ts";
 import { listProjects, listRecentProjects } from "../crud/projects.ts";
+import type { Project } from "../models/project.ts";
 import { Locator } from "../locator.ts";
 
 /**
@@ -53,18 +54,7 @@ export const useOrganizations = (options: { searchQuery?: string } = {}) => {
   return queryResult;
 };
 
-export interface Project {
-  id: string;
-  title: string;
-  slug: string;
-  avatar_url: string | null;
-  org: {
-    id: number;
-    slug: string;
-    avatar_url?: string | null;
-  };
-  last_accessed_at?: string;
-}
+// Project interface moved to ../models/project.ts to avoid drift
 
 export const useProjects = (options: {
   searchQuery?: string;
@@ -86,9 +76,16 @@ export const useProjects = (options: {
 };
 
 export const useRecentProjects = (): Project[] => {
-  const query = useSuspenseQuery({
+  const query = useSuspenseQuery<Project[]>({
     queryKey: KEYS.RECENT_PROJECTS(),
     queryFn: () => listRecentProjects(),
+    // Reduce auth/mcp pressure: rely on cache, no automatic refetches
+    refetchOnMount: false,
+    refetchOnWindowFocus: false,
+    networkMode: "online",
+    staleTime: 60_000,
+    gcTime: 300_000,
+    retry: 0,
   });
   return query.data;
 };

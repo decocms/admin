@@ -72,6 +72,7 @@ export const GLOBAL_TOOLS = [
   teamsAPI.updateTeam,
   teamsAPI.deleteTeam,
   teamsAPI.listTeams,
+  teamsAPI.listRecentProjects,
   teamsAPI.createTeamRole,
   teamsAPI.updateTeamRole,
   teamsAPI.deleteTeamRole,

@@ -1,11 +1,12 @@
 // deno-lint-ignore-file ensure-tailwind-design-system-tokens/ensure-tailwind-design-system-tokens
-import { useOrganizations } from "@deco/sdk";
+import { useOrganizations, useRecentProjects } from "@deco/sdk";
 import { Icon } from "@deco/ui/components/icon.tsx";
 import { Input } from "@deco/ui/components/input.tsx";
 import { Suspense, useState } from "react";
 import { Link } from "react-router";
 import { ErrorBoundary } from "../../error-boundary";
 import { Avatar } from "../common/avatar";
+import { timeAgo } from "../../utils/time-ago";
 import { DecoDayBanner } from "../common/event/deco-day";
 import { OrgAvatars, OrgMemberCount } from "./members";
 import { Button } from "@deco/ui/components/button.tsx";
@@ -28,7 +29,7 @@ function OrganizationCard({
   return (
     <Link
       to={url}
-      className="bg-stone-50 hover:bg-stone-100 transition-colors flex flex-col rounded-lg"
+      className="bg-stone-50 hover:bg-stone-100 transition-colors flex flex-col rounded-lg border border-border"
     >
       <div className="p-4 flex flex-col gap-4">
         <div className="flex justify-between items-start">
@@ -45,7 +46,7 @@ function OrganizationCard({
           />
         </div>
         <div className="flex flex-col gap-[2px]">
-          <h3 className="text-sm text-muted-foreground truncate">@{slug}</h3>
+          <h3 className="text-sm text-muted-foreground truncate">/{slug}</h3>
           <p className="font-medium truncate">{name}</p>
         </div>
       </div>
@@ -123,6 +124,48 @@ Organizations.Empty = () => (
   </div>
 );
 
+function RecentProjectsSection() {
+  const recent = useRecentProjects();
+
+  if (!recent?.length) return null;
+
+  return (
+    <div className="@container flex flex-col gap-4">
+      <h2 className="text-xl font-medium">Recent projects</h2>
+      <div className="grid grid-cols-2 @min-3xl:grid-cols-3 @min-6xl:grid-cols-4 gap-4">
+        {recent.map((project) => (
+          <Link
+            key={`${project.org.slug}/${project.slug}`}
+            to={`/${project.org.slug}/${project.slug}`}
+            className="bg-stone-50 hover:bg-stone-100 transition-colors flex flex-col rounded-lg border border-border"
+          >
+            <div className="p-4 flex flex-col gap-4">
+              <div className="flex justify-between items-start">
+                <Avatar
+                  url={project.avatar_url || project.org.avatar_url || ""}
+                  fallback={project.org.slug}
+                  size="lg"
+                  objectFit="contain"
+                />
+                <Icon name="chevron_right" size={20} className="text-muted-foreground" />
+              </div>
+              <div className="flex flex-col gap-[2px]">
+                <h3 className="text-sm text-muted-foreground truncate">/{project.org.slug}/{project.slug}</h3>
+                <p className="font-medium truncate">{project.title}</p>
+                {project.last_accessed_at && (
+                  <span className="text-xs text-muted-foreground">
+                    Last accessed {timeAgo(project.last_accessed_at)}
+                  </span>
+                )}
+              </div>
+            </div>
+          </Link>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 function MyOrganizations() {
   const [searchQuery, setSearchQuery] = useState("");
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
@@ -131,6 +174,7 @@ function MyOrganizations() {
     <div className="flex w-full h-full items-start bg-background">
       <div className="p-8 flex flex-col gap-4 w-full">
         <DecoDayBanner />
+        <RecentProjectsSection />
         <div className="flex items-center justify-between">
           <h2 className="text-xl font-medium">My organizations</h2>
           <div className="flex items-center gap-2">

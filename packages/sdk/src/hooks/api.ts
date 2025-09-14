@@ -66,6 +66,7 @@ export const KEYS = {
   ],
   TEAMS: () => ["teams"],
   PROJECTS: (org: string) => ["projects", org],
+  RECENT_PROJECTS: () => ["recent-projects"],
   ORGANIZATION: (slug: string) => ["team", slug],
   TEAM_THEME: (slug: string) => ["team-theme", slug],
   TEAM_VIEWS: (locator: ProjectLocator, integrationId: string) => [

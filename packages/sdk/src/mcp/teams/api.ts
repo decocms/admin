@@ -1235,3 +1235,143 @@ export const listProjects = createTool({
     };
   },
 });
+
+export const listRecentProjects = createTool({
+  name: "PROJECTS_RECENT",
+  description: "List recent projects for the current user based on activity",
+  inputSchema: z.object({
+    limit: z.number().optional().default(6),
+  }),
+  handler: async (props, c) => {
+    c.resourceAccess.grant();
+
+    assertPrincipalIsUser(c);
+    const user = c.user;
+    const { limit } = props;
+
+    // Get latest user activity rows (most recent first) and dedupe by team id
+    const { data: activityData, error: activityError } = await c.db
+      .from("user_activity")
+      .select("value, created_at")
+      .eq("user_id", user.id)
+      .eq("resource", "team")
+      .order("created_at", { ascending: false })
+      .limit(Math.max(50, (limit ?? 6) * 4));
+
+    if (activityError) throw activityError;
+
+    if (!activityData || activityData.length === 0) {
+      return { items: [] };
+    }
+
+    // Deduplicate by team id (value) keeping latest order
+    const seen = new Set<string>();
+    const orderedTeamIds = activityData
+      .filter((row) => {
+        if (!row.value) return false;
+        if (seen.has(row.value)) return false;
+        seen.add(row.value);
+        return true;
+      })
+      .slice(0, limit)
+      .map((row) => Number(row.value))
+      .filter((id) => Number.isFinite(id));
+
+    if (orderedTeamIds.length === 0) {
+      return { items: [] };
+    }
+
+    // Fetch projects for these teams with access validation via members join
+    const { data: projectsData, error: projectsError } = await c.db
+      .from("deco_chat_projects")
+      .select(
+        `
+        id,
+        title,
+        slug,
+        icon,
+        org_id,
+        teams!inner (
+          id,
+          slug,
+          theme,
+          members!inner (user_id, deleted_at)
+        )
+      `,
+      )
+      .in("org_id", orderedTeamIds)
+      .eq("teams.members.user_id", user.id)
+      .is("teams.members.deleted_at", null);
+
+    if (projectsError) throw projectsError;
+
+    // Group projects by team id and pick one (prefer slug 'default')
+    const byTeamId = new Map<number, typeof projectsData>();
+    for (const project of projectsData ?? []) {
+      const teamId = Number(project.org_id ?? project.teams?.id);
+      if (!Number.isFinite(teamId)) continue;
+      const existing = byTeamId.get(teamId) ?? [];
+      byTeamId.set(teamId, [...existing, project]);
+    }
+
+    const pickProjectForTeam = (teamId: number) => {
+      const list = byTeamId.get(teamId) ?? [];
+      if (list.length === 0) return null;
+      const defaultProj = list.find((p) => p.slug === "default");
+      return defaultProj ?? list[0];
+    };
+
+    // Build items preserving the activity order
+    const items = (
+      await Promise.all(
+        orderedTeamIds
+          .map((teamId) => pickProjectForTeam(teamId))
+          .filter((p): p is NonNullable<typeof p> => Boolean(p))
+          .map(async (project) => {
+            // Sign org avatar URL like other endpoints
+            const signedUrlCreator = buildSignedUrlCreator({
+              c,
+              existingBucketName: getWorkspaceBucketName(
+                `/shared/${project.teams.slug}`,
+              ),
+            });
+            const orgAvatar = await getAvatarFromTheme(
+              project.teams.theme as unknown as Json,
+              signedUrlCreator,
+            );
+            // Resolve project icon: sign relative paths using the same workspace bucket
+            let projectAvatar: string | null = null;
+            const icon = (project.icon as string | null) || null;
+            if (icon) {
+              if (/^https?:\/\//i.test(icon)) {
+                projectAvatar = icon;
+              } else {
+                try {
+                  projectAvatar = await signedUrlCreator(icon);
+                } catch {
+                  projectAvatar = null;
+                }
+              }
+            }
+
+            return {
+              id: project.id,
+              title: project.title,
+              slug: project.slug,
+              avatar_url: projectAvatar ?? orgAvatar ?? null,
+              org: {
+                id: project.teams.id,
+                slug: project.teams.slug,
+                avatar_url: orgAvatar,
+              },
+              last_accessed_at:
+                activityData?.find((a) => a.value === String(project.teams.id))
+                  ?.created_at || undefined,
+            };
+          }),
+      )
+    ).filter(Boolean);
+
+    return { items };
+  },
+});

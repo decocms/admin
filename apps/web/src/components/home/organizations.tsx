@@ -147,10 +147,16 @@ function RecentProjectsSection() {
                   size="lg"
                   objectFit="contain"
                 />
-                <Icon name="chevron_right" size={20} className="text-muted-foreground" />
+                <Icon
+                  name="chevron_right"
+                  size={20}
+                  className="text-muted-foreground"
+                />
               </div>
               <div className="flex flex-col gap-[2px]">
-                <h3 className="text-sm text-muted-foreground truncate">/{project.org.slug}/{project.slug}</h3>
+                <h3 className="text-sm text-muted-foreground truncate">
+                  /{project.org.slug}/{project.slug}
+                </h3>
                 <p className="font-medium truncate">{project.title}</p>
                 {project.last_accessed_at && (
                   <span className="text-xs text-muted-foreground">

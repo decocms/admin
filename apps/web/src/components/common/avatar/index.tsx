@@ -152,7 +152,6 @@ function UnifiedAvatar({
   muted = false,
   ...props
 }: BaseAvatarProps) {
-  const [isLoaded, setIsLoaded] = useState(false);
   const [isError, setIsError] = useState(false);
   const fallbackContent = useMemo(() => {
     if (typeof fallback === "string") {
@@ -195,7 +194,6 @@ function UnifiedAvatar({
               src={url}
               alt="Avatar"
               className={cn(avatarImageVariants({ objectFit }))}
-              onLoad={() => setIsLoaded(true)}
               onError={() => setIsError(true)}
             />
           )}

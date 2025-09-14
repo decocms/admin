@@ -1240,7 +1240,8 @@ export const listRecentProjects = createTool({
   name: "PROJECTS_RECENT",
   description: "List recent projects for the current user based on activity",
   inputSchema: z.object({
-    limit: z.number().optional().default(6),
+    // Prevent abuse: UI uses 6; allow up to 12
+    limit: z.number().int().min(1).max(12).optional().default(6),
   }),
   outputSchema: z.object({
     items: z.array(
@@ -1264,6 +1265,7 @@ export const listRecentProjects = createTool({
 
     const user = c.user;
     const { limit } = props;
+    const safeLimit = Math.min(12, Math.max(1, Number(limit ?? 6)));
 
     // Get latest user activity rows (most recent first) and dedupe by team id
     const { data: activityData, error: activityError } = await c.db
@@ -1272,7 +1274,7 @@ export const listRecentProjects = createTool({
       .eq("user_id", user.id)
       .eq("resource", "team")
       .order("created_at", { ascending: false })
-      .limit(Math.max(50, (limit ?? 6) * 4));
+      .limit(Math.min(200, Math.max(50, safeLimit * 4)));
 
     if (activityError) throw activityError;
 
@@ -1289,7 +1291,7 @@ export const listRecentProjects = createTool({
         seen.add(row.value);
         return true;
       })
-      .slice(0, limit)
+      .slice(0, safeLimit)
       .map((row) => Number(row.value))
       .filter((id) => Number.isFinite(id));
 

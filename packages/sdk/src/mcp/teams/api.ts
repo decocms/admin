@@ -1245,7 +1245,7 @@ export const listRecentProjects = createTool({
   outputSchema: z.object({
     items: z.array(
       z.object({
-        id: z.union([z.string(), z.number()]),
+        id: z.string(),
         title: z.string(),
         slug: z.string(),
         avatar_url: z.string().nullable(),
@@ -1371,7 +1371,7 @@ export const listRecentProjects = createTool({
             }
 
             return {
-              id: project.id,
+              id: String(project.id),
               title: project.title,
               slug: project.slug,
               avatar_url: projectAvatar ?? orgAvatar ?? null,

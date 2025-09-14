@@ -61,7 +61,7 @@ export interface Project {
   org: {
     id: number;
     slug: string;
-    avatar_url?: string;
+    avatar_url?: string | null;
   };
   last_accessed_at?: string;
 }

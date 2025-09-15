@@ -3,9 +3,14 @@ import {
   WorkflowEvent,
   WorkflowStep as CloudflareWorkflowStep,
   WorkflowStepConfig,
+  RpcTarget,
 } from "cloudflare:workers";
 
 export type { WorkflowStepConfig };
+
+export interface Runnable extends RpcTarget {
+  run: (input: unknown, state: WorkflowState) => Promise<Rpc.Serializable<unknown>>;
+}
 export interface WorkflowState<T = unknown> {
   input: T;
   steps: Record<string, unknown>;
@@ -15,10 +20,7 @@ export interface WorkflowState<T = unknown> {
 export interface WorkflowStep {
   name: string;
   config?: WorkflowStepConfig;
-  fn: (
-    input: unknown,
-    state: WorkflowState,
-  ) => Promise<Rpc.Serializable<unknown>>;
+  fn: Rpc.Stub<Runnable>;
 }
 
 export interface WorkflowRunnerProps<T = unknown> {
@@ -41,12 +43,14 @@ export class WorkflowRunner extends WorkflowEntrypoint {
     for (const step of steps) {
       prev =
         state?.[step.name] ??
-        (await cfStep.do(step.name, step.config ?? {}, () =>
-          step.fn(prev, {
+        (await cfStep.do(step.name, step.config ?? {}, async () => {
+          const runResult = await step.fn.run(prev, {
             ...workflowState,
             sleep: (name, duration) =>
               cfStep.sleep(`${step.name}-${name}`, duration),
-          }),
+          })
+          return runResult as Rpc.Serializable<unknown>;
+        }
         ));
       workflowState.steps[step.name] = prev;
     }

@@ -54,7 +54,6 @@ export const useOrganizations = (options: { searchQuery?: string } = {}) => {
   return queryResult;
 };
 
-// Project interface moved to ../models/project.ts to avoid drift
 
 export const useProjects = (options: {
   searchQuery?: string;

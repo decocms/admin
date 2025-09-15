@@ -79,13 +79,6 @@ export const useRecentProjects = (): Project[] => {
   const query = useSuspenseQuery<Project[]>({
     queryKey: KEYS.RECENT_PROJECTS(),
     queryFn: () => listRecentProjects(),
-    // Reduce auth/mcp pressure: rely on cache, no automatic refetches
-    refetchOnMount: false,
-    refetchOnWindowFocus: false,
-    networkMode: "online",
-    staleTime: 60_000,
-    gcTime: 300_000,
-    retry: 0,
   });
   return query.data;
 };

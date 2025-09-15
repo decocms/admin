@@ -93,7 +93,7 @@ async function executeWorkflow(
     let startStepIndex = 0;
     if (startFromStep) {
       startStepIndex = workflow.steps.findIndex(
-        (step) => step.name === startFromStep,
+        (stepName) => stepName === startFromStep,
       );
       if (startStepIndex === -1) {
         run.status = "failed";
@@ -104,132 +104,128 @@ async function executeWorkflow(
 
     // Execute steps sequentially starting from the specified step
     for (let i = startStepIndex; i < workflow.steps.length; i++) {
-      const step = workflow.steps[i];
-      run.currentStep = step.name;
+      const stepName = workflow.steps[i];
+      run.currentStep = stepName;
 
-      // Evaluate the step function using inlined code
-      using stepEvaluation = await evalCodeAndReturnDefaultHandle(
-        step.execute,
-        runtimeId,
-      );
-      const {
-        ctx: stepCtx,
-        defaultHandle: stepDefaultHandle,
-        guestConsole: stepConsole,
-      } = stepEvaluation;
+      // Find the step definition in mappings or tools
+      const mappingStep = workflow.mappings.find(m => m.name === stepName);
+      const toolStep = workflow.tools.find(t => t.name === stepName);
+
+      if (!mappingStep && !toolStep) {
+        run.status = "failed";
+        run.error = `Step '${stepName}' not found in mappings or tools`;
+        return;
+      }
 
       try {
-        // Create step context with WellKnownOptions
-        const stepContext = {
-          ...step.contextSchema, // Include step's contextSchema properties
-          readWorkflowInput() {
-            return input;
-          },
-          readStepResult(stepName: string) {
-            if (!run.stepResults[stepName]) {
-              throw new Error(`Step '${stepName}' has not been executed yet`);
-            }
-            return run.stepResults[stepName];
-          },
-          env: await envPromise,
-        };
+        let stepResult: unknown;
 
-        // Call the step function
-        const stepCallHandle = await callFunction(
-          stepCtx,
-          stepDefaultHandle,
-          undefined,
-          stepContext,
-          {},
-        );
+        if (mappingStep) {
+          // Execute mapping step
+          using stepEvaluation = await evalCodeAndReturnDefaultHandle(
+            mappingStep.execute,
+            runtimeId,
+          );
+          const {
+            ctx: stepCtx,
+            defaultHandle: stepDefaultHandle,
+            guestConsole: stepConsole,
+          } = stepEvaluation;
 
-        const stepResult = stepCtx.dump(stepCtx.unwrapResult(stepCallHandle));
+          // Create step context with WellKnownOptions
+          const stepContext = {
+            readWorkflowInput() {
+              return input;
+            },
+            readStepResult(stepName: string) {
+              if (!run.stepResults[stepName]) {
+                throw new Error(`Step '${stepName}' has not been executed yet`);
+              }
+              return run.stepResults[stepName];
+            },
+            env: await envPromise,
+          };
 
-        // Validate step output against the step's output schema
-        const stepOutputValidation = validate(stepResult, step.outputSchema);
-        if (!stepOutputValidation.valid) {
-          run.status = "failed";
-          run.error = `Step '${step.name}' output validation failed: ${inspect(
-            stepOutputValidation,
-          )}`;
+          // Call the mapping function
+          const stepCallHandle = await callFunction(
+            stepCtx,
+            stepDefaultHandle,
+            undefined,
+            stepContext,
+            {},
+          );
+
+          stepResult = stepCtx.dump(stepCtx.unwrapResult(stepCallHandle));
           run.logs.push(...stepConsole.logs);
-          return;
+        } else if (toolStep) {
+          // Execute tool call step
+          // Find the integration connection
+          const { items: integrations } = await client.INTEGRATIONS_LIST({});
+          const integration = integrations.find((item) =>
+            item.id === toolStep.integration
+          );
+
+          if (!integration) {
+            throw new Error(`Integration '${toolStep.integration}' not found`);
+          }
+
+          const toolCallResult = await client.INTEGRATIONS_CALL_TOOL({
+            connection: integration.connection,
+            params: {
+              name: toolStep.tool_name,
+              arguments: input,
+            },
+          });
+
+          if (toolCallResult.isError) {
+            throw new Error(`Tool call failed: ${inspect(toolCallResult)}`);
+          }
+
+          stepResult = toolCallResult.structuredContent ||
+            toolCallResult.content;
+          run.logs.push({
+            type: "log",
+            content: `Tool call '${toolStep.tool_name}' completed`,
+          });
         }
 
         // Store the step result
-        run.stepResults[step.name] = stepResult;
-        run.logs.push(...stepConsole.logs);
+        run.stepResults[stepName] = stepResult;
       } catch (error) {
         run.status = "failed";
-        run.error = `Step '${step.name}' execution failed: ${inspect(error)}`;
-        run.logs.push(...stepConsole.logs);
+        run.error = `Step '${stepName}' execution failed: ${inspect(error)}`;
         return;
       }
     }
 
-    // Execute the workflow's execute function using inlined code
-    using workflowEvaluation = await evalCodeAndReturnDefaultHandle(
-      workflow.execute,
-      runtimeId,
-    );
-    const {
-      ctx: workflowCtx,
-      defaultHandle: workflowDefaultHandle,
-      guestConsole: workflowConsole,
-    } = workflowEvaluation;
+    // The final result is the output of the last step
+    const lastStepName = workflow.steps[workflow.steps.length - 1];
+    const finalResult = run.stepResults[lastStepName];
 
-    try {
-      // Create workflow context with WellKnownOptions
-      const workflowContext = {
-        readWorkflowInput() {
-          return input;
-        },
-        readStepResult(stepName: string) {
-          if (!run.stepResults[stepName]) {
-            throw new Error(`Step '${stepName}' has not been executed yet`);
-          }
-          return run.stepResults[stepName];
-        },
-        env: await envPromise,
-      };
-
-      // Call the workflow execute function
-      const workflowCallHandle = await callFunction(
-        workflowCtx,
-        workflowDefaultHandle,
-        undefined,
-        workflowContext,
-        {},
-      );
-
-      const workflowResult = workflowCtx.dump(
-        workflowCtx.unwrapResult(workflowCallHandle),
-      );
-
-      // Validate workflow output against the workflow's output schema
-      const workflowOutputValidation = validate(
-        workflowResult,
-        workflow.outputSchema,
-      );
-      if (!workflowOutputValidation.valid) {
-        run.status = "failed";
-        run.error = `Workflow output validation failed: ${inspect(
-          workflowOutputValidation,
-        )}`;
-        run.logs.push(...workflowConsole.logs);
-        return;
-      }
-
-      run.finalResult = workflowResult;
-      run.logs.push(...workflowConsole.logs);
-      run.status = "completed";
-      run.endTime = Date.now();
-    } catch (error) {
+    if (!finalResult) {
       run.status = "failed";
-      run.error = `Workflow execution failed: ${inspect(error)}`;
-      run.logs.push(...workflowConsole.logs);
-      run.endTime = Date.now();
+      run.error = "No result from the last step";
+      return;
     }
+
+    // Validate workflow output against the workflow's output schema
+    const workflowOutputValidation = validate(
+      finalResult,
+      workflow.outputSchema,
+    );
+    if (!workflowOutputValidation.valid) {
+      run.status = "failed";
+      run.error = `Workflow output validation failed: ${
+        inspect(
+          workflowOutputValidation,
+        )
+      }`;
+      return;
+    }
+
+    run.finalResult = finalResult;
+    run.status = "completed";
+    run.endTime = Date.now();
   } catch (error) {
     run.status = "failed";
     run.error = `Workflow runner failed: ${inspect(error)}`;
@@ -261,10 +257,10 @@ async function readWorkflow(
 
     const workflow = result.content as z.infer<typeof WorkflowDefinitionSchema>;
 
-    // Inline step function code
-    const inlinedSteps = await Promise.all(
-      workflow.steps.map(async (step) => {
-        const stepFunctionPath = step.execute.replace("file://", "");
+    // Inline mapping function code
+    const inlinedMappings = await Promise.all(
+      workflow.mappings.map(async (mapping) => {
+        const stepFunctionPath = mapping.execute.replace("file://", "");
         const stepFunctionResult = await client.READ_FILE({
           branch,
           path: stepFunctionPath,
@@ -272,46 +268,56 @@ async function readWorkflow(
         });
 
         return {
-          name: step.name,
-          description: step.description,
-          contextSchema: step.contextSchema,
-          outputSchema: step.outputSchema,
+          name: mapping.name,
+          description: mapping.description,
           execute: stepFunctionResult.content, // Inline the code in the execute field
         };
       }),
     );
-
-    // Inline workflow execute function code
-    const workflowExecutePath = workflow.execute.replace("file://", "");
-    const workflowExecuteResult = await client.READ_FILE({
-      branch,
-      path: workflowExecutePath,
-      format: "plainString",
-    });
 
     return {
       name: workflow.name,
       description: workflow.description,
       inputSchema: workflow.inputSchema,
       outputSchema: workflow.outputSchema,
-      steps: inlinedSteps,
-      execute: workflowExecuteResult.content, // Inline the code in the execute field
+      mappings: inlinedMappings,
+      tools: workflow.tools, // Tools don't need inlining
+      steps: workflow.steps, // Steps are just names
     };
   } catch {
     return null;
   }
 }
 
-export const WorkflowStepDefinitionSchema = z.object({
+// Mapping step definition - transforms data between tool calls
+export const MappingStepDefinitionSchema = z.object({
   name: z
     .string()
     .min(1)
-    .describe("The unique name of the step within the workflow"),
+    .describe("The unique name of the mapping step within the workflow"),
   description: z
     .string()
     .min(1)
-    .describe("A clear description of what this step does"),
-  contextSchema: z
+    .describe("A clear description of what this mapping step does"),
+  execute: z
+    .string()
+    .min(1)
+    .describe(
+      "ES module code that exports a default async function: (ctx: WellKnownOptions) => Promise<any>. Use ctx.readWorkflowInput() or ctx.readStepResult(stepName) to access data",
+    ),
+});
+
+// Tool call step definition - executes a tool from an integration
+export const ToolCallStepDefinitionSchema = z.object({
+  name: z
+    .string()
+    .min(1)
+    .describe("The unique name of the tool call step within the workflow"),
+  description: z
+    .string()
+    .min(1)
+    .describe("A clear description of what this tool call step does"),
+  options: z
     .object({
       retry: z
         .number()
@@ -328,20 +334,16 @@ export const WorkflowStepDefinitionSchema = z.object({
     .passthrough()
     .nullish()
     .describe(
-      "Step configuration schema. Extend this object with custom properties for business user configuration (e.g., AI prompts, temperature settings)",
+      "Step configuration options. Extend this object with custom properties for business user configuration",
     ),
-  outputSchema: z
-    .object({})
-    .passthrough()
-    .describe(
-      "JSON Schema defining the minimal data this step returns. Keep output minimal for better performance",
-    ),
-  execute: z
+  tool_name: z
     .string()
     .min(1)
-    .describe(
-      "ES module code that exports a default async function: (ctx: ContextSchema & WellKnownOptions) => Promise<outputSchema>",
-    ),
+    .describe("The name of the tool to call"),
+  integration: z
+    .string()
+    .min(1)
+    .describe("The name of the integration that provides this tool"),
 });
 
 export const WorkflowDefinitionSchema = z.object({
@@ -362,19 +364,22 @@ export const WorkflowDefinitionSchema = z.object({
     .describe(
       "JSON Schema defining the workflow's final output after all steps complete",
     ),
+  mappings: z
+    .array(MappingStepDefinitionSchema)
+    .describe("Array of mapping step definitions"),
+  tools: z
+    .array(ToolCallStepDefinitionSchema)
+    .describe("Array of tool call step definitions"),
   steps: z
-    .array(WorkflowStepDefinitionSchema)
-    .min(1)
-    .describe("Array of workflow steps that execute sequentially"),
-  execute: z
-    .string()
+    .array(z.string())
     .min(1)
     .describe(
-      "ES module code that exports a default async function to aggregate step results and return the workflow's outputSchema",
+      "Array of step names that define the execution order. Names must reference mappings or tools defined above. The last step should be a mapping that returns the final output.",
     ),
 });
 
-const WORKFLOW_DESCRIPTION = `Create or update a workflow in the sandbox environment.
+const WORKFLOW_DESCRIPTION =
+  `Create or update a workflow in the sandbox environment.
 
 ## Overview
 
@@ -382,56 +387,59 @@ Workflows are powerful automation tools that execute a sequence of steps sequent
 
 - **Input Schema**: Defines the data structure and parameters required to start the workflow
 - **Output Schema**: Defines the final result structure after all steps complete
-- **Steps**: An ordered array of individual operations that run one after another
-- **Execute Function**: Aggregates step results and returns the final workflow output
+- **Mappings**: Array of mapping step definitions that transform data
+- **Tools**: Array of tool call step definitions that execute external tools
+- **Steps**: Array of step names that define the execution order
 
-## Workflow Steps
+The workflow's final output is determined by the last step in the sequence, which should be a mapping step that aggregates and returns the desired result.
 
-Each step in a workflow is a self-contained unit with:
+## Workflow Structure
 
-### Step Structure
-- **name**: Unique identifier within the workflow
-- **description**: Clear explanation of the step's purpose
-- **contextSchema**: Configuration schema with well-known properties:
-  - retry (number, default: 0): Number of retry attempts on failure
-  - timeout (number, default: Infinity): Maximum execution time in milliseconds
-  - Custom properties: Extend with business-specific configuration (AI prompts, temperature, etc.)
-- **outputSchema**: JSON Schema defining the minimal data returned by this step
+Workflows are organized into three main sections:
+
+### 1. Mappings
+Array of mapping step definitions that transform data:
+- **name**: Unique identifier for the mapping
+- **description**: Clear explanation of the mapping's purpose
 - **execute**: ES module code with a default async function
 
-### Step Execution Function
-Each step's execute function follows this pattern:
-\`\`\`javascript
-export default async function(ctx) {
-  // ctx contains:
-  // - Your custom contextSchema properties
-  // - WellKnownOptions helper functions:
-  //   - await ctx.readWorkflowInput(): Returns the initial workflow input
-  //   - await ctx.readStepResult(stepName): Returns output from a previous step
-  
-  // Your step logic here
-  return stepOutput; // Must match outputSchema
-}
-\`\`\`
+### 2. Tools
+Array of tool call step definitions that execute external tools:
+- **name**: Unique identifier for the tool call
+- **description**: Clear explanation of the tool call's purpose
+- **options**: Configuration with retry/timeout settings and custom properties
+- **tool_name**: The name of the tool to call
+- **integration**: The name of the integration that provides this tool
 
-## Workflow Execute Function
+### 3. Steps
+Array of step names that define the execution order. Names must reference mappings or tools defined above.
 
-The workflow's execute function aggregates all step results:
+### Mapping Step Execution Function
+Each mapping step's execute function follows this pattern:
 \`\`\`javascript
 export default async function(ctx) {
   // ctx contains WellKnownOptions helper functions:
-  // - await ctx.readWorkflowInput(): Original workflow input
-  // - await ctx.readStepResult(stepName): Any step's output
+  // - await ctx.readWorkflowInput(): Returns the initial workflow input
+  // - await ctx.readStepResult(stepName): Returns output from a previous step
   
-  // Aggregate and transform step results
-  const finalResult = {
-    // Combine data from multiple steps
-    // Transform to match outputSchema
-  };
+  // Transform data between tool calls
+  const input = await ctx.readWorkflowInput();
+  const previousResult = await ctx.readStepResult('previous-step');
   
-  return finalResult; // Must match workflow's outputSchema
+  // Your mapping logic here
+  return transformedData;
 }
 \`\`\`
+
+## Final Output
+
+The workflow's final output is automatically determined by the last step in the sequence. This should be a mapping step that:
+
+1. Aggregates data from previous steps using ctx.readStepResult(stepName)
+2. Transforms the data to match the workflow's output schema
+3. Returns the final result
+
+The last mapping step effectively replaces the need for a separate workflow execute function.
 
 ## Examples
 
@@ -455,41 +463,31 @@ export default async function(ctx) {
       "status": { "type": "string", "enum": ["created", "updated"] }
     }
   },
-  "steps": [
+  "mappings": [
     {
       "name": "validate-input",
       "description": "Validates user input data",
-      "contextSchema": {
-        "retry": 2,
-        "timeout": 5000
-      },
-      "outputSchema": {
-        "type": "object",
-        "properties": {
-          "isValid": { "type": "boolean" },
-          "errors": { "type": "array", "items": { "type": "string" } }
-        }
-      },
       "execute": "export default async function(ctx) { const input = await ctx.readWorkflowInput(); return { isValid: input.email.includes('@'), errors: [] }; }"
     },
     {
-      "name": "enrich-data",
-      "description": "Adds additional user information",
-      "contextSchema": {
-        "retry": 1,
-        "timeout": 10000,
-        "apiKey": "string"
-      },
-      "outputSchema": {
-        "type": "object",
-        "properties": {
-          "enrichedData": { "type": "object" }
-        }
-      },
-      "execute": "export default async function(ctx) { const input = await ctx.readWorkflowInput(); return { enrichedData: { ...input, timestamp: Date.now() } }; }"
+      "name": "finalize-result",
+      "description": "Aggregates and returns the final workflow result",
+      "execute": "export default async function(ctx) { const storedUser = await ctx.readStepResult('store-user'); return { userId: storedUser.id, status: 'created' }; }"
     }
   ],
-  "execute": "export default async function(ctx) { const validation = await ctx.readStepResult('validate-input'); const enrichment = await ctx.readStepResult('enrich-data'); return { userId: 'user_123', status: 'created' }; }"
+  "tools": [
+    {
+      "name": "store-user",
+      "description": "Stores user data in database",
+      "options": {
+        "retry": 2,
+        "timeout": 5000
+      },
+      "tool_name": "create_user",
+      "integration": "database"
+    }
+  ],
+  "steps": ["validate-input", "store-user", "finalize-result"]
 }
 \`\`\`
 
@@ -512,57 +510,53 @@ export default async function(ctx) {
       "quality": { "type": "number", "minimum": 0, "maximum": 10 }
     }
   },
-  "steps": [
+  "mappings": [
+    {
+      "name": "prepare-prompt",
+      "description": "Prepares the AI prompt from input",
+      "execute": "export default async function(ctx) { const input = await ctx.readWorkflowInput(); return { prompt: \`Write about \${input.topic} in a \${input.tone} tone\` }; }"
+    },
+    {
+      "name": "finalize-content",
+      "description": "Aggregates and returns the final content result",
+      "execute": "export default async function(ctx) { const draft = await ctx.readStepResult('generate-draft'); return { content: draft.content, quality: 8 }; }"
+    }
+  ],
+  "tools": [
     {
       "name": "generate-draft",
-      "description": "Creates initial content draft",
-      "contextSchema": {
+      "description": "Creates initial content draft using AI",
+      "options": {
         "retry": 1,
         "timeout": 30000,
         "temperature": 0.7,
         "maxTokens": 1000
       },
-      "outputSchema": {
-        "type": "object",
-        "properties": {
-          "draft": { "type": "string" }
-        }
-      },
-      "execute": "export default async function(ctx) { const input = await ctx.readWorkflowInput(); return { draft: \`Generated content about \${input.topic} in \${input.tone} tone\` }; }"
-    },
-    {
-      "name": "review-content",
-      "description": "Reviews and scores the generated content",
-      "contextSchema": {
-        "retry": 0,
-        "timeout": 15000
-      },
-      "outputSchema": {
-        "type": "object",
-        "properties": {
-          "quality": { "type": "number" },
-          "feedback": { "type": "string" }
-        }
-      },
-      "execute": "export default async function(ctx) { const draft = await ctx.readStepResult('generate-draft'); return { quality: 8, feedback: 'Good content structure' }; }"
+      "tool_name": "generate_text",
+      "integration": "openai"
     }
   ],
-  "execute": "export default async function(ctx) { const draft = await ctx.readStepResult('generate-draft'); const review = await ctx.readStepResult('review-content'); return { content: draft.draft, quality: review.quality }; }"
+  "steps": ["prepare-prompt", "generate-draft", "finalize-content"]
 }
 \`\`\`
 
 ## Best Practices
 
-1. **Minimal Output**: Keep step outputs minimal to improve performance
-2. **Error Handling**: Use retry and timeout configurations appropriately
-3. **Schema Validation**: Define clear input/output schemas for type safety
-4. **Step Independence**: Design steps to be testable in isolation
-5. **Business Configuration**: Use contextSchema to expose tunable parameters
-6. **Sequential Execution**: Steps run in order - design accordingly
+1. **Organized Structure**: Define mappings and tools separately, then reference them in the steps array
+2. **Final Mapping Step**: Always end with a mapping step that aggregates and returns the final result
+3. **Input Transformation**: Use mapping steps before tool calls to transform workflow input as needed
+4. **Minimal Output**: Keep mapping step outputs minimal to improve performance
+5. **Error Handling**: Use retry and timeout configurations appropriately for tool calls
+6. **Schema Validation**: Define clear input/output schemas for type safety
+7. **Step Independence**: Design steps to be testable in isolation
+8. **Business Configuration**: Use options to expose tunable parameters for tool calls
+9. **Sequential Execution**: Steps run in order - design accordingly
+10. **Data Flow**: Use mappers to transform data between tool calls
+11. **Step References**: Ensure all step names in the steps array reference existing mappings or tools
 
 ## WellKnownOptions Interface
 
-The context object in both step and workflow execute functions includes:
+The context object in mapping step execute functions includes:
 
 \`\`\`typescript
 interface WellKnownOptions {
@@ -571,7 +565,7 @@ interface WellKnownOptions {
 }
 \`\`\`
 
-Use these helper functions to access workflow input and previous step results within your execute functions.
+Use these helper functions to access workflow input and previous step results within your mapping step execute functions.
 
 `;
 
@@ -589,7 +583,7 @@ const upsertWorkflow = createTool({
       .describe("Compilation or validation error if any"),
   }),
   handler: async (
-    { name, description, inputSchema, outputSchema, steps, execute },
+    { name, description, inputSchema, outputSchema, mappings, tools, steps },
     c,
   ) => {
     await assertWorkspaceResourceAccess(c);
@@ -600,26 +594,26 @@ const upsertWorkflow = createTool({
     const filename = fileNameSlugify(name);
 
     try {
-      // Process each step and save their execute functions
-      const processedSteps = [];
+      // Process each mapping and save their execute functions
+      const processedMappings = [];
 
-      for (const step of steps) {
-        const stepName = fileNameSlugify(step.name);
+      for (const mapping of mappings) {
+        const stepName = fileNameSlugify(mapping.name);
         const stepFilePath = `/src/functions/${filename}.${stepName}.ts`;
 
-        // Process the step execute code
+        // Process the mapping execute code
         const { functionCode, functionPath } = await processExecuteCode(
-          step.execute,
+          mapping.execute,
           stepFilePath,
           client,
           branch,
         );
 
-        // Validate the step function code
+        // Validate the mapping function code
         const validation = await validateExecuteCode(
           functionCode,
           runtimeId,
-          `Step ${step.name}`,
+          `Mapping ${mapping.name}`,
         );
 
         if (!validation.success) {
@@ -629,43 +623,30 @@ const upsertWorkflow = createTool({
           };
         }
 
-        // Add the processed step with file reference
-        processedSteps.push({
-          name: step.name,
-          description: step.description,
-          contextSchema: step.contextSchema,
-          outputSchema: step.outputSchema,
+        // Add the processed mapping with file reference
+        processedMappings.push({
+          name: mapping.name,
+          description: mapping.description,
           execute: `file://${functionPath}`,
         });
       }
 
-      // Process the workflow execute function
-      const workflowExecutePath = `/src/functions/${filename}.output.ts`;
-      const {
-        functionCode: workflowExecuteCode,
-        functionPath: workflowExecuteFilePath,
-      } = await processExecuteCode(
-        execute,
-        workflowExecutePath,
-        client,
-        branch,
-      );
+      // Validate that all step names reference existing mappings or tools
+      const allStepNames = new Set([
+        ...mappings.map(m => m.name),
+        ...tools.map(t => t.name)
+      ]);
 
-      // Validate the workflow execute function code
-      const workflowValidation = await validateExecuteCode(
-        workflowExecuteCode,
-        runtimeId,
-        "Workflow execute",
-      );
-
-      if (!workflowValidation.success) {
-        return {
-          success: false,
-          error: workflowValidation.error,
-        };
+      for (const stepName of steps) {
+        if (!allStepNames.has(stepName)) {
+          return {
+            success: false,
+            error: `Step '${stepName}' not found in mappings or tools`,
+          };
+        }
       }
 
-      // Store the workflow metadata with file references
+      // Store the workflow metadata
       const workflowPath = `/src/workflows/${filename}.json`;
 
       const workflowData = {
@@ -673,8 +654,9 @@ const upsertWorkflow = createTool({
         description,
         inputSchema,
         outputSchema,
-        steps: processedSteps,
-        execute: `file://${workflowExecuteFilePath}`,
+        mappings: processedMappings,
+        tools, // Tools don't need processing
+        steps, // Steps are just names
       };
 
       await client.PUT_FILE({
@@ -824,13 +806,12 @@ const getWorkflowStatus = createTool({
     }
 
     // Create partial result from completed steps
-    const partialResult =
-      Object.keys(run.stepResults).length > 0
-        ? {
-            completedSteps: Object.keys(run.stepResults),
-            stepResults: run.stepResults,
-          }
-        : undefined;
+    const partialResult = Object.keys(run.stepResults).length > 0
+      ? {
+        completedSteps: Object.keys(run.stepResults),
+        stepResults: run.stepResults,
+      }
+      : undefined;
 
     return {
       status: run.status,
@@ -887,7 +868,8 @@ const replayWorkflowFromStep = createTool({
       if (!originalRun.stepResults[stepName]) {
         return {
           newRunId: "",
-          error: `Step '${stepName}' was not completed in the original run or does not exist`,
+          error:
+            `Step '${stepName}' was not completed in the original run or does not exist`,
         };
       }
 

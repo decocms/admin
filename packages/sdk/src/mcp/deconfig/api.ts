@@ -13,6 +13,7 @@
 import { z } from "zod";
 import { DECO_CHAT_ISSUER } from "../../auth/jwt.ts";
 import { WellKnownMcpGroups } from "../../crud/groups.ts";
+import { doRetryable } from "../../do-commons.ts";
 import type { WithTool } from "../assertions.ts";
 import {
   assertHasWorkspace,
@@ -34,6 +35,7 @@ interface DeconfigState {
 type DeconfigContext = WithTool<AppContext> & {
   state: DeconfigState;
 };
+
 // Types from branch.ts - simplified for MCP usage
 export const BranchId = {
   build(name: string, projectId: string) {
@@ -102,6 +104,7 @@ const createDeconfigTool = createToolFactory<DeconfigContext>(
       "Git-like versioned configuration management with branches, files, and real-time collaboration.",
     icon: "https://assets.decocache.com/mcp/24cfa17a-a0a8-40dc-9313-b4c3bdb63af6/deconfig_v1.png",
   },
+  doRetryable,
 );
 
 // =============================================================================

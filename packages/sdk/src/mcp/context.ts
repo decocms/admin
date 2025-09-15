@@ -353,6 +353,9 @@ export function createToolFactory<TAppContext extends AppContext = AppContext>(
   contextFactory: (c: AppContext) => Promise<TAppContext> | TAppContext,
   group?: string,
   integration?: GroupIntegration,
+  wrapHandler?: <TInput, TReturn>(
+    handler: (props: TInput) => Promise<TReturn>,
+  ) => (props: TInput) => Promise<TReturn>,
 ) {
   return <
     TName extends string = string,
@@ -361,12 +364,13 @@ export function createToolFactory<TAppContext extends AppContext = AppContext>(
   >(
     def: ToolDefinition<TAppContext, TName, TInput, TReturn>,
   ): Tool<TName, TInput, TReturn> => {
+    wrapHandler ??= (handler) => handler;
     group && integration && addGroup(group, integration);
     resourceGroupMap.set(def.name, group);
     return {
       group,
       ...def,
-      handler: async (props: TInput): Promise<TReturn> => {
+      handler: wrapHandler(async (props: TInput): Promise<TReturn> => {
         const context = await contextFactory(State.getStore());
         context.tool = { name: def.name };
 
@@ -380,7 +384,7 @@ export function createToolFactory<TAppContext extends AppContext = AppContext>(
         }
 
         return result;
-      },
+      }),
     };
   };
 }

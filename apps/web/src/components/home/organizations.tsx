@@ -136,7 +136,7 @@ function RecentProjectsSection() {
         {recent.map((project) => (
           <Link
             key={`${project.org.slug}/${project.slug}`}
-            to={`/${project.org.slug}/${project.slug}/agents`}
+            to={`/${project.org.slug}/${project.slug}`}
             className="bg-stone-50 hover:bg-stone-100 transition-colors flex flex-col rounded-lg border border-border"
           >
             <div className="p-4 flex flex-col gap-4">

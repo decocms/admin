@@ -1329,6 +1329,15 @@ export const listRecentProjects = createTool({
       projectById.set(String(p.id), p);
     }
 
+    // Build a quick lookup for last access times (first seen = most recent)
+    const lastAccessedByProjectId = new Map<string, string>();
+    for (const row of activityData ?? []) {
+      const pid = String(row.value);
+      if (!lastAccessedByProjectId.has(pid)) {
+        lastAccessedByProjectId.set(pid, row.created_at as string);
+      }
+    }
+
     // Build items preserving the activity order of projects
     const items = (
       await Promise.all(
@@ -1372,9 +1381,7 @@ export const listRecentProjects = createTool({
                 slug: String(project.teams.slug || ""),
                 avatar_url: orgAvatar,
               },
-              last_accessed_at:
-                activityData?.find((a) => a.value === String(project.id))
-                  ?.created_at || undefined,
+              last_accessed_at: lastAccessedByProjectId.get(String(project.id)) || undefined,
             };
           }),
       )

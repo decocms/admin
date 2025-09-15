@@ -333,7 +333,9 @@ export const listRegistryApps = createTool({
       .from(DECO_CHAT_APPS_REGISTRY_TABLE)
       .select(SELECT_REGISTRY_APP_WITH_SCOPE_QUERY)
       .or(
-        `unlisted.eq.false,and(workspace.eq.${workspace},unlisted.eq.true),and(workspace.eq.${personalSlug},unlisted.eq.true)`,
+        `unlisted.eq.false,` +
+          `and(workspace.eq."${workspace}",unlisted.eq.true),` +
+          `and(workspace.eq."${personalSlug}",unlisted.eq.true)`,
       );
 
     if (scopeName) {

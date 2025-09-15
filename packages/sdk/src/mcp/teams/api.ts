@@ -1265,16 +1265,17 @@ export const listRecentProjects = createTool({
 
     const user = c.user;
     const { limit } = props;
-    const safeLimit = Math.min(24, Math.max(1, Number(limit ?? 12)));
+    const effectiveLimit = Number(limit ?? 12);
 
-    // Get latest user activity rows (most recent first) and dedupe by team id
+    // Get latest user activity rows for projects (most recent first)
     const { data: activityData, error: activityError } = await c.db
       .from("user_activity")
       .select("value, created_at")
       .eq("user_id", user.id)
-      .eq("resource", "team")
+      .eq("resource", "project")
       .order("created_at", { ascending: false })
-      .limit(Math.min(200, Math.max(50, safeLimit * 4)));
+      // Fetch some extra to compensate for potential duplicates in activity
+      .limit(Math.min(200, Math.max(50, effectiveLimit * 4)));
 
     if (activityError) throw activityError;
 
@@ -1282,24 +1283,23 @@ export const listRecentProjects = createTool({
       return { items: [] };
     }
 
-    // Deduplicate by team id (value) keeping latest order
+    // Deduplicate by project id (value) keeping latest order
     const seen = new Set<string>();
-    const orderedTeamIds = activityData
+    const orderedProjectIds = activityData
       .filter((row) => {
         if (!row.value) return false;
         if (seen.has(row.value)) return false;
         seen.add(row.value);
         return true;
       })
-      .slice(0, safeLimit)
-      .map((row) => Number(row.value))
-      .filter((id) => Number.isFinite(id));
+      .map((row) => String(row.value))
+      .slice(0, effectiveLimit);
 
-    if (orderedTeamIds.length === 0) {
+    if (orderedProjectIds.length === 0) {
       return { items: [] };
     }
 
-    // Fetch projects for these teams with access validation via members join
+    // Fetch the selected projects with access validation via members join
     const { data: projectsData, error: projectsError } = await c.db
       .from("deco_chat_projects")
       .select(
@@ -1317,33 +1317,23 @@ export const listRecentProjects = createTool({
         )
       `,
       )
-      .in("org_id", orderedTeamIds)
+      .in("id", orderedProjectIds)
       .eq("teams.members.user_id", user.id)
       .is("teams.members.deleted_at", null);
 
     if (projectsError) throw projectsError;
 
-    // Group projects by team id and pick one (prefer slug 'default')
-    const byTeamId = new Map<number, typeof projectsData>();
-    for (const project of projectsData ?? []) {
-      const teamId = Number(project.org_id ?? project.teams?.id);
-      if (!Number.isFinite(teamId)) continue;
-      const existing = byTeamId.get(teamId) ?? [];
-      byTeamId.set(teamId, [...existing, project]);
+    // Index projects by id for ordering
+    const projectById = new Map<string, (typeof projectsData)[number]>();
+    for (const p of projectsData ?? []) {
+      projectById.set(String(p.id), p);
     }
 
-    const pickProjectForTeam = (teamId: number) => {
-      const list = byTeamId.get(teamId) ?? [];
-      if (list.length === 0) return null;
-      const defaultProj = list.find((p) => p.slug === "default");
-      return defaultProj ?? list[0];
-    };
-
-    // Build items preserving the activity order
+    // Build items preserving the activity order of projects
     const items = (
       await Promise.all(
-        orderedTeamIds
-          .map((teamId) => pickProjectForTeam(teamId))
+        orderedProjectIds
+          .map((projectId) => projectById.get(projectId))
           .filter((p): p is NonNullable<typeof p> => Boolean(p))
           .map(async (project) => {
             // Sign org avatar URL like other endpoints
@@ -1383,7 +1373,7 @@ export const listRecentProjects = createTool({
                 avatar_url: orgAvatar,
               },
               last_accessed_at:
-                activityData?.find((a) => a.value === String(project.teams.id))
+                activityData?.find((a) => a.value === String(project.id))
                   ?.created_at || undefined,
             };
           }),

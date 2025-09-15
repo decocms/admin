@@ -60,7 +60,7 @@ export function ProjectLayout() {
     defaultValue: true,
   });
   const [open, setOpen] = useState(defaultOpen);
-  const { org } = useParams();
+  const { org, project } = useParams();
 
   const {
     profileOpen,
@@ -98,7 +98,7 @@ export function ProjectLayout() {
             <SidebarInset className="h-full flex-col bg-sidebar">
               <Outlet />
             </SidebarInset>
-            <RegisterActivity orgSlug={org} />
+            <RegisterActivity orgSlug={org} projectSlug={project} />
           </SidebarProvider>
         </ProfileModalProvider>
       </WithWorkspaceTheme>

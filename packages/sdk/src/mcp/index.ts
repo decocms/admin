@@ -83,6 +83,7 @@ export const GLOBAL_TOOLS = [
   membersAPI.updateTeamMember,
   membersAPI.removeTeamMember,
   membersAPI.registerMemberActivity,
+  membersAPI.registerProjectActivity,
   membersAPI.getMyInvites,
   membersAPI.acceptInvite,
   membersAPI.deleteInvite,

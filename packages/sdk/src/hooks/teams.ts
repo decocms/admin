@@ -54,7 +54,6 @@ export const useOrganizations = (options: { searchQuery?: string } = {}) => {
   return queryResult;
 };
 
-
 export const useProjects = (options: {
   searchQuery?: string;
   org: string;

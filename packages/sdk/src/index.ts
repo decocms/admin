@@ -16,6 +16,7 @@ export * from "./crud/user.ts";
 export * from "./crud/wallet.ts";
 export * from "./crud/workflows.ts";
 export * from "./crud/roles.ts";
+export * from "./crud/projects.ts";
 export * from "./crud/registry.ts";
 
 export * from "./hooks/agent.ts";

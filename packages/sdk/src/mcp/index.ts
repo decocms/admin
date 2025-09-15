@@ -24,7 +24,7 @@ import * as oauthAPI from "./oauth/api.ts";
 import * as profilesAPI from "./profiles/api.ts";
 import * as promptsAPI from "./prompts/api.ts";
 import * as registryAPI from "./registry/api.ts";
-import { SANDBOX_TOOLS } from "./sandbox/api.ts";
+import { SANDBOX_TOOLS_AND_WORKFLOWS } from "./sandbox/api.ts";
 import type { CreateStubHandlerOptions, MCPClientStub } from "./stub.ts";
 import * as teamsAPI from "./teams/api.ts";
 import * as threadsAPI from "./threads/api.ts";
@@ -212,7 +212,7 @@ export const PROJECT_TOOLS = [
   // DECONFIG tools
   ...deconfigAPI.DECONFIG_TOOLS,
   // SANDBOX tools
-  ...SANDBOX_TOOLS,
+  ...SANDBOX_TOOLS_AND_WORKFLOWS,
 ] as const;
 
 export const AGENT_TOOLS = [

@@ -68,6 +68,11 @@ name = "kb-file-processor"
 binding = "KB_FILE_PROCESSOR"
 class_name = "KbFileProcessorWorkflow"
 
+[[workflows]]
+name = "workflow-runner"
+binding = "WORKFLOW_RUNNER"
+class_name = "WorkflowRunner"
+
 [[migrations]]
 tag = "v4"
 new_sqlite_classes = ["WorkspaceDatabase"] # Array of new classes

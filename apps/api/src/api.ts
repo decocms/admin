@@ -122,6 +122,7 @@ export const honoCtxToAppCtx = (c: Context<AppEnv>): AppContext => {
     workspaceDO: c.env.WORKSPACE_DB,
     branchDO: c.env.BRANCH,
     blobsDO: c.env.BLOBS,
+    workflowRunner: c.env.WORKFLOW_RUNNER,
     workspace: ctxWorkspace,
     locator: ctxLocator,
     posthog: createPosthogServerClient({

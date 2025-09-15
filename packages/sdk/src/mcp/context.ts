@@ -27,6 +27,7 @@ import { Blobs } from "./deconfig/blobs.ts";
 import { Branch } from "./deconfig/branch.ts";
 import { addGroup, type GroupIntegration } from "./groups.ts";
 import { generateUUIDv5, toAlphanumericId } from "./slugify.ts";
+import { WorkflowRunnerProps } from "./workflows/workflow-runner.ts";
 
 export type UserPrincipal = Pick<SupaUser, "id" | "email" | "is_anonymous">;
 
@@ -202,6 +203,7 @@ export interface Vars {
   // DECONFIG DurableObjects
   branchDO: DurableObjectNamespace<Branch>;
   blobsDO: DurableObjectNamespace<Blobs>;
+  workflowRunner: Workflow<WorkflowRunnerProps>;
   posthog: PosthogServerClient;
   stub: <
     Constructor extends ActorConstructor<Trigger> | ActorConstructor<AIAgent>,

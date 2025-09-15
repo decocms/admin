@@ -1,4 +1,5 @@
 import type { EnvVars, IWorkspaceDB, Vars } from "@deco/sdk/mcp";
+import { WorkflowRunnerProps } from "@deco/sdk/workflows";
 import type { Context } from "hono";
 import type { TimingVariables } from "hono/timing";
 import type { Blobs, Branch } from "../durable-objects/deconfig.ts";
@@ -10,6 +11,7 @@ export type Bindings = EnvVars & {
   // DECONFIG DurableObjects
   BRANCH: DurableObjectNamespace<Branch>;
   BLOBS: DurableObjectNamespace<Blobs>;
+  WORKFLOW_RUNNER: Workflow<WorkflowRunnerProps>;
   PROD_DISPATCHER: {
     get: <TOutbound extends Record<string, unknown> = Record<string, unknown>>(
       script: string,

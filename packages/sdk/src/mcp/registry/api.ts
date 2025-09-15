@@ -323,6 +323,9 @@ export const listRegistryApps = createTool({
     await assertWorkspaceResourceAccess(c);
 
     assertHasWorkspace(c);
+    // added both scenarios to the query
+    // because we used to registry personal apps workspace as /users/userId
+    // and now we save them as /shared/slug
     const workspace = c.workspace.value;
     const personalSlug = `/shared/${c.locator?.org}`;
 

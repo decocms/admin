@@ -92,9 +92,13 @@ async function executeWorkflow(
     // Determine starting step index
     let startStepIndex = 0;
     if (startFromStep) {
-      startStepIndex = workflow.steps.findIndex(
-        (stepName) => stepName === startFromStep,
-      );
+      startStepIndex = workflow.steps.findIndex((step) => {
+        const stepName =
+          step.type === "mapping"
+            ? (step.def as z.infer<typeof MappingStepDefinitionSchema>).name
+            : (step.def as z.infer<typeof ToolCallStepDefinitionSchema>).name;
+        return stepName === startFromStep;
+      });
       if (startStepIndex === -1) {
         run.status = "failed";
         run.error = `Starting step '${startFromStep}' not found in workflow`;
@@ -104,26 +108,23 @@ async function executeWorkflow(
 
     // Execute steps sequentially starting from the specified step
     for (let i = startStepIndex; i < workflow.steps.length; i++) {
-      const stepName = workflow.steps[i];
+      const step = workflow.steps[i];
+      const stepName =
+        step.type === "mapping"
+          ? (step.def as z.infer<typeof MappingStepDefinitionSchema>).name
+          : (step.def as z.infer<typeof ToolCallStepDefinitionSchema>).name;
       run.currentStep = stepName;
-
-      // Find the step definition in mappings or tools
-      const mappingStep = workflow.mappings.find(m => m.name === stepName);
-      const toolStep = workflow.tools.find(t => t.name === stepName);
-
-      if (!mappingStep && !toolStep) {
-        run.status = "failed";
-        run.error = `Step '${stepName}' not found in mappings or tools`;
-        return;
-      }
 
       try {
         let stepResult: unknown;
 
-        if (mappingStep) {
+        if (step.type === "mapping") {
+          const mappingDef = step.def as z.infer<
+            typeof MappingStepDefinitionSchema
+          >;
           // Execute mapping step
           using stepEvaluation = await evalCodeAndReturnDefaultHandle(
-            mappingStep.execute,
+            mappingDef.execute,
             runtimeId,
           );
           const {
@@ -157,22 +158,25 @@ async function executeWorkflow(
 
           stepResult = stepCtx.dump(stepCtx.unwrapResult(stepCallHandle));
           run.logs.push(...stepConsole.logs);
-        } else if (toolStep) {
+        } else if (step.type === "tool_call") {
+          const toolDef = step.def as z.infer<
+            typeof ToolCallStepDefinitionSchema
+          >;
           // Execute tool call step
           // Find the integration connection
           const { items: integrations } = await client.INTEGRATIONS_LIST({});
-          const integration = integrations.find((item) =>
-            item.id === toolStep.integration
+          const integration = integrations.find(
+            (item) => item.id === toolDef.integration,
           );
 
           if (!integration) {
-            throw new Error(`Integration '${toolStep.integration}' not found`);
+            throw new Error(`Integration '${toolDef.integration}' not found`);
           }
 
           const toolCallResult = await client.INTEGRATIONS_CALL_TOOL({
             connection: integration.connection,
             params: {
-              name: toolStep.tool_name,
+              name: toolDef.tool_name,
               arguments: input,
             },
           });
@@ -181,12 +185,16 @@ async function executeWorkflow(
             throw new Error(`Tool call failed: ${inspect(toolCallResult)}`);
           }
 
-          stepResult = toolCallResult.structuredContent ||
-            toolCallResult.content;
+          stepResult =
+            toolCallResult.structuredContent || toolCallResult.content;
           run.logs.push({
             type: "log",
-            content: `Tool call '${toolStep.tool_name}' completed`,
+            content: `Tool call '${toolDef.tool_name}' completed`,
           });
+        } else {
+          run.status = "failed";
+          run.error = `Unknown step type: ${(step as any).type}`;
+          return;
         }
 
         // Store the step result
@@ -199,7 +207,11 @@ async function executeWorkflow(
     }
 
     // The final result is the output of the last step
-    const lastStepName = workflow.steps[workflow.steps.length - 1];
+    const lastStep = workflow.steps[workflow.steps.length - 1];
+    const lastStepName =
+      lastStep.type === "mapping"
+        ? (lastStep.def as z.infer<typeof MappingStepDefinitionSchema>).name
+        : (lastStep.def as z.infer<typeof ToolCallStepDefinitionSchema>).name;
     const finalResult = run.stepResults[lastStepName];
 
     if (!finalResult) {
@@ -215,11 +227,9 @@ async function executeWorkflow(
     );
     if (!workflowOutputValidation.valid) {
       run.status = "failed";
-      run.error = `Workflow output validation failed: ${
-        inspect(
-          workflowOutputValidation,
-        )
-      }`;
+      run.error = `Workflow output validation failed: ${inspect(
+        workflowOutputValidation,
+      )}`;
       return;
     }
 
@@ -257,21 +267,45 @@ async function readWorkflow(
 
     const workflow = result.content as z.infer<typeof WorkflowDefinitionSchema>;
 
-    // Inline mapping function code
-    const inlinedMappings = await Promise.all(
-      workflow.mappings.map(async (mapping) => {
-        const stepFunctionPath = mapping.execute.replace("file://", "");
-        const stepFunctionResult = await client.READ_FILE({
-          branch,
-          path: stepFunctionPath,
-          format: "plainString",
-        });
+    // Inline step function code
+    const inlinedSteps = await Promise.all(
+      workflow.steps.map(async (step) => {
+        if (step.type === "mapping") {
+          const mappingDef = step.def as z.infer<
+            typeof MappingStepDefinitionSchema
+          >;
+          const stepFunctionPath = mappingDef.execute.replace("file://", "");
+          const stepFunctionResult = await client.READ_FILE({
+            branch,
+            path: stepFunctionPath,
+            format: "plainString",
+          });
 
-        return {
-          name: mapping.name,
-          description: mapping.description,
-          execute: stepFunctionResult.content, // Inline the code in the execute field
-        };
+          return {
+            type: "mapping" as const,
+            def: {
+              name: mappingDef.name,
+              description: mappingDef.description,
+              execute: stepFunctionResult.content, // Inline the code in the execute field
+            },
+          };
+        } else if (step.type === "tool_call") {
+          const toolDef = step.def as z.infer<
+            typeof ToolCallStepDefinitionSchema
+          >;
+          return {
+            type: "tool_call" as const,
+            def: {
+              name: toolDef.name,
+              description: toolDef.description,
+              options: toolDef.options,
+              tool_name: toolDef.tool_name,
+              integration: toolDef.integration,
+            },
+          };
+        } else {
+          throw new Error(`Unknown step type: ${(step as any).type}`);
+        }
       }),
     );
 
@@ -280,9 +314,7 @@ async function readWorkflow(
       description: workflow.description,
       inputSchema: workflow.inputSchema,
       outputSchema: workflow.outputSchema,
-      mappings: inlinedMappings,
-      tools: workflow.tools, // Tools don't need inlining
-      steps: workflow.steps, // Steps are just names
+      steps: inlinedSteps,
     };
   } catch {
     return null;
@@ -336,17 +368,22 @@ export const ToolCallStepDefinitionSchema = z.object({
     .describe(
       "Step configuration options. Extend this object with custom properties for business user configuration",
     ),
-  tool_name: z
-    .string()
-    .min(1)
-    .describe("The name of the tool to call"),
+  tool_name: z.string().min(1).describe("The name of the tool to call"),
   integration: z
     .string()
     .min(1)
     .describe("The name of the integration that provides this tool"),
 });
 
-export const WorkflowDefinitionSchema = z.object({
+// Union of step types
+const WorkflowStepDefinitionSchema = z.object({
+  type: z.enum(["mapping", "tool_call"]).describe("The type of step"),
+  def: z
+    .union([MappingStepDefinitionSchema, ToolCallStepDefinitionSchema])
+    .describe("The step definition based on the type"),
+});
+
+const WorkflowDefinitionSchema = z.object({
   name: z.string().min(1).describe("The unique name of the workflow"),
   description: z
     .string()
@@ -364,22 +401,15 @@ export const WorkflowDefinitionSchema = z.object({
     .describe(
       "JSON Schema defining the workflow's final output after all steps complete",
     ),
-  mappings: z
-    .array(MappingStepDefinitionSchema)
-    .describe("Array of mapping step definitions"),
-  tools: z
-    .array(ToolCallStepDefinitionSchema)
-    .describe("Array of tool call step definitions"),
   steps: z
-    .array(z.string())
+    .array(WorkflowStepDefinitionSchema)
     .min(1)
     .describe(
-      "Array of step names that define the execution order. Names must reference mappings or tools defined above. The last step should be a mapping that returns the final output.",
+      "Array of workflow steps that execute sequentially. The last step should be a mapping step that returns the final output.",
     ),
 });
 
-const WORKFLOW_DESCRIPTION =
-  `Create or update a workflow in the sandbox environment.
+const WORKFLOW_DESCRIPTION = `Create or update a workflow in the sandbox environment.
 
 ## Overview
 
@@ -387,32 +417,33 @@ Workflows are powerful automation tools that execute a sequence of steps sequent
 
 - **Input Schema**: Defines the data structure and parameters required to start the workflow
 - **Output Schema**: Defines the final result structure after all steps complete
-- **Mappings**: Array of mapping step definitions that transform data
-- **Tools**: Array of tool call step definitions that execute external tools
-- **Steps**: Array of step names that define the execution order
+- **Steps**: An ordered array of individual operations that run one after another (alternating between tool calls and mappers)
 
 The workflow's final output is determined by the last step in the sequence, which should be a mapping step that aggregates and returns the desired result.
 
-## Workflow Structure
+## Workflow Steps
 
-Workflows are organized into three main sections:
+Workflows alternate between two types of steps:
 
-### 1. Mappings
-Array of mapping step definitions that transform data:
-- **name**: Unique identifier for the mapping
-- **description**: Clear explanation of the mapping's purpose
-- **execute**: ES module code with a default async function
+### 1. Tool Call Steps
+Execute tools from integrations using the workflow input:
+- **type**: "tool_call"
+- **def**: Tool call step definition containing:
+  - **name**: Unique identifier within the workflow
+  - **description**: Clear explanation of the step's purpose
+  - **options**: Configuration with retry/timeout settings and custom properties
+  - **tool_name**: The name of the tool to call
+  - **integration**: The name of the integration that provides this tool
 
-### 2. Tools
-Array of tool call step definitions that execute external tools:
-- **name**: Unique identifier for the tool call
-- **description**: Clear explanation of the tool call's purpose
-- **options**: Configuration with retry/timeout settings and custom properties
-- **tool_name**: The name of the tool to call
-- **integration**: The name of the integration that provides this tool
+Tool calls receive the workflow input directly. Use mapping steps before tool calls to transform the input as needed.
 
-### 3. Steps
-Array of step names that define the execution order. Names must reference mappings or tools defined above.
+### 2. Mapping Steps
+Transform data between tool calls:
+- **type**: "mapping"
+- **def**: Mapping step definition containing:
+  - **name**: Unique identifier within the workflow
+  - **description**: Clear explanation of the step's purpose
+  - **execute**: ES module code with a default async function
 
 ### Mapping Step Execution Function
 Each mapping step's execute function follows this pattern:
@@ -463,31 +494,37 @@ The last mapping step effectively replaces the need for a separate workflow exec
       "status": { "type": "string", "enum": ["created", "updated"] }
     }
   },
-  "mappings": [
+  "steps": [
     {
-      "name": "validate-input",
-      "description": "Validates user input data",
-      "execute": "export default async function(ctx) { const input = await ctx.readWorkflowInput(); return { isValid: input.email.includes('@'), errors: [] }; }"
+      "type": "mapping",
+      "def": {
+        "name": "validate-input",
+        "description": "Validates user input data",
+        "execute": "export default async function(ctx) { const input = await ctx.readWorkflowInput(); return { isValid: input.email.includes('@'), errors: [] }; }"
+      }
     },
     {
-      "name": "finalize-result",
-      "description": "Aggregates and returns the final workflow result",
-      "execute": "export default async function(ctx) { const storedUser = await ctx.readStepResult('store-user'); return { userId: storedUser.id, status: 'created' }; }"
-    }
-  ],
-  "tools": [
+      "type": "tool_call",
+      "def": {
+        "name": "store-user",
+        "description": "Stores user data in database",
+        "options": {
+          "retry": 2,
+          "timeout": 5000
+        },
+        "tool_name": "create_user",
+        "integration": "database"
+      }
+    },
     {
-      "name": "store-user",
-      "description": "Stores user data in database",
-      "options": {
-        "retry": 2,
-        "timeout": 5000
-      },
-      "tool_name": "create_user",
-      "integration": "database"
+      "type": "mapping",
+      "def": {
+        "name": "finalize-result",
+        "description": "Aggregates and returns the final workflow result",
+        "execute": "export default async function(ctx) { const storedUser = await ctx.readStepResult('store-user'); return { userId: storedUser.id, status: 'created' }; }"
+      }
     }
-  ],
-  "steps": ["validate-input", "store-user", "finalize-result"]
+  ]
 }
 \`\`\`
 
@@ -510,39 +547,45 @@ The last mapping step effectively replaces the need for a separate workflow exec
       "quality": { "type": "number", "minimum": 0, "maximum": 10 }
     }
   },
-  "mappings": [
+  "steps": [
     {
-      "name": "prepare-prompt",
-      "description": "Prepares the AI prompt from input",
-      "execute": "export default async function(ctx) { const input = await ctx.readWorkflowInput(); return { prompt: \`Write about \${input.topic} in a \${input.tone} tone\` }; }"
+      "type": "mapping",
+      "def": {
+        "name": "prepare-prompt",
+        "description": "Prepares the AI prompt from input",
+        "execute": "export default async function(ctx) { const input = await ctx.readWorkflowInput(); return { prompt: \`Write about \${input.topic} in a \${input.tone} tone\` }; }"
+      }
     },
     {
-      "name": "finalize-content",
-      "description": "Aggregates and returns the final content result",
-      "execute": "export default async function(ctx) { const draft = await ctx.readStepResult('generate-draft'); return { content: draft.content, quality: 8 }; }"
-    }
-  ],
-  "tools": [
+      "type": "tool_call",
+      "def": {
+        "name": "generate-draft",
+        "description": "Creates initial content draft using AI",
+        "options": {
+          "retry": 1,
+          "timeout": 30000,
+          "temperature": 0.7,
+          "maxTokens": 1000
+        },
+        "tool_name": "generate_text",
+        "integration": "openai"
+      }
+    },
     {
-      "name": "generate-draft",
-      "description": "Creates initial content draft using AI",
-      "options": {
-        "retry": 1,
-        "timeout": 30000,
-        "temperature": 0.7,
-        "maxTokens": 1000
-      },
-      "tool_name": "generate_text",
-      "integration": "openai"
+      "type": "mapping",
+      "def": {
+        "name": "finalize-content",
+        "description": "Aggregates and returns the final content result",
+        "execute": "export default async function(ctx) { const draft = await ctx.readStepResult('generate-draft'); const review = await ctx.readStepResult('review-content'); return { content: draft.content, quality: review.quality }; }"
+      }
     }
-  ],
-  "steps": ["prepare-prompt", "generate-draft", "finalize-content"]
+  ]
 }
 \`\`\`
 
 ## Best Practices
 
-1. **Organized Structure**: Define mappings and tools separately, then reference them in the steps array
+1. **Alternating Steps**: Design workflows to alternate between tool calls and mappers
 2. **Final Mapping Step**: Always end with a mapping step that aggregates and returns the final result
 3. **Input Transformation**: Use mapping steps before tool calls to transform workflow input as needed
 4. **Minimal Output**: Keep mapping step outputs minimal to improve performance
@@ -552,7 +595,6 @@ The last mapping step effectively replaces the need for a separate workflow exec
 8. **Business Configuration**: Use options to expose tunable parameters for tool calls
 9. **Sequential Execution**: Steps run in order - design accordingly
 10. **Data Flow**: Use mappers to transform data between tool calls
-11. **Step References**: Ensure all step names in the steps array reference existing mappings or tools
 
 ## WellKnownOptions Interface
 
@@ -583,7 +625,7 @@ const upsertWorkflow = createTool({
       .describe("Compilation or validation error if any"),
   }),
   handler: async (
-    { name, description, inputSchema, outputSchema, mappings, tools, steps },
+    { name, description, inputSchema, outputSchema, steps },
     c,
   ) => {
     await assertWorkspaceResourceAccess(c);
@@ -594,54 +636,67 @@ const upsertWorkflow = createTool({
     const filename = fileNameSlugify(name);
 
     try {
-      // Process each mapping and save their execute functions
-      const processedMappings = [];
+      // Process each step and save their execute functions
+      const processedSteps = [];
 
-      for (const mapping of mappings) {
-        const stepName = fileNameSlugify(mapping.name);
-        const stepFilePath = `/src/functions/${filename}.${stepName}.ts`;
+      for (const step of steps) {
+        if (step.type === "mapping") {
+          const mappingDef = step.def as z.infer<
+            typeof MappingStepDefinitionSchema
+          >;
+          const stepName = fileNameSlugify(mappingDef.name);
+          const stepFilePath = `/src/functions/${filename}.${stepName}.ts`;
 
-        // Process the mapping execute code
-        const { functionCode, functionPath } = await processExecuteCode(
-          mapping.execute,
-          stepFilePath,
-          client,
-          branch,
-        );
+          // Process the step execute code
+          const { functionCode, functionPath } = await processExecuteCode(
+            mappingDef.execute,
+            stepFilePath,
+            client,
+            branch,
+          );
 
-        // Validate the mapping function code
-        const validation = await validateExecuteCode(
-          functionCode,
-          runtimeId,
-          `Mapping ${mapping.name}`,
-        );
+          // Validate the step function code
+          const validation = await validateExecuteCode(
+            functionCode,
+            runtimeId,
+            `Step ${mappingDef.name}`,
+          );
 
-        if (!validation.success) {
+          if (!validation.success) {
+            return {
+              success: false,
+              error: validation.error,
+            };
+          }
+
+          // Add the processed mapping step with file reference
+          processedSteps.push({
+            type: "mapping" as const,
+            def: {
+              name: mappingDef.name,
+              description: mappingDef.description,
+              execute: `file://${functionPath}`,
+            },
+          });
+        } else if (step.type === "tool_call") {
+          const toolDef = step.def as z.infer<
+            typeof ToolCallStepDefinitionSchema
+          >;
+          // Add the tool call step directly (no file processing needed)
+          processedSteps.push({
+            type: "tool_call" as const,
+            def: {
+              name: toolDef.name,
+              description: toolDef.description,
+              options: toolDef.options,
+              tool_name: toolDef.tool_name,
+              integration: toolDef.integration,
+            },
+          });
+        } else {
           return {
             success: false,
-            error: validation.error,
-          };
-        }
-
-        // Add the processed mapping with file reference
-        processedMappings.push({
-          name: mapping.name,
-          description: mapping.description,
-          execute: `file://${functionPath}`,
-        });
-      }
-
-      // Validate that all step names reference existing mappings or tools
-      const allStepNames = new Set([
-        ...mappings.map(m => m.name),
-        ...tools.map(t => t.name)
-      ]);
-
-      for (const stepName of steps) {
-        if (!allStepNames.has(stepName)) {
-          return {
-            success: false,
-            error: `Step '${stepName}' not found in mappings or tools`,
+            error: `Unknown step type: ${(step as any).type}`,
           };
         }
       }
@@ -654,9 +709,7 @@ const upsertWorkflow = createTool({
         description,
         inputSchema,
         outputSchema,
-        mappings: processedMappings,
-        tools, // Tools don't need processing
-        steps, // Steps are just names
+        steps: processedSteps,
       };
 
       await client.PUT_FILE({
@@ -806,12 +859,13 @@ const getWorkflowStatus = createTool({
     }
 
     // Create partial result from completed steps
-    const partialResult = Object.keys(run.stepResults).length > 0
-      ? {
-        completedSteps: Object.keys(run.stepResults),
-        stepResults: run.stepResults,
-      }
-      : undefined;
+    const partialResult =
+      Object.keys(run.stepResults).length > 0
+        ? {
+            completedSteps: Object.keys(run.stepResults),
+            stepResults: run.stepResults,
+          }
+        : undefined;
 
     return {
       status: run.status,
@@ -868,8 +922,7 @@ const replayWorkflowFromStep = createTool({
       if (!originalRun.stepResults[stepName]) {
         return {
           newRunId: "",
-          error:
-            `Step '${stepName}' was not completed in the original run or does not exist`,
+          error: `Step '${stepName}' was not completed in the original run or does not exist`,
         };
       }
 

@@ -35,7 +35,7 @@ interface Options {
   unlisted?: boolean;
   assetsDirectory?: string;
   force?: boolean;
-  preview?: boolean;
+  promote?: boolean;
   dryRun?: boolean;
 }
 
@@ -49,12 +49,12 @@ export const deploy = async ({
   assetsDirectory,
   skipConfirmation,
   force,
-  preview = false,
+  promote = true,
   unlisted = true,
   dryRun = false,
 }: Options) => {
   console.log(
-    `\n🚀 ${dryRun ? "Preparing" : "Deploying"} '${appSlug}' to '${workspace}'${dryRun ? " (dry run)" : ""}${preview ? " (preview)" : ""}...\n`,
+    `\n🚀 ${dryRun ? "Preparing" : "Deploying"} '${appSlug}' to '${workspace}'${dryRun ? " (dry run)" : ""}...\n`,
   );
 
   // Ensure the target directory exists
@@ -165,7 +165,7 @@ export const deploy = async ({
     bundle: hasTsFile,
     unlisted,
     force,
-    preview,
+    promote,
   };
 
   console.log("🚚 Deployment summary:");
@@ -173,8 +173,8 @@ export const deploy = async ({
   console.log(`  Files: ${files.length}`);
   console.log(`  ${envVarsStatus}`);
   console.log(`  ${wranglerConfigStatus}`);
-  if (preview) {
-    console.log(`  Preview mode: true (deployment won't replace production)`);
+  if (promote) {
+    console.log(`  Promote mode: true (deployment will replace production)`);
   }
 
   if (dryRun) {
@@ -247,8 +247,7 @@ export const deploy = async ({
   hosts.forEach((host) => console.log(`  ${host}`));
   console.log();
 
-  const previewUrl = preview ? hosts[0] : null;
-
+  const previewUrl = promote ? null : hosts[0];
   if (process.env.GITHUB_OUTPUT && previewUrl) {
     await fs.appendFile(
       process.env.GITHUB_OUTPUT,

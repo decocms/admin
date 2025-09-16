@@ -147,7 +147,7 @@ interface UpdateDatabaseArgs {
   result: DeployResult;
   wranglerConfig: WranglerConfig;
   force?: boolean;
-  preview?: boolean;
+  promote?: boolean;
   files?: Record<string, string>;
 }
 
@@ -159,7 +159,7 @@ async function updateDatabase({
   result,
   wranglerConfig,
   force,
-  preview = false,
+  promote = true,
 }: UpdateDatabaseArgs) {
   // First, ensure the app exists (without deployment-specific data)
   let { data: app, error: updateError } = await c.db
@@ -278,7 +278,7 @@ async function updateDatabase({
 
     // For custom domains, use the promote functionality (update existing routes only)
     // Skip promotion if this is a preview deployment
-    if (!preview) {
+    if (promote) {
       await Promise.all(
         customDomainRoutes.map(async (route) => {
           try {
@@ -655,13 +655,13 @@ Important Notes:
         "If true, force the deployment even if there are breaking changes",
       )
       .optional(),
-    preview: z
+    promote: z
       .boolean()
       .describe(
-        "If true, creates a preview deployment without promoting it to production routes. The deployment will be available at a unique URL but won't replace the production version.",
+        "If true, promotes the deployment to production routes. The deployment will be available at a unique URL but won't replace the production version.",
       )
       .optional()
-      .default(false),
+      .default(true),
     appSlug: z
       .string()
       .optional()
@@ -707,7 +707,7 @@ Important Notes:
   handler: async (
     {
       force,
-      preview = false,
+      promote = true,
       appSlug: _appSlug,
       files,
       envVars,
@@ -739,9 +739,8 @@ Important Notes:
           ) as any as WranglerConfig)
         : ({ name: _appSlug } as WranglerConfig);
 
-      if (!preview) {
-        addDefaultCustomDomain(wranglerConfig);
-      }
+      addDefaultCustomDomain(wranglerConfig);
+
       // check if the entrypoint is in the files
       const entrypoints = [
         ...ENTRYPOINTS,
@@ -867,7 +866,7 @@ Important Notes:
       const data = await updateDatabase({
         c,
         force,
-        preview,
+        promote,
         workspace,
         scriptSlug,
         result,

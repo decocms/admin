@@ -3,42 +3,43 @@ import { Card, CardContent, CardHeader } from "@deco/ui/components/card.tsx";
 import { Badge } from "@deco/ui/components/badge.tsx";
 import { Icon } from "@deco/ui/components/icon.tsx";
 
-interface ToolNodeData {
-  type: "tool_call";
+interface MapperNodeData {
+  type: "mapping";
   name: string;
   description: string;
-  tool_name: string;
-  integration: string;
-  options?: Record<string, any>;
+  execute: string;
+  outputSchema: Record<string, unknown>;
 }
 
-export function ToolNode({ data }: NodeProps<any>) {
+export function MapperNode({ data }: NodeProps<MapperNodeData>) {
+  const isIdentityFunction = data.execute.includes(
+    "return input; // Identity transformation",
+  );
+
   return (
     <Card className="min-w-[200px] shadow-lg">
       <Handle type="target" position={Position.Top} />
 
       <CardHeader className="pb-2">
         <div className="flex items-center gap-2">
-          <Icon name="build" className="h-4 w-4 text-blue-600" />
+          <Icon name="transform" className="h-4 w-4 text-success" />
           <h3 className="font-semibold text-sm">{data.name}</h3>
         </div>
-        <Badge variant="secondary" className="text-xs">
-          {data.integration}
+        <Badge
+          variant={isIdentityFunction ? "secondary" : "default"}
+          className="text-xs"
+        >
+          {isIdentityFunction ? "Identity" : "Transform"}
         </Badge>
       </CardHeader>
 
       <CardContent className="pt-0">
         <p className="text-xs text-muted-foreground mb-2">{data.description}</p>
         <div className="text-xs text-muted-foreground">
-          Tool: {data.tool_name}
+          {isIdentityFunction
+            ? "Passes data through unchanged"
+            : "Transforms data between steps"}
         </div>
-        {data.options && Object.keys(data.options).length > 0 && (
-          <div className="mt-2">
-            <Badge variant="outline" className="text-xs">
-              Configured
-            </Badge>
-          </div>
-        )}
       </CardContent>
 
       <Handle type="source" position={Position.Bottom} />

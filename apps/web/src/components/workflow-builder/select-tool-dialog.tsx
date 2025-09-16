@@ -21,7 +21,7 @@ import { IntegrationIcon } from "../integrations/common.tsx";
 interface Tool {
   name: string;
   description?: string;
-  inputSchema?: Record<string, any>;
+  inputSchema?: Record<string, unknown>;
   integration: Integration;
 }
 
@@ -80,7 +80,7 @@ export function SelectToolDialog({
     );
   }, [tools, deferredSearchTerm]);
 
-  const handleToolSelect = (tool: any) => {
+  const handleToolSelect = (tool: Tool) => {
     if (selectedIntegration) {
       onSelectTool({
         name: tool.name,
@@ -196,7 +196,7 @@ export function SelectToolDialog({
                           <div className="flex items-start gap-3">
                             <Icon
                               name="build"
-                              className="h-4 w-4 text-blue-600 mt-0.5"
+                              className="h-4 w-4 text-primary mt-0.5"
                             />
                             <div className="flex-1 min-w-0">
                               <div className="font-medium text-sm mb-1">

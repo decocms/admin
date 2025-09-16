@@ -7,10 +7,10 @@ import {
   replaySandboxWorkflowFromStep,
   deleteSandboxWorkflow,
   listSandboxWorkflows,
-  type SandboxWorkflowDefinition,
+  type SandboxWorkflowDefinition as _SandboxWorkflowDefinition,
   type SandboxWorkflowUpsertParams,
   type SandboxWorkflowStartParams,
-  type SandboxWorkflowStatusParams,
+  type SandboxWorkflowStatusParams as _SandboxWorkflowStatusParams,
   type SandboxWorkflowReplayParams,
 } from "../crud/sandbox-workflows.ts";
 import { InternalServerError } from "../errors.ts";

@@ -26,7 +26,7 @@ export function WorkflowNotFoundState({
           <Button onClick={() => navigate(-1)} variant="outline">
             Go Back
           </Button>
-          <Button onClick={() => window.location.reload()}>
+          <Button onClick={() => globalThis.location.reload()}>
             Create New Workflow
           </Button>
         </div>

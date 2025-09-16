@@ -13,7 +13,7 @@ interface ExecutionState {
   runId: string;
   status: "pending" | "running" | "completed" | "failed";
   currentStep?: string;
-  stepResults: Record<string, any>;
+  stepResults: Record<string, unknown>;
   logs: Array<{ type: "log" | "warn" | "error"; content: string }>;
   startTime: number;
   endTime?: number;
@@ -40,7 +40,7 @@ export function WorkflowExecutionPanel({
         return <Badge variant="default">Running</Badge>;
       case "completed":
         return (
-          <Badge variant="default" className="bg-green-600">
+          <Badge variant="default" className="bg-success">
             Completed
           </Badge>
         );
@@ -52,11 +52,11 @@ export function WorkflowExecutionPanel({
   const getLogIcon = (type: "log" | "warn" | "error") => {
     switch (type) {
       case "log":
-        return <Icon name="info" className="h-3 w-3 text-blue-600" />;
+        return <Icon name="info" className="h-3 w-3 text-primary" />;
       case "warn":
-        return <Icon name="warning" className="h-3 w-3 text-yellow-600" />;
+        return <Icon name="warning" className="h-3 w-3 text-warning" />;
       case "error":
-        return <Icon name="error" className="h-3 w-3 text-red-600" />;
+        return <Icon name="error" className="h-3 w-3 text-destructive" />;
     }
   };
 
@@ -82,7 +82,7 @@ export function WorkflowExecutionPanel({
               <h4 className="text-sm font-medium mb-2">Step Results</h4>
               <div className="space-y-2">
                 {Object.entries(executionState.stepResults).map(
-                  ([stepName, result]) => (
+                  ([stepName, _result]) => (
                     <div
                       key={stepName}
                       className="flex items-center justify-between p-2 bg-muted rounded"

@@ -10,10 +10,17 @@ import { Label } from "@deco/ui/components/label.tsx";
 import { Textarea } from "@deco/ui/components/textarea.tsx";
 import { useState } from "react";
 
+interface MapperData {
+  name: string;
+  description: string;
+  execute: string;
+  outputSchema: Record<string, unknown>;
+}
+
 interface MapperConfigDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onSubmit: (mapperData: any) => void;
+  onSubmit: (mapperData: MapperData) => void;
 }
 
 export function MapperConfigDialog({

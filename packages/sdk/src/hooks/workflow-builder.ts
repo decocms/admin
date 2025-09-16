@@ -24,12 +24,12 @@ export function useWorkflowBuilder(workflow: WorkflowDefinition) {
           description: step.def.description,
           ...(step.type === "tool_call"
             ? {
-                tool_name: (step.def as any).tool_name,
-                integration: (step.def as any).integration,
-                options: (step.def as any).options,
+                tool_name: (step.def as Record<string, unknown>).tool_name as string,
+                integration: (step.def as Record<string, unknown>).integration as string,
+                options: (step.def as Record<string, unknown>).options as Record<string, unknown>,
               }
             : {
-                execute: (step.def as any).execute,
+                execute: (step.def as Record<string, unknown>).execute as string,
                 outputSchema: {},
               }),
         },
@@ -52,7 +52,7 @@ export function useWorkflowBuilder(workflow: WorkflowDefinition) {
   }, []);
 
   const convertFlowToWorkflow = useCallback(
-    (nodes: Node[], edges: Edge[]): WorkflowDefinition => {
+    (nodes: Node[], _edges: Edge[]): WorkflowDefinition => {
       // Sort nodes by position to maintain order
       const sortedNodes = [...nodes].sort(
         (a, b) => a.position.x - b.position.x,
@@ -66,9 +66,9 @@ export function useWorkflowBuilder(workflow: WorkflowDefinition) {
               def: {
                 name: node.data.name,
                 description: node.data.description,
-                options: (node.data as any).options,
-                tool_name: (node.data as any).tool_name,
-                integration: (node.data as any).integration,
+                options: (node.data as Record<string, unknown>).options as Record<string, unknown>,
+                tool_name: (node.data as Record<string, unknown>).tool_name as string,
+                integration: (node.data as Record<string, unknown>).integration as string,
               },
             };
           } else if (node.data.type === "mapping") {
@@ -77,7 +77,7 @@ export function useWorkflowBuilder(workflow: WorkflowDefinition) {
               def: {
                 name: node.data.name,
                 description: node.data.description,
-                execute: (node.data as any).execute,
+                execute: (node.data as Record<string, unknown>).execute as string,
               },
             };
           }
@@ -90,7 +90,7 @@ export function useWorkflowBuilder(workflow: WorkflowDefinition) {
         description: workflow.description,
         inputSchema: workflow.inputSchema,
         outputSchema: workflow.outputSchema,
-        steps: steps as any[],
+        steps: steps,
       };
     },
     [workflow],
@@ -115,7 +115,7 @@ export function useWorkflowBuilder(workflow: WorkflowDefinition) {
   const handleRunWorkflow = useCallback(
     async (
       workflowDefinition: WorkflowDefinition,
-      input?: Record<string, any>,
+      input?: Record<string, unknown>,
     ) => {
       try {
         // Use the SDK hook for workflow execution

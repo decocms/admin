@@ -12,9 +12,9 @@ interface ToolConfigDialogProps {
     name: string;
     tool_name: string;
     integration: string;
-    options?: Record<string, any>;
+    options?: Record<string, unknown>;
   };
-  onSave: (options: Record<string, any>) => void;
+  onSave: (options: Record<string, unknown>) => void;
   isOpen: boolean;
   onClose: () => void;
 }
@@ -44,7 +44,7 @@ export function ToolConfigDialog({
     },
   };
 
-  const handleSubmit = ({ formData }: { formData: any }) => {
+  const handleSubmit = ({ formData }: { formData: Record<string, unknown> }) => {
     onSave(formData);
     onClose();
   };

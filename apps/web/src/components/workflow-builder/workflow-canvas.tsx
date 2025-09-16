@@ -1,3 +1,4 @@
+import React from "react";
 import { WorkflowDefinitionSchema } from "@deco/sdk";
 import { zodResolver } from "@hookform/resolvers/zod";
 import {
@@ -6,6 +7,8 @@ import {
   Controls,
   type Edge,
   type Node,
+  type NodeChange,
+  type EdgeChange,
   ReactFlow,
   applyEdgeChanges,
   applyNodeChanges,
@@ -13,16 +16,33 @@ import {
   useNodesState,
 } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
-import { useCallback, useEffect } from "react";
+import { useCallback, useMemo, useEffect, useRef } from "react";
 import { useForm } from "react-hook-form";
 import { useWorkflowBuilder } from "@deco/sdk";
 import type { WorkflowDefinition } from "@deco/sdk";
-import { WorkflowPalette } from "./WorkflowPalette.tsx";
-import { WorkflowToolbar } from "./WorkflowToolbar.tsx";
-import { MapperNode } from "./nodes/MapperNode.tsx";
-import { ToolNode } from "./nodes/ToolNode.tsx";
+import { WorkflowPalette } from "./workflow-palette.tsx";
+import { WorkflowToolbar } from "./workflow-toolbar.tsx";
+import { MapperNode } from "./nodes/mapper-node.tsx";
+import { ToolNode } from "./nodes/tool-node.tsx";
 
-const nodeTypes: Record<string, any> = {
+interface ToolData {
+  name: string;
+  description?: string;
+  inputSchema?: Record<string, unknown>;
+  integration: {
+    name: string;
+    id: string;
+  };
+}
+
+interface MapperData {
+  name: string;
+  description: string;
+  execute: string;
+  outputSchema: Record<string, unknown>;
+}
+
+const nodeTypes = {
   tool: ToolNode,
   mapper: MapperNode,
 };
@@ -32,16 +52,6 @@ interface WorkflowCanvasProps {
 }
 
 export function WorkflowCanvas({ workflow }: WorkflowCanvasProps) {
-  const [nodes, setNodes] = useNodesState<Node>([]);
-  const [edges, setEdges] = useEdgesState<Edge>([]);
-  const form = useForm<WorkflowDefinition>({
-    resolver: zodResolver(WorkflowDefinitionSchema as any),
-    defaultValues: workflow,
-    mode: "onChange",
-  });
-
-  const { formState, setValue, reset } = form;
-
   const {
     convertWorkflowToFlow,
     convertFlowToWorkflow,
@@ -49,19 +59,41 @@ export function WorkflowCanvas({ workflow }: WorkflowCanvasProps) {
     handleRunWorkflow,
   } = useWorkflowBuilder(workflow);
 
-  // Convert workflow definition to React Flow nodes and edges
+  // Track when we should update nodes/edges from workflow (only on mount and after AI generation)
+  const shouldUpdateFromWorkflow = useRef(true);
+  const lastWorkflowRef = useRef(workflow);
+
+  // Initialize nodes/edges from workflow on mount
+  const initialFlowData = useMemo(() => {
+    return convertWorkflowToFlow(workflow);
+  }, [workflow, convertWorkflowToFlow]);
+
+  const [nodes, setNodes] = useNodesState<Node>(initialFlowData.nodes);
+  const [edges, setEdges] = useEdgesState<Edge>(initialFlowData.edges);
+
+  // Update nodes/edges from workflow only when we should (mount or after AI generation)
   useEffect(() => {
-    reset(workflow, { keepDirty: false, keepTouched: false });
-    const { nodes: flowNodes, edges: flowEdges } =
-      convertWorkflowToFlow(workflow);
-    setNodes(flowNodes);
-    setEdges(flowEdges);
-  }, [workflow, convertWorkflowToFlow, setNodes, setEdges, reset]);
+    if (shouldUpdateFromWorkflow.current && workflow !== lastWorkflowRef.current) {
+      const { nodes: newNodes, edges: newEdges } = convertWorkflowToFlow(workflow);
+      setNodes(newNodes);
+      setEdges(newEdges);
+      lastWorkflowRef.current = workflow;
+      shouldUpdateFromWorkflow.current = false; // Reset flag after update
+    }
+  }, [workflow, convertWorkflowToFlow, setNodes, setEdges]);
+
+  const form = useForm<WorkflowDefinition>({
+    resolver: zodResolver(WorkflowDefinitionSchema),
+    defaultValues: workflow,
+    mode: "onChange",
+  });
+
+  const { formState, setValue, reset } = form;
 
   const syncStepsFromFlow = useCallback(
     (nextNodes: Node[], nextEdges: Edge[]) => {
       const wf = convertFlowToWorkflow(nextNodes, nextEdges);
-      setValue("steps" as any, wf.steps as any, {
+      setValue("steps", wf.steps, {
         shouldDirty: true,
         shouldTouch: true,
       });
@@ -70,7 +102,7 @@ export function WorkflowCanvas({ workflow }: WorkflowCanvasProps) {
   );
 
   const handleNodesChange = useCallback(
-    (changes: any) => {
+    (changes: NodeChange[]) => {
       setNodes((nds) => {
         const updated = applyNodeChanges(changes, nds);
         syncStepsFromFlow(updated, edges);
@@ -81,7 +113,7 @@ export function WorkflowCanvas({ workflow }: WorkflowCanvasProps) {
   );
 
   const handleEdgesChange = useCallback(
-    (changes: any) => {
+    (changes: EdgeChange[]) => {
       setEdges((eds) => {
         const updated = applyEdgeChanges(changes, eds);
         syncStepsFromFlow(nodes, updated);
@@ -165,6 +197,9 @@ export function WorkflowCanvas({ workflow }: WorkflowCanvasProps) {
   const handleGenerate = useCallback(async () => {
     const workflowDefinition = convertFlowToWorkflow(nodes, edges);
     await handleGenerateWorkflow(workflowDefinition);
+    
+    // After AI generation, mark that we should update from workflow when it changes
+    shouldUpdateFromWorkflow.current = true;
     reset(workflowDefinition, { keepDirty: false, keepTouched: false });
   }, [nodes, edges, convertFlowToWorkflow, handleGenerateWorkflow, reset]);
 
@@ -175,7 +210,7 @@ export function WorkflowCanvas({ workflow }: WorkflowCanvasProps) {
 
   // Function to add a tool to the canvas
   const handleAddTool = useCallback(
-    (tool: any) => {
+    (tool: ToolData) => {
       const newNode: Node = {
         id: `tool-${Date.now()}`,
         type: "tool",
@@ -202,7 +237,7 @@ export function WorkflowCanvas({ workflow }: WorkflowCanvasProps) {
 
   // Function to add a mapper to the canvas
   const handleAddMapper = useCallback(
-    (mapperData: any) => {
+    (mapperData: MapperData) => {
       const newNode: Node = {
         id: `mapper-${Date.now()}`,
         type: "mapper",
@@ -240,7 +275,7 @@ export function WorkflowCanvas({ workflow }: WorkflowCanvasProps) {
         onNodesChange={handleNodesChange}
         onEdgesChange={handleEdgesChange}
         onConnect={handleConnect}
-        nodeTypes={nodeTypes}
+        nodeTypes={nodeTypes as Record<string, React.ComponentType<unknown>>}
         fitView
       >
         <Background />

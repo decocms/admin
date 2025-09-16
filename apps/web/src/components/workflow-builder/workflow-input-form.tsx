@@ -9,8 +9,8 @@ import {
 
 interface WorkflowInputFormProps {
   schema: RJSFSchema;
-  onSubmit: (data: Record<string, any>) => void;
-  initialData?: Record<string, any>;
+  onSubmit: (data: Record<string, unknown>) => void;
+  initialData?: Record<string, unknown>;
   isOpen: boolean;
   onClose: () => void;
 }
@@ -32,7 +32,7 @@ export function WorkflowInputForm({
     },
   };
 
-  const handleSubmit = ({ formData }: { formData: any }) => {
+  const handleSubmit = ({ formData }: { formData: Record<string, unknown> }) => {
     onSubmit(formData);
     onClose();
   };

@@ -164,7 +164,7 @@ const WorkflowDetailPage = lazy(() =>
 
 const WorkflowBuilderPage = lazy(() =>
   wrapWithUILoadingFallback(
-    import("./pages/workflow-builder/WorkflowBuilderPage.tsx"),
+    import("./pages/workflow-builder/workflow-builder-page.tsx"),
   ),
 );
 

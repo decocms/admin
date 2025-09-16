@@ -2,19 +2,29 @@ import { Button } from "@deco/ui/components/button.tsx";
 import { Icon } from "@deco/ui/components/icon.tsx";
 import { Card, CardContent, CardHeader } from "@deco/ui/components/card.tsx";
 import { useState } from "react";
-import { SelectToolDialog } from "./SelectToolDialog.tsx";
-import { MapperConfigDialog } from "./dialogs/MapperConfigDialog.tsx";
+import { SelectToolDialog } from "./select-tool-dialog.tsx";
+import { MapperConfigDialog } from "./dialogs/mapper-config-dialog.tsx";
 
 interface Tool {
   name: string;
   description?: string;
-  inputSchema?: Record<string, any>;
-  integration: any;
+  inputSchema?: Record<string, unknown>;
+  integration: {
+    name: string;
+    id: string;
+  };
+}
+
+interface MapperData {
+  name: string;
+  description: string;
+  execute: string;
+  outputSchema: Record<string, unknown>;
 }
 
 interface WorkflowPaletteProps {
   onAddTool: (tool: Tool) => void;
-  onAddMapper: (mapperData: any) => void;
+  onAddMapper: (mapperData: MapperData) => void;
 }
 
 export function WorkflowPalette({
@@ -36,7 +46,7 @@ export function WorkflowPalette({
     setIsMapperDialogOpen(true);
   };
 
-  const handleMapperSubmit = (mapperData: any) => {
+  const handleMapperSubmit = (mapperData: MapperData) => {
     onAddMapper(mapperData);
   };
 

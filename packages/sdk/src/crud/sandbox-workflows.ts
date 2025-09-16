@@ -4,28 +4,28 @@ import { ProjectLocator } from "../locator.ts";
 export interface SandboxWorkflowDefinition {
   name: string;
   description: string;
-  inputSchema: Record<string, any>;
-  outputSchema: Record<string, any>;
+  inputSchema: Record<string, unknown>;
+  outputSchema: Record<string, unknown>;
   steps: Array<{
     type: "tool_call" | "mapping";
-    def: any;
+    def: Record<string, unknown>;
   }>;
 }
 
 export interface SandboxWorkflowUpsertParams {
   name: string;
   description: string;
-  inputSchema: Record<string, any>;
-  outputSchema: Record<string, any>;
+  inputSchema: Record<string, unknown>;
+  outputSchema: Record<string, unknown>;
   steps: Array<{
     type: "tool_call" | "mapping";
-    def: any;
+    def: Record<string, unknown>;
   }>;
 }
 
 export interface SandboxWorkflowStartParams {
   name: string;
-  input: Record<string, any>;
+  input: Record<string, unknown>;
 }
 
 export interface SandboxWorkflowStatusParams {

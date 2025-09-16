@@ -1,10 +1,9 @@
-import { Spinner } from "@deco/ui/components/spinner.tsx";
 import { useParams } from "react-router";
-import { WorkflowCanvas } from "../../components/workflow-builder/WorkflowCanvas.tsx";
+import { WorkflowCanvas } from "../../components/workflow-builder/workflow-canvas.tsx";
 import { useWorkflow } from "@deco/sdk";
-import { WorkflowErrorState } from "./WorkflowErrorState.tsx";
-import { WorkflowLoadingSkeleton } from "./WorkflowLoadingSkeleton.tsx";
-import { WorkflowNotFoundState } from "./WorkflowNotFoundState.tsx";
+import { WorkflowErrorState } from "./workflow-error-state.tsx";
+import { WorkflowLoadingSkeleton } from "./workflow-loading-skeleton.tsx";
+import { WorkflowNotFoundState } from "./workflow-not-found-state.tsx";
 
 export default function WorkflowBuilderPage() {
   const { org, project, workflowName } = useParams();

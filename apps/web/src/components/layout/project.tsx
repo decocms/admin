@@ -200,7 +200,7 @@ export function PageLayout({
           )}
         >
           {actionButtons}
-          {preferences.enableDecopilot && <ToggleDecopilotButton />}
+          <ToggleDecopilotButton />
         </div>
         {!open && (
           <div className="peer-empty:flex items-center justify-center hidden fixed left-0 top-0 z-10 h-14 px-3">

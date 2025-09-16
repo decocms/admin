@@ -59,7 +59,7 @@ async function readWorkflow(
       uri: `deconfig://workflows/${workflowFileName}`,
     });
 
-    const workflow = WorkflowDefinitionSchema.parse(result.data);
+    const workflow = WorkflowDefinitionSchema.parse(JSON.parse(result.data));
 
     // Inline step function code
     const inlinedSteps = await Promise.all(
@@ -68,12 +68,16 @@ async function readWorkflow(
           const mappingDef = step.def as z.infer<
             typeof MappingStepDefinitionSchema
           >;
-          const stepFunctionPath = mappingDef.execute.replace("file://", "");
-          const stepFunctionResult = await client.READ_FILE({
-            branch,
-            path: stepFunctionPath,
-            format: "plainString",
-          });
+          const stepFunctionPath = mappingDef.execute.startsWith("file://")
+            ? mappingDef.execute.replace("file://", "")
+            : undefined;
+          const stepFunctionResult = stepFunctionPath
+            ? await client.READ_FILE({
+                branch,
+                path: stepFunctionPath,
+                format: "plainString",
+              })
+            : { content: mappingDef.execute };
 
           return {
             type: "mapping" as const,
@@ -112,7 +116,8 @@ async function readWorkflow(
       outputSchema: workflow.outputSchema,
       steps: inlinedSteps,
     };
-  } catch {
+  } catch (err) {
+    console.error(err);
     return null;
   }
 }
@@ -185,8 +190,6 @@ export const startWorkflow = createTool({
           },
         },
       });
-
-      console.log(workflowInstance, await workflowInstance.status());
 
       // Store basic run information for compatibility
       const runId = workflowInstance.id;
@@ -392,6 +395,7 @@ export const workflowViews = impl(VIEW_BINDING_SCHEMA, [
             title: "Workflows",
             description: "Manage and monitor your workflows",
             icon: "workflow",
+            url: `https://api.decocms.com/${c.locator?.org}/${c.locator?.project}/workflows/${c.locator?.branch}`,
             url: `${baseUrl}/${org}/${project}/workflows`,
             tools: [
               "WORKFLOWS_START",

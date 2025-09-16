@@ -6,7 +6,11 @@ import { WorkflowDefinitionSchema } from "../mcp/workflows/workflow-schemas.ts";
 
 export type ResourceBinding = (typeof WellKnownBindings)["Resources"];
 const workspaceResourceClient = (locator: ProjectLocator) =>
-  MCPClient.forLocator<ResourceBinding>(locator, WellKnownMcpGroups.Workflows);
+  MCPClient.forLocator<ResourceBinding>(
+    locator,
+    `/${WellKnownMcpGroups.Workflows}/mcp`,
+  );
+
 export interface SandboxWorkflowDefinition {
   name: string;
   description: string;
@@ -64,7 +68,7 @@ export function getSandboxWorkflow(
       },
       { signal },
     )
-    .then((result) => WorkflowDefinitionSchema.parse(result.data));
+    .then((result) => WorkflowDefinitionSchema.parse(JSON.parse(result.data)));
 }
 
 export function upsertSandboxWorkflow(

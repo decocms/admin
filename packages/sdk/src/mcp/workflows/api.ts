@@ -1,19 +1,21 @@
 import { inspect } from "@deco/cf-sandbox";
 import z from "zod";
+import { VIEW_BINDING_SCHEMA } from "../bindings/views.ts";
 import {
   assertHasWorkspace,
   assertWorkspaceResourceAccess,
+  impl,
   MCPClient,
   ProjectTools,
 } from "../index.ts";
+import { createTool, fileNameSlugify, validate } from "../sandbox/utils.ts";
 import { MCPClientStub } from "../stub.ts";
 import {
   MappingStepDefinitionSchema,
   ToolCallStepDefinitionSchema,
-  WorkflowStepDefinitionSchema,
   WorkflowDefinitionSchema,
+  WorkflowStepDefinitionSchema,
 } from "./workflow-schemas.ts";
-import { createTool, fileNameSlugify, validate } from "../sandbox/utils.ts";
 
 // In-memory storage for workflow runs
 interface WorkflowRun {
@@ -282,9 +284,9 @@ export const getWorkflowStatus = createTool({
         partialResult:
           run?.stepResults && Object.keys(run.stepResults).length > 0
             ? {
-                completedSteps: Object.keys(run.stepResults),
-                stepResults: run.stepResults,
-              }
+              completedSteps: Object.keys(run.stepResults),
+              stepResults: run.stepResults,
+            }
             : undefined,
         error: cfStatus.error || run?.error,
         logs: run?.logs || [],
@@ -298,13 +300,12 @@ export const getWorkflowStatus = createTool({
         throw new Error(`Workflow run '${runId}' not found`);
       }
 
-      const partialResult =
-        Object.keys(run.stepResults).length > 0
-          ? {
-              completedSteps: Object.keys(run.stepResults),
-              stepResults: run.stepResults,
-            }
-          : undefined;
+      const partialResult = Object.keys(run.stepResults).length > 0
+        ? {
+          completedSteps: Object.keys(run.stepResults),
+          stepResults: run.stepResults,
+        }
+        : undefined;
 
       return {
         status: run.status,
@@ -354,3 +355,24 @@ export const replayWorkflowFromStep = createTool({
     };
   },
 });
+
+export const workflowViews = impl(VIEW_BINDING_SCHEMA, [
+  // DECO_CHAT_VIEWS_LIST
+  {
+    description: "List views exposed by this MCP",
+    handler: async (_, c) => {
+      await assertWorkspaceResourceAccess(c);
+
+      return {
+        views: [
+          {
+            title: "Database",
+            icon: "database",
+            url:
+              `https://api.decocms.com/${c.locator?.org}/${c.locator?.project}/workflows/${c.locator?.branch}`,
+          },
+        ],
+      };
+    },
+  },
+]);

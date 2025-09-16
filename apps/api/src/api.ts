@@ -24,12 +24,12 @@ import {
   getRegistryApp,
   getWorkspaceBucketName,
   GLOBAL_TOOLS,
+  IntegrationSub as ProxySub,
   type IntegrationWithTools,
   ListToolsMiddleware,
   MCPClient,
   PrincipalExecutionContext,
   PROJECT_TOOLS,
-  IntegrationSub as ProxySub,
   toBindingsContext,
   Tool,
   type ToolLike,
@@ -80,8 +80,7 @@ const contextToPrincipalExecutionContext = (
     ? Locator.adaptToRootSlug(locator, uid)
     : undefined;
 
-  const branch =
-    c.req.param("branch") ??
+  const branch = c.req.param("branch") ??
     c.req.query("branch") ??
     c.req.header("x-deco-branch") ??
     "main";
@@ -269,9 +268,9 @@ const proxy = (
       ...(middlewares?.listTools ?? []),
       async () =>
         tools ??
-        ((await client.listTools()) as Awaited<
-          ReturnType<ListToolsMiddleware>
-        >),
+          ((await client.listTools()) as Awaited<
+            ReturnType<ListToolsMiddleware>
+          >),
     );
 
     const callTool = compose(...(middlewares?.callTool ?? []), (req) => {
@@ -291,11 +290,13 @@ const proxy = (
 
     await mcpServer.connect(transport);
 
-    mcpServer.server.setRequestHandler(CallToolRequestSchema, (req) =>
-      callTool(req),
+    mcpServer.server.setRequestHandler(
+      CallToolRequestSchema,
+      (req) => callTool(req),
     );
-    mcpServer.server.setRequestHandler(ListToolsRequestSchema, (req) =>
-      listTools(req),
+    mcpServer.server.setRequestHandler(
+      ListToolsRequestSchema,
+      (req) => listTools(req),
     );
 
     return await transport.handleMessage(req);
@@ -362,8 +363,9 @@ const createMcpServerProxyForAppName = (c: Context) => {
   const appName = c.req.query("appName");
   const fetchIntegration = async () => {
     using _ = ctx.resourceAccess.grant();
-    const integration = await State.run(ctx, () =>
-      getRegistryApp.handler({ name: appName }),
+    const integration = await State.run(
+      ctx,
+      () => getRegistryApp.handler({ name: appName }),
     );
 
     return {
@@ -380,16 +382,19 @@ const createMcpServerProxy = (c: Context) => {
   const integrationId = c.req.param("integrationId");
   const fetchIntegration = async () => {
     using _ = ctx.resourceAccess.grant();
-    return await State.run(ctx, () =>
-      getIntegration.handler({ id: integrationId }),
+    return await State.run(
+      ctx,
+      () => getIntegration.handler({ id: integrationId }),
     );
   };
 
-  return createMcpServerProxyForIntegration(c, () =>
-    fetchIntegration().then((integration) => ({
-      ...integration,
-      id: integrationId,
-    })),
+  return createMcpServerProxyForIntegration(
+    c,
+    () =>
+      fetchIntegration().then((integration) => ({
+        ...integration,
+        id: integrationId,
+      })),
   );
 };
 
@@ -458,7 +463,141 @@ app.all(
     const appCtx = honoCtxToAppCtx(ctx);
     const client = createDeconfigClientForContext(appCtx);
 
-    return Promise.resolve(WorkflowResource.create(client));
+
+
+
+
+
+    // Add the DECO_CHAT_VIEWS_LIST tool
+    const viewsListTool = createTool({
+      name: "DECO_CHAT_VIEWS_LIST",
+      description: "List views exposed by this MCP",
+      inputSchema: z.any(),
+      outputSchema: z.object({
+        views: z.array(
+          z.object({
+            id: z.string().optional(),
+            name: z.string().optional(),
+            title: z.string(),
+            description: z.string().optional(),
+            icon: z.string(),
+            url: z.string().optional(),
+            mimeTypePattern: z.string().optional(),
+            resourceName: z.string().optional(),
+            tools: z.array(z.string()).optional().default([]),
+            rules: z.array(z.string()).optional().default([]),
+          }),
+        ),
+      }),
+      handler: async (_, c) => {
+        const appCtx = honoCtxToAppCtx(c);
+        const client = createDeconfigClientForContext(appCtx);
+        
+        try {
+          // List workflows from the workspace
+          const workflows = await client.list({
+            directory: "/src/workflows",
+            resourceName: "workflow",
+          });
+
+          // Create workflow views
+          const workflowViews = workflows.map((workflow) => {
+            const workflowName = workflow.name;
+            const listUrl = `https://api.decocms.com/${appCtx.locator?.org}/${appCtx.locator?.project}/workflows/${appCtx.locator?.branch}`;
+            const detailUrl = `https://api.decocms.com/${appCtx.locator?.org}/${appCtx.locator?.project}/workflows/${appCtx.locator?.branch}/${workflowName}`;
+
+            // Default tools for workflow operations
+            const defaultListTools = [
+              "DECO_CHAT_WORKFLOWS_START",
+              "DECO_CHAT_WORKFLOWS_GET_STATUS",
+              "DECO_CHAT_WORKFLOWS_REPLAY_FROM_STEP",
+            ];
+
+            const defaultListRules = [
+              `You are viewing the ${workflowName} workflow. Use the appropriate workflow tools to start, monitor, and manage workflow executions.`,
+            ];
+
+            const defaultDetailTools = [
+              "DECO_CHAT_WORKFLOWS_START",
+              "DECO_CHAT_WORKFLOWS_GET_STATUS",
+            ];
+
+            const defaultDetailRules = [
+              `You are viewing the ${workflowName} workflow details. This workflow can be started and monitored using the available workflow tools.`,
+            ];
+
+            return [
+              // List view
+              {
+                name: `${workflowName.toUpperCase()}_LIST`,
+                title: `${workflowName} Workflows`,
+                description: `List and manage ${workflowName} workflow executions`,
+                icon: "workflow",
+                url: listUrl,
+                tools: defaultListTools,
+                rules: defaultListRules,
+              },
+              // Detail view
+              {
+                name: `${workflowName.toUpperCase()}_DETAIL`,
+                title: `${workflowName} Workflow Details`,
+                description: `View details and manage ${workflowName} workflow`,
+                icon: "workflow",
+                url: detailUrl,
+                resourceName: workflowName,
+                tools: defaultDetailTools,
+                rules: defaultDetailRules,
+              },
+            ];
+          }).flat();
+
+          // Add a general workflows view
+          const generalWorkflowsView = {
+            name: "WORKFLOWS_LIST",
+            title: "Workflows",
+            description: "Manage and monitor workflow executions",
+            icon: "workflow",
+            url: `https://api.decocms.com/${appCtx.locator?.org}/${appCtx.locator?.project}/workflows/${appCtx.locator?.branch}`,
+            tools: [
+              "DECO_CHAT_WORKFLOWS_START",
+              "DECO_CHAT_WORKFLOWS_GET_STATUS",
+              "DECO_CHAT_WORKFLOWS_REPLAY_FROM_STEP",
+            ],
+            rules: [
+              "You are viewing the workflows management interface. Use the appropriate workflow tools to start, monitor, and manage workflow executions.",
+            ],
+          };
+
+          return {
+            views: [generalWorkflowsView, ...workflowViews],
+          };
+        } catch (error) {
+          // Return empty views if there's an error
+          return {
+            views: [
+              {
+                name: "WORKFLOWS_LIST",
+                title: "Workflows",
+                description: "Manage and monitor workflow executions",
+                icon: "workflow",
+                url: `https://api.decocms.com/${appCtx.locator?.org}/${appCtx.locator?.project}/workflows/${appCtx.locator?.branch}`,
+                tools: [
+                  "DECO_CHAT_WORKFLOWS_START",
+                  "DECO_CHAT_WORKFLOWS_GET_STATUS",
+                  "DECO_CHAT_WORKFLOWS_REPLAY_FROM_STEP",
+                ],
+                rules: [
+                  "You are viewing the workflows management interface. Use the appropriate workflow tools to start, monitor, and manage workflow executions.",
+                ],
+              },
+            ],
+          };
+        }
+      },
+    });
+
+    
+    return Promise.resolve([...WorkflowResource.create(client), viewsListTool]);
   }),
 );
 
@@ -636,8 +775,8 @@ app.get("/files/:org/:project/:path{.+}", async (c) => {
   }
 
   return c.body(response.body, 200, {
-    "Content-Type":
-      response.headers.get("content-type") || "application/octet-stream",
+    "Content-Type": response.headers.get("content-type") ||
+      "application/octet-stream",
   });
 });
 

@@ -35,11 +35,13 @@ export const ToolCallStepDefinitionSchema = z.object({
         .int()
         .min(0)
         .default(0)
+        .optional()
         .describe("Number of retry attempts for this step (default: 0)"),
       timeout: z
         .number()
         .positive()
         .default(Infinity)
+        .optional()
         .describe("Maximum execution time in milliseconds (default: Infinity)"),
     })
     .passthrough()

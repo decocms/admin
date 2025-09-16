@@ -1,5 +1,6 @@
 import { getRegistryApp } from "@deco/sdk";
 import {
+  type PermissionDescription,
   RegistryApp,
   useCreateAPIKey,
   useCreateIntegration,
@@ -81,7 +82,36 @@ export const useInstallCreatingApiKeyAndIntegration = () => {
   return mutation;
 };
 
-export function useIntegrationInstall(appName?: string) {
+export interface IntegrationState {
+  schema: JSONSchema7;
+  scopes: string[];
+  permissions: PermissionDescription[];
+  integrationName: string | undefined;
+  integration: Integration | undefined;
+  isLoading: boolean;
+}
+
+export interface IntegrationInstall {
+  install: (
+    params: {
+      appId: string;
+      appName: string;
+      provider: string;
+      returnUrl: string;
+    },
+    formData: Record<string, unknown> | null,
+  ) => Promise<{
+    integration: Integration;
+    redirectUrl?: string | null;
+    stateSchema?: unknown;
+    scopes?: string[];
+  }>;
+  error: Error | null;
+  isLoading: boolean;
+  integrationState: IntegrationState;
+}
+
+export function useIntegrationInstall(appName?: string): IntegrationInstall {
   const { data: appSchema, isLoading: appSchemaLoading } =
     useMarketplaceAppSchema(appName);
   const installMutation = useInstallFromMarketplace();

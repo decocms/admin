@@ -30,7 +30,10 @@ import {
 import { useSearchParams } from "react-router";
 import { trackEvent } from "../../hooks/analytics.ts";
 import { useCreateCustomConnection } from "../../hooks/use-create-custom-connection.ts";
-import { useIntegrationInstall } from "../../hooks/use-integration-install.tsx";
+import {
+  type IntegrationState,
+  useIntegrationInstall,
+} from "../../hooks/use-integration-install.tsx";
 import {
   useNavigateWorkspace,
   useWorkspaceLink,
@@ -80,28 +83,7 @@ export const useOauthModalContext = () => {
   return context;
 };
 
-function IntegrationWorkspaceIconForMarketplace({
-  integration,
-}: {
-  integration: MarketplaceIntegration | null;
-}) {
-  return (
-    <div className="absolute -translate-y-1/2">
-      <IntegrationIcon
-        icon={integration?.icon}
-        name={integration?.friendlyName ?? integration?.name}
-        size="xl"
-      />
-    </div>
-  );
-}
-
-export function ConfirmMarketplaceInstallDialog({
-  integration,
-  setIntegration,
-  onConfirm,
-}: {
-  integration: MarketplaceIntegration | null;
+interface HandleInstallUI {
   setIntegration: (integration: MarketplaceIntegration | null) => void;
   onConfirm: ({
     connection,
@@ -110,15 +92,17 @@ export function ConfirmMarketplaceInstallDialog({
     connection: Integration;
     authorizeOauthUrl: string | null;
   }) => void;
-}) {
-  const open = useMemo(() => !!integration, [integration]);
-  const { install, integrationState, isLoading } = useIntegrationInstall(
-    integration?.name,
-  );
-  const formRef = useRef<UseFormReturn<Record<string, unknown>> | null>(null);
-  const buildWorkspaceUrl = useWorkspaceLink();
-  const navigateWorkspace = useNavigateWorkspace();
-  const [stepIndex, setStepIndex] = useState(0);
+}
+
+const INITIAL_STEP_INDEX = 0;
+const useIntegrationInstallStep = ({
+  integrationState,
+  install,
+}: {
+  integrationState: IntegrationState;
+  install: () => Promise<void>;
+}) => {
+  const [stepIndex, setStepIndex] = useState(INITIAL_STEP_INDEX);
 
   const { dependencies: maybeAppDependencyList, app: maybeAppList } =
     useMemo(() => {
@@ -179,6 +163,64 @@ export function ConfirmMarketplaceInstallDialog({
       } satisfies JSONSchema7;
     }
   }, [totalSteps, stepIndex, integrationState.schema]);
+
+  const handleNextDependency = () => {
+    // for cases where the app doesn't have dependencies (schema doesn't exist)
+    if (!integrationState.schema) {
+      install();
+      return;
+    }
+
+    if (!maybeAppDependencyList) return;
+
+    if (stepIndex < totalSteps - 1) {
+      // Move to next dependency
+      setStepIndex((prev) => prev + 1);
+    } else {
+      // All dependencies and apps configured, install the main app
+      install();
+    }
+  };
+
+  const handleBack = () => {
+    setStepIndex((prev) => Math.max(prev - 1, 0));
+  };
+  const resetSteps = () => {
+    setStepIndex(INITIAL_STEP_INDEX);
+  };
+
+
+const dependencyName = maybeAppDependencyList?.[stepIndex];
+
+
+  return {
+    stepIndex,
+    currentSchema,
+    totalSteps,
+    isDepencencyStep,
+    maybeAppList,
+    resetSteps,
+    handleNextDependency,
+    handleBack,
+    dependencyName,
+  };
+};
+
+interface UseUIInstallIntegrationProps extends HandleInstallUI {
+  integration: MarketplaceIntegration | null;
+}
+
+const useUIInstallIntegration = ({
+  integration,
+  onConfirm,
+  setIntegration,
+}: UseUIInstallIntegrationProps) => {
+  const { install, integrationState, isLoading } = useIntegrationInstall(
+    integration?.name,
+  );
+  const formRef = useRef<UseFormReturn<Record<string, unknown>> | null>(null);
+  const buildWorkspaceUrl = useWorkspaceLink();
+  const navigateWorkspace = useNavigateWorkspace();
 
   const handleConnect = async () => {
     if (!integration) return;
@@ -251,38 +293,59 @@ export function ConfirmMarketplaceInstallDialog({
     }
   };
 
+  return { install: handleConnect, integrationState, isLoading, formRef };
+};
+
+function IntegrationWorkspaceIconForMarketplace({
+  integration,
+}: {
+  integration: MarketplaceIntegration | null;
+}) {
+  return (
+    <div className="absolute -translate-y-1/2">
+      <IntegrationIcon
+        icon={integration?.icon}
+        name={integration?.friendlyName ?? integration?.name}
+        size="xl"
+      />
+    </div>
+  );
+}
+
+interface ConfirmMarketplaceInstallDialogProps extends HandleInstallUI {
+  integration: MarketplaceIntegration | null;
+}
+
+export function ConfirmMarketplaceInstallDialog({
+  integration,
+  setIntegration,
+  onConfirm,
+}: ConfirmMarketplaceInstallDialogProps) {
+  const open = useMemo(() => !!integration, [integration]);
+  const { install, integrationState, isLoading, formRef } =
+    useUIInstallIntegration({
+      integration,
+      onConfirm,
+      setIntegration,
+    });
+  const {
+    stepIndex,
+    currentSchema,
+    totalSteps,
+    dependencyName,
+    resetSteps,
+    handleNextDependency,
+    handleBack,
+  } = useIntegrationInstallStep({ integrationState, install });
+
   // Reset step when dialog closes/opens
   useEffect(() => {
     if (open) {
-      setStepIndex(0);
+      resetSteps();
     }
   }, [open]);
 
-  const handleNextDependency = () => {
-    // for cases where the app doesn't have dependencies (schema doesn't exist)
-    if (!integrationState.schema) {
-      handleConnect();
-      return;
-    }
-
-    if (!maybeAppDependencyList) return;
-
-    if (stepIndex < totalSteps - 1) {
-      // Move to next dependency
-      setStepIndex((prev) => prev + 1);
-    } else {
-      // All dependencies and apps configured, install the main app
-      handleConnect();
-    }
-  };
-
-  const handleBack = () => {
-    if (stepIndex > 0) {
-      setStepIndex((prev) => prev - 1);
-    }
-  };
-
-  if (!integration) return null;
+ if (!integration) return null;
 
   return (
     <Dialog open={open} onOpenChange={() => setIntegration(null)}>
@@ -291,7 +354,7 @@ export function ConfirmMarketplaceInstallDialog({
         <div className="min-h-135 max-h-135 h-full lg:max-h-[60vh] border-b">
           <DependencyStep
             integration={integration}
-            dependencyName={maybeAppDependencyList?.[stepIndex]}
+            dependencyName={dependencyName}
             dependencySchema={currentSchema}
             currentStep={stepIndex + 1}
             totalSteps={totalSteps}

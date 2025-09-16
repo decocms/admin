@@ -361,29 +361,60 @@ export function ConfirmMarketplaceInstallDialog({
           />
         </div>
         <DialogFooter className="px-4 pb-4">
-          {stepIndex > 0 && (
-            <Button variant="outline" disabled={isLoading} onClick={handleBack}>
-              Back
-            </Button>
-          )}
-          <Button
-            variant="special"
-            onClick={
-              isLoading || integrationState.isLoading
-                ? undefined
-                : handleNextDependency
-            }
-            disabled={isLoading || integrationState.isLoading}
-          >
-            {isLoading || integrationState.isLoading
-              ? "Connecting..."
-              : stepIndex < totalSteps - 1
-                ? "Continue"
-                : "Allow access"}
-          </Button>
+          <InstallStepsButtons
+            stepIndex={stepIndex}
+            isLoading={isLoading}
+            hasNextStep={stepIndex < totalSteps - 1}
+            integrationState={integrationState}
+            handleNextDependency={handleNextDependency}
+            handleBack={handleBack}
+          />
         </DialogFooter>
       </DialogContent>
     </Dialog>
+  );
+}
+
+export function InstallStepsButtons({
+  stepIndex,
+  isLoading,
+  hasNextStep,
+  integrationState,
+  handleNextDependency,
+  handleBack,
+}: {
+  stepIndex: number;
+  isLoading: boolean;
+  hasNextStep: boolean;
+  integrationState: {
+    isLoading: boolean;
+  };
+  handleNextDependency: () => void;
+  handleBack: () => void;
+}) {
+  return (
+    <>
+      {stepIndex > 0 && (
+        <Button variant="outline" disabled={isLoading} onClick={handleBack}>
+          Back
+        </Button>
+      )}
+      <Button
+        variant="special"
+        onClick={
+          isLoading || integrationState.isLoading
+            ? undefined
+            : handleNextDependency
+        }
+        disabled={isLoading || integrationState.isLoading}
+      >
+        {isLoading || integrationState.isLoading
+          ? "Connecting..."
+          : hasNextStep
+            ? "Continue"
+            : "Allow access"}
+      </Button>
+    </>
   );
 }
 
@@ -448,8 +479,6 @@ export function DependencyStep({
 
   const schema = dependencySchema;
   const isColumn = mode === "column";
-
-  console.log(permissionsFromThisDependency);
 
   const integrationIcon = (
     <IntegrationIcon
@@ -540,7 +569,7 @@ export function DependencyStep({
         {/* Permissions Section */}
         {permissionsFromThisDependency &&
           permissionsFromThisDependency.length > 0 && (
-            <div className="flex-grow flex flex-col gap-2">
+            <div className="flex-grow flex flex-col gap-2 text-left">
               <div className="font-mono text-sm text-secondary-foreground uppercase">
                 permissions
               </div>

@@ -46,6 +46,7 @@ import { Locator } from "@deco/sdk";
 import { useUser } from "../../hooks/use-user.ts";
 import {
   DependencyStep,
+  InstallStepsButtons,
   OauthModalContextProvider,
   OauthModalState,
   useIntegrationInstallStep,
@@ -472,22 +473,33 @@ const _InlineInstallation = ({
     currentSchema,
     totalSteps,
     dependencyName,
-    resetSteps,
     handleNextDependency,
     handleBack,
   } = useIntegrationInstallStep({ integrationState, install });
 
   return (
-    <DependencyStep
-      integration={integration}
-      dependencyName={dependencyName}
-      dependencySchema={currentSchema}
-      currentStep={stepIndex}
-      totalSteps={totalSteps}
-      formRef={formRef}
-      integrationState={integrationState}
-      mode="column"
-    />
+    <>
+      <DependencyStep
+        integration={integration}
+        dependencyName={dependencyName}
+        dependencySchema={currentSchema}
+        currentStep={stepIndex+1}
+        totalSteps={totalSteps}
+        formRef={formRef}
+        integrationState={integrationState}
+        mode="column"
+      />
+      <div className="flex justify-end px-4 py-2 gap-2">
+        <InstallStepsButtons
+          stepIndex={stepIndex}
+          isLoading={isLoading}
+          hasNextStep={stepIndex < totalSteps - 1}
+          integrationState={integrationState}
+          handleNextDependency={handleNextDependency}
+          handleBack={handleBack}
+        />
+      </div>
+    </>
   );
 };
 
@@ -675,15 +687,40 @@ const SelectProjectAppInstance = ({
               value={{ onOpenOauthModal: setOauthCompletionDialog }}
             >
               <div className="h-[80vh]">
-              <InlineInstallation
-                integrationName={clientId}
-                // create callback
-                onConfirm={({ connection }) =>
-                  createOAuthCodeAndRedirectBackToApp({
-                    integrationId: connection.id,
-                  })
-                }
-              />
+                <InlineInstallation
+                  integrationName={clientId}
+                  // create callback
+                  onConfirm={({ connection, authorizeOauthUrl }) => {
+                    /** 
+                     * TODO: root app should trigger this;
+                     * Nested apps should open popup
+                    */
+                    // createOAuthCodeAndRedirectBackToApp({
+                    //   integrationId: connection.id,
+                    // });
+
+                    if (authorizeOauthUrl) {
+                      console.log("authorizeOauthUrl", authorizeOauthUrl);
+                      const popup = globalThis.open(
+                        authorizeOauthUrl,
+                        "_blank",
+                      );
+                      if (
+                        !popup ||
+                        popup.closed ||
+                        typeof popup.closed === "undefined"
+                      ) {
+                        setOauthCompletionDialog({
+                          openIntegrationOnFinish: true,
+                          open: true,
+                          url: authorizeOauthUrl,
+                          integrationName: connection?.name || "the service",
+                          connection: connection,
+                        });
+                      }
+                    }
+                  }}
+                />
               </div>
             </OauthModalContextProvider.Provider>
             <OAuthCompletionDialog
@@ -750,7 +787,7 @@ function AppsOAuth({
   const { data: registryApp } = useRegistryApp({ clientId: client_id });
   const { data: orgs } = useOrganizations();
   const [org, setOrg] = useState<Team | null>(
-    preSelectTeam(orgs, workspace_hint),
+    () => preSelectTeam(orgs, workspace_hint),
   );
 
   const selectedOrgSlug = useMemo(() => {

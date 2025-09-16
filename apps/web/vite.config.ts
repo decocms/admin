@@ -29,5 +29,13 @@ export default defineConfig({
     esbuildOptions: {
       target: "es2022",
     },
+    // TODO: fix export of packages/sdk export files to not include these packages, then remove this
+    exclude: ["@deco/cf-sandbox", "cloudflare:workers"],
+  },
+  build: {
+    rollupOptions: {
+      // TODO: fix export of packages/sdk export files to not include these packages, then remove this
+      external: ["@deco/cf-sandbox", "cloudflare:workers"],
+    },
   },
 });

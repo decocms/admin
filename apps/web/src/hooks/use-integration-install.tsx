@@ -86,38 +86,73 @@ export interface IntegrationState {
   schema: JSONSchema7;
   scopes: string[];
   permissions: PermissionDescription[];
-  integrationName: string | undefined;
-  integration: Integration | undefined;
   isLoading: boolean;
 }
 
-export interface IntegrationInstall {
-  install: (
-    params: {
-      appId: string;
-      appName: string;
-      provider: string;
-      returnUrl: string;
-    },
-    formData: Record<string, unknown> | null,
-  ) => Promise<{
-    integration: Integration;
-    redirectUrl?: string | null;
-    stateSchema?: unknown;
-    scopes?: string[];
-  }>;
-  error: Error | null;
-  isLoading: boolean;
-  integrationState: IntegrationState;
-}
-
-export function useIntegrationInstall(appName?: string): IntegrationInstall {
+export function useIntegrationInstallState(appName?: string): IntegrationState {
   const { data: appSchema, isLoading: appSchemaLoading } =
     useMarketplaceAppSchema(appName);
+
+  const integrationSchema = appSchema?.schema as JSONSchema7;
+  const integrationScopes = appSchema?.scopes ?? [];
+  // Get dynamic permission descriptions for all scopes
+  const allScopes = getAllScopes(integrationScopes, integrationSchema);
+  const { permissions: dynamicPermissions, isLoading: permissionsLoading } =
+    usePermissionDescriptions(allScopes);
+
+  return {
+    schema: integrationSchema,
+    scopes: integrationScopes,
+    permissions: dynamicPermissions,
+    isLoading: appSchemaLoading || permissionsLoading,
+  };
+}
+
+export function integrationNeedsHumanApproval(
+  integrationState: IntegrationState,
+) {
+  const shouldInstallDirectly =
+    !integrationState.isLoading &&
+    (!integrationState.schema ||
+      (integrationState.scopes && integrationState.scopes.length === 0));
+
+  return shouldInstallDirectly;
+}
+
+export function useIntegrationInstall() {
   const installMutation = useInstallFromMarketplace();
 
   const installCreatingApiKeyAndIntegration =
     useInstallCreatingApiKeyAndIntegration();
+
+  const setupAppOauth = async (
+    formData: Record<string, unknown>,
+    installState: InstallState,
+  ) => {
+    if (!installState.appName || !installState.provider) {
+      throw new Error("Missing app name or provider");
+    }
+
+    try {
+      // Step 1: Generate API key with required policies
+      const installId = installState.integration?.id ?? crypto.randomUUID();
+      // Step 2: Get marketplace app info
+      const marketplaceApp = await getRegistryApp({
+        name: installState.appName,
+      });
+
+      await installCreatingApiKeyAndIntegration.mutateAsync({
+        clientId: installState.appName,
+        app: marketplaceApp,
+        formData,
+        scopes: installState.scopes ?? [],
+        installId,
+      });
+    } catch (error) {
+      console.error("Failed to complete setup:", error);
+      throw error;
+    }
+  };
 
   const handleInstall = async (
     params: {
@@ -156,64 +191,11 @@ export function useIntegrationInstall(appName?: string): IntegrationInstall {
     }
   };
 
-  const setupAppOauth = async (
-    formData: Record<string, unknown>,
-    installState: InstallState,
-  ) => {
-    if (!installState.appName || !installState.provider) {
-      throw new Error("Missing app name or provider");
-    }
-
-    try {
-      // Step 1: Generate API key with required policies
-      const installId = installState.integration?.id ?? crypto.randomUUID();
-      // Step 2: Get marketplace app info
-      const marketplaceApp = await getRegistryApp({
-        name: installState.appName,
-      });
-
-      await installCreatingApiKeyAndIntegration.mutateAsync({
-        clientId: installState.appName,
-        app: marketplaceApp,
-        formData,
-        scopes: installState.scopes ?? [],
-        installId,
-      });
-    } catch (error) {
-      console.error("Failed to complete setup:", error);
-      throw error;
-    }
-  };
-
-  const integrationSchema = appSchema?.schema as JSONSchema7;
-  const integrationScopes = appSchema?.scopes ?? [];
-  // Get dynamic permission descriptions for all scopes
-  const allScopes = getAllScopes(integrationScopes, integrationSchema);
-  const { permissions: dynamicPermissions, isLoading: permissionsLoading } =
-    usePermissionDescriptions(allScopes);
-
   return {
-    // Install function
     install: handleInstall,
-
-    // // Modal state and handlers
-    integrationState: {
-      schema: integrationSchema,
-      scopes: integrationScopes,
-      permissions: dynamicPermissions,
-      integrationName: installMutation.variables?.appName,
-      integration: installMutation.data?.integration,
-      isLoading:
-        appSchemaLoading ||
-        installCreatingApiKeyAndIntegration.isPending ||
-        permissionsLoading,
-    },
-
-    // Mutation state
     isLoading:
       installMutation.isPending ||
       installCreatingApiKeyAndIntegration.isPending,
-
     error: installMutation.error,
   };
 }

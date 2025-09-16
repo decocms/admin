@@ -33,6 +33,7 @@ import { useCreateCustomConnection } from "../../hooks/use-create-custom-connect
 import {
   type IntegrationState,
   useIntegrationInstall,
+  useIntegrationInstallState,
 } from "../../hooks/use-integration-install.tsx";
 import {
   useNavigateWorkspace,
@@ -84,7 +85,6 @@ export const useOauthModalContext = () => {
 };
 
 interface HandleInstallUI {
-  setIntegration: (integration: MarketplaceIntegration | null) => void;
   onConfirm: ({
     connection,
     authorizeOauthUrl,
@@ -204,23 +204,22 @@ export const useIntegrationInstallStep = ({
   };
 };
 
-interface UseUIInstallIntegrationProps extends HandleInstallUI {
-  integration: MarketplaceIntegration | null;
-}
+interface UseUIInstallIntegrationProps extends HandleInstallUI {}
 
 export const useUIInstallIntegration = ({
-  integration,
   onConfirm,
-  setIntegration,
 }: UseUIInstallIntegrationProps) => {
-  const { install, integrationState, isLoading } = useIntegrationInstall(
-    integration?.name,
-  );
-  const formRef = useRef<UseFormReturn<Record<string, unknown>> | null>(null);
+  const { install, isLoading } = useIntegrationInstall();
   const buildWorkspaceUrl = useWorkspaceLink();
   const navigateWorkspace = useNavigateWorkspace();
 
-  const handleConnect = async () => {
+  const handleConnect = async ({
+    integration,
+    mainFormData = {},
+  }: {
+    integration: MarketplaceIntegration | null;
+    mainFormData?: Record<string, unknown>;
+  }) => {
     if (!integration) return;
 
     const returnUrl = new URL(
@@ -229,7 +228,6 @@ export const useUIInstallIntegration = ({
     );
 
     // Combine all dependency form data with main form data
-    const mainFormData = formRef.current?.getValues() ?? {};
     try {
       const result = await install(
         {
@@ -261,13 +259,11 @@ export const useUIInstallIntegration = ({
           connection: result.integration,
           authorizeOauthUrl: result.redirectUrl,
         });
-        setIntegration(null);
       } else if (result.stateSchema) {
         onConfirm({
           connection: result.integration,
           authorizeOauthUrl: null,
         });
-        setIntegration(null);
       } else if (!result.stateSchema) {
         let link = `/connection/${integration.provider}:::${integration.name}`;
         const isDecoApp = integration.name.startsWith("@deco/");
@@ -280,7 +276,6 @@ export const useUIInstallIntegration = ({
           link = `/connection/deco:::${integration.friendlyName}`;
         }
         navigateWorkspace(link);
-        setIntegration(null);
       }
     } catch (error) {
       trackEvent("integration_install", {
@@ -291,27 +286,12 @@ export const useUIInstallIntegration = ({
     }
   };
 
-  return { install: handleConnect, integrationState, isLoading, formRef };
+  return { install: handleConnect, isLoading };
 };
-
-function IntegrationWorkspaceIconForMarketplace({
-  integration,
-}: {
-  integration: MarketplaceIntegration | null;
-}) {
-  return (
-    <div className="absolute -translate-y-1/2">
-      <IntegrationIcon
-        icon={integration?.icon}
-        name={integration?.friendlyName ?? integration?.name}
-        size="xl"
-      />
-    </div>
-  );
-}
 
 interface ConfirmMarketplaceInstallDialogProps extends HandleInstallUI {
   integration: MarketplaceIntegration | null;
+  setIntegration: (integration: MarketplaceIntegration | null) => void;
 }
 
 export function ConfirmMarketplaceInstallDialog({
@@ -320,12 +300,14 @@ export function ConfirmMarketplaceInstallDialog({
   onConfirm,
 }: ConfirmMarketplaceInstallDialogProps) {
   const open = useMemo(() => !!integration, [integration]);
-  const { install, integrationState, isLoading, formRef } =
-    useUIInstallIntegration({
-      integration,
-      onConfirm,
-      setIntegration,
-    });
+  const integrationState = useIntegrationInstallState(integration?.name);
+  const formRef = useRef<UseFormReturn<Record<string, unknown>> | null>(null);
+  const { install, isLoading } = useUIInstallIntegration({
+    onConfirm: (props) => {
+      onConfirm(props);
+      setIntegration(null);
+    },
+  });
   const {
     stepIndex,
     currentSchema,
@@ -334,7 +316,14 @@ export function ConfirmMarketplaceInstallDialog({
     resetSteps,
     handleNextDependency,
     handleBack,
-  } = useIntegrationInstallStep({ integrationState, install });
+  } = useIntegrationInstallStep({
+    integrationState,
+    install: () =>
+      install({
+        integration,
+        mainFormData: formRef.current?.getValues(),
+      }),
+  });
 
   // Reset step when dialog closes/opens
   useEffect(() => {

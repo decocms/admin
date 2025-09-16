@@ -924,10 +924,8 @@ function ToolsInspector({
     );
   }, [data.instances, selectedIntegrationId]);
 
-  console.log("selectedIntegration", selectedIntegration);
-  console.log("data", data);
-
-  const connection = selectedIntegration?.connection || data?.info?.connection || {};
+  const connection =
+    selectedIntegration?.connection || data?.info?.connection || {};
 
   const tools = useTools(connection as MCPConnection, ignoreCache.current);
 

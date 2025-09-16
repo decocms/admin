@@ -125,7 +125,10 @@ export const useThreads = (partialOptions: ThreadFilterOptions = {}) => {
 
   return useSuspenseQuery({
     queryKey: key,
-    queryFn: ({ signal }) => listThreads(locator, options, { signal }),
+    queryFn: ({ signal }) =>
+      options.enabled
+        ? listThreads(locator, options, { signal })
+        : { threads: [], pagination: { hasMore: false, nextCursor: null } },
   });
 };
 

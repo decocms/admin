@@ -155,7 +155,9 @@ export function AgentProvider({
   const latestRulesRef = useRef<string[] | null>(null);
 
   const mergedUiOptions = { ...DEFAULT_UI_OPTIONS, ...uiOptions };
-  const { data: threads } = useThreads();
+  const { data: threads } = useThreads({
+    enabled: mergedUiOptions.showThreadMessages,
+  });
   const { data: { messages: threadMessages } = { messages: [] } } =
     !mergedUiOptions.showThreadMessages
       ? { data: { messages: [] } }

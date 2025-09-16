@@ -1,41 +1,18 @@
 import { useCallback, useMemo, useState } from "react";
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { z } from "zod";
+import { Button } from "@deco/ui/components/button.tsx";
+import { Textarea } from "@deco/ui/components/textarea.tsx";
+import { Badge } from "@deco/ui/components/badge.tsx";
+import { Spinner } from "@deco/ui/components/spinner.tsx";
 import {
   Dialog,
   DialogContent,
-  DialogFooter,
   DialogHeader,
   DialogTitle,
 } from "@deco/ui/components/dialog.tsx";
-import {
-  Form,
-  FormControl,
-  FormDescription,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from "@deco/ui/components/form.tsx";
-import { Button } from "@deco/ui/components/button.tsx";
-import { Textarea } from "@deco/ui/components/textarea.tsx";
-import { Input } from "@deco/ui/components/input.tsx";
-import { Switch } from "@deco/ui/components/switch.tsx";
-import { Badge } from "@deco/ui/components/badge.tsx";
-import { Spinner } from "@deco/ui/components/spinner.tsx";
-import { Plus, Sparkles, X } from "lucide-react";
-import type { Workflow, WorkflowStep } from "@deco/sdk/mcp/workflows/types";
+import { Plus, Sparkles, X, Wand2 } from "lucide-react";
+import type { Workflow, WorkflowStep } from "@deco/sdk";
 import { useGenerateWorkflowStep, useIntegrations } from "@deco/sdk";
 import { useDebouncedCallback } from "use-debounce";
-
-const stepFormSchema = z.object({
-  title: z.string().min(1, "Title is required"),
-  description: z.string().optional(),
-  prompt: z.string().min(10, "Please describe what this step should do"),
-});
-
-type StepFormData = z.infer<typeof stepFormSchema>;
 
 interface StepCreatorProps {
   workflow: Workflow;
@@ -45,8 +22,8 @@ interface StepCreatorProps {
 }
 
 /**
- * AI-powered step creator with beautiful UX
- * Users describe what they want in natural language
+ * AI-powered step creator that displays inline as a pseudo-step
+ * Simple two-field interface: Prompt and Tools
  */
 export function StepCreator({
   workflow,
@@ -54,56 +31,47 @@ export function StepCreator({
   onStepCreated,
   onCancel,
 }: StepCreatorProps) {
+  const [prompt, setPrompt] = useState(editingStep?.prompt || "");
   const [selectedTools, setSelectedTools] = useState<string[]>([]);
   const [suggestedTools, setSuggestedTools] = useState<string[]>([]);
-  const [showAutoTools, setShowAutoTools] = useState(true);
+  const [showToolDialog, setShowToolDialog] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
+  const [generatedStep, setGeneratedStep] = useState<WorkflowStep | null>(null);
 
   const { data: integrations } = useIntegrations();
   const generateStep = useGenerateWorkflowStep();
 
-  const form = useForm<StepFormData>({
-    resolver: zodResolver(stepFormSchema),
-    defaultValues: {
-      title: editingStep?.title || "",
-      description: editingStep?.description || "",
-      prompt: editingStep?.prompt || "",
-    },
-  });
+  // Tool discovery based on prompt
+  const discoverTools = useDebouncedCallback(async (text: string) => {
+    if (text.length < 10) {
+      setSuggestedTools([]);
+      return;
+    }
 
-  const prompt = form.watch("prompt");
+    // Simple keyword matching for now
+    const keywords = text.toLowerCase().split(/\s+/);
+    const suggested =
+      integrations
+        ?.filter((integration) => {
+          const name = integration.name.toLowerCase();
+          return keywords.some((keyword) => name.includes(keyword));
+        })
+        .map((i) => i.id.replace(/^[ia]_/, ""))
+        .slice(0, 3) || [];
 
-  // TODO: This solution is not future-proof. We need to rely on an agent to
-  // dynamically search tools using searchTools without wasting tokens
-  const discoverTools = useDebouncedCallback(
-    async (text: string) => {
-      if (!showAutoTools || text.length < 10) return;
+    setSuggestedTools(suggested);
+  }, 1500);
 
-      // Simple keyword matching for now
-      // In future, this should call an AI tool discovery service
-      const keywords = text.toLowerCase().split(/\s+/);
-      const suggested =
-        integrations
-          ?.filter((integration) => {
-            const name = integration.name.toLowerCase();
-            return keywords.some((keyword) => name.includes(keyword));
-          })
-          .map((i) => i.id.replace(/^[ia]_/, "")) // Clean IDs
-          .slice(0, 3) || [];
-
-      setSuggestedTools(suggested);
-    },
-    3000, // 3 second debounce as specified
-  );
-
-  // Watch prompt changes for tool discovery
+  // Watch prompt changes
   useMemo(() => {
     discoverTools(prompt);
   }, [prompt, discoverTools]);
 
-  // Handle @ mentions in prompt
+  // Handle @ mentions
   const handlePromptChange = useCallback(
     (value: string) => {
+      setPrompt(value);
+
       // Extract @ mentions
       const mentions = value.match(/@(\w+)/g) || [];
       const mentionedTools = mentions.map((m) => m.slice(1));
@@ -117,41 +85,73 @@ export function StepCreator({
     [selectedTools],
   );
 
-  const onSubmit = async (data: StepFormData) => {
+  const handleGenerate = async () => {
+    if (!prompt.trim() || prompt.length < 10) return;
+
     setIsGenerating(true);
 
     try {
       // Get previous steps for context
-      const previousSteps = workflow.steps.slice(0, -1).map((s) => ({
+      const previousSteps = workflow.steps.map((s: WorkflowStep) => ({
         id: s.id,
         title: s.title,
         outputSchema: s.outputSchema,
       }));
 
-      // Generate step code using AI
-      const generatedStep = await generateStep.mutateAsync({
-        prompt: data.prompt,
+      // Generate step using AI
+      const generated = await generateStep.mutateAsync({
+        prompt,
         selectedTools,
         previousSteps,
       });
 
-      // Create the complete step
+      // Create the complete step with generated data
+      // Extract a meaningful title from the prompt
+      const extractTitle = (prompt: string): string => {
+        // Common patterns for extracting intent
+        const patterns = [
+          /^(send|create|get|fetch|update|delete|process)\s+(.+?)(?:\s+from|\s+to|\s+with|\s+and|$)/i,
+          /^(.+?)(?:\s+from|\s+to|\s+with|\s+and|$)/i,
+        ];
+
+        for (const pattern of patterns) {
+          const match = prompt.match(pattern);
+          if (match) {
+            const action = match[1] || "";
+            const target = match[2] || "";
+            return `${action} ${target}`
+              .trim()
+              .split(" ")
+              .slice(0, 4) // Max 4 words
+              .map((w) => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase())
+              .join(" ");
+          }
+        }
+
+        // Fallback: First few words
+        return prompt
+          .split(" ")
+          .slice(0, 3)
+          .map((w) => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase())
+          .join(" ");
+      };
+
       const newStep: WorkflowStep = {
         id: editingStep?.id || `step-${Date.now()}`,
-        title: data.title,
-        description: data.description || "",
-        prompt: data.prompt,
-        code: generatedStep.code,
-        inputSchema: generatedStep.inputSchema,
-        outputSchema: generatedStep.outputSchema,
-        usedTools: generatedStep.usedTools || [],
+        title: extractTitle(prompt),
+        description: `Executes: ${prompt.slice(0, 100)}${prompt.length > 100 ? "..." : ""}`,
+        prompt,
+        code: generated.code,
+        inputSchema: generated.inputSchema as any,
+        outputSchema: generated.outputSchema as any,
+        usedTools: generated.usedTools || [],
         config: {
           retry: 3,
           timeout: 30000,
         },
       };
 
-      onStepCreated(newStep);
+      setGeneratedStep(newStep);
     } catch (error) {
       console.error("Failed to generate step:", error);
     } finally {
@@ -162,7 +162,7 @@ export function StepCreator({
   const availableTools = useMemo(() => {
     return (
       integrations
-        ?.filter((i) => !i.id.startsWith("a_")) // Filter out agents for now
+        ?.filter((i) => !i.id.startsWith("a_"))
         .map((i) => ({
           id: i.id.replace(/^[ia]_/, ""),
           name: i.name,
@@ -171,122 +171,139 @@ export function StepCreator({
     );
   }, [integrations]);
 
-  return (
-    <Dialog open onOpenChange={(open) => !open && onCancel()}>
-      <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle className="text-2xl">
-            {editingStep ? "Edit Step" : "Create New Step"}
-          </DialogTitle>
-        </DialogHeader>
+  // If step was generated, show the generated view
+  if (generatedStep) {
+    return (
+      <div className="h-full flex items-center justify-center p-12">
+        <div className="max-w-4xl w-full space-y-8">
+          {/* Generated Step Header */}
+          <div className="text-center space-y-4">
+            <div className="flex items-center justify-center gap-2 text-green-600 mb-4">
+              <Sparkles className="w-6 h-6" />
+              <span className="text-sm font-medium">Step Generated!</span>
+            </div>
+            <h1 className="text-4xl font-bold text-gray-900">
+              {generatedStep.title}
+            </h1>
+            <p className="text-xl text-gray-600">{generatedStep.description}</p>
+          </div>
 
-        <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-            {/* Title field */}
-            <FormField
-              control={form.control}
-              name="title"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel className="text-lg">Step Title</FormLabel>
-                  <FormControl>
-                    <Input
-                      {...field}
-                      placeholder="e.g., Send Welcome Email"
-                      className="h-12 text-base"
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+          {/* Generated Step Content */}
+          <div className="bg-white rounded-xl shadow-sm p-8 space-y-6">
+            <div>
+              <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-3">
+                Original Prompt
+              </h3>
+              <p className="text-lg text-gray-800 leading-relaxed">
+                {generatedStep.prompt}
+              </p>
+            </div>
 
-            {/* Description field */}
-            <FormField
-              control={form.control}
-              name="description"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel className="text-lg">
-                    Description (optional)
-                  </FormLabel>
-                  <FormControl>
-                    <Input
-                      {...field}
-                      placeholder="Brief description of what this step does"
-                      className="h-12 text-base"
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            {/* Prompt field - the main input */}
-            <FormField
-              control={form.control}
-              name="prompt"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel className="text-lg">
-                    What should this step do?
-                  </FormLabel>
-                  <FormDescription className="text-base">
-                    Describe in plain English. Use @ to mention tools (e.g.,
-                    @gmail, @sheets)
-                  </FormDescription>
-                  <FormControl>
-                    <Textarea
-                      {...field}
-                      onChange={(e) => {
-                        field.onChange(e);
-                        handlePromptChange(e.target.value);
-                      }}
-                      placeholder="Get the user data from the previous step and send them a welcome email with their name and account details..."
-                      className="min-h-[150px] text-base leading-relaxed resize-none"
-                    />
-                  </FormControl>
-                  <FormMessage />
-                  <div className="text-sm text-gray-500 mt-2">
-                    {field.value?.length || 0} characters
-                  </div>
-                </FormItem>
-              )}
-            />
-
-            {/* Tool selection */}
-            <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <FormLabel className="text-lg">Available Tools</FormLabel>
-                <label className="flex items-center gap-2 cursor-pointer">
-                  <span className="text-sm text-gray-600">Auto-discover</span>
-                  <Switch
-                    checked={showAutoTools}
-                    onCheckedChange={setShowAutoTools}
-                  />
-                </label>
+            {generatedStep.usedTools && generatedStep.usedTools.length > 0 && (
+              <div>
+                <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-3">
+                  Tools Used
+                </h3>
+                <div className="flex flex-wrap gap-2">
+                  {generatedStep.usedTools.map((tool: any, idx: number) => (
+                    <Badge key={idx} variant="secondary">
+                      {tool.integrationId}.{tool.toolName}
+                    </Badge>
+                  ))}
+                </div>
               </div>
+            )}
+          </div>
 
-              {/* Suggested tools */}
-              {showAutoTools && suggestedTools.length > 0 && (
-                <div className="space-y-2">
-                  <p className="text-sm text-gray-600">Suggested tools:</p>
+          {/* Actions */}
+          <div className="flex justify-center gap-4">
+            <Button
+              size="lg"
+              variant="outline"
+              onClick={() => {
+                setGeneratedStep(null);
+                setPrompt("");
+                setSelectedTools([]);
+              }}
+            >
+              Start Over
+            </Button>
+            <Button size="lg" onClick={() => onStepCreated(generatedStep)}>
+              <Sparkles className="w-5 h-5 mr-2" />
+              Save Step
+            </Button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Show the creation form as a pseudo-step
+  return (
+    <>
+      <div className="h-full flex items-center justify-center p-12">
+        <div className="max-w-4xl w-full space-y-8">
+          {/* Pseudo-Step Header */}
+          <div className="text-center space-y-4">
+            <div className="flex items-center justify-center gap-2 text-blue-600 mb-4">
+              <Wand2 className="w-6 h-6" />
+              <span className="text-sm font-medium">Creating New Step</span>
+            </div>
+            <h1 className="text-4xl font-bold text-gray-900">
+              {editingStep ? "Edit Step" : "New Step"}
+            </h1>
+            <p className="text-xl text-gray-600">
+              Describe what this step should do
+            </p>
+          </div>
+
+          {/* Creation Form - styled like a step */}
+          <div className="bg-blue-50 border-2 border-blue-200 rounded-xl p-8 space-y-6">
+            {/* Prompt Field */}
+            <div>
+              <label className="text-sm font-semibold text-gray-700 uppercase tracking-wide mb-3 block">
+                What do you want this step to do?
+              </label>
+              <Textarea
+                value={prompt}
+                onChange={(e) => handlePromptChange(e.target.value)}
+                placeholder="Get the user data from the previous step and send them a welcome email with their name and account details..."
+                className="min-h-[150px] text-lg leading-relaxed resize-none bg-white"
+                autoFocus
+              />
+              <div className="flex justify-between items-center mt-2">
+                <span className="text-sm text-gray-500">
+                  Use @ to mention tools (e.g., @gmail, @sheets)
+                </span>
+                <span className="text-sm text-gray-500">
+                  {prompt.length} characters
+                </span>
+              </div>
+            </div>
+
+            {/* Tools Section */}
+            <div>
+              <label className="text-sm font-semibold text-gray-700 uppercase tracking-wide mb-3 block">
+                Tools
+              </label>
+
+              {/* Suggested Tools */}
+              {suggestedTools.length > 0 && (
+                <div className="mb-3">
+                  <p className="text-xs text-gray-600 mb-2">Suggested:</p>
                   <div className="flex flex-wrap gap-2">
                     {suggestedTools.map((toolId) => {
                       const tool = availableTools.find((t) => t.id === toolId);
                       if (!tool) return null;
+                      const isSelected = selectedTools.includes(tool.id);
 
                       return (
                         <Badge
                           key={tool.id}
-                          variant={
-                            selectedTools.includes(tool.id)
-                              ? "default"
-                              : "outline"
-                          }
+                          variant={isSelected ? "default" : "outline"}
                           className="cursor-pointer"
                           onClick={() => {
-                            if (selectedTools.includes(tool.id)) {
+                            if (isSelected) {
                               setSelectedTools(
                                 selectedTools.filter((t) => t !== tool.id),
                               );
@@ -304,84 +321,123 @@ export function StepCreator({
                 </div>
               )}
 
-              {/* Selected tools */}
-              <div className="space-y-2">
-                <p className="text-sm text-gray-600">Selected tools:</p>
-                <div className="flex flex-wrap gap-2">
-                  {selectedTools.map((toolId) => {
-                    const tool = availableTools.find((t) => t.id === toolId);
-                    if (!tool) return null;
+              {/* Selected Tools */}
+              <div className="flex flex-wrap gap-2">
+                {selectedTools.map((toolId) => {
+                  const tool = availableTools.find((t) => t.id === toolId);
+                  if (!tool) return null;
 
-                    return (
-                      <Badge
-                        key={tool.id}
-                        variant="default"
-                        className="cursor-pointer"
+                  return (
+                    <Badge
+                      key={tool.id}
+                      variant="default"
+                      className="cursor-pointer"
+                    >
+                      {tool.name}
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setSelectedTools(
+                            selectedTools.filter((t) => t !== tool.id),
+                          )
+                        }
+                        className="ml-2"
                       >
-                        {tool.name}
-                        <button
-                          type="button"
-                          onClick={() =>
-                            setSelectedTools(
-                              selectedTools.filter((t) => t !== tool.id),
-                            )
-                          }
-                          className="ml-2"
-                        >
-                          <X className="w-3 h-3" />
-                        </button>
-                      </Badge>
-                    );
-                  })}
+                        <X className="w-3 h-3" />
+                      </button>
+                    </Badge>
+                  );
+                })}
 
-                  {/* Add tool manually button */}
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    className="h-6"
-                    onClick={() => {
-                      // TODO: Open tool selector dialog
-                      console.log("Open tool selector");
-                    }}
-                  >
-                    <Plus className="w-3 h-3 mr-1" />
-                    Add tool
-                  </Button>
-                </div>
+                {/* Add Tool Button */}
+                <button
+                  type="button"
+                  onClick={() => setShowToolDialog(true)}
+                  className="h-7 px-3 rounded-md border border-gray-300 bg-white hover:bg-gray-50 text-sm font-medium inline-flex items-center"
+                >
+                  <Plus className="w-3 h-3 mr-1" />
+                  Add Tool
+                </button>
               </div>
             </div>
+          </div>
 
-            <DialogFooter>
-              <Button
-                type="button"
-                variant="outline"
-                onClick={onCancel}
-                disabled={isGenerating}
-              >
-                Cancel
-              </Button>
-              <Button
-                type="submit"
-                disabled={isGenerating || !form.formState.isValid}
-                className="min-w-[120px]"
-              >
-                {isGenerating ? (
-                  <>
-                    <Spinner className="w-4 h-4 mr-2" />
-                    Generating...
-                  </>
-                ) : (
-                  <>
-                    <Sparkles className="w-4 h-4 mr-2" />
-                    {editingStep ? "Update Step" : "Create Step"}
-                  </>
-                )}
-              </Button>
-            </DialogFooter>
-          </form>
-        </Form>
-      </DialogContent>
-    </Dialog>
+          {/* Action Buttons */}
+          <div className="flex justify-center gap-4">
+            <Button
+              size="lg"
+              variant="outline"
+              onClick={onCancel}
+              disabled={isGenerating}
+            >
+              Cancel
+            </Button>
+            <Button
+              size="lg"
+              onClick={handleGenerate}
+              disabled={isGenerating || prompt.length < 10}
+            >
+              {isGenerating ? (
+                <>
+                  <Spinner />
+                  Generating...
+                </>
+              ) : (
+                <>
+                  <Sparkles className="w-5 h-5 mr-2" />
+                  Generate Step
+                </>
+              )}
+            </Button>
+          </div>
+        </div>
+      </div>
+
+      {/* Tool Selection Dialog */}
+      {showToolDialog && (
+        <Dialog open={showToolDialog} onOpenChange={setShowToolDialog}>
+          <DialogContent className="max-w-2xl max-h-[70vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle>Select Tools</DialogTitle>
+            </DialogHeader>
+
+            <div className="grid grid-cols-2 gap-3 mt-4">
+              {availableTools.map((tool) => {
+                const isSelected = selectedTools.includes(tool.id);
+
+                return (
+                  <button
+                    key={tool.id}
+                    onClick={() => {
+                      if (isSelected) {
+                        setSelectedTools(
+                          selectedTools.filter((t) => t !== tool.id),
+                        );
+                      } else {
+                        setSelectedTools([...selectedTools, tool.id]);
+                      }
+                      setShowToolDialog(false);
+                    }}
+                    className={`
+                      p-4 rounded-lg border-2 text-left transition-all
+                      ${
+                        isSelected
+                          ? "border-blue-500 bg-blue-50"
+                          : "border-gray-200 hover:border-gray-300 hover:bg-gray-50"
+                      }
+                    `}
+                  >
+                    <div className="font-medium">{tool.name}</div>
+                    <div className="text-sm text-gray-500 mt-1">
+                      ID: {tool.id}
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+          </DialogContent>
+        </Dialog>
+      )}
+    </>
   );
 }

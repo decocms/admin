@@ -44,6 +44,15 @@ export interface SandboxWorkflowStatusParams {
   runId: string;
 }
 
+export interface SandboxWorkflowStatusResult {
+  runId: string;
+  status: "pending" | "running" | "completed" | "failed";
+  output?: unknown;
+  error?: string;
+  startedAt?: string;
+  completedAt?: string;
+}
+
 export interface SandboxWorkflowReplayParams {
   runId: string;
   stepName: string;

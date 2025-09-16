@@ -1,26 +1,73 @@
 import { useState } from "react";
-import { ChevronDown, ChevronRight, Code, Edit, Play } from "lucide-react";
+import { Code, Edit, FileText, Play } from "lucide-react";
 import { Button } from "@deco/ui/components/button.tsx";
 import { Badge } from "@deco/ui/components/badge.tsx";
 import { Spinner } from "@deco/ui/components/spinner.tsx";
 import {
-  Collapsible,
-  CollapsibleContent,
-  CollapsibleTrigger,
-} from "@deco/ui/components/collapsible.tsx";
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
+} from "@deco/ui/components/tabs.tsx";
 import { useWorkflowContext } from "../../../contexts/workflow-context.tsx";
 import type { WorkflowStep } from "@deco/sdk";
 
 export function StepSlide({ step }: { step: WorkflowStep }) {
   const { state, executeStep, startEditing } = useWorkflowContext();
   const executionResult = state.executionResults[step.id];
-  const [showCode, setShowCode] = useState(false);
+  const [activeTab, setActiveTab] = useState("overview");
+
+  // Analyze code to find which previous steps are being used
+  const analyzeDependencies = () => {
+    const dependencies: Array<{ stepTitle: string; usage: string }> = [];
+
+    if (step.code) {
+      // Find all getStepResult calls
+      const stepResultPattern = /ctx\.getStepResult\(['"]([^'"]+)['"]\)/g;
+      const matches = step.code.matchAll(stepResultPattern);
+
+      for (const match of matches) {
+        const stepId = match[1];
+        const prevStep = state.workflow.steps.find((s) => s.id === stepId);
+        if (prevStep) {
+          // Try to find context around the usage
+          const startIdx = Math.max(0, match.index! - 50);
+          const endIdx = Math.min(step.code.length, match.index! + 100);
+          const context = step.code.substring(startIdx, endIdx);
+
+          // Extract variable assignment if exists
+          const varPattern = /const\s+(\w+)\s*=\s*await\s+ctx\.getStepResult/;
+          const varMatch = context.match(varPattern);
+          const usage = varMatch
+            ? `Stored as '${varMatch[1]}' variable`
+            : "Used in step logic";
+
+          dependencies.push({
+            stepTitle: prevStep.title || `Step ${stepId}`,
+            usage,
+          });
+        }
+      }
+
+      // Also check for readWorkflowInput
+      if (step.code.includes("ctx.readWorkflowInput()")) {
+        dependencies.push({
+          stepTitle: "Workflow Input",
+          usage: "Initial data for the workflow",
+        });
+      }
+    }
+
+    return dependencies;
+  };
+
+  const dependencies = analyzeDependencies();
 
   return (
-    <div className="h-full flex items-center justify-center p-12">
-      <div className="max-w-4xl w-full space-y-8">
+    <div className="h-full flex flex-col p-12">
+      <div className="max-w-4xl w-full mx-auto space-y-6">
         {/* Step Header */}
-        <div className="text-center space-y-4">
+        <div className="text-center space-y-3">
           <h1 className="text-4xl font-bold text-gray-900">{step.title}</h1>
           {step.description && (
             <p className="text-xl text-gray-600">{step.description}</p>
@@ -28,87 +75,163 @@ export function StepSlide({ step }: { step: WorkflowStep }) {
         </div>
 
         {/* Main Content Card */}
-        <div className="bg-white rounded-xl shadow-sm p-8 space-y-6">
-          {/* Prompt Display */}
-          <div>
-            <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-3">
-              Prompt
-            </h3>
-            <p className="text-lg text-gray-800 leading-relaxed">
-              {step.prompt}
-            </p>
-          </div>
-
-          {/* Tools Used */}
-          {step.usedTools && step.usedTools.length > 0 && (
-            <div>
-              <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-3">
-                Tools Used
-              </h3>
-              <div className="flex flex-wrap gap-2">
-                {step.usedTools.map((tool, idx) => (
-                  <Badge key={idx} variant="secondary">
-                    {tool.integrationId}.{tool.toolName}
-                  </Badge>
-                ))}
-              </div>
+        <div className="bg-white rounded-xl shadow-sm">
+          {/* Tabs */}
+          <Tabs
+            value={activeTab}
+            onValueChange={setActiveTab}
+            className="w-full"
+          >
+            <div className="border-b px-8">
+              <TabsList className="h-12 bg-transparent p-0 border-0">
+                <TabsTrigger
+                  value="overview"
+                  className="data-[state=active]:border-b-2 data-[state=active]:border-blue-500 rounded-none px-4"
+                >
+                  <FileText className="w-4 h-4 mr-2" />
+                  Overview
+                </TabsTrigger>
+                <TabsTrigger
+                  value="code"
+                  className="data-[state=active]:border-b-2 data-[state=active]:border-blue-500 rounded-none px-4"
+                >
+                  <Code className="w-4 h-4 mr-2" />
+                  Code
+                </TabsTrigger>
+              </TabsList>
             </div>
-          )}
 
-          {/* Generated Code (Collapsible) */}
-          {step.code && (
-            <Collapsible open={showCode} onOpenChange={setShowCode}>
-              <CollapsibleTrigger className="flex items-center gap-2 text-sm font-semibold text-gray-500 uppercase tracking-wide hover:text-gray-700 transition-colors">
-                {showCode ? (
-                  <ChevronDown className="w-4 h-4" />
+            {/* Overview Tab */}
+            <TabsContent value="overview" className="p-8 space-y-6 mt-0">
+              {/* Data Dependencies */}
+              {dependencies.length > 0 && (
+                <div>
+                  <h3 className="text-sm font-semibold text-gray-700 uppercase tracking-wide mb-4">
+                    Data from Other Steps
+                  </h3>
+                  <div className="space-y-3">
+                    {dependencies.map((dep, idx) => (
+                      <div
+                        key={idx}
+                        className="flex items-start gap-3 p-3 bg-gray-50 rounded-lg"
+                      >
+                        <div className="w-2 h-2 rounded-full bg-blue-500 mt-1.5"></div>
+                        <div className="flex-1">
+                          <div className="font-medium text-gray-900">
+                            {dep.stepTitle}
+                          </div>
+                          <div className="text-sm text-gray-600 mt-0.5">
+                            {dep.usage}
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Tools Used */}
+              {step.usedTools && step.usedTools.length > 0 && (
+                <div>
+                  <h3 className="text-sm font-semibold text-gray-700 uppercase tracking-wide mb-4">
+                    Tools & Integrations
+                  </h3>
+                  <div className="grid grid-cols-1 gap-3">
+                    {step.usedTools.map((tool, idx) => (
+                      <div
+                        key={idx}
+                        className="p-4 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg border border-blue-200"
+                      >
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 bg-white rounded-lg flex items-center justify-center shadow-sm">
+                            <span className="text-lg">🔧</span>
+                          </div>
+                          <div className="flex-1">
+                            <div className="font-medium text-gray-900">
+                              {tool.integrationId
+                                .replace(/^[ia]:/, "")
+                                .replace(/_/g, " ")}
+                            </div>
+                            <div className="text-sm text-gray-600">
+                              Method:{" "}
+                              <code className="bg-white px-1 py-0.5 rounded">
+                                {tool.toolName}()
+                              </code>
+                            </div>
+                            {tool.description && (
+                              <div className="text-xs text-gray-500 mt-1">
+                                {tool.description}
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </TabsContent>
+
+            {/* Code Tab */}
+            <TabsContent value="code" className="p-8 mt-0">
+              <div className="bg-gray-900 rounded-lg p-6">
+                {step.code ? (
+                  <pre className="text-gray-100 overflow-x-auto text-sm font-mono leading-relaxed">
+                    <code>{step.code}</code>
+                  </pre>
                 ) : (
-                  <ChevronRight className="w-4 h-4" />
+                  <p className="text-gray-400 text-center py-8">
+                    No code generated yet
+                  </p>
                 )}
-                <Code className="w-4 h-4" />
-                Generated Code
-              </CollapsibleTrigger>
-              <CollapsibleContent>
-                <pre className="mt-3 p-4 bg-gray-900 text-gray-100 rounded-lg overflow-x-auto text-sm">
-                  <code>{step.code}</code>
-                </pre>
-              </CollapsibleContent>
-            </Collapsible>
-          )}
+              </div>
+            </TabsContent>
+          </Tabs>
+        </div>
 
-          {/* Execution Result */}
-          {executionResult && (
-            <div
-              className={`
-                p-4 rounded-lg border-2
-                ${
-                  executionResult.error
-                    ? "bg-red-50 border-red-200"
-                    : "bg-green-50 border-green-200"
-                }
-              `}
-            >
-              <h3 className="text-sm font-semibold uppercase tracking-wide mb-2">
+        {/* Execution Context - Below the main card */}
+        {executionResult && (
+          <div
+            className={`
+              p-5 rounded-xl border-2 transition-all
+              ${
+                executionResult.error
+                  ? "bg-red-50 border-red-200"
+                  : "bg-green-50 border-green-200"
+              }
+            `}
+          >
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="text-sm font-semibold uppercase tracking-wide">
                 {executionResult.error ? (
-                  <span className="text-red-700">Execution Error</span>
+                  <span className="text-red-700 flex items-center gap-2">
+                    <span className="w-2 h-2 bg-red-500 rounded-full"></span>
+                    Execution Failed
+                  </span>
                 ) : (
-                  <span className="text-green-700">Execution Result</span>
+                  <span className="text-green-700 flex items-center gap-2">
+                    <span className="w-2 h-2 bg-green-500 rounded-full"></span>
+                    Execution Successful
+                  </span>
                 )}
               </h3>
-              <pre className="text-sm overflow-x-auto whitespace-pre-wrap">
+              <span className="text-xs text-gray-600">
+                {new Date(executionResult.executedAt).toLocaleString()}
+                {executionResult.duration && ` • ${executionResult.duration}ms`}
+              </span>
+            </div>
+
+            <div className="bg-white bg-opacity-60 rounded-lg p-3 font-mono text-xs overflow-x-auto">
+              <pre className="whitespace-pre-wrap">
                 {JSON.stringify(
                   executionResult.error || executionResult.value,
                   null,
                   2,
                 )}
               </pre>
-              <p className="text-xs text-gray-500 mt-3">
-                Executed at{" "}
-                {new Date(executionResult.executedAt).toLocaleString()}
-                {executionResult.duration && ` • ${executionResult.duration}ms`}
-              </p>
             </div>
-          )}
-        </div>
+          </div>
+        )}
 
         {/* Action Buttons */}
         <div className="flex justify-center gap-4">
@@ -130,8 +253,8 @@ export function StepSlide({ step }: { step: WorkflowStep }) {
           >
             {state.isExecuting ? (
               <>
-                <Spinner className="w-5 h-5 mr-2" />
-                Executing...
+                <Spinner />
+                <span className="ml-2">Executing...</span>
               </>
             ) : (
               <>

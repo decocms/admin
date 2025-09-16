@@ -70,26 +70,25 @@ function SlideCanvasContent() {
       <div className="flex-1 relative overflow-hidden">
         <div className="h-full transition-all duration-300">
           {state.isEditing ? (
-            <div className="h-full">
-              <StepCreator
-                editingStep={state.editingStepId ? currentStep : null}
-                workflow={state.workflow}
-                onStepCreated={(step) => {
-                  if (state.editingStepId) {
-                    updateStep(state.editingStepId, step);
-                  } else {
-                    addStep(step);
-                  }
-                  stopEditing();
-                }}
-                onCancel={stopEditing}
-              />
-            </div>
+            // Show StepCreator inline as a pseudo-step
+            <StepCreator
+              editingStep={state.editingStepId ? currentStep : null}
+              workflow={state.workflow}
+              onStepCreated={(step) => {
+                if (state.editingStepId) {
+                  updateStep(state.editingStepId, step);
+                } else {
+                  addStep(step);
+                }
+                stopEditing();
+              }}
+              onCancel={stopEditing}
+            />
           ) : currentStep ? (
-            <div className="h-full">
-              <StepSlide step={currentStep} />
-            </div>
+            // Show the current step
+            <StepSlide step={currentStep} />
           ) : (
+            // Show empty state
             <div className="h-full flex items-center justify-center">
               <EmptyState onCreateStep={() => startEditing()} />
             </div>

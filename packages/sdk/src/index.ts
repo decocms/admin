@@ -41,6 +41,7 @@ export * from "./hooks/registry.ts";
 export * from "./hooks/sandbox-workflows.ts";
 export * from "./hooks/workflow-step-generator.ts";
 export * from "./hooks/create-workflow.ts";
+export * from "./hooks/workflow-step-executor.ts";
 
 // Schemas for sandbox workflows (exported for consumers like the web app)
 // Export new workflow types

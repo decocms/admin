@@ -1,5 +1,6 @@
 import { createContext, ReactNode, useContext, useReducer } from "react";
 import type { StepExecutionResult, Workflow, WorkflowStep } from "@deco/sdk";
+import { useExecuteWorkflowStep, useUpsertSandboxWorkflow } from "@deco/sdk";
 
 // ============= State Types =============
 
@@ -287,6 +288,10 @@ export function WorkflowProvider({
     error: null,
   });
 
+  // Hooks for API calls
+  const executeStep = useExecuteWorkflowStep();
+  const saveWorkflowMutation = useUpsertSandboxWorkflow();
+
   // Computed values
   const currentStep = state.workflow.steps[state.currentStepIndex] || null;
   const canNavigateBack = state.currentStepIndex > 0;
@@ -322,16 +327,22 @@ export function WorkflowProvider({
     dispatch({ type: "STOP_EDITING" });
   };
 
-  const executeStep = async (stepId: string) => {
+  const executeStepHandler = async (stepId: string) => {
     dispatch({ type: "START_EXECUTION", payload: stepId });
 
     try {
-      // TODO: Call actual execution API
-      const result: StepExecutionResult = {
-        executedAt: new Date().toISOString(),
-        value: { success: true },
-        duration: 1000,
-      };
+      // Find the step to execute
+      const step = state.workflow.steps.find((s) => s.id === stepId);
+      if (!step) {
+        throw new Error(`Step ${stepId} not found`);
+      }
+
+      // Execute the step with real sandbox
+      const result = await executeStep.mutateAsync({
+        step,
+        workflowInput: {}, // TODO: Get actual workflow input
+        previousResults: state.executionResults,
+      });
 
       dispatch({
         type: "EXECUTION_COMPLETE",
@@ -382,7 +393,7 @@ export function WorkflowProvider({
     deleteStep,
     startEditing,
     stopEditing,
-    executeStep,
+    executeStep: executeStepHandler,
     saveWorkflow,
   };
 

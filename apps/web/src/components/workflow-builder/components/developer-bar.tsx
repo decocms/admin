@@ -69,23 +69,117 @@ export function DeveloperBar() {
 
             <div className="h-40 overflow-auto p-4">
               <TabsContent value="state" className="mt-0">
-                <div className="space-y-2">
+                <div className="space-y-3">
                   <h4 className="text-xs font-semibold text-gray-600 uppercase">
-                    Workflow State
+                    Execution Context
                   </h4>
-                  <pre className="text-xs bg-gray-50 p-3 rounded overflow-x-auto">
-                    {JSON.stringify(
-                      {
-                        currentStepIndex: state.currentStepIndex,
-                        totalSteps: state.workflow.steps.length,
-                        isDirty: state.isDirty,
-                        isExecuting: state.isExecuting,
-                        executionResults: Object.keys(state.executionResults),
-                      },
-                      null,
-                      2,
+
+                  {/* Visual representation of execution state */}
+                  <div className="space-y-2">
+                    {state.workflow.steps.map((step, index) => {
+                      const result = state.executionResults[step.id];
+                      const hasExecuted = !!result;
+                      const hasError = result?.error;
+
+                      return (
+                        <div
+                          key={step.id}
+                          className={`
+                            p-2 rounded border text-xs
+                            ${
+                              hasError
+                                ? "bg-red-50 border-red-200"
+                                : hasExecuted
+                                  ? "bg-green-50 border-green-200"
+                                  : "bg-gray-50 border-gray-200"
+                            }
+                          `}
+                        >
+                          <div className="flex items-start justify-between mb-1">
+                            <div className="flex items-center gap-2">
+                              <span
+                                className={`
+                                inline-block w-2 h-2 rounded-full
+                                ${
+                                  hasError
+                                    ? "bg-red-500"
+                                    : hasExecuted
+                                      ? "bg-green-500"
+                                      : "bg-gray-400"
+                                }
+                              `}
+                              />
+                              <span className="font-semibold">
+                                {step.title || `Step ${index + 1}`}
+                              </span>
+                            </div>
+                            {result && (
+                              <span className="text-gray-500">
+                                {new Date(
+                                  result.executedAt,
+                                ).toLocaleTimeString()}
+                              </span>
+                            )}
+                          </div>
+
+                          {result && (
+                            <div className="ml-4 mt-1">
+                              {hasError ? (
+                                <div className="text-red-600">
+                                  Error: {result.error}
+                                </div>
+                              ) : (
+                                <details className="cursor-pointer">
+                                  <summary className="text-gray-600 hover:text-gray-800">
+                                    View result ({result.duration}ms)
+                                  </summary>
+                                  <pre className="mt-1 p-2 bg-white rounded text-xs overflow-x-auto">
+                                    {JSON.stringify(result.value, null, 2)}
+                                  </pre>
+                                </details>
+                              )}
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+
+                    {state.workflow.steps.length === 0 && (
+                      <div className="text-gray-500 text-center py-2">
+                        No steps in workflow
+                      </div>
                     )}
-                  </pre>
+                  </div>
+
+                  {/* Summary stats */}
+                  <div className="pt-2 border-t text-xs text-gray-600">
+                    <div className="flex justify-between">
+                      <span>Total Steps:</span>
+                      <span className="font-medium">
+                        {state.workflow.steps.length}
+                      </span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span>Executed:</span>
+                      <span className="font-medium text-green-600">
+                        {
+                          Object.keys(state.executionResults).filter(
+                            (id) => !state.executionResults[id].error,
+                          ).length
+                        }
+                      </span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span>Failed:</span>
+                      <span className="font-medium text-red-600">
+                        {
+                          Object.keys(state.executionResults).filter(
+                            (id) => state.executionResults[id].error,
+                          ).length
+                        }
+                      </span>
+                    </div>
+                  </div>
                 </div>
               </TabsContent>
 

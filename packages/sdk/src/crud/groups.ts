@@ -16,6 +16,7 @@ export const WellKnownMcpGroups = {
   Model: "model-management",
   OAuth: "oauth-management",
   Prompt: "prompt-management",
+  User: "user-management",
   Registry: "registry-management",
   Sandbox: "code-sandbox",
   Team: "team-management",

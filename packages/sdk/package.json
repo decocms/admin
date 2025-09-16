@@ -81,6 +81,7 @@
     "./mcp/binder": "./src/mcp/bindings/binder.ts",
     "./models": "./src/models/index.ts",
     "./workflows": "./src/workflows/index.ts",
-    "./posthog": "./src/posthog.ts"
+    "./posthog": "./src/posthog.ts",
+    "./deconfig": "./src/mcp/deconfig/index.ts"
   }
 }

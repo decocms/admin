@@ -197,7 +197,7 @@ const virtualIntegrationsFor = (
   // Create a virtual User Management integration
   const decoChatMcp = new URL("/mcp", DECO_CMS_API_URL);
   const userManagementIntegration = {
-    id: formatId("i", "user-management"),
+    id: formatId("i", WellKnownMcpGroups.User),
     name: "User Management",
     description: "Manage your teams, invites and profile",
     connection: {
@@ -216,12 +216,31 @@ const virtualIntegrationsFor = (
     DECO_CMS_API_URL,
   );
   const toolsIntegration = {
-    id: formatId("i", "tools-management"),
+    id: formatId("i", WellKnownMcpGroups.Tools),
     name: "Tools Management",
     description: "Manage your tools",
     connection: {
       type: "HTTP",
       url: toolsMcp.href,
+      token,
+    },
+    icon: "https://assets.decocache.com/mcp/81d602bb-45e2-4361-b52a-23379520a34d/sandbox.png",
+    workspace: Locator.adaptToRootSlug(locator),
+    created_at: new Date().toISOString(),
+  };
+
+  const workflowsMcp = new URL(
+    `${projectPath}/${WellKnownMcpGroups.Workflows}/mcp`,
+    DECO_CMS_API_URL,
+  );
+
+  const workflowsIntegration = {
+    id: formatId("i", WellKnownMcpGroups.Workflows),
+    name: "Workflows Management",
+    description: "Manage your workflows",
+    connection: {
+      type: "HTTP",
+      url: workflowsMcp.href,
       token,
     },
     icon: "https://assets.decocache.com/mcp/81d602bb-45e2-4361-b52a-23379520a34d/sandbox.png",
@@ -270,6 +289,7 @@ const virtualIntegrationsFor = (
     workspaceManagementIntegration,
     ...integrationGroups,
     toolsIntegration,
+    workflowsIntegration,
     ...knowledgeBases.map((kb) => {
       const url = new URL(workspaceMcp);
       url.searchParams.set("group", KNOWLEDGE_BASE_GROUP);

@@ -2,6 +2,7 @@ import { MCPClient } from "../fetcher.ts";
 import { ProjectLocator } from "../locator.ts";
 import { WellKnownBindings } from "../mcp/index.ts";
 import { WellKnownMcpGroups } from "./groups.ts";
+import { WorkflowDefinitionSchema } from "../mcp/workflows/workflow-schemas.ts";
 
 export type ResourceBinding = (typeof WellKnownBindings)["Resources"];
 const workspaceResourceClient = (locator: ProjectLocator) =>
@@ -16,6 +17,8 @@ export interface SandboxWorkflowDefinition {
     def: Record<string, unknown>;
   }>;
 }
+
+const RESOURCE_NAME = "workflow";
 
 export interface SandboxWorkflowUpsertParams {
   name: string;
@@ -53,13 +56,15 @@ export function getSandboxWorkflow(
   signal?: AbortSignal,
 ) {
   const client = workspaceResourceClient(locator);
-  return client.DECO_CHAT_RESOURCES_READ(
-    {
-      name: "workflows",
-      uri: buildWorkflowUri(name),
-    },
-    { signal },
-  );
+  return client
+    .DECO_CHAT_RESOURCES_READ(
+      {
+        name: RESOURCE_NAME,
+        uri: buildWorkflowUri(name),
+      },
+      { signal },
+    )
+    .then((result) => WorkflowDefinitionSchema.parse(result.data));
 }
 
 export function upsertSandboxWorkflow(
@@ -75,7 +80,7 @@ export function upsertSandboxWorkflow(
       // Workflow exists, update it
       return client.DECO_CHAT_RESOURCES_UPDATE(
         {
-          name: "workflows",
+          name: RESOURCE_NAME,
           uri: buildWorkflowUri(params.name),
           title: params.name,
           description: params.description,
@@ -98,7 +103,7 @@ export function upsertSandboxWorkflow(
       // Workflow doesn't exist, create it
       return client.DECO_CHAT_RESOURCES_CREATE(
         {
-          name: "workflows",
+          name: RESOURCE_NAME,
           resourceName: params.name,
           title: params.name,
           description: params.description,
@@ -154,17 +159,9 @@ export function deleteSandboxWorkflow(
   const client = workspaceResourceClient(locator);
   return client.DECO_CHAT_RESOURCES_DELETE(
     {
-      name: "workflows",
+      name: RESOURCE_NAME,
       uri: buildWorkflowUri(name),
     },
     { signal },
   );
-}
-
-export function listSandboxWorkflows(
-  locator: ProjectLocator,
-  signal?: AbortSignal,
-) {
-  const client = workspaceResourceClient(locator);
-  return client.DECO_CHAT_RESOURCES_LIST({}, { signal });
 }

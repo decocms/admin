@@ -6,7 +6,6 @@ import {
   getSandboxWorkflowStatus,
   replaySandboxWorkflowFromStep,
   deleteSandboxWorkflow,
-  listSandboxWorkflows,
   type SandboxWorkflowDefinition as _SandboxWorkflowDefinition,
   type SandboxWorkflowUpsertParams,
   type SandboxWorkflowStartParams,
@@ -15,7 +14,6 @@ import {
 } from "../crud/sandbox-workflows.ts";
 import { InternalServerError } from "../errors.ts";
 import { useSDK } from "./store.tsx";
-
 /**
  * Hook to get a sandbox workflow by name
  */
@@ -26,7 +24,7 @@ export const useSandboxWorkflow = (workflowName: string) => {
     queryKey: ["sandbox-workflow", locator, workflowName],
     queryFn: async ({ signal }) => {
       const result = await getSandboxWorkflow(locator, workflowName, signal);
-      return result.workflow;
+      return result;
     },
     retry: (failureCount, error) =>
       error instanceof InternalServerError && failureCount < 2,
@@ -50,9 +48,6 @@ export const useUpsertSandboxWorkflow = () => {
   return useMutation({
     mutationFn: async (params: SandboxWorkflowUpsertParams) => {
       const result = await upsertSandboxWorkflow(locator, params);
-      if (!result.success) {
-        throw new Error(result.error || "Failed to save workflow");
-      }
       return result;
     },
   });
@@ -127,29 +122,4 @@ export const useDeleteSandboxWorkflow = () => {
       return result;
     },
   });
-};
-
-/**
- * Hook to list all sandbox workflows
- */
-export const useSandboxWorkflows = () => {
-  const { locator } = useSDK();
-
-  const { data, isLoading, error, refetch } = useQuery({
-    queryKey: ["sandbox-workflows", locator],
-    queryFn: async ({ signal }) => {
-      const result = await listSandboxWorkflows(locator, signal);
-      return result.workflows;
-    },
-    retry: (failureCount, error) =>
-      error instanceof InternalServerError && failureCount < 2,
-    staleTime: 5 * 60 * 1000, // Cache for 5 minutes
-  });
-
-  return {
-    data,
-    isLoading,
-    error,
-    refetch,
-  };
 };

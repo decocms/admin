@@ -1,12 +1,16 @@
 import { mimeType } from "@deco/workers-runtime/resources";
 import { NotFoundError, UserInputError } from "../../index.ts";
-import { assertHasWorkspace } from "../assertions.ts";
+import {
+  assertHasWorkspace,
+  assertWorkspaceResourceAccess,
+} from "../assertions.ts";
 import { impl, WellKnownBindings } from "../bindings/binder.ts";
 import { DeconfigClient } from "../index.ts";
 
 export interface DeconfigResourceOptions {
   deconfig: DeconfigClient;
   directory: string;
+  resourceName?: string;
 }
 
 const normalizeDirectory = (dir: string) => {
@@ -31,17 +35,18 @@ const extractResourceId = (uri: string) => {
 };
 
 export const deconfigResource = (options: DeconfigResourceOptions) => {
-  const { deconfig, directory } = options;
-
+  const { deconfig, directory, resourceName: _resourceName } = options;
+  const resourceName = _resourceName || directory;
   return impl(WellKnownBindings.Resources, [
     // DECO_CHAT_RESOURCES_READ
     {
       description: `Read a resource from the DECONFIG directory ${directory}`,
       handler: async ({ name, uri }, c) => {
         assertHasWorkspace(c);
+        await assertWorkspaceResourceAccess(c, "READ_FILE");
 
-        if (name !== directory) {
-          throw new UserInputError(`Resource name must be '${directory}'`);
+        if (name !== resourceName) {
+          throw new UserInputError(`Resource name must be '${resourceName}'`);
         }
 
         const resourceId = extractResourceId(uri);
@@ -95,9 +100,10 @@ export const deconfigResource = (options: DeconfigResourceOptions) => {
       description: `Search resources in the DECONFIG directory ${directory}`,
       handler: async ({ name, term, cursor, limit = 10 }, c) => {
         assertHasWorkspace(c);
+        await assertWorkspaceResourceAccess(c, "LIST_FILES");
 
-        if (name !== directory) {
-          throw new UserInputError(`Resource name must be '${directory}'`);
+        if (name !== resourceName) {
+          throw new UserInputError(`Resource name must be '${resourceName}'`);
         }
 
         const normalizedDir = normalizeDirectory(directory);
@@ -151,16 +157,17 @@ export const deconfigResource = (options: DeconfigResourceOptions) => {
     {
       description: `Create a new resource in the DECONFIG directory ${directory}`,
       handler: async (
-        { name, resourceName, title, description, content, metadata },
+        { name, resourceName: rsName, title, description, content, metadata },
         c,
       ) => {
         assertHasWorkspace(c);
+        await assertWorkspaceResourceAccess(c, "PUT_FILE");
 
-        if (name !== directory) {
-          throw new UserInputError(`Resource name must be '${directory}'`);
+        if (name !== resourceName) {
+          throw new UserInputError(`Resource name must be '${resourceName}'`);
         }
 
-        const resourceId = resourceName || crypto.randomUUID();
+        const resourceId = rsName || crypto.randomUUID();
         const uri = `deconfig://${directory}/${resourceId}`;
         const filePath = buildFilePath(directory, resourceId);
 
@@ -180,7 +187,7 @@ export const deconfigResource = (options: DeconfigResourceOptions) => {
         // Merge all data
         const finalData = {
           id: resourceId,
-          name: resourceName || resourceId,
+          name: rsName || resourceId,
           title,
           description,
           created_at: new Date().toISOString(),
@@ -204,7 +211,7 @@ export const deconfigResource = (options: DeconfigResourceOptions) => {
         return {
           name: directory,
           uri,
-          title: title || resourceName || resourceId,
+          title: title || rsName || resourceId,
           description: description || `${directory} resource`,
           mimeType: "application/json",
         };
@@ -215,13 +222,22 @@ export const deconfigResource = (options: DeconfigResourceOptions) => {
     {
       description: `Update a resource in the DECONFIG directory ${directory}`,
       handler: async (
-        { name, uri, resourceName, title, description, content, metadata },
+        {
+          name,
+          uri,
+          resourceName: rsName,
+          title,
+          description,
+          content,
+          metadata,
+        },
         c,
       ) => {
         assertHasWorkspace(c);
+        await assertWorkspaceResourceAccess(c, "READ_FILE");
 
-        if (name !== directory) {
-          throw new UserInputError(`Resource name must be '${directory}'`);
+        if (name !== resourceName) {
+          throw new UserInputError(`Resource name must be '${resourceName}'`);
         }
 
         const resourceId = extractResourceId(uri);
@@ -260,7 +276,7 @@ export const deconfigResource = (options: DeconfigResourceOptions) => {
           updated_at: new Date().toISOString(),
         };
 
-        if (resourceName) updatedData.name = resourceName;
+        if (rsName) updatedData.name = rsName;
         if (title) updatedData.title = title;
         if (description) updatedData.description = description;
 
@@ -279,7 +295,7 @@ export const deconfigResource = (options: DeconfigResourceOptions) => {
         return {
           name: directory,
           uri,
-          title: title || resourceName || resourceId,
+          title: title || rsName || resourceId,
           description: description || `${directory} resource`,
           mimeType: "application/json",
         };
@@ -291,9 +307,10 @@ export const deconfigResource = (options: DeconfigResourceOptions) => {
       description: `Delete a resource from the DECONFIG directory ${directory}`,
       handler: async ({ name, uri }, c) => {
         assertHasWorkspace(c);
+        await assertWorkspaceResourceAccess(c, "DELETE_FILE");
 
-        if (name !== directory) {
-          throw new UserInputError(`Resource name must be '${directory}'`);
+        if (name !== resourceName) {
+          throw new UserInputError(`Resource name must be '${resourceName}'`);
         }
 
         const resourceId = extractResourceId(uri);
@@ -312,16 +329,18 @@ export const deconfigResource = (options: DeconfigResourceOptions) => {
     // DECO_CHAT_RESOURCES_LIST
     {
       description: `List available resource types`,
-      handler: (_, c) => {
+      handler: async (_, c) => {
         assertHasWorkspace(c);
+        await assertWorkspaceResourceAccess(c, "LIST_FILES");
 
         return {
           resources: [
             {
-              name: directory,
+              name: resourceName,
               icon: "folder",
-              title: directory.charAt(0).toUpperCase() + directory.slice(1),
-              description: `DECONFIG directory: ${directory}`,
+              title:
+                resourceName.charAt(0).toUpperCase() + resourceName.slice(1),
+              description: `DECONFIG resourceName: ${resourceName}`,
               hasCreate: true,
               hasUpdate: true,
               hasDelete: true,

@@ -7,12 +7,14 @@ import {
   WellKnownMcpGroups,
 } from "@deco/sdk";
 import { DECO_CHAT_KEY_ID, getKeyPair } from "@deco/sdk/auth";
+import { deconfigResource } from "@deco/sdk/deconfig";
 import {
   AGENT_TOOLS,
   assertWorkspaceResourceAccess,
   CallToolMiddleware,
   compose,
   CONTRACTS_TOOLS,
+  createDeconfigClientForContext,
   createMCPToolsStub,
   createTool,
   DECONFIG_TOOLS,
@@ -28,8 +30,8 @@ import {
   PrincipalExecutionContext,
   PROJECT_TOOLS,
   IntegrationSub as ProxySub,
-  Tool,
   toBindingsContext,
+  Tool,
   type ToolLike,
   watchSSE,
   withMCPAuthorization,
@@ -96,11 +98,11 @@ const contextToPrincipalExecutionContext = (
 
   const ctxLocator = locator
     ? {
-        org,
-        project,
-        value: locator,
-        branch,
-      }
+      org,
+      project,
+      value: locator,
+      branch,
+    }
     : undefined;
   return {
     ...c.var,
@@ -163,8 +165,8 @@ const createMCPHandlerFor = (
               : z.object({}).shape,
           outputSchema:
             tool.outputSchema &&
-            typeof tool.outputSchema === "object" &&
-            "shape" in tool.outputSchema
+              typeof tool.outputSchema === "object" &&
+              "shape" in tool.outputSchema
               ? (tool.outputSchema.shape as z.ZodRawShape)
               : z.object({}).shape,
         },
@@ -449,6 +451,20 @@ app.get(`/:org/:project/deconfig/watch`, (ctx) => {
 
 app.all("/mcp", createMCPHandlerFor(GLOBAL_TOOLS));
 app.all("/:org/:project/mcp", createMCPHandlerFor(PROJECT_TOOLS));
+
+app.all(
+  `/:org/:project/${WellKnownMcpGroups.Workflows}/mcp`,
+  createMCPHandlerFor((ctx) => {
+    const appCtx = honoCtxToAppCtx(ctx);
+    const client = createDeconfigClientForContext(appCtx);
+
+    return Promise.resolve(deconfigResource({
+      deconfig: client,
+      directory: "/src/workflows",
+      resourceName: "workflow",
+    }));
+  }),
+);
 
 app.all(
   `/:org/:project/${WellKnownMcpGroups.Tools}/mcp`,

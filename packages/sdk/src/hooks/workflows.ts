@@ -7,7 +7,7 @@ import {
 import { InternalServerError } from "../errors.ts";
 import { useSDK } from "./store.tsx";
 import { useSandboxWorkflow } from "./sandbox-workflows.ts";
-import type { WorkflowDefinition } from "../mcp/sandbox/workflow-schemas.ts";
+import type { WorkflowDefinition } from "../mcp/workflows/workflow-schemas.ts";
 
 /**
  * Hook to get all unique workflow names in the workspace

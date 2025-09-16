@@ -19,7 +19,7 @@ import {
   processExecuteCode,
   validate,
   validateExecuteCode,
-} from "./utils.ts";
+} from "../sandbox/utils.ts";
 
 // In-memory storage for workflow runs
 interface WorkflowRun {
@@ -332,8 +332,8 @@ Use these helper functions to access workflow input and previous step results wi
 
 `;
 
-const upsertWorkflow = createTool({
-  name: "SANDBOX_UPSERT_WORKFLOW",
+export const upsertWorkflow = createTool({
+  name: "WORKFLOWS_UPSERT",
   description: WORKFLOW_DESCRIPTION,
   inputSchema: WorkflowDefinitionSchema,
   outputSchema: z.object({
@@ -449,8 +449,8 @@ const upsertWorkflow = createTool({
   },
 });
 
-const startWorkflow = createTool({
-  name: "SANDBOX_START_WORKFLOW",
+export const startWorkflow = createTool({
+  name: "WORKFLOWS_START",
   description: "Start a workflow execution using Cloudflare Workflows",
   inputSchema: z.object({
     name: z.string().describe("The name of the workflow to run"),
@@ -529,8 +529,8 @@ const startWorkflow = createTool({
   },
 });
 
-const getWorkflowStatus = createTool({
-  name: "SANDBOX_GET_WORKFLOW_STATUS",
+export const getWorkflowStatus = createTool({
+  name: "WORKFLOWS_GET_STATUS",
   description: "Get the status and output of a workflow run",
   inputSchema: z.object({
     runId: z.string().describe("The unique ID of the workflow run"),
@@ -649,8 +649,8 @@ const getWorkflowStatus = createTool({
   },
 });
 
-const replayWorkflowFromStep = createTool({
-  name: "SANDBOX_REPLAY_WORKFLOW_FROM_STEP",
+export const replayWorkflowFromStep = createTool({
+  name: "WORKFLOWS_REPLAY_FROM_STEP",
   description:
     "Replay a workflow from a specific step (limited support with Cloudflare Workflows)",
   inputSchema: z.object({
@@ -683,8 +683,8 @@ const replayWorkflowFromStep = createTool({
   },
 });
 
-const getWorkflow = createTool({
-  name: "SANDBOX_GET_WORKFLOW",
+export const getWorkflow = createTool({
+  name: "WORKFLOWS_GET",
   description: "Get a workflow from the sandbox",
   inputSchema: z.object({
     name: z.string().describe("The name of the workflow"),
@@ -706,8 +706,8 @@ const getWorkflow = createTool({
   },
 });
 
-const deleteWorkflow = createTool({
-  name: "SANDBOX_DELETE_WORKFLOW",
+export const deleteWorkflow = createTool({
+  name: "WORKFLOWS_DELETE",
   description: "Delete a workflow in the sandbox",
   inputSchema: z.object({
     name: z.string().describe("The name of the workflow"),
@@ -738,8 +738,8 @@ const deleteWorkflow = createTool({
   },
 });
 
-const listWorkflows = createTool({
-  name: "SANDBOX_LIST_WORKFLOWS",
+export const listWorkflows = createTool({
+  name: "WORKFLOWS_LIST",
   description: "List all workflows in the sandbox",
   inputSchema: z.object({}),
   outputSchema: z.object({ workflows: z.array(WorkflowDefinitionSchema) }),
@@ -776,13 +776,3 @@ const listWorkflows = createTool({
     }
   },
 });
-
-export const SANDBOX_WORKFLOWS = [
-  upsertWorkflow,
-  startWorkflow,
-  getWorkflowStatus,
-  replayWorkflowFromStep,
-  getWorkflow,
-  deleteWorkflow,
-  listWorkflows,
-];

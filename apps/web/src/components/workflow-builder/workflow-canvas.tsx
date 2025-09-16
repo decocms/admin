@@ -73,8 +73,12 @@ export function WorkflowCanvas({ workflow }: WorkflowCanvasProps) {
 
   // Update nodes/edges from workflow only when we should (mount or after AI generation)
   useEffect(() => {
-    if (shouldUpdateFromWorkflow.current && workflow !== lastWorkflowRef.current) {
-      const { nodes: newNodes, edges: newEdges } = convertWorkflowToFlow(workflow);
+    if (
+      shouldUpdateFromWorkflow.current &&
+      workflow !== lastWorkflowRef.current
+    ) {
+      const { nodes: newNodes, edges: newEdges } =
+        convertWorkflowToFlow(workflow);
       setNodes(newNodes);
       setEdges(newEdges);
       lastWorkflowRef.current = workflow;
@@ -197,7 +201,7 @@ export function WorkflowCanvas({ workflow }: WorkflowCanvasProps) {
   const handleGenerate = useCallback(async () => {
     const workflowDefinition = convertFlowToWorkflow(nodes, edges);
     await handleGenerateWorkflow(workflowDefinition);
-    
+
     // After AI generation, mark that we should update from workflow when it changes
     shouldUpdateFromWorkflow.current = true;
     reset(workflowDefinition, { keepDirty: false, keepTouched: false });

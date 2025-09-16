@@ -44,7 +44,11 @@ export function ToolConfigDialog({
     },
   };
 
-  const handleSubmit = ({ formData }: { formData: Record<string, unknown> }) => {
+  const handleSubmit = ({
+    formData,
+  }: {
+    formData: Record<string, unknown>;
+  }) => {
     onSave(formData);
     onClose();
   };

@@ -21,7 +21,7 @@ import type {
   MappingStepDefinition,
   ToolCallStepDefinition,
   WorkflowStepDefinition,
-} from "../mcp/sandbox/workflows.ts";
+} from "../mcp/workflows/api.ts";
 
 export type { WorkflowStepConfig };
 

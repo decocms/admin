@@ -2,7 +2,10 @@ import { callFunction, inspect } from "@deco/cf-sandbox";
 import { WorkflowState } from "../../workflows/workflow-runner.ts";
 import { MCPClientStub, ProjectTools } from "../index.ts";
 import { asEnv, evalCodeAndReturnDefaultHandle } from "./utils.ts";
-import { MappingStepDefinition, ToolCallStepDefinition } from "./workflows.ts";
+import {
+  MappingStepDefinition,
+  ToolCallStepDefinition,
+} from "../workflows/api.ts";
 
 export async function runMapping(
   input: unknown,

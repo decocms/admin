@@ -43,7 +43,7 @@ export function getSandboxWorkflow(
   signal?: AbortSignal,
 ) {
   const client = MCPClient.forLocator(locator);
-  return client.SANDBOX_GET_WORKFLOW({ name }, { signal });
+  return client.WORKFLOWS_GET({ name }, { signal });
 }
 
 export function upsertSandboxWorkflow(
@@ -52,7 +52,7 @@ export function upsertSandboxWorkflow(
   signal?: AbortSignal,
 ) {
   const client = MCPClient.forLocator(locator);
-  return client.SANDBOX_UPSERT_WORKFLOW(params, { signal });
+  return client.WORKFLOWS_UPSERT(params, { signal });
 }
 
 export function startSandboxWorkflow(
@@ -61,7 +61,7 @@ export function startSandboxWorkflow(
   signal?: AbortSignal,
 ) {
   const client = MCPClient.forLocator(locator);
-  return client.SANDBOX_START_WORKFLOW(params, { signal });
+  return client.WORKFLOWS_START(params, { signal });
 }
 
 export function getSandboxWorkflowStatus(
@@ -70,7 +70,7 @@ export function getSandboxWorkflowStatus(
   signal?: AbortSignal,
 ) {
   const client = MCPClient.forLocator(locator);
-  return client.SANDBOX_GET_WORKFLOW_STATUS(params, { signal });
+  return client.WORKFLOWS_GET_STATUS(params, { signal });
 }
 
 export function replaySandboxWorkflowFromStep(
@@ -79,7 +79,7 @@ export function replaySandboxWorkflowFromStep(
   signal?: AbortSignal,
 ) {
   const client = MCPClient.forLocator(locator);
-  return client.SANDBOX_REPLAY_WORKFLOW_FROM_STEP(params, { signal });
+  return client.WORKFLOWS_REPLAY_FROM_STEP(params, { signal });
 }
 
 export function deleteSandboxWorkflow(
@@ -88,7 +88,7 @@ export function deleteSandboxWorkflow(
   signal?: AbortSignal,
 ) {
   const client = MCPClient.forLocator(locator);
-  return client.SANDBOX_DELETE_WORKFLOW({ name }, { signal });
+  return client.WORKFLOWS_DELETE({ name }, { signal });
 }
 
 export function listSandboxWorkflows(
@@ -96,5 +96,5 @@ export function listSandboxWorkflows(
   signal?: AbortSignal,
 ) {
   const client = MCPClient.forLocator(locator);
-  return client.SANDBOX_LIST_WORKFLOWS({}, { signal });
+  return client.WORKFLOWS_LIST({}, { signal });
 }

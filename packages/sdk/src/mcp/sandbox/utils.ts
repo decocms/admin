@@ -9,7 +9,7 @@ import { z } from "zod";
 import { createToolGroup, MCPClientStub } from "../context.ts";
 import { slugify } from "../deconfig/api.ts";
 import { ProjectTools } from "../index.ts";
-import { ToolDefinitionSchema } from "./tools.ts";
+import { ToolDefinitionSchema } from "./api.ts";
 
 // Utility functions for consistent naming
 export const toolNameSlugify = (txt: string) => slugify(txt).toUpperCase();
@@ -91,7 +91,9 @@ export const asEnv = async (client: MCPClientStub<ProjectTools>) => {
   > = {};
 
   for (const item of items) {
-    // @ts-expect-error Somehow tools are not typed
+    if (!("tools" in item)) {
+      continue;
+    }
     const tools = item.tools;
 
     if (!Array.isArray(tools)) {

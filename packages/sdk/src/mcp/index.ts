@@ -24,12 +24,13 @@ import * as oauthAPI from "./oauth/api.ts";
 import * as profilesAPI from "./profiles/api.ts";
 import * as promptsAPI from "./prompts/api.ts";
 import * as registryAPI from "./registry/api.ts";
-import { SANDBOX_TOOLS_AND_WORKFLOWS } from "./sandbox/api.ts";
+import * as sandboxAPI from "./sandbox/api.ts";
 import type { CreateStubHandlerOptions, MCPClientStub } from "./stub.ts";
 import * as teamsAPI from "./teams/api.ts";
 import * as threadsAPI from "./threads/api.ts";
 import * as triggersAPI from "./triggers/api.ts";
 import * as walletAPI from "./wallet/api.ts";
+import * as workflowsAPI from "./workflows/api.ts";
 
 export { createTool, createToolGroup } from "./context.ts";
 export { AuthorizationClient, PolicyClient } from "../auth/policy.ts";
@@ -209,10 +210,21 @@ export const PROJECT_TOOLS = [
   aiAPI.aiGenerateObject,
   oauthAPI.oauthCodeCreate,
   contractRegister,
+  sandboxAPI.listTools,
+  sandboxAPI.getTool,
+  sandboxAPI.deleteTool,
+  sandboxAPI.upsertTool,
+  sandboxAPI.runTool,
+  workflowsAPI.upsertWorkflow,
+  workflowsAPI.startWorkflow,
+  workflowsAPI.getWorkflowStatus,
+  workflowsAPI.replayWorkflowFromStep,
+  workflowsAPI.getWorkflow,
+  workflowsAPI.deleteWorkflow,
+  workflowsAPI.listWorkflows,
   // DECONFIG tools
   ...deconfigAPI.DECONFIG_TOOLS,
   // SANDBOX tools
-  ...SANDBOX_TOOLS_AND_WORKFLOWS,
 ] as const;
 
 export const AGENT_TOOLS = [

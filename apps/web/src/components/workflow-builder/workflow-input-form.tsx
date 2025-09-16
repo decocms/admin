@@ -32,7 +32,11 @@ export function WorkflowInputForm({
     },
   };
 
-  const handleSubmit = ({ formData }: { formData: Record<string, unknown> }) => {
+  const handleSubmit = ({
+    formData,
+  }: {
+    formData: Record<string, unknown>;
+  }) => {
     onSubmit(formData);
     onClose();
   };

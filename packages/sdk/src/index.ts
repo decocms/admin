@@ -41,7 +41,7 @@ export * from "./hooks/registry.ts";
 export * from "./hooks/sandbox-workflows.ts";
 
 // Schemas for sandbox workflows (exported for consumers like the web app)
-export * from "./mcp/sandbox/workflow-schemas.ts";
+export * from "./mcp/workflows/workflow-schemas.ts";
 
 export * from "./models/agent.ts";
 export * from "./models/mcp.ts";

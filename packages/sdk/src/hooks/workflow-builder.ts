@@ -4,7 +4,7 @@ import {
   useUpsertSandboxWorkflow,
   useStartSandboxWorkflow,
 } from "./sandbox-workflows.ts";
-import type { WorkflowDefinition } from "../mcp/sandbox/workflow-schemas.ts";
+import type { WorkflowDefinition } from "../mcp/workflows/workflow-schemas.ts";
 
 export function useWorkflowBuilder(workflow: WorkflowDefinition) {
   const convertWorkflowToFlow = useCallback((workflow: WorkflowDefinition) => {
@@ -24,12 +24,16 @@ export function useWorkflowBuilder(workflow: WorkflowDefinition) {
           description: step.def.description,
           ...(step.type === "tool_call"
             ? {
-                tool_name: (step.def as Record<string, unknown>).tool_name as string,
-                integration: (step.def as Record<string, unknown>).integration as string,
-                options: (step.def as Record<string, unknown>).options as Record<string, unknown>,
+                tool_name: (step.def as Record<string, unknown>)
+                  .tool_name as string,
+                integration: (step.def as Record<string, unknown>)
+                  .integration as string,
+                options: (step.def as Record<string, unknown>)
+                  .options as Record<string, unknown>,
               }
             : {
-                execute: (step.def as Record<string, unknown>).execute as string,
+                execute: (step.def as Record<string, unknown>)
+                  .execute as string,
                 outputSchema: {},
               }),
         },
@@ -66,9 +70,12 @@ export function useWorkflowBuilder(workflow: WorkflowDefinition) {
               def: {
                 name: node.data.name,
                 description: node.data.description,
-                options: (node.data as Record<string, unknown>).options as Record<string, unknown>,
-                tool_name: (node.data as Record<string, unknown>).tool_name as string,
-                integration: (node.data as Record<string, unknown>).integration as string,
+                options: (node.data as Record<string, unknown>)
+                  .options as Record<string, unknown>,
+                tool_name: (node.data as Record<string, unknown>)
+                  .tool_name as string,
+                integration: (node.data as Record<string, unknown>)
+                  .integration as string,
               },
             };
           } else if (node.data.type === "mapping") {
@@ -77,7 +84,8 @@ export function useWorkflowBuilder(workflow: WorkflowDefinition) {
               def: {
                 name: node.data.name,
                 description: node.data.description,
-                execute: (node.data as Record<string, unknown>).execute as string,
+                execute: (node.data as Record<string, unknown>)
+                  .execute as string,
               },
             };
           }

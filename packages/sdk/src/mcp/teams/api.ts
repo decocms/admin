@@ -1381,7 +1381,8 @@ export const listRecentProjects = createTool({
                 slug: String(project.teams.slug || ""),
                 avatar_url: orgAvatar,
               },
-              last_accessed_at: lastAccessedByProjectId.get(String(project.id)) || undefined,
+              last_accessed_at:
+                lastAccessedByProjectId.get(String(project.id)) || undefined,
             };
           }),
       )

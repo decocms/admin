@@ -22,7 +22,7 @@ export const watchSSE = async (env: AppContext, options?: WatchOpts) => {
   await assertWorkspaceResourceAccess(env, "DELETE_FILE");
   using branch = await branchRpcFor(env, options?.branchName);
 
-  using watchStream = await branch.watch(options);
+  const watchStream = await branch.watch(options);
 
   // Transform the WatchEvent stream into SSE format
   const sseStream = new ReadableStream({

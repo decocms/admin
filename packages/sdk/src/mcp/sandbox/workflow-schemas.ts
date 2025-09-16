@@ -89,3 +89,5 @@ export const WorkflowDefinitionSchema = z.object({
       "Array of workflow steps that execute sequentially. The last step should be a mapping step that returns the final output.",
     ),
 });
+
+export type WorkflowDefinition = z.infer<typeof WorkflowDefinitionSchema>;

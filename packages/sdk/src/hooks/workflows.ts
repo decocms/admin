@@ -1,4 +1,4 @@
-import { useSuspenseQuery } from "@tanstack/react-query";
+import { useSuspenseQuery, useQuery } from "@tanstack/react-query";
 import {
   getWorkflowStatus,
   listWorkflowNames,
@@ -6,6 +6,8 @@ import {
 } from "../crud/workflows.ts";
 import { InternalServerError } from "../errors.ts";
 import { useSDK } from "./store.tsx";
+import { useSandboxWorkflow } from "./sandbox-workflows.ts";
+import type { WorkflowDefinition } from "../mcp/sandbox/workflow-schemas.ts";
 
 /**
  * Hook to get all unique workflow names in the workspace
@@ -114,3 +116,37 @@ export const useWorkflowStatus = (workflowName: string, instanceId: string) => {
     },
   });
 };
+
+/**
+ * Hook to get a workflow definition with fallback to empty workflow
+ */
+export function useWorkflow(workflowName: string) {
+  const { data, isLoading, error } = useSandboxWorkflow(workflowName);
+  
+  // If workflow doesn't exist, create a new one
+  const workflow = data || createEmptyWorkflow(workflowName);
+
+  return { 
+    workflow, 
+    isLoading, 
+    error: error?.message || null 
+  };
+}
+
+function createEmptyWorkflow(name: string): WorkflowDefinition {
+  return {
+    name,
+    description: `Workflow: ${name}`,
+    inputSchema: {
+      type: 'object',
+      properties: {},
+      required: []
+    },
+    outputSchema: {
+      type: 'object',
+      properties: {},
+      required: []
+    },
+    steps: []
+  };
+}

@@ -1,7 +1,7 @@
 import { useCallback } from "react";
 import type { Node, Edge } from "@xyflow/react";
-import { useUpsertSandboxWorkflow } from "@deco/sdk";
-import type { WorkflowDefinition } from "./useWorkflow.ts";
+import { useUpsertSandboxWorkflow, useStartSandboxWorkflow } from "./sandbox-workflows.ts";
+import type { WorkflowDefinition } from "../mcp/sandbox/workflow-schemas.ts";
 
 export function useWorkflowBuilder(workflow: WorkflowDefinition) {
   const convertWorkflowToFlow = useCallback((workflow: WorkflowDefinition) => {
@@ -20,11 +20,11 @@ export function useWorkflowBuilder(workflow: WorkflowDefinition) {
           name: step.def.name,
           description: step.def.description,
           ...(step.type === 'tool_call' ? {
-            tool_name: step.def.tool_name,
-            integration: step.def.integration,
-            options: step.def.options
+            tool_name: (step.def as any).tool_name,
+            integration: (step.def as any).integration,
+            options: (step.def as any).options
           } : {
-            execute: step.def.execute,
+            execute: (step.def as any).execute,
             outputSchema: {}
           })
         }
@@ -57,9 +57,9 @@ export function useWorkflowBuilder(workflow: WorkflowDefinition) {
           def: {
             name: node.data.name,
             description: node.data.description,
-            options: node.data.options,
-            tool_name: node.data.tool_name,
-            integration: node.data.integration
+            options: (node.data as any).options,
+            tool_name: (node.data as any).tool_name,
+            integration: (node.data as any).integration
           }
         };
       } else if (node.data.type === 'mapping') {
@@ -68,7 +68,7 @@ export function useWorkflowBuilder(workflow: WorkflowDefinition) {
           def: {
             name: node.data.name,
             description: node.data.description,
-            execute: node.data.execute
+            execute: (node.data as any).execute
           }
         };
       }
@@ -85,6 +85,7 @@ export function useWorkflowBuilder(workflow: WorkflowDefinition) {
   }, [workflow]);
 
   const upsertWorkflow = useUpsertSandboxWorkflow();
+  const startWorkflow = useStartSandboxWorkflow();
 
   const handleGenerateWorkflow = useCallback(async (workflowDefinition: WorkflowDefinition) => {
     try {
@@ -96,20 +97,21 @@ export function useWorkflowBuilder(workflow: WorkflowDefinition) {
     }
   }, [upsertWorkflow]);
 
-  const handleRunWorkflow = useCallback(async (workflowDefinition: WorkflowDefinition) => {
+  const handleRunWorkflow = useCallback(async (workflowDefinition: WorkflowDefinition, input?: Record<string, any>) => {
     try {
-      // TODO: Use proper SDK hooks for workflow execution
-      console.log('Running workflow:', workflowDefinition);
+      // Use the SDK hook for workflow execution
+      const result = await startWorkflow.mutateAsync({
+        name: workflowDefinition.name,
+        input: input || {}
+      });
       
-      // For now, just log the workflow definition
-      // In the future, this will:
-      // 1. Show input form to get workflow input
-      // 2. Call SANDBOX_START_WORKFLOW to execute it
+      console.log('Workflow started successfully:', result);
+      return result;
     } catch (error) {
       console.error('Failed to run workflow:', error);
       throw error;
     }
-  }, []);
+  }, [startWorkflow]);
 
   return {
     convertWorkflowToFlow,

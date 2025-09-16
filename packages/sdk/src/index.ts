@@ -35,6 +35,7 @@ export * from "./hooks/tools.ts";
 export * from "./hooks/trigger.ts";
 export * from "./hooks/wallet.ts";
 export * from "./hooks/workflows.ts";
+export * from "./hooks/workflow-builder.ts";
 export * from "./hooks/roles.ts";
 export * from "./hooks/registry.ts";
 export * from "./hooks/sandbox-workflows.ts";

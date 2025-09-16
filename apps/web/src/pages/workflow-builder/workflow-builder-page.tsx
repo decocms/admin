@@ -1,5 +1,5 @@
 import { useParams } from "react-router";
-import { WorkflowCanvas } from "../../components/workflow-builder/workflow-canvas.tsx";
+import { SlideCanvas } from "../../components/workflow-builder/slide-canvas.tsx";
 import { useWorkflow } from "@deco/sdk";
 import { WorkflowErrorState } from "./workflow-error-state.tsx";
 import { WorkflowLoadingSkeleton } from "./workflow-loading-skeleton.tsx";
@@ -20,5 +20,5 @@ export default function WorkflowBuilderPage() {
   if (error) return <WorkflowErrorState error={error} />;
   if (!workflow) return <WorkflowNotFoundState workflowName={workflowName} />;
 
-  return <WorkflowCanvas workflow={workflow} />;
+  return <SlideCanvas workflow={workflow} />;
 }

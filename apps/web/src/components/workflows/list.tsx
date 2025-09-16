@@ -1,4 +1,5 @@
 import {
+  useCreateWorkflow,
   useRecentWorkflowRuns,
   useWorkflowNames,
   useWorkflowRuns,
@@ -291,7 +292,12 @@ function WorkflowRunsTab() {
 
 function WorkflowEmptyState() {
   const [copied, setCopied] = useState(false);
+  const [isCreating, setIsCreating] = useState(false);
+  const [workflowName, setWorkflowName] = useState("");
+  const [showNameDialog, setShowNameDialog] = useState(false);
   const cliCommand = "npm create deco@latest";
+  const createWorkflow = useCreateWorkflow();
+  const navigateWorkspace = useNavigateWorkspace();
 
   const handleCopy = async () => {
     await navigator.clipboard.writeText(cliCommand);
@@ -299,46 +305,127 @@ function WorkflowEmptyState() {
     setTimeout(() => setCopied(false), 1200);
   };
 
+  const handleCreateWorkflow = async () => {
+    if (!workflowName.trim()) return;
+
+    setIsCreating(true);
+    try {
+      const workflow = await createWorkflow.mutateAsync(workflowName);
+      // Navigate to the workflow builder
+      navigateWorkspace(`/workflows/${encodeURIComponent(workflow.name)}`);
+    } catch (error) {
+      console.error("Failed to create workflow:", error);
+      setIsCreating(false);
+    }
+  };
+
   return (
-    <EmptyState
-      icon="flowchart"
-      title="No workflows found"
-      description={
-        <div className="flex flex-col gap-4">
-          <div className="text-sm text-muted-foreground text-center flex flex-col gap-1">
-            <p>No workflows have been created yet.</p>
-            <p>
-              Install the CLI to create workflows.{" "}
+    <>
+      <EmptyState
+        icon="flowchart"
+        title="No workflows found"
+        description={
+          <div className="flex flex-col gap-4">
+            <div className="text-sm text-muted-foreground text-center flex flex-col gap-1">
+              <p>No workflows have been created yet.</p>
+              <p>
+                Create your first workflow or install the CLI to create
+                workflows locally.
+              </p>
+            </div>
+
+            <div className="flex flex-col gap-3 items-center">
+              <Button
+                onClick={() => setShowNameDialog(true)}
+                disabled={isCreating}
+                className="min-w-[200px]"
+              >
+                <Icon name="add" size={16} className="mr-2" />
+                Create Workflow
+              </Button>
+
+              <div className="text-xs text-muted-foreground">or</div>
+
+              <div className="relative w-full max-w-md">
+                <Input
+                  value={cliCommand}
+                  readOnly
+                  className="pr-12 bg-secondary/50 text-muted-foreground font-mono text-sm"
+                />
+                <Button
+                  size="icon"
+                  variant="ghost"
+                  className="absolute right-1 top-1 h-8 w-8"
+                  onClick={handleCopy}
+                  title={copied ? "Copied!" : "Copy to clipboard"}
+                >
+                  <Icon name={copied ? "check" : "content_copy"} size={16} />
+                </Button>
+              </div>
+
               <a
                 href="https://docs.decocms.com"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="text-primary hover:underline"
+                className="text-xs text-primary hover:underline"
               >
                 Learn more in our docs
               </a>
-              .
-            </p>
+            </div>
           </div>
-          <div className="relative w-full max-w-md">
+        }
+      />
+
+      {/* Workflow Name Dialog */}
+      {showNameDialog && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+          <div className="bg-background rounded-lg p-6 w-full max-w-md shadow-lg">
+            <h2 className="text-lg font-semibold mb-4">Create New Workflow</h2>
             <Input
-              value={cliCommand}
-              readOnly
-              className="pr-12 bg-secondary/50 text-muted-foreground font-mono"
+              placeholder="Enter workflow name..."
+              value={workflowName}
+              onChange={(e) => setWorkflowName(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" && workflowName.trim()) {
+                  handleCreateWorkflow();
+                }
+              }}
+              className="mb-4"
+              autoFocus
             />
-            <Button
-              size="icon"
-              variant="ghost"
-              className="absolute right-1 top-1 h-8 w-8"
-              onClick={handleCopy}
-              title={copied ? "Copied!" : "Copy to clipboard"}
-            >
-              <Icon name={copied ? "check" : "content_copy"} size={16} />
-            </Button>
+            <div className="flex gap-2 justify-end">
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setShowNameDialog(false);
+                  setWorkflowName("");
+                }}
+                disabled={isCreating}
+              >
+                Cancel
+              </Button>
+              <Button
+                onClick={handleCreateWorkflow}
+                disabled={!workflowName.trim() || isCreating}
+              >
+                {isCreating ? (
+                  <>
+                    <Icon
+                      name="refresh"
+                      size={16}
+                      className="mr-2 animate-spin"
+                    />
+                    Creating...
+                  </>
+                ) : (
+                  "Create"
+                )}
+              </Button>
+            </div>
           </div>
         </div>
-      }
-    />
+      )}
+    </>
   );
 }
 

@@ -209,10 +209,25 @@ const virtualIntegrationsFor = (
     workspace: Locator.adaptToRootSlug(locator),
     created_at: new Date().toISOString(),
   };
-  const workspaceMcp = new URL(
-    `/${locator.startsWith("/") ? locator.slice(1) : locator}/mcp`,
+  const projectPath = `/${locator.startsWith("/") ? locator.slice(1) : locator}`;
+  const workspaceMcp = new URL(`${projectPath}/mcp`, DECO_CMS_API_URL);
+  const toolsMcp = new URL(
+    `${projectPath}/${WellKnownMcpGroups.Tools}/mcp`,
     DECO_CMS_API_URL,
   );
+  const toolsIntegration = {
+    id: formatId("i", "tools-management"),
+    name: "Tools Management",
+    description: "Manage your tools",
+    connection: {
+      type: "HTTP",
+      url: toolsMcp.href,
+      token,
+    },
+    icon: "https://assets.decocache.com/mcp/81d602bb-45e2-4361-b52a-23379520a34d/sandbox.png",
+    workspace: Locator.adaptToRootSlug(locator),
+    created_at: new Date().toISOString(),
+  };
 
   // Create a virtual Workspace Management integration
   const workspaceManagementIntegration = {
@@ -254,6 +269,7 @@ const virtualIntegrationsFor = (
     userManagementIntegration,
     workspaceManagementIntegration,
     ...integrationGroups,
+    toolsIntegration,
     ...knowledgeBases.map((kb) => {
       const url = new URL(workspaceMcp);
       url.searchParams.set("group", KNOWLEDGE_BASE_GROUP);

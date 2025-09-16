@@ -15,7 +15,7 @@ import {
   compose,
   CONTRACTS_TOOLS,
   createMCPToolsStub,
-  createToolGroup,
+  createTool,
   DECONFIG_TOOLS,
   EMAIL_TOOLS,
   getIntegration,
@@ -457,15 +457,11 @@ app.get(`/:org/:project/deconfig/watch`, (ctx) => {
   });
 });
 
-const createTool = createToolGroup("Self", {
-  name: "Tools",
-  description: "Dynamic tools",
-  icon: "https://assets.decocache.com/mcp/81d602bb-45e2-4361-b52a-23379520a34d/sandbox.png",
-});
-
 app.all("/mcp", createMCPHandlerFor(GLOBAL_TOOLS));
+app.all("/:org/:project/mcp", createMCPHandlerFor(PROJECT_TOOLS));
+
 app.all(
-  "/:org/:project/mcp",
+  `/:org/:project/${WellKnownMcpGroups.Tools}/mcp`,
   createMCPHandlerFor(async (ctx) => {
     const appCtx = honoCtxToAppCtx(ctx);
     const client = MCPClient.forContext(appCtx);
@@ -479,9 +475,10 @@ app.all(
 
     endTime(ctx, "sandbox-list-tools");
 
-    const createdTools = tools.map((tool) => {
+    const virtualTools = tools.map((tool) => {
       return createTool({
         name: tool.name,
+        group: WellKnownMcpGroups.Tools,
         description: tool.description,
         inputSchema: jsonSchemaToModel(tool.inputSchema),
         outputSchema: jsonSchemaToModel(tool.outputSchema),
@@ -499,7 +496,7 @@ app.all(
       });
     });
 
-    return [...PROJECT_TOOLS, ...createdTools];
+    return virtualTools;
   }),
 );
 app.all("/:org/:project/agents/:agentId/mcp", createMCPHandlerFor(AGENT_TOOLS));

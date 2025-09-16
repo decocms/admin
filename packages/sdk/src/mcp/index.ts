@@ -215,13 +215,9 @@ export const PROJECT_TOOLS = [
   sandboxAPI.deleteTool,
   sandboxAPI.upsertTool,
   sandboxAPI.runTool,
-  workflowsAPI.upsertWorkflow,
   workflowsAPI.startWorkflow,
   workflowsAPI.getWorkflowStatus,
   workflowsAPI.replayWorkflowFromStep,
-  workflowsAPI.getWorkflow,
-  workflowsAPI.deleteWorkflow,
-  workflowsAPI.listWorkflows,
   // DECONFIG tools
   ...deconfigAPI.DECONFIG_TOOLS,
   // SANDBOX tools

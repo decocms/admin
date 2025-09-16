@@ -146,6 +146,7 @@ export interface MCPClientRaw {
 }
 export type JSONSchemaToZodConverter = (jsonSchema: any) => z.ZodTypeAny;
 export interface CreateStubAPIOptions {
+  mcpPath?: string;
   decoCmsApiUrl?: string;
   workspace?: string;
   token?: string;

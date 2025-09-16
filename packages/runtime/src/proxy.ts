@@ -46,11 +46,13 @@ export function createMCPClientProxy<T extends Record<string, unknown>>(
     );
   }
 
+  const mcpPath = options?.mcpPath ?? "/mcp";
+
   const connection: MCPConnection = options?.connection || {
     type: "HTTP",
     token: options?.token,
     url: new URL(
-      `${getWorkspace(options?.workspace)}/mcp`,
+      `${getWorkspace(options?.workspace)}${mcpPath}`,
       options?.decoCmsApiUrl ?? `https://api.decocms.com`,
     ).href,
   };

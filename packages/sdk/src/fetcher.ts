@@ -17,10 +17,10 @@ export interface FetchOptions extends RequestInit {
 const global = createMCPFetchStub<GlobalTools>({});
 export const MCPClient = new Proxy(
   {} as typeof global & {
-    forLocator: (
+    forLocator: <TDefinition extends readonly ToolBinder[] = ProjectTools>(
       locator: ProjectLocator,
       integrationId?: string,
-    ) => MCPClientFetchStub<ProjectTools>;
+    ) => MCPClientFetchStub<TDefinition>;
     forConnection: <TDefinition extends readonly ToolBinder[]>(
       connection: MCPConnection,
     ) => MCPClientFetchStub<TDefinition>;
@@ -28,8 +28,9 @@ export const MCPClient = new Proxy(
   {
     get(_, name) {
       if (name === "forLocator") {
-        return (locator: ProjectLocator) =>
-          createMCPFetchStub<ProjectTools>({ workspace: locator });
+        return <TDefinition extends readonly ToolBinder[] = ProjectTools>(
+          locator: ProjectLocator,
+        ) => createMCPFetchStub<TDefinition>({ workspace: locator });
       }
       if (name === "forConnection") {
         return <TDefinition extends readonly ToolBinder[]>(

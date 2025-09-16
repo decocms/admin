@@ -23,6 +23,7 @@ export const WellKnownMcpGroups = {
   Triggers: "triggers-management",
   Wallet: "wallet-management",
   Tools: "tools-management",
+  Workflows: "workflows-management",
 };
 
 export type WellKnownMcpGroup = keyof typeof WellKnownMcpGroups;

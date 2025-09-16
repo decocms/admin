@@ -1,6 +1,11 @@
 import { MCPClient } from "../fetcher.ts";
 import { ProjectLocator } from "../locator.ts";
+import { WellKnownBindings } from "../mcp/index.ts";
+import { WellKnownMcpGroups } from "./groups.ts";
 
+export type ResourceBinding = (typeof WellKnownBindings)["Resources"];
+const workspaceResourceClient = (locator: ProjectLocator) =>
+  MCPClient.forLocator<ResourceBinding>(locator, WellKnownMcpGroups.Workflows);
 export interface SandboxWorkflowDefinition {
   name: string;
   description: string;
@@ -37,13 +42,24 @@ export interface SandboxWorkflowReplayParams {
   stepName: string;
 }
 
+// Helper function to build workflow URI
+function buildWorkflowUri(name: string): string {
+  return `workflow://${name}`;
+}
+
 export function getSandboxWorkflow(
   locator: ProjectLocator,
   name: string,
   signal?: AbortSignal,
 ) {
-  const client = MCPClient.forLocator(locator);
-  return client.WORKFLOWS_GET({ name }, { signal });
+  const client = workspaceResourceClient(locator);
+  return client.DECO_CHAT_RESOURCES_READ(
+    {
+      name: "workflows",
+      uri: buildWorkflowUri(name),
+    },
+    { signal },
+  );
 }
 
 export function upsertSandboxWorkflow(
@@ -51,8 +67,56 @@ export function upsertSandboxWorkflow(
   params: SandboxWorkflowUpsertParams,
   signal?: AbortSignal,
 ) {
-  const client = MCPClient.forLocator(locator);
-  return client.WORKFLOWS_UPSERT(params, { signal });
+  const client = workspaceResourceClient(locator);
+
+  // Check if workflow exists to determine CREATE vs UPDATE
+  return getSandboxWorkflow(locator, params.name, signal)
+    .then(() => {
+      // Workflow exists, update it
+      return client.DECO_CHAT_RESOURCES_UPDATE(
+        {
+          name: "workflows",
+          uri: buildWorkflowUri(params.name),
+          title: params.name,
+          description: params.description,
+          content: {
+            type: "text" as const,
+            data: JSON.stringify({
+              name: params.name,
+              description: params.description,
+              inputSchema: params.inputSchema,
+              outputSchema: params.outputSchema,
+              steps: params.steps,
+            }),
+            mimeType: "application/json",
+          },
+        },
+        { signal },
+      );
+    })
+    .catch(() => {
+      // Workflow doesn't exist, create it
+      return client.DECO_CHAT_RESOURCES_CREATE(
+        {
+          name: "workflows",
+          resourceName: params.name,
+          title: params.name,
+          description: params.description,
+          content: {
+            type: "text" as const,
+            data: JSON.stringify({
+              name: params.name,
+              description: params.description,
+              inputSchema: params.inputSchema,
+              outputSchema: params.outputSchema,
+              steps: params.steps,
+            }),
+            mimeType: "application/json",
+          },
+        },
+        { signal },
+      );
+    });
 }
 
 export function startSandboxWorkflow(
@@ -87,14 +151,20 @@ export function deleteSandboxWorkflow(
   name: string,
   signal?: AbortSignal,
 ) {
-  const client = MCPClient.forLocator(locator);
-  return client.WORKFLOWS_DELETE({ name }, { signal });
+  const client = workspaceResourceClient(locator);
+  return client.DECO_CHAT_RESOURCES_DELETE(
+    {
+      name: "workflows",
+      uri: buildWorkflowUri(name),
+    },
+    { signal },
+  );
 }
 
 export function listSandboxWorkflows(
   locator: ProjectLocator,
   signal?: AbortSignal,
 ) {
-  const client = MCPClient.forLocator(locator);
-  return client.WORKFLOWS_LIST({}, { signal });
+  const client = workspaceResourceClient(locator);
+  return client.DECO_CHAT_RESOURCES_LIST({}, { signal });
 }

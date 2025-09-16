@@ -110,7 +110,7 @@ export class WorkflowRunner extends WorkflowEntrypoint<Bindings> {
       config:
         stepDef.type === "tool_call" && "options" in stepDef.def
           ? (stepDef.def.options ?? {})
-          : undefined,
+          : {},
       fn: runnable,
     };
   }

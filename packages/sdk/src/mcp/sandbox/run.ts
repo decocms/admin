@@ -86,7 +86,7 @@ export async function runTool(
       },
     });
 
-    if (toolCallResult.isError) {
+    if (toolCallResult.isError || toolCallResult.error) {
       throw new Error(`Tool call failed: ${inspect(toolCallResult)}`);
     }
 

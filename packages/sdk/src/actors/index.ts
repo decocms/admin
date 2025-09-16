@@ -1,6 +1,14 @@
+import {
+  Actor,
+  ActorConstructor,
+  RuntimeClass,
+  StubFactory,
+} from "@deco/actors";
+import { ActorCfRuntime } from "@deco/actors/cf";
+import { actors } from "@deco/actors/proxy";
 import process from "node:process";
 import { type AuthUser, getUserBySupabaseCookie } from "../auth/user.ts";
-import type { Principal } from "../mcp/index.ts";
+import type { Bindings, Principal } from "../mcp/index.ts";
 
 export interface AuthMetadata {
   user?: AuthUser | null;
@@ -45,3 +53,15 @@ export abstract class BaseActor<TMetadata extends AuthMetadata = AuthMetadata> {
     return user ?? null;
   }
 }
+
+export const runtime = new RuntimeClass();
+export const stubFor = (env: Bindings) => {
+  return <TActor extends Actor, Constructor extends ActorConstructor<TActor>>(
+    c: Constructor,
+  ): StubFactory<InstanceType<Constructor>> => {
+    return runtime instanceof ActorCfRuntime
+      ? // deno-lint-ignore no-explicit-any
+        runtime.stub(c, env as any)
+      : actors.stub(c.name);
+  };
+};

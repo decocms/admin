@@ -1,12 +1,10 @@
-import { RuntimeClass } from "@deco/actors";
 import { withActors } from "@deco/actors/hono";
 import { Hosts } from "@deco/sdk/hosts";
 import type { Handler } from "hono";
 import { endTime, startTime } from "hono/timing";
 import type { AppEnv } from "../utils/context.ts";
-
-export const runtime = new RuntimeClass();
-
+import { runtime, stubFor } from "@deco/sdk/actors";
+export { runtime, stubFor };
 // Create actors routes for both API hosts
 const actorsRoutePathLegacy = `/${Hosts.API_LEGACY}/actors`;
 const actorsRoutePath = `/${Hosts.API}/actors`;

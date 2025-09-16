@@ -5,29 +5,29 @@ import type { Client } from "@deco/sdk/storage";
 import { createClient } from "@libsql/client/web";
 import type { ToolAnnotations } from "@modelcontextprotocol/sdk/types.d.ts";
 import * as api from "@opentelemetry/api";
+import { createServerClient } from "@supabase/ssr";
 import type { User as SupaUser } from "@supabase/supabase-js";
-import type Cloudflare from "cloudflare";
+import { Cloudflare } from "cloudflare";
 import { AsyncLocalStorage } from "node:async_hooks";
 import { z } from "zod";
-import type { JWTPayload } from "../auth/jwt.ts";
-import type {
-  AuthorizationClient,
-  Policy,
-  PolicyClient,
-} from "../auth/policy.ts";
+import { stubFor } from "../actors/index.ts";
+import { JwtIssuer, JWTPayload } from "../auth/jwt.ts";
+import { AuthorizationClient, Policy, PolicyClient } from "../auth/policy.ts";
+import { SUPABASE_URL } from "../constants.ts";
 import { type WellKnownMcpGroup, WellKnownMcpGroups } from "../crud/groups.ts";
 import { ForbiddenError, type HttpError } from "../errors.ts";
+import { lazy } from "../lazy.ts";
 import { ProjectLocator } from "../locator.ts";
 import { trace } from "../observability/index.ts";
-import { PosthogServerClient } from "../posthog.ts";
+import { createPosthogServerClient, PosthogServerClient } from "../posthog.ts";
+import { WorkflowRunnerProps } from "../workflows/workflow-runner.ts";
 import { type WithTool } from "./assertions.ts";
-import type { ResourceAccess } from "./auth/index.ts";
+import { type ResourceAccess } from "./auth/index.ts";
 import { DatatabasesRunSqlInput, QueryResult } from "./databases/api.ts";
 import { Blobs } from "./deconfig/blobs.ts";
 import { Branch } from "./deconfig/branch.ts";
 import { addGroup, type GroupIntegration } from "./groups.ts";
 import { generateUUIDv5, toAlphanumericId } from "./slugify.ts";
-import { WorkflowRunnerProps } from "./workflows/workflow-runner.ts";
 
 export type UserPrincipal = Pick<SupaUser, "id" | "email" | "is_anonymous">;
 
@@ -166,7 +166,7 @@ export type WorkspaceDO = DurableObjectNamespace<
   IWorkspaceDB & Rpc.DurableObjectBranded
 >;
 
-export interface Vars {
+export interface PrincipalExecutionContext {
   params: Record<string, string>;
   /**
    * @deprecated Use locator instead
@@ -190,11 +190,14 @@ export interface Vars {
   token?: string;
   proxyToken?: string;
   callerApp?: string;
-  db: Client;
+  isLocal?: boolean;
   user: Principal;
+}
+
+export interface Vars extends PrincipalExecutionContext {
+  db: Client;
   policy: PolicyClient;
   authorization: AuthorizationClient;
-  isLocal?: boolean;
   cf: Cloudflare;
   walletBinding?: { fetch: typeof fetch };
   immutableRes?: boolean;
@@ -204,6 +207,7 @@ export interface Vars {
   branchDO: DurableObjectNamespace<Branch>;
   blobsDO: DurableObjectNamespace<Blobs>;
   workflowRunner: Workflow<WorkflowRunnerProps>;
+  jwtIssuer: () => Promise<JwtIssuer>;
   posthog: PosthogServerClient;
   stub: <
     Constructor extends ActorConstructor<Trigger> | ActorConstructor<AIAgent>,
@@ -417,3 +421,61 @@ export const State = {
 };
 
 export * from "./stub.ts";
+
+export type Bindings = EnvVars & {
+  WALLET: Service;
+  DECO_CHAT_APP_ORIGIN?: string;
+  WORKSPACE_DB: DurableObjectNamespace<IWorkspaceDB & Rpc.DurableObjectBranded>;
+  // DECONFIG DurableObjects
+  BRANCH: DurableObjectNamespace<Branch>;
+  BLOBS: DurableObjectNamespace<Blobs>;
+  WORKFLOW_RUNNER: Workflow<WorkflowRunnerProps>;
+  PROD_DISPATCHER: {
+    get: <TOutbound extends Record<string, unknown> = Record<string, unknown>>(
+      script: string,
+      ctx?: Record<string, unknown>,
+      metadata?: { outbound?: TOutbound },
+    ) => { fetch: typeof fetch };
+  };
+  KB_FILE_PROCESSOR?: Workflow;
+};
+export type BindingsContext = Omit<AppContext, keyof PrincipalExecutionContext>;
+
+export const toBindingsContext = (bindings: Bindings): BindingsContext => {
+  const db = createServerClient(SUPABASE_URL, bindings.SUPABASE_SERVER_TOKEN, {
+    cookies: { getAll: () => [] },
+  });
+  const policy = PolicyClient.getInstance(db);
+  const authorization = new AuthorizationClient(policy);
+
+  return {
+    blobsDO: bindings.BLOBS,
+    branchDO: bindings.BRANCH,
+    envVars: bindings,
+    workflowRunner: bindings.WORKFLOW_RUNNER,
+    workspaceDO: bindings.WORKSPACE_DB,
+    kbFileProcessor: bindings.KB_FILE_PROCESSOR,
+    walletBinding: bindings.WALLET,
+    policy,
+    authorization,
+    db,
+    cf: new Cloudflare({ apiToken: bindings.CF_API_TOKEN }),
+    posthog: createPosthogServerClient({
+      apiKey: bindings.POSTHOG_API_KEY,
+      apiHost: bindings.POSTHOG_API_HOST,
+    }),
+    stub: stubFor(bindings),
+    jwtIssuer: lazy(() => {
+      const keyPair =
+        bindings.DECO_CHAT_API_JWT_PRIVATE_KEY &&
+        bindings.DECO_CHAT_API_JWT_PUBLIC_KEY
+          ? {
+              public: bindings.DECO_CHAT_API_JWT_PUBLIC_KEY,
+              private: bindings.DECO_CHAT_API_JWT_PRIVATE_KEY,
+            }
+          : undefined;
+
+      return JwtIssuer.forKeyPair(keyPair);
+    }),
+  };
+};

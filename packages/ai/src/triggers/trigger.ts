@@ -12,38 +12,31 @@
 // are not enforced at runtime in JavaScript and are not preserved in the transpiled output.
 import type { ActorState } from "@deco/actors";
 import { Actor } from "@deco/actors";
-import { JwtIssuer, SUPABASE_URL } from "@deco/sdk/auth";
+import { Locator } from "@deco/sdk";
 import { WELL_KNOWN_AGENT_IDS } from "@deco/sdk/constants";
 import { contextStorage } from "@deco/sdk/fetch";
 import { Hosts } from "@deco/sdk/hosts";
 import {
   type AppContext,
-  AuthorizationClient,
+  BindingsContext,
   createResourceAccess,
   fromWorkspaceString,
   MCPClient,
   type MCPClientStub,
-  PolicyClient,
+  PrincipalExecutionContext,
   type ProjectTools,
+  toBindingsContext,
 } from "@deco/sdk/mcp";
 import type { Callbacks } from "@deco/sdk/mcp/binder";
 import type { CallTool } from "@deco/sdk/models";
 import { getTwoFirstSegments, type Workspace } from "@deco/sdk/path";
-import {
-  createPosthogServerClient,
-  PosthogServerClient,
-} from "@deco/sdk/posthog";
 import type { Json } from "@deco/sdk/storage";
-import { createServerClient } from "@supabase/ssr";
-import { Cloudflare } from "cloudflare";
 import { getRuntimeKey } from "hono/adapter";
-import process from "node:process";
 import { AIAgent } from "../agent.ts";
 import { isApiDecoChatMCPConnection } from "../mcp.ts";
 import { hooks as cron } from "./cron.ts";
 import type { TriggerData, TriggerRun } from "./services.ts";
 import { hooks as webhook } from "./webhook.ts";
-import { Locator } from "@deco/sdk";
 export type { TriggerData };
 
 export const threadOf = (
@@ -132,27 +125,16 @@ export class Trigger {
   protected data: TriggerData | null = null;
   protected hooks: TriggerHooks<TriggerData> | null = null;
   protected workspace: Workspace;
+  protected context: BindingsContext;
   private branch: string = "main"; // TODO(@mcandeia) for now only main branch is supported
-  protected posthog: PosthogServerClient;
-  private db: ReturnType<typeof createServerClient>;
   private env: any;
 
   constructor(
     public state: ActorState,
     protected actorEnv: any,
   ) {
-    this.env = {
-      ...process.env,
-      ...actorEnv,
-    };
+    this.context = toBindingsContext(this.actorEnv);
     this.workspace = getTwoFirstSegments(this.state.id);
-    this.db = createServerClient(SUPABASE_URL, this.env.SUPABASE_SERVER_TOKEN, {
-      cookies: { getAll: () => [] },
-    });
-    this.posthog = createPosthogServerClient({
-      apiKey: this.env.POSTHOG_API_KEY,
-      apiHost: this.env.POSTHOG_API_HOST,
-    });
 
     this.mcpClient = this._createMCPClient();
 
@@ -173,7 +155,7 @@ export class Trigger {
   }
 
   private _trackEvent(event: string, properties: Record<string, unknown> = {}) {
-    this.posthog.trackEvent(event as any, {
+    this.context.posthog.trackEvent(event as any, {
       distinctId: this.state.id,
       $process_person_profile: false,
       actorId: this.state.id,
@@ -191,46 +173,26 @@ export class Trigger {
   }
 
   private _createContext(): AppContext {
-    const policyClient = PolicyClient.getInstance(this.db);
-    const authorizationClient = new AuthorizationClient(policyClient);
-
     const workspace = fromWorkspaceString(this.workspace, this.branch);
     const { org, project } = Locator.parse(this.workspace);
     const locatorValue = Locator.from({ org, project });
-
-    return {
+    const principalContext: PrincipalExecutionContext = {
       params: {},
-      envVars: this.env,
-      db: this.db,
-      // can be ignored for now.
       user: null as unknown as AppContext["user"],
       isLocal: true,
-      workspaceDO: this.actorEnv.WORKSPACE_DB,
-      stub: this.state.stub as AppContext["stub"],
-      // i suspect triggers on old root/slug format for
-      // root == "users" will not work anymore
+      resourceAccess: createResourceAccess(),
       workspace,
       locator: { org, project, value: locatorValue, branch: this.branch },
-      resourceAccess: createResourceAccess(),
-      cf: new Cloudflare({ apiToken: this.env.CF_API_TOKEN }),
-      policy: policyClient,
-      authorization: authorizationClient,
-      posthog: this.posthog,
-      branchDO: this.actorEnv.BRANCH,
-      blobsDO: this.actorEnv.BLOBS,
+    };
+
+    return {
+      ...this.context,
+      ...principalContext,
     };
   }
 
   _token() {
-    const keyPair =
-      this.env.DECO_CHAT_API_JWT_PRIVATE_KEY &&
-      this.env.DECO_CHAT_API_JWT_PUBLIC_KEY
-        ? {
-            public: this.env.DECO_CHAT_API_JWT_PUBLIC_KEY,
-            private: this.env.DECO_CHAT_API_JWT_PRIVATE_KEY,
-          }
-        : undefined;
-    return JwtIssuer.forKeyPair(keyPair).then((issuer) =>
+    return this.context.jwtIssuer().then((issuer) =>
       issuer.issue({
         sub: `trigger:${this._getTriggerId()}`,
         aud: this.workspace,
@@ -378,7 +340,7 @@ export class Trigger {
   }
 
   private async _saveRun(run: Omit<TriggerRun, "id" | "timestamp">) {
-    await this.db
+    await this.context.db
       .from("deco_chat_trigger_runs")
       .insert({
         trigger_id: run.triggerId,

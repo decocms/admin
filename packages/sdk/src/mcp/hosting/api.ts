@@ -1,8 +1,8 @@
 import { D1Store } from "@deco/workers-runtime/d1";
 import { parse as parseToml } from "smol-toml";
 import { z } from "zod";
-import { JwtIssuer } from "../../auth/jwt.ts";
 import { purge } from "../../cache/routing.ts";
+import { AppName } from "../../common/index.ts";
 import { NotFoundError, UserInputError } from "../../errors.ts";
 import { MCPConnection } from "../../models/index.ts";
 import type { Database } from "../../storage/index.ts";
@@ -24,7 +24,6 @@ import { bundler } from "./bundler.ts";
 import { assertsDomainUniqueness } from "./custom-domains.ts";
 import { type DeployResult, deployToCloudflare } from "./deployment.ts";
 import type { WranglerConfig } from "./wrangler.ts";
-import { AppName } from "../../common/index.ts";
 
 const SCRIPT_FILE_NAME = "script.mjs";
 export const HOSTING_APPS_DOMAIN = ".deco.page";
@@ -779,16 +778,7 @@ Important Notes:
         );
       }
 
-      const keyPair =
-        c.envVars.DECO_CHAT_API_JWT_PRIVATE_KEY &&
-        c.envVars.DECO_CHAT_API_JWT_PUBLIC_KEY
-          ? {
-              public: c.envVars.DECO_CHAT_API_JWT_PUBLIC_KEY,
-              private: c.envVars.DECO_CHAT_API_JWT_PRIVATE_KEY,
-            }
-          : undefined;
-
-      const issuer = await JwtIssuer.forKeyPair(keyPair);
+      const issuer = await c.jwtIssuer();
       const scope = wranglerConfig?.scope ?? c.workspace.slug;
       const appName = AppName.build(scope, scriptSlug);
 
@@ -800,7 +790,7 @@ Important Notes:
       const decoEnvVars = {
         DECO_WORKSPACE: workspace,
         DECO_API_TOKEN: token,
-        DECO_API_JWT_PUBLIC_KEY: keyPair?.public,
+        DECO_API_JWT_PUBLIC_KEY: await issuer.publicKey(),
         DECO_APP_SLUG: scriptSlug,
         DECO_APP_NAME: appName,
       };

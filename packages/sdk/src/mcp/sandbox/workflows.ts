@@ -1,15 +1,15 @@
-import { callFunction, inspect } from "@deco/cf-sandbox";
+import { inspect } from "@deco/cf-sandbox";
 import z from "zod";
 import {
+  assertHasWorkspace,
   assertWorkspaceResourceAccess,
   MCPClient,
   ProjectTools,
 } from "../index.ts";
 import { MCPClientStub } from "../stub.ts";
+import { asRunnableStep } from "./run.ts";
 import {
-  asEnv,
   createTool,
-  evalCodeAndReturnDefaultHandle,
   fileNameSlugify,
   processExecuteCode,
   validate,
@@ -39,6 +39,7 @@ interface WorkflowRun {
 
 const workflowRuns = new Map<string, WorkflowRun>();
 
+<<<<<<< HEAD
 /**
  * Generates a unique run ID
  */
@@ -247,6 +248,10 @@ async function executeWorkflow(
     run.endTime = Date.now();
   }
 }
+=======
+// Note: The executeWorkflow function has been removed as we now use Cloudflare Workflows
+// for execution instead of the custom execution loop
+>>>>>>> a2f68fd2 (Refact to pass only serializable properties to workflow start)
 
 /**
  * Reads a workflow definition from the workspace and inlines all function code
@@ -309,7 +314,9 @@ async function readWorkflow(
             },
           };
         } else {
-          throw new Error(`Unknown step type: ${(step as any).type}`);
+          throw new Error(
+            `Unknown step type: ${(step as unknown as { type: string }).type}`,
+          );
         }
       }),
     );
@@ -327,8 +334,91 @@ async function readWorkflow(
 }
 
 
+<<<<<<< HEAD
 const WORKFLOW_DESCRIPTION =
   `Create or update a workflow in the sandbox environment.
+=======
+// Tool call step definition - executes a tool from an integration
+export const ToolCallStepDefinitionSchema = z.object({
+  name: z
+    .string()
+    .min(1)
+    .describe("The unique name of the tool call step within the workflow"),
+  description: z
+    .string()
+    .min(1)
+    .describe("A clear description of what this tool call step does"),
+  options: z
+    .object({
+      retry: z
+        .number()
+        .int()
+        .min(0)
+        .default(0)
+        .describe("Number of retry attempts for this step (default: 0)"),
+      timeout: z
+        .number()
+        .positive()
+        .default(Infinity)
+        .describe("Maximum execution time in milliseconds (default: Infinity)"),
+    })
+    .passthrough()
+    .nullish()
+    .describe(
+      "Step configuration options. Extend this object with custom properties for business user configuration",
+    ),
+  tool_name: z.string().min(1).describe("The name of the tool to call"),
+  integration: z
+    .string()
+    .min(1)
+    .describe("The name of the integration that provides this tool"),
+});
+
+// Union of step types
+const WorkflowStepDefinitionSchema = z.object({
+  type: z.enum(["mapping", "tool_call"]).describe("The type of step"),
+  def: z
+    .union([MappingStepDefinitionSchema, ToolCallStepDefinitionSchema])
+    .describe("The step definition based on the type"),
+});
+
+export type MappingStepDefinition = z.infer<typeof MappingStepDefinitionSchema>;
+export type ToolCallStepDefinition = z.infer<
+  typeof ToolCallStepDefinitionSchema
+>;
+
+export type WorkflowStepDefinition = z.infer<
+  typeof WorkflowStepDefinitionSchema
+>;
+
+const WorkflowDefinitionSchema = z.object({
+  name: z.string().min(1).describe("The unique name of the workflow"),
+  description: z
+    .string()
+    .min(1)
+    .describe("A comprehensive description of what this workflow accomplishes"),
+  inputSchema: z
+    .object({})
+    .passthrough()
+    .describe(
+      "JSON Schema defining the workflow's input parameters and data structure",
+    ),
+  outputSchema: z
+    .object({})
+    .passthrough()
+    .describe(
+      "JSON Schema defining the workflow's final output after all steps complete",
+    ),
+  steps: z
+    .array(WorkflowStepDefinitionSchema)
+    .min(1)
+    .describe(
+      "Array of workflow steps that execute sequentially. The last step should be a mapping step that returns the final output.",
+    ),
+});
+
+const WORKFLOW_DESCRIPTION = `Create or update a workflow in the sandbox environment.
+>>>>>>> a2f68fd2 (Refact to pass only serializable properties to workflow start)
 
 ## Overview
 
@@ -615,7 +705,7 @@ const upsertWorkflow = createTool({
         } else {
           return {
             success: false,
-            error: `Unknown step type: ${(step as any).type}`,
+            error: `Unknown step type: ${(step as unknown as { type: string }).type}`,
           };
         }
       }
@@ -649,8 +739,7 @@ const upsertWorkflow = createTool({
 
 const startWorkflow = createTool({
   name: "SANDBOX_START_WORKFLOW",
-  description:
-    "Start a workflow execution asynchronously in the sandbox environment",
+  description: "Start a workflow execution using Cloudflare Workflows",
   inputSchema: z.object({
     name: z.string().describe("The name of the workflow to run"),
     input: z
@@ -666,6 +755,7 @@ const startWorkflow = createTool({
       .describe("Error message if workflow start failed"),
   }),
   handler: async ({ name, input }, c) => {
+    assertHasWorkspace(c);
     await assertWorkspaceResourceAccess(c);
 
     const branch = c.locator?.branch;
@@ -687,36 +777,40 @@ const startWorkflow = createTool({
         };
       }
 
-      // Clean up old runs periodically
-      cleanupOldRuns();
+      // Convert workflow definition steps to runnable steps
+      const runtimeId = c.locator?.value ?? "default";
+      const workflowSteps = workflow.steps.map((step) => {
+        return asRunnableStep(step, client, runtimeId);
+      });
 
-      // Generate a unique run ID
-      const runId = generateRunId();
+      // Create workflow instance using Cloudflare Workflows
+      const workflowInstance = await c.workflowRunner.create({
+        params: {
+          input,
+          steps: workflowSteps,
+          name,
+          context: {
+            workspace: c.workspace,
+            locator: c.locator,
+          },
+        },
+      });
 
-      // Create the workflow run record
+      console.log(workflowInstance, await workflowInstance.status());
+
+      // Store basic run information for compatibility
+      const runId = workflowInstance.id;
       const workflowRun: WorkflowRun = {
         id: runId,
         workflowName: name,
         input,
-        status: "pending",
+        status: "running",
         stepResults: {},
         logs: [],
         startTime: Date.now(),
       };
 
-      // Store the run in memory
       workflowRuns.set(runId, workflowRun);
-
-      // Start the workflow execution in the background (non-blocking)
-      executeWorkflow(runId, name, input, client, branch).catch((error) => {
-        // Handle any uncaught errors in background execution
-        const run = workflowRuns.get(runId);
-        if (run) {
-          run.status = "failed";
-          run.error = `Background execution error: ${inspect(error)}`;
-          run.endTime = Date.now();
-        }
-      });
 
       return { runId };
     } catch (error) {
@@ -772,10 +866,81 @@ const getWorkflowStatus = createTool({
   handler: async ({ runId }, c) => {
     await assertWorkspaceResourceAccess(c);
 
-    const run = workflowRuns.get(runId);
-    if (!run) {
-      throw new Error(`Workflow run '${runId}' not found`);
+    try {
+      // Try to get status from Cloudflare Workflow first
+      const workflowInstance = await c.workflowRunner.get(runId);
+      const cfStatus = await workflowInstance.status();
+      console.log({ cfStatus });
+
+      // Map Cloudflare Workflow status to our status format
+      let status: "pending" | "running" | "completed" | "failed";
+      switch (cfStatus.status) {
+        case "queued":
+          status = "pending";
+          break;
+        case "running":
+        case "waiting":
+          status = "running";
+          break;
+        case "complete":
+          status = "completed";
+          break;
+        case "errored":
+        case "terminated":
+          status = "failed";
+          break;
+        default:
+          status = "pending";
+      }
+
+      // Get local run data for additional info
+      const run = workflowRuns.get(runId);
+
+      return {
+        status,
+        currentStep: undefined, // CF Workflows doesn't expose current step
+        stepResults: run?.stepResults || {},
+        finalResult: cfStatus.output,
+        partialResult:
+          run?.stepResults && Object.keys(run.stepResults).length > 0
+            ? {
+                completedSteps: Object.keys(run.stepResults),
+                stepResults: run.stepResults,
+              }
+            : undefined,
+        error: cfStatus.error || run?.error,
+        logs: run?.logs || [],
+        startTime: run?.startTime || Date.now(),
+        endTime: run?.endTime,
+      };
+    } catch {
+      // Fallback to local storage if CF Workflow not found
+      const run = workflowRuns.get(runId);
+      if (!run) {
+        throw new Error(`Workflow run '${runId}' not found`);
+      }
+
+      const partialResult =
+        Object.keys(run.stepResults).length > 0
+          ? {
+              completedSteps: Object.keys(run.stepResults),
+              stepResults: run.stepResults,
+            }
+          : undefined;
+
+      return {
+        status: run.status,
+        currentStep: run.currentStep,
+        stepResults: run.stepResults,
+        finalResult: run.finalResult,
+        partialResult,
+        error: run.error,
+        logs: run.logs,
+        startTime: run.startTime,
+        endTime: run.endTime,
+      };
     }
+<<<<<<< HEAD
 
     // Create partial result from completed steps
     const partialResult = Object.keys(run.stepResults).length > 0
@@ -796,13 +961,15 @@ const getWorkflowStatus = createTool({
       startTime: run.startTime,
       endTime: run.endTime,
     };
+=======
+>>>>>>> a2f68fd2 (Refact to pass only serializable properties to workflow start)
   },
 });
 
 const replayWorkflowFromStep = createTool({
   name: "SANDBOX_REPLAY_WORKFLOW_FROM_STEP",
   description:
-    "Replay a workflow from a specific step using the results from a previous run",
+    "Replay a workflow from a specific step (limited support with Cloudflare Workflows)",
   inputSchema: z.object({
     runId: z
       .string()
@@ -820,9 +987,10 @@ const replayWorkflowFromStep = createTool({
       .optional()
       .describe("Error message if replay start failed"),
   }),
-  handler: async ({ runId, stepName }, c) => {
+  handler: async (_, c) => {
     await assertWorkspaceResourceAccess(c);
 
+<<<<<<< HEAD
     const branch = c.locator?.branch;
     const client = MCPClient.forContext(c);
 
@@ -887,6 +1055,15 @@ const replayWorkflowFromStep = createTool({
         error: `Workflow replay start failed: ${inspect(error)}`,
       };
     }
+=======
+    // For now, return an error as replay is not directly supported by CF Workflows
+    // This could be implemented by creating a new workflow with partial state
+    return {
+      newRunId: "",
+      error:
+        "Workflow replay is not yet supported with Cloudflare Workflows. Please create a new workflow instance instead.",
+    };
+>>>>>>> a2f68fd2 (Refact to pass only serializable properties to workflow start)
   },
 });
 

@@ -1,4 +1,3 @@
-import { JwtIssuer } from "../auth/jwt.ts";
 import type { AuthContext, Statement } from "../auth/policy.ts";
 import { ForbiddenError, NotFoundError, UnauthorizedError } from "../errors.ts";
 import { ProjectLocator } from "../locator.ts";
@@ -296,18 +295,6 @@ export const IntegrationSub = {
   },
 };
 
-export const issuerFromContext = async (c: AppContext) => {
-  const keyPair =
-    c.envVars.DECO_CHAT_API_JWT_PRIVATE_KEY &&
-    c.envVars.DECO_CHAT_API_JWT_PUBLIC_KEY
-      ? {
-          public: c.envVars.DECO_CHAT_API_JWT_PUBLIC_KEY,
-          private: c.envVars.DECO_CHAT_API_JWT_PRIVATE_KEY,
-        }
-      : undefined;
-  return await JwtIssuer.forKeyPair(keyPair);
-};
-
 async function grantAccessForProxy(
   c: AppContext,
 ): Promise<Disposable | undefined> {
@@ -323,7 +310,7 @@ async function grantAccessForProxy(
   }
 
   const integrationId = c.user.integrationId;
-  const issuer = await issuerFromContext(c);
+  const issuer = await c.jwtIssuer();
   const payload = await issuer.verify(c.proxyToken).catch(() => null);
   if (payload && payload.sub === IntegrationSub.build(integrationId)) {
     return c.resourceAccess.grant();

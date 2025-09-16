@@ -16,7 +16,6 @@ import type { ActorState, InvokeMiddlewareOptions } from "@deco/actors";
 import { Actor } from "@deco/actors";
 import { type Agent as Configuration, Locator } from "@deco/sdk";
 import { type AuthMetadata, BaseActor } from "@deco/sdk/actors";
-import { JwtIssuer, SUPABASE_URL } from "@deco/sdk/auth";
 import {
   DEFAULT_MAX_STEPS,
   DEFAULT_MAX_THINKING_TOKENS,
@@ -32,23 +31,20 @@ import { contextStorage } from "@deco/sdk/fetch";
 import {
   type AppContext,
   assertWorkspaceResourceAccess,
-  AuthorizationClient,
+  BindingsContext,
   createResourceAccess,
   fromWorkspaceString,
   MCPClient,
   type MCPClientStub,
-  PolicyClient,
+  PrincipalExecutionContext,
   type ProjectTools,
   serializeError,
   SupabaseLLMVault,
+  toBindingsContext,
 } from "@deco/sdk/mcp";
 import type { AgentMemoryConfig } from "@deco/sdk/memory";
 import { AgentMemory, slugify, toAlphanumericId } from "@deco/sdk/memory";
 import { trace } from "@deco/sdk/observability";
-import {
-  createPosthogServerClient,
-  type PosthogServerClient,
-} from "@deco/sdk/posthog";
 import {
   createServerTimings,
   type ServerTimingsBuilder,
@@ -58,7 +54,6 @@ import type { ToolsetsInput, ToolsInput } from "@mastra/core/agent";
 import { Agent } from "@mastra/core/agent";
 import type { MastraMemory } from "@mastra/core/memory";
 import { TokenLimiter } from "@mastra/memory/processors";
-import { createServerClient } from "@supabase/ssr";
 import type { CoreMessage } from "ai";
 import {
   type GenerateObjectResult,
@@ -67,7 +62,6 @@ import {
   type Message,
   smoothStream,
 } from "ai";
-import { Cloudflare } from "cloudflare";
 import { getRuntimeKey } from "hono/adapter";
 import jsonSchemaToZod from "json-schema-to-zod";
 import process from "node:process";
@@ -210,6 +204,7 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
    * These tools are ready to be used. To use them, just filter using the pickCallableTools function.
    */
   protected callableToolSet: ToolsetsInput = {};
+  protected context: BindingsContext;
 
   public locator: ProjectLocator;
   private id: string;
@@ -217,10 +212,8 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
   private agentMemoryConfig: AgentMemoryConfig;
   private agentId: string;
   private wallet: AgentWallet;
-  private db: Awaited<ReturnType<typeof createServerClient>>;
   private agentScoppedMcpClient: MCPClientStub<ProjectTools>;
   private telemetry?: Telemetry;
-  private posthog: PosthogServerClient;
   private branch: string = "main"; // TODO(@mcandeia) for now only main branch is supported
 
   constructor(
@@ -234,17 +227,10 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
       ...process.env,
       ...this.env,
     };
+    this.context = toBindingsContext(this.actorEnv);
     this.locator = Locator.asFirstTwoSegmentsOf(this.state.id);
     this.agentMemoryConfig = null as unknown as AgentMemoryConfig;
     this.agentId = this.state.id.split("/").pop() ?? "";
-    this.db = createServerClient(SUPABASE_URL, this.env.SUPABASE_SERVER_TOKEN, {
-      cookies: { getAll: () => [] },
-    });
-    this.posthog = createPosthogServerClient({
-      apiKey: this.env.POSTHOG_API_KEY,
-      apiHost: this.env.POSTHOG_API_HOST,
-    });
-
     this.agentScoppedMcpClient = this._createMCPClient();
     this.wallet = new AgentWallet({
       agentId: this.id,
@@ -271,7 +257,7 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
   private get llmVault() {
     return this.env.LLMS_ENCRYPTION_KEY
       ? new SupabaseLLMVault(
-          this.db,
+          this.context.db,
           this.env.LLMS_ENCRYPTION_KEY,
           this.workspace,
         )
@@ -279,7 +265,7 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
   }
 
   private _trackEvent(event: string, properties: Record<string, unknown> = {}) {
-    this.posthog.trackEvent(event as any, {
+    this.context.posthog.trackEvent(event as any, {
       distinctId: this.metadata?.user?.id ?? this.id,
       $process_person_profile: this.metadata?.user !== null,
       actorId: this.id,
@@ -290,18 +276,12 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
   }
 
   private _createAppContext(metadata?: AgentMetadata): AppContext {
-    const policyClient = PolicyClient.getInstance(this.db);
     const workspace = fromWorkspaceString(this.workspace, this.branch);
     const { org, project } = Locator.parse(this.locator);
-
-    return {
+    const principalContext: PrincipalExecutionContext = {
       params: {},
-      envVars: this.env as any,
-      db: this.db,
       user: metadata?.user!,
       isLocal: metadata?.user == null,
-      stub: this.state.stub as AppContext["stub"],
-      workspaceDO: this.actorEnv.WORKSPACE_DB,
       cookie: metadata?.userCookie ?? undefined,
       workspace,
       locator: {
@@ -311,12 +291,11 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
         branch: this.branch,
       },
       resourceAccess: createResourceAccess(),
-      cf: new Cloudflare({ apiToken: this.env.CF_API_TOKEN }),
-      policy: policyClient,
-      authorization: new AuthorizationClient(policyClient),
-      posthog: this.posthog,
-      branchDO: this.actorEnv.BRANCH,
-      blobsDO: this.actorEnv.BLOBS,
+    };
+
+    return {
+      ...this.context,
+      ...principalContext,
     };
   }
 
@@ -717,15 +696,7 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
   }
 
   _token() {
-    const keyPair =
-      this.env.DECO_CHAT_API_JWT_PRIVATE_KEY &&
-      this.env.DECO_CHAT_API_JWT_PUBLIC_KEY
-        ? {
-            public: this.env.DECO_CHAT_API_JWT_PUBLIC_KEY,
-            private: this.env.DECO_CHAT_API_JWT_PRIVATE_KEY,
-          }
-        : undefined;
-    return JwtIssuer.forKeyPair(keyPair).then((issuer) =>
+    return this.context.jwtIssuer().then((issuer) =>
       issuer.issue({
         sub: `agent:${this.id}`,
         aud: this.workspace,

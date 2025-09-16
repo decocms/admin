@@ -102,6 +102,7 @@ export type JwtPayloadWithClaims<
 > = JWTPayload & TClaims;
 
 export interface JwtVerifier {
+  publicKey: () => Promise<string>;
   verify: <TClaims extends Record<string, unknown> = Record<string, unknown>>(
     jwt: string,
   ) => Promise<JwtPayloadWithClaims<TClaims> | undefined>;
@@ -123,6 +124,11 @@ export interface JwtIssuerKeyPair {
 
 const newJwtVerifier = (key: CryptoKey): JwtVerifier => {
   return {
+    publicKey: () => {
+      return crypto.subtle
+        .exportKey("jwk", key)
+        .then((jwk) => stringifyJWK(jwk as JsonWebKey));
+    },
     verify: async <
       TClaims extends Record<string, unknown> = Record<string, unknown>,
     >(

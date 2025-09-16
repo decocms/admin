@@ -10,7 +10,6 @@ import type { QueryResult } from "../../storage/index.ts";
 import {
   assertHasWorkspace,
   assertWorkspaceResourceAccess,
-  issuerFromContext,
 } from "../assertions.ts";
 import { createToolGroup } from "../context.ts";
 import { MCPClient } from "../index.ts";
@@ -184,7 +183,7 @@ export const createApiKey = createTool({
       throw new InternalServerError(error.message);
     }
 
-    const issuer = await issuerFromContext(c);
+    const issuer = await c.jwtIssuer();
     const value = await issuer.issue({
       ...claims,
       sub: `api-key:${apiKey.id}`,
@@ -232,7 +231,7 @@ export const reissueApiKey = createTool({
 
     // Generate new JWT token with the provided claims
 
-    const issuer = await issuerFromContext(c);
+    const issuer = await c.jwtIssuer();
     const value = await issuer.issue({
       ...claims,
       sub: `api-key:${apiKey.id}`,

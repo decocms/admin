@@ -10,7 +10,6 @@ import { DECO_CHAT_KEY_ID, getKeyPair } from "@deco/sdk/auth";
 import {
   AGENT_TOOLS,
   assertWorkspaceResourceAccess,
-  AuthorizationClient,
   CallToolMiddleware,
   compose,
   CONTRACTS_TOOLS,
@@ -24,13 +23,13 @@ import {
   getWorkspaceBucketName,
   GLOBAL_TOOLS,
   type IntegrationWithTools,
-  issuerFromContext,
   ListToolsMiddleware,
   MCPClient,
-  PolicyClient,
+  PrincipalExecutionContext,
   PROJECT_TOOLS,
   IntegrationSub as ProxySub,
   Tool,
+  toBindingsContext,
   type ToolLike,
   watchSSE,
   withMCPAuthorization,
@@ -51,7 +50,6 @@ import { logger } from "hono/logger";
 import { endTime, startTime } from "hono/timing";
 import type { ContentfulStatusCode } from "hono/utils/http-status";
 import { studio } from "outerbase-browsable-do-enforced";
-import { createPosthogServerClient } from "packages/sdk/src/posthog.ts";
 import { z } from "zod";
 import { ROUTES as loginRoutes } from "./auth/index.ts";
 import { withActorsStubMiddleware } from "./middlewares/actors-stub.ts";
@@ -65,9 +63,10 @@ import { handleTrigger } from "./webhooks/trigger.ts";
 
 const PROXY_TOKEN_HEADER = "X-Proxy-Auth";
 export const app = new Hono<AppEnv>();
-export const honoCtxToAppCtx = (c: Context<AppEnv>): AppContext => {
-  const envs = env(c);
 
+const contextToPrincipalExecutionContext = (
+  c: Context<AppEnv>,
+): PrincipalExecutionContext => {
   const org = c.req.param("org") ?? c.req.param("root");
   const project = c.req.param("project") ?? c.req.param("slug");
   const locator = org && project ? Locator.from({ org, project }) : undefined;
@@ -103,32 +102,22 @@ export const honoCtxToAppCtx = (c: Context<AppEnv>): AppContext => {
         branch,
       }
     : undefined;
-
-  const policyClient = PolicyClient.getInstance(c.var.db);
-  const authorizationClient = new AuthorizationClient(policyClient);
-
   return {
     ...c.var,
     params: { ...c.req.query(), ...c.req.param() },
-    envVars: envs,
+    workspace: ctxWorkspace,
+    locator: ctxLocator,
     cookie: c.req.header("Cookie"),
     // token issued by the MCP Proxy server to identify the caller as deco api
     proxyToken: c.req.header(PROXY_TOKEN_HEADER)?.replace("Bearer ", ""),
     callerApp: c.req.header("x-caller-app"),
-    policy: policyClient,
-    authorization: authorizationClient,
     token: c.req.header("Authorization")?.replace("Bearer ", ""),
-    kbFileProcessor: c.env.KB_FILE_PROCESSOR,
-    workspaceDO: c.env.WORKSPACE_DB,
-    branchDO: c.env.BRANCH,
-    blobsDO: c.env.BLOBS,
-    workflowRunner: c.env.WORKFLOW_RUNNER,
-    workspace: ctxWorkspace,
-    locator: ctxLocator,
-    posthog: createPosthogServerClient({
-      apiKey: envs.POSTHOG_API_KEY,
-      apiHost: envs.POSTHOG_API_HOST,
-    }),
+  };
+};
+export const honoCtxToAppCtx = (c: Context<AppEnv>): AppContext => {
+  return {
+    ...contextToPrincipalExecutionContext(c),
+    ...toBindingsContext(env(c)),
   };
 };
 
@@ -342,7 +331,7 @@ const createMcpServerProxyForIntegration = async (
 
   const [integration, issuer] = await Promise.all([
     fetchIntegration(),
-    issuerFromContext(ctx),
+    ctx.jwtIssuer(),
   ]);
 
   const token = await issuer.issue({

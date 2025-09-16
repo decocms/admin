@@ -246,4 +246,13 @@ export const deploy = async ({
   console.log(`\n🎉 Deployed! Available at:`);
   hosts.forEach((host) => console.log(`  ${host}`));
   console.log();
+
+  const previewUrl = preview ? hosts[0] : null;
+
+  if (process.env.GITHUB_OUTPUT && previewUrl) {
+    await fs.appendFile(
+      process.env.GITHUB_OUTPUT,
+      `preview_url=${previewUrl}\n`,
+    );
+  }
 };

@@ -1,18 +1,10 @@
 import { callFunction, inspect } from "@deco/cf-sandbox";
-import {
-  Runnable,
-  WorkflowState,
-  WorkflowStep,
-} from "../../workflows/workflow-runner.ts";
+import { WorkflowState } from "../../workflows/workflow-runner.ts";
 import { MCPClientStub, ProjectTools } from "../index.ts";
 import { asEnv, evalCodeAndReturnDefaultHandle } from "./utils.ts";
-import {
-  MappingStepDefinition,
-  ToolCallStepDefinition,
-  WorkflowStepDefinition,
-} from "./workflows.ts";
+import { MappingStepDefinition, ToolCallStepDefinition } from "./workflows.ts";
 
-async function runMapping(
+export async function runMapping(
   input: unknown,
   state: WorkflowState,
   step: MappingStepDefinition,
@@ -69,7 +61,7 @@ async function runMapping(
   }
 }
 
-async function runTool(
+export async function runTool(
   input: unknown,
   step: ToolCallStepDefinition,
   client: MCPClientStub<ProjectTools>,
@@ -108,37 +100,3 @@ async function runTool(
     );
   }
 }
-
-export const asRunnableStep = (
-  step: WorkflowStepDefinition,
-  client: MCPClientStub<ProjectTools>,
-  runtimeId: string = "default",
-): WorkflowStep => {
-  let runnable: Runnable | undefined = undefined;
-  if (step.type === "mapping") {
-    runnable = (input, state) =>
-      runMapping(
-        input,
-        state,
-        step.def as MappingStepDefinition,
-        client,
-        runtimeId,
-      );
-  } else if (step.type === "tool_call") {
-    runnable = (input) =>
-      runTool(input, step.def as ToolCallStepDefinition, client);
-  }
-  if (!runnable) {
-    throw new Error(
-      `Invalid step type: ${(step as unknown as { type: string }).type}`,
-    );
-  }
-  return {
-    name: step.def.name,
-    config:
-      step.type === "tool_call" && "options" in step.def
-        ? (step.def.options ?? {})
-        : undefined,
-    fn: runnable,
-  };
-};

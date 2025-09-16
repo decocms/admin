@@ -7,7 +7,7 @@ import {
   ProjectTools,
 } from "../index.ts";
 import { MCPClientStub } from "../stub.ts";
-import { asRunnableStep } from "./run.ts";
+
 import {
   createTool,
   fileNameSlugify,
@@ -777,17 +777,12 @@ const startWorkflow = createTool({
         };
       }
 
-      // Convert workflow definition steps to runnable steps
-      const runtimeId = c.locator?.value ?? "default";
-      const workflowSteps = workflow.steps.map((step) => {
-        return asRunnableStep(step, client, runtimeId);
-      });
-
       // Create workflow instance using Cloudflare Workflows
+      // Pass the step definitions directly - conversion happens in WorkflowRunner
       const workflowInstance = await c.workflowRunner.create({
         params: {
           input,
-          steps: workflowSteps,
+          steps: workflow.steps, // Pass WorkflowStepDefinition[] directly
           name,
           context: {
             workspace: c.workspace,
@@ -870,7 +865,6 @@ const getWorkflowStatus = createTool({
       // Try to get status from Cloudflare Workflow first
       const workflowInstance = await c.workflowRunner.get(runId);
       const cfStatus = await workflowInstance.status();
-      console.log({ cfStatus });
 
       // Map Cloudflare Workflow status to our status format
       let status: "pending" | "running" | "completed" | "failed";
@@ -904,9 +898,9 @@ const getWorkflowStatus = createTool({
         partialResult:
           run?.stepResults && Object.keys(run.stepResults).length > 0
             ? {
-                completedSteps: Object.keys(run.stepResults),
-                stepResults: run.stepResults,
-              }
+              completedSteps: Object.keys(run.stepResults),
+              stepResults: run.stepResults,
+            }
             : undefined,
         error: cfStatus.error || run?.error,
         logs: run?.logs || [],
@@ -923,9 +917,9 @@ const getWorkflowStatus = createTool({
       const partialResult =
         Object.keys(run.stepResults).length > 0
           ? {
-              completedSteps: Object.keys(run.stepResults),
-              stepResults: run.stepResults,
-            }
+            completedSteps: Object.keys(run.stepResults),
+            stepResults: run.stepResults,
+          }
           : undefined;
 
       return {

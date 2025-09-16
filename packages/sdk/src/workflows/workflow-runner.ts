@@ -11,7 +11,17 @@ import {
   type Bindings,
   type BindingsContext,
 } from "../mcp/context.ts";
-import { assertHasWorkspace, createResourceAccess } from "../mcp/index.ts";
+import {
+  assertHasWorkspace,
+  createResourceAccess,
+  MCPClient,
+} from "../mcp/index.ts";
+import { runMapping, runTool } from "../mcp/sandbox/run.ts";
+import type {
+  MappingStepDefinition,
+  ToolCallStepDefinition,
+  WorkflowStepDefinition,
+} from "../mcp/sandbox/workflows.ts";
 
 export type { WorkflowStepConfig };
 
@@ -34,7 +44,7 @@ export interface WorkflowStep {
 export interface WorkflowRunnerProps<T = unknown> {
   input: T;
   name: string;
-  steps: WorkflowStep[];
+  steps: WorkflowStepDefinition[]; // Changed from WorkflowStep[] to WorkflowStepDefinition[]
   state?: Record<string, unknown>;
   context: Pick<PrincipalExecutionContext, "workspace" | "locator">;
 }
@@ -66,6 +76,45 @@ export class WorkflowRunner extends WorkflowEntrypoint<Bindings> {
     };
   }
 
+  /**
+   * Convert WorkflowStepDefinition to WorkflowStep with actual runnable functions
+   */
+  private convertStepDefinitionToStep(
+    stepDef: WorkflowStepDefinition,
+    appContext: AppContext,
+    runtimeId: string,
+  ): WorkflowStep {
+    const client = MCPClient.forContext(appContext);
+
+    let runnable: Runnable;
+    if (stepDef.type === "mapping") {
+      runnable = (input, state) =>
+        runMapping(
+          input,
+          state,
+          stepDef.def as MappingStepDefinition,
+          client,
+          runtimeId,
+        );
+    } else if (stepDef.type === "tool_call") {
+      runnable = (input) =>
+        runTool(input, stepDef.def as ToolCallStepDefinition, client);
+    } else {
+      throw new Error(
+        `Invalid step type: ${(stepDef as unknown as { type: string }).type}`,
+      );
+    }
+
+    return {
+      name: stepDef.def.name,
+      config:
+        stepDef.type === "tool_call" && "options" in stepDef.def
+          ? (stepDef.def.options ?? {})
+          : undefined,
+      fn: runnable,
+    };
+  }
+
   override async run(
     event: Readonly<WorkflowEvent<WorkflowRunnerProps>>,
     cfStep: CloudflareWorkflowStep,
@@ -74,7 +123,14 @@ export class WorkflowRunner extends WorkflowEntrypoint<Bindings> {
       ...(await this.principalContextFromRunnerProps(event.payload)),
       ...this.bindingsCtx,
     };
-    const { input, steps, state } = event.payload;
+    const { input, steps: stepDefinitions, state } = event.payload;
+    const runtimeId = appContext.locator?.value ?? "default";
+
+    // Convert step definitions to actual runnable steps
+    const steps = stepDefinitions.map((stepDef) =>
+      this.convertStepDefinitionToStep(stepDef, appContext, runtimeId),
+    );
+
     const workflowState = {
       input,
       steps: state ?? {},

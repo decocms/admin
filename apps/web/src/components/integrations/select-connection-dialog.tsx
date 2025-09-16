@@ -95,7 +95,7 @@ interface HandleInstallUI {
 }
 
 const INITIAL_STEP_INDEX = 0;
-const useIntegrationInstallStep = ({
+export const useIntegrationInstallStep = ({
   integrationState,
   install,
 }: {
@@ -189,9 +189,7 @@ const useIntegrationInstallStep = ({
     setStepIndex(INITIAL_STEP_INDEX);
   };
 
-
-const dependencyName = maybeAppDependencyList?.[stepIndex];
-
+  const dependencyName = maybeAppDependencyList?.[stepIndex];
 
   return {
     stepIndex,
@@ -210,7 +208,7 @@ interface UseUIInstallIntegrationProps extends HandleInstallUI {
   integration: MarketplaceIntegration | null;
 }
 
-const useUIInstallIntegration = ({
+export const useUIInstallIntegration = ({
   integration,
   onConfirm,
   setIntegration,
@@ -345,7 +343,7 @@ export function ConfirmMarketplaceInstallDialog({
     }
   }, [open]);
 
- if (!integration) return null;
+  if (!integration) return null;
 
   return (
     <Dialog open={open} onOpenChange={() => setIntegration(null)}>
@@ -389,16 +387,7 @@ export function ConfirmMarketplaceInstallDialog({
   );
 }
 
-// Dependency Configuration Step
-function DependencyStep({
-  integration,
-  dependencyName,
-  dependencySchema,
-  currentStep,
-  totalSteps,
-  formRef,
-  integrationState,
-}: {
+interface DependencyStepProps {
   integration: MarketplaceIntegration;
   dependencyName?: string;
   dependencySchema?: JSONSchema7;
@@ -408,7 +397,20 @@ function DependencyStep({
   integrationState: {
     permissions?: Array<{ scope: string; description: string; app?: string }>;
   };
-}) {
+  mode?: "column" | "grid";
+}
+
+export function DependencyStep({
+  integration,
+  dependencyName,
+  dependencySchema,
+  currentStep,
+  totalSteps,
+  formRef,
+  integrationState,
+  mode = "grid",
+}: DependencyStepProps) {
+  const { data: marketplace } = useMarketplaceIntegrations();
   const dependencyIntegration = useMemo(() => {
     if (!dependencySchema || !dependencyName) return null;
 
@@ -445,78 +447,105 @@ function DependencyStep({
   );
 
   const schema = dependencySchema;
+  const isColumn = mode === "column";
 
-  return (
-    <GridContainer className="lg:max-h-[60vh] max-h-135 min-h-135">
-      {/* Left side: App icons and info */}
-      <GridLeftColumn>
-        <div className="pb-4 px-4 h-full">
-          <IntegrationWorkspaceIconForMarketplace integration={integration} />
+  console.log(permissionsFromThisDependency);
 
-          <div className="h-full flex flex-col justify-between pt-16">
-            <h3 className="text-xl text-base-foreground">
-              <span className="font-bold">
-                {integration.friendlyName ?? integration.name}
-              </span>{" "}
-              needs access to the following permissions:
-            </h3>
+  const integrationIcon = (
+    <IntegrationIcon
+      icon={integration?.icon}
+      name={integration?.friendlyName ?? integration?.name}
+      size="xl"
+    />
+  );
 
-            {/* Warning at bottom left */}
-            {/* TODO: identify when integration consume from wallet */}
-            <div>
-              <WalletBalanceAlert />
-            </div>
-          </div>
+  const stepsIndicator = totalSteps > 1 && (
+    <div className="shrink-0 flex items-center gap-2.5">
+      <div className="font-mono text-sm uppercase text-foreground">
+        <span className="text-muted-foreground">{currentStep}</span> /{" "}
+        {totalSteps}
+      </div>
+    </div>
+  );
+  const appInfoView = (
+    <div className={cn(!isColumn && "h-full pb-4 px-4")}>
+      {!isColumn && (
+        <div className="absolute -translate-y-1/2">{integrationIcon}</div>
+      )}
+
+      <div
+        className={cn(
+          "h-full flex flex-col",
+          !isColumn && "pt-16 justify-between",
+          isColumn && "gap-5",
+        )}
+      >
+        <div className="flex items-center gap-2">
+          {isColumn ? integrationIcon : null}
+          <h3 className="text-xl text-base-foreground text-left">
+            <span className="font-bold">
+              {integration.friendlyName ?? integration.name}
+            </span>{" "}
+            needs access to the following permissions:
+          </h3>
+          {isColumn && stepsIndicator}
         </div>
-      </GridLeftColumn>
 
-      {/* Right side: Dependency configuration */}
-      <GridRightColumn>
-        <div className="h-full flex flex-col gap-2 pr-4 pt-4">
-          {/* Header with step indicator */}
-          <div className="flex items-center justify-between py-2 border-b">
-            <div className="font-mono text-sm text-foreground uppercase tracking-wide">
-              connect requirements
-            </div>
-            {totalSteps > 1 && (
-              <div className="flex items-center gap-2.5">
-                <div className="font-mono text-sm uppercase text-foreground">
-                  <span className="text-muted-foreground">{currentStep}</span> /{" "}
-                  {totalSteps}
-                </div>
-              </div>
-            )}
-          </div>
+        {/* Warning at bottom left */}
+        {/* TODO: identify when integration consume from wallet */}
+        <div>
+          <WalletBalanceAlert />
+        </div>
+      </div>
+    </div>
+  );
+  const appSettingsView = (
+    <div
+      className={cn(
+        "h-full flex flex-col gap-2",
+        !isColumn && "pr-4 pt-4",
+        isColumn && "border rounded-[12px] p-4",
+      )}
+    >
+      {/* Header with step indicator */}
+      <div className="flex items-center justify-between py-2 border-b">
+        <div className="font-mono text-sm text-foreground uppercase tracking-wide">
+          connect requirements
+        </div>
+        {!isColumn && stepsIndicator}
+      </div>
 
-          {/* Dependency integration info */}
-          <div className="flex-grow flex flex-col gap-5 py-2">
-            {/* Configuration Form */}
-            <div className="max-h-[200px] overflow-y-auto">
-              {schema && (
-                <div className="flex justify-between items-center gap-2">
-                  {integrationData && (
-                    <div className="flex items-center gap-2">
-                      <IntegrationIcon
-                        icon={integrationData?.icon}
-                        name={
-                          integrationData?.friendlyName ?? integrationData?.name
-                        }
-                        size="lg"
-                      />
-                      {integrationData?.friendlyName ?? integrationData?.name}
-                    </div>
-                  )}
-                  <IntegrationBindingForm schema={schema} formRef={formRef} />
+      {/* Dependency integration info */}
+      <div className="flex-grow flex flex-col gap-5 py-2">
+        {/* Configuration Form */}
+        <div className="max-h-[200px] overflow-y-auto">
+          {schema && (
+            <div className="flex justify-between items-center gap-2">
+              {integrationData && (
+                <div className="flex items-center gap-2">
+                  <IntegrationIcon
+                    icon={integrationData?.icon}
+                    name={
+                      integrationData?.friendlyName ?? integrationData?.name
+                    }
+                    size="lg"
+                  />
+                  {integrationData?.friendlyName ?? integrationData?.name}
                 </div>
               )}
+              <IntegrationBindingForm schema={schema} formRef={formRef} />
             </div>
-            {/* Permissions Section */}
+          )}
+        </div>
+        {/* Permissions Section */}
+        {permissionsFromThisDependency &&
+          permissionsFromThisDependency.length > 0 && (
             <div className="flex-grow flex flex-col gap-2">
               <div className="font-mono text-sm text-secondary-foreground uppercase">
                 permissions
               </div>
               <ScrollArea className="flex-grow h-0">
-                {permissionsFromThisDependency?.map((permission, index) => (
+                {permissionsFromThisDependency.map((permission, index) => (
                   <div key={index} className="flex gap-4 items-start px-2 py-3">
                     <div className="flex gap-2.5 h-5 items-center justify-start">
                       <Icon
@@ -537,9 +566,27 @@ function DependencyStep({
                 ))}
               </ScrollArea>
             </div>
-          </div>
-        </div>
-      </GridRightColumn>
+          )}
+      </div>
+    </div>
+  );
+
+  if (isColumn) {
+    return (
+      <div className="h-full flex flex-col gap-5">
+        {appInfoView}
+        {appSettingsView}
+      </div>
+    );
+  }
+
+  return (
+    <GridContainer className="lg:max-h-[60vh] max-h-135 min-h-135">
+      {/* Left side: App icons and info */}
+      <GridLeftColumn>{appInfoView}</GridLeftColumn>
+
+      {/* Right side: Dependency configuration */}
+      <GridRightColumn>{appSettingsView}</GridRightColumn>
     </GridContainer>
   );
 }

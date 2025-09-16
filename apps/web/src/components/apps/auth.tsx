@@ -32,14 +32,26 @@ import JsonSchemaForm from "../json-schema/index.tsx";
 import { generateDefaultValues } from "../json-schema/utils/generate-default-values.ts";
 import {
   useMarketplaceAppSchema,
+  useMarketplaceIntegrations,
   useOrganizations,
   usePermissionDescriptions,
 } from "@deco/sdk/hooks";
 import type { JSONSchema7 } from "json-schema";
 import { getAllScopes } from "../../utils/scopes.ts";
-import { VerifiedBadge } from "../integrations/marketplace.tsx";
+import {
+  MarketplaceIntegration,
+  VerifiedBadge,
+} from "../integrations/marketplace.tsx";
 import { Locator } from "@deco/sdk";
 import { useUser } from "../../hooks/use-user.ts";
+import {
+  DependencyStep,
+  OauthModalContextProvider,
+  OauthModalState,
+  useIntegrationInstallStep,
+  useUIInstallIntegration,
+} from "../integrations/select-connection-dialog.tsx";
+import { OAuthCompletionDialog } from "../integrations/oauth-completion-dialog.tsx";
 
 const preSelectTeam = (teams: Team[], workspace_hint: string | undefined) => {
   if (teams.length === 1) {
@@ -439,6 +451,72 @@ const SelectableInstallList = ({
   );
 };
 
+const _InlineInstallation = ({
+  integration,
+  onConfirm,
+}: {
+  integration: MarketplaceIntegration;
+  onConfirm: (data: {
+    authorizeOauthUrl: string | null;
+    connection: Integration;
+  }) => void;
+}) => {
+  const { install, integrationState, isLoading, formRef } =
+    useUIInstallIntegration({
+      integration,
+      onConfirm,
+      setIntegration: () => {},
+    });
+  const {
+    stepIndex,
+    currentSchema,
+    totalSteps,
+    dependencyName,
+    resetSteps,
+    handleNextDependency,
+    handleBack,
+  } = useIntegrationInstallStep({ integrationState, install });
+
+  return (
+    <DependencyStep
+      integration={integration}
+      dependencyName={dependencyName}
+      dependencySchema={currentSchema}
+      currentStep={stepIndex}
+      totalSteps={totalSteps}
+      formRef={formRef}
+      integrationState={integrationState}
+      mode="column"
+    />
+  );
+};
+
+const InlineInstallation = ({
+  integrationName,
+  onConfirm,
+}: {
+  integrationName: string;
+  onConfirm: (data: {
+    authorizeOauthUrl: string | null;
+    connection: Integration;
+  }) => void;
+}) => {
+  const { data: marketplace } = useMarketplaceIntegrations();
+  const integration = useMemo(() => {
+    return marketplace?.integrations.find(
+      (integration) => integration.name === integrationName,
+    );
+  }, [marketplace, integrationName]);
+
+  if (!integration) {
+    return null;
+  }
+
+  return (
+    <_InlineInstallation integration={integration} onConfirm={onConfirm} />
+  );
+};
+
 const FooterButtons = ({
   backLabel,
   onClickBack,
@@ -501,6 +579,28 @@ const SelectProjectAppInstance = ({
     useState<Integration | null>(() => installedIntegrations[0] ?? null);
   const [inlineCreatingIntegration, setInlineCreatingIntegration] =
     useState<boolean>(() => installedIntegrations.length === 0);
+  const [oauthCompletionDialog, setOauthCompletionDialog] =
+    useState<OauthModalState>({
+      open: false,
+      url: "",
+      integrationName: "",
+      connection: null,
+      openIntegrationOnFinish: true,
+    });
+
+  const createOAuthCodeAndRedirectBackToApp = async ({
+    integrationId,
+  }: {
+    integrationId: string;
+  }) => {
+    const { redirectTo } = await createOAuthCode.mutateAsync({
+      integrationId,
+      workspace: Locator.from({ org: org.slug, project }),
+      redirectUri,
+      state,
+    });
+    globalThis.location.href = redirectTo;
+  };
 
   const handleFormSubmit = async ({
     formData,
@@ -521,56 +621,44 @@ const SelectProjectAppInstance = ({
     });
   };
 
-  const createOAuthCodeAndRedirectBackToApp = async ({
-    integrationId,
-  }: {
-    integrationId: string;
-  }) => {
-    const { redirectTo } = await createOAuthCode.mutateAsync({
-      integrationId,
-      workspace: Locator.from({ org: org.slug, project }),
-      redirectUri,
-      state,
-    });
-    globalThis.location.href = redirectTo;
-  };
-
   return (
     <div className="flex flex-col items-center justify-start h-full w-full py-6 overflow-y-auto">
       <div className="text-center space-y-6 max-w-md w-full m-auto">
-        <div className="flex flex-col items-center gap-4">
-          <div className="flex items-center justify-center gap-2">
-            <div className="relative">
-              <Avatar
-                shape="square"
-                url={org.avatar_url}
-                fallback={org.name}
-                objectFit="contain"
-                size="xl"
-              />
-            </div>
+        {inlineCreatingIntegration ? null : (
+          <div className="flex flex-col items-center gap-4">
+            <div className="flex items-center justify-center gap-2">
+              <div className="relative">
+                <Avatar
+                  shape="square"
+                  url={org.avatar_url}
+                  fallback={org.name}
+                  objectFit="contain"
+                  size="xl"
+                />
+              </div>
 
-            <div className="relative -mx-4 z-50 bg-background border border-border rounded-lg w-8 h-8 flex items-center justify-center">
-              <Icon
-                name="sync_alt"
-                size={24}
-                className="text-muted-foreground"
-              />
-            </div>
+              <div className="relative -mx-4 z-50 bg-background border border-border rounded-lg w-8 h-8 flex items-center justify-center">
+                <Icon
+                  name="sync_alt"
+                  size={24}
+                  className="text-muted-foreground"
+                />
+              </div>
 
-            <div className="relative">
-              <IntegrationAvatar
-                url={app.icon}
-                fallback={app.friendlyName ?? app.name}
-                size="xl"
-              />
+              <div className="relative">
+                <IntegrationAvatar
+                  url={app.icon}
+                  fallback={app.friendlyName ?? app.name}
+                  size="xl"
+                />
+              </div>
             </div>
+            <h1 className="text-xl font-semibold flex items-start gap-2">
+              <span>Authorize {app.friendlyName ?? app.name}</span>
+              <div className="mt-2">{app.verified && <VerifiedBadge />}</div>
+            </h1>
           </div>
-          <h1 className="text-xl font-semibold flex items-start gap-2">
-            <span>Authorize {app.friendlyName ?? app.name}</span>
-            <div className="mt-2">{app.verified && <VerifiedBadge />}</div>
-          </h1>
-        </div>
+        )}
 
         {inlineCreatingIntegration ? (
           <Suspense
@@ -578,22 +666,39 @@ const SelectProjectAppInstance = ({
               <div className="flex flex-col items-center space-y-4 w-full">
                 <Spinner size="sm" />
                 <p className="text-sm text-muted-foreground">
-                  Loading app permissions...
+                  Loading app settings...
                 </p>
               </div>
             }
           >
-            <InlineCreateIntegrationForm
-              appName={clientId}
-              onFormSubmit={handleFormSubmit}
-              onBack={() => {
-                if (installedIntegrations.length > 0) {
-                  setInlineCreatingIntegration(false);
-                } else {
-                  selectAnotherProject();
+            <OauthModalContextProvider.Provider
+              value={{ onOpenOauthModal: setOauthCompletionDialog }}
+            >
+              <div className="h-[80vh]">
+              <InlineInstallation
+                integrationName={clientId}
+                // create callback
+                onConfirm={({ connection }) =>
+                  createOAuthCodeAndRedirectBackToApp({
+                    integrationId: connection.id,
+                  })
                 }
+              />
+              </div>
+            </OauthModalContextProvider.Provider>
+            <OAuthCompletionDialog
+              open={oauthCompletionDialog.open}
+              onOpenChange={(open) => {
+                setOauthCompletionDialog((prev) => ({ ...prev, open }));
+                // if (
+                //   oauthCompletionDialog.connection &&
+                //   oauthCompletionDialog.openIntegrationOnFinish
+                // ) {
+                //   onSelect?.(oauthCompletionDialog.connection);
+                // }
               }}
-              backEnabled={installedIntegrations.length > 0}
+              authorizeOauthUrl={oauthCompletionDialog.url}
+              integrationName={oauthCompletionDialog.integrationName}
             />
           </Suspense>
         ) : (

@@ -7,7 +7,12 @@ import {
   ProjectTools,
 } from "../index.ts";
 import { MCPClientStub } from "../stub.ts";
-
+import {
+  MappingStepDefinitionSchema,
+  ToolCallStepDefinitionSchema,
+  WorkflowStepDefinitionSchema,
+  WorkflowDefinitionSchema,
+} from "./workflow-schemas.ts";
 import {
   createTool,
   fileNameSlugify,
@@ -15,12 +20,6 @@ import {
   validate,
   validateExecuteCode,
 } from "./utils.ts";
-import {
-  MappingStepDefinitionSchema,
-  ToolCallStepDefinitionSchema,
-  WorkflowStepDefinitionSchema,
-  WorkflowDefinitionSchema,
-} from "./workflow-schemas.ts";
 
 // In-memory storage for workflow runs
 interface WorkflowRun {
@@ -39,219 +38,8 @@ interface WorkflowRun {
 
 const workflowRuns = new Map<string, WorkflowRun>();
 
-<<<<<<< HEAD
-/**
- * Generates a unique run ID
- */
-function generateRunId(): string {
-  return crypto.randomUUID();
-}
-
-/**
- * Clean up old workflow runs to prevent memory leaks
- * Removes runs older than the specified age (default: 1 hour)
- */
-function cleanupOldRuns(maxAgeMs: number = 60 * 60 * 1000): void {
-  const now = Date.now();
-  for (const [runId, run] of workflowRuns.entries()) {
-    if (now - run.startTime > maxAgeMs) {
-      workflowRuns.delete(runId);
-    }
-  }
-}
-
-/**
- * Reusable workflow execution function that runs in the background
- */
-async function executeWorkflow(
-  runId: string,
-  workflowName: string,
-  input: Record<string, unknown>,
-  client: MCPClientStub<ProjectTools>,
-  branch?: string,
-  startFromStep?: string,
-): Promise<void> {
-  const run = workflowRuns.get(runId);
-  if (!run) return;
-
-  try {
-    run.status = "running";
-
-    // Read the workflow definition
-    const workflow = await readWorkflow(workflowName, client, branch);
-    if (!workflow) {
-      run.status = "failed";
-      run.error = "Workflow not found";
-      return;
-    }
-
-    // Validate input against the workflow's input schema
-    const inputValidation = validate(input, workflow.inputSchema);
-    if (!inputValidation.valid) {
-      run.status = "failed";
-      run.error = `Input validation failed: ${inspect(inputValidation)}`;
-      return;
-    }
-
-    const envPromise = asEnv(client);
-    const runtimeId = "default"; // You might want to make this configurable
-
-    // Determine starting step index
-    let startStepIndex = 0;
-    if (startFromStep) {
-      startStepIndex = workflow.steps.findIndex((step) => {
-        const stepName = step.type === "mapping"
-          ? (step.def as z.infer<typeof MappingStepDefinitionSchema>).name
-          : (step.def as z.infer<typeof ToolCallStepDefinitionSchema>).name;
-        return stepName === startFromStep;
-      });
-      if (startStepIndex === -1) {
-        run.status = "failed";
-        run.error = `Starting step '${startFromStep}' not found in workflow`;
-        return;
-      }
-    }
-
-    // Execute steps sequentially starting from the specified step
-    for (let i = startStepIndex; i < workflow.steps.length; i++) {
-      const step = workflow.steps[i];
-      const stepName = step.type === "mapping"
-        ? (step.def as z.infer<typeof MappingStepDefinitionSchema>).name
-        : (step.def as z.infer<typeof ToolCallStepDefinitionSchema>).name;
-      run.currentStep = stepName;
-
-      try {
-        let stepResult: unknown;
-
-        if (step.type === "mapping") {
-          const mappingDef = step.def as z.infer<
-            typeof MappingStepDefinitionSchema
-          >;
-          // Execute mapping step
-          using stepEvaluation = await evalCodeAndReturnDefaultHandle(
-            mappingDef.execute,
-            runtimeId,
-          );
-          const {
-            ctx: stepCtx,
-            defaultHandle: stepDefaultHandle,
-            guestConsole: stepConsole,
-          } = stepEvaluation;
-
-          // Create step context with WellKnownOptions
-          const stepContext = {
-            readWorkflowInput() {
-              return input;
-            },
-            readStepResult(stepName: string) {
-              if (!run.stepResults[stepName]) {
-                throw new Error(`Step '${stepName}' has not been executed yet`);
-              }
-              return run.stepResults[stepName];
-            },
-            env: await envPromise,
-          };
-
-          // Call the mapping function
-          const stepCallHandle = await callFunction(
-            stepCtx,
-            stepDefaultHandle,
-            undefined,
-            stepContext,
-            {},
-          );
-
-          stepResult = stepCtx.dump(stepCtx.unwrapResult(stepCallHandle));
-          run.logs.push(...stepConsole.logs);
-        } else if (step.type === "tool_call") {
-          const toolDef = step.def as z.infer<
-            typeof ToolCallStepDefinitionSchema
-          >;
-          // Execute tool call step
-          // Find the integration connection
-          const { items: integrations } = await client.INTEGRATIONS_LIST({});
-          const integration = integrations.find(
-            (item) => item.id === toolDef.integration,
-          );
-
-          if (!integration) {
-            throw new Error(`Integration '${toolDef.integration}' not found`);
-          }
-
-          const toolCallResult = await client.INTEGRATIONS_CALL_TOOL({
-            connection: integration.connection,
-            params: {
-              name: toolDef.tool_name,
-              arguments: input,
-            },
-          });
-
-          if (toolCallResult.isError) {
-            throw new Error(`Tool call failed: ${inspect(toolCallResult)}`);
-          }
-
-          stepResult = toolCallResult.structuredContent ||
-            toolCallResult.content;
-          run.logs.push({
-            type: "log",
-            content: `Tool call '${toolDef.tool_name}' completed`,
-          });
-        } else {
-          run.status = "failed";
-          run.error = `Unknown step type: ${(step as any).type}`;
-          return;
-        }
-
-        // Store the step result
-        run.stepResults[stepName] = stepResult;
-      } catch (error) {
-        run.status = "failed";
-        run.error = `Step '${stepName}' execution failed: ${inspect(error)}`;
-        return;
-      }
-    }
-
-    // The final result is the output of the last step
-    const lastStep = workflow.steps[workflow.steps.length - 1];
-    const lastStepName = lastStep.type === "mapping"
-      ? (lastStep.def as z.infer<typeof MappingStepDefinitionSchema>).name
-      : (lastStep.def as z.infer<typeof ToolCallStepDefinitionSchema>).name;
-    const finalResult = run.stepResults[lastStepName];
-
-    if (!finalResult) {
-      run.status = "failed";
-      run.error = "No result from the last step";
-      return;
-    }
-
-    // Validate workflow output against the workflow's output schema
-    const workflowOutputValidation = validate(
-      finalResult,
-      workflow.outputSchema,
-    );
-    if (!workflowOutputValidation.valid) {
-      run.status = "failed";
-      run.error = `Workflow output validation failed: ${
-        inspect(
-          workflowOutputValidation,
-        )
-      }`;
-      return;
-    }
-
-    run.finalResult = finalResult;
-    run.status = "completed";
-    run.endTime = Date.now();
-  } catch (error) {
-    run.status = "failed";
-    run.error = `Workflow runner failed: ${inspect(error)}`;
-    run.endTime = Date.now();
-  }
-}
-=======
 // Note: The executeWorkflow function has been removed as we now use Cloudflare Workflows
 // for execution instead of the custom execution loop
->>>>>>> a2f68fd2 (Refact to pass only serializable properties to workflow start)
 
 /**
  * Reads a workflow definition from the workspace and inlines all function code
@@ -333,55 +121,6 @@ async function readWorkflow(
   }
 }
 
-
-<<<<<<< HEAD
-const WORKFLOW_DESCRIPTION =
-  `Create or update a workflow in the sandbox environment.
-=======
-// Tool call step definition - executes a tool from an integration
-export const ToolCallStepDefinitionSchema = z.object({
-  name: z
-    .string()
-    .min(1)
-    .describe("The unique name of the tool call step within the workflow"),
-  description: z
-    .string()
-    .min(1)
-    .describe("A clear description of what this tool call step does"),
-  options: z
-    .object({
-      retry: z
-        .number()
-        .int()
-        .min(0)
-        .default(0)
-        .describe("Number of retry attempts for this step (default: 0)"),
-      timeout: z
-        .number()
-        .positive()
-        .default(Infinity)
-        .describe("Maximum execution time in milliseconds (default: Infinity)"),
-    })
-    .passthrough()
-    .nullish()
-    .describe(
-      "Step configuration options. Extend this object with custom properties for business user configuration",
-    ),
-  tool_name: z.string().min(1).describe("The name of the tool to call"),
-  integration: z
-    .string()
-    .min(1)
-    .describe("The name of the integration that provides this tool"),
-});
-
-// Union of step types
-const WorkflowStepDefinitionSchema = z.object({
-  type: z.enum(["mapping", "tool_call"]).describe("The type of step"),
-  def: z
-    .union([MappingStepDefinitionSchema, ToolCallStepDefinitionSchema])
-    .describe("The step definition based on the type"),
-});
-
 export type MappingStepDefinition = z.infer<typeof MappingStepDefinitionSchema>;
 export type ToolCallStepDefinition = z.infer<
   typeof ToolCallStepDefinitionSchema
@@ -391,34 +130,7 @@ export type WorkflowStepDefinition = z.infer<
   typeof WorkflowStepDefinitionSchema
 >;
 
-const WorkflowDefinitionSchema = z.object({
-  name: z.string().min(1).describe("The unique name of the workflow"),
-  description: z
-    .string()
-    .min(1)
-    .describe("A comprehensive description of what this workflow accomplishes"),
-  inputSchema: z
-    .object({})
-    .passthrough()
-    .describe(
-      "JSON Schema defining the workflow's input parameters and data structure",
-    ),
-  outputSchema: z
-    .object({})
-    .passthrough()
-    .describe(
-      "JSON Schema defining the workflow's final output after all steps complete",
-    ),
-  steps: z
-    .array(WorkflowStepDefinitionSchema)
-    .min(1)
-    .describe(
-      "Array of workflow steps that execute sequentially. The last step should be a mapping step that returns the final output.",
-    ),
-});
-
 const WORKFLOW_DESCRIPTION = `Create or update a workflow in the sandbox environment.
->>>>>>> a2f68fd2 (Refact to pass only serializable properties to workflow start)
 
 ## Overview
 
@@ -934,29 +646,6 @@ const getWorkflowStatus = createTool({
         endTime: run.endTime,
       };
     }
-<<<<<<< HEAD
-
-    // Create partial result from completed steps
-    const partialResult = Object.keys(run.stepResults).length > 0
-      ? {
-        completedSteps: Object.keys(run.stepResults),
-        stepResults: run.stepResults,
-      }
-      : undefined;
-
-    return {
-      status: run.status,
-      currentStep: run.currentStep,
-      stepResults: run.stepResults,
-      finalResult: run.finalResult,
-      partialResult,
-      error: run.error,
-      logs: run.logs,
-      startTime: run.startTime,
-      endTime: run.endTime,
-    };
-=======
->>>>>>> a2f68fd2 (Refact to pass only serializable properties to workflow start)
   },
 });
 
@@ -984,72 +673,6 @@ const replayWorkflowFromStep = createTool({
   handler: async (_, c) => {
     await assertWorkspaceResourceAccess(c);
 
-<<<<<<< HEAD
-    const branch = c.locator?.branch;
-    const client = MCPClient.forContext(c);
-
-    try {
-      // Get the original run
-      const originalRun = workflowRuns.get(runId);
-      if (!originalRun) {
-        return {
-          newRunId: "",
-          error: `Original workflow run '${runId}' not found`,
-        };
-      }
-
-      // Validate that the step exists in the original run's step results
-      if (!originalRun.stepResults[stepName]) {
-        return {
-          newRunId: "",
-          error:
-            `Step '${stepName}' was not completed in the original run or does not exist`,
-        };
-      }
-
-      // Generate a new unique run ID for the replay
-      const newRunId = generateRunId();
-
-      // Create the new workflow run record with existing step results
-      const replayedWorkflowRun: WorkflowRun = {
-        id: newRunId,
-        workflowName: originalRun.workflowName,
-        input: originalRun.input,
-        status: "pending",
-        stepResults: { ...originalRun.stepResults }, // Copy existing step results
-        logs: [...originalRun.logs], // Copy existing logs
-        startTime: Date.now(),
-      };
-
-      // Store the new run in memory
-      workflowRuns.set(newRunId, replayedWorkflowRun);
-
-      // Start the workflow execution in the background from the specified step
-      executeWorkflow(
-        newRunId,
-        originalRun.workflowName,
-        originalRun.input,
-        client,
-        branch,
-        stepName,
-      ).catch((error) => {
-        // Handle any uncaught errors in background execution
-        const run = workflowRuns.get(newRunId);
-        if (run) {
-          run.status = "failed";
-          run.error = `Background replay execution error: ${inspect(error)}`;
-          run.endTime = Date.now();
-        }
-      });
-
-      return { newRunId };
-    } catch (error) {
-      return {
-        newRunId: "",
-        error: `Workflow replay start failed: ${inspect(error)}`,
-      };
-    }
-=======
     // For now, return an error as replay is not directly supported by CF Workflows
     // This could be implemented by creating a new workflow with partial state
     return {
@@ -1057,7 +680,6 @@ const replayWorkflowFromStep = createTool({
       error:
         "Workflow replay is not yet supported with Cloudflare Workflows. Please create a new workflow instance instead.",
     };
->>>>>>> a2f68fd2 (Refact to pass only serializable properties to workflow start)
   },
 });
 

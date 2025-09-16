@@ -64,9 +64,11 @@ function ViewsButtonInner({ tabs }: { tabs: Record<string, Tab> }) {
             }}
           >
             <Icon
-              name={WELL_KNOWN_VIEW_ICONS[
-                id as keyof typeof WELL_KNOWN_VIEW_ICONS
-              ] || "atr"}
+              name={
+                WELL_KNOWN_VIEW_ICONS[
+                  id as keyof typeof WELL_KNOWN_VIEW_ICONS
+                ] || "atr"
+              }
               className="text-muted-foreground"
               size={16}
             />

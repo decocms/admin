@@ -148,9 +148,8 @@ export function AgentProvider({
   const agentRoot = useAgentRoot(agentId);
   const { preferences } = useUserPreferences();
 
-  const [finishReason, setFinishReason] = useState<
-    LanguageModelV1FinishReason | null
-  >(null);
+  const [finishReason, setFinishReason] =
+    useState<LanguageModelV1FinishReason | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
   const correlationIdRef = useRef<string | null>(null);
   const latestRulesRef = useRef<string[] | null>(null);
@@ -308,9 +307,10 @@ export function AgentProvider({
             maxSteps: effectiveChatState.max_steps,
             pdfSummarization: preferences.pdfSummarization ?? true,
             toolsets,
-            smoothStream: preferences.smoothStream !== false
-              ? { delayInMs: 25, chunk: "word" }
-              : undefined,
+            smoothStream:
+              preferences.smoothStream !== false
+                ? { delayInMs: 25, chunk: "word" }
+                : undefined,
           },
         ],
       };
@@ -359,7 +359,7 @@ export function AgentProvider({
           toolInvocations: msg.toolInvocations?.filter(
             (tool) => tool.toolCallId !== toolCallId,
           ),
-        }))
+        })),
       );
 
       await chat.append({ role: "user", content: selectedValue });

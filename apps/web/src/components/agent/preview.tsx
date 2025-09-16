@@ -68,13 +68,11 @@ function InternalResourceDetailWithIntegration({
   const integration = useIntegration(integrationId).data;
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [content, setContent] = useState<
-    {
-      data?: string;
-      type?: "text" | "blob";
-      mimeType?: string;
-    } | null
-  >(null);
+  const [content, setContent] = useState<{
+    data?: string;
+    type?: "text" | "blob";
+    mimeType?: string;
+  } | null>(null);
 
   async function read() {
     setLoading(true);
@@ -186,11 +184,11 @@ export function useTabsForAgent(
     // If we have views, close all base tabs so only the first view is open
     const tabs = hasViews
       ? Object.fromEntries(
-        Object.entries(baseTabs).map(([key, tab]) => [
-          key,
-          { ...tab, initialOpen: false },
-        ]),
-      )
+          Object.entries(baseTabs).map(([key, tab]) => [
+            key,
+            { ...tab, initialOpen: false },
+          ]),
+        )
       : { ...baseTabs };
 
     // Insert view tabs after chat tab

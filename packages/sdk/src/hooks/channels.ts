@@ -32,12 +32,12 @@ export const useCreateChannel = () => {
 
       const listKey = KEYS.CHANNELS(locator);
       client.cancelQueries({ queryKey: listKey });
-      client.setQueryData<{ channels: Channel[] }>(
-        listKey,
-        (old) =>
-          !old ? { channels: [result] } : {
-            channels: [result, ...old.channels],
-          },
+      client.setQueryData<{ channels: Channel[] }>(listKey, (old) =>
+        !old
+          ? { channels: [result] }
+          : {
+              channels: [result, ...old.channels],
+            },
       );
     },
   });
@@ -56,12 +56,14 @@ export const useUpdateChannelCache = () => {
 
     const listKey = KEYS.CHANNELS(locator);
     client.cancelQueries({ queryKey: listKey });
-    client.setQueryData<{ channels: Channel[] }>(
-      listKey,
-      (old) =>
-        !old ? { channels: [channel] } : {
-          channels: old.channels.map((c) => c.id === channel.id ? channel : c),
-        },
+    client.setQueryData<{ channels: Channel[] }>(listKey, (old) =>
+      !old
+        ? { channels: [channel] }
+        : {
+            channels: old.channels.map((c) =>
+              c.id === channel.id ? channel : c,
+            ),
+          },
     );
   };
 
@@ -117,12 +119,12 @@ export const useRemoveChannel = () => {
 
       const listKey = KEYS.CHANNELS(locator);
       client.cancelQueries({ queryKey: listKey });
-      client.setQueryData<{ channels: Channel[] }>(
-        listKey,
-        (old) =>
-          !old ? { channels: [] } : {
-            channels: old.channels.filter((channel) => channel.id !== id),
-          },
+      client.setQueryData<{ channels: Channel[] }>(listKey, (old) =>
+        !old
+          ? { channels: [] }
+          : {
+              channels: old.channels.filter((channel) => channel.id !== id),
+            },
       );
     },
   });

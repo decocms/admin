@@ -67,20 +67,13 @@ export const getMeta = createDatabaseTool({
 });
 
 const MASTRA_CREATE_TABLE_SQLs: Record<string, boolean> = {
-  "CREATE TABLE IF NOT EXISTS mastra_resources (id TEXT NOT NULL PRIMARY KEY, workingMemory TEXT, metadata TEXT, createdAt TIMESTAMP NOT NULL, updatedAt TIMESTAMP NOT NULL)":
-    true,
-  "CREATE TABLE IF NOT EXISTS mastra_scorers (id TEXT NOT NULL PRIMARY KEY, scorerId TEXT, traceId TEXT, runId TEXT, scorer TEXT, extractStepResult TEXT, analyzeStepResult TEXT, score FLOAT, reason TEXT, metadata TEXT, extractPrompt TEXT, analyzePrompt TEXT, reasonPrompt TEXT, input TEXT, output TEXT, additionalContext TEXT, runtimeContext TEXT, entityType TEXT, entity TEXT, entityId TEXT, source TEXT, resourceId TEXT, threadId TEXT, createdAt TIMESTAMP, updatedAt TIMESTAMP)":
-    true,
-  "CREATE TABLE IF NOT EXISTS mastra_traces (id TEXT NOT NULL PRIMARY KEY, parentSpanId TEXT, name TEXT NOT NULL, traceId TEXT NOT NULL, scope TEXT NOT NULL, kind INTEGER NOT NULL, attributes TEXT, status TEXT, events TEXT, links TEXT, other TEXT, startTime INTEGER NOT NULL, endTime INTEGER NOT NULL, createdAt TIMESTAMP NOT NULL)":
-    true,
-  "CREATE TABLE IF NOT EXISTS mastra_messages (id TEXT NOT NULL PRIMARY KEY, thread_id TEXT NOT NULL, content TEXT NOT NULL, role TEXT NOT NULL, type TEXT NOT NULL, createdAt TIMESTAMP NOT NULL, resourceId TEXT)":
-    true,
-  "CREATE TABLE IF NOT EXISTS mastra_threads (id TEXT NOT NULL PRIMARY KEY, resourceId TEXT NOT NULL, title TEXT NOT NULL, metadata TEXT, createdAt TIMESTAMP NOT NULL, updatedAt TIMESTAMP NOT NULL)":
-    true,
-  "CREATE TABLE IF NOT EXISTS mastra_evals (input TEXT, output TEXT, result TEXT, agent_name TEXT, metric_name TEXT, instructions TEXT, test_info TEXT, global_run_id TEXT, run_id TEXT, created_at TIMESTAMP, createdAt TIMESTAMP)":
-    true,
-  "CREATE TABLE IF NOT EXISTS mastra_workflow_snapshot (workflow_name TEXT, run_id TEXT, resourceId TEXT, snapshot TEXT, createdAt TIMESTAMP, updatedAt TIMESTAMP, UNIQUE (workflow_name, run_id))":
-    true,
+  "CREATE TABLE IF NOT EXISTS mastra_resources (id TEXT NOT NULL PRIMARY KEY, workingMemory TEXT, metadata TEXT, createdAt TIMESTAMP NOT NULL, updatedAt TIMESTAMP NOT NULL)": true,
+  "CREATE TABLE IF NOT EXISTS mastra_scorers (id TEXT NOT NULL PRIMARY KEY, scorerId TEXT, traceId TEXT, runId TEXT, scorer TEXT, extractStepResult TEXT, analyzeStepResult TEXT, score FLOAT, reason TEXT, metadata TEXT, extractPrompt TEXT, analyzePrompt TEXT, reasonPrompt TEXT, input TEXT, output TEXT, additionalContext TEXT, runtimeContext TEXT, entityType TEXT, entity TEXT, entityId TEXT, source TEXT, resourceId TEXT, threadId TEXT, createdAt TIMESTAMP, updatedAt TIMESTAMP)": true,
+  "CREATE TABLE IF NOT EXISTS mastra_traces (id TEXT NOT NULL PRIMARY KEY, parentSpanId TEXT, name TEXT NOT NULL, traceId TEXT NOT NULL, scope TEXT NOT NULL, kind INTEGER NOT NULL, attributes TEXT, status TEXT, events TEXT, links TEXT, other TEXT, startTime INTEGER NOT NULL, endTime INTEGER NOT NULL, createdAt TIMESTAMP NOT NULL)": true,
+  "CREATE TABLE IF NOT EXISTS mastra_messages (id TEXT NOT NULL PRIMARY KEY, thread_id TEXT NOT NULL, content TEXT NOT NULL, role TEXT NOT NULL, type TEXT NOT NULL, createdAt TIMESTAMP NOT NULL, resourceId TEXT)": true,
+  "CREATE TABLE IF NOT EXISTS mastra_threads (id TEXT NOT NULL PRIMARY KEY, resourceId TEXT NOT NULL, title TEXT NOT NULL, metadata TEXT, createdAt TIMESTAMP NOT NULL, updatedAt TIMESTAMP NOT NULL)": true,
+  "CREATE TABLE IF NOT EXISTS mastra_evals (input TEXT, output TEXT, result TEXT, agent_name TEXT, metric_name TEXT, instructions TEXT, test_info TEXT, global_run_id TEXT, run_id TEXT, created_at TIMESTAMP, createdAt TIMESTAMP)": true,
+  "CREATE TABLE IF NOT EXISTS mastra_workflow_snapshot (workflow_name TEXT, run_id TEXT, resourceId TEXT, snapshot TEXT, createdAt TIMESTAMP, updatedAt TIMESTAMP, UNIQUE (workflow_name, run_id))": true,
 };
 
 const CREATED: Map<string, boolean> = new Map();
@@ -154,8 +147,7 @@ export const viewBinding = createDatabaseTool({
         {
           title: "Database",
           icon: "database",
-          url:
-            `https://api.decocms.com/${c.workspace.root}/${c.workspace.slug}/i:databases-management/studio`,
+          url: `https://api.decocms.com/${c.workspace.root}/${c.workspace.slug}/i:databases-management/studio`,
         },
       ],
     };

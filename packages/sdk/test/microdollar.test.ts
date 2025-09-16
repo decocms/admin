@@ -75,9 +75,8 @@ describe("MicroDollar - negative values", () => {
   });
 
   test("should handle large negative values", () => {
-    const largeNegativeValue = MicroDollar.fromMicrodollarString(
-      "-123456789_123456",
-    );
+    const largeNegativeValue =
+      MicroDollar.fromMicrodollarString("-123456789_123456");
     expect(largeNegativeValue.toMicrodollarString()).toBe("-123456789_123456");
     expect(largeNegativeValue.toDollars()).toBe(-123456789.123456);
     expect(largeNegativeValue.isNegative()).toBe(true);

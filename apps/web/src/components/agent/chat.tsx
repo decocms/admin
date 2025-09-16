@@ -91,7 +91,8 @@ function ActionsButtons() {
               onClick={() =>
                 focusChat(agentId, crypto.randomUUID(), {
                   history: false,
-                })}
+                })
+              }
             >
               <Icon name="edit_square" />
             </Button>
@@ -108,7 +109,8 @@ function ActionsButtons() {
               onClick={() =>
                 focusAgent(agentId, crypto.randomUUID(), {
                   history: false,
-                })}
+                })
+              }
             >
               <Icon name="tune" />
             </Button>
@@ -147,7 +149,8 @@ function Breadcrumb({ agentId }: { agentId: string }) {
                         onClick={() =>
                           focusChat(agentId, crypto.randomUUID(), {
                             history: false,
-                          })}
+                          })
+                        }
                       >
                         <Icon name="edit_square" /> New chat
                       </DropdownMenuItem>
@@ -157,7 +160,8 @@ function Breadcrumb({ agentId }: { agentId: string }) {
                       onClick={() =>
                         focusAgent(agentId, crypto.randomUUID(), {
                           history: false,
-                        })}
+                        })
+                      }
                     >
                       <Icon name="tune" /> Edit agent
                     </DropdownMenuItem>
@@ -180,7 +184,9 @@ function AgentMetadataUpdater() {
 
   // Compute favicon href, favouring resolved file URLs for local files.
   const faviconHref = isFilePath(agent?.avatar)
-    ? typeof resolvedAvatar === "string" ? resolvedAvatar : undefined
+    ? typeof resolvedAvatar === "string"
+      ? resolvedAvatar
+      : undefined
     : agent?.avatar;
 
   useDocumentMetadata({
@@ -236,9 +242,11 @@ function Page(props: Props) {
           tabs={TABS}
           key={agentId}
           actionButtons={<ActionsButtons />}
-          breadcrumb={agentId !== WELL_KNOWN_AGENT_IDS.teamAgent && (
-            <Breadcrumb agentId={agentId} />
-          )}
+          breadcrumb={
+            agentId !== WELL_KNOWN_AGENT_IDS.teamAgent && (
+              <Breadcrumb agentId={agentId} />
+            )
+          }
         />
       </AgentProvider>
     </Suspense>

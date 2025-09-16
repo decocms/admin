@@ -43,27 +43,25 @@ export default async function(ctx) {
   // Generated code for: ${prompt}
   
   ${
-        previousSteps?.length
-          ? `// Get data from previous steps
+    previousSteps?.length
+      ? `// Get data from previous steps
   const previousData = await ctx.getStepResult('${
-            previousSteps[previousSteps.length - 1]?.id
-          }');
+    previousSteps[previousSteps.length - 1]?.id
+  }');
   `
-          : ""
-      }
+      : ""
+  }
   
-  ${
-        selectedTools
-          .map(
-            (tool) =>
-              `// Use ${tool} tool
+  ${selectedTools
+    .map(
+      (tool) =>
+        `// Use ${tool} tool
   const ${tool}Result = await ctx.env.${tool}.someMethod({
     // Tool parameters here
   });
   `,
-          )
-          .join("\n")
-      }
+    )
+    .join("\n")}
   
   // Process and return result
   const result = {
@@ -85,10 +83,12 @@ export default async function(ctx) {
 
       return {
         code,
-        inputSchema: previousSteps?.length ? undefined : {
-          type: "object",
-          properties: {},
-        },
+        inputSchema: previousSteps?.length
+          ? undefined
+          : {
+              type: "object",
+              properties: {},
+            },
         outputSchema: {
           type: "object",
           properties: {

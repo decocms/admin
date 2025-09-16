@@ -28,7 +28,7 @@ export const isHeadSampled: TailSampleFn = (traceInfo) => {
   const localRootSpan = traceInfo.localRootSpan;
   return (
     (localRootSpan.spanContext().traceFlags & TraceFlags.SAMPLED) ===
-      TraceFlags.SAMPLED
+    TraceFlags.SAMPLED
   );
 };
 

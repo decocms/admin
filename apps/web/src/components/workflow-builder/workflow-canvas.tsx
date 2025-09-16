@@ -134,9 +134,8 @@ export function WorkflowCanvas({
       setWorkflow(updatedWorkflow);
 
       // Update React Flow
-      const { nodes: newNodes, edges: newEdges } = convertWorkflowToFlow(
-        updatedWorkflow,
-      );
+      const { nodes: newNodes, edges: newEdges } =
+        convertWorkflowToFlow(updatedWorkflow);
       setNodes(newNodes);
       setEdges(newEdges);
 
@@ -154,9 +153,8 @@ export function WorkflowCanvas({
       setWorkflow(updatedWorkflow);
 
       // Update React Flow
-      const { nodes: newNodes, edges: newEdges } = convertWorkflowToFlow(
-        updatedWorkflow,
-      );
+      const { nodes: newNodes, edges: newEdges } =
+        convertWorkflowToFlow(updatedWorkflow);
       setNodes(newNodes);
       setEdges(newEdges);
 
@@ -174,9 +172,8 @@ export function WorkflowCanvas({
       setWorkflow(updatedWorkflow);
 
       // Update React Flow
-      const { nodes: newNodes, edges: newEdges } = convertWorkflowToFlow(
-        updatedWorkflow,
-      );
+      const { nodes: newNodes, edges: newEdges } =
+        convertWorkflowToFlow(updatedWorkflow);
       setNodes(newNodes);
       setEdges(newEdges);
     },

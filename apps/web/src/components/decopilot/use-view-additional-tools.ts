@@ -30,8 +30,8 @@ export function useViewAdditionalTools(): Record<string, string[]> | undefined {
     }
     const toolNames = Array.isArray((integration as any)?.tools)
       ? ((integration as any).tools as Array<{ name: string }>).map(
-        (t) => t.name,
-      )
+          (t) => t.name,
+        )
       : [];
     return { [integrationId]: toolNames } as Record<string, string[]>;
   }, [integrationId, viewName, connectionViews, integration]);

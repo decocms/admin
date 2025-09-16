@@ -45,7 +45,8 @@ function DockedToggleButton({
           title,
           initialWidth: 420,
           position: { direction: "right" },
-        })}
+        })
+      }
       className={cn(className, openPanels.has(id) ? "bg-accent" : "")}
     >
       {children}

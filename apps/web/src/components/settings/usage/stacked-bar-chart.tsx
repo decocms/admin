@@ -85,11 +85,8 @@ function ChartColumn({
   hoveredColumn: number | null;
   setHoveredColumn: (index: number | null) => void;
 }) {
-  const columnWidth = chartData.length > 12
-    ? "50px"
-    : chartData.length <= 7
-    ? "100px"
-    : "80px";
+  const columnWidth =
+    chartData.length > 12 ? "50px" : chartData.length <= 7 ? "100px" : "80px";
   const minWidth = chartData.length > 12 ? "40px" : "60px";
 
   return (
@@ -143,29 +140,25 @@ function ChartColumn({
                     <div
                       className="w-2 h-2 rounded flex-shrink-0"
                       style={{
-                        backgroundColor: item.id === "other"
-                          ? "#E5E7EB"
-                          : item.color,
+                        backgroundColor:
+                          item.id === "other" ? "#E5E7EB" : item.color,
                       }}
                     />
                     {item.id !== "other" && (
                       <>
-                        {item.type === "user" && item.member
-                          ? (
-                            <UserAvatar
-                              url={item.member.profiles?.metadata?.avatar_url}
-                              fallback={item.member.profiles?.email ||
-                                "Unknown"}
-                              size="sm"
-                            />
-                          )
-                          : (
-                            <AgentAvatar
-                              url={item.avatar}
-                              fallback={item.name}
-                              size="sm"
-                            />
-                          )}
+                        {item.type === "user" && item.member ? (
+                          <UserAvatar
+                            url={item.member.profiles?.metadata?.avatar_url}
+                            fallback={item.member.profiles?.email || "Unknown"}
+                            size="sm"
+                          />
+                        ) : (
+                          <AgentAvatar
+                            url={item.avatar}
+                            fallback={item.name}
+                            size="sm"
+                          />
+                        )}
                       </>
                     )}
                     <span className="text-xs truncate">{item.name}</span>
@@ -189,11 +182,8 @@ function ChartColumn({
 }
 
 function XAxisLabels({ chartData }: { chartData: EnrichedChartBarStack[] }) {
-  const columnWidth = chartData.length > 12
-    ? "50px"
-    : chartData.length <= 7
-    ? "100px"
-    : "80px";
+  const columnWidth =
+    chartData.length > 12 ? "50px" : chartData.length <= 7 ? "100px" : "80px";
   const minWidth = chartData.length > 12 ? "40px" : "60px";
 
   return (
@@ -244,9 +234,8 @@ export function StackedBarChart({
   const maxValue = Math.max(
     ...chartData.map((d: EnrichedChartBarStack) => d.total),
   );
-  const chartMax = maxValue > 0
-    ? Math.max(0.1, Math.ceil(maxValue * 1.1 * 100) / 100)
-    : 0.1;
+  const chartMax =
+    maxValue > 0 ? Math.max(0.1, Math.ceil(maxValue * 1.1 * 100) / 100) : 0.1;
 
   return (
     <Card className="w-full p-6 rounded-xl border bg-muted/50">

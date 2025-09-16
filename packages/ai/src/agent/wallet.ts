@@ -215,11 +215,9 @@ export class AgentWallet {
             }
 
             throw new Error(
-              `Failed to ensure pending operations are done: ${
-                JSON.stringify(
-                  operation,
-                )
-              }`,
+              `Failed to ensure pending operations are done: ${JSON.stringify(
+                operation,
+              )}`,
             );
           }
         }),

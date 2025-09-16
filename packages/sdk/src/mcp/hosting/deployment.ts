@@ -134,9 +134,10 @@ const handleAssetUpload = async ({
       form.append(
         fileHash,
         new File([base64Data], fileHash, {
-          type: mimeType === "application/javascript+module"
-            ? "application/javascript"
-            : mimeType,
+          type:
+            mimeType === "application/javascript+module"
+              ? "application/javascript"
+              : mimeType,
         }),
         fileHash,
       );
@@ -178,8 +179,8 @@ const uploadWranglerAssets = async ({
 }) => {
   const assetsManifest = createAssetsManifest(assets, scriptSlug);
 
-  const assetUploadSession = await c.cf.workersForPlatforms.dispatch.namespaces
-    .scripts.assetUpload.create(
+  const assetUploadSession =
+    await c.cf.workersForPlatforms.dispatch.namespaces.scripts.assetUpload.create(
       c.envVars.CF_DISPATCH_NAMESPACE,
       scriptSlug,
       {
@@ -258,11 +259,12 @@ export async function deployToCloudflare({
   if (!zoneId) {
     throw new Error("CF_ZONE_ID is not set");
   }
-  const durableObjects = durable_objects?.bindings?.map((binding) => ({
-    type: "durable_object_namespace" as const,
-    name: binding.name,
-    class_name: binding.class_name,
-  })) ?? [];
+  const durableObjects =
+    durable_objects?.bindings?.map((binding) => ({
+      type: "durable_object_namespace" as const,
+      name: binding.name,
+      class_name: binding.class_name,
+    })) ?? [];
   const hasAnyDoAsideWorkflows = durableObjects.some(
     (durableObject) =>
       "DECO_CHAT_WORKFLOW_DO" !== durableObject.name &&
@@ -323,14 +325,14 @@ export async function deployToCloudflare({
     envVars["DECO_CHAT_BINDINGS"] = bindingsString;
   }
 
-  const { bindings } = await c.cf.workersForPlatforms.dispatch.namespaces
-    .scripts.settings
-    .get(env.CF_DISPATCH_NAMESPACE, scriptSlug, {
-      account_id: env.CF_ACCOUNT_ID,
-    })
-    .catch(() => ({
-      bindings: [],
-    }));
+  const { bindings } =
+    await c.cf.workersForPlatforms.dispatch.namespaces.scripts.settings
+      .get(env.CF_DISPATCH_NAMESPACE, scriptSlug, {
+        account_id: env.CF_ACCOUNT_ID,
+      })
+      .catch(() => ({
+        bindings: [],
+      }));
 
   const doMigrations = migrationDiff(
     migrations ?? [],
@@ -376,11 +378,11 @@ export async function deployToCloudflare({
     })) ?? []),
     ...(wranglerAssetsConfig?.binding && hasAssets
       ? [
-        {
-          type: "assets" as const,
-          name: wranglerAssetsConfig.binding,
-        },
-      ]
+          {
+            type: "assets" as const,
+            name: wranglerAssetsConfig.binding,
+          },
+        ]
       : []),
   ];
 

@@ -65,18 +65,17 @@ export const createTool = ({
           return result;
         } catch (error) {
           err = error;
-          return `Failed to execute tool with the following error: ${
-            String(
-              error,
-            )
-          }`;
+          return `Failed to execute tool with the following error: ${String(
+            error,
+          )}`;
         } finally {
           if (err) {
             span.setStatus({
               code: SpanStatusCode.ERROR,
-              message: typeof err === "object" && "message" in err
-                ? String(err.message)
-                : "Unknown error",
+              message:
+                typeof err === "object" && "message" in err
+                  ? String(err.message)
+                  : "Unknown error",
             });
           } else {
             span.setStatus({

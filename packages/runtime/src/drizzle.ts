@@ -129,11 +129,9 @@ export async function migrateWithoutTransaction(
 
     // Get the last applied migration
     const dbMigrations = await db.values<[number, string, string]>(
-      sql`SELECT id, hash, created_at FROM ${
-        sql.identifier(
-          migrationsTable,
-        )
-      } ORDER BY created_at DESC LIMIT 1`,
+      sql`SELECT id, hash, created_at FROM ${sql.identifier(
+        migrationsTable,
+      )} ORDER BY created_at DESC LIMIT 1`,
     );
 
     const lastDbMigration = dbMigrations[0] ?? undefined;
@@ -141,8 +139,8 @@ export async function migrateWithoutTransaction(
 
     // Apply pending migrations sequentially (without transaction wrapper)
     for (const migration of migrations) {
-      const hasNoMigrations = lastDbMigration === undefined ||
-        !lastDbMigration.length;
+      const hasNoMigrations =
+        lastDbMigration === undefined || !lastDbMigration.length;
       if (
         hasNoMigrations ||
         Number(lastDbMigration[2])! < migration.folderMillis
@@ -163,11 +161,9 @@ export async function migrateWithoutTransaction(
 
           // Record successful migration
           await db.run(
-            sql`INSERT INTO ${
-              sql.identifier(
-                migrationsTable,
-              )
-            } ("hash", "created_at") VALUES(${migration.hash}, ${migration.folderMillis})`,
+            sql`INSERT INTO ${sql.identifier(
+              migrationsTable,
+            )} ("hash", "created_at") VALUES(${migration.hash}, ${migration.folderMillis})`,
           );
 
           if (debug) {

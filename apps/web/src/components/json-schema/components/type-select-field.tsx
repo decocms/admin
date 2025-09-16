@@ -60,9 +60,8 @@ export function TypeSelectField<T extends FieldValues = FieldValues>({
     base: true,
   };
   const { data: marketplace } = useMarketplaceIntegrations();
-  const [installingIntegration, setInstallingIntegration] = useState<
-    MarketplaceIntegration | null
-  >(null);
+  const [installingIntegration, setInstallingIntegration] =
+    useState<MarketplaceIntegration | null>(null);
 
   const selectedOption = options.find(
     // deno-lint-ignore no-explicit-any
@@ -125,85 +124,83 @@ export function TypeSelectField<T extends FieldValues = FieldValues>({
               </FormLabel>
             )}
             <div className="flex items-center gap-4">
-              {options?.length > 0
-                ? (
-                  <Select
-                    onValueChange={(value: string) => {
-                      if (value === CONNECT_ACCOUNT_VALUE) {
-                        field.onChange({ value: "" });
-                        handleAddIntegration();
-                        return;
-                      }
+              {options?.length > 0 ? (
+                <Select
+                  onValueChange={(value: string) => {
+                    if (value === CONNECT_ACCOUNT_VALUE) {
+                      field.onChange({ value: "" });
+                      handleAddIntegration();
+                      return;
+                    }
 
-                      // Update the form with an object containing the selected value
-                      const selectedOption = options.find(
-                        (option: OptionItem) => option.value === value,
-                      );
-                      if (selectedOption) {
-                        field.onChange({ value: selectedOption.value });
-                      }
-                    }}
-                    value={field.value?.value || ""}
-                    disabled={disabled}
-                  >
-                    <FormControl>
-                      <SelectTrigger className="h-11">
-                        <SelectValue placeholder="Select an integration">
-                          {field.value?.value && selectedOption && (
-                            <div className="flex items-center gap-3 max-w-50">
-                              <IntegrationIcon
-                                icon={selectedOption.icon}
-                                name={selectedOption.label}
-                                size="sm"
-                                className="flex-shrink-0"
-                              />
-                              <span className="font-medium truncate min-w-0 flex-1">
-                                {selectedOption.label}
-                              </span>
-                            </div>
-                          )}
-                        </SelectValue>
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent align="end" side="bottom">
-                      {options.map((option: OptionItem) => (
-                        <SelectItem key={option.value} value={option.value}>
+                    // Update the form with an object containing the selected value
+                    const selectedOption = options.find(
+                      (option: OptionItem) => option.value === value,
+                    );
+                    if (selectedOption) {
+                      field.onChange({ value: selectedOption.value });
+                    }
+                  }}
+                  value={field.value?.value || ""}
+                  disabled={disabled}
+                >
+                  <FormControl>
+                    <SelectTrigger className="h-11">
+                      <SelectValue placeholder="Select an integration">
+                        {field.value?.value && selectedOption && (
                           <div className="flex items-center gap-3 max-w-50">
                             <IntegrationIcon
-                              icon={option.icon}
-                              name={option.label}
+                              icon={selectedOption.icon}
+                              name={selectedOption.label}
                               size="sm"
                               className="flex-shrink-0"
                             />
-                            <span className="font-medium text-sm truncate min-w-0 flex-1">
-                              {option.label}
+                            <span className="font-medium truncate min-w-0 flex-1">
+                              {selectedOption.label}
                             </span>
                           </div>
-                        </SelectItem>
-                      ))}
-
-                      <div className="border-t h-px" />
-                      <SelectItem
-                        key={CONNECT_ACCOUNT_VALUE}
-                        value={CONNECT_ACCOUNT_VALUE}
-                      >
-                        <span className="flex items-center justify-center w-8 h-8">
-                          <Icon name="add" size={24} />
-                        </span>
-                        <span className="font-medium text-sm">Create new</span>
+                        )}
+                      </SelectValue>
+                    </SelectTrigger>
+                  </FormControl>
+                  <SelectContent align="end" side="bottom">
+                    {options.map((option: OptionItem) => (
+                      <SelectItem key={option.value} value={option.value}>
+                        <div className="flex items-center gap-3 max-w-50">
+                          <IntegrationIcon
+                            icon={option.icon}
+                            name={option.label}
+                            size="sm"
+                            className="flex-shrink-0"
+                          />
+                          <span className="font-medium text-sm truncate min-w-0 flex-1">
+                            {option.label}
+                          </span>
+                        </div>
                       </SelectItem>
-                    </SelectContent>
-                  </Select>
-                )
-                : (
-                  <Button
-                    disabled={isPending}
-                    onClick={handleAddIntegration}
-                    variant="special"
-                  >
-                    Connect account
-                  </Button>
-                )}
+                    ))}
+
+                    <div className="border-t h-px" />
+                    <SelectItem
+                      key={CONNECT_ACCOUNT_VALUE}
+                      value={CONNECT_ACCOUNT_VALUE}
+                    >
+                      <span className="flex items-center justify-center w-8 h-8">
+                        <Icon name="add" size={24} />
+                      </span>
+                      <span className="font-medium text-sm">Create new</span>
+                    </SelectItem>
+                  </SelectContent>
+                </Select>
+              ) : (
+                <Button
+                  disabled={isPending}
+                  onClick={handleAddIntegration}
+                  variant="special"
+                >
+                  Connect account
+                </Button>
+              )}
             </div>
             {description && (
               <FormDescription className="text-xs text-muted-foreground">

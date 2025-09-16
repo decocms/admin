@@ -43,11 +43,11 @@ export abstract class BaseActor<TMetadata extends AuthMetadata = AuthMetadata> {
       (this.env as Record<string, string>)?.DECO_CHAT_API_JWT_PRIVATE_KEY &&
         (this.env as Record<string, string>)?.DECO_CHAT_API_JWT_PUBLIC_KEY
         ? {
-          public: (this.env as Record<string, string>)
-            ?.DECO_CHAT_API_JWT_PUBLIC_KEY,
-          private: (this.env as Record<string, string>)
-            ?.DECO_CHAT_API_JWT_PRIVATE_KEY,
-        }
+            public: (this.env as Record<string, string>)
+              ?.DECO_CHAT_API_JWT_PUBLIC_KEY,
+            private: (this.env as Record<string, string>)
+              ?.DECO_CHAT_API_JWT_PRIVATE_KEY,
+          }
         : undefined,
     );
     return user ?? null;
@@ -60,8 +60,8 @@ export const stubFor = (env: Bindings) => {
     c: Constructor,
   ): StubFactory<InstanceType<Constructor>> => {
     return runtime instanceof ActorCfRuntime
-      // deno-lint-ignore no-explicit-any
-      ? runtime.stub(c, env as any)
+      ? // deno-lint-ignore no-explicit-any
+        runtime.stub(c, env as any)
       : actors.stub(c.name);
   };
 };

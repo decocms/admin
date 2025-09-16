@@ -180,9 +180,8 @@ const SelectOrganization = ({
               }))}
               value={selectedOrg?.slug ?? ""}
               onChange={(value) =>
-                setSelectedOrg(
-                  orgs.find((team) => team.slug === value) ?? null,
-                )}
+                setSelectedOrg(orgs.find((team) => team.slug === value) ?? null)
+              }
               placeholder="Select a project"
               width="w-full"
               triggerClassName="!h-16"
@@ -190,24 +189,22 @@ const SelectOrganization = ({
               renderTrigger={(selectedOption) => (
                 <div className="flex items-center justify-between w-full h-16 px-3 py-2 border border-input bg-background rounded-md text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50">
                   <div className="flex items-center gap-3">
-                    {selectedOption
-                      ? (
-                        <>
-                          <Avatar
-                            url={selectedOption.avatarUrl as string}
-                            fallback={selectedOption.label}
-                            size="sm"
-                            shape="square"
-                            objectFit="contain"
-                          />
-                          <span>{selectedOption.label}</span>
-                        </>
-                      )
-                      : (
-                        <span className="text-muted-foreground">
-                          Select a project
-                        </span>
-                      )}
+                    {selectedOption ? (
+                      <>
+                        <Avatar
+                          url={selectedOption.avatarUrl as string}
+                          fallback={selectedOption.label}
+                          size="sm"
+                          shape="square"
+                          objectFit="contain"
+                        />
+                        <span>{selectedOption.label}</span>
+                      </>
+                    ) : (
+                      <span className="text-muted-foreground">
+                        Select a project
+                      </span>
+                    )}
                   </div>
                   <ChevronsUpDown className="opacity-50" />
                 </div>
@@ -465,16 +462,14 @@ const FooterButtons = ({
         disabled={continueDisabled}
         onClick={onClickContinue}
       >
-        {continueLoading
-          ? (
-            <div className="flex items-center gap-2">
-              <Spinner size="sm" />
-              Authorizing...
-            </div>
-          )
-          : (
-            `Continue`
-          )}
+        {continueLoading ? (
+          <div className="flex items-center gap-2">
+            <Spinner size="sm" />
+            Authorizing...
+          </div>
+        ) : (
+          `Continue`
+        )}
       </Button>
     </div>
   );
@@ -502,12 +497,10 @@ const SelectProjectAppInstance = ({
   const installCreatingApiKeyAndIntegration =
     useInstallCreatingApiKeyAndIntegration();
 
-  const [selectedIntegration, setSelectedIntegration] = useState<
-    Integration | null
-  >(() => installedIntegrations[0] ?? null);
-  const [inlineCreatingIntegration, setInlineCreatingIntegration] = useState<
-    boolean
-  >(() => installedIntegrations.length === 0);
+  const [selectedIntegration, setSelectedIntegration] =
+    useState<Integration | null>(() => installedIntegrations[0] ?? null);
+  const [inlineCreatingIntegration, setInlineCreatingIntegration] =
+    useState<boolean>(() => installedIntegrations.length === 0);
 
   const handleFormSubmit = async ({
     formData,
@@ -579,43 +572,41 @@ const SelectProjectAppInstance = ({
           </h1>
         </div>
 
-        {inlineCreatingIntegration
-          ? (
-            <Suspense
-              fallback={
-                <div className="flex flex-col items-center space-y-4 w-full">
-                  <Spinner size="sm" />
-                  <p className="text-sm text-muted-foreground">
-                    Loading app permissions...
-                  </p>
-                </div>
-              }
-            >
-              <InlineCreateIntegrationForm
-                appName={clientId}
-                onFormSubmit={handleFormSubmit}
-                onBack={() => {
-                  if (installedIntegrations.length > 0) {
-                    setInlineCreatingIntegration(false);
-                  } else {
-                    selectAnotherProject();
-                  }
-                }}
-                backEnabled={installedIntegrations.length > 0}
-              />
-            </Suspense>
-          )
-          : (
-            <SelectableInstallList
-              installedIntegrations={installedIntegrations}
-              setSelectedIntegration={setSelectedIntegration}
-              selectCreateNew={() => {
-                setInlineCreatingIntegration(true);
-                setSelectedIntegration(null);
+        {inlineCreatingIntegration ? (
+          <Suspense
+            fallback={
+              <div className="flex flex-col items-center space-y-4 w-full">
+                <Spinner size="sm" />
+                <p className="text-sm text-muted-foreground">
+                  Loading app permissions...
+                </p>
+              </div>
+            }
+          >
+            <InlineCreateIntegrationForm
+              appName={clientId}
+              onFormSubmit={handleFormSubmit}
+              onBack={() => {
+                if (installedIntegrations.length > 0) {
+                  setInlineCreatingIntegration(false);
+                } else {
+                  selectAnotherProject();
+                }
               }}
-              selectedIntegration={selectedIntegration}
+              backEnabled={installedIntegrations.length > 0}
             />
-          )}
+          </Suspense>
+        ) : (
+          <SelectableInstallList
+            installedIntegrations={installedIntegrations}
+            setSelectedIntegration={setSelectedIntegration}
+            selectCreateNew={() => {
+              setInlineCreatingIntegration(true);
+              setSelectedIntegration(null);
+            }}
+            selectedIntegration={selectedIntegration}
+          />
+        )}
 
         {inlineCreatingIntegration ? null : (
           <FooterButtons
@@ -629,11 +620,15 @@ const SelectProjectAppInstance = ({
                 integrationId: selectedIntegration.id,
               });
             }}
-            continueDisabled={!selectedIntegration ||
+            continueDisabled={
+              !selectedIntegration ||
               createOAuthCode.isPending ||
-              installCreatingApiKeyAndIntegration.isPending}
-            continueLoading={createOAuthCode.isPending ||
-              installCreatingApiKeyAndIntegration.isPending}
+              installCreatingApiKeyAndIntegration.isPending
+            }
+            continueLoading={
+              createOAuthCode.isPending ||
+              installCreatingApiKeyAndIntegration.isPending
+            }
           />
         )}
       </div>

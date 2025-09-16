@@ -15,7 +15,7 @@ export const Binding = <TDefinition extends readonly ToolBinder[]>(
         );
 
       return requiredTools.every((regexp) =>
-        tools.some((t) => regexp.test(t.name))
+        tools.some((t) => regexp.test(t.name)),
       );
     },
   };

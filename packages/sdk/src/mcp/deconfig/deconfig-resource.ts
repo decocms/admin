@@ -168,8 +168,7 @@ export const deconfigResource = (options: DeconfigResourceOptions) => {
 
     // DECO_CHAT_RESOURCES_CREATE
     {
-      description:
-        `Create a new resource in the DECONFIG directory ${directory}`,
+      description: `Create a new resource in the DECONFIG directory ${directory}`,
       handler: async (
         { name, resourceName: rsName, title, description, content, metadata },
         c,
@@ -189,9 +188,10 @@ export const deconfigResource = (options: DeconfigResourceOptions) => {
         let resourceData: Record<string, unknown> = {};
         if (content) {
           try {
-            resourceData = content.type === "text"
-              ? JSON.parse(content.data)
-              : { data: content.data, type: content.type };
+            resourceData =
+              content.type === "text"
+                ? JSON.parse(content.data)
+                : { data: content.data, type: content.type };
           } catch {
             resourceData = { data: content.data };
           }
@@ -272,9 +272,10 @@ export const deconfigResource = (options: DeconfigResourceOptions) => {
         let parsedData: Record<string, unknown> = {};
         if (content) {
           try {
-            parsedData = content.type === "text"
-              ? JSON.parse(content.data)
-              : { data: content.data, type: content.type };
+            parsedData =
+              content.type === "text"
+                ? JSON.parse(content.data)
+                : { data: content.data, type: content.type };
           } catch {
             parsedData = { data: content.data };
           }
@@ -350,8 +351,8 @@ export const deconfigResource = (options: DeconfigResourceOptions) => {
             {
               name: resourceName,
               icon: "folder",
-              title: resourceName.charAt(0).toUpperCase() +
-                resourceName.slice(1),
+              title:
+                resourceName.charAt(0).toUpperCase() + resourceName.slice(1),
               description: `DECONFIG resourceName: ${resourceName}`,
               hasCreate: true,
               hasUpdate: true,

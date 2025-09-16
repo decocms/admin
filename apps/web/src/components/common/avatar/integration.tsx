@@ -30,7 +30,8 @@ export function IntegrationAvatar({
   const actualUrl = url || DEFAULT_URL;
 
   // Check if URL is already a valid HTTPS/HTTP URL or is the default
-  const isValidUrl = actualUrl.startsWith("https://") ||
+  const isValidUrl =
+    actualUrl.startsWith("https://") ||
     actualUrl.startsWith("http://") ||
     actualUrl.startsWith("/") ||
     actualUrl.startsWith("icon://");
@@ -44,8 +45,8 @@ export function IntegrationAvatar({
   const finalUrl = isValidUrl
     ? actualUrl
     : typeof resolvedFileUrl === "string"
-    ? resolvedFileUrl
-    : DEFAULT_URL;
+      ? resolvedFileUrl
+      : DEFAULT_URL;
 
   return (
     <Avatar

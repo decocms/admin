@@ -73,15 +73,15 @@ export function SetupIntegrationModal({
           </DialogDescription>
         </DialogHeader>
         <DialogFooter>
-          {loading
-            ? <Button disabled={loading}>Connecting...</Button>
-            : createdIntegrationId
-            ? (
-              <div className="flex gap-3">
-                <Button onClick={onEdit}>Configure</Button>
-              </div>
-            )
-            : <Button onClick={onConnect}>Connect</Button>}
+          {loading ? (
+            <Button disabled={loading}>Connecting...</Button>
+          ) : createdIntegrationId ? (
+            <div className="flex gap-3">
+              <Button onClick={onEdit}>Configure</Button>
+            </div>
+          ) : (
+            <Button onClick={onConnect}>Connect</Button>
+          )}
         </DialogFooter>
       </DialogContent>
     </Dialog>
@@ -119,8 +119,8 @@ function CardsView({
   return (
     <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-3">
       {integrations.map((integration) => {
-        const showVerifiedBadge = integration.id !== NEW_CUSTOM_CONNECTION.id &&
-          integration.verified;
+        const showVerifiedBadge =
+          integration.id !== NEW_CUSTOM_CONNECTION.id && integration.verified;
         return (
           <Card
             key={integration.id}
@@ -183,16 +183,16 @@ export function Marketplace({
 
     return filter
       ? integrations.filter(
-        (integration: MarketplaceIntegration) =>
-          integration.name.toLowerCase().includes(searchTerm) ||
-          (integration.description?.toLowerCase() ?? "").includes(
-            searchTerm,
-          ) ||
-          integration.provider.toLowerCase().includes(searchTerm) ||
-          (integration.friendlyName?.toLowerCase() ?? "").includes(
-            searchTerm,
-          ),
-      )
+          (integration: MarketplaceIntegration) =>
+            integration.name.toLowerCase().includes(searchTerm) ||
+            (integration.description?.toLowerCase() ?? "").includes(
+              searchTerm,
+            ) ||
+            integration.provider.toLowerCase().includes(searchTerm) ||
+            (integration.friendlyName?.toLowerCase() ?? "").includes(
+              searchTerm,
+            ),
+        )
       : integrations;
   }, [marketplace, filter]);
 

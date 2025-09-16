@@ -90,13 +90,11 @@ export async function pullCommand(options: PullOptions): Promise<void> {
     const localFiles = new Map<string, { hash: string; path: string }>();
 
     if (existsSync(localPath)) {
-      for await (
-        const entry of walk(localPath, {
-          includeFiles: true,
-          includeDirs: false,
-          skip: [/node_modules/, /\.git/, /\.DS_Store/],
-        })
-      ) {
+      for await (const entry of walk(localPath, {
+        includeFiles: true,
+        includeDirs: false,
+        skip: [/node_modules/, /\.git/, /\.DS_Store/],
+      })) {
         const relativePath = relative(localPath, entry.path);
         const remotePath = `/${relativePath.replace(/\\/g, "/")}`;
         const hash = getFileHash(entry.path);

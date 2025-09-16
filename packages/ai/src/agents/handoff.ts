@@ -32,7 +32,8 @@ export const createHandoffToolsFor = (
       agentId: z.string().describe("The ID of the new agent"),
     }),
     execute:
-      (agent) => async ({ context, threadId: _threadId, resourceId }) => {
+      (agent) =>
+      async ({ context, threadId: _threadId, resourceId }) => {
         const segments = integration.id.split(":");
         const agentId = segments[1] || segments[0];
         const threadId = `${_threadId}-${agentId}`;

@@ -119,19 +119,17 @@ export function ConfirmMarketplaceInstallDialog({
   const navigateWorkspace = useNavigateWorkspace();
   const [stepIndex, setStepIndex] = useState(0);
 
-  const { dependencies: maybeAppDependencyList, app: maybeAppList } = useMemo(
-    () => {
+  const { dependencies: maybeAppDependencyList, app: maybeAppList } =
+    useMemo(() => {
       if (!integrationState.schema?.properties) {
         return { dependencies: null, app: null };
       }
 
       const result = { dependencies: [] as string[], app: [] as string[] };
 
-      for (
-        const propertyEntry of Object.entries(
-          integrationState.schema.properties,
-        )
-      ) {
+      for (const propertyEntry of Object.entries(
+        integrationState.schema.properties,
+      )) {
         const [name, property] = propertyEntry;
         if (isDependency(property)) {
           result.dependencies.push(name);
@@ -140,9 +138,7 @@ export function ConfirmMarketplaceInstallDialog({
         }
       }
       return result;
-    },
-    [integrationState.schema],
-  );
+    }, [integrationState.schema]);
 
   const dependenciesSteps = maybeAppDependencyList?.length
     ? maybeAppDependencyList.length
@@ -310,16 +306,18 @@ export function ConfirmMarketplaceInstallDialog({
           )}
           <Button
             variant="special"
-            onClick={isLoading || integrationState.isLoading
-              ? undefined
-              : handleNextDependency}
+            onClick={
+              isLoading || integrationState.isLoading
+                ? undefined
+                : handleNextDependency
+            }
             disabled={isLoading || integrationState.isLoading}
           >
             {isLoading || integrationState.isLoading
               ? "Connecting..."
               : stepIndex < totalSteps - 1
-              ? "Continue"
-              : "Allow access"}
+                ? "Continue"
+                : "Allow access"}
           </Button>
         </DialogFooter>
       </DialogContent>
@@ -352,7 +350,8 @@ function DependencyStep({
     if (!dependencySchema || !dependencyName) return null;
 
     const internalSchema = dependencySchema.properties?.[dependencyName];
-    const name = typeof internalSchema === "object" &&
+    const name =
+      typeof internalSchema === "object" &&
       ((internalSchema?.properties?.__type as JSONSchema7)?.const as
         | string
         | undefined);
@@ -409,8 +408,7 @@ function DependencyStep({
             {totalSteps > 1 && (
               <div className="flex items-center gap-2.5">
                 <div className="font-mono text-sm uppercase text-foreground">
-                  <span className="text-muted-foreground">{currentStep}</span> /
-                  {" "}
+                  <span className="text-muted-foreground">{currentStep}</span> /{" "}
                   {totalSteps}
                 </div>
               </div>
@@ -427,8 +425,10 @@ function DependencyStep({
                     <div className="flex items-center gap-2">
                       <IntegrationIcon
                         icon={dependencyIntegration?.icon}
-                        name={dependencyIntegration?.friendlyName ??
-                          dependencyIntegration?.name}
+                        name={
+                          dependencyIntegration?.friendlyName ??
+                          dependencyIntegration?.name
+                        }
                         size="lg"
                       />
                       {dependencyIntegration?.friendlyName ??
@@ -495,25 +495,23 @@ function AddConnectionDialogContent({
   const [search, setSearch] = useState("");
   const createCustomConnection = useCreateCustomConnection();
   const { data: marketplace } = useMarketplaceIntegrations();
-  const [installingIntegration, setInstallingIntegration] = useState<
-    MarketplaceIntegration | null
-  >(() => {
-    if (!appName) return null;
-    return (
-      marketplace?.integrations.find(
-        (integration) => integration.appName === appName,
-      ) ?? null
-    );
-  });
-  const [oauthCompletionDialog, setOauthCompletionDialog] = useState<
-    OauthModalState
-  >({
-    open: false,
-    url: "",
-    integrationName: "",
-    connection: null,
-    openIntegrationOnFinish: true,
-  });
+  const [installingIntegration, setInstallingIntegration] =
+    useState<MarketplaceIntegration | null>(() => {
+      if (!appName) return null;
+      return (
+        marketplace?.integrations.find(
+          (integration) => integration.appName === appName,
+        ) ?? null
+      );
+    });
+  const [oauthCompletionDialog, setOauthCompletionDialog] =
+    useState<OauthModalState>({
+      open: false,
+      url: "",
+      integrationName: "",
+      connection: null,
+      openIntegrationOnFinish: true,
+    });
   const navigateWorkspace = useNavigateWorkspace();
   const showEmptyState = search.length > 0;
   const handleInstallFromRegistry = async (appName: string) => {
@@ -621,37 +619,39 @@ function AddConnectionDialogContent({
           {tab === "my-connections" && (
             <InstalledConnections
               query={search}
-              emptyState={showEmptyState
-                ? (myConnectionsEmptyState ?? (
-                  <div className="flex flex-col h-full min-h-[200px] gap-4 pb-16">
-                    <div className="w-full flex items-center flex-col gap-2 py-8">
-                      <h3 className="text-2xl font-medium">
-                        No integrations found
-                      </h3>
-                      <p className="text-sm text-muted-foreground">
-                        Create a new integration to get started
-                      </p>
-                    </div>
-                    <Marketplace
-                      filter={search}
-                      emptyState={
-                        <div className="flex flex-col gap-2 py-8 w-full items-center">
+              emptyState={
+                showEmptyState
+                  ? (myConnectionsEmptyState ?? (
+                      <div className="flex flex-col h-full min-h-[200px] gap-4 pb-16">
+                        <div className="w-full flex items-center flex-col gap-2 py-8">
+                          <h3 className="text-2xl font-medium">
+                            No integrations found
+                          </h3>
                           <p className="text-sm text-muted-foreground">
-                            No integrations found for the search "{search}"
+                            Create a new integration to get started
                           </p>
                         </div>
-                      }
-                      onClick={async (integration) => {
-                        if (integration.id === NEW_CUSTOM_CONNECTION.id) {
-                          await createCustomConnection();
-                          return;
-                        }
-                        setInstallingIntegration(integration);
-                      }}
-                    />
-                  </div>
-                ))
-                : null}
+                        <Marketplace
+                          filter={search}
+                          emptyState={
+                            <div className="flex flex-col gap-2 py-8 w-full items-center">
+                              <p className="text-sm text-muted-foreground">
+                                No integrations found for the search "{search}"
+                              </p>
+                            </div>
+                          }
+                          onClick={async (integration) => {
+                            if (integration.id === NEW_CUSTOM_CONNECTION.id) {
+                              await createCustomConnection();
+                              return;
+                            }
+                            setInstallingIntegration(integration);
+                          }}
+                        />
+                      </div>
+                    ))
+                  : null
+              }
               filter={filter}
               onClick={(integration) => onSelect?.(integration)}
             />

@@ -226,7 +226,7 @@ export class JsonSerializer {
 
     if (typeof value === "object") {
       return Object.values(value).every((item) =>
-        JsonSerializer.isSerializable(item)
+        JsonSerializer.isSerializable(item),
       );
     }
 

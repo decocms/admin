@@ -53,11 +53,12 @@ export function UsersTable({
       userData.threads.push(thread);
 
       // Parse the thread cost more carefully - handle dollar sign
-      const threadCost = typeof thread.total === "string"
-        ? parseFloat(thread.total.replace("$", ""))
-        : typeof thread.total === "number"
-        ? thread.total
-        : 0;
+      const threadCost =
+        typeof thread.total === "string"
+          ? parseFloat(thread.total.replace("$", ""))
+          : typeof thread.total === "number"
+            ? thread.total
+            : 0;
       const validCost = isNaN(threadCost) ? 0 : threadCost;
 
       userData.totalCost += validCost;
@@ -185,7 +186,7 @@ export function UsersTable({
   const handleSort = (key: string) => {
     if (sortKey === key) {
       setSortDirection((prev: "asc" | "desc") =>
-        prev === "asc" ? "desc" : "asc"
+        prev === "asc" ? "desc" : "asc",
       );
     } else {
       setSortKey(key);

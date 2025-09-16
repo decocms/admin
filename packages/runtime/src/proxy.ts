@@ -84,17 +84,18 @@ export function createMCPClientProxy<T extends Record<string, unknown>>(
         if (isError) {
           // @ts-expect-error - content is not typed
           const maybeErrorMessage = content?.[0]?.text;
-          const error = typeof maybeErrorMessage === "string"
-            ? safeParse(maybeErrorMessage)
-            : null;
+          const error =
+            typeof maybeErrorMessage === "string"
+              ? safeParse(maybeErrorMessage)
+              : null;
 
           const throwableError =
             error?.code && typeof options?.getErrorByStatusCode === "function"
               ? options.getErrorByStatusCode(
-                error.code,
-                error.message,
-                error.traceId,
-              )
+                  error.code,
+                  error.message,
+                  error.traceId,
+                )
               : null;
 
           if (throwableError) {
@@ -102,11 +103,9 @@ export function createMCPClientProxy<T extends Record<string, unknown>>(
           }
 
           throw new Error(
-            `Tool ${String(name)} returned an error: ${
-              JSON.stringify(
-                structuredContent ?? content,
-              )
-            }`,
+            `Tool ${String(name)} returned an error: ${JSON.stringify(
+              structuredContent ?? content,
+            )}`,
           );
         }
         return structuredContent;

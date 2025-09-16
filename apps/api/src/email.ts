@@ -34,8 +34,8 @@ export function email(
       c: Constructor,
     ) => StubFactory<InstanceType<Constructor>> = (c) => {
       return runtime instanceof ActorCfRuntime
-        // deno-lint-ignore no-explicit-any
-        ? runtime.stub(c, env as any)
+        ? // deno-lint-ignore no-explicit-any
+          runtime.stub(c, env as any)
         : actors.stub(c.name);
     };
     const originalMessageId = message.headers.get("Message-ID");

@@ -105,7 +105,7 @@ export async function promptIntegrations(
 
     // Convert selected IDs back to integration objects
     const selectedIntegrations = integrations.filter((integration) =>
-      selectedIntegrationIds.includes(integration.id)
+      selectedIntegrationIds.includes(integration.id),
     );
 
     // Return the selected integration bindings

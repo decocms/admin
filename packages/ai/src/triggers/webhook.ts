@@ -99,12 +99,13 @@ export const hooks: TriggerHooks<TriggerData & { type: "webhook" }> = {
       .new(trigger.agentId)
       .withMetadata({ threadId, resourceId });
 
-    const messagesFromArgs = args &&
-        typeof args === "object" &&
-        "messages" in args &&
-        isAIMessages(args.messages)
-      ? args.messages
-      : undefined;
+    const messagesFromArgs =
+      args &&
+      typeof args === "object" &&
+      "messages" in args &&
+      isAIMessages(args.messages)
+        ? args.messages
+        : undefined;
 
     const messages = messagesFromArgs ?? [
       {
@@ -114,23 +115,24 @@ export const hooks: TriggerHooks<TriggerData & { type: "webhook" }> = {
       },
       ...(args
         ? [
-          {
-            id: crypto.randomUUID(),
-            role: "user" as const,
-            content: `\`\`\`json\n${JSON.stringify(args)}\`\`\``,
-          },
-        ]
+            {
+              id: crypto.randomUUID(),
+              role: "user" as const,
+              content: `\`\`\`json\n${JSON.stringify(args)}\`\`\``,
+            },
+          ]
         : []),
     ];
 
-    const schema = "schema" in data && data.schema
-      ? data.schema
-      : typeof args === "object" &&
-          args !== null &&
-          "schema" in args &&
-          typeof args.schema === "object"
-      ? args.schema
-      : undefined;
+    const schema =
+      "schema" in data && data.schema
+        ? data.schema
+        : typeof args === "object" &&
+            args !== null &&
+            "schema" in args &&
+            typeof args.schema === "object"
+          ? args.schema
+          : undefined;
     if (schema) {
       return await agent.generateObject(messages, schema).then((r) => r.object);
     }

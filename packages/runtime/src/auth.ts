@@ -130,8 +130,7 @@ export const handleAuthCallback = async (
       status: 302,
       headers: {
         Location: next,
-        "Set-Cookie":
-          `${DECO_APP_AUTH_COOKIE_NAME}=${access_token}; HttpOnly; SameSite=None; Secure; Path=/`,
+        "Set-Cookie": `${DECO_APP_AUTH_COOKIE_NAME}=${access_token}; HttpOnly; SameSite=None; Secure; Path=/`,
       },
     });
   } catch (err) {

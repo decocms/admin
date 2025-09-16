@@ -122,10 +122,10 @@ export function KnowledgeBaseFileList({
                       {file.uploading
                         ? "Uploading"
                         : file.status === "processing"
-                        ? "Processing"
-                        : file.status === "failed"
-                        ? "Failed"
-                        : "Unknown status"}
+                          ? "Processing"
+                          : file.status === "failed"
+                            ? "Failed"
+                            : "Unknown status"}
                     </TooltipContent>
                   </Tooltip>
                 </TooltipProvider>
@@ -144,8 +144,8 @@ export function KnowledgeBaseFileList({
 
               {knowledgeDeleteFile.isPending &&
                 knowledgeDeleteFile.variables.fileUrl === file.fileUrl && (
-                <span className="text-xs text-primary">removing...</span>
-              )}
+                  <span className="text-xs text-primary">removing...</span>
+                )}
             </div>
           </div>
 
@@ -163,8 +163,10 @@ export function KnowledgeBaseFileList({
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
               <DropdownMenuItem
-                disabled={removeFile.isPending &&
-                  removeFile.variables.path === file.fileUrl}
+                disabled={
+                  removeFile.isPending &&
+                  removeFile.variables.path === file.fileUrl
+                }
                 onClick={() => {
                   if (knowledgeDeleteFile.isPending) return;
                   file.path &&

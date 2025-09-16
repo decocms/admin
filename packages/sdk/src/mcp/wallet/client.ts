@@ -407,20 +407,20 @@ export function createWalletClient(
   const client = createHttpClient<WalletAPI>({
     fetcher: fetcher?.fetch
       ? (req, opts) => {
-        if (currentFetcher) {
-          // @ts-ignore: the cloudflare fetch is not the same as the browser fetch
-          return currentFetcher(req, opts);
-        }
-        // @ts-ignore: the cloudflare fetch is not the same as the browser fetch
-        return fetcher.fetch(req, opts).then((response) => {
-          if (!response.ok && response.status === 503) {
-            currentFetcher = fetch;
+          if (currentFetcher) {
             // @ts-ignore: the cloudflare fetch is not the same as the browser fetch
-            return fetch(req, opts);
+            return currentFetcher(req, opts);
           }
-          return response;
-        });
-      } // this is necessary since "this" is being used internally.
+          // @ts-ignore: the cloudflare fetch is not the same as the browser fetch
+          return fetcher.fetch(req, opts).then((response) => {
+            if (!response.ok && response.status === 503) {
+              currentFetcher = fetch;
+              // @ts-ignore: the cloudflare fetch is not the same as the browser fetch
+              return fetch(req, opts);
+            }
+            return response;
+          });
+        } // this is necessary since "this" is being used internally.
       : undefined,
     base: WALLET_API_URL,
     headers: new Headers({

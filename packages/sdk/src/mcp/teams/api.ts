@@ -420,22 +420,23 @@ async function assignRoleToMembers(
       members.map((m) => m.user_id),
     );
 
-  const memberRolePromises = dbMembers?.map(
-    async (member: {
-      profiles: { email: string } | null;
-      user_id: string | null;
-    }) => {
-      const action = members.find(
-        (m) => m.user_id === member.user_id,
-      )?.action;
-      if (!member.profiles?.email || !action) return;
+  const memberRolePromises =
+    dbMembers?.map(
+      async (member: {
+        profiles: { email: string } | null;
+        user_id: string | null;
+      }) => {
+        const action = members.find(
+          (m) => m.user_id === member.user_id,
+        )?.action;
+        if (!member.profiles?.email || !action) return;
 
-      return await c.policy.updateUserRole(teamId, member.profiles.email, {
-        roleId,
-        action,
-      });
-    },
-  ) ?? [];
+        return await c.policy.updateUserRole(teamId, member.profiles.email, {
+          roleId,
+          action,
+        });
+      },
+    ) ?? [];
 
   await Promise.all(memberRolePromises);
 }
@@ -479,15 +480,16 @@ export const getTeam = createTool({
       context: c,
     });
 
-    const rawViews = (teamData.deco_chat_views as unknown as Array<{
-      id: string;
-      title: string;
-      icon: string;
-      type: string;
-      metadata?: { integration?: { id?: string }; viewName?: string } | null;
-      integration_id?: string | null;
-      name?: string | null;
-    }>) || [];
+    const rawViews =
+      (teamData.deco_chat_views as unknown as Array<{
+        id: string;
+        title: string;
+        icon: string;
+        type: string;
+        metadata?: { integration?: { id?: string }; viewName?: string } | null;
+        integration_id?: string | null;
+        name?: string | null;
+      }>) || [];
     const mappedViews = rawViews.map((v) => ({
       ...v,
       // New columns with backward-compat
@@ -1029,10 +1031,11 @@ export const getTeamRole = createTool({
       }
 
       // Extract member user IDs with grant action (existing members have granted access)
-      const members = memberRoles?.map((mr) => ({
-        user_id: mr.members.user_id,
-        action: "grant" as const,
-      })) || [];
+      const members =
+        memberRoles?.map((mr) => ({
+          user_id: mr.members.user_id,
+          action: "grant" as const,
+        })) || [];
 
       return {
         id: roleWithPolicies.id,

@@ -178,34 +178,32 @@ function UnifiedAvatar({
       className={cn(avatarVariants({ shape, size }), className)}
       {...props}
     >
-      {isIconUrl && iconName
-        ? (
-          <div
-            className={cn(
-              "flex items-center justify-center w-full h-full",
-              fallbackColor,
-            )}
-          >
-            <Icon name={iconName} size={getIconSize(size)} />
-          </div>
-        )
-        : (
-          <>
-            {url && !isError && (
-              <AvatarImage
-                src={url}
-                alt="Avatar"
-                className={cn(avatarImageVariants({ objectFit }))}
-                onError={() => setIsError(true)}
-              />
-            )}
-            {(!url || isError) && (
-              <AvatarFallback className={cn(fallbackColor, "rounded-none")}>
-                {fallbackContent}
-              </AvatarFallback>
-            )}
-          </>
-        )}
+      {isIconUrl && iconName ? (
+        <div
+          className={cn(
+            "flex items-center justify-center w-full h-full",
+            fallbackColor,
+          )}
+        >
+          <Icon name={iconName} size={getIconSize(size)} />
+        </div>
+      ) : (
+        <>
+          {url && !isError && (
+            <AvatarImage
+              src={url}
+              alt="Avatar"
+              className={cn(avatarImageVariants({ objectFit }))}
+              onError={() => setIsError(true)}
+            />
+          )}
+          {(!url || isError) && (
+            <AvatarFallback className={cn(fallbackColor, "rounded-none")}>
+              {fallbackContent}
+            </AvatarFallback>
+          )}
+        </>
+      )}
     </AvatarUI>
   );
 }

@@ -89,8 +89,7 @@ export default function HistoryTab() {
                 <span className="w-4 h-4 bg-background rounded-full flex items-center justify-center">
                   <span className="w-3 h-3 bg-foreground rounded-full flex items-center justify-center">
                     <span className="w-2 h-2 bg-background rounded-full flex items-center justify-center">
-                      <span className="w-1 h-1 bg-foreground rounded-full flex items-center justify-center">
-                      </span>
+                      <span className="w-1 h-1 bg-foreground rounded-full flex items-center justify-center"></span>
                     </span>
                   </span>
                 </span>
@@ -184,9 +183,8 @@ export function HistoryCard({
 
   const isCurrentUser = userId && user && userId === user.id;
 
-  const member = !isCurrentUser && teamId !== null
-    ? teamMembersMap.get(userId)
-    : undefined;
+  const member =
+    !isCurrentUser && teamId !== null ? teamMembersMap.get(userId) : undefined;
 
   const avatarUrl = isCurrentUser
     ? user.metadata.avatar_url
@@ -232,51 +230,48 @@ export function HistoryCard({
           )}
           style={{ minHeight: 36, pointerEvents: "none" }}
         />
-        <span className="w-2 h-2 bg-foreground rounded-full absolute mt-2 -translate-y-1/2">
-        </span>
+        <span className="w-2 h-2 bg-foreground rounded-full absolute mt-2 -translate-y-1/2"></span>
       </div>
       <div className="flex-1 flex items-center gap-2 pl-6 pr-2">
         <div className="flex flex-col justify-start items-start gap-2">
-          {isEditing
-            ? (
-              <input
-                ref={inputRef}
-                type="text"
-                value={versionName || ""}
-                onChange={(e) => setVersionName(e.target.value)}
-                onKeyDown={(e) => handleKeyDown(e)}
-                onBlur={handleSaveLabel}
-                className="text-sm font-semibold border-none outline-none focus:ring-0 p-0 px-1 bg-white"
-                placeholder="Enter version label..."
-              />
-            )
-            : (
-              <span
-                className="text-sm font-semibold cursor-pointer hover:bg-muted px-1 py-0.5 rounded"
-                onClick={() => handleStartEditing()}
-              >
-                {version.version_name ||
-                  new Date(version.created_at).toLocaleString("en-US", {
-                    month: "short",
-                    day: "numeric",
-                    hour: "numeric",
-                    minute: "2-digit",
-                    hour12: true,
-                  })}
-              </span>
-            )}
+          {isEditing ? (
+            <input
+              ref={inputRef}
+              type="text"
+              value={versionName || ""}
+              onChange={(e) => setVersionName(e.target.value)}
+              onKeyDown={(e) => handleKeyDown(e)}
+              onBlur={handleSaveLabel}
+              className="text-sm font-semibold border-none outline-none focus:ring-0 p-0 px-1 bg-white"
+              placeholder="Enter version label..."
+            />
+          ) : (
+            <span
+              className="text-sm font-semibold cursor-pointer hover:bg-muted px-1 py-0.5 rounded"
+              onClick={() => handleStartEditing()}
+            >
+              {version.version_name ||
+                new Date(version.created_at).toLocaleString("en-US", {
+                  month: "short",
+                  day: "numeric",
+                  hour: "numeric",
+                  minute: "2-digit",
+                  hour12: true,
+                })}
+            </span>
+          )}
           <div className="flex items-center gap-1">
             <Avatar className="size-4">
-              {avatarUrl
-                ? <AvatarImage src={avatarUrl} alt={userName} />
-                : (
-                  <AvatarFallback className="text-xs">
-                    {userName
-                      ?.split(" ")
-                      .map((n: string) => n[0])
-                      .join("")}
-                  </AvatarFallback>
-                )}
+              {avatarUrl ? (
+                <AvatarImage src={avatarUrl} alt={userName} />
+              ) : (
+                <AvatarFallback className="text-xs">
+                  {userName
+                    ?.split(" ")
+                    .map((n: string) => n[0])
+                    .join("")}
+                </AvatarFallback>
+              )}
             </Avatar>
             <span className="text-xs text-muted-foreground font-normal">
               {userName}

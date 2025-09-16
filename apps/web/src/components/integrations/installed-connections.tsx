@@ -38,7 +38,7 @@ function CardsView({
               </div>
             </CardContent>
           </Card>
-        )
+        ),
       )}
     </div>
   );
@@ -62,10 +62,10 @@ export function InstalledConnections({
 
     const filteredByQuery = query
       ? installedIntegrations.filter(
-        (integration: Integration) =>
-          integration.name.toLowerCase().includes(searchTerm) ||
-          (integration.description?.toLowerCase() ?? "").includes(searchTerm),
-      )
+          (integration: Integration) =>
+            integration.name.toLowerCase().includes(searchTerm) ||
+            (integration.description?.toLowerCase() ?? "").includes(searchTerm),
+        )
       : installedIntegrations;
 
     return filter ? filteredByQuery.filter(filter) : filteredByQuery;

@@ -258,7 +258,7 @@ export default function MentionDropdown({
     onKeyDown: ({ event }: { event: KeyboardEvent }) => {
       if (event.key === "ArrowUp") {
         setSelected((prev) =>
-          prev === null ? 0 : (prev - 1 + items.length) % items.length
+          prev === null ? 0 : (prev - 1 + items.length) % items.length,
         );
         return true;
       }
@@ -309,75 +309,68 @@ export default function MentionDropdown({
           <span className="text-xs text-muted-foreground font-medium px-2 py-1.5">
             {category.label}
           </span>
-          {category.children?.length
-            ? (
-              category.children.map((item) => {
-                return (
-                  <Tooltip open={isSelected(item)}>
-                    <TooltipTrigger asChild>
-                      <Button
-                        key={item.id}
-                        onClick={() => handleOptionClick(item)}
-                        variant="ghost"
-                        size="sm"
-                        onMouseEnter={() =>
-                          handleMouseEnter(item)}
-                        onMouseLeave={handleMouseLeave}
-                        className={cn(
-                          "w-full line-clamp-1 text-left justify-start flex gap-2 rounded-lg px-2 py-1.5 hover:bg-accent",
-                          isSelected(item) && "bg-accent",
-                        )}
-                      >
-                        {item.icon && (
-                          <Icon
-                            name={item.icon}
-                            filled={isSelected(item)}
-                            size={16}
-                          />
-                        )}
-                        <span className="line-clamp-1">{item.label}</span>
-                      </Button>
-                    </TooltipTrigger>
-                    {item.tooltip && (
-                      <TooltipContent
-                        onClick={(e) => {
-                          e.preventDefault();
-                          e.stopPropagation();
-                        }}
-                        className="max-w-sm bg-secondary text-secondary-foreground shadow-xl rounded-xl p-2 border [&>span>svg]:!bg-secondary [&>span>svg]:!fill-secondary"
-                        align="start"
-                        side="right"
-                      >
-                        {typeof item.tooltip === "string"
-                          ? (
-                            <>
-                              <div className="flex items-center justify-between gap-2 text-muted-foreground">
-                                <p className="font-medium text-xs px-3 italic mt-4 mb-2">
-                                  Full prompt
-                                </p>
-                              </div>
-                              <div className="px-2.5 py-1.5 prose italic text-sm max-h-96 overflow-y-auto">
-                                <Markdown>
-                                  {mentionToTag(item.tooltip)}
-                                </Markdown>
-                              </div>
-                            </>
-                          )
-                          : (
-                            item.tooltip
-                          )}
-                      </TooltipContent>
-                    )}
-                  </Tooltip>
-                );
-              })
-            )
-            : (
-              <span className="text-xs my-2 text-muted-foreground flex items-center justify-center gap-1">
-                <Icon name="quick_reference_all" size={14} />
-                No results found
-              </span>
-            )}
+          {category.children?.length ? (
+            category.children.map((item) => {
+              return (
+                <Tooltip open={isSelected(item)}>
+                  <TooltipTrigger asChild>
+                    <Button
+                      key={item.id}
+                      onClick={() => handleOptionClick(item)}
+                      variant="ghost"
+                      size="sm"
+                      onMouseEnter={() => handleMouseEnter(item)}
+                      onMouseLeave={handleMouseLeave}
+                      className={cn(
+                        "w-full line-clamp-1 text-left justify-start flex gap-2 rounded-lg px-2 py-1.5 hover:bg-accent",
+                        isSelected(item) && "bg-accent",
+                      )}
+                    >
+                      {item.icon && (
+                        <Icon
+                          name={item.icon}
+                          filled={isSelected(item)}
+                          size={16}
+                        />
+                      )}
+                      <span className="line-clamp-1">{item.label}</span>
+                    </Button>
+                  </TooltipTrigger>
+                  {item.tooltip && (
+                    <TooltipContent
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                      }}
+                      className="max-w-sm bg-secondary text-secondary-foreground shadow-xl rounded-xl p-2 border [&>span>svg]:!bg-secondary [&>span>svg]:!fill-secondary"
+                      align="start"
+                      side="right"
+                    >
+                      {typeof item.tooltip === "string" ? (
+                        <>
+                          <div className="flex items-center justify-between gap-2 text-muted-foreground">
+                            <p className="font-medium text-xs px-3 italic mt-4 mb-2">
+                              Full prompt
+                            </p>
+                          </div>
+                          <div className="px-2.5 py-1.5 prose italic text-sm max-h-96 overflow-y-auto">
+                            <Markdown>{mentionToTag(item.tooltip)}</Markdown>
+                          </div>
+                        </>
+                      ) : (
+                        item.tooltip
+                      )}
+                    </TooltipContent>
+                  )}
+                </Tooltip>
+              );
+            })
+          ) : (
+            <span className="text-xs my-2 text-muted-foreground flex items-center justify-center gap-1">
+              <Icon name="quick_reference_all" size={14} />
+              No results found
+            </span>
+          )}
         </div>
       ))}
     </div>

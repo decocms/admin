@@ -8,8 +8,10 @@ import { Browsable } from "outerbase-browsable-do-enforced";
 import type { Bindings } from "../utils/context.ts";
 
 @Browsable()
-export class WorkspaceDatabase extends DurableObject<Bindings>
-  implements IWorkspaceDB {
+export class WorkspaceDatabase
+  extends DurableObject<Bindings>
+  implements IWorkspaceDB
+{
   private sql: SqlStorage;
 
   constructor(

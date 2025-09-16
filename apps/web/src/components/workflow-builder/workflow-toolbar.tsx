@@ -55,19 +55,17 @@ export function WorkflowToolbar({
           disabled={!isDirty || isSaving || isRunning}
           className="min-w-[100px]"
         >
-          {isSaving
-            ? (
-              <>
-                <Spinner className="w-4 h-4 mr-2" />
-                Saving...
-              </>
-            )
-            : (
-              <>
-                <Save className="w-4 h-4 mr-2" />
-                Save
-              </>
-            )}
+          {isSaving ? (
+            <>
+              <Spinner className="w-4 h-4 mr-2" />
+              Saving...
+            </>
+          ) : (
+            <>
+              <Save className="w-4 h-4 mr-2" />
+              Save
+            </>
+          )}
         </Button>
 
         <Button
@@ -75,19 +73,17 @@ export function WorkflowToolbar({
           disabled={isSaving || isRunning || isDirty}
           className="min-w-[100px]"
         >
-          {isRunning
-            ? (
-              <>
-                <Spinner className="w-4 h-4 mr-2" />
-                Running...
-              </>
-            )
-            : (
-              <>
-                <Play className="w-4 h-4 mr-2" />
-                Run
-              </>
-            )}
+          {isRunning ? (
+            <>
+              <Spinner className="w-4 h-4 mr-2" />
+              Running...
+            </>
+          ) : (
+            <>
+              <Play className="w-4 h-4 mr-2" />
+              Run
+            </>
+          )}
         </Button>
       </div>
     </div>

@@ -96,9 +96,8 @@ export function MapperConfigDialog({
             />
             <p className="text-xs text-muted-foreground">
               This function receives a context object with access to previous
-              step results. Use <code>ctx.readStepResult('step-name')</code>
-              {" "}
-              to read data from previous steps.
+              step results. Use <code>ctx.readStepResult('step-name')</code> to
+              read data from previous steps.
             </p>
           </div>
         </div>

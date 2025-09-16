@@ -229,8 +229,8 @@ async function updateAssetRecord(
   const supabase = createKnowledgeBaseSupabaseClient(env);
 
   // Add fallback logic for filename
-  const finalFilename = filename || (path ? basename(path) : undefined) ||
-    fileUrl;
+  const finalFilename =
+    filename || (path ? basename(path) : undefined) || fileUrl;
 
   // Update the asset record
   const { data: previousAsset } = await supabase
@@ -326,7 +326,7 @@ export async function processBatch(
     if (allStoredIds.length > 0) {
       await Promise.all(
         allStoredIds.map((docId) =>
-          vector.deleteVector({ indexName: knowledgeBaseName, id: docId })
+          vector.deleteVector({ indexName: knowledgeBaseName, id: docId }),
         ),
       );
     }

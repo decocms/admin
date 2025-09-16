@@ -101,8 +101,7 @@ export function ArrayField<T extends FieldValues = FieldValues>({
                           type="button"
                           variant="ghost"
                           size="sm"
-                          onClick={() =>
-                            handleMoveUp(index)}
+                          onClick={() => handleMoveUp(index)}
                           disabled={disabled || index === 0}
                           className="w-8"
                         >
@@ -113,8 +112,7 @@ export function ArrayField<T extends FieldValues = FieldValues>({
                           type="button"
                           variant="ghost"
                           size="sm"
-                          onClick={() =>
-                            handleMoveDown(index)}
+                          onClick={() => handleMoveDown(index)}
                           disabled={disabled || index === fields.length - 1}
                           className="w-8"
                         >

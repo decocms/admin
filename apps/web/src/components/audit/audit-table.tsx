@@ -44,9 +44,8 @@ export function AuditTable({
   onRowClick,
   columnsDenyList,
 }: AuditTableProps) {
-  const { key: sortKey, direction: sortDirection } = getSortKeyAndDirection(
-    sort,
-  );
+  const { key: sortKey, direction: sortDirection } =
+    getSortKeyAndDirection(sort);
 
   const columns: TableColumn<(typeof threads)[number]>[] = [
     {
@@ -65,9 +64,7 @@ export function AuditTable({
       id: "agent",
       header: "Agent",
       accessor: (cell: Thread) => (
-        <AgentInfo
-          agentId={cell.metadata?.agentId}
-        />
+        <AgentInfo agentId={cell.metadata?.agentId} />
       ),
     },
     {

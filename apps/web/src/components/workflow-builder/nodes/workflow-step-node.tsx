@@ -35,24 +35,26 @@ export function WorkflowStepNode(props: NodeProps) {
 
   // Extract properties with type checking
   const step = "step" in data ? data.step : undefined;
-  const index = "index" in data && typeof data.index === "number"
-    ? data.index
-    : 0;
-  const isFirst = "isFirst" in data && typeof data.isFirst === "boolean"
-    ? data.isFirst
-    : false;
-  const isLast = "isLast" in data && typeof data.isLast === "boolean"
-    ? data.isLast
-    : false;
-  const onEdit = "onEdit" in data && typeof data.onEdit === "function"
-    ? data.onEdit
-    : undefined;
-  const onDelete = "onDelete" in data && typeof data.onDelete === "function"
-    ? data.onDelete
-    : undefined;
-  const onRun = "onRun" in data && typeof data.onRun === "function"
-    ? data.onRun
-    : undefined;
+  const index =
+    "index" in data && typeof data.index === "number" ? data.index : 0;
+  const isFirst =
+    "isFirst" in data && typeof data.isFirst === "boolean"
+      ? data.isFirst
+      : false;
+  const isLast =
+    "isLast" in data && typeof data.isLast === "boolean" ? data.isLast : false;
+  const onEdit =
+    "onEdit" in data && typeof data.onEdit === "function"
+      ? data.onEdit
+      : undefined;
+  const onDelete =
+    "onDelete" in data && typeof data.onDelete === "function"
+      ? data.onDelete
+      : undefined;
+  const onRun =
+    "onRun" in data && typeof data.onRun === "function"
+      ? data.onRun
+      : undefined;
 
   if (!step || typeof step !== "object") {
     return null;

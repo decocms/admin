@@ -20,7 +20,8 @@ interface WorkspaceMemoryConfig extends SharedMemoryConfig {
 }
 
 interface CreateWorkspaceMemoryOpts
-  extends LibSQLFactoryOpts, Omit<SharedMemoryConfig, "storage" | "vector"> {
+  extends LibSQLFactoryOpts,
+    Omit<SharedMemoryConfig, "storage" | "vector"> {
   workspaceDO: WorkspaceDO;
   workspace: Workspace;
   discriminator?: string;
@@ -81,9 +82,8 @@ export class WorkspaceMemory extends MastraMemory {
         workspaceDO,
         workspace: { value: workspace },
         envVars: {
-          TURSO_GROUP_DATABASE_TOKEN: typeof tokenStorage === "string"
-            ? tokenStorage
-            : "",
+          TURSO_GROUP_DATABASE_TOKEN:
+            typeof tokenStorage === "string" ? tokenStorage : "",
           TURSO_ORGANIZATION: tursoOrganization,
         },
       },
@@ -156,8 +156,8 @@ export class AgentMemory extends WorkspaceMemory {
   }
 
   static async buildAgentMemoryConfig(config: CreateAgentMemoryOpts) {
-    const workspaceMemoryConfig = await WorkspaceMemory
-      .buildWorkspaceMemoryOpts(config);
+    const workspaceMemoryConfig =
+      await WorkspaceMemory.buildWorkspaceMemoryOpts(config);
     return {
       ...workspaceMemoryConfig,
       agentId: config.agentId,

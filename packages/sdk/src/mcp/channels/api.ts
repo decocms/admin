@@ -47,8 +47,7 @@ function mapChannel(
 const createTool = createToolGroup("Channel", {
   name: "Channel Management",
   description: "Create and manage communication channels.",
-  icon:
-    "https://assets.decocache.com/mcp/9e5d7fcd-3a3a-469b-9450-f2af05cdcc7e/Channel-Management.png",
+  icon: "https://assets.decocache.com/mcp/9e5d7fcd-3a3a-469b-9450-f2af05cdcc7e/Channel-Management.png",
 });
 
 export const listChannels = createTool({
@@ -186,7 +185,7 @@ const getAgentName = (
 ) => {
   return (
     channel.agents.find((agent) => agent.agent_id === agentId)?.agent?.name ??
-      "Deco Agent"
+    "Deco Agent"
   );
 };
 

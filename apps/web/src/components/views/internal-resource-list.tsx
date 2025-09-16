@@ -161,37 +161,27 @@ export function InternalResourceListWithIntegration({
       const selected = views.find((v) => v.resourceName === name);
       const targetViewName = selected?.name ?? `${name.toUpperCase()}_DETAIL`;
       const targetUrl = selected?.url
-        ? `${selected.url}${selected.url.includes("?") ? "&" : "?"}uri=${
-          encodeURIComponent(
+        ? `${selected.url}${selected.url.includes("?") ? "&" : "?"}uri=${encodeURIComponent(
             it.uri,
-          )
-        }`
-        : `internal://resource/detail?name=${encodeURIComponent(name)}&uri=${
-          encodeURIComponent(
+          )}`
+        : `internal://resource/detail?name=${encodeURIComponent(name)}&uri=${encodeURIComponent(
             it.uri,
-          )
-        }`;
+          )}`;
       navigateWorkspace(
-        `/views/${integrationId}/${targetViewName}?viewUrl=${
-          encodeURIComponent(
-            targetUrl,
-          )
-        }`,
+        `/views/${integrationId}/${targetViewName}?viewUrl=${encodeURIComponent(
+          targetUrl,
+        )}`,
       );
     } catch (_) {
       // fallback: internal detail
       const targetViewName = `${name.toUpperCase()}_DETAIL`;
-      const targetUrl = `internal://resource/detail?name=${
-        encodeURIComponent(
-          name,
-        )
-      }&uri=${encodeURIComponent(it.uri)}`;
+      const targetUrl = `internal://resource/detail?name=${encodeURIComponent(
+        name,
+      )}&uri=${encodeURIComponent(it.uri)}`;
       navigateWorkspace(
-        `/views/${integrationId}/${targetViewName}?viewUrl=${
-          encodeURIComponent(
-            targetUrl,
-          )
-        }`,
+        `/views/${integrationId}/${targetViewName}?viewUrl=${encodeURIComponent(
+          targetUrl,
+        )}`,
       );
     }
   }
@@ -201,8 +191,8 @@ export function InternalResourceListWithIntegration({
     const resourceName = globalThis.prompt("Name (unique)") ?? "";
     if (!resourceName) return;
     const title = globalThis.prompt("Title (optional)") ?? undefined;
-    const description = globalThis.prompt("Description (optional)") ??
-      undefined;
+    const description =
+      globalThis.prompt("Description (optional)") ?? undefined;
     const data = globalThis.prompt("Content (text)");
     if (data == null) return;
     setLoading(true);
@@ -244,7 +234,8 @@ export function InternalResourceListWithIntegration({
   }
 
   function generateResourceNameFromUri(uri: string, title?: string) {
-    const source = title ||
+    const source =
+      title ||
       (() => {
         try {
           const u = new URL(uri);
@@ -322,15 +313,15 @@ export function InternalResourceListWithIntegration({
         },
       }}
       view={{ viewMode, onChange: setViewMode }}
-      actionsRight={caps.hasCreate
-        ? (
+      actionsRight={
+        caps.hasCreate ? (
           <div className="pl-3 ml-2 border-l border-border">
             <Button onClick={createItem} variant="special">
               Create
             </Button>
           </div>
-        )
-        : null}
+        ) : null
+      }
     />
   );
 
@@ -348,91 +339,82 @@ export function InternalResourceListWithIntegration({
   return (
     <div className="p-4 space-y-3 h-full">
       {header}
-      {items.length === 0
-        ? (
-          <EmptyState
-            icon="search_off"
-            title={`No ${name} found`}
-            description={q
+      {items.length === 0 ? (
+        <EmptyState
+          icon="search_off"
+          title={`No ${name} found`}
+          description={
+            q
               ? "No resources match your search."
-              : "No resources available from this integration."}
-          />
-        )
-        : viewMode === "cards"
-        ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-            {items.map((it) => (
-              <Card key={it.uri} className="cursor-pointer group relative">
-                <CardContent
-                  className="p-3 flex flex-col gap-2"
-                  onClick={() =>
-                    openItem(it)}
+              : "No resources available from this integration."
+          }
+        />
+      ) : viewMode === "cards" ? (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+          {items.map((it) => (
+            <Card key={it.uri} className="cursor-pointer group relative">
+              <CardContent
+                className="p-3 flex flex-col gap-2"
+                onClick={() => openItem(it)}
+              >
+                {it.thumbnail ? (
+                  <img
+                    src={it.thumbnail}
+                    alt="thumbnail"
+                    className="w-full h-32 object-cover rounded"
+                  />
+                ) : null}
+                <div className="font-medium truncate">
+                  {it.title ?? truncateUri(it.uri)}
+                </div>
+                <div className="text-xs text-muted-foreground truncate">
+                  {it.description ?? it.mimeType ?? ""}
+                </div>
+                <div
+                  className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity"
+                  onClick={(e) => e.stopPropagation()}
+                  onMouseDown={(e) => e.stopPropagation()}
                 >
-                  {it.thumbnail
-                    ? (
-                      <img
-                        src={it.thumbnail}
-                        alt="thumbnail"
-                        className="w-full h-32 object-cover rounded"
-                      />
-                    )
-                    : null}
-                  <div className="font-medium truncate">
-                    {it.title ?? truncateUri(it.uri)}
-                  </div>
-                  <div className="text-xs text-muted-foreground truncate">
-                    {it.description ?? it.mimeType ?? ""}
-                  </div>
-                  <div
-                    className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity"
-                    onClick={(e) =>
-                      e.stopPropagation()}
-                    onMouseDown={(e) => e.stopPropagation()}
-                  >
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="icon">
-                          <Icon name="more_horiz" />
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent>
-                        <DropdownMenuItem onClick={() => openItem(it)}>
-                          Open
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="ghost" size="icon">
+                        <Icon name="more_horiz" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent>
+                      <DropdownMenuItem onClick={() => openItem(it)}>
+                        Open
+                      </DropdownMenuItem>
+                      {caps.hasCreate ? (
+                        <DropdownMenuItem
+                          onClick={() => duplicateItem(it)}
+                          disabled={isDuplicating}
+                        >
+                          {isDuplicating ? "Duplicating..." : "Duplicate"}
                         </DropdownMenuItem>
-                        {caps.hasCreate
-                          ? (
-                            <DropdownMenuItem
-                              onClick={() => duplicateItem(it)}
-                              disabled={isDuplicating}
-                            >
-                              {isDuplicating ? "Duplicating..." : "Duplicate"}
-                            </DropdownMenuItem>
-                          )
-                          : null}
-                        {caps.hasDelete
-                          ? (
-                            <>
-                              <DropdownMenuSeparator />
-                              <DropdownMenuItem
-                                variant="destructive"
-                                onClick={() => deleteItem(it)}
-                              >
-                                Delete
-                              </DropdownMenuItem>
-                            </>
-                          )
-                          : null}
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        )
-        : (
-          <Table
-            columns={[
+                      ) : null}
+                      {caps.hasDelete ? (
+                        <>
+                          <DropdownMenuSeparator />
+                          <DropdownMenuItem
+                            variant="destructive"
+                            onClick={() => deleteItem(it)}
+                          >
+                            Delete
+                          </DropdownMenuItem>
+                        </>
+                      ) : null}
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      ) : (
+        <Table
+          columns={
+            [
               {
                 id: "title",
                 header: "Title",
@@ -473,29 +455,25 @@ export function InternalResourceListWithIntegration({
                       <DropdownMenuItem onClick={() => openItem(row)}>
                         Open
                       </DropdownMenuItem>
-                      {caps.hasCreate
-                        ? (
+                      {caps.hasCreate ? (
+                        <DropdownMenuItem
+                          onClick={() => duplicateItem(row)}
+                          disabled={isDuplicating}
+                        >
+                          {isDuplicating ? "Duplicating..." : "Duplicate"}
+                        </DropdownMenuItem>
+                      ) : null}
+                      {caps.hasDelete ? (
+                        <>
+                          <DropdownMenuSeparator />
                           <DropdownMenuItem
-                            onClick={() => duplicateItem(row)}
-                            disabled={isDuplicating}
+                            variant="destructive"
+                            onClick={() => deleteItem(row)}
                           >
-                            {isDuplicating ? "Duplicating..." : "Duplicate"}
+                            Delete
                           </DropdownMenuItem>
-                        )
-                        : null}
-                      {caps.hasDelete
-                        ? (
-                          <>
-                            <DropdownMenuSeparator />
-                            <DropdownMenuItem
-                              variant="destructive"
-                              onClick={() => deleteItem(row)}
-                            >
-                              Delete
-                            </DropdownMenuItem>
-                          </>
-                        )
-                        : null}
+                        </>
+                      ) : null}
                     </DropdownMenuContent>
                   </DropdownMenu>
                 ),
@@ -504,11 +482,12 @@ export function InternalResourceListWithIntegration({
               uri: string;
               title?: string;
               mimeType?: string;
-            }>[]}
-            data={items}
-            onRowClick={(row) => openItem(row)}
-          />
-        )}
+            }>[]
+          }
+          data={items}
+          onRowClick={(row) => openItem(row)}
+        />
+      )}
 
       <AlertDialog
         open={!!deleteTarget}
@@ -532,16 +511,14 @@ export function InternalResourceListWithIntegration({
                 confirmDelete();
               }}
             >
-              {isDeleting
-                ? (
-                  <>
-                    <Spinner size="xs" />
-                    <span className="ml-2">Deleting...</span>
-                  </>
-                )
-                : (
-                  "Delete"
-                )}
+              {isDeleting ? (
+                <>
+                  <Spinner size="xs" />
+                  <span className="ml-2">Deleting...</span>
+                </>
+              ) : (
+                "Delete"
+              )}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

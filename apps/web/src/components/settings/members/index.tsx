@@ -69,9 +69,11 @@ function MembersViewContent({
           }}
         />
 
-        {tab === "members"
-          ? <MembersTableView teamId={teamId} user={user} />
-          : <RolesTableView teamId={teamId} />}
+        {tab === "members" ? (
+          <MembersTableView teamId={teamId} user={user} />
+        ) : (
+          <RolesTableView teamId={teamId} />
+        )}
       </div>
     </div>
   );
@@ -85,9 +87,9 @@ export default function MembersSettings() {
       <Suspense
         fallback={
           <MembersViewLoading
-            loadingMessage={tab === "members"
-              ? "Loading members..."
-              : "Loading roles..."}
+            loadingMessage={
+              tab === "members" ? "Loading members..." : "Loading roles..."
+            }
           />
         }
       >

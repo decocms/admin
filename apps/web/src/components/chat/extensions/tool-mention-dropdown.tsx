@@ -55,12 +55,11 @@ export default forwardRef<
       } else {
         // Resource: show loading in ContextResources, then read and append
         const resource = item as ResourceOption;
-        const clientId =
-          `${resource.integration.id}:${resource.resource.uri}:${Date.now()}`;
+        const clientId = `${resource.integration.id}:${resource.resource.uri}:${Date.now()}`;
         dispatchResourceLoading({
           clientId,
-          name: resource.resource.name || resource.label ||
-            resource.resource.uri,
+          name:
+            resource.resource.name || resource.label || resource.resource.uri,
           contentType: resource.resource.mimeType,
         });
         // Fire-and-forget to avoid blocking selection UX
@@ -101,7 +100,8 @@ export default forwardRef<
               dispatchResourceLoaded({
                 clientId,
                 url: dataUrl,
-                name: resource.resource.name ||
+                name:
+                  resource.resource.name ||
                   resource.label ||
                   resource.resource.uri,
                 contentType,
@@ -188,14 +188,14 @@ export default forwardRef<
   if (items.length === 0) {
     return (
       <div className="bg-background border border-border rounded-lg shadow-lg p-4 min-w-[300px] overflow-hidden">
-        {isLoading
-          ? (
-            <div className="flex items-center gap-2 text-sm text-muted-foreground">
-              <Spinner size="xs" />
-              Searching...
-            </div>
-          )
-          : <div className="text-sm text-muted-foreground">No results</div>}
+        {isLoading ? (
+          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+            <Spinner size="xs" />
+            Searching...
+          </div>
+        ) : (
+          <div className="text-sm text-muted-foreground">No results</div>
+        )}
       </div>
     );
   }
@@ -253,8 +253,8 @@ export default forwardRef<
                     if ((it as ToolOption).type === "tool") {
                       toolIdxs.push(originalIdx);
                     } else {
-                      const rType = (it as ResourceOption).resourceType ||
-                        "Resources";
+                      const rType =
+                        (it as ResourceOption).resourceType || "Resources";
                       const arr = byType.get(rType) ?? [];
                       arr.push(originalIdx);
                       byType.set(rType, arr);
@@ -272,8 +272,7 @@ export default forwardRef<
                   }
 
                   const totalItemsInServer = sections.reduce(
-                    (acc, s) =>
-                      acc + s.list.length,
+                    (acc, s) => acc + s.list.length,
                     0,
                   );
                   if (totalItemsInServer === 0 && isLoading) {
@@ -318,11 +317,11 @@ export default forwardRef<
                             {section.label}
                           </span>
                           {section.label !== "Tools" &&
-                              pendingCategories?.includes(
-                                `${group.server.id}:${section.label}`,
-                              )
-                            ? <Spinner size="xs" />
-                            : null}
+                          pendingCategories?.includes(
+                            `${group.server.id}:${section.label}`,
+                          ) ? (
+                            <Spinner size="xs" />
+                          ) : null}
                         </div>
                       </div>
                       {section.list.map((originalIdx) => {
@@ -342,67 +341,66 @@ export default forwardRef<
                             )}
                             onClick={() => selectItem(renderIndex)}
                           >
-                            {(item as ToolOption).type === "tool"
-                              ? (
-                                <div className="flex min-w-0 flex-1 max-w-[320px]">
-                                  <div className="flex items-center text-sm truncate">
-                                    <span className="font-medium">
-                                      {(item as ToolOption).tool.name}
-                                    </span>
-                                    {(item as ToolOption).tool.description
-                                      ? (
-                                        <>
-                                          <span className="mx-1 text-muted-foreground">
-                                            -
+                            {(item as ToolOption).type === "tool" ? (
+                              <div className="flex min-w-0 flex-1 max-w-[320px]">
+                                <div className="flex items-center text-sm truncate">
+                                  <span className="font-medium">
+                                    {(item as ToolOption).tool.name}
+                                  </span>
+                                  {(item as ToolOption).tool.description ? (
+                                    <>
+                                      <span className="mx-1 text-muted-foreground">
+                                        -
+                                      </span>
+                                      <Tooltip>
+                                        <TooltipTrigger asChild>
+                                          <span className="text-muted-foreground truncate inline-block align-baseline max-w-full">
+                                            {
+                                              (item as ToolOption).tool
+                                                .description
+                                            }
                                           </span>
-                                          <Tooltip>
-                                            <TooltipTrigger asChild>
-                                              <span className="text-muted-foreground truncate inline-block align-baseline max-w-full">
-                                                {(item as ToolOption).tool
-                                                  .description}
-                                              </span>
-                                            </TooltipTrigger>
-                                            <TooltipContent>
-                                              {(item as ToolOption).tool
-                                                .description}
-                                            </TooltipContent>
-                                          </Tooltip>
-                                        </>
-                                      )
-                                      : null}
-                                  </div>
+                                        </TooltipTrigger>
+                                        <TooltipContent>
+                                          {
+                                            (item as ToolOption).tool
+                                              .description
+                                          }
+                                        </TooltipContent>
+                                      </Tooltip>
+                                    </>
+                                  ) : null}
                                 </div>
-                              )
-                              : (
-                                <div className="flex min-w-0 flex-1 max-w-[320px]">
-                                  <div className="flex items-center text-sm truncate">
-                                    <span className="font-medium">
-                                      {(item as ResourceOption).label}
-                                    </span>
-                                    {(item as ResourceOption).description
-                                      ? (
-                                        <>
-                                          <span className="mx-1 text-muted-foreground">
-                                            -
+                              </div>
+                            ) : (
+                              <div className="flex min-w-0 flex-1 max-w-[320px]">
+                                <div className="flex items-center text-sm truncate">
+                                  <span className="font-medium">
+                                    {(item as ResourceOption).label}
+                                  </span>
+                                  {(item as ResourceOption).description ? (
+                                    <>
+                                      <span className="mx-1 text-muted-foreground">
+                                        -
+                                      </span>
+                                      <Tooltip>
+                                        <TooltipTrigger asChild>
+                                          <span className="text-muted-foreground truncate inline-block align-baseline max-w-full">
+                                            {
+                                              (item as ResourceOption)
+                                                .description
+                                            }
                                           </span>
-                                          <Tooltip>
-                                            <TooltipTrigger asChild>
-                                              <span className="text-muted-foreground truncate inline-block align-baseline max-w-full">
-                                                {(item as ResourceOption)
-                                                  .description}
-                                              </span>
-                                            </TooltipTrigger>
-                                            <TooltipContent>
-                                              {(item as ResourceOption)
-                                                .description}
-                                            </TooltipContent>
-                                          </Tooltip>
-                                        </>
-                                      )
-                                      : null}
-                                  </div>
+                                        </TooltipTrigger>
+                                        <TooltipContent>
+                                          {(item as ResourceOption).description}
+                                        </TooltipContent>
+                                      </Tooltip>
+                                    </>
+                                  ) : null}
                                 </div>
-                              )}
+                              </div>
+                            )}
                           </button>
                         );
                       })}

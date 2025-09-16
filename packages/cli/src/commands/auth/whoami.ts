@@ -44,9 +44,10 @@ export const whoamiCommand = async () => {
       console.log("⚠️  No workspace selected.\n");
     }
   } catch (err: unknown) {
-    const message = typeof err === "object" && err && "message" in err
-      ? (err as { message: string }).message
-      : String(err);
+    const message =
+      typeof err === "object" && err && "message" in err
+        ? (err as { message: string }).message
+        : String(err);
     console.error("❌  Error reading session:", message);
   }
 };

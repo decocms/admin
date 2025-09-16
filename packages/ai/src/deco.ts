@@ -64,21 +64,21 @@ export function dereferenceSchema(
   // Handle allOf
   if (result.allOf) {
     result.allOf = result.allOf.map((subSchema: any) =>
-      dereferenceSchema(subSchema as JSONSchema7, definitions, visited)
+      dereferenceSchema(subSchema as JSONSchema7, definitions, visited),
     ) as JSONSchema7[];
   }
 
   // Handle anyOf
   if (result.anyOf) {
     result.anyOf = result.anyOf.map((subSchema: any) =>
-      dereferenceSchema(subSchema as JSONSchema7, definitions, visited)
+      dereferenceSchema(subSchema as JSONSchema7, definitions, visited),
     ) as JSONSchema7[];
   }
 
   // Handle oneOf
   if (result.oneOf) {
     result.oneOf = result.oneOf.map((subSchema: any) =>
-      dereferenceSchema(subSchema as JSONSchema7, definitions, visited)
+      dereferenceSchema(subSchema as JSONSchema7, definitions, visited),
     ) as JSONSchema7[];
   }
 
@@ -147,9 +147,8 @@ export const getTools = (schemas?: any): Tool[] => {
       ? dereferenceSchema(rawInputSchema as JSONSchema7, schemas.definitions)
       : undefined;
 
-    const outputSchemaId = "outputSchema" in func
-      ? (func.outputSchema as string)
-      : undefined;
+    const outputSchemaId =
+      "outputSchema" in func ? (func.outputSchema as string) : undefined;
 
     const rawOutputSchema = outputSchemaId
       ? schemas.definitions[idFromDefinition(outputSchemaId)]
@@ -162,7 +161,8 @@ export const getTools = (schemas?: any): Tool[] => {
       : undefined;
 
     // Handle tool name slugification and clashes
-    let toolName = (funcDefinition as { name?: string })?.name ??
+    let toolName =
+      (funcDefinition as { name?: string })?.name ??
       (inputSchema as { name?: string })?.name ??
       slugify(resolveType);
     let idx = 1;
@@ -174,16 +174,18 @@ export const getTools = (schemas?: any): Tool[] => {
     toolNames.set(toolName, resolveType);
 
     const normalizeSchema = (schema?: JSONSchema7): JSONSchema7 => {
-      return schema && "type" in schema && schema.type === "object" ? schema : {
-        type: "object",
-        additionalProperties: true,
-      };
+      return schema && "type" in schema && schema.type === "object"
+        ? schema
+        : {
+            type: "object",
+            additionalProperties: true,
+          };
     };
     return {
       name: toolName,
       resolveType,
-      description: funcDefinition.description ?? inputSchema?.description ??
-        resolveType,
+      description:
+        funcDefinition.description ?? inputSchema?.description ?? resolveType,
       outputSchema: normalizeSchema(outputSchema),
       inputSchema: normalizeSchema(inputSchema),
     };

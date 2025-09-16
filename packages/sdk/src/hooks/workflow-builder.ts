@@ -105,7 +105,8 @@ export function useWorkflowBuilder(workflow: Workflow) {
           def: {
             name: step.title,
             description: step.description,
-            execute: step.code ||
+            execute:
+              step.code ||
               `export default async function(ctx) {
               // ${step.prompt}
               return {};
@@ -186,7 +187,7 @@ export function useWorkflowBuilder(workflow: Workflow) {
       const newWorkflow: Workflow = {
         ...workflow,
         steps: workflow.steps.map((step) =>
-          step.id === stepId ? { ...step, ...updates } : step
+          step.id === stepId ? { ...step, ...updates } : step,
         ),
         updatedAt: new Date().toISOString(),
       };

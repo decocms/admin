@@ -45,9 +45,10 @@ export async function getUserBySupabaseCookie(
   if (accessToken && cache.has(accessToken)) {
     return cache.get(accessToken);
   }
-  const { supabase } = typeof supabaseServerToken === "string"
-    ? createSupabaseSessionClient(request, supabaseServerToken)
-    : { supabase: supabaseServerToken };
+  const { supabase } =
+    typeof supabaseServerToken === "string"
+      ? createSupabaseSessionClient(request, supabaseServerToken)
+      : { supabase: supabaseServerToken };
   const [{ data: _user }, jwt] = await Promise.all([
     supabase.auth.getUser(accessToken),
     jwtIssuer.verify(sessionToken).then((jwt) => {

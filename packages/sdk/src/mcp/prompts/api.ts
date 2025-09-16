@@ -11,8 +11,7 @@ import { MCPClient } from "../index.ts";
 const createTool = createToolGroup("Prompt", {
   name: "Prompt Management",
   description: "Manage reusable prompt templates.",
-  icon:
-    "https://assets.decocache.com/mcp/9861d914-141d-4236-b616-d73ef6559ca1/Prompt-Management.png",
+  icon: "https://assets.decocache.com/mcp/9861d914-141d-4236-b616-d73ef6559ca1/Prompt-Management.png",
 });
 
 export const createPrompt = createTool({
@@ -230,15 +229,16 @@ export const listPrompts = createTool({
     if (resolveMentions) {
       const resolvedPrompts = await Promise.allSettled(
         prompts.map((prompt) =>
-          resolveMentionsFn(prompt.content, workspace, MCPClient.forContext(c))
+          resolveMentionsFn(prompt.content, workspace, MCPClient.forContext(c)),
         ),
       );
 
       prompts = prompts.map((prompt, index) => ({
         ...prompt,
-        content: resolvedPrompts[index].status === "fulfilled"
-          ? resolvedPrompts[index].value
-          : prompt.content,
+        content:
+          resolvedPrompts[index].status === "fulfilled"
+            ? resolvedPrompts[index].value
+            : prompt.content,
       }));
     }
 

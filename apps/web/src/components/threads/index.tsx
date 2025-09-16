@@ -61,7 +61,8 @@ function Item({ agentId, thread }: { agentId: string; thread: Thread }) {
       )}
       type="button"
       onClick={() =>
-        focusChat(agentId, thread.id.replace(`${user?.id ?? ""}-`, ""))}
+        focusChat(agentId, thread.id.replace(`${user?.id ?? ""}-`, ""))
+      }
     >
       {thread.title}
     </button>
@@ -81,7 +82,8 @@ function App({ agentId }: { agentId: string }) {
     return new Date(b).getTime() - new Date(a).getTime();
   });
 
-  const hasNoThreads = groupedThreads.today.length === 0 &&
+  const hasNoThreads =
+    groupedThreads.today.length === 0 &&
     groupedThreads.yesterday.length === 0 &&
     olderDates.length === 0;
 
@@ -91,47 +93,45 @@ function App({ agentId }: { agentId: string }) {
         "p-4 text-foreground w-full max-w-2xl mx-auto space-y-4 inline-block",
       )}
     >
-      {hasNoThreads
-        ? (
-          <div className="text-center py-12">
-            <h2 className="text-lg font-medium text-foreground mb-2">
-              No conversations yet
-            </h2>
-            <p className="text-sm text-muted-foreground">
-              Start a new conversation to begin chatting with this agent.
-            </p>
-          </div>
-        )
-        : (
-          <>
-            {groupedThreads.today.length > 0 && (
-              <div className="flex flex-col items-start w-full">
-                <Category>Today</Category>
-                {groupedThreads.today.map((thread) => (
-                  <Item key={thread.id} agentId={agentId} thread={thread} />
-                ))}
-              </div>
-            )}
+      {hasNoThreads ? (
+        <div className="text-center py-12">
+          <h2 className="text-lg font-medium text-foreground mb-2">
+            No conversations yet
+          </h2>
+          <p className="text-sm text-muted-foreground">
+            Start a new conversation to begin chatting with this agent.
+          </p>
+        </div>
+      ) : (
+        <>
+          {groupedThreads.today.length > 0 && (
+            <div className="flex flex-col items-start w-full">
+              <Category>Today</Category>
+              {groupedThreads.today.map((thread) => (
+                <Item key={thread.id} agentId={agentId} thread={thread} />
+              ))}
+            </div>
+          )}
 
-            {groupedThreads.yesterday.length > 0 && (
-              <div className="flex flex-col items-start w-full">
-                <Category>Yesterday</Category>
-                {groupedThreads.yesterday.map((thread) => (
-                  <Item key={thread.id} agentId={agentId} thread={thread} />
-                ))}
-              </div>
-            )}
+          {groupedThreads.yesterday.length > 0 && (
+            <div className="flex flex-col items-start w-full">
+              <Category>Yesterday</Category>
+              {groupedThreads.yesterday.map((thread) => (
+                <Item key={thread.id} agentId={agentId} thread={thread} />
+              ))}
+            </div>
+          )}
 
-            {olderDates.map((date) => (
-              <div key={date} className="flex flex-col items-start w-full">
-                <Category>{date}</Category>
-                {groupedThreads.older[date].map((thread) => (
-                  <Item key={thread.id} agentId={agentId} thread={thread} />
-                ))}
-              </div>
-            ))}
-          </>
-        )}
+          {olderDates.map((date) => (
+            <div key={date} className="flex flex-col items-start w-full">
+              <Category>{date}</Category>
+              {groupedThreads.older[date].map((thread) => (
+                <Item key={thread.id} agentId={agentId} thread={thread} />
+              ))}
+            </div>
+          ))}
+        </>
+      )}
     </div>
   );
 }

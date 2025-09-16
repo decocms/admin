@@ -87,10 +87,12 @@ export function ProjectLayout() {
               setOpen(open);
             }}
             className="h-full bg-sidebar"
-            style={{
-              "--sidebar-width": "16rem",
-              "--sidebar-width-mobile": "14rem",
-            } as Record<string, string>}
+            style={
+              {
+                "--sidebar-width": "16rem",
+                "--sidebar-width-mobile": "14rem",
+              } as Record<string, string>
+            }
           >
             <AppSidebar />
             <SidebarInset className="h-full flex-col bg-sidebar">
@@ -268,47 +270,45 @@ export function DefaultBreadcrumb({
 
       <Breadcrumb>
         <BreadcrumbList>
-          {isMobile
-            ? (
-              <BreadcrumbItem key={`mobile-${items.at(-1)?.link || "last"}`}>
-                <BreadcrumbPage className="inline-flex items-center gap-2">
-                  {items.at(-1)?.label}
-                </BreadcrumbPage>
-              </BreadcrumbItem>
-            )
-            : (
-              items?.map((item, index) => {
-                const isLast = index === items.length - 1;
-                const link = useWorkspaceLinkProp
-                  ? withWorkspace(item.link ?? "")
-                  : (item.link ?? "");
+          {isMobile ? (
+            <BreadcrumbItem key={`mobile-${items.at(-1)?.link || "last"}`}>
+              <BreadcrumbPage className="inline-flex items-center gap-2">
+                {items.at(-1)?.label}
+              </BreadcrumbPage>
+            </BreadcrumbItem>
+          ) : (
+            items?.map((item, index) => {
+              const isLast = index === items.length - 1;
+              const link = useWorkspaceLinkProp
+                ? withWorkspace(item.link ?? "")
+                : (item.link ?? "");
 
-                if (isLast) {
-                  return (
-                    <BreadcrumbItem key={`last-${item.link || index}`}>
-                      <BreadcrumbPage className="inline-flex items-center gap-2">
-                        {item.label}
-                      </BreadcrumbPage>
-                    </BreadcrumbItem>
-                  );
-                }
-
+              if (isLast) {
                 return (
-                  <Fragment key={`${item.link}-${index}`}>
-                    <BreadcrumbItem>
-                      <BreadcrumbLink
-                        asChild
-                        href={link}
-                        className="inline-flex items-center gap-2"
-                      >
-                        <Link to={link}>{item.label}</Link>
-                      </BreadcrumbLink>
-                    </BreadcrumbItem>
-                    <BreadcrumbSeparator />
-                  </Fragment>
+                  <BreadcrumbItem key={`last-${item.link || index}`}>
+                    <BreadcrumbPage className="inline-flex items-center gap-2">
+                      {item.label}
+                    </BreadcrumbPage>
+                  </BreadcrumbItem>
                 );
-              })
-            )}
+              }
+
+              return (
+                <Fragment key={`${item.link}-${index}`}>
+                  <BreadcrumbItem>
+                    <BreadcrumbLink
+                      asChild
+                      href={link}
+                      className="inline-flex items-center gap-2"
+                    >
+                      <Link to={link}>{item.label}</Link>
+                    </BreadcrumbLink>
+                  </BreadcrumbItem>
+                  <BreadcrumbSeparator />
+                </Fragment>
+              );
+            })
+          )}
         </BreadcrumbList>
       </Breadcrumb>
     </div>

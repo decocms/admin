@@ -89,7 +89,7 @@ export function RichTextArea({
               icon: integration.icon,
             },
           }),
-        )
+        ),
       );
   }, [integrations]);
 

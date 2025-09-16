@@ -127,8 +127,7 @@ export class LibSQLFactory {
       return newToken.jwt;
     };
 
-    const url =
-      `libsql://${uniqueDbName}-${this.opts.tursoOrganization}.aws-us-east-1.turso.io`;
+    const url = `libsql://${uniqueDbName}-${this.opts.tursoOrganization}.aws-us-east-1.turso.io`;
     const { authToken, created } = await this.turso.databases
       .get(uniqueDbName)
       .then(async () => {
@@ -177,7 +176,7 @@ export class LibSQLFactory {
     const promise = storage
       .init()
       .catch((e) =>
-        console.error("MASTRA tables creation failed with error", e)
+        console.error("MASTRA tables creation failed with error", e),
       );
 
     if (created) {

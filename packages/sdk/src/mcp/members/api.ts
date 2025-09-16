@@ -109,8 +109,7 @@ export const createTool = createToolGroup("Team", {
   name: "Team & User Management",
   description: "Manage workspace access and roles.",
   workspace: false,
-  icon:
-    "https://assets.decocache.com/mcp/de7e81f6-bf2b-4bf5-a96c-867682f7d2ca/Team--User-Management.png",
+  icon: "https://assets.decocache.com/mcp/de7e81f6-bf2b-4bf5-a96c-867682f7d2ca/Team--User-Management.png",
 });
 
 export const getTeamMembers = createTool({
@@ -517,8 +516,8 @@ export const inviteTeamMembers = createTool({
 
       return {
         invitee,
-        ignoreInvitee: (invites && invites.length > 0) ||
-          alreadyExistsUserInTeam,
+        ignoreInvitee:
+          (invites && invites.length > 0) || alreadyExistsUserInTeam,
       };
     });
 
@@ -587,8 +586,7 @@ export const inviteTeamMembers = createTool({
     await Promise.all(requestPromises || []);
 
     return {
-      message:
-        `Invite sent to their home screen. Ask them to log in at https://admin.decocms.com`,
+      message: `Invite sent to their home screen. Ask them to log in at https://admin.decocms.com`,
     };
   },
 });
@@ -659,8 +657,8 @@ export const acceptInvite = createTool({
       .eq("team_id", invite.team_id)
       .eq("user_id", user.id)
       .limit(1);
-    const alreadyExistsUserInTeam = alreadyExistsAsDeletedMember &&
-      alreadyExistsAsDeletedMember.length > 0;
+    const alreadyExistsUserInTeam =
+      alreadyExistsAsDeletedMember && alreadyExistsAsDeletedMember.length > 0;
 
     // Add user to team if not already a member
     if (!alreadyExistsUserInTeam) {
@@ -718,8 +716,8 @@ export const acceptInvite = createTool({
       ok: true,
       teamId: invite.team_id,
       teamName: invite.team_name,
-      teamSlug: team?.slug ||
-        invite.team_name.toLowerCase().replace(/\s+/g, "-"),
+      teamSlug:
+        team?.slug || invite.team_name.toLowerCase().replace(/\s+/g, "-"),
     };
   },
 });
@@ -749,15 +747,16 @@ export const deleteInvite = createTool({
       c.db.from("profiles").select("email").eq("user_id", c.user.id).single(),
     ]);
 
-    const canAccess = error || !invite || !profile
-      ? false
-      : invite?.invited_email &&
-          profile?.email &&
-          invite.invited_email === profile.email
-      ? true
-      : await assertTeamResourceAccess(c.tool.name, invite.team_id, c)
-        .then(() => true)
-        .catch(() => false);
+    const canAccess =
+      error || !invite || !profile
+        ? false
+        : invite?.invited_email &&
+            profile?.email &&
+            invite.invited_email === profile.email
+          ? true
+          : await assertTeamResourceAccess(c.tool.name, invite.team_id, c)
+              .then(() => true)
+              .catch(() => false);
 
     if (!canAccess) {
       throw new ForbiddenError("You are not allowed to delete this invite");

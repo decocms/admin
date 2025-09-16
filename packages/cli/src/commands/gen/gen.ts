@@ -154,12 +154,12 @@ const DEFAULT_BINDINGS: DecoBinding[] = [
 type MCPResult<T> =
   | T
   | {
-    isError: true;
-    content?: {
-      type: "text";
-      text: string;
-    }[];
-  };
+      isError: true;
+      content?: {
+        type: "text";
+        text: string;
+      }[];
+    };
 
 const unwrapMcpResult = <T extends object>(
   result: MCPResult<T>,
@@ -170,7 +170,7 @@ const unwrapMcpResult = <T extends object>(
   if ("isError" in result && result.isError) {
     const message =
       (Array.isArray(result.content) ? result.content[0]?.text : undefined) ??
-        JSON.stringify(result);
+      JSON.stringify(result);
     throw new Error(opts?.errorMessage?.(message) ?? message);
   }
   return result as T;
@@ -208,13 +208,13 @@ export const genEnv = async ({
         ...DEFAULT_BINDINGS,
         ...(selfUrl
           ? [
-            {
-              name: "SELF",
-              type: "mcp" as const,
-              integration_url: selfUrl,
-              ignoreCache: true,
-            },
-          ]
+              {
+                name: "SELF",
+                type: "mcp" as const,
+                integration_url: selfUrl,
+                ignoreCache: true,
+              },
+            ]
           : []),
       ].map(async (binding) => {
         let connection: unknown;
@@ -235,9 +235,10 @@ export const genEnv = async ({
           "integration_name" in binding ||
           binding.type === "contract"
         ) {
-          const [integrationName, type] = "integration_name" in binding
-            ? [binding.integration_name, binding.integration_name]
-            : [CONTRACTS_BINDING, `${appName}-${MD5(binding.contract)}`];
+          const [integrationName, type] =
+            "integration_name" in binding
+              ? [binding.integration_name, binding.integration_name]
+              : [CONTRACTS_BINDING, `${appName}-${MD5(binding.contract)}`];
           stateKey = { type, key: binding.name };
           const appResult = (await client.callTool({
             name: "REGISTRY_GET_APP",
@@ -263,9 +264,8 @@ export const genEnv = async ({
           name: "INTEGRATIONS_LIST_TOOLS",
           arguments: {
             connection,
-            ignoreCache: "ignoreCache" in binding
-              ? binding.ignoreCache
-              : undefined,
+            ignoreCache:
+              "ignoreCache" in binding ? binding.ignoreCache : undefined,
           },
         })) as {
           structuredContent: {
@@ -318,14 +318,14 @@ export const genEnv = async ({
               }),
               t.outputSchema
                 ? await compile(
-                  { ...t.outputSchema, title: outputName },
-                  outputName,
-                  {
-                    customName,
-                    additionalProperties: false,
-                    format: false,
-                  },
-                )
+                    { ...t.outputSchema, title: outputName },
+                    outputName,
+                    {
+                      customName,
+                      additionalProperties: false,
+                      format: false,
+                    },
+                  )
                 : undefined,
             ]);
             tsTypes += `
@@ -368,77 +368,63 @@ ${tsTypes}
   }
 
   export const StateSchema = z.object({
-    ${
-      props
-        .filter((p) => p !== null && p[2] !== undefined)
-        .map((prop) => {
-          const [_, __, stateKey] = prop as [
-            string,
-            [string, string, string | undefined, string | undefined][],
-            KeyInfo | undefined,
-          ];
-          return `${stateKey!.key}: z.object({
+    ${props
+      .filter((p) => p !== null && p[2] !== undefined)
+      .map((prop) => {
+        const [_, __, stateKey] = prop as [
+          string,
+          [string, string, string | undefined, string | undefined][],
+          KeyInfo | undefined,
+        ];
+        return `${stateKey!.key}: z.object({
         value: z.string(),
         __type: z.literal("${stateKey!.type}").default("${stateKey!.type}"),
       })`;
-        })
-        .join(",\n")
-    }
+      })
+      .join(",\n")}
   })
 
   export interface Env {
     DECO_CHAT_WORKSPACE: string;
     DECO_CHAT_API_JWT_PUBLIC_KEY: string;
-    ${
-      props
-        .filter((p) => p !== null)
-        .map(([propName, tools]) => {
-          return `${propName}: Mcp<{
-        ${
-            tools
-              .map(([toolName, inputName, outputName, description]) => {
-                const docComment = description
-                  ? `/**\n${formatDescription(description)}\n */`
-                  : "";
+    ${props
+      .filter((p) => p !== null)
+      .map(([propName, tools]) => {
+        return `${propName}: Mcp<{
+        ${tools
+          .map(([toolName, inputName, outputName, description]) => {
+            const docComment = description
+              ? `/**\n${formatDescription(description)}\n */`
+              : "";
 
-                return `${docComment}
-          ${
-                  toValidProperty(
-                    toolName,
-                  )
-                }: (input: ${inputName}) => Promise<${outputName ?? "any"}>;
+            return `${docComment}
+          ${toValidProperty(
+            toolName,
+          )}: (input: ${inputName}) => Promise<${outputName ?? "any"}>;
           `;
-              })
-              .join("")
-          }
+          })
+          .join("")}
       }>;`;
-        })
-        .join("")
-    }
+      })
+      .join("")}
   }
 
   export const Scopes = {
-    ${
-      Object.entries(mapBindingTools)
+    ${Object.entries(mapBindingTools)
+      .map(
+        ([bindingName, tools]) =>
+          `${toValidProperty(bindingName)}: {
+      ${tools
         .map(
-          ([bindingName, tools]) =>
-            `${toValidProperty(bindingName)}: {
-      ${
-              tools
-                .map(
-                  (toolName) =>
-                    `${toValidProperty(toolName)}: "${
-                      scopeParser.fromBindingToolToScope(
-                        { bindingName, toolName },
-                      )
-                    }"`,
-                )
-                .join(",\n")
-            }
-    }`,
+          (toolName) =>
+            `${toValidProperty(toolName)}: "${scopeParser.fromBindingToolToScope(
+              { bindingName, toolName },
+            )}"`,
         )
-        .join(",\n")
-    }
+        .join(",\n")}
+    }`,
+      )
+      .join(",\n")}
   }
   `);
   } finally {

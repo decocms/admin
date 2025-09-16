@@ -49,8 +49,10 @@ export const Workflow = (
   server: MCPServer<any, any>,
   workflows?: CreateMCPServerOptions["workflows"],
 ) => {
-  return class Workflow extends DurableObject<DefaultEnv>
-    implements WorkflowDO {
+  return class Workflow
+    extends DurableObject<DefaultEnv>
+    implements WorkflowDO
+  {
     constructor(
       // @ts-ignore: This is a workaround to fix the type error
       // deno-lint-ignore ban-types

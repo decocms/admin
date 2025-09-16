@@ -67,22 +67,25 @@ function ExpandableString({
   const stringValue = typeof value === "string" ? value : String(value);
   const isTruncated = stringValue.length > 100;
 
-  const content = showFull || !isTruncated ? stringValue : (
-    <span>
-      {stringValue.slice(0, 100)}
-      <button
-        type="button"
-        className="text-primary hover:text-primary/80 underline ml-1 text-xs font-normal bg-transparent border-none cursor-pointer"
-        onClick={(e) => {
-          e.stopPropagation();
-          setShowFull(true);
-        }}
-        title="Click to show full content"
-      >
-        ... show {stringValue.length - 100} more chars
-      </button>
-    </span>
-  );
+  const content =
+    showFull || !isTruncated ? (
+      stringValue
+    ) : (
+      <span>
+        {stringValue.slice(0, 100)}
+        <button
+          type="button"
+          className="text-primary hover:text-primary/80 underline ml-1 text-xs font-normal bg-transparent border-none cursor-pointer"
+          onClick={(e) => {
+            e.stopPropagation();
+            setShowFull(true);
+          }}
+          title="Click to show full content"
+        >
+          ... show {stringValue.length - 100} more chars
+        </button>
+      </span>
+    );
 
   return (
     <span className={className}>
@@ -212,9 +215,9 @@ function JsonTreeNode({
   const entries = Array.isArray(data)
     ? data.map((item, index) => [String(index), item] as const)
     : Object.entries(data as Record<string, unknown>).map(([key, value]) => {
-      // Ensure we're not accidentally stringifying objects
-      return [key, value] as const;
-    });
+        // Ensure we're not accidentally stringifying objects
+        return [key, value] as const;
+      });
 
   return (
     <div className="font-mono text-sm">
@@ -456,16 +459,14 @@ function InstanceDetailTab() {
   console.log("📋 WORKFLOW API RAW (copy me):", JSON.stringify(data, null, 2));
 
   const snapshot = data?.snapshot;
-  const status = typeof snapshot === "string"
-    ? snapshot
-    : snapshot?.status || "unknown";
+  const status =
+    typeof snapshot === "string" ? snapshot : snapshot?.status || "unknown";
 
   const badgeVariant = getStatusBadgeVariant(status);
   const statusIcon = getStatusIcon(status);
   const context = typeof snapshot === "string" ? undefined : snapshot?.context;
-  const stepGraph = typeof snapshot === "string"
-    ? []
-    : snapshot?.serializedStepGraph || [];
+  const stepGraph =
+    typeof snapshot === "string" ? [] : snapshot?.serializedStepGraph || [];
 
   // Use new processStepGraph to preserve parallel structure
   const processedSteps = processStepGraph(stepGraph);
@@ -560,9 +561,9 @@ function InstanceDetailTab() {
             <OutputField label="Input Params" value={context?.input} />
             <OutputField
               label="Output"
-              value={typeof snapshot === "string"
-                ? undefined
-                : snapshot?.result}
+              value={
+                typeof snapshot === "string" ? undefined : snapshot?.result
+              }
             />
           </Card>
           <h2 className="text-lg font-semibold mb-4">Steps</h2>

@@ -49,11 +49,11 @@ const createLLMUsageTransaction = (opts: {
     },
     payer: opts.hasCustomKey
       ? {
-        type: "wallet",
-        id: WellKnownWallets.build(
-          ...WellKnownWallets.llmVaultCredits(opts.workspace, opts.modelId),
-        ),
-      }
+          type: "wallet",
+          id: WellKnownWallets.build(
+            ...WellKnownWallets.llmVaultCredits(opts.workspace, opts.modelId),
+          ),
+        }
       : undefined,
     usage,
     metadata: opts,
@@ -103,13 +103,14 @@ const setupLLMInstance = async (modelId: string, c: AppContext) => {
   const wellKnownModel = WELL_KNOWN_MODELS.find(
     (model) => model.id === modelId,
   );
-  const llmVault = wellKnownModel || !c.envVars.LLMS_ENCRYPTION_KEY
-    ? undefined
-    : new SupabaseLLMVault(
-      c.db,
-      c.envVars.LLMS_ENCRYPTION_KEY,
-      c.workspace.value,
-    );
+  const llmVault =
+    wellKnownModel || !c.envVars.LLMS_ENCRYPTION_KEY
+      ? undefined
+      : new SupabaseLLMVault(
+          c.db,
+          c.envVars.LLMS_ENCRYPTION_KEY,
+          c.workspace.value,
+        );
   const llmConfig = await getLLMConfig({
     modelId,
     llmVault,
@@ -146,7 +147,7 @@ const prepareMessages = async (
           ...msg,
           id: msg.id || crypto.randomUUID(),
         },
-      })
+      }),
     ),
   );
 };
@@ -166,9 +167,8 @@ const processTransaction = async (
     modelId,
     plan,
     hasCustomKey,
-    userId: typeof c.user.id === "string"
-      ? c.user.id
-      : `apikey-${c.workspace.value}`,
+    userId:
+      typeof c.user.id === "string" ? c.user.id : `apikey-${c.workspace.value}`,
     workspace: c.workspace.value,
   });
 
@@ -196,8 +196,7 @@ const createTool = createToolGroup("AI", {
   name: "AI Gateway",
   description:
     "Unified LLM API, keeping the centralized observability and billing.",
-  icon:
-    "https://assets.decocache.com/mcp/6e1418f7-c962-406b-aceb-137197902709/ai-gateway.png",
+  icon: "https://assets.decocache.com/mcp/6e1418f7-c962-406b-aceb-137197902709/ai-gateway.png",
 });
 
 // Common input schema for messages
@@ -328,18 +327,21 @@ export const aiGenerate = createTool({
       temperature: input.temperature,
     });
 
-    const hasCustomKey = !!c.envVars.LLMS_ENCRYPTION_KEY &&
+    const hasCustomKey =
+      !!c.envVars.LLMS_ENCRYPTION_KEY &&
       !WELL_KNOWN_MODELS.find((model) => model.id === modelId);
 
     const shouldSkip = (input.skipTransaction && usedVault) ?? false;
 
-    const transactionId = shouldSkip ? undefined : await processTransaction(
-      wallet,
-      result.usage,
-      hasCustomKey ? llmConfig.model : modelId,
-      hasCustomKey,
-      c,
-    );
+    const transactionId = shouldSkip
+      ? undefined
+      : await processTransaction(
+          wallet,
+          result.usage,
+          hasCustomKey ? llmConfig.model : modelId,
+          hasCustomKey,
+          c,
+        );
 
     return {
       text: result.text,
@@ -369,7 +371,8 @@ export const aiGenerateObject = createTool({
     const { llm, llmConfig, usedVault } = await setupLLMInstance(modelId, c);
     const aiMessages = await prepareMessages(input.messages);
 
-    const hasCustomKey = !!c.envVars.LLMS_ENCRYPTION_KEY &&
+    const hasCustomKey =
+      !!c.envVars.LLMS_ENCRYPTION_KEY &&
       !WELL_KNOWN_MODELS.find((model) => model.id === modelId);
 
     const result = await generateObject({
@@ -382,13 +385,15 @@ export const aiGenerateObject = createTool({
 
     const shouldSkip = (input.skipTransaction && usedVault) ?? false;
 
-    const transactionId = shouldSkip ? undefined : await processTransaction(
-      wallet,
-      result.usage,
-      hasCustomKey ? llmConfig.model : modelId,
-      hasCustomKey,
-      c,
-    );
+    const transactionId = shouldSkip
+      ? undefined
+      : await processTransaction(
+          wallet,
+          result.usage,
+          hasCustomKey ? llmConfig.model : modelId,
+          hasCustomKey,
+          c,
+        );
 
     return {
       object: result.object,

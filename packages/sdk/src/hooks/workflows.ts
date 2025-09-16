@@ -154,13 +154,11 @@ function convertToNewWorkflow(oldWorkflow: WorkflowDefinition): Workflow {
           description: def.description || "",
           prompt: `Call ${def.tool_name} from ${def.integration}`,
           code: `export default async function(ctx) {
-  return await ctx.env.${def.integration}.${def.tool_name}(${
-            JSON.stringify(
-              def.options || {},
-              null,
-              2,
-            )
-          });
+  return await ctx.env.${def.integration}.${def.tool_name}(${JSON.stringify(
+    def.options || {},
+    null,
+    2,
+  )});
 }`,
           inputSchema: def.inputSchema,
           outputSchema: def.outputSchema,

@@ -35,9 +35,8 @@ export async function devCommand(opts: StartDevServerOptions): Promise<void> {
     }));
 
     const wranglerConfig = await readWranglerConfig();
-    const app = typeof wranglerConfig.name === "string"
-      ? wranglerConfig.name
-      : "my-app";
+    const app =
+      typeof wranglerConfig.name === "string" ? wranglerConfig.name : "my-app";
 
     console.log(chalk.gray(`Starting development server for '${app}'...`));
 
@@ -69,12 +68,10 @@ export async function devCommand(opts: StartDevServerOptions): Promise<void> {
             workspace: config.workspace,
             local: config.local,
             bindings: config.bindings,
-            selfUrl: `https://${
-              getAppDomain(
-                config.workspace,
-                wranglerConfig.name ?? "my-app",
-              )
-            }/mcp`,
+            selfUrl: `https://${getAppDomain(
+              config.workspace,
+              wranglerConfig.name ?? "my-app",
+            )}/mcp`,
           });
 
           const outputPath = join(process.cwd(), "deco.gen.ts");

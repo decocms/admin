@@ -212,9 +212,10 @@ export const useUpdateMemberRole = () => {
       const membersWithChangedRole = members.map((member) => {
         if (member.user_id !== userId) return member;
 
-        const newRoles = action === "grant"
-          ? [...member.roles, { id: roleId, name: roleName }]
-          : member.roles.filter((r) => r.id !== roleId);
+        const newRoles =
+          action === "grant"
+            ? [...member.roles, { id: roleId, name: roleName }]
+            : member.roles.filter((r) => r.id !== roleId);
         return { ...member, roles: newRoles };
       });
       queryClient.setQueryData<TeamMembers>(membersKey, {

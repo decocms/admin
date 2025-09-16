@@ -50,9 +50,8 @@ export function MultiSelect({
   className,
   disabled = false,
 }: MultiSelectProps) {
-  const [selectedValues, setSelectedValues] = React.useState<string[]>(
-    defaultValue,
-  );
+  const [selectedValues, setSelectedValues] =
+    React.useState<string[]>(defaultValue);
   const [isPopoverOpen, setIsPopoverOpen] = React.useState(false);
 
   React.useEffect(() => {
@@ -122,60 +121,56 @@ export function MultiSelect({
           )}
           disabled={disabled}
         >
-          {selectedValues.length > 0
-            ? (
-              <div className="flex items-center justify-between w-full min-w-0">
-                <div className="flex items-center gap-1 min-w-0 flex-1">
-                  {selectedValues.slice(0, maxCount).map((value) => {
-                    const option = options.find((o) => o.value === value);
-                    const IconComponent = option?.icon;
-                    return (
-                      <Badge
-                        key={value}
-                        variant={variant === "default"
-                          ? "default"
-                          : "secondary"}
-                        className="max-w-24"
-                        style={{ animationDuration: `${animation}s` }}
-                      >
-                        {IconComponent && (
-                          <IconComponent className="h-3 w-3 shrink-0" />
-                        )}
-                        <span className="truncate">{option?.label}</span>
-                      </Badge>
-                    );
-                  })}
-                  {selectedValues.length > maxCount && (
+          {selectedValues.length > 0 ? (
+            <div className="flex items-center justify-between w-full min-w-0">
+              <div className="flex items-center gap-1 min-w-0 flex-1">
+                {selectedValues.slice(0, maxCount).map((value) => {
+                  const option = options.find((o) => o.value === value);
+                  const IconComponent = option?.icon;
+                  return (
                     <Badge
+                      key={value}
                       variant={variant === "default" ? "default" : "secondary"}
-                      className="flex-shrink-0"
+                      className="max-w-24"
                       style={{ animationDuration: `${animation}s` }}
                     >
-                      +{selectedValues.length - maxCount}
+                      {IconComponent && (
+                        <IconComponent className="h-3 w-3 shrink-0" />
+                      )}
+                      <span className="truncate">{option?.label}</span>
                     </Badge>
-                  )}
-                </div>
-                <div className="flex items-center shrink-0 ml-2">
-                  <Icon
-                    name="keyboard_arrow_down"
-                    size={20}
-                    className="shrink-0 opacity-50"
-                  />
-                </div>
+                  );
+                })}
+                {selectedValues.length > maxCount && (
+                  <Badge
+                    variant={variant === "default" ? "default" : "secondary"}
+                    className="flex-shrink-0"
+                    style={{ animationDuration: `${animation}s` }}
+                  >
+                    +{selectedValues.length - maxCount}
+                  </Badge>
+                )}
               </div>
-            )
-            : (
-              <div className="flex items-center justify-between w-full">
-                <span className="text-sm text-muted-foreground">
-                  {placeholder}
-                </span>
+              <div className="flex items-center shrink-0 ml-2">
                 <Icon
                   name="keyboard_arrow_down"
                   size={20}
                   className="shrink-0 opacity-50"
                 />
               </div>
-            )}
+            </div>
+          ) : (
+            <div className="flex items-center justify-between w-full">
+              <span className="text-sm text-muted-foreground">
+                {placeholder}
+              </span>
+              <Icon
+                name="keyboard_arrow_down"
+                size={20}
+                className="shrink-0 opacity-50"
+              />
+            </div>
+          )}
         </Button>
       </PopoverTrigger>
       <PopoverContent
@@ -207,8 +202,10 @@ export function MultiSelect({
                   }}
                 >
                   <Checkbox
-                    checked={selectedValues.length === options.length &&
-                      options.length > 0}
+                    checked={
+                      selectedValues.length === options.length &&
+                      options.length > 0
+                    }
                     onCheckedChange={toggleAll}
                     className="mr-2 [&_svg]:!text-primary-foreground"
                     onClick={(e) => e.stopPropagation()}

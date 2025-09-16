@@ -105,12 +105,9 @@ Projects.Skeleton = () => (
           <div className="h-4 w-32 bg-stone-100 rounded-lg"></div>
         </div>
         <div className="p-4 border-t border-border flex items-center">
-          <div className="h-6 w-6 bg-stone-100 rounded-full animate-pulse">
-          </div>
-          <div className="h-6 w-6 bg-stone-100 rounded-full animate-pulse -ml-2">
-          </div>
-          <div className="h-6 w-6 bg-stone-100 rounded-full animate-pulse -ml-2">
-          </div>
+          <div className="h-6 w-6 bg-stone-100 rounded-full animate-pulse"></div>
+          <div className="h-6 w-6 bg-stone-100 rounded-full animate-pulse -ml-2"></div>
+          <div className="h-6 w-6 bg-stone-100 rounded-full animate-pulse -ml-2"></div>
         </div>
       </div>
     ))}

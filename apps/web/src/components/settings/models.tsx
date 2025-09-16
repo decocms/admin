@@ -219,17 +219,17 @@ const ModelActions = ({
 const ModelInfoCell = ({ model }: { model: Model }) => {
   return (
     <div className="flex items-center gap-2">
-      {model.logo
-        ? (
-          <Avatar
-            shape="square"
-            url={model.logo}
-            fallback={model.name}
-            objectFit="contain"
-            size="xs"
-          />
-        )
-        : <Icon name="conversion_path" className="text-muted-foreground" />}
+      {model.logo ? (
+        <Avatar
+          shape="square"
+          url={model.logo}
+          fallback={model.name}
+          objectFit="contain"
+          size="xs"
+        />
+      ) : (
+        <Icon name="conversion_path" className="text-muted-foreground" />
+      )}
       <div>
         <div className="flex items-center gap-2">
           <h3 className="font-medium line-clamp-1">{model.name}</h3>
@@ -547,9 +547,11 @@ function TableView({ models }: { models: Model[] }) {
                         <Input
                           type="password"
                           {...field}
-                          placeholder={modelRef.current?.hasCustomKey
-                            ? "••••••••••••••••••••••••••••••••••••••••••"
-                            : ""}
+                          placeholder={
+                            modelRef.current?.hasCustomKey
+                              ? "••••••••••••••••••••••••••••••••••••••••••"
+                              : ""
+                          }
                           disabled={isMutating}
                         />
                       </FormControl>

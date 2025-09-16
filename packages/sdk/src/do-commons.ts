@@ -5,7 +5,7 @@ export const doRetryable = <T, TArgs extends any[] = any[]>(
   fn: (...args: TArgs) => Promise<T>,
   maxRetries = 3,
   baseDelayMs = 1000,
-): (...args: TArgs) => Promise<T> => {
+): ((...args: TArgs) => Promise<T>) => {
   return async (...args: TArgs) => {
     let lastError: unknown;
 

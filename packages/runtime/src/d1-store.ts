@@ -14,13 +14,11 @@ export class D1Store extends MastraD1Store {
     // Create indexes for better performance on frequently queried columns
     const indexQueries = [
       {
-        sql:
-          "CREATE INDEX IF NOT EXISTS idx_mastra_workflow_snapshot_created_at ON mastra_workflow_snapshot(createdAt)",
+        sql: "CREATE INDEX IF NOT EXISTS idx_mastra_workflow_snapshot_created_at ON mastra_workflow_snapshot(createdAt)",
         params: [],
       },
       {
-        sql:
-          "CREATE INDEX IF NOT EXISTS idx_mastra_messages_created_at ON mastra_messages(createdAt)",
+        sql: "CREATE INDEX IF NOT EXISTS idx_mastra_messages_created_at ON mastra_messages(createdAt)",
         params: [],
       },
     ];

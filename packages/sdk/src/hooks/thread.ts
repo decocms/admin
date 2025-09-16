@@ -88,9 +88,10 @@ export const useThreads = (partialOptions: ThreadFilterOptions = {}) => {
             return oldData;
           }
 
-          const temporaryTitle = typeof messages[0]?.content === "string"
-            ? messages[0].content.slice(0, 20)
-            : "New chat";
+          const temporaryTitle =
+            typeof messages[0]?.content === "string"
+              ? messages[0].content.slice(0, 20)
+              : "New chat";
 
           const updated = {
             pagination: {
@@ -170,7 +171,7 @@ export const useUpdateThreadTitle = () => {
                   threads: oldData.threads.map((thread) =>
                     thread.id === threadId
                       ? { ...thread, title: partialTitle }
-                      : thread
+                      : thread,
                   ),
                 };
               },
@@ -202,7 +203,7 @@ export const useUpdateThreadTitle = () => {
             return {
               ...oldData,
               threads: oldData.threads.map((thread) =>
-                thread.id === threadId ? { ...thread, title } : thread
+                thread.id === threadId ? { ...thread, title } : thread,
               ),
             };
           },

@@ -50,9 +50,10 @@ function mapTrigger(
   trigger: QueryResult<"deco_chat_triggers", typeof SELECT_TRIGGER_QUERY>,
 ) {
   const metadata = trigger.metadata || {};
-  const triggerType = typeof metadata === "object" && "cronExp" in metadata
-    ? ("cron" as const)
-    : ("webhook" as const);
+  const triggerType =
+    typeof metadata === "object" && "cronExp" in metadata
+      ? ("cron" as const)
+      : ("webhook" as const);
 
   if (trigger.agent_id !== WELL_KNOWN_AGENT_IDS.teamAgent) {
     // @ts-expect-error - Compatibility with triggers created before toolCall support was added
@@ -108,8 +109,7 @@ const createTriggerStub = ({
 const createTool = createToolGroup("Triggers", {
   name: "Triggers & Automation",
   description: "Create cron jobs and webhook-based workflows.",
-  icon:
-    "https://assets.decocache.com/mcp/ca2b0d62-731c-4232-b72b-92a0df5afb5b/Triggers--Automation.png",
+  icon: "https://assets.decocache.com/mcp/ca2b0d62-731c-4232-b72b-92a0df5afb5b/Triggers--Automation.png",
 });
 
 export const listTriggers = createTool({
@@ -187,9 +187,10 @@ export const upsertTrigger = createTool({
     }
 
     const userId = typeof user?.id === "string" ? user.id : undefined;
-    const agentId = "agentId" in data && data.agentId
-      ? data.agentId
-      : WELL_KNOWN_AGENT_IDS.teamAgent;
+    const agentId =
+      "agentId" in data && data.agentId
+        ? data.agentId
+        : WELL_KNOWN_AGENT_IDS.teamAgent;
 
     // Update database
     const { data: trigger, error } = await db

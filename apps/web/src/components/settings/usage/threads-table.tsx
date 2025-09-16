@@ -35,11 +35,12 @@ export function ThreadsTable({
       const threadDetail = threadHistory.find((t) => t.id === thread.id);
 
       // Ensure totalCost is always a proper number for sorting - handle dollar sign
-      const parsedCost = typeof thread.total === "string"
-        ? parseFloat(thread.total.replace("$", ""))
-        : typeof thread.total === "number"
-        ? thread.total
-        : 0;
+      const parsedCost =
+        typeof thread.total === "string"
+          ? parseFloat(thread.total.replace("$", ""))
+          : typeof thread.total === "number"
+            ? thread.total
+            : 0;
       const totalCost = isNaN(parsedCost) ? 0 : parsedCost;
 
       return {
@@ -170,7 +171,7 @@ export function ThreadsTable({
   const handleSort = (key: string) => {
     if (sortKey === key) {
       setSortDirection((prev: "asc" | "desc") =>
-        prev === "asc" ? "desc" : "asc"
+        prev === "asc" ? "desc" : "asc",
       );
     } else {
       setSortKey(key);

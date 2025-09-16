@@ -85,9 +85,10 @@ export const dbResource = (options: DBResourceOptions) => {
           params: [...searchParams, limit + 1, offset],
         });
 
-        const rows = (result.result[0]?.results as
-          | Record<string, unknown>[]
-          | undefined) || [];
+        const rows =
+          (result.result[0]?.results as
+            | Record<string, unknown>[]
+            | undefined) || [];
         const hasMore = rows.length > limit;
         const items = rows.slice(0, limit);
 
@@ -127,9 +128,10 @@ export const dbResource = (options: DBResourceOptions) => {
         let parsedData: Record<string, unknown> = {};
         if (content) {
           try {
-            parsedData = content.type === "text"
-              ? JSON.parse(content.data)
-              : { data: content.data, type: content.type };
+            parsedData =
+              content.type === "text"
+                ? JSON.parse(content.data)
+                : { data: content.data, type: content.type };
           } catch {
             parsedData = { data: content.data };
           }
@@ -153,11 +155,9 @@ export const dbResource = (options: DBResourceOptions) => {
         const values = Object.values(resourceData);
 
         using _ = await db.exec({
-          sql: `INSERT INTO ${table} (${
-            columnNames.join(
-              ", ",
-            )
-          }) VALUES (${placeholders})`,
+          sql: `INSERT INTO ${table} (${columnNames.join(
+            ", ",
+          )}) VALUES (${placeholders})`,
           params: values,
         });
 
@@ -199,9 +199,10 @@ export const dbResource = (options: DBResourceOptions) => {
         let parsedData: Record<string, unknown> = {};
         if (content) {
           try {
-            parsedData = content.type === "text"
-              ? JSON.parse(content.data)
-              : { data: content.data, type: content.type };
+            parsedData =
+              content.type === "text"
+                ? JSON.parse(content.data)
+                : { data: content.data, type: content.type };
           } catch {
             parsedData = { data: content.data };
           }

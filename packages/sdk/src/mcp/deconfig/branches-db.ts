@@ -120,9 +120,10 @@ export function newBranchesCRUD(db: IWorkspaceDB) {
           name: nameValue,
           created_at: parseInt(createdAtValue || 0),
           metadata: JSON.parse(metadataValue || "{}"),
-          origin_branch: originBranchValue === "NULL" || !originBranchValue
-            ? null
-            : originBranchValue,
+          origin_branch:
+            originBranchValue === "NULL" || !originBranchValue
+              ? null
+              : originBranchValue,
         };
       });
     },
@@ -153,9 +154,10 @@ export function newBranchesCRUD(db: IWorkspaceDB) {
         name: nameValue,
         created_at: parseInt(createdAtValue || 0),
         metadata: JSON.parse(metadataValue || "{}"),
-        origin_branch: originBranchValue === "NULL" || !originBranchValue
-          ? null
-          : originBranchValue,
+        origin_branch:
+          originBranchValue === "NULL" || !originBranchValue
+            ? null
+            : originBranchValue,
       };
     },
 

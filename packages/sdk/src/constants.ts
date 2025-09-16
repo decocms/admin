@@ -30,14 +30,14 @@ export const SUPABASE_URL = "https://auth.deco.cx";
 export const DECO_CMS_WEB_URL = isDecoChat
   ? "https://deco.chat"
   : LOCAL_DEBUGGER
-  ? "http://localhost:3000"
-  : "https://admin.decocms.com";
+    ? "http://localhost:3000"
+    : "https://admin.decocms.com";
 
 export const DECO_CMS_API_URL = isDecoChat
   ? "https://api.deco.chat"
   : LOCAL_DEBUGGER
-  ? "http://localhost:3001"
-  : "https://api.decocms.com";
+    ? "http://localhost:3001"
+    : "https://api.decocms.com";
 
 export const AUTH_PORT_CLI = 3457;
 export const AUTH_URL_CLI = `http://localhost:${AUTH_PORT_CLI}`;
@@ -70,8 +70,7 @@ const LOGOS = {
     "https://assets.decocache.com/webdraw/6ae2b0e1-7b81-48f7-9707-998751698b6f/anthropic.svg",
   gemini:
     "https://assets.decocache.com/webdraw/17df85af-1578-42ef-ae07-4300de0d1723/gemini.svg",
-  xai:
-    "https://assets.decocache.com/webdraw/7a8003ff-8f2d-4988-8693-3feb20e87eca/xai.svg",
+  xai: "https://assets.decocache.com/webdraw/7a8003ff-8f2d-4988-8693-3feb20e87eca/xai.svg",
 };
 
 // TODO(@camudo): Make native web search work
@@ -324,8 +323,7 @@ When user asks for a prompt, you should use the PROMPTS_GET tool to get the actu
     name: "Decopilot",
     avatar: pickCapybaraAvatar(12),
     description: "Let's Deco!",
-    instructions:
-      `You are a helpful assistant that helps users to accomplish tasks by using tools from your toolset.`,
+    instructions: `You are a helpful assistant that helps users to accomplish tasks by using tools from your toolset.`,
   },
 } satisfies Record<string, Agent>;
 

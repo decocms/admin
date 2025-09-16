@@ -292,8 +292,8 @@ export const DECO_CMS_API = (ctx: AppContext, isDecoChat: boolean) =>
   getEnv(ctx).VITE_USE_LOCAL_BACKEND === "true"
     ? "http://localhost:3001"
     : isDecoChat
-    ? "https://api.deco.chat"
-    : "https://api.decocms.com";
+      ? "https://api.deco.chat"
+      : "https://api.decocms.com";
 
 type ToolCallResultSuccess<T> = {
   isError: false;
@@ -466,13 +466,14 @@ export const toBindingsContext = (bindings: Bindings): BindingsContext => {
     }),
     stub: stubFor(bindings),
     jwtIssuer: lazy(() => {
-      const keyPair = bindings.DECO_CHAT_API_JWT_PRIVATE_KEY &&
-          bindings.DECO_CHAT_API_JWT_PUBLIC_KEY
-        ? {
-          public: bindings.DECO_CHAT_API_JWT_PUBLIC_KEY,
-          private: bindings.DECO_CHAT_API_JWT_PRIVATE_KEY,
-        }
-        : undefined;
+      const keyPair =
+        bindings.DECO_CHAT_API_JWT_PRIVATE_KEY &&
+        bindings.DECO_CHAT_API_JWT_PUBLIC_KEY
+          ? {
+              public: bindings.DECO_CHAT_API_JWT_PUBLIC_KEY,
+              private: bindings.DECO_CHAT_API_JWT_PRIVATE_KEY,
+            }
+          : undefined;
 
       return JwtIssuer.forKeyPair(keyPair);
     }),

@@ -58,9 +58,10 @@ function PreviewTab() {
     );
   }
 
-  const relativeTo = integration?.connection?.type === "HTTP"
-    ? (integration?.connection?.url ?? "")
-    : "";
+  const relativeTo =
+    integration?.connection?.type === "HTTP"
+      ? (integration?.connection?.url ?? "")
+      : "";
   const src = new URL(resolvedUrl, relativeTo).href;
 
   return <Preview src={src} title={view?.title || "Untitled view"} />;

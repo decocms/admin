@@ -152,96 +152,89 @@ export function SelectToolDialog({
 
           {/* Tools List - Right Side */}
           <div className="flex-1 flex flex-col">
-            {selectedIntegration
-              ? (
-                <>
-                  <div className="p-4 border-b border-border">
-                    <div className="flex items-center gap-3">
-                      <IntegrationIcon
-                        icon={selectedIntegration.icon}
-                        name={selectedIntegration.name}
-                        size="sm"
-                      />
-                      <div>
-                        <h3 className="font-medium text-sm">
-                          {selectedIntegration.name}
-                        </h3>
-                        <p className="text-xs text-muted-foreground">
-                          {tools.length} tool{tools.length !== 1 ? "s" : ""}
-                          {" "}
-                          available
-                        </p>
-                      </div>
+            {selectedIntegration ? (
+              <>
+                <div className="p-4 border-b border-border">
+                  <div className="flex items-center gap-3">
+                    <IntegrationIcon
+                      icon={selectedIntegration.icon}
+                      name={selectedIntegration.name}
+                      size="sm"
+                    />
+                    <div>
+                      <h3 className="font-medium text-sm">
+                        {selectedIntegration.name}
+                      </h3>
+                      <p className="text-xs text-muted-foreground">
+                        {tools.length} tool{tools.length !== 1 ? "s" : ""}{" "}
+                        available
+                      </p>
                     </div>
                   </div>
-
-                  <div className="flex-1 overflow-y-auto p-4 space-y-2">
-                    {filteredTools.length === 0
-                      ? (
-                        <div className="text-center py-8 text-muted-foreground">
-                          <Icon
-                            name="search_off"
-                            className="h-8 w-8 mx-auto mb-2"
-                          />
-                          <p>No tools found</p>
-                          {deferredSearchTerm && (
-                            <p className="text-xs">
-                              Try a different search term
-                            </p>
-                          )}
-                        </div>
-                      )
-                      : (
-                        filteredTools.map((tool) => (
-                          <Card
-                            key={tool.name}
-                            className="cursor-pointer transition-colors hover:bg-accent"
-                            onClick={() => handleToolSelect(tool)}
-                          >
-                            <CardContent className="p-4">
-                              <div className="flex items-start gap-3">
-                                <Icon
-                                  name="build"
-                                  className="h-4 w-4 text-primary mt-0.5"
-                                />
-                                <div className="flex-1 min-w-0">
-                                  <div className="font-medium text-sm mb-1">
-                                    {tool.name}
-                                  </div>
-                                  {tool.description && (
-                                    <div className="text-xs text-muted-foreground line-clamp-2">
-                                      {tool.description}
-                                    </div>
-                                  )}
-                                  {tool.inputSchema && (
-                                    <div className="mt-2">
-                                      <Badge
-                                        variant="outline"
-                                        className="text-xs"
-                                      >
-                                        {Object.keys(
-                                          tool.inputSchema.properties || {},
-                                        ).length} parameters
-                                      </Badge>
-                                    </div>
-                                  )}
-                                </div>
-                              </div>
-                            </CardContent>
-                          </Card>
-                        ))
-                      )}
-                  </div>
-                </>
-              )
-              : (
-                <div className="flex-1 flex items-center justify-center text-muted-foreground">
-                  <div className="text-center">
-                    <Icon name="build" className="h-8 w-8 mx-auto mb-2" />
-                    <p>Select an integration to view its tools</p>
-                  </div>
                 </div>
-              )}
+
+                <div className="flex-1 overflow-y-auto p-4 space-y-2">
+                  {filteredTools.length === 0 ? (
+                    <div className="text-center py-8 text-muted-foreground">
+                      <Icon
+                        name="search_off"
+                        className="h-8 w-8 mx-auto mb-2"
+                      />
+                      <p>No tools found</p>
+                      {deferredSearchTerm && (
+                        <p className="text-xs">Try a different search term</p>
+                      )}
+                    </div>
+                  ) : (
+                    filteredTools.map((tool) => (
+                      <Card
+                        key={tool.name}
+                        className="cursor-pointer transition-colors hover:bg-accent"
+                        onClick={() => handleToolSelect(tool)}
+                      >
+                        <CardContent className="p-4">
+                          <div className="flex items-start gap-3">
+                            <Icon
+                              name="build"
+                              className="h-4 w-4 text-primary mt-0.5"
+                            />
+                            <div className="flex-1 min-w-0">
+                              <div className="font-medium text-sm mb-1">
+                                {tool.name}
+                              </div>
+                              {tool.description && (
+                                <div className="text-xs text-muted-foreground line-clamp-2">
+                                  {tool.description}
+                                </div>
+                              )}
+                              {tool.inputSchema && (
+                                <div className="mt-2">
+                                  <Badge variant="outline" className="text-xs">
+                                    {
+                                      Object.keys(
+                                        tool.inputSchema.properties || {},
+                                      ).length
+                                    }{" "}
+                                    parameters
+                                  </Badge>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    ))
+                  )}
+                </div>
+              </>
+            ) : (
+              <div className="flex-1 flex items-center justify-center text-muted-foreground">
+                <div className="text-center">
+                  <Icon name="build" className="h-8 w-8 mx-auto mb-2" />
+                  <p>Select an integration to view its tools</p>
+                </div>
+              </div>
+            )}
           </div>
         </div>
       </DialogContent>

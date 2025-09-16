@@ -8,9 +8,8 @@ import {
 } from "../src/agent/summarize-pdf.ts";
 
 type AIMessage = AIMessageOriginal & {
-  experimental_attachments?:
-    & AIMessageOriginal["experimental_attachments"]
-    & {
+  experimental_attachments?: AIMessageOriginal["experimental_attachments"] &
+    {
       size?: number;
     }[];
 };

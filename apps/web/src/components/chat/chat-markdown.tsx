@@ -100,7 +100,7 @@ function Table(props: React.HTMLAttributes<HTMLTableElement>) {
             }
             return text;
           })
-          .join(",")
+          .join(","),
       )
       .join("\n");
   }, []);

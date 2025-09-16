@@ -138,15 +138,15 @@ const Mappers = {
   ): RegistryApp => {
     const tools = Array.isArray(data.deco_chat_apps_registry_tools)
       ? data.deco_chat_apps_registry_tools.map((tool) => ({
-        id: tool.id,
-        name: tool.name,
-        description: tool.description ?? undefined,
-        inputSchema: (tool.input_schema as Record<string, unknown>) ??
-          undefined,
-        outputSchema: (tool.output_schema as Record<string, unknown>) ??
-          undefined,
-        metadata: (tool.metadata as Record<string, unknown>) ?? undefined,
-      }))
+          id: tool.id,
+          name: tool.name,
+          description: tool.description ?? undefined,
+          inputSchema:
+            (tool.input_schema as Record<string, unknown>) ?? undefined,
+          outputSchema:
+            (tool.output_schema as Record<string, unknown>) ?? undefined,
+          metadata: (tool.metadata as Record<string, unknown>) ?? undefined,
+        }))
       : [];
 
     return {
@@ -176,8 +176,7 @@ const Mappers = {
 const createTool = createToolGroup("Registry", {
   name: "App Registry",
   description: "Manage and discover published apps in the registry.",
-  icon:
-    "https://assets.decocache.com/mcp/09e44283-f47d-4046-955f-816d227c626f/app.png",
+  icon: "https://assets.decocache.com/mcp/09e44283-f47d-4046-955f-816d227c626f/app.png",
 });
 
 export const listRegistryScopes = createTool({
@@ -277,12 +276,10 @@ export const getRegistryApp = createTool({
   outputSchema: RegistryAppSchema,
   handler: async (ctx, c) => {
     c.resourceAccess.grant(); // this method is public
-    let data:
-      | QueryResult<
-        typeof DECO_CHAT_APPS_REGISTRY_TABLE,
-        typeof SELECT_REGISTRY_APP_WITH_SCOPE_QUERY
-      >
-      | null = null;
+    let data: QueryResult<
+      typeof DECO_CHAT_APPS_REGISTRY_TABLE,
+      typeof SELECT_REGISTRY_APP_WITH_SCOPE_QUERY
+    > | null = null;
 
     if ("id" in ctx && ctx.id) {
       const result = await c.db
@@ -519,7 +516,7 @@ export const publishApp = createTool({
           {
             onConflict: "app_id,name",
           },
-        )
+        ),
       ),
     );
 

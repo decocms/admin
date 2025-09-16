@@ -238,19 +238,17 @@ export default function Page() {
                       onSubmit(form.getValues());
                     }}
                   >
-                    {isMutating
-                      ? (
-                        <>
-                          <Spinner size="xs" />
-                          <span>Saving...</span>
-                        </>
-                      )
-                      : (
-                        <span>
-                          Save {numberOfChanges} change
-                          {numberOfChanges > 1 ? "s" : ""}
-                        </span>
-                      )}
+                    {isMutating ? (
+                      <>
+                        <Spinner size="xs" />
+                        <span>Saving...</span>
+                      </>
+                    ) : (
+                      <span>
+                        Save {numberOfChanges} change
+                        {numberOfChanges > 1 ? "s" : ""}
+                      </span>
+                    )}
                   </Button>
                 </div>
               </div>

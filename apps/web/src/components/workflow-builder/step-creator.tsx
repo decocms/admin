@@ -82,13 +82,14 @@ export function StepCreator({
       // Simple keyword matching for now
       // In future, this should call an AI tool discovery service
       const keywords = text.toLowerCase().split(/\s+/);
-      const suggested = integrations
-        ?.filter((integration) => {
-          const name = integration.name.toLowerCase();
-          return keywords.some((keyword) => name.includes(keyword));
-        })
-        .map((i) => i.id.replace(/^[ia]_/, "")) // Clean IDs
-        .slice(0, 3) || [];
+      const suggested =
+        integrations
+          ?.filter((integration) => {
+            const name = integration.name.toLowerCase();
+            return keywords.some((keyword) => name.includes(keyword));
+          })
+          .map((i) => i.id.replace(/^[ia]_/, "")) // Clean IDs
+          .slice(0, 3) || [];
 
       setSuggestedTools(suggested);
     },
@@ -278,9 +279,11 @@ export function StepCreator({
                       return (
                         <Badge
                           key={tool.id}
-                          variant={selectedTools.includes(tool.id)
-                            ? "default"
-                            : "outline"}
+                          variant={
+                            selectedTools.includes(tool.id)
+                              ? "default"
+                              : "outline"
+                          }
                           className="cursor-pointer"
                           onClick={() => {
                             if (selectedTools.includes(tool.id)) {
@@ -321,7 +324,8 @@ export function StepCreator({
                           onClick={() =>
                             setSelectedTools(
                               selectedTools.filter((t) => t !== tool.id),
-                            )}
+                            )
+                          }
                           className="ml-2"
                         >
                           <X className="w-3 h-3" />
@@ -362,19 +366,17 @@ export function StepCreator({
                 disabled={isGenerating || !form.formState.isValid}
                 className="min-w-[120px]"
               >
-                {isGenerating
-                  ? (
-                    <>
-                      <Spinner className="w-4 h-4 mr-2" />
-                      Generating...
-                    </>
-                  )
-                  : (
-                    <>
-                      <Sparkles className="w-4 h-4 mr-2" />
-                      {editingStep ? "Update Step" : "Create Step"}
-                    </>
-                  )}
+                {isGenerating ? (
+                  <>
+                    <Spinner className="w-4 h-4 mr-2" />
+                    Generating...
+                  </>
+                ) : (
+                  <>
+                    <Sparkles className="w-4 h-4 mr-2" />
+                    {editingStep ? "Update Step" : "Create Step"}
+                  </>
+                )}
               </Button>
             </DialogFooter>
           </form>

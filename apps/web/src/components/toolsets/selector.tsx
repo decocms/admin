@@ -78,9 +78,9 @@ export function IntegrationListItem({
   const total = toolsData?.tools?.length ?? 0;
 
   const allTools = toolsData?.tools || [];
-  const enabledCount =
-    allTools.filter((tool) => toolsSet[integration.id]?.includes(tool.name))
-      .length;
+  const enabledCount = allTools.filter((tool) =>
+    toolsSet[integration.id]?.includes(tool.name),
+  ).length;
   const isAll = enabledCount === total && total > 0;
   const isEmpty = !isLoading && allTools.length === 0;
 
@@ -101,7 +101,7 @@ export function IntegrationListItem({
 
   // Filter tools based on search term
   const filteredTools = allTools.filter((tool) =>
-    toolMatchesSearch(tool, searchTerm)
+    toolMatchesSearch(tool, searchTerm),
   );
 
   // Hide integration if searching and no tools match
@@ -206,8 +206,8 @@ export function IntegrationListItem({
                   {isLoading
                     ? "Loading tools..."
                     : searchTerm
-                    ? `${filteredTools.length} matching tools`
-                    : "All tools"}
+                      ? `${filteredTools.length} matching tools`
+                      : "All tools"}
                 </span>
               </div>
               <div className="flex items-center gap-2">

@@ -143,12 +143,10 @@ export function UsageTable({
 }) {
   const [sortKey, setSortKey] = useState<string>("total");
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("desc");
-  const [selectedAgentDetails, setSelectedAgentDetails] = useState<
-    {
-      agent: Agent;
-      metrics: AgentUsageMetrics;
-    } | null
-  >(null);
+  const [selectedAgentDetails, setSelectedAgentDetails] = useState<{
+    agent: Agent;
+    metrics: AgentUsageMetrics;
+  } | null>(null);
 
   // Combine usage data to get comprehensive metrics per agent
   const enrichedAgents = useMemo(() => {
@@ -157,9 +155,8 @@ export function UsageTable({
         const agentUsageData = agentUsage.items?.find(
           (item) => item.id === agent.id,
         );
-        const agentThreads = threadUsage.items?.filter((thread) =>
-          thread.agentId === agent.id
-        ) ||
+        const agentThreads =
+          threadUsage.items?.filter((thread) => thread.agentId === agent.id) ||
           [];
 
         // Calculate metrics from thread data
@@ -291,7 +288,7 @@ export function UsageTable({
   const handleSort = (key: string) => {
     if (sortKey === key) {
       setSortDirection((prev: "asc" | "desc") =>
-        prev === "asc" ? "desc" : "asc"
+        prev === "asc" ? "desc" : "asc",
       );
     } else {
       setSortKey(key);
@@ -327,7 +324,8 @@ export function UsageTable({
         sortDirection={sortDirection}
         onSort={handleSort}
         onRowClick={(agent) =>
-          setSelectedAgentDetails({ agent, metrics: agent.metrics })}
+          setSelectedAgentDetails({ agent, metrics: agent.metrics })
+        }
       />
 
       <Dialog

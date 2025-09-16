@@ -116,7 +116,8 @@ export type MCPClientStub<TDefinition extends readonly ToolBinder[]> = {
     string,
     infer TInput,
     infer TReturn
-  > ? (params: TInput, init?: RequestInit) => Promise<TReturn>
+  >
+    ? (params: TInput, init?: RequestInit) => Promise<TReturn>
     : never;
 };
 
@@ -125,7 +126,8 @@ export type MCPClientFetchStub<TDefinition extends readonly ToolBinder[]> = {
     string,
     infer TInput,
     infer TReturn
-  > ? (params: TInput, init?: RequestInit) => Promise<TReturn>
+  >
+    ? (params: TInput, init?: RequestInit) => Promise<TReturn>
     : never;
 };
 

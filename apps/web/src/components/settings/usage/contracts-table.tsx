@@ -30,17 +30,13 @@ export function ContractsTable({
   const [sortKey, setSortKey] = useState<string>("total");
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("desc");
   const { data: integrations } = useIntegrations();
-  const [selectedContract, setSelectedContract] = useState<
-    {
-      contractId: string;
-      integration?: Integration;
-    } | null
-  >(null);
-  const [contractDetails, setContractDetails] = useState<
-    {
-      clauses: { id: string; price: string | number; description?: string }[];
-    } | null
-  >(null);
+  const [selectedContract, setSelectedContract] = useState<{
+    contractId: string;
+    integration?: Integration;
+  } | null>(null);
+  const [contractDetails, setContractDetails] = useState<{
+    clauses: { id: string; price: string | number; description?: string }[];
+  } | null>(null);
   const [isLoadingDetails, setIsLoadingDetails] = useState(false);
 
   const enrichedContracts = useMemo(() => {
@@ -75,8 +71,8 @@ export function ContractsTable({
               0,
             );
             if (totalTokensInContract > 0) {
-              parsedCost = (clause.amount / totalTokensInContract) *
-                contract.amount;
+              parsedCost =
+                (clause.amount / totalTokensInContract) * contract.amount;
             } else {
               parsedCost = 0;
             }
@@ -167,7 +163,7 @@ export function ContractsTable({
   const handleSort = (key: string) => {
     if (sortKey === key) {
       setSortDirection((prev: "asc" | "desc") =>
-        prev === "asc" ? "desc" : "asc"
+        prev === "asc" ? "desc" : "asc",
       );
     } else {
       setSortKey(key);
@@ -352,9 +348,8 @@ function ContractDetailsDialog({
     try {
       // Contract clause prices are in "dollars per million tokens" format
       // Convert to "dollars per token" for display
-      const pricePerMillionTokens = typeof price === "string"
-        ? parseFloat(price)
-        : price;
+      const pricePerMillionTokens =
+        typeof price === "string" ? parseFloat(price) : price;
       const pricePerToken = pricePerMillionTokens / 1_000_000; // Convert to dollars per token
       return MicroDollar.fromDollars(pricePerToken).display({
         showAllDecimals: true,
@@ -401,40 +396,38 @@ function ContractDetailsDialog({
             <div>
               <h4 className="font-medium mb-2">Clause Details</h4>
               <div className="space-y-2">
-                {contractDetails.clauses.length === 0
-                  ? (
-                    <div className="text-center py-4 text-muted-foreground">
-                      No clauses found in this contract.
-                      <br />
-                      <span className="text-xs">
-                        This integration may not have defined specific pricing
-                        clauses.
-                      </span>
-                    </div>
-                  )
-                  : (
-                    contractDetails.clauses.map((clause, index) => {
-                      const priceDisplay = formatPrice(clause.price);
-                      return (
-                        <div
-                          key={index}
-                          className="flex items-center justify-between p-3 border rounded-lg"
-                        >
-                          <div className="flex flex-col">
-                            <span className="font-medium">{clause.id}</span>
-                            {clause.description && (
-                              <span className="text-xs text-muted-foreground mt-1">
-                                {clause.description}
-                              </span>
-                            )}
-                          </div>
-                          <div className="text-sm text-muted-foreground">
-                            {priceDisplay || "Price not available"}
-                          </div>
+                {contractDetails.clauses.length === 0 ? (
+                  <div className="text-center py-4 text-muted-foreground">
+                    No clauses found in this contract.
+                    <br />
+                    <span className="text-xs">
+                      This integration may not have defined specific pricing
+                      clauses.
+                    </span>
+                  </div>
+                ) : (
+                  contractDetails.clauses.map((clause, index) => {
+                    const priceDisplay = formatPrice(clause.price);
+                    return (
+                      <div
+                        key={index}
+                        className="flex items-center justify-between p-3 border rounded-lg"
+                      >
+                        <div className="flex flex-col">
+                          <span className="font-medium">{clause.id}</span>
+                          {clause.description && (
+                            <span className="text-xs text-muted-foreground mt-1">
+                              {clause.description}
+                            </span>
+                          )}
                         </div>
-                      );
-                    })
-                  )}
+                        <div className="text-sm text-muted-foreground">
+                          {priceDisplay || "Price not available"}
+                        </div>
+                      </div>
+                    );
+                  })
+                )}
               </div>
             </div>
           )}

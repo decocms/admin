@@ -114,7 +114,7 @@ export const suggestion: (args: {
           searcher.searchToolNames.map((toolName) => {
             const resourceType =
               toolName.match(/^DECO_CHAT_RESOURCES_SEARCH_([A-Z]+)$/)?.[1] ??
-                "";
+              "";
             const pendingKey = `${searcher.integration.id}:${resourceType}`;
             return callTool(searcher.connection as never, {
               name: toolName,
@@ -137,12 +137,14 @@ export const suggestion: (args: {
                   .map((r: unknown): ResourceOption => {
                     const resource = r as Record<string, unknown>;
                     return {
-                      id: (resource?.uri as string) ??
+                      id:
+                        (resource?.uri as string) ??
                         `${searcher.integration.id}:${
                           (resource?.name as string) ?? ""
                         }`,
                       type: "resource",
-                      label: (resource?.title as string) ??
+                      label:
+                        (resource?.title as string) ??
                         (resource?.name as string) ??
                         (resource?.uri as string) ??
                         "Unknown",
@@ -189,7 +191,7 @@ export const suggestion: (args: {
                   pendingCategories: Array.from(pendingCount.keys()),
                 });
               });
-          })
+          }),
         );
         // Finalize loading state once all searches have settled
         Promise.allSettled(searches).then(() => {

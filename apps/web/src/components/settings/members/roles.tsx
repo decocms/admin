@@ -182,8 +182,7 @@ function RoleDialogSidebar({
           </SidebarMenuButton>
         </SidebarMenuItem>
         {/* disabled for instance */}
-        {
-          /*<SidebarMenuItem>
+        {/*<SidebarMenuItem>
           <SidebarMenuButton
             isActive={selectedTab === "agents"}
             onClick={() => onTabChange("agents")}
@@ -196,8 +195,7 @@ function RoleDialogSidebar({
               </Badge>
             )}
           </SidebarMenuButton>
-        </SidebarMenuItem> */
-        }
+        </SidebarMenuItem> */}
         <SidebarMenuItem>
           <SidebarMenuButton
             isActive={selectedTab === "members"}
@@ -305,12 +303,13 @@ function RoleToolsPanel({
         for (const integration of filteredIntegrations) {
           try {
             const toolsData = await listTools(integration.connection);
-            const toolPermissions: ToolPermission[] = toolsData.tools?.map(
-              (tool: { name: string; description?: string }) => ({
-                toolName: tool.name,
-                effect: "allow" as const,
-              }),
-            ) || [];
+            const toolPermissions: ToolPermission[] =
+              toolsData.tools?.map(
+                (tool: { name: string; description?: string }) => ({
+                  toolName: tool.name,
+                  effect: "allow" as const,
+                }),
+              ) || [];
             newTools[integration.id] = toolPermissions;
           } catch (error) {
             console.error(
@@ -363,66 +362,62 @@ function RoleToolsPanel({
 
   return (
     <div className="space-y-4">
-      {currentView === "integrations"
-        ? (
-          <>
-            <Input
-              placeholder="Search apps..."
-              value={toolsSearch}
-              onChange={handleToolsSearchChange}
-              className="w-full"
-            />
+      {currentView === "integrations" ? (
+        <>
+          <Input
+            placeholder="Search apps..."
+            value={toolsSearch}
+            onChange={handleToolsSearchChange}
+            className="w-full"
+          />
 
-            <div className="flex items-center justify-between">
-              <span className="text-sm text-muted-foreground">
-                {totalSelectedTools} tools from {selectedIntegrations}{" "}
-                integrations
-              </span>
-              <Button
-                variant="outline"
-                size="sm"
-                disabled
-                onClick={handleSelectAll}
-              >
-                {selectingAllTools
-                  ? "Loading..."
-                  : Object.values(formData.tools).some(
+          <div className="flex items-center justify-between">
+            <span className="text-sm text-muted-foreground">
+              {totalSelectedTools} tools from {selectedIntegrations}{" "}
+              integrations
+            </span>
+            <Button
+              variant="outline"
+              size="sm"
+              disabled
+              onClick={handleSelectAll}
+            >
+              {selectingAllTools
+                ? "Loading..."
+                : Object.values(formData.tools).some(
                       (tools) => Array.isArray(tools) && tools.length > 0,
                     )
                   ? "Deselect All"
                   : "Select All"}
-              </Button>
-            </div>
+            </Button>
+          </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {filteredIntegrations.map((integration) => (
-                <RoleDialogIntegrationListItem
-                  key={integration.id}
-                  toolsSet={toolsSetForDisplay}
-                  setIntegrationTools={setIntegrationTools}
-                  integration={integration}
-                  searchTerm=""
-                  onNavigateToIntegration={handleNavigateToIntegration}
-                />
-              ))}
-              {filteredIntegrations.length === 0 && (
-                <div className="text-center py-8 text-muted-foreground">
-                  No integrations found.
-                </div>
-              )}
-            </div>
-          </>
-        )
-        : currentView === "integration-detail" && selectedIntegration
-        ? (
-          <IntegrationDetailView
-            integration={selectedIntegration}
-            toolsSet={toolsSetForDisplay}
-            setIntegrationTools={setIntegrationTools}
-            onBack={handleBackToIntegrations}
-          />
-        )
-        : null}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {filteredIntegrations.map((integration) => (
+              <RoleDialogIntegrationListItem
+                key={integration.id}
+                toolsSet={toolsSetForDisplay}
+                setIntegrationTools={setIntegrationTools}
+                integration={integration}
+                searchTerm=""
+                onNavigateToIntegration={handleNavigateToIntegration}
+              />
+            ))}
+            {filteredIntegrations.length === 0 && (
+              <div className="text-center py-8 text-muted-foreground">
+                No integrations found.
+              </div>
+            )}
+          </div>
+        </>
+      ) : currentView === "integration-detail" && selectedIntegration ? (
+        <IntegrationDetailView
+          integration={selectedIntegration}
+          toolsSet={toolsSetForDisplay}
+          setIntegrationTools={setIntegrationTools}
+          onBack={handleBackToIntegrations}
+        />
+      ) : null}
     </div>
   );
 }
@@ -504,7 +499,8 @@ function _RoleAgentsPanel({
             key={agent.id}
             className="w-full cursor-pointer"
             onClick={() =>
-              handleAgentToggle(agent.id, !formData.agents.includes(agent.id))}
+              handleAgentToggle(agent.id, !formData.agents.includes(agent.id))
+            }
           >
             <CardContent className="flex items-start p-3 w-full">
               <AgentAvatar
@@ -536,7 +532,8 @@ function _RoleAgentsPanel({
                 <Checkbox
                   checked={formData.agents.includes(agent.id)}
                   onCheckedChange={(checked: boolean) =>
-                    handleAgentToggle(agent.id, checked as boolean)}
+                    handleAgentToggle(agent.id, checked as boolean)
+                  }
                 />
               </div>
             </CardContent>
@@ -614,7 +611,8 @@ function RoleMembersPanel({
                 handleMemberToggle(
                   member.user_id,
                   !formData.members.some((m) => m.user_id === member.user_id),
-                )}
+                )
+              }
             >
               <CardContent className="flex items-start p-3 w-full">
                 <div className="flex flex-col w-full pr-3">
@@ -644,7 +642,8 @@ function RoleMembersPanel({
                       (m) => m.user_id === member.user_id,
                     )}
                     onCheckedChange={(checked: boolean) =>
-                      handleMemberToggle(member.user_id, checked)}
+                      handleMemberToggle(member.user_id, checked)
+                    }
                   />
                 </div>
               </CardContent>
@@ -743,7 +742,7 @@ function RoleDialogIntegrationListItem({
     const total = toolsData?.tools?.length ?? 0;
     const allTools = toolsData?.tools || [];
     const enabledCount = allTools.filter((tool) =>
-      toolsSet[integration.id]?.includes(tool.name)
+      toolsSet[integration.id]?.includes(tool.name),
     ).length;
     const isAll = enabledCount === total && total > 0;
     const isEmpty = !isLoading && allTools.length === 0;
@@ -794,15 +793,13 @@ function RoleDialogIntegrationListItem({
               {integration.name}
             </h4>
             <p className="text-xs text-muted-foreground truncate">
-              {isLoading
-                ? <Skeleton className="h-3 w-16" />
-                : toolsInfo.isEmpty
-                ? (
-                  "No tools available"
-                )
-                : (
-                  `${toolsInfo.enabledCount}/${toolsInfo.total} tools selected`
-                )}
+              {isLoading ? (
+                <Skeleton className="h-3 w-16" />
+              ) : toolsInfo.isEmpty ? (
+                "No tools available"
+              ) : (
+                `${toolsInfo.enabledCount}/${toolsInfo.total} tools selected`
+              )}
             </p>
           </div>
         </div>
@@ -841,7 +838,7 @@ function IntegrationDetailView({
     const total = toolsData?.tools?.length ?? 0;
     const allTools = toolsData?.tools || [];
     const enabledCount = allTools.filter((tool) =>
-      toolsSet[integration.id]?.includes(tool.name)
+      toolsSet[integration.id]?.includes(tool.name),
     ).length;
     const isAll = enabledCount === total && total > 0;
 
@@ -903,7 +900,9 @@ function IntegrationDetailView({
             {integration.name}
           </h3>
           <p className="text-sm text-muted-foreground">
-            {isLoading ? <Skeleton className="h-4 w-24" /> : (
+            {isLoading ? (
+              <Skeleton className="h-4 w-24" />
+            ) : (
               `${toolsInfo.total} tools available`
             )}
           </p>
@@ -916,7 +915,8 @@ function IntegrationDetailView({
           placeholder="Search tools..."
           value={toolsSearch}
           onChange={(e: ChangeEvent<HTMLInputElement>) =>
-            setToolsSearch(e.target.value)}
+            setToolsSearch(e.target.value)
+          }
           className="w-full"
         />
 
@@ -937,73 +937,66 @@ function IntegrationDetailView({
 
       {/* Tools list */}
       <div className="space-y-2">
-        {isLoading
-          ? (
-            <div className="space-y-2">
-              {[...Array(3)].map((_, i) => (
-                <div
-                  key={i}
-                  className="flex items-center justify-between p-3 border rounded-lg"
-                >
-                  <div className="space-y-2">
-                    <Skeleton className="h-4 w-32" />
-                    <Skeleton className="h-3 w-48" />
-                  </div>
-                  <Skeleton className="h-5 w-5" />
+        {isLoading ? (
+          <div className="space-y-2">
+            {[...Array(3)].map((_, i) => (
+              <div
+                key={i}
+                className="flex items-center justify-between p-3 border rounded-lg"
+              >
+                <div className="space-y-2">
+                  <Skeleton className="h-4 w-32" />
+                  <Skeleton className="h-3 w-48" />
                 </div>
-              ))}
-            </div>
-          )
-          : filteredTools.length === 0
-          ? (
-            <div className="text-center py-8 text-muted-foreground">
-              {toolsSearch
-                ? "No tools match your search."
-                : "No tools available."}
-            </div>
-          )
-          : (
-            filteredTools.map((tool) => {
-              const enabled = toolsSet[integration.id]?.includes(tool.name) ??
-                false;
-              const handleCheckboxChange = (checked: boolean) => {
-                const withoutTool = toolsSet[integration.id]?.filter(
-                  (t) => t !== tool.name,
-                );
-                const withTool = [
-                  ...(toolsSet[integration.id] || []),
-                  tool.name,
-                ];
-                const toolsToUpdate = checked ? withTool : withoutTool;
-                setIntegrationTools(integration.id, toolsToUpdate);
-              };
-
-              return (
-                <label
-                  key={tool.name}
-                  className="flex items-start justify-between gap-3 p-3 border rounded-xl cursor-pointer hover:bg-muted/50 transition-colors"
-                >
-                  <div className="flex flex-col min-w-0 flex-1">
-                    <span className="text-sm font-medium truncate text-foreground">
-                      {tool.name
-                        .replace(/_/g, " ")
-                        .toLowerCase()
-                        .replace(/\b\w/g, (c: string) => c.toUpperCase())}
-                    </span>
-                    <span className="text-xs text-muted-foreground break-words">
-                      {tool.description || "No description"}
-                    </span>
-                  </div>
-                  <Checkbox
-                    checked={enabled}
-                    onCheckedChange={handleCheckboxChange}
-                    className="cursor-pointer mt-0.5 flex-shrink-0"
-                    disabled
-                  />
-                </label>
+                <Skeleton className="h-5 w-5" />
+              </div>
+            ))}
+          </div>
+        ) : filteredTools.length === 0 ? (
+          <div className="text-center py-8 text-muted-foreground">
+            {toolsSearch
+              ? "No tools match your search."
+              : "No tools available."}
+          </div>
+        ) : (
+          filteredTools.map((tool) => {
+            const enabled =
+              toolsSet[integration.id]?.includes(tool.name) ?? false;
+            const handleCheckboxChange = (checked: boolean) => {
+              const withoutTool = toolsSet[integration.id]?.filter(
+                (t) => t !== tool.name,
               );
-            })
-          )}
+              const withTool = [...(toolsSet[integration.id] || []), tool.name];
+              const toolsToUpdate = checked ? withTool : withoutTool;
+              setIntegrationTools(integration.id, toolsToUpdate);
+            };
+
+            return (
+              <label
+                key={tool.name}
+                className="flex items-start justify-between gap-3 p-3 border rounded-xl cursor-pointer hover:bg-muted/50 transition-colors"
+              >
+                <div className="flex flex-col min-w-0 flex-1">
+                  <span className="text-sm font-medium truncate text-foreground">
+                    {tool.name
+                      .replace(/_/g, " ")
+                      .toLowerCase()
+                      .replace(/\b\w/g, (c: string) => c.toUpperCase())}
+                  </span>
+                  <span className="text-xs text-muted-foreground break-words">
+                    {tool.description || "No description"}
+                  </span>
+                </div>
+                <Checkbox
+                  checked={enabled}
+                  onCheckedChange={handleCheckboxChange}
+                  className="cursor-pointer mt-0.5 flex-shrink-0"
+                  disabled
+                />
+              </label>
+            );
+          })
+        )}
       </div>
     </div>
   );
@@ -1067,9 +1060,8 @@ function RoleDialogContent({
   const [currentView, setCurrentView] = useState<
     "integrations" | "integration-detail"
   >("integrations");
-  const [selectedIntegration, setSelectedIntegration] = useState<
-    Integration | null
-  >(null);
+  const [selectedIntegration, setSelectedIntegration] =
+    useState<Integration | null>(null);
 
   // Ref for the scrollable content area
   const contentAreaRef = useRef<HTMLDivElement>(null);
@@ -1104,7 +1096,7 @@ function RoleDialogContent({
       availableIntegrations.filter((integration) =>
         integration.name
           .toLowerCase()
-          .includes(deferredToolsSearch.toLowerCase())
+          .includes(deferredToolsSearch.toLowerCase()),
       ),
     [availableIntegrations, deferredToolsSearch],
   );
@@ -1329,8 +1321,7 @@ function RoleDialogContent({
             />
           )}
 
-          {
-            /* selectedTab === "agents" && (
+          {/* selectedTab === "agents" && (
             <RoleAgentsPanel
               formData={formData}
               setFormData={setFormData}
@@ -1340,8 +1331,7 @@ function RoleDialogContent({
               agents={agents}
               handleAgentToggle={handleAgentToggle}
             />
-          ) */
-          }
+          ) */}
 
           {selectedTab === "members" && (
             <RoleMembersPanel
@@ -1488,7 +1478,7 @@ function RoleMembersColumn({ role, teamId, handleEditRole }: BaseColumnProps) {
   const roleMembersList = useMemo(() => {
     if (!teamRoleData?.members) return [];
     return members.filter((member) =>
-      teamRoleData.members.some((m) => m.user_id === member.user_id)
+      teamRoleData.members.some((m) => m.user_id === member.user_id),
     );
   }, [teamRoleData?.members]);
 
@@ -1517,8 +1507,9 @@ function RoleMembersColumn({ role, teamId, handleEditRole }: BaseColumnProps) {
           <UserAvatar
             key={member.user_id}
             url={member.profiles.metadata.avatar_url}
-            fallback={member.profiles.metadata.full_name ||
-              member.profiles.email}
+            fallback={
+              member.profiles.metadata.full_name || member.profiles.email
+            }
             size="sm"
             className="border border-background"
           />
@@ -1644,7 +1635,7 @@ export function RolesTableView({ teamId }: RolesTableViewProps) {
     (key: string) => {
       if (rolesSortKey === key) {
         setRolesSortDirection((prev: "asc" | "desc") =>
-          prev === "asc" ? "desc" : "asc"
+          prev === "asc" ? "desc" : "asc",
         );
       } else {
         setRolesSortKey(key as SortKey);
@@ -1776,7 +1767,7 @@ export function RolesTableView({ teamId }: RolesTableViewProps) {
   const filteredRoles = useMemo(
     () =>
       roles.filter((role) =>
-        role.name.toLowerCase().includes(rolesQuery.toLowerCase())
+        role.name.toLowerCase().includes(rolesQuery.toLowerCase()),
       ),
     [roles, rolesQuery],
   );
@@ -1805,39 +1796,33 @@ export function RolesTableView({ teamId }: RolesTableViewProps) {
             placeholder="Search roles..."
             value={rolesQuery}
             onChange={(e: ChangeEvent<HTMLInputElement>) =>
-              setRolesQuery(e.target.value)}
+              setRolesQuery(e.target.value)
+            }
             className="w-80"
           />
           {/* Disabled at the moment */}
-          {
-            /* <Button onClick={() => handleEditRole(undefined)}>
+          {/* <Button onClick={() => handleEditRole(undefined)}>
             <Icon name="add" />
             Add role
-          </Button> */
-          }
+          </Button> */}
         </div>
-        {roles.length === 0
-          ? (
-            <div className="text-center py-8 text-muted-foreground">
-              No roles available. Create roles to manage team member
-              permissions.
-            </div>
-          )
-          : filteredRoles.length === 0
-          ? (
-            <div className="text-center py-8 text-muted-foreground">
-              No roles found matching your search.
-            </div>
-          )
-          : (
-            <Table
-              columns={rolesColumns}
-              data={sortedRoles}
-              sortKey={rolesSortKey}
-              sortDirection={rolesSortDirection}
-              onSort={handleRolesSort}
-            />
-          )}
+        {roles.length === 0 ? (
+          <div className="text-center py-8 text-muted-foreground">
+            No roles available. Create roles to manage team member permissions.
+          </div>
+        ) : filteredRoles.length === 0 ? (
+          <div className="text-center py-8 text-muted-foreground">
+            No roles found matching your search.
+          </div>
+        ) : (
+          <Table
+            columns={rolesColumns}
+            data={sortedRoles}
+            sortKey={rolesSortKey}
+            sortDirection={rolesSortDirection}
+            onSort={handleRolesSort}
+          />
+        )}
       </div>
 
       <AddRoleDialog

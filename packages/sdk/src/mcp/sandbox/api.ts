@@ -74,8 +74,7 @@ export const ToolDefinitionSchema = z.object({
     ),
 });
 
-const SANDBOX_CREATE_TOOL_DESCRIPTION =
-  `Create a new tool in the sandbox with JSON Schema validation.
+const SANDBOX_CREATE_TOOL_DESCRIPTION = `Create a new tool in the sandbox with JSON Schema validation.
 example, create a greeting tool pass the following arguments:
 
 {

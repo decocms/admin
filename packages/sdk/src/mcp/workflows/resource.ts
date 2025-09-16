@@ -1,6 +1,6 @@
 import { DeconfigResource } from "../deconfig/deconfig-resource.ts";
 
-const RESOURCE_NAME = "workflow";
+export const RESOURCE_NAME = "workflow";
 
 export const WorkflowResource = DeconfigResource.define({
   directory: "/src/workflows",

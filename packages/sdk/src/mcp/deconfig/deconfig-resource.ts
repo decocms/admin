@@ -5,7 +5,7 @@ import {
   assertWorkspaceResourceAccess,
 } from "../assertions.ts";
 import { impl, WellKnownBindings } from "../bindings/binder.ts";
-import { DeconfigClient } from "../index.ts";
+import { createMCPToolsStub, DeconfigClient, MCPClientStub } from "../index.ts";
 
 export interface DeconfigResourceOptions {
   deconfig: DeconfigClient;
@@ -33,10 +33,20 @@ const extractResourceId = (uri: string) => {
   }
   return resourceId;
 };
-
 export const DeconfigResource = {
   define: (options: Omit<DeconfigResourceOptions, "deconfig">) => {
     return {
+      client: (
+        deconfig: DeconfigClient,
+      ): MCPClientStub<(typeof WellKnownBindings)["Resources"]> => {
+        const tools = deconfigResource({
+          deconfig,
+          ...options,
+        });
+        return createMCPToolsStub({
+          tools,
+        }) as MCPClientStub<(typeof WellKnownBindings)["Resources"]>;
+      },
       create: (deconfig: DeconfigClient) => {
         return deconfigResource({
           deconfig,

@@ -5,8 +5,11 @@ import {
   assertHasWorkspace,
   assertWorkspaceResourceAccess,
   impl,
+  createDeconfigClientForContext,
   MCPClient,
   ProjectTools,
+  WellKnownBindings,
+  WorkflowResource,
 } from "../index.ts";
 import { createTool, fileNameSlugify, validate } from "../sandbox/utils.ts";
 import { MCPClientStub } from "../stub.ts";
@@ -16,6 +19,7 @@ import {
   WorkflowDefinitionSchema,
   WorkflowStepDefinitionSchema,
 } from "./workflow-schemas.ts";
+import { RESOURCE_NAME } from "./resource.ts";
 
 // In-memory storage for workflow runs
 interface WorkflowRun {
@@ -44,19 +48,18 @@ const workflowRuns = new Map<string, WorkflowRun>();
 async function readWorkflow(
   name: string,
   client: MCPClientStub<ProjectTools>,
+  workflows: MCPClientStub<(typeof WellKnownBindings)["Resources"]>,
   branch?: string,
 ): Promise<z.infer<typeof WorkflowDefinitionSchema> | null> {
   try {
     const workflowFileName = fileNameSlugify(name);
-    const workflowPath = `/src/workflows/${workflowFileName}.json`;
 
-    const result = await client.READ_FILE({
-      branch,
-      path: workflowPath,
-      format: "json",
+    const result = await workflows.DECO_CHAT_RESOURCES_READ({
+      name: RESOURCE_NAME,
+      uri: `deconfig://workflows/${workflowFileName}`,
     });
 
-    const workflow = result.content as z.infer<typeof WorkflowDefinitionSchema>;
+    const workflow = WorkflowDefinitionSchema.parse(result.data);
 
     // Inline step function code
     const inlinedSteps = await Promise.all(
@@ -146,10 +149,16 @@ export const startWorkflow = createTool({
 
     const branch = c.locator?.branch;
     const client = MCPClient.forContext(c);
+    const deconfig = createDeconfigClientForContext(c);
 
     try {
       // Read the workflow definition to validate it exists
-      const workflow = await readWorkflow(name, client, branch);
+      const workflow = await readWorkflow(
+        name,
+        client,
+        WorkflowResource.client(deconfig),
+        branch,
+      );
       if (!workflow) {
         return { runId: "", error: "Workflow not found" };
       }

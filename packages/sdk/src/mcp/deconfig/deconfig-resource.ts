@@ -34,6 +34,19 @@ const extractResourceId = (uri: string) => {
   return resourceId;
 };
 
+export const DeconfigResource = {
+  define: (options: Omit<DeconfigResourceOptions, "deconfig">) => {
+    return {
+      create: (deconfig: DeconfigClient) => {
+        return deconfigResource({
+          deconfig,
+          ...options,
+        });
+      },
+    };
+  },
+};
+
 export const deconfigResource = (options: DeconfigResourceOptions) => {
   const { deconfig, directory, resourceName: _resourceName } = options;
   const resourceName = _resourceName || directory;

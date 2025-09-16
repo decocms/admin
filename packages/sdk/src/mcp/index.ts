@@ -363,3 +363,5 @@ export function createMCPToolsStub<TDefinition extends readonly ToolLike[]>(
     },
   );
 }
+
+export { WorkflowResource } from "./workflows/resource.ts";

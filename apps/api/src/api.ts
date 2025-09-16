@@ -7,8 +7,8 @@ import {
   WellKnownMcpGroups,
 } from "@deco/sdk";
 import { DECO_CHAT_KEY_ID, getKeyPair } from "@deco/sdk/auth";
-import { deconfigResource } from "@deco/sdk/deconfig";
 import {
+  WorkflowResource,
   AGENT_TOOLS,
   assertWorkspaceResourceAccess,
   CallToolMiddleware,
@@ -98,11 +98,11 @@ const contextToPrincipalExecutionContext = (
 
   const ctxLocator = locator
     ? {
-      org,
-      project,
-      value: locator,
-      branch,
-    }
+        org,
+        project,
+        value: locator,
+        branch,
+      }
     : undefined;
   return {
     ...c.var,
@@ -165,8 +165,8 @@ const createMCPHandlerFor = (
               : z.object({}).shape,
           outputSchema:
             tool.outputSchema &&
-              typeof tool.outputSchema === "object" &&
-              "shape" in tool.outputSchema
+            typeof tool.outputSchema === "object" &&
+            "shape" in tool.outputSchema
               ? (tool.outputSchema.shape as z.ZodRawShape)
               : z.object({}).shape,
         },
@@ -458,11 +458,7 @@ app.all(
     const appCtx = honoCtxToAppCtx(ctx);
     const client = createDeconfigClientForContext(appCtx);
 
-    return Promise.resolve(deconfigResource({
-      deconfig: client,
-      directory: "/src/workflows",
-      resourceName: "workflow",
-    }));
+    return Promise.resolve(WorkflowResource.create(client));
   }),
 );
 

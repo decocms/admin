@@ -293,7 +293,7 @@ const InlineCreateIntegrationForm = ({
   // Update form defaults when schema changes
   useEffect(() => {
     if (schema) {
-      form.reset(generateDefaultValues(schema));
+      form.reset(stateHint ?? generateDefaultValues(schema));
     }
   }, [schema, form]);
 

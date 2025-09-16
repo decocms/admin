@@ -15,6 +15,12 @@ import {
   validate,
   validateExecuteCode,
 } from "./utils.ts";
+import {
+  MappingStepDefinitionSchema,
+  ToolCallStepDefinitionSchema,
+  WorkflowStepDefinitionSchema,
+  WorkflowDefinitionSchema,
+} from "./workflow-schemas.ts";
 
 // In-memory storage for workflow runs
 interface WorkflowRun {
@@ -93,10 +99,9 @@ async function executeWorkflow(
     let startStepIndex = 0;
     if (startFromStep) {
       startStepIndex = workflow.steps.findIndex((step) => {
-        const stepName =
-          step.type === "mapping"
-            ? (step.def as z.infer<typeof MappingStepDefinitionSchema>).name
-            : (step.def as z.infer<typeof ToolCallStepDefinitionSchema>).name;
+        const stepName = step.type === "mapping"
+          ? (step.def as z.infer<typeof MappingStepDefinitionSchema>).name
+          : (step.def as z.infer<typeof ToolCallStepDefinitionSchema>).name;
         return stepName === startFromStep;
       });
       if (startStepIndex === -1) {
@@ -109,10 +114,9 @@ async function executeWorkflow(
     // Execute steps sequentially starting from the specified step
     for (let i = startStepIndex; i < workflow.steps.length; i++) {
       const step = workflow.steps[i];
-      const stepName =
-        step.type === "mapping"
-          ? (step.def as z.infer<typeof MappingStepDefinitionSchema>).name
-          : (step.def as z.infer<typeof ToolCallStepDefinitionSchema>).name;
+      const stepName = step.type === "mapping"
+        ? (step.def as z.infer<typeof MappingStepDefinitionSchema>).name
+        : (step.def as z.infer<typeof ToolCallStepDefinitionSchema>).name;
       run.currentStep = stepName;
 
       try {
@@ -185,8 +189,8 @@ async function executeWorkflow(
             throw new Error(`Tool call failed: ${inspect(toolCallResult)}`);
           }
 
-          stepResult =
-            toolCallResult.structuredContent || toolCallResult.content;
+          stepResult = toolCallResult.structuredContent ||
+            toolCallResult.content;
           run.logs.push({
             type: "log",
             content: `Tool call '${toolDef.tool_name}' completed`,
@@ -208,10 +212,9 @@ async function executeWorkflow(
 
     // The final result is the output of the last step
     const lastStep = workflow.steps[workflow.steps.length - 1];
-    const lastStepName =
-      lastStep.type === "mapping"
-        ? (lastStep.def as z.infer<typeof MappingStepDefinitionSchema>).name
-        : (lastStep.def as z.infer<typeof ToolCallStepDefinitionSchema>).name;
+    const lastStepName = lastStep.type === "mapping"
+      ? (lastStep.def as z.infer<typeof MappingStepDefinitionSchema>).name
+      : (lastStep.def as z.infer<typeof ToolCallStepDefinitionSchema>).name;
     const finalResult = run.stepResults[lastStepName];
 
     if (!finalResult) {
@@ -227,9 +230,11 @@ async function executeWorkflow(
     );
     if (!workflowOutputValidation.valid) {
       run.status = "failed";
-      run.error = `Workflow output validation failed: ${inspect(
-        workflowOutputValidation,
-      )}`;
+      run.error = `Workflow output validation failed: ${
+        inspect(
+          workflowOutputValidation,
+        )
+      }`;
       return;
     }
 
@@ -321,95 +326,9 @@ async function readWorkflow(
   }
 }
 
-// Mapping step definition - transforms data between tool calls
-export const MappingStepDefinitionSchema = z.object({
-  name: z
-    .string()
-    .min(1)
-    .describe("The unique name of the mapping step within the workflow"),
-  description: z
-    .string()
-    .min(1)
-    .describe("A clear description of what this mapping step does"),
-  execute: z
-    .string()
-    .min(1)
-    .describe(
-      "ES module code that exports a default async function: (ctx: WellKnownOptions) => Promise<any>. Use ctx.readWorkflowInput() or ctx.readStepResult(stepName) to access data",
-    ),
-});
 
-// Tool call step definition - executes a tool from an integration
-export const ToolCallStepDefinitionSchema = z.object({
-  name: z
-    .string()
-    .min(1)
-    .describe("The unique name of the tool call step within the workflow"),
-  description: z
-    .string()
-    .min(1)
-    .describe("A clear description of what this tool call step does"),
-  options: z
-    .object({
-      retry: z
-        .number()
-        .int()
-        .min(0)
-        .default(0)
-        .describe("Number of retry attempts for this step (default: 0)"),
-      timeout: z
-        .number()
-        .positive()
-        .default(Infinity)
-        .describe("Maximum execution time in milliseconds (default: Infinity)"),
-    })
-    .passthrough()
-    .nullish()
-    .describe(
-      "Step configuration options. Extend this object with custom properties for business user configuration",
-    ),
-  tool_name: z.string().min(1).describe("The name of the tool to call"),
-  integration: z
-    .string()
-    .min(1)
-    .describe("The name of the integration that provides this tool"),
-});
-
-// Union of step types
-const WorkflowStepDefinitionSchema = z.object({
-  type: z.enum(["mapping", "tool_call"]).describe("The type of step"),
-  def: z
-    .union([MappingStepDefinitionSchema, ToolCallStepDefinitionSchema])
-    .describe("The step definition based on the type"),
-});
-
-const WorkflowDefinitionSchema = z.object({
-  name: z.string().min(1).describe("The unique name of the workflow"),
-  description: z
-    .string()
-    .min(1)
-    .describe("A comprehensive description of what this workflow accomplishes"),
-  inputSchema: z
-    .object({})
-    .passthrough()
-    .describe(
-      "JSON Schema defining the workflow's input parameters and data structure",
-    ),
-  outputSchema: z
-    .object({})
-    .passthrough()
-    .describe(
-      "JSON Schema defining the workflow's final output after all steps complete",
-    ),
-  steps: z
-    .array(WorkflowStepDefinitionSchema)
-    .min(1)
-    .describe(
-      "Array of workflow steps that execute sequentially. The last step should be a mapping step that returns the final output.",
-    ),
-});
-
-const WORKFLOW_DESCRIPTION = `Create or update a workflow in the sandbox environment.
+const WORKFLOW_DESCRIPTION =
+  `Create or update a workflow in the sandbox environment.
 
 ## Overview
 
@@ -859,13 +778,12 @@ const getWorkflowStatus = createTool({
     }
 
     // Create partial result from completed steps
-    const partialResult =
-      Object.keys(run.stepResults).length > 0
-        ? {
-            completedSteps: Object.keys(run.stepResults),
-            stepResults: run.stepResults,
-          }
-        : undefined;
+    const partialResult = Object.keys(run.stepResults).length > 0
+      ? {
+        completedSteps: Object.keys(run.stepResults),
+        stepResults: run.stepResults,
+      }
+      : undefined;
 
     return {
       status: run.status,
@@ -922,7 +840,8 @@ const replayWorkflowFromStep = createTool({
       if (!originalRun.stepResults[stepName]) {
         return {
           newRunId: "",
-          error: `Step '${stepName}' was not completed in the original run or does not exist`,
+          error:
+            `Step '${stepName}' was not completed in the original run or does not exist`,
         };
       }
 

@@ -162,6 +162,10 @@ const WorkflowDetailPage = lazy(() =>
   wrapWithUILoadingFallback(import("./components/workflows/detail.tsx")),
 );
 
+const WorkflowBuilderPage = lazy(() =>
+  wrapWithUILoadingFallback(import("./pages/workflow-builder/WorkflowBuilderPage.tsx")),
+);
+
 const AppAuth = lazy(() =>
   wrapWithUILoadingFallback(import("./components/apps/auth.tsx")),
 );
@@ -345,6 +349,7 @@ const router = createBrowserRouter([
           { path: "prompts", Component: ListPrompts },
           { path: "prompt/:id", Component: PromptDetail },
           { path: "workflows", Component: WorkflowListPage },
+          { path: "workflows/:workflowName", Component: WorkflowBuilderPage },
           { path: "discover", Component: Discover },
           {
             path: "workflows/:workflowName/instances/:instanceId",

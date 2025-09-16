@@ -18,6 +18,7 @@ export * from "./crud/workflows.ts";
 export * from "./crud/roles.ts";
 export * from "./crud/projects.ts";
 export * from "./crud/registry.ts";
+export * from "./crud/sandbox-workflows.ts";
 
 export * from "./hooks/agent.ts";
 export * from "./hooks/audit.ts";
@@ -36,6 +37,10 @@ export * from "./hooks/wallet.ts";
 export * from "./hooks/workflows.ts";
 export * from "./hooks/roles.ts";
 export * from "./hooks/registry.ts";
+export * from "./hooks/sandbox-workflows.ts";
+
+// Schemas for sandbox workflows (exported for consumers like the web app)
+export * from "./mcp/sandbox/workflow-schemas.ts";
 
 export * from "./models/agent.ts";
 export * from "./models/mcp.ts";

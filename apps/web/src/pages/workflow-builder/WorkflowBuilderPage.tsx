@@ -8,9 +8,11 @@ import { WorkflowNotFoundState } from "./WorkflowNotFoundState.tsx";
 
 export default function WorkflowBuilderPage() {
   const { org, project, workflowName } = useParams();
-  
+
   if (!org || !project || !workflowName) {
-    return <WorkflowErrorState error="Missing required parameters: org, project, or workflowName" />;
+    return (
+      <WorkflowErrorState error="Missing required parameters: org, project, or workflowName" />
+    );
   }
 
   const { workflow, isLoading, error } = useWorkflow(workflowName);
@@ -19,5 +21,5 @@ export default function WorkflowBuilderPage() {
   if (error) return <WorkflowErrorState error={error} />;
   if (!workflow) return <WorkflowNotFoundState workflowName={workflowName} />;
 
-          return <WorkflowCanvas workflow={workflow} />;
+  return <WorkflowCanvas workflow={workflow} />;
 }

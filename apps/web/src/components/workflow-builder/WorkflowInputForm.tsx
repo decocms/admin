@@ -1,6 +1,11 @@
-import { Form } from '@rjsf/shadcn';
-import { RJSFSchema, UiSchema } from '@rjsf/utils';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@deco/ui/components/dialog.tsx";
+import { Form } from "@rjsf/shadcn";
+import { RJSFSchema, UiSchema } from "@rjsf/utils";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@deco/ui/components/dialog.tsx";
 
 interface WorkflowInputFormProps {
   schema: RJSFSchema;
@@ -10,21 +15,21 @@ interface WorkflowInputFormProps {
   onClose: () => void;
 }
 
-export function WorkflowInputForm({ 
-  schema, 
-  onSubmit, 
+export function WorkflowInputForm({
+  schema,
+  onSubmit,
   initialData,
   isOpen,
-  onClose
+  onClose,
 }: WorkflowInputFormProps) {
   const uiSchema: UiSchema = {
-    'ui:submitButtonOptions': {
-      submitText: 'Run Workflow',
+    "ui:submitButtonOptions": {
+      submitText: "Run Workflow",
       norender: false,
       props: {
-        className: 'w-full'
-      }
-    }
+        className: "w-full",
+      },
+    },
   };
 
   const handleSubmit = ({ formData }: { formData: any }) => {

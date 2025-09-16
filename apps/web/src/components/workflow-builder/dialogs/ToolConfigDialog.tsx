@@ -1,6 +1,11 @@
-import { Form } from '@rjsf/shadcn';
-import { RJSFSchema } from '@rjsf/utils';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@deco/ui/components/dialog.tsx";
+import { Form } from "@rjsf/shadcn";
+import { RJSFSchema } from "@rjsf/utils";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@deco/ui/components/dialog.tsx";
 
 interface ToolConfigDialogProps {
   tool: {
@@ -14,24 +19,29 @@ interface ToolConfigDialogProps {
   onClose: () => void;
 }
 
-export function ToolConfigDialog({ tool, onSave, isOpen, onClose }: ToolConfigDialogProps) {
+export function ToolConfigDialog({
+  tool,
+  onSave,
+  isOpen,
+  onClose,
+}: ToolConfigDialogProps) {
   const schema: RJSFSchema = {
-    type: 'object',
+    type: "object",
     title: `Configure ${tool.name}`,
     properties: {
       retry: {
-        type: 'number',
-        title: 'Retry Attempts',
+        type: "number",
+        title: "Retry Attempts",
         minimum: 0,
-        default: 0
+        default: 0,
       },
       timeout: {
-        type: 'number',
-        title: 'Timeout (ms)',
+        type: "number",
+        title: "Timeout (ms)",
         minimum: 1000,
-        default: 30000
-      }
-    }
+        default: 30000,
+      },
+    },
   };
 
   const handleSubmit = ({ formData }: { formData: any }) => {
@@ -45,11 +55,7 @@ export function ToolConfigDialog({ tool, onSave, isOpen, onClose }: ToolConfigDi
         <DialogHeader>
           <DialogTitle>Configure Tool</DialogTitle>
         </DialogHeader>
-        <Form
-          schema={schema}
-          formData={tool.options}
-          onSubmit={handleSubmit}
-        />
+        <Form schema={schema} formData={tool.options} onSubmit={handleSubmit} />
       </DialogContent>
     </Dialog>
   );

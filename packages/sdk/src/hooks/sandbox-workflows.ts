@@ -51,7 +51,7 @@ export const useUpsertSandboxWorkflow = () => {
     mutationFn: async (params: SandboxWorkflowUpsertParams) => {
       const result = await upsertSandboxWorkflow(locator, params);
       if (!result.success) {
-        throw new Error(result.error || 'Failed to save workflow');
+        throw new Error(result.error || "Failed to save workflow");
       }
       return result;
     },

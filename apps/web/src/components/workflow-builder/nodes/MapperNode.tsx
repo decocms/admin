@@ -4,7 +4,7 @@ import { Badge } from "@deco/ui/components/badge.tsx";
 import { Icon } from "@deco/ui/components/icon.tsx";
 
 interface MapperNodeData {
-  type: 'mapping';
+  type: "mapping";
   name: string;
   description: string;
   execute: string;
@@ -12,37 +12,36 @@ interface MapperNodeData {
 }
 
 export function MapperNode({ data }: NodeProps<any>) {
-  const isIdentityFunction = data.execute.includes('return input; // Identity transformation');
-  
+  const isIdentityFunction = data.execute.includes(
+    "return input; // Identity transformation",
+  );
+
   return (
     <Card className="min-w-[200px] shadow-lg">
       <Handle type="target" position={Position.Top} />
-      
+
       <CardHeader className="pb-2">
         <div className="flex items-center gap-2">
           <Icon name="transform" className="h-4 w-4 text-green-600" />
           <h3 className="font-semibold text-sm">{data.name}</h3>
         </div>
-        <Badge 
-          variant={isIdentityFunction ? "secondary" : "default"} 
+        <Badge
+          variant={isIdentityFunction ? "secondary" : "default"}
           className="text-xs"
         >
           {isIdentityFunction ? "Identity" : "Transform"}
         </Badge>
       </CardHeader>
-      
+
       <CardContent className="pt-0">
-        <p className="text-xs text-muted-foreground mb-2">
-          {data.description}
-        </p>
+        <p className="text-xs text-muted-foreground mb-2">{data.description}</p>
         <div className="text-xs text-muted-foreground">
-          {isIdentityFunction 
-            ? "Passes data through unchanged" 
-            : "Transforms data between steps"
-          }
+          {isIdentityFunction
+            ? "Passes data through unchanged"
+            : "Transforms data between steps"}
         </div>
       </CardContent>
-      
+
       <Handle type="source" position={Position.Bottom} />
     </Card>
   );

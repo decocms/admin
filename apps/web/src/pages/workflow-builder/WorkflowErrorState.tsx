@@ -17,10 +17,7 @@ export function WorkflowErrorState({ error }: WorkflowErrorStateProps) {
           <h2 className="text-lg font-semibold">Failed to Load Workflow</h2>
           <p className="text-muted-foreground mt-2">{error}</p>
         </div>
-        <Button 
-          onClick={() => navigate(-1)}
-          variant="outline"
-        >
+        <Button onClick={() => navigate(-1)} variant="outline">
           Go Back
         </Button>
       </div>

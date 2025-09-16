@@ -4,7 +4,7 @@ import { Badge } from "@deco/ui/components/badge.tsx";
 import { Icon } from "@deco/ui/components/icon.tsx";
 
 interface ToolNodeData {
-  type: 'tool_call';
+  type: "tool_call";
   name: string;
   description: string;
   tool_name: string;
@@ -16,7 +16,7 @@ export function ToolNode({ data }: NodeProps<any>) {
   return (
     <Card className="min-w-[200px] shadow-lg">
       <Handle type="target" position={Position.Top} />
-      
+
       <CardHeader className="pb-2">
         <div className="flex items-center gap-2">
           <Icon name="build" className="h-4 w-4 text-blue-600" />
@@ -26,11 +26,9 @@ export function ToolNode({ data }: NodeProps<any>) {
           {data.integration}
         </Badge>
       </CardHeader>
-      
+
       <CardContent className="pt-0">
-        <p className="text-xs text-muted-foreground mb-2">
-          {data.description}
-        </p>
+        <p className="text-xs text-muted-foreground mb-2">{data.description}</p>
         <div className="text-xs text-muted-foreground">
           Tool: {data.tool_name}
         </div>
@@ -42,7 +40,7 @@ export function ToolNode({ data }: NodeProps<any>) {
           </div>
         )}
       </CardContent>
-      
+
       <Handle type="source" position={Position.Bottom} />
     </Card>
   );

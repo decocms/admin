@@ -16,9 +16,15 @@ interface MapperConfigDialogProps {
   onSubmit: (mapperData: any) => void;
 }
 
-export function MapperConfigDialog({ open, onOpenChange, onSubmit }: MapperConfigDialogProps) {
+export function MapperConfigDialog({
+  open,
+  onOpenChange,
+  onSubmit,
+}: MapperConfigDialogProps) {
   const [name, setName] = useState("New Mapper");
-  const [description, setDescription] = useState("Transform data between workflow steps");
+  const [description, setDescription] = useState(
+    "Transform data between workflow steps",
+  );
   const [execute, setExecute] = useState(`export default async function(ctx) {
   const input = await ctx.readStepResult('previous-step');
   return input; // Identity transformation
@@ -29,10 +35,10 @@ export function MapperConfigDialog({ open, onOpenChange, onSubmit }: MapperConfi
       name,
       description,
       execute,
-      outputSchema: {}
+      outputSchema: {},
     });
     onOpenChange(false);
-    
+
     // Reset form
     setName("New Mapper");
     setDescription("Transform data between workflow steps");
@@ -48,7 +54,7 @@ export function MapperConfigDialog({ open, onOpenChange, onSubmit }: MapperConfi
         <DialogHeader>
           <DialogTitle>Configure Mapper</DialogTitle>
         </DialogHeader>
-        
+
         <div className="space-y-4">
           <div className="space-y-2">
             <Label htmlFor="mapper-name">Name</Label>
@@ -59,7 +65,7 @@ export function MapperConfigDialog({ open, onOpenChange, onSubmit }: MapperConfi
               placeholder="Enter mapper name"
             />
           </div>
-          
+
           <div className="space-y-2">
             <Label htmlFor="mapper-description">Description</Label>
             <Textarea
@@ -70,7 +76,7 @@ export function MapperConfigDialog({ open, onOpenChange, onSubmit }: MapperConfi
               rows={2}
             />
           </div>
-          
+
           <div className="space-y-2">
             <Label htmlFor="mapper-execute">Execute Function</Label>
             <Textarea
@@ -82,19 +88,18 @@ export function MapperConfigDialog({ open, onOpenChange, onSubmit }: MapperConfi
               className="font-mono text-sm"
             />
             <p className="text-xs text-muted-foreground">
-              This function receives a context object with access to previous step results.
-              Use <code>ctx.readStepResult('step-name')</code> to read data from previous steps.
+              This function receives a context object with access to previous
+              step results. Use <code>ctx.readStepResult('step-name')</code> to
+              read data from previous steps.
             </p>
           </div>
         </div>
-        
+
         <div className="flex justify-end gap-2 pt-4">
           <Button variant="outline" onClick={() => onOpenChange(false)}>
             Cancel
           </Button>
-          <Button onClick={handleSubmit}>
-            Add Mapper
-          </Button>
+          <Button onClick={handleSubmit}>Add Mapper</Button>
         </div>
       </DialogContent>
     </Dialog>

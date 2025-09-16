@@ -17,7 +17,10 @@ interface WorkflowPaletteProps {
   onAddMapper: (mapperData: any) => void;
 }
 
-export function WorkflowPalette({ onAddTool, onAddMapper }: WorkflowPaletteProps) {
+export function WorkflowPalette({
+  onAddTool,
+  onAddMapper,
+}: WorkflowPaletteProps) {
   const [isToolDialogOpen, setIsToolDialogOpen] = useState(false);
   const [isMapperDialogOpen, setIsMapperDialogOpen] = useState(false);
 
@@ -44,19 +47,19 @@ export function WorkflowPalette({ onAddTool, onAddMapper }: WorkflowPaletteProps
           <h3 className="font-semibold text-sm">Add Components</h3>
         </CardHeader>
         <CardContent className="space-y-2">
-          <Button 
-            onClick={handleAddTool} 
-            variant="outline" 
+          <Button
+            onClick={handleAddTool}
+            variant="outline"
             className="w-full justify-start"
             size="sm"
           >
             <Icon name="build" className="h-4 w-4 mr-2" />
             Add Tool
           </Button>
-          
-          <Button 
-            onClick={handleAddMapper} 
-            variant="outline" 
+
+          <Button
+            onClick={handleAddMapper}
+            variant="outline"
             className="w-full justify-start"
             size="sm"
           >
@@ -65,13 +68,13 @@ export function WorkflowPalette({ onAddTool, onAddMapper }: WorkflowPaletteProps
           </Button>
         </CardContent>
       </Card>
-      
+
       <SelectToolDialog
         open={isToolDialogOpen}
         onOpenChange={setIsToolDialogOpen}
         onSelectTool={handleSelectTool}
       />
-      
+
       <MapperConfigDialog
         open={isMapperDialogOpen}
         onOpenChange={setIsMapperDialogOpen}

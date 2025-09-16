@@ -610,9 +610,9 @@ const getWorkflowStatus = createTool({
         partialResult:
           run?.stepResults && Object.keys(run.stepResults).length > 0
             ? {
-              completedSteps: Object.keys(run.stepResults),
-              stepResults: run.stepResults,
-            }
+                completedSteps: Object.keys(run.stepResults),
+                stepResults: run.stepResults,
+              }
             : undefined,
         error: cfStatus.error || run?.error,
         logs: run?.logs || [],
@@ -629,9 +629,9 @@ const getWorkflowStatus = createTool({
       const partialResult =
         Object.keys(run.stepResults).length > 0
           ? {
-            completedSteps: Object.keys(run.stepResults),
-            stepResults: run.stepResults,
-          }
+              completedSteps: Object.keys(run.stepResults),
+              stepResults: run.stepResults,
+            }
           : undefined;
 
       return {

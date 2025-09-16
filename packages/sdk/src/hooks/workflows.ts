@@ -122,14 +122,14 @@ export const useWorkflowStatus = (workflowName: string, instanceId: string) => {
  */
 export function useWorkflow(workflowName: string) {
   const { data, isLoading, error } = useSandboxWorkflow(workflowName);
-  
+
   // If workflow doesn't exist, create a new one
   const workflow = data || createEmptyWorkflow(workflowName);
 
-  return { 
-    workflow, 
-    isLoading, 
-    error: error?.message || null 
+  return {
+    workflow,
+    isLoading,
+    error: error?.message || null,
   };
 }
 
@@ -138,15 +138,15 @@ function createEmptyWorkflow(name: string): WorkflowDefinition {
     name,
     description: `Workflow: ${name}`,
     inputSchema: {
-      type: 'object',
+      type: "object",
       properties: {},
-      required: []
+      required: [],
     },
     outputSchema: {
-      type: 'object',
+      type: "object",
       properties: {},
-      required: []
+      required: [],
     },
-    steps: []
+    steps: [],
   };
 }

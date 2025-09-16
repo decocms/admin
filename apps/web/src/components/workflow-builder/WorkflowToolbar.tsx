@@ -8,7 +8,11 @@ interface WorkflowToolbarProps {
   onRun: () => void;
 }
 
-export function WorkflowToolbar({ isDirty, onGenerate, onRun }: WorkflowToolbarProps) {
+export function WorkflowToolbar({
+  isDirty,
+  onGenerate,
+  onRun,
+}: WorkflowToolbarProps) {
   return (
     <div className="absolute top-4 left-4 z-10">
       <div className="bg-background border rounded-lg shadow-lg p-4 flex items-center gap-3">
@@ -21,9 +25,9 @@ export function WorkflowToolbar({ isDirty, onGenerate, onRun }: WorkflowToolbarP
             </Badge>
           )}
         </div>
-        
+
         <div className="h-4 w-px bg-border" />
-        
+
         <div className="flex gap-2">
           {isDirty ? (
             <Button onClick={onGenerate} size="sm">

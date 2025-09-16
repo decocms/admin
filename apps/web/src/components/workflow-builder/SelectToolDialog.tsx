@@ -31,36 +31,52 @@ interface SelectToolDialogProps {
   onSelectTool: (tool: Tool) => void;
 }
 
-export function SelectToolDialog({ open, onOpenChange, onSelectTool }: SelectToolDialogProps) {
+export function SelectToolDialog({
+  open,
+  onOpenChange,
+  onSelectTool,
+}: SelectToolDialogProps) {
   const [searchTerm, setSearchTerm] = useState("");
   const deferredSearchTerm = useDeferredValue(searchTerm);
-  const [selectedIntegrationId, setSelectedIntegrationId] = useState<string | null>(null);
-  
+  const [selectedIntegrationId, setSelectedIntegrationId] = useState<
+    string | null
+  >(null);
+
   const { data: integrations = [] } = useIntegrations();
 
   // Filter integrations that have tools
   const integrationsWithTools = useMemo(() => {
-    return integrations.filter(integration => 
-      integration.connection && 
-      ['HTTP', 'SSE', 'Websocket', 'INNATE', 'Deco'].includes(integration.connection.type)
+    return integrations.filter(
+      (integration) =>
+        integration.connection &&
+        ["HTTP", "SSE", "Websocket", "INNATE", "Deco"].includes(
+          integration.connection.type,
+        ),
     );
   }, [integrations]);
 
   const selectedIntegration = useMemo(() => {
-    return integrationsWithTools.find(i => i.id === selectedIntegrationId) || integrationsWithTools[0];
+    return (
+      integrationsWithTools.find((i) => i.id === selectedIntegrationId) ||
+      integrationsWithTools[0]
+    );
   }, [integrationsWithTools, selectedIntegrationId]);
 
   // Get tools for the selected integration
-  const { data: toolsData } = useTools(selectedIntegration?.connection as MCPConnection);
+  const { data: toolsData } = useTools(
+    selectedIntegration?.connection as MCPConnection,
+  );
   const tools = toolsData?.tools || [];
 
   // Filter tools based on search term
   const filteredTools = useMemo(() => {
     if (!deferredSearchTerm) return tools;
     const lowercaseSearch = deferredSearchTerm.toLowerCase();
-    return tools.filter(tool =>
-      tool.name.toLowerCase().includes(lowercaseSearch) ||
-      (tool.description && tool.description.toLowerCase().includes(lowercaseSearch))
+    return tools.filter(
+      (tool) =>
+        tool.name.toLowerCase().includes(lowercaseSearch) ||
+        (tool.description &&
+          tool.description.toLowerCase().includes(lowercaseSearch)),
     );
   }, [tools, deferredSearchTerm]);
 
@@ -87,7 +103,7 @@ export function SelectToolDialog({ open, onOpenChange, onSelectTool }: SelectToo
         <DialogHeader className="p-6 pb-4 border-b">
           <DialogTitle>Select Tool</DialogTitle>
         </DialogHeader>
-        
+
         <div className="flex h-[calc(90vh-120px)]">
           {/* Integration List - Left Side */}
           <div className="w-1/3 border-r border-border flex flex-col">
@@ -100,14 +116,15 @@ export function SelectToolDialog({ open, onOpenChange, onSelectTool }: SelectToo
                 className="h-9"
               />
             </div>
-            
+
             <div className="flex-1 overflow-y-auto p-2 space-y-1">
               {integrationsWithTools.map((integration) => (
                 <Card
                   key={integration.id}
                   className={cn(
                     "cursor-pointer transition-colors hover:bg-accent",
-                    selectedIntegrationId === integration.id && "bg-accent border-primary"
+                    selectedIntegrationId === integration.id &&
+                      "bg-accent border-primary",
                   )}
                   onClick={() => handleIntegrationSelect(integration)}
                 >
@@ -145,18 +162,24 @@ export function SelectToolDialog({ open, onOpenChange, onSelectTool }: SelectToo
                       size="sm"
                     />
                     <div>
-                      <h3 className="font-medium text-sm">{selectedIntegration.name}</h3>
+                      <h3 className="font-medium text-sm">
+                        {selectedIntegration.name}
+                      </h3>
                       <p className="text-xs text-muted-foreground">
-                        {tools.length} tool{tools.length !== 1 ? 's' : ''} available
+                        {tools.length} tool{tools.length !== 1 ? "s" : ""}{" "}
+                        available
                       </p>
                     </div>
                   </div>
                 </div>
-                
+
                 <div className="flex-1 overflow-y-auto p-4 space-y-2">
                   {filteredTools.length === 0 ? (
                     <div className="text-center py-8 text-muted-foreground">
-                      <Icon name="search_off" className="h-8 w-8 mx-auto mb-2" />
+                      <Icon
+                        name="search_off"
+                        className="h-8 w-8 mx-auto mb-2"
+                      />
                       <p>No tools found</p>
                       {deferredSearchTerm && (
                         <p className="text-xs">Try a different search term</p>
@@ -171,7 +194,10 @@ export function SelectToolDialog({ open, onOpenChange, onSelectTool }: SelectToo
                       >
                         <CardContent className="p-4">
                           <div className="flex items-start gap-3">
-                            <Icon name="build" className="h-4 w-4 text-blue-600 mt-0.5" />
+                            <Icon
+                              name="build"
+                              className="h-4 w-4 text-blue-600 mt-0.5"
+                            />
                             <div className="flex-1 min-w-0">
                               <div className="font-medium text-sm mb-1">
                                 {tool.name}
@@ -184,7 +210,12 @@ export function SelectToolDialog({ open, onOpenChange, onSelectTool }: SelectToo
                               {tool.inputSchema && (
                                 <div className="mt-2">
                                   <Badge variant="outline" className="text-xs">
-                                    {Object.keys(tool.inputSchema.properties || {}).length} parameters
+                                    {
+                                      Object.keys(
+                                        tool.inputSchema.properties || {},
+                                      ).length
+                                    }{" "}
+                                    parameters
                                   </Badge>
                                 </div>
                               )}

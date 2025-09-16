@@ -361,15 +361,54 @@ export const workflowViews = impl(VIEW_BINDING_SCHEMA, [
   {
     description: "List views exposed by this MCP",
     handler: async (_, c) => {
-      await assertWorkspaceResourceAccess(c);
+      c.resourceAccess.grant();
+
+      const org = c.locator?.org;
+      const project = c.locator?.project;
+      const branch = c.locator?.branch || "main";
+
+      if (!org || !project) {
+        return { views: [] };
+      }
+
+      // Base URL for admin interface
+      const baseUrl = "https://admin.decocms.com";
 
       return {
         views: [
+          // Workflow List View
           {
-            title: "Database",
-            icon: "database",
-            url:
-              `https://api.decocms.com/${c.locator?.org}/${c.locator?.project}/workflows/${c.locator?.branch}`,
+            name: "WORKFLOWS_LIST",
+            title: "Workflows",
+            description: "Manage and monitor your workflows",
+            icon: "workflow",
+            url: `${baseUrl}/${org}/${project}/workflows`,
+            tools: [
+              "WORKFLOWS_START",
+              "WORKFLOWS_GET_STATUS", 
+              "WORKFLOWS_REPLAY_FROM_STEP"
+            ],
+            rules: [
+              "You are viewing the Workflows list. Use workflow tools to start, monitor, and manage workflow executions. Do not fabricate workflow data."
+            ],
+          },
+          // Workflow Detail View (for individual workflow management)
+          {
+            name: "WORKFLOW_DETAIL",
+            title: "Workflow Detail",
+            description: "View and manage individual workflow details",
+            icon: "workflow",
+            url: `${baseUrl}/${org}/${project}/workflows/:resource-id`,
+            mimeTypePattern: "application/json",
+            resourceName: "workflow",
+            tools: [
+              "WORKFLOWS_START",
+              "WORKFLOWS_GET_STATUS",
+              "WORKFLOWS_REPLAY_FROM_STEP"
+            ],
+            rules: [
+              "You are viewing a specific workflow detail. Use workflow tools to start, monitor, and manage this workflow execution. The resource-id in the URL identifies the specific workflow."
+            ],
           },
         ],
       };

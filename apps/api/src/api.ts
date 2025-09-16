@@ -8,7 +8,6 @@ import {
 } from "@deco/sdk";
 import { DECO_CHAT_KEY_ID, getKeyPair } from "@deco/sdk/auth";
 import {
-  WorkflowResource,
   AGENT_TOOLS,
   assertWorkspaceResourceAccess,
   CallToolMiddleware,
@@ -36,6 +35,7 @@ import {
   watchSSE,
   withMCPAuthorization,
   withMCPErrorHandling,
+  WorkflowResource,
   wrapToolFn,
 } from "@deco/sdk/mcp";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
@@ -62,6 +62,7 @@ import { handleCodeExchange } from "./oauth/code.ts";
 import { type AppContext, type AppEnv, State } from "./utils/context.ts";
 import { handleStripeWebhook } from "./webhooks/stripe.ts";
 import { handleTrigger } from "./webhooks/trigger.ts";
+import { workflowViews } from "packages/sdk/src/mcp/workflows/api.ts";
 
 const PROXY_TOKEN_HEADER = "X-Proxy-Auth";
 export const app = new Hono<AppEnv>();
@@ -97,11 +98,11 @@ const contextToPrincipalExecutionContext = (
 
   const ctxLocator = locator
     ? {
-        org,
-        project,
-        value: locator,
-        branch,
-      }
+      org,
+      project,
+      value: locator,
+      branch,
+    }
     : undefined;
   return {
     ...c.var,
@@ -158,16 +159,14 @@ const createMCPHandlerFor = (
         {
           annotations: tool.annotations,
           description: tool.description,
-          inputSchema:
-            "shape" in tool.inputSchema
-              ? (tool.inputSchema.shape as z.ZodRawShape)
-              : z.object({}).shape,
-          outputSchema:
-            tool.outputSchema &&
-            typeof tool.outputSchema === "object" &&
-            "shape" in tool.outputSchema
-              ? (tool.outputSchema.shape as z.ZodRawShape)
-              : z.object({}).shape,
+          inputSchema: "shape" in tool.inputSchema
+            ? (tool.inputSchema.shape as z.ZodRawShape)
+            : z.object({}).shape,
+          outputSchema: tool.outputSchema &&
+              typeof tool.outputSchema === "object" &&
+              "shape" in tool.outputSchema
+            ? (tool.outputSchema.shape as z.ZodRawShape)
+            : z.object({}).shape,
         },
         // @ts-expect-error: zod shape is not typed
         withMCPErrorHandling(tool.handler, tool.name),
@@ -463,141 +462,10 @@ app.all(
     const appCtx = honoCtxToAppCtx(ctx);
     const client = createDeconfigClientForContext(appCtx);
 
-
-
-
-
-
-    // Add the DECO_CHAT_VIEWS_LIST tool
-    const viewsListTool = createTool({
-      name: "DECO_CHAT_VIEWS_LIST",
-      description: "List views exposed by this MCP",
-      inputSchema: z.any(),
-      outputSchema: z.object({
-        views: z.array(
-          z.object({
-            id: z.string().optional(),
-            name: z.string().optional(),
-            title: z.string(),
-            description: z.string().optional(),
-            icon: z.string(),
-            url: z.string().optional(),
-            mimeTypePattern: z.string().optional(),
-            resourceName: z.string().optional(),
-            tools: z.array(z.string()).optional().default([]),
-            rules: z.array(z.string()).optional().default([]),
-          }),
-        ),
-      }),
-      handler: async (_, c) => {
-        const appCtx = honoCtxToAppCtx(c);
-        const client = createDeconfigClientForContext(appCtx);
-        
-        try {
-          // List workflows from the workspace
-          const workflows = await client.list({
-            directory: "/src/workflows",
-            resourceName: "workflow",
-          });
-
-          // Create workflow views
-          const workflowViews = workflows.map((workflow) => {
-            const workflowName = workflow.name;
-            const listUrl = `https://api.decocms.com/${appCtx.locator?.org}/${appCtx.locator?.project}/workflows/${appCtx.locator?.branch}`;
-            const detailUrl = `https://api.decocms.com/${appCtx.locator?.org}/${appCtx.locator?.project}/workflows/${appCtx.locator?.branch}/${workflowName}`;
-
-            // Default tools for workflow operations
-            const defaultListTools = [
-              "DECO_CHAT_WORKFLOWS_START",
-              "DECO_CHAT_WORKFLOWS_GET_STATUS",
-              "DECO_CHAT_WORKFLOWS_REPLAY_FROM_STEP",
-            ];
-
-            const defaultListRules = [
-              `You are viewing the ${workflowName} workflow. Use the appropriate workflow tools to start, monitor, and manage workflow executions.`,
-            ];
-
-            const defaultDetailTools = [
-              "DECO_CHAT_WORKFLOWS_START",
-              "DECO_CHAT_WORKFLOWS_GET_STATUS",
-            ];
-
-            const defaultDetailRules = [
-              `You are viewing the ${workflowName} workflow details. This workflow can be started and monitored using the available workflow tools.`,
-            ];
-
-            return [
-              // List view
-              {
-                name: `${workflowName.toUpperCase()}_LIST`,
-                title: `${workflowName} Workflows`,
-                description: `List and manage ${workflowName} workflow executions`,
-                icon: "workflow",
-                url: listUrl,
-                tools: defaultListTools,
-                rules: defaultListRules,
-              },
-              // Detail view
-              {
-                name: `${workflowName.toUpperCase()}_DETAIL`,
-                title: `${workflowName} Workflow Details`,
-                description: `View details and manage ${workflowName} workflow`,
-                icon: "workflow",
-                url: detailUrl,
-                resourceName: workflowName,
-                tools: defaultDetailTools,
-                rules: defaultDetailRules,
-              },
-            ];
-          }).flat();
-
-          // Add a general workflows view
-          const generalWorkflowsView = {
-            name: "WORKFLOWS_LIST",
-            title: "Workflows",
-            description: "Manage and monitor workflow executions",
-            icon: "workflow",
-            url: `https://api.decocms.com/${appCtx.locator?.org}/${appCtx.locator?.project}/workflows/${appCtx.locator?.branch}`,
-            tools: [
-              "DECO_CHAT_WORKFLOWS_START",
-              "DECO_CHAT_WORKFLOWS_GET_STATUS",
-              "DECO_CHAT_WORKFLOWS_REPLAY_FROM_STEP",
-            ],
-            rules: [
-              "You are viewing the workflows management interface. Use the appropriate workflow tools to start, monitor, and manage workflow executions.",
-            ],
-          };
-
-          return {
-            views: [generalWorkflowsView, ...workflowViews],
-          };
-        } catch (error) {
-          // Return empty views if there's an error
-          return {
-            views: [
-              {
-                name: "WORKFLOWS_LIST",
-                title: "Workflows",
-                description: "Manage and monitor workflow executions",
-                icon: "workflow",
-                url: `https://api.decocms.com/${appCtx.locator?.org}/${appCtx.locator?.project}/workflows/${appCtx.locator?.branch}`,
-                tools: [
-                  "DECO_CHAT_WORKFLOWS_START",
-                  "DECO_CHAT_WORKFLOWS_GET_STATUS",
-                  "DECO_CHAT_WORKFLOWS_REPLAY_FROM_STEP",
-                ],
-                rules: [
-                  "You are viewing the workflows management interface. Use the appropriate workflow tools to start, monitor, and manage workflow executions.",
-                ],
-              },
-            ],
-          };
-        }
-      },
-    });
-
-    
-    return Promise.resolve([...WorkflowResource.create(client), viewsListTool]);
+    return Promise.resolve([
+      ...WorkflowResource.create(client),
+      ...workflowViews,
+    ]);
   }),
 );
 

@@ -1,5 +1,5 @@
 import { useCallback } from "react";
-import { useNavigate, useParams } from "react-router";
+import { useNavigate, useParams, useSearchParams } from "react-router";
 
 const joinPaths = (org: string, project: string, path: string) => {
   const withoutStartingSlash = path.startsWith("/") ? path.slice(1) : path;
@@ -20,7 +20,9 @@ export const useNavigateWorkspace = () => {
 };
 
 export const useWorkspaceLink = () => {
-  const { org, project = "default" } = useParams();
+  const { org: _org, project = "default" } = useParams();
+  const [searchParams] = useSearchParams();
+  const org = _org ?? searchParams.get("workspace_hint");
 
   const getLinkFor = useCallback(
     (path: string) => joinPaths(org!, project, path),

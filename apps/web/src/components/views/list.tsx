@@ -1,9 +1,9 @@
 import {
-  useAddView,
-  useRemoveView,
-  useIntegrationViews,
   buildAddViewPayload,
   findPinnedView,
+  useAddView,
+  useIntegrationViews,
+  useRemoveView,
 } from "@deco/sdk";
 import { Button } from "@deco/ui/components/button.tsx";
 import { Card, CardContent } from "@deco/ui/components/card.tsx";
@@ -152,40 +152,38 @@ function TogglePin({ view }: { view: ViewWithStatus }) {
 
   return (
     <>
-      {view.isAdded ? (
-        <Button
-          variant="outline"
-          size="sm"
-          className="text-destructive hover:text-destructive"
-          onClick={(e) => {
-            e.stopPropagation();
-            handleRemoveView(view);
-          }}
-          disabled={removeViewMutation.isPending}
-        >
-          {removeViewMutation.isPending ? (
-            <Icon name="hourglass_empty" size={14} />
-          ) : (
-            <Icon name="remove" size={14} />
-          )}
-        </Button>
-      ) : (
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={(e) => {
-            e.stopPropagation();
-            handleAddView(view);
-          }}
-          disabled={addViewMutation.isPending}
-        >
-          {addViewMutation.isPending ? (
-            <Icon name="hourglass_empty" size={14} />
-          ) : (
-            <Icon name="add" size={14} />
-          )}
-        </Button>
-      )}
+      {view.isAdded
+        ? (
+          <Button
+            variant="outline"
+            size="sm"
+            className="text-destructive hover:text-destructive"
+            onClick={(e) => {
+              e.stopPropagation();
+              handleRemoveView(view);
+            }}
+            disabled={removeViewMutation.isPending}
+          >
+            {removeViewMutation.isPending
+              ? <Icon name="hourglass_empty" size={14} />
+              : <Icon name="remove" size={14} />}
+          </Button>
+        )
+        : (
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={(e) => {
+              e.stopPropagation();
+              handleAddView(view);
+            }}
+            disabled={addViewMutation.isPending}
+          >
+            {addViewMutation.isPending
+              ? <Icon name="hourglass_empty" size={14} />
+              : <Icon name="add" size={14} />}
+          </Button>
+        )}
     </>
   );
 }
@@ -299,11 +297,9 @@ function ViewsList() {
         <EmptyState
           icon="dashboard"
           title="No views found"
-          description={
-            deferredSearchTerm
-              ? "No views match your search."
-              : "No view tools are available from your integrations."
-          }
+          description={deferredSearchTerm
+            ? "No views match your search."
+            : "No view tools are available from your integrations."}
         />
       )}
     </div>

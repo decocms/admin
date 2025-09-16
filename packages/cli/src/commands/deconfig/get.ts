@@ -1,6 +1,6 @@
 import { writeFileSync } from "fs";
 import { dirname } from "path";
-import { mkdirSync, existsSync } from "fs";
+import { existsSync, mkdirSync } from "fs";
 import { fetchFileContent } from "./base.js";
 import process from "node:process";
 

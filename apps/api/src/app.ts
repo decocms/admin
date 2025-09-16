@@ -18,8 +18,8 @@ export const appsDomainOf = (req: Request, url?: URL) => {
 };
 
 const normalizeHost = (req: Request) => {
-  const host =
-    req.headers.get("host") ?? new URL(req.url).hostname ?? "localhost";
+  const host = req.headers.get("host") ?? new URL(req.url).hostname ??
+    "localhost";
 
   const appsHost = appsDomainOf(req);
   if (appsHost) {

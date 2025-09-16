@@ -35,9 +35,11 @@ export function toQuickJS(ctx: QuickJSContext, value: unknown): QuickJSHandle {
     }
     case "function": {
       // Create a host function bridge that can be called from guest context
-      const functionId = `__hostFn_${Date.now()}_${Math.random()
-        .toString(36)
-        .substr(2, 9)}`;
+      const functionId = `__hostFn_${Date.now()}_${
+        Math.random()
+          .toString(36)
+          .substr(2, 9)
+      }`;
 
       // Store the function in a way that can be accessed from guest context
       // We'll create a proxy function that calls the original function

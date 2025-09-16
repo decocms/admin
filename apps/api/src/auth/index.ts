@@ -19,7 +19,7 @@ import {
   createWalletClient,
   WellKnownTransactions,
 } from "@deco/sdk/mcp/wallet";
-import { InternalServerError, assertPrincipalIsUser } from "@deco/sdk/mcp";
+import { assertPrincipalIsUser, InternalServerError } from "@deco/sdk/mcp";
 import { WELL_KNOWN_PLANS } from "@deco/sdk";
 
 const AUTH_CALLBACK_OAUTH = "/auth/callback/oauth";
@@ -82,9 +82,9 @@ export const getUser = async (
     supabase,
     DECO_CHAT_API_JWT_PRIVATE_KEY && DECO_CHAT_API_JWT_PUBLIC_KEY
       ? {
-          public: DECO_CHAT_API_JWT_PUBLIC_KEY,
-          private: DECO_CHAT_API_JWT_PRIVATE_KEY,
-        }
+        public: DECO_CHAT_API_JWT_PUBLIC_KEY,
+        private: DECO_CHAT_API_JWT_PRIVATE_KEY,
+      }
       : undefined,
   );
 
@@ -110,8 +110,8 @@ export const createMagicLinkEmail = async (ctx: AppContext) => {
     const redirectTo = url.host.includes("localhost")
       ? "http://localhost:3001/"
       : url.host.includes("deco.chat")
-        ? "https://api.deco.chat/"
-        : "https://api.decocms.com/";
+      ? "https://api.deco.chat/"
+      : "https://api.decocms.com/";
 
     await db.auth.signInWithOtp({
       email,
@@ -136,8 +136,7 @@ appLogin.all("/oauth", async (ctx: AppContext) => {
 
   // user already logged in, set by userMiddleware
   if (user && !user.is_anonymous) {
-    const origin =
-      ctx.req.header("referer") ||
+    const origin = ctx.req.header("referer") ||
       ctx.req.header("origin") ||
       "https://admin.decocms.com";
     return ctx.redirect(origin);
@@ -190,10 +189,10 @@ appLogin.all("/magiclink", async (ctx: AppContext) => {
     const redirectTo = cli
       ? AUTH_URL_CLI
       : url.host.includes("localhost")
-        ? "http://localhost:3001/"
-        : url.host.includes("deco.chat")
-          ? "https://api.deco.chat/"
-          : "https://api.decocms.com/";
+      ? "http://localhost:3001/"
+      : url.host.includes("deco.chat")
+      ? "https://api.deco.chat/"
+      : "https://api.decocms.com/";
 
     await db.auth.signInWithOtp({
       email,
@@ -212,13 +211,12 @@ appAuth.all("/callback/oauth", async (ctx: AppContext) => {
     const { db, headers } = createDbAndHeadersForRequest(ctx);
     const request = ctx.req.raw;
     const url = new URL(request.url);
-    const next =
-      url.searchParams.get("next") ||
+    const next = url.searchParams.get("next") ||
       (url.host.includes("localhost")
         ? "http://localhost:3000"
         : url.host.includes("deco.chat")
-          ? "https://deco.chat"
-          : "https://admin.decocms.com");
+        ? "https://deco.chat"
+        : "https://admin.decocms.com");
     const code = url.searchParams.get("code");
 
     if (!code) {
@@ -253,13 +251,12 @@ appAuth.all("/callback/magiclink", async (ctx: AppContext) => {
     const request = ctx.req.raw;
     const { db, headers } = createDbAndHeadersForRequest(ctx);
     const url = new URL(request.url);
-    const next =
-      url.searchParams.get("next") ||
+    const next = url.searchParams.get("next") ||
       (url.host.includes("localhost")
         ? "http://localhost:3000"
         : url.host.includes("deco.chat")
-          ? "https://deco.chat"
-          : "https://admin.decocms.com");
+        ? "https://deco.chat"
+        : "https://admin.decocms.com");
     const tokenHash = url.searchParams.get("tokenHash");
     const type = url.searchParams.get("type") as EmailOtpType | null;
 
@@ -371,8 +368,7 @@ async function ensureHasAnyOrg({
     throw new InternalServerError("Failed to get existing orgs");
   }
 
-  const userFirstName =
-    user.user_metadata.full_name?.split(" ")?.[0] ??
+  const userFirstName = user.user_metadata.full_name?.split(" ")?.[0] ??
     user.email?.split("@")?.[0];
 
   const orgName = userFirstName ? `${userFirstName}'s org` : "Personal org";

@@ -1,4 +1,5 @@
 # Deco docs
+
 Created from the template:
 [MCP with Astro Docs View](https://github.com/deco-cx/astro-docs-view)
 

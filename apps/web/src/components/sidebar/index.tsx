@@ -267,40 +267,42 @@ function SidebarThreadItem({
               tooltip={thread.title}
               className="h-9 w-full -ml-1 pr-8 gap-3"
             >
-              {isEditing ? (
-                <Form {...methods}>
-                  <form
-                    ref={formRef}
-                    onSubmit={handleSubmit}
-                    className="flex-1"
+              {isEditing
+                ? (
+                  <Form {...methods}>
+                    <form
+                      ref={formRef}
+                      onSubmit={handleSubmit}
+                      className="flex-1"
+                    >
+                      <Input
+                        {...methods.register("title")}
+                        className="h-8 text-sm w-5/6"
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter") {
+                            e.preventDefault();
+                            handleSubmit(e);
+                          }
+                        }}
+                        onBlur={handleBlur}
+                      />
+                    </form>
+                  </Form>
+                )
+                : (
+                  <Link
+                    to={buildThreadUrl(thread)}
+                    onClick={() => onThreadClick(thread)}
                   >
-                    <Input
-                      {...methods.register("title")}
-                      className="h-8 text-sm w-5/6"
-                      onKeyDown={(e) => {
-                        if (e.key === "Enter") {
-                          e.preventDefault();
-                          handleSubmit(e);
-                        }
-                      }}
-                      onBlur={handleBlur}
+                    <AgentAvatar
+                      url={agent?.avatar}
+                      fallback={agent?.name ?? WELL_KNOWN_AGENT_IDS.teamAgent}
+                      size="xs"
                     />
-                  </form>
-                </Form>
-              ) : (
-                <Link
-                  to={buildThreadUrl(thread)}
-                  onClick={() => onThreadClick(thread)}
-                >
-                  <AgentAvatar
-                    url={agent?.avatar}
-                    fallback={agent?.name ?? WELL_KNOWN_AGENT_IDS.teamAgent}
-                    size="xs"
-                  />
 
-                  <span className="truncate">{thread.title}</span>
-                </Link>
-              )}
+                    <span className="truncate">{thread.title}</span>
+                  </Link>
+                )}
             </SidebarMenuButton>
           )}
         </WithActive>
@@ -390,17 +392,17 @@ function SidebarThreads() {
 
       {Object.entries(groupedThreads.older).length > 0
         ? Object.entries(groupedThreads.older).map(([date, threads]) => {
-            return (
-              <SidebarGroup key={date}>
-                <SidebarGroupContent>
-                  <SidebarGroupLabel>{date}</SidebarGroupLabel>
-                  <SidebarMenu className="gap-0">
-                    <SidebarThreadList threads={threads} agents={agents} />
-                  </SidebarMenu>
-                </SidebarGroupContent>
-              </SidebarGroup>
-            );
-          })
+          return (
+            <SidebarGroup key={date}>
+              <SidebarGroupContent>
+                <SidebarGroupLabel>{date}</SidebarGroupLabel>
+                <SidebarMenu className="gap-0">
+                  <SidebarThreadList threads={threads} agents={agents} />
+                </SidebarMenu>
+              </SidebarGroupContent>
+            </SidebarGroup>
+          );
+        })
         : null}
     </>
   );
@@ -495,10 +497,10 @@ function WorkspaceViews() {
   const mcpItems = firstLevelViews.filter((item) =>
     ["Agents", "My Apps", "Prompts", "Views", "Workflows", "Triggers"].includes(
       item.title,
-    ),
+    )
   );
   const otherItems = firstLevelViews.filter((item) =>
-    ["Monitor"].includes(item.title),
+    ["Monitor"].includes(item.title)
   );
 
   return (

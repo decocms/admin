@@ -36,7 +36,8 @@ export function validate(instance: unknown, schema: Record<string, unknown>) {
 export const createTool = createToolGroup("Sandbox", {
   name: "Code Sandbox",
   description: "Run JavaScript code",
-  icon: "https://assets.decocache.com/mcp/81d602bb-45e2-4361-b52a-23379520a34d/sandbox.png",
+  icon:
+    "https://assets.decocache.com/mcp/81d602bb-45e2-4361-b52a-23379520a34d/sandbox.png",
 });
 
 // Common function for evaluating code and returning default handle

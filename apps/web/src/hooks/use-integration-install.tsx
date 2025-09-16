@@ -156,8 +156,7 @@ export function useIntegrationInstall(appName?: string) {
       const integration = installState.integration;
       const connection = integration?.connection;
       const isHTTP = connection?.type === "HTTP";
-      const isWellKnownMCP =
-        isHTTP &&
+      const isWellKnownMCP = isHTTP &&
         connection?.url.includes("mcp.deco.site") &&
         integration?.name; // weak check FIXME @author Marcos V. Candeia.
 
@@ -190,15 +189,13 @@ export function useIntegrationInstall(appName?: string) {
       permissions: dynamicPermissions,
       integrationName: installMutation.variables?.appName,
       integration: installMutation.data?.integration,
-      isLoading:
-        appSchemaLoading ||
+      isLoading: appSchemaLoading ||
         installCreatingApiKeyAndIntegration.isPending ||
         permissionsLoading,
     },
 
     // Mutation state
-    isLoading:
-      installMutation.isPending ||
+    isLoading: installMutation.isPending ||
       installCreatingApiKeyAndIntegration.isPending,
 
     error: installMutation.error,

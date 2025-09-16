@@ -1,46 +1,94 @@
 import { Button } from "@deco/ui/components/button.tsx";
-import { Icon } from "@deco/ui/components/icon.tsx";
-import { Badge } from "@deco/ui/components/badge.tsx";
+import { Spinner } from "@deco/ui/components/spinner.tsx";
+import { CheckCircle, Play, Save } from "lucide-react";
 
 interface WorkflowToolbarProps {
+  workflowName: string;
   isDirty: boolean;
-  onGenerate: () => void;
+  onSave: () => void;
   onRun: () => void;
+  isSaving?: boolean;
+  isRunning?: boolean;
 }
 
+/**
+ * Toolbar for workflow actions
+ * Clean and simple with clear status indicators
+ */
 export function WorkflowToolbar({
+  workflowName,
   isDirty,
-  onGenerate,
+  onSave,
   onRun,
+  isSaving,
+  isRunning,
 }: WorkflowToolbarProps) {
   return (
-    <div className="absolute top-4 left-4 z-10">
-      <div className="bg-background border rounded-lg shadow-lg p-4 flex items-center gap-3">
-        <div className="flex items-center gap-2">
-          <Icon name="account_tree" className="h-5 w-5" />
-          <span className="font-semibold">Workflow Builder</span>
-          {isDirty && (
-            <Badge variant="destructive" className="text-xs">
-              Unsaved Changes
-            </Badge>
-          )}
-        </div>
+    <div className="h-16 border-b bg-white px-6 flex items-center justify-between shadow-sm">
+      {/* Workflow name and status */}
+      <div className="flex items-center gap-4">
+        <h1 className="text-xl font-semibold">{workflowName}</h1>
+        {isDirty && !isSaving && (
+          <span className="text-sm text-orange-600 font-medium">
+            • Unsaved changes
+          </span>
+        )}
+        {isSaving && (
+          <span className="text-sm text-blue-600 font-medium flex items-center gap-1">
+            <Spinner className="w-3 h-3" />
+            Saving...
+          </span>
+        )}
+        {!isDirty && !isSaving && (
+          <span className="text-sm text-green-600 font-medium flex items-center gap-1">
+            <CheckCircle className="w-3 h-3" />
+            Saved
+          </span>
+        )}
+      </div>
 
-        <div className="h-4 w-px bg-border" />
+      {/* Action buttons */}
+      <div className="flex items-center gap-3">
+        <Button
+          variant="outline"
+          onClick={onSave}
+          disabled={!isDirty || isSaving || isRunning}
+          className="min-w-[100px]"
+        >
+          {isSaving
+            ? (
+              <>
+                <Spinner className="w-4 h-4 mr-2" />
+                Saving...
+              </>
+            )
+            : (
+              <>
+                <Save className="w-4 h-4 mr-2" />
+                Save
+              </>
+            )}
+        </Button>
 
-        <div className="flex gap-2">
-          {isDirty ? (
-            <Button onClick={onGenerate} size="sm">
-              <Icon name="auto_fix_high" className="h-4 w-4 mr-2" />
-              Generate Workflow
-            </Button>
-          ) : (
-            <Button onClick={onRun} size="sm" variant="default">
-              <Icon name="play_arrow" className="h-4 w-4 mr-2" />
-              Run Workflow
-            </Button>
-          )}
-        </div>
+        <Button
+          onClick={onRun}
+          disabled={isSaving || isRunning || isDirty}
+          className="min-w-[100px]"
+        >
+          {isRunning
+            ? (
+              <>
+                <Spinner className="w-4 h-4 mr-2" />
+                Running...
+              </>
+            )
+            : (
+              <>
+                <Play className="w-4 h-4 mr-2" />
+                Run
+              </>
+            )}
+        </Button>
       </div>
     </div>
   );

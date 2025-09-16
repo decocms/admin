@@ -35,9 +35,11 @@ function getCountryConfig(country: any): Country {
         let digits = value.replace(/\D/g, "");
         if (digits.length > 11) digits = digits.slice(0, 11);
         if (digits.length === 11) {
-          return `(${digits.slice(0, 2)}) ${digits.slice(2, 7)}-${digits.slice(
-            7,
-          )}`;
+          return `(${digits.slice(0, 2)}) ${digits.slice(2, 7)}-${
+            digits.slice(
+              7,
+            )
+          }`;
         } else if (digits.length > 2) {
           return `(${digits.slice(0, 2)}) ${digits.slice(2)}`;
         } else if (digits.length > 0) {
@@ -57,9 +59,11 @@ function getCountryConfig(country: any): Country {
         let digits = value.replace(/\D/g, "");
         if (digits.length > 10) digits = digits.slice(0, 10);
         if (digits.length === 10) {
-          return `(${digits.slice(0, 3)}) ${digits.slice(3, 6)}-${digits.slice(
-            6,
-          )}`;
+          return `(${digits.slice(0, 3)}) ${digits.slice(3, 6)}-${
+            digits.slice(
+              6,
+            )
+          }`;
         } else if (digits.length > 3) {
           return `(${digits.slice(0, 3)}) ${digits.slice(3)}`;
         } else if (digits.length > 0) {
@@ -129,7 +133,7 @@ export function ProfileSettings({
     if (profile?.phone) {
       // Find country by dial_code
       const match = COUNTRIES.find((c) =>
-        profile.phone?.startsWith(c.dial_code),
+        profile.phone?.startsWith(c.dial_code)
       );
       setCountry(match || null);
       if (match) {
@@ -152,61 +156,65 @@ export function ProfileSettings({
           <DialogTitle>Profile</DialogTitle>
           <DialogDescription>Your account information</DialogDescription>
         </DialogHeader>
-        {isLoading ? (
-          <div className="py-8 text-center text-muted-foreground">
-            Loading...
-          </div>
-        ) : loadError ? (
-          <div className="py-8 text-center text-destructive">
-            {String(loadError.message)}
-          </div>
-        ) : (
-          <div className="flex flex-col items-center gap-4 py-4">
-            <UserAvatar
-              url={profile?.metadata?.avatar_url}
-              fallback={profile?.metadata?.full_name || profile?.email}
-              size="2xl"
-            />
-            <div className="text-lg font-semibold">
-              {profile?.metadata?.full_name || profile?.email}
+        {isLoading
+          ? (
+            <div className="py-8 text-center text-muted-foreground">
+              Loading...
             </div>
-            <div className="text-sm text-muted-foreground">
-              {profile?.email}
+          )
+          : loadError
+          ? (
+            <div className="py-8 text-center text-destructive">
+              {String(loadError.message)}
             </div>
-            <div className="flex items-center gap-2 text-xs text-muted-foreground">
-              <span>User ID: {user?.id}</span>
-              <button
-                type="button"
-                onClick={handleCopyUserId}
-                className="p-1 hover:bg-muted rounded transition-colors"
-                aria-label="Copy user ID"
-              >
-                <Icon
-                  name={userIdCopied ? "check" : "content_copy"}
-                  size={12}
-                />
-              </button>
+          )
+          : (
+            <div className="flex flex-col items-center gap-4 py-4">
+              <UserAvatar
+                url={profile?.metadata?.avatar_url}
+                fallback={profile?.metadata?.full_name || profile?.email}
+                size="2xl"
+              />
+              <div className="text-lg font-semibold">
+                {profile?.metadata?.full_name || profile?.email}
+              </div>
+              <div className="text-sm text-muted-foreground">
+                {profile?.email}
+              </div>
+              <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                <span>User ID: {user?.id}</span>
+                <button
+                  type="button"
+                  onClick={handleCopyUserId}
+                  className="p-1 hover:bg-muted rounded transition-colors"
+                  aria-label="Copy user ID"
+                >
+                  <Icon
+                    name={userIdCopied ? "check" : "content_copy"}
+                    size={12}
+                  />
+                </button>
+              </div>
+              <PhoneInput
+                dialCode={dialCode}
+                country={country}
+                localValue={localValue}
+                setDialCode={setDialCode}
+                setCountry={setCountry}
+                setLocalValue={setLocalValue}
+                setFullPhone={setFullPhone}
+                setError={setError}
+                isDisabled={updateProfile.isPending}
+                fullPhone={fullPhone}
+              />
+              {error && (
+                <span className="text-destructive text-xs mt-1">{error}</span>
+              )}
+              {success && (
+                <span className="text-special text-xs mt-1">Saved!</span>
+              )}
             </div>
-            <PhoneInput
-              dialCode={dialCode}
-              country={country}
-              localValue={localValue}
-              setDialCode={setDialCode}
-              setCountry={setCountry}
-              setLocalValue={setLocalValue}
-              setFullPhone={setFullPhone}
-              setError={setError}
-              isDisabled={updateProfile.isPending}
-              fullPhone={fullPhone}
-            />
-            {error && (
-              <span className="text-destructive text-xs mt-1">{error}</span>
-            )}
-            {success && (
-              <span className="text-special text-xs mt-1">Saved!</span>
-            )}
-          </div>
-        )}
+          )}
         <DialogFooter>
           <Button
             type="button"
@@ -318,10 +326,8 @@ export function PhoneInput({
           id="profile-local"
           type="tel"
           className="border rounded px-3 py-2 text-sm flex-1"
-          placeholder={
-            country?.placeholder?.replace(country.dial_code, "") ??
-            "11910000000"
-          }
+          placeholder={country?.placeholder?.replace(country.dial_code, "") ??
+            "11910000000"}
           value={localValue}
           onChange={handleLocalChange}
           onBlur={validatePhone}

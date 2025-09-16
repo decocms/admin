@@ -28,10 +28,9 @@ export const workspaceClientParams = async ({
     path = `${workspacePath}/${integrationId}${pathname}`;
   } else {
     // Workspace MCP endpoint: /:root/:slug/mcp
-    path =
-      !workspace || workspace.startsWith("/")
-        ? `${workspace ?? ""}${pathname}`
-        : `/shared/${workspace}${pathname}`;
+    path = !workspace || workspace.startsWith("/")
+      ? `${workspace ?? ""}${pathname}`
+      : `/shared/${workspace}${pathname}`;
   }
 
   const url = new URL(path, api);

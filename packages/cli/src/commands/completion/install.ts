@@ -153,8 +153,7 @@ export async function installCompletionCommand(
       case "bash": {
         script = generateBashCompletionScript();
         filename = "deco-completion.bash";
-        installPath =
-          options.output ||
+        installPath = options.output ||
           join(homedir(), ".local/share/bash-completion/completions/deco");
         break;
       }
@@ -178,8 +177,7 @@ export async function installCompletionCommand(
     }
 
     // Determine final path and ensure directory exists
-    const finalPath =
-      options.output ||
+    const finalPath = options.output ||
       (targetShell === "zsh" ? join(installPath, filename) : installPath);
 
     // Ensure the directory exists

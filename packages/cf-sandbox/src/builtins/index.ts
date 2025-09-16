@@ -1,2 +1,2 @@
-export { installConsole, type ConsoleBuiltin } from "./console.ts";
-export { installFetch, type FetchBuiltin } from "./fetch.ts";
+export { type ConsoleBuiltin, installConsole } from "./console.ts";
+export { type FetchBuiltin, installFetch } from "./fetch.ts";

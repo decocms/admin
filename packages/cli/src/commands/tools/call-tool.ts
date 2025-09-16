@@ -34,12 +34,11 @@ export async function autocompleteIntegrations(
 
     if (response.isError || !response.structuredContent) return [];
 
-    const integrations =
-      (
-        response.structuredContent as {
-          items: Array<{ id: string; name: string }>;
-        }
-      )?.items || [];
+    const integrations = (
+      response.structuredContent as {
+        items: Array<{ id: string; name: string }>;
+      }
+    )?.items || [];
 
     return integrations
       .map((integration) => integration.id)
@@ -148,7 +147,9 @@ export async function callToolCommand(
         payload = JSON.parse(options.payload);
       } catch (error) {
         throw new Error(
-          `Invalid JSON payload: ${error instanceof Error ? error.message : String(error)}`,
+          `Invalid JSON payload: ${
+            error instanceof Error ? error.message : String(error)
+          }`,
         );
       }
     }

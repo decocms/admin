@@ -102,7 +102,8 @@ const createDeconfigTool = createToolFactory<DeconfigContext>(
     name: "Deconfig",
     description:
       "Git-like versioned configuration management with branches, files, and real-time collaboration.",
-    icon: "https://assets.decocache.com/mcp/24cfa17a-a0a8-40dc-9313-b4c3bdb63af6/deconfig_v1.png",
+    icon:
+      "https://assets.decocache.com/mcp/24cfa17a-a0a8-40dc-9313-b4c3bdb63af6/deconfig_v1.png",
   },
   doRetryable,
 );
@@ -441,8 +442,7 @@ export const putFile = createDeconfigTool({
       // Handle base64 object
       try {
         data = Uint8Array.from(atob(content.base64), (c: string) =>
-          c.charCodeAt(0),
-        ).buffer;
+          c.charCodeAt(0)).buffer;
       } catch (error) {
         throw new Error(
           `Invalid base64 content: ${

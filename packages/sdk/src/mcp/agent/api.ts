@@ -181,8 +181,8 @@ export const agentListen = createAgentTool({
       }
 
       // Check content type to ensure it's not HTML or other non-audio content
-      const contentType =
-        response.headers.get("content-type")?.toLowerCase() || "";
+      const contentType = response.headers.get("content-type")?.toLowerCase() ||
+        "";
       if (
         contentType.includes("text/html") ||
         contentType.includes("application/json") ||
@@ -216,9 +216,11 @@ export const agentListen = createAgentTool({
       return {
         transcription,
         success: true,
-        message: `Successfully transcribed audio (${Math.round(
-          (audioBufferUint8Array.length * 0.75) / 1024,
-        )}KB)`,
+        message: `Successfully transcribed audio (${
+          Math.round(
+            (audioBufferUint8Array.length * 0.75) / 1024,
+          )
+        }KB)`,
       };
     } catch (error) {
       console.error("💥 Error in TRANSCRIBE_AUDIO tool:", error);

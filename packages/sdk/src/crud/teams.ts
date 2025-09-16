@@ -42,9 +42,11 @@ export const getOrgTheme = (
   slug: string,
   init?: RequestInit,
 ): Promise<{ theme?: Theme } | null> =>
-  MCPClient.TEAMS_GET_THEME({ slug }, init) as Promise<{
-    theme?: Theme;
-  } | null>;
+  MCPClient.TEAMS_GET_THEME({ slug }, init) as Promise<
+    {
+      theme?: Theme;
+    } | null
+  >;
 
 export interface UpdateTeamInput {
   id: number;

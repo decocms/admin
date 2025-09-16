@@ -71,8 +71,8 @@ function CustomBadge({
     variant === "destructive"
       ? "bg-background border-destructive text-destructive [a&]:hover:bg-destructive/5"
       : variant === "secondary"
-        ? "border-transparent bg-secondary text-secondary-foreground [a&]:hover:bg-secondary/90"
-        : "border-transparent bg-primary text-primary-foreground [a&]:hover:bg-primary/90",
+      ? "border-transparent bg-secondary text-secondary-foreground [a&]:hover:bg-secondary/90"
+      : "border-transparent bg-primary text-primary-foreground [a&]:hover:bg-primary/90",
     className,
   );
 
@@ -364,9 +364,9 @@ function EmailTagsInput({
             onKeyDown={handleKeyDown}
             onPaste={handlePaste}
             className="flex-1 min-w-[120px] bg-transparent border-none outline-none resize-none placeholder:text-muted-foreground overflow-hidden"
-            placeholder={
-              emails.length === 0 ? placeholder : "Add more emails..."
-            }
+            placeholder={emails.length === 0
+              ? placeholder
+              : "Add more emails..."}
             disabled={disabled}
             rows={4}
             style={{
@@ -508,8 +508,8 @@ export function InviteTeamMembersDialog({
       const trimmedEmail = email.trim().toLowerCase();
 
       const isValidFormat = emailSchema.safeParse(trimmedEmail).success;
-      const isNotSelf =
-        !user?.email || trimmedEmail !== user.email.toLowerCase();
+      const isNotSelf = !user?.email ||
+        trimmedEmail !== user.email.toLowerCase();
       return isValidFormat && isNotSelf;
     });
   }, [emails, user?.email]);
@@ -565,8 +565,8 @@ export function InviteTeamMembersDialog({
   // Create a cloned trigger with an onClick handler
   const wrappedTrigger = trigger
     ? cloneElement(trigger as ReactElement<{ onClick?: MouseEventHandler }>, {
-        onClick: openDialog,
-      })
+      onClick: openDialog,
+    })
     : null;
 
   // Role options for MultiSelect
@@ -667,8 +667,8 @@ export function InviteTeamMembersDialog({
                     {inviteMemberMutation.isPending
                       ? "Inviting..."
                       : `Invite ${validEmails.length || 0} Member${
-                          validEmails.length !== 1 ? "s" : ""
-                        }`}
+                        validEmails.length !== 1 ? "s" : ""
+                      }`}
                   </Button>
                 </DialogFooter>
               </form>

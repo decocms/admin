@@ -186,9 +186,8 @@ const withDefaultBindings = ({
   env["DECO_CHAT_WORKSPACE_API"] = client;
   env["DECO_CHAT_WORKSPACE_DB"] = workspaceDbBinding;
 
-  env["IS_LOCAL"] =
-    (url?.startsWith("http://localhost") ||
-      url?.startsWith("http://127.0.0.1")) ??
+  env["IS_LOCAL"] = (url?.startsWith("http://localhost") ||
+    url?.startsWith("http://127.0.0.1")) ??
     false;
 };
 
@@ -353,16 +352,14 @@ export const withRuntime = <TEnv, TSchema extends z.ZodTypeAny = never>(
       ctx: ExecutionContext,
     ) => {
       const referer = req.headers.get("referer");
-      const isFetchRequest =
-        req.headers.has(DECO_MCP_CLIENT_HEADER) ||
+      const isFetchRequest = req.headers.has(DECO_MCP_CLIENT_HEADER) ||
         req.headers.get("sec-fetch-mode") === "cors";
 
       try {
         const bindings = withBindings({
           env,
           server,
-          branch:
-            req.headers.get("x-deco-branch") ??
+          branch: req.headers.get("x-deco-branch") ??
             new URL(req.url).searchParams.get("__b"),
           tokenOrContext: await getReqToken(req, env),
           origin: referer ?? req.headers.get("origin"),

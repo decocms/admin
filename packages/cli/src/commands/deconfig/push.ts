@@ -24,7 +24,9 @@ export async function pushCommand(options: PushOptions): Promise<void> {
   } = options;
 
   console.log(
-    `📤 Pushing files from "${localPath}" to branch "${branchName}"${dryRun ? " (dry run)" : ""}...`,
+    `📤 Pushing files from "${localPath}" to branch "${branchName}"${
+      dryRun ? " (dry run)" : ""
+    }...`,
   );
 
   try {
@@ -41,11 +43,13 @@ export async function pushCommand(options: PushOptions): Promise<void> {
       size: number;
     }> = [];
 
-    for await (const entry of walk(localPath, {
-      includeFiles: true,
-      includeDirs: false,
-      skip: [/node_modules/, /\.git/, /\.DS_Store/],
-    })) {
+    for await (
+      const entry of walk(localPath, {
+        includeFiles: true,
+        includeDirs: false,
+        skip: [/node_modules/, /\.git/, /\.DS_Store/],
+      })
+    ) {
       const relativePath = relative(localPath, entry.path);
       const remotePath = `/${relativePath.replace(/\\/g, "/")}`;
 

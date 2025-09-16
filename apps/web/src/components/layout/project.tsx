@@ -17,7 +17,7 @@ import {
 import { Toaster } from "@deco/ui/components/sonner.tsx";
 import { cn } from "@deco/ui/lib/utils.ts";
 import { DockviewReadyEvent } from "dockview-react";
-import { Fragment, useMemo, useState, type ReactNode } from "react";
+import { Fragment, type ReactNode, useMemo, useState } from "react";
 import { Link, Outlet, useParams } from "react-router";
 import { useLocalStorage } from "../../hooks/use-local-storage.ts";
 import { useWorkspaceLink } from "../../hooks/use-navigate-workspace.ts";
@@ -29,7 +29,7 @@ import {
   DecopilotTabs,
   toggleDecopilotTab,
 } from "../decopilot/index.tsx";
-import Docked, { useDock, type Tab } from "../dock/index.tsx";
+import Docked, { type Tab, useDock } from "../dock/index.tsx";
 import { ProfileModalProvider, useProfileModal } from "../profile-modal.tsx";
 import { AppSidebar } from "../sidebar/index.tsx";
 import { WithWorkspaceTheme } from "../theme.tsx";
@@ -87,12 +87,10 @@ export function ProjectLayout() {
               setOpen(open);
             }}
             className="h-full bg-sidebar"
-            style={
-              {
-                "--sidebar-width": "16rem",
-                "--sidebar-width-mobile": "14rem",
-              } as Record<string, string>
-            }
+            style={{
+              "--sidebar-width": "16rem",
+              "--sidebar-width-mobile": "14rem",
+            } as Record<string, string>}
           >
             <AppSidebar />
             <SidebarInset className="h-full flex-col bg-sidebar">
@@ -270,45 +268,47 @@ export function DefaultBreadcrumb({
 
       <Breadcrumb>
         <BreadcrumbList>
-          {isMobile ? (
-            <BreadcrumbItem key={`mobile-${items.at(-1)?.link || "last"}`}>
-              <BreadcrumbPage className="inline-flex items-center gap-2">
-                {items.at(-1)?.label}
-              </BreadcrumbPage>
-            </BreadcrumbItem>
-          ) : (
-            items?.map((item, index) => {
-              const isLast = index === items.length - 1;
-              const link = useWorkspaceLinkProp
-                ? withWorkspace(item.link ?? "")
-                : (item.link ?? "");
+          {isMobile
+            ? (
+              <BreadcrumbItem key={`mobile-${items.at(-1)?.link || "last"}`}>
+                <BreadcrumbPage className="inline-flex items-center gap-2">
+                  {items.at(-1)?.label}
+                </BreadcrumbPage>
+              </BreadcrumbItem>
+            )
+            : (
+              items?.map((item, index) => {
+                const isLast = index === items.length - 1;
+                const link = useWorkspaceLinkProp
+                  ? withWorkspace(item.link ?? "")
+                  : (item.link ?? "");
 
-              if (isLast) {
+                if (isLast) {
+                  return (
+                    <BreadcrumbItem key={`last-${item.link || index}`}>
+                      <BreadcrumbPage className="inline-flex items-center gap-2">
+                        {item.label}
+                      </BreadcrumbPage>
+                    </BreadcrumbItem>
+                  );
+                }
+
                 return (
-                  <BreadcrumbItem key={`last-${item.link || index}`}>
-                    <BreadcrumbPage className="inline-flex items-center gap-2">
-                      {item.label}
-                    </BreadcrumbPage>
-                  </BreadcrumbItem>
+                  <Fragment key={`${item.link}-${index}`}>
+                    <BreadcrumbItem>
+                      <BreadcrumbLink
+                        asChild
+                        href={link}
+                        className="inline-flex items-center gap-2"
+                      >
+                        <Link to={link}>{item.label}</Link>
+                      </BreadcrumbLink>
+                    </BreadcrumbItem>
+                    <BreadcrumbSeparator />
+                  </Fragment>
                 );
-              }
-
-              return (
-                <Fragment key={`${item.link}-${index}`}>
-                  <BreadcrumbItem>
-                    <BreadcrumbLink
-                      asChild
-                      href={link}
-                      className="inline-flex items-center gap-2"
-                    >
-                      <Link to={link}>{item.label}</Link>
-                    </BreadcrumbLink>
-                  </BreadcrumbItem>
-                  <BreadcrumbSeparator />
-                </Fragment>
-              );
-            })
-          )}
+              })
+            )}
         </BreadcrumbList>
       </Breadcrumb>
     </div>

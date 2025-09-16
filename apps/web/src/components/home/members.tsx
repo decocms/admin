@@ -11,9 +11,7 @@ export function OrgAvatars({ teamId }: { teamId: number }) {
 
   return (
     <div ref={elementRef} className="flex items-center">
-      {isLoading ? (
-        <OrgAvatars.Skeleton />
-      ) : (
+      {isLoading ? <OrgAvatars.Skeleton /> : (
         members?.members
           .slice(0, 3)
           .map((member) => (
@@ -51,9 +49,7 @@ export const OrgMemberCount = ({ teamId }: { teamId: number }) => {
 
   return (
     <div ref={elementRef} className="text-xs">
-      {isLoading ? (
-        <OrgMemberCount.Skeleton />
-      ) : (
+      {isLoading ? <OrgMemberCount.Skeleton /> : (
         `${members?.members.length || 0} members`
       )}
     </div>

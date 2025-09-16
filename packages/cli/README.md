@@ -96,7 +96,8 @@ update this configuration anytime using: `deco configure`
 
 ## Deconfig Commands
 
-The deconfig commands allow you to interact with the deconfig filesystem - a git-like, versioned configuration manager built on Cloudflare Durable Objects.
+The deconfig commands allow you to interact with the deconfig filesystem - a
+git-like, versioned configuration manager built on Cloudflare Durable Objects.
 
 ### Authentication
 
@@ -117,10 +118,12 @@ deco deconfig get <path> -b <branchName> [options]
 ```
 
 **Options:**
+
 - `-b, --branch <branchName>` (required) - Branch name
 - `-o, --output <file>` - Output file (defaults to stdout)
 
 **Examples:**
+
 ```bash
 # Get file and output to stdout
 deco deconfig get /config.json -b main
@@ -138,12 +141,14 @@ deco deconfig put <path> -b <branchName> [options]
 ```
 
 **Options:**
+
 - `-b, --branch <branchName>` (required) - Branch name
 - `-f, --file <file>` - Local file to upload
 - `-c, --content <content>` - Content to upload directly
 - `-m, --metadata <metadata>` - Metadata JSON string
 
 **Examples:**
+
 ```bash
 # Upload local file
 deco deconfig put /config.json -b main -f ./local-config.json
@@ -167,11 +172,13 @@ deco deconfig watch -b <branchName> [options]
 ```
 
 **Options:**
+
 - `-b, --branch <branchName>` (required) - Branch name
 - `-p, --path <path>` - Path filter for watching specific files
 - `--from-ctime <ctime>` - Start watching from this ctime (default: 1)
 
 **Examples:**
+
 ```bash
 # Watch all changes on main branch
 deco deconfig watch -b main
@@ -192,12 +199,14 @@ deco deconfig mount -b <branchName> --path <localPath> [options]
 ```
 
 **Options:**
+
 - `-b, --branch <branchName>` (required) - Branch name to mount
 - `--path <path>` (required) - Local directory path to sync files to
 - `--from-ctime <ctime>` - Start watching from this ctime (default: 1)
 - `--path-filter <filter>` - Filter files by path pattern
 
 **Examples:**
+
 ```bash
 # Mount branch "main" to ./local directory
 deco deconfig mount -b main --path ./local
@@ -209,7 +218,8 @@ deco deconfig mount -b feature-branch --path ./sync --from-ctime 1000 --path-fil
 ### How it works
 
 1. **Authentication**: Uses your deco.chat session (requires `deco login`)
-2. **API Communication**: All commands use MCP (Model Context Protocol) tools via HTTPS
+2. **API Communication**: All commands use MCP (Model Context Protocol) tools
+   via HTTPS
 3. **Real-time Updates**: Watch and mount commands use Server-Sent Events (SSE)
 4. **Content Handling**: Files are transferred as base64-encoded content
 5. **Path Filtering**: Supports glob-like patterns for selective operations
@@ -222,4 +232,5 @@ deco deconfig mount -b feature-branch --path ./sync --from-ctime 1000 --path-fil
 - **Authentication**: Bearer token in Authorization header
 - **Content Encoding**: Base64 for binary safety
 
-All commands will run until completion or interruption (Ctrl+C for watch/mount commands).
+All commands will run until completion or interruption (Ctrl+C for watch/mount
+commands).

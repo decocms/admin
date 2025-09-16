@@ -73,15 +73,15 @@ function KeyValueRow({
     <div className="flex items-center justify-between py-1 text-sm">
       <span className="text-muted-foreground">{label}</span>
       <div className="flex items-center gap-2">
-        {typeof value === "boolean" ? (
-          <Badge variant={value ? "default" : "secondary"}>
-            {String(value)}
-          </Badge>
-        ) : value === null || value === undefined || value === "" ? (
-          <Badge variant="secondary">none</Badge>
-        ) : (
-          <span className="font-medium">{String(value)}</span>
-        )}
+        {typeof value === "boolean"
+          ? (
+            <Badge variant={value ? "default" : "secondary"}>
+              {String(value)}
+            </Badge>
+          )
+          : value === null || value === undefined || value === ""
+          ? <Badge variant="secondary">none</Badge>
+          : <span className="font-medium">{String(value)}</span>}
       </div>
     </div>
   );

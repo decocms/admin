@@ -120,8 +120,12 @@ function convertEventToRequestLog(event: TailEvent): any {
   }
 
   const bodyString = hasRequest
-    ? `${event.event!.request!.method} ${event.event!.request!.url} - ${event.event?.response?.status ?? "no response"} - ${event.wallTime}ms (CPU: ${event.cpuTime}ms)`
-    : `DO ${event.entrypoint || "unknown"}.${event.event?.rpcMethod || "unknown"} - ${event.wallTime}ms (CPU: ${event.cpuTime}ms)`;
+    ? `${event.event!.request!.method} ${event.event!.request!.url} - ${
+      event.event?.response?.status ?? "no response"
+    } - ${event.wallTime}ms (CPU: ${event.cpuTime}ms)`
+    : `DO ${event.entrypoint || "unknown"}.${
+      event.event?.rpcMethod || "unknown"
+    } - ${event.wallTime}ms (CPU: ${event.cpuTime}ms)`;
 
   return {
     resourceLogs: [
@@ -142,17 +146,17 @@ function convertEventToRequestLog(event: TailEvent): any {
                   // Add important headers (excluding sensitive ones) only if request exists
                   ...(hasRequest
                     ? Object.entries(event.event!.request!.headers)
-                        .filter(
-                          ([key]) =>
-                            !key.toLowerCase().includes("authorization") &&
-                            !key.toLowerCase().includes("cookie") &&
-                            !key.toLowerCase().includes("x-real-ip"),
-                        )
-                        .slice(0, 10)
-                        .map(([key, value]) => ({
-                          key: `http.request.header.${key.toLowerCase()}`,
-                          value: { stringValue: value },
-                        }))
+                      .filter(
+                        ([key]) =>
+                          !key.toLowerCase().includes("authorization") &&
+                          !key.toLowerCase().includes("cookie") &&
+                          !key.toLowerCase().includes("x-real-ip"),
+                      )
+                      .slice(0, 10)
+                      .map(([key, value]) => ({
+                        key: `http.request.header.${key.toLowerCase()}`,
+                        value: { stringValue: value },
+                      }))
                     : []),
                 ],
               },
@@ -190,16 +194,18 @@ function convertTailLogs(event: TailEvent): any {
       },
     );
   } else {
-    if (event.event?.rpcMethod)
+    if (event.event?.rpcMethod) {
       attributes.push({
         key: "rpc.method",
         value: { stringValue: event.event.rpcMethod },
       });
-    if (event.entrypoint)
+    }
+    if (event.entrypoint) {
       attributes.push({
         key: "entrypoint",
         value: { stringValue: event.entrypoint },
       });
+    }
   }
 
   return {
@@ -224,19 +230,19 @@ function convertTailLogs(event: TailEvent): any {
                   { key: "cpu_time_ms", value: { intValue: event.cpuTime } },
                   ...(log.traces?.trace_id
                     ? [
-                        {
-                          key: "trace_id",
-                          value: { stringValue: log.traces.trace_id },
-                        },
-                      ]
+                      {
+                        key: "trace_id",
+                        value: { stringValue: log.traces.trace_id },
+                      },
+                    ]
                     : []),
                   ...(log.traces?.span_id
                     ? [
-                        {
-                          key: "span_id",
-                          value: { stringValue: log.traces.span_id },
-                        },
-                      ]
+                      {
+                        key: "span_id",
+                        value: { stringValue: log.traces.span_id },
+                      },
+                    ]
                     : []),
                 ],
               };
@@ -274,16 +280,18 @@ function convertTailExceptions(event: TailEvent): any {
       },
     );
   } else {
-    if (event.event?.rpcMethod)
+    if (event.event?.rpcMethod) {
       attributes.push({
         key: "rpc.method",
         value: { stringValue: event.event.rpcMethod },
       });
-    if (event.entrypoint)
+    }
+    if (event.entrypoint) {
       attributes.push({
         key: "entrypoint",
         value: { stringValue: event.entrypoint },
       });
+    }
   }
 
   return {
@@ -339,16 +347,18 @@ function convertTailTraces(event: TailEvent): any {
       },
     );
   } else {
-    if (event.event?.rpcMethod)
+    if (event.event?.rpcMethod) {
       attributes.push({
         key: "rpc.method",
         value: { stringValue: event.event.rpcMethod },
       });
-    if (event.entrypoint)
+    }
+    if (event.entrypoint) {
       attributes.push({
         key: "entrypoint",
         value: { stringValue: event.entrypoint },
       });
+    }
   }
 
   return {

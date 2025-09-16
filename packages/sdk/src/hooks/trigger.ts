@@ -158,8 +158,9 @@ export function useActivateTrigger() {
         // Update the trigger's active status in cache
         const itemKey = KEYS.TRIGGER(locator, triggerId);
         client.cancelQueries({ queryKey: itemKey });
-        client.setQueryData<TriggerOutput>(itemKey, (old) =>
-          old ? { ...old, active: true } : undefined,
+        client.setQueryData<TriggerOutput>(
+          itemKey,
+          (old) => old ? { ...old, active: true } : undefined,
         );
 
         // Update lists
@@ -169,7 +170,7 @@ export function useActivateTrigger() {
           if (!old) return old;
           return {
             triggers: old.triggers.map((t) =>
-              t.id === triggerId ? { ...t, active: true } : t,
+              t.id === triggerId ? { ...t, active: true } : t
             ),
           };
         });
@@ -189,8 +190,9 @@ export function useDeactivateTrigger() {
         // Update the trigger's active status in cache
         const itemKey = KEYS.TRIGGER(locator, triggerId);
         client.cancelQueries({ queryKey: itemKey });
-        client.setQueryData<TriggerOutput>(itemKey, (old) =>
-          old ? { ...old, active: false } : undefined,
+        client.setQueryData<TriggerOutput>(
+          itemKey,
+          (old) => old ? { ...old, active: false } : undefined,
         );
 
         // Update lists
@@ -200,7 +202,7 @@ export function useDeactivateTrigger() {
           if (!old) return old;
           return {
             triggers: old.triggers.map((t) =>
-              t.id === triggerId ? { ...t, active: false } : t,
+              t.id === triggerId ? { ...t, active: false } : t
             ),
           };
         });

@@ -140,8 +140,8 @@ export const createLLMProvider: ProviderFactory = (opts) => {
       baseURL: opts.bypassGateway ? undefined : aiGatewayForProvider(opts),
       headers: opts.metadata
         ? {
-            "cf-aig-metadata": JSON.stringify(opts.metadata),
-          }
+          "cf-aig-metadata": JSON.stringify(opts.metadata),
+        }
         : undefined,
     });
     return (model: string) => {
@@ -156,9 +156,9 @@ export const createLLMProvider: ProviderFactory = (opts) => {
     apiKey: openRouterApiKey,
     headers: opts.metadata
       ? {
-          ...OPENROUTER_HEADERS,
-          "cf-aig-metadata": JSON.stringify(opts.metadata),
-        }
+        ...OPENROUTER_HEADERS,
+        "cf-aig-metadata": JSON.stringify(opts.metadata),
+      }
       : undefined,
     baseURL: opts.bypassGateway
       ? undefined

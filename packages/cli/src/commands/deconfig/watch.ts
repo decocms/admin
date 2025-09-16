@@ -1,5 +1,5 @@
 import process from "node:process";
-import { watch as baseWatch, type FileChangeEventWithContent } from "./base.js";
+import { type FileChangeEventWithContent, watch as baseWatch } from "./base.js";
 
 interface WatchCommandOptions {
   path?: string;

@@ -27,8 +27,7 @@ export function ChatInput({ disabled }: { disabled?: boolean } = {}) {
   const { preferences, setPreferences } = useUserPreferences();
   const model = preferences.defaultModel;
 
-  const canSubmit =
-    !isLoading &&
+  const canSubmit = !isLoading &&
     input.trim() &&
     !uploadedFiles.some((uf) => uf.status === "uploading");
 
@@ -48,8 +47,7 @@ export function ChatInput({ disabled }: { disabled?: boolean } = {}) {
     }
   }, [isLoading]);
 
-  const isMobile =
-    typeof window !== "undefined" &&
+  const isMobile = typeof window !== "undefined" &&
     ("ontouchstart" in window ||
       navigator.userAgent.toLowerCase().includes("mobile"));
 
@@ -139,8 +137,7 @@ export function ChatInput({ disabled }: { disabled?: boolean } = {}) {
                         setPreferences({
                           ...preferences,
                           defaultModel: modelToSelect,
-                        })
-                      }
+                        })}
                     />
                   )}
                   {showThreadTools && <ToolsButton />}
@@ -151,9 +148,9 @@ export function ChatInput({ disabled }: { disabled?: boolean } = {}) {
                     disabled={isLoading ? false : !canSubmit}
                     onClick={isLoading ? stop : undefined}
                     className="h-8 w-8 transition-all hover:opacity-70"
-                    title={
-                      isLoading ? "Stop generating" : "Send message (Enter)"
-                    }
+                    title={isLoading
+                      ? "Stop generating"
+                      : "Send message (Enter)"}
                   >
                     <Icon filled name={isLoading ? "stop" : "send"} />
                   </Button>

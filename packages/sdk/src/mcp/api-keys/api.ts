@@ -46,7 +46,8 @@ function mapApiKey(
 const createTool = createToolGroup("APIKeys", {
   name: "API Key Management",
   description: "Create and manage API keys securely.",
-  icon: "https://assets.decocache.com/mcp/5e6930c3-86f6-4913-8de3-0c1fefdf02e3/API-key.png",
+  icon:
+    "https://assets.decocache.com/mcp/5e6930c3-86f6-4913-8de3-0c1fefdf02e3/API-key.png",
 });
 
 export const listApiKeys = createTool({
@@ -436,9 +437,9 @@ export const checkAccess = createTool({
         c.envVars.DECO_CHAT_API_JWT_PRIVATE_KEY &&
           c.envVars.DECO_CHAT_API_JWT_PUBLIC_KEY
           ? {
-              public: c.envVars.DECO_CHAT_API_JWT_PUBLIC_KEY,
-              private: c.envVars.DECO_CHAT_API_JWT_PRIVATE_KEY,
-            }
+            public: c.envVars.DECO_CHAT_API_JWT_PUBLIC_KEY,
+            private: c.envVars.DECO_CHAT_API_JWT_PRIVATE_KEY,
+          }
           : undefined,
       );
       user = fromJWT ?? user;

@@ -12,7 +12,9 @@ complete workflow steps with all necessary code and tool integrations.
 
 ### Key Differentiators
 
-1. **Self-Contained Steps**: Each AI-generated step is completely autonomous - it fetches its own data, processes it, and returns results. There's NO "between steps" concept - each step knows exactly what it needs
+1. **Self-Contained Steps**: Each AI-generated step is completely autonomous -
+   it fetches its own data, processes it, and returns results. There's NO
+   "between steps" concept - each step knows exactly what it needs
 2. **Natural Language First**: Users describe intentions, not implementations
 3. **Single Step Type**: Unified model that can execute any code
 4. **Real-time Code Generation**: AI creates complete, working code instantly
@@ -38,21 +40,57 @@ complete workflow steps with all necessary code and tool integrations.
 
 ## Phase 1: Backend Foundation (Week 1)
 
-### 1.1 New Workflow Model (Clean Slate)
+### 1.1 Centralized Type Definitions
 
-**File**: `packages/sdk/src/mcp/workflows/workflow-schemas.ts`
+**File**: `packages/sdk/src/mcp/workflows/types.ts`
 
 ```typescript
-// Completely new schema - no legacy support
+import { z } from "zod";
+import type { JSONSchema7 } from "json-schema";
+
+// ============= Core Types =============
+// All workflow types in one central location for reuse
+
+// JSON Schema type for input/output schemas
+export type JSONSchema = JSONSchema7;
+
+// Tool reference with integration
+export interface ToolReference {
+  integrationId: string; // Clean ID without prefix
+  toolName: string;
+  inputSchema?: JSONSchema;
+  outputSchema?: JSONSchema;
+  description?: string;
+}
+
+// Step execution result
+export interface StepExecutionResult {
+  executedAt: string; // ISO date
+  value: unknown; // Result data
+  error?: string; // Error message if failed
+  duration?: number; // Execution time in ms
+}
+
+// Form state for workflow inputs
+export interface WorkflowFormState {
+  stepId: string;
+  values: Record<string, unknown>;
+  isDirty: boolean;
+  isValid: boolean;
+  errors: Record<string, string>;
+}
+
+// ============= Zod Schemas =============
+
 export const WorkflowStepSchema = z.object({
   id: z.string(),
   title: z.string(),
   description: z.string(),
   prompt: z.string(), // User's original prompt
   code: z.string(), // Generated ES module code
-  inputSchema: z.object({}).passthrough(),
-  outputSchema: z.object({}).passthrough(),
-  usedTools: z.array(z.string()), // Tool IDs referenced
+  inputSchema: z.custom<JSONSchema>(), // Typed JSON Schema
+  outputSchema: z.custom<JSONSchema>(), // Typed JSON Schema
+  usedTools: z.array(z.custom<ToolReference>()), // Typed tool references
   logoUrl: z.string().optional(),
   config: z.object({
     retry: z.number().default(3),
@@ -65,13 +103,46 @@ export const WorkflowSchema = z.object({
   name: z.string(),
   description: z.string(),
   steps: z.array(WorkflowStepSchema),
-  executionState: z.record(z.string(), z.object({
-    executedAt: z.string(), // ISO date when step was executed
-    value: z.unknown(),     // The actual result value from the step
-  })), // Map of stepId -> execution result
+
+  // Workflow execution state
+  executionState: z.record(
+    z.string(),
+    z.custom<StepExecutionResult>(),
+  ),
+
+  // Form states for each step that requires input
+  formStates: z.record(
+    z.string(),
+    z.custom<WorkflowFormState>(),
+  ).optional(),
+
+  // Global workflow input schema (if needed)
+  inputSchema: z.custom<JSONSchema>().optional(),
+
+  // Workflow metadata
   createdAt: z.string(),
   updatedAt: z.string(),
+  lastExecutedAt: z.string().optional(),
 });
+
+// ============= Type Exports =============
+
+export type WorkflowStep = z.infer<typeof WorkflowStepSchema>;
+export type Workflow = z.infer<typeof WorkflowSchema>;
+
+// Runtime types for execution
+export interface StepContext {
+  readWorkflowInput: () => unknown;
+  getStepResult: (stepId: string) => unknown;
+  env: Record<string, Record<string, Function>>;
+}
+
+export interface ExecutionContext {
+  workflow: Workflow;
+  currentStepId: string;
+  state: Record<string, StepExecutionResult>;
+  formValues?: Record<string, unknown>;
+}
 ```
 
 **Implementation Steps**:
@@ -165,7 +236,9 @@ The code must be complete, handle errors, and work immediately.
 
 ### 1.3 Tool Discovery AI
 
-**TODO**: This solution is not future-proof. We need to rely on an agent to dynamically search tools using searchTools to fulfill this request without wasting a lot of tokens.
+**TODO**: This solution is not future-proof. We need to rely on an agent to
+dynamically search tools using searchTools to fulfill this request without
+wasting a lot of tokens.
 
 **File**: `packages/sdk/src/mcp/workflows/tool-discovery.ts`
 
@@ -200,14 +273,21 @@ export const discoverRelevantTools = createTool({
 
 ### 2.1 New Step Runner (From Scratch)
 
-**Context**: Previously, we had a complex system with different step types (mapper, tool_call) and manual wiring between steps. The old system required users to explicitly define how data flows between steps, which was error-prone and hard to understand.
+**Context**: Previously, we had a complex system with different step types
+(mapper, tool_call) and manual wiring between steps. The old system required
+users to explicitly define how data flows between steps, which was error-prone
+and hard to understand.
 
-**The Revolution**: Our new Step Runner treats EVERY step as autonomous JavaScript code that runs in a sandbox. Each step is a complete mini-program that:
+**The Revolution**: Our new Step Runner treats EVERY step as autonomous
+JavaScript code that runs in a sandbox. Each step is a complete mini-program
+that:
+
 - Fetches its own data (from tools or previous steps)
 - Processes that data however it needs
 - Returns a result that can be used by future steps
 
 **How It Works**:
+
 1. User describes what they want in natural language
 2. AI generates complete JavaScript code that implements the logic
 3. Code runs in QuickJS sandbox with access to tools and previous results
@@ -216,64 +296,109 @@ export const discoverRelevantTools = createTool({
 **File**: `packages/sdk/src/workflows/step-runner.ts`
 
 ```typescript
+import type {
+  ExecutionContext,
+  StepContext,
+  StepExecutionResult,
+  Workflow,
+  WorkflowStep,
+} from "@deco/sdk/mcp/workflows/types";
+
 // Brand new implementation - no legacy code
 export class WorkflowStepRunner {
   async executeStep(
     step: WorkflowStep,
-    state: WorkflowState,
+    workflow: Workflow,
     context: AppContext,
-  ): Promise<unknown> {
-    // Create execution context with tool access
-    const executionContext = {
-      readWorkflowInput: () => state.input,
-      getStepResult: (stepId: string) => {
-        if (!state.steps[stepId]) {
-          throw new Error(`Step '${stepId}' not executed yet`);
-        }
-        return state.steps[stepId];
-      },
-      env: await createToolEnvironment(context),
-    };
-
-    // Execute in sandbox
-    const evaluation = await evalCodeAndReturnDefaultHandle(
-      step.code,
-      context.runtimeId,
-    );
+  ): Promise<StepExecutionResult> {
+    const startTime = Date.now();
 
     try {
-      const result = await callFunction(
-        evaluation.ctx,
-        evaluation.defaultHandle,
-        undefined,
-        executionContext,
-        {},
+      // Get form values if this step has an input schema
+      const formValues = step.inputSchema
+        ? workflow.formStates?.[step.id]?.values
+        : undefined;
+
+      // Create strongly typed execution context
+      const stepContext: StepContext = {
+        readWorkflowInput() {
+          return formValues || workflow.inputSchema
+            ? workflow.formStates?.["workflow-input"]?.values
+            : {};
+        },
+        getStepResult(stepId: string) {
+          const result = workflow.executionState[stepId];
+          if (!result) {
+            throw new Error(`Step ${stepId} has not been executed yet`);
+          }
+          return result.value;
+        },
+        env: await createToolEnvironment(context),
+      };
+
+      // Execute in sandbox
+      const evaluation = await evalCodeAndReturnDefaultHandle(
+        step.code,
+        context.runtimeId,
       );
-      return result;
-    } finally {
-      // Clean up the evaluation handle
-      await evaluation.dispose();
+
+      try {
+        const result = await callFunction(
+          evaluation.ctx,
+          evaluation.defaultHandle,
+          undefined,
+          stepContext,
+          {},
+        );
+
+        // Create typed execution result
+        const executionResult: StepExecutionResult = {
+          executedAt: new Date().toISOString(),
+          value: result,
+          duration: Date.now() - startTime,
+        };
+
+        // Update workflow state
+        workflow.executionState[step.id] = executionResult;
+
+        return executionResult;
+      } finally {
+        // Clean up the evaluation handle
+        await evaluation.dispose();
+      }
+    } catch (error) {
+      // Create error result
+      const errorResult: StepExecutionResult = {
+        executedAt: new Date().toISOString(),
+        value: null,
+        error: error instanceof Error ? error.message : String(error),
+        duration: Date.now() - startTime,
+      };
+
+      workflow.executionState[step.id] = errorResult;
+      throw error;
     }
-
-    // Update state
-    state.steps[step.id] = result;
-
-    return result;
   }
 }
 ```
 
 ### 2.2 Tool Environment Builder
 
-**Purpose**: Creates the `ctx.env` object that gives sandboxed code access to all available tools in the project. This is what allows generated code to call `ctx.env.gmail.sendEmail()` or `ctx.env.sheets.readSheet()`.
+**Purpose**: Creates the `ctx.env` object that gives sandboxed code access to
+all available tools in the project. This is what allows generated code to call
+`ctx.env.gmail.sendEmail()` or `ctx.env.sheets.readSheet()`.
 
 **How It Works**:
+
 1. Fetches all integrations (Gmail, Sheets, Notion, custom APIs, etc.)
 2. For each integration, fetches its available tools
 3. Creates async functions that proxy calls to the actual MCP backend
-4. Returns an object where keys are integration IDs and values are tool functions
+4. Returns an object where keys are integration IDs and values are tool
+   functions
 
-**Critical Detail**: The integration IDs in the UI have prefixes (`i_123`, `a_456`) but the env uses clean IDs without prefixes. This mapping must be handled correctly.
+**Critical Detail**: The integration IDs in the UI have prefixes (`i_123`,
+`a_456`) but the env uses clean IDs without prefixes. This mapping must be
+handled correctly.
 
 ```typescript
 async function createToolEnvironment(context: AppContext) {
@@ -283,13 +408,13 @@ async function createToolEnvironment(context: AppContext) {
 
   for (const integration of integrations) {
     // CRITICAL: Remove prefix from integration ID for env key
-    const cleanId = integration.id.replace(/^[ia]_/, '');
-    
+    const cleanId = integration.id.replace(/^[ia]_/, "");
+
     // Fetch tools for this integration
     const { tools } = await context.client.TOOLS_LIST({
       connection: integration.connection,
     });
-    
+
     env[cleanId] = {};
 
     for (const tool of tools) {
@@ -299,7 +424,7 @@ async function createToolEnvironment(context: AppContext) {
         if (tool.inputSchema) {
           // TODO: Add validation
         }
-        
+
         const response = await context.client.INTEGRATIONS_CALL_TOOL({
           connection: integration.connection,
           params: { name: tool.name, arguments: args },
@@ -323,13 +448,264 @@ async function createToolEnvironment(context: AppContext) {
 
 ## Phase 3: Frontend Components (Week 3)
 
-### 3.0 State Management with Zustand
+### 3.0 Auto-Generated Forms with React Hook Form
+
+**File**: `apps/web/src/components/workflow-builder/auto-form.tsx`
+
+```typescript
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { jsonSchemaToZod } from "@/utils/json-schema-to-zod";
+import type { JSONSchema, WorkflowStep } from "@deco/sdk/mcp/workflows/types";
+
+interface AutoFormProps {
+  schema: JSONSchema;
+  onSubmit: (values: unknown) => void;
+  defaultValues?: Record<string, unknown>;
+  stepId: string;
+}
+
+/**
+ * Automatically generates a form from a JSON Schema
+ * Used for workflow input forms and step configuration
+ */
+export function AutoForm(
+  { schema, onSubmit, defaultValues, stepId }: AutoFormProps,
+) {
+  // Convert JSON Schema to Zod schema for validation
+  const zodSchema = useMemo(() => jsonSchemaToZod(schema), [schema]);
+
+  // Initialize React Hook Form with Zod resolver
+  const form = useForm({
+    resolver: zodResolver(zodSchema),
+    defaultValues: defaultValues || generateDefaultValues(schema),
+    mode: "onBlur", // Validate on blur for better UX
+  });
+
+  // Generate form fields from schema
+  const fields = useMemo(() => generateFieldsFromSchema(schema), [schema]);
+
+  return (
+    <Form {...form}>
+      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+        {fields.map((field) => (
+          <FormField
+            key={field.name}
+            control={form.control}
+            name={field.name}
+            render={({ field: formField, fieldState }) => (
+              <FormItem>
+                <FormLabel className="text-lg font-medium">
+                  {field.label}
+                  {field.required && (
+                    <span className="text-destructive ml-1">*</span>
+                  )}
+                </FormLabel>
+
+                {field.description && (
+                  <FormDescription className="text-base text-gray-600">
+                    {field.description}
+                  </FormDescription>
+                )}
+
+                <FormControl>
+                  {renderFieldComponent(field, formField, fieldState)}
+                </FormControl>
+
+                <FormMessage className="text-sm" />
+              </FormItem>
+            )}
+          />
+        ))}
+
+        <Button
+          type="submit"
+          disabled={form.formState.isSubmitting}
+          className="w-full h-14 text-lg font-semibold"
+        >
+          {form.formState.isSubmitting ? <Spinner className="mr-2" /> : null}
+          Continue
+        </Button>
+      </form>
+    </Form>
+  );
+}
+
+/**
+ * Renders the appropriate field component based on schema type
+ */
+function renderFieldComponent(
+  field: FieldDefinition,
+  formField: any,
+  fieldState: any,
+) {
+  const errorClass = fieldState.error ? "border-destructive" : "";
+
+  switch (field.type) {
+    case "string":
+      if (field.enum) {
+        return (
+          <Select {...formField}>
+            <SelectTrigger className={`h-12 text-base ${errorClass}`}>
+              <SelectValue placeholder={field.placeholder} />
+            </SelectTrigger>
+            <SelectContent>
+              {field.enum.map((value) => (
+                <SelectItem key={value} value={value}>
+                  {value}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        );
+      }
+
+      if (field.format === "textarea") {
+        return (
+          <Textarea
+            {...formField}
+            placeholder={field.placeholder}
+            className={`min-h-[120px] text-base ${errorClass}`}
+          />
+        );
+      }
+
+      return (
+        <Input
+          {...formField}
+          type={field.format === "email" ? "email" : "text"}
+          placeholder={field.placeholder}
+          className={`h-12 text-base ${errorClass}`}
+        />
+      );
+
+    case "number":
+      return (
+        <Input
+          {...formField}
+          type="number"
+          placeholder={field.placeholder}
+          className={`h-12 text-base ${errorClass}`}
+          onChange={(e) => formField.onChange(parseFloat(e.target.value))}
+        />
+      );
+
+    case "boolean":
+      return (
+        <div className="flex items-center space-x-3">
+          <Switch
+            checked={formField.value}
+            onCheckedChange={formField.onChange}
+          />
+          <Label className="text-base">{field.label}</Label>
+        </div>
+      );
+
+    case "array":
+      return (
+        <ArrayField
+          {...formField}
+          itemSchema={field.items}
+          className={errorClass}
+        />
+      );
+
+    case "object":
+      return (
+        <ObjectField
+          {...formField}
+          properties={field.properties}
+          className={errorClass}
+        />
+      );
+
+    default:
+      return (
+        <Input
+          {...formField}
+          placeholder={field.placeholder}
+          className={`h-12 text-base ${errorClass}`}
+        />
+      );
+  }
+}
+```
+
+**File**: `apps/web/src/hooks/use-workflow-forms.ts`
+
+```typescript
+import { create } from "zustand";
+import type {
+  Workflow,
+  WorkflowFormState,
+} from "@deco/sdk/mcp/workflows/types";
+
+interface WorkflowFormsStore {
+  forms: Record<string, WorkflowFormState>;
+
+  // Actions
+  setFormState: (stepId: string, state: Partial<WorkflowFormState>) => void;
+  getFormValues: (stepId: string) => Record<string, unknown>;
+  validateForm: (stepId: string, schema: JSONSchema) => boolean;
+  resetForm: (stepId: string) => void;
+  resetAllForms: () => void;
+}
+
+export const useWorkflowFormsStore = create<WorkflowFormsStore>((set, get) => ({
+  forms: {},
+
+  setFormState: (stepId, state) =>
+    set((prev) => ({
+      forms: {
+        ...prev.forms,
+        [stepId]: {
+          ...prev.forms[stepId],
+          ...state,
+          stepId,
+        },
+      },
+    })),
+
+  getFormValues: (stepId) => get().forms[stepId]?.values || {},
+
+  validateForm: (stepId, schema) => {
+    // Validate using JSON Schema
+    const values = get().getFormValues(stepId);
+    const result = validateJsonSchema(schema, values);
+
+    get().setFormState(stepId, {
+      isValid: result.valid,
+      errors: result.errors,
+    });
+
+    return result.valid;
+  },
+
+  resetForm: (stepId) =>
+    set((prev) => ({
+      forms: {
+        ...prev.forms,
+        [stepId]: {
+          stepId,
+          values: {},
+          isDirty: false,
+          isValid: true,
+          errors: {},
+        },
+      },
+    })),
+
+  resetAllForms: () => set({ forms: {} }),
+}));
+```
+
+### 3.1 State Management with Zustand
 
 **File**: `apps/web/src/stores/workflow-builder-store.ts`
 
 ```typescript
-import { create } from 'zustand';
-import { devtools, persist } from 'zustand/middleware';
+import { create } from "zustand";
+import { devtools, persist } from "zustand/middleware";
 
 interface StepCreatorState {
   // Current step being created
@@ -337,7 +713,7 @@ interface StepCreatorState {
   selectedTools: string[];
   suggestedTools: string[];
   isGenerating: boolean;
-  
+
   // Actions
   setPrompt: (prompt: string) => void;
   setSelectedTools: (tools: string[]) => void;
@@ -350,39 +726,40 @@ export const useStepCreatorStore = create<StepCreatorState>()(
   devtools(
     persist(
       (set) => ({
-        prompt: '',
+        prompt: "",
         selectedTools: [],
         suggestedTools: [],
         isGenerating: false,
-        
+
         setPrompt: (prompt) => set({ prompt }),
         setSelectedTools: (selectedTools) => set({ selectedTools }),
         setSuggestedTools: (suggestedTools) => set({ suggestedTools }),
         setIsGenerating: (isGenerating) => set({ isGenerating }),
-        reset: () => set({
-          prompt: '',
-          selectedTools: [],
-          suggestedTools: [],
-          isGenerating: false,
-        }),
+        reset: () =>
+          set({
+            prompt: "",
+            selectedTools: [],
+            suggestedTools: [],
+            isGenerating: false,
+          }),
       }),
       {
-        name: 'step-creator-storage',
+        name: "step-creator-storage",
         partialize: (state) => ({ prompt: state.prompt }), // Only persist prompt
-      }
-    )
-  )
+      },
+    ),
+  ),
 );
 
 interface WorkflowCanvasState {
   currentStepIndex: number;
-  mode: 'view' | 'create' | 'edit';
+  mode: "view" | "create" | "edit";
   executionResults: Record<string, unknown>;
-  
+
   // Navigation
   setCurrentStepIndex: (index: number) => void;
-  setMode: (mode: 'view' | 'create' | 'edit') => void;
-  
+  setMode: (mode: "view" | "create" | "edit") => void;
+
   // Execution
   setExecutionResult: (stepId: string, result: unknown) => void;
   clearExecutionResults: () => void;
@@ -392,18 +769,18 @@ export const useWorkflowCanvasStore = create<WorkflowCanvasState>()(
   devtools(
     (set) => ({
       currentStepIndex: 0,
-      mode: 'view',
+      mode: "view",
       executionResults: {},
-      
+
       setCurrentStepIndex: (currentStepIndex) => set({ currentStepIndex }),
       setMode: (mode) => set({ mode }),
-      setExecutionResult: (stepId, result) => 
+      setExecutionResult: (stepId, result) =>
         set((state) => ({
-          executionResults: { ...state.executionResults, [stepId]: result }
+          executionResults: { ...state.executionResults, [stepId]: result },
         })),
       clearExecutionResults: () => set({ executionResults: {} }),
-    })
-  )
+    }),
+  ),
 );
 ```
 
@@ -476,6 +853,7 @@ export function LinearWorkflowCanvas({ workflowId }: Props) {
 ### 3.2 Step Creator with AI (Beautiful UX Design)
 
 **Design Specifications**:
+
 - **Typography**: Base font size 18px, headings 24-32px
 - **Spacing**: Minimum 24px between sections, 16px internal padding
 - **Colors**: High contrast, accessible color palette
@@ -487,23 +865,23 @@ export function LinearWorkflowCanvas({ workflowId }: Props) {
 ```typescript
 export function StepCreator({ workflow, onStepCreated, onCancel }: Props) {
   // Use Zustand for local state management
-  const { 
-    prompt, 
-    selectedTools, 
+  const {
+    prompt,
+    selectedTools,
     suggestedTools,
     isGenerating,
     setPrompt,
     setSelectedTools,
     setSuggestedTools,
-    reset
+    reset,
   } = useStepCreatorStore();
 
   const [showAutoTools, setShowAutoTools] = useState(true);
   const { mutate: generateStep } = useGenerateStep();
   const { data: availableTools } = useAvailableTools();
 
-  // TODO: This solution is not future-proof. We need to rely on an agent to 
-  // dynamically search tools using searchTools to fulfill this request without 
+  // TODO: This solution is not future-proof. We need to rely on an agent to
+  // dynamically search tools using searchTools to fulfill this request without
   // wasting a lot of tokens.
   // Debounced tool discovery (only if auto-tools enabled)
   const discoverTools = useDebouncedCallback(
@@ -944,7 +1322,170 @@ export function NavigationBar(
 }
 ```
 
-## Phase 4: Advanced Features (Week 4)
+## Phase 4: Workflow State & Form Integration
+
+### 4.1 Workflow Execution with Forms
+
+**File**: `apps/web/src/components/workflow-builder/workflow-executor.tsx`
+
+```typescript
+import type { Workflow, WorkflowStep } from "@deco/sdk/mcp/workflows/types";
+import { useWorkflowFormsStore } from "@/hooks/use-workflow-forms";
+
+export function WorkflowExecutor({ workflow }: { workflow: Workflow }) {
+  const { forms, setFormState, validateForm } = useWorkflowFormsStore();
+  const [currentStepIndex, setCurrentStepIndex] = useState(0);
+  const [isExecuting, setIsExecuting] = useState(false);
+
+  const currentStep = workflow.steps[currentStepIndex];
+  const needsInput = currentStep?.inputSchema != null;
+  const formState = forms[currentStep?.id];
+
+  // Check if step needs user input before execution
+  const handleStepExecution = async () => {
+    if (needsInput && !formState?.isValid) {
+      // Show form for user input
+      return;
+    }
+
+    setIsExecuting(true);
+    try {
+      // Execute step with form values
+      const result = await executeWorkflowStep({
+        step: currentStep,
+        workflow,
+        formValues: formState?.values,
+      });
+
+      // Move to next step
+      setCurrentStepIndex((prev) => prev + 1);
+    } catch (error) {
+      console.error("Step execution failed:", error);
+    } finally {
+      setIsExecuting(false);
+    }
+  };
+
+  // Render form if step needs input
+  if (needsInput && !formState?.isValid) {
+    return (
+      <div className="max-w-2xl mx-auto p-8">
+        <h2 className="text-2xl font-bold mb-6">
+          {currentStep.title} - Input Required
+        </h2>
+
+        <AutoForm
+          schema={currentStep.inputSchema}
+          stepId={currentStep.id}
+          defaultValues={formState?.values}
+          onSubmit={(values) => {
+            setFormState(currentStep.id, {
+              values,
+              isValid: true,
+              isDirty: true,
+            });
+            handleStepExecution();
+          }}
+        />
+      </div>
+    );
+  }
+
+  // Show execution progress
+  return (
+    <div className="max-w-4xl mx-auto p-8">
+      <WorkflowProgress
+        steps={workflow.steps}
+        currentIndex={currentStepIndex}
+        executionState={workflow.executionState}
+      />
+
+      {isExecuting
+        ? (
+          <div className="flex items-center justify-center py-12">
+            <Spinner className="w-8 h-8" />
+            <span className="ml-4 text-lg">
+              Executing {currentStep.title}...
+            </span>
+          </div>
+        )
+        : (
+          <StepResult
+            step={currentStep}
+            result={workflow.executionState[currentStep.id]}
+            onContinue={handleStepExecution}
+          />
+        )}
+    </div>
+  );
+}
+```
+
+### 4.2 Type-Safe Tool Integration
+
+**File**: `packages/sdk/src/mcp/workflows/tool-integration.ts`
+
+```typescript
+import type { JSONSchema, ToolReference } from "./types";
+
+/**
+ * Ensures type safety when calling tools from generated code
+ */
+export function createTypedToolProxy(
+  tools: Record<string, Record<string, Function>>,
+  toolRefs: ToolReference[],
+): Record<string, Record<string, Function>> {
+  const proxy: Record<string, Record<string, Function>> = {};
+
+  for (const ref of toolRefs) {
+    if (!proxy[ref.integrationId]) {
+      proxy[ref.integrationId] = {};
+    }
+
+    const originalTool = tools[ref.integrationId]?.[ref.toolName];
+    if (!originalTool) {
+      console.warn(`Tool ${ref.integrationId}.${ref.toolName} not found`);
+      continue;
+    }
+
+    // Wrap tool with input/output validation
+    proxy[ref.integrationId][ref.toolName] = async (input: unknown) => {
+      // Validate input if schema provided
+      if (ref.inputSchema) {
+        const validation = validateJsonSchema(ref.inputSchema, input);
+        if (!validation.valid) {
+          throw new Error(
+            `Invalid input for ${ref.toolName}: ${
+              validation.errors.join(", ")
+            }`,
+          );
+        }
+      }
+
+      // Call original tool
+      const result = await originalTool(input);
+
+      // Validate output if schema provided
+      if (ref.outputSchema) {
+        const validation = validateJsonSchema(ref.outputSchema, result);
+        if (!validation.valid) {
+          console.warn(
+            `Tool ${ref.toolName} returned invalid output: ${
+              validation.errors.join(", ")
+            }`,
+          );
+        }
+      }
+
+      return result;
+    };
+  }
+
+  return proxy;
+}
+```
+
+## Phase 5: Advanced Features (Week 4)
 
 ### 4.1 DecoPilot Integration
 
@@ -1134,24 +1675,30 @@ ctx.env = {
 ## ⚠️ Critical Implementation Warnings
 
 ### WARNING 1: Integration ID Prefix Issue
-**Problem**: Integration IDs come with prefixes (`i_`, `a_`) from the UI but `ctx.env` expects clean IDs.
+
+**Problem**: Integration IDs come with prefixes (`i_`, `a_`) from the UI but
+`ctx.env` expects clean IDs.
 
 **Solution**:
+
 ```typescript
 // Always clean integration IDs before using
-const cleanId = integrationId.replace(/^[ia]_/, '');
+const cleanId = integrationId.replace(/^[ia]_/, "");
 
 // In prompt generation:
 const toolPrompt = `ctx.env.${cleanId}.${toolName}(args)`;
 
 // In asEnv():
-env[cleanId] = { /* tools */ };
+env[cleanId] = {/* tools */};
 ```
 
 ### WARNING 2: Tools Not Initially Available
-**Problem**: Integration objects from `useIntegrations()` don't include tools initially.
+
+**Problem**: Integration objects from `useIntegrations()` don't include tools
+initially.
 
 **Solution**:
+
 ```typescript
 // Must combine data from two sources
 const integration = await useIntegrations();
@@ -1160,14 +1707,16 @@ const { tools } = await useTools(integration.connection);
 // Combine before passing to AI
 const toolWithIntegration = {
   ...tool,
-  integration: integration
+  integration: integration,
 };
 ```
 
 ### WARNING 3: Step IDs vs Names
+
 **Problem**: `getStepResult()` expects step IDs, not titles.
 
 **Solution**:
+
 ```typescript
 // Generate stable IDs
 const step = {
@@ -1181,17 +1730,18 @@ await ctx.getStepResult("step-1234567890");
 ```
 
 ### WARNING 4: Agent vs Integration Confusion
-**Problem**: Agents appear as integrations with `a_` prefix but don't have traditional tools.
+
+**Problem**: Agents appear as integrations with `a_` prefix but don't have
+traditional tools.
 
 **Solution**:
+
 ```typescript
 // Filter or handle separately
-const realIntegrations = integrations.filter(i => 
-  !i.id.startsWith('a_')
-);
+const realIntegrations = integrations.filter((i) => !i.id.startsWith("a_"));
 
 // Or handle agent tools differently
-if (integration.id.startsWith('a_')) {
+if (integration.id.startsWith("a_")) {
   // Agent-specific logic
 }
 ```
@@ -1202,17 +1752,19 @@ if (integration.id.startsWith('a_')) {
 
 **Resposta Detalhada:**
 
-O sistema usa a função `asEnv()` do arquivo `packages/sdk/src/mcp/sandbox/utils.ts` que cria um ambiente de execução com todas as tools disponíveis:
+O sistema usa a função `asEnv()` do arquivo
+`packages/sdk/src/mcp/sandbox/utils.ts` que cria um ambiente de execução com
+todas as tools disponíveis:
 
 ```typescript
 // packages/sdk/src/mcp/sandbox/utils.ts (linha 85-151)
 export const asEnv = async (client: MCPClientStub<ProjectTools>) => {
   const { items } = await client.INTEGRATIONS_LIST({});
   const env = {};
-  
+
   for (const item of items) {
     // CRITICAL: Remove prefix from integration ID for env key
-    const cleanId = item.id.replace(/^[ia]_/, '');
+    const cleanId = item.id.replace(/^[ia]_/, "");
     env[cleanId] = Object.fromEntries(
       tools.map((tool) => [
         tool.name,
@@ -1222,16 +1774,16 @@ export const asEnv = async (client: MCPClientStub<ProjectTools>) => {
           if (!inputValidation.valid) {
             throw new Error(`Input validation failed`);
           }
-          
+
           // Chama a tool via MCP
           const response = await client.INTEGRATIONS_CALL_TOOL({
             connection: item.connection,
             params: { name: tool.name, arguments: args },
           });
-          
+
           return response.structuredContent || response.content;
         },
-      ])
+      ]),
     );
   }
   return env;
@@ -1257,6 +1809,7 @@ async (input, ctx) => {
 ```
 
 **Garantia de funcionamento:**
+
 1. Validação de schema na entrada e saída
 2. Error handling com mensagens descritivas
 3. Todas as tools são pré-carregadas no contexto antes da execução
@@ -1265,7 +1818,8 @@ async (input, ctx) => {
 
 **Resposta Detalhada:**
 
-O `getStepResult` é implementado como parte do contexto passado para o QuickJS via `callFunction`:
+O `getStepResult` é implementado como parte do contexto passado para o QuickJS
+via `callFunction`:
 
 ```typescript
 // packages/sdk/src/mcp/sandbox/run.ts (linha 30-41)
@@ -1284,11 +1838,11 @@ const stepContext = {
 
 // Executa no QuickJS passando contexto
 const stepCallHandle = await callFunction(
-  stepCtx,           // QuickJS context
+  stepCtx, // QuickJS context
   stepDefaultHandle, // Função do step
-  undefined,         // thisArg
-  stepContext,       // Nosso contexto com getStepResult
-  {}                // Configuração adicional
+  undefined, // thisArg
+  stepContext, // Nosso contexto com getStepResult
+  {}, // Configuração adicional
 );
 ```
 
@@ -1304,16 +1858,17 @@ export function callFunction(
 ) {
   // Converte argumentos JS para QuickJS handles
   const argHandles = args.map((arg) => toQuickJS(ctx, arg));
-  
+
   // Para funções, cria proxy que executa no host
   // Isso permite que getStepResult acesse o state real
-  
+
   const result = ctx.callFunction(fn, thisArgHandle, ...argHandles);
   return ctx.resolvePromise(resultPromise.handle);
 }
 ```
 
-**Importante:** O `getStepResult` executa no contexto do HOST, não dentro do sandbox, garantindo acesso ao state real do workflow.
+**Importante:** O `getStepResult` executa no contexto do HOST, não dentro do
+sandbox, garantindo acesso ao state real do workflow.
 
 ### Q3: As tools disponíveis do projeto estão garantidas?
 
@@ -1330,13 +1885,13 @@ const integrationsWithTools = integrations.filter(
   (integration) =>
     integration.connection &&
     ["HTTP", "SSE", "Websocket", "INNATE", "Deco"].includes(
-      integration.connection.type
-    )
+      integration.connection.type,
+    ),
 );
 
 // Pega tools da integração selecionada
 const { data: toolsData } = useTools(
-  selectedIntegration?.connection as MCPConnection
+  selectedIntegration?.connection as MCPConnection,
 );
 const tools = toolsData?.tools || [];
 ```
@@ -1346,24 +1901,24 @@ const tools = toolsData?.tools || [];
 ```typescript
 // Como vem do SelectToolDialog
 interface ToolWithIntegration {
-  name: string;              // Ex: "sendEmail"
-  description?: string;      // Ex: "Send an email via Gmail"
-  inputSchema?: JSONSchema;  // Validação de entrada
-  integration: Integration;  // OBJETO COMPLETO da integration
+  name: string; // Ex: "sendEmail"
+  description?: string; // Ex: "Send an email via Gmail"
+  inputSchema?: JSONSchema; // Validação de entrada
+  integration: Integration; // OBJETO COMPLETO da integration
 }
 
 interface Integration {
-  id: string;               // Ex: "i_123" (COM prefixo!)
-  name: string;             // Ex: "Gmail"
+  id: string; // Ex: "i_123" (COM prefixo!)
+  name: string; // Ex: "Gmail"
   icon?: string;
   connection: MCPConnection;
-  tools?: MCPTool[];        // Pode não vir preenchido inicialmente
+  tools?: MCPTool[]; // Pode não vir preenchido inicialmente
 }
 
 // IMPORTANTE: Remover prefixo antes de usar
 function getCleanIntegrationId(id: string): string {
   // Remove prefixos "i_", "a_", etc
-  return id.replace(/^[ia]_/, '');
+  return id.replace(/^[ia]_/, "");
 }
 ```
 
@@ -1385,7 +1940,7 @@ async function validateStepCode(code: string, context: AppContext) {
   if (!moduleRegex.test(code)) {
     throw new Error("Code must export default async function");
   }
-  
+
   // 2. Teste de compilação no QuickJS
   const evaluation = await evalCodeAndReturnDefaultHandle(code, "test");
   try {
@@ -1397,7 +1952,7 @@ async function validateStepCode(code: string, context: AppContext) {
     // Always clean up
     await evaluation.dispose();
   }
-  
+
   return true;
 }
 ```
@@ -1422,29 +1977,33 @@ export default async function(ctx) {
 - ctx.env.INTEGRATION_ID.tool_name(args) - Call tools
 
 3. AVAILABLE TOOLS:
-${tools.map(t => {
-  // CRITICAL: Remove prefix from integration ID
-  const cleanId = t.integration.id.replace(/^[ia]_/, '');
-  const inputDesc = t.inputSchema?.description || 'No description';
-  const outputDesc = t.outputSchema?.description || 'Returns the result';
-  return `
+${
+  tools.map((t) => {
+    // CRITICAL: Remove prefix from integration ID
+    const cleanId = t.integration.id.replace(/^[ia]_/, "");
+    const inputDesc = t.inputSchema?.description || "No description";
+    const outputDesc = t.outputSchema?.description || "Returns the result";
+    return `
 Tool: ctx.env.${cleanId}.${t.name}
-  Purpose: ${t.description || 'No description available'}
+  Purpose: ${t.description || "No description available"}
   Input Schema: ${JSON.stringify(t.inputSchema, null, 2)}
   Input Description: ${inputDesc}
   Output Schema: ${JSON.stringify(t.outputSchema, null, 2)}
   Output Description: ${outputDesc}
   Example: await ctx.env.${cleanId}.${t.name}({ /* your args here */ });
 `;
-}).join('\n')}
+  }).join("\n")
+}
 
 4. PREVIOUS STEPS DATA:
-${previousSteps.map(s => `
+${
+  previousSteps.map((s) => `
 Step "${s.id}":
   Title: ${s.title}
   Output Shape: ${JSON.stringify(s.outputSchema)}
   Access via: const data = await ctx.getStepResult("${s.id}");
-`).join('\n')}
+`).join("\n")
+}
 
 5. USER REQUEST:
 ${userPrompt}
@@ -1504,7 +2063,7 @@ export default async function(ctx) {
   --font-size-2xl: 32px;
   --font-size-3xl: 40px;
   --line-height-relaxed: 1.8;
-  
+
   /* Spacing */
   --spacing-xs: 8px;
   --spacing-sm: 12px;
@@ -1513,18 +2072,18 @@ export default async function(ctx) {
   --spacing-xl: 32px;
   --spacing-2xl: 48px;
   --spacing-3xl: 64px;
-  
+
   /* Border Radius */
   --radius-sm: 8px;
   --radius-md: 12px;
   --radius-lg: 16px;
   --radius-xl: 24px;
-  
+
   /* Shadows */
   --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.08);
   --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.12);
   --shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.16);
-  
+
   /* Transitions */
   --transition-fast: 150ms ease;
   --transition-base: 200ms ease;
@@ -1562,13 +2121,15 @@ export default async function(ctx) {
 ## Implementation Checklist
 
 ### Week 1: Backend Foundation
+
 - [ ] Create new workflow schema (no legacy)
 - [ ] Build AI step generation tool
 - [ ] Implement tool discovery with debounce
 - [ ] Add manual tool selection fallback
 - [ ] Test AI prompt engineering
 
-### Week 2: Execution Engine  
+### Week 2: Execution Engine
+
 - [ ] Build new step runner from scratch
 - [ ] Create tool environment with proper ID mapping
 - [ ] Implement QuickJS sandbox execution
@@ -1576,6 +2137,7 @@ export default async function(ctx) {
 - [ ] Test with real integrations
 
 ### Week 3: Frontend Components
+
 - [ ] Setup Zustand stores
 - [ ] Build linear canvas with animations
 - [ ] Create step creator with beautiful UX
@@ -1583,6 +2145,7 @@ export default async function(ctx) {
 - [ ] Implement navigation controls
 
 ### Week 4: Polish & Testing
+
 - [ ] Add comprehensive error handling
 - [ ] Implement loading states
 - [ ] Create success animations
@@ -1591,13 +2154,16 @@ export default async function(ctx) {
 
 ## Conclusion
 
-This implementation creates a revolutionary workflow builder that treats each step as self-contained, autonomous code. Key innovations:
+This implementation creates a revolutionary workflow builder that treats each
+step as self-contained, autonomous code. Key innovations:
 
 1. **No "Between Steps" Complexity**: Each step fetches what it needs
-2. **AI-First Design**: Natural language to working code instantly  
+2. **AI-First Design**: Natural language to working code instantly
 3. **Beautiful UX**: Large text, generous spacing, smooth animations
-4. **Smart Tool Discovery**: 3-second debounced AI suggestions with manual fallback
+4. **Smart Tool Discovery**: 3-second debounced AI suggestions with manual
+   fallback
 5. **Zustand State Management**: Clean, predictable state handling
 6. **Clean Slate Approach**: No legacy code, fresh start
 
-The system empowers users to create powerful workflows through simple descriptions, with AI handling all the technical complexity behind the scenes.
+The system empowers users to create powerful workflows through simple
+descriptions, with AI handling all the technical complexity behind the scenes.

@@ -2,7 +2,7 @@ import { IntegrationAvatar } from "../../common/avatar/integration.tsx";
 import { Badge } from "@deco/ui/components/badge.tsx";
 import { NodeViewWrapper, type ReactNodeViewProps } from "@tiptap/react";
 import { cn } from "@deco/ui/lib/utils.ts";
-import { type ToolOption, type ResourceOption } from "./tool-suggestion.ts";
+import { type ResourceOption, type ToolOption } from "./tool-suggestion.ts";
 
 export default function ToolMentionNode({
   node,

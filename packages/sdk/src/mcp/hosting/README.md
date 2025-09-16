@@ -1,17 +1,21 @@
 # Deco Hosting - Cloudflare Workers Deployment
 
-This module provides serverless app deployment capabilities via Cloudflare Workers, allowing users to deploy TypeScript/JavaScript applications with full MCP (Model Context Protocol) integration.
+This module provides serverless app deployment capabilities via Cloudflare
+Workers, allowing users to deploy TypeScript/JavaScript applications with full
+MCP (Model Context Protocol) integration.
 
 ## Overview
 
 The hosting module enables:
 
-- **Serverless Deployment**: Deploy apps to Cloudflare Workers for global edge execution
+- **Serverless Deployment**: Deploy apps to Cloudflare Workers for global edge
+  execution
 - **Custom Domains**: Support for custom domain routing with automatic SSL
 - **Asset Management**: Static asset upload and serving capabilities
 - **Environment Variables**: Secure environment variable management
 - **MCP Integration**: Automatic tool discovery and registry publishing
-- **Database Integration**: Built-in support for KV, D1, and other Cloudflare services
+- **Database Integration**: Built-in support for KV, D1, and other Cloudflare
+  services
 
 ## Architecture
 
@@ -26,7 +30,8 @@ The hosting module enables:
 
 ## Deployment Process
 
-The deployment process is complex and involves multiple async operations. Here's the complete flow:
+The deployment process is complex and involves multiple async operations. Here's
+the complete flow:
 
 ### 1. Main Deployment Flow
 
@@ -241,16 +246,19 @@ flowchart TD
 
 ### Async/IO Operations (Major Time Consumers)
 
-The deployment process involves numerous async operations that can impact performance:
+The deployment process involves numerous async operations that can impact
+performance:
 
 1. **🔧 CF Namespace Creation** - Cloudflare API call (~500ms)
-2. **🌐 Code Bundling** - External bundler service (~1-3s depending on complexity)
+2. **🌐 Code Bundling** - External bundler service (~1-3s depending on
+   complexity)
 3. **🔍 Domain Uniqueness Check** - Database query (~100ms)
 4. **🏠 Custom Domain Setup** - Multiple CF API calls (~1-2s per domain)
 5. **📤 Asset Upload** - Multiple HTTP uploads (~500ms-2s depending on size)
 6. **🚀 Worker Script Deployment** - CF Workers API (~1-2s)
 7. **🔒 Environment Variables** - Multiple CF secret updates (~100ms each)
-8. **💾 Database Operations** - Multiple DB queries/inserts/updates (~50-200ms each)
+8. **💾 Database Operations** - Multiple DB queries/inserts/updates (~50-200ms
+   each)
 9. **🔄 Route Management** - Database route operations (~100-300ms)
 10. **📚 Registry Publishing** - App and scope upserts (~200ms)
 11. **🔍 Tool Discovery** - MCP HTTP request to deployed app (~500ms-1s)
@@ -268,9 +276,11 @@ The deployment process involves numerous async operations that can impact perfor
 ### Main Tools
 
 #### `HOSTING_APP_DEPLOY`
+
 Deploy files to Cloudflare Workers with full configuration support.
 
 **Input:**
+
 ```typescript
 {
   appSlug?: string;           // App identifier
@@ -283,6 +293,7 @@ Deploy files to Cloudflare Workers with full configuration support.
 ```
 
 **Output:**
+
 ```typescript
 {
   entrypoint: string;         // Main app URL
@@ -294,26 +305,33 @@ Deploy files to Cloudflare Workers with full configuration support.
 ```
 
 #### `HOSTING_APPS_LIST`
+
 List all deployed apps for the current workspace.
 
 #### `HOSTING_APP_DELETE`
+
 Delete an app and its associated worker.
 
 #### `HOSTING_APP_INFO`
+
 Get detailed information about a specific app.
 
 #### `HOSTING_APP_DEPLOYMENTS_LIST`
+
 List all deployments for a specific app.
 
 ### Workflow Tools
 
 #### `HOSTING_APP_WORKFLOWS_LIST_RUNS`
+
 List workflow execution runs with filtering and pagination.
 
 #### `HOSTING_APP_WORKFLOWS_LIST_NAMES`
+
 Get all unique workflow names in the workspace.
 
 #### `HOSTING_APP_WORKFLOWS_STATUS`
+
 Get the current status of a specific workflow instance.
 
 ## Configuration
@@ -367,7 +385,8 @@ value = "integration-id"
 
 The deployment process includes comprehensive error handling:
 
-- **Validation Errors**: Clear messages for missing files or invalid configuration
+- **Validation Errors**: Clear messages for missing files or invalid
+  configuration
 - **Cloudflare Errors**: Automatic retries and fallback strategies
 - **Database Errors**: Transaction rollback and cleanup
 - **Network Errors**: Timeout handling and retry logic
@@ -398,4 +417,6 @@ The deployment process includes comprehensive error handling:
 
 ### Debug Information
 
-Enable debug logging by setting appropriate log levels in your deployment environment. The system provides detailed timing information for each deployment phase.
+Enable debug logging by setting appropriate log levels in your deployment
+environment. The system provides detailed timing information for each deployment
+phase.

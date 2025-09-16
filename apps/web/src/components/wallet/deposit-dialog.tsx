@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useMutation } from "@tanstack/react-query";
 import { Button } from "@deco/ui/components/button.tsx";
 import {
@@ -77,8 +77,16 @@ export function DepositDialog() {
       createWalletCheckoutSession({
         locator: locator,
         amountUSDCents: amountInCents,
-        successUrl: `${location.origin}${workspaceLink("/monitor/billing?deposit_success=true")}`,
-        cancelUrl: `${location.origin}${workspaceLink("/monitor/billing?deposit_success=false")}`,
+        successUrl: `${location.origin}${
+          workspaceLink(
+            "/monitor/billing?deposit_success=true",
+          )
+        }`,
+        cancelUrl: `${location.origin}${
+          workspaceLink(
+            "/monitor/billing?deposit_success=false",
+          )
+        }`,
       }),
   });
 
@@ -97,9 +105,11 @@ export function DepositDialog() {
     const amount = parseInt(creditAmount);
     if (isNaN(amount) || amount < MINIMUM_AMOUNT) {
       setAmountError(
-        `Minimum deposit amount is ${formatCurrency(
-          MINIMUM_AMOUNT.toString(),
-        )}`,
+        `Minimum deposit amount is ${
+          formatCurrency(
+            MINIMUM_AMOUNT.toString(),
+          )
+        }`,
       );
       return false;
     }
@@ -113,8 +123,7 @@ export function DepositDialog() {
           variant="special"
           className="w-full"
           onClick={() =>
-            trackEvent("wallet_add_credits_click", { userId: user?.id })
-          }
+            trackEvent("wallet_add_credits_click", { userId: user?.id })}
         >
           <Icon name="add" size={16} className="mr-2" />
           Add credits
@@ -140,50 +149,52 @@ export function DepositDialog() {
           {creditAmount &&
             !amountError &&
             parseInt(creditAmount) >= MINIMUM_AMOUNT && (
-              <div className="rounded-xl border border-border bg-muted/30 p-3">
-                <div className="flex justify-between items-center text-sm">
-                  <span className="text-muted-foreground">Credit amount:</span>
-                  <span>{formatCurrency(creditAmount)}</span>
-                </div>
-                {plan.markup > 0 && (
-                  <>
-                    <div className="flex justify-between items-center text-sm">
-                      <span className="text-muted-foreground">
-                        Your plan deposit fee ({plan.markup}%):
-                      </span>
-                      <span>
-                        {formatCurrency(
-                          (
-                            Markup.add({
-                              usdCents: parseInt(creditAmount),
-                              markupPercentage: plan.markup,
-                            }) - parseInt(creditAmount)
-                          ).toString(),
-                        )}
-                      </span>
-                    </div>
-                    <div className="flex justify-between items-center text-sm font-medium pt-2 border-t border-border mt-2">
-                      <span>Total charge:</span>
-                      <span>
-                        {formatCurrency(
+            <div className="rounded-xl border border-border bg-muted/30 p-3">
+              <div className="flex justify-between items-center text-sm">
+                <span className="text-muted-foreground">Credit amount:</span>
+                <span>{formatCurrency(creditAmount)}</span>
+              </div>
+              {plan.markup > 0 && (
+                <>
+                  <div className="flex justify-between items-center text-sm">
+                    <span className="text-muted-foreground">
+                      Your plan deposit fee ({plan.markup}%):
+                    </span>
+                    <span>
+                      {formatCurrency(
+                        (
                           Markup.add({
                             usdCents: parseInt(creditAmount),
                             markupPercentage: plan.markup,
-                          }).toString(),
-                        )}
-                      </span>
-                    </div>
-                  </>
-                )}
-              </div>
-            )}
-          {createCheckoutSession.error ? (
-            <p className="text-destructive text-sm">
-              We could not create a checkout session for you now.
-              <br />
-              Please try again later.
-            </p>
-          ) : null}
+                          }) - parseInt(creditAmount)
+                        ).toString(),
+                      )}
+                    </span>
+                  </div>
+                  <div className="flex justify-between items-center text-sm font-medium pt-2 border-t border-border mt-2">
+                    <span>Total charge:</span>
+                    <span>
+                      {formatCurrency(
+                        Markup.add({
+                          usdCents: parseInt(creditAmount),
+                          markupPercentage: plan.markup,
+                        }).toString(),
+                      )}
+                    </span>
+                  </div>
+                </>
+              )}
+            </div>
+          )}
+          {createCheckoutSession.error
+            ? (
+              <p className="text-destructive text-sm">
+                We could not create a checkout session for you now.
+                <br />
+                Please try again later.
+              </p>
+            )
+            : null}
           <Button
             disabled={createCheckoutSession.isPending}
             variant="special"

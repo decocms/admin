@@ -35,8 +35,9 @@ export const useCreateAgent = () => {
       // update list
       const listKey = KEYS.AGENT(locator);
       client.cancelQueries({ queryKey: listKey });
-      client.setQueryData<Agent[]>(listKey, (old) =>
-        !old ? [result] : [result, ...old],
+      client.setQueryData<Agent[]>(
+        listKey,
+        (old) => !old ? [result] : [result, ...old],
       );
     },
   });
@@ -59,8 +60,10 @@ export const useUpdateAgent = () => {
       // update list
       const listKey = KEYS.AGENT(locator);
       client.cancelQueries({ queryKey: listKey });
-      client.setQueryData<Agent[]>(listKey, (old) =>
-        !old ? [result] : old.map((a) => (a.id === result.id ? result : a)),
+      client.setQueryData<Agent[]>(
+        listKey,
+        (old) =>
+          !old ? [result] : old.map((a) => (a.id === result.id ? result : a)),
       );
     },
   });
@@ -83,8 +86,9 @@ export const useRemoveAgent = () => {
       // Update the list
       const listKey = KEYS.AGENT(locator);
       client.cancelQueries({ queryKey: listKey });
-      client.setQueryData<Agent[]>(listKey, (old) =>
-        !old ? [] : old.filter((agent) => agent.id !== id),
+      client.setQueryData<Agent[]>(
+        listKey,
+        (old) => !old ? [] : old.filter((agent) => agent.id !== id),
       );
 
       // Invalidate triggers

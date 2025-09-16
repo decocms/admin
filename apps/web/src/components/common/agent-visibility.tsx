@@ -30,13 +30,11 @@ AgentVisibility.Icon = ({
     <TooltipTrigger asChild>
       <Icon
         {...props}
-        name={
-          agent.visibility === "PUBLIC"
-            ? "public"
-            : agent.visibility === "PRIVATE"
-              ? "lock"
-              : "groups"
-        }
+        name={agent.visibility === "PUBLIC"
+          ? "public"
+          : agent.visibility === "PRIVATE"
+          ? "lock"
+          : "groups"}
       />
     </TooltipTrigger>
     <TooltipContent>{DESCRIPTIONS[agent.visibility]}</TooltipContent>

@@ -93,11 +93,9 @@ export const RENDER = createInnateTool({
     "Display content in a preview iframe. Accepts either a URL or HTML content.",
   inputSchema: RenderInputSchema,
   outputSchema: RenderInputSchema,
-  execute:
-    () =>
-    async ({ context }) => {
-      return await Promise.resolve(context);
-    },
+  execute: () => async ({ context }) => {
+    return await Promise.resolve(context);
+  },
 });
 
 export const FETCH = createInnateTool({
@@ -106,49 +104,47 @@ export const FETCH = createInnateTool({
     "Fetch to a URL. Use only when you don't have a specific integration, so make sure to try to use the other tools first. Supports multiple HTTP methods, custom headers, request body, and optional proxy usage. With this you can get the content of a URL or make requests to APIs.",
   inputSchema: FetchInputSchema,
   outputSchema: FetchOutputSchema,
-  execute:
-    () =>
-    async ({ context }) => {
-      const { url: targetUrl, method, headers = {}, body, timeout } = context;
+  execute: () => async ({ context }) => {
+    const { url: targetUrl, method, headers = {}, body, timeout } = context;
 
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), timeout);
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), timeout);
 
-      try {
-        const requestHeaders = new Headers(headers);
-        if (body && typeof body === "object") {
-          requestHeaders.set("Content-Type", "application/json");
-        }
-
-        const requestInit: RequestInit = {
-          method,
-          headers: requestHeaders,
-          signal: controller.signal,
-          body: body && typeof body === "object" ? JSON.stringify(body) : body,
-        };
-
-        const response = await fetch(targetUrl, requestInit);
-        const content = await response.text();
-        const responseHeaders: Record<string, string> = {};
-        response.headers.forEach((value, key) => {
-          responseHeaders[key] = value;
-        });
-
-        return {
-          content,
-          status: response.status,
-          headers: responseHeaders,
-          ok: response.ok,
-        };
-      } catch (error) {
-        if (error instanceof Error && error.name === "AbortError") {
-          throw new Error(`Request timed out after ${timeout}ms`);
-        }
-        throw error;
-      } finally {
-        clearTimeout(timeoutId);
+    try {
+      const requestHeaders = new Headers(headers);
+      if (body && typeof body === "object") {
+        requestHeaders.set("Content-Type", "application/json");
       }
-    },
+
+      const requestInit: RequestInit = {
+        method,
+        headers: requestHeaders,
+        signal: controller.signal,
+        body: body && typeof body === "object" ? JSON.stringify(body) : body,
+      };
+
+      const response = await fetch(targetUrl, requestInit);
+      const content = await response.text();
+      const responseHeaders: Record<string, string> = {};
+      response.headers.forEach((value, key) => {
+        responseHeaders[key] = value;
+      });
+
+      return {
+        content,
+        status: response.status,
+        headers: responseHeaders,
+        ok: response.ok,
+      };
+    } catch (error) {
+      if (error instanceof Error && error.name === "AbortError") {
+        throw new Error(`Request timed out after ${timeout}ms`);
+      }
+      throw error;
+    } finally {
+      clearTimeout(timeoutId);
+    }
+  },
 });
 
 export const POLL_FOR_CONTENT = createInnateTool({
@@ -157,153 +153,129 @@ export const POLL_FOR_CONTENT = createInnateTool({
     "Check if a URL has content available with better detection methods, timeouts, and resource management. Uses HEAD requests for efficiency and proper retry logic.",
   inputSchema: PollForContentInputSchema,
   outputSchema: PollForContentOutputSchema,
-  execute:
-    () =>
-    async ({ context }) => {
-      const {
-        url,
-        maxAttempts = RETRY_CONFIG.maxAttempts,
-        maxDelay = RETRY_CONFIG.maxDelay,
-      } = context;
+  execute: () => async ({ context }) => {
+    const {
+      url,
+      maxAttempts = RETRY_CONFIG.maxAttempts,
+      maxDelay = RETRY_CONFIG.maxDelay,
+    } = context;
+
+    try {
+      new URL(url);
+    } catch {
+      return {
+        hasContent: false,
+        message: "Invalid URL format",
+      };
+    }
+
+    let attempt = 1;
+
+    while (attempt <= maxAttempts) {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
 
       try {
-        new URL(url);
-      } catch {
-        return {
-          hasContent: false,
-          message: "Invalid URL format",
-        };
-      }
-
-      let attempt = 1;
-
-      while (attempt <= maxAttempts) {
-        const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
+        let hasContent = false;
+        let contentInfo = "";
 
         try {
-          let hasContent = false;
-          let contentInfo = "";
+          const headRes = await fetch(url, {
+            method: "HEAD",
+            signal: controller.signal,
+          });
 
+          if (headRes.ok) {
+            const contentLength = headRes.headers.get("Content-Length");
+            const contentType = headRes.headers.get("Content-Type");
+
+            // Simple logic: if HEAD returns OK (200-299), content is likely available
+            // Additional checks for content length can help confirm
+            const hasValidLength = contentLength
+              ? parseInt(contentLength, 10) > 0
+              : true; // Default to true if no length header
+
+            if (hasValidLength) {
+              hasContent = true;
+              contentInfo =
+                `URL has content available (HEAD: ${headRes.status}, Content-Length: ${
+                  contentLength || "unknown"
+                }, Content-Type: ${contentType || "unknown"})`;
+            }
+          }
+        } catch (headError) {
+          console.debug(
+            "HEAD request failed, will try GET fallback:",
+            headError,
+          );
+        }
+
+        // If HEAD didn't confirm content, try GET as fallback
+        if (!hasContent) {
           try {
-            const headRes = await fetch(url, {
-              method: "HEAD",
+            const getRes = await fetch(url, {
+              method: "GET",
               signal: controller.signal,
+              headers: {
+                Range: "bytes=0-1023", // Only fetch first 1KB to minimize data transfer
+              },
             });
 
-            if (headRes.ok) {
-              const contentLength = headRes.headers.get("Content-Length");
-              const contentType = headRes.headers.get("Content-Type");
+            if (getRes.ok) {
+              const contentLength = getRes.headers.get("Content-Length");
+              const contentType = getRes.headers.get("Content-Type");
 
-              // Simple logic: if HEAD returns OK (200-299), content is likely available
-              // Additional checks for content length can help confirm
-              const hasValidLength = contentLength
-                ? parseInt(contentLength, 10) > 0
-                : true; // Default to true if no length header
+              // Cancel the response body to avoid downloading the full content
+              if (getRes.body) {
+                await getRes.body.cancel();
+              }
 
-              if (hasValidLength) {
-                hasContent = true;
-                contentInfo = `URL has content available (HEAD: ${headRes.status}, Content-Length: ${
+              hasContent = true;
+              contentInfo =
+                `URL has content available (GET: ${getRes.status}, Content-Length: ${
                   contentLength || "unknown"
                 }, Content-Type: ${contentType || "unknown"})`;
-              }
             }
-          } catch (headError) {
-            console.debug(
-              "HEAD request failed, will try GET fallback:",
-              headError,
-            );
+          } catch (getError) {
+            // Both HEAD and GET failed, continue to retry logic
+            console.debug("GET request also failed:", getError);
           }
+        }
 
-          // If HEAD didn't confirm content, try GET as fallback
-          if (!hasContent) {
-            try {
-              const getRes = await fetch(url, {
-                method: "GET",
-                signal: controller.signal,
-                headers: {
-                  Range: "bytes=0-1023", // Only fetch first 1KB to minimize data transfer
-                },
-              });
+        clearTimeout(timeoutId);
 
-              if (getRes.ok) {
-                const contentLength = getRes.headers.get("Content-Length");
-                const contentType = getRes.headers.get("Content-Type");
-
-                // Cancel the response body to avoid downloading the full content
-                if (getRes.body) {
-                  await getRes.body.cancel();
-                }
-
-                hasContent = true;
-                contentInfo = `URL has content available (GET: ${getRes.status}, Content-Length: ${
-                  contentLength || "unknown"
-                }, Content-Type: ${contentType || "unknown"})`;
-              }
-            } catch (getError) {
-              // Both HEAD and GET failed, continue to retry logic
-              console.debug("GET request also failed:", getError);
-            }
-          }
-
-          clearTimeout(timeoutId);
-
-          if (hasContent) {
-            return {
-              hasContent: true,
-              message: contentInfo,
-            };
-          }
-
-          // If we reach here, no content was detected
-          if (attempt < maxAttempts) {
-            // Exponential backoff with jitter
-            const baseDelay = Math.min(
-              500 * Math.pow(2, attempt - 1),
-              maxDelay,
-            );
-            const jitter = Math.random() * 0.1 * baseDelay; // Add 10% jitter
-            const delay = baseDelay + jitter;
-
-            await new Promise((resolve) => setTimeout(resolve, delay));
-            attempt++;
-            continue;
-          }
-
+        if (hasContent) {
           return {
-            hasContent: false,
-            message: `URL has no content after ${maxAttempts} attempts`,
+            hasContent: true,
+            message: contentInfo,
           };
-        } catch (error) {
-          clearTimeout(timeoutId);
+        }
 
-          // Check if it's a timeout error
-          if (error instanceof Error && error.name === "AbortError") {
-            if (attempt < maxAttempts) {
-              const baseDelay = Math.min(
-                1000 * Math.pow(2, attempt - 1),
-                maxDelay,
-              );
-              const jitter = Math.random() * 0.1 * baseDelay;
-              const delay = baseDelay + jitter;
+        // If we reach here, no content was detected
+        if (attempt < maxAttempts) {
+          // Exponential backoff with jitter
+          const baseDelay = Math.min(
+            500 * Math.pow(2, attempt - 1),
+            maxDelay,
+          );
+          const jitter = Math.random() * 0.1 * baseDelay; // Add 10% jitter
+          const delay = baseDelay + jitter;
 
-              await new Promise((resolve) => setTimeout(resolve, delay));
-              attempt++;
-              continue;
-            }
+          await new Promise((resolve) => setTimeout(resolve, delay));
+          attempt++;
+          continue;
+        }
 
-            return {
-              hasContent: false,
-              message: "Request timed out after multiple attempts",
-            };
-          }
+        return {
+          hasContent: false,
+          message: `URL has no content after ${maxAttempts} attempts`,
+        };
+      } catch (error) {
+        clearTimeout(timeoutId);
 
-          // For other errors, determine if they're retryable
-          const isRetryable =
-            error instanceof TypeError || // Network errors
-            (error instanceof Error && error.message.includes("fetch"));
-
-          if (isRetryable && attempt < maxAttempts) {
+        // Check if it's a timeout error
+        if (error instanceof Error && error.name === "AbortError") {
+          if (attempt < maxAttempts) {
             const baseDelay = Math.min(
               1000 * Math.pow(2, attempt - 1),
               maxDelay,
@@ -318,18 +290,41 @@ export const POLL_FOR_CONTENT = createInnateTool({
 
           return {
             hasContent: false,
-            message: `Error checking URL: ${
-              error instanceof Error ? error.message : "Unknown error"
-            }`,
+            message: "Request timed out after multiple attempts",
           };
         }
-      }
 
-      return {
-        hasContent: false,
-        message: "Maximum retry attempts reached",
-      };
-    },
+        // For other errors, determine if they're retryable
+        const isRetryable = error instanceof TypeError || // Network errors
+          (error instanceof Error && error.message.includes("fetch"));
+
+        if (isRetryable && attempt < maxAttempts) {
+          const baseDelay = Math.min(
+            1000 * Math.pow(2, attempt - 1),
+            maxDelay,
+          );
+          const jitter = Math.random() * 0.1 * baseDelay;
+          const delay = baseDelay + jitter;
+
+          await new Promise((resolve) => setTimeout(resolve, delay));
+          attempt++;
+          continue;
+        }
+
+        return {
+          hasContent: false,
+          message: `Error checking URL: ${
+            error instanceof Error ? error.message : "Unknown error"
+          }`,
+        };
+      }
+    }
+
+    return {
+      hasContent: false,
+      message: "Maximum retry attempts reached",
+    };
+  },
 });
 
 const ShowPickerInputSchema = z.object({
@@ -354,11 +349,9 @@ export const SHOW_PICKER = createInnateTool({
     "Don't repeat the question in text before calling the tool, just call the tool with the question and options.",
   inputSchema: ShowPickerInputSchema,
   outputSchema: ShowPickerInputSchema,
-  execute:
-    () =>
-    async ({ context }) => {
-      return await Promise.resolve(context);
-    },
+  execute: () => async ({ context }) => {
+    return await Promise.resolve(context);
+  },
 });
 
 const ConfirmInputSchema = z.object({
@@ -375,23 +368,21 @@ export const CONFIRM = createInnateTool({
     "for example when confirming a payment, deleting a file, etc.",
   inputSchema: ConfirmInputSchema,
   outputSchema: ShowPickerInputSchema,
-  execute:
-    () =>
-    async ({ context }) => {
-      return await Promise.resolve({
-        question: context.message,
-        options: [
-          {
-            label: "Confirm",
-            value: "confirm",
-          },
-          {
-            label: "Cancel",
-            value: "cancel",
-          },
-        ],
-      });
-    },
+  execute: () => async ({ context }) => {
+    return await Promise.resolve({
+      question: context.message,
+      options: [
+        {
+          label: "Confirm",
+          value: "confirm",
+        },
+        {
+          label: "Cancel",
+          value: "cancel",
+        },
+      ],
+    });
+  },
 });
 
 const CreatePresignedUrlInputSchema = z.object({
@@ -413,59 +404,57 @@ export const CREATE_PRESIGNED_URL = createInnateTool({
   description: "Create a presigned URL for a file in the Deco Chat file system",
   inputSchema: CreatePresignedUrlInputSchema,
   outputSchema: CreatePresignedUrlOutputSchema,
-  execute:
-    (agent, env) =>
-    async ({ context }) => {
-      const { expiresIn = 3600, fileExtension } = context;
-      if (!env) {
-        throw new Error("Env is required");
-      }
+  execute: (agent, env) => async ({ context }) => {
+    const { expiresIn = 3600, fileExtension } = context;
+    if (!env) {
+      throw new Error("Env is required");
+    }
 
-      const { workspace } = agent;
-      const bucketName = env.DECO_CHAT_DATA_BUCKET_NAME ?? "deco-chat-fs";
-      const region = env.AWS_REGION ?? "us-east-2";
+    const { workspace } = agent;
+    const bucketName = env.DECO_CHAT_DATA_BUCKET_NAME ?? "deco-chat-fs";
+    const region = env.AWS_REGION ?? "us-east-2";
 
-      const expiresAt = Math.floor(Date.now() / 1000) + expiresIn;
+    const expiresAt = Math.floor(Date.now() / 1000) + expiresIn;
 
-      const s3Client = new S3Client({
-        region,
-        credentials: {
-          accessKeyId: env.AWS_ACCESS_KEY_ID!,
-          secretAccessKey: env.AWS_SECRET_ACCESS_KEY!,
-        },
-      });
+    const s3Client = new S3Client({
+      region,
+      credentials: {
+        accessKeyId: env.AWS_ACCESS_KEY_ID!,
+        secretAccessKey: env.AWS_SECRET_ACCESS_KEY!,
+      },
+    });
 
-      const s3Key = `${workspace}/${crypto.randomUUID()}.${fileExtension}`;
+    const s3Key = `${workspace}/${crypto.randomUUID()}.${fileExtension}`;
 
-      const contentType = getContentType(fileExtension);
+    const contentType = getContentType(fileExtension);
 
-      const putCommand = new PutObjectCommand({
-        Bucket: bucketName,
-        Key: s3Key,
-        ContentType: contentType,
-      });
+    const putCommand = new PutObjectCommand({
+      Bucket: bucketName,
+      Key: s3Key,
+      ContentType: contentType,
+    });
 
-      const putUrl = await getSignedUrl(s3Client, putCommand, {
-        expiresIn,
-        signableHeaders: new Set(["content-type"]),
-      });
+    const putUrl = await getSignedUrl(s3Client, putCommand, {
+      expiresIn,
+      signableHeaders: new Set(["content-type"]),
+    });
 
-      const getCommand = new GetObjectCommand({
-        Bucket: bucketName,
-        Key: s3Key,
-        ResponseContentType: contentType,
-      });
+    const getCommand = new GetObjectCommand({
+      Bucket: bucketName,
+      Key: s3Key,
+      ResponseContentType: contentType,
+    });
 
-      const getUrl = await getSignedUrl(s3Client, getCommand, {
-        expiresIn,
-      });
+    const getUrl = await getSignedUrl(s3Client, getCommand, {
+      expiresIn,
+    });
 
-      return {
-        putUrl,
-        getUrl,
-        expiresAt,
-      };
-    },
+    return {
+      putUrl,
+      getUrl,
+      expiresAt,
+    };
+  },
 });
 
 function getContentType(extension: string): string {
@@ -478,11 +467,13 @@ function getContentType(extension: string): string {
     svg: "image/svg+xml",
     pdf: "application/pdf",
     doc: "application/msword",
-    docx: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+    docx:
+      "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
     xls: "application/vnd.ms-excel",
     xlsx: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
     ppt: "application/vnd.ms-powerpoint",
-    pptx: "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+    pptx:
+      "application/vnd.openxmlformats-officedocument.presentationml.presentation",
     txt: "text/plain",
     csv: "text/csv",
     html: "text/html",
@@ -581,99 +572,97 @@ export const SPEAK = createInnateTool({
     "For example: ![audio]({audioUrl})",
   inputSchema: SpeakInputSchema,
   outputSchema: SpeakOutputSchema,
-  execute:
-    (agent, env) =>
-    async ({ context }) => {
-      let s3Client: S3Client | null = null;
-      // deno-lint-ignore no-explicit-any
-      let readableStream: any = null;
+  execute: (agent, env) => async ({ context }) => {
+    let s3Client: S3Client | null = null;
+    // deno-lint-ignore no-explicit-any
+    let readableStream: any = null;
 
-      try {
-        const { text, emotion, speed, voice } = context;
+    try {
+      const { text, emotion, speed, voice } = context;
 
-        // Add emotional context to the text if specified
-        let enhancedText = text;
-        if (emotion && emotion !== "neutral") {
-          enhancedText = `[Speaking in a ${emotion} tone] ${text}`;
-        }
+      // Add emotional context to the text if specified
+      let enhancedText = text;
+      if (emotion && emotion !== "neutral") {
+        enhancedText = `[Speaking in a ${emotion} tone] ${text}`;
+      }
 
-        // Use the agent's speak method with voice and speed options
-        const speedMap = { slow: 0.75, normal: 1.0, fast: 1.25 };
-        const speakOptions = {
-          voice,
-          speed: speed ? speedMap[speed] : undefined,
-        };
+      // Use the agent's speak method with voice and speed options
+      const speedMap = { slow: 0.75, normal: 1.0, fast: 1.25 };
+      const speakOptions = {
+        voice,
+        speed: speed ? speedMap[speed] : undefined,
+      };
 
-        readableStream = await agent.speak(enhancedText, speakOptions);
+      readableStream = await agent.speak(enhancedText, speakOptions);
 
-        // Check if we got a valid ReadableStream
-        if (!readableStream) {
-          return {
-            success: false,
-            message: "Voice synthesis is not available for this agent",
-          };
-        }
-
-        const {
-          DECO_CHAT_DATA_BUCKET_NAME,
-          AWS_REGION,
-          AWS_ACCESS_KEY_ID,
-          AWS_SECRET_ACCESS_KEY,
-        } = env ?? {};
-
-        let audioUrl: string | undefined;
-
-        if (
-          DECO_CHAT_DATA_BUCKET_NAME &&
-          AWS_REGION &&
-          AWS_ACCESS_KEY_ID &&
-          AWS_SECRET_ACCESS_KEY
-        ) {
-          try {
-            s3Client = new S3Client({
-              region: AWS_REGION,
-              credentials: {
-                accessKeyId: AWS_ACCESS_KEY_ID,
-                secretAccessKey: AWS_SECRET_ACCESS_KEY,
-              },
-            });
-
-            const timestamp = Date.now();
-            const audioFileName = `audio/speech-${timestamp}.mp3`;
-            const { workspace } = agent;
-            const s3Key = `${workspace}/${audioFileName}`;
-
-            audioUrl = await processAudioStream(
-              readableStream,
-              s3Client,
-              DECO_CHAT_DATA_BUCKET_NAME,
-              s3Key,
-            );
-          } catch (uploadError) {
-            console.error("💥 Error uploading audio:", uploadError);
-          }
-        }
-
-        return {
-          success: true,
-          message: `Successfully generated speech for: "${text.substring(0, 50)}${
-            text.length > 50 ? "..." : ""
-          }"`,
-          audioUrl,
-        };
-      } catch (error) {
-        console.error("💥 Error in SPEAK tool:", error);
+      // Check if we got a valid ReadableStream
+      if (!readableStream) {
         return {
           success: false,
-          message: `Failed to generate speech: ${
-            error instanceof Error ? error.message : "Unknown error"
-          }`,
+          message: "Voice synthesis is not available for this agent",
         };
-      } finally {
-        // Cleanup resources
-        await cleanupResources(readableStream, s3Client);
       }
-    },
+
+      const {
+        DECO_CHAT_DATA_BUCKET_NAME,
+        AWS_REGION,
+        AWS_ACCESS_KEY_ID,
+        AWS_SECRET_ACCESS_KEY,
+      } = env ?? {};
+
+      let audioUrl: string | undefined;
+
+      if (
+        DECO_CHAT_DATA_BUCKET_NAME &&
+        AWS_REGION &&
+        AWS_ACCESS_KEY_ID &&
+        AWS_SECRET_ACCESS_KEY
+      ) {
+        try {
+          s3Client = new S3Client({
+            region: AWS_REGION,
+            credentials: {
+              accessKeyId: AWS_ACCESS_KEY_ID,
+              secretAccessKey: AWS_SECRET_ACCESS_KEY,
+            },
+          });
+
+          const timestamp = Date.now();
+          const audioFileName = `audio/speech-${timestamp}.mp3`;
+          const { workspace } = agent;
+          const s3Key = `${workspace}/${audioFileName}`;
+
+          audioUrl = await processAudioStream(
+            readableStream,
+            s3Client,
+            DECO_CHAT_DATA_BUCKET_NAME,
+            s3Key,
+          );
+        } catch (uploadError) {
+          console.error("💥 Error uploading audio:", uploadError);
+        }
+      }
+
+      return {
+        success: true,
+        message: `Successfully generated speech for: "${text.substring(0, 50)}${
+          text.length > 50 ? "..." : ""
+        }"`,
+        audioUrl,
+      };
+    } catch (error) {
+      console.error("💥 Error in SPEAK tool:", error);
+      return {
+        success: false,
+        message: `Failed to generate speech: ${
+          error instanceof Error ? error.message : "Unknown error"
+        }`,
+      };
+    } finally {
+      // Cleanup resources
+      await cleanupResources(readableStream, s3Client);
+    }
+  },
 });
 
 // Helper function to process audio stream with memory efficiency
@@ -822,8 +811,9 @@ async function uploadWithRetry(
       await s3Client.send(putCommand);
       return; // Success
     } catch (error) {
-      lastError =
-        error instanceof Error ? error : new Error("Unknown upload error");
+      lastError = error instanceof Error
+        ? error
+        : new Error("Unknown upload error");
 
       if (attempt < maxRetries) {
         // Exponential backoff: 1s, 2s, 4s

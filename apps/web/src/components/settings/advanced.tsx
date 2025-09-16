@@ -408,11 +408,9 @@ function AdvancedTab() {
                             {roles.map((role) => (
                               <SelectItem key={role.id} value={role.name}>
                                 <Icon
-                                  name={
-                                    role.name === "owner"
-                                      ? "lock_person"
-                                      : "groups"
-                                  }
+                                  name={role.name === "owner"
+                                    ? "lock_person"
+                                    : "groups"}
                                 />
                                 {role.name}
                               </SelectItem>

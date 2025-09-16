@@ -1,10 +1,12 @@
 import type { LanguageModelV1FinishReason } from "@ai-sdk/provider";
 import { useChat } from "@ai-sdk/react";
 import {
+  type Agent,
   AgentSchema,
   DECO_CMS_API_URL,
   dispatchMessages,
   getTraceDebugId,
+  type Integration,
   Toolset,
   useAgentData,
   useAgentRoot,
@@ -13,8 +15,6 @@ import {
   useThreads,
   useUpdateAgent,
   WELL_KNOWN_AGENTS,
-  type Agent,
-  type Integration,
 } from "@deco/sdk";
 import {
   AlertDialog,
@@ -30,14 +30,14 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import type { UIMessage } from "ai";
 import {
   createContext,
+  type PropsWithChildren,
+  type RefObject,
   useCallback,
   useContext,
+  useEffect,
   useMemo,
   useRef,
   useState,
-  useEffect,
-  type PropsWithChildren,
-  type RefObject,
 } from "react";
 import { useForm, type UseFormReturn } from "react-hook-form";
 import { useBlocker } from "react-router";
@@ -148,8 +148,9 @@ export function AgentProvider({
   const agentRoot = useAgentRoot(agentId);
   const { preferences } = useUserPreferences();
 
-  const [finishReason, setFinishReason] =
-    useState<LanguageModelV1FinishReason | null>(null);
+  const [finishReason, setFinishReason] = useState<
+    LanguageModelV1FinishReason | null
+  >(null);
   const scrollRef = useRef<HTMLDivElement>(null);
   const correlationIdRef = useRef<string | null>(null);
   const latestRulesRef = useRef<string[] | null>(null);
@@ -307,10 +308,9 @@ export function AgentProvider({
             maxSteps: effectiveChatState.max_steps,
             pdfSummarization: preferences.pdfSummarization ?? true,
             toolsets,
-            smoothStream:
-              preferences.smoothStream !== false
-                ? { delayInMs: 25, chunk: "word" }
-                : undefined,
+            smoothStream: preferences.smoothStream !== false
+              ? { delayInMs: 25, chunk: "word" }
+              : undefined,
           },
         ],
       };
@@ -359,7 +359,7 @@ export function AgentProvider({
           toolInvocations: msg.toolInvocations?.filter(
             (tool) => tool.toolCallId !== toolCallId,
           ),
-        })),
+        }))
       );
 
       await chat.append({ role: "user", content: selectedValue });

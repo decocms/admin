@@ -177,8 +177,8 @@ export const JwtIssuer = {
     keyPair?: JwtIssuerKeyPair,
     issuer: string = DECO_CHAT_ISSUER,
   ): Promise<JwtIssuer> => {
-    const { public: pubkey, private: privkey } =
-      keyPair || (await jwtKeyPair());
+    const { public: pubkey, private: privkey } = keyPair ||
+      (await jwtKeyPair());
     const [verifier, priv] = await Promise.all([
       newJwtVerifierWithJWK(pubkey),
       importKey(privkey, ["sign"]),

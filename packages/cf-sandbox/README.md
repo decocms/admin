@@ -1,13 +1,17 @@
 # CF Sandbox
 
-A JavaScript sandbox implementation using QuickJS for secure code execution in Cloudflare Workers.
+A JavaScript sandbox implementation using QuickJS for secure code execution in
+Cloudflare Workers.
 
 ## Features
 
 - **Secure Execution**: Code runs in an isolated QuickJS context
-- **Function Arguments**: Pass serializable data and host functions to sandboxed code
-- **Host Function Proxies**: Function arguments execute in the host context, not the sandbox
-- **Backward Compatible**: Existing code using `evalFunction(code)` continues to work
+- **Function Arguments**: Pass serializable data and host functions to sandboxed
+  code
+- **Host Function Proxies**: Function arguments execute in the host context, not
+  the sandbox
+- **Backward Compatible**: Existing code using `evalFunction(code)` continues to
+  work
 
 ## Usage
 
@@ -50,9 +54,9 @@ const hostCallback = (value: number) => {
 
 // Execute the function with arguments
 const result = await context.evalFunction(
-  fnString, 
-  42,           // serializable argument
-  hostCallback  // function argument (executes in host)
+  fnString,
+  42, // serializable argument
+  hostCallback, // function argument (executes in host)
 );
 
 console.log(result.value); // "Host processed: 252"
@@ -110,9 +114,9 @@ const hostProcessor = (value: number) => {
 
 const result = await context.evalFunction(
   fnString,
-  { value: 5, name: "test" },  // serializable object
-  hostProcessor,                // host function
-  "Mixed args test"            // serializable string
+  { value: 5, name: "test" }, // serializable object
+  hostProcessor, // host function
+  "Mixed args test", // serializable string
 );
 
 console.log(result.value);
@@ -130,25 +134,35 @@ console.log(result.value);
 Evaluates code in the sandbox context.
 
 **Parameters:**
+
 - `codeOrFnString`: JavaScript code string or function string to execute
 - `...args`: Optional arguments to pass to the function
 
 **Behavior:**
-- If no arguments provided: executes the code string directly (backward compatible)
-- If arguments provided: treats the first parameter as a function string and calls it with the provided arguments
-- **Promise handling**: All code is wrapped in async functions to automatically handle both sync and async returns
+
+- If no arguments provided: executes the code string directly (backward
+  compatible)
+- If arguments provided: treats the first parameter as a function string and
+  calls it with the provided arguments
+- **Promise handling**: All code is wrapped in async functions to automatically
+  handle both sync and async returns
 
 **Argument Handling:**
-- **Serializable arguments**: JSON-serializable values are serialized and passed to the sandbox
-- **Function arguments**: Functions are proxied to execute in the host context, not the sandbox
-- **Async support**: Functions can return promises, which are automatically awaited
+
+- **Serializable arguments**: JSON-serializable values are serialized and passed
+  to the sandbox
+- **Function arguments**: Functions are proxied to execute in the host context,
+  not the sandbox
+- **Async support**: Functions can return promises, which are automatically
+  awaited
 
 **Returns:**
+
 ```typescript
 interface EvaluationResult<T = unknown> {
-  value?: T;           // The result of the evaluation
-  error?: unknown;     // Any error that occurred
-  logs: Array<{        // Console logs from the sandbox
+  value?: T; // The result of the evaluation
+  error?: unknown; // Any error that occurred
+  logs: Array<{ // Console logs from the sandbox
     type: "log" | "warn" | "error";
     content: string;
   }>;

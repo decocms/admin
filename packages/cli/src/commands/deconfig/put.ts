@@ -1,4 +1,4 @@
-import { readFileSync, existsSync } from "fs";
+import { existsSync, readFileSync } from "fs";
 import { putFileContent } from "./base.js";
 import { Buffer } from "node:buffer";
 import process from "node:process";

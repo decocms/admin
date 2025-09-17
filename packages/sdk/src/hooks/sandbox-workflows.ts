@@ -1,6 +1,5 @@
 import { useMutation, useQuery, useSuspenseQuery } from "@tanstack/react-query";
 
-
 import { WellKnownMcpGroups } from "../crud/groups.ts";
 
 import { InternalServerError } from "../errors.ts";

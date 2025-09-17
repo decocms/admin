@@ -162,7 +162,6 @@ const WorkflowDetailPage = lazy(() =>
   wrapWithUILoadingFallback(import("./components/workflows/detail.tsx")),
 );
 
-
 const AppAuth = lazy(() =>
   wrapWithUILoadingFallback(import("./components/apps/auth.tsx")),
 );

@@ -7,10 +7,21 @@ import {
 import { impl, WellKnownBindings } from "../bindings/binder.ts";
 import { createMCPToolsStub, DeconfigClient, MCPClientStub } from "../index.ts";
 
+export type ResourcesBinding = (typeof WellKnownBindings)["Resources"];
+export type ResourcesTools = ResourcesBinding[number]["name"];
+
+export type EnhancedResourcesTools = Record<
+  ResourcesTools,
+  {
+    description: string;
+  }
+>;
+
 export interface DeconfigResourceOptions {
   deconfig: DeconfigClient;
   directory: string;
   resourceName?: string;
+  tools?: EnhancedResourcesTools;
 }
 
 const normalizeDirectory = (dir: string) => {
@@ -36,16 +47,14 @@ const extractResourceId = (uri: string) => {
 export const DeconfigResource = {
   define: (options: Omit<DeconfigResourceOptions, "deconfig">) => {
     return {
-      client: (
-        deconfig: DeconfigClient,
-      ): MCPClientStub<(typeof WellKnownBindings)["Resources"]> => {
+      client: (deconfig: DeconfigClient): MCPClientStub<ResourcesBinding> => {
         const tools = deconfigResource({
           deconfig,
           ...options,
         });
         return createMCPToolsStub({
           tools,
-        }) as MCPClientStub<(typeof WellKnownBindings)["Resources"]>;
+        }) as MCPClientStub<ResourcesBinding>;
       },
       create: (deconfig: DeconfigClient) => {
         return deconfigResource({
@@ -58,12 +67,14 @@ export const DeconfigResource = {
 };
 
 export const deconfigResource = (options: DeconfigResourceOptions) => {
-  const { deconfig, directory, resourceName: _resourceName } = options;
+  const { deconfig, directory, resourceName: _resourceName, tools } = options;
   const resourceName = _resourceName || directory;
   return impl(WellKnownBindings.Resources, [
     // DECO_CHAT_RESOURCES_READ
     {
-      description: `Read a resource from the DECONFIG directory ${directory}`,
+      description:
+        tools?.DECO_CHAT_RESOURCES_READ?.description ||
+        `Read a resource from the DECONFIG directory ${directory}`,
       handler: async ({ name, uri }, c) => {
         assertHasWorkspace(c);
         await assertWorkspaceResourceAccess(c, "READ_FILE");
@@ -120,7 +131,9 @@ export const deconfigResource = (options: DeconfigResourceOptions) => {
 
     // DECO_CHAT_RESOURCES_SEARCH
     {
-      description: `Search resources in the DECONFIG directory ${directory}`,
+      description:
+        tools?.DECO_CHAT_RESOURCES_SEARCH?.description ||
+        `Search resources in the DECONFIG directory ${directory}`,
       handler: async ({ name, term, cursor, limit = 10 }, c) => {
         assertHasWorkspace(c);
         await assertWorkspaceResourceAccess(c, "LIST_FILES");
@@ -178,7 +191,9 @@ export const deconfigResource = (options: DeconfigResourceOptions) => {
 
     // DECO_CHAT_RESOURCES_CREATE
     {
-      description: `Create a new resource in the DECONFIG directory ${directory}`,
+      description:
+        tools?.DECO_CHAT_RESOURCES_CREATE?.description ||
+        `Create a new resource in the DECONFIG directory ${directory}`,
       handler: async (
         { name, resourceName: rsName, title, description, content, metadata },
         c,
@@ -243,7 +258,9 @@ export const deconfigResource = (options: DeconfigResourceOptions) => {
 
     // DECO_CHAT_RESOURCES_UPDATE
     {
-      description: `Update a resource in the DECONFIG directory ${directory}`,
+      description:
+        tools?.DECO_CHAT_RESOURCES_UPDATE?.description ||
+        `Update a resource in the DECONFIG directory ${directory}`,
       handler: async (
         {
           name,
@@ -327,7 +344,9 @@ export const deconfigResource = (options: DeconfigResourceOptions) => {
 
     // DECO_CHAT_RESOURCES_DELETE
     {
-      description: `Delete a resource from the DECONFIG directory ${directory}`,
+      description:
+        tools?.DECO_CHAT_RESOURCES_DELETE?.description ||
+        `Delete a resource from the DECONFIG directory ${directory}`,
       handler: async ({ name, uri }, c) => {
         assertHasWorkspace(c);
         await assertWorkspaceResourceAccess(c, "DELETE_FILE");
@@ -351,7 +370,9 @@ export const deconfigResource = (options: DeconfigResourceOptions) => {
 
     // DECO_CHAT_RESOURCES_LIST
     {
-      description: `List available resource types`,
+      description:
+        tools?.DECO_CHAT_RESOURCES_LIST?.description ||
+        `List available resource types`,
       handler: async (_, c) => {
         assertHasWorkspace(c);
         await assertWorkspaceResourceAccess(c, "LIST_FILES");

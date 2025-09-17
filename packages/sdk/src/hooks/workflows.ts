@@ -6,7 +6,10 @@ import {
 } from "../crud/workflows.ts";
 import { InternalServerError } from "../errors.ts";
 import { useSDK } from "./store.tsx";
-import { useSandboxWorkflow, useSandboxWorkflowByUri } from "./sandbox-workflows.ts";
+import {
+  useSandboxWorkflow,
+  useSandboxWorkflowByUri,
+} from "./sandbox-workflows.ts";
 import type { WorkflowDefinition } from "../mcp/workflows/workflow-schemas.ts";
 import type { Workflow } from "../mcp/workflows/types.ts";
 
@@ -205,7 +208,6 @@ export function useWorkflow(workflowName: string) {
     error: error?.message || null,
   };
 }
-
 
 /**
  * Hook to get a workflow definition by URI with fallback to empty workflow

@@ -113,22 +113,92 @@ export type WorkflowStepDefinition = z.infer<
 
 export const startWorkflow = createTool({
   name: "WORKFLOWS_START",
-  description: "Start a workflow execution using Cloudflare Workflows",
+  description: `Execute a multi-step workflow with optional partial execution and state injection.
+
+## Overview
+
+This tool starts a workflow execution. Workflows are sequential automation processes that consist of alternating steps between tool calls (calling integration tools) and code steps (data transformation). Each workflow validates input against its schema and executes steps in order until completion or until stopped at a specified step.
+
+## Parameters
+
+### name
+The identifier of the workflow to execute. This must match an existing workflow definition in the workspace.
+
+### input
+The input data passed to the workflow. This data:
+- Will be validated against the workflow's defined input schema
+- Is accessible to all steps via \`ctx.readWorkflowInput()\`
+- Should match the structure expected by the workflow's first step
+
+### stopAfter (Optional)
+The name of the step where execution should halt. When specified:
+- The workflow executes **up to and including** the named step
+- Execution stops after the specified step completes
+- Useful for debugging, testing individual steps, or partial workflow execution
+- Example: If workflow has steps ["validate", "process", "notify"], setting \`stopAfter: "process"\` will run "validate" and "process" but skip "notify"
+
+### state (Optional)
+Pre-computed step results to inject into the workflow execution state. Format: \`{ "step-name": STEP_RESULT }\`
+
+This allows you to:
+- **Skip steps**: Provide expected outputs for steps you want to bypass
+- **Resume workflows**: Continue from a specific point with known intermediate results  
+- **Test workflows**: Inject mock data to test specific scenarios
+- **Debug workflows**: Isolate problems by providing known good inputs to later steps
+
+Example:
+\`\`\`json
+{
+  "validate-input": { "isValid": true, "errors": [] },
+  "fetch-data": { "records": [{"id": 1, "name": "test"}] }
+}
+\`\`\`
+
+## Execution Flow
+
+1. **Validation**: Input is validated against the workflow's input schema
+2. **State Injection**: Any provided state results are loaded into the workflow context
+3. **Step Execution**: Steps run sequentially, with each step having access to:
+   - Original workflow input via \`ctx.readWorkflowInput()\`
+   - Previous step results via \`ctx.readStepResult(stepName)\`
+   - Injected state results (treated as if those steps already completed)
+4. **Stopping**: If \`stopAfter\` is specified, execution halts after that step completes
+5. **Tracking**: Returns a \`runId\` for monitoring progress with \`WORKFLOWS_GET_STATUS\`
+
+## Common Use Cases
+
+- **Full Execution**: Run complete workflow from start to finish
+- **Step-by-Step Debugging**: Use \`stopAfter\` to test each step individually
+- **Workflow Resumption**: Use \`state\` to continue from a previous execution point
+- **Testing with Mock Data**: Use \`state\` to inject test results for upstream steps
+- **Partial Processing**: Stop at intermediate steps to inspect results before continuing
+
+## Return Value
+
+Returns an object with:
+- \`runId\`: Unique identifier for tracking this workflow execution
+- \`error\`: Error message if workflow failed to start (validation errors, missing workflow, etc.)`,
   inputSchema: z.object({
-    name: z.string().describe("The name of the workflow to run"),
+    name: z.string().describe("The name of the workflow to execute"),
     input: z
       .object({})
       .passthrough()
-      .describe("The input data for the workflow"),
+      .describe(
+        "The input data that will be validated against the workflow's input schema and passed to the first step",
+      ),
     stopAfter: z
       .string()
       .optional()
-      .describe("The name of the step to stop after"),
+      .describe(
+        "Optional step name where execution should halt. The workflow will execute up to and including this step, then stop. Useful for partial execution, debugging, or step-by-step testing.",
+      ),
     state: z
       .object({})
       .passthrough()
       .optional()
-      .describe("The state to pass to the workflow"),
+      .describe(
+        "Optional pre-computed step results to inject into the workflow state. Format: { 'step-name': STEP_RESULT }. Allows skipping steps by providing their expected outputs, useful for resuming workflows or testing with known intermediate results.",
+      ),
   }),
   outputSchema: z.object({
     runId: z
@@ -304,61 +374,7 @@ export const getWorkflowStatus = createTool({
   },
 });
 
-export const replayWorkflowFromStep = createTool({
-  name: "WORKFLOWS_REPLAY_FROM_STEP",
-  description:
-    "Replay a workflow from a specific step using Cloudflare Workflows restart capability",
-  inputSchema: z.object({
-    runId: z
-      .string()
-      .describe("The unique ID of the original workflow run to replay from"),
-    stepName: z
-      .string()
-      .describe("The name of the step to start replaying from"),
-  }),
-  outputSchema: z.object({
-    newRunId: z
-      .string()
-      .optional()
-      .describe("The unique ID for tracking this replayed workflow run"),
-    error: z
-      .string()
-      .optional()
-      .describe("Error message if replay start failed"),
-  }),
-  handler: async ({ runId, stepName }, c) => {
-    await assertWorkspaceResourceAccess(c);
-
-    try {
-      // Get the original workflow instance to retrieve its parameters
-      const workflowInstance = await c.workflowRunner.get(runId);
-      const originalStatus = await workflowInstance.status();
-
-      if (!originalStatus) {
-        return {
-          error: "Original workflow run not found",
-        };
-      }
-
-      // For now, replay is not fully supported with Cloudflare Workflows
-      // as it doesn't provide a direct restart from step functionality
-      // Return an error message suggesting to create a new workflow instead
-      return {
-        error: `Workflow replay from step "${stepName}" is not yet supported with Cloudflare Workflows. Please create a new workflow instance instead. Original run ID: ${runId}`,
-      };
-    } catch (error) {
-      return {
-        error: `Workflow replay failed: ${inspect(error)}`,
-      };
-    }
-  },
-});
-
-const WORKFLOW_TOOLS_BUT_VIEWS = [
-  startWorkflow,
-  getWorkflowStatus,
-  replayWorkflowFromStep,
-];
+const WORKFLOW_TOOLS_BUT_VIEWS = [startWorkflow, getWorkflowStatus];
 
 export const workflowViews = impl(VIEW_BINDING_SCHEMA, [
   // DECO_CHAT_VIEWS_LIST

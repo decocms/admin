@@ -41,11 +41,6 @@ export interface SandboxWorkflowStatusParams {
   runId: string;
 }
 
-export interface SandboxWorkflowReplayParams {
-  runId: string;
-  stepName: string;
-}
-
 // Constants
 const RESOURCE_NAME = "workflow";
 
@@ -64,10 +59,6 @@ type ClientWithWorkflows = ReturnType<typeof workspaceResourceClient> & {
   ) => Promise<unknown>;
   WORKFLOWS_GET_STATUS: (
     params: SandboxWorkflowStatusParams,
-    options?: { signal?: AbortSignal },
-  ) => Promise<unknown>;
-  WORKFLOWS_REPLAY_FROM_STEP: (
-    params: SandboxWorkflowReplayParams,
     options?: { signal?: AbortSignal },
   ) => Promise<unknown>;
 };
@@ -168,17 +159,6 @@ export function getSandboxWorkflowStatus(
 ) {
   const client = workspaceResourceClient(locator);
   return (client as ClientWithWorkflows).WORKFLOWS_GET_STATUS(params, {
-    signal,
-  });
-}
-
-export function replaySandboxWorkflowFromStep(
-  locator: ProjectLocator,
-  params: SandboxWorkflowReplayParams,
-  signal?: AbortSignal,
-) {
-  const client = workspaceResourceClient(locator);
-  return (client as ClientWithWorkflows).WORKFLOWS_REPLAY_FROM_STEP(params, {
     signal,
   });
 }
@@ -309,26 +289,6 @@ export const useSandboxWorkflowStatus = (runId: string) => {
         return false;
       }
       return 1000; // Poll every 1 second by default
-    },
-  });
-};
-
-/**
- * Hook to replay a sandbox workflow from a specific step
- */
-export const useReplaySandboxWorkflowFromStep = () => {
-  const { locator } = useSDK();
-
-  return useMutation({
-    mutationFn: async (params: SandboxWorkflowReplayParams) => {
-      const result = (await replaySandboxWorkflowFromStep(locator, params)) as {
-        error?: string;
-        newRunId?: string;
-      };
-      if (result.error) {
-        throw new Error(result.error);
-      }
-      return result;
     },
   });
 };

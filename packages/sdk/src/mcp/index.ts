@@ -30,9 +30,8 @@ import * as teamsAPI from "./teams/api.ts";
 import * as threadsAPI from "./threads/api.ts";
 import * as triggersAPI from "./triggers/api.ts";
 import * as walletAPI from "./wallet/api.ts";
-import * as workflowsAPI from "./workflows/api.ts";
+export { WORKFLOWS_TOOLS } from "./workflows/api.ts";
 
-export { createTool, createToolGroup } from "./context.ts";
 export { AuthorizationClient, PolicyClient } from "../auth/policy.ts";
 export * from "../errors.ts";
 export { FileProcessor } from "../mcp/file-processor.ts";
@@ -40,6 +39,7 @@ export * from "./assertions.ts";
 export { createResourceAccess } from "./auth/index.ts";
 export * from "./bindings/binder.ts";
 export * from "./context.ts";
+export { createTool, createToolGroup } from "./context.ts";
 export type { ContractState } from "./contracts/api.ts";
 export type { DatatabasesRunSqlInput } from "./databases/api.ts";
 export { Blobs, Branch } from "./deconfig/api.ts";
@@ -215,9 +215,6 @@ export const PROJECT_TOOLS = [
   sandboxAPI.deleteTool,
   sandboxAPI.upsertTool,
   sandboxAPI.runTool,
-  workflowsAPI.startWorkflow,
-  workflowsAPI.getWorkflowStatus,
-  workflowsAPI.replayWorkflowFromStep,
   // DECONFIG tools
   ...deconfigAPI.DECONFIG_TOOLS,
   // SANDBOX tools

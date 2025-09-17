@@ -10,8 +10,9 @@ import {
   ProjectTools,
   WellKnownBindings,
   WorkflowResource,
+  createTool,
 } from "../index.ts";
-import { createTool, fileNameSlugify, validate } from "../sandbox/utils.ts";
+import { fileNameSlugify, validate } from "../sandbox/utils.ts";
 import { MCPClientStub } from "../stub.ts";
 import {
   MappingStepDefinitionSchema,
@@ -428,3 +429,10 @@ export const workflowViews = impl(VIEW_BINDING_SCHEMA, [
     },
   },
 ]);
+
+export const WORKFLOWS_TOOLS = [
+  startWorkflow,
+  getWorkflowStatus,
+  replayWorkflowFromStep,
+  ...workflowViews,
+];

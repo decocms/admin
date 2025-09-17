@@ -37,6 +37,7 @@ import {
   withMCPErrorHandling,
   WorkflowResource,
   wrapToolFn,
+  WORKFLOWS_TOOLS,
 } from "@deco/sdk/mcp";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import {
@@ -62,7 +63,6 @@ import { handleCodeExchange } from "./oauth/code.ts";
 import { type AppContext, type AppEnv, State } from "./utils/context.ts";
 import { handleStripeWebhook } from "./webhooks/stripe.ts";
 import { handleTrigger } from "./webhooks/trigger.ts";
-import { workflowViews } from "packages/sdk/src/mcp/workflows/api.ts";
 
 const PROXY_TOKEN_HEADER = "X-Proxy-Auth";
 export const app = new Hono<AppEnv>();
@@ -461,7 +461,7 @@ app.all(
 
     return Promise.resolve([
       ...WorkflowResource.create(client),
-      ...workflowViews,
+      ...WORKFLOWS_TOOLS,
     ]);
   }),
 );

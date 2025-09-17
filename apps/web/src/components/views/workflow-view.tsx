@@ -28,10 +28,16 @@ export function WorkflowView() {
     );
   }
 
-  const { data: workflow, isLoading, error, refetch } = useSandboxWorkflowByUri(workflowUri);
+  const {
+    data: workflow,
+    isLoading,
+    error,
+    refetch,
+  } = useSandboxWorkflowByUri(workflowUri);
 
   if (isLoading) return <WorkflowLoadingSkeleton />;
-  if (error) return <WorkflowErrorState error={error?.message || "Unknown error"} />;
+  if (error)
+    return <WorkflowErrorState error={error?.message || "Unknown error"} />;
   if (!workflow) return <WorkflowNotFoundState workflowName={workflowUri} />;
 
   return (

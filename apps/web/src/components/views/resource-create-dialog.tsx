@@ -28,7 +28,10 @@ const ResourceCreateFormSchema = z.object({
   resourceName: z
     .string()
     .min(1, "Resource name is required")
-    .regex(/^[a-zA-Z0-9-_]+$/, "Resource name can only contain letters, numbers, hyphens, and underscores"),
+    .regex(
+      /^[a-zA-Z0-9-_]+$/,
+      "Resource name can only contain letters, numbers, hyphens, and underscores",
+    ),
   title: z.string().optional(),
   description: z.string().optional(),
   content: z
@@ -77,7 +80,7 @@ export function ResourceCreateDialog({
   const handleSubmit = async (data: ResourceCreateFormData) => {
     // Clear any previous errors when submitting
     onClearError?.();
-    
+
     try {
       await onSubmit({
         resourceName: data.resourceName,
@@ -110,7 +113,8 @@ export function ResourceCreateDialog({
         <DialogHeader>
           <DialogTitle>Create {resourceName}</DialogTitle>
           <DialogDescription>
-            Create a new {resourceName.toLowerCase()} resource. All fields except the resource name and content are optional.
+            Create a new {resourceName.toLowerCase()} resource. All fields
+            except the resource name and content are optional.
           </DialogDescription>
         </DialogHeader>
 
@@ -121,20 +125,28 @@ export function ResourceCreateDialog({
         )}
 
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
+          <form
+            onSubmit={form.handleSubmit(handleSubmit)}
+            className="space-y-4"
+          >
             <FormField
               control={form.control}
               name="resourceName"
               render={({ field, fieldState }) => (
                 <FormItem>
                   <FormLabel>
-                    Resource Name <span className="text-destructive ml-1">*</span>
+                    Resource Name{" "}
+                    <span className="text-destructive ml-1">*</span>
                   </FormLabel>
                   <FormControl>
                     <Input
                       {...field}
                       placeholder="my-resource-name"
-                      className={fieldState.error ? "border-destructive focus-visible:ring-destructive" : ""}
+                      className={
+                        fieldState.error
+                          ? "border-destructive focus-visible:ring-destructive"
+                          : ""
+                      }
                     />
                   </FormControl>
                   <FormMessage />
@@ -190,7 +202,11 @@ export function ResourceCreateDialog({
                       {...field}
                       placeholder="Enter the text content for this resource"
                       rows={6}
-                      className={fieldState.error ? "border-destructive focus-visible:ring-destructive" : ""}
+                      className={
+                        fieldState.error
+                          ? "border-destructive focus-visible:ring-destructive"
+                          : ""
+                      }
                     />
                   </FormControl>
                   <FormMessage />

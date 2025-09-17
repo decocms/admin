@@ -14,10 +14,16 @@ export default function WorkflowBuilderPage() {
     );
   }
 
-  const { data: workflow, isLoading, error, refetch } = useSandboxWorkflow(workflowName);
+  const {
+    data: workflow,
+    isLoading,
+    error,
+    refetch,
+  } = useSandboxWorkflow(workflowName);
 
   if (isLoading) return <WorkflowLoadingSkeleton />;
-  if (error) return <WorkflowErrorState error={error?.message || "Unknown error"} />;
+  if (error)
+    return <WorkflowErrorState error={error?.message || "Unknown error"} />;
   if (!workflow) return <WorkflowNotFoundState workflowName={workflowName} />;
 
   // The workflow from useSandboxWorkflow is already in the correct format

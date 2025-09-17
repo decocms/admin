@@ -60,7 +60,8 @@ export function WorkflowDisplayCanvas({
 
   // Update nodes when workflow changes
   React.useEffect(() => {
-    const { nodes: newNodes, edges: newEdges } = convertWorkflowToDisplayFlow(workflow);
+    const { nodes: newNodes, edges: newEdges } =
+      convertWorkflowToDisplayFlow(workflow);
     setNodes(newNodes);
     setEdges(newEdges);
   }, [workflow, setNodes, setEdges]);
@@ -83,7 +84,9 @@ export function WorkflowDisplayCanvas({
           variant="outline"
           size="sm"
         >
-          <RefreshCw className={`w-4 h-4 mr-2 ${isLoading ? "animate-spin" : ""}`} />
+          <RefreshCw
+            className={`w-4 h-4 mr-2 ${isLoading ? "animate-spin" : ""}`}
+          />
           Refresh
         </Button>
       </div>
@@ -144,7 +147,8 @@ function convertWorkflowToDisplayFlow(workflow: DisplayWorkflow) {
       data: {
         step,
         index,
-        integrationId: step.type === "tool_call" ? step.def.integration : undefined,
+        integrationId:
+          step.type === "tool_call" ? step.def.integration : undefined,
       },
     };
     nodes.push(stepNode);

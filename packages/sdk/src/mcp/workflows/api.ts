@@ -57,10 +57,10 @@ async function readWorkflow(
             : undefined;
           const stepFunctionResult = stepFunctionPath
             ? await client.READ_FILE({
-              branch,
-              path: stepFunctionPath,
-              format: "plainString",
-            })
+                branch,
+                path: stepFunctionPath,
+                format: "plainString",
+              })
             : { content: mappingDef.execute };
 
           return {
@@ -260,19 +260,20 @@ export const getWorkflowStatus = createTool({
       // Extract step results from Cloudflare Workflow output
       let stepResults: Record<string, unknown> = {};
       if (
-        cfStatus.output && typeof cfStatus.output === "object" &&
+        cfStatus.output &&
+        typeof cfStatus.output === "object" &&
         "steps" in cfStatus.output
       ) {
-        stepResults =
-          (cfStatus.output as { steps: Record<string, unknown> }).steps;
+        stepResults = (cfStatus.output as { steps: Record<string, unknown> })
+          .steps;
       }
 
       const partialResult =
         Object.keys(stepResults).length > 0 && status !== "completed"
           ? {
-            completedSteps: Object.keys(stepResults),
-            stepResults,
-          }
+              completedSteps: Object.keys(stepResults),
+              stepResults,
+            }
           : undefined;
 
       return {
@@ -333,8 +334,7 @@ export const replayWorkflowFromStep = createTool({
       // Return an error message suggesting to create a new workflow instead
       return {
         newRunId: "",
-        error:
-          `Workflow replay from step "${stepName}" is not yet supported with Cloudflare Workflows. Please create a new workflow instance instead. Original run ID: ${runId}`,
+        error: `Workflow replay from step "${stepName}" is not yet supported with Cloudflare Workflows. Please create a new workflow instance instead. Original run ID: ${runId}`,
       };
     } catch (error) {
       return {
@@ -405,7 +405,4 @@ export const workflowViews = impl(VIEW_BINDING_SCHEMA, [
   },
 ]);
 
-export const WORKFLOWS_TOOLS = [
-  ...WORKFLOW_TOOLS_BUT_VIEWS,
-  ...workflowViews,
-];
+export const WORKFLOWS_TOOLS = [...WORKFLOW_TOOLS_BUT_VIEWS, ...workflowViews];

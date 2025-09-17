@@ -108,9 +108,10 @@ export class WorkflowRunner extends WorkflowEntrypoint<Bindings> {
 
     return {
       name: stepDef.def.name,
-      config: stepDef.type === "tool_call" && "options" in stepDef.def
-        ? (stepDef.def.options ?? {})
-        : {},
+      config:
+        stepDef.type === "tool_call" && "options" in stepDef.def
+          ? (stepDef.def.options ?? {})
+          : {},
       fn: runnable,
     };
   }
@@ -128,7 +129,7 @@ export class WorkflowRunner extends WorkflowEntrypoint<Bindings> {
 
     // Convert step definitions to actual runnable steps
     const steps = stepDefinitions.map((stepDef) =>
-      this.convertStepDefinitionToStep(input, stepDef, appContext, runtimeId)
+      this.convertStepDefinitionToStep(input, stepDef, appContext, runtimeId),
     );
 
     const workflowState = {
@@ -137,7 +138,8 @@ export class WorkflowRunner extends WorkflowEntrypoint<Bindings> {
     };
     let prev = input;
     for (const step of steps) {
-      prev = state?.[step.name] ??
+      prev =
+        state?.[step.name] ??
         (await cfStep.do(step.name, step.config ?? {}, async () => {
           const runResult = await step.fn(prev, {
             ...workflowState,

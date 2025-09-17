@@ -45,7 +45,10 @@ export function WorkflowSinkNode(props: NodeProps) {
             </p>
           )}
           {schema && (
-            <Badge variant="secondary" className="text-xs mt-1 bg-green-100 text-green-700">
+            <Badge
+              variant="secondary"
+              className="text-xs mt-1 bg-green-100 text-green-700"
+            >
               {Object.keys(schema.properties || {}).length} outputs
             </Badge>
           )}

@@ -240,7 +240,7 @@ export const genEnv = async ({
               ? [binding.integration_name, binding.integration_name]
               : [CONTRACTS_BINDING, `${appName}-${MD5(binding.contract)}`];
           stateKey = { type, key: binding.name };
-          const appResult = (await client.callTool({
+          const appResult = (await apiClient.callTool({
             name: "REGISTRY_GET_APP",
             arguments: {
               name: integrationName,

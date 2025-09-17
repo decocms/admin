@@ -81,11 +81,16 @@ import {
   ConfirmMarketplaceInstallDialog,
   OauthModalContextProvider,
   OauthModalState,
+  useUIInstallIntegration,
 } from "./select-connection-dialog.tsx";
 import { ToolCallForm } from "./tool-call-form.tsx";
 import { ToolCallResult } from "./tool-call-result.tsx";
 import type { MCPToolCallResult } from "./types.ts";
 import { Label } from "@deco/ui/components/label.tsx";
+import {
+  integrationNeedsHumanApproval,
+  useIntegrationInstallState,
+} from "../../hooks/use-integration-install.tsx";
 
 function ConnectionInstanceActions({
   onDelete,
@@ -300,8 +305,45 @@ function ConfigureConnectionInstanceForm({
   }, [data.info?.description]);
   const [isExpanded, setIsExpanded] = useState(!hasBigDescription);
 
+  const handleIntegrationInstalled = ({
+    authorizeOauthUrl,
+    connection,
+  }: {
+    authorizeOauthUrl: string | null;
+    connection: Integration;
+  }) => {
+    function onSelect() {
+      const key = getConnectionAppKey(connection);
+      const appKey = AppKeys.build(key);
+      navigateWorkspace(`/connection/${appKey}`);
+    }
+
+    if (authorizeOauthUrl) {
+      const popup = globalThis.open(authorizeOauthUrl, "_blank");
+      if (!popup || popup.closed || typeof popup.closed === "undefined") {
+        setOauthCompletionDialog({
+          openIntegrationOnFinish: true,
+          open: true,
+          url: authorizeOauthUrl,
+          integrationName: installingIntegration?.name || "the service",
+          connection: connection,
+        });
+      } else {
+        onSelect();
+      }
+    }
+  };
+
+  const integrationState = useIntegrationInstallState(data.info?.name);
+  // Setup direct install functionality
+  const { install, isLoading: isInstallingLoading } = useUIInstallIntegration({
+    onConfirm: handleIntegrationInstalled, // this shouldn't trigger any navigation flow,
+  });
+
   const handleAddConnection = () => {
-    setInstallingIntegration({
+    const shouldInstallDirectly =
+      integrationNeedsHumanApproval(integrationState);
+    const integrationMarketplace = {
       id: data.info?.id ?? "",
       provider: data.info?.provider ?? "unknown",
       name: data.info?.name ?? "",
@@ -310,7 +352,15 @@ function ConfigureConnectionInstanceForm({
       verified: data.info?.verified ?? false,
       connection: data.info?.connection ?? { type: "HTTP", url: "" },
       friendlyName: data.info?.friendlyName ?? "",
-    });
+    };
+    if (shouldInstallDirectly) {
+      install({
+        integration: integrationMarketplace,
+      });
+      return;
+    }
+
+    setInstallingIntegration(integrationMarketplace);
   };
 
   const description = isExpanded
@@ -363,8 +413,11 @@ function ConfigureConnectionInstanceForm({
               variant="special"
               className="w-[250px]"
               onClick={handleAddConnection}
+              disabled={integrationState.isLoading || isInstallingLoading}
             >
-              <span className="hidden md:inline">Install app</span>
+              <span className="hidden md:inline">
+                {isInstallingLoading ? "Installing..." : "Install app"}
+              </span>
             </Button>
           ) : null}
           <OauthModalContextProvider.Provider
@@ -519,6 +572,7 @@ function ConfigureConnectionInstanceForm({
                           key="create-new"
                           value="create-new"
                           className="cursor-pointer"
+                          disabled={integrationState.isLoading || isInstallingLoading}
                         >
                           <Icon
                             name="add"

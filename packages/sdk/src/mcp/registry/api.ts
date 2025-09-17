@@ -22,6 +22,19 @@ const DECO_CHAT_REGISTRY_SCOPES_TABLE = "deco_chat_registry_scopes" as const;
 const DECO_CHAT_REGISTRY_APPS_TOOLS_TABLE =
   "deco_chat_apps_registry_tools" as const;
 
+// Apps to omit from marketplace/discover
+const OMITTED_APPS = [
+  "9cecc7d6-d114-44b4-96e3-d4d06faf2c2f",
+  "4c5aeb03-6b3d-4b58-bb14-4a0d7ecd4d14",
+  "f5fe9093-67a6-416c-8fac-b77d3edf52e0",
+  "6bc2c3e3-8858-49cd-b603-ca183e4f4f19",
+  "f2bd7ca4-61fb-4dff-9753-45e5b8a85693",
+  "0696cdb3-e6da-46ea-93af-e6524cabaa75",
+  "5bd518f9-21f6-477f-8fbc-927b1a03018b",
+  "b0ae29d5-7220-423c-b57b-d0bbe3816120",
+  "fc348403-4bb9-4b95-8cda-b73e8beac4fd",
+];
+
 const SELECT_REGISTRY_SCOPE_QUERY = `
   id,
   scope_name,
@@ -352,7 +365,10 @@ export const listRegistryApps = createTool({
 
     if (error) throw error;
 
-    return { apps: data.map(Mappers.toRegistryApp) };
+    // Filter out omitted apps
+    const filteredData = data.filter(app => !OMITTED_APPS.includes(app.id));
+
+    return { apps: filteredData.map(Mappers.toRegistryApp) };
   },
 });
 
@@ -387,7 +403,10 @@ export const listPublishedApps = createTool({
 
     if (error) throw error;
 
-    return { apps: data.map(Mappers.toRegistryApp) };
+    // Filter out omitted apps
+    const filteredData = data.filter(app => !OMITTED_APPS.includes(app.id));
+
+    return { apps: filteredData.map(Mappers.toRegistryApp) };
   },
 });
 

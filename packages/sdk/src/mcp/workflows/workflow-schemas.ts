@@ -57,7 +57,6 @@ export const ToolCallStepDefinitionSchema = z.object({
         .optional()
         .describe("Maximum execution time in milliseconds (default: Infinity)"),
     })
-    .passthrough()
     .nullish()
     .describe(
       "Step configuration options. Extend this object with custom properties for business user configuration",

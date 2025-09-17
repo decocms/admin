@@ -120,6 +120,15 @@ export const startWorkflow = createTool({
       .object({})
       .passthrough()
       .describe("The input data for the workflow"),
+    stopAfter: z
+      .string()
+      .optional()
+      .describe("The name of the step to stop after"),
+    state: z
+      .object({})
+      .passthrough()
+      .optional()
+      .describe("The state to pass to the workflow"),
   }),
   outputSchema: z.object({
     runId: z
@@ -131,7 +140,7 @@ export const startWorkflow = createTool({
       .optional()
       .describe("Error message if workflow start failed"),
   }),
-  handler: async ({ name, input }, c) => {
+  handler: async ({ name, input, stopAfter, state }, c) => {
     assertHasWorkspace(c);
     await assertWorkspaceResourceAccess(c);
 
@@ -164,6 +173,8 @@ export const startWorkflow = createTool({
       const workflowInstance = await c.workflowRunner.create({
         params: {
           input,
+          stopAfter,
+          state,
           steps: workflow.steps, // Pass WorkflowStepDefinition[] directly
           name,
           context: {

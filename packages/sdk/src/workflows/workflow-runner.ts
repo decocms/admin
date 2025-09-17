@@ -46,6 +46,7 @@ export interface WorkflowRunnerProps<T = unknown> {
   input: T;
   name: string;
   steps: WorkflowStepDefinition[]; // Changed from WorkflowStep[] to WorkflowStepDefinition[]
+  stopAfter?: string;
   state?: Record<string, unknown>;
   context: Pick<PrincipalExecutionContext, "workspace" | "locator">;
 }
@@ -153,6 +154,9 @@ export class WorkflowRunner extends WorkflowEntrypoint<Bindings> {
           return runResult as Rpc.Serializable<unknown>;
         }));
       workflowState.steps[step.name] = prev;
+      if (event.payload.stopAfter === step.name) {
+        break;
+      }
     }
     return prev;
   }

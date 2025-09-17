@@ -113,7 +113,7 @@ The last code step effectively replaces the need for a separate workflow execute
         "name": "store-user",
         "description": "Stores user data in database",
         "options": {
-          "retry": 2,
+          "retries": { "limit": 2 },
           "timeout": 5000
         },
         "tool_name": "create_user",
@@ -169,7 +169,7 @@ The last code step effectively replaces the need for a separate workflow execute
         "name": "generate-draft",
         "description": "Creates initial content draft using AI",
         "options": {
-          "retry": 1,
+          "retries": { "limit": 1 },
           "timeout": 30000,
           "temperature": 0.7,
           "maxTokens": 1000

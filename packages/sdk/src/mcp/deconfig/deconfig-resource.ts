@@ -6,6 +6,7 @@ import {
 } from "../assertions.ts";
 import { impl, WellKnownBindings } from "../bindings/binder.ts";
 import { createMCPToolsStub, DeconfigClient, MCPClientStub } from "../index.ts";
+import z from "zod";
 
 export type ResourcesBinding = (typeof WellKnownBindings)["Resources"];
 export type ResourcesTools = ResourcesBinding[number]["name"];
@@ -22,6 +23,7 @@ export interface DeconfigResourceOptions {
   directory: string;
   resourceName?: string;
   tools?: EnhancedResourcesTools;
+  schema?: z.ZodType;
 }
 
 const normalizeDirectory = (dir: string) => {
@@ -104,7 +106,7 @@ export const deconfigResource = (options: DeconfigResourceOptions) => {
           }
 
           return {
-            name: directory,
+            name: resourceName,
             uri,
             data,
             type: "text" as const,
@@ -175,7 +177,7 @@ export const deconfigResource = (options: DeconfigResourceOptions) => {
 
         return {
           items: items.map(({ resourceId, metadata }) => ({
-            name: directory,
+            name: resourceName,
             uri: `deconfig://${directory}/${resourceId}`,
             title: resourceId,
             description: `${directory} resource`,
@@ -213,10 +215,9 @@ export const deconfigResource = (options: DeconfigResourceOptions) => {
         let resourceData: Record<string, unknown> = {};
         if (content) {
           try {
-            resourceData =
-              content.type === "text"
-                ? JSON.parse(content.data)
-                : { data: content.data, type: content.type };
+            resourceData = content.type === "text"
+              ? JSON.parse(content.data)
+              : { data: content.data, type: content.type };
           } catch {
             resourceData = { data: content.data };
           }
@@ -234,6 +235,10 @@ export const deconfigResource = (options: DeconfigResourceOptions) => {
           ...metadata,
         };
 
+        if (options.schema) {
+          options.schema.parse(finalData);
+        }
+
         const fileContent = JSON.stringify(finalData, null, 2);
 
         await deconfig.PUT_FILE({
@@ -247,7 +252,7 @@ export const deconfigResource = (options: DeconfigResourceOptions) => {
         });
 
         return {
-          name: directory,
+          name: resourceName,
           uri,
           title: title || rsName || resourceId,
           description: description || `${directory} resource`,
@@ -299,10 +304,9 @@ export const deconfigResource = (options: DeconfigResourceOptions) => {
         let parsedData: Record<string, unknown> = {};
         if (content) {
           try {
-            parsedData =
-              content.type === "text"
-                ? JSON.parse(content.data)
-                : { data: content.data, type: content.type };
+            parsedData = content.type === "text"
+              ? JSON.parse(content.data)
+              : { data: content.data, type: content.type };
           } catch {
             parsedData = { data: content.data };
           }
@@ -315,6 +319,10 @@ export const deconfigResource = (options: DeconfigResourceOptions) => {
           ...metadata,
           updated_at: new Date().toISOString(),
         };
+
+        if (options.schema) {
+          options.schema.parse(updatedData);
+        }
 
         if (rsName) updatedData.name = rsName;
         if (title) updatedData.title = title;
@@ -333,7 +341,7 @@ export const deconfigResource = (options: DeconfigResourceOptions) => {
         });
 
         return {
-          name: directory,
+          name: resourceName,
           uri,
           title: title || rsName || resourceId,
           description: description || `${directory} resource`,
@@ -382,8 +390,8 @@ export const deconfigResource = (options: DeconfigResourceOptions) => {
             {
               name: resourceName,
               icon: "folder",
-              title:
-                resourceName.charAt(0).toUpperCase() + resourceName.slice(1),
+              title: resourceName.charAt(0).toUpperCase() +
+                resourceName.slice(1),
               description: `DECONFIG resourceName: ${resourceName}`,
               hasCreate: true,
               hasUpdate: true,

@@ -4,13 +4,13 @@ import { VIEW_BINDING_SCHEMA } from "../bindings/views.ts";
 import {
   assertHasWorkspace,
   assertWorkspaceResourceAccess,
-  impl,
   createDeconfigClientForContext,
+  createTool,
+  impl,
   MCPClient,
   ProjectTools,
   WellKnownBindings,
   WorkflowResource,
-  createTool,
 } from "../index.ts";
 import { fileNameSlugify, validate } from "../sandbox/utils.ts";
 import { MCPClientStub } from "../stub.ts";
@@ -74,10 +74,10 @@ async function readWorkflow(
             : undefined;
           const stepFunctionResult = stepFunctionPath
             ? await client.READ_FILE({
-                branch,
-                path: stepFunctionPath,
-                format: "plainString",
-              })
+              branch,
+              path: stepFunctionPath,
+              format: "plainString",
+            })
             : { content: mappingDef.execute };
 
           return {
@@ -297,9 +297,9 @@ export const getWorkflowStatus = createTool({
         partialResult:
           run?.stepResults && Object.keys(run.stepResults).length > 0
             ? {
-                completedSteps: Object.keys(run.stepResults),
-                stepResults: run.stepResults,
-              }
+              completedSteps: Object.keys(run.stepResults),
+              stepResults: run.stepResults,
+            }
             : undefined,
         error: cfStatus.error || run?.error,
         logs: run?.logs || [],
@@ -313,13 +313,12 @@ export const getWorkflowStatus = createTool({
         throw new Error(`Workflow run '${runId}' not found`);
       }
 
-      const partialResult =
-        Object.keys(run.stepResults).length > 0
-          ? {
-              completedSteps: Object.keys(run.stepResults),
-              stepResults: run.stepResults,
-            }
-          : undefined;
+      const partialResult = Object.keys(run.stepResults).length > 0
+        ? {
+          completedSteps: Object.keys(run.stepResults),
+          stepResults: run.stepResults,
+        }
+        : undefined;
 
       return {
         status: run.status,
@@ -370,6 +369,12 @@ export const replayWorkflowFromStep = createTool({
   },
 });
 
+const WORKFLOW_TOOLS_BUT_VIEWS = [
+  startWorkflow,
+  getWorkflowStatus,
+  replayWorkflowFromStep,
+];
+
 export const workflowViews = impl(VIEW_BINDING_SCHEMA, [
   // DECO_CHAT_VIEWS_LIST
   {
@@ -385,9 +390,6 @@ export const workflowViews = impl(VIEW_BINDING_SCHEMA, [
         return { views: [] };
       }
 
-      // Base URL for admin interface
-      const baseUrl = "https://admin.decocms.com";
-
       return {
         views: [
           // Workflow List View
@@ -397,13 +399,9 @@ export const workflowViews = impl(VIEW_BINDING_SCHEMA, [
             description: "Manage and monitor your workflows",
             icon: "workflow",
             url: `internal://resource/list?name=workflow`,
-            tools: [
-              "WORKFLOWS_START",
-              "WORKFLOWS_GET_STATUS",
-              "WORKFLOWS_REPLAY_FROM_STEP",
-            ],
+            tools: WellKnownBindings.Resources.map((resource) => resource.name),
             rules: [
-              "You are viewing the Workflows list. Use workflow tools to start, monitor, and manage workflow executions. Do not fabricate workflow data.",
+              "You are a specialist for crud operations on resources. Use the resource tools to read, search, create, update, or delete items; do not fabricate data.",
             ],
           },
           // Workflow Detail View (for individual workflow management)
@@ -416,12 +414,11 @@ export const workflowViews = impl(VIEW_BINDING_SCHEMA, [
             mimeTypePattern: "application/json",
             resourceName: "workflow",
             tools: [
-              "WORKFLOWS_START",
-              "WORKFLOWS_GET_STATUS",
-              "WORKFLOWS_REPLAY_FROM_STEP",
+              ...WORKFLOW_TOOLS_BUT_VIEWS.map((tool) => tool.name),
+              ...WellKnownBindings.Resources.map((resource) => resource.name),
             ],
             rules: [
-              "You are viewing a specific workflow detail. Use workflow tools to start, monitor, and manage this workflow execution. The resource-id in the URL identifies the specific workflow.",
+              "You are a workflow editing specialist. Use the workflow tools to edit the current workflow. A good strategy is to test each step, one at a time in isolation and check how they affect the overall workflow.",
             ],
           },
         ],
@@ -431,8 +428,6 @@ export const workflowViews = impl(VIEW_BINDING_SCHEMA, [
 ]);
 
 export const WORKFLOWS_TOOLS = [
-  startWorkflow,
-  getWorkflowStatus,
-  replayWorkflowFromStep,
+  ...WORKFLOW_TOOLS_BUT_VIEWS,
   ...workflowViews,
 ];

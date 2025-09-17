@@ -2,6 +2,7 @@ import {
   getRegistryApp,
   type Integration,
   useMarketplaceIntegrations,
+  useRegistryApp,
 } from "@deco/sdk";
 import { AppName } from "@deco/sdk/common";
 import { Button } from "@deco/ui/components/button.tsx";
@@ -345,7 +346,6 @@ function DependencyStep({
     permissions?: Array<{ scope: string; description: string; app?: string }>;
   };
 }) {
-  const { data: marketplace } = useMarketplaceIntegrations();
   const dependencyIntegration = useMemo(() => {
     if (!dependencySchema || !dependencyName) return null;
 
@@ -357,18 +357,28 @@ function DependencyStep({
         | undefined);
     if (typeof name !== "string") return null;
 
-    return (
-      (marketplace?.integrations.find(
-        (integration) => integration.name === name,
-      ) as MarketplaceIntegration | null) ?? null
-    );
+    return name;
   }, [dependencySchema, dependencyName]);
+
+  const { data: app } = useRegistryApp({
+    clientId: dependencyIntegration || "",
+  });
+
+  const integrationData = useMemo(() => {
+    if (!app) return null;
+
+    return {
+      ...app,
+      name: dependencyIntegration,
+      provider: "marketplace",
+    } as MarketplaceIntegration;
+  }, [app, dependencyIntegration]);
   const permissionsFromThisDependency = useMemo(
     () =>
       integrationState.permissions?.filter(
-        (permission) => permission.app === dependencyIntegration?.name,
+        (permission) => permission.app === dependencyIntegration,
       ),
-    [dependencyIntegration?.name, integrationState.permissions],
+    [dependencyIntegration, integrationState.permissions],
   );
 
   const schema = dependencySchema;
@@ -421,18 +431,16 @@ function DependencyStep({
             <div className="max-h-[200px] overflow-y-auto">
               {schema && (
                 <div className="flex justify-between items-center gap-2">
-                  {dependencyIntegration && (
+                  {integrationData && (
                     <div className="flex items-center gap-2">
                       <IntegrationIcon
-                        icon={dependencyIntegration?.icon}
+                        icon={integrationData?.icon}
                         name={
-                          dependencyIntegration?.friendlyName ??
-                          dependencyIntegration?.name
+                          integrationData?.friendlyName ?? integrationData?.name
                         }
                         size="lg"
                       />
-                      {dependencyIntegration?.friendlyName ??
-                        dependencyIntegration?.name}
+                      {integrationData?.friendlyName ?? integrationData?.name}
                     </div>
                   )}
                   <IntegrationBindingForm schema={schema} formRef={formRef} />
@@ -500,7 +508,8 @@ function AddConnectionDialogContent({
       if (!appName) return null;
       return (
         marketplace?.integrations.find(
-          (integration) => integration.appName === appName,
+          (integration: MarketplaceIntegration) =>
+            integration.appName === appName,
         ) ?? null
       );
     });

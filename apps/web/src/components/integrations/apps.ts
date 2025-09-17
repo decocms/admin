@@ -23,6 +23,7 @@ import {
   type IntegrationMessage,
 } from "../../lib/broadcast-channels.ts";
 import { LEGACY_INTEGRATIONS } from "../../constants.ts";
+import { AppName } from "@deco/sdk/common";
 
 export interface GroupedApp {
   id: string;
@@ -106,38 +107,21 @@ export function getConnectionAppKey(connection: Integration): AppKey {
     if (connection.connection.type === "HTTP") {
       const url = new URL(connection.connection.url);
 
-      if (url.hostname.includes("mcp.deco.site")) {
-        // https://mcp.deco.site/apps/{appName}...
-        const appName = url.pathname.split("/")[2];
-        return {
-          appId: decodeURIComponent(appName),
-          provider: "deco",
-        };
-      }
-
       if (url.hostname.includes("mcp.wppagent.com")) {
         return {
           appId: "WhatsApp",
           provider: "wppagent", // the same as deco? will use this for a "verified" badge
         };
       }
-
-      return {
-        appId: connection.id,
-        provider: "unknown",
-      };
     }
 
-    if (connection.connection.type === "SSE") {
-      return {
-        appId: connection.id,
-        provider: "unknown",
-      };
-    }
+    const { scopeName, name } = AppName.parse(
+      connection.appName || connection.name,
+    );
 
     return {
-      appId: connection.id,
-      provider: "unknown",
+      appId: name,
+      provider: scopeName,
     };
   } catch (err) {
     console.error("Could not get connection app key", err, connection);
@@ -264,7 +248,8 @@ export function useGroupedApps({ filter }: { filter: string }) {
 }
 
 export function useGroupedApp({ appKey }: { appKey: string }) {
-  const { data: installedIntegrations } = useIntegrations();
+  const { data: installedIntegrations, refetch: refetchIntegrations } =
+    useIntegrations();
   const { data: marketplace } = useMarketplaceIntegrations();
   useRefetchIntegrationsOnNotification();
 
@@ -320,5 +305,6 @@ export function useGroupedApp({ appKey }: { appKey: string }) {
   return {
     info,
     instances,
+    refetch: () => refetchIntegrations(),
   };
 }

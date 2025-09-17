@@ -399,6 +399,8 @@ function ConfigureConnectionInstanceForm({
                     onSelect();
                   }
                 }
+
+                data.refetch();
               }}
             />
           </OauthModalContextProvider.Provider>

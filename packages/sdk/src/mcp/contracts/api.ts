@@ -163,7 +163,7 @@ export const contractRegister = createTool({
       scopeName,
       icon: "https://assets.decocache.com/mcp/10b5e8b4-a4e2-4868-8a7d-8cf9b46f0d79/contract.png",
       description: context.contract.body,
-      friendlyName: `A Contract for ${assignor}`,
+      friendlyName: context.contract.body,
       unlisted: true,
       connection: {
         type: "HTTP",

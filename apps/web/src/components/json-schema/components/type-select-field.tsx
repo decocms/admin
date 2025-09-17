@@ -18,7 +18,7 @@ import type { OptionItem } from "../index.tsx";
 import { IntegrationIcon } from "../../integrations/common.tsx";
 import { Button } from "@deco/ui/components/button.tsx";
 import { useOptionsLoader } from "../../../hooks/use-options-loader.ts";
-import { useMarketplaceIntegrations } from "@deco/sdk";
+import { useMarketplaceIntegrations, useRegistryApp } from "@deco/sdk";
 import {
   ConfirmMarketplaceInstallDialog,
   useOauthModalContext,
@@ -27,6 +27,7 @@ import type { MarketplaceIntegration } from "../../integrations/marketplace";
 import { useState } from "react";
 import type { Integration } from "@deco/sdk";
 import { Icon } from "@deco/ui/components/icon.tsx";
+import { AppName } from "@deco/sdk/common";
 
 const CONNECT_ACCOUNT_VALUE = "__connect_account__";
 
@@ -62,6 +63,7 @@ export function TypeSelectField<T extends FieldValues = FieldValues>({
   const { data: marketplace } = useMarketplaceIntegrations();
   const [installingIntegration, setInstallingIntegration] =
     useState<MarketplaceIntegration | null>(null);
+  const { data: app } = useRegistryApp({ clientId: typeValue });
 
   const selectedOption = options.find(
     // deno-lint-ignore no-explicit-any
@@ -75,9 +77,15 @@ export function TypeSelectField<T extends FieldValues = FieldValues>({
     // TODO: handle type for contracts
 
     // Find the integration from marketplace based on typeValue
-    const integration = marketplace?.integrations.find(
-      (integration) => integration.name === typeValue,
-    );
+    const integration = app
+      ? {
+          ...app,
+          name: AppName.build(app.scopeName, app.name),
+          provider: "marketplace",
+        }
+      : marketplace?.integrations.find(
+          (integration) => integration.name === typeValue,
+        );
 
     if (integration) {
       setInstallingIntegration(integration);

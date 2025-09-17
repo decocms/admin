@@ -8,7 +8,7 @@ If you want to provide a custom user interface for your agents (for example, a w
 
 ## Frontend Stack
 
-Deco's view is built with [React](https://react.dev/) (a popular UI library) and [Tailwind CSS](https://tailwindcss.com/) (a utility-first CSS framework for styling). The template uses Vite for bundling, and TanStack Router for routing (instead of React Router). This gives a modern, SPA-like experience.
+Deco's view is built with [React](https://react.dev/) (a popular UI library) and [Tailwind CSS](https://tailwindcss.com/) (a utility-first CSS framework for styling). The template uses Vite for bundling, and TanStack Router for routing (instead of React Router).
 
 ## Setting up the View
 
@@ -24,8 +24,8 @@ If you used a template with a view, the basics should already be configured:
 
 The `src/lib/rpc.ts` file provides a client that is your gateway to call backend functions from the frontend. This is set up via the `@deco/workers-runtime/client` library and uses the types from your `deco.gen.ts`. In practice:
 
-- To call a Tool from the UI, you do: `await client.tools.TOOL_ID(input)`.
-- To call a Workflow, do: `await client.workflows.WORKFLOW_ID(input)`.
+- To call a Tool from the UI, you do: `await client.TOOL_ID(input)`.
+- To call a Workflow, do: `await client.WORKFLOW_ID(input)`.
 
 The client will make an HTTP request to your Worker's MCP endpoint under the hood, and return the JSON result as a promise. This is super convenient – no need to manually write fetch logic or API endpoints for your own tools. Just ensure your dev server is running (so the calls go through locally), or if deployed, the same client code will call the production endpoint.
 
@@ -37,7 +37,7 @@ import { client } from "../lib/rpc";
 function GreetingButton() {
   const [message, setMessage] = useState("");
   const sayHello = async () => {
-    const result = await client.tools.HELLO_TOOL({ name: "Deco" });
+    const result = await client.HELLO_TOOL({ name: "Deco" });
     setMessage(result.greeting);
   };
   return (
@@ -65,7 +65,7 @@ Tailwind makes styling easier by using classes directly in JSX. You might have p
 
 ## Connecting to Tools/Workflows
 
-We covered RPC usage. It's worth noting that because the RPC client is generated from your types, if you add a new tool and re-run `npm run gen` and `npm run gen:self`, your `client.tools` will automatically have the new method. This prevents calling something that doesn't exist. If you try to call a tool that you didn't list in `withRuntime` on the server, the TypeScript compiler will complain (and at runtime it would 404). So always update the generation after adding new capabilities, and update your UI accordingly.
+We covered RPC usage. It's worth noting that because the RPC client is generated from your types, if you add a new tool and re-run `npm run gen`, your `client` will automatically have the new method. This prevents calling something that doesn't exist. If you try to call a tool that you didn't list in `withRuntime` on the server, the TypeScript compiler will complain (and at runtime it would 404). So always update the generation after adding new capabilities, and update your UI accordingly.
 
 ## Hot Reload & Development
 

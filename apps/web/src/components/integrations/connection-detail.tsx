@@ -85,8 +85,15 @@ import {
 import { ToolCallForm } from "./tool-call-form.tsx";
 import { ToolCallResult } from "./tool-call-result.tsx";
 import type { MCPToolCallResult } from "./types.ts";
+import { Label } from "@deco/ui/components/label.tsx";
 
-function ConnectionInstanceActions({ onDelete }: { onDelete: () => void }) {
+function ConnectionInstanceActions({
+  onDelete,
+  onEdit,
+}: {
+  onDelete: () => void;
+  onEdit: () => void;
+}) {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
@@ -95,6 +102,12 @@ function ConnectionInstanceActions({ onDelete }: { onDelete: () => void }) {
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent>
+        <DropdownMenuItem
+          onSelect={onEdit}
+          className="text-primary focus:bg-primary/10 focus:text-primary"
+        >
+          Edit
+        </DropdownMenuItem>
         <DropdownMenuItem
           onSelect={onDelete}
           className="text-destructive focus:bg-destructive/10 focus:text-destructive"
@@ -170,12 +183,20 @@ function ConfigureConnectionInstanceForm({
   instance,
   setDeletingId,
   defaultConnection,
+  selectedIntegration,
+  setSelectedIntegrationId,
+  data,
+  appKey,
 }: {
   instance?: Integration;
   setDeletingId: (id: string | null) => void;
   defaultConnection?: MCPConnection;
+  selectedIntegration?: Integration;
+  setSelectedIntegrationId: (id: string) => void;
+  data: ReturnType<typeof useGroupedApp>;
+  appKey: string;
 }) {
-  const isReadOnly = !instance;
+  const [isEditing, setIsEditing] = useState(false);
 
   const form = useForm<Integration>({
     defaultValues: {
@@ -259,230 +280,6 @@ function ConfigureConnectionInstanceForm({
     );
   };
 
-  return (
-    <div className="w-full flex flex-col gap-6">
-      <Form {...form}>
-        <form
-          onSubmit={form.handleSubmit(onSubmit)}
-          className="flex flex-col gap-6"
-        >
-          {!isReadOnly && (
-            <div className="flex items-end gap-4">
-              <FormField
-                control={form.control}
-                name="icon"
-                render={({ field }) => (
-                  <FormItem>
-                    <input
-                      type="file"
-                      ref={fileInputRef}
-                      accept="image/*"
-                      className="hidden"
-                      onChange={handleFileChange}
-                    />
-                    <Input type="hidden" {...field} />
-                    <FormControl>
-                      {iconValue ? (
-                        <div
-                          onClick={triggerFileInput}
-                          className="w-10 h-10 relative group"
-                        >
-                          <IntegrationIcon
-                            icon={iconValue}
-                            className={cn(
-                              "w-10 h-10 bg-background",
-                              isUploading && "opacity-50",
-                            )}
-                          />
-                          <div className="rounded-xl cursor-pointer transition-all absolute top-0 left-0 w-full h-full opacity-0 group-hover:opacity-90 flex items-center justify-center bg-accent">
-                            <Icon name="upload" size={24} />
-                          </div>
-                        </div>
-                      ) : (
-                        <div
-                          onClick={triggerFileInput}
-                          className="w-14 h-14 flex flex-col items-center justify-center gap-1 border border-border bg-background rounded-xl"
-                        >
-                          <Icon name="upload" size={24} />
-                          <span className="text-xs text-muted-foreground/70 text-center px-1">
-                            Select an icon
-                          </span>
-                        </div>
-                      )}
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="name"
-                render={({ field }) => (
-                  <FormItem className="w-full">
-                    <FormControl>
-                      <Input
-                        className="bg-background"
-                        placeholder="Integration name"
-                        {...field}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <div className="ml-auto">
-                <ConnectionInstanceActions
-                  onDelete={() => {
-                    setDeletingId(instance?.id);
-                  }}
-                />
-              </div>
-            </div>
-          )}
-          <div className="space-y-2">
-            <div className="space-y-4">
-              <FormField
-                control={form.control}
-                name="connection.type"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Connection Type</FormLabel>
-                    <Select
-                      onValueChange={(value: MCPConnection["type"]) => {
-                        field.onChange(value);
-                        handleConnectionTypeChange(value);
-                      }}
-                      defaultValue={field.value}
-                      value={field.value}
-                    >
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select a connection type" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        <SelectItem value="HTTP">HTTP</SelectItem>
-                        <SelectItem value="SSE">
-                          Server-Sent Events (SSE)
-                        </SelectItem>
-                        <SelectItem value="Websocket">WebSocket</SelectItem>
-                        <SelectItem value="Deco">Deco</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              {["SSE", "HTTP"].includes(connection.type) && (
-                <>
-                  <FormField
-                    control={form.control}
-                    name="connection.url"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>{connection.type} URL</FormLabel>
-                        <FormControl>
-                          <Input
-                            placeholder="https://example.com/messages"
-                            {...field}
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  <FormField
-                    control={form.control}
-                    name="connection.token"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Token</FormLabel>
-                        <span className="text-[10px] text-muted-foreground ml-1">
-                          optional
-                        </span>
-                        <FormControl>
-                          <PasswordInput placeholder="token" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                </>
-              )}
-
-              {connection.type === "Websocket" && (
-                <FormField
-                  control={form.control}
-                  name="connection.url"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>WebSocket URL</FormLabel>
-                      <FormControl>
-                        <Input placeholder="wss://example.com/ws" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              )}
-
-              {connection.type === "Deco" && (
-                <>
-                  <FormField
-                    control={form.control}
-                    name="connection.tenant"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Tenant ID</FormLabel>
-                        <FormControl>
-                          <Input placeholder="tenant-id" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  <FormField
-                    control={form.control}
-                    name="connection.token"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Token</FormLabel>
-                        <span className="text-[10px] text-muted-foreground ml-1">
-                          optional
-                        </span>
-                        <FormControl>
-                          <PasswordInput placeholder="token" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                </>
-              )}
-            </div>
-          </div>
-          <div className="flex justify-end gap-2">
-            <Button type="submit" disabled={isSaving || numberOfChanges === 0}>
-              Save
-            </Button>
-          </div>
-        </form>
-      </Form>
-    </div>
-  );
-}
-
-const MAX_DESCRIPTION_LENGTH = 180;
-
-function Overview({
-  data,
-  appKey,
-}: {
-  data: ReturnType<typeof useGroupedApp>;
-  appKey: string;
-  showInstallButton: boolean;
-}) {
   const isWellKnown = isWellKnownApp(appKey);
   const navigateWorkspace = useNavigateWorkspace();
   const [installingIntegration, setInstallingIntegration] =
@@ -520,89 +317,385 @@ function Overview({
     ? data.info?.description
     : data.info?.description?.slice(0, MAX_DESCRIPTION_LENGTH) + "...";
 
+  const deduplicatedInstances = useMemo(() => {
+    return data.instances?.reduce((acc, instance) => {
+      if (!acc.find((i) => i.id === instance.id)) {
+        acc.push(instance);
+      }
+      return acc;
+    }, [] as Integration[]);
+  }, [data.instances]);
+
+  const isInstalled = data?.instances?.length > 0;
+
   return (
-    <div className="w-full flex flex-col-reverse items-start justify-between gap-4">
-      <div className="flex flex-col items-start gap-4 order-1">
-        <IntegrationIcon
-          icon={data.info?.icon}
-          name={data.info?.name}
-          size="xl"
-        />
-        <div className="flex flex-col gap-1">
-          <h5 className="text-xl font-medium">
-            {data.info?.friendlyName || data.info?.name}
-          </h5>
-          <p className="text-sm text-muted-foreground whitespace-pre-line">
-            {description}
-          </p>
-          {hasBigDescription && (
+    <>
+      {!isEditing && (
+        <div className="w-full flex items-start justify-between gap-4">
+          <div className="flex items-center gap-4">
+            <IntegrationIcon
+              icon={data.info?.icon}
+              name={data.info?.name}
+              size="xl"
+            />
+            <div className="flex flex-col gap-1">
+              <h5 className="text-xl font-medium">
+                {data.info?.friendlyName || data.info?.name}
+              </h5>
+              <p className="text-sm text-muted-foreground whitespace-pre-line">
+                {description}
+              </p>
+              {hasBigDescription && (
+                <Button
+                  className="w-fit mt-2"
+                  variant="special"
+                  onClick={() => setIsExpanded(!isExpanded)}
+                >
+                  {isExpanded ? "Show less" : "Show more"}
+                </Button>
+              )}
+            </div>
+          </div>
+          {!isWellKnown &&
+          data.info?.provider !== "custom" &&
+          (!data.instances || data.instances?.length === 0) ? (
             <Button
-              className="w-fit mt-2"
               variant="special"
-              onClick={() => setIsExpanded(!isExpanded)}
+              className="w-[250px]"
+              onClick={handleAddConnection}
             >
-              {isExpanded ? "Show less" : "Show more"}
+              <span className="hidden md:inline">Install app</span>
             </Button>
-          )}
+          ) : null}
+          <OauthModalContextProvider.Provider
+            value={{ onOpenOauthModal: setOauthCompletionDialog }}
+          >
+            <ConfirmMarketplaceInstallDialog
+              integration={installingIntegration}
+              setIntegration={setInstallingIntegration}
+              onConfirm={({ authorizeOauthUrl, connection }) => {
+                function onSelect() {
+                  const key = getConnectionAppKey(connection);
+                  const appKey = AppKeys.build(key);
+                  navigateWorkspace(`/connection/${appKey}`);
+                }
+
+                if (authorizeOauthUrl) {
+                  const popup = globalThis.open(authorizeOauthUrl, "_blank");
+                  if (
+                    !popup ||
+                    popup.closed ||
+                    typeof popup.closed === "undefined"
+                  ) {
+                    setOauthCompletionDialog({
+                      openIntegrationOnFinish: true,
+                      open: true,
+                      url: authorizeOauthUrl,
+                      integrationName:
+                        installingIntegration?.name || "the service",
+                      connection: connection,
+                    });
+                  } else {
+                    onSelect();
+                  }
+                }
+              }}
+            />
+          </OauthModalContextProvider.Provider>
+
+          <OAuthCompletionDialog
+            open={oauthCompletionDialog.open}
+            onOpenChange={(open) =>
+              setOauthCompletionDialog((prev) => ({ ...prev, open }))
+            }
+            authorizeOauthUrl={oauthCompletionDialog.url}
+            integrationName={oauthCompletionDialog.integrationName}
+          />
         </div>
-      </div>
-      {!isWellKnown && data.info?.provider !== "custom" ? (
-        <Button
-          variant="special"
-          className="w-full"
-          onClick={handleAddConnection}
-        >
-          <span className="hidden md:inline">Install app</span>
-        </Button>
-      ) : null}
-      <OauthModalContextProvider.Provider
-        value={{ onOpenOauthModal: setOauthCompletionDialog }}
-      >
-        <ConfirmMarketplaceInstallDialog
-          integration={installingIntegration}
-          setIntegration={setInstallingIntegration}
-          onConfirm={({ authorizeOauthUrl, connection }) => {
-            function onSelect() {
-              const key = getConnectionAppKey(connection);
-              const appKey = AppKeys.build(key);
-              navigateWorkspace(`/connection/${appKey}`);
-            }
+      )}
 
-            if (authorizeOauthUrl) {
-              const popup = globalThis.open(authorizeOauthUrl, "_blank");
-              if (
-                !popup ||
-                popup.closed ||
-                typeof popup.closed === "undefined"
-              ) {
-                setOauthCompletionDialog({
-                  openIntegrationOnFinish: true,
-                  open: true,
-                  url: authorizeOauthUrl,
-                  integrationName: installingIntegration?.name || "the service",
-                  connection: connection,
-                });
-              } else {
-                onSelect();
-              }
-            } else {
-              onSelect();
-            }
-          }}
-        />
-      </OauthModalContextProvider.Provider>
+      {isInstalled && (
+        <div className="w-full flex flex-col gap-6">
+          <Form {...form}>
+            <form
+              onSubmit={form.handleSubmit(onSubmit)}
+              className="flex flex-col gap-6"
+            >
+              <div className="flex items-end gap-4">
+                {isEditing && (
+                  <FormField
+                    control={form.control}
+                    name="icon"
+                    render={({ field }) => (
+                      <FormItem>
+                        <input
+                          type="file"
+                          ref={fileInputRef}
+                          accept="image/*"
+                          className="hidden"
+                          onChange={handleFileChange}
+                        />
+                        <Input type="hidden" {...field} />
+                        <FormControl>
+                          {iconValue ? (
+                            <div
+                              onClick={triggerFileInput}
+                              className="w-10 h-10 relative group"
+                            >
+                              <IntegrationIcon
+                                icon={iconValue}
+                                className={cn(
+                                  "w-10 h-10 bg-background",
+                                  isUploading && "opacity-50",
+                                )}
+                              />
+                              <div className="rounded-xl cursor-pointer transition-all absolute top-0 left-0 w-full h-full opacity-0 group-hover:opacity-90 flex items-center justify-center bg-accent">
+                                <Icon name="upload" size={24} />
+                              </div>
+                            </div>
+                          ) : (
+                            <div
+                              onClick={triggerFileInput}
+                              className="w-14 h-14 flex flex-col items-center justify-center gap-1 border border-border bg-background rounded-xl"
+                            >
+                              <Icon name="upload" size={24} />
+                              <span className="text-xs text-muted-foreground/70 text-center px-1">
+                                Select an icon
+                              </span>
+                            </div>
+                          )}
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                )}
+                {isEditing && (
+                  <FormField
+                    control={form.control}
+                    name="name"
+                    render={({ field }) => (
+                      <FormItem className="w-full">
+                        <FormControl>
+                          <Input
+                            className="bg-background"
+                            placeholder="Integration name"
+                            {...field}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                )}
+                {!isEditing && (
+                  <div className="flex flex-col items-start gap-1">
+                    <Label className="text-sm text-muted-foreground">
+                      Instances
+                    </Label>
+                    <Select
+                      value={selectedIntegration?.id}
+                      onValueChange={(value) => {
+                        if (value === "create-new") {
+                          handleAddConnection();
+                          return;
+                        }
+                        setSelectedIntegrationId(value);
+                      }}
+                    >
+                      <SelectTrigger className="w-[300px]">
+                        <SelectValue placeholder="Select instance" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {deduplicatedInstances?.map((instance) => (
+                          <InstanceSelectItem
+                            key={instance.id}
+                            instance={instance}
+                          />
+                        ))}
+                        <SelectItem
+                          key="create-new"
+                          value="create-new"
+                          className="cursor-pointer"
+                        >
+                          <Icon
+                            name="add"
+                            size={16}
+                            className="flex-shrink-0"
+                          />
+                          Create new
+                        </SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                )}
+                <div className="ml-auto">
+                  <ConnectionInstanceActions
+                    onDelete={() => {
+                      setDeletingId(instance?.id ?? null);
+                    }}
+                    onEdit={() => {
+                      setIsEditing(!isEditing);
+                    }}
+                  />
+                </div>
+              </div>
+              {isEditing && (
+                <div className="space-y-2">
+                  <div className="space-y-4">
+                    <FormField
+                      control={form.control}
+                      name="connection.type"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Connection Type</FormLabel>
+                          <Select
+                            onValueChange={(value: MCPConnection["type"]) => {
+                              field.onChange(value);
+                              handleConnectionTypeChange(value);
+                            }}
+                            defaultValue={field.value}
+                            value={field.value}
+                          >
+                            <FormControl>
+                              <SelectTrigger>
+                                <SelectValue placeholder="Select a connection type" />
+                              </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                              <SelectItem value="HTTP">HTTP</SelectItem>
+                              <SelectItem value="SSE">
+                                Server-Sent Events (SSE)
+                              </SelectItem>
+                              <SelectItem value="Websocket">
+                                WebSocket
+                              </SelectItem>
+                              <SelectItem value="Deco">Deco</SelectItem>
+                            </SelectContent>
+                          </Select>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
 
-      <OAuthCompletionDialog
-        open={oauthCompletionDialog.open}
-        onOpenChange={(open) =>
-          setOauthCompletionDialog((prev) => ({ ...prev, open }))
-        }
-        authorizeOauthUrl={oauthCompletionDialog.url}
-        integrationName={oauthCompletionDialog.integrationName}
-      />
-    </div>
+                    {["SSE", "HTTP"].includes(connection.type) && (
+                      <>
+                        <FormField
+                          control={form.control}
+                          name="connection.url"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>{connection.type} URL</FormLabel>
+                              <FormControl>
+                                <Input
+                                  placeholder="https://example.com/messages"
+                                  {...field}
+                                />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                        <FormField
+                          control={form.control}
+                          name="connection.token"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Token</FormLabel>
+                              <span className="text-[10px] text-muted-foreground ml-1">
+                                optional
+                              </span>
+                              <FormControl>
+                                <PasswordInput placeholder="token" {...field} />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                      </>
+                    )}
+
+                    {connection.type === "Websocket" && (
+                      <FormField
+                        control={form.control}
+                        name="connection.url"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>WebSocket URL</FormLabel>
+                            <FormControl>
+                              <Input
+                                placeholder="wss://example.com/ws"
+                                {...field}
+                              />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    )}
+
+                    {connection.type === "Deco" && (
+                      <>
+                        <FormField
+                          control={form.control}
+                          name="connection.tenant"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Tenant ID</FormLabel>
+                              <FormControl>
+                                <Input placeholder="tenant-id" {...field} />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                        <FormField
+                          control={form.control}
+                          name="connection.token"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Token</FormLabel>
+                              <span className="text-[10px] text-muted-foreground ml-1">
+                                optional
+                              </span>
+                              <FormControl>
+                                <PasswordInput placeholder="token" {...field} />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                      </>
+                    )}
+                  </div>
+                </div>
+              )}
+              {isEditing && (
+                <div className="flex justify-end gap-2">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => setIsEditing(false)}
+                  >
+                    Cancel
+                  </Button>
+                  <Button
+                    type="submit"
+                    disabled={isSaving || numberOfChanges === 0}
+                  >
+                    Save
+                  </Button>
+                </div>
+              )}
+            </form>
+          </Form>
+        </div>
+      )}
+    </>
   );
 }
+
+const MAX_DESCRIPTION_LENGTH = 180;
 
 function ParametersViewer({ tool }: Pick<ToolProps, "tool">) {
   const getParameters = (schema: Record<string, unknown>) => {
@@ -831,7 +924,8 @@ function ToolsInspector({
     );
   }, [data.instances, selectedIntegrationId]);
 
-  const connection = selectedIntegration?.connection || data?.info?.connection;
+  const connection =
+    selectedIntegration?.connection || data?.info?.connection || {};
 
   const tools = useTools(connection as MCPConnection, ignoreCache.current);
 
@@ -860,7 +954,7 @@ function ToolsInspector({
   );
 
   return (
-    <ScrollArea className="h-[calc(100vh-10rem)]">
+    <ScrollArea className="h-full min-h-0">
       <div ref={toolsRef} className="w-full flex flex-col items-center gap-4">
         <div className="w-full flex items-center justify-between">
           <Input
@@ -881,7 +975,7 @@ function ToolsInspector({
           </Button>
         </div>
 
-        <div className="flex flex-col gap-4 w-full min-h-[80vh]">
+        <div className="flex flex-col gap-4 w-full pb-4">
           {tools.isLoading ? (
             Array.from({ length: 8 }).map((_, idx) => (
               <Skeleton key={idx} className="rounded-lg w-full h-[76px]" />
@@ -1075,7 +1169,7 @@ function ViewsList({ integration }: { integration: Integration }) {
   }
 
   return (
-    <ScrollArea className="h-[calc(100vh-10rem)]">
+    <ScrollArea className="h-full">
       <div className="w-full flex flex-col items-center gap-4">
         <h6 className="text-sm text-muted-foreground font-medium w-full">
           Views available from this integration
@@ -1243,37 +1337,19 @@ function AppDetail() {
     useRemoveConnection();
 
   return (
-    <div className="grid grid-cols-6 gap-6 p-6 h-full">
-      <div className="col-span-2 bg-card rounded-xl p-4 flex flex-col gap-4 h-full">
-        <Overview
-          key={appKey}
-          data={data}
-          appKey={appKey}
-          showInstallButton={!data.instances || data.instances?.length === 0}
-        />
-        {data.instances?.length > 1 && (
-          <Select
-            value={selectedIntegration?.id}
-            onValueChange={(value) => {
-              setSelectedIntegrationId(value);
-            }}
-          >
-            <SelectTrigger className="w-full">
-              <SelectValue placeholder="Select connection" />
-            </SelectTrigger>
-            <SelectContent>
-              {data.instances?.map((instance) => (
-                <InstanceSelectItem key={instance.id} instance={instance} />
-              ))}
-            </SelectContent>
-          </Select>
-        )}
+    <div className="flex flex-col gap-6 p-6 h-full">
+      <div className="w-full flex flex-col gap-4 border-b pb-6">
         <ConfigureConnectionInstanceForm
+          appKey={appKey}
           key={selectedIntegration?.id}
           instance={selectedIntegration}
           defaultConnection={data.info?.connection}
           setDeletingId={setDeletingId}
+          selectedIntegration={selectedIntegration}
+          setSelectedIntegrationId={setSelectedIntegrationId}
+          data={data}
         />
+
         {deletingId && (
           <RemoveConnectionAlert
             open={deletingId !== null}
@@ -1288,11 +1364,11 @@ function AppDetail() {
           />
         )}
       </div>
-      <div className="col-span-4 h-full">
+      <div className="flex-grow w-full min-h-0">
         <Tabs
           defaultValue="tools"
           orientation="horizontal"
-          className="w-full h-full gap-4"
+          className="w-full gap-4 h-[90%]"
         >
           <TabsList>
             <TabsTrigger value="tools" className="px-4">

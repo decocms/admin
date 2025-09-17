@@ -3,9 +3,7 @@ import type { AppScope } from "@deco/sdk/hooks";
 import type { JSONSchema7 } from "json-schema";
 
 // Default policies required for all integrations
-export const DEFAULT_INTEGRATION_POLICIES = [
-  { effect: "allow" as const, resource: "DATABASES_RUN_SQL" },
-];
+export const DEFAULT_INTEGRATION_POLICIES: Statement[] = [];
 
 export const parseAppScope = (scope: string) => {
   const [bindingName, toolName] = scope.split("::");

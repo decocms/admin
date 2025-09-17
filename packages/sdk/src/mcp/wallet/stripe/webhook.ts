@@ -145,6 +145,7 @@ const paymentIntentSucceeded: EventHandler<
       value: workspace,
       slug: workspaceMatch.pathname.groups.slug,
       root: workspaceMatch.pathname.groups.root,
+      branch: "main",
     },
   };
 

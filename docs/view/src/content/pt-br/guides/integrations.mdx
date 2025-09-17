@@ -1,0 +1,126 @@
+---
+title: Integrações
+description: Aprenda como conectar serviços externos e APIs no deco
+icon: Link
+---
+
+Um dos aspectos mais poderosos do deco é a facilidade com que você pode conectar serviços externos – isso pode ser qualquer coisa desde uma API SaaS até um banco de dados ou armazenamento de arquivos. Integrações permitem que seu agente faça coisas como: enviar emails, consultar o banco de dados da sua empresa, buscar documentos do Google Drive, ou incorporar conhecimento de PDFs e websites.
+
+## Conectando APIs Externas
+
+Muitas integrações comuns estão disponíveis prontas para uso na biblioteca de integrações do deco (por exemplo, Slack, Gmail, Notion, Stripe, etc.). Estas podem ser adicionadas via interface do deco (na seção "Tools" ou "Integrations"). Quando você "Adicionar Integração" e configurá-la (frequentemente OAuth ou chaves de API), as tools dessa integração ficam disponíveis no seu objeto de ambiente `Env`. Por exemplo, após adicionar Gmail e conceder acesso, seu Cloudflare Worker pode chamar `env.GMAIL.sendEmail` como vimos anteriormente. O `deco.gen.ts` terá os tipos para `GMAIL.sendEmail` (e qualquer outras tools do Gmail fornecidas).
+
+Se não há uma integração integrada para o que você precisa, você tem duas opções:
+
+- **Usar HTTP diretamente em uma tool personalizada**: Como Cloudflare Workers podem fazer fetch de URLs externas, você pode escrever uma tool que chama qualquer API REST usando `fetch`. Você lidaria manualmente com auth (armazenar uma chave de API como variável de ambiente ou secret no `wrangler.toml`) e parsearia a resposta. Isso é direto para APIs simples.
+
+- **Construir uma integração personalizada**: A plataforma deco permite publicar integrações personalizadas que podem ser reutilizadas entre tools, seja para todos usarem ou para o registry privado da equipe.
+
+## Integrações Integradas
+
+O deco vem com um conjunto abrangente de integrações integradas que estão automaticamente disponíveis para seus agentes. Essas integrações são organizadas em duas categorias:
+
+### Integrações Globais
+
+Essas integrações são acessíveis no nível da organização/equipe e fornecem capacidades fundamentais que funcionam em todos os seus projetos:
+
+**Gerenciamento de Equipe**
+- **TEAMS_GET**, **TEAMS_CREATE**, **TEAMS_UPDATE**, **TEAMS_DELETE**: Gerenciar criação de equipe, configuração e membros
+- **TEAMS_LIST**: Listar todas as equipes às quais você tem acesso
+- **TEAMS_GET_THEME**: Acessar configurações de tema e marca do workspace
+- **PROJECTS_LIST**: Listar todos os projetos dentro de uma organização
+
+**Gerenciamento de Usuários e Membros**
+- **Gerenciamento de Membros**: Convidar membros da equipe, gerenciar papéis e permissões, lidar com convites da equipe
+- **Gerenciamento de Perfil**: Atualizar perfis de usuário e configurações pessoais
+- **Gerenciamento de Papéis**: Criar papéis personalizados com permissões granulares de tools e recursos
+
+**Gerenciamento de Integrações (Global)**
+- **INTEGRATIONS_CALL_TOOL**: Executar tools de qualquer integração instalada
+- **INTEGRATIONS_LIST_TOOLS**: Descobrir tools disponíveis de integrações
+- **Acesso ao Registry**: Navegar e descobrir novas integrações do marketplace deco
+
+### Integrações de Projeto
+
+Essas integrações operam dentro do contexto de um projeto/workspace específico e fornecem a funcionalidade principal para construir e gerenciar agentes de AI:
+
+**Gerenciamento de Agentes**
+- **AGENTS_LIST**, **AGENTS_GET**, **AGENTS_CREATE**, **AGENTS_UPDATE**, **AGENTS_DELETE**: Gerenciamento completo do ciclo de vida do agente
+- Configurar personalidades de agente, instruções, acesso a tools e comportamento
+
+**Gerenciamento de Integrações (Escopo do Projeto)**
+- **INTEGRATIONS_GET**, **INTEGRATIONS_CREATE**, **INTEGRATIONS_UPDATE**, **INTEGRATIONS_DELETE**: Gerenciar integrações específicas do projeto
+- **Configuração de Integração OAuth**: Lidar com fluxos OAuth para conexões de serviços terceirizados
+- **Descoberta de Integrações**: Pesquisar e instalar novas integrações do marketplace
+
+**Gerenciamento de Threads e Conversas**
+- **THREADS_LIST**, **THREADS_GET**: Acessar histórico de conversas e gerenciamento de threads
+- **Metadados de Thread**: Atualizar títulos de thread e gerenciar contexto de conversa
+- **Histórico de Mensagens**: Recuperar e analisar conversas passadas
+
+**Hospedagem de Aplicações**
+- **Gerenciamento de Deploy**: Fazer deploy de seus agentes como aplicações web com domínios personalizados
+- **Ciclo de Vida do App**: Criar, atualizar e gerenciar aplicações hospedadas
+- **Gerenciamento de Domínio**: Configurar domínios personalizados para seus agentes deployados
+- **Execução de Workflow**: Executar e monitorar workflows em background
+
+**Registry e Marketplace**
+- **Descoberta de App**: Navegar apps e integrações disponíveis no registry
+- **Publicação**: Publicar seus próprios apps e integrações para outros usarem
+- **Gerenciamento de Versão**: Gerenciar diferentes versões de aplicações publicadas
+
+**Automação e Triggers**
+- **TRIGGERS_CREATE**, **TRIGGERS_UPDATE**, **TRIGGERS_DELETE**: Configurar workflows automatizados
+- **Agendamento Cron**: Agendar tarefas e workflows recorrentes
+- **Triggers Webhook**: Criar endpoints webhook para integrações de sistema externo
+- **Automação Orientada a Eventos**: Responder a eventos do sistema e triggers externos
+
+**Gerenciamento de Base de Conhecimento**
+- **KNOWLEDGE_BASE_CREATE**, **KNOWLEDGE_BASE_DELETE**: Gerenciar bases de conhecimento para RAG
+- **KNOWLEDGE_BASE_REMEMBER**, **KNOWLEDGE_BASE_FORGET**: Adicionar e remover informações
+- **KNOWLEDGE_BASE_SEARCH**: Busca semântica através de suas bases de conhecimento
+- **Processamento de Arquivos**: Fazer upload e processar documentos, PDFs e outros tipos de arquivo
+
+**Gerenciamento de Sistema de Arquivos**
+- **FS_READ**, **FS_WRITE**, **FS_DELETE**: Ler, escrever e gerenciar arquivos no armazenamento do workspace
+- **Metadados de Arquivo**: Acessar informações e propriedades de arquivo
+- **URLs Pré-assinadas**: Gerar URLs seguras para acesso a arquivo
+
+**Gerenciamento de Banco de Dados**
+- **DATABASES_RUN_SQL**: Executar consultas SQL contra bancos de dados do workspace
+- **Migração de Banco de Dados**: Gerenciar mudanças de schema e migrações de dados
+- **Banco de Dados do Workspace**: Cada workspace recebe seu próprio banco de dados isolado
+
+**Gerenciamento de AI e Modelo**
+- **AI_GENERATE**, **AI_GENERATE_OBJECT**: Acessar capacidades de modelo de linguagem
+- **Modelos Personalizados**: Configurar e gerenciar modelos de AI personalizados
+- **Controle de Acesso a Modelo**: Controlar quais modelos agentes podem acessar
+
+**Rastreamento Financeiro e de Uso**
+- **Gerenciamento de Carteira**: Rastrear créditos de uso e faturamento
+- **Analytics de Uso**: Monitorar performance do agente e consumo de recursos
+- **Histórico de Faturamento**: Acessar relatórios detalhados de uso e custo
+
+**Controle de Acesso e Segurança**
+- **Gerenciamento de Chave de API**: Gerar e gerenciar chaves de API para acesso externo
+- **Permissões Baseadas em Papel**: Controle de acesso granular para tools e recursos
+- **Gerenciamento de Política**: Definir e impor políticas de segurança
+
+Todas essas integrações funcionam perfeitamente juntas, permitindo que você construa agentes de AI 
+sofisticados que podem interagir com serviços externos, gerenciar dados, automatizar workflows e 
+fornecer experiências de usuário ricas. As integrações integradas lidam com autenticação, tratamento de erro 
+e gerenciamento de recursos automaticamente, então você pode focar em construir a funcionalidade principal do seu agente.
+
+## Usando Serviços Externos em Workflows
+
+Note que você pode encadear múltiplas integrações diferentes em um workflow. Por exemplo, um workflow pode:
+
+- Usar uma **integração de banco de dados** para buscar alguns dados no passo 1,
+- Usar uma **tool LLM** (como integração OpenAI) para resumir esses dados no passo 2,
+- Usar uma **integração de email** para enviar o resumo para um usuário no passo 3.
+
+Esta é uma orquestração multi-serviço. A plataforma encoraja tal uso – é a razão pela qual temos workflows! Apenas seja cuidadoso para lidar com falhas em cada passo (talvez via branching) e não exceder quaisquer limites de taxa desses serviços.
+
+Finalmente, sempre teste suas integrações. Para qualquer integração que você configure, tente chamá-la diretamente (talvez via uma tool simples ou os botões de teste de integração fornecidos na UI) para garantir que as credenciais estejam corretas. Problemas de integração são uma fonte comum de erros de runtime, então se algo não estiver funcionando, verifique novamente se a integração está conectada e autorizada (ex: A chave de API está correta?).
+
+Forneceremos how-tos detalhados para integrações populares em seções dedicadas, mas o acima dá uma ideia geral de como conectar praticamente qualquer coisa aos seus agentes deco.

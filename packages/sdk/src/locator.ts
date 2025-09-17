@@ -4,7 +4,7 @@
  * format: <org-slug>/<project-slug>
  */
 
-type LocatorStructured = {
+export type LocatorStructured = {
   org: string;
   project: string;
 };
@@ -12,6 +12,10 @@ type LocatorStructured = {
 export type ProjectLocator = `${string}/${string}`;
 
 export const Locator = {
+  asFirstTwoSegmentsOf(path: string): ProjectLocator {
+    const normalized = path.startsWith("/") ? path.slice(1) : path;
+    return normalized.split("/").slice(0, 2).join("/") as ProjectLocator;
+  },
   from({ org, project }: LocatorStructured): ProjectLocator {
     if (org.includes("/") || project.includes("/")) {
       throw new Error("Org or project cannot contain slashes");
@@ -42,7 +46,7 @@ export const Locator = {
   adaptToRootSlug: (
     locator: string,
     userId?: string,
-  ): `/${string}/${string}` => {
+  ): `/users/${string}` | `/shared/${string}` => {
     const normalized = locator.startsWith("/") ? locator.slice(1) : locator;
     const [org, project] = normalized.split("/");
 

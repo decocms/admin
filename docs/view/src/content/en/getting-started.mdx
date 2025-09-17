@@ -1,89 +1,74 @@
 ---
 title: Getting Started
-description: Set up your development environment and create your first deco project
+description: Create and deploy your first MCP server in minutes
 icon: Play
 ---
 
 import { StepGroup } from "../../components/ui/StepGroup";
 import { Step } from "../../components/ui/Step";
+import Callout from "../../components/ui/Callout.astro";
 
 ## Prerequisites
 
-Before you begin, make sure you have the following:
+Before starting,  make sure you have:
 
-- **Node.js** (v18+ recommended) – required for running the frontend development server and bundling assets.
+- **Node.js** v22+ ([download here](https://nodejs.org))
+- **Git** for version control
+- **Code editor** (we recommend [Cursor](https://cursor.com) for AI-powered development)
+- **Basic TypeScript knowledge** – The project is TypeScript-heavy, so familiarity with TS is important (if you’re new, see the official TypeScript docs for a primer).
 
-- **deco CLI** – the command-line interface for deco, which you can install via NPM.
-
-- **Cloudflare Account** – needed to deploy your app (Cloudflare Workers is the runtime).
-
-- **Basic TypeScript knowledge** – The project is TypeScript-heavy, so familiarity with TS is important (if you're new, see the official TypeScript docs for a primer).
-
-## Project Setup with the CLI
-
-Once your environment is ready, follow these steps to create a new deco project:
+## Creating a new App
 
 <StepGroup>
-  <Step number={1} title="Create a project">
-    Open your terminal and run:
-    
+  <Step number={1} title="Init your app">
     ```bash
     npm create deco@latest
     ```
     
-    If you're not authenticated, this will your browser so you can log in or create an account,
-    then initialize a project for you.
+    This may open your browser to authenticate. You can create a 
+    new account if you don't have one.
+    
+    You will be prompted to link this app to a deco CMS project
+    that you're part of.
   </Step>
 
-  <Step number={2} title="Install dependencies">
-    After scaffolding, `cd` into the project folder. If the project includes a frontend, run:
-    
+  <Step number={2} title="Start development">
     ```bash
+    cd <your-app-name>
     npm install
-    ```
-    
-    (or `pnpm install`) to install Node dependencies for the view.
-  </Step>
-
-  <Step number={3} title="Run the development server">
-    Start your app locally with:
-    
-    ```bash
     npm run dev
     ```
     
-    This will spin up the development environment – usually it runs the Cloudflare Worker (MCP server) on a local port (8787 by default) and a Vite dev server for the frontend, with hot-reload for both. Check the terminal output for the local URL (often something like `https://localhost-<hash>.deco.host`), and open it in your browser. You should see the default deco app interface loading.
+    Your app's local server will start with hot reload enabled. 
+    Copy the preview URL from the terminal output.
+    The preview URL is accessible anywhere on the internet now.
     
-    <Callout type="success">
-      At this point, you have a running deco application on your machine! 🎉
+    <Callout type="info">
+      The local server can be accessed on port 8787 and serves 
+      both a MCP app at `/mcp`, and a React view front-end at `/`.
     </Callout>
   </Step>
 </StepGroup>
 
-## "Hello World" Example
+## Test your MCP
 
-Let's illustrate how you might add a simple "Hello World" tool to your app:
+Test your MCP server:
 
-In your project's server code (e.g., `server/main.ts`), you can define a new Tool that returns a greeting:
+1. Go to your team on the [deco CMS](https://admin.decocms.com)
+2. Click **Add Integration** → **Custom Integration**
+3. Paste your preview URL + `/mcp` (e.g., `https://localhost-abc123.deco.host/mcp`)
+4. Save and test the default tools that come from the template
 
-```typescript
-import { createTool } from "@deco/workers-runtime";
-import { z } from "zod";
+<Callout type="success">
+  Your MCP server is now running locally and connected to deco! 🎉
+</Callout>
 
-const createHelloTool = () =>
-  createTool({
-    id: "HELLO_TOOL",
-    description: "Returns a hello message",
-    inputSchema: z.object({ name: z.string() }),
-    outputSchema: z.object({ greeting: z.string() }),
-    execute: async ({ inputData }) => {
-      return { greeting: `Hello, ${inputData.name}!` };
-    },
-  });
+## Deploy to production
+
+When ready to share your MCP:
+
+```bash
+npm run deploy
 ```
 
-Here we use **Zod** to define that this tool expects a name (string) and outputs a greeting string. _(If you're unfamiliar with Zod: it's a TypeScript-friendly schema validation library that ensures inputs/outputs conform to the types your code expects.)_
-
-Register this tool in the `withRuntime` setup (we'll explain this in _Project Structure_ next). Then run `deco configure` (if needed) and restart the dev server. Don't forget to run `deco gen` to update types (more on the gen command under **CLI Reference**).
-
-Now you can test the tool. For example, using the deco UI or a curl request to the MCP endpoint, call the `HELLO_TOOL` with `{"name": "World"}` and see if you get back `{"greeting": "Hello, World!"}`.
+We deploy your app to Cloudflare Workers and becomes available on the private registry of your Team.

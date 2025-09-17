@@ -221,9 +221,20 @@ function Docked({ hideViewsButton, onReady, ...props }: Props) {
 
       const activeTabs = Object.entries(tabs).filter(([, tab]) => tab.active);
       if (activeTabs.length > 0) {
-        for (const [id] of activeTabs) {
+        const ordered = isMobile
+          ? [
+              ...activeTabs.filter(([id]) => id !== "chat"),
+              ...activeTabs.filter(([id]) => id === "chat"),
+            ]
+          : activeTabs;
+        for (const [id] of ordered) {
           event.api.getPanel(id)?.api.setActive();
         }
+      }
+
+      // Prefer chat on mobile when no explicit active tab exists
+      if (isMobile && activeTabs.length === 0) {
+        event.api.getPanel("chat")?.api.setActive();
       }
 
       setOpenPanels(initialPanels);

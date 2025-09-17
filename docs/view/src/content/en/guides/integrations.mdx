@@ -14,50 +14,102 @@ If there isn't a built-in integration for what you need, you have two options:
 
 - **Use HTTP directly in a custom tool**: Because Cloudflare Workers can fetch external URLs, you can write a tool that calls any REST API using `fetch`. You'd manually handle auth (store an API key as an environment variable or secret in `wrangler.toml`) and parse the response. This is straightforward for simple APIs.
 
-- **Build a custom integration (advanced)**: The deco platform likely allows registering custom integrations that can be reused across tools, but this typically involves deeper integration. For most cases, writing a bespoke tool is enough.
+- **Build a custom integration**: The deco platform allows publishing custom integrations that can be reused across tools, either for everyone to use or to the private team registry.
 
-## Databases and Storage
+## Built-in Integrations
 
-If your agent needs to read/write data, you can integrate with databases:
+deco comes with a comprehensive set of built-in integrations that are automatically available to your agents. These integrations are organized into two categories:
 
-- **Cloudflare D1 (SQL)** or **Workers KV/DO**: Since the backend is a CF Worker, you can use Cloudflare's storage solutions. For example, if you have a D1 database, you'd configure it in `wrangler.toml` and use the D1 binding in your tools. Durable Objects (DO) can hold state or be used for synchronization patterns.
+### Global Integrations
 
-- **External DBs**: You can call external database APIs or services (if accessible via HTTP). Or use something like Supabase or Firebase by calling their APIs/SDKs (ensuring any secrets are kept safe).
+These integrations are accessible at the organization/team level and provide foundational capabilities that work across all your projects:
 
-- Deco might also provide some built-in workspace storage (the "Knowledge Base" likely uses Workers KV or Durable Objects under the hood to store uploaded content).
+**Team Management**
+- **TEAMS_GET**, **TEAMS_CREATE**, **TEAMS_UPDATE**, **TEAMS_DELETE**: Manage team creation, configuration, and membership
+- **TEAMS_LIST**: List all teams you have access to
+- **TEAMS_GET_THEME**: Access workspace theming and branding settings
+- **PROJECTS_LIST**: List all projects within an organization
 
-## Knowledge Base Integration
+**User & Member Management** 
+- **Member Management**: Invite team members, manage roles and permissions, handle team invitations
+- **Profile Management**: Update user profiles and personal settings
+- **Role Management**: Create custom roles with granular tool and resource permissions
 
-The Knowledge Base is a special integration for unstructured data. In the deco UI, you can upload documents (PDFs, text, etc.) to your workspace's knowledge base. The platform will index these (e.g., split into chunks, vectorize them) so that agents can retrieve information from them when responding. From a developer perspective, once a document is uploaded:
+**Integration Management (Global)**
+- **INTEGRATIONS_CALL_TOOL**: Execute tools from any installed integration
+- **INTEGRATIONS_LIST_TOOLS**: Discover available tools from integrations
+- **Registry Access**: Browse and discover new integrations from the deco marketplace
 
-- The agent's context will automatically include relevant snippets from these docs when the agent is asked about something related. (You might not need to write code for this – it's handled by the platform's retrieval-augmented generation system.)
+### Project Integrations
 
-- If there are specific Knowledge Base tools (for example, `env.DECO_CHAT_WORKSPACE_API.queryKnowledgeBase` or similar), those would appear in `Env`. You could then explicitly call or workflow around them if needed.
+These integrations operate within the context of a specific project/workspace and provide the core functionality for building and managing AI agents:
 
-In short, the Knowledge Base is a convenient way to give your agents domain-specific knowledge without hardcoding it in the prompt. Use it for FAQs, policy documents, manuals, or any text that the agent should refer to. Just be mindful of size limits and ensure you only upload non-sensitive content (or content you have rights to), as those might be processed by AI models.
+**Agent Management**
+- **AGENTS_LIST**, **AGENTS_GET**, **AGENTS_CREATE**, **AGENTS_UPDATE**, **AGENTS_DELETE**: Complete agent lifecycle management
+- Configure agent personalities, instructions, tool access, and behavior
 
-## File Systems
+**Integration Management (Project-scoped)**
+- **INTEGRATIONS_GET**, **INTEGRATIONS_CREATE**, **INTEGRATIONS_UPDATE**, **INTEGRATIONS_DELETE**: Manage project-specific integrations
+- **OAuth Integration Setup**: Handle OAuth flows for third-party service connections
+- **Integration Discovery**: Search and install new integrations from marketplace
 
-Because Workers are serverless, you can't directly access a local file system. If you need to handle files, you'll likely either use the Knowledge Base (for large text files), or integrate with cloud storage (S3, Cloudflare R2, etc.) by writing tools that fetch or put files there via API.
+**Thread & Conversation Management**
+- **THREADS_LIST**, **THREADS_GET**: Access conversation history and thread management
+- **Thread Metadata**: Update thread titles and manage conversation context
+- **Message History**: Retrieve and analyze past conversations
 
-## Custom Integrations Example
+**Application Hosting**
+- **Deployment Management**: Deploy your agents as web applications with custom domains
+- **App Lifecycle**: Create, update, and manage hosted applications
+- **Domain Management**: Configure custom domains for your deployed agents
+- **Workflow Execution**: Run and monitor background workflows
 
-Let's say you have an internal REST API for your inventory. You could:
+**Registry & Marketplace**
+- **App Discovery**: Browse available apps and integrations in the registry
+- **Publishing**: Publish your own apps and integrations for others to use
+- **Version Management**: Manage different versions of published applications
 
-- Add an integration via deco that wraps that API (if supported), or
-- Store an API key/URL as environment variables in `wrangler.toml`, then create a tool `GET_INVENTORY` that does:
+**Automation & Triggers**
+- **TRIGGERS_CREATE**, **TRIGGERS_UPDATE**, **TRIGGERS_DELETE**: Set up automated workflows
+- **Cron Scheduling**: Schedule recurring tasks and workflows
+- **Webhook Triggers**: Create webhook endpoints for external system integrations
+- **Event-driven Automation**: Respond to system events and external triggers
 
-```ts
-const resp = await fetch(`${env.INVENTORY_API_URL}/items?id=${inputData.id}`, {
-  headers: { Authorization: `Bearer ${env.INVENTORY_API_KEY}` },
-});
-```
+**Knowledge Base Management**
+- **KNOWLEDGE_BASE_CREATE**, **KNOWLEDGE_BASE_DELETE**: Manage knowledge bases for RAG
+- **KNOWLEDGE_BASE_REMEMBER**, **KNOWLEDGE_BASE_FORGET**: Add and remove information
+- **KNOWLEDGE_BASE_SEARCH**: Semantic search across your knowledge bases
+- **File Processing**: Upload and process documents, PDFs, and other file types
 
-and returns the JSON data. Now your agent can call `GET_INVENTORY` to retrieve inventory info.
+**File System Management**
+- **FS_READ**, **FS_WRITE**, **FS_DELETE**: Read, write and manage files in workspace storage
+- **File Metadata**: Access file information and properties
+- **Presigned URLs**: Generate secure URLs for file access
 
-## Security & Permissions
+**Database Management**
+- **DATABASES_RUN_SQL**: Execute SQL queries against workspace databases
+- **Database Migration**: Manage schema changes and data migrations
+- **Workspace Database**: Each workspace gets its own isolated database
 
-Integrations often require API keys or OAuth tokens. The deco CLI or UI will usually help store these securely (for example, tokens might be stored in your workspace settings and not exposed in code). When you deploy to Cloudflare, ensure any required secrets are present in `wrangler.toml` (using secret environment variables or KV). Cloudflare's Secrets Manager can hold things like API keys which you refer to in your Worker code via `env`.
+**AI & Model Management**
+- **AI_GENERATE**, **AI_GENERATE_OBJECT**: Access language model capabilities
+- **Custom Models**: Configure and manage custom AI models
+- **Model Access Control**: Control which models agents can access
+
+**Financial & Usage Tracking**
+- **Wallet Management**: Track usage credits and billing
+- **Usage Analytics**: Monitor agent performance and resource consumption
+- **Billing History**: Access detailed usage and cost reports
+
+**Access Control & Security**
+- **API Key Management**: Generate and manage API keys for external access
+- **Role-based Permissions**: Fine-grained access control for tools and resources
+- **Policy Management**: Define and enforce security policies
+
+All these integrations work seamlessly together, allowing you to build sophisticated AI 
+agents that can interact with external services, manage data, automate workflows, and 
+provide rich user experiences. The built-in integrations handle authentication, error 
+handling, and resource management automatically, so you can focus on building your agent's core functionality.
 
 ## Using External Services in Workflows
 
@@ -69,6 +121,6 @@ Note that you might chain multiple different integrations in one workflow. For i
 
 This is a multi-service orchestration. The platform encourages such usage – it's the reason we have workflows! Just be careful to handle failures at each step (perhaps via branching) and not exceed any rate limits of those services.
 
-Finally, always test your integrations. For any integration you configure, try calling it directly (maybe via a simple tool or the provided integration test buttons in the UI) to ensure credentials are correct. Integration issues are a common source of runtime errors, so if something isn't working, double-check that the integration is connected and authorized (e.g., did the OAuth token expire? Is the API key correct?).
+Finally, always test your integrations. For any integration you configure, try calling it directly (maybe via a simple tool or the provided integration test buttons in the UI) to ensure credentials are correct. Integration issues are a common source of runtime errors, so if something isn't working, double-check that the integration is connected and authorized (e.g., Is the API key correct?).
 
 We'll provide detailed how-tos for popular integrations in dedicated sections, but the above gives you a general idea of how to connect just about anything to your deco agents.

@@ -37,6 +37,14 @@ class_name = "Trigger"
 name = "WORKSPACE_DB"
 class_name = "WorkspaceDatabase"
 
+[[durable_objects.bindings]]
+name = "BRANCH"
+class_name = "Branch"
+
+[[durable_objects.bindings]]
+name = "BLOBS"
+class_name = "Blobs"
+
 # Durable Object migrations.
 # Docs: https://developers.cloudflare.com/workers/wrangler/configuration/#migrations
 [[migrations]]
@@ -63,3 +71,7 @@ class_name = "KbFileProcessorWorkflow"
 [[migrations]]
 tag = "v4"
 new_sqlite_classes = ["WorkspaceDatabase"] # Array of new classes
+
+[[migrations]]
+tag = "v5"
+new_sqlite_classes = ["Branch", "Blobs"] # DECONFIG DurableObjects

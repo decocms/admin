@@ -110,6 +110,7 @@ export const withMCPErrorHandling = <
         structuredContent: result,
       };
     } catch (error) {
+      console.error(error);
       return {
         isError: true,
         content: [{ type: "text", text: serializeError(error) }],

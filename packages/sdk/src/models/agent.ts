@@ -166,6 +166,7 @@ export type GenerateOptions = z.infer<typeof AgentGenerateOptions>;
 
 export const AgentStreamOptions = AgentGenerateOptions.extend({
   sendReasoning: z.boolean().optional(),
+  threadTitle: z.string().optional(),
   smoothStream: z
     .object({
       delayInMs: z.number().optional(),

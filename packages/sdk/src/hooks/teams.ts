@@ -25,7 +25,8 @@ import { DEFAULT_THEME } from "../theme.ts";
 import { useSDK } from "./store.tsx";
 import { MCPConnection } from "../models/index.ts";
 import { listIntegrations } from "../crud/mcp.ts";
-import { listProjects } from "../crud/projects.ts";
+import { listProjects, listRecentProjects } from "../crud/projects.ts";
+import type { Project } from "../models/project.ts";
 import { Locator } from "../locator.ts";
 
 /**
@@ -53,18 +54,6 @@ export const useOrganizations = (options: { searchQuery?: string } = {}) => {
   return queryResult;
 };
 
-export interface Project {
-  id: string;
-  title: string;
-  slug: string;
-  avatar_url: string | null;
-  org: {
-    id: number;
-    slug: string;
-    avatar_url?: string;
-  };
-}
-
 export const useProjects = (options: {
   searchQuery?: string;
   org: string;
@@ -82,6 +71,14 @@ export const useProjects = (options: {
   );
 
   return filtered;
+};
+
+export const useRecentProjects = (): Project[] => {
+  const query = useSuspenseQuery<Project[]>({
+    queryKey: KEYS.RECENT_PROJECTS(),
+    queryFn: () => listRecentProjects(),
+  });
+  return query.data;
 };
 
 export const useTeam = (slug: string = "") => {

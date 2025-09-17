@@ -54,7 +54,9 @@ export const Workflow = (
     implements WorkflowDO
   {
     constructor(
-      public override ctx: DurableObjectState,
+      // @ts-ignore: This is a workaround to fix the type error
+      // deno-lint-ignore ban-types
+      public override ctx: DurableObjectState<{}>,
       public override env: DefaultEnv,
     ) {
       super(ctx, env);

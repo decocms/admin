@@ -1,3 +1,4 @@
+import { JwtIssuer } from "../auth/jwt.ts";
 import type { AuthContext, Statement } from "../auth/policy.ts";
 import { ForbiddenError, NotFoundError, UnauthorizedError } from "../errors.ts";
 import { ProjectLocator } from "../locator.ts";
@@ -16,14 +17,19 @@ type WithWorkspace<TAppContext extends AppContext = AppContext> = Omit<
   TAppContext,
   "workspace"
 > & {
-  workspace: { root: string; slug: string; value: Workspace };
+  workspace: { root: string; slug: string; value: Workspace; branch: string };
 };
 
 type WithLocator<TAppContext extends AppContext = AppContext> = Omit<
   TAppContext,
   "locator"
 > & {
-  locator: { org: string; project: string; value: ProjectLocator };
+  locator: {
+    org: string;
+    project: string;
+    value: ProjectLocator;
+    branch: string;
+  };
 };
 
 type WithKbFileProcessor<TAppContext extends AppContext = AppContext> = Omit<
@@ -105,6 +111,13 @@ export const assertWorkspaceResourceAccess = async (
 ): Promise<Disposable> => {
   if (c.isLocal || c.resourceAccess.granted()) {
     return c.resourceAccess.grant();
+  }
+
+  if (c.proxyToken) {
+    const grant = await grantAccessForProxy(c);
+    if (grant) {
+      return grant;
+    }
   }
 
   const resourcesOrContexts =
@@ -221,14 +234,18 @@ export const assertWorkspaceResourceAccess = async (
       }
     } catch (error) {
       errors.push(
-        `Error checking access for resource: ${error instanceof Error ? error.message : String(error)}`,
+        `Error checking access for resource: ${
+          error instanceof Error ? error.message : String(error)
+        }`,
       );
     }
   }
 
   // If we reach here, none of the resources granted access
   throw new ForbiddenError(
-    `Cannot access any of the requested resources in workspace ${c.workspace.value} ${resourcesOrContexts}. Errors: ${errors.join("; ")}`,
+    `Cannot access any of the requested resources in workspace ${c.workspace.value} ${resourcesOrContexts}. Errors: ${errors.join(
+      "; ",
+    )}`,
   );
 };
 
@@ -263,4 +280,53 @@ export function assertKbFileProcessor(
   if (!c.kbFileProcessor) {
     throw new ForbiddenError("KbFileProcessor not found");
   }
+}
+
+export const DECO_MCP_PROXY_SUB_PREFIX = "deco-mcp-proxy";
+
+export const IntegrationSub = {
+  build: (integrationId: string) =>
+    `${DECO_MCP_PROXY_SUB_PREFIX}:${integrationId}`,
+  parse: (sub: string) => {
+    const [prefix, integrationId] = sub.split(":");
+    if (prefix !== DECO_MCP_PROXY_SUB_PREFIX) {
+      throw new ForbiddenError("Invalid proxy token");
+    }
+    return integrationId;
+  },
+};
+
+export const issuerFromContext = async (c: AppContext) => {
+  const keyPair =
+    c.envVars.DECO_CHAT_API_JWT_PRIVATE_KEY &&
+    c.envVars.DECO_CHAT_API_JWT_PUBLIC_KEY
+      ? {
+          public: c.envVars.DECO_CHAT_API_JWT_PUBLIC_KEY,
+          private: c.envVars.DECO_CHAT_API_JWT_PRIVATE_KEY,
+        }
+      : undefined;
+  return await JwtIssuer.forKeyPair(keyPair);
+};
+
+async function grantAccessForProxy(
+  c: AppContext,
+): Promise<Disposable | undefined> {
+  if (!c.proxyToken) {
+    throw new ForbiddenError("Proxy token not found");
+  }
+
+  if (
+    !("integrationId" in c.user) ||
+    typeof c.user.integrationId !== "string"
+  ) {
+    return undefined; // fallthrough to authorization
+  }
+
+  const integrationId = c.user.integrationId;
+  const issuer = await issuerFromContext(c);
+  const payload = await issuer.verify(c.proxyToken).catch(() => null);
+  if (payload && payload.sub === IntegrationSub.build(integrationId)) {
+    return c.resourceAccess.grant();
+  }
+  throw new ForbiddenError("Invalid proxy token");
 }

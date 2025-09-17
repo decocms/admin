@@ -12,6 +12,7 @@ export interface ThreadFilterOptions {
     | "updatedAt_asc";
   cursor?: string;
   limit?: number;
+  enabled?: boolean;
 }
 
 export interface ThreadList {

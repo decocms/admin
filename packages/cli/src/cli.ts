@@ -71,6 +71,16 @@ import {
 } from "./commands/tools/call-tool.js";
 import { completionCommand } from "./commands/completion/completion.js";
 import { installCompletionCommand } from "./commands/completion/install.js";
+import {
+  cloneCommand,
+  getCommand,
+  putCommand,
+  watchCommand,
+  pushCommand,
+  pullCommand,
+  listCommand,
+  deleteCommand,
+} from "./commands/deconfig/index.js";
 import { detectRuntime } from "./lib/runtime.js";
 
 const __filename = fileURLToPath(import.meta.url);
@@ -529,6 +539,257 @@ const gen = new Command("gen")
     }
   });
 
+// Get command for deconfig
+const deconfigGet = new Command("get")
+  .description("Get a file from a deconfig branch.")
+  .argument("<path>", "File path to get")
+  .option("-b, --branch <branchName>", "Branch name", "main")
+  .option("-o, --output <file>", "Output file (defaults to stdout)")
+  .option("-w, --workspace <workspace>", "Workspace name")
+  .action(async (path, options) => {
+    try {
+      const config = await getConfig({
+        inlineOptions: { workspace: options.workspace },
+      });
+      await getCommand({
+        path,
+        branch: options.branch,
+        output: options.output,
+        workspace: config.workspace,
+        local: config.local,
+      });
+    } catch (error) {
+      console.error(
+        "❌ Get failed:",
+        error instanceof Error ? error.message : String(error),
+      );
+      process.exit(1);
+    }
+  });
+
+// Put command for deconfig
+const deconfigPut = new Command("put")
+  .description("Put a file to a deconfig branch.")
+  .argument("<path>", "File path to put")
+  .option("-b, --branch <branchName>", "Branch name", "main")
+  .option("-f, --file <file>", "Local file to upload")
+  .option("-c, --content <content>", "Content to upload")
+  .option("-m, --metadata <metadata>", "Metadata JSON string")
+  .option("-w, --workspace <workspace>", "Workspace name")
+  .action(async (path, options) => {
+    try {
+      const config = await getConfig({
+        inlineOptions: { workspace: options.workspace },
+      });
+      await putCommand({
+        path,
+        branch: options.branch,
+        file: options.file,
+        content: options.content,
+        metadata: options.metadata,
+        workspace: config.workspace,
+        local: config.local,
+      });
+    } catch (error) {
+      console.error(
+        "❌ Put failed:",
+        error instanceof Error ? error.message : String(error),
+      );
+      process.exit(1);
+    }
+  });
+
+// Watch command for deconfig
+const deconfigWatch = new Command("watch")
+  .description("Watch a deconfig branch for changes.")
+  .option("-b, --branch <branchName>", "Branch name", "main")
+  .option("-p, --path <path>", "Path filter for watching specific files")
+  .option(
+    "--from-ctime <ctime>",
+    "Start watching from this ctime",
+    (value) => parseInt(value),
+    1,
+  )
+  .option("-w, --workspace <workspace>", "Workspace name")
+  .action(async (options) => {
+    try {
+      const config = await getConfig({
+        inlineOptions: { workspace: options.workspace },
+      });
+      await watchCommand({
+        branch: options.branch,
+        path: options.path,
+        fromCtime: options.fromCtime,
+        workspace: config.workspace,
+        local: config.local,
+      });
+    } catch (error) {
+      console.error(
+        "❌ Watch failed:",
+        error instanceof Error ? error.message : String(error),
+      );
+      process.exit(1);
+    }
+  });
+
+// Clone command for deconfig
+const deconfigClone = new Command("clone")
+  .description("Clone a deconfig branch to a local directory.")
+  .option("-b, --branch <branchName>", "Branch name to clone", "main")
+  .requiredOption("--path <path>", "Local directory path to clone files to")
+  .option("--path-filter <filter>", "Filter files by path pattern")
+  .option("-w, --workspace <workspace>", "Workspace name")
+  .action(async (options) => {
+    try {
+      const config = await getConfig({
+        inlineOptions: { workspace: options.workspace },
+      });
+      await cloneCommand({
+        branchName: options.branch,
+        path: options.path,
+        pathFilter: options.pathFilter,
+        workspace: config.workspace,
+        local: config.local,
+      });
+    } catch (error) {
+      console.error(
+        "❌ Clone failed:",
+        error instanceof Error ? error.message : String(error),
+      );
+      process.exit(1);
+    }
+  });
+
+// Push command for deconfig
+const deconfigPush = new Command("push")
+  .description("Push local files to a deconfig branch.")
+  .option("-b, --branch <branchName>", "Branch name to push to", "main")
+  .requiredOption("--path <path>", "Local directory path to push files from")
+  .option("--path-filter <filter>", "Filter files by path pattern")
+  .option("--dry-run", "Show what would be pushed without making changes")
+  .option("-w, --workspace <workspace>", "Workspace name")
+  .action(async (options) => {
+    try {
+      const config = await getConfig({
+        inlineOptions: { workspace: options.workspace },
+      });
+      await pushCommand({
+        branchName: options.branch,
+        path: options.path,
+        pathFilter: options.pathFilter,
+        dryRun: options.dryRun,
+        workspace: config.workspace,
+        local: config.local,
+      });
+    } catch (error) {
+      console.error(
+        "❌ Push failed:",
+        error instanceof Error ? error.message : String(error),
+      );
+      process.exit(1);
+    }
+  });
+
+// Pull command for deconfig
+const deconfigPull = new Command("pull")
+  .description("Pull changes from a deconfig branch to local directory.")
+  .option("-b, --branch <branchName>", "Branch name to pull from", "main")
+  .requiredOption("--path <path>", "Local directory path to pull files to")
+  .option("--path-filter <filter>", "Filter files by path pattern")
+  .option("--dry-run", "Show what would be changed without making changes")
+  .option("-w, --workspace <workspace>", "Workspace name")
+  .action(async (options) => {
+    try {
+      const config = await getConfig({
+        inlineOptions: { workspace: options.workspace },
+      });
+      await pullCommand({
+        branchName: options.branch,
+        path: options.path,
+        pathFilter: options.pathFilter,
+        dryRun: options.dryRun,
+        workspace: config.workspace,
+        local: config.local,
+      });
+    } catch (error) {
+      console.error(
+        "❌ Pull failed:",
+        error instanceof Error ? error.message : String(error),
+      );
+      process.exit(1);
+    }
+  });
+
+// List command for deconfig
+const deconfigList = new Command("list")
+  .description("Interactively browse and view files in a deconfig branch.")
+  .option("-b, --branch <branchName>", "Branch name to list files from", "main")
+  .option("--path-filter <filter>", "Filter files by path pattern")
+  .option(
+    "--format <format>",
+    "Content display format: plainString, json, base64",
+    "plainString",
+  )
+  .option("-w, --workspace <workspace>", "Workspace name")
+  .action(async (options) => {
+    try {
+      const config = await getConfig({
+        inlineOptions: { workspace: options.workspace },
+      });
+      await listCommand({
+        branchName: options.branch,
+        pathFilter: options.pathFilter,
+        format: options.format,
+        workspace: config.workspace,
+        local: config.local,
+      });
+    } catch (error) {
+      console.error(
+        "❌ List failed:",
+        error instanceof Error ? error.message : String(error),
+      );
+      process.exit(1);
+    }
+  });
+
+// Delete command for deconfig
+const deconfigDelete = new Command("delete")
+  .description("Delete a file from a deconfig branch.")
+  .argument("<path>", "File path to delete")
+  .option("-b, --branch <branchName>", "Branch name", "main")
+  .option("-w, --workspace <workspace>", "Workspace name")
+  .action(async (path, options) => {
+    try {
+      const config = await getConfig({
+        inlineOptions: { workspace: options.workspace },
+      });
+      await deleteCommand({
+        path,
+        branchName: options.branch,
+        workspace: config.workspace,
+        local: config.local,
+      });
+    } catch (error) {
+      console.error(
+        "❌ Delete failed:",
+        error instanceof Error ? error.message : String(error),
+      );
+      process.exit(1);
+    }
+  });
+
+// Deconfig parent command
+const deconfig = new Command("deconfig")
+  .description("Manage deconfig filesystem operations.")
+  .addCommand(deconfigGet)
+  .addCommand(deconfigPut)
+  .addCommand(deconfigWatch)
+  .addCommand(deconfigClone)
+  .addCommand(deconfigPush)
+  .addCommand(deconfigPull)
+  .addCommand(deconfigList)
+  .addCommand(deconfigDelete);
+
 // Main CLI program
 const program = new Command()
   .name(packageJson.name)
@@ -582,6 +843,7 @@ const program = new Command()
   .addCommand(linkCmd)
   .addCommand(gen)
   .addCommand(create)
+  .addCommand(deconfig)
   .addCommand(completion)
   .addCommand(installCompletion);
 

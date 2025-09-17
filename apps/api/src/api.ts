@@ -1,10 +1,10 @@
+import { createServerClient, jsonSchemaToModel } from "@deco/ai/mcp";
 import { HttpServerTransport } from "@deco/mcp/http";
-import { createServerClient } from "@deco/ai/mcp";
 import {
   DECO_CMS_WEB_URL,
+  Locator,
   MCPConnection,
   WellKnownMcpGroups,
-  Locator,
 } from "@deco/sdk";
 import { DECO_CHAT_KEY_ID, getKeyPair } from "@deco/sdk/auth";
 import {
@@ -15,22 +15,34 @@ import {
   compose,
   CONTRACTS_TOOLS,
   createMCPToolsStub,
+  createTool,
+  DECONFIG_TOOLS,
   EMAIL_TOOLS,
+  getIntegration,
   getPresignedReadUrl_WITHOUT_CHECKING_AUTHORIZATION,
+  getRegistryApp,
   getWorkspaceBucketName,
   GLOBAL_TOOLS,
+  type IntegrationWithTools,
+  issuerFromContext,
   ListToolsMiddleware,
+  MCPClient,
   PolicyClient,
+  PROJECT_TOOLS,
+  IntegrationSub as ProxySub,
+  Tool,
   type ToolLike,
+  watchSSE,
   withMCPAuthorization,
   withMCPErrorHandling,
-  PROJECT_TOOLS,
   wrapToolFn,
-  getIntegration,
-  type IntegrationWithTools,
-  getRegistryApp,
 } from "@deco/sdk/mcp";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
+import {
+  CallToolRequestSchema,
+  ListToolsRequestSchema,
+  ListToolsResult,
+} from "@modelcontextprotocol/sdk/types.js";
 import { type Context, Hono } from "hono";
 import { env, getRuntimeKey } from "hono/adapter";
 import { cors } from "hono/cors";
@@ -38,27 +50,20 @@ import { HTTPException } from "hono/http-exception";
 import { logger } from "hono/logger";
 import { endTime, startTime } from "hono/timing";
 import type { ContentfulStatusCode } from "hono/utils/http-status";
+import { studio } from "outerbase-browsable-do-enforced";
+import { createPosthogServerClient } from "packages/sdk/src/posthog.ts";
 import { z } from "zod";
 import { ROUTES as loginRoutes } from "./auth/index.ts";
 import { withActorsStubMiddleware } from "./middlewares/actors-stub.ts";
-import {
-  withActorsMiddleware,
-  withActorsMiddlewareLegacy,
-} from "./middlewares/actors.ts";
+import { withActorsMiddleware } from "./middlewares/actors.ts";
 import { withContextMiddleware } from "./middlewares/context.ts";
 import { setUserMiddleware } from "./middlewares/user.ts";
 import { handleCodeExchange } from "./oauth/code.ts";
 import { type AppContext, type AppEnv, State } from "./utils/context.ts";
 import { handleStripeWebhook } from "./webhooks/stripe.ts";
 import { handleTrigger } from "./webhooks/trigger.ts";
-import {
-  CallToolRequestSchema,
-  ListToolsRequestSchema,
-  ListToolsResult,
-} from "@modelcontextprotocol/sdk/types.js";
-import { createPosthogServerClient } from "packages/sdk/src/posthog.ts";
-import { studio } from "outerbase-browsable-do-enforced";
 
+const PROXY_TOKEN_HEADER = "X-Proxy-Auth";
 export const app = new Hono<AppEnv>();
 export const honoCtxToAppCtx = (c: Context<AppEnv>): AppContext => {
   const envs = env(c);
@@ -74,10 +79,16 @@ export const honoCtxToAppCtx = (c: Context<AppEnv>): AppContext => {
     ? Locator.adaptToRootSlug(locator, uid)
     : undefined;
 
+  const branch =
+    c.req.param("branch") ??
+    c.req.query("branch") ??
+    c.req.header("x-deco-branch") ??
+    "main";
   let ctxWorkspace = undefined;
   if (oldWorkspaceValue) {
     const [_, root, slug] = oldWorkspaceValue.split("/");
     ctxWorkspace = {
+      branch,
       root,
       slug,
       value: oldWorkspaceValue,
@@ -89,6 +100,7 @@ export const honoCtxToAppCtx = (c: Context<AppEnv>): AppContext => {
         org,
         project,
         value: locator,
+        branch,
       }
     : undefined;
 
@@ -100,12 +112,16 @@ export const honoCtxToAppCtx = (c: Context<AppEnv>): AppContext => {
     params: { ...c.req.query(), ...c.req.param() },
     envVars: envs,
     cookie: c.req.header("Cookie"),
-    callerApp: c.var.callerApp,
+    // token issued by the MCP Proxy server to identify the caller as deco api
+    proxyToken: c.req.header(PROXY_TOKEN_HEADER)?.replace("Bearer ", ""),
+    callerApp: c.req.header("x-caller-app"),
     policy: policyClient,
     authorization: authorizationClient,
     token: c.req.header("Authorization")?.replace("Bearer ", ""),
     kbFileProcessor: c.env.KB_FILE_PROCESSOR,
     workspaceDO: c.env.WORKSPACE_DB,
+    branchDO: c.env.BRANCH,
+    blobsDO: c.env.BLOBS,
     workspace: ctxWorkspace,
     locator: ctxLocator,
     posthog: createPosthogServerClient({
@@ -130,13 +146,10 @@ const mapMCPErrorToHTTPExceptionOrThrow = (err: Error) => {
  */
 const createMCPHandlerFor = (
   tools:
-    | typeof GLOBAL_TOOLS
-    | typeof PROJECT_TOOLS
-    | typeof EMAIL_TOOLS
-    | typeof AGENT_TOOLS
-    | typeof CONTRACTS_TOOLS,
+    | readonly Tool[]
+    | ((c: Context<AppEnv>) => Promise<Tool[] | readonly Tool[]>),
 ) => {
-  return async (c: Context) => {
+  return async (c: Context<AppEnv>) => {
     const group = c.req.query("group");
 
     const server = new McpServer(
@@ -144,7 +157,7 @@ const createMCPHandlerFor = (
       { capabilities: { tools: {} } },
     );
 
-    for (const tool of tools) {
+    for (const tool of await (typeof tools === "function" ? tools(c) : tools)) {
       if (group && tool.group !== group) {
         continue;
       }
@@ -237,6 +250,8 @@ const createToolCallHandlerFor = <
 };
 
 interface ProxyOptions {
+  proxyToken?: string;
+  headers?: Record<string, string>;
   tools?: ListToolsResult | null;
   middlewares?: Partial<{
     listTools: ListToolsMiddleware[];
@@ -246,8 +261,7 @@ interface ProxyOptions {
 
 const proxy = (
   mcpConnection: MCPConnection,
-  { middlewares, tools }: ProxyOptions = {},
-  callerApp?: string,
+  { middlewares, tools, headers }: ProxyOptions = {},
 ) => {
   const createMcpClient = async () => {
     const client = await createServerClient(
@@ -256,11 +270,7 @@ const proxy = (
         name: "proxy",
       },
       undefined,
-      callerApp
-        ? {
-            "x-caller-app": callerApp,
-          }
-        : undefined,
+      headers,
     );
 
     const listTools = compose(
@@ -329,22 +339,27 @@ const createMcpServerProxyForIntegration = async (
   const ctx = honoCtxToAppCtx(c);
   const callerApp = ctx.callerApp;
 
-  const integration = await fetchIntegration();
+  const [integration, issuer] = await Promise.all([
+    fetchIntegration(),
+    issuerFromContext(ctx),
+  ]);
 
-  const mcpServerProxy = proxy(
-    integration.connection,
-    {
-      tools: integration.tools
-        ? { tools: integration.tools as ListToolsResult["tools"] }
-        : undefined,
-      middlewares: {
-        callTool: [
-          withMCPAuthorization(ctx, { integrationId: integration.id }),
-        ],
-      },
+  const token = await issuer.issue({
+    sub: ProxySub.build(integration.id),
+  });
+
+  const mcpServerProxy = proxy(integration.connection, {
+    headers: {
+      ...(callerApp ? { "x-caller-app": callerApp } : {}),
+      [PROXY_TOKEN_HEADER]: token,
     },
-    callerApp,
-  );
+    tools: integration.tools
+      ? { tools: integration.tools as ListToolsResult["tools"] }
+      : undefined,
+    middlewares: {
+      callTool: [withMCPAuthorization(ctx, { integrationId: integration.id })],
+    },
+  });
 
   return mcpServerProxy;
 };
@@ -430,12 +445,60 @@ app.use(async (c, next) => {
 });
 
 app.use(withActorsMiddleware);
-app.use(withActorsMiddlewareLegacy);
 
 app.post(`/contracts/mcp`, createMCPHandlerFor(CONTRACTS_TOOLS));
+app.post(`/deconfig/mcp`, createMCPHandlerFor(DECONFIG_TOOLS));
+app.get(`/:org/:project/deconfig/watch`, (ctx) => {
+  const appCtx = honoCtxToAppCtx(ctx);
+  return watchSSE(appCtx, {
+    branchName: ctx.req.query("branch"),
+    pathFilter: ctx.req.query("pathFilter"),
+    fromCtime: +(ctx.req.query("fromCtime") ?? "1"),
+  });
+});
 
 app.all("/mcp", createMCPHandlerFor(GLOBAL_TOOLS));
 app.all("/:org/:project/mcp", createMCPHandlerFor(PROJECT_TOOLS));
+
+app.all(
+  `/:org/:project/${WellKnownMcpGroups.Tools}/mcp`,
+  createMCPHandlerFor(async (ctx) => {
+    const appCtx = honoCtxToAppCtx(ctx);
+    const client = MCPClient.forContext(appCtx);
+    startTime(ctx, "sandbox-list-tools");
+
+    using _ = appCtx.resourceAccess.grant();
+    const { tools } = await State.run(
+      appCtx,
+      async () => await client.SANDBOX_LIST_TOOLS({}),
+    );
+
+    endTime(ctx, "sandbox-list-tools");
+
+    const virtualTools = tools.map((tool) => {
+      return createTool({
+        name: tool.name,
+        group: WellKnownMcpGroups.Tools,
+        description: tool.description,
+        inputSchema: jsonSchemaToModel(tool.inputSchema),
+        outputSchema: jsonSchemaToModel(tool.outputSchema),
+        handler: async (ctx, appCtx) => {
+          const { result } = await State.run(
+            appCtx,
+            async () =>
+              await client.SANDBOX_RUN_TOOL({
+                name: tool.name,
+                input: ctx,
+              }),
+          );
+          return result;
+        },
+      });
+    });
+
+    return virtualTools;
+  }),
+);
 app.all("/:org/:project/agents/:agentId/mcp", createMCPHandlerFor(AGENT_TOOLS));
 
 // Tool call endpoint handlers
@@ -452,6 +515,12 @@ app.post(
 );
 
 app.post("/:org/:project/:integrationId/mcp", async (c) => {
+  const mcpServerProxy = await createMcpServerProxy(c);
+
+  return mcpServerProxy.fetch(c.req.raw);
+});
+
+app.post("/:org/:project/:branch/:integrationId/mcp", async (c) => {
   const mcpServerProxy = await createMcpServerProxy(c);
 
   return mcpServerProxy.fetch(c.req.raw);
@@ -477,7 +546,7 @@ app.all("/:org/:project/i:databases-management/studio", async (c) => {
   const org = c.req.param("org");
   const project = c.req.param("project");
   const ctx = honoCtxToAppCtx(c);
-  const uid = ctx.user.id as string | undefined;
+  const uid = ctx.user?.id as string | undefined;
   await assertWorkspaceResourceAccess(ctx, {
     resource: "DATABASES_RUN_SQL",
   });

@@ -132,6 +132,7 @@ export class Trigger {
   protected data: TriggerData | null = null;
   protected hooks: TriggerHooks<TriggerData> | null = null;
   protected workspace: Workspace;
+  private branch: string = "main"; // TODO(@mcandeia) for now only main branch is supported
   protected posthog: PosthogServerClient;
   private db: ReturnType<typeof createServerClient>;
   private env: any;
@@ -193,7 +194,7 @@ export class Trigger {
     const policyClient = PolicyClient.getInstance(this.db);
     const authorizationClient = new AuthorizationClient(policyClient);
 
-    const workspace = fromWorkspaceString(this.workspace);
+    const workspace = fromWorkspaceString(this.workspace, this.branch);
     const { org, project } = Locator.parse(this.workspace);
     const locatorValue = Locator.from({ org, project });
 
@@ -209,12 +210,14 @@ export class Trigger {
       // i suspect triggers on old root/slug format for
       // root == "users" will not work anymore
       workspace,
-      locator: { org, project, value: locatorValue },
+      locator: { org, project, value: locatorValue, branch: this.branch },
       resourceAccess: createResourceAccess(),
       cf: new Cloudflare({ apiToken: this.env.CF_API_TOKEN }),
       policy: policyClient,
       authorization: authorizationClient,
       posthog: this.posthog,
+      branchDO: this.actorEnv.BRANCH,
+      blobsDO: this.actorEnv.BLOBS,
     };
   }
 

@@ -10,7 +10,6 @@ export const setUserMiddleware: MiddlewareHandler<AppEnv> = async (
   startTime(ctx, "get-user");
 
   const user = await getUser(ctx);
-
   if (user) {
     ctx.set("user", user);
   }

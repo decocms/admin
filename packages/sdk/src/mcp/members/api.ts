@@ -342,6 +342,53 @@ export const registerMemberActivity = createTool({
   },
 });
 
+export const registerProjectActivity = createTool({
+  name: "PROJECT_ACTIVITY_REGISTER",
+  description: "Register that the user accessed a project",
+  inputSchema: z.object({
+    org: z.string(),
+    project: z.string(),
+  }),
+  handler: async (props, c) => {
+    assertPrincipalIsUser(c);
+    c.resourceAccess.grant();
+
+    const user = c.user;
+    const { org, project } = props;
+
+    const { data: proj, error } = await c.db
+      .from("deco_chat_projects")
+      .select(
+        `
+        id,
+        slug,
+        teams!inner (
+          id,
+          slug,
+          members!inner (user_id, deleted_at)
+        )
+      `,
+      )
+      .eq("slug", project)
+      .eq("teams.slug", org)
+      .eq("teams.members.user_id", user.id)
+      .is("teams.members.deleted_at", null)
+      .single();
+
+    if (error) throw error;
+    if (!proj) return { success: false };
+
+    await c.db.from("user_activity").insert({
+      user_id: user.id,
+      resource: "project",
+      key: "id",
+      value: String(proj.id),
+    });
+
+    return { success: true };
+  },
+});
+
 // User's invites list handler
 export const getMyInvites = createTool({
   name: "MY_INVITES_LIST",

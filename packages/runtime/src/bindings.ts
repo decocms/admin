@@ -11,6 +11,7 @@ import type {
 interface IntegrationContext {
   integrationId: string;
   workspace: string;
+  branch?: string;
   decoCmsApiUrl?: string;
 }
 
@@ -45,11 +46,13 @@ const createIntegrationsUrl = ({
   integrationId,
   workspace,
   decoCmsApiUrl,
-}: IntegrationContext) =>
-  new URL(
-    `${normalizeWorkspace(workspace)}/${integrationId}/mcp`,
-    decoCmsApiUrl ?? "https://api.decocms.com",
-  ).href;
+  branch,
+}: IntegrationContext) => {
+  const base = `${normalizeWorkspace(workspace)}/${integrationId}/mcp`;
+  const url = new URL(base, decoCmsApiUrl ?? "https://api.decocms.com");
+  branch && url.searchParams.set("branch", branch);
+  return url.href;
+};
 
 type WorkspaceClientContext = Omit<
   RequestContext,
@@ -85,6 +88,7 @@ const mcpClientForIntegrationId = (
       integrationId,
       workspace: ctx.workspace,
       decoCmsApiUrl: decoChatApiUrl,
+      branch: ctx.branch,
     }),
     token: ctx.token,
     headers: appName ? { "x-caller-app": appName } : undefined,

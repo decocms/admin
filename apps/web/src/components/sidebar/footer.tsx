@@ -47,7 +47,11 @@ import { Link, useLocation, useMatch } from "react-router";
 import { ErrorBoundary } from "../../error-boundary.tsx";
 import { trackEvent } from "../../hooks/analytics.ts";
 import { useGitHubStars } from "../../hooks/use-github-stars.ts";
-import { useUserPreferences } from "../../hooks/use-user-preferences.ts";
+import {
+  UserPreferences,
+  userPreferencesLabels,
+  useUserPreferences,
+} from "../../hooks/use-user-preferences.ts";
 import { useUser } from "../../hooks/use-user.ts";
 import { ModelSelector } from "../chat/model-selector.tsx";
 import { UserAvatar } from "../common/avatar/user.tsx";
@@ -96,7 +100,6 @@ function UserPreferencesModal({
       smoothStream: preferences.smoothStream,
       sendReasoning: preferences.sendReasoning,
       pdfSummarization: preferences.pdfSummarization,
-      enableDecopilot: preferences.enableDecopilot,
     },
   });
   const {
@@ -104,14 +107,7 @@ function UserPreferencesModal({
     formState: { isDirty },
   } = form;
 
-  function onSubmit(data: {
-    defaultModel: string;
-    useOpenRouter: boolean;
-    sendReasoning: boolean;
-    smoothStream: boolean;
-    pdfSummarization: boolean;
-    enableDecopilot: boolean;
-  }) {
+  function onSubmit(data: Omit<UserPreferences, "showDecopilot">) {
     setPreferences({
       ...preferences,
       ...data,
@@ -154,137 +150,28 @@ function UserPreferencesModal({
                 </FormItem>
               )}
             />
-            <FormField
-              name="useOpenRouter"
-              render={({ field }) => (
-                <FormItem className="flex flex-col justify-center items-start gap-2">
-                  <div className="flex items-center gap-2 cursor-pointer">
-                    <FormControl>
-                      <Switch
-                        id="openrouter-switch"
-                        checked={field.value}
-                        onCheckedChange={field.onChange}
-                      />
-                    </FormControl>
-                    <FormLabel
-                      htmlFor="openrouter-switch"
-                      className="cursor-pointer"
-                    >
-                      Use OpenRouter
-                    </FormLabel>
-                  </div>
-                  <FormDescription>
-                    Improve availability of AI responses.
-                  </FormDescription>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              name="smoothStream"
-              render={({ field }) => (
-                <FormItem className="flex flex-col justify-center items-start gap-2">
-                  <div className="flex items-center gap-2 cursor-pointer">
-                    <FormControl>
-                      <Switch
-                        id="smoothStream"
-                        checked={field.value}
-                        onCheckedChange={field.onChange}
-                      />
-                    </FormControl>
-                    <FormLabel
-                      htmlFor="smoothStream"
-                      className="cursor-pointer"
-                    >
-                      Smooth Stream
-                    </FormLabel>
-                  </div>
-                  <FormDescription>
-                    Smooth out the stream of AI responses.
-                  </FormDescription>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              name="sendReasoning"
-              render={({ field }) => (
-                <FormItem className="flex flex-col justify-center items-start gap-2">
-                  <div className="flex items-center gap-2 cursor-pointer">
-                    <FormControl>
-                      <Switch
-                        id="sendReasoning"
-                        checked={field.value}
-                        onCheckedChange={field.onChange}
-                      />
-                    </FormControl>
-                    <FormLabel
-                      htmlFor="sendReasoning"
-                      className="cursor-pointer"
-                    >
-                      Reasoning
-                    </FormLabel>
-                  </div>
-                  <FormDescription>
-                    Display AI reasoning tokens in the chat.
-                  </FormDescription>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              name="pdfSummarization"
-              render={({ field }) => (
-                <FormItem className="flex flex-col justify-center items-start gap-2">
-                  <div className="flex items-center gap-2 cursor-pointer">
-                    <FormControl>
-                      <Switch
-                        id="pdfSummarization"
-                        checked={field.value}
-                        onCheckedChange={field.onChange}
-                      />
-                    </FormControl>
-                    <FormLabel
-                      htmlFor="pdfSummarization"
-                      className="cursor-pointer"
-                    >
-                      Summarize PDFs
-                    </FormLabel>
-                  </div>
-                  <FormDescription>
-                    Summarize large PDFs to reduce token usage and enable larger
-                    PDF support.
-                  </FormDescription>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              name="enableDecopilot"
-              render={({ field }) => (
-                <FormItem className="flex flex-col justify-center items-start gap-2">
-                  <div className="flex items-center gap-2 cursor-pointer">
-                    <FormControl>
-                      <Switch
-                        id="enableDecopilot"
-                        checked={field.value}
-                        onCheckedChange={field.onChange}
-                      />
-                    </FormControl>
-                    <FormLabel
-                      htmlFor="enableDecopilot"
-                      className="cursor-pointer"
-                    >
-                      Enable Decopilot
-                    </FormLabel>
-                  </div>
-                  <FormDescription>
-                    Show the Decopilot toggle button in the chat interface.
-                  </FormDescription>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+            {Object.entries(userPreferencesLabels).map(([key, value]) => (
+              <FormField
+                name={key}
+                render={({ field }) => (
+                  <FormItem className="flex flex-col justify-center items-start gap-2">
+                    <div className="flex items-center gap-2">
+                      <FormControl>
+                        <Switch
+                          id={key}
+                          checked={field.value}
+                          onCheckedChange={field.onChange}
+                        />
+                      </FormControl>
+                      <FormLabel>{value.label}</FormLabel>
+                    </div>
+                    <FormDescription>{value.description}</FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            ))}
+
             <DialogFooter>
               <DialogClose asChild>
                 <Button type="button" variant="outline">

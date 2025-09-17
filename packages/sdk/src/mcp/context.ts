@@ -17,14 +17,16 @@ import type {
 } from "../auth/policy.ts";
 import { type WellKnownMcpGroup, WellKnownMcpGroups } from "../crud/groups.ts";
 import { ForbiddenError, type HttpError } from "../errors.ts";
+import { ProjectLocator } from "../locator.ts";
 import { trace } from "../observability/index.ts";
 import { PosthogServerClient } from "../posthog.ts";
 import { type WithTool } from "./assertions.ts";
 import type { ResourceAccess } from "./auth/index.ts";
 import { DatatabasesRunSqlInput, QueryResult } from "./databases/api.ts";
+import { Blobs } from "./deconfig/blobs.ts";
+import { Branch } from "./deconfig/branch.ts";
 import { addGroup, type GroupIntegration } from "./groups.ts";
 import { generateUUIDv5, toAlphanumericId } from "./slugify.ts";
-import { ProjectLocator } from "../locator.ts";
 
 export type UserPrincipal = Pick<SupaUser, "id" | "email" | "is_anonymous">;
 
@@ -172,10 +174,12 @@ export interface Vars {
     root: string;
     slug: string;
     value: string;
+    branch: string;
   };
   locator?: {
     org: string;
     project: string;
+    branch: string;
     value: ProjectLocator;
   };
   resourceAccess: ResourceAccess;
@@ -183,6 +187,7 @@ export interface Vars {
   tool?: { name: string };
   cookie?: string;
   token?: string;
+  proxyToken?: string;
   callerApp?: string;
   db: Client;
   user: Principal;
@@ -194,6 +199,9 @@ export interface Vars {
   immutableRes?: boolean;
   kbFileProcessor?: Workflow;
   workspaceDO: WorkspaceDO;
+  // DECONFIG DurableObjects
+  branchDO: DurableObjectNamespace<Branch>;
+  blobsDO: DurableObjectNamespace<Blobs>;
   posthog: PosthogServerClient;
   stub: <
     Constructor extends ActorConstructor<Trigger> | ActorConstructor<AIAgent>,
@@ -345,6 +353,9 @@ export function createToolFactory<TAppContext extends AppContext = AppContext>(
   contextFactory: (c: AppContext) => Promise<TAppContext> | TAppContext,
   group?: string,
   integration?: GroupIntegration,
+  wrapHandler?: <TInput, TReturn>(
+    handler: (props: TInput) => Promise<TReturn>,
+  ) => (props: TInput) => Promise<TReturn>,
 ) {
   return <
     TName extends string = string,
@@ -353,12 +364,13 @@ export function createToolFactory<TAppContext extends AppContext = AppContext>(
   >(
     def: ToolDefinition<TAppContext, TName, TInput, TReturn>,
   ): Tool<TName, TInput, TReturn> => {
+    wrapHandler ??= (handler) => handler;
     group && integration && addGroup(group, integration);
     resourceGroupMap.set(def.name, group);
     return {
       group,
       ...def,
-      handler: async (props: TInput): Promise<TReturn> => {
+      handler: wrapHandler(async (props: TInput): Promise<TReturn> => {
         const context = await contextFactory(State.getStore());
         context.tool = { name: def.name };
 
@@ -372,7 +384,7 @@ export function createToolFactory<TAppContext extends AppContext = AppContext>(
         }
 
         return result;
-      },
+      }),
     };
   };
 }

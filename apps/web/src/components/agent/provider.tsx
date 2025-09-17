@@ -10,6 +10,7 @@ import {
   useAgentRoot,
   useIntegrations,
   useThreadMessages,
+  useThreads,
   useUpdateAgent,
   WELL_KNOWN_AGENTS,
   type Agent,
@@ -46,7 +47,6 @@ import { useCreateAgent } from "../../hooks/use-create-agent.ts";
 import { useUserPreferences } from "../../hooks/use-user-preferences.ts";
 import { IMAGE_REGEXP, openPreviewPanel } from "../chat/utils/preview.ts";
 import { onRulesUpdated } from "../../utils/events.ts";
-import { useUser } from "../../hooks/use-user.ts";
 
 interface UiOptions {
   showThreadTools: boolean;
@@ -143,8 +143,7 @@ export function AgentProvider({
   const { data: serverAgent } = useAgentData(agentId);
   const isPublic = serverAgent.visibility === "PUBLIC";
   const { data: installedIntegrations } = useIntegrations({ isPublic });
-  const user = useUser();
-  const updateAgentMutation = useUpdateAgent(user.id);
+  const updateAgentMutation = useUpdateAgent();
   const createAgent = useCreateAgent();
   const agentRoot = useAgentRoot(agentId);
   const { preferences } = useUserPreferences();
@@ -156,7 +155,9 @@ export function AgentProvider({
   const latestRulesRef = useRef<string[] | null>(null);
 
   const mergedUiOptions = { ...DEFAULT_UI_OPTIONS, ...uiOptions };
-
+  const { data: threads } = useThreads({
+    enabled: mergedUiOptions.showThreadMessages,
+  });
   const { data: { messages: threadMessages } = { messages: [] } } =
     !mergedUiOptions.showThreadMessages
       ? { data: { messages: [] } }
@@ -173,6 +174,10 @@ export function AgentProvider({
     });
     return () => off();
   }, []);
+
+  const thread = useMemo(() => {
+    return threads?.threads.find((t) => t.id === threadId);
+  }, [threads, threadId]);
 
   // Merge additionalTools into serverAgent tools_set
   const mergedToolsSet = useMemo<Agent["tools_set"]>(() => {
@@ -297,6 +302,7 @@ export function AgentProvider({
             instructions: effectiveChatState.instructions,
             bypassOpenRouter,
             sendReasoning: preferences.sendReasoning ?? true,
+            threadTitle: thread?.title,
             tools: effectiveChatState.tools_set,
             maxSteps: effectiveChatState.max_steps,
             pdfSummarization: preferences.pdfSummarization ?? true,

@@ -6,7 +6,7 @@ import {
 import { Icon } from "@deco/ui/components/icon.tsx";
 import { cn } from "@deco/ui/lib/utils.ts";
 import { cva, type VariantProps } from "class-variance-authority";
-import { type HTMLAttributes, type ReactNode, useMemo } from "react";
+import { type HTMLAttributes, type ReactNode, useMemo, useState } from "react";
 
 // Predefined color palette for avatar backgrounds with gradients and shadows
 const AVATAR_COLORS = [
@@ -152,6 +152,7 @@ function UnifiedAvatar({
   muted = false,
   ...props
 }: BaseAvatarProps) {
+  const [isError, setIsError] = useState(false);
   const fallbackContent = useMemo(() => {
     if (typeof fallback === "string") {
       return fallback.substring(0, 1).toUpperCase();
@@ -188,14 +189,19 @@ function UnifiedAvatar({
         </div>
       ) : (
         <>
-          <AvatarImage
-            src={url}
-            alt="Avatar"
-            className={cn(avatarImageVariants({ objectFit }))}
-          />
-          <AvatarFallback className={cn(fallbackColor, "rounded-none")}>
-            {fallbackContent}
-          </AvatarFallback>
+          {url && !isError && (
+            <AvatarImage
+              src={url}
+              alt="Avatar"
+              className={cn(avatarImageVariants({ objectFit }))}
+              onError={() => setIsError(true)}
+            />
+          )}
+          {(!url || isError) && (
+            <AvatarFallback className={cn(fallbackColor, "rounded-none")}>
+              {fallbackContent}
+            </AvatarFallback>
+          )}
         </>
       )}
     </AvatarUI>

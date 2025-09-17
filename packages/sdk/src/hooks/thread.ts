@@ -21,10 +21,6 @@ import {
 } from "../crud/thread.ts";
 import { KEYS } from "./api.ts";
 import { useSDK } from "./store.tsx";
-import { MCPClient } from "../fetcher.ts";
-
-// Minimum delay to prevent UI flickering during title generation
-const TITLE_GENERATION_MIN_DELAY_MS = 2000;
 
 /** Hook for fetching thread details */
 export const useThread = (threadId: string) => {
@@ -69,45 +65,6 @@ export const useThreads = (partialOptions: ThreadFilterOptions = {}) => {
     ...partialOptions,
   };
   const key = KEYS.THREADS(locator, options);
-  const updateThreadTitle = useUpdateThreadTitle();
-
-  const generateThreadTitle = useCallback(
-    async ({
-      firstMessage: _firstMessage,
-      threadId,
-    }: {
-      firstMessage: string;
-      threadId: string;
-    }) => {
-      const [result] = await Promise.all([
-        MCPClient.forLocator(locator).AI_GENERATE({
-          // This can break if the workspace disabled 4.1-nano.
-          // TODO: Implement something like a model price/quality/speed hinting system.
-          model: "openai:gpt-4.1-nano",
-          messages: [
-            {
-              role: "user",
-              content: `Generate a title for the thread that started with the following user message:
-                <Rule>Make it short and concise</Rule>
-                <Rule>Make it a single sentence</Rule>
-                <Rule>Keep the same language as the user message</Rule>
-                <Rule>Return ONLY THE TITLE! NO OTHER TEXT!</Rule>
-
-                <UserMessage>
-                  ${_firstMessage}
-                </UserMessage>`,
-            },
-          ],
-        }),
-        // ensure at least 2 seconds delay to avoid UI flickering.
-        new Promise((resolve) =>
-          setTimeout(resolve, TITLE_GENERATION_MIN_DELAY_MS),
-        ),
-      ]);
-      updateThreadTitle.mutate({ threadId, title: result.text, stream: true });
-    },
-    [updateThreadTitle, locator],
-  );
 
   const effect = useCallback(
     ({
@@ -135,8 +92,6 @@ export const useThreads = (partialOptions: ThreadFilterOptions = {}) => {
             typeof messages[0]?.content === "string"
               ? messages[0].content.slice(0, 20)
               : "New chat";
-
-          generateThreadTitle({ firstMessage: messages[0].content, threadId });
 
           const updated = {
             pagination: {
@@ -170,7 +125,10 @@ export const useThreads = (partialOptions: ThreadFilterOptions = {}) => {
 
   return useSuspenseQuery({
     queryKey: key,
-    queryFn: ({ signal }) => listThreads(locator, options, { signal }),
+    queryFn: ({ signal }) =>
+      options.enabled
+        ? listThreads(locator, options, { signal })
+        : { threads: [], pagination: { hasMore: false, nextCursor: null } },
   });
 };
 

@@ -1,0 +1,21 @@
+{
+  "name": "@deco/cf-sandbox",
+  "version": "0.0.1",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "tsc"
+  },
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "dependencies": {
+    "@jitl/quickjs-ng-wasmfile-release-asyncify": "^0.31.0",
+    "@jitl/quickjs-wasmfile-release-asyncify": "^0.31.0",
+    "@jitl/quickjs-wasmfile-release-sync": "^0.31.0",
+    "quickjs-emscripten-core": "^0.31.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.6"
+  }
+}

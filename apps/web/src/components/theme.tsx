@@ -49,7 +49,7 @@ export function WithWorkspaceTheme({
   children: React.ReactNode;
 }) {
   const { data: theme } = useTheme();
-  const loadedLogo = theme?.picture ?? "/img/deco-chat-logo.png";
+  const loadedLogo = theme?.picture ?? "/img/deco-logo.svg";
   const loadedBackground =
     theme?.variables?.["--splash" as ThemeVariable] ??
     theme?.variables?.["--sidebar" as ThemeVariable] ??
@@ -238,8 +238,8 @@ export function WithWorkspaceTheme({
             <div className="p-4 rounded-full bg-white">
               <img
                 ref={logoRef}
-                src="/img/deco-chat-logo.png"
-                alt="Deco Chat Logo"
+                src="/img/deco-logo.svg"
+                alt="Deco Logo"
                 className="w-36 h-36 object-contain rounded-full"
               />
             </div>

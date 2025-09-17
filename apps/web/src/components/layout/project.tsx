@@ -60,7 +60,7 @@ export function ProjectLayout() {
     defaultValue: true,
   });
   const [open, setOpen] = useState(defaultOpen);
-  const { org } = useParams();
+  const { org, project } = useParams();
 
   const {
     profileOpen,
@@ -98,7 +98,7 @@ export function ProjectLayout() {
             <SidebarInset className="h-full flex-col bg-sidebar">
               <Outlet />
             </SidebarInset>
-            <RegisterActivity orgSlug={org} />
+            <RegisterActivity orgSlug={org} projectSlug={project} />
           </SidebarProvider>
         </ProfileModalProvider>
       </WithWorkspaceTheme>
@@ -200,7 +200,7 @@ export function PageLayout({
           )}
         >
           {actionButtons}
-          {preferences.enableDecopilot && <ToggleDecopilotButton />}
+          <ToggleDecopilotButton />
         </div>
         {!open && (
           <div className="peer-empty:flex items-center justify-center hidden fixed left-0 top-0 z-10 h-14 px-3">

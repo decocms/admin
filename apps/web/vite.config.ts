@@ -24,10 +24,18 @@ export default defineConfig({
       },
     }),
   ],
-  server: { port: 3000, allowedHosts: [".deco.host"] },
+  server: { host: "0.0.0.0", port: 3000, allowedHosts: [".deco.host"] },
   optimizeDeps: {
     esbuildOptions: {
       target: "es2022",
+    },
+    // TODO: fix export of packages/sdk export files to not include these packages, then remove this
+    exclude: ["@deco/cf-sandbox", "cloudflare:workers"],
+  },
+  build: {
+    rollupOptions: {
+      // TODO: fix export of packages/sdk export files to not include these packages, then remove this
+      external: ["@deco/cf-sandbox", "cloudflare:workers"],
     },
   },
 });

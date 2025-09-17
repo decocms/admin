@@ -1,6 +1,5 @@
 import {
   findConnectionView,
-  NotFoundError,
   useConnectionViews,
   useIntegrations,
 } from "@deco/sdk";
@@ -112,10 +111,6 @@ export default function ViewDetail() {
       return undefined;
     }
   }, [resolvedUrl, isEmbeddedList, isEmbeddedDetail]);
-
-  if (!connectionViewMatch) {
-    throw new NotFoundError("View not found");
-  }
 
   const tabs = TABS;
 

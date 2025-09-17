@@ -1,24 +1,25 @@
 {
-  "name": "docs",
+  "name": "deco-create",
   "version": "1.0.0",
-  "description": "Deco MCP server with an Astro documentation site, tools and workflows",
+  "description": "Deco Application built on top of Cloudflare Workers and React",
   "private": true,
   "workspaces": [
     "server",
     "view"
   ],
   "scripts": {
-    "dev": "cd view && npm run dev & cd server && npm run dev",
+    "dev": "concurrently \"cd view && npm run dev\" \"cd server && npm run dev\"",
     "configure": "cd server && deco configure",
-    "gen": "cd server && deco gen > deco.gen.ts",
-    "gen:self": "cd server && deco gen --self=$DECO_SELF_URL > deco.gen.ts",
-    "deploy": "cd view && npm run build && cd ../server && npm run deploy"
+    "gen": "cd server && deco gen --output=deco.gen.ts",
+    "deploy": "cd view && npm run build && cd ../server && npm run deploy",
+    "build": "cd view && npm run build && cd ../server && npm run build",
+    "db:generate": "cd server && npm run db:generate"
   },
   "devDependencies": {
+    "concurrently": "^9.2.0",
     "typescript": "^5.7.2"
   },
   "engines": {
-    "node": ">=18.0.0",
-    "npm": ">=8.0.0"
+    "node": ">=22.0.0"
   }
 }

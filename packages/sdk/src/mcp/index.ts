@@ -1,18 +1,4 @@
-export * from "../errors.ts";
-export * from "./assertions.ts";
-export { createResourceAccess } from "./auth/index.ts";
-export * from "./bindings/binder.ts";
-export * from "./context.ts";
-export {
-  getPresignedReadUrl_WITHOUT_CHECKING_AUTHORIZATION,
-  getWorkspaceBucketName,
-} from "./fs/api.ts";
-export { HOSTING_APPS_DOMAIN } from "./hosting/api.ts";
-export * from "./middlewares.ts";
-export * from "./models/llm-vault.ts";
-export * from "./wallet/stripe/webhook.ts";
-
-export { EMAIL_TOOLS } from "./email/api.ts";
+import { Locator } from "../locator.ts";
 import * as agentAPI from "./agent/api.ts";
 import * as agentsAPI from "./agents/api.ts";
 import * as aiAPI from "./ai/api.ts";
@@ -27,6 +13,7 @@ import {
   oauthStart,
 } from "./contracts/api.ts";
 import * as databasesAPI from "./databases/api.ts";
+import * as deconfigAPI from "./deconfig/api.ts";
 import * as fsAPI from "./fs/api.ts";
 import * as hostingAPI from "./hosting/api.ts";
 import * as integrationsAPI from "./integrations/api.ts";
@@ -37,19 +24,41 @@ import * as oauthAPI from "./oauth/api.ts";
 import * as profilesAPI from "./profiles/api.ts";
 import * as promptsAPI from "./prompts/api.ts";
 import * as registryAPI from "./registry/api.ts";
+import { SANDBOX_TOOLS } from "./sandbox/api.ts";
 import type { CreateStubHandlerOptions, MCPClientStub } from "./stub.ts";
 import * as teamsAPI from "./teams/api.ts";
 import * as threadsAPI from "./threads/api.ts";
 import * as triggersAPI from "./triggers/api.ts";
 import * as walletAPI from "./wallet/api.ts";
+
+export { createTool, createToolGroup } from "./context.ts";
+export { AuthorizationClient, PolicyClient } from "../auth/policy.ts";
+export * from "../errors.ts";
+export { FileProcessor } from "../mcp/file-processor.ts";
+export * from "./assertions.ts";
+export { createResourceAccess } from "./auth/index.ts";
+export * from "./bindings/binder.ts";
+export * from "./context.ts";
+export type { ContractState } from "./contracts/api.ts";
+export type { DatatabasesRunSqlInput } from "./databases/api.ts";
+export { Blobs, Branch } from "./deconfig/api.ts";
+export { watchSSE } from "./deconfig/watch-sse.ts";
+export { EMAIL_TOOLS } from "./email/api.ts";
+export {
+  getPresignedReadUrl_WITHOUT_CHECKING_AUTHORIZATION,
+  getWorkspaceBucketName,
+} from "./fs/api.ts";
+export { HOSTING_APPS_DOMAIN } from "./hosting/api.ts";
 export {
   getIntegration,
   type IntegrationWithTools,
 } from "./integrations/api.ts";
+export * from "./middlewares.ts";
+export * from "./models/llm-vault.ts";
 export { getRegistryApp } from "./registry/api.ts";
+export * from "./wallet/stripe/webhook.ts";
 
-export type { ContractState } from "./contracts/api.ts";
-
+export const DECONFIG_TOOLS = deconfigAPI.DECONFIG_TOOLS;
 export const CONTRACTS_TOOLS = [
   contractGet,
   contractAuthorize,
@@ -64,6 +73,7 @@ export const GLOBAL_TOOLS = [
   teamsAPI.updateTeam,
   teamsAPI.deleteTeam,
   teamsAPI.listTeams,
+  teamsAPI.listRecentProjects,
   teamsAPI.createTeamRole,
   teamsAPI.updateTeamRole,
   teamsAPI.deleteTeamRole,
@@ -74,6 +84,7 @@ export const GLOBAL_TOOLS = [
   membersAPI.updateTeamMember,
   membersAPI.removeTeamMember,
   membersAPI.registerMemberActivity,
+  membersAPI.registerProjectActivity,
   membersAPI.getMyInvites,
   membersAPI.acceptInvite,
   membersAPI.deleteInvite,
@@ -198,6 +209,10 @@ export const PROJECT_TOOLS = [
   aiAPI.aiGenerateObject,
   oauthAPI.oauthCodeCreate,
   contractRegister,
+  // DECONFIG tools
+  ...deconfigAPI.DECONFIG_TOOLS,
+  // SANDBOX tools
+  ...SANDBOX_TOOLS,
 ] as const;
 
 export const AGENT_TOOLS = [
@@ -237,8 +252,26 @@ export const createGlobalForContext = (context?: AppContext): typeof global => {
     context,
   });
 };
+
+export const withProject = (
+  context: AppContext,
+  projectValue: string,
+  branch: string,
+  userId?: string,
+): AppContext => {
+  const { org, project } = Locator.parse(
+    projectValue.slice(1) as `${string}/${string}`,
+  );
+  return {
+    ...context,
+    locator: { org, project, value: Locator.from({ org, project }), branch },
+    workspace: fromWorkspaceString(projectValue, branch, userId),
+  };
+};
+
 export const fromWorkspaceString = (
   _workspace: string,
+  branch: string,
   userId?: string,
 ): AppContext["workspace"] => {
   const normalized = _workspace.startsWith("/") ? _workspace : `/${_workspace}`;
@@ -247,9 +280,8 @@ export const fromWorkspaceString = (
     return {
       value: normalized,
       root: normalized.startsWith("/users") ? "users" : "shared",
-      slug: normalized.startsWith("/users")
-        ? normalized.split("/")[1]
-        : normalized.split("/")[2],
+      slug: normalized.split("/")[2],
+      branch,
     };
   }
 
@@ -262,7 +294,13 @@ export const fromWorkspaceString = (
     value: `/${root}/${slug}`,
     root,
     slug,
+    branch,
   };
+};
+
+export type DeconfigClient = MCPClientStub<typeof DECONFIG_TOOLS>;
+export const createDeconfigClientForContext = (context: AppContext) => {
+  return createMCPToolsStub({ tools: DECONFIG_TOOLS, context });
 };
 
 export const MCPClient = new Proxy(
@@ -317,7 +355,3 @@ export function createMCPToolsStub<TDefinition extends readonly ToolLike[]>(
     },
   );
 }
-
-export { AuthorizationClient, PolicyClient } from "../auth/policy.ts";
-export { FileProcessor } from "../mcp/file-processor.ts";
-export type { DatatabasesRunSqlInput } from "./databases/api.ts";

@@ -1,19 +1,24 @@
-import { DurableObject } from "cloudflare:workers";
-import * as context from "../utils/context.ts";
 import {
   DatatabasesRunSqlInput,
   IWorkspaceDB,
   IWorkspaceDBMeta,
 } from "@deco/sdk/mcp";
+import { DurableObject } from "cloudflare:workers";
 import { Browsable } from "outerbase-browsable-do-enforced";
+import type { Bindings } from "../utils/context.ts";
 
 @Browsable()
-export class WorkspaceDatabase extends DurableObject implements IWorkspaceDB {
+export class WorkspaceDatabase
+  extends DurableObject<Bindings>
+  implements IWorkspaceDB
+{
   private sql: SqlStorage;
 
   constructor(
-    protected override ctx: DurableObjectState,
-    protected override env: context.Bindings,
+    // @ts-ignore: This is a workaround to fix the type error
+    // deno-lint-ignore ban-types
+    protected override ctx: DurableObjectState<{}>,
+    protected override env: Bindings,
   ) {
     super(ctx, env);
     this.sql = ctx.storage.sql;

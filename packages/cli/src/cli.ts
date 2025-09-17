@@ -174,8 +174,8 @@ const hostingDeploy = new Command("deploy")
     "Write deploy manifest to local filesystem instead of deploying",
   )
   .option(
-    "-p, --promote",
-    "Promote the deployment to production routes",
+    "--no-promote",
+    "Do not promote the deployment to production routes",
   )
   .argument("[cwd]", "Working directory")
   .action(async (cwd, options) => {

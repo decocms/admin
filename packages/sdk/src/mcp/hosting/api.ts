@@ -893,12 +893,20 @@ Important Notes:
             throw err;
           }
         });
+
+      const hosts = [];
+
+      if (promote) {
+        hosts.push(data.entrypoint);
+      }
+
+      if (deploymentId) {
+        hosts.push(Entrypoint.build(data.slug!, deploymentId));
+      }
+
       return {
         entrypoint: data.entrypoint,
-        hosts: [
-          data.entrypoint,
-          ...(deploymentId ? [Entrypoint.build(data.slug!, deploymentId)] : []),
-        ],
+        hosts,
         id: data.id,
         workspace: data.workspace,
         deploymentId,

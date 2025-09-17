@@ -62,7 +62,7 @@ function SlideCanvasContent() {
   }, [state.isEditing, nextStep, previousStep, stopEditing]);
 
   return (
-    <div className="h-screen flex flex-col bg-gray-50">
+    <div className="h-screen flex flex-col bg-muted">
       {/* Top Bar */}
       <TopBar />
 
@@ -97,7 +97,7 @@ function SlideCanvasContent() {
 
         {/* Keyboard Navigation Hints */}
         {!state.isEditing && (
-          <div className="absolute bottom-4 left-4 flex gap-4 text-sm text-gray-500">
+          <div className="absolute bottom-4 left-4 flex gap-4 text-sm text-muted-foreground">
             <div className="flex items-center gap-2">
               <kbd className="px-2 py-1 bg-white rounded shadow text-xs font-mono">
                 ←
@@ -115,7 +115,7 @@ function SlideCanvasContent() {
 
         {/* Step Counter */}
         {!state.isEditing && currentStep && (
-          <div className="absolute bottom-4 right-4 text-sm text-gray-500">
+          <div className="absolute bottom-4 right-4 text-sm text-muted-foreground">
             Step {state.currentStepIndex + 1} of {state.workflow.steps.length}
           </div>
         )}

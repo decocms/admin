@@ -1,4 +1,4 @@
-import React, { useCallback, useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import {
   applyEdgeChanges,
   applyNodeChanges,
@@ -18,7 +18,7 @@ import { useWorkflowBuilder } from "@deco/sdk";
 import type { Workflow, WorkflowStep } from "@deco/sdk";
 import {
   WorkflowStepNode,
-  type WorkflowStepNodeData,
+  type WorkflowStepNodeData as _WorkflowStepNodeData,
 } from "./nodes/workflow-step-node.tsx";
 import { StepCreator } from "./step-creator.tsx";
 import { WorkflowToolbar } from "./workflow-toolbar.tsx";
@@ -207,7 +207,7 @@ export function WorkflowCanvas({
   /**
    * Handle testing a single step
    */
-  const handleTestStep = useCallback(async (step: WorkflowStep) => {
+  const handleTestStep = useCallback((step: WorkflowStep) => {
     console.log("Testing step:", step);
     // TODO: Implement step testing
   }, []);

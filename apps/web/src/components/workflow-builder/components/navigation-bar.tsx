@@ -31,13 +31,14 @@ export function NavigationBar() {
         {state.workflow.steps.map((step, index) => (
           <button
             key={step.id}
+            type="button"
             onClick={() => navigateToStep(index)}
             className={`
               px-5 py-2.5 rounded-full text-sm font-medium transition-all whitespace-nowrap
               ${
                 index === state.currentStepIndex
                   ? "bg-blue-500 text-white shadow-md scale-105"
-                  : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                  : "bg-muted text-foreground hover:bg-accent"
               }
             `}
           >
@@ -47,10 +48,11 @@ export function NavigationBar() {
 
         {/* Add Step Button */}
         <button
+          type="button"
           onClick={() => startEditing()}
           className="px-5 py-2.5 rounded-full text-sm font-medium 
-                     bg-gray-100 text-gray-500 hover:bg-gray-200 
-                     border-2 border-dashed border-gray-300
+                     bg-muted text-muted-foreground hover:bg-accent 
+                     border-2 border-dashed border-border
                      transition-all whitespace-nowrap"
         >
           <Plus className="w-4 h-4 inline mr-1" />

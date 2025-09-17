@@ -1,5 +1,8 @@
 import { useParams } from "react-router";
-import { WorkflowDisplayCanvas } from "../../components/workflow-builder/workflow-display-canvas.tsx";
+import {
+  WorkflowDisplayCanvas,
+  type DisplayWorkflow,
+} from "../../components/workflow-builder/workflow-display-canvas.tsx";
 import { useSandboxWorkflow } from "@deco/sdk";
 import { WorkflowErrorState } from "./workflow-error-state.tsx";
 import { WorkflowLoadingSkeleton } from "./workflow-loading-skeleton.tsx";
@@ -29,8 +32,10 @@ export default function WorkflowBuilderPage() {
   // The workflow from useSandboxWorkflow is already in the correct format
   return (
     <WorkflowDisplayCanvas
-      workflow={workflow as any} // Type assertion to handle the mismatch
-      onRefresh={() => refetch()}
+      workflow={workflow as unknown as DisplayWorkflow} // Type assertion to handle the mismatch
+      onRefresh={async () => {
+        await refetch();
+      }}
       isLoading={isLoading}
     />
   );

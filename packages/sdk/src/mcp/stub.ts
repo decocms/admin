@@ -35,6 +35,7 @@ export interface CreateStubHandlerOptions<
 export interface CreateStubAPIOptions {
   workspace?: string;
   connection?: MCPConnection;
+  mcpPath?: string;
 }
 
 export type CreateStubOptions<TDefinition extends ToolBinder[]> =

@@ -190,7 +190,12 @@ export function SelectToolDialog({
                       <Card
                         key={tool.name}
                         className="cursor-pointer transition-colors hover:bg-accent"
-                        onClick={() => handleToolSelect(tool)}
+                        onClick={() =>
+                          handleToolSelect({
+                            ...tool,
+                            integration: selectedIntegration!,
+                          })
+                        }
                       >
                         <CardContent className="p-4">
                           <div className="flex items-start gap-3">

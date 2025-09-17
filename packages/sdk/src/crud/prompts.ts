@@ -14,7 +14,9 @@ export const listPrompts = (
 ): Promise<Prompt[]> =>
   (client ?? MCPClient.forLocator(locator))
     .PROMPTS_LIST(input || {}, init)
-    .then((res) => res.items) as Promise<Prompt[]>;
+    .then((res: unknown) => (res as { items: Prompt[] }).items) as Promise<
+    Prompt[]
+  >;
 
 export const getPrompt = (
   locator: ProjectLocator,

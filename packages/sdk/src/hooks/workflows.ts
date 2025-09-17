@@ -138,23 +138,23 @@ function convertToNewWorkflow(oldWorkflow: WorkflowDefinition): Workflow {
 
       // Convert old step format to new format
       if (step.type === "mapping") {
-        const def = step.def as any;
+        const def = step.def as Record<string, unknown>;
         return {
           id: stepId,
-          title: def.name || `Step ${index + 1}`,
-          description: def.description || "",
-          prompt: def.description || "Legacy mapping step",
-          code: def.execute || "",
-          inputSchema: def.inputSchema,
-          outputSchema: def.outputSchema,
+          title: String(def.name || `Step ${index + 1}`),
+          description: String(def.description || ""),
+          prompt: String(def.description || "Legacy mapping step"),
+          code: String(def.execute || ""),
+          inputSchema: def.inputSchema as Record<string, unknown>,
+          outputSchema: def.outputSchema as Record<string, unknown>,
           usedTools: [],
         };
       } else if (step.type === "tool_call") {
-        const def = step.def as any;
+        const def = step.def as Record<string, unknown>;
         return {
           id: stepId,
-          title: def.name || `Tool Call ${index + 1}`,
-          description: def.description || "",
+          title: String(def.name || `Tool Call ${index + 1}`),
+          description: String(def.description || ""),
           prompt: `Call ${def.tool_name} from ${def.integration}`,
           code: `export default async function(ctx) {
   return await ctx.env.${def.integration}.${def.tool_name}(${JSON.stringify(
@@ -163,12 +163,12 @@ function convertToNewWorkflow(oldWorkflow: WorkflowDefinition): Workflow {
     2,
   )});
 }`,
-          inputSchema: def.inputSchema,
-          outputSchema: def.outputSchema,
+          inputSchema: def.inputSchema as Record<string, unknown>,
+          outputSchema: def.outputSchema as Record<string, unknown>,
           usedTools: [
             {
-              integrationId: def.integration,
-              toolName: def.tool_name,
+              integrationId: String(def.integration),
+              toolName: String(def.tool_name),
             },
           ],
         };
@@ -226,7 +226,7 @@ export function useWorkflowByUri(workflowUri: string) {
 }
 
 function createEmptyWorkflow(name: string): WorkflowDefinition {
-  const now = new Date().toISOString();
+  const _now = new Date().toISOString();
   return {
     name,
     description: `Workflow: ${name}`,

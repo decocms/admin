@@ -290,7 +290,7 @@ export function WorkflowProvider({
 
   // Hooks for API calls
   const executeStep = useExecuteWorkflowStep();
-  const saveWorkflowMutation = useUpsertSandboxWorkflow();
+  const _saveWorkflowMutation = useUpsertSandboxWorkflow();
 
   // Computed values
   const currentStep = state.workflow.steps[state.currentStepIndex] || null;

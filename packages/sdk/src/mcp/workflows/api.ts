@@ -355,12 +355,12 @@ export const workflowViews = impl(VIEW_BINDING_SCHEMA, [
   // DECO_CHAT_VIEWS_LIST
   {
     description: "List views exposed by this MCP",
-    handler: async (_, c) => {
+    handler: (_, c) => {
       c.resourceAccess.grant();
 
       const org = c.locator?.org;
       const project = c.locator?.project;
-      const branch = c.locator?.branch || "main";
+      const _branch = c.locator?.branch || "main";
 
       if (!org || !project) {
         return { views: [] };

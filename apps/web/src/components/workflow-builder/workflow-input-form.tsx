@@ -1,5 +1,6 @@
 import { Form } from "@rjsf/shadcn";
 import { RJSFSchema, UiSchema } from "@rjsf/utils";
+import validator from "@rjsf/validator-ajv8";
 import {
   Dialog,
   DialogContent,
@@ -32,12 +33,8 @@ export function WorkflowInputForm({
     },
   };
 
-  const handleSubmit = ({
-    formData,
-  }: {
-    formData: Record<string, unknown>;
-  }) => {
-    onSubmit(formData);
+  const handleSubmit = (data: { formData?: Record<string, unknown> }) => {
+    onSubmit(data.formData || {});
     onClose();
   };
 
@@ -52,6 +49,7 @@ export function WorkflowInputForm({
           uiSchema={uiSchema}
           formData={initialData}
           onSubmit={handleSubmit}
+          validator={validator}
         />
       </DialogContent>
     </Dialog>

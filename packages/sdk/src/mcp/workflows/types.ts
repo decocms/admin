@@ -86,7 +86,7 @@ export type Workflow = z.infer<typeof WorkflowSchema>;
 export interface StepContext {
   readWorkflowInput: () => unknown;
   getStepResult: (stepId: string) => unknown;
-  env: Record<string, Record<string, Function>>;
+  env: Record<string, Record<string, (...args: unknown[]) => unknown>>;
 }
 
 export interface ExecutionContext {

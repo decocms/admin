@@ -29,18 +29,18 @@ export function WorkflowToolbar({
       <div className="flex items-center gap-4">
         <h1 className="text-xl font-semibold">{workflowName}</h1>
         {isDirty && !isSaving && (
-          <span className="text-sm text-orange-600 font-medium">
+          <span className="text-sm text-warning font-medium">
             • Unsaved changes
           </span>
         )}
         {isSaving && (
-          <span className="text-sm text-blue-600 font-medium flex items-center gap-1">
-            <Spinner className="w-3 h-3" />
+          <span className="text-sm text-primary font-medium flex items-center gap-1">
+            <Spinner size="xs" />
             Saving...
           </span>
         )}
         {!isDirty && !isSaving && (
-          <span className="text-sm text-green-600 font-medium flex items-center gap-1">
+          <span className="text-sm text-success font-medium flex items-center gap-1">
             <CheckCircle className="w-3 h-3" />
             Saved
           </span>
@@ -57,7 +57,7 @@ export function WorkflowToolbar({
         >
           {isSaving ? (
             <>
-              <Spinner className="w-4 h-4 mr-2" />
+              <Spinner size="xs" />
               Saving...
             </>
           ) : (
@@ -75,7 +75,7 @@ export function WorkflowToolbar({
         >
           {isRunning ? (
             <>
-              <Spinner className="w-4 h-4 mr-2" />
+              <Spinner size="xs" />
               Running...
             </>
           ) : (

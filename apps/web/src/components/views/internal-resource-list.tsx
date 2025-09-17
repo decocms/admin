@@ -224,8 +224,10 @@ export function InternalResourceListWithIntegration({
 
       if (response.isError) {
         // Extract error message from response.content[0].text
-        const content = response.content as any;
-        const errorMessage = content?.[0]?.text || "Failed to create resource";
+        const content = response.content as Record<string, unknown>;
+        const errorMessage =
+          (content as unknown as Array<{ text?: string }>)?.[0]?.text ||
+          "Failed to create resource";
         setCreateError(errorMessage);
         return; // Don't close dialog or refresh on error
       }

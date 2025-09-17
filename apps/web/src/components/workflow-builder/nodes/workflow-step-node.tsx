@@ -75,7 +75,7 @@ export function WorkflowStepNode(props: NodeProps) {
         <Handle
           type="target"
           position={Position.Left}
-          className="w-3 h-3 bg-blue-500 border-2 border-white"
+          className="w-3 h-3 bg-primary border-2 border-white"
         />
       )}
 
@@ -93,7 +93,7 @@ export function WorkflowStepNode(props: NodeProps) {
                 {workflowStep.title || `Step ${index + 1}`}
               </CardTitle>
               {workflowStep.description && (
-                <p className="text-sm text-gray-600 mt-1 line-clamp-2">
+                <p className="text-sm text-muted-foreground mt-1 line-clamp-2">
                   {workflowStep.description}
                 </p>
               )}
@@ -109,8 +109,8 @@ export function WorkflowStepNode(props: NodeProps) {
         <CardContent className="space-y-3">
           {/* Prompt preview */}
           {workflowStep.prompt && (
-            <div className="bg-gray-50 rounded-lg p-3">
-              <p className="text-sm text-gray-700 line-clamp-3">
+            <div className="bg-muted rounded-lg p-3">
+              <p className="text-sm text-foreground line-clamp-3">
                 "{workflowStep.prompt}"
               </p>
             </div>
@@ -168,7 +168,7 @@ export function WorkflowStepNode(props: NodeProps) {
                 size="sm"
                 variant="outline"
                 onClick={() => onDelete?.(workflowStep.id)}
-                className="text-red-600 hover:bg-red-50"
+                className="text-destructive hover:bg-destructive/10"
               >
                 <Trash2 className="w-3 h-3" />
               </Button>
@@ -185,7 +185,7 @@ export function WorkflowStepNode(props: NodeProps) {
         <Handle
           type="source"
           position={Position.Right}
-          className="w-3 h-3 bg-green-500 border-2 border-white"
+          className="w-3 h-3 bg-success border-2 border-white"
         />
       )}
     </>

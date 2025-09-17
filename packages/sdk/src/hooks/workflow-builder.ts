@@ -162,7 +162,7 @@ export function useWorkflowBuilder(workflow: Workflow) {
    * Add a new step to the workflow
    */
   const addStep = useCallback(
-    (step: WorkflowStep, position?: { x: number; y: number }) => {
+    (step: WorkflowStep, _position?: { x: number; y: number }) => {
       const newStep: WorkflowStep = {
         ...step,
         id: step.id || `step-${Date.now()}`,

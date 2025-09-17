@@ -1,4 +1,5 @@
-import React, { useCallback, useMemo, useState } from "react";
+import type { WorkflowDefinition } from "@deco/sdk";
+import { Button } from "@deco/ui/components/button.tsx";
 import {
   Background,
   type Edge,
@@ -8,22 +9,25 @@ import {
   useNodesState,
 } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
-import { Button } from "@deco/ui/components/button.tsx";
-import { RefreshCw } from "lucide-react";
-import type { WorkflowDefinition } from "@deco/sdk";
-import { WorkflowSourceNode } from "./nodes/workflow-source-node.tsx";
+import { Icon } from "@deco/ui/components/icon.tsx";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { WorkflowSinkNode } from "./nodes/workflow-sink-node.tsx";
+import { WorkflowSourceNode } from "./nodes/workflow-source-node.tsx";
 import { WorkflowStepDisplayNode } from "./nodes/workflow-step-display-node.tsx";
 
 // Extended workflow type for display (includes optional metadata)
-interface DisplayWorkflow extends WorkflowDefinition {
+export interface DisplayWorkflow
+  extends Omit<
+    WorkflowDefinition,
+    "id" | "createdAt" | "updatedAt" | "executionState"
+  > {
   id?: string;
   title?: string;
   created_at?: string;
   updated_at?: string;
   createdAt?: string;
   updatedAt?: string;
-  executionState?: any;
+  executionState?: Record<string, unknown>;
 }
 
 // Node types for the display canvas
@@ -35,7 +39,7 @@ const nodeTypes = {
 
 interface WorkflowDisplayCanvasProps {
   workflow: DisplayWorkflow;
-  onRefresh?: () => void;
+  onRefresh?: () => Promise<void>;
   isLoading?: boolean;
 }
 
@@ -48,6 +52,9 @@ export function WorkflowDisplayCanvas({
   onRefresh,
   isLoading = false,
 }: WorkflowDisplayCanvasProps) {
+  // Local loading state for refresh functionality
+  const [isRefreshing, setIsRefreshing] = useState(false);
+
   // Convert workflow to React Flow format for display
   const { nodes: initialNodes, edges: initialEdges } = useMemo(
     () => convertWorkflowToDisplayFlow(workflow),
@@ -59,16 +66,25 @@ export function WorkflowDisplayCanvas({
   const [edges, setEdges] = useEdgesState<Edge>(initialEdges);
 
   // Update nodes when workflow changes
-  React.useEffect(() => {
+  useEffect(() => {
     const { nodes: newNodes, edges: newEdges } =
       convertWorkflowToDisplayFlow(workflow);
     setNodes(newNodes);
     setEdges(newEdges);
   }, [workflow, setNodes, setEdges]);
 
-  const handleRefresh = useCallback(() => {
-    onRefresh?.();
-  }, [onRefresh]);
+  const handleRefresh = useCallback(async () => {
+    if (!onRefresh || isRefreshing) return;
+
+    try {
+      setIsRefreshing(true);
+      await onRefresh();
+    } catch (error) {
+      console.error("Failed to refresh workflow:", error);
+    } finally {
+      setIsRefreshing(false);
+    }
+  }, [onRefresh, isRefreshing]);
 
   return (
     <div className="h-screen w-full flex flex-col">
@@ -76,18 +92,23 @@ export function WorkflowDisplayCanvas({
       <div className="flex items-center justify-between p-4 border-b bg-white">
         <div>
           <h1 className="text-xl font-semibold">{workflow.name}</h1>
-          <p className="text-sm text-gray-600">{workflow.description}</p>
+          <p className="text-sm text-muted-foreground">
+            {workflow.description}
+          </p>
         </div>
         <Button
           onClick={handleRefresh}
-          disabled={isLoading}
+          disabled={isRefreshing || isLoading}
           variant="outline"
           size="sm"
+          className="min-w-[100px]"
         >
-          <RefreshCw
-            className={`w-4 h-4 mr-2 ${isLoading ? "animate-spin" : ""}`}
+          <Icon
+            name="refresh"
+            size={16}
+            className={`mr-2 ${isRefreshing ? "animate-spin" : ""}`}
           />
-          Refresh
+          {isRefreshing ? "Refreshing..." : "Refresh"}
         </Button>
       </div>
 
@@ -106,9 +127,9 @@ export function WorkflowDisplayCanvas({
           nodesDraggable={false}
           nodesConnectable={false}
           elementsSelectable={false}
-          panOnDrag={true}
-          zoomOnScroll={true}
-          zoomOnPinch={true}
+          panOnDrag
+          zoomOnScroll
+          zoomOnPinch
           preventScrolling={false}
         >
           <Background />
@@ -148,7 +169,11 @@ function convertWorkflowToDisplayFlow(workflow: DisplayWorkflow) {
         step,
         index,
         integrationId:
-          step.type === "tool_call" ? step.def.integration : undefined,
+          (step as { type?: string; def?: { integration?: string } }).type ===
+          "tool_call"
+            ? (step as { type?: string; def?: { integration?: string } }).def
+                ?.integration
+            : undefined,
       },
     };
     nodes.push(stepNode);

@@ -1,7 +1,5 @@
 import { useMutation, useQuery, useSuspenseQuery } from "@tanstack/react-query";
-
 import { WellKnownMcpGroups } from "../crud/groups.ts";
-
 import { InternalServerError } from "../errors.ts";
 import { MCPClient } from "../fetcher.ts";
 import type { ProjectLocator } from "../locator.ts";
@@ -57,6 +55,22 @@ const workspaceResourceClient = (locator: ProjectLocator) =>
     locator,
     `/${WellKnownMcpGroups.Workflows}/mcp`,
   );
+
+// Type for client with workflow methods
+type ClientWithWorkflows = ReturnType<typeof workspaceResourceClient> & {
+  WORKFLOWS_START: (
+    params: SandboxWorkflowStartParams,
+    options?: { signal?: AbortSignal },
+  ) => Promise<unknown>;
+  WORKFLOWS_GET_STATUS: (
+    params: SandboxWorkflowStatusParams,
+    options?: { signal?: AbortSignal },
+  ) => Promise<unknown>;
+  WORKFLOWS_REPLAY_FROM_STEP: (
+    params: SandboxWorkflowReplayParams,
+    options?: { signal?: AbortSignal },
+  ) => Promise<unknown>;
+};
 
 // Helper function to build workflow URI
 function buildWorkflowUri(name: string): string {
@@ -143,8 +157,8 @@ export function startSandboxWorkflow(
   params: SandboxWorkflowStartParams,
   signal?: AbortSignal,
 ) {
-  const client = MCPClient.forLocator(locator);
-  return client.WORKFLOWS_START(params, { signal });
+  const client = workspaceResourceClient(locator);
+  return (client as ClientWithWorkflows).WORKFLOWS_START(params, { signal });
 }
 
 export function getSandboxWorkflowStatus(
@@ -152,8 +166,10 @@ export function getSandboxWorkflowStatus(
   params: SandboxWorkflowStatusParams,
   signal?: AbortSignal,
 ) {
-  const client = MCPClient.forLocator(locator);
-  return client.WORKFLOWS_GET_STATUS(params, { signal });
+  const client = workspaceResourceClient(locator);
+  return (client as ClientWithWorkflows).WORKFLOWS_GET_STATUS(params, {
+    signal,
+  });
 }
 
 export function replaySandboxWorkflowFromStep(
@@ -161,8 +177,10 @@ export function replaySandboxWorkflowFromStep(
   params: SandboxWorkflowReplayParams,
   signal?: AbortSignal,
 ) {
-  const client = MCPClient.forLocator(locator);
-  return client.WORKFLOWS_REPLAY_FROM_STEP(params, { signal });
+  const client = workspaceResourceClient(locator);
+  return (client as ClientWithWorkflows).WORKFLOWS_REPLAY_FROM_STEP(params, {
+    signal,
+  });
 }
 
 export function deleteSandboxWorkflow(
@@ -260,7 +278,10 @@ export const useStartSandboxWorkflow = () => {
 
   return useMutation({
     mutationFn: async (params: SandboxWorkflowStartParams) => {
-      const result = await startSandboxWorkflow(locator, params);
+      const result = (await startSandboxWorkflow(locator, params)) as {
+        error?: string;
+        runId?: string;
+      };
       if (result.error) {
         throw new Error(result.error);
       }
@@ -282,7 +303,7 @@ export const useSandboxWorkflowStatus = (runId: string) => {
     retry: (failureCount, error) =>
       error instanceof InternalServerError && failureCount < 2,
     refetchInterval: (query) => {
-      const data = query.state.data;
+      const data = query.state.data as { status?: string } | undefined;
       const status = data?.status;
       if (status === "completed" || status === "failed") {
         return false;
@@ -300,7 +321,10 @@ export const useReplaySandboxWorkflowFromStep = () => {
 
   return useMutation({
     mutationFn: async (params: SandboxWorkflowReplayParams) => {
-      const result = await replaySandboxWorkflowFromStep(locator, params);
+      const result = (await replaySandboxWorkflowFromStep(locator, params)) as {
+        error?: string;
+        newRunId?: string;
+      };
       if (result.error) {
         throw new Error(result.error);
       }

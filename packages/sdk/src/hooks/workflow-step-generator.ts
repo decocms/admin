@@ -1,5 +1,8 @@
 import { useMutation } from "@tanstack/react-query";
-import type { ToolReference, WorkflowStep } from "../mcp/workflows/types.ts";
+import type {
+  ToolReference,
+  WorkflowStep as _WorkflowStep,
+} from "../mcp/workflows/types.ts";
 
 interface GenerateStepInput {
   prompt: string;
@@ -49,7 +52,7 @@ function generateCodeFromPrompt(
   // Analyze prompt for common patterns
   const isEmail = /email|mail|send|notify/i.test(prompt);
   const isData = /get|fetch|retrieve|load|read/i.test(prompt);
-  const isProcess = /process|transform|calculate|analyze/i.test(prompt);
+  const _isProcess = /process|transform|calculate|analyze/i.test(prompt);
   const isWrite = /save|store|write|update|create/i.test(prompt);
 
   let code = `export default async function(ctx) {
@@ -218,10 +221,11 @@ export function useGenerateWorkflowStep() {
       // Add tool-specific properties to output schema
       selectedTools.forEach((toolId) => {
         const cleanId = cleanIntegrationId(toolId);
-        outputSchema.properties[`${cleanId}Data`] = {
-          type: "object",
-          description: `Result from ${toolId} integration`,
-        };
+        (outputSchema.properties as Record<string, unknown>)[`${cleanId}Data`] =
+          {
+            type: "object",
+            description: `Result from ${toolId} integration`,
+          };
       });
 
       return {

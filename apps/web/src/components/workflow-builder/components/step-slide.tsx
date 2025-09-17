@@ -1,7 +1,6 @@
 import { useState } from "react";
 import { Code, Edit, FileText, Play } from "lucide-react";
 import { Button } from "@deco/ui/components/button.tsx";
-import { Badge } from "@deco/ui/components/badge.tsx";
 import { Spinner } from "@deco/ui/components/spinner.tsx";
 import {
   Tabs,
@@ -68,9 +67,9 @@ export function StepSlide({ step }: { step: WorkflowStep }) {
       <div className="max-w-4xl w-full mx-auto space-y-6">
         {/* Step Header */}
         <div className="text-center space-y-3">
-          <h1 className="text-4xl font-bold text-gray-900">{step.title}</h1>
+          <h1 className="text-4xl font-bold text-foreground">{step.title}</h1>
           {step.description && (
-            <p className="text-xl text-gray-600">{step.description}</p>
+            <p className="text-xl text-muted-foreground">{step.description}</p>
           )}
         </div>
 
@@ -86,14 +85,14 @@ export function StepSlide({ step }: { step: WorkflowStep }) {
               <TabsList className="h-12 bg-transparent p-0 border-0">
                 <TabsTrigger
                   value="overview"
-                  className="data-[state=active]:border-b-2 data-[state=active]:border-blue-500 rounded-none px-4"
+                  className="data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none px-4"
                 >
                   <FileText className="w-4 h-4 mr-2" />
                   Overview
                 </TabsTrigger>
                 <TabsTrigger
                   value="code"
-                  className="data-[state=active]:border-b-2 data-[state=active]:border-blue-500 rounded-none px-4"
+                  className="data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none px-4"
                 >
                   <Code className="w-4 h-4 mr-2" />
                   Code
@@ -106,21 +105,21 @@ export function StepSlide({ step }: { step: WorkflowStep }) {
               {/* Data Dependencies */}
               {dependencies.length > 0 && (
                 <div>
-                  <h3 className="text-sm font-semibold text-gray-700 uppercase tracking-wide mb-4">
+                  <h3 className="text-sm font-semibold text-foreground uppercase tracking-wide mb-4">
                     Data from Other Steps
                   </h3>
                   <div className="space-y-3">
                     {dependencies.map((dep, idx) => (
                       <div
                         key={idx}
-                        className="flex items-start gap-3 p-3 bg-gray-50 rounded-lg"
+                        className="flex items-start gap-3 p-3 bg-muted rounded-lg"
                       >
-                        <div className="w-2 h-2 rounded-full bg-blue-500 mt-1.5"></div>
+                        <div className="w-2 h-2 rounded-full bg-primary mt-1.5"></div>
                         <div className="flex-1">
-                          <div className="font-medium text-gray-900">
+                          <div className="font-medium text-foreground">
                             {dep.stepTitle}
                           </div>
-                          <div className="text-sm text-gray-600 mt-0.5">
+                          <div className="text-sm text-muted-foreground mt-0.5">
                             {dep.usage}
                           </div>
                         </div>
@@ -133,33 +132,33 @@ export function StepSlide({ step }: { step: WorkflowStep }) {
               {/* Tools Used */}
               {step.usedTools && step.usedTools.length > 0 && (
                 <div>
-                  <h3 className="text-sm font-semibold text-gray-700 uppercase tracking-wide mb-4">
+                  <h3 className="text-sm font-semibold text-foreground uppercase tracking-wide mb-4">
                     Tools & Integrations
                   </h3>
                   <div className="grid grid-cols-1 gap-3">
                     {step.usedTools.map((tool, idx) => (
                       <div
                         key={idx}
-                        className="p-4 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg border border-blue-200"
+                        className="p-4 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg border border-border"
                       >
                         <div className="flex items-center gap-3">
                           <div className="w-10 h-10 bg-white rounded-lg flex items-center justify-center shadow-sm">
                             <span className="text-lg">🔧</span>
                           </div>
                           <div className="flex-1">
-                            <div className="font-medium text-gray-900">
+                            <div className="font-medium text-foreground">
                               {tool.integrationId
                                 .replace(/^[ia]:/, "")
                                 .replace(/_/g, " ")}
                             </div>
-                            <div className="text-sm text-gray-600">
+                            <div className="text-sm text-muted-foreground">
                               Method:{" "}
                               <code className="bg-white px-1 py-0.5 rounded">
                                 {tool.toolName}()
                               </code>
                             </div>
                             {tool.description && (
-                              <div className="text-xs text-gray-500 mt-1">
+                              <div className="text-xs text-muted-foreground mt-1">
                                 {tool.description}
                               </div>
                             )}
@@ -174,13 +173,13 @@ export function StepSlide({ step }: { step: WorkflowStep }) {
 
             {/* Code Tab */}
             <TabsContent value="code" className="p-8 mt-0">
-              <div className="bg-gray-900 rounded-lg p-6">
+              <div className="bg-card rounded-lg p-6">
                 {step.code ? (
-                  <pre className="text-gray-100 overflow-x-auto text-sm font-mono leading-relaxed">
+                  <pre className="text-card-foreground overflow-x-auto text-sm font-mono leading-relaxed">
                     <code>{step.code}</code>
                   </pre>
                 ) : (
-                  <p className="text-gray-400 text-center py-8">
+                  <p className="text-muted-foreground text-center py-8">
                     No code generated yet
                   </p>
                 )}
@@ -204,18 +203,18 @@ export function StepSlide({ step }: { step: WorkflowStep }) {
             <div className="flex items-center justify-between mb-3">
               <h3 className="text-sm font-semibold uppercase tracking-wide">
                 {executionResult.error ? (
-                  <span className="text-red-700 flex items-center gap-2">
-                    <span className="w-2 h-2 bg-red-500 rounded-full"></span>
+                  <span className="text-destructive flex items-center gap-2">
+                    <span className="w-2 h-2 bg-destructive rounded-full"></span>
                     Execution Failed
                   </span>
                 ) : (
-                  <span className="text-green-700 flex items-center gap-2">
-                    <span className="w-2 h-2 bg-green-500 rounded-full"></span>
+                  <span className="text-success flex items-center gap-2">
+                    <span className="w-2 h-2 bg-success rounded-full"></span>
                     Execution Successful
                   </span>
                 )}
               </h3>
-              <span className="text-xs text-gray-600">
+              <span className="text-xs text-muted-foreground">
                 {new Date(executionResult.executedAt).toLocaleString()}
                 {executionResult.duration && ` • ${executionResult.duration}ms`}
               </span>

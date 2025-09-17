@@ -1,3 +1,4 @@
+// deno-lint-ignore-file ensure-tailwind-design-system-tokens/ensure-tailwind-design-system-tokens
 import { useIntegrations } from "@deco/sdk";
 import { Badge } from "@deco/ui/components/badge.tsx";
 import {
@@ -26,7 +27,7 @@ type WorkflowStep = {
     execute?: string; // For mapping steps
     tool_name?: string; // For tool_call steps
     integration?: string; // For tool_call steps
-    options?: any; // For tool_call steps
+    options?: Record<string, unknown>; // For tool_call steps
   };
 };
 

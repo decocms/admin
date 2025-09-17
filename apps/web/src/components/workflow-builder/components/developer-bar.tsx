@@ -25,7 +25,7 @@ export function DeveloperBar() {
       `}
     >
       {/* Header */}
-      <div className="h-12 px-4 flex items-center justify-between border-b bg-gray-50">
+      <div className="h-12 px-4 flex items-center justify-between border-b bg-muted">
         <div className="flex items-center gap-3">
           <h3 className="text-sm font-semibold">Developer Tools</h3>
           <Button
@@ -70,7 +70,7 @@ export function DeveloperBar() {
             <div className="h-40 overflow-auto p-4">
               <TabsContent value="state" className="mt-0">
                 <div className="space-y-3">
-                  <h4 className="text-xs font-semibold text-gray-600 uppercase">
+                  <h4 className="text-xs font-semibold text-muted-foreground uppercase">
                     Execution Context
                   </h4>
 
@@ -88,10 +88,10 @@ export function DeveloperBar() {
                             p-2 rounded border text-xs
                             ${
                               hasError
-                                ? "bg-red-50 border-red-200"
+                                ? "bg-destructive/10 border-destructive/20"
                                 : hasExecuted
-                                  ? "bg-green-50 border-green-200"
-                                  : "bg-gray-50 border-gray-200"
+                                  ? "bg-success/10 border-success/20"
+                                  : "bg-muted border-border"
                             }
                           `}
                         >
@@ -102,10 +102,10 @@ export function DeveloperBar() {
                                 inline-block w-2 h-2 rounded-full
                                 ${
                                   hasError
-                                    ? "bg-red-500"
+                                    ? "bg-destructive/100"
                                     : hasExecuted
-                                      ? "bg-green-500"
-                                      : "bg-gray-400"
+                                      ? "bg-success/100"
+                                      : "bg-muted-foreground"
                                 }
                               `}
                               />
@@ -114,7 +114,7 @@ export function DeveloperBar() {
                               </span>
                             </div>
                             {result && (
-                              <span className="text-gray-500">
+                              <span className="text-muted-foreground">
                                 {new Date(
                                   result.executedAt,
                                 ).toLocaleTimeString()}
@@ -125,12 +125,12 @@ export function DeveloperBar() {
                           {result && (
                             <div className="ml-4 mt-1">
                               {hasError ? (
-                                <div className="text-red-600">
+                                <div className="text-destructive">
                                   Error: {result.error}
                                 </div>
                               ) : (
                                 <details className="cursor-pointer">
-                                  <summary className="text-gray-600 hover:text-gray-800">
+                                  <summary className="text-muted-foreground hover:text-foreground">
                                     View result ({result.duration}ms)
                                   </summary>
                                   <pre className="mt-1 p-2 bg-white rounded text-xs overflow-x-auto">
@@ -145,14 +145,14 @@ export function DeveloperBar() {
                     })}
 
                     {state.workflow.steps.length === 0 && (
-                      <div className="text-gray-500 text-center py-2">
+                      <div className="text-muted-foreground text-center py-2">
                         No steps in workflow
                       </div>
                     )}
                   </div>
 
                   {/* Summary stats */}
-                  <div className="pt-2 border-t text-xs text-gray-600">
+                  <div className="pt-2 border-t text-xs text-muted-foreground">
                     <div className="flex justify-between">
                       <span>Total Steps:</span>
                       <span className="font-medium">
@@ -161,7 +161,7 @@ export function DeveloperBar() {
                     </div>
                     <div className="flex justify-between">
                       <span>Executed:</span>
-                      <span className="font-medium text-green-600">
+                      <span className="font-medium text-success">
                         {
                           Object.keys(state.executionResults).filter(
                             (id) => !state.executionResults[id].error,
@@ -171,7 +171,7 @@ export function DeveloperBar() {
                     </div>
                     <div className="flex justify-between">
                       <span>Failed:</span>
-                      <span className="font-medium text-red-600">
+                      <span className="font-medium text-destructive">
                         {
                           Object.keys(state.executionResults).filter(
                             (id) => state.executionResults[id].error,
@@ -185,10 +185,10 @@ export function DeveloperBar() {
 
               <TabsContent value="config" className="mt-0">
                 <div className="space-y-2">
-                  <h4 className="text-xs font-semibold text-gray-600 uppercase">
+                  <h4 className="text-xs font-semibold text-muted-foreground uppercase">
                     Workflow Configuration
                   </h4>
-                  <pre className="text-xs bg-gray-50 p-3 rounded overflow-x-auto">
+                  <pre className="text-xs bg-muted p-3 rounded overflow-x-auto">
                     {JSON.stringify(
                       {
                         id: state.workflow.id,
@@ -207,31 +207,31 @@ export function DeveloperBar() {
 
               <TabsContent value="logs" className="mt-0">
                 <div className="space-y-2">
-                  <h4 className="text-xs font-semibold text-gray-600 uppercase">
+                  <h4 className="text-xs font-semibold text-muted-foreground uppercase">
                     Execution Logs
                   </h4>
                   <div className="text-xs font-mono space-y-1">
                     {Object.entries(state.executionResults).map(
                       ([stepId, result]) => (
                         <div key={stepId} className="flex gap-2">
-                          <span className="text-gray-500">
+                          <span className="text-muted-foreground">
                             [{new Date(result.executedAt).toLocaleTimeString()}]
                           </span>
                           <span
                             className={
-                              result.error ? "text-red-600" : "text-green-600"
+                              result.error ? "text-destructive" : "text-success"
                             }
                           >
                             {stepId}:
                           </span>
-                          <span className="text-gray-700">
+                          <span className="text-foreground">
                             {result.error || "Success"}
                           </span>
                         </div>
                       ),
                     )}
                     {Object.keys(state.executionResults).length === 0 && (
-                      <span className="text-gray-400">
+                      <span className="text-muted-foreground">
                         No execution logs yet
                       </span>
                     )}
@@ -241,10 +241,10 @@ export function DeveloperBar() {
 
               <TabsContent value="debug" className="mt-0">
                 <div className="space-y-2">
-                  <h4 className="text-xs font-semibold text-gray-600 uppercase">
+                  <h4 className="text-xs font-semibold text-muted-foreground uppercase">
                     Debug Information
                   </h4>
-                  <pre className="text-xs bg-gray-50 p-3 rounded overflow-x-auto">
+                  <pre className="text-xs bg-muted p-3 rounded overflow-x-auto">
                     {JSON.stringify(
                       {
                         currentStep:

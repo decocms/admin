@@ -4,7 +4,10 @@ import { useSearchParams } from "react-router";
 import { WorkflowErrorState } from "../../pages/workflow-builder/workflow-error-state.tsx";
 import { WorkflowLoadingSkeleton } from "../../pages/workflow-builder/workflow-loading-skeleton.tsx";
 import { WorkflowNotFoundState } from "../../pages/workflow-builder/workflow-not-found-state.tsx";
-import { WorkflowDisplayCanvas } from "../workflow-builder/workflow-display-canvas.tsx";
+import {
+  WorkflowDisplayCanvas,
+  type DisplayWorkflow,
+} from "../workflow-builder/workflow-display-canvas.tsx";
 
 export function WorkflowView() {
   const [searchParams] = useSearchParams();
@@ -42,9 +45,11 @@ export function WorkflowView() {
 
   return (
     <WorkflowDisplayCanvas
-      workflow={workflow as any} // Type assertion to handle the data structure
-      onRefresh={() => refetch()}
+      workflow={workflow as unknown as DisplayWorkflow} // Type assertion to handle the data structure
       isLoading={isLoading}
+      onRefresh={async () => {
+        await refetch();
+      }}
     />
   );
 }

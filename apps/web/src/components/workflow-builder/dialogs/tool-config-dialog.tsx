@@ -1,11 +1,12 @@
-import { Form } from "@rjsf/shadcn";
-import { RJSFSchema } from "@rjsf/utils";
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
 } from "@deco/ui/components/dialog.tsx";
+import { Form } from "@rjsf/shadcn";
+import { RJSFSchema } from "@rjsf/utils";
+import validator from "@rjsf/validator-ajv8";
 
 interface ToolConfigDialogProps {
   tool: {
@@ -47,9 +48,9 @@ export function ToolConfigDialog({
   const handleSubmit = ({
     formData,
   }: {
-    formData: Record<string, unknown>;
+    formData?: Record<string, unknown>;
   }) => {
-    onSave(formData);
+    onSave(formData || {});
     onClose();
   };
 
@@ -59,7 +60,12 @@ export function ToolConfigDialog({
         <DialogHeader>
           <DialogTitle>Configure Tool</DialogTitle>
         </DialogHeader>
-        <Form schema={schema} formData={tool.options} onSubmit={handleSubmit} />
+        <Form
+          schema={schema}
+          formData={tool.options}
+          onSubmit={handleSubmit}
+          validator={validator}
+        />
       </DialogContent>
     </Dialog>
   );

@@ -65,7 +65,7 @@ export default async function(ctx) {
 }`;
 
         // Convert to backend format
-        const sandboxStep = {
+        const _sandboxStep = {
           type: "mapping" as const,
           def: {
             name: step.title || "Test Step",
@@ -75,10 +75,10 @@ export default async function(ctx) {
         };
 
         // Start the workflow execution
-        const { runId } = await startSandboxWorkflow(locator, {
+        const { runId } = (await startSandboxWorkflow(locator, {
           name: tempWorkflowName,
           input: workflowInput as Record<string, unknown>,
-        });
+        })) as { runId: string };
 
         // Poll for completion (max 30 seconds)
         const maxAttempts = 30;
@@ -86,7 +86,12 @@ export default async function(ctx) {
         let status;
 
         while (attempts < maxAttempts) {
-          status = await getSandboxWorkflowStatus(locator, { runId });
+          status = (await getSandboxWorkflowStatus(locator, { runId })) as {
+            status?: string;
+            finalResult?: unknown;
+            stepResults?: unknown;
+            error?: string;
+          };
 
           if (status.status === "completed" || status.status === "failed") {
             break;

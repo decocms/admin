@@ -42,7 +42,7 @@ export function StepCreator({
   const generateStep = useGenerateWorkflowStep();
 
   // Tool discovery based on prompt
-  const discoverTools = useDebouncedCallback(async (text: string) => {
+  const discoverTools = useDebouncedCallback((text: string) => {
     if (text.length < 10) {
       setSuggestedTools([]);
       return;
@@ -142,8 +142,8 @@ export function StepCreator({
         description: `Executes: ${prompt.slice(0, 100)}${prompt.length > 100 ? "..." : ""}`,
         prompt,
         code: generated.code,
-        inputSchema: generated.inputSchema as any,
-        outputSchema: generated.outputSchema as any,
+        inputSchema: generated.inputSchema as Record<string, unknown>,
+        outputSchema: generated.outputSchema as Record<string, unknown>,
         usedTools: generated.usedTools || [],
         config: {
           retry: 3,
@@ -178,38 +178,45 @@ export function StepCreator({
         <div className="max-w-4xl w-full space-y-8">
           {/* Generated Step Header */}
           <div className="text-center space-y-4">
-            <div className="flex items-center justify-center gap-2 text-green-600 mb-4">
+            <div className="flex items-center justify-center gap-2 text-success mb-4">
               <Sparkles className="w-6 h-6" />
               <span className="text-sm font-medium">Step Generated!</span>
             </div>
-            <h1 className="text-4xl font-bold text-gray-900">
+            <h1 className="text-4xl font-bold text-foreground">
               {generatedStep.title}
             </h1>
-            <p className="text-xl text-gray-600">{generatedStep.description}</p>
+            <p className="text-xl text-muted-foreground">
+              {generatedStep.description}
+            </p>
           </div>
 
           {/* Generated Step Content */}
           <div className="bg-white rounded-xl shadow-sm p-8 space-y-6">
             <div>
-              <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-3">
+              <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-3">
                 Original Prompt
               </h3>
-              <p className="text-lg text-gray-800 leading-relaxed">
+              <p className="text-lg text-foreground leading-relaxed">
                 {generatedStep.prompt}
               </p>
             </div>
 
             {generatedStep.usedTools && generatedStep.usedTools.length > 0 && (
               <div>
-                <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-3">
+                <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-3">
                   Tools Used
                 </h3>
                 <div className="flex flex-wrap gap-2">
-                  {generatedStep.usedTools.map((tool: any, idx: number) => (
-                    <Badge key={idx} variant="secondary">
-                      {tool.integrationId}.{tool.toolName}
-                    </Badge>
-                  ))}
+                  {generatedStep.usedTools.map(
+                    (
+                      tool: { integrationId?: string; toolName?: string },
+                      idx: number,
+                    ) => (
+                      <Badge key={idx} variant="secondary">
+                        {String(tool.integrationId)}.{String(tool.toolName)}
+                      </Badge>
+                    ),
+                  )}
                 </div>
               </div>
             )}
@@ -245,23 +252,23 @@ export function StepCreator({
         <div className="max-w-4xl w-full space-y-8">
           {/* Pseudo-Step Header */}
           <div className="text-center space-y-4">
-            <div className="flex items-center justify-center gap-2 text-blue-600 mb-4">
+            <div className="flex items-center justify-center gap-2 text-primary mb-4">
               <Wand2 className="w-6 h-6" />
               <span className="text-sm font-medium">Creating New Step</span>
             </div>
-            <h1 className="text-4xl font-bold text-gray-900">
+            <h1 className="text-4xl font-bold text-foreground">
               {editingStep ? "Edit Step" : "New Step"}
             </h1>
-            <p className="text-xl text-gray-600">
+            <p className="text-xl text-muted-foreground">
               Describe what this step should do
             </p>
           </div>
 
           {/* Creation Form - styled like a step */}
-          <div className="bg-blue-50 border-2 border-blue-200 rounded-xl p-8 space-y-6">
+          <div className="bg-primary/10 border-2 border-primary/20 rounded-xl p-8 space-y-6">
             {/* Prompt Field */}
             <div>
-              <label className="text-sm font-semibold text-gray-700 uppercase tracking-wide mb-3 block">
+              <label className="text-sm font-semibold text-foreground uppercase tracking-wide mb-3 block">
                 What do you want this step to do?
               </label>
               <Textarea
@@ -272,10 +279,10 @@ export function StepCreator({
                 autoFocus
               />
               <div className="flex justify-between items-center mt-2">
-                <span className="text-sm text-gray-500">
+                <span className="text-sm text-muted-foreground">
                   Use @ to mention tools (e.g., @gmail, @sheets)
                 </span>
-                <span className="text-sm text-gray-500">
+                <span className="text-sm text-muted-foreground">
                   {prompt.length} characters
                 </span>
               </div>
@@ -283,14 +290,16 @@ export function StepCreator({
 
             {/* Tools Section */}
             <div>
-              <label className="text-sm font-semibold text-gray-700 uppercase tracking-wide mb-3 block">
+              <label className="text-sm font-semibold text-foreground uppercase tracking-wide mb-3 block">
                 Tools
               </label>
 
               {/* Suggested Tools */}
               {suggestedTools.length > 0 && (
                 <div className="mb-3">
-                  <p className="text-xs text-gray-600 mb-2">Suggested:</p>
+                  <p className="text-xs text-muted-foreground mb-2">
+                    Suggested:
+                  </p>
                   <div className="flex flex-wrap gap-2">
                     {suggestedTools.map((toolId) => {
                       const tool = availableTools.find((t) => t.id === toolId);
@@ -353,7 +362,7 @@ export function StepCreator({
                 <button
                   type="button"
                   onClick={() => setShowToolDialog(true)}
-                  className="h-7 px-3 rounded-md border border-gray-300 bg-white hover:bg-gray-50 text-sm font-medium inline-flex items-center"
+                  className="h-7 px-3 rounded-md border border-border bg-white hover:bg-muted text-sm font-medium inline-flex items-center"
                 >
                   <Plus className="w-3 h-3 mr-1" />
                   Add Tool
@@ -407,6 +416,7 @@ export function StepCreator({
 
                 return (
                   <button
+                    type="button"
                     key={tool.id}
                     onClick={() => {
                       if (isSelected) {
@@ -422,13 +432,13 @@ export function StepCreator({
                       p-4 rounded-lg border-2 text-left transition-all
                       ${
                         isSelected
-                          ? "border-blue-500 bg-blue-50"
-                          : "border-gray-200 hover:border-gray-300 hover:bg-gray-50"
+                          ? "border-blue-500 bg-primary/10"
+                          : "border-gray-200 hover:border-border hover:bg-muted"
                       }
                     `}
                   >
                     <div className="font-medium">{tool.name}</div>
-                    <div className="text-sm text-gray-500 mt-1">
+                    <div className="text-sm text-muted-foreground mt-1">
                       ID: {tool.id}
                     </div>
                   </button>

@@ -88,7 +88,7 @@ import { ToolCallResult } from "./tool-call-result.tsx";
 import type { MCPToolCallResult } from "./types.ts";
 import { Label } from "@deco/ui/components/label.tsx";
 import {
-  integrationNeedsHumanApproval,
+  integrationNeedsApproval,
   useIntegrationInstallState,
 } from "../../hooks/use-integration-install.tsx";
 
@@ -342,8 +342,8 @@ function ConfigureConnectionInstanceForm({
   });
 
   const handleAddConnection = () => {
-    const shouldInstallDirectly =
-      integrationNeedsHumanApproval(integrationState);
+    const needsApproval =
+      integrationNeedsApproval(integrationState);
     const integrationMarketplace = {
       id: data.info?.id ?? "",
       provider: data.info?.provider ?? "unknown",
@@ -354,7 +354,7 @@ function ConfigureConnectionInstanceForm({
       connection: data.info?.connection ?? { type: "HTTP", url: "" },
       friendlyName: data.info?.friendlyName ?? "",
     };
-    if (shouldInstallDirectly) {
+    if (!needsApproval) {
       install({
         integration: integrationMarketplace,
       });

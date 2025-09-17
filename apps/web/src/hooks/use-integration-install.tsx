@@ -108,16 +108,16 @@ export function useIntegrationInstallState(appName?: string): IntegrationState {
   };
 }
 
-export function integrationNeedsHumanApproval(
+export function integrationNeedsApproval(
   integrationState: IntegrationState,
 ) {
-  const shouldInstallDirectly =
-    !integrationState.isLoading &&
-    !integrationState.schema &&
-    integrationState.scopes &&
-    integrationState.scopes.length === 0;
+  if (integrationState.isLoading) return true;
 
-  return shouldInstallDirectly;
+  const needsApproval =
+    !!integrationState.schema ||
+    (integrationState.scopes && integrationState.scopes.length > 0);
+
+  return needsApproval;
 }
 
 export function useIntegrationInstall() {

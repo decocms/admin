@@ -21,7 +21,7 @@ import { Spinner } from "@deco/ui/components/spinner.tsx";
 import { useState } from "react";
 import type { FieldPath, FieldValues, UseFormReturn } from "react-hook-form";
 import {
-  integrationNeedsHumanApproval,
+  integrationNeedsApproval,
   useIntegrationInstallState,
 } from "../../../hooks/use-integration-install.tsx";
 import { useOptionsLoader } from "../../../hooks/use-options-loader.ts";
@@ -91,11 +91,11 @@ export function TypeSelectField<T extends FieldValues = FieldValues>({
 
     if (!integration) return;
     // Check if we should install directly (no schema or empty scopes)
-    const shouldInstallDirectly =
-      integrationNeedsHumanApproval(integrationState);
+    const needsApproval =
+      integrationNeedsApproval(integrationState);
 
     // If no schema exists or scopes are empty, install directly
-    if (shouldInstallDirectly) {
+    if (!needsApproval) {
       try {
         await install({
           integration,
@@ -137,7 +137,7 @@ export function TypeSelectField<T extends FieldValues = FieldValues>({
   const { install, isLoading: isInstallingLoading } = useUIInstallIntegration({
     onConfirm: handleIntegrationInstalled,
     validate: () =>
-      Promise.resolve(integrationNeedsHumanApproval(integrationState)),
+      Promise.resolve(!integrationNeedsApproval(integrationState)),
   });
 
   return (

@@ -6,7 +6,7 @@ const options: Options = {
   multipleOfPrecision: 8,
   strict: false,
   verbose: true,
-  discriminator: false, // TODO enable this in V6
+  discriminator: false,
 } as const;
 
 export const ajvResolver: typeof rawAjvResolver = (

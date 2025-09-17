@@ -44,6 +44,7 @@ export default function Form<T extends FieldValues = Record<string, unknown>>({
   }
 
   // Handle root schema
+  // replace this to multischema field
   return (
     <form className="space-y-4" onSubmit={onSubmit}>
       {schema.type === "object" && schema.properties && (
@@ -305,3 +306,5 @@ function Field<T extends FieldValues = Record<string, unknown>>({
       );
   }
 }
+
+export { ajvResolver } from "./utils/ajv-resolver.ts";

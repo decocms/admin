@@ -7,6 +7,7 @@ import type { ContractState } from "@deco/sdk/mcp";
 import { MicroDollar } from "@deco/sdk/mcp/wallet";
 import { RefObject } from "react";
 import { Icon } from "@deco/ui/components/icon.tsx";
+import { ajvResolver } from "./json-schema/index.tsx";
 
 interface Permission {
   scope: string;
@@ -66,6 +67,7 @@ export function IntegrationBindingForm({
 }: IntegrationBindingFormProps) {
   const form = useForm<Record<string, unknown>>({
     defaultValues: generateDefaultValues(schema),
+    resolver: ajvResolver(schema as any),
   });
 
   formRef.current = form;

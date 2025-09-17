@@ -366,7 +366,7 @@ export const listRegistryApps = createTool({
     if (error) throw error;
 
     // Filter out omitted apps
-    const filteredData = data.filter(app => !OMITTED_APPS.includes(app.id));
+    const filteredData = data.filter((app) => !OMITTED_APPS.includes(app.id));
 
     return { apps: filteredData.map(Mappers.toRegistryApp) };
   },
@@ -404,7 +404,7 @@ export const listPublishedApps = createTool({
     if (error) throw error;
 
     // Filter out omitted apps
-    const filteredData = data.filter(app => !OMITTED_APPS.includes(app.id));
+    const filteredData = data.filter((app) => !OMITTED_APPS.includes(app.id));
 
     return { apps: filteredData.map(Mappers.toRegistryApp) };
   },

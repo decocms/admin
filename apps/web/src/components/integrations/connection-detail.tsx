@@ -564,7 +564,12 @@ function ConfigureConnectionInstanceForm({
                       }}
                     >
                       <SelectTrigger className="w-[300px]">
-                        <SelectValue placeholder="Select instance" />
+                        <SelectValue placeholder={isInstallingLoading ? 
+                          <>
+                            <Spinner />
+                            Installing...
+                          </>
+                          : "Select instance"} />
                       </SelectTrigger>
                       <SelectContent>
                         {deduplicatedInstances?.map((instance) => (

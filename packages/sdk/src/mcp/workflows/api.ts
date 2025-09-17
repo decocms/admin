@@ -22,23 +22,6 @@ import {
 } from "./workflow-schemas.ts";
 import { RESOURCE_NAME } from "./resource.ts";
 
-// In-memory storage for workflow runs
-interface WorkflowRun {
-  id: string;
-  workflowName: string;
-  input: Record<string, unknown>;
-  status: "pending" | "running" | "completed" | "failed";
-  currentStep?: string;
-  stepResults: Record<string, unknown>;
-  finalResult?: unknown;
-  error?: string;
-  logs: Array<{ type: "log" | "warn" | "error"; content: string }>;
-  startTime: number;
-  endTime?: number;
-}
-
-const workflowRuns = new Map<string, WorkflowRun>();
-
 /**
  * Reads a workflow definition from the workspace and inlines all function code
  * @param name - The name of the workflow
@@ -192,20 +175,8 @@ export const startWorkflow = createTool({
         },
       });
 
-      // Store basic run information for compatibility
+      // Return the workflow instance ID directly from Cloudflare
       const runId = workflowInstance.id;
-      const workflowRun: WorkflowRun = {
-        id: runId,
-        workflowName: name,
-        input,
-        status: "running",
-        stepResults: {},
-        logs: [],
-        startTime: Date.now(),
-      };
-
-      workflowRuns.set(runId, workflowRun);
-
       return { runId };
     } catch (error) {
       return {
@@ -261,7 +232,7 @@ export const getWorkflowStatus = createTool({
     await assertWorkspaceResourceAccess(c);
 
     try {
-      // Try to get status from Cloudflare Workflow first
+      // Get status from Cloudflare Workflow
       const workflowInstance = await c.workflowRunner.get(runId);
       const cfStatus = await workflowInstance.status();
 
@@ -286,51 +257,37 @@ export const getWorkflowStatus = createTool({
           status = "pending";
       }
 
-      // Get local run data for additional info
-      const run = workflowRuns.get(runId);
+      // Extract step results from Cloudflare Workflow output
+      let stepResults: Record<string, unknown> = {};
+      if (
+        cfStatus.output && typeof cfStatus.output === "object" &&
+        "steps" in cfStatus.output
+      ) {
+        stepResults =
+          (cfStatus.output as { steps: Record<string, unknown> }).steps;
+      }
+
+      const partialResult =
+        Object.keys(stepResults).length > 0 && status !== "completed"
+          ? {
+            completedSteps: Object.keys(stepResults),
+            stepResults,
+          }
+          : undefined;
 
       return {
         status,
         currentStep: undefined, // CF Workflows doesn't expose current step
-        stepResults: run?.stepResults || {},
+        stepResults,
         finalResult: cfStatus.output,
-        partialResult:
-          run?.stepResults && Object.keys(run.stepResults).length > 0
-            ? {
-              completedSteps: Object.keys(run.stepResults),
-              stepResults: run.stepResults,
-            }
-            : undefined,
-        error: cfStatus.error || run?.error,
-        logs: run?.logs || [],
-        startTime: run?.startTime || Date.now(),
-        endTime: run?.endTime,
-      };
-    } catch {
-      // Fallback to local storage if CF Workflow not found
-      const run = workflowRuns.get(runId);
-      if (!run) {
-        throw new Error(`Workflow run '${runId}' not found`);
-      }
-
-      const partialResult = Object.keys(run.stepResults).length > 0
-        ? {
-          completedSteps: Object.keys(run.stepResults),
-          stepResults: run.stepResults,
-        }
-        : undefined;
-
-      return {
-        status: run.status,
-        currentStep: run.currentStep,
-        stepResults: run.stepResults,
-        finalResult: run.finalResult,
         partialResult,
-        error: run.error,
-        logs: run.logs,
-        startTime: run.startTime,
-        endTime: run.endTime,
+        error: cfStatus.error,
+        logs: [], // CF Workflows doesn't expose individual step logs
+        startTime: Date.now(), // CF Workflows doesn't expose start time in status
+        endTime: undefined, // CF Workflows doesn't expose end time in status
       };
+    } catch (error) {
+      throw new Error(`Workflow run '${runId}' not found: ${inspect(error)}`);
     }
   },
 });
@@ -338,7 +295,7 @@ export const getWorkflowStatus = createTool({
 export const replayWorkflowFromStep = createTool({
   name: "WORKFLOWS_REPLAY_FROM_STEP",
   description:
-    "Replay a workflow from a specific step (limited support with Cloudflare Workflows)",
+    "Replay a workflow from a specific step using Cloudflare Workflows restart capability",
   inputSchema: z.object({
     runId: z
       .string()
@@ -356,16 +313,35 @@ export const replayWorkflowFromStep = createTool({
       .optional()
       .describe("Error message if replay start failed"),
   }),
-  handler: async (_, c) => {
+  handler: async ({ runId, stepName }, c) => {
     await assertWorkspaceResourceAccess(c);
 
-    // For now, return an error as replay is not directly supported by CF Workflows
-    // This could be implemented by creating a new workflow with partial state
-    return {
-      newRunId: "",
-      error:
-        "Workflow replay is not yet supported with Cloudflare Workflows. Please create a new workflow instance instead.",
-    };
+    try {
+      // Get the original workflow instance to retrieve its parameters
+      const workflowInstance = await c.workflowRunner.get(runId);
+      const originalStatus = await workflowInstance.status();
+
+      if (!originalStatus) {
+        return {
+          newRunId: "",
+          error: "Original workflow run not found",
+        };
+      }
+
+      // For now, replay is not fully supported with Cloudflare Workflows
+      // as it doesn't provide a direct restart from step functionality
+      // Return an error message suggesting to create a new workflow instead
+      return {
+        newRunId: "",
+        error:
+          `Workflow replay from step "${stepName}" is not yet supported with Cloudflare Workflows. Please create a new workflow instance instead. Original run ID: ${runId}`,
+      };
+    } catch (error) {
+      return {
+        newRunId: "",
+        error: `Workflow replay failed: ${inspect(error)}`,
+      };
+    }
   },
 });
 
@@ -415,7 +391,9 @@ export const workflowViews = impl(VIEW_BINDING_SCHEMA, [
             resourceName: "workflow",
             tools: [
               ...WORKFLOW_TOOLS_BUT_VIEWS.map((tool) => tool.name),
-              ...WellKnownBindings.Resources.map((resource) => resource.name),
+              "DECO_CHAT_RESOURCES_READ",
+              "DECO_CHAT_RESOURCES_UPDATE",
+              "DECO_CHAT_RESOURCES_SEARCH",
             ],
             rules: [
               "You are a workflow editing specialist. Use the workflow tools to edit the current workflow. A good strategy is to test each step, one at a time in isolation and check how they affect the overall workflow.",

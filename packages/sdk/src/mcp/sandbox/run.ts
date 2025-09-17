@@ -8,7 +8,7 @@ import {
 } from "../workflows/api.ts";
 
 export async function runMapping(
-  input: unknown,
+  workflowInput: unknown,
   state: WorkflowState,
   step: MappingStepDefinition,
   client: MCPClientStub<ProjectTools>,
@@ -29,7 +29,7 @@ export async function runMapping(
     // Create step context with WellKnownOptions
     const stepContext = {
       readWorkflowInput() {
-        return input;
+        return workflowInput;
       },
       readStepResult(stepName: string) {
         if (!state.steps[stepName]) {

@@ -11,12 +11,12 @@ import z from "zod";
 export type ResourcesBinding = (typeof WellKnownBindings)["Resources"];
 export type ResourcesTools = ResourcesBinding[number]["name"];
 
-export type EnhancedResourcesTools = Record<
+export type EnhancedResourcesTools = Partial<Record<
   ResourcesTools,
   {
     description: string;
   }
->;
+>>;
 
 export interface DeconfigResourceOptions {
   deconfig: DeconfigClient;

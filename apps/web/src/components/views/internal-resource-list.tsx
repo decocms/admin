@@ -28,6 +28,7 @@ import { EmptyState } from "../common/empty-state.tsx";
 import { ListPageHeader } from "../common/list-page-header.tsx";
 import { Table, type TableColumn } from "../common/table/index.tsx";
 import { useParams } from "react-router";
+import { ResourceCreateDialog } from "./resource-create-dialog.tsx";
 
 export function InternalResourceList({ name }: { name: string }) {
   const { integrationId } = useParams();
@@ -72,6 +73,9 @@ export function InternalResourceListWithIntegration({
   );
   const [isDeleting, setIsDeleting] = useState(false);
   const [isDuplicating, setIsDuplicating] = useState(false);
+  const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
+  const [isCreating, setIsCreating] = useState(false);
+  const [createError, setCreateError] = useState<string | null>(null);
 
   async function runSearch(term: string) {
     setLoading(true);
@@ -186,30 +190,48 @@ export function InternalResourceListWithIntegration({
     }
   }
 
-  async function createItem() {
+  function openCreateDialog() {
     if (!caps.hasCreate) return;
-    const resourceName = globalThis.prompt("Name (unique)") ?? "";
-    if (!resourceName) return;
-    const title = globalThis.prompt("Title (optional)") ?? undefined;
-    const description =
-      globalThis.prompt("Description (optional)") ?? undefined;
-    const data = globalThis.prompt("Content (text)");
-    if (data == null) return;
-    setLoading(true);
+    setCreateError(null); // Clear any previous errors
+    setIsCreateDialogOpen(true);
+  }
+
+  async function handleCreateResource(data: {
+    resourceName: string;
+    title?: string;
+    description?: string;
+    content: { data: string; type: "text" };
+  }) {
+    setIsCreating(true);
+    setCreateError(null);
     try {
-      await callTool(integration?.connection, {
+      const response = await callTool(integration?.connection, {
         name: "DECO_CHAT_RESOURCES_CREATE",
         arguments: {
           name,
-          resourceName,
-          title,
-          description,
-          content: { data, type: "text" },
+          resourceName: data.resourceName,
+          title: data.title,
+          description: data.description,
+          content: data.content,
         },
       });
+
+      if (response.isError) {
+        // Extract error message from response.content[0].text
+        const content = response.content as any;
+        const errorMessage = content?.[0]?.text || "Failed to create resource";
+        setCreateError(errorMessage);
+        return; // Don't close dialog or refresh on error
+      }
+
+      // Success - close dialog and refresh
+      setIsCreateDialogOpen(false);
       await runSearch(q);
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : "An unexpected error occurred";
+      setCreateError(errorMessage);
     } finally {
-      setLoading(false);
+      setIsCreating(false);
     }
   }
 
@@ -316,7 +338,7 @@ export function InternalResourceListWithIntegration({
       actionsRight={
         caps.hasCreate ? (
           <div className="pl-3 ml-2 border-l border-border">
-            <Button onClick={createItem} variant="special">
+            <Button onClick={openCreateDialog} variant="special">
               Create
             </Button>
           </div>
@@ -523,6 +545,16 @@ export function InternalResourceListWithIntegration({
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <ResourceCreateDialog
+        open={isCreateDialogOpen}
+        onOpenChange={setIsCreateDialogOpen}
+        resourceName={name}
+        onSubmit={handleCreateResource}
+        isLoading={isCreating}
+        error={createError}
+        onClearError={() => setCreateError(null)}
+      />
     </div>
   );
 }

@@ -215,9 +215,9 @@ const Marketplace = () => {
             );
           })}
 
-          <h2 className="text-lg font-medium">
+          <h2 className="text-lg pt-5 font-medium">
             Featured Apps
-            <span className="text-muted-foreground text-sm ml-2">
+            <span className="text-muted-foreground font-mono font-normal text-sm ml-2">
               {featuredIntegrations?.length}
             </span>
           </h2>
@@ -227,9 +227,9 @@ const Marketplace = () => {
             ))}
           </div>
 
-          <h2 className="text-lg font-medium">
+          <h2 className="text-lg pt-5 font-medium">
             All Apps
-            <span className="text-muted-foreground text-sm ml-2">
+            <span className="text-muted-foreground font-mono font-normal text-sm ml-2">
               {integrations?.integrations?.length}
             </span>
           </h2>
@@ -241,7 +241,7 @@ const Marketplace = () => {
         </div>
 
         <div className="flex flex-col gap-2 col-span-2">
-          <h2 className="text-muted-foreground">VERIFIED BY DECO</h2>
+          <h2 className="text-muted-foreground text-sm font-mono">VERIFIED BY DECO</h2>
           <div className="grid gap-2">
             {verifiedIntegrations?.map((integration) => (
               <SimpleFeaturedCard

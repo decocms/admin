@@ -1,6 +1,14 @@
 @import url("https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&display=swap");
 @import url("https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0..1,0");
 
+@font-face {
+  font-family: "CommitMono";
+  src: url("/fonts/CommitMono VariableFont.woff2") format("woff2-variations");
+  font-weight: 100 900;
+  font-style: normal;
+  font-display: swap;
+}
+
 @import "tailwindcss";
 @import "tw-animate-css";
 
@@ -129,6 +137,7 @@
 
 @theme inline {
   --font-sans: "Inter", sans-serif;
+  --font-mono: "CommitMono", "Fira Code", "Consolas", monospace;
 
   --font-crimson-pro: "Crimson Pro", serif;
 

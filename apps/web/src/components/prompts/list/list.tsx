@@ -118,6 +118,7 @@ function ListPromptsLayout() {
           onClick={handleCreate}
           disabled={create.isPending}
           variant="special"
+          size="sm"
           className="gap-2"
         >
           {create.isPending ? (

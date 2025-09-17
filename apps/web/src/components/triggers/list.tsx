@@ -79,6 +79,7 @@ export default function ListTriggersLayout() {
         <>
           <Button
             variant="special"
+            size="sm"
             title="Add Trigger"
             onClick={() => setIsCreateModalOpen(true)}
           >

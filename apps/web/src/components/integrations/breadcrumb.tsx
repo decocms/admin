@@ -34,6 +34,7 @@ export function IntegrationPageLayout({ tabs }: { tabs: Record<string, Tab> }) {
         actionButtons={
           <Button
             variant="special"
+            size="sm"
             onClick={() => navigateWorkspace("/discover")}
           >
             Discover Apps

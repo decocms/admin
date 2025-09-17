@@ -41,7 +41,7 @@ import {
   useGroupedApp,
 } from "./apps.ts";
 import { IntegrationIcon } from "./common.tsx";
-
+import { Spinner } from "@deco/ui/components/spinner.tsx";
 import { useUpdateIntegration, useWriteFile } from "@deco/sdk";
 import {
   Accordion,
@@ -411,13 +411,17 @@ function ConfigureConnectionInstanceForm({
           (!data.instances || data.instances?.length === 0) ? (
             <Button
               variant="special"
-              className="w-[250px]"
+              className="w-[250px] hidden md:flex"
               onClick={handleAddConnection}
               disabled={integrationState.isLoading || isInstallingLoading}
             >
-              <span className="hidden md:inline">
-                {isInstallingLoading ? "Installing..." : "Install app"}
-              </span>
+              {isInstallingLoading ? (
+                <>
+                  <Spinner /> Connecting...
+                </>
+              ) : (
+                <>{integrationState.isLoading && <Spinner />} Connect app</>
+              )}
             </Button>
           ) : null}
           <OauthModalContextProvider.Provider
@@ -572,14 +576,16 @@ function ConfigureConnectionInstanceForm({
                           key="create-new"
                           value="create-new"
                           className="cursor-pointer"
-                          disabled={integrationState.isLoading || isInstallingLoading}
+                          disabled={
+                            integrationState.isLoading || isInstallingLoading
+                          }
                         >
                           <Icon
                             name="add"
                             size={16}
                             className="flex-shrink-0"
                           />
-                          Create new
+                          Create new account
                         </SelectItem>
                       </SelectContent>
                     </Select>

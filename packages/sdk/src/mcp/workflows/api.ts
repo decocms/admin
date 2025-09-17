@@ -21,6 +21,15 @@ import {
   WorkflowStepDefinitionSchema,
 } from "./workflow-schemas.ts";
 import { RESOURCE_NAME } from "./resource.ts";
+import {
+  extractStepLogs,
+  extractWorkflowTiming,
+  fetchWorkflowStatus,
+  findCurrentStep,
+  formatWorkflowError,
+  mapWorkflowStatus,
+  processWorkflowSteps,
+} from "./common.ts";
 
 /**
  * Reads a workflow definition from the workspace and inlines all function code
@@ -310,42 +319,20 @@ export const getWorkflowStatus = createTool({
     await assertWorkspaceResourceAccess(c);
 
     try {
-      // Get status from Cloudflare Workflow
-      const workflowInstance = await c.workflowRunner.get(runId);
-      const cfStatus = await workflowInstance.status();
+      // Get workflow status from both sources
+      const workflowStatus = await fetchWorkflowStatus(c, runId);
 
-      // Map Cloudflare Workflow status to our status format
-      let status: "pending" | "running" | "completed" | "failed";
-      switch (cfStatus.status) {
-        case "queued":
-          status = "pending";
-          break;
-        case "running":
-        case "waiting":
-          status = "running";
-          break;
-        case "complete":
-          status = "completed";
-          break;
-        case "errored":
-        case "terminated":
-          status = "failed";
-          break;
-        default:
-          status = "pending";
-      }
+      // Map to our standardized status format
+      const status = mapWorkflowStatus(workflowStatus.status);
 
-      // Extract step results from Cloudflare Workflow output
-      let stepResults: Record<string, unknown> = {};
-      if (
-        cfStatus.output &&
-        typeof cfStatus.output === "object" &&
-        "steps" in cfStatus.output
-      ) {
-        stepResults = (cfStatus.output as { steps: Record<string, unknown> })
-          .steps;
-      }
+      // Process workflow data
+      const stepResults = processWorkflowSteps(workflowStatus);
+      const currentStep = findCurrentStep(workflowStatus.steps, status);
+      const logs = extractStepLogs(workflowStatus.steps);
+      const { startTime, endTime } = extractWorkflowTiming(workflowStatus);
+      const error = formatWorkflowError(workflowStatus);
 
+      // Calculate partial result for ongoing workflows
       const partialResult =
         Object.keys(stepResults).length > 0 && status !== "completed"
           ? {
@@ -356,17 +343,14 @@ export const getWorkflowStatus = createTool({
 
       return {
         status,
-        currentStep: undefined, // CF Workflows doesn't expose current step
+        currentStep,
         stepResults,
-        finalResult: cfStatus.output,
+        finalResult: workflowStatus.output,
         partialResult,
-        error:
-          typeof cfStatus.error === "object"
-            ? JSON.stringify(cfStatus.error, null, 2)
-            : (cfStatus.error ?? undefined),
-        logs: [], // CF Workflows doesn't expose individual step logs
-        startTime: Date.now(), // CF Workflows doesn't expose start time in status
-        endTime: undefined, // CF Workflows doesn't expose end time in status
+        error,
+        logs,
+        startTime,
+        endTime,
       };
     } catch (error) {
       throw new Error(`Workflow run '${runId}' not found: ${inspect(error)}`);

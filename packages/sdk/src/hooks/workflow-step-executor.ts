@@ -3,7 +3,7 @@ import { useSDK } from "./store.tsx";
 import {
   startSandboxWorkflow,
   getSandboxWorkflowStatus,
-} from "../crud/sandbox-workflows.ts";
+} from "./sandbox-workflows.ts";
 import type {
   WorkflowStep,
   StepExecutionResult,

@@ -1,6 +1,6 @@
 import { useMutation } from "@tanstack/react-query";
 import { useSDK } from "./store.tsx";
-import { upsertSandboxWorkflow } from "../crud/sandbox-workflows.ts";
+import { upsertSandboxWorkflow } from "./sandbox-workflows.ts";
 import type {
   JSONSchema,
   Workflow,

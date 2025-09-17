@@ -224,8 +224,8 @@ export function useWorkflowByUri(workflowUri: string) {
 }
 
 function createEmptyWorkflow(name: string): WorkflowDefinition {
+  const now = new Date().toISOString();
   return {
-    id: `workflow-${name}`,
     name,
     description: `Workflow: ${name}`,
     inputSchema: {
@@ -239,8 +239,5 @@ function createEmptyWorkflow(name: string): WorkflowDefinition {
       required: [],
     },
     steps: [],
-    executionState: {},
-    createdAt: now,
-    updatedAt: now,
   };
 }

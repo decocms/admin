@@ -323,7 +323,7 @@ export function ConfirmMarketplaceInstallDialog({
     handleBack,
   } = useIntegrationInstallStep({
     integrationState,
-    install: async () => {
+    install: () => {
       return install({
         integration,
         mainFormData: formRef.current?.getValues(),

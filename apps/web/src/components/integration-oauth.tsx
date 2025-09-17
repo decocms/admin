@@ -67,6 +67,7 @@ export function IntegrationBindingForm({
 }: IntegrationBindingFormProps) {
   const form = useForm<Record<string, unknown>>({
     defaultValues: generateDefaultValues(schema),
+    // deno-lint-ignore no-explicit-any
     resolver: ajvResolver(schema as any),
   });
 

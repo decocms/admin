@@ -19,7 +19,10 @@ import { Check, ChevronsUpDown } from "lucide-react";
 import { Suspense, useMemo, useRef, useState } from "react";
 import { UseFormReturn } from "react-hook-form";
 import { ErrorBoundary } from "../../error-boundary.tsx";
-import { useInstallCreatingApiKeyAndIntegration, useIntegrationInstallState } from "../../hooks/use-integration-install.tsx";
+import {
+  useInstallCreatingApiKeyAndIntegration,
+  useIntegrationInstallState,
+} from "../../hooks/use-integration-install.tsx";
 import { useUser } from "../../hooks/use-user.ts";
 import { Avatar } from "../common/avatar/index.tsx";
 import { IntegrationAvatar } from "../common/avatar/integration.tsx";

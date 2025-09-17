@@ -113,8 +113,9 @@ export function integrationNeedsHumanApproval(
 ) {
   const shouldInstallDirectly =
     !integrationState.isLoading &&
-    (!integrationState.schema &&
-      (integrationState.scopes && integrationState.scopes.length === 0));
+    !integrationState.schema &&
+    integrationState.scopes &&
+    integrationState.scopes.length === 0;
 
   return shouldInstallDirectly;
 }

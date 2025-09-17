@@ -1,6 +1,6 @@
 import { useParams } from "react-router";
-import { SlideCanvas } from "../../components/workflow-builder/slide-canvas.tsx";
-import { useWorkflow } from "@deco/sdk";
+import { WorkflowDisplayCanvas } from "../../components/workflow-builder/workflow-display-canvas.tsx";
+import { useSandboxWorkflow } from "@deco/sdk";
 import { WorkflowErrorState } from "./workflow-error-state.tsx";
 import { WorkflowLoadingSkeleton } from "./workflow-loading-skeleton.tsx";
 import { WorkflowNotFoundState } from "./workflow-not-found-state.tsx";
@@ -14,11 +14,18 @@ export default function WorkflowBuilderPage() {
     );
   }
 
-  const { workflow, isLoading, error } = useWorkflow(workflowName);
+  const { data: workflow, isLoading, error, refetch } = useSandboxWorkflow(workflowName);
 
   if (isLoading) return <WorkflowLoadingSkeleton />;
-  if (error) return <WorkflowErrorState error={error} />;
+  if (error) return <WorkflowErrorState error={error?.message || "Unknown error"} />;
   if (!workflow) return <WorkflowNotFoundState workflowName={workflowName} />;
 
-  return <SlideCanvas workflow={workflow} />;
+  // The workflow from useSandboxWorkflow is already in the correct format
+  return (
+    <WorkflowDisplayCanvas
+      workflow={workflow as any} // Type assertion to handle the mismatch
+      onRefresh={() => refetch()}
+      isLoading={isLoading}
+    />
+  );
 }

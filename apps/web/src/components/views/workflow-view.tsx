@@ -1,10 +1,10 @@
-import { useWorkflowByUri } from "@deco/sdk";
+import { useSandboxWorkflowByUri } from "@deco/sdk";
 import { useMemo } from "react";
 import { useSearchParams } from "react-router";
 import { WorkflowErrorState } from "../../pages/workflow-builder/workflow-error-state.tsx";
 import { WorkflowLoadingSkeleton } from "../../pages/workflow-builder/workflow-loading-skeleton.tsx";
 import { WorkflowNotFoundState } from "../../pages/workflow-builder/workflow-not-found-state.tsx";
-import { WorkflowCanvas } from "../workflow-builder/workflow-canvas.tsx";
+import { WorkflowDisplayCanvas } from "../workflow-builder/workflow-display-canvas.tsx";
 
 export function WorkflowView() {
   const [searchParams] = useSearchParams();
@@ -28,11 +28,17 @@ export function WorkflowView() {
     );
   }
 
-  const { workflow, isLoading, error } = useWorkflowByUri(workflowUri);
+  const { data: workflow, isLoading, error, refetch } = useSandboxWorkflowByUri(workflowUri);
 
   if (isLoading) return <WorkflowLoadingSkeleton />;
-  if (error) return <WorkflowErrorState error={error} />;
+  if (error) return <WorkflowErrorState error={error?.message || "Unknown error"} />;
   if (!workflow) return <WorkflowNotFoundState workflowName={workflowUri} />;
 
-  return <WorkflowCanvas workflow={workflow} />;
+  return (
+    <WorkflowDisplayCanvas
+      workflow={workflow as any} // Type assertion to handle the data structure
+      onRefresh={() => refetch()}
+      isLoading={isLoading}
+    />
+  );
 }

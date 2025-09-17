@@ -20,6 +20,12 @@ import {
 } from "@deco/ui/components/dropdown-menu.tsx";
 import { Icon } from "@deco/ui/components/icon.tsx";
 import { Spinner } from "@deco/ui/components/spinner.tsx";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@deco/ui/components/tooltip.tsx";
 import { useViewMode } from "@deco/ui/hooks/use-view-mode.ts";
 import { useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "react-router";
@@ -228,7 +234,8 @@ export function InternalResourceListWithIntegration({
       setIsCreateDialogOpen(false);
       await runSearch(q);
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : "An unexpected error occurred";
+      const errorMessage =
+        error instanceof Error ? error.message : "An unexpected error occurred";
       setCreateError(errorMessage);
     } finally {
       setIsCreating(false);
@@ -336,13 +343,30 @@ export function InternalResourceListWithIntegration({
       }}
       view={{ viewMode, onChange: setViewMode }}
       actionsRight={
-        caps.hasCreate ? (
-          <div className="pl-3 ml-2 border-l border-border">
+        <div className="pl-3 ml-2 border-l border-border flex items-center gap-2">
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  onClick={() => runSearch(q)}
+                  variant="outline"
+                  size="icon"
+                  disabled={loading}
+                >
+                  <Icon name="refresh" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>Refresh</p>
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
+          {caps.hasCreate && (
             <Button onClick={openCreateDialog} variant="special">
               Create
             </Button>
-          </div>
-        ) : null
+          )}
+        </div>
       }
     />
   );
@@ -474,12 +498,22 @@ export function InternalResourceListWithIntegration({
                       </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent>
-                      <DropdownMenuItem onClick={() => openItem(row)}>
+                      <DropdownMenuItem
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          e.preventDefault();
+                          openItem(row);
+                        }}
+                      >
                         Open
                       </DropdownMenuItem>
                       {caps.hasCreate ? (
                         <DropdownMenuItem
-                          onClick={() => duplicateItem(row)}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            e.preventDefault();
+                            duplicateItem(row);
+                          }}
                           disabled={isDuplicating}
                         >
                           {isDuplicating ? "Duplicating..." : "Duplicate"}
@@ -490,7 +524,11 @@ export function InternalResourceListWithIntegration({
                           <DropdownMenuSeparator />
                           <DropdownMenuItem
                             variant="destructive"
-                            onClick={() => deleteItem(row)}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              e.preventDefault();
+                              deleteItem(row);
+                            }}
                           >
                             Delete
                           </DropdownMenuItem>

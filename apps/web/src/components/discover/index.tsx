@@ -28,14 +28,7 @@ const HIGHLIGHTS = [
 ];
 
 // For the future, it should be controlled in a view
-const FEATURED = [
-  "@decocms/perplexity",
-  "@deco/airtable",
-  "@deco/stability",
-  "@deco/spotify",
-  "@deco/slack",
-  "@deco/google-sheets",
-];
+const FEATURED = ["@deco/airtable", "@deco/slack", "@deco/google-docs"];
 
 type FeaturedIntegration = Integration & {
   provider: string;

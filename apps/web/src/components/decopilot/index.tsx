@@ -4,6 +4,7 @@ import { useState } from "react";
 import { MainChat } from "../agent/chat.tsx";
 import { AgentProvider } from "../agent/provider.tsx";
 import { useViewAdditionalTools } from "./use-view-additional-tools.ts";
+import { useAppAdditionalTools } from "./use-app-additional-tools.ts";
 
 export const NO_DROP_TARGET = "no-drop-target";
 
@@ -38,6 +39,7 @@ export const toggleDecopilotTab = (api: DockviewApi) => {
 export function DecopilotChat() {
   const [threadId, _setThreadId] = useState(() => crypto.randomUUID());
   const viewAdditionalTools = useViewAdditionalTools();
+  const appAdditionalTools = useAppAdditionalTools();
 
   return (
     <div className="flex flex-col h-full">
@@ -45,7 +47,10 @@ export function DecopilotChat() {
         key={WELL_KNOWN_AGENTS.decopilotAgent.id}
         agentId={WELL_KNOWN_AGENTS.decopilotAgent.id}
         threadId={threadId}
-        additionalTools={viewAdditionalTools}
+        additionalTools={{
+          ...viewAdditionalTools,
+          ...appAdditionalTools,
+        }}
         chatOverrides={{}}
         uiOptions={{
           showThreadTools: false,

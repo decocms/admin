@@ -241,7 +241,9 @@ const Marketplace = () => {
         </div>
 
         <div className="flex flex-col gap-2 col-span-2">
-          <h2 className="text-muted-foreground text-sm font-mono">VERIFIED BY DECO</h2>
+          <h2 className="text-muted-foreground text-sm font-mono">
+            VERIFIED BY DECO
+          </h2>
           <div className="grid gap-2">
             {verifiedIntegrations?.map((integration) => (
               <SimpleFeaturedCard

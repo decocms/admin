@@ -480,7 +480,12 @@ export default function Page() {
           <DefaultBreadcrumb items={[{ label: "Agents", link: "/agents" }]} />
         }
         actionButtons={
-          <Button onClick={handleCreate} variant="special" size="sm" className="gap-2">
+          <Button
+            onClick={handleCreate}
+            variant="special"
+            size="sm"
+            className="gap-2"
+          >
             <Icon name="add" />
             <span className="hidden md:inline">New agent</span>
           </Button>

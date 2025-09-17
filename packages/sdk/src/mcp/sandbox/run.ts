@@ -3,18 +3,18 @@ import { WorkflowState } from "../../workflows/workflow-runner.ts";
 import { MCPClientStub, ProjectTools } from "../index.ts";
 import { asEnv, evalCodeAndReturnDefaultHandle } from "./utils.ts";
 import {
-  MappingStepDefinition,
+  CodeStepDefinition,
   ToolCallStepDefinition,
 } from "../workflows/api.ts";
 
-export async function runMapping(
+export async function runCode(
   workflowInput: unknown,
   state: WorkflowState,
-  step: MappingStepDefinition,
+  step: CodeStepDefinition,
   client: MCPClientStub<ProjectTools>,
   runtimeId: string = "default",
 ): Promise<Rpc.Serializable<unknown>> {
-  // Load and execute the mapping step function
+  // Load and execute the code step function
   using stepEvaluation = await evalCodeAndReturnDefaultHandle(
     step.execute,
     runtimeId,
@@ -45,7 +45,7 @@ export async function runMapping(
     env: await asEnv(client),
   };
 
-  // Call the mapping function
+  // Call the function
   const stepCallHandle = await callFunction(
     stepCtx,
     stepDefaultHandle,
@@ -58,7 +58,7 @@ export async function runMapping(
 
   // Log any console output from the step execution
   if (stepConsole.logs.length > 0) {
-    console.log(`Mapping step '${step.name}' logs:`, stepConsole.logs);
+    console.log(`Code step '${step.name}' logs:`, stepConsole.logs);
   }
 
   return result as Rpc.Serializable<unknown>;

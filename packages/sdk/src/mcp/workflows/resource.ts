@@ -13,7 +13,7 @@ Workflows are powerful automation tools that execute a sequence of steps sequent
 - **Output Schema**: Defines the final result structure after all steps complete
 - **Steps**: An ordered array of individual operations that run one after another (alternating between tool calls and mappers)
 
-The workflow's final output is determined by the last step in the sequence, which should be a mapping step that aggregates and returns the desired result.
+The workflow's final output is determined by the last step in the sequence, which should be a code step that aggregates and returns the desired result.
 
 ## Workflow Steps
 
@@ -34,18 +34,18 @@ Execute tools from integrations using the workflow input:
 2. Look for the integration that provides the tool you need
 3. Use the integration's ID (e.g., \`i:123e4567-e89b-12d3-a456-426614174000\`) in the \`integration\` property
 
-Tool calls receive the workflow input directly. Use mapping steps before tool calls to transform the input as needed.
+Tool calls receive the workflow input directly. Use code steps before tool calls to transform the input as needed.
 
-### 2. Mapping Steps
+### 2. Code Steps
 Transform data between tool calls:
-- **type**: "mapping"
-- **def**: Mapping step definition containing:
+- **type**: "code"
+- **def**: Code step definition containing:
   - **name**: Unique identifier within the workflow
   - **description**: Clear explanation of the step's purpose
   - **execute**: ES module code with a default async function
 
-### Mapping Step Execution Function
-Each mapping step's execute function follows this pattern:
+### Code Step Execution Function
+Each code step's execute function follows this pattern:
 \`\`\`javascript
 export default async function(ctx) {
   // ctx contains WellKnownOptions helper functions:
@@ -58,20 +58,20 @@ export default async function(ctx) {
   const input = await ctx.readWorkflowInput();
   const previousResult = await ctx.readStepResult('previous-step');
   
-  // Your mapping logic here
+  // Your code logic here
   return transformedData;
 }
 \`\`\`
 
 ## Final Output
 
-The workflow's final output is automatically determined by the last step in the sequence. This should be a mapping step that:
+The workflow's final output is automatically determined by the last step in the sequence. This should be a code step that:
 
 1. Aggregates data from previous steps using ctx.readStepResult(stepName)
 2. Transforms the data to match the workflow's output schema
 3. Returns the final result
 
-The last mapping step effectively replaces the need for a separate workflow execute function.
+The last code step effectively replaces the need for a separate workflow execute function.
 
 ## Examples
 
@@ -100,7 +100,7 @@ The last mapping step effectively replaces the need for a separate workflow exec
   },
   "steps": [
     {
-      "type": "mapping",
+      "type": "code",
       "def": {
         "name": "validate-input",
         "description": "Validates user input data",
@@ -121,7 +121,7 @@ The last mapping step effectively replaces the need for a separate workflow exec
       }
     },
     {
-      "type": "mapping",
+      "type": "code",
       "def": {
         "name": "finalize-result",
         "description": "Aggregates and returns the final workflow result",
@@ -156,7 +156,7 @@ The last mapping step effectively replaces the need for a separate workflow exec
   },
   "steps": [
     {
-      "type": "mapping",
+      "type": "code",
       "def": {
         "name": "prepare-prompt",
         "description": "Prepares the AI prompt from input",
@@ -179,7 +179,7 @@ The last mapping step effectively replaces the need for a separate workflow exec
       }
     },
     {
-      "type": "mapping",
+      "type": "code",
       "def": {
         "name": "finalize-content",
         "description": "Aggregates and returns the final content result",
@@ -192,21 +192,21 @@ The last mapping step effectively replaces the need for a separate workflow exec
 
 ## Best Practices
 
-1. **Alternating Steps**: Design workflows to alternate between tool calls and mappers
-2. **Final Mapping Step**: Always end with a mapping step that aggregates and returns the final result
-3. **Input Transformation**: Use mapping steps before tool calls to transform workflow input as needed
+1. **Alternating Steps**: Design workflows to alternate between tool calls and code
+2. **Final Code Step**: Always end with a code step that aggregates and returns the final result
+3. **Input Transformation**: Use code steps before tool calls to transform workflow input as needed
 4. **Integration Discovery**: Always use the \`integration_list\` tool to find the correct integration ID before creating tool_call steps
-5. **Minimal Output**: Keep mapping step outputs minimal to improve performance
+5. **Minimal Output**: Keep code step outputs minimal to improve performance
 6. **Error Handling**: Use retry and timeout configurations appropriately for tool calls
 7. **Schema Validation**: Define clear input/output schemas for type safety
 8. **Step Independence**: Design steps to be testable in isolation
 9. **Business Configuration**: Use options to expose tunable parameters for tool calls
 10. **Sequential Execution**: Steps run in order - design accordingly
-11. **Data Flow**: Use mappers to transform data between tool calls
+11. **Data Flow**: Use code to transform data between tool calls
 
 ## WellKnownOptions Interface
 
-The context object in mapping step execute functions includes:
+The context object in code step execute functions includes:
 
 \`\`\`typescript
 interface WellKnownOptions {
@@ -217,7 +217,7 @@ interface WellKnownOptions {
 }
 \`\`\`
 
-Use these helper functions to access workflow input and previous step results within your mapping step execute functions.
+Use these helper functions to access workflow input and previous step results within your code step execute functions.
 
 `;
 

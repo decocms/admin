@@ -49,7 +49,11 @@ export const ResourceSearchOutputSchema = z.object({
 
 export const ResourceCreateInputSchema = z.object({
   name: z.string().describe("Resource type name (e.g., 'Page', 'GoogleDrive')"),
-  resourceName: z.string().describe("Name of the specific resource instance. DO NOT ADD EXTENSIONS TO THE NAME"),
+  resourceName: z
+    .string()
+    .describe(
+      "Name of the specific resource instance. DO NOT ADD EXTENSIONS TO THE NAME",
+    ),
   title: z.string().optional(),
   description: z.string().optional(),
   content: z

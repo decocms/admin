@@ -117,11 +117,11 @@ interface ToolNodeData {
 }
 ```
 
-**Mapper Node**
+**Code Node**
 
 ```typescript
-interface MapperNodeData {
-  type: "mapping";
+interface CoderNodeData {
+  type: "code";
   name: string;
   description: string;
   execute: string; // Generated or user-defined code
@@ -495,9 +495,9 @@ function convertCanvasToWorkflow(
             integration: node.data.integration,
           },
         };
-      } else if (node.data.type === "mapping") {
+      } else if (node.data.type === "code") {
         return {
-          type: "mapping" as const,
+          type: "code" as const,
           def: {
             name: node.data.name,
             description: node.data.description,

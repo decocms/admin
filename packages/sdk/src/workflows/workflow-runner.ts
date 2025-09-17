@@ -16,9 +16,9 @@ import {
   createResourceAccess,
   MCPClient,
 } from "../mcp/index.ts";
-import { runMapping, runTool } from "../mcp/sandbox/run.ts";
+import { runCode, runTool } from "../mcp/sandbox/run.ts";
 import type {
-  MappingStepDefinition,
+  CodeStepDefinition,
   ToolCallStepDefinition,
   WorkflowStepDefinition,
 } from "../mcp/workflows/api.ts";
@@ -89,12 +89,12 @@ export class WorkflowRunner extends WorkflowEntrypoint<Bindings> {
     const client = MCPClient.forContext(appContext);
 
     let runnable: Runnable;
-    if (stepDef.type === "mapping") {
+    if (stepDef.type === "code") {
       runnable = (_input, state) =>
-        runMapping(
+        runCode(
           workflowInput,
           state,
-          stepDef.def as MappingStepDefinition,
+          stepDef.def as CodeStepDefinition,
           client,
           runtimeId,
         );

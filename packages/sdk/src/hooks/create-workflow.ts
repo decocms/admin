@@ -67,7 +67,7 @@ export function useCreateWorkflow() {
 
       // Convert to backend format (old schema)
       const backendStep = {
-        type: "mapping" as const,
+        type: "code" as const,
         def: {
           name: initialStep.title,
           description: initialStep.description,

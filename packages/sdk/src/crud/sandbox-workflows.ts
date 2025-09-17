@@ -16,7 +16,7 @@ export interface SandboxWorkflowDefinition {
   inputSchema: Record<string, unknown>;
   outputSchema: Record<string, unknown>;
   steps: Array<{
-    type: "tool_call" | "code";
+    type: "tool_call" | "mapping";
     def: Record<string, unknown>;
   }>;
 }
@@ -27,7 +27,7 @@ export interface SandboxWorkflowUpsertParams {
   inputSchema: Record<string, unknown>;
   outputSchema: Record<string, unknown>;
   steps: Array<{
-    type: "tool_call" | "code";
+    type: "tool_call" | "mapping";
     def: Record<string, unknown>;
   }>;
 }

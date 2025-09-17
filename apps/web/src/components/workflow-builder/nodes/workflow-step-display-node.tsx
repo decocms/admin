@@ -20,11 +20,11 @@ import { IntegrationIcon } from "../../integrations/common.tsx";
 
 // Define the step type based on the actual workflow structure
 type WorkflowStep = {
-  type: "mapping" | "tool_call";
+  type: "code" | "tool_call";
   def: {
     name: string;
     description: string;
-    execute?: string; // For mapping steps
+    execute?: string; // For code steps
     tool_name?: string; // For tool_call steps
     integration?: string; // For tool_call steps
     options?: Record<string, unknown>; // For tool_call steps
@@ -38,8 +38,8 @@ export interface WorkflowStepDisplayNodeData {
 }
 
 /**
- * Display node for workflow steps (tool_call or mapping)
- * Tool calls show integration icon, mappings show code dialog
+ * Display node for workflow steps (tool_call or code)
+ * Tool calls show integration icon, code show code dialog
  */
 export function WorkflowStepDisplayNode(props: NodeProps) {
   const { data } = props;
@@ -63,7 +63,7 @@ export function WorkflowStepDisplayNode(props: NodeProps) {
   }
 
   const workflowStep = step as WorkflowStep;
-  const isMapping = workflowStep.type === "mapping";
+  const isCode = workflowStep.type === "code";
   const isToolCall = workflowStep.type === "tool_call";
 
   // Fetch integrations and find the matching one
@@ -74,7 +74,7 @@ export function WorkflowStepDisplayNode(props: NodeProps) {
   }, [integrationId, integrations]);
 
   const handleClick = () => {
-    if (isMapping) {
+    if (isCode) {
       setShowCodeDialog(true);
     }
   };
@@ -90,7 +90,7 @@ export function WorkflowStepDisplayNode(props: NodeProps) {
       <Card
         className={`
           w-48 h-48 shadow-md cursor-pointer transition-all duration-200 hover:shadow-lg p-2
-          ${isMapping ? "bg-purple-50 border-purple-300" : "bg-white border-gray-300"}
+          ${isCode ? "bg-purple-50 border-purple-300" : "bg-white border-gray-300"}
         `}
         onClick={handleClick}
       >
@@ -119,7 +119,7 @@ export function WorkflowStepDisplayNode(props: NodeProps) {
             </div>
           )}
 
-          {isMapping && (
+          {isCode && (
             <div className="flex flex-col items-center gap-2">
               <div className="w-12 h-12 bg-purple-500 rounded flex items-center justify-center">
                 <Icon name="code" size={32} className="text-white" />
@@ -138,12 +138,12 @@ export function WorkflowStepDisplayNode(props: NodeProps) {
         className="w-3 h-3 bg-blue-500 border-2 border-white"
       />
 
-      {/* Code Dialog for Mapping Steps */}
-      {isMapping && (
+      {/* Code Dialog for Code Steps */}
+      {isCode && (
         <Dialog open={showCodeDialog} onOpenChange={setShowCodeDialog}>
           <DialogContent className="max-w-4xl max-h-[80vh] overflow-auto">
             <DialogHeader>
-              <DialogTitle>Mapping Code: {workflowStep.def.name}</DialogTitle>
+              <DialogTitle>Code: {workflowStep.def.name}</DialogTitle>
             </DialogHeader>
             <div className="space-y-4">
               <div>

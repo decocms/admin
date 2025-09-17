@@ -137,13 +137,13 @@ function convertToNewWorkflow(oldWorkflow: WorkflowDefinition): Workflow {
       const stepId = `step-${index}`;
 
       // Convert old step format to new format
-      if (step.type === "mapping") {
+      if (step.type === "code") {
         const def = step.def as Record<string, unknown>;
         return {
           id: stepId,
           title: String(def.name || `Step ${index + 1}`),
           description: String(def.description || ""),
-          prompt: String(def.description || "Legacy mapping step"),
+          prompt: String(def.description || "Legacy code step"),
           code: String(def.execute || ""),
           inputSchema: def.inputSchema as Record<string, unknown>,
           outputSchema: def.outputSchema as Record<string, unknown>,

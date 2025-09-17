@@ -101,7 +101,7 @@ export function useWorkflowBuilder(workflow: Workflow) {
         // Convert new step format to old format temporarily
         // TODO: Remove this conversion when backend supports new format
         const legacySteps = workflowToSave.steps.map((step) => ({
-          type: "mapping" as const, // All steps are now mapping type (code)
+          type: "code" as const, // All steps are now code type
           def: {
             name: step.title,
             description: step.description,

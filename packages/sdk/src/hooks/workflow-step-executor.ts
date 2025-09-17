@@ -30,7 +30,7 @@ export function useExecuteWorkflowStep() {
         // Create a temporary workflow with just this step for testing
         const tempWorkflowName = `test-step-${Date.now()}`;
 
-        // Build the step's execution context by creating a mapping step
+        // Build the step's execution context by creating a code step
         // that includes the previous results in its code
         const stepCode =
           step.code ||
@@ -66,7 +66,7 @@ export default async function(ctx) {
 
         // Convert to backend format
         const _sandboxStep = {
-          type: "mapping" as const,
+          type: "code" as const,
           def: {
             name: step.title || "Test Step",
             description: step.description || "Testing step execution",

@@ -397,7 +397,7 @@ all available tools in the project. This is what allows generated code to call
    functions
 
 **Critical Detail**: The integration IDs in the UI have prefixes (`i_123`,
-`a_456`) but the env uses clean IDs without prefixes. This mapping must be
+`a_456`) but the env uses clean IDs without prefixes. This code must be
 handled correctly.
 
 ```typescript
@@ -2133,7 +2133,7 @@ export default async function(ctx) {
 ### Week 2: Execution Engine
 
 - [ ] Build new step runner from scratch
-- [ ] Create tool environment with proper ID mapping
+- [ ] Create tool environment with proper ID code
 - [ ] Implement QuickJS sandbox execution
 - [ ] Add error handling and retries
 - [ ] Test with real integrations

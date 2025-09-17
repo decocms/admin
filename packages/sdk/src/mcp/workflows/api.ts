@@ -15,7 +15,7 @@ import {
 import { validate } from "../sandbox/utils.ts";
 import { MCPClientStub } from "../stub.ts";
 import {
-  MappingStepDefinitionSchema,
+  CodeStepDefinitionSchema,
   ToolCallStepDefinitionSchema,
   WorkflowDefinitionSchema,
   WorkflowStepDefinitionSchema,
@@ -46,12 +46,10 @@ async function readWorkflow(
     // Inline step function code
     const inlinedSteps = await Promise.all(
       workflow.steps.map(async (step) => {
-        if (step.type === "mapping") {
-          const mappingDef = step.def as z.infer<
-            typeof MappingStepDefinitionSchema
-          >;
-          const stepFunctionPath = mappingDef.execute.startsWith("file://")
-            ? mappingDef.execute.replace("file://", "")
+        if (step.type === "code") {
+          const codeDef = step.def as z.infer<typeof CodeStepDefinitionSchema>;
+          const stepFunctionPath = codeDef.execute.startsWith("file://")
+            ? codeDef.execute.replace("file://", "")
             : undefined;
           const stepFunctionResult = stepFunctionPath
             ? await client.READ_FILE({
@@ -59,13 +57,13 @@ async function readWorkflow(
                 path: stepFunctionPath,
                 format: "plainString",
               })
-            : { content: mappingDef.execute };
+            : { content: codeDef.execute };
 
           return {
-            type: "mapping" as const,
+            type: "code" as const,
             def: {
-              name: mappingDef.name,
-              description: mappingDef.description,
+              name: codeDef.name,
+              description: codeDef.description,
               execute: stepFunctionResult.content, // Inline the code in the execute field
             },
           };
@@ -104,7 +102,7 @@ async function readWorkflow(
   }
 }
 
-export type MappingStepDefinition = z.infer<typeof MappingStepDefinitionSchema>;
+export type CodeStepDefinition = z.infer<typeof CodeStepDefinitionSchema>;
 export type ToolCallStepDefinition = z.infer<
   typeof ToolCallStepDefinitionSchema
 >;

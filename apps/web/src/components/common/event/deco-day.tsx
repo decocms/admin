@@ -5,7 +5,7 @@ import { Button } from "@deco/ui/components/button.tsx";
 const DECO_DAY_START_DATE = new Date("2025-09-08T14:00:00");
 const DECO_DAY_END_DATE = new Date("2025-09-08T18:00:00");
 
-const YOUTUBE_URL = "https://www.youtube.com/@decocms";
+const BOUNTIES_URL = "https://bounties.decocms.com/";
 
 const CountdownBox = ({ value, label }: { value: string; label: string }) => (
   <div className="flex flex-col items-center justify-center gap-2">
@@ -28,7 +28,7 @@ const LinkWrapper = ({
   className?: string;
 }) => (
   <a
-    href={YOUTUBE_URL}
+    href={BOUNTIES_URL}
     target="_blank"
     rel="noopener noreferrer"
     className={cn(
@@ -46,7 +46,7 @@ const Upcoming = () => {
 
   return (
     <a
-      href={YOUTUBE_URL}
+      href={BOUNTIES_URL}
       target="_blank"
       rel="noopener noreferrer"
       className={cn(
@@ -73,7 +73,7 @@ const Upcoming = () => {
       </div>
 
       <Button variant="special">
-        <span>Watch on YouTube</span>
+        <span>Visit Bounties</span>
       </Button>
     </a>
   );
@@ -95,8 +95,8 @@ const Past = () => {
   return (
     <LinkWrapper>
       <img
-        src="/img/deco-day-past.png"
-        alt="deco.day past"
+        src="/img/banner-v2.jpg"
+        alt="banner v2"
         className="w-full h-full object-cover"
       />
     </LinkWrapper>

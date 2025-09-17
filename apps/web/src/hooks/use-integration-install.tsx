@@ -108,9 +108,7 @@ export function useIntegrationInstallState(appName?: string): IntegrationState {
   };
 }
 
-export function integrationNeedsApproval(
-  integrationState: IntegrationState,
-) {
+export function integrationNeedsApproval(integrationState: IntegrationState) {
   if (integrationState.isLoading) return true;
 
   const needsApproval =

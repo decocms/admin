@@ -342,8 +342,7 @@ function ConfigureConnectionInstanceForm({
   });
 
   const handleAddConnection = () => {
-    const needsApproval =
-      integrationNeedsApproval(integrationState);
+    const needsApproval = integrationNeedsApproval(integrationState);
     const integrationMarketplace = {
       id: data.info?.id ?? "",
       provider: data.info?.provider ?? "unknown",
@@ -564,12 +563,18 @@ function ConfigureConnectionInstanceForm({
                       }}
                     >
                       <SelectTrigger className="w-[300px]">
-                        <SelectValue placeholder={isInstallingLoading ? 
-                          <>
-                            <Spinner />
-                            Installing...
-                          </>
-                          : "Select instance"} />
+                        <SelectValue
+                          placeholder={
+                            isInstallingLoading ? (
+                              <>
+                                <Spinner />
+                                Installing...
+                              </>
+                            ) : (
+                              "Select instance"
+                            )
+                          }
+                        />
                       </SelectTrigger>
                       <SelectContent>
                         {deduplicatedInstances?.map((instance) => (

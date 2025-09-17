@@ -136,6 +136,8 @@ export function TypeSelectField<T extends FieldValues = FieldValues>({
   // Setup direct install functionality
   const { install, isLoading: isInstallingLoading } = useUIInstallIntegration({
     onConfirm: handleIntegrationInstalled,
+    validate: () =>
+      Promise.resolve(integrationNeedsHumanApproval(integrationState)),
   });
 
   return (

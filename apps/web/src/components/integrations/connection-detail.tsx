@@ -337,7 +337,8 @@ function ConfigureConnectionInstanceForm({
   const integrationState = useIntegrationInstallState(data.info?.name);
   // Setup direct install functionality
   const { install, isLoading: isInstallingLoading } = useUIInstallIntegration({
-    onConfirm: handleIntegrationInstalled, // this shouldn't trigger any navigation flow,
+    onConfirm: handleIntegrationInstalled,
+    validate: () => form.trigger(),
   });
 
   const handleAddConnection = () => {

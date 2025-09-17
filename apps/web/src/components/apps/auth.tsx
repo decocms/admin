@@ -304,6 +304,7 @@ const _InlineInstallation = ({
   const formRef = useRef<UseFormReturn<Record<string, unknown>> | null>(null);
   const { install, isLoading } = useUIInstallIntegration({
     onConfirm,
+    validate: () => formRef.current?.trigger() ?? Promise.resolve(true),
   });
   const {
     stepIndex,

@@ -204,10 +204,13 @@ export const useIntegrationInstallStep = ({
   };
 };
 
-interface UseUIInstallIntegrationProps extends HandleInstallUI {}
+interface UseUIInstallIntegrationProps extends HandleInstallUI {
+  validate: () => Promise<boolean>;
+}
 
 export const useUIInstallIntegration = ({
   onConfirm,
+  validate,
 }: UseUIInstallIntegrationProps) => {
   const { install, isLoading } = useIntegrationInstall();
   const buildWorkspaceUrl = useWorkspaceLink();
@@ -220,7 +223,8 @@ export const useUIInstallIntegration = ({
     integration: MarketplaceIntegration | null;
     mainFormData?: Record<string, unknown>;
   }) => {
-    if (!integration) return;
+    const isValid = await validate();
+    if (!integration || !isValid) return;
 
     const returnUrl = new URL(
       buildWorkspaceUrl("/connections/success"),
@@ -307,6 +311,7 @@ export function ConfirmMarketplaceInstallDialog({
       onConfirm(props);
       setIntegration(null);
     },
+    validate: () => formRef.current?.trigger() ?? Promise.resolve(true),
   });
   const {
     stepIndex,
@@ -318,11 +323,12 @@ export function ConfirmMarketplaceInstallDialog({
     handleBack,
   } = useIntegrationInstallStep({
     integrationState,
-    install: () =>
-      install({
+    install: async () => {
+      return install({
         integration,
         mainFormData: formRef.current?.getValues(),
-      }),
+      });
+    },
   });
 
   // Reset step when dialog closes/opens

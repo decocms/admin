@@ -126,7 +126,10 @@ export const startWorkflow = createTool({
       .describe("The input data for the workflow"),
   }),
   outputSchema: z.object({
-    runId: z.string().describe("The unique ID for tracking this workflow run"),
+    runId: z
+      .string()
+      .optional()
+      .describe("The unique ID for tracking this workflow run"),
     error: z
       .string()
       .optional()
@@ -149,14 +152,13 @@ export const startWorkflow = createTool({
         branch,
       );
       if (!workflow) {
-        return { runId: "", error: "Workflow not found" };
+        return { error: "Workflow not found" };
       }
 
       // Validate input against the workflow's input schema
       const inputValidation = validate(input, workflow.inputSchema);
       if (!inputValidation.valid) {
         return {
-          runId: "",
           error: `Input validation failed: ${inspect(inputValidation)}`,
         };
       }
@@ -180,7 +182,6 @@ export const startWorkflow = createTool({
       return { runId };
     } catch (error) {
       return {
-        runId: "",
         error: `Workflow start failed: ${inspect(error)}`,
       };
     }
@@ -308,6 +309,7 @@ export const replayWorkflowFromStep = createTool({
   outputSchema: z.object({
     newRunId: z
       .string()
+      .optional()
       .describe("The unique ID for tracking this replayed workflow run"),
     error: z
       .string()
@@ -324,7 +326,6 @@ export const replayWorkflowFromStep = createTool({
 
       if (!originalStatus) {
         return {
-          newRunId: "",
           error: "Original workflow run not found",
         };
       }
@@ -333,12 +334,10 @@ export const replayWorkflowFromStep = createTool({
       // as it doesn't provide a direct restart from step functionality
       // Return an error message suggesting to create a new workflow instead
       return {
-        newRunId: "",
         error: `Workflow replay from step "${stepName}" is not yet supported with Cloudflare Workflows. Please create a new workflow instance instead. Original run ID: ${runId}`,
       };
     } catch (error) {
       return {
-        newRunId: "",
         error: `Workflow replay failed: ${inspect(error)}`,
       };
     }
@@ -360,7 +359,6 @@ export const workflowViews = impl(VIEW_BINDING_SCHEMA, [
 
       const org = c.locator?.org;
       const project = c.locator?.project;
-      const _branch = c.locator?.branch || "main";
 
       if (!org || !project) {
         return { views: [] };

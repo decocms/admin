@@ -221,7 +221,7 @@ export const WorkflowResource = DeconfigResource.define({
   directory: "/src/workflows",
   resourceName: RESOURCE_NAME,
   schema: WorkflowDefinitionSchema,
-  tools: {
+  enhancements: {
     DECO_CHAT_RESOURCES_CREATE: {
       description: WORKFLOW_PROMPT,
     },

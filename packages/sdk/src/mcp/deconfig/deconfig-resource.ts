@@ -24,7 +24,7 @@ export interface DeconfigResourceOptions {
   deconfig: DeconfigClient;
   directory: string;
   resourceName?: string;
-  tools?: EnhancedResourcesTools;
+  enhancements?: EnhancedResourcesTools;
   schema?: z.ZodType;
 }
 
@@ -71,13 +71,18 @@ export const DeconfigResource = {
 };
 
 export const deconfigResource = (options: DeconfigResourceOptions) => {
-  const { deconfig, directory, resourceName: _resourceName, tools } = options;
+  const {
+    deconfig,
+    directory,
+    resourceName: _resourceName,
+    enhancements,
+  } = options;
   const resourceName = _resourceName || directory;
   return impl(WellKnownBindings.Resources, [
     // DECO_CHAT_RESOURCES_READ
     {
       description:
-        tools?.DECO_CHAT_RESOURCES_READ?.description ||
+        enhancements?.DECO_CHAT_RESOURCES_READ?.description ||
         `Read a resource from the DECONFIG directory ${directory}`,
       handler: async ({ name, uri }, c) => {
         assertHasWorkspace(c);
@@ -136,7 +141,7 @@ export const deconfigResource = (options: DeconfigResourceOptions) => {
     // DECO_CHAT_RESOURCES_SEARCH
     {
       description:
-        tools?.DECO_CHAT_RESOURCES_SEARCH?.description ||
+        enhancements?.DECO_CHAT_RESOURCES_SEARCH?.description ||
         `Search resources in the DECONFIG directory ${directory}`,
       handler: async ({ name, term, cursor, limit = 10 }, c) => {
         assertHasWorkspace(c);
@@ -196,7 +201,7 @@ export const deconfigResource = (options: DeconfigResourceOptions) => {
     // DECO_CHAT_RESOURCES_CREATE
     {
       description:
-        tools?.DECO_CHAT_RESOURCES_CREATE?.description ||
+        enhancements?.DECO_CHAT_RESOURCES_CREATE?.description ||
         `Create a new resource in the DECONFIG directory ${directory}`,
       handler: async (
         { name, resourceName: rsName, title, description, content, metadata },
@@ -267,7 +272,7 @@ export const deconfigResource = (options: DeconfigResourceOptions) => {
     // DECO_CHAT_RESOURCES_UPDATE
     {
       description:
-        tools?.DECO_CHAT_RESOURCES_UPDATE?.description ||
+        enhancements?.DECO_CHAT_RESOURCES_UPDATE?.description ||
         `Update a resource in the DECONFIG directory ${directory}`,
       handler: async (
         {
@@ -357,7 +362,7 @@ export const deconfigResource = (options: DeconfigResourceOptions) => {
     // DECO_CHAT_RESOURCES_DELETE
     {
       description:
-        tools?.DECO_CHAT_RESOURCES_DELETE?.description ||
+        enhancements?.DECO_CHAT_RESOURCES_DELETE?.description ||
         `Delete a resource from the DECONFIG directory ${directory}`,
       handler: async ({ name, uri }, c) => {
         assertHasWorkspace(c);
@@ -383,7 +388,7 @@ export const deconfigResource = (options: DeconfigResourceOptions) => {
     // DECO_CHAT_RESOURCES_LIST
     {
       description:
-        tools?.DECO_CHAT_RESOURCES_LIST?.description ||
+        enhancements?.DECO_CHAT_RESOURCES_LIST?.description ||
         `List available resource types`,
       handler: async (_, c) => {
         assertHasWorkspace(c);

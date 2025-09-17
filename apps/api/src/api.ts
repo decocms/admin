@@ -459,54 +459,10 @@ app.all(
     const appCtx = honoCtxToAppCtx(ctx);
     const client = createDeconfigClientForContext(appCtx);
 
-
-          const workflowViews = workflows
-            .map((workflow) => {
-              const workflowName = workflow.name;
-              const listUrl = `https://api.decocms.com/${appCtx.locator?.org}/${appCtx.locator?.project}/workflows/${appCtx.locator?.branch}`;
-              const detailUrl = `https://api.decocms.com/${appCtx.locator?.org}/${appCtx.locator?.project}/workflows/${appCtx.locator?.branch}/${workflowName}`;
-              // Default tools for workflow operations
-              const defaultListTools = [
-                "DECO_CHAT_WORKFLOWS_START",
-                "DECO_CHAT_WORKFLOWS_GET_STATUS",
-                "DECO_CHAT_WORKFLOWS_REPLAY_FROM_STEP",
-              ];
-              const defaultListRules = [
-                `You are viewing the ${workflowName} workflow. Use the appropriate workflow tools to start, monitor, and manage workflow executions.`,
-              ];
-              const defaultDetailTools = [
-                "DECO_CHAT_WORKFLOWS_START",
-                "DECO_CHAT_WORKFLOWS_GET_STATUS",
-              ];
-              const defaultDetailRules = [
-                `You are viewing the ${workflowName} workflow details. This workflow can be started and monitored using the available workflow tools.`,
-              ];
-              return [
-                // List view
-                {
-                  name: `${workflowName.toUpperCase()}_LIST`,
-                  title: `${workflowName} Workflows`,
-                  description: `List and manage ${workflowName} workflow executions`,
-                  icon: "workflow",
-                  url: listUrl,
-                  tools: defaultListTools,
-                  rules: defaultListRules,
-                },
-                // Detail view
-                {
-                  name: `${workflowName.toUpperCase()}_DETAIL`,
-                  title: `${workflowName} Workflow Details`,
-                  description: `View details and manage ${workflowName} workflow`,
-                  icon: "workflow",
-                  url: detailUrl,
-                  resourceName: workflowName,
-                  tools: defaultDetailTools,
-                  rules: defaultDetailRules,
-                },
-              ];
-            })
-            .flat();
-        } catch {
+    return Promise.resolve([
+      ...WorkflowResource.create(client),
+      ...workflowViews,
+    ]);
   }),
 );
 

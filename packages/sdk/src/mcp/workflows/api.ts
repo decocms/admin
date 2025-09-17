@@ -395,7 +395,6 @@ export const workflowViews = impl(VIEW_BINDING_SCHEMA, [
             title: "Workflows",
             description: "Manage and monitor your workflows",
             icon: "workflow",
-            url: `https://api.decocms.com/${c.locator?.org}/${c.locator?.project}/workflows/${c.locator?.branch}`,
             url: `${baseUrl}/${org}/${project}/workflows`,
             tools: [
               "WORKFLOWS_START",

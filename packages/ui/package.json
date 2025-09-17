@@ -8,7 +8,8 @@
     "./components/*": "./src/components/*",
     "./hooks/*": "./src/hooks/*",
     "./lib/*": "./src/lib/*",
-    "./styles/*": "./src/styles/*"
+    "./styles/*": "./src/styles/*",
+    "./assets/*": "./src/assets/*"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.0.1",

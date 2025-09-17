@@ -3,7 +3,10 @@
 
 @font-face {
   font-family: "CommitMono";
-  src: url("/fonts/CommitMono VariableFont.woff2") format("woff2-variations");
+  src:
+    local("Commit Mono"),
+    local("CommitMono"),
+    url("./assets/fonts/CommitMono VariableFont.woff2") format("woff2");
   font-weight: 100 900;
   font-style: normal;
   font-display: swap;

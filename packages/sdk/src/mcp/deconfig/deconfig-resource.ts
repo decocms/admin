@@ -40,7 +40,7 @@ const buildFilePath = (directory: string, resourceId: string) => {
 };
 
 const extractResourceId = (uri: string) => {
-  // Extract ID from URI - expecting format like deconfig://directory/resourceId
+  // Extract ID from URI - expecting format like workflow://resourceId
   const urlParts = uri.split("/");
   const resourceId = urlParts[urlParts.length - 1];
   if (!resourceId) {
@@ -185,7 +185,7 @@ export const deconfigResource = (options: DeconfigResourceOptions) => {
         return {
           items: items.map(({ resourceId, metadata }) => ({
             name: resourceName,
-            uri: `deconfig://${directory}/${resourceId}`,
+            uri: `${resourceName}://${resourceId}`,
             title: resourceId,
             description: `${directory} resource`,
             mimeType: "application/json",
@@ -215,7 +215,7 @@ export const deconfigResource = (options: DeconfigResourceOptions) => {
         }
 
         const resourceId = rsName || crypto.randomUUID();
-        const uri = `deconfig://${directory}/${resourceId}`;
+        const uri = `${resourceName}://${resourceId}`;
         const filePath = buildFilePath(directory, resourceId);
 
         // Parse content data
@@ -329,14 +329,13 @@ export const deconfigResource = (options: DeconfigResourceOptions) => {
           updated_at: new Date().toISOString(),
         };
 
-        if (options.schema) {
-          options.schema.parse(updatedData);
-        }
-
         if (rsName) updatedData.name = rsName;
         if (title) updatedData.title = title;
         if (description) updatedData.description = description;
 
+        if (options.schema) {
+          options.schema.parse(updatedData);
+        }
         const fileContent = JSON.stringify(updatedData, null, 2);
 
         await deconfig.PUT_FILE({

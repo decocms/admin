@@ -12,7 +12,7 @@ import {
   WellKnownBindings,
   WorkflowResource,
 } from "../index.ts";
-import { fileNameSlugify, validate } from "../sandbox/utils.ts";
+import { validate } from "../sandbox/utils.ts";
 import { MCPClientStub } from "../stub.ts";
 import {
   MappingStepDefinitionSchema,
@@ -36,11 +36,9 @@ async function readWorkflow(
   branch?: string,
 ): Promise<z.infer<typeof WorkflowDefinitionSchema> | null> {
   try {
-    const workflowFileName = fileNameSlugify(name);
-
     const result = await workflows.DECO_CHAT_RESOURCES_READ({
       name: RESOURCE_NAME,
-      uri: `deconfig://workflows/${workflowFileName}`,
+      uri: `workflow://${name}`,
     });
 
     const workflow = WorkflowDefinitionSchema.parse(JSON.parse(result.data));

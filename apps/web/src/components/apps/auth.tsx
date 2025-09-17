@@ -657,7 +657,7 @@ function AppsOAuth({
 
   const selectedProject = "default";
 
-  if (!orgs || orgs.length === 0) {
+  if (!orgs || orgs.length === 0 || !registryApp) {
     return <NoProjectFound />;
   }
 

@@ -13,6 +13,8 @@ import type { Tab } from "../dock/index.tsx";
 import { DefaultBreadcrumb, PageLayout } from "../layout/project.tsx";
 import { InternalResourceListWithIntegration } from "./internal-resource-list.tsx";
 import { ViewRouteProvider } from "./view-route-context.tsx";
+import { WorkflowView } from "./workflow-view.tsx";
+import { EmptyState } from "../common/empty-state.tsx";
 
 interface ViewDetailContextValue {
   integrationId?: string;
@@ -49,11 +51,35 @@ function PreviewTab() {
   const { embeddedName, integrationId, integration, resolvedUrl, view } =
     useViewDetail();
 
-  if (embeddedName && integrationId) {
+  if (resolvedUrl.startsWith("internal://resource/list")) {
+    if (!embeddedName || !integrationId) {
+      return (
+        <EmptyState
+          icon="report"
+          title="Missing embedded name or integration id"
+          description="The embedded name or integration id is missing from the URL parameters. This is likely a bug in the system, please report it to the team."
+        />
+      );
+    }
+
     return (
       <InternalResourceListWithIntegration
         name={embeddedName}
         integrationId={integrationId}
+      />
+    );
+  }
+
+  if (resolvedUrl.startsWith("internal://resource/detail")) {
+    if (embeddedName === "workflow") {
+      return <WorkflowView />;
+    }
+
+    return (
+      <EmptyState
+        icon="report"
+        title="Not implemented yet"
+        description="This view is not implemented yet."
       />
     );
   }
@@ -94,24 +120,18 @@ export default function ViewDetail() {
   }, [connectionViews, viewName, url]);
 
   const resolvedUrl = url || connectionViewMatch?.url || "";
-  const isEmbeddedList = resolvedUrl?.startsWith("internal://resource/list?");
-  const isEmbeddedDetail = resolvedUrl?.startsWith(
-    "internal://resource/detail?",
-  );
 
   const embeddedName = useMemo(() => {
-    if (!resolvedUrl || (!isEmbeddedList && !isEmbeddedDetail)) {
+    if (!resolvedUrl) {
       return undefined;
     }
     try {
-      const u = new URL(
-        resolvedUrl.replace("internal://", "https://internal/"),
-      );
+      const u = new URL(resolvedUrl);
       return u.searchParams.get("name") ?? undefined;
     } catch {
       return undefined;
     }
-  }, [resolvedUrl, isEmbeddedList, isEmbeddedDetail]);
+  }, [resolvedUrl]);
 
   const tabs = TABS;
 

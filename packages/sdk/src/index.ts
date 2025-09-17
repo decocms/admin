@@ -18,7 +18,6 @@ export * from "./crud/workflows.ts";
 export * from "./crud/roles.ts";
 export * from "./crud/projects.ts";
 export * from "./crud/registry.ts";
-export * from "./crud/sandbox-workflows.ts";
 
 export * from "./hooks/agent.ts";
 export * from "./hooks/audit.ts";

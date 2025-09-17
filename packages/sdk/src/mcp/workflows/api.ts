@@ -395,7 +395,7 @@ export const workflowViews = impl(VIEW_BINDING_SCHEMA, [
             title: "Workflows",
             description: "Manage and monitor your workflows",
             icon: "workflow",
-            url: `${baseUrl}/${org}/${project}/workflows`,
+            url: `internal://resource/list?name=workflow`,
             tools: [
               "WORKFLOWS_START",
               "WORKFLOWS_GET_STATUS",
@@ -411,7 +411,7 @@ export const workflowViews = impl(VIEW_BINDING_SCHEMA, [
             title: "Workflow Detail",
             description: "View and manage individual workflow details",
             icon: "workflow",
-            url: `${baseUrl}/${org}/${project}/workflows/:resource-id`,
+            url: `internal://resource/detail?name=workflow`,
             mimeTypePattern: "application/json",
             resourceName: "workflow",
             tools: [

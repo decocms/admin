@@ -6,7 +6,7 @@ import {
 } from "../crud/workflows.ts";
 import { InternalServerError } from "../errors.ts";
 import { useSDK } from "./store.tsx";
-import { useSandboxWorkflow } from "./sandbox-workflows.ts";
+import { useSandboxWorkflow, useSandboxWorkflowByUri } from "./sandbox-workflows.ts";
 import type { WorkflowDefinition } from "../mcp/workflows/workflow-schemas.ts";
 import type { Workflow } from "../mcp/workflows/types.ts";
 
@@ -206,9 +206,24 @@ export function useWorkflow(workflowName: string) {
   };
 }
 
-function createEmptyWorkflow(name: string): Workflow {
-  const now = new Date().toISOString();
 
+/**
+ * Hook to get a workflow definition by URI with fallback to empty workflow
+ */
+export function useWorkflowByUri(workflowUri: string) {
+  const { data, isLoading, error } = useSandboxWorkflowByUri(workflowUri);
+
+  // If workflow doesn't exist, create a new one
+  const workflow = data || createEmptyWorkflow(workflowUri);
+
+  return {
+    workflow,
+    isLoading,
+    error: error?.message || null,
+  };
+}
+
+function createEmptyWorkflow(name: string): WorkflowDefinition {
   return {
     id: `workflow-${name}`,
     name,

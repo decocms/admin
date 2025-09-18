@@ -43,7 +43,7 @@ export function toMention(id: string, type: Mentionables = "prompt") {
 }
 
 const hasMentions = (content: string) => {
-  return content.includes("<span");
+  return content.includes("<span") || content.includes("&lt;span");
 };
 
 // TODO: Resolve all types of mentions
@@ -58,12 +58,12 @@ export async function resolveMentions(
     parentPromptId?: string;
   },
 ): Promise<string> {
-  // Unescape HTML at the beginning to ensure all regex operations work on unescaped content
-  const unescapedContent = unescapeHTML(content);
-
-  if (!hasMentions(unescapedContent)) {
+  if (!hasMentions(content)) {
     return content;
   }
+
+  // Unescape HTML at the beginning to ensure all regex operations work on unescaped content
+  const unescapedContent = unescapeHTML(content);
 
   const contentWithoutComments = unescapedContent.replaceAll(COMMENT_REGEX, "");
 

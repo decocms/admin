@@ -112,7 +112,7 @@ export function integrationNeedsApproval(integrationState: IntegrationState) {
   if (integrationState.isLoading) return true;
 
   const needsApproval =
-    !!integrationState.schema ||
+    !!integrationState.schema && integrationState.schema.properties && Object.keys(integrationState.schema.properties).length > 0 ||
     (integrationState.scopes && integrationState.scopes.length > 0);
 
   return needsApproval;

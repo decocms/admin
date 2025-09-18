@@ -434,7 +434,6 @@ export function DependencyStep({
   integrationState,
   mode = "grid",
 }: DependencyStepProps) {
-  const { data: marketplace } = useMarketplaceIntegrations();
   const dependencyIntegration = useMemo(() => {
     if (!dependencySchema || !dependencyName) return null;
 

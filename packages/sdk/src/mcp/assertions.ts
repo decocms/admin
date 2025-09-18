@@ -316,8 +316,6 @@ async function grantAccessForProxy(
     throw new ForbiddenError("Proxy token not found");
   }
 
-  console.log(c.user);
-
   if (
     !("integrationId" in c.user) ||
     typeof c.user.integrationId !== "string"

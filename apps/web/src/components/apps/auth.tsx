@@ -517,16 +517,7 @@ const SelectProjectAppInstance = ({
                   integrationName={clientId}
                   // create callback
                   onConfirm={({ connection, authorizeOauthUrl }) => {
-                    /**
-                     * TODO: root app should trigger this;
-                     * Nested apps should open popup
-                     */
-                    // createOAuthCodeAndRedirectBackToApp({
-                    //   integrationId: connection.id,
-                    // });
-
                     if (authorizeOauthUrl) {
-                      console.log("authorizeOauthUrl", authorizeOauthUrl);
                       const popup = globalThis.open(
                         authorizeOauthUrl,
                         "_blank",
@@ -545,6 +536,9 @@ const SelectProjectAppInstance = ({
                         });
                       }
                     }
+                    createOAuthCodeAndRedirectBackToApp({
+                      integrationId: connection.id,
+                    });
                   }}
                 />
               </div>

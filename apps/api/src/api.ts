@@ -105,6 +105,7 @@ const contextToPrincipalExecutionContext = (
         branch,
       }
     : undefined;
+  const tokenQs = c.req.query("auth-token");
   return {
     ...c.var,
     params: { ...c.req.query(), ...c.req.param() },
@@ -114,7 +115,7 @@ const contextToPrincipalExecutionContext = (
     // token issued by the MCP Proxy server to identify the caller as deco api
     proxyToken: c.req.header(PROXY_TOKEN_HEADER)?.split(" ")[1],
     callerApp: c.req.header("x-caller-app"),
-    token: c.req.header("Authorization")?.split(" ")[1],
+    token: tokenQs ?? c.req.header("Authorization")?.split(" ")[1],
   };
 };
 export const honoCtxToAppCtx = (c: Context<AppEnv>): AppContext => {
@@ -441,9 +442,9 @@ app.use(withActorsMiddleware);
 
 app.post(`/contracts/mcp`, createMCPHandlerFor(CONTRACTS_TOOLS));
 app.post(`/deconfig/mcp`, createMCPHandlerFor(DECONFIG_TOOLS));
-app.get(`/:org/:project/deconfig/watch`, (ctx) => {
+app.get(`/:org/:project/deconfig/watch`, async (ctx) => {
   const appCtx = honoCtxToAppCtx(ctx);
-  return watchSSE(appCtx, {
+  return await watchSSE(appCtx, {
     branchName: ctx.req.query("branch"),
     pathFilter: ctx.req.query("pathFilter"),
     fromCtime: +(ctx.req.query("fromCtime") ?? "1"),

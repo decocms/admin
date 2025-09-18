@@ -6,7 +6,7 @@ import { JwtIssuer, type JwtIssuerKeyPair } from "./jwt.ts";
 import {
   createSupabaseSessionClient,
   getSessionToken,
-  parseAuthorizationHeader,
+  parseAuthorizationToken,
 } from "./supabase.ts";
 
 export type { AuthUser };
@@ -33,7 +33,7 @@ export async function getUserBySupabaseCookie(
   keyPair?: JwtIssuerKeyPair,
 ): Promise<Principal | undefined> {
   const jwtIssuer = await JwtIssuer.forKeyPair(keyPair);
-  const accessToken = parseAuthorizationHeader(request);
+  const accessToken = parseAuthorizationToken(request);
   const sessionToken = getSessionToken(request);
 
   if (!sessionToken && !accessToken) {

@@ -94,10 +94,14 @@ export const createSessionTokenCookie = (
   });
 };
 
-export const parseAuthorizationHeader = (
+export const parseAuthorizationToken = (
   request: Request,
 ): string | undefined => {
   const authorization = request.headers.get("authorization");
+  if (!authorization) {
+    const url = new URL(request.url);
+    return url.searchParams.get("auth-token") ?? undefined;
+  }
   if (!authorization) {
     return undefined;
   }

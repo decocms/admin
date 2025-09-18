@@ -530,25 +530,41 @@ export class Branch extends DurableObject<DeconfigEnv> {
       options.fromCtime,
     );
 
+    // Track paths we've already sent events for to ensure one event per path
+    const processedPaths = new Set<FilePath>();
+
     for (const row of result) {
       const added = JSON.parse(row.added_json as string) as Record<
         FilePath,
         FileMetadata
       >;
       const deleted = JSON.parse(row.deleted_json as string) as FilePath[];
+      const timestamp = row.timestamp as number;
+      const patchId = row.id as number;
 
-      // Send events for added/modified files
+      // Process added/modified files
       for (const [path, metadata] of Object.entries(added)) {
         if (options.pathFilter && !path.startsWith(options.pathFilter)) {
           continue;
         }
 
+        // Skip if we've already processed this path
+        if (processedPaths.has(path)) {
+          continue;
+        }
+
+        // Mark as processed and send event immediately
+        processedPaths.add(path);
+
+        // Determine if this is an add or modify based on current tree state
+        const type = this.state.tree[path] ? "modified" : "added";
+
         const event: FileChangeEvent = {
-          type: this.state.tree[path] ? "modified" : "added",
+          type,
           path,
           metadata,
-          timestamp: row.timestamp as number,
-          patchId: row.id as number,
+          timestamp,
+          patchId,
         };
 
         this.sendSSE(controller, {
@@ -557,17 +573,25 @@ export class Branch extends DurableObject<DeconfigEnv> {
         });
       }
 
-      // Send events for deleted files
+      // Process deleted files
       for (const path of deleted) {
         if (options.pathFilter && !path.startsWith(options.pathFilter)) {
           continue;
         }
 
+        // Skip if we've already processed this path
+        if (processedPaths.has(path)) {
+          continue;
+        }
+
+        // Mark as processed and send event immediately
+        processedPaths.add(path);
+
         const event: FileChangeEvent = {
           type: "deleted",
           path,
-          timestamp: row.timestamp as number,
-          patchId: row.id as number,
+          timestamp,
+          patchId,
         };
 
         this.sendSSE(controller, {

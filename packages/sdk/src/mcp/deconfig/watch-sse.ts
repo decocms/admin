@@ -19,7 +19,7 @@ export interface WatchOpts extends WatchOptions {
  */
 export const watchSSE = async (env: AppContext, options?: WatchOpts) => {
   assertHasWorkspace(env);
-  await assertWorkspaceResourceAccess(env, "DELETE_FILE");
+  await assertWorkspaceResourceAccess(env, "READ_FILE");
   using branch = await branchRpcFor(env, options?.branchName);
 
   const watchStream = await branch.watch(options);

@@ -43,6 +43,10 @@ export function toMention(id: string, type: Mentionables = "prompt") {
   return `<span data-type="mention" data-id=${id} data-mention-type=${type}></span>`;
 }
 
+const hasMentions = (content: string) => {
+  return content.includes("<span");
+};
+
 // TODO: Resolve all types of mentions
 export async function resolveMentions(
   content: string,
@@ -55,6 +59,10 @@ export async function resolveMentions(
     parentPromptId?: string;
   },
 ): Promise<string> {
+  if (!hasMentions(content)) {
+    return content;
+  }
+
   const contentWithoutComments = content.replaceAll(COMMENT_REGEX, "");
 
   const mentions = extractMentionsFromString(content);

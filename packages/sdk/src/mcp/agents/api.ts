@@ -9,7 +9,6 @@ import { LocatorStructured } from "../../locator.ts";
 import {
   assertHasWorkspace,
   assertWorkspaceResourceAccess,
-  assertPrincipalIsUser,
   type WithTool,
 } from "../assertions.ts";
 import { type AppContext, createToolGroup } from "../context.ts";

@@ -450,6 +450,7 @@ export function DependencyStep({
 
   const { data: app } = useRegistryApp({
     clientId: dependencyIntegration || "",
+    mode: "sync",
   });
 
   const integrationData = useMemo(() => {

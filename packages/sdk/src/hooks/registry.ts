@@ -1,4 +1,5 @@
-import { useSuspenseQuery } from "@tanstack/react-query";
+import { useSuspenseQuery, useQuery } from "@tanstack/react-query";
+import { useRef } from "react";
 import { getRegistryApp } from "../crud/registry.ts";
 
 export class RegistryAppNotFoundError extends Error {
@@ -14,8 +15,10 @@ export type RegistryApp = Awaited<ReturnType<typeof getRegistryApp>>;
  * Hook to get a registry app by client ID in the format @scope/app-name
  * @param params - Object containing clientId in format @scope/app-name
  */
-export const useRegistryApp = (params: { clientId: string }) => {
-  return useSuspenseQuery({
+export const useRegistryApp = (params: { clientId: string, mode?: "suspense" | "sync" }) => {
+  const mode = useRef(params.mode ?? "suspense");
+  const useQueryMode = mode.current === "suspense" ? useSuspenseQuery : useQuery;
+  return useQueryMode({
     queryKey: ["registry-app", params.clientId],
     queryFn: async () => {
       if (!params.clientId) {

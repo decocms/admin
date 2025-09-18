@@ -21,12 +21,11 @@ interface Mention {
 /**
  * Extracts prompt mentions from a system prompt
  */
-export function extractMentionsFromString(systemPrompt: string): Mention[] {
-  const unescapedSystemPrompt = unescapeHTML(systemPrompt);
+function extractMentionsFromString(systemPrompt: string): Mention[] {
   const mentions: Mention[] = [];
   let match;
 
-  while ((match = MENTION_REGEX.exec(unescapedSystemPrompt)) !== null) {
+  while ((match = MENTION_REGEX.exec(systemPrompt)) !== null) {
     const type = match[2] as Mentionables;
     if (mentionableTypes.includes(type)) {
       mentions.push({
@@ -59,13 +58,16 @@ export async function resolveMentions(
     parentPromptId?: string;
   },
 ): Promise<string> {
-  if (!hasMentions(content)) {
+  // Unescape HTML at the beginning to ensure all regex operations work on unescaped content
+  const unescapedContent = unescapeHTML(content);
+
+  if (!hasMentions(unescapedContent)) {
     return content;
   }
 
-  const contentWithoutComments = content.replaceAll(COMMENT_REGEX, "");
+  const contentWithoutComments = unescapedContent.replaceAll(COMMENT_REGEX, "");
 
-  const mentions = extractMentionsFromString(content);
+  const mentions = extractMentionsFromString(unescapedContent);
 
   const promptIds = mentions
     .filter((mention) => mention.type === "prompt")

@@ -54,9 +54,18 @@ export const formatFileSize = (bytes: number) => {
   return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + " " + sizes[i];
 };
 
-export const getKnowledgeBaseIntegrationId = (index: string) =>
-  `${WELL_KNOWN_KNOWLEDGE_BASE_CONNECTION_ID_STARTSWITH}-${index}`;
-
+export const KnowledgeBaseID = {
+  format: (index: string) =>
+    `${WELL_KNOWN_KNOWLEDGE_BASE_CONNECTION_ID_STARTSWITH}-${index}`,
+  parse: (id: string) => {
+    if (!id.startsWith(WELL_KNOWN_KNOWLEDGE_BASE_CONNECTION_ID_STARTSWITH)) {
+      throw new Error("Invalid knowledge base ID");
+    }
+    return id.slice(
+      WELL_KNOWN_KNOWLEDGE_BASE_CONNECTION_ID_STARTSWITH.length + 1,
+    );
+  },
+};
 /* Must start with a letter or underscore, contain only letters, numbers, or underscores, and be at most 63 characters long. */
 export const parseToValidIndexName = (uuid: string) =>
   `_${uuid.replaceAll("-", "_")}`;

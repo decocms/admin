@@ -16,10 +16,7 @@ import {
   useReadFile,
   useWriteFile,
 } from "@deco/sdk";
-import {
-  getKnowledgeBaseIntegrationId,
-  parseToValidIndexName,
-} from "@deco/sdk/utils";
+import { KnowledgeBaseID, parseToValidIndexName } from "@deco/sdk/utils";
 import { toast } from "@deco/ui/components/sonner.tsx";
 
 interface UseAgentKnowledgeIntegrationProps {
@@ -33,7 +30,7 @@ export const useAgentKnowledgeIntegration = ({
   const { id: idProp } = agent;
   const knowledgeName = useMemo(() => parseToValidIndexName(idProp), [idProp]);
   const knowledgeIntegrationId = useMemo(
-    () => getKnowledgeBaseIntegrationId(knowledgeName),
+    () => KnowledgeBaseID.format(knowledgeName),
     [knowledgeName],
   );
   const integrations = useIntegrations();

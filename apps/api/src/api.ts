@@ -112,9 +112,9 @@ const contextToPrincipalExecutionContext = (
     locator: ctxLocator,
     cookie: c.req.header("Cookie"),
     // token issued by the MCP Proxy server to identify the caller as deco api
-    proxyToken: c.req.header(PROXY_TOKEN_HEADER)?.replace("Bearer ", ""),
+    proxyToken: c.req.header(PROXY_TOKEN_HEADER)?.split(" ")[1],
     callerApp: c.req.header("x-caller-app"),
-    token: c.req.header("Authorization")?.replace("Bearer ", ""),
+    token: c.req.header("Authorization")?.split(" ")[1],
   };
 };
 export const honoCtxToAppCtx = (c: Context<AppEnv>): AppContext => {

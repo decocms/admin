@@ -1,4 +1,5 @@
 import type { AuthContext, Statement } from "../auth/policy.ts";
+import { SWRCache } from "../cache/swr.ts";
 import { ForbiddenError, NotFoundError, UnauthorizedError } from "../errors.ts";
 import { ProjectLocator } from "../locator.ts";
 import type { Workspace } from "../path.ts";
@@ -100,6 +101,15 @@ export function assertsNotNull<T>(
   }
 }
 
+const FIVE_SECONDS = 5;
+
+export const apiKeySWRCache = new SWRCache<QueryResult<
+  "deco_chat_api_keys",
+  "*"
+> | null>("api-key-swr", {
+  staleTtlSeconds: FIVE_SECONDS,
+});
+
 interface ResourceAccessContext extends Partial<Omit<AuthContext, "user">> {
   resource: string;
 }
@@ -146,18 +156,22 @@ export const assertWorkspaceResourceAccess = async (
   if ("aud" in user && user.aud === c.workspace.value) {
     const [sub, id] = user.sub?.split(":") ?? [];
     if (sub === "api-key") {
-      const { data, error } = await c.db
-        .from("deco_chat_api_keys")
-        .select("*")
-        .eq("id", id)
-        .eq("enabled", true)
-        .eq("workspace", c.workspace.value)
-        .maybeSingle();
-
-      if (error) {
-        apiKeyError = error.message;
-      } else {
-        apiKeyData = data;
+      try {
+        apiKeyData = await apiKeySWRCache.cache(async () => {
+          const { data, error } = await c.db
+            .from("deco_chat_api_keys")
+            .select("*")
+            .eq("id", id)
+            .eq("enabled", true)
+            .eq("workspace", c.workspace.value)
+            .maybeSingle();
+          if (error) {
+            throw error;
+          }
+          return data;
+        }, `${c.workspace.value}:${id}`);
+      } catch (error) {
+        apiKeyError = (error as { message: string }).message;
       }
     }
   }
@@ -301,6 +315,8 @@ async function grantAccessForProxy(
   if (!c.proxyToken) {
     throw new ForbiddenError("Proxy token not found");
   }
+
+  console.log(c.user);
 
   if (
     !("integrationId" in c.user) ||

@@ -1,12 +1,16 @@
 import {
   createServerClient as createMcpServerClient,
-  isApiDecoChatMCPConnection as shouldPatchDecoChatMCPConnection,
   listToolsByConnectionType,
   patchApiDecoChatTokenHTTPConnection,
+  isApiDecoChatMCPConnection as shouldPatchDecoChatMCPConnection,
 } from "@deco/ai/mcp";
 import { CallToolRequestSchema } from "@modelcontextprotocol/sdk/types.js";
 import { z } from "zod";
-import { KNOWLEDGE_BASE_GROUP } from "../../constants.ts";
+import { AppName } from "../../common/index.ts";
+import {
+  KNOWLEDGE_BASE_GROUP,
+  WELL_KNOWN_KNOWLEDGE_BASE_CONNECTION_ID_STARTSWITH,
+} from "../../constants.ts";
 import type { MCPTool } from "../../hooks/tools.ts";
 import {
   type Agent,
@@ -26,8 +30,9 @@ import {
 } from "../../index.ts";
 import { CallToolResultSchema } from "../../models/tool-call.ts";
 import type { Workspace } from "../../path.ts";
+import { Json } from "../../storage/index.ts";
 import type { QueryResult } from "../../storage/supabase/client.ts";
-import { getKnowledgeBaseIntegrationId } from "../../utils/index.ts";
+import { KnowledgeBaseID } from "../../utils/index.ts";
 import { IMPORTANT_ROLES } from "../agents/api.ts";
 import {
   assertHasLocator,
@@ -43,10 +48,8 @@ import {
   WellKnownBindings,
 } from "../index.ts";
 import { listKnowledgeBases } from "../knowledge/api.ts";
-import { AppName } from "../../common/index.ts";
 import { getRegistryApp, listRegistryApps } from "../registry/api.ts";
 import { createServerClient } from "../utils.ts";
-import { Json } from "../../storage/index.ts";
 
 const SELECT_INTEGRATION_QUERY = `
           *,
@@ -189,6 +192,37 @@ export const listTools = createIntegrationManagementTool({
   },
 });
 
+const toKbIntegration = (
+  kb: string,
+  locator: ProjectLocator,
+  token?: string,
+) => {
+  const { url: workspaceMcpUrl } = projectUrlFromLocator(locator);
+  const url = new URL(workspaceMcpUrl);
+  url.searchParams.set("group", KNOWLEDGE_BASE_GROUP);
+  url.searchParams.set("name", kb);
+  return {
+    id: kb,
+    name: `${KnowledgeBaseID.parse(kb)} (Knowledge Base)`,
+    description: "Ingest, search, and manage contextual data.",
+    connection: {
+      type: "HTTP",
+      url: url.href,
+      token,
+    },
+    icon: "https://assets.decocache.com/mcp/1b6e79a9-7830-459c-a1a6-ba83e7e58cbe/Knowledge-Base.png",
+    workspace: Locator.adaptToRootSlug(locator),
+    created_at: new Date().toISOString(),
+  };
+};
+
+const projectUrlFromLocator = (locator: ProjectLocator) => {
+  const projectPath = `/${
+    locator.startsWith("/") ? locator.slice(1) : locator
+  }`;
+  return { url: new URL(`${projectPath}/mcp`, DECO_CMS_API_URL), projectPath };
+};
+
 const virtualIntegrationsFor = (
   locator: ProjectLocator,
   knowledgeBases: string[],
@@ -209,10 +243,7 @@ const virtualIntegrationsFor = (
     workspace: Locator.adaptToRootSlug(locator),
     created_at: new Date().toISOString(),
   };
-  const projectPath = `/${
-    locator.startsWith("/") ? locator.slice(1) : locator
-  }`;
-  const workspaceMcp = new URL(`${projectPath}/mcp`, DECO_CMS_API_URL);
+  const { url: workspaceMcp, projectPath } = projectUrlFromLocator(locator);
   const toolsMcp = new URL(
     `${projectPath}/${WellKnownMcpGroups.Tools}/mcp`,
     DECO_CMS_API_URL,
@@ -293,22 +324,7 @@ const virtualIntegrationsFor = (
     toolsIntegration,
     workflowsIntegration,
     ...knowledgeBases.map((kb) => {
-      const url = new URL(workspaceMcp);
-      url.searchParams.set("group", KNOWLEDGE_BASE_GROUP);
-      url.searchParams.set("name", kb);
-      return {
-        id: getKnowledgeBaseIntegrationId(kb),
-        name: `${kb} (Knowledge Base)`,
-        description: "Ingest, search, and manage contextual data.",
-        connection: {
-          type: "HTTP",
-          url: url.href,
-          token,
-        },
-        icon: "https://assets.decocache.com/mcp/1b6e79a9-7830-459c-a1a6-ba83e7e58cbe/Knowledge-Base.png",
-        workspace: Locator.adaptToRootSlug(locator),
-        created_at: new Date().toISOString(),
-      };
+      return toKbIntegration(KnowledgeBaseID.format(kb), locator, token);
     }),
   ];
 };
@@ -468,6 +484,24 @@ export const getIntegration = createIntegrationManagementTool({
     }
 
     const { uuid, type } = parseId(id);
+    assertHasLocator(c);
+
+    if (
+      formatId(type, uuid).startsWith(
+        WELL_KNOWN_KNOWLEDGE_BASE_CONNECTION_ID_STARTSWITH,
+      )
+    ) {
+      const parsed = IntegrationSchema.parse({
+        ...toKbIntegration(uuid, c.locator.value, c.token),
+        id: formatId(type, id),
+      });
+      return {
+        ...parsed,
+        tools: null,
+      };
+    }
+    assertHasWorkspace(c);
+
     if (uuid in INNATE_INTEGRATIONS) {
       const data =
         INNATE_INTEGRATIONS[uuid as keyof typeof INNATE_INTEGRATIONS];
@@ -477,7 +511,6 @@ export const getIntegration = createIntegrationManagementTool({
       });
       return { ...baseIntegration, tools: null }; // Innate integrations don't have tools for now
     }
-    assertHasWorkspace(c);
 
     const selectPromise =
       type === "i"
@@ -496,12 +529,9 @@ export const getIntegration = createIntegrationManagementTool({
             .single()
             .then((r) => r);
 
-    const knowledgeBases = await listKnowledgeBases.handler({});
-
-    assertHasLocator(c);
     const virtualIntegrations = virtualIntegrationsFor(
       c.locator.value,
-      knowledgeBases.names ?? [],
+      [],
       c.token,
     );
 

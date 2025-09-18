@@ -560,7 +560,6 @@ export const readFile = createDeconfigTool({
       default:
         content = btoa(String.fromCharCode(...combined)); // fallback to base64
     }
-
     return {
       content,
       address: fileData.metadata.address,

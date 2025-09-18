@@ -3,10 +3,7 @@ import {
   useIntegrationViews,
   useKnowledgeListFiles,
 } from "@deco/sdk";
-import {
-  getExtensionFromContentType,
-  getKnowledgeBaseIntegrationId,
-} from "@deco/sdk/utils";
+import { getExtensionFromContentType, KnowledgeBaseID } from "@deco/sdk/utils";
 import { Button } from "@deco/ui/components/button.tsx";
 import {
   Dialog,
@@ -47,7 +44,7 @@ import { IntegrationListItem } from "../toolsets/selector.tsx";
 
 const ADVANCED_INTEGRATIONS = [
   ...LEGACY_INTEGRATIONS,
-  getKnowledgeBaseIntegrationId("standard"),
+  KnowledgeBaseID.format("standard"),
   "DECO_INTEGRATIONS",
   "DECO_UTILS",
 ];

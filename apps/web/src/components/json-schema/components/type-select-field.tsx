@@ -91,8 +91,7 @@ export function TypeSelectField<T extends FieldValues = FieldValues>({
 
     if (!integration) return;
     // Check if we should install directly (no schema or empty scopes)
-    const needsApproval =
-      integrationNeedsApproval(integrationState);
+    const needsApproval = integrationNeedsApproval(integrationState);
 
     // If no schema exists or scopes are empty, install directly
     if (!needsApproval) {
@@ -101,7 +100,9 @@ export function TypeSelectField<T extends FieldValues = FieldValues>({
           integration,
         });
         return;
-      } catch {/** empty block */}
+      } catch {
+        /** empty block */
+      }
     }
     // Show dialog for integrations with schema or scopes
     setInstallingIntegration(integration);

@@ -171,8 +171,6 @@ export const useIntegrationInstallStep = ({
       return;
     }
 
-    if (!maybeAppDependencyList) return;
-
     if (stepIndex < totalSteps - 1) {
       // Move to next dependency
       setStepIndex((prev) => prev + 1);

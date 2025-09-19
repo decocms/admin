@@ -33,7 +33,10 @@ import type { Workspace } from "../../path.ts";
 import { Json } from "../../storage/index.ts";
 import type { QueryResult } from "../../storage/supabase/client.ts";
 import { KnowledgeBaseID } from "../../utils/index.ts";
-import { IMPORTANT_ROLES } from "../agents/api.ts";
+import {
+  IMPORTANT_ROLES,
+  matchByWorkspaceOrProjectLocator,
+} from "../agents/api.ts";
 import {
   assertHasLocator,
   assertHasWorkspace,
@@ -50,6 +53,9 @@ import {
 import { listKnowledgeBases } from "../knowledge/api.ts";
 import { getRegistryApp, listRegistryApps } from "../registry/api.ts";
 import { createServerClient } from "../utils.ts";
+import { agents, integrations, projects } from "../schema.ts";
+import { and, eq } from "drizzle-orm";
+import { getProjectIdFromContext } from "../projects/util.ts";
 
 const SELECT_INTEGRATION_QUERY = `
           *,
@@ -514,20 +520,28 @@ export const getIntegration = createIntegrationManagementTool({
 
     const selectPromise =
       type === "i"
-        ? c.db
-            .from("deco_chat_integrations")
-            .select(SELECT_INTEGRATION_QUERY)
-            .eq("id", uuid)
-            .eq("workspace", c.workspace.value)
-            .single()
-            .then((r) => r)
-        : c.db
-            .from("deco_chat_agents")
-            .select("*")
-            .eq("id", uuid)
-            .eq("workspace", c.workspace.value)
-            .single()
-            .then((r) => r);
+        ? c.drizzle
+            .select()
+            .from(integrations)
+            .where(
+              and(
+                eq(integrations.id, uuid),
+                matchByWorkspaceOrProjectLocator(c.workspace.value, c.locator),
+              ),
+            )
+            .limit(1)
+            .then((r) => r[0])
+        : c.drizzle
+            .select()
+            .from(agents)
+            .where(
+              and(
+                eq(agents.id, uuid),
+                matchByWorkspaceOrProjectLocator(c.workspace.value, c.locator),
+              ),
+            )
+            .limit(1)
+            .then((r) => r[0]);
 
     const virtualIntegrations = virtualIntegrationsFor(
       c.locator.value,
@@ -543,14 +557,10 @@ export const getIntegration = createIntegrationManagementTool({
       return { ...baseIntegration, tools: null }; // Virtual integrations don't have tools for now
     }
 
-    const { data, error } = await selectPromise;
+    const data = await selectPromise;
 
     if (!data) {
       throw new NotFoundError("Integration not found");
-    }
-
-    if (error) {
-      throw new InternalServerError((error as Error).message);
     }
 
     if (type === "a") {
@@ -609,28 +619,37 @@ export const createIntegration = createIntegrationManagementTool({
       ? await getRegistryApp.handler({ name: clientIdFromApp })
       : undefined;
 
+    const projectId = await getProjectIdFromContext(c);
+
     const payload = {
       ...baseIntegration,
       app_id: appId ?? fetchedApp?.id,
+      project_id: projectId,
     };
 
-    const { data, error } =
-      "id" in payload && payload.id
-        ? await c.db
-            .from("deco_chat_integrations")
-            .upsert(payload)
-            .eq("workspace", c.workspace.value)
-            .select()
-            .single()
-        : await c.db
-            .from("deco_chat_integrations")
-            .insert(payload)
-            .select()
-            .single();
+    // update
+    if ("id" in payload && payload.id) {
+      const [data] = await c.drizzle
+        .update(integrations)
+        .set(payload)
+        .where(
+          and(
+            eq(integrations.id, payload.id),
+            matchByWorkspaceOrProjectLocator(c.workspace.value, c.locator),
+          ),
+        )
+        .returning();
 
-    if (error) {
-      throw new InternalServerError(error.message);
+      return IntegrationSchema.parse({
+        ...data,
+        id: formatId("i", data.id),
+      });
     }
+
+    const [data] = await c.drizzle
+      .insert(integrations)
+      .values(payload)
+      .returning();
 
     return IntegrationSchema.parse({
       ...data,

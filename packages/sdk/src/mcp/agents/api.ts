@@ -15,6 +15,7 @@ import { deleteTrigger, listTriggers } from "../triggers/api.ts";
 import { and, desc, eq, ilike, inArray, or } from "drizzle-orm";
 import { agents, organizations, projects } from "../schema.ts";
 import { LocatorStructured } from "../../locator.ts";
+import { getProjectIdFromContext } from "../projects/util.ts";
 
 const createTool = createToolGroup("Agent", {
   name: "Agent Management",
@@ -212,6 +213,7 @@ export const createAgent = createTool({
         ...NEW_AGENT_TEMPLATE,
         ...agent,
         workspace: c.workspace.value,
+        project_id: await getProjectIdFromContext(c),
       })
       .returning(AGENT_FIELDS_SELECT);
 

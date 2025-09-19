@@ -654,14 +654,31 @@ export const createIntegration = createIntegrationManagementTool({
       project_id: projectId,
     };
 
-    // update
-    if ("id" in payload && payload.id) {
+    const existingIntegration = payload.id
+      ? await c.drizzle
+          .select({
+            id: integrations.id,
+          })
+          .from(integrations)
+          .leftJoin(projects, eq(integrations.project_id, projects.id))
+          .leftJoin(organizations, eq(projects.org_id, organizations.id))
+          .where(
+            and(
+              eq(integrations.id, payload.id),
+              matchByWorkspaceOrProjectLocator(c.workspace.value, c.locator),
+            ),
+          )
+          .limit(1)
+          .then((r) => r[0])
+      : null;
+
+    if (existingIntegration) {
       const [data] = await c.drizzle
         .update(integrations)
         .set(payload)
         .where(
           and(
-            eq(integrations.id, payload.id),
+            eq(integrations.id, existingIntegration.id),
             // TODO: update to use project locator
             eq(integrations.workspace, c.workspace.value),
           ),

@@ -5,7 +5,8 @@
  *
  * 1. **Hash-based comparison**: Uses SHA-256 hashes (same as blobs.ts) to detect content changes
  * 2. **Efficient uploads**: Only transfers new or modified files
- * 3. **Smart filtering**: Uses .deconfigignore files (like .gitignore) plus built-in patterns
+ * 3. **Smart filtering**: Uses .deconfigignore files (gitignore-style patterns) plus built-in patterns
+ * 4. **Watch mode**: Monitors directory for changes and automatically pushes modified files
  *
  * Hash extraction from blob addresses:
  * - Remote files have addresses like "blobs:project-blob:abc123..."
@@ -23,6 +24,7 @@ import { putFileContent } from "./base.js";
 import { walk } from "../../lib/fs.js";
 import { createWorkspaceClient } from "../../lib/mcp.js";
 import { createIgnoreChecker } from "../../lib/ignore.js";
+import { watchAndSync } from "./sync.js";
 import process from "node:process";
 
 interface PushOptions {
@@ -32,6 +34,7 @@ interface PushOptions {
   workspace?: string;
   local?: boolean;
   dryRun?: boolean;
+  watch?: boolean;
 }
 
 interface LocalFileInfo {
@@ -71,10 +74,11 @@ export async function pushCommand(options: PushOptions): Promise<void> {
     workspace,
     local,
     dryRun,
+    watch: watchMode,
   } = options;
 
   console.log(
-    `📤 Pushing files from "${localPath}" to branch "${branchName}"${
+    `📤 ${watchMode ? "Watching and pushing" : "Pushing"} files from "${localPath}" to branch "${branchName}"${
       dryRun ? " (dry run)" : ""
     }...`,
   );
@@ -89,6 +93,33 @@ export async function pushCommand(options: PushOptions): Promise<void> {
     // Create ignore checker for .deconfigignore patterns
     const ignoreChecker = createIgnoreChecker(localPath);
     console.log(`📋 Loaded ${ignoreChecker.getPatternCount()} ignore patterns`);
+
+    // If watch mode is enabled, start watching
+    if (watchMode) {
+      if (dryRun) {
+        console.error("❌ Cannot use --watch with --dry-run");
+        process.exit(1);
+      }
+
+      // Do initial push first
+      console.log("🚀 Performing initial push...");
+      await pushCommand({
+        ...options,
+        watch: false, // Disable watch for initial push
+      });
+
+      console.log("✅ Initial push completed, starting watch mode...\n");
+
+      // Start watching for changes using the sync module
+      await watchAndSync({
+        localPath,
+        branchName,
+        pathFilter,
+        workspace,
+        local,
+      });
+      return;
+    }
 
     // Get current local files
     const currentLocalFiles = new Map<string, LocalFileInfo>();

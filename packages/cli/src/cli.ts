@@ -669,6 +669,7 @@ const deconfigPush = new Command("push")
   .requiredOption("--path <path>", "Local directory path to push files from")
   .option("--path-filter <filter>", "Filter files by path pattern")
   .option("--dry-run", "Show what would be pushed without making changes")
+  .option("--watch", "Watch directory for changes and auto-push modified files")
   .option("-w, --workspace <workspace>", "Workspace name")
   .addHelpText(
     "after",
@@ -676,18 +677,26 @@ const deconfigPush = new Command("push")
 Examples:
   $ deco deconfig push --path ./src --branch main
   $ deco deconfig push --path ./docs --path-filter "/docs/" --dry-run
+  $ deco deconfig push --path ./src --watch --branch main
   
 This command works like rsync:
 - Compares local file hashes with remote file hashes
 - Only uploads changed files (new or modified content)
 - Respects .deconfigignore files (gitignore-style patterns)
 - Built-in patterns: node_modules/, .git/, .DS_Store, *.tmp, *.temp, .env.local
+- Watch mode: Monitors directory and auto-pushes changes (500ms debounce)
 
 .deconfigignore syntax (like .gitignore):
   *.log        # ignore all .log files
   /temp        # ignore temp in project root only
   build/       # ignore build directories
   !important.txt # negate pattern (include file)
+
+Watch mode features:
+- Performs initial push, then monitors for file changes
+- Debounces rapid changes (500ms delay) to avoid spam
+- Respects .deconfigignore patterns
+- Graceful shutdown with Ctrl+C
 
 Note: Deletion detection is not yet implemented - files deleted locally
 will remain on the remote branch until manually deleted with 'deco deconfig delete'.
@@ -703,6 +712,7 @@ will remain on the remote branch until manually deleted with 'deco deconfig dele
         path: options.path,
         pathFilter: options.pathFilter,
         dryRun: options.dryRun,
+        watch: options.watch,
         workspace: config.workspace,
         local: config.local,
       });

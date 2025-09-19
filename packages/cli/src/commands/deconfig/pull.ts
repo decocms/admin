@@ -10,6 +10,7 @@ import process from "node:process";
 import { fetchFileContent } from "./base.js";
 import { walk } from "../../lib/fs.js";
 import { createHash } from "crypto";
+import { createIgnoreChecker } from "../../lib/ignore.js";
 
 interface PullOptions {
   branchName: string;
@@ -90,10 +91,13 @@ export async function pullCommand(options: PullOptions): Promise<void> {
     const localFiles = new Map<string, { hash: string; path: string }>();
 
     if (existsSync(localPath)) {
+      // Create ignore checker for .deconfigignore patterns
+      const ignoreChecker = createIgnoreChecker(localPath);
+
       for await (const entry of walk(localPath, {
         includeFiles: true,
         includeDirs: false,
-        skip: [/node_modules/, /\.git/, /\.DS_Store/],
+        skip: ignoreChecker.toWalkSkipPatterns(),
       })) {
         const relativePath = relative(localPath, entry.path);
         const remotePath = `/${relativePath.replace(/\\/g, "/")}`;

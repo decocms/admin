@@ -1,7 +1,28 @@
+/**
+ * DECONFIG Push Command - Rsync-like file synchronization
+ *
+ * This command implements rsync-like behavior for pushing local files to a remote DECONFIG branch:
+ *
+ * 1. **Hash-based comparison**: Uses SHA-256 hashes (same as blobs.ts) to detect content changes
+ * 2. **Efficient uploads**: Only transfers new or modified files
+ * 3. **Smart filtering**: Uses .deconfigignore files (like .gitignore) plus built-in patterns
+ *
+ * Hash extraction from blob addresses:
+ * - Remote files have addresses like "blobs:project-blob:abc123..."
+ * - We extract the hash (3rd part after splitting by ':')
+ * - Compare with local file SHA-256 hash using the same algorithm as blobs.ts
+ *
+ * Note: Deletion detection is not yet implemented - files deleted locally
+ * will remain on the remote branch until manually deleted.
+ */
+
 import { readFileSync, statSync } from "fs";
-import { relative } from "path";
+import { relative, join } from "path";
+import { createHash } from "crypto";
 import { putFileContent } from "./base.js";
 import { walk } from "../../lib/fs.js";
+import { createWorkspaceClient } from "../../lib/mcp.js";
+import { createIgnoreChecker } from "../../lib/ignore.js";
 import process from "node:process";
 
 interface PushOptions {
@@ -11,6 +32,35 @@ interface PushOptions {
   workspace?: string;
   local?: boolean;
   dryRun?: boolean;
+}
+
+interface LocalFileInfo {
+  hash: string;
+  size: number;
+}
+
+interface RemoteFileInfo {
+  address: string;
+  metadata: Record<string, unknown>;
+  sizeInBytes: number;
+  mtime: number;
+  ctime: number;
+}
+
+/**
+ * Calculate SHA-256 hash of file content (same as blobs.ts)
+ */
+function calculateFileHash(filePath: string): string {
+  const content = readFileSync(filePath);
+  return createHash("sha256").update(content).digest("hex");
+}
+
+/**
+ * Extract hash from blob address format: "blobs:blob-id:hash"
+ */
+function extractHashFromAddress(address: string): string {
+  const parts = address.split(":");
+  return parts.length >= 3 ? parts[2] : "";
 }
 
 export async function pushCommand(options: PushOptions): Promise<void> {
@@ -36,17 +86,17 @@ export async function pushCommand(options: PushOptions): Promise<void> {
       throw new Error(`Path is not a directory: ${localPath}`);
     }
 
-    // Walk through local files
-    const filesToPush: Array<{
-      localPath: string;
-      remotePath: string;
-      size: number;
-    }> = [];
+    // Create ignore checker for .deconfigignore patterns
+    const ignoreChecker = createIgnoreChecker(localPath);
+    console.log(`📋 Loaded ${ignoreChecker.getPatternCount()} ignore patterns`);
+
+    // Get current local files
+    const currentLocalFiles = new Map<string, LocalFileInfo>();
 
     for await (const entry of walk(localPath, {
       includeFiles: true,
       includeDirs: false,
-      skip: [/node_modules/, /\.git/, /\.DS_Store/],
+      skip: ignoreChecker.toWalkSkipPatterns(),
     })) {
       const relativePath = relative(localPath, entry.path);
       const remotePath = `/${relativePath.replace(/\\/g, "/")}`;
@@ -57,40 +107,117 @@ export async function pushCommand(options: PushOptions): Promise<void> {
       }
 
       const stats = statSync(entry.path);
-      filesToPush.push({
-        localPath: entry.path,
-        remotePath,
+      const hash = calculateFileHash(entry.path);
+
+      currentLocalFiles.set(remotePath, {
+        hash,
         size: stats.size,
       });
     }
 
-    console.log(`📋 Found ${filesToPush.length} files to push`);
+    // Get remote files list
+    const client = await createWorkspaceClient({ workspace, local });
+
+    let remoteFiles: Record<string, RemoteFileInfo> = {};
+
+    try {
+      const response = await client.callTool({
+        name: "LIST_FILES",
+        arguments: {
+          branch: branchName,
+          prefix: pathFilter,
+        },
+      });
+
+      if (response.isError) {
+        const errorMessage = Array.isArray(response.content)
+          ? response.content[0]?.text || "Failed to list files"
+          : "Failed to list files";
+        throw new Error(errorMessage);
+      }
+
+      const result = response.structuredContent as {
+        files: Record<string, RemoteFileInfo>;
+        count: number;
+      };
+
+      remoteFiles = result.files;
+      console.log(`📋 Found ${result.count} remote files`);
+    } finally {
+      await client.close();
+    }
+
+    // Analyze changes
+    const toUpload: string[] = [];
+    const toUpdate: string[] = [];
+
+    // Check for new/modified files
+    for (const [remotePath, localInfo] of currentLocalFiles) {
+      const remoteInfo = remoteFiles[remotePath];
+
+      if (!remoteInfo) {
+        // File doesn't exist remotely
+        toUpload.push(remotePath);
+      } else {
+        // File exists remotely, check if content changed
+        const remoteHash = extractHashFromAddress(remoteInfo.address);
+        if (localInfo.hash !== remoteHash) {
+          toUpdate.push(remotePath);
+        }
+      }
+    }
+
+    console.log(
+      `📊 Changes detected: ${toUpload.length} new, ${toUpdate.length} modified`,
+    );
 
     if (dryRun) {
-      console.log("\n📝 Files that would be pushed:");
-      for (const file of filesToPush) {
-        console.log(`   ${file.remotePath} (${file.size} bytes)`);
+      if (toUpload.length > 0) {
+        console.log("\n📤 Files to upload:");
+        for (const path of toUpload) {
+          const info = currentLocalFiles.get(path)!;
+          console.log(`   + ${path} (${info.size} bytes)`);
+        }
+      }
+      if (toUpdate.length > 0) {
+        console.log("\n📝 Files to update:");
+        for (const path of toUpdate) {
+          const info = currentLocalFiles.get(path)!;
+          console.log(`   ~ ${path} (${info.size} bytes)`);
+        }
       }
       console.log(
-        `\n✅ Dry run completed. ${filesToPush.length} files would be pushed.`,
+        `\n✅ Dry run completed. ${toUpload.length + toUpdate.length} changes detected.`,
       );
       return;
     }
 
-    // Push each file
     let successCount = 0;
     let errorCount = 0;
+    const totalOperations = toUpload.length + toUpdate.length;
 
-    for (const file of filesToPush) {
+    if (totalOperations === 0) {
+      console.log("✅ No changes detected. Branch is up to date!");
+      return;
+    }
+
+    // Process uploads and updates
+    for (const remotePath of [...toUpload, ...toUpdate]) {
       try {
-        console.log(`📤 Pushing: ${file.remotePath}`);
+        const isUpdate = toUpdate.includes(remotePath);
+        const localInfo = currentLocalFiles.get(remotePath)!;
+        const localFilePath = join(localPath, remotePath.substring(1)); // Remove leading '/'
+
+        console.log(
+          `📤 ${isUpdate ? "Updating" : "Uploading"}: ${remotePath} (${localInfo.size} bytes)`,
+        );
 
         // Read file content
-        const content = readFileSync(file.localPath);
+        const content = readFileSync(localFilePath);
 
         // Push to remote branch
         await putFileContent(
-          file.remotePath,
+          remotePath,
           content,
           branchName,
           undefined, // no metadata for now
@@ -98,11 +225,13 @@ export async function pushCommand(options: PushOptions): Promise<void> {
           local,
         );
 
-        console.log(`   ✅ Pushed: ${file.remotePath} (${file.size} bytes)`);
+        console.log(
+          `   ✅ ${isUpdate ? "Updated" : "Uploaded"}: ${remotePath}`,
+        );
         successCount++;
       } catch (error) {
         console.error(
-          `   ❌ Failed to push ${file.remotePath}:`,
+          `   ❌ Failed to ${toUpdate.includes(remotePath) ? "update" : "upload"} ${remotePath}:`,
           error instanceof Error ? error.message : String(error),
         );
         errorCount++;
@@ -114,9 +243,10 @@ export async function pushCommand(options: PushOptions): Promise<void> {
       console.log(
         `\n⚠️  Push completed with errors: ${successCount} succeeded, ${errorCount} failed`,
       );
+      process.exit(1);
     } else {
       console.log(
-        `\n🎉 Push completed successfully! Pushed ${successCount} files to ${branchName}`,
+        `\n🎉 Push completed successfully! ${successCount} operations completed on ${branchName}`,
       );
     }
   } catch (error) {

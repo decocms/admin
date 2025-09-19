@@ -662,12 +662,37 @@ const deconfigClone = new Command("clone")
 
 // Push command for deconfig
 const deconfigPush = new Command("push")
-  .description("Push local files to a deconfig branch.")
+  .description(
+    "Push local files to a deconfig branch (rsync-like behavior with change detection)",
+  )
   .option("-b, --branch <branchName>", "Branch name to push to", "main")
   .requiredOption("--path <path>", "Local directory path to push files from")
   .option("--path-filter <filter>", "Filter files by path pattern")
   .option("--dry-run", "Show what would be pushed without making changes")
   .option("-w, --workspace <workspace>", "Workspace name")
+  .addHelpText(
+    "after",
+    `
+Examples:
+  $ deco deconfig push --path ./src --branch main
+  $ deco deconfig push --path ./docs --path-filter "/docs/" --dry-run
+  
+This command works like rsync:
+- Compares local file hashes with remote file hashes
+- Only uploads changed files (new or modified content)
+- Respects .deconfigignore files (gitignore-style patterns)
+- Built-in patterns: node_modules/, .git/, .DS_Store, *.tmp, *.temp, .env.local
+
+.deconfigignore syntax (like .gitignore):
+  *.log        # ignore all .log files
+  /temp        # ignore temp in project root only
+  build/       # ignore build directories
+  !important.txt # negate pattern (include file)
+
+Note: Deletion detection is not yet implemented - files deleted locally
+will remain on the remote branch until manually deleted with 'deco deconfig delete'.
+`,
+  )
   .action(async (options) => {
     try {
       const config = await getConfig({

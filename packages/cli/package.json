@@ -38,6 +38,7 @@
     "chalk": "^5.3.0",
     "commander": "^12.0.0",
     "glob": "^10.3.10",
+    "ignore": "^7.0.5",
     "inquirer": "^9.2.15",
     "inquirer-search-checkbox": "^1.0.0",
     "inquirer-search-list": "^1.2.6",

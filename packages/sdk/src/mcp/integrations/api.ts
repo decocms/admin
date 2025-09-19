@@ -53,7 +53,7 @@ import {
 import { listKnowledgeBases } from "../knowledge/api.ts";
 import { getRegistryApp, listRegistryApps } from "../registry/api.ts";
 import { createServerClient } from "../utils.ts";
-import { agents, integrations, projects } from "../schema.ts";
+import { agents, integrations } from "../schema.ts";
 import { and, eq } from "drizzle-orm";
 import { getProjectIdFromContext } from "../projects/util.ts";
 

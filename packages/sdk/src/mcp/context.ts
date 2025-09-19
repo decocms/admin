@@ -28,6 +28,11 @@ import { Blobs } from "./deconfig/blobs.ts";
 import { Branch } from "./deconfig/branch.ts";
 import { addGroup, type GroupIntegration } from "./groups.ts";
 import { generateUUIDv5, toAlphanumericId } from "./slugify.ts";
+import {
+  drizzle as drizzlePostgres,
+  PostgresJsDatabase,
+} from "drizzle-orm/postgres-js";
+import postgres from "postgres";
 
 export type UserPrincipal = Pick<SupaUser, "id" | "email" | "is_anonymous">;
 
@@ -196,6 +201,7 @@ export interface PrincipalExecutionContext {
 
 export interface Vars extends PrincipalExecutionContext {
   db: Client;
+  drizzle: PostgresJsDatabase;
   policy: PolicyClient;
   authorization: AuthorizationClient;
   cf: Cloudflare;
@@ -262,6 +268,7 @@ const envSchema = z.object({
   VITE_USE_LOCAL_BACKEND: z.any().optional().readonly(),
   SUPABASE_URL: z.string().readonly(),
   SUPABASE_SERVER_TOKEN: z.string().readonly(),
+  DATABASE_URL: z.string().readonly(),
   DECO_CHAT_API_JWT_PUBLIC_KEY: z.any().optional().readonly(),
   DECO_CHAT_API_JWT_PRIVATE_KEY: z.any().optional().readonly(),
   TURSO_GROUP_DATABASE_TOKEN: z.string().readonly(),
@@ -447,8 +454,11 @@ export const toBindingsContext = (bindings: Bindings): BindingsContext => {
   });
   const policy = PolicyClient.getInstance(db);
   const authorization = new AuthorizationClient(policy);
+  const sql = postgres(bindings.DATABASE_URL);
+  const drizzle = drizzlePostgres(sql);
 
   return {
+    drizzle,
     blobsDO: bindings.BLOBS,
     branchDO: bindings.BRANCH,
     envVars: bindings,

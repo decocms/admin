@@ -17,6 +17,9 @@ import {
   NotFoundError,
 } from "../index.ts";
 import { deleteTrigger, listTriggers } from "../triggers/api.ts";
+import { and, desc, eq, ilike, or } from "drizzle-orm";
+import { agents, organizations, projects } from "../schema.ts";
+
 const createTool = createToolGroup("Agent", {
   name: "Agent Management",
   description: "Manage your agents",
@@ -83,14 +86,43 @@ export const listAgents = createTool({
 
     await assertWorkspaceResourceAccess(c);
 
-    const { data, error } = await c.db
-      .from("deco_chat_agents")
-      .select("*")
-      .ilike("workspace", c.workspace.value);
-
-    if (error) {
-      throw new InternalServerError(error.message);
-    }
+    const data = await c.drizzle
+      .select({
+        id: agents.id,
+        name: agents.name,
+        avatar: agents.avatar,
+        instructions: agents.instructions,
+        description: agents.description,
+        tools_set: agents.tools_set,
+        max_steps: agents.max_steps,
+        max_tokens: agents.max_tokens,
+        model: agents.model,
+        memory: agents.memory,
+        views: agents.views,
+        visibility: agents.visibility,
+        access: agents.access,
+        temperature: agents.temperature,
+        workspace: agents.workspace,
+        created_at: agents.created_at,
+        access_id: agents.access_id,
+        project_id: projects.id,
+        org_id: organizations.id,
+      })
+      .from(agents)
+      .leftJoin(projects, eq(agents.project_id, projects.id))
+      .leftJoin(organizations, eq(projects.org_id, organizations.id))
+      .where(
+        or(
+          ilike(agents.workspace, c.workspace.value),
+          c.locator
+            ? and(
+                eq(projects.slug, c.locator.project),
+                eq(organizations.slug, c.locator.org),
+              )
+            : undefined,
+        ),
+      )
+      .orderBy(desc(agents.created_at));
 
     const roles =
       c.workspace.root === "users"

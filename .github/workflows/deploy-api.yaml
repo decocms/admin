@@ -65,6 +65,7 @@ jobs:
             DECO_CHAT_API_JWT_PRIVATE_KEY
             POSTHOG_API_KEY
             POSTHOG_API_HOST
+            DATABASE_URL
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_SERVER_TOKEN: ${{ secrets.SUPABASE_SERVER_TOKEN }}
@@ -98,3 +99,4 @@ jobs:
           LLMS_ENCRYPTION_KEY: ${{ secrets.LLMS_ENCRYPTION_KEY }}
           POSTHOG_API_KEY: ${{ secrets.POSTHOG_API_KEY }}
           POSTHOG_API_HOST: ${{ secrets.POSTHOG_API_HOST }}
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}

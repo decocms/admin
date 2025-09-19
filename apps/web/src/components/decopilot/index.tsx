@@ -5,8 +5,26 @@ import { MainChat } from "../agent/chat.tsx";
 import { AgentProvider } from "../agent/provider.tsx";
 import { useViewAdditionalTools } from "./use-view-additional-tools.ts";
 import { useAppAdditionalTools } from "./use-app-additional-tools.ts";
+import { useSearchParams } from "react-router";
 
 export const NO_DROP_TARGET = "no-drop-target";
+
+export const useDecopilotParams = () => {
+  const [searchParams, setSearchParams] = useSearchParams();
+
+  const clearAutoSendParams = () => {
+    const newParams = new URLSearchParams(searchParams);
+    newParams.delete("autoSend");
+    newParams.delete("initialInput");
+    setSearchParams(newParams, { replace: true });
+  };
+
+  return {
+    initialInput: searchParams.get("initialInput"),
+    autoSend: searchParams.get("autoSend") === "true",
+    clearAutoSendParams,
+  };
+};
 
 /**
  * Returns true if the decopilot tab is open, false otherwise.
@@ -38,6 +56,7 @@ export const toggleDecopilotTab = (api: DockviewApi) => {
 
 export function DecopilotChat() {
   const [threadId, _setThreadId] = useState(() => crypto.randomUUID());
+  const { initialInput, autoSend, clearAutoSendParams } = useDecopilotParams();
   const viewAdditionalTools = useViewAdditionalTools();
   const appAdditionalTools = useAppAdditionalTools();
 
@@ -59,6 +78,9 @@ export function DecopilotChat() {
           showAgentVisibility: false,
           showEditAgent: false,
         }}
+        initialInput={initialInput ?? undefined}
+        autoSend={autoSend}
+        onAutoSendComplete={clearAutoSendParams}
       >
         <div className="h-full">
           <MainChat />

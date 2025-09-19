@@ -68,6 +68,8 @@ interface AgentProviderProps {
   children: React.ReactNode;
   additionalTools?: Agent["tools_set"];
   toolsets?: Toolset[];
+  autoSend?: boolean;
+  onAutoSendComplete?: () => void;
 }
 
 interface AgentContextValue {
@@ -139,6 +141,8 @@ export function AgentProvider({
   children,
   additionalTools,
   toolsets,
+  autoSend,
+  onAutoSendComplete,
 }: PropsWithChildren<AgentProviderProps>) {
   const { data: serverAgent } = useAgentData(agentId);
   const isPublic = serverAgent.visibility === "PUBLIC";
@@ -401,6 +405,20 @@ export function AgentProvider({
     form.reset();
     blocked.proceed?.();
   }
+
+  // Auto-send initialInput when autoSend is true
+  useEffect(() => {
+    if (
+      autoSend &&
+      initialInput &&
+      chat.messages.length === 0 &&
+      !chat.isLoading
+    ) {
+      chat.handleSubmit(new Event("submit") as any);
+      setAutoScroll(scrollRef.current, true);
+      onAutoSendComplete?.();
+    }
+  }, []);
 
   const contextValue: AgentContextValue = {
     agent: agent as Agent,

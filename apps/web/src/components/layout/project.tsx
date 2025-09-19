@@ -28,6 +28,7 @@ import {
   DecopilotChat,
   DecopilotTabs,
   toggleDecopilotTab,
+  useDecopilotParams,
 } from "../decopilot/index.tsx";
 import Docked, { type Tab, useDock } from "../dock/index.tsx";
 import { ProfileModalProvider, useProfileModal } from "../profile-modal.tsx";
@@ -148,6 +149,7 @@ export function PageLayout({
 }: PageLayoutProps) {
   const { toggleSidebar, open } = useSidebar();
   const { preferences } = useUserPreferences();
+  const { initialInput, autoSend } = useDecopilotParams();
   const withDecopilot = useMemo(
     () => ({
       ...tabs,
@@ -160,7 +162,7 @@ export function PageLayout({
   );
 
   const onReady = (event: DockviewReadyEvent) => {
-    if (preferences.showDecopilot) {
+    if (preferences.showDecopilot || (autoSend && initialInput)) {
       toggleDecopilotTab(event.api);
     }
   };

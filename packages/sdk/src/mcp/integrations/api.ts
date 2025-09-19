@@ -54,7 +54,7 @@ import { listKnowledgeBases } from "../knowledge/api.ts";
 import { getRegistryApp, listRegistryApps } from "../registry/api.ts";
 import { createServerClient } from "../utils.ts";
 import { agents, integrations, projects, organizations } from "../schema.ts";
-import { and, eq } from "drizzle-orm";
+import { and, eq, or } from "drizzle-orm";
 import { getProjectIdFromContext } from "../projects/util.ts";
 
 const SELECT_INTEGRATION_QUERY = `
@@ -540,7 +540,15 @@ export const getIntegration = createIntegrationManagementTool({
             .where(
               and(
                 eq(integrations.id, uuid),
-                matchByWorkspaceOrProjectLocator(c.workspace.value, c.locator),
+                or(
+                  eq(integrations.workspace, c.workspace.value),
+                  c.locator
+                    ? and(
+                        eq(projects.slug, c.locator.project),
+                        eq(organizations.slug, c.locator.org),
+                      )
+                    : undefined,
+                ),
               ),
             )
             .limit(1)
@@ -665,7 +673,15 @@ export const createIntegration = createIntegrationManagementTool({
           .where(
             and(
               eq(integrations.id, payload.id),
-              matchByWorkspaceOrProjectLocator(c.workspace.value, c.locator),
+              or(
+                eq(integrations.workspace, c.workspace.value),
+                c.locator
+                  ? and(
+                      eq(projects.slug, c.locator.project),
+                      eq(organizations.slug, c.locator.org),
+                    )
+                  : undefined,
+              ),
             ),
           )
           .limit(1)

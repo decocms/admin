@@ -454,7 +454,9 @@ export const toBindingsContext = (bindings: Bindings): BindingsContext => {
   });
   const policy = PolicyClient.getInstance(db);
   const authorization = new AuthorizationClient(policy);
-  const sql = postgres(bindings.DATABASE_URL);
+  const sql = postgres(bindings.DATABASE_URL, {
+    max: 5,
+  });
   const drizzle = drizzlePostgres(sql);
 
   return {

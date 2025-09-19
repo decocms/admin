@@ -414,7 +414,7 @@ export function AgentProvider({
       chat.messages.length === 0 &&
       !chat.isLoading
     ) {
-      chat.handleSubmit(new Event("submit") as any);
+      chat.handleSubmit(new Event("submit"));
       setAutoScroll(scrollRef.current, true);
       onAutoSendComplete?.();
     }

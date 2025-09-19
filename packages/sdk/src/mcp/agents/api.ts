@@ -1,4 +1,3 @@
-import type { PostgrestError } from "@supabase/supabase-js";
 import { z } from "zod";
 import {
   AgentSchema,
@@ -11,14 +10,11 @@ import {
   type WithTool,
 } from "../assertions.ts";
 import { type AppContext, createToolGroup } from "../context.ts";
-import {
-  ForbiddenError,
-  InternalServerError,
-  NotFoundError,
-} from "../index.ts";
+import { ForbiddenError, NotFoundError } from "../index.ts";
 import { deleteTrigger, listTriggers } from "../triggers/api.ts";
-import { and, desc, eq, ilike, or } from "drizzle-orm";
+import { and, desc, eq, ilike, inArray, or } from "drizzle-orm";
 import { agents, organizations, projects } from "../schema.ts";
+import { LocatorStructured } from "../../locator.ts";
 
 const createTool = createToolGroup("Agent", {
   name: "Agent Management",
@@ -26,7 +22,6 @@ const createTool = createToolGroup("Agent", {
   icon: "https://assets.decocache.com/mcp/6f6bb7ac-e2bd-49fc-a67c-96d09ef84993/Agent-Management.png",
 });
 
-const NO_DATA_ERROR = "PGRST116";
 export const getAgentsByIds = async (ids: string[], c: AppContext) => {
   assertHasWorkspace(c);
 
@@ -39,15 +34,16 @@ export const getAgentsByIds = async (ids: string[], c: AppContext) => {
     "instructions" | "memory" | "views" | "visibility" | "access"
   >[] = [];
   if (dbIds.length > 0) {
-    const { data, error } = await c.db
-      .from("deco_chat_agents")
-      .select("id, name, description, tools_set, avatar")
-      .in("id", dbIds)
-      .eq("workspace", c.workspace.value);
-
-    if (error) {
-      throw error;
-    }
+    const data = await c.drizzle
+      .select({
+        id: agents.id,
+        name: agents.name,
+        description: agents.description,
+        tools_set: agents.tools_set,
+        avatar: agents.avatar,
+      })
+      .from(agents)
+      .where(inArray(agents.id, dbIds));
 
     dbAgents = data.map((item) =>
       AgentSchema.omit({
@@ -74,6 +70,48 @@ export const getAgentsByIds = async (ids: string[], c: AppContext) => {
 
 export const IMPORTANT_ROLES = ["owner", "admin"];
 
+/**
+ * Returns a Drizzle OR condition that filters agents by workspace or project locator.
+ * Used temporarily for the migration to the new schema. Soon will be removed in favor of
+ * always using the project locator.
+ */
+export const matchByWorkspaceOrProjectLocator = (
+  workspace: string,
+  locator?: LocatorStructured,
+) => {
+  return or(
+    ilike(agents.workspace, workspace),
+    locator
+      ? and(
+          eq(projects.slug, locator.project),
+          eq(organizations.slug, locator.org),
+        )
+      : undefined,
+  );
+};
+
+const AGENT_FIELDS_SELECT = {
+  id: agents.id,
+  name: agents.name,
+  avatar: agents.avatar,
+  instructions: agents.instructions,
+  description: agents.description,
+  tools_set: agents.tools_set,
+  max_steps: agents.max_steps,
+  max_tokens: agents.max_tokens,
+  model: agents.model,
+  memory: agents.memory,
+  views: agents.views,
+  visibility: agents.visibility,
+  access: agents.access,
+  temperature: agents.temperature,
+  workspace: agents.workspace,
+  created_at: agents.created_at,
+  access_id: agents.access_id,
+  project_id: projects.id,
+  org_id: organizations.id,
+};
+
 export const listAgents = createTool({
   name: "AGENTS_LIST",
   description: "List all agents",
@@ -87,41 +125,11 @@ export const listAgents = createTool({
     await assertWorkspaceResourceAccess(c);
 
     const data = await c.drizzle
-      .select({
-        id: agents.id,
-        name: agents.name,
-        avatar: agents.avatar,
-        instructions: agents.instructions,
-        description: agents.description,
-        tools_set: agents.tools_set,
-        max_steps: agents.max_steps,
-        max_tokens: agents.max_tokens,
-        model: agents.model,
-        memory: agents.memory,
-        views: agents.views,
-        visibility: agents.visibility,
-        access: agents.access,
-        temperature: agents.temperature,
-        workspace: agents.workspace,
-        created_at: agents.created_at,
-        access_id: agents.access_id,
-        project_id: projects.id,
-        org_id: organizations.id,
-      })
+      .select(AGENT_FIELDS_SELECT)
       .from(agents)
       .leftJoin(projects, eq(agents.project_id, projects.id))
       .leftJoin(organizations, eq(projects.org_id, organizations.id))
-      .where(
-        or(
-          ilike(agents.workspace, c.workspace.value),
-          c.locator
-            ? and(
-                eq(projects.slug, c.locator.project),
-                eq(organizations.slug, c.locator.org),
-              )
-            : undefined,
-        ),
-      )
+      .where(matchByWorkspaceOrProjectLocator(c.workspace.value, c.locator))
       .orderBy(desc(agents.created_at));
 
     const roles =
@@ -152,33 +160,35 @@ export const getAgent = createTool({
   handler: async ({ id }, c) => {
     assertHasWorkspace(c);
 
-    const [canAccess, { data, error }] = await Promise.all([
+    const [canAccess, data] = await Promise.all([
       assertWorkspaceResourceAccess(c)
         .then(() => true)
         .catch(() => false),
       id in WELL_KNOWN_AGENTS
-        ? Promise.resolve({
-            data: WELL_KNOWN_AGENTS[id as keyof typeof WELL_KNOWN_AGENTS],
-            error: null,
-          })
-        : c.db
-            .from("deco_chat_agents")
-            .select("*")
-            .eq("workspace", c.workspace.value)
-            .eq("id", id)
-            .single(),
+        ? Promise.resolve(
+            WELL_KNOWN_AGENTS[id as keyof typeof WELL_KNOWN_AGENTS],
+          )
+        : c.drizzle
+            .select(AGENT_FIELDS_SELECT)
+            .from(agents)
+            .leftJoin(projects, eq(agents.project_id, projects.id))
+            .leftJoin(organizations, eq(projects.org_id, organizations.id))
+            .where(
+              and(
+                matchByWorkspaceOrProjectLocator(c.workspace.value, c.locator),
+                eq(agents.id, id),
+              ),
+            )
+            .limit(1)
+            .then((r) => r[0]),
     ]);
 
-    if ((error && error.code == NO_DATA_ERROR) || !data) {
+    if (!data) {
       throw new NotFoundError(id);
     }
 
     if (data.visibility !== "PUBLIC" && !canAccess) {
       throw new ForbiddenError(`You are not allowed to access this agent`);
-    }
-
-    if (error) {
-      throw new InternalServerError((error as PostgrestError).message);
     }
 
     c.resourceAccess.grant();
@@ -196,22 +206,14 @@ export const createAgent = createTool({
 
     await assertWorkspaceResourceAccess(c);
 
-    const [{ data, error }] = await Promise.all([
-      c.db
-        .from("deco_chat_agents")
-        // @ts-ignore - @Camudo push your code
-        .insert({
-          ...NEW_AGENT_TEMPLATE,
-          ...agent,
-          workspace: c.workspace.value,
-        })
-        .select()
-        .single(),
-    ]);
-
-    if (error) {
-      throw new InternalServerError(error.message);
-    }
+    const data = await c.drizzle
+      .insert(agents)
+      .values({
+        ...NEW_AGENT_TEMPLATE,
+        ...agent,
+        workspace: c.workspace.value,
+      })
+      .returning(AGENT_FIELDS_SELECT);
 
     return AgentSchema.parse(data);
   },
@@ -236,16 +238,19 @@ export const updateAgent = createAgentSetupTool({
 
     await assertWorkspaceResourceAccess(c);
 
-    const { data, error } = await c.db
-      .from("deco_chat_agents")
-      .update({ ...agent, id, workspace: c.workspace.value })
-      .eq("id", id)
-      .select()
-      .single();
+    const updateData = {
+      ...agent,
+      // enforce workspace and remove
+      // project_id from the update data
+      workspace: c.workspace.value,
+      project_id: undefined,
+    };
 
-    if (error) {
-      throw new InternalServerError(error.message);
-    }
+    const [data] = await c.drizzle
+      .update(agents)
+      .set(updateData)
+      .where(eq(agents.id, id))
+      .returning(AGENT_FIELDS_SELECT);
 
     if (!data) {
       throw new NotFoundError("Agent not found");
@@ -264,11 +269,14 @@ export const deleteAgent = createTool({
 
     await assertWorkspaceResourceAccess(c);
 
-    const { error } = await c.db
-      .from("deco_chat_agents")
-      .delete()
-      .eq("id", id)
-      .eq("workspace", c.workspace.value);
+    await c.drizzle
+      .delete(agents)
+      .where(
+        and(
+          eq(agents.id, id),
+          matchByWorkspaceOrProjectLocator(c.workspace.value, c.locator),
+        ),
+      );
 
     const triggers = await listTriggers.handler({ agentId: id });
 
@@ -277,10 +285,6 @@ export const deleteAgent = createTool({
     }
 
     // TODO: implement an way to remove knowledge base and it's files from asset and kb
-
-    if (error) {
-      throw new InternalServerError(error.message);
-    }
 
     return { deleted: true };
   },

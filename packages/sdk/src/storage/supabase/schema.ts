@@ -368,6 +368,7 @@ export type Database = {
           memory: Json | null;
           model: string;
           name: string;
+          project_id: string | null;
           temperature: number | null;
           tools_set: Json;
           views: Json;
@@ -387,6 +388,7 @@ export type Database = {
           memory?: Json | null;
           model: string;
           name: string;
+          project_id?: string | null;
           temperature?: number | null;
           tools_set: Json;
           views: Json;
@@ -406,6 +408,7 @@ export type Database = {
           memory?: Json | null;
           model?: string;
           name?: string;
+          project_id?: string | null;
           temperature?: number | null;
           tools_set?: Json;
           views?: Json;
@@ -420,6 +423,13 @@ export type Database = {
             referencedRelation: "deco_chat_access";
             referencedColumns: ["id"];
           },
+          {
+            foreignKeyName: "fk_deco_chat_agents_project_id";
+            columns: ["project_id"];
+            isOneToOne: false;
+            referencedRelation: "deco_chat_projects";
+            referencedColumns: ["id"];
+          },
         ];
       };
       deco_chat_api_keys: {
@@ -430,6 +440,7 @@ export type Database = {
           id: string;
           name: string;
           policies: Json | null;
+          project_id: string | null;
           updated_at: string;
           workspace: string;
         };
@@ -440,6 +451,7 @@ export type Database = {
           id?: string;
           name: string;
           policies?: Json | null;
+          project_id?: string | null;
           updated_at?: string;
           workspace: string;
         };
@@ -450,10 +462,19 @@ export type Database = {
           id?: string;
           name?: string;
           policies?: Json | null;
+          project_id?: string | null;
           updated_at?: string;
           workspace?: string;
         };
-        Relationships: [];
+        Relationships: [
+          {
+            foreignKeyName: "fk_deco_chat_api_keys_project_id";
+            columns: ["project_id"];
+            isOneToOne: false;
+            referencedRelation: "deco_chat_projects";
+            referencedColumns: ["id"];
+          },
+        ];
       };
       deco_chat_apps_registry: {
         Row: {
@@ -465,6 +486,7 @@ export type Database = {
           id: string;
           metadata: Json | null;
           name: string;
+          project_id: string | null;
           scope_id: string;
           unlisted: boolean;
           updated_at: string;
@@ -480,6 +502,7 @@ export type Database = {
           id?: string;
           metadata?: Json | null;
           name: string;
+          project_id?: string | null;
           scope_id: string;
           unlisted?: boolean;
           updated_at?: string;
@@ -495,6 +518,7 @@ export type Database = {
           id?: string;
           metadata?: Json | null;
           name?: string;
+          project_id?: string | null;
           scope_id?: string;
           unlisted?: boolean;
           updated_at?: string;
@@ -507,6 +531,13 @@ export type Database = {
             columns: ["scope_id"];
             isOneToOne: false;
             referencedRelation: "deco_chat_registry_scopes";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "fk_deco_chat_apps_registry_project_id";
+            columns: ["project_id"];
+            isOneToOne: false;
+            referencedRelation: "deco_chat_projects";
             referencedColumns: ["id"];
           },
         ];
@@ -564,6 +595,7 @@ export type Database = {
           index_name: string | null;
           metadata: Json | null;
           path: string | null;
+          project_id: string | null;
           status: string | null;
           workspace: string;
         };
@@ -575,6 +607,7 @@ export type Database = {
           index_name?: string | null;
           metadata?: Json | null;
           path?: string | null;
+          project_id?: string | null;
           status?: string | null;
           workspace: string;
         };
@@ -586,10 +619,19 @@ export type Database = {
           index_name?: string | null;
           metadata?: Json | null;
           path?: string | null;
+          project_id?: string | null;
           status?: string | null;
           workspace?: string;
         };
-        Relationships: [];
+        Relationships: [
+          {
+            foreignKeyName: "fk_deco_chat_assets_project_id";
+            columns: ["project_id"];
+            isOneToOne: false;
+            referencedRelation: "deco_chat_projects";
+            referencedColumns: ["id"];
+          },
+        ];
       };
       deco_chat_channel_agents: {
         Row: {
@@ -630,6 +672,7 @@ export type Database = {
           id: string;
           integration_id: string;
           name: string | null;
+          project_id: string | null;
           updated_at: string;
           workspace: string;
         };
@@ -641,6 +684,7 @@ export type Database = {
           id?: string;
           integration_id: string;
           name?: string | null;
+          project_id?: string | null;
           updated_at?: string;
           workspace: string;
         };
@@ -652,6 +696,7 @@ export type Database = {
           id?: string;
           integration_id?: string;
           name?: string | null;
+          project_id?: string | null;
           updated_at?: string;
           workspace?: string;
         };
@@ -663,25 +708,43 @@ export type Database = {
             referencedRelation: "deco_chat_integrations";
             referencedColumns: ["id"];
           },
+          {
+            foreignKeyName: "fk_deco_chat_channels_project_id";
+            columns: ["project_id"];
+            isOneToOne: false;
+            referencedRelation: "deco_chat_projects";
+            referencedColumns: ["id"];
+          },
         ];
       };
       deco_chat_customer: {
         Row: {
           created_at: string;
           customer_id: string;
+          org_id: number | null;
           workspace: string;
         };
         Insert: {
           created_at?: string;
           customer_id: string;
+          org_id?: number | null;
           workspace: string;
         };
         Update: {
           created_at?: string;
           customer_id?: string;
+          org_id?: number | null;
           workspace?: string;
         };
-        Relationships: [];
+        Relationships: [
+          {
+            foreignKeyName: "deco_chat_customer_org_id_fkey";
+            columns: ["org_id"];
+            isOneToOne: false;
+            referencedRelation: "teams";
+            referencedColumns: ["id"];
+          },
+        ];
       };
       deco_chat_hosting_apps: {
         Row: {
@@ -692,6 +755,7 @@ export type Database = {
           files: Json | null;
           id: string;
           metadata: Json | null;
+          project_id: string | null;
           slug: string;
           updated_at: string;
           workspace: string;
@@ -704,6 +768,7 @@ export type Database = {
           files?: Json | null;
           id?: string;
           metadata?: Json | null;
+          project_id?: string | null;
           slug: string;
           updated_at?: string;
           workspace: string;
@@ -716,11 +781,20 @@ export type Database = {
           files?: Json | null;
           id?: string;
           metadata?: Json | null;
+          project_id?: string | null;
           slug?: string;
           updated_at?: string;
           workspace?: string;
         };
-        Relationships: [];
+        Relationships: [
+          {
+            foreignKeyName: "fk_deco_chat_hosting_apps_project_id";
+            columns: ["project_id"];
+            isOneToOne: false;
+            referencedRelation: "deco_chat_projects";
+            referencedColumns: ["id"];
+          },
+        ];
       };
       deco_chat_hosting_apps_deployments: {
         Row: {
@@ -812,6 +886,7 @@ export type Database = {
           icon: string | null;
           id: string;
           name: string;
+          project_id: string | null;
           workspace: string;
         };
         Insert: {
@@ -824,6 +899,7 @@ export type Database = {
           icon?: string | null;
           id?: string;
           name: string;
+          project_id?: string | null;
           workspace: string;
         };
         Update: {
@@ -836,6 +912,7 @@ export type Database = {
           icon?: string | null;
           id?: string;
           name?: string;
+          project_id?: string | null;
           workspace?: string;
         };
         Relationships: [
@@ -853,6 +930,13 @@ export type Database = {
             referencedRelation: "deco_chat_apps_registry";
             referencedColumns: ["id"];
           },
+          {
+            foreignKeyName: "fk_deco_chat_integrations_project_id";
+            columns: ["project_id"];
+            isOneToOne: false;
+            referencedRelation: "deco_chat_projects";
+            referencedColumns: ["id"];
+          },
         ];
       };
       deco_chat_oauth_codes: {
@@ -860,21 +944,32 @@ export type Database = {
           claims: Json;
           code: string;
           created_at: string;
+          project_id: string | null;
           workspace: string;
         };
         Insert: {
           claims: Json;
           code: string;
           created_at?: string;
+          project_id?: string | null;
           workspace: string;
         };
         Update: {
           claims?: Json;
           code?: string;
           created_at?: string;
+          project_id?: string | null;
           workspace?: string;
         };
-        Relationships: [];
+        Relationships: [
+          {
+            foreignKeyName: "fk_deco_chat_oauth_codes_project_id";
+            columns: ["project_id"];
+            isOneToOne: false;
+            referencedRelation: "deco_chat_projects";
+            referencedColumns: ["id"];
+          },
+        ];
       };
       deco_chat_plans: {
         Row: {
@@ -951,6 +1046,7 @@ export type Database = {
           description: string | null;
           id: string;
           name: string;
+          project_id: string | null;
           updated_at: string | null;
           workspace: string;
         };
@@ -960,6 +1056,7 @@ export type Database = {
           description?: string | null;
           id?: string;
           name: string;
+          project_id?: string | null;
           updated_at?: string | null;
           workspace: string;
         };
@@ -969,10 +1066,19 @@ export type Database = {
           description?: string | null;
           id?: string;
           name?: string;
+          project_id?: string | null;
           updated_at?: string | null;
           workspace?: string;
         };
-        Relationships: [];
+        Relationships: [
+          {
+            foreignKeyName: "fk_deco_chat_prompts_project_id";
+            columns: ["project_id"];
+            isOneToOne: false;
+            referencedRelation: "deco_chat_projects";
+            referencedColumns: ["id"];
+          },
+        ];
       };
       deco_chat_prompts_versions: {
         Row: {
@@ -1008,6 +1114,7 @@ export type Database = {
         Row: {
           created_at: string;
           id: string;
+          project_id: string | null;
           scope_name: string;
           updated_at: string;
           workspace: string;
@@ -1015,6 +1122,7 @@ export type Database = {
         Insert: {
           created_at?: string;
           id?: string;
+          project_id?: string | null;
           scope_name: string;
           updated_at?: string;
           workspace: string;
@@ -1022,11 +1130,20 @@ export type Database = {
         Update: {
           created_at?: string;
           id?: string;
+          project_id?: string | null;
           scope_name?: string;
           updated_at?: string;
           workspace?: string;
         };
-        Relationships: [];
+        Relationships: [
+          {
+            foreignKeyName: "fk_deco_chat_registry_scopes_project_id";
+            columns: ["project_id"];
+            isOneToOne: false;
+            referencedRelation: "deco_chat_projects";
+            referencedColumns: ["id"];
+          },
+        ];
       };
       deco_chat_trigger_runs: {
         Row: {
@@ -1072,6 +1189,7 @@ export type Database = {
           created_at: string;
           id: string;
           metadata: Json;
+          project_id: string | null;
           updated_at: string;
           user_id: string | null;
           workspace: string;
@@ -1084,6 +1202,7 @@ export type Database = {
           created_at?: string;
           id?: string;
           metadata: Json;
+          project_id?: string | null;
           updated_at?: string;
           user_id?: string | null;
           workspace: string;
@@ -1096,6 +1215,7 @@ export type Database = {
           created_at?: string;
           id?: string;
           metadata?: Json;
+          project_id?: string | null;
           updated_at?: string;
           user_id?: string | null;
           workspace?: string;
@@ -1121,6 +1241,13 @@ export type Database = {
             isOneToOne: false;
             referencedRelation: "profiles";
             referencedColumns: ["user_id"];
+          },
+          {
+            foreignKeyName: "fk_deco_chat_triggers_project_id";
+            columns: ["project_id"];
+            isOneToOne: false;
+            referencedRelation: "deco_chat_projects";
+            referencedColumns: ["id"];
           },
         ];
       };
@@ -2156,6 +2283,7 @@ export type Database = {
           is_enabled: boolean;
           model: string;
           name: string;
+          project_id: string | null;
           updated_at: string;
           workspace: string;
         };
@@ -2168,6 +2296,7 @@ export type Database = {
           is_enabled?: boolean;
           model: string;
           name: string;
+          project_id?: string | null;
           updated_at?: string;
           workspace: string;
         };
@@ -2180,10 +2309,19 @@ export type Database = {
           is_enabled?: boolean;
           model?: string;
           name?: string;
+          project_id?: string | null;
           updated_at?: string;
           workspace?: string;
         };
-        Relationships: [];
+        Relationships: [
+          {
+            foreignKeyName: "fk_models_project_id";
+            columns: ["project_id"];
+            isOneToOne: false;
+            referencedRelation: "deco_chat_projects";
+            referencedColumns: ["id"];
+          },
+        ];
       };
       pages: {
         Row: {

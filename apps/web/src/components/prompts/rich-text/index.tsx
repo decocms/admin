@@ -96,7 +96,9 @@ export default function RichTextArea({
     [prompts],
   );
 
-  // // sync external value changes to the editor
+  // This sync is breaking, so we're disabling it for now
+  // More info at https://github.com/deco-cx/chat/pull/1291
+  // TODO: Fix this
   // useEffect(() => {
   //   if (!editor) return;
 

@@ -2,6 +2,7 @@ import { MCPClient } from "../fetcher.ts";
 import { type Agent, AgentSchema } from "../models/agent.ts";
 import { stub } from "../stub.ts";
 import { ProjectLocator } from "../locator.ts";
+import { DEFAULT_MODEL } from "../constants.ts";
 
 // TODO(camudo): fix this, this will only work on personal migrated
 // projects when the user talking to the agent are the owner of the projects.
@@ -39,12 +40,20 @@ export const createAgent = (
  * @param signal - The signal to abort the request
  * @returns The agent
  */
-export const loadAgent = (
+export const loadAgent = async (
   locator: ProjectLocator,
   agentId: string,
   signal?: AbortSignal,
-): Promise<Agent> =>
-  MCPClient.forLocator(locator).AGENTS_GET({ id: agentId }, { signal });
+): Promise<Agent> => {
+  const result = await MCPClient.forLocator(locator).AGENTS_GET(
+    { id: agentId },
+    { signal },
+  );
+  return {
+    ...result,
+    model: result.model ?? DEFAULT_MODEL.id,
+  };
+};
 
 export const listAgents = (
   locator: ProjectLocator,

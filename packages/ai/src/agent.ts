@@ -812,10 +812,16 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
         throw new Error("Failed to update agent");
       }
 
-      await this._initAgent(dbConfig);
-      this._configuration = dbConfig;
+      // Ensure model is always defined
+      const configWithModel: Configuration = {
+        ...dbConfig,
+        model: dbConfig.model ?? DEFAULT_MODEL.id,
+      };
 
-      return dbConfig;
+      await this._initAgent(configWithModel);
+      this._configuration = configWithModel;
+
+      return configWithModel;
     } catch (error) {
       console.error("Error configuring agent", error);
       this._trackEvent("agent_configure_error", {
@@ -999,10 +1005,11 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
       tools_set: {},
       avatar: pickCapybaraAvatar(),
       id: crypto.randomUUID(),
-      model: DEFAULT_MODEL.id,
       views: [],
       visibility: "WORKSPACE",
       ...manifest,
+      // Ensure model is always defined
+      model: manifest?.model ?? DEFAULT_MODEL.id,
     };
 
     this._configuration = merged;

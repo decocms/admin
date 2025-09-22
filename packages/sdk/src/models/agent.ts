@@ -17,15 +17,29 @@ const wellKnownModelIds = [
  * Schema for agent model validation
  * Accepts either well-known model IDs or UUIDs for BYOK models
  */
-export const ModelSchema = z.union([
-  // Well-known model IDs
-  z.enum(wellKnownModelIds as [string, ...string[]]),
-  // UUID format for BYOK models
-  z
-    .string()
-    .uuid()
-    .describe("UUID for BYOK models"),
-]);
+export const ModelSchema = z
+  .string()
+  .refine(
+    (val) => {
+      // Check if it's a well-known model ID
+      if (wellKnownModelIds.includes(val)) {
+        return true;
+      }
+      // Check if it's a valid UUID
+      if (
+        val.match(
+          /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i,
+        )
+      ) {
+        return true;
+      }
+      return false;
+    },
+    {
+      message: "Model must be a well-known model ID or valid UUID",
+    },
+  )
+  .default(DEFAULT_MODEL.id);
 
 /**
  * Zod schema for an AI Agent
@@ -67,7 +81,7 @@ export const AgentSchema = z.object({
     .optional()
     .describe("Maximum number of tokens the agent can use, defaults to 8192"),
   /** Model to use for the agent */
-  model: ModelSchema.default(DEFAULT_MODEL.id).describe(
+  model: ModelSchema.describe(
     "Model to use for the agent - either a well-known model ID or UUID for BYOK models",
   ),
   /** Memory to use for the agent */

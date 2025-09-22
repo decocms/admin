@@ -8,6 +8,7 @@ import {
   useSuspenseQuery,
 } from "@tanstack/react-query";
 import { useMemo } from "react";
+import { DEFAULT_MODEL } from "../constants.ts";
 import {
   createAgent,
   deleteAgent,
@@ -27,16 +28,22 @@ export const useCreateAgent = () => {
   const create = useMutation({
     mutationFn: (agent: Partial<Agent>) => createAgent(locator, agent),
     onSuccess: (result) => {
+      // Ensure model is always defined
+      const agentWithModel: Agent = {
+        ...result,
+        model: result.model ?? DEFAULT_MODEL.id,
+      };
+
       // update item
-      const itemKey = KEYS.AGENT(locator, result.id);
+      const itemKey = KEYS.AGENT(locator, agentWithModel.id);
       client.cancelQueries({ queryKey: itemKey });
-      client.setQueryData<Agent>(itemKey, result);
+      client.setQueryData<Agent>(itemKey, agentWithModel);
 
       // update list
       const listKey = KEYS.AGENT(locator);
       client.cancelQueries({ queryKey: listKey });
       client.setQueryData<Agent[]>(listKey, (old) =>
-        !old ? [result] : [result, ...old],
+        !old ? [agentWithModel] : [agentWithModel, ...old],
       );
     },
   });

@@ -4,6 +4,7 @@ import {
   type Agent,
   AgentSchema,
   DECO_CMS_API_URL,
+  DEFAULT_MODEL,
   dispatchMessages,
   getTraceDebugId,
   type Integration,
@@ -222,7 +223,11 @@ export function AgentProvider({
     try {
       if (isWellKnownAgent) {
         const id = crypto.randomUUID();
-        const newAgent = { ...agent, id };
+        const newAgent = {
+          ...agent,
+          id,
+          model: agent.model ?? DEFAULT_MODEL.id,
+        };
         await createAgent(newAgent, {
           eventName: "agent_create_from_well_known",
         });

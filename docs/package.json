@@ -8,7 +8,7 @@
     "view"
   ],
   "scripts": {
-    "dev": "concurrently \"cd view && npm run dev\" \"cd server && npm run dev\"",
+    "dev": "bun run --filter server --filter view dev",
     "configure": "cd server && deco configure",
     "gen": "cd server && deco gen --output=deco.gen.ts",
     "deploy": "cd view && npm run build && cd ../server && npm run deploy",
@@ -16,7 +16,6 @@
     "db:generate": "cd server && npm run db:generate"
   },
   "devDependencies": {
-    "concurrently": "^9.2.0",
     "typescript": "^5.7.2"
   },
   "engines": {

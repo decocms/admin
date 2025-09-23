@@ -430,23 +430,50 @@ export const listIntegrations = createIntegrationManagementTool({
           ),
         )
         .then((rows) => {
-          return rows.map((row) => {
-            return {
-              ...row,
-              created_at:
-                row.created_at?.toISOString() || new Date().toISOString(),
-              deco_chat_apps_registry: row.registry_app_name
-                ? {
-                    name: row.registry_app_name,
-                    deco_chat_registry_scopes: {
-                      scope_name: row.registry_scope_name || "",
-                    },
-                    deco_chat_apps_registry_tools: [],
-                  }
-                : null,
-              connection: row.connection as Json,
-            };
-          });
+          const byIntegration = new Map<
+            string,
+            QueryResult<
+              "deco_chat_integrations",
+              typeof SELECT_INTEGRATION_QUERY
+            >
+          >();
+          for (const row of rows) {
+            const tool = row.tool_id
+              ? {
+                  name: row.tool_name!,
+                  description: row.tool_description,
+                  input_schema: row.tool_input_schema,
+                  output_schema: row.tool_output_schema,
+                }
+              : null;
+            const existing = byIntegration.get(row.id);
+            if (!existing) {
+              byIntegration.set(row.id, {
+                ...row,
+                created_at:
+                  row.created_at?.toISOString() || new Date().toISOString(),
+                deco_chat_apps_registry: row.registry_app_name
+                  ? {
+                      name: row.registry_app_name,
+                      deco_chat_registry_scopes: row.registry_scope_name
+                        ? { scope_name: row.registry_scope_name }
+                        : null,
+                      deco_chat_apps_registry_tools: tool ? [tool] : [],
+                    }
+                  : null,
+                connection: row.connection as Json,
+              } as unknown as QueryResult<
+                "deco_chat_integrations",
+                typeof SELECT_INTEGRATION_QUERY
+              >);
+            } else if (tool && existing.deco_chat_apps_registry) {
+              (
+                existing.deco_chat_apps_registry
+                  .deco_chat_apps_registry_tools as unknown[]
+              ).push(tool);
+            }
+          }
+          return Array.from(byIntegration.values());
         }),
       // Query agents
       c.drizzle

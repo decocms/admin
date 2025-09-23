@@ -430,21 +430,23 @@ export const listIntegrations = createIntegrationManagementTool({
           ),
         )
         .then((rows) => {
-
           return rows.map((row) => {
             return {
               ...row,
-              created_at: row.created_at?.toISOString() || new Date().toISOString(),
-              deco_chat_apps_registry: row.registry_app_name ? {
-                name: row.registry_app_name,
-                deco_chat_registry_scopes: {
-                  scope_name: row.registry_scope_name || "",
-                },
-                deco_chat_apps_registry_tools: [],
-              } : null,
+              created_at:
+                row.created_at?.toISOString() || new Date().toISOString(),
+              deco_chat_apps_registry: row.registry_app_name
+                ? {
+                    name: row.registry_app_name,
+                    deco_chat_registry_scopes: {
+                      scope_name: row.registry_scope_name || "",
+                    },
+                    deco_chat_apps_registry_tools: [],
+                  }
+                : null,
               connection: row.connection as Json,
             };
-          }); 
+          });
         }),
       // Query agents
       c.drizzle
@@ -897,9 +899,8 @@ export const updateIntegration = createIntegrationManagementTool({
           and(
             eq(integrations.id, uuid),
             eq(integrations.project_id, c.locator.project),
-          )
-        )
-        
+          ),
+        ),
       )
       .returning();
 

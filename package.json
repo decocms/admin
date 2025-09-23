@@ -57,6 +57,7 @@
   "devDependencies": {
     "@biomejs/biome": "2.1.2",
     "supabase": "^2.22.12",
+    "concurrently": "^9.2.0",
     "typescript": "^5.8.3",
     "@types/node": "^22.10.6",
     "vitest": "3.2.4"

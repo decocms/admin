@@ -353,9 +353,7 @@ export const withRuntime = <TEnv, TSchema extends z.ZodTypeAny = never>(
       ctx: ExecutionContext,
     ) => {
       const referer = req.headers.get("referer");
-      const isFetchRequest =
-        req.headers.has(DECO_MCP_CLIENT_HEADER) ||
-        req.headers.get("sec-fetch-mode") === "cors";
+      const isFetchRequest = req.headers.has(DECO_MCP_CLIENT_HEADER);
 
       try {
         const bindings = withBindings({

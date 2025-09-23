@@ -880,6 +880,10 @@ export const updateIntegration = createIntegrationManagementTool({
 
     const { name, description, icon, connection, access, appId } = integration;
 
+    // For UPDATE queries with joins, we need to use a different approach
+    // First, let's get the project ID if we have a locator
+    const projectId = c.locator ? await getProjectIdFromContext(c) : null;
+
     const [data] = await c.drizzle
       .update(integrations)
       .set({
@@ -889,16 +893,14 @@ export const updateIntegration = createIntegrationManagementTool({
         connection,
         access,
         app_id: appId,
+        id: uuid,
       })
       .where(
-        or(
-          and(
-            eq(integrations.id, uuid),
+        and(
+          eq(integrations.id, uuid),
+          or(
             eq(integrations.workspace, c.workspace.value),
-          ),
-          and(
-            eq(integrations.id, uuid),
-            eq(integrations.project_id, c.locator.project),
+            projectId ? eq(integrations.project_id, projectId) : undefined,
           ),
         ),
       )
@@ -931,12 +933,19 @@ export const deleteIntegration = createIntegrationManagementTool({
       throw new UserInputError("Cannot delete an agent integration");
     }
 
+    // For UPDATE queries with joins, we need to use a different approach
+    // First, let's get the project ID if we have a locator
+    const projectId = c.locator ? await getProjectIdFromContext(c) : null;
+
     await c.drizzle
       .delete(integrations)
       .where(
         and(
           eq(integrations.id, uuid),
-          eq(integrations.workspace, c.workspace.value),
+          or(
+            eq(integrations.workspace, c.workspace.value),
+            projectId ? eq(integrations.project_id, projectId) : undefined,
+          ),
         ),
       );
 

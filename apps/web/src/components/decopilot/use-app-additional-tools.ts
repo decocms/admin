@@ -9,11 +9,15 @@ export function useAppAdditionalTools() {
   const data = useGroupedApp({ appKey });
 
   // TODO: change for the selected one
-  const instance = data.instances?.[0];
+  const instance = data.instances?.[0] as
+    | (typeof data.instances)[number]
+    | undefined;
+
+  if (!instance) return {};
 
   return {
     [instance.id]:
-      (instance as unknown as { tools?: { name: string }[] }).tools?.map(
+      (instance as unknown as { tools?: { name: string }[] })?.tools?.map(
         (tool) => tool.name,
       ) ?? [],
   };

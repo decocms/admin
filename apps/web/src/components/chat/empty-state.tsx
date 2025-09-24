@@ -20,7 +20,7 @@ export function EmptyState() {
           <div className="text-sm font-normal text-muted-foreground max-w-[510px] text-center">
             Use this chat to ask questions, generate content, execute tasks or
             <br />
-            <span className="italic font-crimson-pro text-base">
+            <span className="italic font-mono text-base">
               build personalized agents.
             </span>
           </div>

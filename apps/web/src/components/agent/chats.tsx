@@ -1,6 +1,10 @@
 import { type ProjectLocator, SDKProvider, UnauthorizedError } from "@deco/sdk";
 import { ScrollArea } from "@deco/ui/components/scroll-area.tsx";
-import { SidebarInset, SidebarProvider } from "@deco/ui/components/sidebar.tsx";
+import {
+  SidebarInset,
+  SidebarLayout,
+  SidebarProvider,
+} from "@deco/ui/components/sidebar.tsx";
 import { Spinner } from "@deco/ui/components/spinner.tsx";
 import { Suspense, useMemo } from "react";
 import { useSearchParams } from "react-router";
@@ -124,21 +128,23 @@ function Page() {
               showContextResources: false,
             }}
           >
-            <SidebarProvider
-              style={
-                {
-                  "--sidebar-width": "16rem",
-                  "--sidebar-width-mobile": "14rem",
-                } as Record<string, string>
-              }
-            >
-              <SidebarInset>
-                <PageLayout
-                  tabs={TABS}
-                  breadcrumb={<ChatHeader />}
-                  hideViewsButton
-                />
-              </SidebarInset>
+            <SidebarProvider>
+              <SidebarLayout
+                style={
+                  {
+                    "--sidebar-width": "13rem",
+                    "--sidebar-width-mobile": "11rem",
+                  } as Record<string, string>
+                }
+              >
+                <SidebarInset>
+                  <PageLayout
+                    tabs={TABS}
+                    breadcrumb={<ChatHeader />}
+                    hideViewsButton
+                  />
+                </SidebarInset>
+              </SidebarLayout>
             </SidebarProvider>
           </AgentProvider>
         </SDKProvider>

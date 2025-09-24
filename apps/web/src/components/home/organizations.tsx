@@ -248,7 +248,7 @@ function MyOrganizations() {
 
 export function OrgList() {
   return (
-    <TopbarLayout breadcrumb={[{ label: "Organizations", link: "/" }]}>
+    <TopbarLayout breadcrumb={[]}>
       <MyOrganizations />
     </TopbarLayout>
   );

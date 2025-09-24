@@ -3,7 +3,7 @@ import { z } from "zod";
 export const DEFAULT_VIEWS: View[] = [
   {
     id: "connections",
-    title: "My Apps",
+    title: "Apps",
     icon: "linked_services",
     type: "default",
     metadata: {

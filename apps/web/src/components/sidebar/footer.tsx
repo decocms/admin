@@ -130,26 +130,29 @@ function UserPreferencesModal({
             onSubmit={handleSubmit(onSubmit)}
             className="flex flex-col gap-6 py-2"
           >
-            <FormField
-              name="defaultModel"
-              render={({ field }) => (
-                <FormItem className="flex flex-col justify-center items-start gap-2">
-                  <div className="flex items-center gap-2">
-                    <FormLabel>Default Model</FormLabel>
-                    <FormControl>
-                      <ModelSelector
-                        model={field.value}
-                        onModelChange={field.onChange}
-                      />
-                    </FormControl>
-                  </div>
-                  <FormDescription>
-                    Choose the default AI model for new chats.
-                  </FormDescription>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+            {/* Outside of project context, this throws because ModelSelector depends on the SDK context. */}
+            <ErrorBoundary fallback={null}>
+              <FormField
+                name="defaultModel"
+                render={({ field }) => (
+                  <FormItem className="flex flex-col justify-center items-start gap-2">
+                    <div className="flex items-center gap-2">
+                      <FormLabel>Default Model</FormLabel>
+                      <FormControl>
+                        <ModelSelector
+                          model={field.value}
+                          onModelChange={field.onChange}
+                        />
+                      </FormControl>
+                    </div>
+                    <FormDescription>
+                      Choose the default AI model for new chats.
+                    </FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </ErrorBoundary>
             {Object.entries(userPreferencesLabels).map(([key, value]) => (
               <FormField
                 name={key}
@@ -220,11 +223,9 @@ export function LoggedUserAvatarTrigger({ user }: { user: User }) {
 
 export function LoggedUser({
   trigger,
-  disablePreferences,
   align = "start",
 }: {
   trigger: (user: User) => React.ReactNode;
-  disablePreferences?: boolean;
   align?: "start" | "end";
 }) {
   const user = useUser();
@@ -277,18 +278,16 @@ export function LoggedUser({
             Profile
           </button>
         </ResponsiveDropdownItem>
-        {!disablePreferences && (
-          <ResponsiveDropdownItem asChild>
-            <button
-              type="button"
-              className="flex items-center gap-2 text-sm w-full cursor-pointer"
-              onClick={() => setPreferencesOpen(true)}
-            >
-              <Icon name="tune" className="text-muted-foreground" />
-              Preferences
-            </button>
-          </ResponsiveDropdownItem>
-        )}
+        <ResponsiveDropdownItem asChild>
+          <button
+            type="button"
+            className="flex items-center gap-2 text-sm w-full cursor-pointer"
+            onClick={() => setPreferencesOpen(true)}
+          >
+            <Icon name="tune" className="text-muted-foreground" />
+            Preferences
+          </button>
+        </ResponsiveDropdownItem>
         <ResponsiveDropdownItem asChild>
           <Link
             to={href}
@@ -367,7 +366,7 @@ export function LoggedUser({
       {profileOpen && (
         <ProfileSettings open={profileOpen} onOpenChange={setProfileOpen} />
       )}
-      {!disablePreferences && preferencesOpen && (
+      {preferencesOpen && (
         <UserPreferencesModal
           open={preferencesOpen}
           onOpenChange={setPreferencesOpen}
@@ -403,7 +402,7 @@ function TeamBalanceLabel() {
   );
 }
 
-function TeamBalance() {
+function TeamPlanAndBalance() {
   return (
     <Suspense fallback={null}>
       <ErrorBoundary fallback={null}>
@@ -446,12 +445,7 @@ export function SidebarFooter() {
         <SidebarFooterInner>
           <SidebarMenu>
             <SidebarMenuItem>
-              <TeamBalance />
-            </SidebarMenuItem>
-            <SidebarMenuItem>
-              <LoggedUser
-                trigger={(user) => <LoggedUserSidebarTrigger user={user} />}
-              />
+              <TeamPlanAndBalance />
             </SidebarMenuItem>
           </SidebarMenu>
         </SidebarFooterInner>

@@ -192,6 +192,7 @@ function UnifiedAvatar({
           {url && !isError && (
             <AvatarImage
               src={url}
+              loading="lazy"
               alt="Avatar"
               className={cn(avatarImageVariants({ objectFit }))}
               onError={() => setIsError(true)}

@@ -1,18 +1,47 @@
 import { DecoQueryClientProvider } from "@deco/sdk";
 import { Link, Outlet } from "react-router";
-import { DefaultBreadcrumb } from "./project";
+import { DefaultBreadcrumb, ToggleDecopilotButton } from "./project";
 import { LoggedUser, LoggedUserAvatarTrigger } from "../sidebar/footer";
 import { BreadcrumbSeparator } from "@deco/ui/components/breadcrumb.tsx";
+import { Icon } from "@deco/ui/components/icon.tsx";
+import { useSidebar } from "@deco/ui/components/sidebar.tsx";
+import { Button } from "@deco/ui/components/button.tsx";
+import { ErrorBoundary } from "../../error-boundary.tsx";
 
 interface BreadcrumbItem {
   label: string | React.ReactNode;
   link?: string;
 }
 
-function Topbar({ breadcrumb }: { breadcrumb: BreadcrumbItem[] }) {
+function SidebarToggle() {
+  const { toggleSidebar } = useSidebar();
+
   return (
-    <div className="flex items-center justify-between w-screen p-4 h-13 border-b border-border">
+    <>
+      <Button
+        onClick={toggleSidebar}
+        size="icon"
+        variant="ghost"
+        className="w-8 h-8 rounded-md"
+      >
+        <Icon
+          name="dock_to_right"
+          className="text-muted-foreground"
+          size={20}
+        />
+      </Button>
+      <div className="h-8 w-px bg-border" />
+    </>
+  );
+}
+
+export function Topbar({ breadcrumb }: { breadcrumb: BreadcrumbItem[] }) {
+  return (
+    <div className="fixed top-0 left-0 right-0 z-20 bg-sidebar flex items-center justify-between w-full p-4 h-12 border-b border-border">
       <div className="flex items-center gap-3">
+        <ErrorBoundary fallback={null}>
+          <SidebarToggle />
+        </ErrorBoundary>
         <Link to="/">
           <img
             src="/img/logo-tiny.svg"
@@ -23,11 +52,13 @@ function Topbar({ breadcrumb }: { breadcrumb: BreadcrumbItem[] }) {
         <BreadcrumbSeparator className="text-muted-foreground" />
         <DefaultBreadcrumb items={breadcrumb} useWorkspaceLink={false} />
       </div>
-      <LoggedUser
-        trigger={(user) => <LoggedUserAvatarTrigger user={user} />}
-        disablePreferences
-        align="end"
-      />
+      <div className="flex items-center gap-3">
+        <ToggleDecopilotButton />
+        <LoggedUser
+          trigger={(user) => <LoggedUserAvatarTrigger user={user} />}
+          align="end"
+        />
+      </div>
     </div>
   );
 }
@@ -42,7 +73,7 @@ export function TopbarLayout({
   return (
     <div className="flex flex-col h-full">
       <Topbar breadcrumb={breadcrumb} />
-      {children}
+      <div className="pt-12 flex-1">{children}</div>
     </div>
   );
 }

@@ -5,6 +5,7 @@ import {
   usePlan,
   User,
   useWorkspaceWalletBalance,
+  WELL_KNOWN_PLANS,
 } from "@deco/sdk";
 import { Button } from "@deco/ui/components/button.tsx";
 import {
@@ -57,6 +58,7 @@ import { ModelSelector } from "../chat/model-selector.tsx";
 import { UserAvatar } from "../common/avatar/user.tsx";
 import { ProfileSettings } from "../settings/profile.tsx";
 import { useWorkspaceLink } from "../../hooks/use-navigate-workspace.ts";
+import { PlanIcons } from "../../utils/plan-icons.tsx";
 
 /** Wrapped component to be suspended */
 function NotificationDot({ className }: { className?: string }) {
@@ -376,52 +378,65 @@ export function LoggedUser({
   );
 }
 
+const PlanColors = {
+  [WELL_KNOWN_PLANS.FREE]: {
+    background:
+      "bg-primary-light/30 hover:bg-primary-light/50 text-primary-dark",
+    sprite: "text-primary-light",
+  },
+  [WELL_KNOWN_PLANS.STARTER]: {
+    background:
+      "bg-primary-light/30 hover:bg-primary-light/50 text-primary-dark",
+    sprite: "text-primary-light",
+  },
+  [WELL_KNOWN_PLANS.GROWTH]: {
+    background: "bg-yellow-light/30 hover:bg-yellow-light/50 text-yellow-dark",
+    sprite: "text-yellow-light",
+  },
+  [WELL_KNOWN_PLANS.SCALE]: {
+    background: "bg-purple-light/30 hover:bg-purple-light/50 text-purple-dark",
+    sprite: "text-purple-light",
+  },
+};
+
 /**
  * Very small team balance label to be shown above the user menu in the sidebar footer.
  */
-function TeamBalanceLabel() {
+function TeamPlanAndBalance() {
   const plan = usePlan();
   const account = useWorkspaceWalletBalance();
   const withWorkspaceLink = useWorkspaceLink();
 
   if (!account?.balance) return null;
 
+  const planColor = PlanColors[plan.id] ?? PlanColors[WELL_KNOWN_PLANS.SCALE];
+  const PlanIcon = PlanIcons[plan.id] ?? PlanIcons[WELL_KNOWN_PLANS.SCALE];
+
   return (
     <Link
       to={withWorkspaceLink("/monitor/billing")}
-      className="bg-sidebar-accent flex flex-col gap-1 px-4 py-3 rounded-xl w-full transition-colors hover:bg-sidebar-accent"
+      className={cn(
+        "relative flex flex-col gap-1 p-0.5 rounded-xl w-full transition-colors overflow-hidden",
+        planColor.background,
+      )}
     >
-      <div className="text-xs text-muted-foreground uppercase">
-        {plan.title}
+      <svg
+        width="192"
+        height="64"
+        viewBox="0 0 192 64"
+        className={cn("absolute top-0 left-0 z-10", planColor.sprite)}
+      >
+        <use href="/img/galaxy-sprite.svg" />
+      </svg>
+      <div className="z-20 text-xs flex items-center gap-1 uppercase px-2 py-1">
+        <PlanIcon />
+        {plan.title} PLAN
       </div>
-      <div className="flex items-center justify-between w-full text-sm">
+      <div className="z-20 flex items-center justify-between px-2 h-9 rounded-xl w-full text-sm bg-sidebar-accent">
         <span className="text-sidebar-foreground">Team Balance</span>
         <span className="text-muted-foreground">{account.balance}</span>
       </div>
     </Link>
-  );
-}
-
-function TeamPlanAndBalance() {
-  return (
-    <Suspense fallback={null}>
-      <ErrorBoundary fallback={null}>
-        <TeamBalanceLabel />
-      </ErrorBoundary>
-    </Suspense>
-  );
-}
-
-function AnonymouseUser() {
-  const to = `/login?next=${globalThis?.location?.href}`;
-
-  return (
-    <SidebarMenuButton>
-      <Link to={to}>
-        <Icon name="person" size={18} />
-        Sign in
-      </Link>
-    </SidebarMenuButton>
   );
 }
 
@@ -437,19 +452,16 @@ function Skeleton() {
 
 export function SidebarFooter() {
   return (
-    <Suspense fallback={<Skeleton />}>
-      <ErrorBoundary
-        shouldCatch={(error) => error instanceof UnauthorizedError}
-        fallback={<AnonymouseUser />}
-      >
-        <SidebarFooterInner>
-          <SidebarMenu>
-            <SidebarMenuItem>
+    <SidebarFooterInner>
+      <SidebarMenu>
+        <SidebarMenuItem>
+          <Suspense fallback={<Skeleton />}>
+            <ErrorBoundary fallback={null}>
               <TeamPlanAndBalance />
-            </SidebarMenuItem>
-          </SidebarMenu>
-        </SidebarFooterInner>
-      </ErrorBoundary>
-    </Suspense>
+            </ErrorBoundary>
+          </Suspense>
+        </SidebarMenuItem>
+      </SidebarMenu>
+    </SidebarFooterInner>
   );
 }

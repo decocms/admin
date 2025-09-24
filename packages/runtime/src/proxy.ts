@@ -144,6 +144,7 @@ export function createMCPClientProxy<T extends Record<string, unknown>>(
         const tools = (await listToolsOnce()) ?? [];
         const tool = tools.find((t) => t.name === name);
         if (!tool) {
+          console.warn(`Tool ${name} not found`);
           return null;
         }
 

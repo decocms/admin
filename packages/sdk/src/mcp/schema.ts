@@ -350,3 +350,40 @@ export const integrations = pgTable("deco_chat_integrations", {
   app_id: uuid("app_id").references(() => registryApps.id),
   project_id: uuid("project_id").references(() => projects.id),
 });
+
+/**
+ * create table public.deco_chat_api_keys (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  name text NOT NULL,
+  workspace text NOT NULL,
+  enabled boolean NOT NULL DEFAULT true,
+  policies jsonb DEFAULT '{}',
+  created_at timestamptz NOT NULL DEFAULT now(),
+  updated_at timestamptz NOT NULL DEFAULT now(),
+  deleted_at timestamptz,
+  project_id uuid NULL,
+  CONSTRAINT unique_api_key_name_workspace UNIQUE(name, workspace),
+  CONSTRAINT fk_deco_chat_api_keys_project_id FOREIGN KEY (project_id) REFERENCES deco_chat_projects (id) ON DELETE SET NULL
+) TABLESPACE pg_default;
+ */
+
+export const apiKeys = pgTable(
+  "deco_chat_api_keys",
+  {
+    id: uuid("id").primaryKey().default(sql`gen_random_uuid ()`),
+    name: text("name").notNull(),
+    workspace: text("workspace").notNull(),
+    enabled: boolean("enabled").notNull().default(true),
+    policies: jsonb("policies"),
+    created_at: timestamp("created_at").defaultNow(),
+    updated_at: timestamp("updated_at").defaultNow(),
+    deleted_at: timestamp("deleted_at"),
+    project_id: uuid("project_id").references(() => projects.id),
+  },
+  (table) => [
+    uniqueIndex("unique_api_key_name_workspace").on(
+      table.name,
+      table.workspace,
+    ),
+  ],
+);

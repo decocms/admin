@@ -14,12 +14,7 @@ import {
 import { type AppContext, createToolGroup } from "../context.ts";
 import { ForbiddenError, NotFoundError } from "../index.ts";
 import { getProjectIdFromContext } from "../projects/util.ts";
-import {
-  agents,
-  apiKeys,
-  organizations,
-  projects
-} from "../schema.ts";
+import { agents, apiKeys, organizations, projects } from "../schema.ts";
 import { deleteTrigger, listTriggers } from "../triggers/api.ts";
 
 const createTool = createToolGroup("Agent", {

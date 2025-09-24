@@ -26,7 +26,7 @@ import {
   NEW_INTEGRATION_TEMPLATE,
   ProjectLocator,
   UserInputError,
-  WellKnownMcpGroups
+  WellKnownMcpGroups,
 } from "../../index.ts";
 import { CallToolResultSchema } from "../../models/tool-call.ts";
 import type { Workspace } from "../../path.ts";

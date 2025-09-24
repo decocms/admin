@@ -1,9 +1,11 @@
+import { and, desc, eq, ilike, inArray, or } from "drizzle-orm";
 import { z } from "zod";
 import {
   AgentSchema,
   NEW_AGENT_TEMPLATE,
   WELL_KNOWN_AGENTS,
 } from "../../index.ts";
+import { LocatorStructured } from "../../locator.ts";
 import {
   assertHasWorkspace,
   assertWorkspaceResourceAccess,
@@ -11,11 +13,14 @@ import {
 } from "../assertions.ts";
 import { type AppContext, createToolGroup } from "../context.ts";
 import { ForbiddenError, NotFoundError } from "../index.ts";
-import { deleteTrigger, listTriggers } from "../triggers/api.ts";
-import { and, desc, eq, ilike, inArray, or } from "drizzle-orm";
-import { agents, organizations, projects } from "../schema.ts";
-import { LocatorStructured } from "../../locator.ts";
 import { getProjectIdFromContext } from "../projects/util.ts";
+import {
+  agents,
+  apiKeys,
+  organizations,
+  projects
+} from "../schema.ts";
+import { deleteTrigger, listTriggers } from "../triggers/api.ts";
 
 const createTool = createToolGroup("Agent", {
   name: "Agent Management",
@@ -82,6 +87,25 @@ export const matchByWorkspaceOrProjectLocator = (
 ) => {
   return or(
     ilike(agents.workspace, workspace),
+    locator
+      ? and(
+          eq(projects.slug, locator.project),
+          eq(organizations.slug, locator.org),
+        )
+      : undefined,
+  );
+};
+
+/**
+ * Returns a Drizzle OR condition that filters API keys by workspace or project locator.
+ * This version works with queries that don't include the agents table.
+ */
+export const matchByWorkspaceOrProjectLocatorForApiKeys = (
+  workspace: string,
+  locator?: LocatorStructured,
+) => {
+  return or(
+    ilike(apiKeys.workspace, workspace),
     locator
       ? and(
           eq(projects.slug, locator.project),

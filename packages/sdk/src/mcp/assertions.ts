@@ -1,11 +1,12 @@
+import { and, eq } from "drizzle-orm";
 import type { AuthContext, Statement } from "../auth/policy.ts";
 import { SWRCache } from "../cache/swr.ts";
 import { ForbiddenError, NotFoundError, UnauthorizedError } from "../errors.ts";
 import { ProjectLocator } from "../locator.ts";
 import type { Workspace } from "../path.ts";
+import { matchByWorkspaceOrProjectLocatorForApiKeys } from "./agents/api.ts";
 import type { AppContext, UserPrincipal } from "./context.ts";
-import { apiKeys, projects } from "./schema.ts";
-import { eq, and, or } from "drizzle-orm";
+import { apiKeys, organizations, projects } from "./schema.ts";
 
 type WithUser<TAppContext extends AppContext = AppContext> = Omit<
   TAppContext,
@@ -189,15 +190,14 @@ export const assertWorkspaceResourceAccess = async (
             })
             .from(apiKeys)
             .leftJoin(projects, eq(apiKeys.project_id, projects.id))
+            .leftJoin(organizations, eq(projects.org_id, organizations.id))
             .where(
               and(
                 eq(apiKeys.id, id),
                 eq(apiKeys.enabled, true),
-                or(
-                  eq(apiKeys.workspace, c.workspace.value),
-                  c.locator?.value
-                    ? eq(apiKeys.project_id, c.locator?.value)
-                    : undefined,
+                matchByWorkspaceOrProjectLocatorForApiKeys(
+                  c.workspace.value,
+                  c.locator,
                 ),
               ),
             )

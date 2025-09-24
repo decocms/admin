@@ -185,6 +185,13 @@ export class JsonSerializer {
           data: base64,
         };
       }
+      if (typeof value === "bigint") {
+        // Convert BigInt to string with special type marker
+        return {
+          __type: "BigInt",
+          data: value.toString(),
+        };
+      }
       return value;
     });
   }
@@ -205,6 +212,15 @@ export class JsonSerializer {
         }
         return bytes;
       }
+      if (
+        value &&
+        typeof value === "object" &&
+        value.__type === "BigInt" &&
+        typeof value.data === "string"
+      ) {
+        // Convert string back to BigInt
+        return BigInt(value.data);
+      }
       return value;
     });
   }
@@ -214,7 +230,8 @@ export class JsonSerializer {
     if (
       typeof value === "string" ||
       typeof value === "number" ||
-      typeof value === "boolean"
+      typeof value === "boolean" ||
+      typeof value === "bigint"
     ) {
       return true;
     }

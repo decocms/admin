@@ -16,7 +16,7 @@ import {
 import { Toaster } from "@deco/ui/components/sonner.tsx";
 import { useIsMobile } from "@deco/ui/hooks/use-mobile.ts";
 import { type DockviewApi, DockviewReadyEvent } from "dockview-react";
-import { Fragment, type ReactNode, useEffect, useMemo, useState } from "react";
+import { Fragment, type ReactNode, Suspense, useEffect, useMemo, useState } from "react";
 import { Link, Outlet, useParams } from "react-router";
 import { useLocalStorage } from "../../hooks/use-local-storage.ts";
 import { useWorkspaceLink } from "../../hooks/use-navigate-workspace.ts";
@@ -34,6 +34,7 @@ import { ProfileModalProvider, useProfileModal } from "../profile-modal.tsx";
 import { ProjectSidebar } from "../sidebar/index.tsx";
 import { WithWorkspaceTheme } from "../theme.tsx";
 import { TopbarLayout } from "./home.tsx";
+import { BreadcrumbOrgSwitcher } from "./org-project-switcher.tsx";
 
 export function BaseRouteLayout({ children }: { children: ReactNode }) {
   // remove?
@@ -86,7 +87,14 @@ export function ProjectLayout() {
             }}
           >
             <div className="flex flex-col h-full">
-              <TopbarLayout breadcrumb={[]}>
+              <TopbarLayout breadcrumb={[{
+                label: (
+                  <Suspense fallback={<BreadcrumbOrgSwitcher.Skeleton />}>
+                    <BreadcrumbOrgSwitcher />
+                  </Suspense>
+                ),
+                link: `/${org}`,
+              }]}>
                 <SidebarLayout
                   className="h-full bg-sidebar"
                   style={

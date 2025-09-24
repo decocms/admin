@@ -1,4 +1,4 @@
-import { and, desc, eq, ilike, inArray, or } from "drizzle-orm";
+import { and, desc, eq, inArray, or } from "drizzle-orm";
 import { z } from "zod";
 import {
   AgentSchema,
@@ -14,7 +14,7 @@ import {
 import { type AppContext, createToolGroup } from "../context.ts";
 import { ForbiddenError, NotFoundError } from "../index.ts";
 import { getProjectIdFromContext } from "../projects/util.ts";
-import { agents, apiKeys, organizations, projects } from "../schema.ts";
+import { agents, organizations, projects } from "../schema.ts";
 import { deleteTrigger, listTriggers } from "../triggers/api.ts";
 
 const createTool = createToolGroup("Agent", {
@@ -130,7 +130,9 @@ export const listAgents = createTool({
       .from(agents)
       .leftJoin(projects, eq(agents.project_id, projects.id))
       .leftJoin(organizations, eq(projects.org_id, organizations.id))
-      .where(matchByWorkspaceOrProjectLocatorForAgents(c.workspace.value, c.locator))
+      .where(
+        matchByWorkspaceOrProjectLocatorForAgents(c.workspace.value, c.locator),
+      )
       .orderBy(desc(agents.created_at));
 
     const roles =
@@ -177,7 +179,10 @@ export const getAgent = createTool({
             .leftJoin(organizations, eq(projects.org_id, organizations.id))
             .where(
               and(
-                matchByWorkspaceOrProjectLocatorForAgents(c.workspace.value, c.locator),
+                matchByWorkspaceOrProjectLocatorForAgents(
+                  c.workspace.value,
+                  c.locator,
+                ),
                 eq(agents.id, id),
               ),
             )
@@ -284,7 +289,10 @@ export const deleteAgent = createTool({
       .where(
         and(
           eq(agents.id, id),
-          matchByWorkspaceOrProjectLocatorForAgents(c.workspace.value, c.locator),
+          matchByWorkspaceOrProjectLocatorForAgents(
+            c.workspace.value,
+            c.locator,
+          ),
         ),
       )
       .limit(1);

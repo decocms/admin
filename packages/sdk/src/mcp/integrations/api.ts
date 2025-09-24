@@ -5,7 +5,7 @@ import {
   isApiDecoChatMCPConnection as shouldPatchDecoChatMCPConnection,
 } from "@deco/ai/mcp";
 import { CallToolRequestSchema } from "@modelcontextprotocol/sdk/types.js";
-import { and, eq, ilike, or } from "drizzle-orm";
+import { and, eq, or } from "drizzle-orm";
 import { z } from "zod";
 import { AppName } from "../../common/index.ts";
 import {
@@ -80,9 +80,9 @@ const SELECT_INTEGRATION_QUERY = `
         ` as const;
 
 /**
-* Returns a Drizzle OR condition that filters Integrations by workspace or project locator.
-* This version works with queries that don't include the agents table.
-*/
+ * Returns a Drizzle OR condition that filters Integrations by workspace or project locator.
+ * This version works with queries that don't include the agents table.
+ */
 export const matchByWorkspaceOrProjectLocatorForIntegrations = (
   workspace: string,
   locator?: LocatorStructured,
@@ -513,9 +513,7 @@ export const listIntegrations = createIntegrationManagementTool({
         .from(agents)
         .leftJoin(projects, eq(agents.project_id, projects.id))
         .leftJoin(organizations, eq(projects.org_id, organizations.id))
-        .where(
-          matchByWorkspaceOrProjectLocatorForAgents(workspace, c.locator),
-        )
+        .where(matchByWorkspaceOrProjectLocatorForAgents(workspace, c.locator))
         .then((result) => ({ data: result })),
       listKnowledgeBases.handler({}),
     ]);
@@ -679,7 +677,10 @@ export const getIntegration = createIntegrationManagementTool({
             .where(
               and(
                 eq(integrations.id, uuid),
-                matchByWorkspaceOrProjectLocatorForIntegrations(c.workspace.value, c.locator),
+                matchByWorkspaceOrProjectLocatorForIntegrations(
+                  c.workspace.value,
+                  c.locator,
+                ),
               ),
             )
             .then((rows) => {
@@ -731,7 +732,10 @@ export const getIntegration = createIntegrationManagementTool({
             .where(
               and(
                 eq(agents.id, uuid),
-                matchByWorkspaceOrProjectLocatorForAgents(c.workspace.value, c.locator),
+                matchByWorkspaceOrProjectLocatorForAgents(
+                  c.workspace.value,
+                  c.locator,
+                ),
               ),
             )
             .limit(1)
@@ -837,7 +841,10 @@ export const createIntegration = createIntegrationManagementTool({
           .where(
             and(
               eq(integrations.id, payload.id),
-              matchByWorkspaceOrProjectLocatorForIntegrations(c.workspace.value, c.locator),
+              matchByWorkspaceOrProjectLocatorForIntegrations(
+                c.workspace.value,
+                c.locator,
+              ),
             ),
           )
           .limit(1)
@@ -851,7 +858,10 @@ export const createIntegration = createIntegrationManagementTool({
         .where(
           and(
             eq(integrations.id, existingIntegration.id),
-            matchByWorkspaceOrProjectLocatorForIntegrations(c.workspace.value, c.locator),
+            matchByWorkspaceOrProjectLocatorForIntegrations(
+              c.workspace.value,
+              c.locator,
+            ),
           ),
         )
         .returning();
@@ -912,7 +922,10 @@ export const updateIntegration = createIntegrationManagementTool({
       .where(
         and(
           eq(integrations.id, uuid),
-          matchByWorkspaceOrProjectLocatorForIntegrations(c.workspace.value, c.locator),
+          or(
+            eq(integrations.workspace, c.workspace.value),
+            projectId ? eq(integrations.project_id, projectId) : undefined,
+          ),
         ),
       )
       .returning();
@@ -953,7 +966,10 @@ export const deleteIntegration = createIntegrationManagementTool({
       .where(
         and(
           eq(integrations.id, uuid),
-          matchByWorkspaceOrProjectLocatorForIntegrations(c.workspace.value, c.locator),
+          or(
+            eq(integrations.workspace, c.workspace.value),
+            projectId ? eq(integrations.project_id, projectId) : undefined,
+          ),
         ),
       );
 

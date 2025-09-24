@@ -1,3 +1,4 @@
+import { and, eq, or } from "drizzle-orm";
 import { z } from "zod";
 import { StatementSchema } from "../../auth/policy.ts";
 import { userFromJWT } from "../../auth/user.ts";
@@ -6,6 +7,7 @@ import {
   NotFoundError,
   UserInputError,
 } from "../../errors.ts";
+import { LocatorStructured } from "../../locator.ts";
 import type { QueryResult } from "../../storage/index.ts";
 import {
   assertHasWorkspace,
@@ -15,11 +17,7 @@ import { createToolGroup } from "../context.ts";
 import { MCPClient } from "../index.ts";
 import { getIntegration } from "../integrations/api.ts";
 import { getRegistryApp } from "../registry/api.ts";
-import { LocatorStructured } from "../../locator.ts";
-import { apiKeys } from "../schema.ts";
-import { eq, ilike, and, or } from "drizzle-orm";
-import { projects } from "../schema.ts";
-import { organizations } from "../schema.ts";
+import { apiKeys, organizations, projects } from "../schema.ts";
 
 const SELECT_API_KEY_QUERY = `
   id,

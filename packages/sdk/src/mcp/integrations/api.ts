@@ -5,6 +5,7 @@ import {
   isApiDecoChatMCPConnection as shouldPatchDecoChatMCPConnection,
 } from "@deco/ai/mcp";
 import { CallToolRequestSchema } from "@modelcontextprotocol/sdk/types.js";
+import { and, eq, or } from "drizzle-orm";
 import { z } from "zod";
 import { AppName } from "../../common/index.ts";
 import {
@@ -20,13 +21,12 @@ import {
   INNATE_INTEGRATIONS,
   type Integration,
   IntegrationSchema,
-  InternalServerError,
   Locator,
   type MCPConnection,
   NEW_INTEGRATION_TEMPLATE,
   ProjectLocator,
   UserInputError,
-  WellKnownMcpGroups,
+  WellKnownMcpGroups
 } from "../../index.ts";
 import { CallToolResultSchema } from "../../models/tool-call.ts";
 import type { Workspace } from "../../path.ts";
@@ -51,19 +51,18 @@ import {
   WellKnownBindings,
 } from "../index.ts";
 import { listKnowledgeBases } from "../knowledge/api.ts";
+import { getProjectIdFromContext } from "../projects/util.ts";
 import { getRegistryApp, listRegistryApps } from "../registry/api.ts";
-import { createServerClient } from "../utils.ts";
 import {
   agents,
   integrations,
-  projects,
   organizations,
+  projects,
   registryApps,
-  registryTools,
   registryScopes,
+  registryTools,
 } from "../schema.ts";
-import { and, eq, or } from "drizzle-orm";
-import { getProjectIdFromContext } from "../projects/util.ts";
+import { createServerClient } from "../utils.ts";
 
 const SELECT_INTEGRATION_QUERY = `
           *,

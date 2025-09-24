@@ -83,6 +83,7 @@ export const deploy = async ({
       /\.env/,
       /\.env\.local/,
       /\.dev\.vars/,
+      /\.vite/,
     ],
     exts: [
       "ts",

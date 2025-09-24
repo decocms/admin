@@ -76,31 +76,12 @@ export const IMPORTANT_ROLES = ["owner", "admin"];
  * Used temporarily for the migration to the new schema. Soon will be removed in favor of
  * always using the project locator.
  */
-export const matchByWorkspaceOrProjectLocator = (
+export const matchByWorkspaceOrProjectLocatorForAgents = (
   workspace: string,
   locator?: LocatorStructured,
 ) => {
   return or(
-    ilike(agents.workspace, workspace),
-    locator
-      ? and(
-          eq(projects.slug, locator.project),
-          eq(organizations.slug, locator.org),
-        )
-      : undefined,
-  );
-};
-
-/**
- * Returns a Drizzle OR condition that filters API keys by workspace or project locator.
- * This version works with queries that don't include the agents table.
- */
-export const matchByWorkspaceOrProjectLocatorForApiKeys = (
-  workspace: string,
-  locator?: LocatorStructured,
-) => {
-  return or(
-    ilike(apiKeys.workspace, workspace),
+    eq(agents.workspace, workspace),
     locator
       ? and(
           eq(projects.slug, locator.project),
@@ -149,7 +130,7 @@ export const listAgents = createTool({
       .from(agents)
       .leftJoin(projects, eq(agents.project_id, projects.id))
       .leftJoin(organizations, eq(projects.org_id, organizations.id))
-      .where(matchByWorkspaceOrProjectLocator(c.workspace.value, c.locator))
+      .where(matchByWorkspaceOrProjectLocatorForAgents(c.workspace.value, c.locator))
       .orderBy(desc(agents.created_at));
 
     const roles =
@@ -196,7 +177,7 @@ export const getAgent = createTool({
             .leftJoin(organizations, eq(projects.org_id, organizations.id))
             .where(
               and(
-                matchByWorkspaceOrProjectLocator(c.workspace.value, c.locator),
+                matchByWorkspaceOrProjectLocatorForAgents(c.workspace.value, c.locator),
                 eq(agents.id, id),
               ),
             )
@@ -303,7 +284,7 @@ export const deleteAgent = createTool({
       .where(
         and(
           eq(agents.id, id),
-          matchByWorkspaceOrProjectLocator(c.workspace.value, c.locator),
+          matchByWorkspaceOrProjectLocatorForAgents(c.workspace.value, c.locator),
         ),
       )
       .limit(1);

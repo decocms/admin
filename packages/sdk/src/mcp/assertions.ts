@@ -4,7 +4,7 @@ import { SWRCache } from "../cache/swr.ts";
 import { ForbiddenError, NotFoundError, UnauthorizedError } from "../errors.ts";
 import { ProjectLocator } from "../locator.ts";
 import type { Workspace } from "../path.ts";
-import { matchByWorkspaceOrProjectLocatorForApiKeys } from "./agents/api.ts";
+import { matchByWorkspaceOrProjectLocatorForApiKeys } from "./api-keys/api.ts";
 import type { AppContext, UserPrincipal } from "./context.ts";
 import { apiKeys, organizations, projects } from "./schema.ts";
 

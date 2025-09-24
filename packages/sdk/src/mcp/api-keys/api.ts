@@ -15,6 +15,11 @@ import { createToolGroup } from "../context.ts";
 import { MCPClient } from "../index.ts";
 import { getIntegration } from "../integrations/api.ts";
 import { getRegistryApp } from "../registry/api.ts";
+import { LocatorStructured } from "../../locator.ts";
+import { apiKeys } from "../schema.ts";
+import { eq, ilike, and, or } from "drizzle-orm";
+import { projects } from "../schema.ts";
+import { organizations } from "../schema.ts";
 
 const SELECT_API_KEY_QUERY = `
   id,
@@ -48,6 +53,25 @@ const createTool = createToolGroup("APIKeys", {
   description: "Create and manage API keys securely.",
   icon: "https://assets.decocache.com/mcp/5e6930c3-86f6-4913-8de3-0c1fefdf02e3/API-key.png",
 });
+
+/**
+ * Returns a Drizzle OR condition that filters API keys by workspace or project locator.
+ * This version works with queries that don't include the agents table.
+ */
+export const matchByWorkspaceOrProjectLocatorForApiKeys = (
+  workspace: string,
+  locator?: LocatorStructured,
+) => {
+  return or(
+    eq(apiKeys.workspace, workspace),
+    locator
+      ? and(
+          eq(projects.slug, locator.project),
+          eq(organizations.slug, locator.org),
+        )
+      : undefined,
+  );
+};
 
 export const listApiKeys = createTool({
   name: "API_KEYS_LIST",

@@ -3,7 +3,7 @@ import { SWRCache } from "../cache/swr.ts";
 import { ForbiddenError, NotFoundError, UnauthorizedError } from "../errors.ts";
 import { ProjectLocator } from "../locator.ts";
 import type { Workspace } from "../path.ts";
-import type { AppContext, UserPrincipal, JWTPrincipal } from "./context.ts";
+import type { AppContext, UserPrincipal } from "./context.ts";
 import { apiKeys, projects } from "./schema.ts";
 import { eq, and, or } from "drizzle-orm";
 
@@ -220,8 +220,7 @@ export const assertWorkspaceResourceAccess = async (
       // agent tokens
       if (
         "aud" in user &&
-        (user.aud === c.workspace.value ||
-          (user as JWTPrincipal).aud === c.locator?.value)
+        (user.aud === c.workspace.value || user.aud === c.locator?.value)
       ) {
         // API keys
         const [sub] = user.sub?.split(":") ?? [];

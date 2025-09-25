@@ -73,13 +73,13 @@ function useConfigureConnection() {
   return useCallback(
     (integration: Integration) => {
       const appKey = AppKeys.build(getConnectionAppKey(integration));
-      navigateWorkspace(`/connection/${appKey}?edit=${integration.id}`);
+      navigateWorkspace(`/apps/${appKey}?edit=${integration.id}`);
     },
     [navigateWorkspace],
   );
 }
 
-function Connections() {
+function Integrations() {
   const {
     toolsSet,
     setIntegrationTools,
@@ -571,7 +571,7 @@ function ToolsAndKnowledgeTab() {
       <Form {...form}>
         <div className="h-full w-full p-4 max-w-3xl mx-auto">
           <form onSubmit={handleSubmit} className="space-y-4">
-            <Connections />
+            <Integrations />
             {/* TODO: bring this back. The flow it buggs is adding a file to kb <Knowledge /> */}
             {/* <Knowledge /> */}
             <MultiAgent />

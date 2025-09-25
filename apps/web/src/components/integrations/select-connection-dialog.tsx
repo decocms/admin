@@ -29,7 +29,7 @@ import {
 } from "react";
 import { useSearchParams } from "react-router";
 import { trackEvent } from "../../hooks/analytics.ts";
-import { useCreateCustomConnection } from "../../hooks/use-create-custom-connection.ts";
+import { useCreateCustomApp } from "../../hooks/use-create-custom-connection.ts";
 import {
   type IntegrationState,
   useIntegrationInstall,
@@ -267,7 +267,7 @@ export const useUIInstallIntegration = ({
           authorizeOauthUrl: null,
         });
       } else if (!result.stateSchema) {
-        let link = `/connection/${integration.provider}:::${integration.name}`;
+        let link = `/apps/${integration.provider}:::${integration.name}`;
         const isDecoApp = integration.name.startsWith("@deco/");
         if (
           result.redirectUrl === null &&
@@ -275,7 +275,7 @@ export const useUIInstallIntegration = ({
           integration.friendlyName
         ) {
           // special case for non oauth-apps
-          link = `/connection/deco:::${integration.friendlyName}`;
+          link = `/apps/deco:::${integration.friendlyName}`;
         }
         navigateWorkspace(link);
       }
@@ -633,7 +633,7 @@ function AddConnectionDialogContent({
   );
   const tab = forceTab ?? _tab;
   const [search, setSearch] = useState("");
-  const createCustomConnection = useCreateCustomConnection();
+  const createCustomConnection = useCreateCustomApp();
   const { data: marketplace } = useMarketplaceIntegrations();
   const [installingIntegration, setInstallingIntegration] =
     useState<MarketplaceIntegration | null>(() => {
@@ -709,7 +709,7 @@ function AddConnectionDialogContent({
             <Button
               variant="ghost"
               className={cn("w-full justify-start text-muted-foreground group")}
-              onClick={() => navigateWorkspace("/connections")}
+              onClick={() => navigateWorkspace("/apps")}
             >
               <Icon name="arrow_outward" size={16} />
               <span className="group-hover:underline">Manage integrations</span>

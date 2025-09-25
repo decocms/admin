@@ -8,10 +8,10 @@ import {
 } from "../components/integrations/apps.ts";
 
 /**
- * Creates an empty connection and redirects to the connection detail page.
- * Use this for creating custom connections, like connecting to a proprietary MCP server.
+ * Creates an empty app and redirects to the app detail page.
+ * Use this for creating custom apps, like connecting to a proprietary MCP server.
  */
-export const useCreateCustomConnection = () => {
+export const useCreateCustomApp = () => {
   const create = useCreateIntegration();
   const navigateWorkspace = useNavigateWorkspace();
 
@@ -27,7 +27,7 @@ export const useCreateCustomConnection = () => {
         },
       });
       const key = getConnectionAppKey(result);
-      navigateWorkspace(`/connection/${AppKeys.build(key)}?edit=${result.id}`);
+      navigateWorkspace(`/apps/${AppKeys.build(key)}?edit=${result.id}`);
     } catch (err) {
       console.error(err);
       toast.error(

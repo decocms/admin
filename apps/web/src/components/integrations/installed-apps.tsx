@@ -156,7 +156,7 @@ function TableView({
   );
 }
 
-export function ConnectedAppsList() {
+export default function InstalledAppsList() {
   const [viewMode, setViewMode] = useViewMode("integrations");
   const [filter, setFilter] = useState<string>("");
   const navigateWorkspace = useNavigateWorkspace();
@@ -165,7 +165,7 @@ export function ConnectedAppsList() {
   });
 
   const navigateToApp = (app: GroupedApp) => {
-    navigateWorkspace(`/connection/${app.id}`);
+    navigateWorkspace(`/apps/${app.id}`);
   };
 
   return (

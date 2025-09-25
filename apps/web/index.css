@@ -37,7 +37,7 @@
     --dv-icon-hover-background-color: var(--accent);
     --dv-floating-box-shadow:
       0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
-    --dv-active-sash-color: var(--color-red-500);
+    --dv-active-sash-color: var(--color-slate-50);
     --dv-background-color: var(--background);
 
     .dv-view.visible:not(:has(.dv-view.visible)) {

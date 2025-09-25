@@ -3,18 +3,14 @@ import {
   useConnectionViews,
   useIntegrations,
 } from "@deco/sdk";
-import { Button } from "@deco/ui/components/button.tsx";
-import { Icon } from "@deco/ui/components/icon.tsx";
 import { createContext, useContext, useMemo } from "react";
-import { Link, useParams, useSearchParams } from "react-router";
+import { useParams, useSearchParams } from "react-router";
 import { dispatchRulesUpdated } from "../../utils/events.ts";
 import Preview from "../agent/preview";
-import type { Tab } from "../dock/index.tsx";
-import { DefaultBreadcrumb, PageLayout } from "../layout/project.tsx";
+import { EmptyState } from "../common/empty-state.tsx";
 import { InternalResourceListWithIntegration } from "./internal-resource-list.tsx";
 import { ViewRouteProvider } from "./view-route-context.tsx";
 import { WorkflowView } from "./workflow-view.tsx";
-import { EmptyState } from "../common/empty-state.tsx";
 
 interface ViewDetailContextValue {
   integrationId?: string;
@@ -93,15 +89,6 @@ function PreviewTab() {
   return <Preview src={src} title={view?.title || "Untitled view"} />;
 }
 
-const TABS: Record<string, Tab> = {
-  preview: {
-    Component: PreviewTab,
-    title: "Preview",
-    initialOpen: true,
-    active: true,
-  },
-};
-
 export default function ViewDetail() {
   const { integrationId, viewName } = useParams();
   const [searchParams] = useSearchParams();
@@ -133,8 +120,6 @@ export default function ViewDetail() {
     }
   }, [resolvedUrl]);
 
-  const tabs = TABS;
-
   // Seed rules for this view when present (no effect outside view routes)
   const rules = (connectionViewMatch?.rules ?? []) as string[];
   if (rules.length) {
@@ -157,45 +142,8 @@ export default function ViewDetail() {
           view: connectionViewMatch,
         }}
       >
-        <PageLayout
-          key={`${integrationId}-${viewName}`}
-          hideViewsButton
-          tabs={tabs}
-          breadcrumb={
-            <DefaultBreadcrumb
-              items={[
-                {
-                  label: (
-                    <div className="flex items-center gap-2">
-                      <Icon
-                        name={connectionViewMatch?.icon || "dashboard"}
-                        className="w-4 h-4"
-                      />
-                      <span>{connectionViewMatch?.title}</span>
-                      <Link to={resolvedUrl ?? "#"} target="_blank">
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                          }}
-                          className="text-muted-foreground hover:text-primary-dark"
-                          title="Open view"
-                        >
-                          <Icon name="open_in_new" className="w-4 h-4" />
-                        </Button>
-                      </Link>
-                    </div>
-                  ),
-                },
-              ]}
-            />
-          }
-          actionButtons={undefined}
-        />
+        <PreviewTab />
       </ViewDetailContext.Provider>
     </ViewRouteProvider>
   );
 }
-
-// (Internal fallback components removed to simplify the view renderer)

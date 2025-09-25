@@ -4,17 +4,14 @@ import {
   useMarketplaceIntegrations,
 } from "@deco/sdk";
 import { Button } from "@deco/ui/components/button.tsx";
-import { Input } from "@deco/ui/components/input.tsx";
 import { Icon } from "@deco/ui/components/icon.tsx";
+import { Input } from "@deco/ui/components/input.tsx";
 import { useMemo, useState } from "react";
-import { useParams } from "react-router";
+import { useCreateCustomApp } from "../../hooks/use-create-custom-connection.ts";
 import { useNavigateWorkspace } from "../../hooks/use-navigate-workspace.ts";
-import type { Tab } from "../dock/index.tsx";
+import { IntegrationAvatar } from "../common/avatar/integration.tsx";
 import { AppKeys, getConnectionAppKey } from "../integrations/apps.ts";
 import { VerifiedBadge } from "../integrations/marketplace.tsx";
-import { DefaultBreadcrumb, PageLayout } from "../layout/project.tsx";
-import { IntegrationAvatar } from "../common/avatar/integration.tsx";
-import { useCreateCustomConnection } from "../../hooks/use-create-custom-connection.ts";
 
 // For the future, it should be controlled in a view
 const HIGHLIGHTS = [
@@ -48,7 +45,7 @@ const FeaturedCard = ({
   return (
     <div
       onClick={() => {
-        navigateWorkspace(`/connection/${appKey}`);
+        navigateWorkspace(`/apps/${appKey}`);
       }}
       className="flex flex-col gap-2 p-4 bg-card relative rounded-xl cursor-pointer overflow-hidden"
     >
@@ -77,7 +74,7 @@ const SimpleFeaturedCard = ({
   return (
     <div
       onClick={() => {
-        navigateWorkspace(`/connection/${appKey}`);
+        navigateWorkspace(`/apps/${appKey}`);
       }}
       className="flex p-2 gap-2 cursor-pointer overflow-hidden items-center hover:bg-muted rounded-lg"
     >
@@ -98,11 +95,11 @@ const SimpleFeaturedCard = ({
   );
 };
 
-const Marketplace = () => {
+const Discover = () => {
   const [search, setSearch] = useState("");
   const { data: integrations } = useMarketplaceIntegrations();
   const navigateWorkspace = useNavigateWorkspace();
-  const createCustomConnection = useCreateCustomConnection();
+  const createCustomConnection = useCreateCustomApp();
 
   const featuredIntegrations = integrations?.integrations.filter(
     (integration) => FEATURED.includes(integration.name),
@@ -188,7 +185,7 @@ const Marketplace = () => {
               return (
                 <a
                   onClick={() => {
-                    navigateWorkspace(`/connection/${appKey}`);
+                    navigateWorkspace(`/apps/${appKey}`);
                   }}
                   key={item.appName}
                   className="relative rounded-xl cursor-pointer overflow-hidden"
@@ -271,38 +268,4 @@ const Marketplace = () => {
   );
 };
 
-const BASE_TABS: Record<string, Tab> = {
-  activity: {
-    title: "Activity",
-    Component: Marketplace,
-    initialOpen: true,
-    active: false,
-  },
-};
-
-export default function Discover() {
-  const { tab } = useParams<{ tab?: string }>();
-  const activeKey = tab && tab in BASE_TABS ? tab : "activity";
-
-  const tabs = useMemo(() => {
-    return Object.fromEntries(
-      Object.entries(BASE_TABS).map(([key, value]) => [
-        key,
-        {
-          ...value,
-          active: key === activeKey,
-        },
-      ]),
-    ) as Record<string, Tab>;
-  }, [activeKey]);
-
-  return (
-    <PageLayout
-      tabs={tabs}
-      hideViewsButton
-      breadcrumb={
-        <DefaultBreadcrumb items={[{ label: "Discover", link: "/discover" }]} />
-      }
-    />
-  );
-}
+export default Discover;

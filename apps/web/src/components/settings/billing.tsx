@@ -347,9 +347,7 @@ function TransactionsTable() {
             />
             <Link
               target="_blank"
-              to={workspaceLink(
-                `/connection/unknown:::${callerAppIntegration.id}`,
-              )}
+              to={workspaceLink(`/apps/unknown:::${callerAppIntegration.id}`)}
               className="text-xs text-muted-foreground"
             >
               {callerAppIntegration.name}

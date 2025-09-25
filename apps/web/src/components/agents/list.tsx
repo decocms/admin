@@ -348,9 +348,20 @@ const VISIBILITY_LABELS = {
 
 type Visibility = (typeof VISIBILITIES)[number];
 
-function List() {
+const useFocusTeamAgent = () => {
+  const focusChat = useFocusChat();
+  const handleCreate = () => {
+    focusChat(WELL_KNOWN_AGENT_IDS.teamAgent, crypto.randomUUID(), {
+      history: false,
+    });
+  };
+
+  return handleCreate;
+};
+
+function AgentsList() {
   const [state, dispatch] = useReducer(listReducer, initialState);
-  const { handleCreate } = useContext(Context)!;
+  const handleCreate = useFocusTeamAgent();
   const { filter } = state;
   const { data: agents } = useAgents();
   const [viewMode, setViewMode] = useViewMode("agents");
@@ -452,45 +463,4 @@ function List() {
   );
 }
 
-const TABS: Record<string, Tab> = {
-  list: {
-    Component: List,
-    title: "Agents",
-    initialOpen: true,
-  },
-};
-
-const Context = createContext<{ handleCreate: () => void } | null>(null);
-
-export default function Page() {
-  const focusChat = useFocusChat();
-
-  const handleCreate = () => {
-    focusChat(WELL_KNOWN_AGENT_IDS.teamAgent, crypto.randomUUID(), {
-      history: false,
-    });
-  };
-
-  return (
-    <Context.Provider value={{ handleCreate }}>
-      <PageLayout
-        tabs={TABS}
-        hideViewsButton
-        breadcrumb={
-          <DefaultBreadcrumb items={[{ label: "Agents", link: "/agents" }]} />
-        }
-        actionButtons={
-          <Button
-            onClick={handleCreate}
-            variant="special"
-            size="sm"
-            className="gap-2"
-          >
-            <Icon name="add" />
-            <span className="hidden md:inline">New agent</span>
-          </Button>
-        }
-      />
-    </Context.Provider>
-  );
-}
+export default AgentsList;

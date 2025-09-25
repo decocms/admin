@@ -10,16 +10,37 @@ import {
   useRemoveView,
   useToolCall,
   useTools,
+  useUpdateIntegration,
+  useWriteFile,
 } from "@deco/sdk";
 import { Binding, WellKnownBindings } from "@deco/sdk/mcp/bindings";
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@deco/ui/components/accordion.tsx";
 import { Button } from "@deco/ui/components/button.tsx";
+import { Card } from "@deco/ui/components/card.tsx";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@deco/ui/components/dropdown-menu.tsx";
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@deco/ui/components/form.tsx";
 import { Icon } from "@deco/ui/components/icon.tsx";
+import { Input } from "@deco/ui/components/input.tsx";
+import { Label } from "@deco/ui/components/label.tsx";
+import { PasswordInput } from "@deco/ui/components/password-input.tsx";
+import { ScrollArea, ScrollBar } from "@deco/ui/components/scroll-area.tsx";
 import {
   Select,
   SelectContent,
@@ -29,6 +50,13 @@ import {
 } from "@deco/ui/components/select.tsx";
 import { Skeleton } from "@deco/ui/components/skeleton.tsx";
 import { toast } from "@deco/ui/components/sonner.tsx";
+import { Spinner } from "@deco/ui/components/spinner.tsx";
+import {
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
+} from "@deco/ui/components/tabs.tsx";
 import { cn } from "@deco/ui/lib/utils.ts";
 import {
   type Dispatch,
@@ -38,8 +66,15 @@ import {
   useRef,
   useState,
 } from "react";
+import { useForm } from "react-hook-form";
 import { useParams } from "react-router";
-import { DefaultBreadcrumb, PageLayout } from "../layout/project.tsx";
+import { trackEvent } from "../../hooks/analytics.ts";
+import {
+  integrationNeedsApproval,
+  useIntegrationInstallState,
+} from "../../hooks/use-integration-install.tsx";
+import { useNavigateWorkspace } from "../../hooks/use-navigate-workspace.ts";
+import { formatToolName } from "../chat/utils/format-tool-name.ts";
 import { useCurrentTeam } from "../sidebar/team-selector.tsx";
 import {
   AppKeys,
@@ -48,36 +83,6 @@ import {
   useGroupedApp,
 } from "./apps.ts";
 import { IntegrationIcon } from "./common.tsx";
-import { Spinner } from "@deco/ui/components/spinner.tsx";
-import { useUpdateIntegration, useWriteFile } from "@deco/sdk";
-import {
-  Accordion,
-  AccordionContent,
-  AccordionItem,
-  AccordionTrigger,
-} from "@deco/ui/components/accordion.tsx";
-import { Card } from "@deco/ui/components/card.tsx";
-import {
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from "@deco/ui/components/form.tsx";
-import { Input } from "@deco/ui/components/input.tsx";
-import { PasswordInput } from "@deco/ui/components/password-input.tsx";
-import { ScrollArea, ScrollBar } from "@deco/ui/components/scroll-area.tsx";
-import {
-  Tabs,
-  TabsContent,
-  TabsList,
-  TabsTrigger,
-} from "@deco/ui/components/tabs.tsx";
-import { useForm } from "react-hook-form";
-import { trackEvent } from "../../hooks/analytics.ts";
-import { useNavigateWorkspace } from "../../hooks/use-navigate-workspace.ts";
-import { formatToolName } from "../chat/utils/format-tool-name.ts";
 import type { MarketplaceIntegration } from "./marketplace.tsx";
 import { OAuthCompletionDialog } from "./oauth-completion-dialog.tsx";
 import {
@@ -93,11 +98,6 @@ import {
 import { ToolCallForm } from "./tool-call-form.tsx";
 import { ToolCallResult } from "./tool-call-result.tsx";
 import type { MCPToolCallResult } from "./types.ts";
-import { Label } from "@deco/ui/components/label.tsx";
-import {
-  integrationNeedsApproval,
-  useIntegrationInstallState,
-} from "../../hooks/use-integration-install.tsx";
 
 function ConnectionInstanceActions({
   onDelete,
@@ -326,7 +326,7 @@ function ConfigureConnectionInstanceForm({
     function onSelect() {
       const key = getConnectionAppKey(connection);
       const appKey = AppKeys.build(key);
-      navigateWorkspace(`/connection/${appKey}`);
+      navigateWorkspace(`/apps/${appKey}`);
     }
 
     if (authorizeOauthUrl) {
@@ -1373,7 +1373,7 @@ const InstanceSelectItem = ({ instance }: { instance: Integration }) => {
   );
 };
 
-function AppDetail() {
+export default function AppDetail() {
   const { appKey: _appKey } = useParams();
   const navigateWorkspace = useNavigateWorkspace();
   const appKey = _appKey!;
@@ -1469,56 +1469,5 @@ function AppDetail() {
         </Tabs>
       </div>
     </div>
-  );
-}
-
-export default function Page() {
-  const { appKey: _appKey } = useParams();
-  const appKey = _appKey!;
-  const app = useGroupedApp({
-    appKey,
-  });
-
-  const isInstalled = app.instances?.length > 0;
-
-  const { info } = app;
-
-  return (
-    <PageLayout
-      hideViewsButton
-      tabs={{
-        main: {
-          Component: () => <AppDetail />,
-          title: "Overview",
-          initialOpen: true,
-        },
-      }}
-      breadcrumb={
-        <DefaultBreadcrumb
-          items={[
-            // This behavior is strange, it will be fixed once we have different pages for discover and integrations
-            isInstalled
-              ? { label: "My Apps", link: "/connections" }
-              : { label: "Discover", link: "/discover" },
-            ...(info?.name
-              ? [
-                  {
-                    label: (
-                      <div className="flex items-center gap-2">
-                        <IntegrationIcon
-                          icon={info.icon}
-                          name={info.name}
-                          size="xs"
-                        />
-                        <span>{info.friendlyName || info.name}</span>
-                      </div>
-                    ),
-                  },
-                ]
-              : []),
-          ]}
-        />
-      }
-    />
   );
 }

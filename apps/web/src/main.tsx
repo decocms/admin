@@ -78,19 +78,17 @@ const Login = lazy(() => import("./components/login/index.tsx"));
  * Route component with Suspense + Spinner. Remove the wrapWithUILoadingFallback if
  * want custom Suspense behavior.
  */
-const ConnectionDetail = lazy(() =>
+const AppDetail = lazy(() =>
+  wrapWithUILoadingFallback(import("./components/integrations/app-detail.tsx")),
+);
+
+const InstalledAppsList = lazy(() =>
   wrapWithUILoadingFallback(
-    import("./components/integrations/connection-detail.tsx"),
+    import("./components/integrations/installed-apps.tsx"),
   ),
 );
 
-const ConnectionsList = lazy(() =>
-  wrapWithUILoadingFallback(
-    import("./components/integrations/connections-list.tsx"),
-  ),
-);
-
-const ConnectionInstallSuccess = lazy(() =>
+const AppInstallSuccess = lazy(() =>
   wrapWithUILoadingFallback(
     import("./components/integrations/install-success.tsx"),
   ),
@@ -326,11 +324,11 @@ const router = createBrowserRouter([
         Component: ProjectLayout,
         children: [
           { index: true, Component: ProjectHome },
-          { path: "agents", Component: AgentList },
+          { path: "agents", Component: AgentList }, // ok - missing create button
           { path: "agent/:id/:threadId", Component: AgentDetail },
-          { path: "connections", Component: ConnectionsList },
-          { path: "connection/:appKey", Component: ConnectionDetail },
-          { path: "connections/success", Component: ConnectionInstallSuccess },
+          { path: "apps", Component: InstalledAppsList }, // ok - missing create button
+          { path: "apps/:appKey", Component: AppDetail }, // ok - but backwards navigation is missing. prob just make topbar know all
+          { path: "apps/success", Component: AppInstallSuccess }, // ok
           { path: "triggers", Component: TriggerList },
           { path: "trigger/:id", Component: TriggerDetails },
           { path: "settings/:tab", Component: Settings },
@@ -341,13 +339,13 @@ const router = createBrowserRouter([
           { path: "audit/:id", Component: AuditDetail },
           { path: "views", Component: ViewsList },
           // New dynamic route: /:teamSlug/views/:integrationId/:viewName
-          { path: "views/:integrationId/:viewName", Component: ViewDetail },
+          { path: "views/:integrationId/:viewName", Component: ViewDetail }, // ok
           // Legacy route redirects to the new dynamic route
           { path: "views/:id", Component: LegacyViewRedirect },
           { path: "prompts", Component: ListPrompts },
           { path: "prompt/:id", Component: PromptDetail },
           { path: "workflows", Component: WorkflowListPage },
-          { path: "discover", Component: Discover },
+          { path: "discover", Component: Discover }, // ok
           {
             path: "workflows/:workflowName/instances/:instanceId",
             Component: WorkflowDetailPage,

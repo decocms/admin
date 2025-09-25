@@ -171,9 +171,13 @@ function AdvancedTab() {
                       type="number"
                       min={1}
                       max={MAX_MAX_STEPS}
-                      defaultValue={DEFAULT_MAX_STEPS}
-                      {...field}
-                      onChange={(e) => field.onChange(parseInt(e.target.value))}
+                      value={field.value ?? DEFAULT_MAX_STEPS}
+                      onChange={(event) => {
+                        const nextValue = event.currentTarget.valueAsNumber;
+                        field.onChange(
+                          Number.isNaN(nextValue) ? undefined : nextValue,
+                        );
+                      }}
                     />
                   </FormControl>
                   <FormMessage />
@@ -196,8 +200,13 @@ function AdvancedTab() {
                       type="number"
                       min={MIN_MAX_TOKENS}
                       max={MAX_MAX_TOKENS}
-                      {...field}
-                      onChange={(e) => field.onChange(parseInt(e.target.value))}
+                      value={field.value ?? ""}
+                      onChange={(event) => {
+                        const nextValue = event.currentTarget.valueAsNumber;
+                        field.onChange(
+                          Number.isNaN(nextValue) ? undefined : nextValue,
+                        );
+                      }}
                     />
                   </FormControl>
                   <FormMessage />
@@ -221,11 +230,12 @@ function AdvancedTab() {
                       min={0}
                       max={1}
                       step={0.01}
-                      defaultValue={form.getValues("temperature") ?? undefined}
-                      {...field}
-                      onChange={(e) => {
-                        const value = Number(e.target.value);
-                        field.onChange(Number.isNaN(value) ? 0 : value);
+                      value={field.value ?? ""}
+                      onChange={(event) => {
+                        const nextValue = event.currentTarget.valueAsNumber;
+                        field.onChange(
+                          Number.isNaN(nextValue) ? undefined : nextValue,
+                        );
                       }}
                     />
                   </FormControl>

@@ -11,7 +11,6 @@
     "@modelcontextprotocol/sdk": "1.17.1",
     "drizzle-orm": "^0.44.3",
     "jose": "^6.0.11",
-    "mime-types": "^3.0.1",
     "zod": "^3.25.67",
     "zod-to-json-schema": "^3.24.4",
     "zod-from-json-schema": "^0.0.5"
@@ -28,7 +27,6 @@
     "./mcp-client": "./src/mcp-client.ts"
   },
   "devDependencies": {
-    "@types/mime-types": "^3.0.1",
     "ts-json-schema-generator": "^2.4.0",
     "wrangler": "^4.13.2"
   },

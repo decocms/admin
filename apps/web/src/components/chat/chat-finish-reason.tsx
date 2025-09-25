@@ -17,7 +17,8 @@ const REPORTS_BY_FINISH_REASON = {
   },
   stop: {
     title: "Agent completed the response",
-    description: "Everything looks good. Ask a follow-up question to keep going.",
+    description:
+      "Everything looks good. Ask a follow-up question to keep going.",
   },
 } as const;
 

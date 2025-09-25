@@ -1,5 +1,60 @@
 import { z } from "zod";
-import { lookup } from "mime-types";
+
+const MIME_TYPES: Record<string, string> = {
+  json: "application/json",
+  txt: "text/plain",
+  text: "text/plain",
+  md: "text/markdown",
+  markdown: "text/markdown",
+  html: "text/html",
+  htm: "text/html",
+  csv: "text/csv",
+  tsv: "text/tab-separated-values",
+  yml: "application/yaml",
+  yaml: "application/yaml",
+  xml: "application/xml",
+  pdf: "application/pdf",
+  png: "image/png",
+  jpg: "image/jpeg",
+  jpeg: "image/jpeg",
+  gif: "image/gif",
+  webp: "image/webp",
+  svg: "image/svg+xml",
+  avif: "image/avif",
+  bmp: "image/bmp",
+  ico: "image/x-icon",
+  mp3: "audio/mpeg",
+  wav: "audio/wav",
+  mp4: "video/mp4",
+  mov: "video/quicktime",
+  webm: "video/webm",
+  zip: "application/zip",
+  gz: "application/gzip",
+};
+
+function extractExtension(value: string): string | undefined {
+  if (!value) return undefined;
+  const trimmed = value.trim();
+  if (!trimmed) return undefined;
+
+  const sanitized = trimmed.replace(/^[^?#]*/g, (match) => match);
+  const withoutQuery = sanitized.split(/[?#]/)[0];
+
+  if (withoutQuery.startsWith(".")) {
+    return withoutQuery.slice(1).toLowerCase();
+  }
+
+  if (!withoutQuery.includes(".")) {
+    if (!withoutQuery.includes("/") && !withoutQuery.includes("\\")) {
+      return withoutQuery.toLowerCase();
+    }
+    return undefined;
+  }
+
+  const lastDot = withoutQuery.lastIndexOf(".");
+  if (lastDot === -1 || lastDot === withoutQuery.length - 1) return undefined;
+  return withoutQuery.slice(lastDot + 1).toLowerCase();
+}
 
 // Base Resource Schema (enhanced)
 export const ResourceSchema = z.object({
@@ -124,4 +179,4 @@ export type ResourcesListInput = z.infer<typeof ResourcesListInputSchema>;
 export type ResourcesListOutput = z.infer<typeof ResourcesListOutputSchema>;
 
 export const mimeType = (filePathOrExtension: string) =>
-  lookup(filePathOrExtension) || "text/plain";
+  MIME_TYPES[extractExtension(filePathOrExtension) ?? ""] ?? "text/plain";

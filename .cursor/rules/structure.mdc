@@ -70,16 +70,14 @@ Your admin menu is generated from these vibecoded assets so you can ship AI-nati
 The project leverages Bun for various development tasks:
 
 - Dependency management (`bun install`)
-- Code linting (`bun run lint`)
-- Code formatting (`bun run fmt`)
+- Code formatting (`bun run fmt:check --fix`)
 - Type checking (`bun run check`)
 - Running scripts (`bun run <script-name>`)
 - Package management (`bun add`, `bun remove`)
 
 - Dependency management
-- Code linting (deno run lint in package root folder or passing --config=./package.json)
-- Code formatting (deno run fmt in package root folder or passing --config=./package.json)
-- Type checking (deno run check in package root folder or passing --config=./package.json)
+- Code formatting (deno run fmt --config=./package.json)
+- Type checking (deno run check --config=./package.json)
 
 ## Local Development Checklist
 

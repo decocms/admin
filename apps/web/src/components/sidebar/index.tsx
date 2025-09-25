@@ -1,8 +1,8 @@
 import {
   type Agent,
   findPinnedView,
+  Integration,
   type Thread,
-  useAddView,
   useAgents,
   useConnectionViews,
   useDeleteThread,
@@ -425,12 +425,11 @@ function AddViewsDialog({
   open,
   onOpenChange,
 }: {
-  integration: { id: string; name: string; connection: any };
+  integration: Integration;
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }) {
   const currentTeam = useCurrentTeam();
-  const addViewMutation = useAddView();
   const { data: viewsData, isLoading: isLoadingViews } = useConnectionViews(
     integration,
     false,
@@ -452,11 +451,11 @@ function AddViewsDialog({
         integration: integration,
         isAdded: !!existingView,
         teamViewId: existingView?.id,
-      } as typeof view & { isAdded: boolean; teamViewId?: string; integration: { id: string; name: string; connection: any } };
+      } as typeof view & { isAdded: boolean; teamViewId?: string; integration: Integration };
     });
   }, [views, currentTeam.views, integration.id]);
 
-  return (
+  return (  
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-md">
         <DialogHeader>
@@ -533,7 +532,7 @@ function WorkspaceViews() {
   const navigateWorkspace = useNavigateWorkspace();
   const [addViewsDialogState, setAddViewsDialogState] = useState<{
     open: boolean;
-    integration?: { id: string; name: string; connection: any };
+    integration?: Integration;
   }>({ open: false });
 
   const handleRemoveView = async (view: View) => {
@@ -762,11 +761,7 @@ function WorkspaceViews() {
                           e.stopPropagation();
                           setAddViewsDialogState({
                             open: true,
-                            integration: {
-                              id: integration.id,
-                              name: integration.name,
-                              connection: integration.connection,
-                            },
+                            integration,
                           });
                         }}
                       >

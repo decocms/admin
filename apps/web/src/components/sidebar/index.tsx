@@ -48,6 +48,7 @@ import {
   SidebarMenuSub,
   SidebarMenuSubButton,
   SidebarMenuSubItem,
+  SidebarMenuAction,
   useSidebar,
 } from "@deco/ui/components/sidebar.tsx";
 import { Skeleton } from "@deco/ui/components/skeleton.tsx";
@@ -741,9 +742,31 @@ function WorkspaceViews() {
         return (
           <SidebarMenuItem key={integrationId}>
             <Collapsible asChild defaultOpen className="group/collapsible">
-              <div>
+              <div className="group/integration-header relative">
+                <SidebarMenuAction
+                  className="absolute right-3 top-1/2 hidden h-6 w-6 -translate-y-1/2 items-center justify-center rounded-full border border-border bg-background shadow-sm transition-opacity group-hover/integration-header:flex"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    if (integration && integrationId !== "custom") {
+                      setAddViewsDialogState({
+                        open: true,
+                        integration,
+                      });
+                    }
+                  }}
+                  aria-label={`Add view to ${integration?.name ?? "integration"}`}
+                  showOnHover
+                >
+                  <Icon
+                    name="add"
+                    size={14}
+                    className="text-muted-foreground"
+                  />
+                </SidebarMenuAction>
+
                 <CollapsibleTrigger asChild>
-                  <SidebarMenuButton className="w-full group/integration-header">
+                  <SidebarMenuButton className="w-full pr-8">
                     <IntegrationAvatar
                       size="xs"
                       url={integration?.icon}
@@ -753,27 +776,6 @@ function WorkspaceViews() {
                     <span className="truncate">
                       {integration?.name ?? "Custom"}
                     </span>
-                    {integration && integrationId !== "custom" && (
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="hidden group-hover/integration-header:flex transition-opacity ml-auto mr-1 h-5 w-5"
-                        onClick={(e) => {
-                          e.preventDefault();
-                          e.stopPropagation();
-                          setAddViewsDialogState({
-                            open: true,
-                            integration,
-                          });
-                        }}
-                      >
-                        <Icon
-                          name="add"
-                          size={14}
-                          className="text-muted-foreground"
-                        />
-                      </Button>
-                    )}
                     <Icon
                       name="chevron_right"
                       size={18}

@@ -1,3 +1,5 @@
+import { useEffect, useMemo, useRef } from "react";
+import { LanguageModelV1FinishReason } from "@ai-sdk/provider";
 import { Button } from "@deco/ui/components/button.tsx";
 import { Icon } from "@deco/ui/components/icon.tsx";
 import { useAgent } from "../agent/provider.tsx";
@@ -13,23 +15,46 @@ const REPORTS_BY_FINISH_REASON = {
     description:
       "You can let the agent keep going from where it stopped, or adjust the token limit in settings.",
   },
-};
+} as const;
+
+type KnownFinishReason = keyof typeof REPORTS_BY_FINISH_REASON;
+
+function getFinishReasonKey(
+  reason: LanguageModelV1FinishReason | null,
+): KnownFinishReason | undefined {
+  if (!reason || reason === "stop") return undefined;
+  if (reason in REPORTS_BY_FINISH_REASON) {
+    return reason as KnownFinishReason;
+  }
+  return undefined;
+}
 
 export function ChatFinishReason() {
   const { chat } = useAgent();
   const { append, status, finishReason } = chat;
+  const lastLoggedReasonRef = useRef<LanguageModelV1FinishReason | "__NONE__">(
+    "__NONE__",
+  );
 
-  if (
-    status !== "ready" ||
-    (finishReason !== "tool-calls" && finishReason !== "length")
-  ) {
-    if (finishReason !== "stop") {
-      console.warn(
-        "Unknown finish reason. Consider adding it to REPORTS_BY_FINISH_REASON in chat-finish-reason.tsx. Finish reason: ",
-        finishReason,
-      );
-    }
+  useEffect(() => {
+    if (!finishReason || finishReason === "stop") return;
+    if (finishReason in REPORTS_BY_FINISH_REASON) return;
+    if (lastLoggedReasonRef.current === finishReason) return;
+    lastLoggedReasonRef.current = finishReason;
 
+    console.warn(
+      "Unknown finish reason. Consider adding it to REPORTS_BY_FINISH_REASON in chat-finish-reason.tsx. Finish reason:",
+      finishReason,
+      "- the UI will ignore it.",
+    );
+  }, [finishReason]);
+
+  const reasonKey = useMemo(
+    () => getFinishReasonKey(finishReason),
+    [finishReason],
+  );
+
+  if (status !== "ready" || !reasonKey) {
     return null;
   }
 
@@ -45,10 +70,10 @@ export function ChatFinishReason() {
 
         <div className="flex flex-col gap-1">
           <div className="text-sm font-medium text-foreground">
-            {REPORTS_BY_FINISH_REASON[finishReason].title}
+            {REPORTS_BY_FINISH_REASON[reasonKey].title}
           </div>
           <div className="text-xs text-muted-foreground">
-            {REPORTS_BY_FINISH_REASON[finishReason].description}
+            {REPORTS_BY_FINISH_REASON[reasonKey].description}
           </div>
         </div>
 

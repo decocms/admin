@@ -15,11 +15,6 @@ const REPORTS_BY_FINISH_REASON = {
     description:
       "You can let the agent keep going from where it stopped, or adjust the token limit in settings.",
   },
-  stop: {
-    title: "Agent completed the response",
-    description:
-      "Everything looks good. Ask a follow-up question to keep going.",
-  },
 } as const;
 
 type KnownFinishReason = keyof typeof REPORTS_BY_FINISH_REASON;
@@ -27,7 +22,7 @@ type KnownFinishReason = keyof typeof REPORTS_BY_FINISH_REASON;
 function getFinishReasonKey(
   reason: LanguageModelV1FinishReason | null,
 ): KnownFinishReason | undefined {
-  if (!reason) return undefined;
+  if (!reason || reason === "stop") return undefined;
   if (reason in REPORTS_BY_FINISH_REASON) {
     return reason as KnownFinishReason;
   }
@@ -42,7 +37,7 @@ export function ChatFinishReason() {
   );
 
   useEffect(() => {
-    if (!finishReason) return;
+    if (!finishReason || finishReason === "stop") return;
     if (finishReason in REPORTS_BY_FINISH_REASON) return;
     if (lastLoggedReasonRef.current === finishReason) return;
     lastLoggedReasonRef.current = finishReason;

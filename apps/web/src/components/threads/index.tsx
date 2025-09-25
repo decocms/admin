@@ -154,7 +154,13 @@ function App({ agentId }: { agentId: string }) {
         new Date(a.updatedAt || a.createdAt).getTime(),
     );
 
-  const nothing = myThreads.length === 0 && otherThreads.length === 0;
+  const showProjectThreads = Boolean(
+    import.meta.env.VITE_FEATURE_THREADS_PROJECT,
+  );
+
+  const nothing =
+    myThreads.length === 0 &&
+    (!showProjectThreads || otherThreads.length === 0);
 
   return (
     <div
@@ -179,13 +185,15 @@ function App({ agentId }: { agentId: string }) {
             agentId={agentId}
             emptyText="You haven't started any conversations yet."
           />
-          <Section
-            title="Project threads"
-            threads={otherThreads}
-            showUser
-            agentId={agentId}
-            emptyText="No conversations from other collaborators yet."
-          />
+          {showProjectThreads ? (
+            <Section
+              title="Project threads"
+              threads={otherThreads}
+              showUser
+              agentId={agentId}
+              emptyText="No conversations from other collaborators yet."
+            />
+          ) : null}
         </>
       )}
     </div>

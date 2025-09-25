@@ -4,6 +4,7 @@ import {
   useRemoveAgent,
   useSDK,
   WELL_KNOWN_AGENT_IDS,
+  AgentWithActivity,
 } from "@deco/sdk";
 import {
   AlertDialog,
@@ -48,12 +49,6 @@ import type { Tab } from "../dock/index.tsx";
 import { DefaultBreadcrumb, PageLayout } from "../layout/project.tsx";
 import { useFocusChat } from "./hooks.ts";
 import { useViewMode } from "@deco/ui/hooks/use-view-mode.ts";
-
-// Agent model enriched with last-used fields from API
-interface AgentWithActivity extends Agent {
-  lastAccess?: string | null;
-  lastAccessor?: string | null;
-}
 
 export const useDuplicateAgent = (agent: Agent | null) => {
   const [duplicating, setDuplicating] = useState(false);
@@ -407,17 +402,14 @@ function List() {
     {
       key: "agents-visibility",
       defaultValue: "active",
+      migrate: (value) => {
+        if (value === "all") {
+          return "active";
+        }
+        return value;
+      },
     },
   );
-
-  // Migration: Previously saved value may be "all"; make "active" the new default on first load
-  useEffect(() => {
-    if (selectedTab === "all") {
-      setSelectedTab("active");
-    }
-    // run once on mount
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
 
   const agentsByVisibility = useMemo(() => {
     const initial: Record<

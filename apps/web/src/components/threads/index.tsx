@@ -133,7 +133,7 @@ function Section({
   );
 }
 
-function App({ agentId }: { agentId: string }) {
+function ThreadsList({ agentId }: { agentId: string }) {
   const user = useUser();
   const my = useThreads({ agentId, resourceId: user?.id ?? "" });
   const all = useThreads({ agentId });
@@ -200,4 +200,4 @@ function App({ agentId }: { agentId: string }) {
   );
 }
 
-export default App;
+export default ThreadsList;

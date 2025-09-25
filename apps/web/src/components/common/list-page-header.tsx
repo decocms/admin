@@ -84,7 +84,7 @@ export function ListPageHeader<TChiplet extends Chiplet>({
         {view && <ViewModeSwitcher {...view} />}
         {input && (
           <Input
-            className="w-full sm:w-56 md:w-72 lg:w-80 text-sm min-w-0 flex-shrink"
+            className="w-full sm:w-56 md:w-72 lg:w-80 text-sm min-w-0 shrink"
             {...input}
           />
         )}

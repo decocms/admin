@@ -150,16 +150,18 @@ export const listAgents = createTool({
         : await c.policy.getUserRoles(c.user.id as string, c.workspace.slug);
     const userRoles: string[] = roles?.map((role) => role.name);
 
-    const filteredAgents = data.filter(
-      (agent) =>
-        !agent.access ||
-        userRoles?.includes(agent.access) ||
-        userRoles?.some((role) => IMPORTANT_ROLES.includes(role)),
-    );
+    const filteredAgents = data
+      .filter(
+        (agent) =>
+          !agent.access ||
+          userRoles?.includes(agent.access) ||
+          userRoles?.some((role) => IMPORTANT_ROLES.includes(role)),
+      );
 
     const agentIds = filteredAgents
       .map((a) => a.id)
       .filter((id) => !(id in WELL_KNOWN_AGENTS));
+
     let latestByAgent: Record<
       string,
       { created_at: string; user_id: string } | undefined

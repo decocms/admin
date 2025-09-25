@@ -50,11 +50,15 @@ function useLocalStorageChange(
 interface UseLocalStorageProps<T> {
   key: string;
   defaultValue: T;
+  migrate?: (value: T) => T;
 }
 
-function useLocalStorage<T>({ key, defaultValue }: UseLocalStorageProps<T>) {
+function useLocalStorage<T>({ key, defaultValue, migrate }: UseLocalStorageProps<T>) {
   const [value, setValue] = useState<T>(() => {
     const item = localStorage.getItem(key);
+    if (migrate && item) {
+      return migrate(JSON.parse(item));
+    }
     return item ? JSON.parse(item) : defaultValue;
   });
 

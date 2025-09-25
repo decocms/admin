@@ -738,6 +738,90 @@ function WorkspaceViews() {
       })}
       {Object.entries(fromIntegration).map(([integrationId, views]) => {
         const integration = integrationMap.get(integrationId);
+        const isSingleView = views.length === 1;
+
+        if (isSingleView) {
+          const [view] = views;
+          const href = buildViewHrefFromView(view as View);
+
+          return (
+            <SidebarMenuItem key={integrationId}>
+              <WithActive to={href}>
+                {({ isActive }) => (
+                  <SidebarMenuButton
+                    asChild
+                    isActive={isActive}
+                    className="w-full pr-8"
+                  >
+                    <Link
+                      to={href}
+                      className="group/item"
+                      onClick={() => {
+                        trackEvent("sidebar_navigation_click", {
+                          item: view.title,
+                        });
+                        isMobile && toggleSidebar();
+                      }}
+                    >
+                      <div className="relative">
+                        <IntegrationAvatar
+                          size="xs"
+                          url={integration?.icon}
+                          fallback={integration?.name}
+                          className="!w-[18px] !h-[18px] !rounded-md"
+                        />
+                        {integration && integrationId !== "custom" && (
+                          <SidebarMenuAction
+                            asChild
+                            className="absolute inset-0 hidden items-center justify-center rounded-md border border-border/80 bg-background/95 shadow-sm transition-opacity group-hover/item:flex"
+                            onClick={(event) => {
+                              event.preventDefault();
+                              event.stopPropagation();
+                              setAddViewsDialogState({
+                                open: true,
+                                integration,
+                              });
+                            }}
+                            aria-label={`Add view to ${integration?.name ?? "integration"}`}
+                            showOnHover
+                          >
+                            <span
+                              role="button"
+                              tabIndex={0}
+                              className="flex h-full w-full items-center justify-center"
+                              onKeyDown={(event) => {
+                                if (
+                                  event.key === "Enter" ||
+                                  event.key === " "
+                                ) {
+                                  event.preventDefault();
+                                  event.stopPropagation();
+                                  setAddViewsDialogState({
+                                    open: true,
+                                    integration,
+                                  });
+                                }
+                              }}
+                            >
+                              <Icon
+                                name="add"
+                                size={14}
+                                className="text-muted-foreground"
+                              />
+                            </span>
+                          </SidebarMenuAction>
+                        )}
+                      </div>
+                      <span className="truncate">
+                        {view.title ?? integration?.name ?? "Custom"}
+                      </span>
+                    </Link>
+                  </SidebarMenuButton>
+                )}
+              </WithActive>
+            </SidebarMenuItem>
+          );
+        }
 
         return (
           <SidebarMenuItem key={integrationId}>
@@ -756,9 +840,9 @@ function WorkspaceViews() {
                         <SidebarMenuAction
                           asChild
                           className="absolute inset-0 hidden items-center justify-center rounded-md border border-border/80 bg-background/95 shadow-sm transition-opacity group-hover/integration-header:flex"
-                          onClick={(e) => {
-                            e.preventDefault();
-                            e.stopPropagation();
+                          onClick={(event) => {
+                            event.preventDefault();
+                            event.stopPropagation();
                             setAddViewsDialogState({
                               open: true,
                               integration,
@@ -767,7 +851,21 @@ function WorkspaceViews() {
                           aria-label={`Add view to ${integration?.name ?? "integration"}`}
                           showOnHover
                         >
-                          <span className="flex h-full w-full items-center justify-center">
+                          <span
+                            role="button"
+                            tabIndex={0}
+                            className="flex h-full w-full items-center justify-center"
+                            onKeyDown={(event) => {
+                              if (event.key === "Enter" || event.key === " ") {
+                                event.preventDefault();
+                                event.stopPropagation();
+                                setAddViewsDialogState({
+                                  open: true,
+                                  integration,
+                                });
+                              }
+                            }}
+                          >
                             <Icon
                               name="add"
                               size={14}
@@ -816,9 +914,9 @@ function WorkspaceViews() {
                                   name="unpin"
                                   size={18}
                                   className="text-muted-foreground/75 opacity-0 group-hover/item:opacity-50 hover:opacity-100 transition-opacity cursor-pointer ml-auto"
-                                  onClick={(e) => {
-                                    e.preventDefault();
-                                    e.stopPropagation();
+                                  onClick={(event) => {
+                                    event.preventDefault();
+                                    event.stopPropagation();
                                     handleRemoveView(view);
                                   }}
                                 />

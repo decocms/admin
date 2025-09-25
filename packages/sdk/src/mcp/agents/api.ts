@@ -80,15 +80,12 @@ export const matchByWorkspaceOrProjectLocatorForAgents = (
   workspace: string,
   locator?: LocatorStructured,
 ) => {
-  return or(
-    eq(agents.workspace, workspace),
-    locator
-      ? and(
-          eq(projects.slug, locator.project),
-          eq(organizations.slug, locator.org),
-        )
-      : undefined,
-  );
+  return locator
+    ? and(
+        eq(projects.slug, locator.project),
+        eq(organizations.slug, locator.org),
+      )
+    : eq(agents.workspace, workspace);
 };
 
 const AGENT_FIELDS_SELECT = {

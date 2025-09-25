@@ -87,15 +87,12 @@ export const matchByWorkspaceOrProjectLocatorForIntegrations = (
   workspace: string,
   locator?: LocatorStructured,
 ) => {
-  return or(
-    eq(integrations.workspace, workspace),
-    locator
-      ? and(
-          eq(projects.slug, locator.project),
-          eq(organizations.slug, locator.org),
-        )
-      : undefined,
-  );
+  return locator
+    ? and(
+        eq(projects.slug, locator.project),
+        eq(organizations.slug, locator.org),
+      )
+    : eq(integrations.workspace, workspace);
 };
 
 // Tool factories for each group

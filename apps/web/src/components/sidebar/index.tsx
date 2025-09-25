@@ -457,6 +457,14 @@ function WorkspaceViews() {
     for (const view of views) {
       const integrationId = view.integrationId as string | undefined;
       if (integrationId) {
+        const isInstalled = integrations?.some(
+          (integration) => integration.id === integrationId,
+        );
+
+        if (!isInstalled) {
+          continue;
+        }
+
         if (!result.fromIntegration[integrationId]) {
           result.fromIntegration[integrationId] = [];
         }

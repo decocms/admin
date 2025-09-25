@@ -70,21 +70,17 @@ Your admin menu is generated from these vibecoded assets so you can ship AI-nati
 The project leverages Bun for various development tasks:
 
 - Dependency management (`bun install`)
-- Code formatting (`bun run fmt:check --fix`)
+- Code formatting (`bun run fmt`)
 - Type checking (`bun run check`)
 - Running scripts (`bun run <script-name>`)
 - Package management (`bun add`, `bun remove`)
 
-- Dependency management
-- Code formatting (deno run fmt --config=./package.json)
-- Type checking (deno run check --config=./package.json)
-
 ## Local Development Checklist
 
 1. Install dependencies: `bun install`
-2. Start the web app: `bun run --filter apps/web dev`
+2. Start the web app: `bun dev`
 3. Run type checking: `bun run check`
-4. Run linting: `bun run lint`
-5. Enforce formatting: `bun run fmt:check --fix`
+4. Run formatting: `bun run fmt`
+5. Run linting: `bun run lint`
 
 > Tip: run steps 3–5 before opening pull requests to keep CI green.

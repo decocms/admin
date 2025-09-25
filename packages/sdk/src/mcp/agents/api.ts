@@ -234,8 +234,6 @@ export const listAgents = createTool({
   },
 });
 
-// removed AGENTS_LIST_WITH_ACTIVITY and AGENT_ACTIVITY_REGISTER to avoid extra policy surface
-
 export const getAgent = createTool({
   name: "AGENTS_GET",
   description: "Get an agent by id",

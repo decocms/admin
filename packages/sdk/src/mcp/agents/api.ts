@@ -157,26 +157,54 @@ export const listAgents = createTool({
         userRoles?.some((role) => IMPORTANT_ROLES.includes(role)),
     );
 
-    const agentIds = filteredAgents.map((a) => a.id);
+    const agentIds = filteredAgents
+      .map((a) => a.id)
+      .filter((id) => !(id in WELL_KNOWN_AGENTS));
     let latestByAgent: Record<
       string,
       { created_at: string; user_id: string } | undefined
     > = {};
     if (agentIds.length > 0) {
-      const { data: activityData, error: activityError } = await c.db
+      const {
+        data: activityData,
+        error: activityError,
+      } = await c.db
         .from("user_activity")
         .select("user_id, value, created_at")
-        .eq("workspace", c.workspace.value)
         .eq("resource", "agent")
         .eq("key", "id")
         .in("value", agentIds)
         .order("created_at", { ascending: false });
 
+      let rows = activityData ?? [];
+
       if (activityError) {
-        throw new InternalServerError(activityError.message);
+        const isMissingWorkspaceColumn =
+          activityError.message?.includes("user_activity.workspace");
+
+        if (!isMissingWorkspaceColumn) {
+          throw new InternalServerError(activityError.message);
+        }
+
+        const {
+          data: fallbackData,
+          error: fallbackError,
+        } = await c.db
+          .from("user_activity")
+          .select("user_id, value, created_at")
+          .eq("resource", "agent")
+          .eq("key", "id")
+          .in("value", agentIds)
+          .order("created_at", { ascending: false });
+
+        if (fallbackError) {
+          throw new InternalServerError(fallbackError.message);
+        }
+
+        rows = fallbackData ?? [];
       }
 
-      latestByAgent = (activityData ?? []).reduce(
+      latestByAgent = rows.reduce(
         (acc, row) => {
           const value = row.value as string | null;
           if (!value) return acc;

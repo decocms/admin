@@ -39,7 +39,7 @@ export function Chiplet(props: ChipletProps) {
 
   return (
     <Tooltip>
-      <TooltipTrigger>
+      <TooltipTrigger asChild>
         <Button
           variant="outline"
           disabled={item.disabled}

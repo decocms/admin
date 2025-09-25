@@ -15,6 +15,10 @@ const REPORTS_BY_FINISH_REASON = {
     description:
       "You can let the agent keep going from where it stopped, or adjust the token limit in settings.",
   },
+  stop: {
+    title: "Agent completed the response",
+    description: "Everything looks good. Ask a follow-up question to keep going.",
+  },
 } as const;
 
 type KnownFinishReason = keyof typeof REPORTS_BY_FINISH_REASON;
@@ -45,6 +49,7 @@ export function ChatFinishReason() {
     console.warn(
       "Unknown finish reason. Consider adding it to REPORTS_BY_FINISH_REASON in chat-finish-reason.tsx. Finish reason:",
       finishReason,
+      "- the UI will ignore it.",
     );
   }, [finishReason]);
 

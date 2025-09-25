@@ -1,5 +1,43 @@
 import { z } from "zod";
-import { lookup } from "mime-types";
+import mimeDb from "./mime-db.json";
+
+type MimeDb = Record<string, { extensions?: string[] }>;
+
+const EXTENSION_TO_MIME = (() => {
+  const map = new Map<string, string>();
+  Object.entries(mimeDb as MimeDb).forEach(([type, meta]) => {
+    meta.extensions?.forEach((ext) => {
+      if (!map.has(ext)) {
+        map.set(ext, type);
+      }
+    });
+  });
+  return map;
+})();
+
+function extractExtension(value: string): string | undefined {
+  if (!value) return undefined;
+  const trimmed = value.trim();
+  if (!trimmed) return undefined;
+
+  const sanitized = trimmed.replace(/^[^?#]*/g, (match) => match);
+  const withoutQuery = sanitized.split(/[?#]/)[0];
+
+  if (withoutQuery.startsWith(".")) {
+    return withoutQuery.slice(1).toLowerCase();
+  }
+
+  if (!withoutQuery.includes(".")) {
+    if (!withoutQuery.includes("/") && !withoutQuery.includes("\\")) {
+      return withoutQuery.toLowerCase();
+    }
+    return undefined;
+  }
+
+  const lastDot = withoutQuery.lastIndexOf(".");
+  if (lastDot === -1 || lastDot === withoutQuery.length - 1) return undefined;
+  return withoutQuery.slice(lastDot + 1).toLowerCase();
+}
 
 // Base Resource Schema (enhanced)
 export const ResourceSchema = z.object({
@@ -123,5 +161,8 @@ export type ResourceDeleteOutput = z.infer<typeof ResourceDeleteOutputSchema>;
 export type ResourcesListInput = z.infer<typeof ResourcesListInputSchema>;
 export type ResourcesListOutput = z.infer<typeof ResourcesListOutputSchema>;
 
-export const mimeType = (filePathOrExtension: string) =>
-  lookup(filePathOrExtension) || "text/plain";
+export const mimeType = (filePathOrExtension: string) => {
+  const ext = extractExtension(filePathOrExtension);
+  if (!ext) return "text/plain";
+  return EXTENSION_TO_MIME.get(ext) ?? "text/plain";
+};

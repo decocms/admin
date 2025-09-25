@@ -1,36 +1,19 @@
 import { z } from "zod";
+import mimeDb from "./mime-db.json";
 
-const MIME_TYPES: Record<string, string> = {
-  json: "application/json",
-  txt: "text/plain",
-  text: "text/plain",
-  md: "text/markdown",
-  markdown: "text/markdown",
-  html: "text/html",
-  htm: "text/html",
-  csv: "text/csv",
-  tsv: "text/tab-separated-values",
-  yml: "application/yaml",
-  yaml: "application/yaml",
-  xml: "application/xml",
-  pdf: "application/pdf",
-  png: "image/png",
-  jpg: "image/jpeg",
-  jpeg: "image/jpeg",
-  gif: "image/gif",
-  webp: "image/webp",
-  svg: "image/svg+xml",
-  avif: "image/avif",
-  bmp: "image/bmp",
-  ico: "image/x-icon",
-  mp3: "audio/mpeg",
-  wav: "audio/wav",
-  mp4: "video/mp4",
-  mov: "video/quicktime",
-  webm: "video/webm",
-  zip: "application/zip",
-  gz: "application/gzip",
-};
+type MimeDb = Record<string, { extensions?: string[] }>;
+
+const EXTENSION_TO_MIME = (() => {
+  const map = new Map<string, string>();
+  Object.entries(mimeDb as MimeDb).forEach(([type, meta]) => {
+    meta.extensions?.forEach((ext) => {
+      if (!map.has(ext)) {
+        map.set(ext, type);
+      }
+    });
+  });
+  return map;
+})();
 
 function extractExtension(value: string): string | undefined {
   if (!value) return undefined;
@@ -178,5 +161,8 @@ export type ResourceDeleteOutput = z.infer<typeof ResourceDeleteOutputSchema>;
 export type ResourcesListInput = z.infer<typeof ResourcesListInputSchema>;
 export type ResourcesListOutput = z.infer<typeof ResourcesListOutputSchema>;
 
-export const mimeType = (filePathOrExtension: string) =>
-  MIME_TYPES[extractExtension(filePathOrExtension) ?? ""] ?? "text/plain";
+export const mimeType = (filePathOrExtension: string) => {
+  const ext = extractExtension(filePathOrExtension);
+  if (!ext) return "text/plain";
+  return EXTENSION_TO_MIME.get(ext) ?? "text/plain";
+};

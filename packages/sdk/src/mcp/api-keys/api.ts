@@ -60,7 +60,7 @@ export const matchByWorkspaceOrProjectLocatorForApiKeys = (
   workspace: string,
   locator?: LocatorStructured,
 ) => {
-  return locator
+  return locator && locator?.project !== "default"
     ? and(
         eq(projects.slug, locator.project),
         eq(organizations.slug, locator.org),

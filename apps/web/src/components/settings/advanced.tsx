@@ -171,9 +171,16 @@ function AdvancedTab() {
                       type="number"
                       min={1}
                       max={MAX_MAX_STEPS}
-                      value={field.value ?? DEFAULT_MAX_STEPS}
+                      step={1}
+                      placeholder={String(DEFAULT_MAX_STEPS)}
+                      value={field.value === undefined ? "" : field.value}
                       onChange={(event) => {
-                        const nextValue = event.currentTarget.valueAsNumber;
+                        const rawValue = event.currentTarget.value;
+                        if (rawValue === "") {
+                          field.onChange(undefined);
+                          return;
+                        }
+                        const nextValue = Number.parseInt(rawValue, 10);
                         field.onChange(
                           Number.isNaN(nextValue) ? undefined : nextValue,
                         );

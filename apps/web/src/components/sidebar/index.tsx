@@ -11,7 +11,7 @@ import {
   useThreads,
   useUpdateThreadTitle,
   View,
-  WELL_KNOWN_AGENT_IDS
+  WELL_KNOWN_AGENT_IDS,
 } from "@deco/sdk";
 import { Button } from "@deco/ui/components/button.tsx";
 import {
@@ -451,11 +451,15 @@ function AddViewsDialog({
         integration: integration,
         isAdded: !!existingView,
         teamViewId: existingView?.id,
-      } as typeof view & { isAdded: boolean; teamViewId?: string; integration: Integration };
+      } as typeof view & {
+        isAdded: boolean;
+        teamViewId?: string;
+        integration: Integration;
+      };
     });
   }, [views, currentTeam.views, integration.id]);
 
-  return (  
+  return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-md">
         <DialogHeader>
@@ -505,8 +509,6 @@ function AddViewsDialog({
                     </div>
                   </div>
                   <TogglePin view={view} />
-
-
                 </div>
               ))}
             </div>
@@ -575,7 +577,7 @@ function WorkspaceViews() {
         if (!isInstalled) {
           continue;
         }
-        
+
         if (!result.fromIntegration[integrationId]) {
           result.fromIntegration[integrationId] = [];
         }
@@ -827,15 +829,15 @@ function WorkspaceViews() {
           </SidebarMenuItem>
         );
       })}
-      
+
       {addViewsDialogState.integration && (
         <AddViewsDialog
           integration={addViewsDialogState.integration}
           open={addViewsDialogState.open}
-          onOpenChange={(open) => 
-            setAddViewsDialogState({ 
-              open, 
-              integration: open ? addViewsDialogState.integration : undefined 
+          onOpenChange={(open) =>
+            setAddViewsDialogState({
+              open,
+              integration: open ? addViewsDialogState.integration : undefined,
             })
           }
         />

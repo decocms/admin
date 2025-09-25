@@ -743,36 +743,40 @@ function WorkspaceViews() {
           <SidebarMenuItem key={integrationId}>
             <Collapsible asChild defaultOpen className="group/collapsible">
               <div className="group/integration-header relative">
-                <SidebarMenuAction
-                  className="absolute right-3 top-1/2 hidden h-6 w-6 -translate-y-1/2 items-center justify-center rounded-full border border-border bg-background shadow-sm transition-opacity group-hover/integration-header:flex"
-                  onClick={(e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    if (integration && integrationId !== "custom") {
-                      setAddViewsDialogState({
-                        open: true,
-                        integration,
-                      });
-                    }
-                  }}
-                  aria-label={`Add view to ${integration?.name ?? "integration"}`}
-                  showOnHover
-                >
-                  <Icon
-                    name="add"
-                    size={14}
-                    className="text-muted-foreground"
-                  />
-                </SidebarMenuAction>
-
                 <CollapsibleTrigger asChild>
                   <SidebarMenuButton className="w-full pr-8">
-                    <IntegrationAvatar
-                      size="xs"
-                      url={integration?.icon}
-                      fallback={integration?.name}
-                      className="!w-[18px] !h-[18px] !rounded-md"
-                    />
+                    <div className="relative">
+                      <IntegrationAvatar
+                        size="xs"
+                        url={integration?.icon}
+                        fallback={integration?.name}
+                        className="!w-[18px] !h-[18px] !rounded-md"
+                      />
+                      {integration && integrationId !== "custom" && (
+                        <SidebarMenuAction
+                          asChild
+                          className="absolute inset-0 hidden items-center justify-center rounded-md border border-border/80 bg-background/95 shadow-sm transition-opacity group-hover/integration-header:flex"
+                          onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            setAddViewsDialogState({
+                              open: true,
+                              integration,
+                            });
+                          }}
+                          aria-label={`Add view to ${integration?.name ?? "integration"}`}
+                          showOnHover
+                        >
+                          <span className="flex h-full w-full items-center justify-center">
+                            <Icon
+                              name="add"
+                              size={14}
+                              className="text-muted-foreground"
+                            />
+                          </span>
+                        </SidebarMenuAction>
+                      )}
+                    </div>
                     <span className="truncate">
                       {integration?.name ?? "Custom"}
                     </span>

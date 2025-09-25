@@ -872,8 +872,8 @@ export function AppSidebar() {
     <Sidebar variant="sidebar">
       <SidebarHeader />
 
-      <SidebarContent className="flex flex-col h-full overflow-x-hidden">
-        <div className="flex flex-col flex-1 min-h-0">
+      <SidebarContent className="flex h-full flex-col overflow-hidden">
+        <div className="flex flex-1 min-h-0 flex-col overflow-y-auto overflow-x-hidden">
           <div className="flex-none">
             <SidebarGroup className="font-medium">
               <SidebarGroupContent>
@@ -923,13 +923,11 @@ export function AppSidebar() {
           </div>
 
           {!isCollapsed && (
-            <>
-              <div className="flex-1 overflow-y-auto overflow-x-hidden">
-                <Suspense fallback={<SidebarThreads.Skeleton />}>
-                  <SidebarThreads />
-                </Suspense>
-              </div>
-            </>
+            <div className="mt-4 flex-none">
+              <Suspense fallback={<SidebarThreads.Skeleton />}>
+                <SidebarThreads />
+              </Suspense>
+            </div>
           )}
         </div>
 

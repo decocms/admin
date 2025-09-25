@@ -420,19 +420,26 @@ function List() {
   }, []);
 
   const agentsByVisibility = useMemo(() => {
-    const initial: Record<"all" | "public" | "workspace", AgentWithActivity[]> =
-      {
-        all: [],
-        public: [],
-        workspace: [],
-      };
+    const initial: Record<
+      "all" | "public" | "workspace" | "private",
+      AgentWithActivity[]
+    > = {
+      all: [],
+      public: [],
+      workspace: [],
+      private: [],
+    };
 
     return (
       (agents as AgentWithActivity[] | undefined)?.reduce((acc, agent) => {
         acc["all"].push(agent);
-        acc[agent.visibility.toLowerCase() as "public" | "workspace"].push(
-          agent,
-        );
+        if (agent.visibility === "PUBLIC") {
+          acc.public.push(agent);
+        } else if (agent.visibility === "WORKSPACE") {
+          acc.workspace.push(agent);
+        } else if (agent.visibility === "PRIVATE") {
+          acc.private.push(agent);
+        }
         return acc;
       }, initial) ?? initial
     );

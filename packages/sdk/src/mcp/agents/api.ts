@@ -166,6 +166,7 @@ export const listAgents = createTool({
       const { data: activityData, error: activityError } = await c.db
         .from("user_activity")
         .select("user_id, value, created_at")
+        .eq("workspace", c.workspace.value)
         .eq("resource", "agent")
         .eq("key", "id")
         .in("value", agentIds)

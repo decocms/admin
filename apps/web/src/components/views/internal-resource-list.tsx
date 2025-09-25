@@ -399,7 +399,7 @@ export function InternalResourceListWithIntegration({
           }
         />
       ) : viewMode === "cards" ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 overflow-y-auto h-[calc(100%-54px)]">
           {items.map((it) => (
             <Card key={it.uri} className="cursor-pointer group relative">
               <CardContent

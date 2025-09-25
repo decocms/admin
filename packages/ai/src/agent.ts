@@ -745,7 +745,6 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
           resource: "agent",
           key: "id",
           value: this.agentId,
-          workspace: this.workspace,
         });
       }
     } catch (err) {

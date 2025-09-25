@@ -420,11 +420,12 @@ function List() {
   }, []);
 
   const agentsByVisibility = useMemo(() => {
-    const initial: Record<"all" | "public" | "workspace", AgentWithActivity[]> = {
-      all: [],
-      public: [],
-      workspace: [],
-    };
+    const initial: Record<"all" | "public" | "workspace", AgentWithActivity[]> =
+      {
+        all: [],
+        public: [],
+        workspace: [],
+      };
 
     return (
       (agents as AgentWithActivity[] | undefined)?.reduce((acc, agent) => {

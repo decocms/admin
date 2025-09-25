@@ -13,7 +13,6 @@ import { ChatInput } from "../chat/chat-input.tsx";
 import { ChatMessages } from "../chat/chat-messages.tsx";
 import { AgentProvider } from "./provider.tsx";
 import { EmptyState } from "../common/empty-state.tsx";
-import { PageLayout } from "../layout/project.tsx";
 import { ChatHeader } from "./chat-header.tsx";
 import AgentPreview from "./preview.tsx";
 import ThreadView from "./thread.tsx";
@@ -138,11 +137,14 @@ function Page() {
                 }
               >
                 <SidebarInset>
-                  <PageLayout
+                  {/** TODO: make sure this page works ok */}
+                  <MainChat />
+
+                  {/* <PageLayout
                     tabs={TABS}
                     breadcrumb={<ChatHeader />}
                     hideViewsButton
-                  />
+                  /> */}
                 </SidebarInset>
               </SidebarLayout>
             </SidebarProvider>

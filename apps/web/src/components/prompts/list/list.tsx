@@ -29,7 +29,6 @@ import { useReducer, useState } from "react";
 import { useNavigateWorkspace } from "../../../hooks/use-navigate-workspace.ts";
 import { EmptyState } from "../../common/empty-state.tsx";
 import { Table, type TableColumn } from "../../common/table/index.tsx";
-import { DefaultBreadcrumb, PageLayout } from "../../layout/project.tsx";
 import { Header } from "./common.tsx";
 import { useViewMode } from "@deco/ui/hooks/use-view-mode.ts";
 
@@ -84,58 +83,6 @@ function listReducer(state: ListState, action: ListAction): ListState {
       return state;
     }
   }
-}
-
-function ListPromptsLayout() {
-  const create = useCreatePrompt();
-  const navigateWorkspace = useNavigateWorkspace();
-
-  const handleCreate = async () => {
-    const result = await create.mutateAsync({
-      name: "",
-      content: "",
-    });
-    navigateWorkspace(`/prompt/${result.id}`);
-  };
-
-  return (
-    <PageLayout
-      hideViewsButton
-      breadcrumb={
-        <DefaultBreadcrumb
-          items={[{ label: "Prompt Library", link: "/prompts" }]}
-        />
-      }
-      tabs={{
-        prompts: {
-          title: "Prompt Library",
-          Component: ListPrompts,
-          initialOpen: true,
-        },
-      }}
-      actionButtons={
-        <Button
-          onClick={handleCreate}
-          disabled={create.isPending}
-          variant="special"
-          size="sm"
-          className="gap-2"
-        >
-          {create.isPending ? (
-            <>
-              <Spinner size="xs" />
-              <span>Creating prompt...</span>
-            </>
-          ) : (
-            <>
-              <Icon name="add" />
-              <span className="hidden md:inline">New prompt</span>
-            </>
-          )}
-        </Button>
-      }
-    />
-  );
 }
 
 interface PromptActionsProps {
@@ -419,5 +366,5 @@ function ListPrompts() {
 }
 
 export default function Page() {
-  return <ListPromptsLayout />;
+  return <ListPrompts />;
 }

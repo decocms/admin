@@ -1,4 +1,4 @@
-import { togglePanel } from "../../dock/index.tsx";
+// import { togglePanel } from "../../dock/index.tsx";
 
 export const IMAGE_REGEXP = /\.png|\.jpg|\.jpeg|\.gif|\.webp/;
 
@@ -42,10 +42,11 @@ export const openPreviewPanel = (
   content: string,
   title: string,
 ) => {
-  togglePanel({
-    id,
-    component: "preview",
-    title,
-    params: toIframeProps(content),
-  });
+  throw new Error(",,,fdmasf");
+  // togglePanel({
+  //   id,
+  //   component: "preview",
+  //   title,
+  //   params: toIframeProps(content),
+  // });
 };

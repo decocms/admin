@@ -154,8 +154,7 @@ export function BreadcrumbOrgSwitcher() {
                 variant="ghost"
                 size="sm"
                 className="w-full justify-start font-normal"
-                // TODO: move organization settings/plan to org-level routes instead of project-level
-                onClick={() => navigate(`/${org}/default/settings`)}
+                onClick={() => navigate(`/${org}/settings`)}
               >
                 <Icon name="settings" size={16} />
                 <span>Settings</span>

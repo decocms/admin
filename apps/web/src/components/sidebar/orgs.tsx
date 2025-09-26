@@ -22,6 +22,18 @@ function OrgViews() {
         <SidebarMenuButton
           className="cursor-pointer"
           onClick={() => {
+            navigateOrg("/");
+          }}
+        >
+          <Icon name="folder" size={20} className="text-muted-foreground/75" />
+          <span className="truncate">Projects</span>
+        </SidebarMenuButton>
+      </SidebarMenuItem>
+
+      <SidebarMenuItem>
+        <SidebarMenuButton
+          className="cursor-pointer"
+          onClick={() => {
             navigateOrg("/members");
           }}
         >
@@ -39,6 +51,54 @@ function OrgViews() {
         >
           <Icon name="wallet" size={20} className="text-muted-foreground/75" />
           <span className="truncate">Billing</span>
+        </SidebarMenuButton>
+      </SidebarMenuItem>
+
+      <SidebarMenuItem>
+        <SidebarMenuButton
+          className="cursor-pointer"
+          onClick={() => {
+            navigateOrg("/models");
+          }}
+        >
+          <Icon
+            name="network_intelligence"
+            size={20}
+            className="text-muted-foreground/75"
+          />
+          <span className="truncate">Models</span>
+        </SidebarMenuButton>
+      </SidebarMenuItem>
+
+      <SidebarMenuItem>
+        <SidebarMenuButton
+          className="cursor-pointer"
+          onClick={() => {
+            navigateOrg("/usage");
+          }}
+        >
+          <Icon
+            name="monitoring"
+            size={20}
+            className="text-muted-foreground/75"
+          />
+          <span className="truncate">Usage</span>
+        </SidebarMenuButton>
+      </SidebarMenuItem>
+
+      <SidebarMenuItem>
+        <SidebarMenuButton
+          className="cursor-pointer"
+          onClick={() => {
+            navigateOrg("/settings");
+          }}
+        >
+          <Icon
+            name="settings"
+            size={20}
+            className="text-muted-foreground/75"
+          />
+          <span className="truncate">Settings</span>
         </SidebarMenuButton>
       </SidebarMenuItem>
     </>

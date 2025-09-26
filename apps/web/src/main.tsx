@@ -88,7 +88,9 @@ const OrgList = lazy(() =>
   })),
 );
 
-const OrgProjectList = lazy(() => import("./components/home/projects.tsx"));
+const OrgProjectList = lazy(() =>
+  wrapWithUILoadingFallback(import("./components/home/projects.tsx")),
+);
 
 const ProjectHome = lazy(() =>
   import("./components/home/project-home.tsx").then((mod) => ({
@@ -146,12 +148,24 @@ const MagicLink = lazy(() =>
   wrapWithUILoadingFallback(import("./components/login/magic-link.tsx")),
 );
 
-const Settings = lazy(() =>
-  wrapWithUILoadingFallback(import("./components/settings/page.tsx")),
-);
-
 const Members = lazy(() =>
   wrapWithUILoadingFallback(import("./components/settings/members/index.tsx")),
+);
+
+const OrgSettings = lazy(() =>
+  wrapWithUILoadingFallback(import("./components/settings/general.tsx")),
+);
+
+const Models = lazy(() =>
+  wrapWithUILoadingFallback(import("./components/settings/models.tsx")),
+);
+
+const Billing = lazy(() =>
+  wrapWithUILoadingFallback(import("./components/settings/billing.tsx")),
+);
+
+const Usage = lazy(() =>
+  wrapWithUILoadingFallback(import("./components/settings/usage/usage.tsx")),
 );
 
 const Monitor = lazy(() =>
@@ -333,6 +347,22 @@ const router = createBrowserRouter([
             path: "members",
             Component: Members,
           },
+          {
+            path: "billing",
+            Component: Billing,
+          },
+          {
+            path: "models",
+            Component: Models,
+          },
+          {
+            path: "usage",
+            Component: Usage,
+          },
+          {
+            path: "settings",
+            Component: OrgSettings,
+          },
         ],
       },
       {
@@ -388,10 +418,7 @@ const router = createBrowserRouter([
           { path: "audit/:id", Component: AuditDetail }, // is this still used?
 
           // MOVE TO ORG SIDEBAR/LAYOUT
-          { path: "settings", Component: Settings },
-          { path: "settings/:tab", Component: Settings },
           { path: "monitor", Component: Monitor },
-          { path: "monitor/:tab", Component: Monitor },
         ],
       },
       { path: "*", Component: NotFound },

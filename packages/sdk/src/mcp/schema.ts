@@ -449,7 +449,7 @@ export const userActivity = pgTable(
     created_at: timestamp("created_at").defaultNow(),
     user_id: uuid("user_id")
       .notNull()
-      .references(() => profiles.id),
+      .references(() => profiles.user_id),
     resource: text("resource").notNull(),
     key: text("key"),
     value: text("value"),

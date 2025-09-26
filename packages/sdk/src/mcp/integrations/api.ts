@@ -53,7 +53,11 @@ import {
 } from "../index.ts";
 import { listKnowledgeBases } from "../knowledge/api.ts";
 import { getProjectIdFromContext } from "../projects/util.ts";
-import { getRegistryApp, listRegistryApps } from "../registry/api.ts";
+import {
+  getRegistryApp,
+  listRegistryApps,
+  RegistryApp,
+} from "../registry/api.ts";
 import {
   agents,
   integrations,
@@ -1017,6 +1021,11 @@ It's always handy to search for installed integrations with no query, since all 
 `,
   inputSchema: z.object({
     query: z.string().describe("The query to search for").optional(),
+    showContracts: z
+      .boolean()
+      .describe("Whether to show contracts")
+      .optional()
+      .default(false),
   }),
   outputSchema: z.object({
     integrations: z
@@ -1030,7 +1039,7 @@ It's always handy to search for installed integrations with no query, since all 
       )
       .describe("The Integrations that match the query"),
   }),
-  handler: async ({ query }, c) => {
+  handler: async ({ query, showContracts }, c) => {
     assertHasWorkspace(c);
     await assertWorkspaceResourceAccess(c);
 
@@ -1038,18 +1047,29 @@ It's always handy to search for installed integrations with no query, since all 
       search: query,
     });
 
-    const registryList = registry.apps.map((app) => ({
-      id: app.id,
-      name: AppName.build(app.scopeName, app.name),
-      friendlyName: app.friendlyName,
-      description: app.description,
-      icon: app.icon,
-      provider: MARKETPLACE_PROVIDER,
-      metadata: app.metadata,
-      verified: app.verified,
-      connection:
-        app.connection || ({ type: "HTTP", url: "" } as MCPConnection),
-    }));
+    const appIsContract = (app: RegistryApp) => {
+      return app.metadata?.contract !== undefined;
+    };
+
+    const registryList = registry.apps
+      .map((app) => {
+        if (!showContracts && appIsContract(app)) {
+          return null;
+        }
+        return {
+          id: app.id,
+          name: AppName.build(app.scopeName, app.name),
+          friendlyName: app.friendlyName,
+          description: app.description,
+          icon: app.icon,
+          provider: MARKETPLACE_PROVIDER,
+          metadata: app.metadata,
+          verified: app.verified,
+          connection:
+            app.connection || ({ type: "HTTP", url: "" } as MCPConnection),
+        };
+      })
+      .filter((app) => app !== null);
 
     const virtualIntegrations = virtualInstallableIntegrations();
     return {

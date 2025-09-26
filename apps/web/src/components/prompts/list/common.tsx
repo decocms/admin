@@ -6,11 +6,13 @@ export const Header = ({
   setValue,
   viewMode,
   setViewMode,
+  actionsRight,
 }: {
   value: string;
   setValue: (value: string) => void;
   viewMode: ViewModeSwitcherProps["viewMode"];
   setViewMode: (viewMode: ViewModeSwitcherProps["viewMode"]) => void;
+  actionsRight?: React.ReactNode;
 }) => {
   return (
     <ListPageHeader
@@ -20,6 +22,7 @@ export const Header = ({
         onChange: (e) => setValue(e.target.value),
       }}
       view={{ viewMode, onChange: setViewMode }}
+      actionsRight={actionsRight}
     />
   );
 };

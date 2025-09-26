@@ -44,8 +44,6 @@ import { EmptyState } from "../common/empty-state.tsx";
 import { ListPageHeader } from "../common/list-page-header.tsx";
 import { Table } from "../common/table/index.tsx";
 import { DateTimeCell, UserInfo } from "../common/table/table-cells.tsx";
-import type { Tab } from "../dock/index.tsx";
-import { DefaultBreadcrumb, PageLayout } from "../layout/project.tsx";
 import { useFocusChat } from "./hooks.ts";
 import { useViewMode } from "@deco/ui/hooks/use-view-mode.ts";
 import { ScrollArea } from "@deco/ui/components/scroll-area.tsx";
@@ -473,7 +471,7 @@ function AgentsList() {
   );
 
   return (
-    <ScrollArea className="flex flex-col h-full gap-4 p-4">
+    <div className="flex flex-col h-full gap-4 p-4">
       <ListPageHeader
         filter={{
           items: (["active", ...VISIBILITIES] as TabId[]).map((id) => ({
@@ -495,6 +493,12 @@ function AgentsList() {
             dispatch({ type: "SET_FILTER", payload: e.target.value }),
         }}
         view={{ viewMode, onChange: setViewMode }}
+        actionsRight={
+          <Button variant="special" onClick={handleCreate}>
+            <Icon name="add" size={16} />
+            New agent
+          </Button>
+        }
       />
 
       {filteredAgents.length > 0 ? (
@@ -583,7 +587,7 @@ function AgentsList() {
       )}
 
       {/* footer note moved inside list container when Active */}
-    </ScrollArea>
+    </div>
   );
 }
 

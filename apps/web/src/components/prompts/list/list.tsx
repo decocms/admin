@@ -298,6 +298,12 @@ function ListPrompts() {
           setValue={(value) => dispatch({ type: "SET_FILTER", payload: value })}
           viewMode={viewMode}
           setViewMode={setViewMode}
+          actionsRight={
+            <Button variant="special" onClick={handleCreate}>
+              <Icon name="add" size={16} />
+              New prompt
+            </Button>
+          }
         />
       </div>
 

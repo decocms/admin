@@ -334,6 +334,19 @@ export const getPromptVersions = createTool({
     limit: z.number().optional(),
     offset: z.number().optional(),
   }),
+  outputSchema: z.object({
+    items: z.array(
+      z.object({
+        content: z.string().nullable(),
+        created_at: z.string(),
+        created_by: z.string().nullable(),
+        id: z.string(),
+        name: z.string().nullable(),
+        prompt_id: z.string(),
+        version_name: z.string().nullable(),
+      }),
+    ),
+  }),
   handler: async (props, c) => {
     assertHasWorkspace(c);
     const { id, limit = 50, offset = 0 } = props;
@@ -349,7 +362,9 @@ export const getPromptVersions = createTool({
 
     if (error) throw error;
 
-    return data;
+    return {
+      items: data,
+    };
   },
 });
 

@@ -61,7 +61,7 @@ export default function HistoryTab() {
   }, [teamMembers]);
 
   return (
-    <div className="flex flex-col py-1">
+    <div className="flex flex-col py-1 h-full">
       <div className="relative">
         <div className="flex flex-col relative z-10">
           <div

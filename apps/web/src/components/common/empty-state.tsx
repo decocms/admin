@@ -17,8 +17,8 @@ export function EmptyState({
   buttonComponent?: ReactNode;
 }) {
   return (
-    <div className="flex h-full flex-col items-center justify-center gap-6 relative">
-      <div className="absolute flex items-center justify-center mb-80">
+    <div className="flex h-full flex-col items-center justify-center">
+      <div className="flex items-center justify-center">
         <div className="p-6 rounded-full border border-muted">
           <div className="p-4 rounded-full border border-border">
             <div className="p-3.5 rounded-full border border-border">
@@ -36,7 +36,7 @@ export function EmptyState({
         </div>
       </div>
 
-      <div className="flex flex-col items-center gap-2 max-w-md z-10">
+      <div className="flex flex-col items-center gap-2 max-w-md">
         <h3 className="text-2xl font-semibold text-foreground text-center">
           {title}
         </h3>
@@ -44,15 +44,17 @@ export function EmptyState({
           {description}
         </div>
       </div>
-      {buttonComponent ??
-        (buttonProps && (
-          <Button
-            variant="outline"
-            size="default"
-            className={cn("gap-2", buttonProps?.className)}
-            {...buttonProps}
-          />
-        ))}
+      <div className="mt-6">
+        {buttonComponent ??
+          (buttonProps && (
+            <Button
+              variant="outline"
+              size="default"
+              className={cn("gap-2", buttonProps?.className)}
+              {...buttonProps}
+            />
+          ))}
+      </div>
     </div>
   );
 }

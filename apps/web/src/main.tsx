@@ -355,7 +355,7 @@ const router = createBrowserRouter([
         Component: ProjectLayout,
         children: [
           { index: true, Component: ProjectHome },
-          { path: "agents", Component: AgentList }, // ok - missing create button
+          { path: "agents", Component: AgentList }, // ok
           { path: "agent/:id/:threadId", Component: AgentDetail },
           { path: "apps", Component: InstalledAppsList }, // ok - missing create button
           { path: "apps/:appKey", Component: AppDetail }, // ok - but backwards navigation is missing. prob just make topbar know all
@@ -373,8 +373,8 @@ const router = createBrowserRouter([
           { path: "views/:integrationId/:viewName", Component: ViewDetail }, // ok
           // Legacy route redirects to the new dynamic route
           { path: "views/:id", Component: LegacyViewRedirect },
-          { path: "prompts", Component: ListPrompts },
-          { path: "prompt/:id", Component: PromptDetail },
+          { path: "prompts", Component: ListPrompts }, // ok
+          { path: "prompt/:id", Component: PromptDetail }, // ok - partially fixed history.
           { path: "workflows", Component: WorkflowListPage },
           { path: "discover", Component: Discover }, // ok
           {

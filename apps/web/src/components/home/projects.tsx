@@ -37,7 +37,7 @@ function ProjectCard({
         <div className="flex justify-between items-start">
           <Avatar
             url={avatarUrl}
-            fallback={slug}
+            fallback={name || slug}
             size="lg"
             objectFit="contain"
           />

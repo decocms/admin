@@ -392,7 +392,7 @@ function WorkspaceViews() {
                           size="xs"
                           url={integration?.icon}
                           fallback={integration?.name}
-                          className="!w-[18px] !h-[18px] !rounded-md"
+                          className="!w-[22px] !h-[22px] !rounded-md"
                         />
                         {integration && integrationId !== "custom" && (
                           <SidebarMenuAction

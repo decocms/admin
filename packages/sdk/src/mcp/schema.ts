@@ -409,20 +409,21 @@ export const apiKeys = pgTable(
 create index IF not exists idx_profiles_user_id on public.profiles using btree (user_id) TABLESPACE pg_default;
  */
 
-export const profiles = pgTable("profiles", {
-  id: bigint("id", { mode: "bigint" }).primaryKey(),
-  created_at: timestamp("created_at").defaultNow(),
-  name: text("name"),
-  user_id: uuid("user_id").notNull(), // .references(() => users.id),
-  email: text("email").notNull(),
-  // deco_user_id: bigint("deco_user_id", { mode: "bigint" }).references(() => decoUsers.id),
-  is_new_user: boolean("is_new_user"),
-  phone: text("phone"),
-  phone_verified_at: timestamp("phone_verified_at"),
-}, (table) => [
-  uniqueIndex("profiles_user_id_key").on(table.user_id),
-]);
-
+export const profiles = pgTable(
+  "profiles",
+  {
+    id: bigint("id", { mode: "bigint" }).primaryKey(),
+    created_at: timestamp("created_at").defaultNow(),
+    name: text("name"),
+    user_id: uuid("user_id").notNull(), // .references(() => users.id),
+    email: text("email").notNull(),
+    // deco_user_id: bigint("deco_user_id", { mode: "bigint" }).references(() => decoUsers.id),
+    is_new_user: boolean("is_new_user"),
+    phone: text("phone"),
+    phone_verified_at: timestamp("phone_verified_at"),
+  },
+  (table) => [uniqueIndex("profiles_user_id_key").on(table.user_id)],
+);
 
 /**
  * create table public.user_activity (
@@ -441,14 +442,27 @@ create index IF not exists user_activity_resource_key_value_idx on public.user_a
 create index IF not exists user_activity_user_id_created_at_idx on public.user_activity using btree (user_id, created_at desc) TABLESPACE pg_default;
  */
 
-export const userActivity = pgTable("user_activity", {
-  id: bigint("id", { mode: "bigint" }).primaryKey(),
-  created_at: timestamp("created_at").defaultNow(),
-  user_id: uuid("user_id").notNull().references(() => profiles.id),
-  resource: text("resource").notNull(),
-  key: text("key"),
-  value: text("value"),
-}, (table) => [
-  index("user_activity_resource_key_value_idx").on(table.resource, table.key, table.value),
-  index("user_activity_user_id_created_at_idx").on(table.user_id, table.created_at),
-]);
+export const userActivity = pgTable(
+  "user_activity",
+  {
+    id: bigint("id", { mode: "bigint" }).primaryKey(),
+    created_at: timestamp("created_at").defaultNow(),
+    user_id: uuid("user_id")
+      .notNull()
+      .references(() => profiles.id),
+    resource: text("resource").notNull(),
+    key: text("key"),
+    value: text("value"),
+  },
+  (table) => [
+    index("user_activity_resource_key_value_idx").on(
+      table.resource,
+      table.key,
+      table.value,
+    ),
+    index("user_activity_user_id_created_at_idx").on(
+      table.user_id,
+      table.created_at,
+    ),
+  ],
+);

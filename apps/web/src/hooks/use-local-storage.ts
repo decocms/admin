@@ -53,7 +53,11 @@ interface UseLocalStorageProps<T> {
   migrate?: (value: T) => T;
 }
 
-function useLocalStorage<T>({ key, defaultValue, migrate }: UseLocalStorageProps<T>) {
+function useLocalStorage<T>({
+  key,
+  defaultValue,
+  migrate,
+}: UseLocalStorageProps<T>) {
   const [value, setValue] = useState<T>(() => {
     const item = localStorage.getItem(key);
     if (migrate && item) {

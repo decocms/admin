@@ -33,7 +33,6 @@ import {
   useMemo,
   useReducer,
   useState,
-  useEffect,
 } from "react";
 import { trackEvent } from "../../hooks/analytics.ts";
 import { useCreateAgent } from "../../hooks/use-create-agent.ts";

@@ -18,12 +18,7 @@ import {
   InternalServerError,
 } from "../index.ts";
 import { getProjectIdFromContext } from "../projects/util.ts";
-import {
-  agents,
-  organizations,
-  projects,
-  userActivity,
-} from "../schema.ts";
+import { agents, organizations, projects, userActivity } from "../schema.ts";
 import { deleteTrigger, listTriggers } from "../triggers/api.ts";
 
 const createTool = createToolGroup("Agent", {
@@ -155,13 +150,12 @@ export const listAgents = createTool({
         : await c.policy.getUserRoles(c.user.id as string, c.workspace.slug);
     const userRoles: string[] = roles?.map((role) => role.name);
 
-    const filteredAgents = data
-      .filter(
-        (agent) =>
-          !agent.access ||
-          userRoles?.includes(agent.access) ||
-          userRoles?.some((role) => IMPORTANT_ROLES.includes(role)),
-      );
+    const filteredAgents = data.filter(
+      (agent) =>
+        !agent.access ||
+        userRoles?.includes(agent.access) ||
+        userRoles?.some((role) => IMPORTANT_ROLES.includes(role)),
+    );
 
     const agentIds = filteredAgents
       .map((a) => a.id)
@@ -198,7 +192,7 @@ export const listAgents = createTool({
             const createdAt =
               row.createdAt instanceof Date
                 ? row.createdAt.toISOString()
-                : row.createdAt ?? undefined;
+                : (row.createdAt ?? undefined);
 
             if (!createdAt) return acc;
 

@@ -33,6 +33,7 @@ import {
   SidebarMenuSub,
   SidebarMenuSubButton,
   SidebarMenuSubItem,
+  SidebarSeparator,
   useSidebar,
 } from "@deco/ui/components/sidebar.tsx";
 import { Skeleton } from "@deco/ui/components/skeleton.tsx";
@@ -252,14 +253,23 @@ function WorkspaceViews() {
     return workspaceLink(path ?? "/");
   }
 
+  const wellKnownItems = [
+    "Agents",
+    "Workflows",
+    "Views",
+    "Prompts",
+    "Triggers",
+  ];
+
   // Separate items for organization
   const mcpItems = firstLevelViews
-    .filter((item) =>
-      ["Agents", "Apps", "Prompts", "Views", "Workflows", "Triggers"].includes(
-        item.title,
-      ),
-    )
-    .sort((a, b) => a.title.localeCompare(b.title));
+    .filter((item) => wellKnownItems.includes(item.title))
+    .sort((a, b) => {
+      const predefinedOrder = wellKnownItems;
+      return (
+        predefinedOrder.indexOf(a.title) - predefinedOrder.indexOf(b.title)
+      );
+    });
   const otherItems = firstLevelViews.filter((item) =>
     ["Monitor"].includes(item.title),
   );
@@ -281,6 +291,25 @@ function WorkspaceViews() {
           <span className="truncate">Discover</span>
         </SidebarMenuButton>
       </SidebarMenuItem>
+
+      <SidebarMenuItem>
+        <SidebarMenuButton
+          className="cursor-pointer"
+          onClick={() => {
+            navigateWorkspace("/apps");
+          }}
+        >
+          <Icon
+            name="grid_view"
+            size={20}
+            className="text-muted-foreground/75"
+          />
+          <span className="truncate">Apps</span>
+        </SidebarMenuButton>
+      </SidebarMenuItem>
+
+      <SidebarSeparator className="my-2 -ml-1" />
+
       {mcpItems.map((item) => {
         const displayTitle = item.title;
         const href = buildViewHrefFromView(item as View);

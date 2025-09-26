@@ -14,8 +14,6 @@ import { ChatMessages } from "../chat/chat-messages.tsx";
 import { AgentProvider } from "./provider.tsx";
 import { EmptyState } from "../common/empty-state.tsx";
 import { ChatHeader } from "./chat-header.tsx";
-import AgentPreview from "./preview.tsx";
-import ThreadView from "./thread.tsx";
 
 const MainChat = () => {
   return (
@@ -28,24 +26,6 @@ const MainChat = () => {
       </div>
     </div>
   );
-};
-
-const TABS = {
-  chat: {
-    Component: MainChat,
-    title: "Chat",
-    initialOpen: true,
-  },
-  chatView: {
-    Component: ThreadView,
-    title: "Thread",
-    hideFromViews: true,
-  },
-  preview: {
-    Component: AgentPreview,
-    title: "Preview",
-    hideFromViews: true,
-  },
 };
 
 export const getPublicChatLink = (
@@ -137,14 +117,10 @@ function Page() {
                 }
               >
                 <SidebarInset>
-                  {/** TODO: make sure this page works ok */}
+                  <div className="w-full h-12 border border-b px-8">
+                    <ChatHeader />
+                  </div>
                   <MainChat />
-
-                  {/* <PageLayout
-                    tabs={TABS}
-                    breadcrumb={<ChatHeader />}
-                    hideViewsButton
-                  /> */}
                 </SidebarInset>
               </SidebarLayout>
             </SidebarProvider>

@@ -22,7 +22,6 @@ import {
 } from "@deco/ui/components/tooltip.tsx";
 import { Button } from "@deco/ui/components/button.tsx";
 import { cn } from "@deco/ui/lib/utils.ts";
-import { useBlocker } from "react-router";
 import { Spinner } from "@deco/ui/components/spinner.tsx";
 import {
   AlertDialog,

@@ -1,32 +1,13 @@
-import { useFile, WELL_KNOWN_AGENT_IDS } from "@deco/sdk";
-import { Button } from "@deco/ui/components/button.tsx";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@deco/ui/components/dropdown-menu.tsx";
-import { Icon } from "@deco/ui/components/icon.tsx";
 import { ScrollArea } from "@deco/ui/components/scroll-area.tsx";
 import { Spinner } from "@deco/ui/components/spinner.tsx";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger,
-} from "@deco/ui/components/tooltip.tsx";
 import { Suspense, useMemo } from "react";
 import { useParams } from "react-router";
-import { useFocusChat } from "../agents/hooks.ts";
+import { useFile, WELL_KNOWN_AGENT_IDS } from "@deco/sdk";
+import { useDocumentMetadata } from "../../hooks/use-document-metadata.ts";
+import { isFilePath } from "../../utils/path.ts";
 import { ChatInput } from "../chat/chat-input.tsx";
 import { ChatMessages } from "../chat/chat-messages.tsx";
-import { useAgent } from "./provider.tsx";
-import { AgentProvider } from "./provider.tsx";
-import { DefaultBreadcrumb, PageLayout } from "../layout/project.tsx";
-import { AgentBreadcrumbSegment } from "./breadcrumb-segment.tsx";
-import AgentPreview from "./preview.tsx";
-import ThreadView from "./thread.tsx";
-import { isFilePath } from "../../utils/path.ts";
-import { useDocumentMetadata } from "../../hooks/use-document-metadata.ts";
+import { AgentProvider, useAgent } from "./provider.tsx";
 
 export type WellKnownAgents =
   (typeof WELL_KNOWN_AGENT_IDS)[keyof typeof WELL_KNOWN_AGENT_IDS];
@@ -49,132 +30,6 @@ export const MainChat = () => {
     </div>
   );
 };
-
-const TABS = {
-  chat: {
-    Component: MainChat,
-    title: "Chat",
-    initialOpen: true,
-  },
-  chatView: {
-    Component: ThreadView,
-    title: "Thread",
-    hideFromViews: true,
-  },
-  preview: {
-    Component: AgentPreview,
-    title: "Preview",
-    hideFromViews: true,
-  },
-};
-
-function ActionsButtons() {
-  const { agentId, chat } = useAgent();
-  const focusChat = useFocusChat();
-  const focusAgent = useFocusChat();
-
-  const displaySettings = agentId !== WELL_KNOWN_AGENT_IDS.teamAgent;
-  const displayNewChat = displaySettings && chat.messages.length !== 0;
-
-  if (!displayNewChat && !displaySettings) {
-    return null;
-  }
-
-  return (
-    <div className="hidden md:flex items-center gap-2">
-      {displayNewChat && (
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() =>
-                focusChat(agentId, crypto.randomUUID(), {
-                  history: false,
-                })
-              }
-            >
-              <Icon name="edit_square" />
-            </Button>
-          </TooltipTrigger>
-          <TooltipContent>New chat</TooltipContent>
-        </Tooltip>
-      )}
-      {displaySettings && (
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() =>
-                focusAgent(agentId, crypto.randomUUID(), {
-                  history: false,
-                })
-              }
-            >
-              <Icon name="tune" />
-            </Button>
-          </TooltipTrigger>
-          <TooltipContent>Edit agent</TooltipContent>
-        </Tooltip>
-      )}
-    </div>
-  );
-}
-
-function Breadcrumb({ agentId }: { agentId: string }) {
-  const { chat } = useAgent();
-  const focusChat = useFocusChat();
-  const focusAgent = useFocusChat();
-
-  return (
-    <DefaultBreadcrumb
-      items={[
-        {
-          label: (
-            <>
-              <div className="hidden md:flex items-center gap-2">
-                <AgentBreadcrumbSegment />
-              </div>
-              <div className="md:hidden">
-                <DropdownMenu>
-                  <DropdownMenuTrigger className="flex items-center gap-2">
-                    <AgentBreadcrumbSegment />
-                    <Icon name="arrow_drop_down" />
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="start">
-                    {chat.messages.length !== 0 && (
-                      <DropdownMenuItem
-                        className="flex items-center gap-4"
-                        onClick={() =>
-                          focusChat(agentId, crypto.randomUUID(), {
-                            history: false,
-                          })
-                        }
-                      >
-                        <Icon name="edit_square" /> New chat
-                      </DropdownMenuItem>
-                    )}
-                    <DropdownMenuItem
-                      className="flex items-center gap-4"
-                      onClick={() =>
-                        focusAgent(agentId, crypto.randomUUID(), {
-                          history: false,
-                        })
-                      }
-                    >
-                      <Icon name="tune" /> Edit agent
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              </div>
-            </>
-          ),
-        },
-      ]}
-    />
-  );
-}
 
 function AgentMetadataUpdater() {
   const { agent } = useAgent();

@@ -17,7 +17,7 @@ export interface Props {
   onBack?: () => void;
 }
 
-function TriggerDetails({ id: _triggerId, onBack }: Props) {
+export function TriggerDetails({ id: _triggerId, onBack }: Props) {
   const params = useParams();
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
 

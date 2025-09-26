@@ -15,6 +15,7 @@ import {
   FormLabel,
   FormMessage,
 } from "@deco/ui/components/form.tsx";
+import { Skeleton } from "@deco/ui/components/skeleton.tsx";
 import { Icon } from "@deco/ui/components/icon.tsx";
 import { Input } from "@deco/ui/components/input.tsx";
 import { ScrollArea } from "@deco/ui/components/scroll-area.tsx";
@@ -454,5 +455,110 @@ function AdvancedTab() {
     </ScrollArea>
   );
 }
+
+AdvancedTab.Skeleton = () => (
+  <ScrollArea className="h-full w-full">
+    <div className="h-full w-full p-4 max-w-3xl mx-auto">
+      <div className="space-y-6 py-2 pb-16">
+        {/* Visibility Section */}
+        <div className="space-y-4">
+          <div className="flex items-center justify-between">
+            <div className="flex flex-col gap-2">
+              <Skeleton className="h-4 w-16" />
+              <Skeleton className="h-4 w-64" />
+            </div>
+            <Skeleton className="h-10 w-24" />
+          </div>
+          <Skeleton className="h-10 w-full" />
+        </div>
+
+        {/* Input Fields Section */}
+        {Array.from({ length: 3 }).map((_, i) => (
+          <div key={i} className="space-y-4">
+            <div className="flex flex-col gap-2">
+              <div className="flex items-center gap-2">
+                <Skeleton className="h-4 w-20" />
+                <Skeleton className="h-4 w-4" />
+              </div>
+              <Skeleton className="h-4 w-80" />
+            </div>
+            <Skeleton className="h-10 w-full" />
+          </div>
+        ))}
+
+        {/* Context Window Section */}
+        <div className="space-y-4">
+          <div className="flex flex-col gap-2">
+            <div className="flex items-center gap-2">
+              <Skeleton className="h-4 w-28" />
+              <Skeleton className="h-4 w-4" />
+            </div>
+            <Skeleton className="h-4 w-72" />
+          </div>
+          <Skeleton className="h-10 w-full" />
+        </div>
+
+        {/* Switch Fields */}
+        {Array.from({ length: 2 }).map((_, i) => (
+          <div key={i} className="flex flex-row items-center justify-between">
+            <div className="flex flex-col gap-2">
+              <div className="flex items-center gap-2">
+                <Skeleton className="h-4 w-32" />
+                <Skeleton className="h-4 w-4" />
+              </div>
+              <Skeleton className="h-4 w-96" />
+            </div>
+            <Skeleton className="h-6 w-11" />
+          </div>
+        ))}
+
+        {/* Working Memory Template (conditional) */}
+        <div className="space-y-4">
+          <div className="flex items-center gap-2">
+            <Skeleton className="h-4 w-40" />
+            <Skeleton className="h-5 w-16" />
+          </div>
+          <Skeleton className="h-24 w-full" />
+          <Skeleton className="h-4 w-80" />
+        </div>
+
+        {/* Team Access Section */}
+        <div className="space-y-4">
+          <div className="flex items-center justify-between">
+            <div className="flex flex-col gap-2">
+              <Skeleton className="h-4 w-12" />
+              <Skeleton className="h-4 w-72" />
+            </div>
+          </div>
+          <Skeleton className="h-10 w-full" />
+        </div>
+
+        {/* Channels Section */}
+        <div className="border-t pt-6">
+          <div className="space-y-6">
+            <div className="space-y-2">
+              <Skeleton className="h-6 w-24" />
+              <Skeleton className="h-4 w-80" />
+            </div>
+            {Array.from({ length: 2 }).map((_, i) => (
+              <div key={i} className="border rounded-lg p-4 space-y-4">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <Skeleton className="h-10 w-10 rounded" />
+                    <div className="space-y-1">
+                      <Skeleton className="h-4 w-32" />
+                      <Skeleton className="h-3 w-48" />
+                    </div>
+                  </div>
+                  <Skeleton className="h-6 w-11" />
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    </div>
+  </ScrollArea>
+);
 
 export default AdvancedTab;

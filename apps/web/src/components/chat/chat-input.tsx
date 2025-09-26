@@ -19,8 +19,7 @@ import { RichTextArea } from "./rich-text.tsx";
 export function ChatInput({ disabled }: { disabled?: boolean } = {}) {
   const { chat, uiOptions } = useAgent();
   const { stop, input, handleInputChange, handleSubmit, status } = chat;
-  const { showModelSelector, showThreadTools, showContextResources } =
-    uiOptions;
+  const { showModelSelector, showContextResources } = uiOptions;
   const isLoading = status === "submitted" || status === "streaming";
   const [uploadedFiles, setUploadedFiles] = useState<UploadedFile[]>([]);
   const { preferences, setPreferences } = useUserPreferences();

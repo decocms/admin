@@ -33,6 +33,7 @@ import { TopbarLayout } from "./home.tsx";
 import { BreadcrumbOrgSwitcher } from "./org-project-switcher.tsx";
 import { DecopilotChat } from "../decopilot/index.tsx";
 import { ScrollArea } from "@deco/ui/components/scroll-area.tsx";
+import { Spinner } from "@deco/ui/components/spinner.tsx";
 
 export function BaseRouteLayout({ children }: { children: ReactNode }) {
   // remove?
@@ -133,7 +134,15 @@ export function ProjectLayout() {
                       <ResizablePanel>
                         {/* Topbar height is 48px */}
                         <ScrollArea className="h-[calc(100vh-48px)]">
-                          <Outlet />
+                          <Suspense
+                            fallback={
+                              <div className="h-[calc(100vh-48px)] w-full grid place-items-center">
+                                <Spinner />
+                              </div>
+                            }
+                          >
+                            <Outlet />
+                          </Suspense>
                         </ScrollArea>
                       </ResizablePanel>
                       <ResizableHandle withHandle />

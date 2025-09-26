@@ -59,7 +59,7 @@ export const wrapWithUILoadingFallback = <P,>(
     default: (p: P) => (
       <Suspense
         fallback={
-          <div className="h-full w-full flex items-center justify-center">
+          <div className="h-[calc(100vh-48px)] w-full grid place-items-center">
             <Spinner />
           </div>
         }
@@ -357,7 +357,7 @@ const router = createBrowserRouter([
           { index: true, Component: ProjectHome }, // ok
           { path: "discover", Component: Discover }, // ok
           { path: "agents", Component: AgentList }, // ok
-          { path: "agent/:id/:threadId", Component: AgentDetail },
+          { path: "agent/:id/:threadId", Component: AgentDetail }, // ok
           { path: "apps", Component: InstalledAppsList }, // ok
           { path: "apps/:appKey", Component: AppDetail }, // ok
           { path: "apps/success", Component: AppInstallSuccess }, // ok

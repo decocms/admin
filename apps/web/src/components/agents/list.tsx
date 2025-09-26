@@ -26,14 +26,7 @@ import {
 } from "@deco/ui/components/dropdown-menu.tsx";
 import { Icon } from "@deco/ui/components/icon.tsx";
 import { Spinner } from "@deco/ui/components/spinner.tsx";
-import {
-  createContext,
-  useCallback,
-  useContext,
-  useMemo,
-  useReducer,
-  useState,
-} from "react";
+import { useCallback, useMemo, useReducer, useState } from "react";
 import { trackEvent } from "../../hooks/analytics.ts";
 import { useCreateAgent } from "../../hooks/use-create-agent.ts";
 import { useLocalStorage } from "../../hooks/use-local-storage.ts";
@@ -46,7 +39,6 @@ import { Table } from "../common/table/index.tsx";
 import { DateTimeCell, UserInfo } from "../common/table/table-cells.tsx";
 import { useFocusChat } from "./hooks.ts";
 import { useViewMode } from "@deco/ui/hooks/use-view-mode.ts";
-import { ScrollArea } from "@deco/ui/components/scroll-area.tsx";
 
 export const useDuplicateAgent = (agent: Agent | null) => {
   const [duplicating, setDuplicating] = useState(false);

@@ -1,6 +1,5 @@
 import {
   DECO_CMS_API_URL,
-  UnauthorizedError,
   useInvites,
   usePlan,
   User,

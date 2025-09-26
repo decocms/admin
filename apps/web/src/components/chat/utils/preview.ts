@@ -1,5 +1,3 @@
-// import { togglePanel } from "../../dock/index.tsx";
-
 export const IMAGE_REGEXP = /\.png|\.jpg|\.jpeg|\.gif|\.webp/;
 
 const safeParse = (content: string) => {
@@ -37,12 +35,13 @@ export const toIframeProps = (content: string) => {
   }
 };
 
+// TODO: Change to use a dialog instead of removed docked panel
 export const openPreviewPanel = (
-  id: string,
-  content: string,
-  title: string,
+  _id: string,
+  _content: string,
+  _title: string,
 ) => {
-  throw new Error(",,,fdmasf");
+  throw new Error("Could not open preview");
   // togglePanel({
   //   id,
   //   component: "preview",

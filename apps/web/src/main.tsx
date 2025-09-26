@@ -390,27 +390,27 @@ const router = createBrowserRouter([
         path: "/:org/:project",
         Component: ProjectLayout,
         children: [
-          { index: true, Component: ProjectHome }, // ok
-          { path: "discover", Component: Discover }, // ok
-          { path: "agents", Component: AgentList }, // ok
-          { path: "agent/:id/:threadId", Component: AgentDetail }, // ok
-          { path: "apps", Component: InstalledAppsList }, // ok
-          { path: "apps/:appKey", Component: AppDetail }, // ok
-          { path: "apps/success", Component: AppInstallSuccess }, // ok
-          { path: "triggers", Component: TriggerList }, // ok
-          { path: "trigger/:id", Component: TriggerDetails }, // ok
-          { path: "views", Component: ViewsList }, // ok
-          { path: "views/:integrationId/:viewName", Component: ViewDetail }, // ok
-          { path: "views/:id", Component: LegacyViewRedirect }, // ok
-          { path: "prompts", Component: ListPrompts }, // ok
-          { path: "prompt/:id", Component: PromptDetail }, // ok - partially fixed history.
-          { path: "workflows", Component: WorkflowListPage }, // ok
+          { index: true, Component: ProjectHome },
+          { path: "discover", Component: Discover },
+          { path: "agents", Component: AgentList },
+          { path: "agent/:id/:threadId", Component: AgentDetail },
+          { path: "apps", Component: InstalledAppsList },
+          { path: "apps/:appKey", Component: AppDetail },
+          { path: "apps/success", Component: AppInstallSuccess },
+          { path: "triggers", Component: TriggerList },
+          { path: "trigger/:id", Component: TriggerDetails },
+          { path: "views", Component: ViewsList },
+          { path: "views/:integrationId/:viewName", Component: ViewDetail },
+          { path: "views/:id", Component: LegacyViewRedirect },
+          { path: "prompts", Component: ListPrompts },
+          { path: "prompt/:id", Component: PromptDetail },
+          { path: "workflows", Component: WorkflowListPage },
           {
             path: "workflows/:workflowName/instances/:instanceId",
-            Component: WorkflowDetailPage, // ok
+            Component: WorkflowDetailPage,
           },
-          { path: "activity", Component: Activity }, // ok
-          { path: "audit/:id", Component: AuditDetail }, // ok
+          { path: "activity", Component: Activity },
+          { path: "audit/:id", Component: AuditDetail },
         ],
       },
       { path: "*", Component: NotFound },

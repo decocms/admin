@@ -18,7 +18,12 @@ import {
   InternalServerError,
 } from "../index.ts";
 import { getProjectIdFromContext } from "../projects/util.ts";
-import { agents, organizations, projects } from "../schema.ts";
+import {
+  agents,
+  organizations,
+  projects,
+  userActivity,
+} from "../schema.ts";
 import { deleteTrigger, listTriggers } from "../triggers/api.ts";
 
 const createTool = createToolGroup("Agent", {
@@ -167,57 +172,53 @@ export const listAgents = createTool({
       { created_at: string; user_id: string } | undefined
     > = {};
     if (agentIds.length > 0) {
-      const { data: activityData, error: activityError } = await c.db
-        .from("user_activity")
-        .select("user_id, value, created_at")
-        .eq("resource", "agent")
-        .eq("key", "id")
-        .in("value", agentIds)
-        .order("created_at", { ascending: false });
+      try {
+        const rows = await c.drizzle
+          .select({
+            createdAt: userActivity.created_at,
+            userId: userActivity.user_id,
+            value: userActivity.value,
+          })
+          .from(userActivity)
+          .where(
+            and(
+              eq(userActivity.resource, "agent"),
+              eq(userActivity.key, "id"),
+              inArray(userActivity.value, agentIds),
+            ),
+          )
+          .orderBy(desc(userActivity.created_at));
 
-      let rows = activityData ?? [];
+        latestByAgent = rows.reduce(
+          (acc, row) => {
+            const value = row.value ?? undefined;
+            if (!value) return acc;
+            if (acc[value]) return acc;
 
-      if (activityError) {
-        const isMissingWorkspaceColumn = activityError.message?.includes(
-          "user_activity.workspace",
-        );
+            const createdAt =
+              row.createdAt instanceof Date
+                ? row.createdAt.toISOString()
+                : row.createdAt ?? undefined;
 
-        if (!isMissingWorkspaceColumn) {
-          throw new InternalServerError(activityError.message);
-        }
+            if (!createdAt) return acc;
 
-        const { data: fallbackData, error: fallbackError } = await c.db
-          .from("user_activity")
-          .select("user_id, value, created_at")
-          .eq("resource", "agent")
-          .eq("key", "id")
-          .in("value", agentIds)
-          .order("created_at", { ascending: false });
-
-        if (fallbackError) {
-          throw new InternalServerError(fallbackError.message);
-        }
-
-        rows = fallbackData ?? [];
-      }
-
-      latestByAgent = rows.reduce(
-        (acc, row) => {
-          const value = row.value as string | null;
-          if (!value) return acc;
-          if (!acc[value]) {
             acc[value] = {
-              created_at: row.created_at as string,
-              user_id: row.user_id as string,
+              created_at: createdAt,
+              user_id: row.userId,
             };
-          }
-          return acc;
-        },
-        {} as Record<
-          string,
-          { created_at: string; user_id: string } | undefined
-        >,
-      );
+
+            return acc;
+          },
+          {} as Record<
+            string,
+            { created_at: string; user_id: string } | undefined
+          >,
+        );
+      } catch (error) {
+        throw new InternalServerError(
+          error instanceof Error ? error.message : String(error),
+        );
+      }
     }
 
     return {

@@ -3,23 +3,21 @@ description:
 globs: 
 alwaysApply: true
 ---
-# deco.chat 
+# deco CMS — Open Source Admin for Internal AI Apps
 
-deco.chat is an Agent Builder application for users to connnect Integrations (e.g: Google Drive, Sheets, Notion or custom ones) and create AI Agents that have system instructions and available tools, that come from integrations.
+This repository powers the deco CMS admin experience: an open-source MCP manager for internal AI applications. Teams vibecode their apps across **Sites**, **Tools**, **Agents**, **Databases**, and **Workflows**, and the platform assembles a beautiful admin with navigation, permissions, and deployment hooks. Every installed app surfaces MCP tools as menu buttons, and you can always chat with those tools through the AI shell. Own your software — host it yourself, bring your models and data, and keep your workspace private.
 
-## Repository Structure 
+## Repository Structure
 
-This project is a modern web application built with cutting-edge technologies
-and follows a monorepo architecture powered by Bun workspaces.
+This project is a modern web application built with cutting-edge technologies and follows a monorepo architecture powered by Bun workspaces.
 
 ## Technology Stack
 
-- **React 19**: The latest version of React for building user interfaces
-- **Tailwind CSS v4**: For utility-first styling
-- **Bun**: Used for dependency management, linting, formatting, and type
-  checking
-- **Vite**: Powering the development server and build process
-- **shadcn/ui**: Component library for the UI package
+- **React 19**: UI for the decocms admin shell and marketplace
+- **Tailwind CSS v4**: Utility styling for responsive dashboards
+- **Bun**: Dependency management, task runner, and TypeScript tooling
+- **Vite**: Development server and build pipeline for the web app
+- **shadcn/ui**: Shared design system components in `packages/ui`
  
 ## File Tree
 
@@ -51,22 +49,38 @@ and follows a monorepo architecture powered by Bun workspaces.
 
 ## Folders
 
-- `/apps/web` -> Vite SPA with the main app UI
-- `/packages/sdk` -> Hooks and data access code
-- `/packages/ui` -> A shared UI component library built with shadcn/ui
+- `/apps/web` → decocms admin web app (React + Vite)
+- `/packages/sdk` → Shared SDK for data access, MCP integrations, and runtime helpers
+- `/packages/ui` → Reusable design system components (shadcn/ui based)
+
+## Product Concepts
+
+- **Sites**: Bundle pages, layouts, and brand for internal and external interfaces
+- **Tools**: Atomic capabilities exposed via MCP apps; reusable across agents and workflows
+- **Agents**: Combine a model, specialized prompt, and curated toolset to solve focused problems and power conversational experiences
+- **Databases**: Define models that power admin tables and forms
+- **Workflows**: Orchestrate tools, agents, and databases into automated processes
+- **Apps (MCP Integrations)**: Bring external capabilities into the workspace; each app provides tools via MCP
+- **Marketplace**: Install curated MCP apps into your project with one click, ready to appear in the admin menu
+
+Your admin menu is generated from these vibecoded assets so you can ship AI-native internal software quickly, with full control.
 
 ## Development Workflow
 
 The project leverages Bun for various development tasks:
 
 - Dependency management (`bun install`)
-- Code linting (`bun run lint`)
 - Code formatting (`bun run fmt`)
 - Type checking (`bun run check`)
 - Running scripts (`bun run <script-name>`)
 - Package management (`bun add`, `bun remove`)
 
-- Dependency management
-- Code linting (deno run lint in package root folder or passing --config=./package.json)
-- Code formatting (deno run fmt in package root folder or passing --config=./package.json)
-- Type checking (deno run check in package root folder or passing --config=./package.json)
+## Local Development Checklist
+
+1. Install dependencies: `bun install`
+2. Start the web app: `bun dev`
+3. Run type checking: `bun run check`
+4. Run formatting: `bun run fmt`
+5. Run linting: `bun run lint`
+
+> Tip: run steps 3–5 before opening pull requests to keep CI green.

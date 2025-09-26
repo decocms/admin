@@ -50,12 +50,36 @@ function useLocalStorageChange(
 interface UseLocalStorageProps<T> {
   key: string;
   defaultValue: T;
+  migrate?: (value: T) => T;
 }
 
-function useLocalStorage<T>({ key, defaultValue }: UseLocalStorageProps<T>) {
+function useLocalStorage<T>({
+  key,
+  defaultValue,
+  migrate,
+}: UseLocalStorageProps<T>) {
   const [value, setValue] = useState<T>(() => {
     const item = localStorage.getItem(key);
-    return item ? JSON.parse(item) : defaultValue;
+    if (!item) return defaultValue;
+    try {
+      const parsed = JSON.parse(item) as T;
+      const next = migrate ? migrate(parsed) : parsed;
+      if (migrate && next !== parsed) {
+        try {
+          localStorage.setItem(key, JSON.stringify(next));
+          globalThis.dispatchEvent(
+            new CustomEvent(STORAGE_EVENT, {
+              detail: { key, value: JSON.stringify(next) },
+            }),
+          );
+        } catch {
+          console.warn("Failed to write to localStorage", key);
+        }
+      }
+      return next;
+    } catch {
+      return defaultValue;
+    }
   });
 
   useLocalStorageChange(key, (value) => {

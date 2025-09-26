@@ -22,6 +22,9 @@ const normalizeWorkspace = (workspace: string) => {
   if (workspace.startsWith("/shared")) {
     return workspace;
   }
+  if (workspace.includes("/")) {
+    return workspace;
+  }
   return `/shared/${workspace}`;
 };
 

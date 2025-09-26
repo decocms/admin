@@ -107,7 +107,7 @@ function TableView({
   );
 }
 
-function TogglePin({ view }: { view: ViewWithStatus }) {
+export function TogglePin({ view }: { view: ViewWithStatus }) {
   const removeViewMutation = useRemoveView();
   const addViewMutation = useAddView();
 

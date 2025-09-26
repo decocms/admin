@@ -132,7 +132,7 @@ export const useAgents = () => {
       for (const item of items) {
         const itemKey = KEYS.AGENT(locator, item.id);
         client.cancelQueries({ queryKey: itemKey });
-        client.setQueryData<Agent>(itemKey, item);
+        client.setQueryData(itemKey, item);
       }
 
       return items;

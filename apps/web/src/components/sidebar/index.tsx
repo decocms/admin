@@ -1,10 +1,21 @@
-import { useIntegrations, useRemoveView, View } from "@deco/sdk";
+import {
+  findPinnedView,
+  Integration, useConnectionViews, useIntegrations, useRemoveView, View
+} from "@deco/sdk";
 import { Button } from "@deco/ui/components/button.tsx";
 import {
   Collapsible,
   CollapsibleContent,
   CollapsibleTrigger,
 } from "@deco/ui/components/collapsible.tsx";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@deco/ui/components/dialog.tsx";
 import { Icon } from "@deco/ui/components/icon.tsx";
 import {
   Sidebar,
@@ -12,6 +23,7 @@ import {
   SidebarGroup,
   SidebarGroupContent,
   SidebarMenu,
+  SidebarMenuAction,
   SidebarMenuButton,
   SidebarMenuItem,
   SidebarMenuSub,
@@ -20,7 +32,7 @@ import {
   useSidebar,
 } from "@deco/ui/components/sidebar.tsx";
 import { Skeleton } from "@deco/ui/components/skeleton.tsx";
-import { type ReactNode, Suspense, useMemo } from "react";
+import { type ReactNode, Suspense, useMemo, useState } from "react";
 import { Link, useMatch } from "react-router";
 import { trackEvent } from "../../hooks/analytics.ts";
 import {
@@ -28,6 +40,7 @@ import {
   useWorkspaceLink,
 } from "../../hooks/use-navigate-workspace.ts";
 import { IntegrationAvatar } from "../common/avatar/integration.tsx";
+import { TogglePin } from "../views/list.tsx";
 import { SidebarFooter } from "./footer.tsx";
 import { useCurrentTeam } from "./team-selector.tsx";
 
@@ -43,6 +56,111 @@ const WithActive = ({
   return <div {...props}>{children({ isActive: !!match })}</div>;
 };
 
+function AddViewsDialog({
+  integration,
+  open,
+  onOpenChange,
+}: {
+  integration: Integration;
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+}) {
+  const currentTeam = useCurrentTeam();
+  const { data: viewsData, isLoading: isLoadingViews } = useConnectionViews(
+    integration,
+    false,
+  );
+  const views = viewsData?.views || [];
+
+  // Check which views are already added to the team
+  const viewsWithStatus = useMemo(() => {
+    if (!views || views.length === 0 || !currentTeam.views) return [];
+
+    return views.map((view) => {
+      const existingView = findPinnedView(currentTeam.views, integration.id, {
+        name: view.name,
+        url: view.url,
+      });
+
+      return {
+        ...view,
+        integration: integration,
+        isAdded: !!existingView,
+        teamViewId: existingView?.id,
+      } as typeof view & {
+        isAdded: boolean;
+        teamViewId?: string;
+        integration: Integration;
+      };
+    });
+  }, [views, currentTeam.views, integration.id]);
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-md">
+        <DialogHeader>
+          <DialogTitle>Add Views from {integration.name}</DialogTitle>
+          <DialogDescription>
+            Select views to add to your sidebar from this integration.
+          </DialogDescription>
+        </DialogHeader>
+
+        <div className="max-h-80 overflow-y-auto">
+          {isLoadingViews ? (
+            <div className="space-y-2">
+              {Array.from({ length: 3 }).map((_, index) => (
+                <Skeleton key={index} className="h-12 w-full" />
+              ))}
+            </div>
+          ) : viewsWithStatus.length === 0 ? (
+            <div className="text-sm text-muted-foreground text-center py-8">
+              {views.length === 0
+                ? "No views available from this integration"
+                : "All available views have already been added"}
+            </div>
+          ) : (
+            <div className="space-y-2">
+              {viewsWithStatus.map((view) => (
+                <div
+                  key={view.name ?? view.url ?? view.title}
+                  className="flex items-center justify-between p-3 border border-border rounded-lg bg-background hover:bg-accent/50 transition-colors"
+                >
+                  <div className="flex items-center gap-3 flex-1 min-w-0">
+                    {view.icon && (
+                      <Icon
+                        name={view.icon}
+                        size={20}
+                        className="flex-shrink-0 text-muted-foreground"
+                      />
+                    )}
+                    <div className="min-w-0 flex-1">
+                      <h4 className="text-sm font-medium truncate">
+                        {view.title}
+                      </h4>
+                      {view.url && (
+                        <p className="text-xs text-muted-foreground truncate">
+                          {view.url}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                  <TogglePin view={view} />
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        <DialogFooter>
+          <Button variant="outline" onClick={() => onOpenChange(false)}>
+            Close
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
 function WorkspaceViews() {
   const workspaceLink = useWorkspaceLink();
   const { isMobile, toggleSidebar } = useSidebar();
@@ -50,6 +168,10 @@ function WorkspaceViews() {
   const team = useCurrentTeam();
   const removeViewMutation = useRemoveView();
   const navigateWorkspace = useNavigateWorkspace();
+  const [addViewsDialogState, setAddViewsDialogState] = useState<{
+    open: boolean;
+    integration?: Integration;
+  }>({ open: false });
 
   const handleRemoveView = async (view: View) => {
     const isUserInView = globalThis.location.pathname.includes(
@@ -84,6 +206,14 @@ function WorkspaceViews() {
     for (const view of views) {
       const integrationId = view.integrationId as string | undefined;
       if (integrationId) {
+        const isInstalled = integrations?.some(
+          (integration) => integration.id === integrationId,
+        );
+
+        if (!isInstalled) {
+          continue;
+        }
+
         if (!result.fromIntegration[integrationId]) {
           result.fromIntegration[integrationId] = [];
         }
@@ -232,19 +362,143 @@ function WorkspaceViews() {
       })}
       {Object.entries(fromIntegration).map(([integrationId, views]) => {
         const integration = integrationMap.get(integrationId);
+        const isSingleView = views.length === 1;
+
+        if (isSingleView) {
+          const [view] = views;
+          const href = buildViewHrefFromView(view as View);
+
+          return (
+            <SidebarMenuItem key={integrationId}>
+              <WithActive to={href}>
+                {({ isActive }) => (
+                  <SidebarMenuButton
+                    asChild
+                    isActive={isActive}
+                    className="w-full pr-8"
+                  >
+                    <Link
+                      to={href}
+                      className="group/item"
+                      onClick={() => {
+                        trackEvent("sidebar_navigation_click", {
+                          item: view.title,
+                        });
+                        isMobile && toggleSidebar();
+                      }}
+                    >
+                      <div className="relative">
+                        <IntegrationAvatar
+                          size="xs"
+                          url={integration?.icon}
+                          fallback={integration?.name}
+                          className="!w-[18px] !h-[18px] !rounded-md"
+                        />
+                        {integration && integrationId !== "custom" && (
+                          <SidebarMenuAction
+                            asChild
+                            className="absolute inset-0 hidden items-center justify-center rounded-md border border-border/80 bg-background/95 shadow-sm transition-opacity group-hover/item:flex"
+                            onClick={(event) => {
+                              event.preventDefault();
+                              event.stopPropagation();
+                              setAddViewsDialogState({
+                                open: true,
+                                integration,
+                              });
+                            }}
+                            aria-label={`Add view to ${integration?.name ?? "integration"}`}
+                            showOnHover
+                          >
+                            <span
+                              role="button"
+                              tabIndex={0}
+                              className="flex h-full w-full items-center justify-center"
+                              onKeyDown={(event) => {
+                                if (
+                                  event.key === "Enter" ||
+                                  event.key === " "
+                                ) {
+                                  event.preventDefault();
+                                  event.stopPropagation();
+                                  setAddViewsDialogState({
+                                    open: true,
+                                    integration,
+                                  });
+                                }
+                              }}
+                            >
+                              <Icon
+                                name="add"
+                                size={14}
+                                className="text-muted-foreground"
+                              />
+                            </span>
+                          </SidebarMenuAction>
+                        )}
+                      </div>
+                      <span className="truncate">
+                        {view.title ?? integration?.name ?? "Custom"}
+                      </span>
+                    </Link>
+                  </SidebarMenuButton>
+                )}
+              </WithActive>
+            </SidebarMenuItem>
+          );
+        }
 
         return (
           <SidebarMenuItem key={integrationId}>
             <Collapsible asChild defaultOpen className="group/collapsible">
-              <div>
+              <div className="group/integration-header relative">
                 <CollapsibleTrigger asChild>
                   <SidebarMenuButton className="w-full">
-                    <IntegrationAvatar
-                      size="xs"
-                      url={integration?.icon}
-                      fallback={integration?.name}
-                      className="!w-[22px] !h-[22px] !rounded-md"
-                    />
+                    <div className="relative">
+                      <IntegrationAvatar
+                        size="xs"
+                        url={integration?.icon}
+                        fallback={integration?.name}
+                        className="!w-[22px] !h-[22px] !rounded-md"
+                      />
+                      {integration && integrationId !== "custom" && (
+                        <SidebarMenuAction
+                          asChild
+                          className="absolute inset-0 hidden items-center justify-center rounded-md border border-border/80 bg-background/95 shadow-sm transition-opacity group-hover/integration-header:flex"
+                          onClick={(event) => {
+                            event.preventDefault();
+                            event.stopPropagation();
+                            setAddViewsDialogState({
+                              open: true,
+                              integration,
+                            });
+                          }}
+                          aria-label={`Add view to ${integration?.name ?? "integration"}`}
+                          showOnHover
+                        >
+                          <span
+                            role="button"
+                            tabIndex={0}
+                            className="flex h-full w-full items-center justify-center"
+                            onKeyDown={(event) => {
+                              if (event.key === "Enter" || event.key === " ") {
+                                event.preventDefault();
+                                event.stopPropagation();
+                                setAddViewsDialogState({
+                                  open: true,
+                                  integration,
+                                });
+                              }
+                            }}
+                          >
+                            <Icon
+                              name="add"
+                              size={14}
+                              className="text-muted-foreground"
+                            />
+                          </span>
+                        </SidebarMenuAction>
+                      )}
+                    </div>
                     <span className="truncate">
                       {integration?.name ?? "Custom"}
                     </span>
@@ -284,9 +538,9 @@ function WorkspaceViews() {
                                   name="unpin"
                                   size={18}
                                   className="text-muted-foreground/75 opacity-0 group-hover/item:opacity-50 hover:opacity-100 transition-opacity cursor-pointer ml-auto"
-                                  onClick={(e) => {
-                                    e.preventDefault();
-                                    e.stopPropagation();
+                                  onClick={(event) => {
+                                    event.preventDefault();
+                                    event.stopPropagation();
                                     handleRemoveView(view);
                                   }}
                                 />
@@ -303,6 +557,19 @@ function WorkspaceViews() {
           </SidebarMenuItem>
         );
       })}
+
+      {addViewsDialogState.integration && (
+        <AddViewsDialog
+          integration={addViewsDialogState.integration}
+          open={addViewsDialogState.open}
+          onOpenChange={(open) =>
+            setAddViewsDialogState({
+              open,
+              integration: open ? addViewsDialogState.integration : undefined,
+            })
+          }
+        />
+      )}
     </>
   );
 }

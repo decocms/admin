@@ -1,5 +1,4 @@
 import { WELL_KNOWN_AGENTS } from "@deco/sdk";
-import { DockviewApi } from "dockview-react";
 import { useState } from "react";
 import { MainChat } from "../agent/chat.tsx";
 import { AgentProvider } from "../agent/provider.tsx";
@@ -24,34 +23,6 @@ export const useDecopilotParams = () => {
     autoSend: searchParams.get("autoSend") === "true",
     clearAutoSendParams,
   };
-};
-
-/**
- * Returns true if the decopilot tab is open, false otherwise.
- */
-export const toggleDecopilotTab = (api: DockviewApi) => {
-  const group = api.getGroup(NO_DROP_TARGET);
-
-  if (group) {
-    api.removeGroup(group);
-    return false;
-  }
-
-  api.addGroup({
-    id: NO_DROP_TARGET,
-    locked: NO_DROP_TARGET,
-    direction: "right",
-  });
-
-  api.addPanel({
-    id: DecopilotChat.displayName,
-    component: DecopilotChat.displayName,
-    title: "Default Chat",
-    tabComponent: DecopilotTabs.displayName,
-    maximumWidth: 512,
-  });
-
-  return true;
 };
 
 export function DecopilotChat() {

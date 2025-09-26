@@ -19,6 +19,19 @@ export const useNavigateWorkspace = () => {
   return navigateWorkspace;
 };
 
+export const useNavigateOrg = () => {
+  const navigate = useNavigate();
+  const { org } = useParams();
+
+  const navigateOrg = useCallback(
+    (path: string) =>
+      navigate(`/${org}/${path.startsWith("/") ? path.slice(1) : path}`),
+    [navigate, org],
+  );
+
+  return navigateOrg;
+};
+
 export const useWorkspaceLink = () => {
   const { org: _org, project = "default" } = useParams();
   const [searchParams] = useSearchParams();

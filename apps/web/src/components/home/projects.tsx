@@ -13,9 +13,7 @@ import { Link, useParams } from "react-router";
 import { ErrorBoundary } from "../../error-boundary";
 import { Avatar } from "../common/avatar";
 import { DecoDayBanner } from "../common/event/deco-day";
-import { TopbarLayout } from "../layout/home";
 import { OrgAvatars, OrgMemberCount } from "./members";
-import { BreadcrumbOrgSwitcher } from "../layout/org-project-switcher";
 
 function ProjectCard({
   name,
@@ -175,23 +173,4 @@ function OrgProjectListContent() {
   );
 }
 
-export function OrgProjectList() {
-  const { org } = useParams();
-
-  return (
-    <TopbarLayout
-      breadcrumb={[
-        {
-          label: (
-            <Suspense fallback={<BreadcrumbOrgSwitcher.Skeleton />}>
-              <BreadcrumbOrgSwitcher />
-            </Suspense>
-          ),
-          link: `/${org}`,
-        },
-      ]}
-    >
-      <OrgProjectListContent />
-    </TopbarLayout>
-  );
-}
+export default OrgProjectListContent;

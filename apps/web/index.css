@@ -1,5 +1,4 @@
 @import "@deco/ui/styles/global.css";
-@import "dockview-react/dist/styles/dockview.css";
 
 /* include the ui package */
 @source "../../packages/ui";
@@ -14,100 +13,6 @@
   }
 
   * {
-    --dv-paneview-active-outline-color: var(--ring);
-    --dv-tabs-and-actions-container-font-size: 0.875rem;
-    --dv-tabs-and-actions-container-height: auto;
-    --dv-tab-close-icon: var(--foreground);
-    --dv-drag-over-background-color: var(--accent);
-    --dv-drag-over-border-color: var(--border);
-    --dv-tabs-container-scrollbar-color: var(--muted);
-    --dv-group-view-background-color: var(--sidebar);
-    --dv-tabs-and-actions-container-background-color: var(--background);
-    --dv-activegroup-visiblepanel-tab-background-color: transparent;
-    --dv-activegroup-hiddenpanel-tab-background-color: transparent;
-    --dv-inactivegroup-visiblepanel-tab-background-color: transparent;
-    --dv-inactivegroup-hiddenpanel-tab-background-color: transparent;
-    --dv-tab-divider-color: transparent;
-    --dv-activegroup-visiblepanel-tab-color: var(--foreground);
-    --dv-activegroup-hiddenpanel-tab-color: var(--muted-foreground);
-    --dv-inactivegroup-visiblepanel-tab-color: var(--muted-foreground);
-    --dv-inactivegroup-hiddenpanel-tab-color: var(--muted-foreground);
-    --dv-separator-border: var(--border);
-    --dv-paneview-header-border-color: var(--border);
-    --dv-icon-hover-background-color: var(--accent);
-    --dv-floating-box-shadow:
-      0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
-    --dv-active-sash-color: var(--color-slate-50);
-    --dv-background-color: var(--background);
-
-    .dv-view.visible:not(:has(.dv-view.visible)) {
-      @apply p-0 sm:p-0.5;
-    }
-
-    .dv-view.visible {
-      @apply w-full;
-    }
-
-    .dv-void-container {
-      @apply bg-muted;
-    }
-
-    .dv-inactive-tab .dv-react-part {
-      @apply border-b-0;
-    }
-
-    .dv-tabs-container {
-      @apply bg-muted;
-    }
-
-    .dv-inactive-group {
-      @apply bg-muted;
-    }
-
-    .dv-groupview {
-      @apply border;
-    }
-
-    .dv-groupview {
-      @apply md:rounded-xl md:shadow-md;
-    }
-
-    .dv-content-container {
-      @apply bg-background;
-    }
-
-    .dv-active-tab [data-active="true"] {
-      @apply bg-background! rounded-t-xl relative z-10;
-      border-bottom: 1px solid var(--background);
-    }
-
-    .dv-active-tab [data-active="true"]::before,
-    .dv-active-tab [data-active="true"]::after {
-      content: "";
-      pointer-events: none;
-      position: absolute;
-      bottom: -3px;
-      width: 1rem;
-      height: 1.5rem;
-      background: transparent;
-    }
-
-    .dv-active-tab [data-active="true"]::before {
-      left: -1rem;
-      border-bottom-right-radius: 16px;
-      box-shadow: 8px 8px 0 0 var(--background);
-    }
-
-    .dv-active-tab [data-active="true"]::after {
-      right: -1rem;
-      border-bottom-left-radius: 16px;
-      box-shadow: -8px 8px 0 0 var(--background);
-    }
-
-    .one-tab .dv-scrollable {
-      @apply grow-0!;
-    }
-
     .prose {
       @apply whitespace-pre-wrap break-words;
       overflow-wrap: anywhere;
@@ -185,23 +90,6 @@
 
     .prose hr {
       @apply my-4 border-border;
-    }
-
-    .dv-active-tab [data-active="true"] button {
-      @apply opacity-100;
-    }
-
-    .dv-inactive-tab [data-active="true"] button {
-      @apply opacity-0 group-hover:opacity-100;
-    }
-
-    .one-tab .dv-scrollable {
-      @apply grow-0!;
-    }
-
-    /* Keep dockview defaults; minimal tweak: ensure horizontal overflow shows */
-    .dv-tabs-container .dv-scrollable {
-      overflow-x: auto;
     }
   }
 }

@@ -38,7 +38,6 @@
     "@zenfs/core": "^2.0.0",
     "ai": "^4.3.13",
     "cloudflare": "^4.2.0",
-    "dockview-react": "^4.2.1",
     "jose": "6.0.11",
     "jsonschema": "^1.5.0",
     "lru-cache": "^11.1.0",

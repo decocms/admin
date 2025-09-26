@@ -17,6 +17,7 @@ import {
 } from "react-router";
 import { EmptyState } from "./components/common/empty-state.tsx";
 import { useWorkspaceLink } from "./hooks/use-navigate-workspace.ts";
+import { OrgsLayout } from "./components/layout/org.tsx";
 
 const DECO_ASCII_LOGO = `
 ..................................................
@@ -87,11 +88,7 @@ const OrgList = lazy(() =>
   })),
 );
 
-const OrgProjectList = lazy(() =>
-  import("./components/home/projects.tsx").then((mod) => ({
-    default: mod.OrgProjectList,
-  })),
-);
+const OrgProjectList = lazy(() => import("./components/home/projects.tsx"));
 
 const ProjectHome = lazy(() =>
   import("./components/home/project-home.tsx").then((mod) => ({
@@ -151,6 +148,10 @@ const MagicLink = lazy(() =>
 
 const Settings = lazy(() =>
   wrapWithUILoadingFallback(import("./components/settings/page.tsx")),
+);
+
+const Members = lazy(() =>
+  wrapWithUILoadingFallback(import("./components/settings/members/index.tsx")),
 );
 
 const Monitor = lazy(() =>
@@ -322,8 +323,17 @@ const router = createBrowserRouter([
       },
       {
         path: "/:org",
-        Component: HomeLayout,
-        children: [{ index: true, Component: OrgProjectList }],
+        Component: OrgsLayout,
+        children: [
+          {
+            index: true,
+            Component: OrgProjectList,
+          },
+          {
+            path: "members",
+            Component: Members,
+          },
+        ],
       },
       {
         path: "/invites",

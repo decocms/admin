@@ -134,7 +134,9 @@ export function BreadcrumbOrgSwitcher() {
                     className="!w-[22px] !h-[22px]"
                     objectFit="contain"
                   />
-                  <span>{organization.name}</span>
+                  <span className="overflow-hidden text-ellipsis whitespace-nowrap">
+                    {organization.name}
+                  </span>
                 </Button>
               ))}
             </div>

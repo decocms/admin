@@ -228,7 +228,7 @@ export function DefaultBreadcrumb({
   const withWorkspace = useWorkspaceLink();
 
   return (
-    <div className="flex items-center gap-3 pl-2">
+    <div className="flex items-center gap-3">
       <Breadcrumb>
         <BreadcrumbList>
           {isMobile ? (

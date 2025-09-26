@@ -858,9 +858,9 @@ export const createIntegration = createIntegrationManagementTool({
         .where(
           and(
             eq(integrations.id, existingIntegration.id),
-            matchByWorkspaceOrProjectLocatorForIntegrations(
-              c.workspace.value,
-              c.locator,
+            or(
+              eq(integrations.workspace, c.workspace.value),
+              projectId ? eq(integrations.project_id, projectId) : undefined,
             ),
           ),
         )

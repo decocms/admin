@@ -4,6 +4,8 @@ import { defineConfig, type PluginOption } from "vite";
 import { VitePWA } from "vite-plugin-pwa";
 import inspect from "vite-plugin-inspect";
 
+const fourMB = 4 * 1024 * 1024;
+
 // https://vite.dev/config/
 export default defineConfig({
   plugins: [
@@ -15,6 +17,7 @@ export default defineConfig({
       workbox: {
         globPatterns: ["**/*.{js,css,ico,png,svg}"],
         cleanupOutdatedCaches: true,
+        maximumFileSizeToCacheInBytes: fourMB,
       },
       // Force update on chunk loading errors
       devOptions: {

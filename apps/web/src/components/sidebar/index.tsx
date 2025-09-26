@@ -271,7 +271,7 @@ function WorkspaceViews() {
       );
     });
   const otherItems = firstLevelViews.filter((item) =>
-    ["Monitor"].includes(item.title),
+    ["Activity"].includes(item.title),
   );
 
   return (

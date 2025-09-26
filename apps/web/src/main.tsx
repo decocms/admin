@@ -136,10 +136,6 @@ const PublicChats = lazy(() =>
   wrapWithUILoadingFallback(import("./components/agent/chats.tsx")),
 );
 
-const AuditList = lazy(() =>
-  wrapWithUILoadingFallback(import("./components/audit/list.tsx")),
-);
-
 const AuditDetail = lazy(() =>
   wrapWithUILoadingFallback(import("./components/audit/detail.tsx")),
 );
@@ -168,7 +164,7 @@ const Usage = lazy(() =>
   wrapWithUILoadingFallback(import("./components/settings/usage/usage.tsx")),
 );
 
-const Monitor = lazy(() =>
+const Activity = lazy(() =>
   wrapWithUILoadingFallback(import("./components/monitor/page.tsx")),
 );
 
@@ -413,12 +409,8 @@ const router = createBrowserRouter([
             path: "workflows/:workflowName/instances/:instanceId",
             Component: WorkflowDetailPage, // ok
           },
-
-          { path: "audits", Component: AuditList }, // is someone using this?
-          { path: "audit/:id", Component: AuditDetail }, // is this still used?
-
-          // MOVE TO ORG SIDEBAR/LAYOUT
-          { path: "monitor", Component: Monitor },
+          { path: "activity", Component: Activity }, // ok
+          { path: "audit/:id", Component: AuditDetail }, // ok
         ],
       },
       { path: "*", Component: NotFound },

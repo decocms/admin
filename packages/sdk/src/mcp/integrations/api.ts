@@ -851,7 +851,7 @@ export const createIntegration = createIntegrationManagementTool({
           .then((r) => r[0])
       : null;
 
-    if (existingIntegration) {
+    if (existingIntegration) {  
       const [data] = await c.drizzle
         .update(integrations)
         .set(payload)

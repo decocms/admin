@@ -29,8 +29,6 @@ import { useNavigateWorkspace } from "../../hooks/use-navigate-workspace.ts";
 import { EmptyState } from "../common/empty-state.tsx";
 import { ListPageHeader } from "../common/list-page-header.tsx";
 import { Table, type TableColumn } from "../common/table/index.tsx";
-import type { Tab } from "../dock/index.tsx";
-import { DefaultBreadcrumb, PageLayout } from "../layout/project.tsx";
 import type { WorkflowRun } from "./types.ts";
 import {
   formatStatus,
@@ -177,7 +175,7 @@ function WorkflowRunsTableView({
   );
 }
 
-function WorkflowRunsTab() {
+function WorkflowRuns() {
   const [_searchParams, _setSearchParams] = useSearchParams();
   const [viewMode, setViewMode] = useViewMode("workflows-list");
   const [filter, setFilter] = useState("");
@@ -429,23 +427,4 @@ function WorkflowEmptyState() {
   );
 }
 
-const tabs: Record<string, Tab> = {
-  workflows: {
-    Component: WorkflowRunsTab,
-    title: "Workflow Runs",
-    active: true,
-    initialOpen: true,
-  },
-};
-
-function WorkflowRunsListPage() {
-  return (
-    <PageLayout
-      hideViewsButton
-      tabs={tabs}
-      breadcrumb={<DefaultBreadcrumb items={[{ label: "Workflow Runs" }]} />}
-    />
-  );
-}
-
-export default WorkflowRunsListPage;
+export default WorkflowRuns;

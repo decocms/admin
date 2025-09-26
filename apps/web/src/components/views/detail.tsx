@@ -142,7 +142,9 @@ export default function ViewDetail() {
           view: connectionViewMatch,
         }}
       >
-        <PreviewTab />
+        <div className="h-[calc(100vh-48px)]">
+          <PreviewTab />
+        </div>
       </ViewDetailContext.Provider>
     </ViewRouteProvider>
   );

@@ -354,33 +354,34 @@ const router = createBrowserRouter([
         path: "/:org/:project",
         Component: ProjectLayout,
         children: [
-          { index: true, Component: ProjectHome },
+          { index: true, Component: ProjectHome }, // ok
+          { path: "discover", Component: Discover }, // ok
           { path: "agents", Component: AgentList }, // ok
           { path: "agent/:id/:threadId", Component: AgentDetail },
-          { path: "apps", Component: InstalledAppsList }, // ok - missing create button
-          { path: "apps/:appKey", Component: AppDetail }, // ok - but backwards navigation is missing. prob just make topbar know all
+          { path: "apps", Component: InstalledAppsList }, // ok
+          { path: "apps/:appKey", Component: AppDetail }, // ok
           { path: "apps/success", Component: AppInstallSuccess }, // ok
-          { path: "triggers", Component: TriggerList },
-          { path: "trigger/:id", Component: TriggerDetails },
-          { path: "settings/:tab", Component: Settings },
-          { path: "settings", Component: Settings },
-          { path: "monitor/:tab", Component: Monitor },
-          { path: "monitor", Component: Monitor },
-          { path: "audits", Component: AuditList },
-          { path: "audit/:id", Component: AuditDetail },
-          { path: "views", Component: ViewsList },
-          // New dynamic route: /:teamSlug/views/:integrationId/:viewName
+          { path: "triggers", Component: TriggerList }, // ok
+          { path: "trigger/:id", Component: TriggerDetails }, // ok
+          { path: "views", Component: ViewsList }, // ok
           { path: "views/:integrationId/:viewName", Component: ViewDetail }, // ok
-          // Legacy route redirects to the new dynamic route
-          { path: "views/:id", Component: LegacyViewRedirect },
+          { path: "views/:id", Component: LegacyViewRedirect }, // ok
           { path: "prompts", Component: ListPrompts }, // ok
           { path: "prompt/:id", Component: PromptDetail }, // ok - partially fixed history.
-          { path: "workflows", Component: WorkflowListPage },
-          { path: "discover", Component: Discover }, // ok
+          { path: "workflows", Component: WorkflowListPage }, // ok
           {
             path: "workflows/:workflowName/instances/:instanceId",
-            Component: WorkflowDetailPage,
+            Component: WorkflowDetailPage, // ok
           },
+
+          { path: "audits", Component: AuditList }, // is someone using this?
+          { path: "audit/:id", Component: AuditDetail }, // is this still used?
+
+          // MOVE TO ORG SIDEBAR/LAYOUT
+          { path: "settings", Component: Settings },
+          { path: "settings/:tab", Component: Settings },
+          { path: "monitor", Component: Monitor },
+          { path: "monitor/:tab", Component: Monitor },
         ],
       },
       { path: "*", Component: NotFound },

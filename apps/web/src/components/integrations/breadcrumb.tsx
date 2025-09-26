@@ -9,11 +9,13 @@ export const Header = ({
   setQuery,
   viewMode,
   setViewMode,
+  actionsRight,
 }: {
   query: string;
   setQuery: (query: string) => void;
   viewMode: ViewModeSwitcherProps["viewMode"];
   setViewMode: (viewMode: ViewModeSwitcherProps["viewMode"]) => void;
+  actionsRight?: React.ReactNode;
 }) => {
   const projectAppsViewActive = useMatch({
     path: `:org/:project/apps`,
@@ -62,6 +64,7 @@ export const Header = ({
         onChange: (e) => setQuery(e.target.value),
       }}
       view={{ viewMode, onChange: setViewMode }}
+      actionsRight={actionsRight}
     />
   );
 };

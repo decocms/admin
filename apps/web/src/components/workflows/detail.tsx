@@ -7,8 +7,6 @@ import { Icon } from "@deco/ui/components/icon.tsx";
 import { ScrollArea } from "@deco/ui/components/scroll-area.tsx";
 import { useState } from "react";
 import { useParams } from "react-router";
-import type { Tab } from "../dock/index.tsx";
-import { DefaultBreadcrumb, PageLayout } from "../layout/project.tsx";
 import { WorkflowFlowVisualization } from "./workflow-flow-visualization.tsx";
 
 function tryParseJson(str: unknown): unknown {
@@ -450,7 +448,7 @@ function processStepGraph(graph: any): any[] {
   }
 }
 
-function InstanceDetailTab() {
+function WorkflowDetail() {
   const { workflowName = "", instanceId = "" } = useParams();
   const { data } = useWorkflowStatus(workflowName, instanceId);
 
@@ -580,34 +578,4 @@ function InstanceDetailTab() {
   );
 }
 
-const tabs: Record<string, Tab> = {
-  instance: {
-    Component: InstanceDetailTab,
-    title: "Instance Details",
-    active: true,
-    initialOpen: true,
-  },
-};
-
-function WorkflowDetailPage() {
-  const { instanceId } = useParams();
-
-  return (
-    <PageLayout
-      hideViewsButton
-      tabs={tabs}
-      breadcrumb={
-        <DefaultBreadcrumb
-          items={[
-            { label: "Workflows", link: "/workflows" },
-            {
-              label: `Instance ${instanceId?.slice(0, 8)}...`,
-            },
-          ]}
-        />
-      }
-    />
-  );
-}
-
-export default WorkflowDetailPage;
+export default WorkflowDetail;

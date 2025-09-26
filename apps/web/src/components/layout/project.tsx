@@ -8,7 +8,11 @@ import {
   BreadcrumbSeparator,
 } from "@deco/ui/components/breadcrumb.tsx";
 import { Button } from "@deco/ui/components/button.tsx";
-import { ResizablePanel, ResizablePanelGroup, ResizableHandle } from "@deco/ui/components/resizable.tsx";
+import {
+  ResizablePanel,
+  ResizablePanelGroup,
+  ResizableHandle,
+} from "@deco/ui/components/resizable.tsx";
 import {
   SidebarInset,
   SidebarLayout,
@@ -55,7 +59,7 @@ export function useDecopilotOpen() {
 
   const toggle = () => {
     setOpen(!open);
-  }
+  };
 
   return {
     open,
@@ -65,10 +69,11 @@ export function useDecopilotOpen() {
 }
 
 export function ProjectLayout() {
-  const { value: defaultSidebarOpen, update: setDefaultSidebarOpen } = useLocalStorage({
-    key: "deco-chat-sidebar",
-    defaultValue: true,
-  });
+  const { value: defaultSidebarOpen, update: setDefaultSidebarOpen } =
+    useLocalStorage({
+      key: "deco-chat-sidebar",
+      defaultValue: true,
+    });
   const [sidebarOpen, setSidebarOpen] = useState(defaultSidebarOpen);
 
   const { open: decopilotOpen } = useDecopilotOpen();
@@ -131,7 +136,7 @@ export function ProjectLayout() {
                           <Outlet />
                         </ScrollArea>
                       </ResizablePanel>
-                      <ResizableHandle withHandle/>
+                      <ResizableHandle withHandle />
                       {decopilotOpen && (
                         <ResizablePanel defaultSize={30}>
                           <DecopilotChat />

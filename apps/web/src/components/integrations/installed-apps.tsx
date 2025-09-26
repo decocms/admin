@@ -3,8 +3,12 @@ import { Card, CardContent } from "@deco/ui/components/card.tsx";
 import { Icon } from "@deco/ui/components/icon.tsx";
 import { Spinner } from "@deco/ui/components/spinner.tsx";
 import { useViewMode } from "@deco/ui/hooks/use-view-mode.ts";
+import { Button } from "@deco/ui/components/button.tsx";
 import { useState } from "react";
-import { useNavigateWorkspace } from "../../hooks/use-navigate-workspace.ts";
+import {
+  useNavigateWorkspace,
+  useWorkspaceLink,
+} from "../../hooks/use-navigate-workspace.ts";
 import { AgentAvatar } from "../common/avatar/agent.tsx";
 import { IntegrationAvatar } from "../common/avatar/integration.tsx";
 import { EmptyState } from "../common/empty-state.tsx";
@@ -13,6 +17,7 @@ import { IntegrationInfo } from "../common/table/table-cells.tsx";
 import { type GroupedApp, useGroupedApps } from "./apps.ts";
 import { Header } from "./breadcrumb.tsx";
 import { SelectConnectionDialog } from "./select-connection-dialog.tsx";
+import { Link } from "react-router";
 
 function AppCard({
   app,
@@ -159,6 +164,7 @@ function TableView({
 export default function InstalledAppsList() {
   const [viewMode, setViewMode] = useViewMode("integrations");
   const [filter, setFilter] = useState<string>("");
+  const workspaceLink = useWorkspaceLink();
   const navigateWorkspace = useNavigateWorkspace();
   const apps = useGroupedApps({
     filter,
@@ -176,6 +182,11 @@ export default function InstalledAppsList() {
           setQuery={setFilter}
           viewMode={viewMode}
           setViewMode={setViewMode}
+          actionsRight={
+            <Button asChild variant="special">
+              <Link to={workspaceLink(`/discover`)}>Discover Apps</Link>
+            </Button>
+          }
         />
       </div>
 

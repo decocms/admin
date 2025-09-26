@@ -1,6 +1,10 @@
 import {
   findPinnedView,
-  Integration, useConnectionViews, useIntegrations, useRemoveView, View
+  Integration,
+  useConnectionViews,
+  useIntegrations,
+  useRemoveView,
+  View,
 } from "@deco/sdk";
 import { Button } from "@deco/ui/components/button.tsx";
 import {

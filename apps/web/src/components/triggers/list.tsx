@@ -15,7 +15,6 @@ import {
   IntegrationInfo,
   UserInfo,
 } from "../common/table/table-cells.tsx";
-import { DefaultBreadcrumb, PageLayout } from "../layout/project.tsx";
 import { TriggerActions } from "./trigger-actions.tsx";
 import { TriggerCard } from "./trigger-card.tsx";
 import { TriggerModal } from "./trigger-dialog.tsx";
@@ -58,47 +57,7 @@ function ListTriggersSkeleton() {
   );
 }
 
-const TABS = {
-  list: {
-    Component: ListTriggers,
-    title: "Triggers",
-    initialOpen: true,
-  },
-};
-
-export default function ListTriggersLayout() {
-  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
-  return (
-    <PageLayout
-      hideViewsButton
-      tabs={TABS}
-      breadcrumb={
-        <DefaultBreadcrumb items={[{ label: "Triggers", link: "/triggers" }]} />
-      }
-      actionButtons={
-        <>
-          <Button
-            variant="special"
-            size="sm"
-            title="Add Trigger"
-            onClick={() => setIsCreateModalOpen(true)}
-          >
-            <Icon name="add" />
-            <span className="hidden md:inline">New Trigger</span>
-          </Button>
-          {isCreateModalOpen && (
-            <TriggerModal
-              isOpen={isCreateModalOpen}
-              onOpenChange={setIsCreateModalOpen}
-            />
-          )}
-        </>
-      }
-    />
-  );
-}
-
-export function ListTriggers() {
+export default function ListTriggers() {
   return (
     <Suspense fallback={<ListTriggersSkeleton />}>
       <ListTriggersSuspended />
@@ -110,6 +69,7 @@ function ListTriggersSuspended() {
   const { data, isLoading } = useListTriggers();
   const [search, setSearch] = useState("");
   const [viewMode, setViewMode] = useViewMode("triggers");
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
 
   const triggers = (data?.triggers || []) as TriggerOutput[];
 
@@ -126,6 +86,12 @@ function ListTriggersSuspended() {
 
   return (
     <div className="p-4 flex flex-col gap-4 h-full">
+      {isCreateModalOpen && (
+        <TriggerModal
+          isOpen={isCreateModalOpen}
+          onOpenChange={setIsCreateModalOpen}
+        />
+      )}
       <ListPageHeader
         filter={{
           items: [],
@@ -140,6 +106,16 @@ function ListTriggersSuspended() {
           viewMode,
           onChange: setViewMode,
         }}
+        actionsRight={
+          <Button
+            variant="special"
+            title="Add Trigger"
+            onClick={() => setIsCreateModalOpen(true)}
+          >
+            <Icon name="add" />
+            <span className="hidden md:inline">New Trigger</span>
+          </Button>
+        }
       />
 
       <div className="flex-1 min-h-0 overflow-x-auto">

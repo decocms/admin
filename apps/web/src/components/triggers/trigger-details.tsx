@@ -7,7 +7,6 @@ import { Skeleton } from "@deco/ui/components/skeleton.tsx";
 import { useState } from "react";
 import { useParams } from "react-router";
 import { AuditListContent } from "../audit/list.tsx";
-import { DefaultBreadcrumb, PageLayout } from "../layout/project.tsx";
 import { CronDetails } from "./cron-details.tsx";
 import { TriggerModal } from "./trigger-dialog.tsx";
 import { TriggerToggle } from "./trigger-toggle.tsx";
@@ -18,7 +17,7 @@ export interface Props {
   onBack?: () => void;
 }
 
-export function TriggerDetails({ id: _triggerId, onBack }: Props) {
+function TriggerDetails({ id: _triggerId, onBack }: Props) {
   const params = useParams();
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
 
@@ -100,38 +99,6 @@ export function TriggerDetails({ id: _triggerId, onBack }: Props) {
   );
 }
 
-export default function Page() {
-  const params = useParams();
-  const triggerId = params.id;
-
-  if (!triggerId) {
-    return null;
-  }
-
-  const { data: trigger } = useTrigger(triggerId);
-
-  return (
-    <PageLayout
-      hideViewsButton
-      breadcrumb={
-        <DefaultBreadcrumb
-          items={[
-            { label: "Triggers", link: "/triggers" },
-            ...(trigger?.data.title ? [{ label: trigger.data.title }] : []),
-          ]}
-        />
-      }
-      tabs={{
-        main: {
-          Component: TriggerDetails,
-          title: "Trigger Details",
-          initialOpen: true,
-        },
-      }}
-    />
-  );
-}
-
 function TriggerIcon({ type }: { type: Trigger["type"] }) {
   return (
     <div className="flex items-center justify-center p-2 bg-primary/10 rounded-md">
@@ -157,3 +124,5 @@ export function TriggerDetailsSkeleton() {
     </div>
   );
 }
+
+export default TriggerDetails;

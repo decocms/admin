@@ -16,7 +16,6 @@ import { useNavigateWorkspace } from "../../hooks/use-navigate-workspace.ts";
 import { EmptyState } from "../common/empty-state.tsx";
 import { ListPageHeader } from "../common/list-page-header.tsx";
 import { Table, TableColumn } from "../common/table/index.tsx";
-import { DefaultBreadcrumb } from "../layout/project.tsx";
 import { useCurrentTeam } from "../sidebar/team-selector";
 import { Spinner } from "@deco/ui/components/spinner.tsx";
 
@@ -310,22 +309,4 @@ function ViewsList() {
   );
 }
 
-const TABS = {
-  list: {
-    Component: ViewsList,
-    title: "Views",
-    initialOpen: true,
-  },
-};
-
-export default function Page() {
-  return (
-    <PageLayout
-      tabs={TABS}
-      hideViewsButton
-      breadcrumb={
-        <DefaultBreadcrumb items={[{ label: "Views", link: "/views" }]} />
-      }
-    />
-  );
-}
+export default ViewsList;

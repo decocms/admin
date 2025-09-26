@@ -56,7 +56,7 @@ import { useUser } from "../../hooks/use-user.ts";
 import { ModelSelector } from "../chat/model-selector.tsx";
 import { UserAvatar } from "../common/avatar/user.tsx";
 import { ProfileSettings } from "../settings/profile.tsx";
-import { useWorkspaceLink } from "../../hooks/use-navigate-workspace.ts";
+import { useOrgLink } from "../../hooks/use-navigate-workspace.ts";
 import { PlanIcons } from "../../utils/plan-icons.tsx";
 
 /** Wrapped component to be suspended */
@@ -404,7 +404,7 @@ const PlanColors = {
 function TeamPlanAndBalance() {
   const plan = usePlan();
   const account = useWorkspaceWalletBalance();
-  const withWorkspaceLink = useWorkspaceLink();
+  const orgLink = useOrgLink();
 
   if (!account?.balance) return null;
 
@@ -413,7 +413,7 @@ function TeamPlanAndBalance() {
 
   return (
     <Link
-      to={withWorkspaceLink("/monitor/billing")}
+      to={orgLink("/billing")}
       className={cn(
         "relative flex flex-col gap-1 p-0.5 rounded-xl w-full transition-colors overflow-hidden",
         planColor.background,

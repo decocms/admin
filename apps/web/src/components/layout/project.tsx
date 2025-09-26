@@ -145,11 +145,13 @@ export function ProjectLayout() {
                           </Suspense>
                         </ScrollArea>
                       </ResizablePanel>
-                      <ResizableHandle withHandle />
                       {decopilotOpen && (
-                        <ResizablePanel defaultSize={30}>
-                          <DecopilotChat />
-                        </ResizablePanel>
+                        <>
+                          <ResizableHandle withHandle />
+                          <ResizablePanel defaultSize={30}>
+                            <DecopilotChat />
+                          </ResizablePanel>
+                        </>
                       )}
                     </ResizablePanelGroup>
                   </SidebarInset>

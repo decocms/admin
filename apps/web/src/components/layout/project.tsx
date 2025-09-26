@@ -8,6 +8,7 @@ import {
   BreadcrumbSeparator,
 } from "@deco/ui/components/breadcrumb.tsx";
 import { Button } from "@deco/ui/components/button.tsx";
+import { ResizablePanel, ResizablePanelGroup, ResizableHandle } from "@deco/ui/components/resizable.tsx";
 import {
   SidebarInset,
   SidebarLayout,
@@ -26,6 +27,8 @@ import { ProjectSidebar } from "../sidebar/index.tsx";
 import { WithWorkspaceTheme } from "../theme.tsx";
 import { TopbarLayout } from "./home.tsx";
 import { BreadcrumbOrgSwitcher } from "./org-project-switcher.tsx";
+import { DecopilotChat } from "../decopilot/index.tsx";
+import { ScrollArea } from "@deco/ui/components/scroll-area.tsx";
 
 export function BaseRouteLayout({ children }: { children: ReactNode }) {
   // remove?
@@ -44,12 +47,32 @@ export function BaseRouteLayout({ children }: { children: ReactNode }) {
   );
 }
 
+export function useDecopilotOpen() {
+  const { value: open, update: setOpen } = useLocalStorage({
+    key: "deco-cms-decopilot",
+    defaultValue: false,
+  });
+
+  const toggle = () => {
+    setOpen(!open);
+  }
+
+  return {
+    open,
+    setOpen,
+    toggle,
+  };
+}
+
 export function ProjectLayout() {
-  const { value: defaultOpen, update: setDefaultOpen } = useLocalStorage({
+  const { value: defaultSidebarOpen, update: setDefaultSidebarOpen } = useLocalStorage({
     key: "deco-chat-sidebar",
     defaultValue: true,
   });
-  const [open, setOpen] = useState(defaultOpen);
+  const [sidebarOpen, setSidebarOpen] = useState(defaultSidebarOpen);
+
+  const { open: decopilotOpen } = useDecopilotOpen();
+
   const { org, project } = useParams();
 
   const {
@@ -71,10 +94,10 @@ export function ProjectLayout() {
           handlePhoneSaved={handlePhoneSaved}
         >
           <SidebarProvider
-            open={open}
+            open={sidebarOpen}
             onOpenChange={(open) => {
-              setDefaultOpen(open);
-              setOpen(open);
+              setDefaultSidebarOpen(open);
+              setSidebarOpen(open);
             }}
           >
             <div className="flex flex-col h-full">
@@ -101,7 +124,20 @@ export function ProjectLayout() {
                 >
                   <ProjectSidebar />
                   <SidebarInset className="h-full flex-col bg-sidebar">
-                    <Outlet />
+                    <ResizablePanelGroup direction="horizontal">
+                      <ResizablePanel>
+                        {/* Topbar height is 48px */}
+                        <ScrollArea className="h-[calc(100vh-48px)]">
+                          <Outlet />
+                        </ScrollArea>
+                      </ResizablePanel>
+                      <ResizableHandle withHandle/>
+                      {decopilotOpen && (
+                        <ResizablePanel defaultSize={30}>
+                          <DecopilotChat />
+                        </ResizablePanel>
+                      )}
+                    </ResizablePanelGroup>
                   </SidebarInset>
                 </SidebarLayout>
               </TopbarLayout>
@@ -146,16 +182,14 @@ const useIsProjectContext = () => {
 
 export const ToggleDecopilotButton = () => {
   const isProjectContext = useIsProjectContext();
-  const handleToggle = () => {
-    globalThis.dispatchEvent(new CustomEvent("toggle-decopilot"));
-  };
+  const { toggle } = useDecopilotOpen();
 
   if (!isProjectContext) {
     return null;
   }
 
   return (
-    <Button size="sm" variant="special" onClick={handleToggle}>
+    <Button size="sm" variant="special" onClick={toggle}>
       <img src="/img/logo-tiny.svg" alt="Deco logo" className="w-4 h-4" />
       Chat
     </Button>

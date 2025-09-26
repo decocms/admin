@@ -238,16 +238,7 @@ function Page(props: Props) {
         }}
       >
         <AgentMetadataUpdater />
-        <PageLayout
-          tabs={TABS}
-          key={agentId}
-          actionButtons={<ActionsButtons />}
-          breadcrumb={
-            agentId !== WELL_KNOWN_AGENT_IDS.teamAgent && (
-              <Breadcrumb agentId={agentId} />
-            )
-          }
-        />
+        <MainChat />
       </AgentProvider>
     </Suspense>
   );

@@ -48,6 +48,7 @@ import type { Tab } from "../dock/index.tsx";
 import { DefaultBreadcrumb, PageLayout } from "../layout/project.tsx";
 import { useFocusChat } from "./hooks.ts";
 import { useViewMode } from "@deco/ui/hooks/use-view-mode.ts";
+import { ScrollArea } from "@deco/ui/components/scroll-area.tsx";
 
 export const useDuplicateAgent = (agent: Agent | null) => {
   const [duplicating, setDuplicating] = useState(false);
@@ -472,7 +473,7 @@ function AgentsList() {
   );
 
   return (
-    <div className="flex flex-col h-full gap-4 p-4">
+    <ScrollArea className="flex flex-col h-full gap-4 p-4">
       <ListPageHeader
         filter={{
           items: (["active", ...VISIBILITIES] as TabId[]).map((id) => ({
@@ -582,7 +583,7 @@ function AgentsList() {
       )}
 
       {/* footer note moved inside list container when Active */}
-    </div>
+    </ScrollArea>
   );
 }
 

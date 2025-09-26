@@ -90,8 +90,3 @@ export function DecopilotChat() {
   );
 }
 DecopilotChat.displayName = "DefaultChat";
-
-export function DecopilotTabs() {
-  return null; //<div>display threads in here</div>;
-}
-DecopilotTabs.displayName = "DefaultChatTabComponent";

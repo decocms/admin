@@ -58,7 +58,8 @@ function ProjectCard({
         <div className="flex flex-col gap-[2px]">
           {!hideSlug && (
             <h3 className="text-sm text-muted-foreground truncate">
-              {slugPrefix}{slug}
+              {slugPrefix}
+              {slug}
             </h3>
           )}
           <p className="font-medium truncate">{name}</p>

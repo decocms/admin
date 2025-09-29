@@ -1,6 +1,13 @@
 import { cn } from "@deco/ui/lib/utils.ts";
 import { Button } from "@deco/ui/components/button.tsx";
-import { createContext, useContext, useEffect, useRef, useState, type ReactNode } from "react";
+import {
+  createContext,
+  useContext,
+  useEffect,
+  useRef,
+  useState,
+  type ReactNode,
+} from "react";
 
 const CountdownContext = createContext<{
   countdown: string;
@@ -20,14 +27,19 @@ const getCountdownString = (targetDate: Date): string => {
   if (difference <= 0) return "00:00:00:00";
 
   const days = Math.floor(difference / (1000 * 60 * 60 * 24));
-  const hours = Math.floor((difference % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+  const hours = Math.floor(
+    (difference % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60),
+  );
   const minutes = Math.floor((difference % (1000 * 60 * 60)) / (1000 * 60));
   const seconds = Math.floor((difference % (1000 * 60)) / 1000);
 
   return `${days.toString().padStart(2, "0")}:${hours.toString().padStart(2, "0")}:${minutes.toString().padStart(2, "0")}:${seconds.toString().padStart(2, "0")}`;
 };
 
-const getEventState = (startDate: Date, endDate: Date): "upcoming" | "active" | "past" => {
+const getEventState = (
+  startDate: Date,
+  endDate: Date,
+): "upcoming" | "active" | "past" => {
   const now = new Date();
   if (now < startDate) {
     return "upcoming";
@@ -101,8 +113,9 @@ export function EventBanner({
   const [countdown, setCountdown] = useState<string>("");
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
   const state = getEventState(startDate, endDate);
-  
-  const currentState = state === "upcoming" ? upcoming : state === "active" ? active : past;
+
+  const currentState =
+    state === "upcoming" ? upcoming : state === "active" ? active : past;
   const isExternalLink = typeof currentState.buttonAction === "string";
 
   useEffect(() => {
@@ -162,23 +175,24 @@ export function EventBanner({
           <>
             {/* Text content */}
             <div className="flex flex-col items-start leading-none relative z-10 shrink-0 text-nowrap max-w-[400px]">
-              
               <div className="font-mono flex flex-row items-center gap-2 text-sm text-dc-50 uppercase font-normal leading-none">
                 {currentState.subtitle}
-                                {/* Date indicator */}
-                                <div className="text-xs text-dc-300 uppercase tracking-wide">
-                  {startDate.toLocaleDateString('en-US', {
-                    month: 'short',
-                    day: 'numeric', 
-                    year: 'numeric'
-                  })} @ {startDate.toLocaleTimeString('en-US', {
-                    hour: 'numeric',
-                    minute: '2-digit'
+                {/* Date indicator */}
+                <div className="text-xs text-dc-300 uppercase tracking-wide">
+                  {startDate.toLocaleDateString("en-US", {
+                    month: "short",
+                    day: "numeric",
+                    year: "numeric",
+                  })}{" "}
+                  @{" "}
+                  {startDate.toLocaleTimeString("en-US", {
+                    hour: "numeric",
+                    minute: "2-digit",
                   })}
                 </div>
               </div>
-              
-              <div 
+
+              <div
                 className="font-sans text-xl font-normal text-[#d0ec1a] leading-8 whitespace-pre"
                 style={{ fontVariationSettings: "'wdth' 100" }}
               >
@@ -189,12 +203,11 @@ export function EventBanner({
             {/* Countdown for upcoming events */}
             {state === "upcoming" && (
               <div className="hidden @min-md:flex flex-col items-center gap-2 relative z-10">
-
-                
                 {/* Countdown timer */}
                 <div className="flex justify-center gap-2 @min-xl:gap-3">
                   {(() => {
-                    const [days, hours, minutes, seconds] = countdown.split(":");
+                    const [days, hours, minutes, seconds] =
+                      countdown.split(":");
                     return (
                       <>
                         <CountdownBox value={days} label="days" />
@@ -214,16 +227,28 @@ export function EventBanner({
             {/* Button */}
             <div className="relative z-10 shrink-0">
               {isExternalLink ? (
-                <Button 
+                <Button
                   variant="special"
                   size="default"
                   asChild
                   className="w-[110px] bg-[#d0ec1a] text-[#07401a]"
                 >
                   <a
-                    href={typeof currentState.buttonAction === "string" ? currentState.buttonAction : "#"}
-                    target={currentState.newTab !== false ? (currentState.target || "_blank") : undefined}
-                    rel={currentState.newTab !== false ? "noopener noreferrer" : undefined}
+                    href={
+                      typeof currentState.buttonAction === "string"
+                        ? currentState.buttonAction
+                        : "#"
+                    }
+                    target={
+                      currentState.newTab !== false
+                        ? currentState.target || "_blank"
+                        : undefined
+                    }
+                    rel={
+                      currentState.newTab !== false
+                        ? "noopener noreferrer"
+                        : undefined
+                    }
                   >
                     {currentState.buttonText}
                   </a>
@@ -232,7 +257,11 @@ export function EventBanner({
                 <Button
                   variant="special"
                   size="default"
-                  onClick={typeof currentState.buttonAction === "function" ? currentState.buttonAction : undefined}
+                  onClick={
+                    typeof currentState.buttonAction === "function"
+                      ? currentState.buttonAction
+                      : undefined
+                  }
                   className="w-[110px] bg-[#d0ec1a] text-[#07401a]"
                 >
                   {currentState.buttonText}

@@ -163,10 +163,7 @@ RecentProjectsSection.Skeleton = () => (
     <div className="h-6 w-40 bg-card rounded animate-pulse" />
     <div className="grid grid-cols-2 @min-3xl:grid-cols-3 @min-6xl:grid-cols-4 gap-4">
       {Array.from({ length: 6 }).map((_, index) => (
-        <div
-          key={index}
-          className="bg-card flex flex-col rounded-lg"
-        >
+        <div key={index} className="bg-card flex flex-col rounded-lg">
           <div className="p-4 flex flex-col gap-4">
             <div className="flex justify-between items-start">
               <div className="h-12 w-12 bg-card rounded-lg animate-pulse" />

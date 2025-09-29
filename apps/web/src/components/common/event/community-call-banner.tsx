@@ -7,34 +7,35 @@ const COMMUNITY_CALL_URL = "https://decocms.com/discord"; // Discord link for al
 const LEFT_BACKGROUND_IMAGE = "/img/banner-decoration-2.svg";
 const RIGHT_BACKGROUND_IMAGE = "/img/banner-decoration-1.svg";
 
-function getNextFridayAt2PM(): { startDate: Date; endDate: Date } {
-  const now = new Date();
-  const currentDay = now.getDay(); // 0=Sunday, 1=Monday, ..., 5=Friday, 6=Saturday
-  const currentHour = now.getHours();
+function getNextFridayAt2PM(now: Date = new Date()): {
+  startDate: Date;
+  endDate: Date;
+} {
+  const day = now.getDay(); // 0=Sun..5=Fri,6=Sat
+  const hour = now.getHours();
+  const minute = now.getMinutes();
+  const second = now.getSeconds();
 
-  // Calculate days until next Friday
-  let daysUntilFriday = 0;
-  if (currentDay < 5) {
-    // Before Friday this week
-    daysUntilFriday = 5 - currentDay;
-  } else if (currentDay === 5 && currentHour < 14) {
-    // It's Friday before 2pm local time
-    daysUntilFriday = 0;
-  } else {
-    // It's Friday after 2pm local time, or weekend - go to next Friday
-    daysUntilFriday = currentDay === 5 ? 7 : 7 - currentDay + 5;
+  // Days until this week's Friday; 0 when today is Friday
+  let daysUntilFriday = (5 - day + 7) % 7;
+
+  // If it's already past 3pm Friday, roll to next week; if 2–3pm, keep today (active)
+  if (daysUntilFriday === 0) {
+    const nowSec = hour * 3600 + minute * 60 + second;
+    const _startSec = 14 * 3600;
+    const endSec = 15 * 3600;
+    if (nowSec >= endSec) daysUntilFriday = 7;
   }
 
-  // Create target date
   const targetDate = new Date(now);
   targetDate.setDate(targetDate.getDate() + daysUntilFriday);
 
-  // Set to 2pm local time
   const startDate = new Date(
     targetDate.getFullYear(),
     targetDate.getMonth(),
     targetDate.getDate(),
     14,
+    0,
     0,
     0,
   );
@@ -45,8 +46,8 @@ function getNextFridayAt2PM(): { startDate: Date; endDate: Date } {
     15,
     0,
     0,
+    0,
   );
-
   return { startDate, endDate };
 }
 

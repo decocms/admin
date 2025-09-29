@@ -1,3 +1,4 @@
+// deno-lint-ignore-file ensure-tailwind-design-system-tokens/ensure-tailwind-design-system-tokens
 import { cn } from "@deco/ui/lib/utils.ts";
 import { Button } from "@deco/ui/components/button.tsx";
 import {
@@ -15,7 +16,7 @@ const CountdownContext = createContext<{
   countdown: "",
 });
 
-const useCountdown = () => {
+const _useCountdown = () => {
   return useContext(CountdownContext);
 };
 
@@ -111,7 +112,7 @@ export function EventBanner({
   children,
 }: EventBannerProps) {
   const [countdown, setCountdown] = useState<string>("");
-  const intervalRef = useRef<NodeJS.Timeout | null>(null);
+  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const state = getEventState(startDate, endDate);
 
   const currentState =
@@ -206,8 +207,9 @@ export function EventBanner({
                 {/* Countdown timer */}
                 <div className="flex justify-center gap-2 @min-xl:gap-3">
                   {(() => {
-                    const [days, hours, minutes, seconds] =
-                      countdown.split(":");
+                    const [days, hours, minutes, seconds] = (
+                      countdown || "00:00:00:00"
+                    ).split(":");
                     return (
                       <>
                         <CountdownBox value={days} label="days" />

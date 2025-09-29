@@ -1,4 +1,3 @@
-// deno-lint-ignore-file ensure-tailwind-design-system-tokens/ensure-tailwind-design-system-tokens
 import { useProjects } from "@deco/sdk";
 import { Button } from "@deco/ui/components/button.tsx";
 import { Icon } from "@deco/ui/components/icon.tsx";
@@ -8,7 +7,7 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@deco/ui/components/tooltip.tsx";
-import { Suspense, useState } from "react";
+import { Suspense, useState, useDeferredValue } from "react";
 import { Link, useParams } from "react-router";
 import { ErrorBoundary } from "../../error-boundary";
 import { Avatar } from "../common/avatar";
@@ -71,7 +70,7 @@ function ProjectCard({
         </div>
       </div>
       {/* Show organization members on the project card for now */}
-      {showMembers && teamId && (
+      {showMembers && typeof teamId === "number" && (
         <div className="p-4 border-t border-border flex justify-between items-center">
           <ErrorBoundary fallback={<div className="w-full h-8"></div>}>
             <Suspense fallback={<OrgAvatars.Skeleton />}>
@@ -153,6 +152,7 @@ Projects.Empty = () => (
 
 function OrgProjectListContent() {
   const [searchQuery, setSearchQuery] = useState("");
+  const deferredQuery = useDeferredValue(searchQuery);
   const { org } = useParams();
 
   return (
@@ -184,7 +184,7 @@ function OrgProjectListContent() {
         <div className="@container overflow-y-auto flex-1 pb-28">
           <ErrorBoundary fallback={<Projects.Error />}>
             <Suspense fallback={<Projects.Skeleton />}>
-              <Projects query={searchQuery} org={org ?? ""} />
+              <Projects query={deferredQuery} org={org ?? ""} />
             </Suspense>
           </ErrorBoundary>
         </div>

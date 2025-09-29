@@ -1,9 +1,8 @@
-// deno-lint-ignore-file ensure-tailwind-design-system-tokens/ensure-tailwind-design-system-tokens
 import { useOrganizations, useRecentProjects } from "@deco/sdk";
 import { Button } from "@deco/ui/components/button.tsx";
 import { Icon } from "@deco/ui/components/icon.tsx";
 import { Input } from "@deco/ui/components/input.tsx";
-import { Suspense, useState } from "react";
+import { Suspense, useState, useDeferredValue } from "react";
 import { Link } from "react-router";
 import { ErrorBoundary } from "../../error-boundary";
 import { Avatar } from "../common/avatar";
@@ -145,7 +144,7 @@ function RecentProjectsSection() {
             avatarUrl={project.avatar_url || project.org.avatar_url || ""}
             slugPrefix="/"
             showMembers={false}
-            hideSlug={true}
+            hideSlug
             additionalInfo={
               project.last_accessed_at
                 ? `Last seen ${timeAgo(project.last_accessed_at)}`
@@ -181,6 +180,7 @@ RecentProjectsSection.Skeleton = () => (
 
 function MyOrganizations() {
   const [searchQuery, setSearchQuery] = useState("");
+  const deferredQuery = useDeferredValue(searchQuery);
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
 
   return (
@@ -213,7 +213,7 @@ function MyOrganizations() {
         <div className="@container overflow-y-auto flex-1 pb-28">
           <ErrorBoundary fallback={<Organizations.Error />}>
             <Suspense fallback={<Organizations.Skeleton />}>
-              <Organizations query={searchQuery} />
+              <Organizations query={deferredQuery} />
             </Suspense>
           </ErrorBoundary>
         </div>

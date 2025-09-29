@@ -222,6 +222,22 @@ const Discover = lazy(() =>
   wrapWithUILoadingFallback(import("./components/discover/index.tsx")),
 );
 
+// Resources v2 routes
+const ResourcesV2List = lazy(() =>
+  wrapWithUILoadingFallback(import("./components/resources-v2/list.tsx")),
+);
+
+const ResourcesV2Detail = lazy(() =>
+  wrapWithUILoadingFallback(import("./components/resources-v2/detail.tsx")),
+);
+
+// Workflows resource list
+const WorkflowsResourceList = lazy(() =>
+  wrapWithUILoadingFallback(
+    import("./components/workflows/workflows-resource-list.tsx"),
+  ),
+);
+
 function NotFound(): null {
   throw new NotFoundError("The path was not found");
 }
@@ -404,13 +420,23 @@ const router = createBrowserRouter([
           { path: "views/:id", Component: LegacyViewRedirect },
           { path: "prompts", Component: ListPrompts },
           { path: "prompt/:id", Component: PromptDetail },
-          { path: "workflows", Component: WorkflowListPage },
+          { path: "workflow-runs", Component: WorkflowListPage },
           {
-            path: "workflows/:workflowName/instances/:instanceId",
+            path: "workflow-runs/:workflowName/instances/:instanceId",
             Component: WorkflowDetailPage,
           },
+          { path: "workflows", Component: WorkflowsResourceList },
           { path: "activity", Component: Activity },
           { path: "audit/:id", Component: AuditDetail },
+          // Resources v2 list/detail routes
+          {
+            path: "rsc/:integrationId/:resourceName",
+            Component: ResourcesV2List,
+          },
+          {
+            path: "rsc/:integrationId/:resourceName/:resourceUri",
+            Component: ResourcesV2Detail,
+          },
         ],
       },
       { path: "*", Component: NotFound },

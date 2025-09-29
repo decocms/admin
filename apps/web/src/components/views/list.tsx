@@ -18,6 +18,8 @@ import { ListPageHeader } from "../common/list-page-header.tsx";
 import { Table, TableColumn } from "../common/table/index.tsx";
 import { useCurrentTeam } from "../sidebar/team-selector";
 import { Spinner } from "@deco/ui/components/spinner.tsx";
+import { type DecopilotContextValue } from "../decopilot/context.tsx";
+import { DecopilotLayout } from "../layout/decopilot-layout.tsx";
 
 export interface ViewWithStatus {
   isAdded: boolean;
@@ -242,70 +244,78 @@ function ViewsList() {
     );
   };
 
+  const decopilotContextValue: DecopilotContextValue = {
+    additionalTools: {},
+  };
+
   return (
-    <div className="flex flex-col h-full p-4">
-      <ListPageHeader
-        input={{
-          placeholder: "Search views",
-          value: searchTerm,
-          onChange: (e) => setSearchTerm(e.target.value),
-        }}
-        view={{ viewMode, onChange: setViewMode }}
-      />
-
-      {isLoadingViews && (
-        <div className="flex justify-center items-center h-full">
-          <Spinner />
-        </div>
-      )}
-
-      {filteredViews.length > 0 && viewMode === "cards" && (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 py-4">
-          {filteredViews.map((view) => (
-            <Card
-              key={`${view.integration.id}-${view.title}`}
-              className={cn("hover:shadow-md transition-shadow cursor-pointer")}
-              onClick={() => handleViewClick(view)}
-            >
-              <CardContent className="p-4">
-                <div className="flex items-center gap-3">
-                  <Icon
-                    name={view.icon.toLowerCase()}
-                    className="w-6 h-6 shrink-0"
-                    size={24}
-                  />
-                  <div className="flex-1 min-w-0">
-                    <h3 className="font-medium truncate">
-                      {beautifyViewName(view.title || "")}
-                    </h3>
-                    <p className="text-sm text-muted-foreground truncate">
-                      {view.integration.name}
-                    </p>
-                  </div>
-                  <TogglePin view={view} />
-                </div>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-      )}
-
-      {filteredViews.length > 0 && viewMode === "table" && (
-        <TableView views={filteredViews} onConfigure={handleViewClick} />
-      )}
-
-      {filteredViews.length === 0 && !isLoadingViews && (
-        <EmptyState
-          icon="dashboard"
-          title="No views found"
-          description={
-            deferredSearchTerm
-              ? "No views match your search."
-              : "No view tools are available from your integrations."
-          }
+    <DecopilotLayout value={decopilotContextValue}>
+      <div className="flex flex-col h-full p-4">
+        <ListPageHeader
+          input={{
+            placeholder: "Search views",
+            value: searchTerm,
+            onChange: (e) => setSearchTerm(e.target.value),
+          }}
+          view={{ viewMode, onChange: setViewMode }}
         />
-      )}
-    </div>
+
+        {isLoadingViews && (
+          <div className="flex justify-center items-center h-full">
+            <Spinner />
+          </div>
+        )}
+
+        {filteredViews.length > 0 && viewMode === "cards" && (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 py-4">
+            {filteredViews.map((view) => (
+              <Card
+                key={`${view.integration.id}-${view.title}`}
+                className={cn(
+                  "hover:shadow-md transition-shadow cursor-pointer",
+                )}
+                onClick={() => handleViewClick(view)}
+              >
+                <CardContent className="p-4">
+                  <div className="flex items-center gap-3">
+                    <Icon
+                      name={view.icon.toLowerCase()}
+                      className="w-6 h-6 shrink-0"
+                      size={24}
+                    />
+                    <div className="flex-1 min-w-0">
+                      <h3 className="font-medium truncate">
+                        {beautifyViewName(view.title || "")}
+                      </h3>
+                      <p className="text-sm text-muted-foreground truncate">
+                        {view.integration.name}
+                      </p>
+                    </div>
+                    <TogglePin view={view} />
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        )}
+
+        {filteredViews.length > 0 && viewMode === "table" && (
+          <TableView views={filteredViews} onConfigure={handleViewClick} />
+        )}
+
+        {filteredViews.length === 0 && !isLoadingViews && (
+          <EmptyState
+            icon="dashboard"
+            title="No views found"
+            description={
+              deferredSearchTerm
+                ? "No views match your search."
+                : "No view tools are available from your integrations."
+            }
+          />
+        )}
+      </div>
+    </DecopilotLayout>
   );
 }
 

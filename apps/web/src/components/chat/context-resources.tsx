@@ -45,16 +45,7 @@ import {
   onResourceLoaded,
   onResourceLoading,
 } from "../../utils/events.ts";
-import type { IntegrationViewItem } from "../decopilot/use-view.ts";
-import { useViewRoute } from "../views/view-route-context.tsx";
-// Rules now derived from the current integration view item
-
-interface IntegrationWithTools extends Integration {
-  tools?: Array<{
-    name: string;
-    description?: string;
-  }>;
-}
+// Rules now derived from the agent context
 
 export interface UploadedFile {
   file: File;
@@ -126,7 +117,7 @@ export function ContextResources({
   uploadedFiles,
   setUploadedFiles,
 }: ContextResourcesProps) {
-  const { agent } = useAgent();
+  const { agent, rules, setRules } = useAgent();
   const { locator } = useSDK();
   const { data: integrations = [] } = useIntegrations();
   const { data: agents = [] } = useAgents();
@@ -182,7 +173,7 @@ export function ContextResources({
     return integrationsWithTools.map((item) => {
       // Use integration.tools?.length for total tools count, handle nullable field
       const totalTools =
-        (item.integration as IntegrationWithTools).tools?.length ||
+        (item.integration as Integration).tools?.length ||
         item.enabledTools.length;
       return {
         ...item,
@@ -317,31 +308,17 @@ export function ContextResources({
 
   const isDragging = useGlobalDrop(handleFileDrop);
 
-  // Rules for the chat now come from the current route context.
-  // Context provider dispatches rules; we only display and allow removal locally.
-  const { view } = useViewRoute();
-  const viewRules = (view as IntegrationViewItem | undefined)?.rules ?? [];
-  const [persistedRules, setPersistedRules] = useState<
-    Array<{ id: string; text: string }>
-  >(
-    (viewRules as string[]).map((text: string, idx: number) => ({
-      id: `view-rule-initial-${idx}`,
-      text,
-    })),
-  );
+  // Convert rules to persistedRules format for display
+  const persistedRules = rules.map((text: string, idx: number) => ({
+    id: `agent-rule-${idx}`,
+    text,
+  }));
 
   const removeRule = (id: string) => {
-    setPersistedRules((prev) => prev.filter((r) => r.id !== id));
+    const ruleIndex = parseInt(id.replace("agent-rule-", ""));
+    const newRules = rules.filter((_, idx) => idx !== ruleIndex);
+    setRules(newRules);
   };
-
-  // Expose rules to rest of app via custom event (AgentProvider listens)
-  useEffect(() => {
-    const rules = persistedRules.map((r) => r.text);
-    // Avoid dispatch storms: minimal debounce not necessary here; list is small
-    import("../../utils/events.ts").then(({ dispatchRulesUpdated }) =>
-      dispatchRulesUpdated({ rules }),
-    );
-  }, [persistedRules]);
 
   // Listen for resource lifecycle events from mentions and manage uploadedFiles
   useEffect(() => {
@@ -556,11 +533,11 @@ function IntegrationResourceItem({
             <div className="text-xs text-muted-foreground">
               {enabledTools.length} of {totalTools} tools enabled
             </div>
-            {(integration as IntegrationWithTools).tools && (
+            {(integration as Integration).tools && (
               <div className="space-y-1">
                 <div className="text-xs font-medium">Tools:</div>
                 <div className="space-y-1 max-h-64 overflow-y-auto">
-                  {(integration as IntegrationWithTools).tools!.map(
+                  {(integration as Integration).tools!.map(
                     (tool, index: number) => {
                       const isEnabled = enabledTools.includes(tool.name);
                       return (

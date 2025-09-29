@@ -1,10 +1,10 @@
 import type { Agent } from "@deco/sdk";
 import {
+  AgentWithActivity,
   useAgents,
   useRemoveAgent,
   useSDK,
   WELL_KNOWN_AGENT_IDS,
-  AgentWithActivity,
 } from "@deco/sdk";
 import {
   AlertDialog,
@@ -17,7 +17,7 @@ import {
   AlertDialogTitle,
 } from "@deco/ui/components/alert-dialog.tsx";
 import { Button } from "@deco/ui/components/button.tsx";
-import { Card as UICard, CardContent } from "@deco/ui/components/card.tsx";
+import { CardContent, Card as UICard } from "@deco/ui/components/card.tsx";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -26,6 +26,7 @@ import {
 } from "@deco/ui/components/dropdown-menu.tsx";
 import { Icon } from "@deco/ui/components/icon.tsx";
 import { Spinner } from "@deco/ui/components/spinner.tsx";
+import { useViewMode } from "@deco/ui/hooks/use-view-mode.ts";
 import { useCallback, useMemo, useReducer, useState } from "react";
 import { trackEvent } from "../../hooks/analytics.ts";
 import { useCreateAgent } from "../../hooks/use-create-agent.ts";
@@ -37,8 +38,8 @@ import { EmptyState } from "../common/empty-state.tsx";
 import { ListPageHeader } from "../common/list-page-header.tsx";
 import { Table } from "../common/table/index.tsx";
 import { DateTimeCell, UserInfo } from "../common/table/table-cells.tsx";
+import { DecopilotLayout } from "../layout/decopilot-layout.tsx";
 import { useFocusChat } from "./hooks.ts";
-import { useViewMode } from "@deco/ui/hooks/use-view-mode.ts";
 
 export const useDuplicateAgent = (agent: Agent | null) => {
   const [duplicating, setDuplicating] = useState(false);
@@ -462,124 +463,140 @@ function AgentsList() {
     agent.name.toLowerCase().includes(filter.toLowerCase()),
   );
 
+  // Prepare decopilot context value for agents list
+  const decopilotContextValue = useMemo(() => {
+    const rules: string[] = [
+      `You are helping with agent management and organization. Focus on operations related to agent creation, configuration, management, and organization.`,
+      `When working with agents, prioritize operations that help users create new agents, manage existing agents, understand agent capabilities, and organize their agent collection effectively. Consider the current agent list and available agent types when providing assistance.`,
+    ];
+
+    return {
+      rules,
+    };
+  }, []);
+
   return (
-    <div className="flex flex-col h-full gap-4 p-4">
-      <ListPageHeader
-        filter={{
-          items: (["active", ...VISIBILITIES] as TabId[]).map((id) => ({
-            id,
-            active: selectedTab === id,
-            label:
-              id === "active" ? "Active" : VISIBILITY_LABELS[id as Visibility],
-            count:
-              id === "active"
-                ? activeAgents.length
-                : agentsByVisibility[id as Visibility].length,
-          })),
-          onClick: (item) => setSelectedTab(item.id as TabId),
-        }}
-        input={{
-          placeholder: "Search agent",
-          value: filter,
-          onChange: (e) =>
-            dispatch({ type: "SET_FILTER", payload: e.target.value }),
-        }}
-        view={{ viewMode, onChange: setViewMode }}
-        actionsRight={
-          <Button variant="special" onClick={handleCreate}>
-            <Icon name="add" size={16} />
-            New agent
-          </Button>
-        }
-      />
-
-      {filteredAgents.length > 0 ? (
-        <div
-          className={
-            selectedTab === "active"
-              ? "min-h-0 overflow-x-auto"
-              : "flex-1 min-h-0 overflow-x-auto"
+    <DecopilotLayout value={decopilotContextValue}>
+      <div className="flex flex-col h-full gap-4 p-4">
+        <ListPageHeader
+          filter={{
+            items: (["active", ...VISIBILITIES] as TabId[]).map((id) => ({
+              id,
+              active: selectedTab === id,
+              label:
+                id === "active"
+                  ? "Active"
+                  : VISIBILITY_LABELS[id as Visibility],
+              count:
+                id === "active"
+                  ? activeAgents.length
+                  : agentsByVisibility[id as Visibility].length,
+            })),
+            onClick: (item) => setSelectedTab(item.id as TabId),
+          }}
+          input={{
+            placeholder: "Search agent",
+            value: filter,
+            onChange: (e) =>
+              dispatch({ type: "SET_FILTER", payload: e.target.value }),
+          }}
+          view={{ viewMode, onChange: setViewMode }}
+          actionsRight={
+            <Button variant="special" onClick={handleCreate}>
+              <Icon name="add" size={16} />
+              New agent
+            </Button>
           }
-        >
-          {viewMode === "table" ? (
-            <TableView agents={filteredAgents} />
-          ) : (
-            <CardsView agents={filteredAgents} />
-          )}
+        />
 
-          {selectedTab === "active" && (
-            <div className="w-full text-center text-xs text-muted-foreground py-3">
-              showing only agents used in the last 7 days. click
-              <Button
-                variant="link"
-                className="px-1"
-                onClick={() => setSelectedTab("all")}
-              >
-                All
-              </Button>
-              to see more
-            </div>
-          )}
-        </div>
-      ) : (
-        <>
-          {selectedTab === "active" ? (
-            <EmptyState
-              icon="history"
-              title="No agents used in the last 7 days"
-              description="Click All to see more."
-              buttonProps={{
-                children: "All",
-                onClick: () => setSelectedTab("all"),
-                variant: "outline",
-              }}
-            />
-          ) : (
-            <EmptyState
-              icon={
-                (agents?.length ?? 0) === 0
-                  ? "robot_2"
-                  : selectedTab === "public" &&
-                      agentsByVisibility["public"].length === 0
-                    ? "public"
-                    : selectedTab === "workspace" &&
-                        agentsByVisibility["workspace"].length === 0
-                      ? "groups"
-                      : "search_off"
-              }
-              title={
-                (agents?.length ?? 0) === 0
-                  ? "No agents yet"
-                  : selectedTab === "public" &&
-                      agentsByVisibility["public"].length === 0
-                    ? "No public agents available"
-                    : selectedTab === "workspace" &&
-                        agentsByVisibility["workspace"].length === 0
-                      ? "No team agents yet"
-                      : "No agents match your filter"
-              }
-              description={
-                (agents?.length ?? 0) === 0
-                  ? "You haven't created any agents yet. Create one to get started."
-                  : selectedTab === "public" &&
-                      agentsByVisibility["public"].length === 0
-                    ? "Once agents are shared publicly, they'll appear here for anyone to explore and try out."
-                    : selectedTab === "workspace" &&
-                        agentsByVisibility["workspace"].length === 0
-                      ? "Agents shared with your team will show up here. Create one to start collaborating."
-                      : "Try adjusting your search. If you still can't find what you're looking for, you can create a new agent."
-              }
-              buttonProps={{
-                children: "New agent",
-                onClick: handleCreate,
-              }}
-            />
-          )}
-        </>
-      )}
+        {filteredAgents.length > 0 ? (
+          <div
+            className={
+              selectedTab === "active"
+                ? "min-h-0 overflow-x-auto"
+                : "flex-1 min-h-0 overflow-x-auto"
+            }
+          >
+            {viewMode === "table" ? (
+              <TableView agents={filteredAgents} />
+            ) : (
+              <CardsView agents={filteredAgents} />
+            )}
 
-      {/* footer note moved inside list container when Active */}
-    </div>
+            {selectedTab === "active" && (
+              <div className="w-full text-center text-xs text-muted-foreground py-3">
+                showing only agents used in the last 7 days. click
+                <Button
+                  variant="link"
+                  className="px-1"
+                  onClick={() => setSelectedTab("all")}
+                >
+                  All
+                </Button>
+                to see more
+              </div>
+            )}
+          </div>
+        ) : (
+          <>
+            {selectedTab === "active" ? (
+              <EmptyState
+                icon="history"
+                title="No agents used in the last 7 days"
+                description="Click All to see more."
+                buttonProps={{
+                  children: "All",
+                  onClick: () => setSelectedTab("all"),
+                  variant: "outline",
+                }}
+              />
+            ) : (
+              <EmptyState
+                icon={
+                  (agents?.length ?? 0) === 0
+                    ? "robot_2"
+                    : selectedTab === "public" &&
+                        agentsByVisibility["public"].length === 0
+                      ? "public"
+                      : selectedTab === "workspace" &&
+                          agentsByVisibility["workspace"].length === 0
+                        ? "groups"
+                        : "search_off"
+                }
+                title={
+                  (agents?.length ?? 0) === 0
+                    ? "No agents yet"
+                    : selectedTab === "public" &&
+                        agentsByVisibility["public"].length === 0
+                      ? "No public agents available"
+                      : selectedTab === "workspace" &&
+                          agentsByVisibility["workspace"].length === 0
+                        ? "No team agents yet"
+                        : "No agents match your filter"
+                }
+                description={
+                  (agents?.length ?? 0) === 0
+                    ? "You haven't created any agents yet. Create one to get started."
+                    : selectedTab === "public" &&
+                        agentsByVisibility["public"].length === 0
+                      ? "Once agents are shared publicly, they'll appear here for anyone to explore and try out."
+                      : selectedTab === "workspace" &&
+                          agentsByVisibility["workspace"].length === 0
+                        ? "Agents shared with your team will show up here. Create one to start collaborating."
+                        : "Try adjusting your search. If you still can't find what you're looking for, you can create a new agent."
+                }
+                buttonProps={{
+                  children: "New agent",
+                  onClick: handleCreate,
+                }}
+              />
+            )}
+          </>
+        )}
+
+        {/* footer note moved inside list container when Active */}
+      </div>
+    </DecopilotLayout>
   );
 }
 

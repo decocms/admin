@@ -5,7 +5,6 @@ import {
   type HTTPConnection,
   type Integration,
   type MCPConnection,
-  MCPTool,
 } from "@deco/sdk";
 import { createSessionTokenCookie } from "@deco/sdk/auth";
 import { WebCache } from "@deco/sdk/cache";
@@ -24,8 +23,7 @@ import { getToolsForInnateIntegration } from "./storage/tools.ts";
 import { createTool } from "./utils/create-tool.ts";
 import { jsonSchemaToModel } from "./utils/json-schema-to-model.ts";
 import { mapToolEntries } from "./utils/tool-entries.ts";
-export { createServerClient, createTransport };
-export { jsonSchemaToModel };
+export { createServerClient, createTransport, jsonSchemaToModel };
 const ApiDecoChatURLs = [
   "https://api.decocms.com",
   "https://api.deco.chat",
@@ -75,7 +73,7 @@ export const swrListTools = (mcpServer: Integration, signal?: AbortSignal) => {
 };
 
 const getMCPServerTools = async (
-  mcpServer: Integration & { tools?: MCPTool[] },
+  mcpServer: Integration,
   agent: AIAgent,
   signal?: AbortSignal,
 ): Promise<Record<string, ToolAction<any, any, any>>> => {

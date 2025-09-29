@@ -1,5 +1,7 @@
 import type { WorkflowDefinition } from "@deco/sdk";
+import { useWorkflowByUriV2 } from "@deco/sdk";
 import { Button } from "@deco/ui/components/button.tsx";
+import { Icon } from "@deco/ui/components/icon.tsx";
 import {
   Background,
   type Edge,
@@ -9,7 +11,6 @@ import {
   useNodesState,
 } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
-import { Icon } from "@deco/ui/components/icon.tsx";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { WorkflowSinkNode } from "./nodes/workflow-sink-node.tsx";
 import { WorkflowSourceNode } from "./nodes/workflow-source-node.tsx";
@@ -38,9 +39,8 @@ const nodeTypes = {
 };
 
 interface WorkflowDisplayCanvasProps {
-  workflow: DisplayWorkflow;
+  resourceUri: string;
   onRefresh?: () => Promise<void>;
-  isLoading?: boolean;
 }
 
 /**
@@ -48,17 +48,32 @@ interface WorkflowDisplayCanvasProps {
  * No interactions - just visual representation
  */
 export function WorkflowDisplayCanvas({
-  workflow,
+  resourceUri,
   onRefresh,
-  isLoading = false,
 }: WorkflowDisplayCanvasProps) {
+  const {
+    data: resource,
+    isLoading: isLoading,
+    refetch,
+  } = useWorkflowByUriV2(resourceUri);
+  const effectiveWorkflow = resource?.data;
+
   // Local loading state for refresh functionality
   const [isRefreshing, setIsRefreshing] = useState(false);
 
   // Convert workflow to React Flow format for display
   const { nodes: initialNodes, edges: initialEdges } = useMemo(
-    () => convertWorkflowToDisplayFlow(workflow),
-    [workflow],
+    () =>
+      convertWorkflowToDisplayFlow(
+        effectiveWorkflow || {
+          name: resourceUri,
+          description: "",
+          inputSchema: {},
+          outputSchema: {},
+          steps: [],
+        },
+      ),
+    [effectiveWorkflow, resourceUri],
   );
 
   // React Flow state
@@ -67,33 +82,42 @@ export function WorkflowDisplayCanvas({
 
   // Update nodes when workflow changes
   useEffect(() => {
+    if (!effectiveWorkflow) return;
     const { nodes: newNodes, edges: newEdges } =
-      convertWorkflowToDisplayFlow(workflow);
+      convertWorkflowToDisplayFlow(effectiveWorkflow);
     setNodes(newNodes);
     setEdges(newEdges);
-  }, [workflow, setNodes, setEdges]);
+  }, [effectiveWorkflow, setNodes, setEdges]);
 
   const handleRefresh = useCallback(async () => {
-    if (!onRefresh || isRefreshing) return;
-
+    if (isRefreshing) return;
+    if (onRefresh) {
+      try {
+        setIsRefreshing(true);
+        await onRefresh();
+      } finally {
+        setIsRefreshing(false);
+      }
+      return;
+    }
     try {
       setIsRefreshing(true);
-      await onRefresh();
-    } catch (error) {
-      console.error("Failed to refresh workflow:", error);
+      await refetch();
     } finally {
       setIsRefreshing(false);
     }
-  }, [onRefresh, isRefreshing]);
+  }, [onRefresh, isRefreshing, resourceUri, refetch]);
 
   return (
-    <div className="h-screen w-full flex flex-col">
+    <div className="h-full w-full flex flex-col">
       {/* Header with refresh button */}
       <div className="flex items-center justify-between p-4 border-b bg-white">
         <div>
-          <h1 className="text-xl font-semibold">{workflow.name}</h1>
+          <h1 className="text-xl font-semibold">
+            {effectiveWorkflow?.name || resourceUri || "Workflow"}
+          </h1>
           <p className="text-sm text-muted-foreground">
-            {workflow.description}
+            {effectiveWorkflow?.description}
           </p>
         </div>
         <Button

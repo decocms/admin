@@ -14,6 +14,8 @@ import { trackEvent } from "../../../hooks/analytics.ts";
 import { AgentProvider } from "../../agent/provider.tsx";
 import { Context } from "./context.ts";
 import { PromptDetail } from "./form.tsx";
+import { type DecopilotContextValue } from "../../decopilot/context.tsx";
+import { DecopilotLayout } from "../../layout/decopilot-layout.tsx";
 
 export default function Page() {
   const agentId = WELL_KNOWN_AGENT_IDS.promptAgent;
@@ -104,28 +106,34 @@ export default function Page() {
   // via AgentProvider in the new architecture. The prompt ID context should be
   // passed via chat overrides instead of modifying cached agent data.
 
+  const decopilotContextValue: DecopilotContextValue = {
+    additionalTools: {},
+  };
+
   return (
-    <AgentProvider
-      agentId={agentId}
-      threadId={threadId}
-      uiOptions={{ showEditAgent: false }}
-    >
-      <Context.Provider
-        value={{
-          form,
-          prompt: selectedPrompt,
-          setSelectedPrompt,
-          onSubmit,
-          promptVersion,
-          setPromptVersion,
-          handleRestoreVersion,
-          handleDiscard,
-          handleCancel,
-          blocker,
-        }}
+    <DecopilotLayout value={decopilotContextValue}>
+      <AgentProvider
+        agentId={agentId}
+        threadId={threadId}
+        uiOptions={{ showEditAgent: false }}
       >
-        <PromptDetail />
-      </Context.Provider>
-    </AgentProvider>
+        <Context.Provider
+          value={{
+            form,
+            prompt: selectedPrompt,
+            setSelectedPrompt,
+            onSubmit,
+            promptVersion,
+            setPromptVersion,
+            handleRestoreVersion,
+            handleDiscard,
+            handleCancel,
+            blocker,
+          }}
+        >
+          <PromptDetail />
+        </Context.Provider>
+      </AgentProvider>
+    </DecopilotLayout>
   );
 }

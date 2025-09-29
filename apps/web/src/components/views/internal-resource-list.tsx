@@ -364,7 +364,7 @@ export function InternalResourceListWithIntegration({
             </Tooltip>
           </TooltipProvider>
           {caps.hasCreate && (
-            <Button onClick={openCreateDialog} variant="special" size="sm">
+            <Button onClick={openCreateDialog} variant="special">
               <Icon name="add" />
               Create
             </Button>

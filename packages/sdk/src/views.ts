@@ -38,6 +38,15 @@ export const DEFAULT_VIEWS: View[] = [
     },
   },
   {
+    id: "workflow-runs",
+    title: "Workflow Runs",
+    icon: "play_arrow",
+    type: "default",
+    metadata: {
+      path: "/workflow-runs",
+    },
+  },
+  {
     id: "triggers",
     title: "Triggers",
     icon: "cable",

@@ -20,6 +20,8 @@ import { TriggerCard } from "./trigger-card.tsx";
 import { TriggerModal } from "./trigger-dialog.tsx";
 import { TriggerToggle } from "./trigger-toggle.tsx";
 import { TriggerType } from "./trigger-type.tsx";
+import { type DecopilotContextValue } from "../decopilot/context.tsx";
+import { DecopilotLayout } from "../layout/decopilot-layout.tsx";
 
 const SORTABLE_KEYS = ["title", "type", "target", "author"] as const;
 
@@ -84,70 +86,78 @@ function ListTriggersSuspended() {
     return <ListTriggersSkeleton />;
   }
 
-  return (
-    <div className="p-4 flex flex-col gap-4 h-full">
-      {isCreateModalOpen && (
-        <TriggerModal
-          isOpen={isCreateModalOpen}
-          onOpenChange={setIsCreateModalOpen}
-        />
-      )}
-      <ListPageHeader
-        filter={{
-          items: [],
-          onClick: () => {},
-        }}
-        input={{
-          placeholder: "Search trigger",
-          value: search,
-          onChange: (e) => setSearch(e.target.value),
-        }}
-        view={{
-          viewMode,
-          onChange: setViewMode,
-        }}
-        actionsRight={
-          <Button
-            variant="special"
-            title="Add Trigger"
-            onClick={() => setIsCreateModalOpen(true)}
-          >
-            <Icon name="add" />
-            <span className="hidden md:inline">New Trigger</span>
-          </Button>
-        }
-      />
+  const decopilotContextValue: DecopilotContextValue = {
+    additionalTools: {},
+  };
 
-      <div className="flex-1 min-h-0 overflow-x-auto">
-        {filteredTriggers.length === 0 ? (
-          <EmptyState
-            icon="cable"
-            title={
-              search.trim().length > 0 ? "No triggers found" : "No triggers yet"
-            }
-            description={
-              search.trim().length > 0
-                ? "Try adjusting your search terms to find what you're looking for."
-                : "Create your first trigger to automate your agent workflows and respond to events automatically."
-            }
-            buttonProps={{
-              children: "Create Trigger",
-              onClick: () => {
-                // This will trigger the modal to open
-                const createButton = document.querySelector(
-                  '[title="Add Trigger"]',
-                ) as HTMLButtonElement;
-                createButton?.click();
-              },
-            }}
+  return (
+    <DecopilotLayout value={decopilotContextValue}>
+      <div className="p-4 flex flex-col gap-4 h-full">
+        {isCreateModalOpen && (
+          <TriggerModal
+            isOpen={isCreateModalOpen}
+            onOpenChange={setIsCreateModalOpen}
           />
-        ) : viewMode === "table" ? (
-          <TableView triggers={filteredTriggers} />
-        ) : (
-          <CardsView triggers={filteredTriggers} />
         )}
+        <ListPageHeader
+          filter={{
+            items: [],
+            onClick: () => {},
+          }}
+          input={{
+            placeholder: "Search trigger",
+            value: search,
+            onChange: (e) => setSearch(e.target.value),
+          }}
+          view={{
+            viewMode,
+            onChange: setViewMode,
+          }}
+          actionsRight={
+            <Button
+              variant="special"
+              title="Add Trigger"
+              onClick={() => setIsCreateModalOpen(true)}
+            >
+              <Icon name="add" />
+              <span className="hidden md:inline">New Trigger</span>
+            </Button>
+          }
+        />
+
+        <div className="flex-1 min-h-0 overflow-x-auto">
+          {filteredTriggers.length === 0 ? (
+            <EmptyState
+              icon="cable"
+              title={
+                search.trim().length > 0
+                  ? "No triggers found"
+                  : "No triggers yet"
+              }
+              description={
+                search.trim().length > 0
+                  ? "Try adjusting your search terms to find what you're looking for."
+                  : "Create your first trigger to automate your agent workflows and respond to events automatically."
+              }
+              buttonProps={{
+                children: "Create Trigger",
+                onClick: () => {
+                  // This will trigger the modal to open
+                  const createButton = document.querySelector(
+                    '[title="Add Trigger"]',
+                  ) as HTMLButtonElement;
+                  createButton?.click();
+                },
+              }}
+            />
+          ) : viewMode === "table" ? (
+            <TableView triggers={filteredTriggers} />
+          ) : (
+            <CardsView triggers={filteredTriggers} />
+          )}
+        </div>
       </div>
-    </div>
+    </DecopilotLayout>
   );
 }
 

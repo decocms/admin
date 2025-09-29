@@ -12,6 +12,8 @@ import { useNavigateWorkspace } from "../../hooks/use-navigate-workspace.ts";
 import { IntegrationAvatar } from "../common/avatar/integration.tsx";
 import { AppKeys, getConnectionAppKey } from "../integrations/apps.ts";
 import { VerifiedBadge } from "../integrations/marketplace.tsx";
+import { type DecopilotContextValue } from "../decopilot/context.tsx";
+import { DecopilotLayout } from "../layout/decopilot-layout.tsx";
 
 // For the future, it should be controlled in a view
 const HIGHLIGHTS = [
@@ -132,139 +134,151 @@ const Discover = () => {
       ?.slice(0, 7);
   }, [integrations, search]);
 
+  const decopilotContextValue: DecopilotContextValue = {
+    additionalTools: {},
+  };
+
   return (
-    <div className="flex flex-col h-full">
-      {/* Sticky header */}
-      <div className="sticky top-0 z-10 bg-background p-4">
-        <div className="flex justify-between items-center">
-          <div className="relative">
-            <Icon
-              name="search"
-              size={20}
-              className="absolute left-4 top-1/2 transform -translate-y-1/2 text-muted-foreground pointer-events-none z-10"
-            />
-            <Input
-              placeholder="Search"
-              className="w-[370px] pl-12"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-            />
-            {search && (
-              <div className="z-20 p-2 bg-popover w-[370px] absolute left-0 top-[calc(100%+8px)] rounded-xl border border-border shadow-lg">
-                {filteredIntegrations?.map((integration) => (
-                  <SimpleFeaturedCard
-                    key={"search-" + integration.id}
+    <DecopilotLayout value={decopilotContextValue}>
+      <div className="flex flex-col h-full">
+        {/* Sticky header */}
+        <div className="sticky top-0 z-10 bg-background p-4">
+          <div className="flex justify-between items-center">
+            <div className="relative">
+              <Icon
+                name="search"
+                size={20}
+                className="absolute left-4 top-1/2 transform -translate-y-1/2 text-muted-foreground pointer-events-none z-10"
+              />
+              <Input
+                placeholder="Search"
+                className="w-[370px] pl-12"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+              />
+              {search && (
+                <div className="z-20 p-2 bg-popover w-[370px] absolute left-0 top-[calc(100%+8px)] rounded-xl border border-border shadow-lg">
+                  {filteredIntegrations?.map((integration) => (
+                    <SimpleFeaturedCard
+                      key={"search-" + integration.id}
+                      integration={integration}
+                    />
+                  ))}
+                  {filteredIntegrations?.length === 0 && (
+                    <div className="text-sm text-muted-foreground">
+                      No integrations found
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+            <Button variant="outline" onClick={createCustomConnection}>
+              Create Custom App
+            </Button>
+          </div>
+        </div>
+
+        {/* Scrollable content with independent columns */}
+        <div className="flex-1 p-4 grid grid-cols-6 gap-8 overflow-hidden">
+          {/* Left column - main content with independent scroll */}
+          <div className="col-span-4 overflow-y-auto">
+            <div className="flex flex-col gap-4">
+              {highlights.map((item) => {
+                if (!item.id) {
+                  return null;
+                }
+                const key = getConnectionAppKey(item as Integration);
+                const appKey = AppKeys.build(key);
+                return (
+                  <a
+                    onClick={() => {
+                      navigateWorkspace(`/apps/${appKey}`);
+                    }}
+                    key={item.appName}
+                    className="relative rounded-xl cursor-pointer overflow-hidden"
+                  >
+                    <img
+                      src={item.banner}
+                      alt={item.appName || ""}
+                      className="w-full h-full object-cover"
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
+                    <div className="absolute flex flex-col bottom-6 left-6">
+                      <IntegrationAvatar
+                        url={item.icon}
+                        fallback={item.friendlyName ?? item.name}
+                        size="lg"
+                        className="border-none mb-2"
+                      />
+                      <h3 className="flex gap-2 items-center text-3xl text-white mb-0.5">
+                        {item.name || item.friendlyName || item.appName}
+                        <VerifiedBadge />
+                      </h3>
+                      <p className="text-sm text-white">{item.description}</p>
+                    </div>
+                    <Button
+                      className="absolute bottom-6 right-6 hover:bg-primary-light!"
+                      variant="special"
+                    >
+                      See app
+                    </Button>
+                  </a>
+                );
+              })}
+
+              <h2 className="text-lg pt-5 font-medium">
+                Featured Apps
+                <span className="text-muted-foreground font-mono font-normal text-sm ml-2">
+                  {featuredIntegrations?.length}
+                </span>
+              </h2>
+              <div className="grid grid-cols-3 gap-4">
+                {featuredIntegrations?.map((integration) => (
+                  <FeaturedCard
+                    key={integration.id}
                     integration={integration}
                   />
                 ))}
-                {filteredIntegrations?.length === 0 && (
-                  <div className="text-sm text-muted-foreground">
-                    No integrations found
-                  </div>
-                )}
               </div>
-            )}
-          </div>
-          <Button variant="outline" onClick={createCustomConnection}>
-            Create Custom App
-          </Button>
-        </div>
-      </div>
 
-      {/* Scrollable content with independent columns */}
-      <div className="flex-1 p-4 grid grid-cols-6 gap-8 overflow-hidden">
-        {/* Left column - main content with independent scroll */}
-        <div className="col-span-4 overflow-y-auto">
-          <div className="flex flex-col gap-4">
-            {highlights.map((item) => {
-              if (!item.id) {
-                return null;
-              }
-              const key = getConnectionAppKey(item as Integration);
-              const appKey = AppKeys.build(key);
-              return (
-                <a
-                  onClick={() => {
-                    navigateWorkspace(`/apps/${appKey}`);
-                  }}
-                  key={item.appName}
-                  className="relative rounded-xl cursor-pointer overflow-hidden"
-                >
-                  <img
-                    src={item.banner}
-                    alt={item.appName || ""}
-                    className="w-full h-full object-cover"
-                  />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
-                  <div className="absolute flex flex-col bottom-6 left-6">
-                    <IntegrationAvatar
-                      url={item.icon}
-                      fallback={item.friendlyName ?? item.name}
-                      size="lg"
-                      className="border-none mb-2"
-                    />
-                    <h3 className="flex gap-2 items-center text-3xl text-white mb-0.5">
-                      {item.name || item.friendlyName || item.appName}
-                      <VerifiedBadge />
-                    </h3>
-                    <p className="text-sm text-white">{item.description}</p>
-                  </div>
-                  <Button
-                    className="absolute bottom-6 right-6 hover:bg-primary-light!"
-                    variant="special"
-                  >
-                    See app
-                  </Button>
-                </a>
-              );
-            })}
-
-            <h2 className="text-lg pt-5 font-medium">
-              Featured Apps
-              <span className="text-muted-foreground font-mono font-normal text-sm ml-2">
-                {featuredIntegrations?.length}
-              </span>
-            </h2>
-            <div className="grid grid-cols-3 gap-4">
-              {featuredIntegrations?.map((integration) => (
-                <FeaturedCard key={integration.id} integration={integration} />
-              ))}
-            </div>
-
-            <h2 className="text-lg pt-5 font-medium">
-              All Apps
-              <span className="text-muted-foreground font-mono font-normal text-sm ml-2">
-                {integrations?.integrations?.length}
-              </span>
-            </h2>
-            <div className="grid grid-cols-3 gap-4">
-              {integrations?.integrations.map((integration) => (
-                <FeaturedCard key={integration.id} integration={integration} />
-              ))}
-            </div>
-          </div>
-        </div>
-
-        {/* Right column - verified apps with independent scroll */}
-        <div className="col-span-2 overflow-y-auto">
-          <div className="flex flex-col gap-2">
-            <div className="sticky top-0 bg-background z-10 pb-2">
-              <h2 className="text-muted-foreground text-sm font-mono">
-                VERIFIED BY DECO
+              <h2 className="text-lg pt-5 font-medium">
+                All Apps
+                <span className="text-muted-foreground font-mono font-normal text-sm ml-2">
+                  {integrations?.integrations?.length}
+                </span>
               </h2>
+              <div className="grid grid-cols-3 gap-4">
+                {integrations?.integrations.map((integration) => (
+                  <FeaturedCard
+                    key={integration.id}
+                    integration={integration}
+                  />
+                ))}
+              </div>
             </div>
-            <div className="grid gap-2">
-              {verifiedIntegrations?.map((integration) => (
-                <SimpleFeaturedCard
-                  key={integration.id}
-                  integration={integration}
-                />
-              ))}
+          </div>
+
+          {/* Right column - verified apps with independent scroll */}
+          <div className="col-span-2 overflow-y-auto">
+            <div className="flex flex-col gap-2">
+              <div className="sticky top-0 bg-background z-10 pb-2">
+                <h2 className="text-muted-foreground text-sm font-mono">
+                  VERIFIED BY DECO
+                </h2>
+              </div>
+              <div className="grid gap-2">
+                {verifiedIntegrations?.map((integration) => (
+                  <SimpleFeaturedCard
+                    key={integration.id}
+                    integration={integration}
+                  />
+                ))}
+              </div>
             </div>
           </div>
         </div>
       </div>
-    </div>
+    </DecopilotLayout>
   );
 };
 

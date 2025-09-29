@@ -1,5 +1,4 @@
 import {
-  useCreateWorkflow,
   useRecentWorkflowRuns,
   useWorkflowNames,
   useWorkflowRuns,
@@ -26,16 +25,18 @@ import { useViewMode } from "@deco/ui/hooks/use-view-mode.ts";
 import { useMemo, useState } from "react";
 import { useSearchParams } from "react-router";
 import { useNavigateWorkspace } from "../../hooks/use-navigate-workspace.ts";
+import { formatToolName } from "../chat/utils/format-tool-name.ts";
 import { EmptyState } from "../common/empty-state.tsx";
 import { ListPageHeader } from "../common/list-page-header.tsx";
 import { Table, type TableColumn } from "../common/table/index.tsx";
+import { type DecopilotContextValue } from "../decopilot/context.tsx";
+import { DecopilotLayout } from "../layout/decopilot-layout.tsx";
 import type { WorkflowRun } from "./types.ts";
 import {
   formatStatus,
   getStatusBadgeVariant,
   sortWorkflowRuns,
 } from "./utils.ts";
-import { formatToolName } from "../chat/utils/format-tool-name.ts";
 
 function WorkflowRunsCardView({
   runs,
@@ -115,7 +116,7 @@ function WorkflowRunsTableView({
       render: (run) => (
         <div className="flex items-center gap-2">
           <Icon name="schedule" size={14} className="text-muted-foreground" />
-          <span className="text-sm font-mono text-xs">{run.runId}</span>
+          <span className="text-xs font-mono">{run.runId}</span>
         </div>
       ),
       sortable: true,
@@ -210,220 +211,130 @@ function WorkflowRuns() {
 
   function handleRunClick(run: WorkflowRun) {
     navigateWorkspace(
-      `/workflows/${encodeURIComponent(run.workflowName)}/instances/${encodeURIComponent(
+      `/workflow-runs/${encodeURIComponent(run.workflowName)}/instances/${encodeURIComponent(
         run.runId,
       )}`,
     );
   }
 
-  return (
-    <ScrollArea className="h-full">
-      <div className="flex flex-col gap-4 h-full py-4">
-        <div className="px-4 overflow-x-auto">
-          <div className="flex items-center gap-2 mb-4">
-            <ListPageHeader
-              input={{
-                placeholder: "Search workflow runs",
-                value: filter,
-                onChange: (e: React.ChangeEvent<HTMLInputElement>) =>
-                  setFilter(e.target.value),
-              }}
-              view={{ viewMode, onChange: setViewMode }}
-            />
-            <Select
-              value={selectedWorkflow}
-              onValueChange={setSelectedWorkflow}
-            >
-              <SelectTrigger className="w-[200px]">
-                <SelectValue placeholder="All workflows" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All workflows</SelectItem>
-                {workflowNames.map((name) => (
-                  <SelectItem key={name} value={name}>
-                    {formatToolName(name)}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button
-                  variant="outline"
-                  size="icon"
-                  onClick={() => refetch()}
-                  disabled={isRefetching}
-                  className="h-10 w-10"
-                >
-                  <Icon
-                    name="refresh"
-                    size={16}
-                    className={isRefetching ? "animate-spin" : ""}
-                  />
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>Refresh</TooltipContent>
-            </Tooltip>
-          </div>
-        </div>
-        <div className="flex-1 min-h-0 px-4 overflow-x-auto">
-          {sortedAndFilteredRuns.length === 0 ? (
-            <div className="flex flex-1 min-h-[700px] items-center justify-center">
-              <WorkflowEmptyState />
-            </div>
-          ) : viewMode === "cards" ? (
-            <WorkflowRunsCardView
-              runs={sortedAndFilteredRuns}
-              onClick={handleRunClick}
-            />
-          ) : (
-            <WorkflowRunsTableView
-              runs={sortedAndFilteredRuns}
-              onClick={handleRunClick}
-            />
-          )}
-        </div>
-      </div>
-    </ScrollArea>
-  );
-}
-
-function WorkflowEmptyState() {
-  const [copied, setCopied] = useState(false);
-  const [isCreating, setIsCreating] = useState(false);
-  const [workflowName, setWorkflowName] = useState("");
-  const [showNameDialog, setShowNameDialog] = useState(false);
-  const cliCommand = "npm create deco@latest";
-  const createWorkflow = useCreateWorkflow();
-  const navigateWorkspace = useNavigateWorkspace();
-
-  const handleCopy = async () => {
-    await navigator.clipboard.writeText(cliCommand);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 1200);
-  };
-
-  const handleCreateWorkflow = async () => {
-    if (!workflowName.trim()) return;
-
-    setIsCreating(true);
-    try {
-      const workflow = await createWorkflow.mutateAsync(workflowName);
-      // Navigate to the workflow builder
-      navigateWorkspace(`/workflows/${encodeURIComponent(workflow.name)}`);
-    } catch (error) {
-      console.error("Failed to create workflow:", error);
-      setIsCreating(false);
-    }
+  const decopilotContextValue: DecopilotContextValue = {
+    additionalTools: {},
   };
 
   return (
-    <>
-      <EmptyState
-        icon="flowchart"
-        title="No workflows found"
-        description={
-          <div className="flex flex-col gap-4">
-            <div className="text-sm text-muted-foreground text-center flex flex-col gap-1">
-              <p>No workflows have been created yet.</p>
-              <p>
-                Create your first workflow or install the CLI to create
-                workflows locally.
-              </p>
-            </div>
-
-            <div className="flex flex-col gap-3 items-center">
-              <Button
-                onClick={() => setShowNameDialog(true)}
-                disabled={isCreating}
-                className="min-w-[200px]"
-              >
-                <Icon name="add" size={16} className="mr-2" />
-                Create Workflow
-              </Button>
-
-              <div className="text-xs text-muted-foreground">or</div>
-
-              <div className="relative w-full max-w-md">
-                <Input
-                  value={cliCommand}
-                  readOnly
-                  className="pr-12 bg-secondary/50 text-muted-foreground font-mono text-sm"
-                />
-                <Button
-                  size="icon"
-                  variant="ghost"
-                  className="absolute right-1 top-1 h-8 w-8"
-                  onClick={handleCopy}
-                  title={copied ? "Copied!" : "Copy to clipboard"}
-                >
-                  <Icon name={copied ? "check" : "content_copy"} size={16} />
-                </Button>
-              </div>
-
-              <a
-                href="https://docs.decocms.com"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-xs text-primary hover:underline"
-              >
-                Learn more in our docs
-              </a>
-            </div>
-          </div>
-        }
-      />
-
-      {/* Workflow Name Dialog */}
-      {showNameDialog && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-          <div className="bg-background rounded-lg p-6 w-full max-w-md shadow-lg">
-            <h2 className="text-lg font-semibold mb-4">Create New Workflow</h2>
-            <Input
-              placeholder="Enter workflow name..."
-              value={workflowName}
-              onChange={(e) => setWorkflowName(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === "Enter" && workflowName.trim()) {
-                  handleCreateWorkflow();
-                }
-              }}
-              className="mb-4"
-              autoFocus
-            />
-            <div className="flex gap-2 justify-end">
-              <Button
-                variant="outline"
-                onClick={() => {
-                  setShowNameDialog(false);
-                  setWorkflowName("");
+    <DecopilotLayout value={decopilotContextValue}>
+      <ScrollArea className="h-full">
+        <div className="flex flex-col gap-4 h-full py-4">
+          <div className="px-4 overflow-x-auto">
+            <div className="flex items-center gap-2 mb-4">
+              <ListPageHeader
+                input={{
+                  placeholder: "Search workflow runs",
+                  value: filter,
+                  onChange: (e: React.ChangeEvent<HTMLInputElement>) =>
+                    setFilter(e.target.value),
                 }}
-                disabled={isCreating}
+                view={{ viewMode, onChange: setViewMode }}
+              />
+              <Select
+                value={selectedWorkflow}
+                onValueChange={setSelectedWorkflow}
               >
-                Cancel
-              </Button>
-              <Button
-                onClick={handleCreateWorkflow}
-                disabled={!workflowName.trim() || isCreating}
-              >
-                {isCreating ? (
-                  <>
+                <SelectTrigger className="w-[200px]">
+                  <SelectValue placeholder="All workflows" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All workflows</SelectItem>
+                  {workflowNames.map((name) => (
+                    <SelectItem key={name} value={name}>
+                      {formatToolName(name)}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    onClick={() => refetch()}
+                    disabled={isRefetching}
+                    className="h-10 w-10"
+                  >
                     <Icon
                       name="refresh"
                       size={16}
-                      className="mr-2 animate-spin"
+                      className={isRefetching ? "animate-spin" : ""}
                     />
-                    Creating...
-                  </>
-                ) : (
-                  "Create"
-                )}
-              </Button>
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>Refresh</TooltipContent>
+              </Tooltip>
             </div>
           </div>
+          <div className="flex-1 min-h-0 px-4 overflow-x-auto">
+            {sortedAndFilteredRuns.length === 0 ? (
+              <div className="flex flex-1 min-h-[700px] items-center justify-center">
+                <EmptyState
+                  icon="flowchart"
+                  title="No workflows found"
+                  description={
+                    <div className="flex flex-col gap-4">
+                      <div className="text-sm text-muted-foreground text-center flex flex-col gap-1">
+                        <p>No workflows have been created yet.</p>
+                        <p>Install the CLI to create workflows locally.</p>
+                      </div>
+
+                      <div className="flex flex-col gap-3 items-center">
+                        <div className="relative w-full max-w-md">
+                          <Input
+                            value="npm create deco@latest"
+                            readOnly
+                            className="pr-12 bg-secondary/50 text-muted-foreground font-mono text-sm"
+                          />
+                          <Button
+                            size="icon"
+                            variant="ghost"
+                            className="absolute right-1 top-1 h-8 w-8"
+                            onClick={async () => {
+                              await navigator.clipboard.writeText(
+                                "npm create deco@latest",
+                              );
+                            }}
+                            title="Copy to clipboard"
+                          >
+                            <Icon name="content_copy" size={16} />
+                          </Button>
+                        </div>
+
+                        <a
+                          href="https://docs.decocms.com"
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-xs text-primary hover:underline"
+                        >
+                          Learn more in our docs
+                        </a>
+                      </div>
+                    </div>
+                  }
+                />
+              </div>
+            ) : viewMode === "cards" ? (
+              <WorkflowRunsCardView
+                runs={sortedAndFilteredRuns}
+                onClick={handleRunClick}
+              />
+            ) : (
+              <WorkflowRunsTableView
+                runs={sortedAndFilteredRuns}
+                onClick={handleRunClick}
+              />
+            )}
+          </div>
         </div>
-      )}
-    </>
+      </ScrollArea>
+    </DecopilotLayout>
   );
 }
 

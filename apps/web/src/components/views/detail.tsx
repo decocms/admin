@@ -3,16 +3,16 @@ import {
   useConnectionViews,
   useIntegrations,
 } from "@deco/sdk";
-import { createContext, useContext, useMemo } from "react";
+import { useMemo } from "react";
 import { useParams, useSearchParams } from "react-router";
-import { dispatchRulesUpdated } from "../../utils/events.ts";
 import Preview from "../agent/preview";
 import { EmptyState } from "../common/empty-state.tsx";
 import { InternalResourceListWithIntegration } from "./internal-resource-list.tsx";
-import { ViewRouteProvider } from "./view-route-context.tsx";
 import { WorkflowView } from "./workflow-view.tsx";
+import { type DecopilotContextValue } from "../decopilot/context.tsx";
+import { DecopilotLayout } from "../layout/decopilot-layout.tsx";
 
-interface ViewDetailContextValue {
+interface Props {
   integrationId?: string;
   integration?: {
     id: string;
@@ -31,22 +31,13 @@ interface ViewDetailContextValue {
   };
 }
 
-const ViewDetailContext = createContext<ViewDetailContextValue | undefined>(
-  undefined,
-);
-
-function useViewDetail(): ViewDetailContextValue {
-  const ctx = useContext(ViewDetailContext);
-  if (!ctx) {
-    return { resolvedUrl: "" };
-  }
-  return ctx;
-}
-
-function PreviewTab() {
-  const { embeddedName, integrationId, integration, resolvedUrl, view } =
-    useViewDetail();
-
+function PreviewTab({
+  embeddedName,
+  integrationId,
+  integration,
+  resolvedUrl,
+  view,
+}: Props) {
   if (resolvedUrl.startsWith("internal://resource/list")) {
     if (!embeddedName || !integrationId) {
       return (
@@ -102,9 +93,10 @@ export default function ViewDetail() {
 
   const { data: connectionViews } = useConnectionViews(integration ?? null);
 
-  const connectionViewMatch = useMemo(() => {
-    return findConnectionView(connectionViews?.views, { viewName, url });
-  }, [connectionViews, viewName, url]);
+  const connectionViewMatch = useMemo(
+    () => findConnectionView(connectionViews?.views, { viewName, url }),
+    [connectionViews, viewName, url],
+  );
 
   const resolvedUrl = url || connectionViewMatch?.url || "";
 
@@ -120,32 +112,44 @@ export default function ViewDetail() {
     }
   }, [resolvedUrl]);
 
-  // Seed rules for this view when present (no effect outside view routes)
-  const rules = (connectionViewMatch?.rules ?? []) as string[];
-  if (rules.length) {
-    // Single dispatch based on current render; upstream keeps last update
-    dispatchRulesUpdated({ rules });
-  }
+  // Prepare decopilot context value for view
+  const decopilotContextValue = useMemo((): DecopilotContextValue => {
+    if (!integrationId) return {};
+
+    // Check if the view has specific tools defined
+    const matched = (connectionViews?.views ?? []).find(
+      (v) => v.name === viewName,
+    );
+
+    if (matched && Array.isArray(matched.tools)) {
+      return {
+        additionalTools: {
+          [integrationId]: matched.tools,
+        },
+      };
+    }
+
+    // Fallback to all integration tools if no specific tools are defined
+    const toolNames = Array.isArray(integration?.tools)
+      ? integration.tools.map((t) => t.name)
+      : [];
+
+    return {
+      additionalTools: { [integrationId]: toolNames },
+    };
+  }, [integrationId, viewName, connectionViews, integration]);
 
   return (
-    <ViewRouteProvider
-      integrationId={integrationId}
-      viewName={viewName}
-      view={connectionViewMatch}
-    >
-      <ViewDetailContext.Provider
-        value={{
-          integrationId,
-          integration,
-          resolvedUrl,
-          embeddedName,
-          view: connectionViewMatch,
-        }}
-      >
-        <div className="h-[calc(100vh-48px)]">
-          <PreviewTab />
-        </div>
-      </ViewDetailContext.Provider>
-    </ViewRouteProvider>
+    <DecopilotLayout value={decopilotContextValue}>
+      <div className="h-[calc(100vh-48px)]">
+        <PreviewTab
+          integrationId={integrationId}
+          integration={integration}
+          resolvedUrl={resolvedUrl}
+          embeddedName={embeddedName}
+          view={connectionViewMatch}
+        />
+      </div>
+    </DecopilotLayout>
   );
 }

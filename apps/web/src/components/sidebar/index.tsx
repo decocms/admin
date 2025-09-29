@@ -1,8 +1,10 @@
 import {
   findPinnedView,
   Integration,
+  Resource,
   useConnectionViews,
   useIntegrations,
+  useRemoveResource,
   useRemoveView,
   View,
 } from "@deco/sdk";
@@ -194,51 +196,92 @@ function WorkspaceViews() {
     });
   };
 
+  const removeResourceMutation = useRemoveResource();
+
+  const handleRemoveResource = async (resource: { resourceId: string }) => {
+    const isUserInResource = globalThis.location.pathname.includes(
+      `/rsc/${resource.resourceId}`,
+    );
+    if (isUserInResource) {
+      navigateWorkspace("/");
+      await removeResourceMutation.mutateAsync({
+        resourceId: resource.resourceId,
+      });
+      return;
+    }
+    await removeResourceMutation.mutateAsync({
+      resourceId: resource.resourceId,
+    });
+  };
+
   const integrationMap = new Map(
     integrations?.map((integration) => [integration.id, integration]),
   );
 
-  const { fromIntegration, firstLevelViews } = useMemo(() => {
-    const result: {
-      fromIntegration: Record<string, View[]>;
-      firstLevelViews: View[];
-    } = {
-      fromIntegration: {},
-      firstLevelViews: [],
-    };
+  const { fromIntegration, firstLevelViews, fromIntegrationResources } =
+    useMemo(() => {
+      const result: {
+        fromIntegration: Record<string, View[]>;
+        firstLevelViews: View[];
+        fromIntegrationResources: Record<string, Resource[]>;
+      } = {
+        fromIntegration: {},
+        firstLevelViews: [],
+        fromIntegrationResources: {},
+      };
 
-    const views = (team?.views ?? []) as View[];
-    for (const view of views) {
-      const integrationId = view.integrationId as string | undefined;
-      if (integrationId) {
-        const isInstalled = integrations?.some(
-          (integration) => integration.id === integrationId,
-        );
+      const views = (team?.views ?? []) as View[];
+      for (const view of views) {
+        const integrationId = view.integrationId as string | undefined;
+        if (integrationId) {
+          const isInstalled = integrations?.some(
+            (integration) => integration.id === integrationId,
+          );
 
-        if (!isInstalled) {
+          if (!isInstalled) {
+            continue;
+          }
+
+          if (!result.fromIntegration[integrationId]) {
+            result.fromIntegration[integrationId] = [];
+          }
+          result.fromIntegration[integrationId].push(view);
           continue;
         }
 
-        if (!result.fromIntegration[integrationId]) {
-          result.fromIntegration[integrationId] = [];
+        if (view.type === "custom") {
+          if (!result.fromIntegration["custom"]) {
+            result.fromIntegration["custom"] = [];
+          }
+          result.fromIntegration["custom"].push(view);
+          continue;
         }
-        result.fromIntegration[integrationId].push(view);
-        continue;
+
+        result.firstLevelViews.push(view);
       }
 
-      if (view.type === "custom") {
-        if (!result.fromIntegration["custom"]) {
-          result.fromIntegration["custom"] = [];
+      // Process resources (stored as views with type="resource")
+      const resources = team?.resources ?? [];
+      for (const resource of resources) {
+        const integrationId = resource.integration_id as string | undefined;
+        if (integrationId) {
+          const isInstalled = integrations?.some(
+            (integration) => integration.id === integrationId,
+          );
+
+          if (!isInstalled) {
+            continue;
+          }
+
+          if (!result.fromIntegrationResources[integrationId]) {
+            result.fromIntegrationResources[integrationId] = [];
+          }
+          result.fromIntegrationResources[integrationId].push(resource);
         }
-        result.fromIntegration["custom"].push(view);
-        continue;
       }
 
-      result.firstLevelViews.push(view);
-    }
-
-    return result;
-  }, [team?.views]);
+      return result;
+    }, [team?.views, team?.resources, integrations]);
 
   function buildViewHrefFromView(view: View): string {
     if (view.type === "custom") {
@@ -256,10 +299,18 @@ function WorkspaceViews() {
   const wellKnownItems = [
     "Agents",
     "Workflows",
+    "Workflow Runs",
     "Views",
     "Prompts",
     "Triggers",
   ];
+
+  function buildResourceHrefFromResource(resource: {
+    integration_id: string;
+    name: string;
+  }): string {
+    return workspaceLink(`/rsc/${resource.integration_id}/${resource.name}`);
+  }
 
   // Separate items for organization
   const mcpItems = firstLevelViews
@@ -590,6 +641,152 @@ function WorkspaceViews() {
           </SidebarMenuItem>
         );
       })}
+
+      {/* Resources section */}
+      {Object.entries(fromIntegrationResources).map(
+        ([integrationId, resources]) => {
+          const integration = integrationMap.get(integrationId);
+          const isSingleResource = resources.length === 1;
+
+          if (isSingleResource) {
+            const [resource] = resources;
+            const href = buildResourceHrefFromResource(resource);
+
+            return (
+              <SidebarMenuItem key={`resource-${integrationId}`}>
+                <WithActive to={href}>
+                  {({ isActive }) => (
+                    <SidebarMenuButton
+                      asChild
+                      isActive={isActive}
+                      className="w-full pr-8"
+                    >
+                      <Link
+                        to={href}
+                        className="group/item"
+                        onClick={() => {
+                          trackEvent("sidebar_navigation_click", {
+                            item: resource.title,
+                          });
+                          isMobile && toggleSidebar();
+                        }}
+                      >
+                        <div className="relative">
+                          <IntegrationAvatar
+                            size="xs"
+                            url={integration?.icon}
+                            fallback={integration?.name}
+                            className="!w-[18px] !h-[18px] !rounded-md"
+                          />
+                        </div>
+                        <span className="truncate">
+                          {resource.title ?? integration?.name ?? "Resource"}
+                        </span>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="text-destructive hover:text-destructive ml-auto group-hover/item:block! hidden! p-0.5 h-6"
+                          onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            handleRemoveResource({ resourceId: resource.id });
+                          }}
+                        >
+                          <Icon
+                            name="remove"
+                            size={18}
+                            className="text-muted-foreground ml-auto group-hover/item:block! hidden!"
+                          />
+                        </Button>
+                      </Link>
+                    </SidebarMenuButton>
+                  )}
+                </WithActive>
+              </SidebarMenuItem>
+            );
+          }
+
+          return (
+            <SidebarMenuItem key={`resource-${integrationId}`}>
+              <Collapsible asChild defaultOpen className="group/collapsible">
+                <div className="group/integration-header relative">
+                  <CollapsibleTrigger asChild>
+                    <SidebarMenuButton className="w-full pr-8">
+                      <div className="relative">
+                        <IntegrationAvatar
+                          size="xs"
+                          url={integration?.icon}
+                          fallback={integration?.name}
+                          className="!w-[18px] !h-[18px] !rounded-md"
+                        />
+                      </div>
+                      <span className="truncate">
+                        {integration?.name ?? "Resources"}
+                      </span>
+                      <Icon
+                        name="chevron_right"
+                        size={18}
+                        className="ml-auto transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90 text-muted-foreground/75"
+                      />
+                    </SidebarMenuButton>
+                  </CollapsibleTrigger>
+                  <CollapsibleContent>
+                    <SidebarMenuSub>
+                      {resources.map((resource) => {
+                        const href = buildResourceHrefFromResource(resource);
+
+                        return (
+                          <SidebarMenuSubItem key={resource.id}>
+                            <SidebarMenuSubButton asChild>
+                              <Link
+                                to={href}
+                                className="group/item"
+                                onClick={() => {
+                                  trackEvent("sidebar_navigation_click", {
+                                    item: resource.title,
+                                  });
+                                  isMobile && toggleSidebar();
+                                }}
+                              >
+                                <Icon
+                                  name="folder"
+                                  size={18}
+                                  className="text-muted-foreground/75"
+                                />
+                                <span className="truncate">
+                                  {resource.title}
+                                </span>
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  className="text-destructive hover:text-destructive ml-auto group-hover/item:block! hidden! p-0.5 h-6"
+                                  onClick={(e) => {
+                                    e.preventDefault();
+                                    e.stopPropagation();
+                                    handleRemoveResource({
+                                      resourceId: resource.id,
+                                    });
+                                  }}
+                                >
+                                  <Icon
+                                    name="remove"
+                                    size={18}
+                                    className="text-muted-foreground ml-auto group-hover/item:block! hidden!"
+                                  />
+                                </Button>
+                              </Link>
+                            </SidebarMenuSubButton>
+                          </SidebarMenuSubItem>
+                        );
+                      })}
+                    </SidebarMenuSub>
+                  </CollapsibleContent>
+                </div>
+              </Collapsible>
+            </SidebarMenuItem>
+          );
+        },
+      )}
 
       {addViewsDialogState.integration && (
         <AddViewsDialog

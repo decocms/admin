@@ -18,6 +18,8 @@ import { type GroupedApp, useGroupedApps } from "./apps.ts";
 import { Header } from "./breadcrumb.tsx";
 import { SelectConnectionDialog } from "./select-connection-dialog.tsx";
 import { Link } from "react-router";
+import { type DecopilotContextValue } from "../decopilot/context.tsx";
+import { DecopilotLayout } from "../layout/decopilot-layout.tsx";
 
 function AppCard({
   app,
@@ -174,42 +176,48 @@ export default function InstalledAppsList() {
     navigateWorkspace(`/apps/${app.id}`);
   };
 
-  return (
-    <div className="flex flex-col gap-4 h-full py-4">
-      <div className="px-4 overflow-x-auto">
-        <Header
-          query={filter}
-          setQuery={setFilter}
-          viewMode={viewMode}
-          setViewMode={setViewMode}
-          actionsRight={
-            <Button asChild variant="special">
-              <Link to={workspaceLink(`/discover`)}>Discover Apps</Link>
-            </Button>
-          }
-        />
-      </div>
+  const decopilotContextValue: DecopilotContextValue = {
+    additionalTools: {},
+  };
 
-      <div className="flex-1 min-h-0 px-4 overflow-x-auto">
-        {!apps ? (
-          <div className="flex h-48 items-center justify-center">
-            <Spinner size="lg" />
-          </div>
-        ) : apps.length === 0 ? (
-          <EmptyState
-            icon="linked_services"
-            title="No connected integrations yet"
-            description="Connect services to expand what your agents can do."
-            buttonComponent={
-              <SelectConnectionDialog forceTab="new-connection" />
+  return (
+    <DecopilotLayout value={decopilotContextValue}>
+      <div className="flex flex-col gap-4 h-full py-4">
+        <div className="px-4 overflow-x-auto">
+          <Header
+            query={filter}
+            setQuery={setFilter}
+            viewMode={viewMode}
+            setViewMode={setViewMode}
+            actionsRight={
+              <Button asChild variant="special">
+                <Link to={workspaceLink(`/discover`)}>Discover Apps</Link>
+              </Button>
             }
           />
-        ) : viewMode === "cards" ? (
-          <CardsView apps={apps} onClick={navigateToApp} />
-        ) : (
-          <TableView apps={apps} onClick={navigateToApp} />
-        )}
+        </div>
+
+        <div className="flex-1 min-h-0 px-4 overflow-x-auto">
+          {!apps ? (
+            <div className="flex h-48 items-center justify-center">
+              <Spinner size="lg" />
+            </div>
+          ) : apps.length === 0 ? (
+            <EmptyState
+              icon="linked_services"
+              title="No connected integrations yet"
+              description="Connect services to expand what your agents can do."
+              buttonComponent={
+                <SelectConnectionDialog forceTab="new-connection" />
+              }
+            />
+          ) : viewMode === "cards" ? (
+            <CardsView apps={apps} onClick={navigateToApp} />
+          ) : (
+            <TableView apps={apps} onClick={navigateToApp} />
+          )}
+        </div>
       </div>
-    </div>
+    </DecopilotLayout>
   );
 }

@@ -31,6 +31,8 @@ import { EmptyState } from "../../common/empty-state.tsx";
 import { Table, type TableColumn } from "../../common/table/index.tsx";
 import { Header } from "./common.tsx";
 import { useViewMode } from "@deco/ui/hooks/use-view-mode.ts";
+import { type DecopilotContextValue } from "../../decopilot/context.tsx";
+import { DecopilotLayout } from "../../layout/decopilot-layout.tsx";
 
 interface ListState {
   filter: string;
@@ -290,84 +292,92 @@ function ListPrompts() {
     }
   };
 
-  return (
-    <div className="flex flex-col gap-4 h-full py-4">
-      <div className="px-4 overflow-x-auto">
-        <Header
-          value={filter}
-          setValue={(value) => dispatch({ type: "SET_FILTER", payload: value })}
-          viewMode={viewMode}
-          setViewMode={setViewMode}
-          actionsRight={
-            <Button variant="special" onClick={handleCreate}>
-              <Icon name="add" size={16} />
-              New prompt
-            </Button>
-          }
-        />
-      </div>
+  const decopilotContextValue: DecopilotContextValue = {
+    additionalTools: {},
+  };
 
-      <div className="flex-1 min-h-0 px-4 overflow-x-auto">
-        {!prompts ? (
-          <div className="flex h-48 items-center justify-center">
-            <Spinner size="lg" />
-          </div>
-        ) : filteredPrompts.length === 0 ? (
-          <EmptyState
-            icon="local_library"
-            title="No prompts yet"
-            description="Create a prompt to get started."
-            buttonProps={{
-              children: "Create a prompt",
-              onClick: handleCreate,
-            }}
+  return (
+    <DecopilotLayout value={decopilotContextValue}>
+      <div className="flex flex-col gap-4 h-full py-4">
+        <div className="px-4 overflow-x-auto">
+          <Header
+            value={filter}
+            setValue={(value) =>
+              dispatch({ type: "SET_FILTER", payload: value })
+            }
+            viewMode={viewMode}
+            setViewMode={setViewMode}
+            actionsRight={
+              <Button variant="special" onClick={handleCreate}>
+                <Icon name="add" size={16} />
+                New prompt
+              </Button>
+            }
           />
-        ) : viewMode === "cards" ? (
-          <CardsView
-            prompts={filteredPrompts}
-            onConfigure={handleConfigure}
-            onDelete={handleDeleteConfirm}
-          />
-        ) : (
-          <TableView
-            prompts={filteredPrompts}
-            onConfigure={handleConfigure}
-            onDelete={handleDeleteConfirm}
-          />
-        )}
+        </div>
+
+        <div className="flex-1 min-h-0 px-4 overflow-x-auto">
+          {!prompts ? (
+            <div className="flex h-48 items-center justify-center">
+              <Spinner size="lg" />
+            </div>
+          ) : filteredPrompts.length === 0 ? (
+            <EmptyState
+              icon="local_library"
+              title="No prompts yet"
+              description="Create a prompt to get started."
+              buttonProps={{
+                children: "Create a prompt",
+                onClick: handleCreate,
+              }}
+            />
+          ) : viewMode === "cards" ? (
+            <CardsView
+              prompts={filteredPrompts}
+              onConfigure={handleConfigure}
+              onDelete={handleDeleteConfirm}
+            />
+          ) : (
+            <TableView
+              prompts={filteredPrompts}
+              onConfigure={handleConfigure}
+              onDelete={handleDeleteConfirm}
+            />
+          )}
+        </div>
+        <AlertDialog
+          open={deleteDialogOpen}
+          onOpenChange={handleDeleteDialogOpenChange}
+        >
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+              <AlertDialogDescription>
+                This will permanently delete the prompt. This action cannot be
+                undone.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel disabled={deleting}>Cancel</AlertDialogCancel>
+              <AlertDialogAction
+                onClick={handleDelete}
+                disabled={deleting}
+                className="bg-destructive text-destructive-foreground hover:bg-destructive/90 gap-2"
+              >
+                {deleting ? (
+                  <>
+                    <Spinner />
+                    Deleting...
+                  </>
+                ) : (
+                  "Delete"
+                )}
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </div>
-      <AlertDialog
-        open={deleteDialogOpen}
-        onOpenChange={handleDeleteDialogOpenChange}
-      >
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
-            <AlertDialogDescription>
-              This will permanently delete the prompt. This action cannot be
-              undone.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel disabled={deleting}>Cancel</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={handleDelete}
-              disabled={deleting}
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90 gap-2"
-            >
-              {deleting ? (
-                <>
-                  <Spinner />
-                  Deleting...
-                </>
-              ) : (
-                "Delete"
-              )}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-    </div>
+    </DecopilotLayout>
   );
 }
 

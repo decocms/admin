@@ -33,6 +33,7 @@ import { useFocusChat } from "../agents/hooks.ts";
 import { ChatInput } from "../chat/chat-input.tsx";
 import { ChatMessages } from "../chat/chat-messages.tsx";
 import { AgentAvatar } from "../common/avatar/agent.tsx";
+import { DecopilotLayout } from "../layout/decopilot-layout.tsx";
 import AdvancedTab from "../settings/advanced.tsx";
 import AgentProfileTab from "../settings/agent-profile.tsx";
 import ToolsAndKnowledgeTab from "../settings/integrations.tsx";
@@ -222,6 +223,20 @@ function FormProvider(props: Props & { agentId: string; threadId: string }) {
     agent?.avatar && isFilePath(agent.avatar) ? agent.avatar : "",
   );
 
+  // Prepare decopilot context value for agent edit
+  const decopilotContextValue = useMemo(() => {
+    if (!agent) return {};
+
+    const rules: string[] = [
+      `You are helping with agent editing and configuration. The current agent is "${agent.name}". Focus on operations related to agent configuration, tool management, knowledge base integration, and agent optimization.`,
+      `When working with this agent (${agent.name}), prioritize operations that help users configure the agent's behavior, manage its tools and integrations, optimize its performance, and understand its capabilities. Consider the agent's current configuration and settings when providing assistance.`,
+    ];
+
+    return {
+      rules,
+    };
+  }, [agent]);
+
   useDocumentMetadata({
     title: agent ? `${agent.name} | deco CMS` : undefined,
     description: agent
@@ -236,25 +251,27 @@ function FormProvider(props: Props & { agentId: string; threadId: string }) {
   });
 
   return (
-    <AgentProvider
-      agentId={agentId}
-      threadId={threadId}
-      uiOptions={{
-        showThreadTools: false,
-        showEditAgent: false,
-        showModelSelector: false,
-      }}
-    >
-      <ResizablePanelGroup direction="horizontal">
-        <ResizablePanel className="h-[calc(100vh-48px)]" defaultSize={60}>
-          <AgentConfigs />
-        </ResizablePanel>
-        <ResizableHandle />
-        <ResizablePanel className="h-[calc(100vh-48px)]" defaultSize={40}>
-          <Chat />
-        </ResizablePanel>
-      </ResizablePanelGroup>
-    </AgentProvider>
+    <DecopilotLayout value={decopilotContextValue}>
+      <AgentProvider
+        agentId={agentId}
+        threadId={threadId}
+        uiOptions={{
+          showThreadTools: false,
+          showEditAgent: false,
+          showModelSelector: false,
+        }}
+      >
+        <ResizablePanelGroup direction="horizontal">
+          <ResizablePanel className="h-[calc(100vh-48px)]" defaultSize={60}>
+            <AgentConfigs />
+          </ResizablePanel>
+          <ResizableHandle />
+          <ResizablePanel className="h-[calc(100vh-48px)]" defaultSize={40}>
+            <Chat />
+          </ResizablePanel>
+        </ResizablePanelGroup>
+      </AgentProvider>
+    </DecopilotLayout>
   );
 }
 

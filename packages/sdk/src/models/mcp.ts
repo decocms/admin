@@ -1,5 +1,6 @@
 import { z } from "zod";
 import type { WellKnownBindingsName } from "../mcp/index.ts";
+import { ToolDefinitionSchema } from "../mcp/tools/schemas.ts";
 
 export const BindingsSchema = z.enum([
   "Channel",
@@ -67,6 +68,20 @@ export const IntegrationSchema = z.object({
   ]),
   /** Metadata */
   metadata: z.record(z.any()).optional().nullable(),
+  /** Tools */
+  tools: z
+    .array(
+      ToolDefinitionSchema.pick({
+        name: true,
+        inputSchema: true,
+      }).and(
+        ToolDefinitionSchema.pick({
+          description: true,
+          outputSchema: true,
+        }).partial(),
+      ),
+    )
+    .nullish(),
 });
 
 /**

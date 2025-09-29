@@ -7,6 +7,8 @@ import {
 } from "@deco/ui/components/alert.tsx";
 import { ErrorBoundary } from "../../error-boundary.tsx";
 import { AuditListContent } from "../audit/list.tsx";
+import { type DecopilotContextValue } from "../decopilot/context.tsx";
+import { DecopilotLayout } from "../layout/decopilot-layout.tsx";
 
 function ActivityErrorFallback() {
   return (
@@ -20,19 +22,25 @@ function ActivityErrorFallback() {
 }
 
 export default function ActivitySettings() {
+  const decopilotContextValue: DecopilotContextValue = {
+    additionalTools: {},
+  };
+
   return (
-    <div className="h-full text-foreground px-6 py-6 overflow-x-auto w-full">
-      <ErrorBoundary fallback={<ActivityErrorFallback />}>
-        <Suspense
-          fallback={
-            <div className="flex justify-center items-center h-64">
-              <Spinner />
-            </div>
-          }
-        >
-          <AuditListContent />
-        </Suspense>
-      </ErrorBoundary>
-    </div>
+    <DecopilotLayout value={decopilotContextValue}>
+      <div className="h-full text-foreground px-6 py-6 overflow-x-auto w-full">
+        <ErrorBoundary fallback={<ActivityErrorFallback />}>
+          <Suspense
+            fallback={
+              <div className="flex justify-center items-center h-64">
+                <Spinner />
+              </div>
+            }
+          >
+            <AuditListContent />
+          </Suspense>
+        </ErrorBoundary>
+      </div>
+    </DecopilotLayout>
   );
 }

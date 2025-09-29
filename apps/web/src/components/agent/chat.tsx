@@ -1,12 +1,13 @@
+import { useAgentData, useFile, WELL_KNOWN_AGENT_IDS } from "@deco/sdk";
 import { ScrollArea } from "@deco/ui/components/scroll-area.tsx";
 import { Spinner } from "@deco/ui/components/spinner.tsx";
 import { Suspense, useMemo } from "react";
 import { useParams } from "react-router";
-import { useFile, WELL_KNOWN_AGENT_IDS } from "@deco/sdk";
 import { useDocumentMetadata } from "../../hooks/use-document-metadata.ts";
 import { isFilePath } from "../../utils/path.ts";
 import { ChatInput } from "../chat/chat-input.tsx";
 import { ChatMessages } from "../chat/chat-messages.tsx";
+import { DecopilotLayout } from "../layout/decopilot-layout.tsx";
 import { AgentProvider, useAgent } from "./provider.tsx";
 
 export type WellKnownAgents =
@@ -74,6 +75,23 @@ function Page(props: Props) {
   // Use AgentProvider for all agents (including team agent)
   const isTeamAgent = agentId === WELL_KNOWN_AGENT_IDS.teamAgent;
 
+  // Get agent data for decopilot context
+  const { data: agent } = useAgentData(agentId);
+
+  // Prepare decopilot context value for agent chat
+  const decopilotContextValue = useMemo(() => {
+    if (!agent) return {};
+
+    const rules: string[] = [
+      `You are helping with agent chat and conversation. The current agent is "${agent.name}". Focus on operations related to conversation management, message handling, and chat functionality.`,
+      `When working with this agent chat (${agent.name}), prioritize operations that help users manage conversations, understand chat history, and interact effectively with the agent. Consider the agent's capabilities and current conversation context when providing assistance.`,
+    ];
+
+    return {
+      rules,
+    };
+  }, [agent]);
+
   return (
     <Suspense
       // This make the react render fallback when changin agent+threadid, instead of hang the whole navigation while the subtree isn't changed
@@ -84,17 +102,19 @@ function Page(props: Props) {
         </div>
       }
     >
-      <AgentProvider
-        agentId={agentId}
-        threadId={threadId}
-        uiOptions={{
-          showThreadTools: isTeamAgent,
-          showThreadMessages: props.showThreadMessages ?? true,
-        }}
-      >
-        <AgentMetadataUpdater />
-        <MainChat />
-      </AgentProvider>
+      <DecopilotLayout value={decopilotContextValue}>
+        <AgentProvider
+          agentId={agentId}
+          threadId={threadId}
+          uiOptions={{
+            showThreadTools: isTeamAgent,
+            showThreadMessages: props.showThreadMessages ?? true,
+          }}
+        >
+          <AgentMetadataUpdater />
+          <MainChat />
+        </AgentProvider>
+      </DecopilotLayout>
     </Suspense>
   );
 }

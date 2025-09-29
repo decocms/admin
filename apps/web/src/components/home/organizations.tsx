@@ -30,7 +30,7 @@ function OrganizationCard({
   return (
     <Link
       to={url}
-      className="bg-stone-50 hover:bg-stone-100 transition-colors flex flex-col rounded-lg"
+      className="group bg-stone-50 hover:bg-stone-100 transition-colors flex flex-col rounded-lg"
     >
       <div className="p-4 flex flex-col gap-4">
         <div className="flex justify-between items-start">
@@ -43,7 +43,7 @@ function OrganizationCard({
           <Icon
             name="chevron_right"
             size={20}
-            className="text-muted-foreground"
+            className="text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity"
           />
         </div>
         <div className="flex flex-col gap-[2px]">
@@ -145,9 +145,10 @@ function RecentProjectsSection() {
             avatarUrl={project.avatar_url || project.org.avatar_url || ""}
             slugPrefix="/"
             showMembers={false}
+            hideSlug={true}
             additionalInfo={
               project.last_accessed_at
-                ? `Last accessed ${timeAgo(project.last_accessed_at)}`
+                ? `Last seen ${timeAgo(project.last_accessed_at)}`
                 : undefined
             }
           />

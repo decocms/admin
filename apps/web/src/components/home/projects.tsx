@@ -39,7 +39,7 @@ function ProjectCard({
   return (
     <Link
       to={url}
-      className="group bg-stone-50 hover:bg-stone-100 transition-colors flex flex-col rounded-lg"
+      className="group bg-card hover:bg-accent transition-colors flex flex-col rounded-lg"
     >
       <div className="p-4 flex flex-col gap-4">
         <div className="flex justify-between items-start">
@@ -114,17 +114,17 @@ Projects.Skeleton = () => (
     {Array.from({ length: 8 }).map((_, index) => (
       <div
         key={index}
-        className="bg-stone-50 hover:bg-stone-100 transition-colors flex flex-col rounded-lg animate-pulse"
+        className="bg-card hover:bg-accent transition-colors flex flex-col rounded-lg animate-pulse"
       >
         <div className="p-4 flex flex-col gap-4">
-          <div className="h-12 w-12 bg-stone-100 rounded-lg"></div>
-          <div className="h-4 w-32 bg-stone-100 rounded-lg"></div>
-          <div className="h-4 w-32 bg-stone-100 rounded-lg"></div>
+          <div className="h-12 w-12 bg-card rounded-lg"></div>
+          <div className="h-4 w-32 bg-card rounded-lg"></div>
+          <div className="h-4 w-32 bg-card rounded-lg"></div>
         </div>
         <div className="p-4 border-t border-border flex items-center">
-          <div className="h-6 w-6 bg-stone-100 rounded-full animate-pulse"></div>
-          <div className="h-6 w-6 bg-stone-100 rounded-full animate-pulse -ml-2"></div>
-          <div className="h-6 w-6 bg-stone-100 rounded-full animate-pulse -ml-2"></div>
+          <div className="h-6 w-6 bg-card rounded-full animate-pulse"></div>
+          <div className="h-6 w-6 bg-card rounded-full animate-pulse -ml-2"></div>
+          <div className="h-6 w-6 bg-card rounded-full animate-pulse -ml-2"></div>
         </div>
       </div>
     ))}

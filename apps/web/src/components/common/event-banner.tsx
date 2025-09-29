@@ -3,7 +3,6 @@ import { cn } from "@deco/ui/lib/utils.ts";
 import { Button } from "@deco/ui/components/button.tsx";
 import {
   createContext,
-  useContext,
   useEffect,
   useRef,
   useState,
@@ -15,10 +14,6 @@ const CountdownContext = createContext<{
 }>({
   countdown: "",
 });
-
-const _useCountdown = () => {
-  return useContext(CountdownContext);
-};
 
 const getCountdownString = (targetDate: Date): string => {
   const now = new Date().getTime();

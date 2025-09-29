@@ -1,4 +1,6 @@
-import { createContext, useContext, useEffect, useRef, useState } from "react";
+import { cn } from "@deco/ui/lib/utils.ts";
+import { Button } from "@deco/ui/components/button.tsx";
+import { createContext, useContext, useEffect, useRef, useState, type ReactNode } from "react";
 
 const CountdownContext = createContext<{
   countdown: string;
@@ -6,34 +8,26 @@ const CountdownContext = createContext<{
   countdown: "",
 });
 
-export const useCountdown = () => {
+const useCountdown = () => {
   return useContext(CountdownContext);
 };
 
 const getCountdownString = (targetDate: Date): string => {
-  const now = new Date();
-  const diff = targetDate.getTime() - now.getTime();
+  const now = new Date().getTime();
+  const target = targetDate.getTime();
+  const difference = target - now;
 
-  if (diff <= 0) {
-    return "00:00:00:00";
-  }
+  if (difference <= 0) return "00:00:00:00";
 
-  const days = Math.floor(diff / (1000 * 60 * 60 * 24));
-  const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-  const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
-  const seconds = Math.floor((diff % (1000 * 60)) / 1000);
+  const days = Math.floor(difference / (1000 * 60 * 60 * 24));
+  const hours = Math.floor((difference % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+  const minutes = Math.floor((difference % (1000 * 60 * 60)) / (1000 * 60));
+  const seconds = Math.floor((difference % (1000 * 60)) / 1000);
 
-  return `${days.toString().padStart(2, "0")}:${hours
-    .toString()
-    .padStart(2, "0")}:${minutes.toString().padStart(2, "0")}:${seconds
-    .toString()
-    .padStart(2, "0")}`;
+  return `${days.toString().padStart(2, "0")}:${hours.toString().padStart(2, "0")}:${minutes.toString().padStart(2, "0")}:${seconds.toString().padStart(2, "0")}`;
 };
 
-const getEventState = (
-  startDate: Date,
-  endDate: Date,
-): "upcoming" | "active" | "past" => {
+const getEventState = (startDate: Date, endDate: Date): "upcoming" | "active" | "past" => {
   const now = new Date();
   if (now < startDate) {
     return "upcoming";
@@ -44,13 +38,54 @@ const getEventState = (
   return "active";
 };
 
-export interface EventBannerProps {
-  startDate: Date;
-  endDate: Date;
-  upcoming: React.ReactNode;
-  active: React.ReactNode;
-  past: React.ReactNode;
+export interface EventState {
+  /** Small uppercase subtitle text */
+  subtitle: string;
+  /** Main message text */
+  title: string;
+  /** Button text */
+  buttonText: string;
+  /** Button click handler or href */
+  buttonAction?: (() => void) | string;
+  /** Target for link when buttonAction is a string */
+  target?: string;
+  /** Whether to open link in new tab (default: true for external links) */
+  newTab?: boolean;
 }
+
+export interface EventBannerProps {
+  /** Event start date */
+  startDate: Date;
+  /** Event end date */
+  endDate: Date;
+  /** Content for before the event starts */
+  upcoming: EventState;
+  /** Content during the event */
+  active: EventState;
+  /** Content after the event ends */
+  past: EventState;
+  /** Optional left background image/SVG placeholder */
+  leftBackgroundImage?: string;
+  /** Optional right background image/SVG placeholder */
+  rightBackgroundImage?: string;
+  /** Custom className for the banner */
+  className?: string;
+  /** Custom content instead of default text layout */
+  children?: ReactNode;
+}
+
+const CountdownBox = ({ value, label }: { value: string; label: string }) => (
+  <div className="flex flex-col items-center justify-center gap-1">
+    <div className="text-sm @min-xl:text-lg font-medium text-dc-50">
+      {value}
+    </div>
+    <div className="text-xs text-dc-300">{label}</div>
+  </div>
+);
+
+const Separator = () => (
+  <span className="text-sm @min-xl:text-lg font-semibold text-dc-300">:</span>
+);
 
 export function EventBanner({
   startDate,
@@ -58,10 +93,17 @@ export function EventBanner({
   upcoming,
   active,
   past,
+  leftBackgroundImage,
+  rightBackgroundImage,
+  className,
+  children,
 }: EventBannerProps) {
   const [countdown, setCountdown] = useState<string>("");
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
   const state = getEventState(startDate, endDate);
+  
+  const currentState = state === "upcoming" ? upcoming : state === "active" ? active : past;
+  const isExternalLink = typeof currentState.buttonAction === "string";
 
   useEffect(() => {
     const updateCountdown = () => {
@@ -86,7 +128,120 @@ export function EventBanner({
 
   return (
     <CountdownContext.Provider value={{ countdown }}>
-      {state === "upcoming" ? upcoming : state === "active" ? active : past}
+      <div
+        className={cn(
+          "relative w-full h-32 mb-10 bg-dc-900 rounded-lg overflow-hidden",
+          "flex items-center justify-between pl-32 pr-20 py-0 @container",
+          className,
+        )}
+      >
+        {/* Left background image */}
+        {leftBackgroundImage && (
+          <div className="absolute left-0 top-0 h-32 w-[600px] pointer-events-none">
+            <img
+              src={leftBackgroundImage}
+              alt=""
+              className="absolute inset-0 w-full h-full object-cover max-w-none object-center"
+            />
+          </div>
+        )}
+
+        {/* Right background image */}
+        {rightBackgroundImage && (
+          <div className="absolute right-0 bottom-0 h-32 w-[535px] pointer-events-none">
+            <img
+              src={rightBackgroundImage}
+              alt=""
+              className="absolute inset-0 w-full h-full object-cover max-w-none object-center"
+            />
+          </div>
+        )}
+
+        {/* Content */}
+        {children || (
+          <>
+            {/* Text content */}
+            <div className="flex flex-col items-start leading-none relative z-10 shrink-0 text-nowrap max-w-[400px]">
+              
+              <div className="font-mono flex flex-row items-center gap-2 text-sm text-dc-50 uppercase font-normal leading-none">
+                {currentState.subtitle}
+                                {/* Date indicator */}
+                                <div className="text-xs text-dc-300 uppercase tracking-wide">
+                  {startDate.toLocaleDateString('en-US', {
+                    month: 'short',
+                    day: 'numeric', 
+                    year: 'numeric'
+                  })} @ {startDate.toLocaleTimeString('en-US', {
+                    hour: 'numeric',
+                    minute: '2-digit'
+                  })}
+                </div>
+              </div>
+              
+              <div 
+                className="font-sans text-xl font-normal text-[#d0ec1a] leading-8 whitespace-pre"
+                style={{ fontVariationSettings: "'wdth' 100" }}
+              >
+                {currentState.title}
+              </div>
+            </div>
+
+            {/* Countdown for upcoming events */}
+            {state === "upcoming" && (
+              <div className="hidden @min-md:flex flex-col items-center gap-2 relative z-10">
+
+                
+                {/* Countdown timer */}
+                <div className="flex justify-center gap-2 @min-xl:gap-3">
+                  {(() => {
+                    const [days, hours, minutes, seconds] = countdown.split(":");
+                    return (
+                      <>
+                        <CountdownBox value={days} label="days" />
+                        <Separator />
+                        <CountdownBox value={hours} label="hours" />
+                        <Separator />
+                        <CountdownBox value={minutes} label="minutes" />
+                        <Separator />
+                        <CountdownBox value={seconds} label="seconds" />
+                      </>
+                    );
+                  })()}
+                </div>
+              </div>
+            )}
+
+            {/* Button */}
+            <div className="relative z-10 shrink-0">
+              {isExternalLink ? (
+                <Button 
+                  variant="special"
+                  size="default"
+                  asChild
+                  className="w-[110px] bg-[#d0ec1a] text-[#07401a]"
+                >
+                  <a
+                    href={typeof currentState.buttonAction === "string" ? currentState.buttonAction : "#"}
+                    target={currentState.newTab !== false ? (currentState.target || "_blank") : undefined}
+                    rel={currentState.newTab !== false ? "noopener noreferrer" : undefined}
+                  >
+                    {currentState.buttonText}
+                  </a>
+                </Button>
+              ) : (
+                <Button
+                  variant="special"
+                  size="default"
+                  onClick={typeof currentState.buttonAction === "function" ? currentState.buttonAction : undefined}
+                  className="w-[110px] bg-[#d0ec1a] text-[#07401a]"
+                >
+                  {currentState.buttonText}
+                </Button>
+              )}
+            </div>
+          </>
+        )}
+      </div>
     </CountdownContext.Provider>
   );
 }

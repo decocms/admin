@@ -12,7 +12,7 @@ import { Suspense, useState } from "react";
 import { Link, useParams } from "react-router";
 import { ErrorBoundary } from "../../error-boundary";
 import { Avatar } from "../common/avatar";
-import { DecoDayBanner } from "../common/event/deco-day";
+import { CommunityCallBanner } from "../common/event/community-call-banner";
 import { OrgAvatars, OrgMemberCount } from "./members";
 
 function ProjectCard({
@@ -21,12 +21,18 @@ function ProjectCard({
   url,
   avatarUrl,
   teamId,
+  slugPrefix = "@",
+  showMembers = true,
+  additionalInfo,
 }: {
   name: string;
   slug: string;
   url: string;
   avatarUrl: string;
-  teamId: number;
+  teamId?: number;
+  slugPrefix?: string;
+  showMembers?: boolean;
+  additionalInfo?: string;
 }) {
   return (
     <Link
@@ -48,21 +54,30 @@ function ProjectCard({
           />
         </div>
         <div className="flex flex-col gap-[2px]">
-          <h3 className="text-sm text-muted-foreground">@{slug}</h3>
-          <p className="font-medium">{name}</p>
+          <h3 className="text-sm text-muted-foreground truncate">
+            {slugPrefix}{slug}
+          </h3>
+          <p className="font-medium truncate">{name}</p>
+          {additionalInfo && (
+            <span className="text-xs text-muted-foreground">
+              {additionalInfo}
+            </span>
+          )}
         </div>
       </div>
       {/* Show organization members on the project card for now */}
-      <div className="p-4 border-t border-border flex justify-between items-center">
-        <ErrorBoundary fallback={<div className="w-full h-8"></div>}>
-          <Suspense fallback={<OrgAvatars.Skeleton />}>
-            <OrgAvatars teamId={teamId} />
-          </Suspense>
-          <Suspense fallback={<OrgMemberCount.Skeleton />}>
-            <OrgMemberCount teamId={teamId} />
-          </Suspense>
-        </ErrorBoundary>
-      </div>
+      {showMembers && teamId && (
+        <div className="p-4 border-t border-border flex justify-between items-center">
+          <ErrorBoundary fallback={<div className="w-full h-8"></div>}>
+            <Suspense fallback={<OrgAvatars.Skeleton />}>
+              <OrgAvatars teamId={teamId} />
+            </Suspense>
+            <Suspense fallback={<OrgMemberCount.Skeleton />}>
+              <OrgMemberCount teamId={teamId} />
+            </Suspense>
+          </ErrorBoundary>
+        </div>
+      )}
     </Link>
   );
 }
@@ -136,9 +151,9 @@ function OrgProjectListContent() {
   const { org } = useParams();
 
   return (
-    <div className="flex w-full h-full items-start bg-background">
-      <div className="p-8 flex flex-col gap-4 w-full">
-        <DecoDayBanner />
+    <div className="min-h-full w-full bg-background">
+      <div className="p-8 flex flex-col gap-4 w-full max-w-7xl mx-auto min-h-[calc(100vh-48px)]">
+        <CommunityCallBanner />
         <div className="flex items-center justify-between">
           <h2 className="text-xl font-medium">Projects</h2>
           <div className="flex items-center gap-2">
@@ -161,7 +176,7 @@ function OrgProjectListContent() {
             </Tooltip>
           </div>
         </div>
-        <div className="@container overflow-y-auto max-h-[calc(100vh-12rem)] pb-8">
+        <div className="@container overflow-y-auto flex-1 pb-28">
           <ErrorBoundary fallback={<Projects.Error />}>
             <Suspense fallback={<Projects.Skeleton />}>
               <Projects query={searchQuery} org={org ?? ""} />
@@ -174,3 +189,4 @@ function OrgProjectListContent() {
 }
 
 export default OrgProjectListContent;
+export { ProjectCard };

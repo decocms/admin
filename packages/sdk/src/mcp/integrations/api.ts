@@ -45,6 +45,7 @@ import {
 } from "../assertions.ts";
 import { getGroups } from "../groups.ts";
 import {
+  AppContext,
   Binding,
   createToolGroup,
   MCPClient,
@@ -205,6 +206,23 @@ export const callTool = createIntegrationManagementTool({
   },
 });
 
+async function listToolsAndSortByName(
+  {
+    connection,
+    ignoreCache,
+  }: { connection: MCPConnection; ignoreCache?: boolean },
+  c: AppContext,
+) {
+  const result = await listToolsByConnectionType(connection, c, ignoreCache);
+
+  // Sort tools by name for consistent UI
+  if (Array.isArray(result?.tools)) {
+    result.tools.sort((a, b) => a.name.localeCompare(b.name));
+  }
+
+  return result;
+}
+
 export const listTools = createIntegrationManagementTool({
   name: "INTEGRATIONS_LIST_TOOLS",
   description: "List tools of a given integration",
@@ -216,17 +234,10 @@ export const listTools = createIntegrationManagementTool({
       .optional()
       .describe("Whether to ignore the cache when listing tools"),
   }),
-  handler: async ({ connection, ignoreCache }, c) => {
+  handler: (props, c) => {
     c.resourceAccess.grant();
 
-    const result = await listToolsByConnectionType(connection, c, ignoreCache);
-
-    // Sort tools by name for consistent UI
-    if (Array.isArray(result?.tools)) {
-      result.tools.sort((a, b) => a.name.localeCompare(b.name));
-    }
-
-    return result;
+    return listToolsAndSortByName(props, c);
   },
 });
 
@@ -282,6 +293,20 @@ const virtualIntegrationsFor = (
     created_at: new Date().toISOString(),
   };
   const { url: workspaceMcp, projectPath } = projectUrlFromLocator(locator);
+
+  const contractsMcp = new URL("/contracts/mcp", DECO_CMS_API_URL);
+  const contractsIntegration = {
+    id: formatId("i", WellKnownMcpGroups.Contracts),
+    name: "Contracts Management",
+    description: "Manage your contracts",
+    connection: {
+      type: "HTTP",
+      url: contractsMcp.href,
+      token,
+    },
+    workspace: Locator.adaptToRootSlug(locator),
+    created_at: new Date().toISOString(),
+  };
 
   const toolsMcp = new URL(
     `${projectPath}/${WellKnownMcpGroups.Tools}/mcp`,
@@ -363,6 +388,7 @@ const virtualIntegrationsFor = (
     ...integrationGroups,
     toolsIntegration,
     workflowsIntegration,
+    contractsIntegration,
     ...knowledgeBases.map((kb) => {
       return toKbIntegration(KnowledgeBaseID.format(kb), locator, token);
     }),
@@ -562,16 +588,39 @@ export const listIntegrations = createIntegrationManagementTool({
       .filter((i) => !!i);
 
     // Add tools to each integration
-    const result = baseResult.map((integration) => {
-      // Find the corresponding database record to extract tools
-      const dbRecord = filteredIntegrations.find(
-        (dbIntegration) => formatId("i", dbIntegration.id) === integration.id,
-      );
+    const result = await Promise.all(
+      baseResult.map(async (integration) => {
+        // Find the corresponding database record to extract tools
+        const dbRecord = filteredIntegrations.find(
+          (dbIntegration) => formatId("i", dbIntegration.id) === integration.id,
+        );
 
-      const tools = dbRecord ? extractToolsFromRegistry(dbRecord) : null;
+        const { connection } = integration;
 
-      return { ...integration, tools };
-    });
+        const isVirtual =
+          connection.type === "HTTP" &&
+          connection.url.startsWith(DECO_CMS_API_URL);
+
+        const tools = isVirtual
+          ? await listToolsAndSortByName({ connection, ignoreCache: false }, c)
+              .then((r) => r?.tools ?? null)
+              .catch(() => {
+                console.error(
+                  "Error listing tools for virtual integration",
+                  connection,
+                );
+                return null;
+              })
+          : dbRecord
+            ? extractToolsFromRegistry(dbRecord)
+            : null;
+
+        return {
+          ...integration,
+          tools: tools as z.infer<typeof IntegrationSchema>["tools"],
+        };
+      }),
+    );
 
     if (binder) {
       // Filter by binder capability
@@ -758,7 +807,13 @@ export const getIntegration = createIntegrationManagementTool({
         ...virtualIntegrations.find((i) => i.id === id),
         id: formatId(type, id),
       });
-      return { ...baseIntegration, tools: null }; // Virtual integrations don't have tools for now
+      return {
+        ...baseIntegration,
+        tools: await listToolsAndSortByName(
+          { connection: baseIntegration.connection, ignoreCache: false },
+          c,
+        ).then((r) => r?.tools as z.infer<typeof IntegrationSchema>["tools"]),
+      };
     }
 
     const data = await selectPromise;

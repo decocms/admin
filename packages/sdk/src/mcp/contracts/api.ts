@@ -2,7 +2,7 @@ import { MD5 } from "object-hash";
 import z from "zod";
 import { WebCache } from "../../cache/index.ts";
 import { SWRCache } from "../../cache/swr.ts";
-import { WellKnownMcpGroups } from "../../crud/groups.ts";
+import { AppName } from "../../common/index.ts";
 import {
   AppContext,
   createTool,
@@ -16,7 +16,6 @@ import {
   UserInputError,
   WithTool,
 } from "../index.ts";
-import { AppName } from "../../common/index.ts";
 import { getRegistryApp, publishApp } from "../registry/api.ts";
 import {
   commitPreAuthorizedAmount,
@@ -65,7 +64,7 @@ const createContractTool = createToolFactory<ContractContext>(
       ),
     };
   },
-  WellKnownMcpGroups.Contracts,
+  undefined, // Do not set WellKnownMcpGroups.Contracts since it will set the wrong uri for this mcp,
   {
     name: "Contracts",
     description: "Manage smart contracts",

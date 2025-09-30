@@ -206,10 +206,10 @@ function ConfigureConnectionInstanceForm({
       icon: instance?.icon || "",
       connection: instance?.connection ||
         defaultConnection || {
-        type: "HTTP" as const,
-        url: "https://example.com/messages",
-        token: "",
-      },
+          type: "HTTP" as const,
+          url: "https://example.com/messages",
+          token: "",
+        },
       access: instance?.access || null,
     },
   });
@@ -258,25 +258,25 @@ function ConfigureConnectionInstanceForm({
       "connection",
       value === "SSE" || value === "HTTP"
         ? {
-          type: value,
-          url:
-            ec?.type === "SSE"
-              ? ec.url || "https://example.com/sse"
-              : "https://example.com/sse",
-        }
+            type: value,
+            url:
+              ec?.type === "SSE"
+                ? ec.url || "https://example.com/sse"
+                : "https://example.com/sse",
+          }
         : value === "Websocket"
           ? {
-            type: "Websocket",
-            url:
-              ec?.type === "Websocket"
-                ? ec.url || "wss://example.com/ws"
-                : "wss://example.com/ws",
-          }
+              type: "Websocket",
+              url:
+                ec?.type === "Websocket"
+                  ? ec.url || "wss://example.com/ws"
+                  : "wss://example.com/ws",
+            }
           : {
-            type: "Deco",
-            tenant:
-              ec?.type === "Deco" ? ec.tenant || "tenant-id" : "tenant-id",
-          },
+              type: "Deco",
+              tenant:
+                ec?.type === "Deco" ? ec.tenant || "tenant-id" : "tenant-id",
+            },
     );
   };
 
@@ -404,8 +404,8 @@ function ConfigureConnectionInstanceForm({
               {tools.isRefetching ? "Refreshing..." : "Refresh"}
             </Button>
             {!isWellKnown &&
-              data.info?.provider !== "custom" &&
-              (!data.instances || data.instances?.length === 0) ? (
+            data.info?.provider !== "custom" &&
+            (!data.instances || data.instances?.length === 0) ? (
               <Button
                 variant="special"
                 className="w-[250px] hidden md:flex"

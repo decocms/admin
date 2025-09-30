@@ -265,9 +265,12 @@ export async function runTool(
   step: ToolCallStepDefinition,
   client: MCPClientStub<ProjectTools>,
 ): Promise<Rpc.Serializable<unknown>> {
-  // Find the integration by name
+  // Find the integration by name or id
   const { items } = await client.INTEGRATIONS_LIST({});
-  const integration = items.find((item) => item.name === step.integration);
+
+  const integration = items.find(
+    (item) => item.name === step.integration || item.id === step.integration,
+  );
 
   if (!integration) {
     throw new Error(`Integration '${step.integration}' not found`);

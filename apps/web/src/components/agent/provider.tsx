@@ -201,6 +201,10 @@ export function AgentProvider({
     };
   }, [serverAgent.tools_set, additionalTools]);
 
+  useEffect(() => {
+    form.setValue("tools_set", mergedToolsSet);
+  }, [mergedToolsSet]);
+
   // Form state - for editing agent settings
   const form = useForm({
     defaultValues: { ...serverAgent, tools_set: mergedToolsSet },

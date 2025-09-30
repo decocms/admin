@@ -118,9 +118,8 @@ export default function ViewDetail() {
 
     if (matched && Array.isArray(matched.tools)) {
       return {
-        additionalTools: {
-          [integrationId]: matched.tools,
-        },
+        rules: matched.rules,
+        additionalTools: { [integrationId]: matched.tools },
       };
     }
 
@@ -130,6 +129,7 @@ export default function ViewDetail() {
       : [];
 
     return {
+      rules: matched?.rules,
       additionalTools: { [integrationId]: toolNames },
     };
   }, [integrationId, viewName, connectionViews, integration]);

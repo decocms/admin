@@ -19,3 +19,4 @@ export * from "./registry.ts";
 export * from "./permissions.ts";
 export * from "./models.ts";
 export * from "./resources-workflow.ts";
+export * from "./resources-tools.ts";

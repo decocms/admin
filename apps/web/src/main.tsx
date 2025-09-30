@@ -238,6 +238,13 @@ const WorkflowsResourceList = lazy(() =>
   ),
 );
 
+// Tools resource list
+const ToolsResourceList = lazy(() =>
+  wrapWithUILoadingFallback(
+    import("./components/tools/tools-resource-list.tsx"),
+  ),
+);
+
 function NotFound(): null {
   throw new NotFoundError("The path was not found");
 }
@@ -408,6 +415,7 @@ const router = createBrowserRouter([
         children: [
           { index: true, Component: ProjectHome },
           { path: "discover", Component: Discover },
+          { path: "tools", Component: ToolsResourceList },
           { path: "agents", Component: AgentList },
           { path: "agent/:id/:threadId", Component: AgentDetail },
           { path: "apps", Component: InstalledAppsList },

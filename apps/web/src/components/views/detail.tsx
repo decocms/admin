@@ -7,10 +7,9 @@ import { useMemo } from "react";
 import { useParams, useSearchParams } from "react-router";
 import Preview from "../agent/preview";
 import { EmptyState } from "../common/empty-state.tsx";
-import { InternalResourceListWithIntegration } from "./internal-resource-list.tsx";
-import { WorkflowView } from "./workflow-view.tsx";
 import { type DecopilotContextValue } from "../decopilot/context.tsx";
 import { DecopilotLayout } from "../layout/decopilot-layout.tsx";
+import { InternalResourceListWithIntegration } from "./internal-resource-list.tsx";
 
 interface Props {
   integrationId?: string;
@@ -58,10 +57,6 @@ function PreviewTab({
   }
 
   if (resolvedUrl.startsWith("internal://resource/detail")) {
-    if (embeddedName === "workflow") {
-      return <WorkflowView />;
-    }
-
     return (
       <EmptyState
         icon="report"

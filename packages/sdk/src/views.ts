@@ -11,6 +11,16 @@ export const DEFAULT_VIEWS: View[] = [
     },
   },
   {
+    id: "tools",
+    title: "Tools",
+    icon: "build",
+    type: "default",
+    badge: "New",
+    metadata: {
+      path: "/tools",
+    },
+  },
+  {
     id: "agents",
     title: "Agents",
     icon: "robot_2",
@@ -97,6 +107,8 @@ export interface View {
   // For custom views pinned in teams
   integrationId?: string;
   name?: string;
+  // Optional badge to display in menu
+  badge?: string;
   // For default views only
   metadata?: {
     path: string;

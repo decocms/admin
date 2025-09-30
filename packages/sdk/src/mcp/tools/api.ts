@@ -10,7 +10,6 @@ import {
 } from "../index.ts";
 import {
   createDetailViewUrl,
-  createListViewUrl,
   createViewImplementation,
   createViewRenderer,
 } from "../views-v2/index.ts";
@@ -226,27 +225,6 @@ export function createToolResourceV2Implementation(
 export function createToolViewsV2() {
   const integrationId = formatIntegrationId(WellKnownMcpGroups.Tools);
 
-  // Create view renderers for tool views
-  const toolListRenderer = createViewRenderer({
-    name: "tool_list",
-    title: "Tool List",
-    description: "Browse and manage tools",
-    icon: "https://example.com/icons/tool-list.svg",
-    tools: [
-      "DECO_RESOURCE_TOOL_SEARCH",
-      "DECO_RESOURCE_TOOL_CREATE",
-      "DECO_RESOURCE_TOOL_READ",
-      "DECO_RESOURCE_TOOL_UPDATE",
-      "DECO_RESOURCE_TOOL_DELETE",
-    ],
-    prompt:
-      "You are helping the user browse and manage tools. You can search for tools, create new ones, and perform bulk operations. Provide clear feedback on all actions.",
-    handler: (_input, _c) => {
-      const url = createListViewUrl("tool", integrationId);
-      return Promise.resolve({ url });
-    },
-  });
-
   const toolDetailRenderer = createViewRenderer({
     name: "tool_detail",
     title: "Tool Detail",
@@ -269,18 +247,8 @@ export function createToolViewsV2() {
 
   // Create Views 2.0 implementation
   const viewsV2Implementation = createViewImplementation({
-    renderers: [toolListRenderer, toolDetailRenderer],
+    renderers: [toolDetailRenderer],
   });
 
   return viewsV2Implementation;
 }
-
-// Export tools array for consistency with other modules
-export const TOOLS_TOOLS = [
-  "DECO_RESOURCE_TOOL_SEARCH",
-  "DECO_RESOURCE_TOOL_READ",
-  "DECO_RESOURCE_TOOL_CREATE",
-  "DECO_RESOURCE_TOOL_UPDATE",
-  "DECO_RESOURCE_TOOL_DELETE",
-  "DECO_TOOL_CALL_TOOL",
-] as const;

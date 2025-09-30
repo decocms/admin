@@ -38,6 +38,10 @@ export {
   useWorkflow as useWorkflowByUriV2,
   useWorkflowStatus as useWorkflowStatusV2,
 } from "./hooks/resources-workflow.ts";
+export {
+  useTool as useToolByUriV2,
+  useToolCallV2,
+} from "./hooks/resources-tools.ts";
 export * from "./hooks/store.tsx";
 export * from "./hooks/teams.ts";
 export * from "./hooks/thread.ts";
@@ -55,6 +59,11 @@ export {
   type WorkflowDefinition,
   type WorkflowStep,
 } from "./mcp/workflows/schemas.ts";
+
+export {
+  ToolDefinitionSchema,
+  type ToolDefinition,
+} from "./mcp/tools/schemas.ts";
 
 export * from "./models/agent.ts";
 export * from "./models/mcp.ts";

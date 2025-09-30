@@ -1,6 +1,7 @@
 import { useMemo } from "react";
 import { useResourceRoute } from "../resources-v2/route-context.tsx";
 import { WorkflowDisplayCanvas } from "../workflow-builder/workflow-display-canvas.tsx";
+import { ToolDetail } from "../tools/tool-detail.tsx";
 
 interface ReactViewProps {
   url: string;
@@ -8,11 +9,12 @@ interface ReactViewProps {
 
 const WELL_KNOWN_VIEWS = {
   workflow_detail: WorkflowDisplayCanvas,
+  tool_detail: ToolDetail,
 };
 
 /**
  * Renders built-in React views based on a react:// URL.
- * Currently supports: react://workflow_detail?uri=<rsc-uri>
+ * Currently supports: react://workflow_detail?uri=<rsc-uri> and react://tool_detail?uri=<rsc-uri>
  */
 export function ReactViewRenderer({ url }: ReactViewProps) {
   const { key } = useMemo(() => parseReactUrl(url), [url]);

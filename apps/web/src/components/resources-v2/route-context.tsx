@@ -1,9 +1,11 @@
 import { createContext, useContext } from "react";
+import type { MCPConnection } from "@deco/sdk";
 
 interface ResourceRouteContextValue {
   integrationId?: string;
   resourceName?: string;
   resourceUri?: string;
+  connection?: MCPConnection;
 }
 
 const ResourceRouteContext = createContext<

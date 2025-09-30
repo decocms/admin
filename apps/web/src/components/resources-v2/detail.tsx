@@ -28,13 +28,17 @@ const ResourceDetailContext = createContext<
   ReadOutput<typeof BaseResourceDataSchema> | undefined
 >(undefined);
 
-const ViewQueryContext = createContext<{
-  data: ViewResponse | undefined;
-  isLoading: boolean;
-  error: Error | null;
-} | null>(null);
+interface ResourcesV2DetailTabProps {
+  viewData: ViewResponse | undefined;
+  viewIsLoading: boolean;
+  viewError: Error | null;
+}
 
-function ResourcesV2DetailTab() {
+function ResourcesV2DetailTab({
+  viewData,
+  viewIsLoading,
+  viewError,
+}: ResourcesV2DetailTabProps) {
   const readResponse = useContext(ResourceDetailContext);
   if (readResponse === undefined) {
     throw new Error(
@@ -42,10 +46,7 @@ function ResourcesV2DetailTab() {
     );
   }
 
-  // View query moved to parent - this component now just renders the result
-  const viewQuery = useContext(ViewQueryContext)!;
-
-  if (viewQuery.isLoading) {
+  if (viewIsLoading) {
     return (
       <div className="flex-1 flex items-center justify-center">
         <Spinner />
@@ -53,29 +54,28 @@ function ResourcesV2DetailTab() {
     );
   }
 
-  if (viewQuery.error || !viewQuery.data) {
+  if (viewError || !viewData) {
     return (
       <EmptyState
         icon="error"
         title="Failed to load view"
         description={
-          (viewQuery.error as Error)?.message ||
-          "No URL returned from view render"
+          (viewError as Error)?.message || "No URL returned from view render"
         }
       />
     );
   }
 
   if (
-    typeof viewQuery.data.url === "string" &&
-    viewQuery.data.url?.startsWith("react://")
+    typeof viewData.url === "string" &&
+    viewData.url?.startsWith("react://")
   ) {
-    return <ReactViewRenderer url={viewQuery.data.url} />;
+    return <ReactViewRenderer url={viewData.url} />;
   }
 
   return (
     <div className="h-full">
-      <iframe src={viewQuery.data.url} className="w-full h-full border-0" />
+      <iframe src={viewData.url} className="w-full h-full border-0" />
     </div>
   );
 }
@@ -239,19 +239,22 @@ function ResourcesV2Detail() {
         integrationId={integrationId}
         resourceName={resourceName}
         resourceUri={decodedUri}
+        connection={integration?.connection}
       >
         <ResourceDetailContext.Provider value={readResponse}>
-          <ViewQueryContext.Provider value={viewQuery}>
-            {!viewRenderTool ? (
-              <EmptyState
-                icon="view_carousel"
-                title="No view render tool available"
-                description="This integration doesn't have a view render tool."
-              />
-            ) : (
-              <ResourcesV2DetailTab />
-            )}
-          </ViewQueryContext.Provider>
+          {!viewRenderTool ? (
+            <EmptyState
+              icon="view_carousel"
+              title="No view render tool available"
+              description="This integration doesn't have a view render tool."
+            />
+          ) : (
+            <ResourcesV2DetailTab
+              viewData={viewQuery.data}
+              viewIsLoading={viewQuery.isLoading}
+              viewError={viewQuery.error}
+            />
+          )}
         </ResourceDetailContext.Provider>
       </ResourceRouteProvider>
     </DecopilotLayout>

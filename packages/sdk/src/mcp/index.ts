@@ -30,7 +30,6 @@ import * as threadsAPI from "./threads/api.ts";
 import * as triggersAPI from "./triggers/api.ts";
 import * as walletAPI from "./wallet/api.ts";
 export {
-  TOOLS_TOOLS,
   createToolBindingImpl as createToolTools,
   createToolViewsV2,
 } from "./tools/api.ts";

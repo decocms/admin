@@ -181,19 +181,15 @@ export function createDetailViewUrl(
   resourceUri: string,
   params: Record<string, string> = {},
 ): string {
-  // Special-case: workflow detail renders as a built-in React view
-  if (resourceType === "workflow") {
-    const searchParams = new URLSearchParams({
-      uri: resourceUri,
-      integrationId,
-      view: "detail",
-      ...params,
-    });
-    return `react://workflow_detail?${searchParams.toString()}`;
+  const url = new URL(`react://${resourceType}_detail`);
+
+  url.searchParams.set("uri", resourceUri);
+  url.searchParams.set("integrationId", integrationId);
+  url.searchParams.set("view", "detail");
+
+  for (const [key, value] of Object.entries(params)) {
+    url.searchParams.set(key, value);
   }
 
-  return createResourceCentricUrl(resourceType, "detail", integrationId, {
-    uri: resourceUri,
-    ...params,
-  });
+  return url.href;
 }

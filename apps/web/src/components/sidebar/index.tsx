@@ -8,6 +8,7 @@ import {
   useRemoveView,
   View,
 } from "@deco/sdk";
+import { Badge } from "@deco/ui/components/badge.tsx";
 import { Button } from "@deco/ui/components/button.tsx";
 import {
   Collapsible,
@@ -297,6 +298,7 @@ function WorkspaceViews() {
   }
 
   const wellKnownItems = [
+    "Tools",
     "Agents",
     "Workflows",
     "Workflow Runs",
@@ -364,6 +366,7 @@ function WorkspaceViews() {
       {mcpItems.map((item) => {
         const displayTitle = item.title;
         const href = buildViewHrefFromView(item as View);
+        const view = item as View;
 
         return (
           <SidebarMenuItem key={item.title}>
@@ -383,6 +386,11 @@ function WorkspaceViews() {
                   className="text-muted-foreground/75"
                 />
                 <span className="truncate">{displayTitle}</span>
+                {view.badge && (
+                  <Badge variant="secondary" className="ml-auto text-xs">
+                    {view.badge}
+                  </Badge>
+                )}
               </Link>
             </SidebarMenuButton>
           </SidebarMenuItem>

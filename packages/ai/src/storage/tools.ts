@@ -11,10 +11,9 @@ export const getToolsForInnateIntegration = (
   agent: AIAgent,
   env?: Env,
 ) => {
-  const tools =
-    integration.id in INNATE_INTEGRATIONS
-      ? INNATE_TOOLS[integration.id as keyof typeof INNATE_INTEGRATIONS]
-      : createHandoffToolsFor(integration);
+  const tools = integration.id in INNATE_INTEGRATIONS
+    ? INNATE_TOOLS[integration.id as keyof typeof INNATE_INTEGRATIONS]
+    : createHandoffToolsFor(integration);
 
   return Object.fromEntries(
     Object.entries(tools).map(([key, tool]) => {

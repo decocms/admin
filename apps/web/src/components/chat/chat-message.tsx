@@ -154,9 +154,9 @@ export function ChatMessage({
   const handleCopy = async () => {
     const content = message.parts
       ? (message.parts as Part[])
-          .filter((part) => part.type === "text")
-          .map((part) => part.text)
-          .join("\n")
+        .filter((part) => part.type === "text")
+        .map((part) => part.text)
+        .join("\n")
       : message.content;
     await navigator.clipboard.writeText(content);
     toast("Copied to clipboard");
@@ -217,52 +217,53 @@ export function ChatMessage({
             isUser ? "bg-muted p-3" : "bg-transparent",
           )}
         >
-          {message.parts ? (
-            <div className="space-y-2 w-full">
-              {mergedParts.map((part, index) => {
-                if (part.type === "reasoning") {
-                  const isLastReasoningPart = mergedParts
-                    .slice(index + 1)
-                    .every((p) => p.type !== "reasoning");
-                  return (
-                    <ReasoningPart
-                      key={index}
-                      reasoning={part.reasoning || ""}
-                      messageId={message.id}
-                      index={index}
-                      isStreaming={isLastReasoningPart && isReasoningStreaming}
-                      isResponseStreaming={isResponseStreaming}
-                    />
-                  );
-                } else if (part.type === "text") {
-                  return (
-                    <MemoizedMarkdown
-                      key={index}
-                      id={`${message.id}-${index}`}
-                      content={part.content || ""}
-                    />
-                  );
-                } else if (part.type === "image") {
-                  if (!part.image) return null;
-                  return <ImagePart image={part.image} key={index} />;
-                } else if (
-                  part.type === "tool-invocation-group" &&
-                  part.toolInvocations
-                ) {
-                  return (
-                    <ToolMessage
-                      key={index}
-                      toolInvocations={part.toolInvocations}
-                      isLastMessage={isLastMessage}
-                    />
-                  );
-                }
-                return null;
-              })}
-            </div>
-          ) : (
-            <MemoizedMarkdown id={message.id} content={message.content} />
-          )}
+          {message.parts
+            ? (
+              <div className="space-y-2 w-full">
+                {mergedParts.map((part, index) => {
+                  if (part.type === "reasoning") {
+                    const isLastReasoningPart = mergedParts
+                      .slice(index + 1)
+                      .every((p) => p.type !== "reasoning");
+                    return (
+                      <ReasoningPart
+                        key={index}
+                        reasoning={part.reasoning || ""}
+                        messageId={message.id}
+                        index={index}
+                        isStreaming={isLastReasoningPart &&
+                          isReasoningStreaming}
+                        isResponseStreaming={isResponseStreaming}
+                      />
+                    );
+                  } else if (part.type === "text") {
+                    return (
+                      <MemoizedMarkdown
+                        key={index}
+                        id={`${message.id}-${index}`}
+                        content={part.content || ""}
+                      />
+                    );
+                  } else if (part.type === "image") {
+                    if (!part.image) return null;
+                    return <ImagePart image={part.image} key={index} />;
+                  } else if (
+                    part.type === "tool-invocation-group" &&
+                    part.toolInvocations
+                  ) {
+                    return (
+                      <ToolMessage
+                        key={index}
+                        toolInvocations={part.toolInvocations}
+                        isLastMessage={isLastMessage}
+                      />
+                    );
+                  }
+                  return null;
+                })}
+              </div>
+            )
+            : <MemoizedMarkdown id={message.id} content={message.content} />}
 
           {attachments && attachments.length > 0 && (
             <div className="mt-2 flex flex-wrap gap-2">
@@ -313,16 +314,14 @@ function ImagePart({ image }: { image: string }) {
 }
 
 function AttachmentCard({ attachment }: { attachment: MessageAttachment }) {
-  const contentType =
-    attachment.contentType ||
+  const contentType = attachment.contentType ||
     (attachment.url.startsWith("data:")
       ? attachment.url.split(":")[1]?.split(";")[0]
       : undefined) ||
     "application/octet-stream";
   const isImage = contentType.startsWith("image/");
   const isPDF = contentType.startsWith("application/pdf");
-  const isText =
-    contentType.startsWith("text/") ||
+  const isText = contentType.startsWith("text/") ||
     contentType === "application/json" ||
     contentType.endsWith("+json") ||
     contentType.endsWith("+xml") ||
@@ -489,18 +488,18 @@ function TextPreviewCard({
                 !text && "text-muted-foreground",
               )}
             >
-              {text ? (
-                <pre
-                  className={cn(
-                    "text-xs whitespace-pre-wrap break-words overflow-auto",
-                    "max-h-[500px]",
-                  )}
-                >
+              {text
+                ? (
+                  <pre
+                    className={cn(
+                      "text-xs whitespace-pre-wrap break-words overflow-auto",
+                      "max-h-[500px]",
+                    )}
+                  >
                   {text}
-                </pre>
-              ) : (
-                <span className="text-xs">Loading preview…</span>
-              )}
+                  </pre>
+                )
+                : <span className="text-xs">Loading preview…</span>}
             </div>
           )}
         </div>

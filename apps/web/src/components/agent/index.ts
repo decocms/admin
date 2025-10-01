@@ -8,6 +8,6 @@ export { default as AgentThreads } from "./threads.tsx";
 export { AgentBreadcrumbSegment } from "./breadcrumb-segment.tsx";
 export { ChatHeader as AgentChatHeader } from "./chat-header.tsx";
 export {
-  KnowledgeBaseFileList,
   AddFileToKnowledgeButton,
+  KnowledgeBaseFileList,
 } from "./upload-knowledge-asset.tsx";

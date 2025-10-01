@@ -41,31 +41,31 @@ export const wrapWithUILoadingFallback = <P,>(
 const ProjectLayout = lazy(() =>
   import("./components/layout/project.tsx").then((mod) => ({
     default: mod.ProjectLayout,
-  })),
+  }))
 );
 
 const HomeLayout = lazy(() =>
   import("./components/layout/home.tsx").then((mod) => ({
     default: mod.HomeLayout,
-  })),
+  }))
 );
 
 const OrgList = lazy(() =>
   import("./components/home/organizations.tsx").then((mod) => ({
     default: mod.OrgList,
-  })),
+  }))
 );
 
 const OrgProjectList = lazy(() =>
   import("./components/home/projects.tsx").then((mod) => ({
     default: mod.OrgProjectList,
-  })),
+  }))
 );
 
 const ProjectHome = lazy(() =>
   import("./components/home/project-home.tsx").then((mod) => ({
     default: mod.ProjectHome,
-  })),
+  }))
 );
 
 const PageviewTrackerLayout = lazy(
@@ -81,105 +81,105 @@ const Login = lazy(() => import("./components/login/index.tsx"));
 const ConnectionDetail = lazy(() =>
   wrapWithUILoadingFallback(
     import("./components/integrations/connection-detail.tsx"),
-  ),
+  )
 );
 
 const ConnectionsList = lazy(() =>
   wrapWithUILoadingFallback(
     import("./components/integrations/connections-list.tsx"),
-  ),
+  )
 );
 
 const ConnectionInstallSuccess = lazy(() =>
   wrapWithUILoadingFallback(
     import("./components/integrations/install-success.tsx"),
-  ),
+  )
 );
 
 const AgentList = lazy(() =>
-  wrapWithUILoadingFallback(import("./components/agents/list.tsx")),
+  wrapWithUILoadingFallback(import("./components/agents/list.tsx"))
 );
 
 const AgentDetail = lazy(() =>
-  wrapWithUILoadingFallback(import("./components/agent/edit.tsx")),
+  wrapWithUILoadingFallback(import("./components/agent/edit.tsx"))
 );
 
 const PublicChats = lazy(() =>
-  wrapWithUILoadingFallback(import("./components/agent/chats.tsx")),
+  wrapWithUILoadingFallback(import("./components/agent/chats.tsx"))
 );
 
 const AuditList = lazy(() =>
-  wrapWithUILoadingFallback(import("./components/audit/list.tsx")),
+  wrapWithUILoadingFallback(import("./components/audit/list.tsx"))
 );
 
 const AuditDetail = lazy(() =>
-  wrapWithUILoadingFallback(import("./components/audit/detail.tsx")),
+  wrapWithUILoadingFallback(import("./components/audit/detail.tsx"))
 );
 
 const MagicLink = lazy(() =>
-  wrapWithUILoadingFallback(import("./components/login/magic-link.tsx")),
+  wrapWithUILoadingFallback(import("./components/login/magic-link.tsx"))
 );
 
 const Settings = lazy(() =>
-  wrapWithUILoadingFallback(import("./components/settings/page.tsx")),
+  wrapWithUILoadingFallback(import("./components/settings/page.tsx"))
 );
 
 const Monitor = lazy(() =>
-  wrapWithUILoadingFallback(import("./components/monitor/page.tsx")),
+  wrapWithUILoadingFallback(import("./components/monitor/page.tsx"))
 );
 
 const TriggerList = lazy(() =>
-  wrapWithUILoadingFallback(import("./components/triggers/list.tsx")),
+  wrapWithUILoadingFallback(import("./components/triggers/list.tsx"))
 );
 
 const TriggerDetails = lazy(() =>
   wrapWithUILoadingFallback(
     import("./components/triggers/trigger-details.tsx"),
-  ),
+  )
 );
 
 const InvitesList = lazy(() =>
-  wrapWithUILoadingFallback(import("./components/invites/index.tsx")),
+  wrapWithUILoadingFallback(import("./components/invites/index.tsx"))
 );
 
 const SalesDeck = lazy(() =>
-  wrapWithUILoadingFallback(import("./components/sales-deck/deck.tsx")),
+  wrapWithUILoadingFallback(import("./components/sales-deck/deck.tsx"))
 );
 
 const ListPrompts = lazy(() =>
-  wrapWithUILoadingFallback(import("./components/prompts/list/list.tsx")),
+  wrapWithUILoadingFallback(import("./components/prompts/list/list.tsx"))
 );
 
 const PromptDetail = lazy(() =>
-  wrapWithUILoadingFallback(import("./components/prompts/detail/detail.tsx")),
+  wrapWithUILoadingFallback(import("./components/prompts/detail/detail.tsx"))
 );
 
 const WorkflowListPage = lazy(() =>
-  wrapWithUILoadingFallback(import("./components/workflows/list.tsx")),
+  wrapWithUILoadingFallback(import("./components/workflows/list.tsx"))
 );
 
 const WorkflowDetailPage = lazy(() =>
-  wrapWithUILoadingFallback(import("./components/workflows/detail.tsx")),
+  wrapWithUILoadingFallback(import("./components/workflows/detail.tsx"))
 );
 
 const AppAuth = lazy(() =>
-  wrapWithUILoadingFallback(import("./components/apps/auth.tsx")),
+  wrapWithUILoadingFallback(import("./components/apps/auth.tsx"))
 );
 
 const ViewDetail = lazy(() =>
-  wrapWithUILoadingFallback(import("./components/views/detail.tsx")),
+  wrapWithUILoadingFallback(import("./components/views/detail.tsx"))
 );
 
 const ViewsList = lazy(() =>
-  wrapWithUILoadingFallback(import("./components/views/list.tsx")),
+  wrapWithUILoadingFallback(import("./components/views/list.tsx"))
 );
 
 const LegacyViewRedirect = lazy(() =>
-  wrapWithUILoadingFallback(import("./components/views/legacy-redirect.tsx")),
+  wrapWithUILoadingFallback(import("./components/views/legacy-redirect.tsx"))
 );
 
 const Discover = lazy(() =>
-  wrapWithUILoadingFallback(import("./components/discover/index.tsx")),
+  wrapWithUILoadingFallback(import("./components/discover/index.tsx"))
 );
 
 function NotFound(): null {
@@ -202,7 +202,9 @@ function ErrorFallback() {
     }
 
     const next = new URL(`${pathname}${search}`, globalThis.location.origin);
-    globalThis.location.href = `/login?next=${encodeURIComponent(next.toString())}`;
+    globalThis.location.href = `/login?next=${
+      encodeURIComponent(next.toString())
+    }`;
   }, [isUnauthorized, pathname, search]);
 
   if (isUnauthorized) {

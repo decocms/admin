@@ -256,10 +256,9 @@ export function instrumentClientFetch(
 
       const host = new URL(request.url).host;
       const method = request.method.toUpperCase();
-      const spanName =
-        typeof attrs?.["name"] === "string"
-          ? attrs?.["name"]
-          : `fetch ${method} ${host}`;
+      const spanName = typeof attrs?.["name"] === "string"
+        ? attrs?.["name"]
+        : `fetch ${method} ${host}`;
       const promise = tracer.startActiveSpan(
         spanName,
         options,

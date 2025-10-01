@@ -6,45 +6,55 @@ import type { Workspace } from "../path.ts";
 import { QueryResult } from "../storage/index.ts";
 import type { AppContext, UserPrincipal } from "./context.ts";
 
-type WithUser<TAppContext extends AppContext = AppContext> = Omit<
-  TAppContext,
-  "user"
-> & {
-  user: UserPrincipal;
-};
-
-type WithWorkspace<TAppContext extends AppContext = AppContext> = Omit<
-  TAppContext,
-  "workspace"
-> & {
-  workspace: { root: string; slug: string; value: Workspace; branch: string };
-};
-
-type WithLocator<TAppContext extends AppContext = AppContext> = Omit<
-  TAppContext,
-  "locator"
-> & {
-  locator: {
-    org: string;
-    project: string;
-    value: ProjectLocator;
-    branch: string;
+type WithUser<TAppContext extends AppContext = AppContext> =
+  & Omit<
+    TAppContext,
+    "user"
+  >
+  & {
+    user: UserPrincipal;
   };
-};
 
-type WithKbFileProcessor<TAppContext extends AppContext = AppContext> = Omit<
-  TAppContext,
-  "kbFileProcessor"
-> & {
-  kbFileProcessor: Workflow;
-};
+type WithWorkspace<TAppContext extends AppContext = AppContext> =
+  & Omit<
+    TAppContext,
+    "workspace"
+  >
+  & {
+    workspace: { root: string; slug: string; value: Workspace; branch: string };
+  };
 
-export type WithTool<TAppContext extends AppContext = AppContext> = Omit<
-  TAppContext,
-  "tool"
-> & {
-  tool: { name: string };
-};
+type WithLocator<TAppContext extends AppContext = AppContext> =
+  & Omit<
+    TAppContext,
+    "locator"
+  >
+  & {
+    locator: {
+      org: string;
+      project: string;
+      value: ProjectLocator;
+      branch: string;
+    };
+  };
+
+type WithKbFileProcessor<TAppContext extends AppContext = AppContext> =
+  & Omit<
+    TAppContext,
+    "kbFileProcessor"
+  >
+  & {
+    kbFileProcessor: Workflow;
+  };
+
+export type WithTool<TAppContext extends AppContext = AppContext> =
+  & Omit<
+    TAppContext,
+    "tool"
+  >
+  & {
+    tool: { name: string };
+  };
 
 export function assertHasWorkspace<TContext extends AppContext = AppContext>(
   c: Pick<TContext, "workspace"> | Pick<WithWorkspace<TContext>, "workspace">,
@@ -120,10 +130,9 @@ export const assertWorkspaceResourceAccess = async (
     }
   }
 
-  const resourcesOrContexts =
-    _resourcesOrContexts.length === 0 && c.tool
-      ? [c.tool.name]
-      : _resourcesOrContexts;
+  const resourcesOrContexts = _resourcesOrContexts.length === 0 && c.tool
+    ? [c.tool.name]
+    : _resourcesOrContexts;
 
   // If no resources provided, throw error
   if (resourcesOrContexts.length === 0) {
@@ -234,14 +243,18 @@ export const assertWorkspaceResourceAccess = async (
       }
     } catch (error) {
       errors.push(
-        `Error checking access for resource: ${error instanceof Error ? error.message : String(error)}`,
+        `Error checking access for resource: ${
+          error instanceof Error ? error.message : String(error)
+        }`,
       );
     }
   }
 
   // If we reach here, none of the resources granted access
   throw new ForbiddenError(
-    `Cannot access any of the requested resources in workspace ${c.workspace.value} ${resourcesOrContexts}. Errors: ${errors.join("; ")}`,
+    `Cannot access any of the requested resources in workspace ${c.workspace.value} ${resourcesOrContexts}. Errors: ${
+      errors.join("; ")
+    }`,
   );
 };
 
@@ -293,14 +306,13 @@ export const IntegrationSub = {
 };
 
 export const issuerFromContext = async (c: AppContext) => {
-  const keyPair =
-    c.envVars.DECO_CHAT_API_JWT_PRIVATE_KEY &&
-    c.envVars.DECO_CHAT_API_JWT_PUBLIC_KEY
-      ? {
-          public: c.envVars.DECO_CHAT_API_JWT_PUBLIC_KEY,
-          private: c.envVars.DECO_CHAT_API_JWT_PRIVATE_KEY,
-        }
-      : undefined;
+  const keyPair = c.envVars.DECO_CHAT_API_JWT_PRIVATE_KEY &&
+      c.envVars.DECO_CHAT_API_JWT_PUBLIC_KEY
+    ? {
+      public: c.envVars.DECO_CHAT_API_JWT_PUBLIC_KEY,
+      private: c.envVars.DECO_CHAT_API_JWT_PRIVATE_KEY,
+    }
+    : undefined;
   return await JwtIssuer.forKeyPair(keyPair);
 };
 

@@ -31,11 +31,10 @@ const useAgentsMergedWithWellKnown = () => {
   const agents = useAgents();
   return {
     ...agents,
-    data:
-      agents.data?.concat([
-        WELL_KNOWN_AGENTS.teamAgent,
-        WELL_KNOWN_AGENTS.setupAgent,
-      ]) || [],
+    data: agents.data?.concat([
+      WELL_KNOWN_AGENTS.teamAgent,
+      WELL_KNOWN_AGENTS.setupAgent,
+    ]) || [],
   };
 };
 
@@ -155,23 +154,22 @@ export function Usage() {
     if (usageType === "contract") {
       // For contracts, calculate the actual total cost from the filtered data
       let totalCost = 0;
-      const filteredContracts =
-        contractsCommits.items?.filter((contract) => {
-          // Filter by contract if specified
-          if (
-            selectedContractId &&
-            contract.contractId !== selectedContractId
-          ) {
-            return false;
-          }
-          // If a clause filter is selected, only include contracts that have that clause
-          if (selectedClauseId) {
-            return (contract.clauses || []).some(
-              (clause) => clause.clauseId === selectedClauseId,
-            );
-          }
-          return true;
-        }) || [];
+      const filteredContracts = contractsCommits.items?.filter((contract) => {
+        // Filter by contract if specified
+        if (
+          selectedContractId &&
+          contract.contractId !== selectedContractId
+        ) {
+          return false;
+        }
+        // If a clause filter is selected, only include contracts that have that clause
+        if (selectedClauseId) {
+          return (contract.clauses || []).some(
+            (clause) => clause.clauseId === selectedClauseId,
+          );
+        }
+        return true;
+      }) || [];
 
       for (const contract of filteredContracts) {
         if (selectedClauseId) {
@@ -186,8 +184,8 @@ export function Usage() {
               0,
             );
             if (totalTokensInContract > 0) {
-              totalCost +=
-                (clause.amount / totalTokensInContract) * contract.amount;
+              totalCost += (clause.amount / totalTokensInContract) *
+                contract.amount;
             }
           }
         } else {

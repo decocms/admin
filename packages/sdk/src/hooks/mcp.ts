@@ -46,8 +46,9 @@ export const useCreateIntegration = () => {
       // update list
       const listKey = KEYS.INTEGRATION(locator);
       client.cancelQueries({ queryKey: listKey });
-      client.setQueryData<Integration[]>(listKey, (old) =>
-        !old ? [processedResult] : [processedResult, ...old],
+      client.setQueryData<Integration[]>(
+        listKey,
+        (old) => !old ? [processedResult] : [processedResult, ...old],
       );
     },
   });
@@ -79,10 +80,12 @@ export const useUpdateIntegration = ({
       // Update the list
       const listKey = KEYS.INTEGRATION(locator);
       client.cancelQueries({ queryKey: listKey });
-      client.setQueryData<Integration[]>(listKey, (old) =>
-        !old
-          ? [processedResult]
-          : old.map((mcp) => (mcp.id === result.id ? processedResult : mcp)),
+      client.setQueryData<Integration[]>(
+        listKey,
+        (old) =>
+          !old
+            ? [processedResult]
+            : old.map((mcp) => (mcp.id === result.id ? processedResult : mcp)),
       );
 
       client.invalidateQueries({ queryKey: ["tools"] });
@@ -110,8 +113,9 @@ export const useRemoveIntegration = () => {
       // Update the list
       const listKey = KEYS.INTEGRATION(locator);
       client.cancelQueries({ queryKey: listKey });
-      client.setQueryData<Integration[]>(listKey, (old) =>
-        !old ? [] : old.filter((mcp) => mcp.id !== id),
+      client.setQueryData<Integration[]>(
+        listKey,
+        (old) => !old ? [] : old.filter((mcp) => mcp.id !== id),
       );
     },
   });
@@ -160,7 +164,7 @@ export const useIntegrations = ({ isPublic }: { isPublic?: boolean } = {}) => {
 
       const agents = client.getQueryData<Agent[]>(KEYS.AGENT(locator));
       const processedItems = items.map((item) =>
-        applyDisplayNameToIntegration(item, agents),
+        applyDisplayNameToIntegration(item, agents)
       );
 
       for (const item of processedItems) {
@@ -196,7 +200,7 @@ export const useMarketplaceIntegrations = () => {
       MCPClient.forLocator(locator)
         .DECO_INTEGRATIONS_SEARCH({ query: "" })
         .then((r: IntegrationsResult | string) =>
-          typeof r === "string" ? { integrations: [] } : r,
+          typeof r === "string" ? { integrations: [] } : r
         ),
   });
 };
@@ -299,8 +303,9 @@ export const useInstallFromMarketplace = () => {
       // update list
       const listKey = KEYS.INTEGRATION(locator);
       client.cancelQueries({ queryKey: listKey });
-      client.setQueryData<Integration[]>(listKey, (old) =>
-        !old ? [processedIntegration] : [processedIntegration, ...old],
+      client.setQueryData<Integration[]>(
+        listKey,
+        (old) => !old ? [processedIntegration] : [processedIntegration, ...old],
       );
     },
   });

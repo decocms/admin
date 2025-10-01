@@ -107,7 +107,8 @@ const Mappers = {
 const createTool = createToolGroup("Hosting", {
   name: "Hosting & Deployment",
   description: "Deploy serverless apps via Cloudflare Workers.",
-  icon: "https://assets.decocache.com/mcp/59297cd7-2ecd-452f-8b5d-0ff0d0985232/Hosting--Deployment.png",
+  icon:
+    "https://assets.decocache.com/mcp/59297cd7-2ecd-452f-8b5d-0ff0d0985232/Hosting--Deployment.png",
 });
 
 // 1. List apps for a given workspace
@@ -444,7 +445,8 @@ const DECO_WORKER_RUNTIME_VERSION = "0.4.0";
 // Update the schema in deployFiles
 export const deployFiles = createTool({
   name: "HOSTING_APP_DEPLOY",
-  description: `Deploy multiple TypeScript files that use Wrangler for bundling and deployment to Cloudflare Workers. You must provide a package.json file with the necessary dependencies and a wrangler.toml file matching the Workers for Platforms format. Use 'main_module' instead of 'main', and define bindings using the [[bindings]] array, where each binding is a table specifying its type and properties. To add custom Deco bindings, set type = "MCP" in a binding entry (these will be filtered and handled automatically).
+  description:
+    `Deploy multiple TypeScript files that use Wrangler for bundling and deployment to Cloudflare Workers. You must provide a package.json file with the necessary dependencies and a wrangler.toml file matching the Workers for Platforms format. Use 'main_module' instead of 'main', and define bindings using the [[bindings]] array, where each binding is a table specifying its type and properties. To add custom Deco bindings, set type = "MCP" in a binding entry (these will be filtered and handled automatically).
 
 Common patterns:
 1. Use a package.json file to manage dependencies:
@@ -720,9 +722,9 @@ Important Notes:
       const wranglerFile = CONFIGS.find((file) => file in filesRecord);
       const wranglerConfig: WranglerConfig = wranglerFile
         ? (parseToml(
-            filesRecord[wranglerFile]?.content,
-            // deno-lint-ignore no-explicit-any
-          ) as any as WranglerConfig)
+          filesRecord[wranglerFile]?.content,
+          // deno-lint-ignore no-explicit-any
+        ) as any as WranglerConfig)
         : ({ name: _appSlug } as WranglerConfig);
 
       addDefaultCustomDomain(wranglerConfig);
@@ -736,9 +738,11 @@ Important Notes:
       );
       if (!entrypoint) {
         throw new UserInputError(
-          `Entrypoint not found in files. Entrypoint must be one of: ${[
-            ...new Set(entrypoints),
-          ].join(", ")}`,
+          `Entrypoint not found in files. Entrypoint must be one of: ${
+            [
+              ...new Set(entrypoints),
+            ].join(", ")
+          }`,
         );
       }
 
@@ -779,14 +783,13 @@ Important Notes:
         );
       }
 
-      const keyPair =
-        c.envVars.DECO_CHAT_API_JWT_PRIVATE_KEY &&
-        c.envVars.DECO_CHAT_API_JWT_PUBLIC_KEY
-          ? {
-              public: c.envVars.DECO_CHAT_API_JWT_PUBLIC_KEY,
-              private: c.envVars.DECO_CHAT_API_JWT_PRIVATE_KEY,
-            }
-          : undefined;
+      const keyPair = c.envVars.DECO_CHAT_API_JWT_PRIVATE_KEY &&
+          c.envVars.DECO_CHAT_API_JWT_PUBLIC_KEY
+        ? {
+          public: c.envVars.DECO_CHAT_API_JWT_PUBLIC_KEY,
+          private: c.envVars.DECO_CHAT_API_JWT_PRIVATE_KEY,
+        }
+        : undefined;
 
       const issuer = await JwtIssuer.forKeyPair(keyPair);
       const scope = wranglerConfig?.scope ?? c.workspace.slug;
@@ -865,8 +868,10 @@ Important Notes:
         .REGISTRY_PUBLISH_APP({
           name: scriptSlug,
           scopeName: wranglerConfig?.scope ?? c.workspace.slug,
-          description: `App ${scriptSlug} by deco workers for workspace ${workspace}`,
-          icon: "https://assets.decocache.com/mcp/09e44283-f47d-4046-955f-816d227c626f/app.png",
+          description:
+            `App ${scriptSlug} by deco workers for workspace ${workspace}`,
+          icon:
+            "https://assets.decocache.com/mcp/09e44283-f47d-4046-955f-816d227c626f/app.png",
           ...wranglerConfig.deco?.integration,
           unlisted: isUnlisted,
           connection: Entrypoint.mcp(data.entrypoint),
@@ -1165,8 +1170,9 @@ export const listWorkflowRuns = createTool({
       params.push(toDate);
     }
 
-    const whereClause =
-      conditions.length > 0 ? `WHERE ${conditions.join(" AND ")}` : "";
+    const whereClause = conditions.length > 0
+      ? `WHERE ${conditions.join(" AND ")}`
+      : "";
     const offset = (page - 1) * per_page;
 
     const sql = `
@@ -1190,33 +1196,32 @@ export const listWorkflowRuns = createTool({
       });
       dispose?.();
 
-      const transformed =
-        result[0].results?.map((row: unknown) => {
-          const rowData = row as {
-            workflow_name: string;
-            run_id: string;
-            createdAt: string;
-            updatedAt: string | null;
-            snapshot: string;
-          };
+      const transformed = result[0].results?.map((row: unknown) => {
+        const rowData = row as {
+          workflow_name: string;
+          run_id: string;
+          createdAt: string;
+          updatedAt: string | null;
+          snapshot: string;
+        };
 
-          let snapshot: unknown;
-          try {
-            snapshot = JSON.parse(rowData.snapshot);
-          } catch {
-            snapshot = null;
-          }
+        let snapshot: unknown;
+        try {
+          snapshot = JSON.parse(rowData.snapshot);
+        } catch {
+          snapshot = null;
+        }
 
-          return {
-            workflowName: rowData.workflow_name,
-            runId: rowData.run_id,
-            createdAt: new Date(rowData.createdAt).getTime(),
-            updatedAt: rowData.updatedAt
-              ? new Date(rowData.updatedAt).getTime()
-              : null,
-            status: extractStatusFromSnapshot(snapshot),
-          };
-        }) ?? [];
+        return {
+          workflowName: rowData.workflow_name,
+          runId: rowData.run_id,
+          createdAt: new Date(rowData.createdAt).getTime(),
+          updatedAt: rowData.updatedAt
+            ? new Date(rowData.updatedAt).getTime()
+            : null,
+          status: extractStatusFromSnapshot(snapshot),
+        };
+      }) ?? [];
 
       // TODO: Stats calculation commented out due to SQLite memory issues
       // // Calculate stats using SQL aggregation to avoid memory issues
@@ -1401,11 +1406,10 @@ export const listWorkflowNames = createTool({
         sql,
       });
       dispose?.();
-      const workflowNames =
-        result[0].results?.map((row: unknown) => {
-          const rowData = row as { workflow_name: string };
-          return rowData.workflow_name;
-        }) ?? [];
+      const workflowNames = result[0].results?.map((row: unknown) => {
+        const rowData = row as { workflow_name: string };
+        return rowData.workflow_name;
+      }) ?? [];
 
       return {
         workflowNames,

@@ -12,7 +12,8 @@ const estimateSQLMetrics = (
   columnNames: string,
   rows: any[],
 ): { size: number; paramCount: number } => {
-  const baseSQL = `INSERT OR REPLACE INTO "${tableName}" (${columnNames}) VALUES `;
+  const baseSQL =
+    `INSERT OR REPLACE INTO "${tableName}" (${columnNames}) VALUES `;
   const placeholders = columnNames
     .split(", ")
     .map(() => "?")
@@ -70,9 +71,12 @@ const insertChunk = async (
 
   try {
     const placeholders = columns.map(() => "?").join(", ");
-    const insertSql = `INSERT OR REPLACE INTO "${tableName}" (${columnNames}) VALUES ${rows
-      .map(() => `(${placeholders})`)
-      .join(", ")}`;
+    const insertSql =
+      `INSERT OR REPLACE INTO "${tableName}" (${columnNames}) VALUES ${
+        rows
+          .map(() => `(${placeholders})`)
+          .join(", ")
+      }`;
 
     const params: any[] = [];
     for (const row of rows) {
@@ -100,7 +104,8 @@ const insertChunk = async (
     );
     // Fall back to single-row inserts
     const placeholders = columns.map(() => "?").join(", ");
-    const singleInsertSql = `INSERT OR REPLACE INTO "${tableName}" (${columnNames}) VALUES (${placeholders})`;
+    const singleInsertSql =
+      `INSERT OR REPLACE INTO "${tableName}" (${columnNames}) VALUES (${placeholders})`;
 
     for (const row of rows) {
       const params: any[] = [];
@@ -197,7 +202,8 @@ export const migrate = createDatabaseTool({
       console.log("🔍 Discovering tables in Turso database...");
       try {
         using tursoResult = await tursoDb.exec({
-          sql: "SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%'",
+          sql:
+            "SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%'",
           params: [],
         });
         const tursoTables =
@@ -305,7 +311,8 @@ export const migrate = createDatabaseTool({
           // Check if table exists in Turso database
           try {
             using checkTursoResult = await tursoDb.exec({
-              sql: `SELECT name FROM sqlite_master WHERE type='table' AND name='${tableName}'`,
+              sql:
+                `SELECT name FROM sqlite_master WHERE type='table' AND name='${tableName}'`,
               params: [],
             });
             tableExistsInTurso =
@@ -326,7 +333,8 @@ export const migrate = createDatabaseTool({
           if (tableExistsInTurso) {
             try {
               using result = await tursoDb.exec({
-                sql: `SELECT sql FROM sqlite_master WHERE type='table' AND name='${tableName}'`,
+                sql:
+                  `SELECT sql FROM sqlite_master WHERE type='table' AND name='${tableName}'`,
                 params: [],
               });
               const tursoSchemaResult = result.result[0]?.results?.[0] as
@@ -374,7 +382,8 @@ export const migrate = createDatabaseTool({
           let tableExists = false;
           try {
             using checkTableResponse = await newDb.exec({
-              sql: `SELECT name FROM sqlite_master WHERE type='table' AND name='${tableName}'`,
+              sql:
+                `SELECT name FROM sqlite_master WHERE type='table' AND name='${tableName}'`,
               params: [],
             });
             tableExists =
@@ -433,8 +442,8 @@ export const migrate = createDatabaseTool({
               sql: `PRAGMA table_info("${tableName}")`,
               params: [],
             });
-            columns =
-              (result.result[0]?.results as Array<{ name: string }>) || [];
+            columns = (result.result[0]?.results as Array<{ name: string }>) ||
+              [];
             console.log(
               `   ✅ Got columns from Turso database (${columns.length} columns)`,
             );
@@ -454,12 +463,11 @@ export const migrate = createDatabaseTool({
               sql: `SELECT COUNT(*) as count FROM "${tableName}"`,
               params: [],
             });
-            existingRowCount =
-              (
-                existingCountResponse.result[0]?.results?.[0] as {
-                  count: number;
-                }
-              )?.count || 0;
+            existingRowCount = (
+              existingCountResponse.result[0]?.results?.[0] as {
+                count: number;
+              }
+            )?.count || 0;
           } catch {
             // If we can't count existing rows, assume table is empty
             existingRowCount = 0;
@@ -520,7 +528,8 @@ export const migrate = createDatabaseTool({
               let rows: any[] = [];
               try {
                 using result = await tursoDb.exec({
-                  sql: `SELECT ${columnNames} FROM "${tableName}" LIMIT ${batchSize} OFFSET ${tursoOffset}`,
+                  sql:
+                    `SELECT ${columnNames} FROM "${tableName}" LIMIT ${batchSize} OFFSET ${tursoOffset}`,
                   params: [],
                 });
                 rows = result.result[0]?.results || [];
@@ -576,10 +585,9 @@ export const migrate = createDatabaseTool({
                 );
 
                 // Check both size and parameter count limits
-                const shouldInsert =
-                  (metrics.size > maxSQLSize ||
-                    metrics.paramCount > maxParams ||
-                    currentChunk.length >= maxRowsPerChunk) &&
+                const shouldInsert = (metrics.size > maxSQLSize ||
+                  metrics.paramCount > maxParams ||
+                  currentChunk.length >= maxRowsPerChunk) &&
                   currentChunk.length > 0;
 
                 if (shouldInsert) {
@@ -682,7 +690,10 @@ export const migrate = createDatabaseTool({
         });
         console.log("✅ Foreign key constraints re-enabled");
       } catch (fkError) {
-        console.warn("⚠️ Could not re-enable foreign key constraints:", fkError);
+        console.warn(
+          "⚠️ Could not re-enable foreign key constraints:",
+          fkError,
+        );
       }
 
       const executionTime = Date.now() - startTime;

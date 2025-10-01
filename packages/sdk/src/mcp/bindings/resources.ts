@@ -1,16 +1,16 @@
 import {
-  ResourcesReadInputSchema,
-  ResourcesReadOutputSchema,
-  ResourceSearchInputSchema,
-  ResourceSearchOutputSchema,
   ResourceCreateInputSchema,
   ResourceCreateOutputSchema,
-  ResourceUpdateInputSchema,
-  ResourceUpdateOutputSchema,
   ResourceDeleteInputSchema,
   ResourceDeleteOutputSchema,
+  ResourceSearchInputSchema,
+  ResourceSearchOutputSchema,
   ResourcesListInputSchema,
   ResourcesListOutputSchema,
+  ResourcesReadInputSchema,
+  ResourcesReadOutputSchema,
+  ResourceUpdateInputSchema,
+  ResourceUpdateOutputSchema,
 } from "@deco/workers-runtime/resources";
 import type { Binder } from "../index.ts";
 

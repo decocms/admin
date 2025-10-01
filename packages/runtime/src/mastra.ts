@@ -60,8 +60,9 @@ const createRuntimeContext = (prev?: RuntimeContext<AppContext>) => {
 export function createPrivateTool<
   TSchemaIn extends z.ZodSchema | undefined = undefined,
   TSchemaOut extends z.ZodSchema | undefined = undefined,
-  TContext extends
-    ToolExecutionContext<TSchemaIn> = ToolExecutionContext<TSchemaIn>,
+  TContext extends ToolExecutionContext<TSchemaIn> = ToolExecutionContext<
+    TSchemaIn
+  >,
   TExecute extends ToolAction<
     TSchemaIn,
     TSchemaOut,
@@ -75,12 +76,11 @@ export function createPrivateTool<
   z.ZodSchema,
   z.ZodSchema,
   Function,
-]
-  ? Tool<TSchemaIn, TSchemaOut, TContext> & {
-      inputSchema: TSchemaIn;
-      outputSchema: TSchemaOut;
-      execute: (context: TContext) => Promise<any>;
-    }
+] ? Tool<TSchemaIn, TSchemaOut, TContext> & {
+    inputSchema: TSchemaIn;
+    outputSchema: TSchemaOut;
+    execute: (context: TContext) => Promise<any>;
+  }
   : Tool<TSchemaIn, TSchemaOut, TContext> {
   const execute = opts.execute;
   if (typeof execute === "function") {
@@ -97,8 +97,9 @@ export function createPrivateTool<
 export function createTool<
   TSchemaIn extends z.ZodSchema | undefined = undefined,
   TSchemaOut extends z.ZodSchema | undefined = undefined,
-  TContext extends
-    ToolExecutionContext<TSchemaIn> = ToolExecutionContext<TSchemaIn>,
+  TContext extends ToolExecutionContext<TSchemaIn> = ToolExecutionContext<
+    TSchemaIn
+  >,
   TExecute extends ToolAction<
     TSchemaIn,
     TSchemaOut,
@@ -112,24 +113,22 @@ export function createTool<
   z.ZodSchema,
   z.ZodSchema,
   Function,
-]
-  ? Tool<TSchemaIn, TSchemaOut, TContext> & {
-      inputSchema: TSchemaIn;
-      outputSchema: TSchemaOut;
-      execute: (context: TContext) => Promise<any>;
-    }
+] ? Tool<TSchemaIn, TSchemaOut, TContext> & {
+    inputSchema: TSchemaIn;
+    outputSchema: TSchemaOut;
+    execute: (context: TContext) => Promise<any>;
+  }
   : Tool<TSchemaIn, TSchemaOut, TContext> {
   return mastraCreateTool({
     ...opts,
-    execute:
-      typeof opts?.execute === "function"
-        ? (((input) => {
-            return opts.execute!({
-              ...input,
-              runtimeContext: createRuntimeContext(input.runtimeContext),
-            });
-          }) as TExecute)
-        : opts.execute,
+    execute: typeof opts?.execute === "function"
+      ? (((input) => {
+        return opts.execute!({
+          ...input,
+          runtimeContext: createRuntimeContext(input.runtimeContext),
+        });
+      }) as TExecute)
+      : opts.execute,
   });
 }
 
@@ -146,7 +145,8 @@ export interface Step<
   TResumeSchema extends z.ZodType<any> = z.ZodType<any>,
   TSuspendSchema extends z.ZodType<any> = z.ZodType<any>,
   TEngineType = any,
-> extends Omit<
+> extends
+  Omit<
     MastraStep<
       TStepId,
       TSchemaIn,
@@ -297,8 +297,8 @@ export interface CreateMCPServerOptions<
     (
       env: Env & DefaultEnv<TSchema>,
     ) => // this is a workaround to allow workflows to be thenables
-      | Promise<{ workflow: ReturnType<typeof createWorkflow> }>
-      | ReturnType<typeof createWorkflow>
+    | Promise<{ workflow: ReturnType<typeof createWorkflow> }>
+    | ReturnType<typeof createWorkflow>
   >;
 }
 
@@ -349,17 +349,16 @@ const createWorkflowTools = <TEnv = any, TSchema extends z.ZodTypeAny = never>(
   const startTool = createTool({
     id: `DECO_CHAT_WORKFLOWS_START_${workflow.id}`,
     description: workflow.description ?? `Start workflow ${workflow.id}`,
-    inputSchema:
-      workflow.inputSchema && "shape" in workflow.inputSchema
-        ? workflow.inputSchema
-        : z.object({}),
+    inputSchema: workflow.inputSchema && "shape" in workflow.inputSchema
+      ? workflow.inputSchema
+      : z.object({}),
     outputSchema: z.object({
       id: z.string(),
     }),
     execute: async (args) => {
       const store = State.getStore();
-      const runId =
-        store?.req?.headers.get("x-deco-chat-run-id") ?? crypto.randomUUID();
+      const runId = store?.req?.headers.get("x-deco-chat-run-id") ??
+        crypto.randomUUID();
       const workflowDO = bindings.DECO_WORKFLOW_DO.get(
         bindings.DECO_WORKFLOW_DO.idFromName(runId),
       );
@@ -597,10 +596,9 @@ export const createMCPServer = <
       }) ?? [],
     ).then((w) => w.map((w) => w.workflow));
 
-    const workflowTools =
-      workflows
-        ?.map((workflow) => createWorkflowTools(workflow, bindings))
-        .flat() ?? [];
+    const workflowTools = workflows
+      ?.map((workflow) => createWorkflowTools(workflow, bindings))
+      .flat() ?? [];
 
     tools.push(...workflowTools);
     tools.push(...decoChatOAuthToolsFor<TSchema>(options.oauth));
@@ -626,8 +624,7 @@ export const createMCPServer = <
           }));
           const resourceViews = resolvedResources
             .map((r) => {
-              const listUrl =
-                r.views?.list?.url ??
+              const listUrl = r.views?.list?.url ??
                 `internal://resource/list?name=${encodeURIComponent(r.name)}`;
 
               // Default CRUD tool ids for resources
@@ -663,8 +660,7 @@ export const createMCPServer = <
                   rules: r.views?.list?.rules ?? defaultListRules,
                 },
               ];
-              const detailUrl =
-                r.views?.detail?.url ??
+              const detailUrl = r.views?.detail?.url ??
                 `internal://resource/detail?name=${encodeURIComponent(r.name)}`;
               const detail = [
                 {
@@ -696,16 +692,14 @@ export const createMCPServer = <
         tool.id,
         {
           description: tool.description,
-          inputSchema:
-            tool.inputSchema && "shape" in tool.inputSchema
-              ? (tool.inputSchema.shape as z.ZodRawShape)
-              : z.object({}).shape,
-          outputSchema:
-            tool.outputSchema &&
-            typeof tool.outputSchema === "object" &&
-            "shape" in tool.outputSchema
-              ? (tool.outputSchema.shape as z.ZodRawShape)
-              : z.object({}).shape,
+          inputSchema: tool.inputSchema && "shape" in tool.inputSchema
+            ? (tool.inputSchema.shape as z.ZodRawShape)
+            : z.object({}).shape,
+          outputSchema: tool.outputSchema &&
+              typeof tool.outputSchema === "object" &&
+              "shape" in tool.outputSchema
+            ? (tool.outputSchema.shape as z.ZodRawShape)
+            : z.object({}).shape,
         },
         async (args) => {
           const result = await tool.execute!({

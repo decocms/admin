@@ -104,12 +104,11 @@ function mcpClientFromState(
 ) {
   const ctx = env.DECO_REQUEST_CONTEXT;
   const bindingFromState = ctx?.state?.[binding.name];
-  const integrationId =
-    bindingFromState &&
-    typeof bindingFromState === "object" &&
-    "value" in bindingFromState
-      ? bindingFromState.value
-      : undefined;
+  const integrationId = bindingFromState &&
+      typeof bindingFromState === "object" &&
+      "value" in bindingFromState
+    ? bindingFromState.value
+    : undefined;
   if (typeof integrationId !== "string" && "integration_name" in binding) {
     // in case of a binding to an app name, we need to use the new apps/mcp endpoint which will proxy the request to the app but without any token
     return mcpClientForAppName(binding.integration_name, env.DECO_API_URL);
@@ -133,8 +132,9 @@ export const createIntegrationBinding = (
   binding: MCPBinding,
   env: DefaultEnv,
 ) => {
-  const integrationId =
-    "integration_id" in binding ? binding.integration_id : undefined;
+  const integrationId = "integration_id" in binding
+    ? binding.integration_id
+    : undefined;
   if (!integrationId) {
     return mcpClientFromState(binding, env);
   }

@@ -4,9 +4,9 @@ import { join, resolve } from "path";
 import { writeFile } from "fs/promises";
 import chalk from "chalk";
 import {
+  getAppDomain,
   getConfig,
   readWranglerConfig,
-  getAppDomain,
 } from "../../lib/config.js";
 import { ensureDevEnvironment } from "../../lib/wrangler.js";
 import { genEnv } from "../gen/gen.js";
@@ -35,8 +35,9 @@ export async function devCommand(opts: StartDevServerOptions): Promise<void> {
     }));
 
     const wranglerConfig = await readWranglerConfig();
-    const app =
-      typeof wranglerConfig.name === "string" ? wranglerConfig.name : "my-app";
+    const app = typeof wranglerConfig.name === "string"
+      ? wranglerConfig.name
+      : "my-app";
 
     console.log(chalk.gray(`Starting development server for '${app}'...`));
 
@@ -68,10 +69,12 @@ export async function devCommand(opts: StartDevServerOptions): Promise<void> {
             workspace: config.workspace,
             local: config.local,
             bindings: config.bindings,
-            selfUrl: `https://${getAppDomain(
-              config.workspace,
-              wranglerConfig.name ?? "my-app",
-            )}/mcp`,
+            selfUrl: `https://${
+              getAppDomain(
+                config.workspace,
+                wranglerConfig.name ?? "my-app",
+              )
+            }/mcp`,
           });
 
           const outputPath = join(process.cwd(), "deco.gen.ts");

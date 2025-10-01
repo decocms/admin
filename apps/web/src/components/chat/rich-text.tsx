@@ -1,8 +1,8 @@
-import { useIntegrations, type Integration } from "@deco/sdk";
+import { type Integration, useIntegrations } from "@deco/sdk";
 import { Binding, WellKnownBindings } from "@deco/sdk/mcp/bindings";
 import { cn } from "@deco/ui/lib/utils.ts";
 import Placeholder from "@tiptap/extension-placeholder";
-import { EditorContent, useEditor, type Extensions } from "@tiptap/react";
+import { EditorContent, type Extensions, useEditor } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import { useEffect, useMemo } from "react";
 import { Markdown } from "tiptap-markdown";
@@ -89,7 +89,7 @@ export function RichTextArea({
               icon: integration.icon,
             },
           }),
-        ),
+        )
       );
   }, [integrations]);
 

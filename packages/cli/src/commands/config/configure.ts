@@ -19,8 +19,9 @@ export async function configureCommand(local?: boolean) {
   );
 
   const wranglerConfig = await readWranglerConfig();
-  const defaultApp =
-    typeof wranglerConfig.name === "string" ? wranglerConfig.name : "my-app";
+  const defaultApp = typeof wranglerConfig.name === "string"
+    ? wranglerConfig.name
+    : "my-app";
 
   const { app } = await inquirer.prompt([
     {

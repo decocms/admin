@@ -1,7 +1,7 @@
 # @deco/sdk
 
-The official SDK for building applications with decocms.com's AI capabilities and
-integrations.
+The official SDK for building applications with decocms.com's AI capabilities
+and integrations.
 
 ## Overview
 

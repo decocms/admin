@@ -297,20 +297,20 @@ export function ContextResources({
         prev.map((uf) =>
           uf.file === file
             ? { ...uf, url: url || undefined, status: "done" }
-            : uf,
-        ),
+            : uf
+        )
       );
     } catch (error) {
       setUploadedFiles((prev) =>
         prev.map((uf) =>
           uf.file === file
             ? {
-                ...uf,
-                status: "error",
-                error: error instanceof Error ? error.message : "Upload failed",
-              }
-            : uf,
-        ),
+              ...uf,
+              status: "error",
+              error: error instanceof Error ? error.message : "Upload failed",
+            }
+            : uf
+        )
       );
     }
   }
@@ -339,7 +339,7 @@ export function ContextResources({
     const rules = persistedRules.map((r) => r.text);
     // Avoid dispatch storms: minimal debounce not necessary here; list is small
     import("../../utils/events.ts").then(({ dispatchRulesUpdated }) =>
-      dispatchRulesUpdated({ rules }),
+      dispatchRulesUpdated({ rules })
     );
   }, [persistedRules]);
 
@@ -368,20 +368,20 @@ export function ContextResources({
           prev.map((uf) =>
             uf.clientId === detail.clientId
               ? { ...uf, file, url: detail.url, status: "done" }
-              : uf,
-          ),
+              : uf
+          )
         );
       } catch (err) {
         setUploadedFiles((prev) =>
           prev.map((uf) =>
             uf.clientId === detail.clientId
               ? {
-                  ...uf,
-                  status: "error",
-                  error: err instanceof Error ? err.message : "Failed to load",
-                }
-              : uf,
-          ),
+                ...uf,
+                status: "error",
+                error: err instanceof Error ? err.message : "Failed to load",
+              }
+              : uf
+          )
         );
       }
     });
@@ -392,12 +392,12 @@ export function ContextResources({
         prev.map((uf) =>
           uf.clientId === detail.clientId
             ? {
-                ...uf,
-                status: "error",
-                error: detail.error || "Failed to read",
-              }
-            : uf,
-        ),
+              ...uf,
+              status: "error",
+              error: detail.error || "Failed to read",
+            }
+            : uf
+        )
       );
     });
 
@@ -471,7 +471,8 @@ export function ContextResources({
               type="button"
               variant="ghost"
               size="icon"
-              onClick={() => removeRule(rule.id)}
+              onClick={() =>
+                removeRule(rule.id)}
               className="absolute -top-1 -right-1 h-4 w-4 opacity-0 group-hover:opacity-100 transition-opacity rounded-full shadow-sm bg-primary text-primary-foreground hover:bg-primary/50 hover:text-sidebar"
               title="Remove rule"
             >
@@ -490,8 +491,7 @@ export function ContextResources({
               totalTools={totalTools}
               onRemove={() => handleRemoveIntegration(integrationId)}
               onToggleTool={(toolName, isEnabled) =>
-                handleToggleTool(integrationId, toolName, isEnabled)
-              }
+                handleToggleTool(integrationId, toolName, isEnabled)}
             />
           ),
         )}
@@ -581,8 +581,7 @@ function IntegrationResourceItem({
                           <Checkbox
                             checked={isEnabled}
                             onCheckedChange={() =>
-                              onToggleTool(tool.name, isEnabled)
-                            }
+                              onToggleTool(tool.name, isEnabled)}
                             className="ml-2 flex-shrink-0"
                           />
                         </div>
@@ -656,26 +655,26 @@ function FilePreviewItem({ uploadedFile, removeFile }: FilePreviewItemProps) {
   return (
     <div className="relative group flex items-center gap-1.5 px-1.5 py-1 bg-muted/50 rounded-xl border border-border h-10">
       <div className="flex items-center justify-center size-6 rounded overflow-hidden bg-muted flex-shrink-0">
-        {status === "uploading" ? (
-          <Spinner size="xs" />
-        ) : status === "error" ? (
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Icon name="error" size={16} className="text-destructive" />
-            </TooltipTrigger>
-            <TooltipContent className="flex flex-col items-center">
-              Error uploading file {error?.toString()}
-            </TooltipContent>
-          </Tooltip>
-        ) : (
-          <>
-            {file.type.startsWith("image/") && url ? (
-              <img src={url} className="h-full w-full object-cover" />
-            ) : (
-              <Icon name="draft" size={16} />
-            )}
-          </>
-        )}
+        {status === "uploading"
+          ? <Spinner size="xs" />
+          : status === "error"
+          ? (
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Icon name="error" size={16} className="text-destructive" />
+              </TooltipTrigger>
+              <TooltipContent className="flex flex-col items-center">
+                Error uploading file {error?.toString()}
+              </TooltipContent>
+            </Tooltip>
+          )
+          : (
+            <>
+              {file.type.startsWith("image/") && url
+                ? <img src={url} className="h-full w-full object-cover" />
+                : <Icon name="draft" size={16} />}
+            </>
+          )}
       </div>
 
       <div className="flex flex-col min-w-0 flex-1">

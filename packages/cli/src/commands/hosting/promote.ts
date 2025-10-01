@@ -117,8 +117,8 @@ export const promoteApp = async ({
     );
   }
 
-  const { deployments, app } =
-    deploymentsResponse.structuredContent as AppDeploymentsResponse;
+  const { deployments, app } = deploymentsResponse
+    .structuredContent as AppDeploymentsResponse;
 
   if (deployments.length === 0) {
     console.log("📭 No deployments found for this app.");
@@ -139,9 +139,11 @@ export const promoteApp = async ({
     } else {
       // Show deployments with creation time
       const deploymentOptions = deployments.map((dep) => ({
-        name: `${dep.id} - ${new Date(
-          dep.created_at,
-        ).toLocaleString()} (${dep.entrypoint})`,
+        name: `${dep.id} - ${
+          new Date(
+            dep.created_at,
+          ).toLocaleString()
+        } (${dep.entrypoint})`,
         value: dep.id,
       }));
 

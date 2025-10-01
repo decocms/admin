@@ -1,8 +1,8 @@
 import type {
   GlobalTools,
   MCPClientFetchStub,
-  ToolBinder,
   ProjectTools,
+  ToolBinder,
 } from "./mcp/index.ts";
 import { createMCPFetchStub } from "./mcp/stub.ts";
 import type { MCPConnection } from "./models/mcp.ts";

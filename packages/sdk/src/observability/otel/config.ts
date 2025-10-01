@@ -74,16 +74,15 @@ export function parseConfig(supplied: TraceConfig): ResolvedTraceConfig {
       },
       handlers: {
         fetch: {
-          acceptTraceContext:
-            supplied.handlers?.fetch?.acceptTraceContext ?? true,
+          acceptTraceContext: supplied.handlers?.fetch?.acceptTraceContext ??
+            true,
         },
       },
-      postProcessor:
-        supplied.postProcessor || ((spans: ReadableSpan[]) => spans),
+      postProcessor: supplied.postProcessor ||
+        ((spans: ReadableSpan[]) => spans),
       sampling: {
         headSampler,
-        tailSampler:
-          supplied.sampling?.tailSampler ||
+        tailSampler: supplied.sampling?.tailSampler ||
           multiTailSampler([isHeadSampled, isRootErrorSpan]),
       },
       service: supplied.service,

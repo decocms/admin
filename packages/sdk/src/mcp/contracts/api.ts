@@ -69,7 +69,8 @@ const createContractTool = createToolFactory<ContractContext>(
   {
     name: "Contracts",
     description: "Manage smart contracts",
-    icon: "https://assets.decocache.com/mcp/10b5e8b4-a4e2-4868-8a7d-8cf9b46f0d79/contract.png",
+    icon:
+      "https://assets.decocache.com/mcp/10b5e8b4-a4e2-4868-8a7d-8cf9b46f0d79/contract.png",
   },
 );
 
@@ -161,7 +162,8 @@ export const contractRegister = createTool({
     const app = await publishApp.handler({
       name,
       scopeName,
-      icon: "https://assets.decocache.com/mcp/10b5e8b4-a4e2-4868-8a7d-8cf9b46f0d79/contract.png",
+      icon:
+        "https://assets.decocache.com/mcp/10b5e8b4-a4e2-4868-8a7d-8cf9b46f0d79/contract.png",
       description: context.contract.body,
       friendlyName: `A Contract for ${assignor}`,
       unlisted: true,
@@ -215,14 +217,16 @@ export const contractAuthorize = createContractTool({
       context.clauses,
     ).toMicrodollarString();
 
-    const { id: transactionId } = await State.run(c, () =>
-      preAuthorizeAmount.handler({
-        amount: clauseAmount,
-        metadata: {
-          contractId,
-          clauses: context.clauses,
-        },
-      }),
+    const { id: transactionId } = await State.run(
+      c,
+      () =>
+        preAuthorizeAmount.handler({
+          amount: clauseAmount,
+          metadata: {
+            contractId,
+            clauses: context.clauses,
+          },
+        }),
     );
 
     return {
@@ -244,10 +248,9 @@ export const contractGet = createContractTool({
   handler: (_, c) => {
     c.resourceAccess.grant();
     return {
-      appName:
-        "appName" in c.user && typeof c.user.appName === "string"
-          ? c.user.appName
-          : undefined,
+      appName: "appName" in c.user && typeof c.user.appName === "string"
+        ? c.user.appName
+        : undefined,
       contract: c.state,
     };
   },
@@ -295,11 +298,10 @@ export const contractSettle = createContractTool({
         vendorId: context.vendorId,
         metadata: callerApp
           ? {
-              callerApp,
-            }
+            callerApp,
+          }
           : undefined,
-      }),
-    );
+      }));
 
     return {
       transactionId: context.transactionId,

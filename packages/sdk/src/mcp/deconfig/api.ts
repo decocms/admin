@@ -17,14 +17,14 @@ import {
   assertWorkspaceResourceAccess,
 } from "../assertions.ts";
 import {
+  type AppContext,
   createTool,
   createToolFactory,
   workspaceDB,
-  type AppContext,
 } from "../context.ts";
 import { withProject } from "../index.ts";
 import type { BranchRpc, ConflictEntry, DiffEntry } from "./branch.ts";
-import { newBranchesCRUD, type BranchRecord } from "./branches-db.ts";
+import { type BranchRecord, newBranchesCRUD } from "./branches-db.ts";
 import { DECO_CHAT_ISSUER } from "../../auth/jwt.ts";
 
 interface DeconfigState {
@@ -98,7 +98,8 @@ const createDeconfigTool = createToolFactory<DeconfigContext>(
     name: "DECONFIG - Versioned Configuration Management",
     description:
       "Git-like versioned configuration management with branches, files, and real-time collaboration.",
-    icon: "https://assets.decocache.com/mcp/24cfa17a-a0a8-40dc-9313-b4c3bdb63af6/deconfig_v1.png",
+    icon:
+      "https://assets.decocache.com/mcp/24cfa17a-a0a8-40dc-9313-b4c3bdb63af6/deconfig_v1.png",
   },
 );
 
@@ -436,11 +437,12 @@ export const putFile = createDeconfigTool({
       // Handle base64 object
       try {
         data = Uint8Array.from(atob(content.base64), (c: string) =>
-          c.charCodeAt(0),
-        ).buffer;
+          c.charCodeAt(0)).buffer;
       } catch (error) {
         throw new Error(
-          `Invalid base64 content: ${error instanceof Error ? error.message : String(error)}`,
+          `Invalid base64 content: ${
+            error instanceof Error ? error.message : String(error)
+          }`,
         );
       }
     } else {
@@ -538,7 +540,9 @@ export const readFile = createDeconfigTool({
           content = JSON.parse(text);
         } catch (error) {
           throw new Error(
-            `Invalid JSON content: ${error instanceof Error ? error.message : String(error)}`,
+            `Invalid JSON content: ${
+              error instanceof Error ? error.message : String(error)
+            }`,
           );
         }
         break;

@@ -50,10 +50,9 @@ export const threadOf = (
   data: TriggerData,
   url?: URL,
 ): { threadId: string | undefined; resourceId: string | undefined } => {
-  const resourceId =
-    data.resourceId ?? url?.searchParams.get("resourceId") ?? undefined;
-  const threadId =
-    url?.searchParams.get("threadId") ??
+  const resourceId = data.resourceId ?? url?.searchParams.get("resourceId") ??
+    undefined;
+  const threadId = url?.searchParams.get("threadId") ??
     (resourceId ? crypto.randomUUID() : undefined); // generate a random threadId if resourceId exists.
   return { threadId, resourceId };
 };
@@ -222,19 +221,18 @@ export class Trigger {
   }
 
   _token() {
-    const keyPair =
-      this.env.DECO_CHAT_API_JWT_PRIVATE_KEY &&
-      this.env.DECO_CHAT_API_JWT_PUBLIC_KEY
-        ? {
-            public: this.env.DECO_CHAT_API_JWT_PUBLIC_KEY,
-            private: this.env.DECO_CHAT_API_JWT_PRIVATE_KEY,
-          }
-        : undefined;
+    const keyPair = this.env.DECO_CHAT_API_JWT_PRIVATE_KEY &&
+        this.env.DECO_CHAT_API_JWT_PUBLIC_KEY
+      ? {
+        public: this.env.DECO_CHAT_API_JWT_PUBLIC_KEY,
+        private: this.env.DECO_CHAT_API_JWT_PRIVATE_KEY,
+      }
+      : undefined;
     return JwtIssuer.forKeyPair(keyPair).then((issuer) =>
       issuer.issue({
         sub: `trigger:${this._getTriggerId()}`,
         aud: this.workspace,
-      }),
+      })
     );
   }
 
@@ -260,8 +258,8 @@ export class Trigger {
         });
 
         const patchedConnection = isApiDecoChatMCPConnection(
-          integration.connection,
-        )
+            integration.connection,
+          )
           ? { ...integration.connection, token: await this._token() }
           : integration.connection;
 
@@ -410,8 +408,8 @@ export class Trigger {
 
   enrichMetadata(metadata: TriggerMetadata, req: Request): TriggerMetadata {
     return {
-      internalCall:
-        req.headers.get("host") === null || getRuntimeKey() === "deno",
+      internalCall: req.headers.get("host") === null ||
+        getRuntimeKey() === "deno",
       params: Object.fromEntries(new URL(req.url).searchParams.entries()),
       reqHeaders: Object.fromEntries(req.headers.entries()),
       ...metadata,

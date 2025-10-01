@@ -48,8 +48,8 @@ import { DECO_CMS_API_LOCAL } from "./lib/constants.js";
 import {
   getAppDomain,
   getConfig,
-  readWranglerConfig,
   getLocal,
+  readWranglerConfig,
   setLocal,
 } from "./lib/config.js";
 import { loginCommand } from "./commands/auth/login.js";
@@ -66,8 +66,8 @@ import { upgradeCommand } from "./commands/update/upgrade.js";
 import { updateCommand } from "./commands/update/update.js";
 import { addCommand } from "./commands/add/add.js";
 import {
-  callToolCommand,
   autocompleteIntegrations,
+  callToolCommand,
 } from "./commands/tools/call-tool.js";
 import { completionCommand } from "./commands/completion/completion.js";
 import { installCompletionCommand } from "./commands/completion/install.js";
@@ -181,8 +181,7 @@ const hostingDeploy = new Command("deploy")
       });
       const wranglerConfig = await readWranglerConfig();
       const assetsDirectory = wranglerConfig.assets?.directory;
-      const app =
-        options.app ??
+      const app = options.app ??
         (typeof wranglerConfig.name === "string"
           ? wranglerConfig.name
           : "my-app");
@@ -227,10 +226,9 @@ const hostingPromote = new Command("promote")
       if (!app) {
         try {
           const wranglerConfig = await readWranglerConfig();
-          app =
-            typeof wranglerConfig.name === "string"
-              ? wranglerConfig.name
-              : undefined;
+          app = typeof wranglerConfig.name === "string"
+            ? wranglerConfig.name
+            : undefined;
         } catch {
           // No wrangler config found, app will remain undefined
         }
@@ -506,12 +504,13 @@ const gen = new Command("gen")
         workspace: config.workspace,
         local: config.local,
         bindings: config.bindings,
-        selfUrl:
-          options.self ??
-          `https://${getAppDomain(
-            config.workspace,
-            wranglerConfig.name ?? "my-app",
-          )}/mcp`,
+        selfUrl: options.self ??
+          `https://${
+            getAppDomain(
+              config.workspace,
+              wranglerConfig.name ?? "my-app",
+            )
+          }/mcp`,
       });
       if (options.output) {
         await writeFile(options.output, env);

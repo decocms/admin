@@ -2,4 +2,4 @@
 
 See initial work at: <https://github.com/deco-cx/chat/pull/496>
 
-----
+---

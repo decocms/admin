@@ -49,10 +49,8 @@ export const Workflow = (
   server: MCPServer<any, any>,
   workflows?: CreateMCPServerOptions["workflows"],
 ) => {
-  return class Workflow
-    extends DurableObject<DefaultEnv>
-    implements WorkflowDO
-  {
+  return class Workflow extends DurableObject<DefaultEnv>
+    implements WorkflowDO {
     constructor(
       public override ctx: DurableObjectState,
       public override env: DefaultEnv,

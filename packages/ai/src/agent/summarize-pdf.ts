@@ -57,10 +57,9 @@ async function summarizeChunk(
   maxTokens: number,
 ): Promise<string> {
   try {
-    const context =
-      previousSummaries.length > 0
-        ? `\n\nPrevious summary context:\n${previousSummaries.join("\n\n")}\n\n`
-        : "";
+    const context = previousSummaries.length > 0
+      ? `\n\nPrevious summary context:\n${previousSummaries.join("\n\n")}\n\n`
+      : "";
 
     const result = await mcpClient.AI_GENERATE({
       messages: [
@@ -71,7 +70,8 @@ async function summarizeChunk(
         },
         {
           role: "user",
-          content: `${context}Please summarize the following text in a concise way, building on the previous context if provided:\n\n${chunk}`,
+          content:
+            `${context}Please summarize the following text in a concise way, building on the previous context if provided:\n\n${chunk}`,
         },
       ],
       model,
@@ -108,7 +108,7 @@ export function shouldSummarizePDFs(messages: AIMessage[]): {
   const pdfMessages = messages.filter((message) =>
     message.experimental_attachments?.some(
       (attachment) => attachment.contentType === "application/pdf",
-    ),
+    )
   );
 
   const hasPdf = pdfMessages.length > 0;
@@ -204,7 +204,9 @@ export async function summarizePDFMessages(
           url: pdfAttachment.url,
           name: pdfAttachment.name || "document",
           contentType: "application/pdf",
-          content: `<pdf_summary original="${pdfAttachment.name || "document"}">\n${combinedSummary}\n</pdf_summary>`,
+          content: `<pdf_summary original="${
+            pdfAttachment.name || "document"
+          }">\n${combinedSummary}\n</pdf_summary>`,
         };
 
         if (!message.annotations) {

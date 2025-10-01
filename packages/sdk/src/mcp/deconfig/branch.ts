@@ -540,8 +540,9 @@ export class Branch extends DurableObject<DeconfigEnv> {
 
       // Send events for added/modified files
       for (const [path, metadata] of Object.entries(added)) {
-        if (options.pathFilter && !path.startsWith(options.pathFilter))
+        if (options.pathFilter && !path.startsWith(options.pathFilter)) {
           continue;
+        }
 
         const event: FileChangeEvent = {
           type: this.state.tree[path] ? "modified" : "added",
@@ -559,8 +560,9 @@ export class Branch extends DurableObject<DeconfigEnv> {
 
       // Send events for deleted files
       for (const path of deleted) {
-        if (options.pathFilter && !path.startsWith(options.pathFilter))
+        if (options.pathFilter && !path.startsWith(options.pathFilter)) {
           continue;
+        }
 
         const event: FileChangeEvent = {
           type: "deleted",
@@ -951,15 +953,14 @@ export class Branch extends DurableObject<DeconfigEnv> {
 
       // If no condition, apply directly
       if (!write.condition) {
-        const finalMetadata =
-          write.metadata === null
-            ? null
-            : preserveTimestamps
-              ? write.metadata
-              : {
-                  ...write.metadata,
-                  ctime: now,
-                };
+        const finalMetadata = write.metadata === null
+          ? null
+          : preserveTimestamps
+          ? write.metadata
+          : {
+            ...write.metadata,
+            ctime: now,
+          };
         toApply[path] = finalMetadata;
 
         results[path] = {
@@ -977,15 +978,14 @@ export class Branch extends DurableObject<DeconfigEnv> {
 
       if (!isConflict) {
         // No conflict - apply the change
-        const finalMetadata =
-          write.metadata === null
-            ? null
-            : preserveTimestamps
-              ? write.metadata
-              : {
-                  ...write.metadata,
-                  ctime: now,
-                };
+        const finalMetadata = write.metadata === null
+          ? null
+          : preserveTimestamps
+          ? write.metadata
+          : {
+            ...write.metadata,
+            ctime: now,
+          };
         toApply[path] = finalMetadata;
 
         results[path] = {
@@ -1009,15 +1009,14 @@ export class Branch extends DurableObject<DeconfigEnv> {
 
       if (newMtime > currentMtime) {
         // New version is newer - apply it
-        const finalMetadata =
-          write.metadata === null
-            ? null
-            : preserveTimestamps
-              ? write.metadata
-              : {
-                  ...write.metadata,
-                  ctime: now,
-                };
+        const finalMetadata = write.metadata === null
+          ? null
+          : preserveTimestamps
+          ? write.metadata
+          : {
+            ...write.metadata,
+            ctime: now,
+          };
         toApply[path] = finalMetadata;
 
         results[path] = {
@@ -1120,10 +1119,9 @@ export class Branch extends DurableObject<DeconfigEnv> {
           mtime: now,
           ctime: now,
         },
-        condition:
-          patch.expectedCtime !== undefined
-            ? { expectedCtime: patch.expectedCtime }
-            : undefined,
+        condition: patch.expectedCtime !== undefined
+          ? { expectedCtime: patch.expectedCtime }
+          : undefined,
       };
     }
 
@@ -1131,10 +1129,9 @@ export class Branch extends DurableObject<DeconfigEnv> {
     for (const patch of deletePatches) {
       writes[patch.path] = {
         metadata: null,
-        condition:
-          patch.expectedCtime !== undefined
-            ? { expectedCtime: patch.expectedCtime }
-            : undefined,
+        condition: patch.expectedCtime !== undefined
+          ? { expectedCtime: patch.expectedCtime }
+          : undefined,
       };
     }
 
@@ -1239,10 +1236,9 @@ export class Branch extends DurableObject<DeconfigEnv> {
       const currentFile = this.state.tree[diff.path];
       writes[diff.path] = {
         metadata: diff.metadata,
-        condition:
-          strategy === MergeStrategy.LAST_WRITE_WINS && currentFile
-            ? { expectedCtime: currentFile.ctime }
-            : undefined,
+        condition: strategy === MergeStrategy.LAST_WRITE_WINS && currentFile
+          ? { expectedCtime: currentFile.ctime }
+          : undefined,
       };
 
       if (diff.metadata === null) {
@@ -1285,8 +1281,9 @@ export class Branch extends DurableObject<DeconfigEnv> {
     return {
       success: true,
       filesMerged: Object.values(result).filter((r) => r.success).length,
-      conflicts:
-        strategy === MergeStrategy.LAST_WRITE_WINS ? conflicts : undefined,
+      conflicts: strategy === MergeStrategy.LAST_WRITE_WINS
+        ? conflicts
+        : undefined,
       added: added.filter((path) => result[path]?.success),
       modified: modified.filter((path) => result[path]?.success),
       deleted: deleted.filter(

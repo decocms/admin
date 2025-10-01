@@ -1,6 +1,7 @@
 # create-deco
 
-A simple wrapper package that allows users to create new deco projects using the standard `npm create` pattern.
+A simple wrapper package that allows users to create new deco projects using the
+standard `npm create` pattern.
 
 ## Usage
 
@@ -20,7 +21,8 @@ bun create deco my-project
 
 ## What it does
 
-This package is a thin wrapper around the `create` command from `deco-cli`. When you run `npm create deco`, it:
+This package is a thin wrapper around the `create` command from `deco-cli`. When
+you run `npm create deco`, it:
 
 1. Invokes the `deco create` command from the `deco-cli` package
 2. Passes all arguments through to the underlying command

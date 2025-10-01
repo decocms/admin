@@ -1,4 +1,4 @@
-import { useTeam, useOrganizations } from "@deco/sdk";
+import { useOrganizations, useTeam } from "@deco/sdk";
 import { Button } from "@deco/ui/components/button.tsx";
 import { Icon } from "@deco/ui/components/icon.tsx";
 import { Input } from "@deco/ui/components/input.tsx";

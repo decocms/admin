@@ -34,7 +34,7 @@ export const waitKeys = async <T>(p: Promisified<T>): Promise<T> => {
 
   const keyResults = await Promise.all(
     entries.map(([k, v]) =>
-      isAwaitable(v) ? v.then((r) => [k, r] as [keyof T, T[keyof T]]) : [k, v],
+      isAwaitable(v) ? v.then((r) => [k, r] as [keyof T, T[keyof T]]) : [k, v]
     ),
   );
 

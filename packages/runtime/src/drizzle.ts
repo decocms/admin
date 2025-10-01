@@ -129,7 +129,9 @@ export async function migrateWithoutTransaction(
 
     // Get the last applied migration
     const dbMigrations = await db.values<[number, string, string]>(
-      sql`SELECT id, hash, created_at FROM ${sql.identifier(migrationsTable)} ORDER BY created_at DESC LIMIT 1`,
+      sql`SELECT id, hash, created_at FROM ${
+        sql.identifier(migrationsTable)
+      } ORDER BY created_at DESC LIMIT 1`,
     );
 
     const lastDbMigration = dbMigrations[0] ?? undefined;
@@ -137,8 +139,8 @@ export async function migrateWithoutTransaction(
 
     // Apply pending migrations sequentially (without transaction wrapper)
     for (const migration of migrations) {
-      const hasNoMigrations =
-        lastDbMigration === undefined || !lastDbMigration.length;
+      const hasNoMigrations = lastDbMigration === undefined ||
+        !lastDbMigration.length;
       if (
         hasNoMigrations ||
         Number(lastDbMigration[2])! < migration.folderMillis
@@ -150,37 +152,46 @@ export async function migrateWithoutTransaction(
           for (const stmt of migration.sql) {
             if (stmt.trim()) {
               // Skip empty statements
-              if (debug)
+              if (debug) {
                 console.log("Executing:", stmt.substring(0, 100) + "...");
+              }
               await db.run(sql.raw(stmt));
             }
           }
 
           // Record successful migration
           await db.run(
-            sql`INSERT INTO ${sql.identifier(
-              migrationsTable,
-            )} ("hash", "created_at") VALUES(${migration.hash}, ${migration.folderMillis})`,
+            sql`INSERT INTO ${
+              sql.identifier(
+                migrationsTable,
+              )
+            } ("hash", "created_at") VALUES(${migration.hash}, ${migration.folderMillis})`,
           );
 
-          if (debug)
+          if (debug) {
             console.log(
               `✅ Migration ${migration.folderMillis} applied successfully`,
             );
+          }
         } catch (migrationError: unknown) {
           console.error(
             `❌ Migration ${migration.folderMillis} failed:`,
             migrationError,
           );
           throw new Error(
-            `Migration failed at ${migration.folderMillis}: ${migrationError instanceof Error ? migrationError.message : String(migrationError)}`,
+            `Migration failed at ${migration.folderMillis}: ${
+              migrationError instanceof Error
+                ? migrationError.message
+                : String(migrationError)
+            }`,
           );
         }
       } else {
-        if (debug)
+        if (debug) {
           console.log(
             `⏭️ Skipping already applied migration: ${migration.folderMillis}`,
           );
+        }
       }
     }
 

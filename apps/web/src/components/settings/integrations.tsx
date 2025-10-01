@@ -109,58 +109,61 @@ function Connections() {
         </FormDescription>
         {!showAddConnectionEmptyState && <AddConnectionButton />}
       </div>
-      {showAddConnectionEmptyState ? (
-        <div className="flex flex-col gap-2 items-center justify-center h-full min-h-[200px] rounded-xl bg-muted border border-border border-dashed relative overflow-hidden">
-          <div className="absolute inset-0">
-            <img
-              src="/img/empty-state-agent-connections.svg"
-              alt="No connections found"
-              className="h-40"
-            />
-            <div className="absolute inset-0 bg-gradient-to-r from-muted via-transparent to-muted" />
-          </div>
-          <div className="absolute z-10 flex flex-col items-center gap-2 bottom-6">
-            <AddConnectionButton />
-          </div>
-        </div>
-      ) : (
-        <>
-          <div className="flex gap-2 w-full">
-            <div className="border border-border rounded-xl w-full">
-              <div className="flex items-center h-10 px-4 gap-2">
-                <Icon
-                  name="search"
-                  size={20}
-                  className="text-muted-foreground"
-                />
-                <Input
-                  placeholder="Search tools..."
-                  value={_search}
-                  onChange={(e) => setSearch(e.target.value)}
-                  className="flex-1 h-full border-none focus-visible:ring-0 placeholder:text-muted-foreground bg-transparent px-2"
-                />
-              </div>
+      {showAddConnectionEmptyState
+        ? (
+          <div className="flex flex-col gap-2 items-center justify-center h-full min-h-[200px] rounded-xl bg-muted border border-border border-dashed relative overflow-hidden">
+            <div className="absolute inset-0">
+              <img
+                src="/img/empty-state-agent-connections.svg"
+                alt="No connections found"
+                className="h-40"
+              />
+              <div className="absolute inset-0 bg-gradient-to-r from-muted via-transparent to-muted" />
+            </div>
+            <div className="absolute z-10 flex flex-col items-center gap-2 bottom-6">
+              <AddConnectionButton />
             </div>
           </div>
-          <div className="space-y-2">
-            <div className="flex-1">
-              <div className="flex flex-col gap-2">
-                {connections.map((connection) => (
-                  <IntegrationListItem
-                    key={connection.id}
-                    toolsSet={toolsSet}
-                    setIntegrationTools={setIntegrationTools}
-                    integration={connection}
-                    onConfigure={onConfigureConnection}
-                    onRemove={(integrationId) => disableAllTools(integrationId)}
-                    searchTerm={search}
+        )
+        : (
+          <>
+            <div className="flex gap-2 w-full">
+              <div className="border border-border rounded-xl w-full">
+                <div className="flex items-center h-10 px-4 gap-2">
+                  <Icon
+                    name="search"
+                    size={20}
+                    className="text-muted-foreground"
                   />
-                ))}
+                  <Input
+                    placeholder="Search tools..."
+                    value={_search}
+                    onChange={(e) => setSearch(e.target.value)}
+                    className="flex-1 h-full border-none focus-visible:ring-0 placeholder:text-muted-foreground bg-transparent px-2"
+                  />
+                </div>
               </div>
             </div>
-          </div>
-        </>
-      )}
+            <div className="space-y-2">
+              <div className="flex-1">
+                <div className="flex flex-col gap-2">
+                  {connections.map((connection) => (
+                    <IntegrationListItem
+                      key={connection.id}
+                      toolsSet={toolsSet}
+                      setIntegrationTools={setIntegrationTools}
+                      integration={connection}
+                      onConfigure={onConfigureConnection}
+                      onRemove={(integrationId) =>
+                        disableAllTools(integrationId)}
+                      searchTerm={search}
+                    />
+                  ))}
+                </div>
+              </div>
+            </div>
+          </>
+        )}
     </div>
   );
 }
@@ -196,11 +199,11 @@ function _Knowledge() {
     () =>
       files
         ? files.map((file) => ({
-            fileUrl: file.fileUrl,
-            ...file.metadata,
-            name: file.filename,
-            status: file.status,
-          }))
+          fileUrl: file.fileUrl,
+          ...file.metadata,
+          name: file.filename,
+          status: file.status,
+        }))
         : [],
     [files],
   );
@@ -228,8 +231,8 @@ function _Knowledge() {
   }, [formatedFiles, uploadingFiles]);
 
   // Show empty view only if there are no uploaded files AND no uploading files
-  const hasNoFiles =
-    (files?.length === 0 || !files) && uploadingFiles.length === 0;
+  const hasNoFiles = (files?.length === 0 || !files) &&
+    uploadingFiles.length === 0;
 
   // Disable add file button when loading on first request and has no files
   const shouldDisableAddButton = isLoading && hasNoFiles;
@@ -306,8 +309,7 @@ function AddAgentConnectionButton() {
         </div>
       }
       onSelect={(integration) =>
-        setIntegrationTools(integration.id, ["AGENT_GENERATE_TEXT"])
-      }
+        setIntegrationTools(integration.id, ["AGENT_GENERATE_TEXT"])}
       trigger={
         <Button variant="outline">
           <Icon name="add" /> Add agent
@@ -341,29 +343,31 @@ function MultiAgent() {
         </FormDescription>
         {!showAddAgentEmptyState ? <AddAgentConnectionButton /> : null}
       </div>
-      {showAddAgentEmptyState ? (
-        <div className="flex flex-col gap-2 items-center justify-center h-full min-h-[200px] rounded-xl bg-muted border border-border border-dashed">
-          <AddAgentConnectionButton />
-        </div>
-      ) : (
-        <div className="space-y-2">
-          <div className="flex-1">
-            <div className="flex flex-col gap-2">
-              {agentConnections.map((agentConnection) => (
-                <IntegrationListItem
-                  key={agentConnection.id}
-                  toolsSet={toolsSet}
-                  setIntegrationTools={setIntegrationTools}
-                  integration={agentConnection}
-                  onConfigure={onConfigure}
-                  onRemove={(integrationId) => disableAllTools(integrationId)}
-                  hideTools
-                />
-              ))}
+      {showAddAgentEmptyState
+        ? (
+          <div className="flex flex-col gap-2 items-center justify-center h-full min-h-[200px] rounded-xl bg-muted border border-border border-dashed">
+            <AddAgentConnectionButton />
+          </div>
+        )
+        : (
+          <div className="space-y-2">
+            <div className="flex-1">
+              <div className="flex flex-col gap-2">
+                {agentConnections.map((agentConnection) => (
+                  <IntegrationListItem
+                    key={agentConnection.id}
+                    toolsSet={toolsSet}
+                    setIntegrationTools={setIntegrationTools}
+                    integration={agentConnection}
+                    onConfigure={onConfigure}
+                    onRemove={(integrationId) => disableAllTools(integrationId)}
+                    hideTools
+                  />
+                ))}
+              </div>
             </div>
           </div>
-        </div>
-      )}
+        )}
     </div>
   );
 }
@@ -448,41 +452,43 @@ function AddViewButton() {
           )}
           <ScrollArea className="w-full flex-1 min-h-0">
             <div className="space-y-2">
-              {filteredViews.length === 0 && !isLoadingViews ? (
-                <div className="flex flex-col gap-2 items-center justify-center h-32 text-muted-foreground">
-                  <Icon name="dashboard" size={24} />
-                  <span className="text-sm">
-                    {availableViews.length === 0
-                      ? "All available views are already added"
-                      : "No views found"}
-                  </span>
-                </div>
-              ) : (
-                filteredViews.map((view) => (
-                  <div
-                    key={view.url}
-                    className="flex items-center justify-between p-3 border border-border rounded-lg hover:bg-muted/50 cursor-pointer transition-colors"
-                    onClick={() => handleViewSelect(view)}
-                  >
-                    <div className="flex items-center gap-3">
-                      <div className="w-8 h-8 rounded-lg bg-muted flex items-center justify-center">
-                        <Icon name={view.icon || "dashboard"} size={16} />
-                      </div>
-                      <div className="flex flex-col">
-                        <span className="font-medium text-sm">
-                          {view.title}
-                        </span>
-                        <span className="text-xs text-muted-foreground">
-                          {view.integration.name}
-                        </span>
-                      </div>
-                    </div>
-                    <Button variant="ghost" size="sm">
-                      <Icon name="add" size={16} />
-                    </Button>
+              {filteredViews.length === 0 && !isLoadingViews
+                ? (
+                  <div className="flex flex-col gap-2 items-center justify-center h-32 text-muted-foreground">
+                    <Icon name="dashboard" size={24} />
+                    <span className="text-sm">
+                      {availableViews.length === 0
+                        ? "All available views are already added"
+                        : "No views found"}
+                    </span>
                   </div>
-                ))
-              )}
+                )
+                : (
+                  filteredViews.map((view) => (
+                    <div
+                      key={view.url}
+                      className="flex items-center justify-between p-3 border border-border rounded-lg hover:bg-muted/50 cursor-pointer transition-colors"
+                      onClick={() => handleViewSelect(view)}
+                    >
+                      <div className="flex items-center gap-3">
+                        <div className="w-8 h-8 rounded-lg bg-muted flex items-center justify-center">
+                          <Icon name={view.icon || "dashboard"} size={16} />
+                        </div>
+                        <div className="flex flex-col">
+                          <span className="font-medium text-sm">
+                            {view.title}
+                          </span>
+                          <span className="text-xs text-muted-foreground">
+                            {view.integration.name}
+                          </span>
+                        </div>
+                      </div>
+                      <Button variant="ghost" size="sm">
+                        <Icon name="add" size={16} />
+                      </Button>
+                    </div>
+                  ))
+                )}
             </div>
           </ScrollArea>
         </div>

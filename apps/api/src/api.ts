@@ -22,12 +22,12 @@ import {
   getRegistryApp,
   getWorkspaceBucketName,
   GLOBAL_TOOLS,
+  IntegrationSub as ProxySub,
   type IntegrationWithTools,
   issuerFromContext,
   ListToolsMiddleware,
   PolicyClient,
   PROJECT_TOOLS,
-  IntegrationSub as ProxySub,
   type ToolLike,
   withMCPAuthorization,
   withMCPErrorHandling,
@@ -75,8 +75,7 @@ export const honoCtxToAppCtx = (c: Context<AppEnv>): AppContext => {
     ? Locator.adaptToRootSlug(locator, uid)
     : undefined;
 
-  const branch =
-    c.req.param("branch") ??
+  const branch = c.req.param("branch") ??
     c.req.query("branch") ??
     c.req.header("x-deco-branch") ??
     "main";
@@ -93,11 +92,11 @@ export const honoCtxToAppCtx = (c: Context<AppEnv>): AppContext => {
 
   const ctxLocator = locator
     ? {
-        org,
-        project,
-        value: locator,
-        branch,
-      }
+      org,
+      project,
+      value: locator,
+      branch,
+    }
     : undefined;
 
   const policyClient = PolicyClient.getInstance(c.var.db);
@@ -167,16 +166,14 @@ const createMCPHandlerFor = (
         {
           annotations: tool.annotations,
           description: tool.description,
-          inputSchema:
-            "shape" in tool.inputSchema
-              ? (tool.inputSchema.shape as z.ZodRawShape)
-              : z.object({}).shape,
-          outputSchema:
-            tool.outputSchema &&
-            typeof tool.outputSchema === "object" &&
-            "shape" in tool.outputSchema
-              ? (tool.outputSchema.shape as z.ZodRawShape)
-              : z.object({}).shape,
+          inputSchema: "shape" in tool.inputSchema
+            ? (tool.inputSchema.shape as z.ZodRawShape)
+            : z.object({}).shape,
+          outputSchema: tool.outputSchema &&
+              typeof tool.outputSchema === "object" &&
+              "shape" in tool.outputSchema
+            ? (tool.outputSchema.shape as z.ZodRawShape)
+            : z.object({}).shape,
         },
         // @ts-expect-error: zod shape is not typed
         withMCPErrorHandling(tool.handler, tool.name),
@@ -277,9 +274,9 @@ const proxy = (
       ...(middlewares?.listTools ?? []),
       async () =>
         tools ??
-        ((await client.listTools()) as Awaited<
-          ReturnType<ListToolsMiddleware>
-        >),
+          ((await client.listTools()) as Awaited<
+            ReturnType<ListToolsMiddleware>
+          >),
     );
 
     const callTool = compose(...(middlewares?.callTool ?? []), (req) => {
@@ -299,11 +296,13 @@ const proxy = (
 
     await mcpServer.connect(transport);
 
-    mcpServer.server.setRequestHandler(CallToolRequestSchema, (req) =>
-      callTool(req),
+    mcpServer.server.setRequestHandler(
+      CallToolRequestSchema,
+      (req) => callTool(req),
     );
-    mcpServer.server.setRequestHandler(ListToolsRequestSchema, (req) =>
-      listTools(req),
+    mcpServer.server.setRequestHandler(
+      ListToolsRequestSchema,
+      (req) => listTools(req),
     );
 
     return await transport.handleMessage(req);
@@ -370,8 +369,9 @@ const createMcpServerProxyForAppName = (c: Context) => {
   const appName = c.req.query("appName");
   const fetchIntegration = async () => {
     using _ = ctx.resourceAccess.grant();
-    const integration = await State.run(ctx, () =>
-      getRegistryApp.handler({ name: appName }),
+    const integration = await State.run(
+      ctx,
+      () => getRegistryApp.handler({ name: appName }),
     );
 
     return {
@@ -388,16 +388,19 @@ const createMcpServerProxy = (c: Context) => {
   const integrationId = c.req.param("integrationId");
   const fetchIntegration = async () => {
     using _ = ctx.resourceAccess.grant();
-    return await State.run(ctx, () =>
-      getIntegration.handler({ id: integrationId }),
+    return await State.run(
+      ctx,
+      () => getIntegration.handler({ id: integrationId }),
     );
   };
 
-  return createMcpServerProxyForIntegration(c, () =>
-    fetchIntegration().then((integration) => ({
-      ...integration,
-      id: integrationId,
-    })),
+  return createMcpServerProxyForIntegration(
+    c,
+    () =>
+      fetchIntegration().then((integration) => ({
+        ...integration,
+        id: integrationId,
+      })),
   );
 };
 
@@ -586,8 +589,8 @@ app.get("/files/:org/:project/:path{.+}", async (c) => {
   }
 
   return c.body(response.body, 200, {
-    "Content-Type":
-      response.headers.get("content-type") || "application/octet-stream",
+    "Content-Type": response.headers.get("content-type") ||
+      "application/octet-stream",
   });
 });
 

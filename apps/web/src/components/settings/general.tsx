@@ -142,8 +142,8 @@ function ThemeVariableInput({
           <div
             className="absolute inset-0 pointer-events-none rounded-md border border-border"
             style={{
-              backgroundColor:
-                variable.value || variable.defaultValue || "#000000",
+              backgroundColor: variable.value || variable.defaultValue ||
+                "#000000",
             }}
           />
         </div>
@@ -240,9 +240,8 @@ function DeleteTeamDialog({
             This action cannot be undone. This will permanently delete the team
             and all its data.
           </AlertDialogDescription>
-          {error && (
-            <div className="text-destructive text-sm mt-2">{error}</div>
-          )}
+          {error && <div className="text-destructive text-sm mt-2">{error}
+          </div>}
         </AlertDialogHeader>
         <AlertDialogFooter>
           <AlertDialogCancel disabled={isPending}>Cancel</AlertDialogCancel>
@@ -256,13 +255,15 @@ function DeleteTeamDialog({
             }}
             className="bg-destructive text-destructive-foreground hover:bg-destructive/90 focus-visible:ring-destructive/20 dark:focus-visible:ring-destructive/40"
           >
-            {isPending ? (
-              <span className="flex items-center gap-2">
-                <Spinner size="xs" variant="destructive" /> Deleting...
-              </span>
-            ) : (
-              "Delete"
-            )}
+            {isPending
+              ? (
+                <span className="flex items-center gap-2">
+                  <Spinner size="xs" variant="destructive" /> Deleting...
+                </span>
+              )
+              : (
+                "Delete"
+              )}
           </AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>
@@ -367,10 +368,9 @@ export function GeneralSettings() {
     }
 
     await updateTeam.mutateAsync({
-      id:
-        typeof currentTeamId === "number"
-          ? currentTeamId
-          : Number(currentTeamId) || 0,
+      id: typeof currentTeamId === "number"
+        ? currentTeamId
+        : Number(currentTeamId) || 0,
       data: {
         name: data.teamName,
         slug: data.teamSlug,
@@ -631,23 +631,19 @@ export function GeneralSettings() {
                       type="button"
                       variant="outline"
                       onClick={() => form.reset()}
-                      disabled={
-                        isReadOnly ||
+                      disabled={isReadOnly ||
                         !form.formState.isDirty ||
-                        form.formState.isSubmitting
-                      }
+                        form.formState.isSubmitting}
                     >
                       Discard
                     </Button>
                     <Button
                       type="submit"
                       variant="default"
-                      disabled={
-                        isReadOnly ||
+                      disabled={isReadOnly ||
                         !form.formState.isDirty ||
                         form.formState.isSubmitting ||
-                        updateTeam.isPending
-                      }
+                        updateTeam.isPending}
                     >
                       {updateTeam.isPending ? "Saving..." : "Save"}
                     </Button>

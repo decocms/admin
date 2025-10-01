@@ -2,7 +2,7 @@ import { type JWTPayload } from "@deco/sdk/auth";
 import type { Context } from "hono";
 import { HTTPException } from "hono/http-exception";
 import { honoCtxToAppCtx } from "../api.ts";
-import { issuerFromContext, type AppEnv } from "../utils/context.ts";
+import { type AppEnv, issuerFromContext } from "../utils/context.ts";
 
 const tryParseUser = (user: unknown) => {
   if (typeof user === "string") {

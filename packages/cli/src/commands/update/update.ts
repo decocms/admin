@@ -159,7 +159,9 @@ const checkForUpdates = async (
         } catch (error) {
           console.warn(
             chalk.yellow(
-              `⚠️  Failed to check updates for ${depName}: ${error instanceof Error ? error.message : String(error)}`,
+              `⚠️  Failed to check updates for ${depName}: ${
+                error instanceof Error ? error.message : String(error)
+              }`,
             ),
           );
         }
@@ -188,7 +190,9 @@ const checkForUpdates = async (
         } catch (error) {
           console.warn(
             chalk.yellow(
-              `⚠️  Failed to check updates for ${depName}: ${error instanceof Error ? error.message : String(error)}`,
+              `⚠️  Failed to check updates for ${depName}: ${
+                error instanceof Error ? error.message : String(error)
+              }`,
             ),
           );
         }
@@ -211,7 +215,9 @@ const checkAllPackagesForUpdates = async (
     } catch (error) {
       console.warn(
         chalk.yellow(
-          `⚠️  Failed to check updates for ${packageJsonPath}: ${error instanceof Error ? error.message : String(error)}`,
+          `⚠️  Failed to check updates for ${packageJsonPath}: ${
+            error instanceof Error ? error.message : String(error)
+          }`,
         ),
       );
     }
@@ -314,7 +320,9 @@ export async function updateCommand(options: { yes?: boolean }): Promise<void> {
         {
           type: "confirm",
           name: "confirmed",
-          message: `Update ${updates.length} Deco ${updates.length === 1 ? "dependency" : "dependencies"}?`,
+          message: `Update ${updates.length} Deco ${
+            updates.length === 1 ? "dependency" : "dependencies"
+          }?`,
           default: true,
         },
       ]);

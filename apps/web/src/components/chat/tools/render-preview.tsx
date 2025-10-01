@@ -46,13 +46,17 @@ function ImageActionButton({
       aria-label={label}
       {...(href ? { asChild: true } : {})}
     >
-      {href ? (
-        <a href={href} download={download} onClick={(e) => e.stopPropagation()}>
-          <Icon name={icon} className={BUTTON_STYLES.icon} />
-        </a>
-      ) : (
-        <Icon name={icon} className={BUTTON_STYLES.icon} />
-      )}
+      {href
+        ? (
+          <a
+            href={href}
+            download={download}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <Icon name={icon} className={BUTTON_STYLES.icon} />
+          </a>
+        )
+        : <Icon name={icon} className={BUTTON_STYLES.icon} />}
     </Button>
   );
 

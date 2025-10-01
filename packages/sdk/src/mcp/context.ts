@@ -286,8 +286,8 @@ export const DECO_CMS_API = (ctx: AppContext, isDecoChat: boolean) =>
   getEnv(ctx).VITE_USE_LOCAL_BACKEND === "true"
     ? "http://localhost:3001"
     : isDecoChat
-      ? "https://api.deco.chat"
-      : "https://api.decocms.com";
+    ? "https://api.deco.chat"
+    : "https://api.decocms.com";
 
 type ToolCallResultSuccess<T> = {
   isError: false;

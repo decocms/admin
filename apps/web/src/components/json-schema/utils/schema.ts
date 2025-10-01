@@ -38,8 +38,8 @@ export function getDetectedType(value: SchemaType): string {
   return valueType === "object" && value === null
     ? "null"
     : valueType === "object" && Array.isArray(value)
-      ? "array"
-      : valueType;
+    ? "array"
+    : valueType;
 }
 
 /**
@@ -262,7 +262,7 @@ export function findSchemaByParentRelationship<
         const schemaObj = s as JSONSchema7;
         return (
           schemaObj.title?.toLowerCase() ===
-          parentRecord.type?.toString().toLowerCase()
+            parentRecord.type?.toString().toLowerCase()
         );
       });
 
@@ -344,12 +344,12 @@ export function getDefaultAnyOfSchema(schemas: JSONSchema7[]): JSONSchema7 {
   // Then try to find a non-null schema
   const nonNullSchema = !schemaWithDefault
     ? schemas.find((s) => {
-        const schemaType = (s as JSONSchema7).type;
-        if (Array.isArray(schemaType)) {
-          return !schemaType.includes("null");
-        }
-        return schemaType !== "null";
-      })
+      const schemaType = (s as JSONSchema7).type;
+      if (Array.isArray(schemaType)) {
+        return !schemaType.includes("null");
+      }
+      return schemaType !== "null";
+    })
     : null;
 
   // Choose the best schema based on priority: default value > non-null > first item
@@ -375,13 +375,12 @@ function handleSecretStringAnyOf(schemas: JSONSchema7[]): JSONSchema7 | null {
       schema.type === "object" &&
       (schema.title === "Secret" ||
         (schema as JSONSchema7 & { hideOption?: string | boolean })
-          .hideOption === "true" ||
+            .hideOption === "true" ||
         (schema as JSONSchema7 & { hideOption?: string | boolean })
-          .hideOption === true)
+            .hideOption === true)
     ) {
       secretSchema = schema;
-    }
-    // Check if this is a string schema
+    } // Check if this is a string schema
     else if (schema.type === "string") {
       stringSchema = schema;
     }

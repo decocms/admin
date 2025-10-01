@@ -1,6 +1,5 @@
 <img width="2400" height="750" alt="image" src="https://github.com/user-attachments/assets/d3e36c98-4609-46d3-b39f-7ee1c6d77432" />
 
-
 # decocms.com
 
 **decocms** is an open-source foundation for building AI-native software.\
@@ -75,7 +74,8 @@ or
 bun create deco
 ```
 
-> This will prompt you to log in or to create an account on [decocms.com](https://decocms.com). 
+> This will prompt you to log in or to create an account on
+> [decocms.com](https://decocms.com).
 
 2. Enter the project directory and start the dev server
 
@@ -215,4 +215,3 @@ guidelines and tips.
 
 Made with ❤️ by the Deco community — helping teams build AI-native systems that
 scale.
-

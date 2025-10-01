@@ -1,16 +1,16 @@
 // deno-lint-ignore-file no-explicit-any
 import {
   CallToolResultSchema,
-  MCPTool,
   type DecoConnection,
   type HTTPConnection,
   type Integration,
   type MCPConnection,
+  MCPTool,
 } from "@deco/sdk";
 import { createSessionTokenCookie } from "@deco/sdk/auth";
 import { WebCache } from "@deco/sdk/cache";
 import { SWRCache } from "@deco/sdk/cache/swr";
-import { fromWorkspaceString, MCPClient, type AppContext } from "@deco/sdk/mcp";
+import { type AppContext, fromWorkspaceString, MCPClient } from "@deco/sdk/mcp";
 import { slugify } from "@deco/sdk/memory";
 import {
   createServerClient,
@@ -80,10 +80,9 @@ const getMCPServerTools = async (
   signal?: AbortSignal,
 ): Promise<Record<string, ToolAction<any, any, any>>> => {
   try {
-    const { tools } =
-      mcpServer.tools && mcpServer.tools.length > 0
-        ? { tools: mcpServer.tools }
-        : await swrListTools(mcpServer, signal);
+    const { tools } = mcpServer.tools && mcpServer.tools.length > 0
+      ? { tools: mcpServer.tools }
+      : await swrListTools(mcpServer, signal);
     const mtools: Record<
       string,
       ToolAction<any, any, any>
@@ -177,8 +176,9 @@ export const getDecoSiteTools = async (
             new URL(`/live/invoke/${tool.resolveType}`, baseUrl),
             {
               method: "POST",
-              body:
-                typeof context === "string" ? context : JSON.stringify(context),
+              body: typeof context === "string"
+                ? context
+                : JSON.stringify(context),
               headers: {
                 "content-type": "application/json",
                 ...(settings.token && {
@@ -222,12 +222,11 @@ export const mcpServerTools = async (
     );
   }
 
-  const response =
-    mcpServer.connection.type === "Deco"
-      ? await getDecoSiteTools(mcpServer.connection)
-      : mcpServer.connection.type === "INNATE"
-        ? getToolsForInnateIntegration(mcpServer, agent, env)
-        : await getMCPServerTools(mcpServer, agent, signal);
+  const response = mcpServer.connection.type === "Deco"
+    ? await getDecoSiteTools(mcpServer.connection)
+    : mcpServer.connection.type === "INNATE"
+    ? getToolsForInnateIntegration(mcpServer, agent, env)
+    : await getMCPServerTools(mcpServer, agent, signal);
 
   return response;
 };
@@ -268,14 +267,13 @@ export async function listToolsByConnectionType(
     case "INNATE": {
       const mcpClient = MCPClient.forContext({
         ...ctx,
-        workspace:
-          ctx.workspace ??
+        workspace: ctx.workspace ??
           (connection.workspace
             ? fromWorkspaceString(
-                connection.workspace,
-                ctx.locator?.branch ?? "main",
-                ctx.user?.id as string | undefined,
-              )
+              connection.workspace,
+              ctx.locator?.branch ?? "main",
+              ctx.user?.id as string | undefined,
+            )
             : undefined),
       });
 

@@ -70,10 +70,9 @@ export const getAllScopes = (
     const { bindingName, toolName } = parseAppScope(scope);
     return {
       name: toolName ?? scope,
-      app:
-        schema && bindingName
-          ? getAppNameFromSchema(schema, bindingName)
-          : undefined,
+      app: schema && bindingName
+        ? getAppNameFromSchema(schema, bindingName)
+        : undefined,
     };
   });
 };
@@ -96,11 +95,11 @@ export const createPolicyStatements = (
         resource: toolName ?? scope,
         ...(integrationId
           ? {
-              matchCondition: {
-                resource: "is_integration",
-                integrationId,
-              },
-            }
+            matchCondition: {
+              resource: "is_integration",
+              integrationId,
+            },
+          }
           : {}),
       };
     }),

@@ -28,97 +28,96 @@ const bindingsAreEqual = (a: DoBinding[], b: DoBinding[]): boolean => {
     aSorted.every((binding, index) => bindingIsEqual(binding, bSorted[index]))
   );
 };
-const applyMigration =
-  (currentBindings: DoBinding[]) =>
-  (
-    [bindings, stepMigration]: [DoBinding[], SingleStepMigration],
-    migration: Migration,
-  ): [DoBinding[], SingleStepMigration] => {
-    let bindingsResult: DoBinding[] = bindings;
-    const shouldRunMigration = stepMigration.old_tag != null;
+const applyMigration = (currentBindings: DoBinding[]) =>
+(
+  [bindings, stepMigration]: [DoBinding[], SingleStepMigration],
+  migration: Migration,
+): [DoBinding[], SingleStepMigration] => {
+  let bindingsResult: DoBinding[] = bindings;
+  const shouldRunMigration = stepMigration.old_tag != null;
 
-    if ("new_classes" in migration) {
-      bindingsResult = [
-        ...(migration.new_classes?.map((className) => ({
-          class_name: className,
-          name: className,
-          type: "durable_object_namespace" as const,
-        })) ?? []),
+  if ("new_classes" in migration) {
+    bindingsResult = [
+      ...(migration.new_classes?.map((className) => ({
+        class_name: className,
+        name: className,
+        type: "durable_object_namespace" as const,
+      })) ?? []),
+    ];
+    if (shouldRunMigration) {
+      stepMigration.new_classes = [
+        ...(stepMigration.new_classes ?? []),
+        ...(migration.new_classes ?? []),
       ];
-      if (shouldRunMigration) {
-        stepMigration.new_classes = [
-          ...(stepMigration.new_classes ?? []),
-          ...(migration.new_classes ?? []),
-        ];
-      }
     }
+  }
 
-    if ("new_sqlite_classes" in migration) {
-      bindingsResult = [
-        ...bindingsResult,
-        ...(migration.new_sqlite_classes?.map((className) => ({
-          class_name: className,
-          name: className,
-          type: "durable_object_namespace" as const,
-        })) ?? []),
+  if ("new_sqlite_classes" in migration) {
+    bindingsResult = [
+      ...bindingsResult,
+      ...(migration.new_sqlite_classes?.map((className) => ({
+        class_name: className,
+        name: className,
+        type: "durable_object_namespace" as const,
+      })) ?? []),
+    ];
+    if (shouldRunMigration) {
+      stepMigration.new_sqlite_classes = [
+        ...(stepMigration.new_sqlite_classes ?? []),
+        ...(migration.new_sqlite_classes ?? []),
       ];
-      if (shouldRunMigration) {
-        stepMigration.new_sqlite_classes = [
-          ...(stepMigration.new_sqlite_classes ?? []),
-          ...(migration.new_sqlite_classes ?? []),
-        ];
-      }
     }
+  }
 
-    if ("deleted_classes" in migration) {
-      bindingsResult = [
-        ...bindingsResult,
-        ...bindings.filter(
-          (binding) => !migration.deleted_classes.includes(binding.class_name),
-        ),
+  if ("deleted_classes" in migration) {
+    bindingsResult = [
+      ...bindingsResult,
+      ...bindings.filter(
+        (binding) => !migration.deleted_classes.includes(binding.class_name),
+      ),
+    ];
+    if (shouldRunMigration) {
+      stepMigration.deleted_classes = [
+        ...(stepMigration.deleted_classes ?? []),
+        ...migration.deleted_classes,
       ];
-      if (shouldRunMigration) {
-        stepMigration.deleted_classes = [
-          ...(stepMigration.deleted_classes ?? []),
-          ...migration.deleted_classes,
-        ];
-      }
     }
+  }
 
-    if ("renamed_classes" in migration) {
-      const renamedClasses = migration.renamed_classes.reduce(
-        (acc, renamedClass) => {
-          acc[renamedClass.from] = renamedClass.to;
-          return acc;
-        },
-        {} as Record<string, string>,
-      );
-      bindingsResult = [
-        ...bindingsResult,
-        ...bindings.map((binding) => ({
-          ...binding,
-          class_name: renamedClasses[binding.class_name] ?? binding.class_name,
-        })),
+  if ("renamed_classes" in migration) {
+    const renamedClasses = migration.renamed_classes.reduce(
+      (acc, renamedClass) => {
+        acc[renamedClass.from] = renamedClass.to;
+        return acc;
+      },
+      {} as Record<string, string>,
+    );
+    bindingsResult = [
+      ...bindingsResult,
+      ...bindings.map((binding) => ({
+        ...binding,
+        class_name: renamedClasses[binding.class_name] ?? binding.class_name,
+      })),
+    ];
+    if (shouldRunMigration) {
+      stepMigration.renamed_classes = [
+        ...(stepMigration.renamed_classes ?? []),
+        ...migration.renamed_classes,
       ];
-      if (shouldRunMigration) {
-        stepMigration.renamed_classes = [
-          ...(stepMigration.renamed_classes ?? []),
-          ...migration.renamed_classes,
-        ];
-      }
     }
+  }
 
-    if (bindingsAreEqual(bindingsResult, currentBindings)) {
-      stepMigration.old_tag = migration.tag;
-    }
+  if (bindingsAreEqual(bindingsResult, currentBindings)) {
+    stepMigration.old_tag = migration.tag;
+  }
 
-    // Set new_tag for any migration that should run OR the next migration after finding current state
-    if (shouldRunMigration || stepMigration.old_tag === migration.tag) {
-      stepMigration.new_tag = migration.tag;
-    }
+  // Set new_tag for any migration that should run OR the next migration after finding current state
+  if (shouldRunMigration || stepMigration.old_tag === migration.tag) {
+    stepMigration.new_tag = migration.tag;
+  }
 
-    return [bindingsResult, stepMigration];
-  };
+  return [bindingsResult, stepMigration];
+};
 
 /**
  * Takes wrangler.toml migrations and do bindings and returns a single step migration

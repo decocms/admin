@@ -20,11 +20,10 @@ export default function MentionNode({
   const id = node.attrs.id;
   const { mutateAsync: updatePrompt } = useUpdatePrompt();
 
-  const items =
-    extension.options.suggestion
-      ?.items?.({ query: label })
-      ?.find((option: Option) => option.id === "references")
-      ?.children?.flatMap((options: Option) => options.children) || [];
+  const items = extension.options.suggestion
+    ?.items?.({ query: label })
+    ?.find((option: Option) => option.id === "references")
+    ?.children?.flatMap((options: Option) => options.children) || [];
 
   const prompt = items?.find((option: Option) => option?.id === id);
 

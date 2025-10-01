@@ -54,20 +54,22 @@ export function Combobox({
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
-        {renderTrigger ? (
-          <div className={cn("cursor-pointer", triggerClassName)}>
-            {renderTrigger(selectedOption)}
-          </div>
-        ) : (
-          <Button
-            variant="outline"
-            role="combobox"
-            className={cn("justify-between", width, triggerClassName)}
-          >
-            {selectedOption ? selectedOption.label : placeholder}
-            <ChevronsUpDown className="opacity-50" />
-          </Button>
-        )}
+        {renderTrigger
+          ? (
+            <div className={cn("cursor-pointer", triggerClassName)}>
+              {renderTrigger(selectedOption)}
+            </div>
+          )
+          : (
+            <Button
+              variant="outline"
+              role="combobox"
+              className={cn("justify-between", width, triggerClassName)}
+            >
+              {selectedOption ? selectedOption.label : placeholder}
+              <ChevronsUpDown className="opacity-50" />
+            </Button>
+          )}
       </PopoverTrigger>
       <PopoverContent
         className={cn("p-0", contentClassName)}
@@ -94,19 +96,21 @@ export function Combobox({
                       setOpen(false);
                     }}
                   >
-                    {renderItem ? (
-                      renderItem(option, isSelected)
-                    ) : (
-                      <>
-                        {option.label}
-                        <Check
-                          className={cn(
-                            "ml-auto",
-                            isSelected ? "opacity-100" : "opacity-0",
-                          )}
-                        />
-                      </>
-                    )}
+                    {renderItem
+                      ? (
+                        renderItem(option, isSelected)
+                      )
+                      : (
+                        <>
+                          {option.label}
+                          <Check
+                            className={cn(
+                              "ml-auto",
+                              isSelected ? "opacity-100" : "opacity-0",
+                            )}
+                          />
+                        </>
+                      )}
                   </CommandItem>
                 );
               })}

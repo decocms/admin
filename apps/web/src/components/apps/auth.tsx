@@ -2,20 +2,20 @@ import {
   type Integration,
   RegistryAppNotFoundError,
   SDKProvider,
+  type Team,
   useCreateOAuthCodeForIntegration,
   useIntegrations,
-  type Team,
 } from "@deco/sdk";
 import { Button } from "@deco/ui/components/button.tsx";
 import { Icon } from "@deco/ui/components/icon.tsx";
 import { Spinner } from "@deco/ui/components/spinner.tsx";
 import { Combobox } from "@deco/ui/components/combobox.tsx";
-import { useEffect, useMemo, useState, Suspense } from "react";
-import { ChevronsUpDown, Check } from "lucide-react";
+import { Suspense, useEffect, useMemo, useState } from "react";
+import { Check, ChevronsUpDown } from "lucide-react";
 import { cn } from "@deco/ui/lib/utils.ts";
 import { Avatar } from "../common/avatar/index.tsx";
 import { AppsAuthLayout, OAuthSearchParams } from "./layout.tsx";
-import { useRegistryApp, type RegistryApp } from "@deco/sdk";
+import { type RegistryApp, useRegistryApp } from "@deco/sdk";
 import { IntegrationAvatar } from "../common/avatar/integration.tsx";
 import { ErrorBoundary } from "../../error-boundary.tsx";
 import { useInstallCreatingApiKeyAndIntegration } from "../../hooks/use-integration-install.tsx";
@@ -180,8 +180,9 @@ const SelectOrganization = ({
               }))}
               value={selectedOrg?.slug ?? ""}
               onChange={(value) =>
-                setSelectedOrg(orgs.find((team) => team.slug === value) ?? null)
-              }
+                setSelectedOrg(
+                  orgs.find((team) => team.slug === value) ?? null,
+                )}
               placeholder="Select a project"
               width="w-full"
               triggerClassName="!h-16"
@@ -189,22 +190,24 @@ const SelectOrganization = ({
               renderTrigger={(selectedOption) => (
                 <div className="flex items-center justify-between w-full h-16 px-3 py-2 border border-input bg-background rounded-md text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50">
                   <div className="flex items-center gap-3">
-                    {selectedOption ? (
-                      <>
-                        <Avatar
-                          url={selectedOption.avatarUrl as string}
-                          fallback={selectedOption.label}
-                          size="sm"
-                          shape="square"
-                          objectFit="contain"
-                        />
-                        <span>{selectedOption.label}</span>
-                      </>
-                    ) : (
-                      <span className="text-muted-foreground">
-                        Select a project
-                      </span>
-                    )}
+                    {selectedOption
+                      ? (
+                        <>
+                          <Avatar
+                            url={selectedOption.avatarUrl as string}
+                            fallback={selectedOption.label}
+                            size="sm"
+                            shape="square"
+                            objectFit="contain"
+                          />
+                          <span>{selectedOption.label}</span>
+                        </>
+                      )
+                      : (
+                        <span className="text-muted-foreground">
+                          Select a project
+                        </span>
+                      )}
                   </div>
                   <ChevronsUpDown className="opacity-50" />
                 </div>
@@ -433,7 +436,7 @@ const SelectableInstallList = ({
         className="w-full h-16 justify-start px-3 py-3"
       >
         <Icon name="add" size={16} />
-        <span className="text-sm">Create new </span>
+        <span className="text-sm">Create new</span>
       </Button>
     </div>
   );
@@ -462,14 +465,16 @@ const FooterButtons = ({
         disabled={continueDisabled}
         onClick={onClickContinue}
       >
-        {continueLoading ? (
-          <div className="flex items-center gap-2">
-            <Spinner size="sm" />
-            Authorizing...
-          </div>
-        ) : (
-          `Continue`
-        )}
+        {continueLoading
+          ? (
+            <div className="flex items-center gap-2">
+              <Spinner size="sm" />
+              Authorizing...
+            </div>
+          )
+          : (
+            `Continue`
+          )}
       </Button>
     </div>
   );
@@ -497,10 +502,12 @@ const SelectProjectAppInstance = ({
   const installCreatingApiKeyAndIntegration =
     useInstallCreatingApiKeyAndIntegration();
 
-  const [selectedIntegration, setSelectedIntegration] =
-    useState<Integration | null>(() => installedIntegrations[0] ?? null);
-  const [inlineCreatingIntegration, setInlineCreatingIntegration] =
-    useState<boolean>(() => installedIntegrations.length === 0);
+  const [selectedIntegration, setSelectedIntegration] = useState<
+    Integration | null
+  >(() => installedIntegrations[0] ?? null);
+  const [inlineCreatingIntegration, setInlineCreatingIntegration] = useState<
+    boolean
+  >(() => installedIntegrations.length === 0);
 
   const handleFormSubmit = async ({
     formData,
@@ -572,41 +579,43 @@ const SelectProjectAppInstance = ({
           </h1>
         </div>
 
-        {inlineCreatingIntegration ? (
-          <Suspense
-            fallback={
-              <div className="flex flex-col items-center space-y-4 w-full">
-                <Spinner size="sm" />
-                <p className="text-sm text-muted-foreground">
-                  Loading app permissions...
-                </p>
-              </div>
-            }
-          >
-            <InlineCreateIntegrationForm
-              appName={clientId}
-              onFormSubmit={handleFormSubmit}
-              onBack={() => {
-                if (installedIntegrations.length > 0) {
-                  setInlineCreatingIntegration(false);
-                } else {
-                  selectAnotherProject();
-                }
+        {inlineCreatingIntegration
+          ? (
+            <Suspense
+              fallback={
+                <div className="flex flex-col items-center space-y-4 w-full">
+                  <Spinner size="sm" />
+                  <p className="text-sm text-muted-foreground">
+                    Loading app permissions...
+                  </p>
+                </div>
+              }
+            >
+              <InlineCreateIntegrationForm
+                appName={clientId}
+                onFormSubmit={handleFormSubmit}
+                onBack={() => {
+                  if (installedIntegrations.length > 0) {
+                    setInlineCreatingIntegration(false);
+                  } else {
+                    selectAnotherProject();
+                  }
+                }}
+                backEnabled={installedIntegrations.length > 0}
+              />
+            </Suspense>
+          )
+          : (
+            <SelectableInstallList
+              installedIntegrations={installedIntegrations}
+              setSelectedIntegration={setSelectedIntegration}
+              selectCreateNew={() => {
+                setInlineCreatingIntegration(true);
+                setSelectedIntegration(null);
               }}
-              backEnabled={installedIntegrations.length > 0}
+              selectedIntegration={selectedIntegration}
             />
-          </Suspense>
-        ) : (
-          <SelectableInstallList
-            installedIntegrations={installedIntegrations}
-            setSelectedIntegration={setSelectedIntegration}
-            selectCreateNew={() => {
-              setInlineCreatingIntegration(true);
-              setSelectedIntegration(null);
-            }}
-            selectedIntegration={selectedIntegration}
-          />
-        )}
+          )}
 
         {inlineCreatingIntegration ? null : (
           <FooterButtons
@@ -620,15 +629,11 @@ const SelectProjectAppInstance = ({
                 integrationId: selectedIntegration.id,
               });
             }}
-            continueDisabled={
-              !selectedIntegration ||
+            continueDisabled={!selectedIntegration ||
               createOAuthCode.isPending ||
-              installCreatingApiKeyAndIntegration.isPending
-            }
-            continueLoading={
-              createOAuthCode.isPending ||
-              installCreatingApiKeyAndIntegration.isPending
-            }
+              installCreatingApiKeyAndIntegration.isPending}
+            continueLoading={createOAuthCode.isPending ||
+              installCreatingApiKeyAndIntegration.isPending}
           />
         )}
       </div>

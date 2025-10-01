@@ -11,6 +11,8 @@ import {
 } from "../assertions.ts";
 import { type AppContext, createToolGroup } from "../context.ts";
 import { userFromDatabase } from "../user.ts";
+import { issues, organizations, projects, members } from "../schema.ts";
+import { eq, and, isNull } from "drizzle-orm";
 import {
   checkAlreadyExistUserIdInTeam,
   enrichPlanWithTeamMetadata,
@@ -134,7 +136,8 @@ export const getTeamMembers = createTool({
     const [{ data, error }, { data: invitesData }] = await Promise.all([
       c.db
         .from("members")
-        .select(`
+        .select(
+          `
         id,
         user_id,
         admin,
@@ -146,7 +149,8 @@ export const getTeamMembers = createTool({
           metadata:users_meta_data_view(id, raw_user_meta_data)
         ),
         member_roles(roles(id, name))
-      `)
+      `,
+        )
         .eq("team_id", teamId)
         .is("deleted_at", null),
       c.db
@@ -419,7 +423,8 @@ export const getMyInvites = createTool({
     // Find invites for this email
     const { data: invites, error } = await db
       .from("invites")
-      .select(`
+      .select(
+        `
         id,
         team_id,
         team_name,
@@ -430,7 +435,8 @@ export const getMyInvites = createTool({
           name,
           email
         )
-      `)
+      `,
+      )
       .eq("invited_email", profile.email.toLowerCase());
 
     if (error) throw error;
@@ -821,5 +827,84 @@ export const updateMemberRole = createTool({
     });
 
     return { success: true };
+  },
+});
+
+export const createIssue = createTool({
+  name: "TEAM_REPORT_ISSUE_CREATE",
+  description: "Report a bug or idea within a team/project context",
+  inputSchema: z.object({
+    orgSlug: z.string().optional(),
+    projectSlug: z.string().optional(),
+    type: z.enum(["Bug", "Idea"]),
+    content: z.string().min(1),
+    url: z.string().optional(),
+    path: z.string().optional(),
+  }),
+  handler: async (props, c) => {
+    c.resourceAccess.grant();
+    const { orgSlug, projectSlug, type, content, url, path } = props;
+
+    // 1. Assert user is authenticated
+    assertPrincipalIsUser(c);
+    const user = c.user;
+
+    // 2. Resolve org_id if orgSlug provided and assert user membership
+    let orgId: bigint | null = null;
+    if (orgSlug) {
+      const [org] = await c.drizzle
+        .select({ id: organizations.id })
+        .from(organizations)
+        .innerJoin(
+          members,
+          and(
+            eq(members.team_id, organizations.id),
+            eq(members.user_id, user.id),
+            isNull(members.deleted_at),
+          ),
+        )
+        .where(eq(organizations.slug, orgSlug))
+        .limit(1);
+
+      if (!org)
+        throw new Error("Organization not found or user is not a member");
+      orgId = BigInt(org.id);
+    }
+
+    // 3. Resolve project_id if projectSlug provided
+    let projectId: string | null = null;
+    if (projectSlug && orgId) {
+      const [project] = await c.drizzle
+        .select({ id: projects.id })
+        .from(projects)
+        .where(and(eq(projects.org_id, orgId), eq(projects.slug, projectSlug)))
+        .limit(1);
+      projectId = project?.id ?? null;
+    }
+
+    // 4. Insert issue
+    const [issue] = await c.drizzle
+      .insert(issues)
+      .values({
+        org_id: orgId,
+        project_id: projectId,
+        reporter_user_id: user.id,
+        type,
+        content,
+        url: url ?? null,
+        path: path ?? null,
+      })
+      .returning();
+
+    return {
+      id: issue.id,
+      org_id: issue.org_id ? Number(issue.org_id) : null,
+      project_id: issue.project_id,
+      type: issue.type,
+      content: issue.content,
+      url: issue.url,
+      path: issue.path,
+      created_at: issue.created_at,
+    };
   },
 });

@@ -18,6 +18,7 @@ import {
   type Role as _Role,
   updateMemberRole,
 } from "../crud/members.ts";
+import { MCPClient } from "../fetcher.ts";
 import { KEYS } from "./api.ts";
 import { useOrganizations } from "./teams.ts";
 import { type User, useSDK } from "../index.ts";
@@ -223,5 +224,37 @@ export const useUpdateMemberRole = () => {
         members: membersWithChangedRole,
       });
     },
+  });
+};
+
+/**
+ * Hook to report an issue (bug or idea)
+ * @returns Mutation function for reporting an issue
+ */
+export const useReportIssue = () => {
+  return useMutation({
+    mutationFn: ({
+      orgSlug,
+      projectSlug,
+      type,
+      content,
+      url,
+      path,
+    }: {
+      orgSlug?: string;
+      projectSlug?: string;
+      type: "Bug" | "Idea";
+      content: string;
+      url?: string;
+      path?: string;
+    }) =>
+      MCPClient.TEAM_REPORT_ISSUE_CREATE({
+        orgSlug,
+        projectSlug,
+        type,
+        content,
+        url,
+        path,
+      }),
   });
 };

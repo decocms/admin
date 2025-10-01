@@ -5,6 +5,7 @@ import { useSidebar } from "@deco/ui/components/sidebar.tsx";
 import { Link } from "react-router";
 import { ErrorBoundary } from "../../error-boundary.tsx";
 import { LoggedUser, LoggedUserAvatarTrigger } from "../sidebar/footer";
+import { ReportIssueButton } from "../common/report-issue-button.tsx";
 import { DefaultBreadcrumb, ToggleDecopilotButton } from "./project";
 
 interface BreadcrumbItem {
@@ -52,6 +53,7 @@ export function Topbar({ breadcrumb }: { breadcrumb: BreadcrumbItem[] }) {
         <DefaultBreadcrumb items={breadcrumb} useWorkspaceLink={false} />
       </div>
       <div className="flex items-center gap-3">
+        <ReportIssueButton />
         <ToggleDecopilotButton />
         <LoggedUser
           trigger={(user) => <LoggedUserAvatarTrigger user={user} />}

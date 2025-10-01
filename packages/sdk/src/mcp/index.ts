@@ -94,6 +94,7 @@ export const GLOBAL_TOOLS = [
   membersAPI.inviteTeamMembers,
   membersAPI.teamRolesList,
   membersAPI.updateMemberRole,
+  membersAPI.createIssue,
   profilesAPI.getProfile,
   profilesAPI.updateProfile,
   integrationsAPI.callTool,

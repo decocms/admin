@@ -1,4 +1,35 @@
 export const WellKnownMcpGroups = {
+  AI: "ai-generation",
+  Agent: "agent-management",
+  AgentSetup: "agent-setup",
+  APIKeys: "api-keys-management",
+  Channel: "channel-management",
+  Contracts: "contracts-management",
+  Databases: "databases-management",
+  Deconfig: "deconfig-management",
+  Email: "email-management",
+  FS: "file-system",
+  Hosting: "hosting",
+  Integration: "integration-management",
+  KnowledgeBase: "knowledge-base-",
+  KnowledgeBaseManagement: "kb-management",
+  Model: "model-management",
+  OAuth: "oauth-management",
+  Prompt: "prompt-management",
+  User: "user-management",
+  Registry: "registry-management",
+  Sandbox: "code-sandbox",
+  Team: "team-management",
+  Thread: "thread-management",
+  Triggers: "triggers-management",
+  Wallet: "wallet-management",
+  Tools: "tools-management",
+  Workflows: "workflows-management",
+  Self: "self",
+};
+
+// used to publish on the registry
+export const WellKnownAppNames: Partial<typeof WellKnownMcpGroups> = {
   AI: "ai-gateway",
   Agent: "agents",
   AgentSetup: "agent-crud",
@@ -24,7 +55,6 @@ export const WellKnownMcpGroups = {
   Wallet: "wallet",
   Tools: "tools",
   Workflows: "workflows",
-  Self: "self",
 };
 
 export type WellKnownMcpGroup = keyof typeof WellKnownMcpGroups;

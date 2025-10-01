@@ -37,7 +37,7 @@ import {
   withMCPErrorHandling,
   wrapToolFn,
 } from "@deco/sdk/mcp";
-import { getGroups } from "@deco/sdk/mcp/groups";
+import { getApps } from "@deco/sdk/mcp/groups";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import {
   CallToolRequestSchema,
@@ -465,22 +465,16 @@ app.get(`/:org/:project/deconfig/watch`, async (ctx) => {
 app.all("/mcp", createMCPHandlerFor(GLOBAL_TOOLS));
 
 app.get("/mcp/groups", (ctx) => {
-  const groups = getGroups();
-  return ctx.json(
-    Object.entries(groups).map(([group, integration]) => {
-      return {
-        ...integration,
-        group,
-      };
-    }),
-  );
+  return ctx.json(getApps());
 });
 
 app.all(
   "/mcp/:group",
   createMCPHandlerFor((ctx) => {
     const group = ctx.req.param("group");
-    return PROJECT_TOOLS.filter((tool) => tool.group === group);
+    return Promise.resolve(
+      PROJECT_TOOLS.filter((tool) => tool.group === group),
+    );
   }),
 );
 

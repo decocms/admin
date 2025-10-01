@@ -1,10 +1,20 @@
 // deno-lint-ignore-file no-explicit-any
-import { env } from "cloudflare:workers";
+import * as process from "node:process";
 import { z } from "zod";
 import type { MCPConnection } from "./connection.ts";
 import type { DefaultEnv } from "./index.ts";
 import { createMCPClientProxy } from "./proxy.ts";
 
+const cfEnv = await import("cloudflare:workers")
+  .then(({ env }) => env)
+  .catch(() => ({}));
+
+const env = () => {
+  return {
+    ...cfEnv,
+    ...process.env,
+  };
+};
 export interface FetchOptions extends RequestInit {
   path?: string;
   segments?: string[];
@@ -84,7 +94,7 @@ export const MCPClient = new Proxy(
           createMCPFetchStub<[]>({
             workspace,
             token,
-            decoCmsApiUrl: (env as DefaultEnv).DECO_API_URL,
+            decoCmsApiUrl: (env() as DefaultEnv).DECO_API_URL,
           });
       }
       if (name === "forConnection") {
@@ -93,7 +103,7 @@ export const MCPClient = new Proxy(
         ) =>
           createMCPFetchStub<TDefinition>({
             connection,
-            decoCmsApiUrl: (env as DefaultEnv).DECO_API_URL,
+            decoCmsApiUrl: (env() as DefaultEnv).DECO_API_URL,
           });
       }
       return global[name as keyof typeof global];

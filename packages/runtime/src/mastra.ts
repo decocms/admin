@@ -245,6 +245,9 @@ export interface CreateMCPServerOptions<
   Env = any,
   TSchema extends z.ZodTypeAny = never,
 > {
+  assets?: {
+    fetch: (req: Request) => Promise<Response>;
+  };
   before?: (env: Env & DefaultEnv<TSchema>) => Promise<void> | void;
   oauth?: {
     state?: TSchema;

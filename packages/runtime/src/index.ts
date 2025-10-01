@@ -213,6 +213,7 @@ const AUTHENTICATED = (user?: unknown, workspace?: string) => () => {
 };
 
 export const withBindings = <TEnv>({
+  assets,
   env: _env,
   server,
   tokenOrContext,
@@ -220,6 +221,9 @@ export const withBindings = <TEnv>({
   url,
   branch,
 }: {
+  assets?: {
+    fetch: (req: Request) => Promise<Response>;
+  };
   env: TEnv;
   server: MCPServer<TEnv, any>;
   tokenOrContext?: string | RequestContext;
@@ -229,6 +233,9 @@ export const withBindings = <TEnv>({
 }): TEnv => {
   branch ??= undefined;
   const env = _env as DefaultEnv<any>;
+  if (!("ASSETS" in env)) {
+    env.ASSETS = assets;
+  }
 
   const apiUrl = env.DECO_API_URL ?? "https://api.decocms.com";
   let context;

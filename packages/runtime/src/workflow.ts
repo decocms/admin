@@ -10,7 +10,6 @@ import {
 import { D1Store } from "./d1-store.ts";
 import { Mastra, type Workflow as MastraWorkflow } from "@mastra/core";
 import { RuntimeContext } from "@mastra/core/di";
-import { DurableObject } from "./cf-imports.ts";
 import { State } from "./state.ts";
 
 const createRuntimeContext = (env: DefaultEnv, ctx: DurableObjectState) => {
@@ -49,18 +48,15 @@ export const Workflow = (
   server: MCPServer<any, any>,
   workflows?: CreateMCPServerOptions["workflows"],
 ) => {
-  return class Workflow
-    extends DurableObject<DefaultEnv>
-    implements WorkflowDO
-  {
+  // @ts-ignore: This is a workaround to fix the type error
+  return class Workflow implements WorkflowDO {
     constructor(
       // @ts-ignore: This is a workaround to fix the type error
       // deno-lint-ignore ban-types
       public override ctx: DurableObjectState<{}>,
+      // @ts-ignore: This is a workaround to fix the type error
       public override env: DefaultEnv,
-    ) {
-      super(ctx, env);
-    }
+    ) {}
 
     bindings(ctx: RequestContext) {
       return withBindings<DefaultEnv>({

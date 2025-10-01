@@ -100,3 +100,10 @@ jobs:
           POSTHOG_API_KEY: ${{ secrets.POSTHOG_API_KEY }}
           POSTHOG_API_HOST: ${{ secrets.POSTHOG_API_HOST }}
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
+      - name: Publish Apps
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        run: bun run ./scripts/publish.ts
+        env:
+          DECO_TOKEN: ${{ secrets.DECO_TOKEN }}
+          PROJECT: /deco/default
+

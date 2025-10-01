@@ -37,6 +37,7 @@ import {
   withMCPErrorHandling,
   wrapToolFn,
 } from "@deco/sdk/mcp";
+import { getGroups } from "@deco/sdk/mcp/groups";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import {
   CallToolRequestSchema,
@@ -79,8 +80,9 @@ export const app = new Hono<AppEnv>();
 const contextToPrincipalExecutionContext = (
   c: Context<AppEnv>,
 ): PrincipalExecutionContext => {
-  const org = c.req.param("org") ?? c.req.param("root");
-  const project = c.req.param("project") ?? c.req.param("slug");
+  const org = c.req.param("org") ?? c.req.param("root") ?? c.req.query("org");
+  const project =
+    c.req.param("project") ?? c.req.param("slug") ?? c.req.query("project");
   const locator = org && project ? Locator.from({ org, project }) : undefined;
 
   const user = c.get("user");
@@ -153,7 +155,7 @@ const createMCPHandlerFor = (
     | ((c: Context<AppEnv>) => Promise<Tool[] | readonly Tool[]>),
 ) => {
   return async (c: Context<AppEnv>) => {
-    const group = c.req.query("group");
+    const group = c.req.query("group") ?? c.req.param("group");
 
     const server = new McpServer(
       { name: "@deco/api", version: "1.0.0" },
@@ -461,6 +463,27 @@ app.get(`/:org/:project/deconfig/watch`, async (ctx) => {
 });
 
 app.all("/mcp", createMCPHandlerFor(GLOBAL_TOOLS));
+
+app.get("/mcp/groups", (ctx) => {
+  const groups = getGroups();
+  return ctx.json(
+    Object.entries(groups).map(([group, integration]) => {
+      return {
+        ...integration,
+        group,
+      };
+    }),
+  );
+});
+
+app.all(
+  "/mcp/:group",
+  createMCPHandlerFor((ctx) => {
+    const group = ctx.req.param("group");
+    return PROJECT_TOOLS.filter((tool) => tool.group === group);
+  }),
+);
+
 app.all("/:org/:project/mcp", createMCPHandlerFor(PROJECT_TOOLS));
 
 app.all(

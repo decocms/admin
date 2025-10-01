@@ -73,6 +73,7 @@
     "./http": "./src/http.ts",
     "./storage": "./src/storage/index.ts",
     "./mcp": "./src/mcp/index.ts",
+    "./mcp/groups": "./src/mcp/groups.ts",
     "./mcp/wallet": "./src/mcp/wallet/index.ts",
     "./fetch": "./src/fetch.ts",
     "./hooks": "./src/hooks/index.ts",

@@ -718,7 +718,7 @@ const MatcherFunctions = {
   is_integration: createMatchFn({
     schema: IsIntegrationSchema.omit({ resource: true }),
     handler: ({ integrationId }, c) => {
-      return c.integrationId === integrationId;
+      return !c.integrationId || c.integrationId === integrationId;
     },
   }),
 };

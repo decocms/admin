@@ -43,7 +43,7 @@ import {
   assertHasWorkspace,
   assertWorkspaceResourceAccess,
 } from "../assertions.ts";
-import { getGroups } from "../groups.ts";
+import { getAppNameFromGroup, getGroups } from "../groups.ts";
 import {
   AppContext,
   Binding,
@@ -366,11 +366,13 @@ const virtualIntegrationsFor = (
       const url =
         workspace === false ? new URL(decoChatMcp) : new URL(workspaceMcp);
       url.searchParams.set("group", group);
+      const app = getAppNameFromGroup(group);
       return {
         id: formatId("i", group),
         name,
         icon,
         description,
+        appName: app ? AppName.build("deco", app) : undefined,
         connection: {
           type: "HTTP",
           url: url.href,

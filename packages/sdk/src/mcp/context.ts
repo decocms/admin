@@ -193,7 +193,6 @@ export interface PrincipalExecutionContext {
   tool?: { name: string };
   cookie?: string;
   token?: string;
-  proxyToken?: string;
   callerApp?: string;
   isLocal?: boolean;
   user: Principal;

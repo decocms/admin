@@ -29,6 +29,16 @@ export const getGroupByAppName = (appName?: string | null) => {
   return WellKnownMcpGroups[wellKnownName as WellKnownMcpGroup];
 };
 
+export const getAppNameFromGroup = (group: string) => {
+  const wellKnownName = Object.entries(WellKnownMcpGroups).find(
+    ([_, name]) => name === group,
+  )?.[0];
+  if (!wellKnownName) {
+    return undefined;
+  }
+  return WellKnownAppNames[wellKnownName as keyof typeof WellKnownAppNames];
+};
+
 export const getApps = () => {
   const idToWellKnownName = Object.fromEntries(
     Object.entries(WellKnownMcpGroups).map(([group, integration]) => [

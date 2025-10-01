@@ -128,13 +128,6 @@ export const assertWorkspaceResourceAccess = async (
     return c.resourceAccess.grant();
   }
 
-  if (c.proxyToken) {
-    const grant = await grantAccessForProxy(c);
-    if (grant) {
-      return grant;
-    }
-  }
-
   const resourcesOrContexts =
     _resourcesOrContexts.length === 0 && c.tool
       ? [c.tool.name]
@@ -224,6 +217,7 @@ export const assertWorkspaceResourceAccess = async (
       ) {
         // API keys
         const [sub] = user.sub?.split(":") ?? [];
+        let policies: Statement[] | undefined = undefined;
         if (sub === "api-key") {
           if (apiKeyError) {
             errors.push(`API key error for ${resource}: ${apiKeyError}`);
@@ -236,21 +230,26 @@ export const assertWorkspaceResourceAccess = async (
             continue;
           }
 
-          // scopes should be a space-separated list of resources
-          if (
-            assertPoliciesIsStatementArray(apiKeyData.policies) &&
-            !(await c.authorization.canAccess(
-              apiKeyData.policies ?? [],
-              slug,
-              resource,
-              authContext,
-            ))
-          ) {
-            errors.push(
-              `Cannot access ${resource} in workspace ${c.workspace.value}`,
-            );
-            continue;
-          }
+          policies = assertPoliciesIsStatementArray(apiKeyData.policies)
+            ? apiKeyData.policies
+            : [];
+        } else if (sub === "proxy") {
+          policies =
+            user.policies?.map((policy) => policy.statements).flat() ?? [];
+        }
+        if (
+          policies &&
+          !(await c.authorization.canAccess(
+            policies,
+            slug,
+            resource,
+            authContext,
+          ))
+        ) {
+          errors.push(
+            `Cannot access ${resource} in workspace ${c.workspace.value}`,
+          );
+          continue;
         }
 
         // If we reach here for this resource, access is granted
@@ -330,41 +329,4 @@ export function assertKbFileProcessor(
   if (!c.kbFileProcessor) {
     throw new ForbiddenError("KbFileProcessor not found");
   }
-}
-
-export const DECO_MCP_PROXY_SUB_PREFIX = "deco-mcp-proxy";
-
-export const IntegrationSub = {
-  build: (integrationId: string) =>
-    `${DECO_MCP_PROXY_SUB_PREFIX}:${integrationId}`,
-  parse: (sub: string) => {
-    const [prefix, integrationId] = sub.split(":");
-    if (prefix !== DECO_MCP_PROXY_SUB_PREFIX) {
-      throw new ForbiddenError("Invalid proxy token");
-    }
-    return integrationId;
-  },
-};
-
-async function grantAccessForProxy(
-  c: AppContext,
-): Promise<Disposable | undefined> {
-  if (!c.proxyToken) {
-    throw new ForbiddenError("Proxy token not found");
-  }
-
-  if (
-    !("integrationId" in c.user) ||
-    typeof c.user.integrationId !== "string"
-  ) {
-    return undefined; // fallthrough to authorization
-  }
-
-  const integrationId = c.user.integrationId;
-  const issuer = await c.jwtIssuer();
-  const payload = await issuer.verify(c.proxyToken).catch(() => null);
-  if (payload && payload.sub === IntegrationSub.build(integrationId)) {
-    return c.resourceAccess.grant();
-  }
-  throw new ForbiddenError("Invalid proxy token");
 }

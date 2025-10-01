@@ -84,7 +84,7 @@ export function ReportIssueButton() {
             <div className="flex items-center justify-between pl-1">
               <div className="flex items-center gap-2">
                 <Icon
-                  name="lightbulb"
+                  name="lightbulb_2"
                   className="w-4 h-4 text-muted-foreground"
                 />
                 <span className="text-sm font-medium">Feedback</span>

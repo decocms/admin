@@ -122,6 +122,7 @@ const contextToPrincipalExecutionContext = (
     locator: ctxLocator,
     cookie: c.req.header("Cookie"),
     // token issued by the MCP Proxy server to identify the caller as deco api
+    proxyToken: c.req.header(PROXY_TOKEN_HEADER),
     callerApp: c.req.header("x-caller-app"),
     token: tokenQs ?? c.req.header("Authorization")?.split(" ")[1],
   };
@@ -265,28 +266,25 @@ interface ProxyOptions {
   }>;
 }
 
+const PROXY_TOKEN_HEADER = "x-deco-proxy-token";
 const proxy = (
   mcpConnection: MCPConnection,
   { middlewares, tools, headers, tokenEmitter }: ProxyOptions = {},
 ) => {
   const createMcpClient = () => {
-    const addToken = (mcpConnection: MCPConnection, token?: string) => {
-      if (token && mcpConnection.type === "HTTP") {
-        return { ...mcpConnection, token };
-      }
-      return mcpConnection;
-    };
     const client = async (options?: EmitTokenOptions) => {
       return createServerClient(
         {
-          connection: addToken(
-            mcpConnection,
-            tokenEmitter && options ? await tokenEmitter(options) : undefined,
-          ),
+          connection: mcpConnection,
           name: "proxy",
         },
         undefined,
-        headers,
+        {
+          ...headers,
+          ...(tokenEmitter && options
+            ? { [PROXY_TOKEN_HEADER]: await tokenEmitter(options) }
+            : {}),
+        },
       );
     };
 

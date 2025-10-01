@@ -128,6 +128,17 @@ export const assertWorkspaceResourceAccess = async (
     return c.resourceAccess.grant();
   }
 
+  if (c.proxyToken) {
+    const issuer = await c.jwtIssuer();
+    const payload = await issuer.verify(c.proxyToken).catch(() => null);
+    if (payload) {
+      return assertWorkspaceResourceAccess(
+        { ...c, user: payload, proxyToken: undefined },
+        ..._resourcesOrContexts,
+      );
+    }
+  }
+
   const resourcesOrContexts =
     _resourcesOrContexts.length === 0 && c.tool
       ? [c.tool.name]

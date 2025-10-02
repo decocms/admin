@@ -132,6 +132,16 @@ export const WELL_KNOWN_MODELS: Model[] = [
     hasCustomKey: false,
   },
   {
+    id: "anthropic:claude-sonnet-4.5",
+    model: "anthropic:claude-sonnet-4.5",
+    name: "Claude Sonnet 4.5",
+    logo: LOGOS.anthropic,
+    capabilities: ["reasoning", "image-upload", "file-upload"],
+    byDeco: true,
+    isEnabled: true,
+    hasCustomKey: false,
+  },
+  {
     id: "anthropic:claude-sonnet-4",
     model: "anthropic:claude-sonnet-4",
     name: "Claude Sonnet 4",
@@ -282,7 +292,7 @@ export const WELL_KNOWN_AGENTS = {
     views: [],
     memory: DEFAULT_MEMORY,
     instructions: `
-You are an assistant that helps users set up integrations and agents. 
+You are an assistant that helps users set up integrations and agents.
 
 When setting up an integration, you should start by running tools that setup the integration. For instance, you should
 check if connection is active and configure the integration.

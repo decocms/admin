@@ -27,7 +27,13 @@ import {
 import { Icon } from "@deco/ui/components/icon.tsx";
 import { Spinner } from "@deco/ui/components/spinner.tsx";
 import { useViewMode } from "@deco/ui/hooks/use-view-mode.ts";
-import { useCallback, useMemo, useReducer, useState } from "react";
+import {
+  useCallback,
+  useMemo,
+  useReducer,
+  useState,
+  type ReactNode,
+} from "react";
 import { trackEvent } from "../../hooks/analytics.ts";
 import { useCreateAgent } from "../../hooks/use-create-agent.ts";
 import { useLocalStorage } from "../../hooks/use-local-storage.ts";
@@ -394,7 +400,7 @@ const useFocusTeamAgent = () => {
   return handleCreate;
 };
 
-function AgentsList() {
+function AgentsList({ headerSlot }: { headerSlot?: ReactNode } = {}) {
   const [state, dispatch] = useReducer(listReducer, initialState);
   const handleCreate = useFocusTeamAgent();
   const { filter } = state;
@@ -477,7 +483,8 @@ function AgentsList() {
 
   return (
     <DecopilotLayout value={decopilotContextValue}>
-      <div className="flex flex-col h-full gap-4 p-4">
+      <div className="flex flex-col h-full gap-2 p-4">
+        {headerSlot}
         <ListPageHeader
           filter={{
             items: (["active", ...VISIBILITIES] as TabId[]).map((id) => ({

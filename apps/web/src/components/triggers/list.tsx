@@ -4,7 +4,7 @@ import { Button } from "@deco/ui/components/button.tsx";
 import { Icon } from "@deco/ui/components/icon.tsx";
 import { Skeleton } from "@deco/ui/components/skeleton.tsx";
 import { useViewMode } from "@deco/ui/hooks/use-view-mode.ts";
-import { Suspense, useCallback, useState } from "react";
+import { Suspense, useCallback, useState, type ReactNode } from "react";
 import { useNavigateWorkspace } from "../../hooks/use-navigate-workspace.ts";
 import { EmptyState } from "../common/empty-state.tsx";
 import { ListPageHeader } from "../common/list-page-header.tsx";
@@ -59,15 +59,23 @@ function ListTriggersSkeleton() {
   );
 }
 
-export default function ListTriggers() {
+export default function ListTriggers({
+  headerSlot,
+}: {
+  headerSlot?: ReactNode;
+} = {}) {
   return (
     <Suspense fallback={<ListTriggersSkeleton />}>
-      <ListTriggersSuspended />
+      <ListTriggersSuspended headerSlot={headerSlot} />
     </Suspense>
   );
 }
 
-function ListTriggersSuspended() {
+function ListTriggersSuspended({
+  headerSlot,
+}: {
+  headerSlot?: ReactNode;
+}) {
   const { data, isLoading } = useListTriggers();
   const [search, setSearch] = useState("");
   const [viewMode, setViewMode] = useViewMode("triggers");
@@ -93,6 +101,7 @@ function ListTriggersSuspended() {
   return (
     <DecopilotLayout value={decopilotContextValue}>
       <div className="p-4 flex flex-col gap-4 h-full">
+        {headerSlot}
         {isCreateModalOpen && (
           <TriggerModal
             isOpen={isCreateModalOpen}

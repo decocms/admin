@@ -812,7 +812,7 @@ export default function AppDetail() {
               onDelete={(arg) => {
                 performDelete(arg);
                 if (data.info.provider === "custom") {
-                  navigateWorkspace("/discover");
+                  navigateWorkspace("/store");
                 }
               }}
             />

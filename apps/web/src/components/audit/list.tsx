@@ -262,7 +262,7 @@ export function AuditListContent({
 
 function AuditList() {
   return (
-    <div className="h-full text-foreground px-6 py-6 overflow-x-auto w-full">
+    <div className="h-full w-full text-foreground overflow-x-auto p-4 flex flex-col gap-2">
       <ErrorBoundary fallback={<AuditListErrorFallback />}>
         <Suspense
           fallback={

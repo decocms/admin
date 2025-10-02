@@ -191,7 +191,7 @@ export default function InstalledAppsList() {
             setViewMode={setViewMode}
             actionsRight={
               <Button asChild variant="special">
-                <Link to={workspaceLink(`/discover`)}>Discover Apps</Link>
+                <Link to={workspaceLink(`/store`)}>Store</Link>
               </Button>
             }
           />

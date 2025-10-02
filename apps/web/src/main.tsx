@@ -12,6 +12,7 @@ import { createRoot } from "react-dom/client";
 import {
   createBrowserRouter,
   RouterProvider,
+  Navigate,
   useLocation,
   useRouteError,
 } from "react-router";
@@ -124,8 +125,12 @@ const AppInstallSuccess = lazy(() =>
   ),
 );
 
-const AgentList = lazy(() =>
-  wrapWithUILoadingFallback(import("./components/agents/list.tsx")),
+const AgentsListPage = lazy(() =>
+  wrapWithUILoadingFallback(import("./components/agents/list-page.tsx")),
+);
+
+const AgentsThreadsPage = lazy(() =>
+  wrapWithUILoadingFallback(import("./components/agents/threads-page.tsx")),
 );
 
 const AgentDetail = lazy(() =>
@@ -164,14 +169,6 @@ const Usage = lazy(() =>
   wrapWithUILoadingFallback(import("./components/settings/usage/usage.tsx")),
 );
 
-const Activity = lazy(() =>
-  wrapWithUILoadingFallback(import("./components/monitor/page.tsx")),
-);
-
-const TriggerList = lazy(() =>
-  wrapWithUILoadingFallback(import("./components/triggers/list.tsx")),
-);
-
 const TriggerDetails = lazy(() =>
   wrapWithUILoadingFallback(
     import("./components/triggers/trigger-details.tsx"),
@@ -194,8 +191,10 @@ const PromptDetail = lazy(() =>
   wrapWithUILoadingFallback(import("./components/prompts/detail/detail.tsx")),
 );
 
-const WorkflowListPage = lazy(() =>
-  wrapWithUILoadingFallback(import("./components/workflows/list.tsx")),
+const WorkflowsRunsPage = lazy(() =>
+  wrapWithUILoadingFallback(
+    import("./components/workflows/runs-page.tsx"),
+  ),
 );
 
 const WorkflowDetailPage = lazy(() =>
@@ -218,7 +217,7 @@ const LegacyViewRedirect = lazy(() =>
   wrapWithUILoadingFallback(import("./components/views/legacy-redirect.tsx")),
 );
 
-const Discover = lazy(() =>
+const Store = lazy(() =>
   wrapWithUILoadingFallback(import("./components/discover/index.tsx")),
 );
 
@@ -232,9 +231,15 @@ const ResourcesV2Detail = lazy(() =>
 );
 
 // Workflows resource list
-const WorkflowsResourceList = lazy(() =>
+const WorkflowsListPage = lazy(() =>
   wrapWithUILoadingFallback(
-    import("./components/workflows/workflows-resource-list.tsx"),
+    import("./components/workflows/list-page.tsx"),
+  ),
+);
+
+const WorkflowsTriggersPage = lazy(() =>
+  wrapWithUILoadingFallback(
+    import("./components/workflows/triggers-page.tsx"),
   ),
 );
 
@@ -414,27 +419,47 @@ const router = createBrowserRouter([
         Component: ProjectLayout,
         children: [
           { index: true, Component: ProjectHome },
-          { path: "discover", Component: Discover },
+          { path: "store", Component: Store },
+          {
+            path: "discover",
+            Component: () => <Navigate to="../store" replace />,
+          },
           { path: "tools", Component: ToolsResourceList },
-          { path: "agents", Component: AgentList },
+          { path: "agents", Component: AgentsListPage },
+          { path: "agents/threads", Component: AgentsThreadsPage },
           { path: "agent/:id/:threadId", Component: AgentDetail },
           { path: "apps", Component: InstalledAppsList },
           { path: "apps/:appKey", Component: AppDetail },
           { path: "apps/success", Component: AppInstallSuccess },
-          { path: "triggers", Component: TriggerList },
+          {
+            path: "triggers",
+            Component: () => <Navigate to="../workflows/triggers" replace />,
+          },
           { path: "trigger/:id", Component: TriggerDetails },
           { path: "views", Component: ViewsList },
           { path: "views/:integrationId/:viewName", Component: ViewDetail },
           { path: "views/:id", Component: LegacyViewRedirect },
           { path: "prompts", Component: ListPrompts },
           { path: "prompt/:id", Component: PromptDetail },
-          { path: "workflow-runs", Component: WorkflowListPage },
+          {
+            path: "workflow-runs",
+            Component: () => <Navigate to="../workflows/runs" replace />,
+          },
           {
             path: "workflow-runs/:workflowName/instances/:instanceId",
             Component: WorkflowDetailPage,
           },
-          { path: "workflows", Component: WorkflowsResourceList },
-          { path: "activity", Component: Activity },
+          { path: "workflows", Component: WorkflowsListPage },
+          { path: "workflows/runs", Component: WorkflowsRunsPage },
+          {
+            path: "workflows/runs/:workflowName/instances/:instanceId",
+            Component: WorkflowDetailPage,
+          },
+          { path: "workflows/triggers", Component: WorkflowsTriggersPage },
+          {
+            path: "activity",
+            Component: () => <Navigate to="../agents/threads" replace />,
+          },
           { path: "audit/:id", Component: AuditDetail },
           // Resources v2 list/detail routes
           {

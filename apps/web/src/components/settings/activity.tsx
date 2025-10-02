@@ -1,4 +1,4 @@
-import { Suspense } from "react";
+import { Suspense, type ReactNode } from "react";
 import { Spinner } from "@deco/ui/components/spinner.tsx";
 import {
   Alert,
@@ -21,14 +21,19 @@ function ActivityErrorFallback() {
   );
 }
 
-export default function ActivitySettings() {
+export default function ActivitySettings({
+  headerSlot,
+}: {
+  headerSlot?: ReactNode;
+} = {}) {
   const decopilotContextValue: DecopilotContextValue = {
     additionalTools: {},
   };
 
   return (
     <DecopilotLayout value={decopilotContextValue}>
-      <div className="h-full text-foreground px-6 py-6 overflow-x-auto w-full">
+      <div className="h-full w-full text-foreground overflow-x-auto p-4 flex flex-col gap-2">
+        {headerSlot}
         <ErrorBoundary fallback={<ActivityErrorFallback />}>
           <Suspense
             fallback={

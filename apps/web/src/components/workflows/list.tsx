@@ -22,7 +22,7 @@ import {
   TooltipTrigger,
 } from "@deco/ui/components/tooltip.tsx";
 import { useViewMode } from "@deco/ui/hooks/use-view-mode.ts";
-import { useMemo, useState } from "react";
+import { useMemo, useState, type ReactNode } from "react";
 import { useSearchParams } from "react-router";
 import { useNavigateWorkspace } from "../../hooks/use-navigate-workspace.ts";
 import { formatToolName } from "../chat/utils/format-tool-name.ts";
@@ -176,7 +176,7 @@ function WorkflowRunsTableView({
   );
 }
 
-function WorkflowRuns() {
+function WorkflowRuns({ headerSlot }: { headerSlot?: ReactNode } = {}) {
   const [_searchParams, _setSearchParams] = useSearchParams();
   const [viewMode, setViewMode] = useViewMode("workflows-list");
   const [filter, setFilter] = useState("");
@@ -225,6 +225,7 @@ function WorkflowRuns() {
     <DecopilotLayout value={decopilotContextValue}>
       <ScrollArea className="h-full">
         <div className="flex flex-col gap-4 h-full py-4">
+          {headerSlot ? <div className="px-4">{headerSlot}</div> : null}
           <div className="px-4 overflow-x-auto">
             <div className="flex items-center gap-2 mb-4">
               <ListPageHeader

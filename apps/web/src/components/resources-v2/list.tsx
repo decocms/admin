@@ -18,7 +18,7 @@ import {
 } from "@deco/ui/components/tooltip.tsx";
 import { useViewMode } from "@deco/ui/hooks/use-view-mode.ts";
 import { useQuery } from "@tanstack/react-query";
-import { useDeferredValue, useMemo, useState } from "react";
+import { useDeferredValue, useMemo, useState, type ReactNode } from "react";
 import { useParams, useSearchParams } from "react-router";
 import { z } from "zod";
 import { useNavigateWorkspace } from "../../hooks/use-navigate-workspace.ts";
@@ -45,9 +45,11 @@ type ResourceListItem = ResourceItem<typeof BaseResourceDataSchema>;
 function ResourcesV2ListTab({
   integrationId,
   resourceName,
+  headerSlot,
 }: {
   integrationId?: string;
   resourceName?: string;
+  headerSlot?: ReactNode;
 }) {
   const [searchParams, setSearchParams] = useSearchParams();
   const integration = useIntegration(integrationId ?? "").data;
@@ -215,6 +217,7 @@ function ResourcesV2ListTab({
 
   return (
     <div className="p-4 space-y-3 h-full">
+      {headerSlot}
       <ListPageHeader
         input={{
           placeholder: `Search ${resourceName}...`,
@@ -412,9 +415,11 @@ function ResourcesV2ListTab({
 export function ResourcesV2List({
   integrationId,
   resourceName,
+  headerSlot,
 }: {
   integrationId?: string;
   resourceName?: string;
+  headerSlot?: ReactNode;
 }) {
   const integration = useIntegration(integrationId ?? "").data;
 
@@ -451,6 +456,7 @@ export function ResourcesV2List({
         <ResourcesV2ListTab
           integrationId={integrationId}
           resourceName={resourceName}
+          headerSlot={headerSlot}
         />
       </ResourceRouteProvider>
     </DecopilotLayout>

@@ -297,15 +297,7 @@ function WorkspaceViews() {
     return workspaceLink(path ?? "/");
   }
 
-  const wellKnownItems = [
-    "Tools",
-    "Agents",
-    "Workflows",
-    "Workflow Runs",
-    "Views",
-    "Prompts",
-    "Triggers",
-  ];
+  const wellKnownItems = ["Tools", "Views", "Workflows", "Agents"];
 
   function buildResourceHrefFromResource(resource: {
     integration_id: string;
@@ -323,9 +315,9 @@ function WorkspaceViews() {
         predefinedOrder.indexOf(a.title) - predefinedOrder.indexOf(b.title)
       );
     });
-  const otherItems = firstLevelViews.filter((item) =>
-    ["Activity"].includes(item.title),
-  );
+  const hasIntegrationMenus =
+    Object.keys(fromIntegration).length > 0 ||
+    Object.keys(fromIntegrationResources).length > 0;
 
   return (
     <>
@@ -333,7 +325,7 @@ function WorkspaceViews() {
         <SidebarMenuButton
           className="cursor-pointer"
           onClick={() => {
-            navigateWorkspace("/discover");
+            navigateWorkspace("/store");
           }}
         >
           <Icon
@@ -341,7 +333,7 @@ function WorkspaceViews() {
             size={20}
             className="text-muted-foreground/75"
           />
-          <span className="truncate">Discover</span>
+          <span className="truncate">Store</span>
         </SidebarMenuButton>
       </SidebarMenuItem>
 
@@ -396,62 +388,7 @@ function WorkspaceViews() {
           </SidebarMenuItem>
         );
       })}
-      {/* Regular items */}
-      {otherItems.map((item) => {
-        const href = buildViewHrefFromView(item as View);
-
-        return (
-          <SidebarMenuItem key={item.title}>
-            <WithActive to={href}>
-              {({ isActive }) => (
-                <SidebarMenuButton
-                  asChild
-                  isActive={isActive}
-                  tooltip={item.title}
-                >
-                  <Link
-                    to={href}
-                    className="group/item"
-                    onClick={() => {
-                      trackEvent("sidebar_navigation_click", {
-                        item: item.title,
-                      });
-                      isMobile && toggleSidebar();
-                    }}
-                  >
-                    <Icon
-                      name={item.icon}
-                      filled={isActive}
-                      size={20}
-                      className="text-muted-foreground/75"
-                    />
-                    <span className="truncate">{item.title}</span>
-
-                    {item.type === "custom" && (
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        className="text-destructive hover:text-destructive ml-auto group-hover/item:block! hidden! p-0.5 h-6"
-                        onClick={(e) => {
-                          e.preventDefault();
-                          e.stopPropagation();
-                          handleRemoveView(item);
-                        }}
-                      >
-                        <Icon
-                          name="remove"
-                          size={20}
-                          className="text-muted-foreground ml-auto group-hover/item:block! hidden!"
-                        />
-                      </Button>
-                    )}
-                  </Link>
-                </SidebarMenuButton>
-              )}
-            </WithActive>
-          </SidebarMenuItem>
-        );
-      })}
+      {hasIntegrationMenus && <SidebarSeparator className="my-2 -ml-1" />}
       {Object.entries(fromIntegration).map(([integrationId, views]) => {
         const integration = integrationMap.get(integrationId);
         const isSingleView = views.length === 1;

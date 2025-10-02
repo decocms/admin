@@ -20,7 +20,7 @@ import {
   createToolViewsV2,
   createWorkflowBindingImpl,
   createWorkflowResourceV2Implementation,
-  createWorkflowViews,
+  workflowViews as legacyWorkflowViews,
   createWorkflowViewsV2,
   DECONFIG_TOOLS,
   EMAIL_TOOLS,
@@ -158,10 +158,17 @@ const createMCPHandlerFor = (
       { capabilities: { tools: {} } },
     );
 
+    const registeredTools = new Set<string>();
     for (const tool of await (typeof tools === "function" ? tools(c) : tools)) {
       if (group && tool.group !== group) {
         continue;
       }
+
+      if (registeredTools.has(tool.name)) {
+        continue;
+      }
+
+      registeredTools.add(tool.name);
 
       server.registerTool(
         tool.name,
@@ -506,7 +513,7 @@ app.get("/mcp/groups", (ctx) => {
   return ctx.json(getApps());
 });
 
-const loadToolsManagementTools = (ctx: Context) => {
+const createContextBasedTools = (ctx: Context) => {
   const appCtx = honoCtxToAppCtx(ctx);
   const client = createDeconfigClientForContext(appCtx);
 
@@ -533,12 +540,43 @@ const loadToolsManagementTools = (ctx: Context) => {
   // Create Views 2.0 implementation for tool views
   const toolViewsV2 = createToolViewsV2();
 
-  return [
+  // Create Resources 2.0 workflow resource implementation
+  const workflowResourceV2 = createWorkflowResourceV2Implementation(
+    client,
+    WellKnownMcpGroups.Workflows,
+  );
+
+  const resourceWorkflowRead: WorkflowBindingImplOptions["resourceWorkflowRead"] =
+    ((uri) =>
+      State.run(
+        appCtx,
+        async () => await resourcesClient.DECO_RESOURCE_WORKFLOW_READ({ uri }),
+      )) as WorkflowBindingImplOptions["resourceWorkflowRead"];
+
+  // Create workflow execution tools using createWorkflowBindingImpl
+  const workflowBinding = createWorkflowBindingImpl({
+    resourceWorkflowRead,
+  });
+
+  // Create Views 2.0 implementation for workflow views
+  const workflowViewsV2 = createWorkflowViewsV2();
+
+  // Create legacy workflow views for backward compatibility
+
+  const workflowTools = [
+    ...workflowResourceV2, // Add new Resources 2.0 implementation
+    ...workflowBinding, // Add workflow execution tools
+    ...workflowViewsV2, // Add Views 2.0 implementation
+    ...legacyWorkflowViews, // Add legacy workflow views
+  ].map((tool) => ({ ...tool, group: WellKnownMcpGroups.Workflows }));
+
+  const toolsManagementTools = [
     ...toolResourceV2, // Add new Resources 2.0 implementation
     ...callTool, // Add tool execution functionality
     runTool,
     ...toolViewsV2, // Add Views 2.0 implementation
   ].map((tool) => ({ ...tool, group: WellKnownMcpGroups.Tools }));
+  return [...workflowTools, ...toolsManagementTools];
 };
 
 app.all(
@@ -552,55 +590,10 @@ app.all(
 );
 
 const projectTools = (ctx: Context) => {
-  return Promise.resolve([...PROJECT_TOOLS, ...loadToolsManagementTools(ctx)]);
+  return Promise.resolve([...PROJECT_TOOLS, ...createContextBasedTools(ctx)]);
 };
 
 app.all("/:org/:project/mcp", createMCPHandlerFor(projectTools));
-
-app.all(
-  `/:org/:project/${WellKnownMcpGroups.Workflows}/mcp`,
-  createMCPHandlerFor((ctx) => {
-    const appCtx = honoCtxToAppCtx(ctx);
-    const client = createDeconfigClientForContext(appCtx);
-
-    // Create Resources 2.0 workflow resource implementation
-    const workflowResourceV2 = createWorkflowResourceV2Implementation(
-      client,
-      WellKnownMcpGroups.Workflows,
-    );
-
-    const resourcesClient = createMCPToolsStub({
-      tools: workflowResourceV2,
-      context: appCtx,
-    });
-
-    const resourceWorkflowRead: WorkflowBindingImplOptions["resourceWorkflowRead"] =
-      ((uri) =>
-        State.run(
-          appCtx,
-          async () =>
-            await resourcesClient.DECO_RESOURCE_WORKFLOW_READ({ uri }),
-        )) as WorkflowBindingImplOptions["resourceWorkflowRead"];
-
-    // Create workflow execution tools using createWorkflowBindingImpl
-    const workflowBinding = createWorkflowBindingImpl({
-      resourceWorkflowRead,
-    });
-
-    // Create Views 2.0 implementation for workflow views
-    const workflowViewsV2 = createWorkflowViewsV2();
-
-    // Create legacy workflow views for backward compatibility
-    const legacyWorkflowViews = createWorkflowViews();
-
-    return Promise.resolve([
-      ...workflowResourceV2, // Add new Resources 2.0 implementation
-      ...workflowBinding, // Add workflow execution tools
-      ...workflowViewsV2, // Add Views 2.0 implementation
-      ...legacyWorkflowViews, // Add legacy workflow views
-    ]);
-  }),
-);
 
 app.all("/:org/:project/agents/:agentId/mcp", createMCPHandlerFor(AGENT_TOOLS));
 

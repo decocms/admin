@@ -365,7 +365,7 @@ export function createMCPToolsStub<TDefinition extends readonly ToolLike[]>(
 export {
   createWorkflowBindingImpl,
   createWorkflowResourceV2Implementation,
-  createWorkflowViews,
+  workflowViews,
   createWorkflowViewsV2,
   WorkflowResource,
   WorkflowResourceV2,

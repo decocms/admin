@@ -292,7 +292,7 @@ const virtualIntegrationsFor = (
     workspace: Locator.adaptToRootSlug(locator),
     created_at: new Date().toISOString(),
   };
-  const { url: workspaceMcp, projectPath } = projectUrlFromLocator(locator);
+  const { url: workspaceMcp } = projectUrlFromLocator(locator);
 
   const contractsMcp = new URL("/contracts/mcp", DECO_CMS_API_URL);
   const contractsIntegration = {
@@ -304,25 +304,7 @@ const virtualIntegrationsFor = (
       url: contractsMcp.href,
       token,
     },
-    workspace: Locator.adaptToRootSlug(locator),
-    created_at: new Date().toISOString(),
-  };
-
-  const workflowsMcp = new URL(
-    `${projectPath}/${WellKnownMcpGroups.Workflows}/mcp`,
-    DECO_CMS_API_URL,
-  );
-
-  const workflowsIntegration = {
-    id: formatId("i", WellKnownMcpGroups.Workflows),
-    name: "Workflows Management",
-    description: "Manage your workflows",
-    connection: {
-      type: "HTTP",
-      url: workflowsMcp.href,
-      token,
-    },
-    icon: "https://assets.decocache.com/mcp/81d602bb-45e2-4361-b52a-23379520a34d/sandbox.png",
+    icon: "https://assets.decocache.com/mcp/10b5e8b4-a4e2-4868-8a7d-8cf9b46f0d79/contract.png",
     workspace: Locator.adaptToRootSlug(locator),
     created_at: new Date().toISOString(),
   };
@@ -369,7 +351,6 @@ const virtualIntegrationsFor = (
     userManagementIntegration,
     workspaceManagementIntegration,
     ...integrationGroups,
-    workflowsIntegration,
     contractsIntegration,
     ...knowledgeBases.map((kb) => {
       return toKbIntegration(KnowledgeBaseID.format(kb), locator, token);

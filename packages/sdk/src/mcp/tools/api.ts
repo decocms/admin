@@ -234,6 +234,7 @@ export const runTool = createToolManagementTool({
 export const ToolResourceV2 = DeconfigResourceV2.define({
   directory: "/src/tools",
   resourceName: "tool",
+  group: WellKnownMcpGroups.Tools,
   dataSchema: ToolDefinitionSchema,
   enhancements: {
     DECO_RESOURCE_TOOL_SEARCH: {

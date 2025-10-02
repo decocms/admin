@@ -344,6 +344,7 @@ export function InternalResourceListWithIntegration({
         },
       }}
       view={{ viewMode, onChange: setViewMode }}
+      controlsAlign="start"
       actionsRight={
         <div className="pl-3 ml-2 border-l border-border flex items-center gap-2">
           <TooltipProvider>

@@ -122,6 +122,7 @@ function ListTriggersSuspended({
             viewMode,
             onChange: setViewMode,
           }}
+          controlsAlign="start"
           actionsRight={
             <Button
               variant="special"

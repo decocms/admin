@@ -236,6 +236,7 @@ function WorkflowRuns({ headerSlot }: { headerSlot?: ReactNode } = {}) {
                     setFilter(e.target.value),
                 }}
                 view={{ viewMode, onChange: setViewMode }}
+                controlsAlign="start"
               />
               <Select
                 value={selectedWorkflow}

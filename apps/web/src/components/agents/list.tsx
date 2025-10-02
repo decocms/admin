@@ -508,6 +508,7 @@ function AgentsList({ headerSlot }: { headerSlot?: ReactNode } = {}) {
               dispatch({ type: "SET_FILTER", payload: e.target.value }),
           }}
           view={{ viewMode, onChange: setViewMode }}
+          controlsAlign="start"
           actionsRight={
             <Button variant="special" onClick={handleCreate}>
               <Icon name="add" size={16} />

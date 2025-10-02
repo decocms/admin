@@ -18,6 +18,7 @@ interface Props<TChiplet extends Chiplet> {
   view?: ComponentProps<typeof ViewModeSwitcher>;
   actionsLeft?: ReactNode;
   actionsRight?: ReactNode;
+  controlsAlign?: "start" | "end";
 }
 
 interface Chiplet {
@@ -67,20 +68,41 @@ export function ListPageHeader<TChiplet extends Chiplet>({
   view,
   actionsLeft,
   actionsRight,
+  controlsAlign = "end",
 }: Props<TChiplet>) {
+  const filterItems = filter?.items ?? [];
+  const hasLeftContent = filterItems.length > 0 || actionsLeft;
+  const controlsAlignmentClass =
+    controlsAlign === "start"
+      ? "justify-self-start md:justify-self-start"
+      : "justify-self-end md:justify-self-end";
+
   return (
-    <div className="w-full grid grid-cols-1 md:grid-cols-[minmax(0,1fr)_auto] gap-2">
-      <div className="flex items-center gap-2 overflow-x-auto no-scrollbar min-w-0">
-        {filter?.items.map((chiplet) => (
-          <Chiplet
-            key={chiplet.id}
-            item={chiplet}
-            onClick={filter.onClick as (item: Chiplet) => void}
-          />
-        ))}
-        {actionsLeft}
-      </div>
-      <div className="flex items-center gap-2 justify-self-auto md:justify-self-end p-1 min-w-0 shrink-0">
+    <div
+      className={cn(
+        "w-full grid grid-cols-1 gap-2",
+        hasLeftContent ? "md:grid-cols-[minmax(0,1fr)_auto]" : "md:grid-cols-1",
+      )}
+    >
+      {hasLeftContent && (
+        <div className="flex items-center gap-2 overflow-x-auto no-scrollbar min-w-0">
+          {filter &&
+            filterItems.map((chiplet) => (
+              <Chiplet
+                key={chiplet.id}
+                item={chiplet}
+                onClick={filter.onClick as (item: Chiplet) => void}
+              />
+            ))}
+          {actionsLeft}
+        </div>
+      )}
+      <div
+        className={cn(
+          "flex items-center gap-2 justify-self-auto p-1 min-w-0 shrink-0",
+          controlsAlignmentClass,
+        )}
+      >
         {view && <ViewModeSwitcher {...view} />}
         {input && (
           <Input

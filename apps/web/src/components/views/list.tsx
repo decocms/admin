@@ -258,6 +258,7 @@ function ViewsList() {
             onChange: (e) => setSearchTerm(e.target.value),
           }}
           view={{ viewMode, onChange: setViewMode }}
+          controlsAlign="start"
         />
 
         {isLoadingViews && (

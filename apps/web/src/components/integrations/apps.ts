@@ -14,6 +14,7 @@ import {
   MCPConnection,
   useIntegrations,
   useMarketplaceIntegrations,
+  maybeRegistryApp,
   WELL_KNOWN_KNOWLEDGE_BASE_CONNECTION_ID_STARTSWITH,
   WellKnownMcpGroupIds,
 } from "@deco/sdk";
@@ -24,6 +25,7 @@ import {
 } from "../../lib/broadcast-channels.ts";
 import { LEGACY_INTEGRATIONS } from "../../constants.ts";
 import { AppName } from "@deco/sdk/common";
+import { MarketplaceIntegration } from "./marketplace.tsx";
 
 export interface GroupedApp {
   id: string;
@@ -45,6 +47,10 @@ export interface AppKey {
 
 export const AppKeys = {
   build: (key: AppKey) => `${key.provider}:::${key.appId}`,
+  toAppName: (key: string) => {
+    const { provider, appId } = AppKeys.parse(key);
+    return `@${provider}/${appId}`;
+  },
   parse: (key: string) => {
     const [provider, appId] = key.split(":::");
     return {
@@ -250,7 +256,9 @@ export function useGroupedApps({ filter }: { filter: string }) {
 export function useGroupedApp({ appKey }: { appKey: string }) {
   const { data: installedIntegrations, refetch: refetchIntegrations } =
     useIntegrations();
-  const { data: marketplace } = useMarketplaceIntegrations();
+  const app = maybeRegistryApp({
+    app: AppKeys.toAppName(appKey),
+  });
   useRefetchIntegrationsOnNotification();
 
   const instances = useMemo(() => {
@@ -258,31 +266,19 @@ export function useGroupedApp({ appKey }: { appKey: string }) {
     return grouped[appKey];
   }, [installedIntegrations, appKey]);
 
-  const info = useMemo(() => {
+  const info = useMemo<Partial<MarketplaceIntegration>>(() => {
     const wellKnownApp = WELL_KNOWN_APPS[appKey];
     if (wellKnownApp) {
       return wellKnownApp;
     }
 
-    const marketplaceApp = marketplace?.integrations?.find((app) => {
-      const key = getConnectionAppKey(app);
-      const appKeyToCompare = AppKeys.build(key);
-      if (appKeyToCompare === appKey) {
-        return true;
-      }
-    });
-
-    if (marketplaceApp) {
+    if (app) {
       return {
-        id: marketplaceApp.id,
-        name: marketplaceApp.name,
-        icon: marketplaceApp.icon,
-        description: marketplaceApp.description,
-        provider: marketplaceApp.provider,
-        connection: marketplaceApp.connection,
-        verified: marketplaceApp.verified,
-        friendlyName: marketplaceApp.friendlyName,
-      };
+        ...app,
+        description: app.description ?? "No description available",
+        name: AppName.build(app.scopeName, app.name),
+        provider: "marketplace",
+      } satisfies MarketplaceIntegration;
     }
 
     const firstInstance = instances?.[0];
@@ -300,7 +296,7 @@ export function useGroupedApp({ appKey }: { appKey: string }) {
       description: "No description available",
       provider: "unknown",
     };
-  }, [marketplace, appKey, instances]);
+  }, [appKey, instances]);
 
   return {
     info,

@@ -104,6 +104,7 @@ const wrapIWorkspaceDB = (
 
 const createWorkspaceDB = async (
   options: Pick<AppContext, "workspaceDO"> & {
+    user?: AppContext["user"];
     workspace: Pick<NonNullable<AppContext["workspace"]>, "value">;
     envVars: Pick<EnvVars, "TURSO_GROUP_DATABASE_TOKEN" | "TURSO_ORGANIZATION">;
   },
@@ -117,8 +118,15 @@ const createWorkspaceDB = async (
   const shouldUseSQLite = turso !== true;
 
   if (shouldUseSQLite) {
+    const dbId =
+      typeof options.user === "object" &&
+      "integrationId" in options.user &&
+      typeof options.user.integrationId === "string"
+        ? options.user.integrationId
+        : undefined;
+    const uniqueDbName = dbId ? `${dbId}-${workspace.value}` : workspace.value;
     return workspaceDO.get(
-      workspaceDO.idFromName(workspace.value),
+      workspaceDO.idFromName(uniqueDbName),
     ) as IWorkspaceDB;
   }
 
@@ -145,6 +153,7 @@ const createWorkspaceDB = async (
 
 export const workspaceDB = async (
   options: Pick<AppContext, "workspaceDO"> & {
+    user?: AppContext["user"];
     workspace: Pick<NonNullable<AppContext["workspace"]>, "value">;
     envVars: Pick<EnvVars, "TURSO_GROUP_DATABASE_TOKEN" | "TURSO_ORGANIZATION">;
   },

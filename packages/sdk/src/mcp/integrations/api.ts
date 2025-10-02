@@ -1103,6 +1103,8 @@ It's always handy to search for installed integrations with no query, since all 
   },
 });
 
+const NO_TOOL_FOUND_ERR =
+  "MCP error -32602: MCP error -32602: Tool DECO_CHAT_OAUTH_START not found";
 export const DECO_INTEGRATION_OAUTH_START = createIntegrationManagementTool({
   name: "DECO_INTEGRATION_OAUTH_START",
   description: "Start the OAuth flow for an integration",
@@ -1159,18 +1161,39 @@ export const DECO_INTEGRATION_OAUTH_START = createIntegrationManagementTool({
           returnUrl,
         },
       },
-    })) as {
-      structuredContent:
-        | { redirectUrl: string }
-        | {
-            stateSchema: unknown;
-            scopes?: string[];
-          };
-    };
+    })) as
+      | {
+          structuredContent:
+            | { redirectUrl: string }
+            | {
+                stateSchema: unknown;
+                scopes?: string[];
+              };
+        }
+      | {
+          error: string;
+        };
+    if (oauth && "error" in oauth) {
+      if (oauth.error === NO_TOOL_FOUND_ERR) {
+        return {
+          stateSchema: DEFAULT_APP_SCHEMA.schema,
+          scopes: DEFAULT_APP_SCHEMA.scopes,
+        };
+      }
+      throw new Error(oauth.error);
+    }
 
     return oauth.structuredContent;
   },
 });
+
+const DEFAULT_APP_SCHEMA = {
+  schema: {
+    type: "object",
+    properties: {},
+  },
+  scopes: [],
+};
 
 export const DECO_GET_APP_SCHEMA = createIntegrationManagementTool({
   name: "DECO_GET_APP_SCHEMA",
@@ -1198,22 +1221,34 @@ export const DECO_GET_APP_SCHEMA = createIntegrationManagementTool({
           returnUrl: "",
         },
       },
-    })) as {
-      structuredContent:
-        | { redirectUrl: string }
-        | {
-            stateSchema: unknown;
-            scopes?: string[];
-          };
-    };
+    })) as
+      | {
+          structuredContent:
+            | { redirectUrl: string }
+            | {
+                stateSchema: unknown;
+                scopes?: string[];
+              };
+        }
+      | { error: string };
 
-    if ("redirectUrl" in result.structuredContent) {
+    if ("error" in result) {
+      if (result.error === NO_TOOL_FOUND_ERR) {
+        return DEFAULT_APP_SCHEMA;
+      }
+      throw new Error(result.error);
+    }
+
+    const isObject = typeof result?.structuredContent === "object";
+
+    if ((isObject && "redirectUrl" in result.structuredContent) || !isObject) {
       throw new Error("Redirect URL returned, but we expected a state schema");
     }
 
     return {
-      schema: result.structuredContent.stateSchema,
-      scopes: result.structuredContent.scopes,
+      schema: (result.structuredContent as { stateSchema: unknown })
+        .stateSchema,
+      scopes: (result.structuredContent as { scopes: string[] }).scopes,
     };
   },
 });

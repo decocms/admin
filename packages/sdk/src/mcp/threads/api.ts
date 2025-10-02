@@ -37,14 +37,7 @@ async function getWorkspaceMemory(c: AppContext) {
 
 async function getWorkspaceDB(c: AppContext) {
   assertHasWorkspace(c);
-  return await workspaceDB({
-    workspaceDO: c.workspaceDO,
-    workspace: { value: c.workspace.value },
-    envVars: {
-      TURSO_GROUP_DATABASE_TOKEN: c.envVars.TURSO_GROUP_DATABASE_TOKEN,
-      TURSO_ORGANIZATION: c.envVars.TURSO_ORGANIZATION,
-    },
-  });
+  return await workspaceDB(c);
 }
 
 const safeParse = (str: string) => {
@@ -160,14 +153,7 @@ export const listThreads = createTool({
     limit ??= 10;
 
     const generateQuery = async ({ where }: { where: string }) => {
-      const db = await workspaceDB({
-        workspaceDO: c.workspaceDO,
-        workspace: { value: c.workspace.value },
-        envVars: {
-          TURSO_GROUP_DATABASE_TOKEN: c.envVars.TURSO_GROUP_DATABASE_TOKEN,
-          TURSO_ORGANIZATION: c.envVars.TURSO_ORGANIZATION,
-        },
-      });
+      const db = await workspaceDB(c);
       return safeExecute(db, {
         sql: `SELECT * FROM mastra_threads ${where} ORDER BY ${field} ${direction.toUpperCase()} LIMIT ?`,
         params: [...args, limit + 1], // Fetch one extra to determine if there are more

@@ -604,7 +604,7 @@ function AppsOAuth({
   state,
   workspace_hint,
 }: OAuthSearchParams) {
-  const { data: registryApp } = useRegistryApp({ clientId: client_id });
+  const { data: registryApp } = useRegistryApp({ app: client_id });
   const { data: orgs } = useOrganizations();
   const [org, setOrg] = useState<Team | null>(() =>
     preSelectTeam(orgs, workspace_hint),

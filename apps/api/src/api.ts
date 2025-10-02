@@ -4,6 +4,7 @@ import {
   DECO_CMS_WEB_URL,
   Locator,
   MCPConnection,
+  ProjectLocator,
   WellKnownMcpGroups,
 } from "@deco/sdk";
 import { DECO_CHAT_KEY_ID, getKeyPair } from "@deco/sdk/auth";
@@ -75,12 +76,20 @@ export const app = new Hono<AppEnv>();
 const contextToPrincipalExecutionContext = (
   c: Context<AppEnv>,
 ): PrincipalExecutionContext => {
-  const org = c.req.param("org") ?? c.req.param("root") ?? c.req.query("org");
-  const project =
+  let org = c.req.param("org") ?? c.req.param("root") ?? c.req.query("org");
+  let project =
     c.req.param("project") ?? c.req.param("slug") ?? c.req.query("project");
+  const user = c.get("user");
+  const userAud =
+    typeof user === "object" && "aud" in user ? user.aud : undefined;
+  // set org and project based on user aud
+  if (!org && !project && typeof userAud === "string") {
+    const parsed = Locator.parse(userAud as ProjectLocator);
+    org = parsed.org;
+    project = parsed.project;
+  }
   const locator = org && project ? Locator.from({ org, project }) : undefined;
 
-  const user = c.get("user");
   const uid = user?.id as string | undefined;
 
   const oldWorkspaceValue = locator
@@ -637,9 +646,11 @@ app.post("/:org/:project/:integrationId/tools/list", async (c) => {
   );
 });
 
-app.all("/:org/:project/i:databases-management/studio", async (c) => {
+app.all("/:org/:project/:integrationId/studio", async (c) => {
   const org = c.req.param("org");
   const project = c.req.param("project");
+  const integrationId = c.req.param("integrationId");
+  const isDefaultDb = integrationId === "i:databases-management";
   const ctx = honoCtxToAppCtx(c);
   const uid = ctx.user?.id as string | undefined;
   await assertWorkspaceResourceAccess(ctx, {
@@ -647,13 +658,14 @@ app.all("/:org/:project/i:databases-management/studio", async (c) => {
   });
 
   const locator = Locator.from({ org, project });
+  const id = Locator.adaptToRootSlug(locator, uid);
 
   // The DO id can be overridden by the client, both on the URL
   // for GET requests and on the body "id" property for POST requests
   // i've forked the library to add the ability to enforce the id
   return studio(c.req.raw, ctx.workspaceDO, {
     disableHomepage: true,
-    enforceId: Locator.adaptToRootSlug(locator, uid),
+    enforceId: isDefaultDb ? id : `${integrationId}-${id}`,
   });
 });
 

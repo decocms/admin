@@ -62,7 +62,7 @@ export function TypeSelectField<T extends FieldValues = FieldValues>({
   const { data: marketplace } = useMarketplaceIntegrations();
   const [installingIntegration, setInstallingIntegration] =
     useState<MarketplaceIntegration | null>(null);
-  const { data: app } = useRegistryApp({ clientId: typeValue, mode: "sync" });
+  const { data: app } = useRegistryApp({ app: typeValue, mode: "sync" });
 
   // Get integration state to check if we need to show dialog or install directly
   const integrationState = useIntegrationInstallState(typeValue);

@@ -26,35 +26,39 @@ export const WellKnownMcpGroups = {
   Tools: "tools-management",
   Workflows: "workflows-management",
   Self: "self",
-};
+} as const;
+
+type Groups = typeof WellKnownMcpGroups;
+
+export type WellKnownMcpGroupRecord = Record<Groups[keyof Groups], string>;
 
 // used to publish on the registry
-export const WellKnownAppNames: Partial<typeof WellKnownMcpGroups> = {
-  AI: "ai-gateway",
-  Agent: "agents",
-  AgentSetup: "agent-crud",
-  APIKeys: "api-keys",
-  Channel: "channels",
-  Contracts: "contracts",
-  Databases: "database",
-  Deconfig: "deconfig",
-  Email: "email-admin",
-  FS: "file-system",
-  Hosting: "hosting",
-  Integration: "integrations",
-  KnowledgeBaseManagement: "knowledge-base",
-  Model: "ai-models",
-  OAuth: "oauth-management",
-  Prompt: "prompts",
-  User: "users",
-  Registry: "registry",
-  Sandbox: "code-sandbox",
-  Team: "teams",
-  Thread: "threads",
-  Triggers: "triggers",
-  Wallet: "wallet",
-  Tools: "tools",
-  Workflows: "workflows",
+export const WellKnownAppNames: Partial<WellKnownMcpGroupRecord> = {
+  "ai-generation": "ai-gateway",
+  "agent-management": "agents",
+  "agent-setup": "agent-crud",
+  "api-keys-management": "api-keys",
+  "channel-management": "channels",
+  "contracts-management": "contracts",
+  "databases-management": "database",
+  "deconfig-management": "deconfig",
+  "email-management": "email-admin",
+  "file-system": "file-system",
+  hosting: "hosting",
+  "integration-management": "integrations",
+  "kb-management": "knowledge-base",
+  "model-management": "ai-models",
+  "oauth-management": "oauth-management",
+  "prompt-management": "prompts",
+  "user-management": "users",
+  "registry-management": "registry",
+  "code-sandbox": "code-sandbox",
+  "team-management": "teams",
+  "thread-management": "threads",
+  "triggers-management": "triggers",
+  "wallet-management": "wallet",
+  "tools-management": "tools",
+  "workflows-management": "workflows",
 };
 
 export type WellKnownMcpGroup = keyof typeof WellKnownMcpGroups;

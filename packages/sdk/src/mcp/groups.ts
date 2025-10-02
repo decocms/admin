@@ -1,8 +1,4 @@
-import {
-  WellKnownAppNames,
-  WellKnownMcpGroup,
-  WellKnownMcpGroups,
-} from "../crud/groups.ts";
+import { WellKnownAppNames } from "../crud/groups.ts";
 import type { Integration } from "../models/index.ts";
 export { WellKnownAppNames, WellKnownMcpGroups } from "../crud/groups.ts";
 export type GroupIntegration = Omit<Integration, "id" | "connection"> & {
@@ -20,41 +16,21 @@ export const getGroupByAppName = (appName?: string | null) => {
   if (!appName) {
     return undefined;
   }
-  const wellKnownName = Object.entries(WellKnownAppNames).find(
-    ([_, name]) => name === appName,
-  )?.[0];
-  if (!wellKnownName) {
-    return undefined;
-  }
-  return WellKnownMcpGroups[wellKnownName as WellKnownMcpGroup];
+  const inverseWellKnownAppNames = Object.fromEntries(
+    Object.entries(WellKnownAppNames).map(([group, name]) => [name, group]),
+  );
+  return inverseWellKnownAppNames[appName];
 };
 
 export const getAppNameFromGroup = (group: string) => {
-  const wellKnownName = Object.entries(WellKnownMcpGroups).find(
-    ([_, name]) => name === group,
-  )?.[0];
-  if (!wellKnownName) {
-    return undefined;
-  }
-  return WellKnownAppNames[wellKnownName as keyof typeof WellKnownAppNames];
+  return WellKnownAppNames[group as keyof typeof WellKnownAppNames];
 };
 
 export const getApps = () => {
-  const idToWellKnownName = Object.fromEntries(
-    Object.entries(WellKnownMcpGroups).map(([group, integration]) => [
-      integration,
-      group,
-    ]),
-  );
   return Object.entries(groups)
     .map(([groupname, integration]) => {
-      const wellKnownName: WellKnownMcpGroup | undefined = idToWellKnownName[
-        groupname
-      ] as WellKnownMcpGroup | undefined;
-      if (!wellKnownName) {
-        return undefined;
-      }
-      const group = WellKnownAppNames[wellKnownName];
+      const group =
+        WellKnownAppNames[groupname as keyof typeof WellKnownAppNames];
       if (!group) {
         return undefined;
       }

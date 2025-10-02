@@ -27,7 +27,7 @@ export function ChatInput({ disabled }: { disabled?: boolean } = {}) {
 
   const canSubmit =
     !isLoading &&
-    input.trim() &&
+    input?.trim() &&
     !uploadedFiles.some((uf) => uf.status === "uploading");
 
   const handleRichTextChange = (markdown: string) => {

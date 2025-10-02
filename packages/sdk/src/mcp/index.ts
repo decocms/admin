@@ -365,11 +365,12 @@ export function createMCPToolsStub<TDefinition extends readonly ToolLike[]>(
 export {
   createWorkflowBindingImpl,
   createWorkflowResourceV2Implementation,
+  createWorkflowViews,
   createWorkflowViewsV2,
   WorkflowResource,
   WorkflowResourceV2,
-  type WorkflowDataV2,
   type WorkflowBindingImplOptions,
+  type WorkflowDataV2,
 } from "./workflows/api.ts";
 
 export {
@@ -377,8 +378,8 @@ export {
   createToolResourceV2Implementation,
   createToolRunImpl,
   ToolResourceV2,
-  type ToolDataV2,
   type ToolBindingImplOptions,
+  type ToolDataV2,
 } from "./tools/api.ts";
 
 // Export Resources 2.0 bindings function

@@ -3,10 +3,12 @@ import z from "zod";
 import { formatIntegrationId, WellKnownMcpGroups } from "../../crud/groups.ts";
 import { DeconfigResourceV2 } from "../deconfig-v2/index.ts";
 import {
+  AppContext,
   assertWorkspaceResourceAccess,
   createTool,
   DeconfigClient,
   MCPClient,
+  WithTool,
 } from "../index.ts";
 import {
   createDetailViewUrl,
@@ -23,10 +25,68 @@ import {
 } from "./prompts.ts";
 import { ToolDefinitionSchema } from "./schemas.ts";
 import { asEnv, evalCodeAndReturnDefaultHandle, validate } from "./utils.ts";
+
 export interface ToolBindingImplOptions {
   resourceToolRead: (
     uri: string,
   ) => Promise<{ data: z.infer<typeof ToolDefinitionSchema> }>;
+}
+
+/**
+ * Common tool execution logic shared between different tool implementations
+ */
+async function executeToolWithValidation(
+  tool: z.infer<typeof ToolDefinitionSchema>,
+  input: Record<string, unknown>,
+  context: WithTool<AppContext>,
+) {
+  await assertWorkspaceResourceAccess(context);
+
+  const runtimeId = context.locator?.value ?? "default";
+  const client = MCPClient.forContext(context);
+  const envPromise = asEnv(client);
+
+  // Validate input against the tool's input schema
+  const inputValidation = validate(input, tool.inputSchema);
+  if (!inputValidation.valid) {
+    return {
+      error: `Input validation failed: ${inspect(inputValidation)}`,
+    };
+  }
+
+  // Use the inlined function code
+  using evaluation = await evalCodeAndReturnDefaultHandle(
+    tool.execute,
+    runtimeId,
+  );
+  const { ctx, defaultHandle, guestConsole } = evaluation;
+
+  try {
+    // Call the function using the callFunction utility
+    const callHandle = await callFunction(
+      ctx,
+      defaultHandle,
+      undefined,
+      input,
+      { env: await envPromise },
+    );
+
+    const callResult = ctx.dump(ctx.unwrapResult(callHandle));
+
+    // Validate output against the tool's output schema
+    const outputValidation = validate(callResult, tool.outputSchema);
+
+    if (!outputValidation.valid) {
+      return {
+        error: `Output validation failed: ${inspect(outputValidation)}`,
+        logs: guestConsole.logs,
+      };
+    }
+
+    return { result: callResult, logs: guestConsole.logs };
+  } catch (error) {
+    return { error: inspect(error), logs: guestConsole.logs };
+  }
 }
 
 /**
@@ -57,13 +117,6 @@ export function createToolBindingImpl({
         .describe("Console logs from the execution"),
     }),
     handler: async ({ uri, input }, c) => {
-      await assertWorkspaceResourceAccess(c);
-
-      const runtimeId = c.locator?.value ?? "default";
-      const client = MCPClient.forContext(c);
-
-      const envPromise = asEnv(client);
-
       try {
         const { data: tool } = await resourceToolRead(uri);
 
@@ -71,47 +124,7 @@ export function createToolBindingImpl({
           return { error: "Tool not found" };
         }
 
-        // Validate input against the tool's input schema
-        const inputValidation = validate(input, tool.inputSchema);
-        if (!inputValidation.valid) {
-          return {
-            error: `Input validation failed: ${inspect(inputValidation)}`,
-          };
-        }
-
-        // Use the inlined function code
-        using evaluation = await evalCodeAndReturnDefaultHandle(
-          tool.execute,
-          runtimeId,
-        );
-        const { ctx, defaultHandle, guestConsole } = evaluation;
-
-        try {
-          // Call the function using the callFunction utility
-          const callHandle = await callFunction(
-            ctx,
-            defaultHandle,
-            undefined,
-            input,
-            { env: await envPromise },
-          );
-
-          const callResult = ctx.dump(ctx.unwrapResult(callHandle));
-
-          // Validate output against the tool's output schema
-          const outputValidation = validate(callResult, tool.outputSchema);
-
-          if (!outputValidation.valid) {
-            return {
-              error: `Output validation failed: ${inspect(outputValidation)}`,
-              logs: guestConsole.logs,
-            };
-          }
-
-          return { result: callResult, logs: guestConsole.logs };
-        } catch (error) {
-          return { error: inspect(error), logs: guestConsole.logs };
-        }
+        return await executeToolWithValidation(tool, input, c);
       } catch (error) {
         return { error: inspect(error) };
       }
@@ -147,55 +160,8 @@ export function createToolRunImpl() {
         .describe("Console logs from the execution"),
     }),
     handler: async ({ tool, input }, c) => {
-      await assertWorkspaceResourceAccess(c);
-
-      const runtimeId = c.locator?.value ?? "default";
-      const client = MCPClient.forContext(c);
-
-      const envPromise = asEnv(client);
-
       try {
-        // Validate input against the tool's input schema
-        const inputValidation = validate(input, tool.inputSchema);
-        if (!inputValidation.valid) {
-          return {
-            error: `Input validation failed: ${inspect(inputValidation)}`,
-          };
-        }
-
-        // Use the inlined function code
-        using evaluation = await evalCodeAndReturnDefaultHandle(
-          tool.execute,
-          runtimeId,
-        );
-        const { ctx, defaultHandle, guestConsole } = evaluation;
-
-        try {
-          // Call the function using the callFunction utility
-          const callHandle = await callFunction(
-            ctx,
-            defaultHandle,
-            undefined,
-            input,
-            { env: await envPromise },
-          );
-
-          const callResult = ctx.dump(ctx.unwrapResult(callHandle));
-
-          // Validate output against the tool's output schema
-          const outputValidation = validate(callResult, tool.outputSchema);
-
-          if (!outputValidation.valid) {
-            return {
-              error: `Output validation failed: ${inspect(outputValidation)}`,
-              logs: guestConsole.logs,
-            };
-          }
-
-          return { result: callResult, logs: guestConsole.logs };
-        } catch (error) {
-          return { error: inspect(error), logs: guestConsole.logs };
-        }
+        return await executeToolWithValidation(tool, input, c);
       } catch (error) {
         return { error: inspect(error) };
       }

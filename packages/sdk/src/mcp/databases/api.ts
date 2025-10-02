@@ -145,8 +145,8 @@ export const viewBinding = createDatabaseTool({
     assertHasWorkspace(c);
     const integrationId =
       typeof c.user === "object" &&
-        "integrationId" in c.user &&
-        typeof c.user.integrationId === "string"
+      "integrationId" in c.user &&
+      typeof c.user.integrationId === "string"
         ? c.user.integrationId
         : DEFAULT_INTEGRATION_ID;
 

@@ -15,8 +15,14 @@ import {
   CONTRACTS_TOOLS,
   createDeconfigClientForContext,
   createMCPToolsStub,
+  createToolBindingImpl,
   createToolResourceV2Implementation,
+  createToolRunImpl,
+  createToolViewsV2,
+  createWorkflowBindingImpl,
   createWorkflowResourceV2Implementation,
+  createWorkflowViews,
+  createWorkflowViewsV2,
   DECONFIG_TOOLS,
   EMAIL_TOOLS,
   getIntegration,
@@ -30,10 +36,12 @@ import {
   PROJECT_TOOLS,
   toBindingsContext,
   Tool,
+  ToolBindingImplOptions,
   type ToolLike,
   watchSSE,
   withMCPAuthorization,
   withMCPErrorHandling,
+  WorkflowBindingImplOptions,
   wrapToolFn,
 } from "@deco/sdk/mcp";
 import { getApps, getGroupByAppName } from "@deco/sdk/mcp/groups";
@@ -51,17 +59,6 @@ import { logger } from "hono/logger";
 import { endTime, startTime } from "hono/timing";
 import type { ContentfulStatusCode } from "hono/utils/http-status";
 import { studio } from "outerbase-browsable-do-enforced";
-import {
-  createToolBindingImpl,
-  createToolViewsV2,
-  ToolBindingImplOptions,
-} from "packages/sdk/src/mcp/tools/api.ts";
-import {
-  createWorkflowBindingImpl,
-  createWorkflowViews,
-  createWorkflowViewsV2,
-  WorkflowBindingImplOptions,
-} from "packages/sdk/src/mcp/workflows/api.ts";
 import { z } from "zod";
 import { ROUTES as loginRoutes } from "./auth/index.ts";
 import { withActorsStubMiddleware } from "./middlewares/actors-stub.ts";
@@ -582,14 +579,16 @@ app.all(
       )) as ToolBindingImplOptions["resourceToolRead"];
 
     // Create tool execution functionality using createToolBindingImpl
-    const runTool = createToolBindingImpl({ resourceToolRead });
+    const callTool = createToolBindingImpl({ resourceToolRead });
+    const runTool = createToolRunImpl();
 
     // Create Views 2.0 implementation for tool views
     const toolViewsV2 = createToolViewsV2();
 
     return Promise.resolve([
       ...toolResourceV2, // Add new Resources 2.0 implementation
-      ...runTool, // Add tool execution functionality
+      ...callTool, // Add tool execution functionality
+      ...runTool,
       ...toolViewsV2, // Add Views 2.0 implementation
     ]);
   }),

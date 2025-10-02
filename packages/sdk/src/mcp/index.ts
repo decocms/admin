@@ -362,25 +362,29 @@ export function createMCPToolsStub<TDefinition extends readonly ToolLike[]>(
   );
 }
 
-export { WorkflowResource } from "./workflows/api.ts";
 export {
-  createWorkflowResourceV2Implementation,
   createWorkflowBindingImpl,
+  createWorkflowResourceV2Implementation,
   createWorkflowViewsV2,
+  WorkflowResource,
   WorkflowResourceV2,
   type WorkflowDataV2,
+  type WorkflowBindingImplOptions,
 } from "./workflows/api.ts";
 
 export {
+  createToolBindingImpl,
+  createToolResourceV2Implementation,
+  createToolRunImpl,
   ToolResourceV2,
   type ToolDataV2,
-  createToolResourceV2Implementation,
+  type ToolBindingImplOptions,
 } from "./tools/api.ts";
 
 // Export Resources 2.0 bindings function
 export { createResourceV2Bindings } from "./resources-v2/bindings.ts";
 export type {
+  ReadOutput,
   ResourceItem,
   SearchOutput,
-  ReadOutput,
 } from "./resources-v2/schemas.ts";

@@ -121,6 +121,90 @@ export function createToolBindingImpl({
   return [runTool];
 }
 
+/**
+ * Creates tool binding implementation that accepts a resource reader
+ * Returns only the core tool execution functionality
+ */
+export function createToolRunImpl() {
+  const runTool = createTool({
+    name: "DECO_TOOL_RUN_TOOL",
+    description: "Invoke a tool created with DECO_RESOURCE_TOOL_CREATE",
+    inputSchema: z.object({
+      tool: ToolDefinitionSchema,
+      input: z.object({}).passthrough().describe("The input of the code"),
+    }),
+    outputSchema: z.object({
+      result: z.any().optional().describe("The result of the tool execution"),
+      error: z.any().optional().describe("Error if any"),
+      logs: z
+        .array(
+          z.object({
+            type: z.enum(["log", "warn", "error"]),
+            content: z.string(),
+          }),
+        )
+        .optional()
+        .describe("Console logs from the execution"),
+    }),
+    handler: async ({ tool, input }, c) => {
+      await assertWorkspaceResourceAccess(c);
+
+      const runtimeId = c.locator?.value ?? "default";
+      const client = MCPClient.forContext(c);
+
+      const envPromise = asEnv(client);
+
+      try {
+        // Validate input against the tool's input schema
+        const inputValidation = validate(input, tool.inputSchema);
+        if (!inputValidation.valid) {
+          return {
+            error: `Input validation failed: ${inspect(inputValidation)}`,
+          };
+        }
+
+        // Use the inlined function code
+        using evaluation = await evalCodeAndReturnDefaultHandle(
+          tool.execute,
+          runtimeId,
+        );
+        const { ctx, defaultHandle, guestConsole } = evaluation;
+
+        try {
+          // Call the function using the callFunction utility
+          const callHandle = await callFunction(
+            ctx,
+            defaultHandle,
+            undefined,
+            input,
+            { env: await envPromise },
+          );
+
+          const callResult = ctx.dump(ctx.unwrapResult(callHandle));
+
+          // Validate output against the tool's output schema
+          const outputValidation = validate(callResult, tool.outputSchema);
+
+          if (!outputValidation.valid) {
+            return {
+              error: `Output validation failed: ${inspect(outputValidation)}`,
+              logs: guestConsole.logs,
+            };
+          }
+
+          return { result: callResult, logs: guestConsole.logs };
+        } catch (error) {
+          return { error: inspect(error), logs: guestConsole.logs };
+        }
+      } catch (error) {
+        return { error: inspect(error) };
+      }
+    },
+  });
+
+  return [runTool];
+}
+
 // const { items } = await resourceToolSearch({ page: 1, pageSize: Infinity });
 // const tools = items.map(async ({ uri }: any) => {
 //   const {

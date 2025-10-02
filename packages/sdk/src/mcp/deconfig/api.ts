@@ -637,7 +637,7 @@ export const listFiles = createDeconfigTool({
     if (prefix) {
       select = [prefix];
     }
-    if (select) {
+    if (select && select.length > 0) {
       select = select.map((s) => withPathPrefix(c, s));
     }
     if (

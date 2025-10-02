@@ -23,7 +23,7 @@ const TOOL_TOOLS = {
 
 // Helper functions
 const workspaceResourceClient = (locator: ProjectLocator) =>
-  MCPClient.forLocator(locator, `/${WellKnownMcpGroups.Tools}/mcp`);
+  MCPClient.forLocator(locator, `/mcp`);
 
 const integrationId = formatIntegrationId(WellKnownMcpGroups.Tools);
 

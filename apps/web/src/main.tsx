@@ -192,9 +192,7 @@ const PromptDetail = lazy(() =>
 );
 
 const WorkflowsRunsPage = lazy(() =>
-  wrapWithUILoadingFallback(
-    import("./components/workflows/runs-page.tsx"),
-  ),
+  wrapWithUILoadingFallback(import("./components/workflows/runs-page.tsx")),
 );
 
 const WorkflowDetailPage = lazy(() =>
@@ -232,15 +230,11 @@ const ResourcesV2Detail = lazy(() =>
 
 // Workflows resource list
 const WorkflowsListPage = lazy(() =>
-  wrapWithUILoadingFallback(
-    import("./components/workflows/list-page.tsx"),
-  ),
+  wrapWithUILoadingFallback(import("./components/workflows/list-page.tsx")),
 );
 
 const WorkflowsTriggersPage = lazy(() =>
-  wrapWithUILoadingFallback(
-    import("./components/workflows/triggers-page.tsx"),
-  ),
+  wrapWithUILoadingFallback(import("./components/workflows/triggers-page.tsx")),
 );
 
 // Tools resource list

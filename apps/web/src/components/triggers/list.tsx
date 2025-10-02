@@ -71,11 +71,7 @@ export default function ListTriggers({
   );
 }
 
-function ListTriggersSuspended({
-  headerSlot,
-}: {
-  headerSlot?: ReactNode;
-}) {
+function ListTriggersSuspended({ headerSlot }: { headerSlot?: ReactNode }) {
   const { data, isLoading } = useListTriggers();
   const [search, setSearch] = useState("");
   const [viewMode, setViewMode] = useViewMode("triggers");

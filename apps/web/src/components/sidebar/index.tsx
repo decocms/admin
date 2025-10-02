@@ -297,7 +297,7 @@ function WorkspaceViews() {
     return workspaceLink(path ?? "/");
   }
 
-  const wellKnownItems = ["Tools", "Views", "Workflows", "Agents"];
+  const wellKnownItems = ["Tools", "Views", "Workflows", "Agents", "Prompts"];
 
   function buildResourceHrefFromResource(resource: {
     integration_id: string;

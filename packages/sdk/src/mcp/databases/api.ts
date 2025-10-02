@@ -145,8 +145,8 @@ export const viewBinding = createDatabaseTool({
     assertHasWorkspace(c);
     const integrationId =
       typeof c.user === "object" &&
-      "integrationId" in c.user &&
-      typeof c.user.integrationId === "string"
+        "integrationId" in c.user &&
+        typeof c.user.integrationId === "string"
         ? c.user.integrationId
         : DEFAULT_INTEGRATION_ID;
 
@@ -158,7 +158,7 @@ export const viewBinding = createDatabaseTool({
               ? "Database"
               : `Database (${integrationId})`,
           icon: "database",
-          url: `http://localhost:3001/${c.workspace.root}/${c.workspace.slug}/${integrationId}/studio`,
+          url: `https://api.decocms.com/${c.workspace.root}/${c.workspace.slug}/${integrationId}/studio`,
         },
       ],
     };

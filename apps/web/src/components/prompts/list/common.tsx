@@ -22,6 +22,7 @@ export const Header = ({
         onChange: (e) => setValue(e.target.value),
       }}
       view={{ viewMode, onChange: setViewMode }}
+      controlsAlign="start"
       actionsRight={actionsRight}
     />
   );

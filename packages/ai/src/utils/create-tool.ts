@@ -3,7 +3,7 @@ import {
   createTool as mastraCreateTool,
   type ToolExecutionContext,
 } from "@mastra/core";
-import type { ToolExecutionOptions } from "ai";
+import type { ToolCallOptions } from "ai";
 import type { z } from "zod";
 import type { AIAgent, Env } from "../agent.ts";
 
@@ -20,7 +20,7 @@ export interface ToolOptions<
     env?: Env,
   ) => (
     context: ToolExecutionContext<TSchemaIn>,
-    options?: ToolExecutionOptions,
+    options?: ToolCallOptions,
   ) => Promise<TSchemaOut extends z.ZodSchema ? z.infer<TSchemaOut> : unknown>;
 }
 export const createInnateTool: <

@@ -48,7 +48,7 @@ export const createHandoffToolsFor = (
         const userMessage = {
           id: crypto.randomUUID(),
           role: "user" as const,
-          content: context.message,
+          parts: [{ type: "text" as const, text: context.message }],
         };
 
         if (context.schema) {

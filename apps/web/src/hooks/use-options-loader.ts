@@ -23,12 +23,7 @@ export const useOptionsLoader = (type: string) => {
       const matchingIntegrations = installedIntegrations.filter(
         (integration: Integration) => {
           // Match by name (case-insensitive)
-          return (
-            registryApp.appName === integration.appName ||
-            (integration.connection.type === "HTTP" &&
-              registryApp.connection.type === "HTTP" &&
-              integration.connection.url === registryApp.connection.url)
-          );
+          return registryApp.appName === integration.appName;
         },
       );
 

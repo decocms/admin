@@ -137,11 +137,7 @@ export const createBranch = createDeconfigTool({
     assertHasWorkspace(c);
     await assertWorkspaceResourceAccess(c);
 
-    const db = await workspaceDB({
-      workspaceDO: c.workspaceDO,
-      workspace: c.workspace!,
-      envVars: c.envVars,
-    });
+    const db = await workspaceDB(c);
 
     const crud = newBranchesCRUD(db);
 
@@ -199,11 +195,7 @@ export const listBranches = createDeconfigTool({
     assertHasWorkspace(c);
     await assertWorkspaceResourceAccess(c);
 
-    const db = await workspaceDB({
-      workspaceDO: c.workspaceDO,
-      workspace: c.workspace!,
-      envVars: c.envVars,
-    });
+    const db = await workspaceDB(c);
 
     const crud = newBranchesCRUD(db);
     const branches = await crud.listBranches({ prefix });
@@ -238,11 +230,7 @@ export const deleteBranch = createDeconfigTool({
     assertHasWorkspace(c);
     await assertWorkspaceResourceAccess(c);
 
-    const db = await workspaceDB({
-      workspaceDO: c.workspaceDO,
-      workspace: c.workspace!,
-      envVars: c.envVars,
-    });
+    const db = await workspaceDB(c);
 
     const crud = newBranchesCRUD(db);
 

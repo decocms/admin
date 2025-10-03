@@ -449,7 +449,7 @@ export function DependencyStep({
   }, [dependencySchema, dependencyName]);
 
   const { data: app } = useRegistryApp({
-    clientId: dependencyIntegration || "",
+    app: dependencyIntegration || "",
     mode: "sync",
   });
 

@@ -3,10 +3,13 @@ import z from "zod";
 import { formatIntegrationId, WellKnownMcpGroups } from "../../crud/groups.ts";
 import { DeconfigResourceV2 } from "../deconfig-v2/index.ts";
 import {
+  AppContext,
   assertWorkspaceResourceAccess,
   createTool,
+  createToolGroup,
   DeconfigClient,
   MCPClient,
+  WithTool,
 } from "../index.ts";
 import {
   createDetailViewUrl,
@@ -23,10 +26,68 @@ import {
 } from "./prompts.ts";
 import { ToolDefinitionSchema } from "./schemas.ts";
 import { asEnv, evalCodeAndReturnDefaultHandle, validate } from "./utils.ts";
+
 export interface ToolBindingImplOptions {
   resourceToolRead: (
     uri: string,
   ) => Promise<{ data: z.infer<typeof ToolDefinitionSchema> }>;
+}
+
+/**
+ * Common tool execution logic shared between different tool implementations
+ */
+async function executeToolWithValidation(
+  tool: z.infer<typeof ToolDefinitionSchema>,
+  input: Record<string, unknown>,
+  context: WithTool<AppContext>,
+) {
+  await assertWorkspaceResourceAccess(context);
+
+  const runtimeId = context.locator?.value ?? "default";
+  const client = MCPClient.forContext(context);
+  const envPromise = asEnv(client);
+
+  // Validate input against the tool's input schema
+  const inputValidation = validate(input, tool.inputSchema);
+  if (!inputValidation.valid) {
+    return {
+      error: `Input validation failed: ${inspect(inputValidation)}`,
+    };
+  }
+
+  // Use the inlined function code
+  using evaluation = await evalCodeAndReturnDefaultHandle(
+    tool.execute,
+    runtimeId,
+  );
+  const { ctx, defaultHandle, guestConsole } = evaluation;
+
+  try {
+    // Call the function using the callFunction utility
+    const callHandle = await callFunction(
+      ctx,
+      defaultHandle,
+      undefined,
+      input,
+      { env: await envPromise },
+    );
+
+    const callResult = ctx.dump(ctx.unwrapResult(callHandle));
+
+    // Validate output against the tool's output schema
+    const outputValidation = validate(callResult, tool.outputSchema);
+
+    if (!outputValidation.valid) {
+      return {
+        error: `Output validation failed: ${inspect(outputValidation)}`,
+        logs: guestConsole.logs,
+      };
+    }
+
+    return { result: callResult, logs: guestConsole.logs };
+  } catch (error) {
+    return { error: inspect(error), logs: guestConsole.logs };
+  }
 }
 
 /**
@@ -57,13 +118,6 @@ export function createToolBindingImpl({
         .describe("Console logs from the execution"),
     }),
     handler: async ({ uri, input }, c) => {
-      await assertWorkspaceResourceAccess(c);
-
-      const runtimeId = c.locator?.value ?? "default";
-      const client = MCPClient.forContext(c);
-
-      const envPromise = asEnv(client);
-
       try {
         const { data: tool } = await resourceToolRead(uri);
 
@@ -71,47 +125,7 @@ export function createToolBindingImpl({
           return { error: "Tool not found" };
         }
 
-        // Validate input against the tool's input schema
-        const inputValidation = validate(input, tool.inputSchema);
-        if (!inputValidation.valid) {
-          return {
-            error: `Input validation failed: ${inspect(inputValidation)}`,
-          };
-        }
-
-        // Use the inlined function code
-        using evaluation = await evalCodeAndReturnDefaultHandle(
-          tool.execute,
-          runtimeId,
-        );
-        const { ctx, defaultHandle, guestConsole } = evaluation;
-
-        try {
-          // Call the function using the callFunction utility
-          const callHandle = await callFunction(
-            ctx,
-            defaultHandle,
-            undefined,
-            input,
-            { env: await envPromise },
-          );
-
-          const callResult = ctx.dump(ctx.unwrapResult(callHandle));
-
-          // Validate output against the tool's output schema
-          const outputValidation = validate(callResult, tool.outputSchema);
-
-          if (!outputValidation.valid) {
-            return {
-              error: `Output validation failed: ${inspect(outputValidation)}`,
-              logs: guestConsole.logs,
-            };
-          }
-
-          return { result: callResult, logs: guestConsole.logs };
-        } catch (error) {
-          return { error: inspect(error), logs: guestConsole.logs };
-        }
+        return await executeToolWithValidation(tool, input, c);
       } catch (error) {
         return { error: inspect(error) };
       }
@@ -120,6 +134,45 @@ export function createToolBindingImpl({
 
   return [runTool];
 }
+
+const createToolManagementTool = createToolGroup("Tools", {
+  name: "Tools Management",
+  description: "Manage your tools",
+  icon: "https://assets.decocache.com/mcp/81d602bb-45e2-4361-b52a-23379520a34d/sandbox.png",
+});
+
+/**
+ * Creates tool binding implementation that accepts a resource reader
+ * Returns only the core tool execution functionality
+ */
+export const runTool = createToolManagementTool({
+  name: "DECO_TOOL_RUN_TOOL",
+  description: "Invoke the tool passed as input",
+  inputSchema: z.object({
+    tool: ToolDefinitionSchema,
+    input: z.object({}).passthrough().describe("The input of the code"),
+  }),
+  outputSchema: z.object({
+    result: z.any().optional().describe("The result of the tool execution"),
+    error: z.any().optional().describe("Error if any"),
+    logs: z
+      .array(
+        z.object({
+          type: z.enum(["log", "warn", "error"]),
+          content: z.string(),
+        }),
+      )
+      .optional()
+      .describe("Console logs from the execution"),
+  }),
+  handler: async ({ tool, input }, c) => {
+    try {
+      return await executeToolWithValidation(tool, input, c);
+    } catch (error) {
+      return { error: inspect(error) };
+    }
+  },
+});
 
 // const { items } = await resourceToolSearch({ page: 1, pageSize: Infinity });
 // const tools = items.map(async ({ uri }: any) => {
@@ -181,6 +234,7 @@ export function createToolBindingImpl({
 export const ToolResourceV2 = DeconfigResourceV2.define({
   directory: "/src/tools",
   resourceName: "tool",
+  group: WellKnownMcpGroups.Tools,
   dataSchema: ToolDefinitionSchema,
   enhancements: {
     DECO_RESOURCE_TOOL_SEARCH: {

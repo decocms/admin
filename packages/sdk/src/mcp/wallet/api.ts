@@ -532,7 +532,6 @@ export const preAuthorizeAmount = createTool({
   }),
   handler: async ({ amount, metadata }, c) => {
     assertHasWorkspace(c);
-
     await assertWorkspaceResourceAccess(c);
 
     const wallet = getWalletClient(c);

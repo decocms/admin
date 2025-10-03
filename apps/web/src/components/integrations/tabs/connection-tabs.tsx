@@ -9,6 +9,7 @@ import {
   useAddView,
   useConnectionViews,
   useRemoveView,
+  useSDK,
   useToolCall,
   useTools,
 } from "@deco/sdk";
@@ -53,7 +54,7 @@ import { WorkflowsV2UI } from "./workflows.tsx";
 
 interface ToolProps {
   tool: MCPTool;
-  connection: MCPConnection;
+  params: MCPConnection | { id: string };
   readOnly?: boolean;
 }
 
@@ -229,8 +230,9 @@ function UnifiedToolInterface({
   );
 }
 
-function Tool({ tool, connection, readOnly }: ToolProps) {
-  const toolCall = useToolCall(connection);
+function Tool({ tool, params: connection, readOnly }: ToolProps) {
+  const { locator } = useSDK();
+  const toolCall = useToolCall(connection, locator);
   const [toolCallResponse, setToolCallResponse] =
     useState<MCPToolCallResult | null>(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -425,16 +427,26 @@ function ToolsInspector({
               </div>
             )
           ) : (
-            filteredTools.map((tool) =>
-              connection ? (
+            filteredTools.map((tool) => {
+              if (selectedIntegrationId) {
+                return (
+                  <Tool
+                    key={tool.name}
+                    params={{ id: selectedIntegrationId }}
+                    tool={tool}
+                    readOnly={readOnly}
+                  />
+                );
+              }
+              return connection ? (
                 <Tool
                   key={tool.name}
-                  connection={connection as MCPConnection}
+                  params={connection as MCPConnection}
                   tool={tool}
                   readOnly={readOnly}
                 />
-              ) : null,
-            )
+              ) : null;
+            })
           )}
         </div>
       </div>

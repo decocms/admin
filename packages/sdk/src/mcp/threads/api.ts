@@ -1,5 +1,4 @@
 import { MessageList } from "@mastra/core/agent";
-import type { Message as AIMessage } from "ai";
 import { z } from "zod";
 import { WorkspaceMemory } from "../../memory/memory.ts";
 import {
@@ -37,14 +36,7 @@ async function getWorkspaceMemory(c: AppContext) {
 
 async function getWorkspaceDB(c: AppContext) {
   assertHasWorkspace(c);
-  return await workspaceDB({
-    workspaceDO: c.workspaceDO,
-    workspace: { value: c.workspace.value },
-    envVars: {
-      TURSO_GROUP_DATABASE_TOKEN: c.envVars.TURSO_GROUP_DATABASE_TOKEN,
-      TURSO_ORGANIZATION: c.envVars.TURSO_ORGANIZATION,
-    },
-  });
+  return await workspaceDB(c);
 }
 
 const safeParse = (str: string) => {
@@ -160,14 +152,7 @@ export const listThreads = createTool({
     limit ??= 10;
 
     const generateQuery = async ({ where }: { where: string }) => {
-      const db = await workspaceDB({
-        workspaceDO: c.workspaceDO,
-        workspace: { value: c.workspace.value },
-        envVars: {
-          TURSO_GROUP_DATABASE_TOKEN: c.envVars.TURSO_GROUP_DATABASE_TOKEN,
-          TURSO_ORGANIZATION: c.envVars.TURSO_ORGANIZATION,
-        },
-      });
+      const db = await workspaceDB(c);
       return safeExecute(db, {
         sql: `SELECT * FROM mastra_threads ${where} ORDER BY ${field} ${direction.toUpperCase()} LIMIT ?`,
         params: [...args, limit + 1], // Fetch one extra to determine if there are more
@@ -261,12 +246,15 @@ export const getThreadMessages = createTool({
 
     const list = new MessageList({ threadId: id });
     for (const message of messages) {
-      list.add(message as unknown as AIMessage, "memory");
+      // @ts-expect-error: I guess this is ok
+      list.add(message, "memory");
     }
 
-    const uiMessages = list.get.all.ui();
+    const uiMessages = list.get.all.aiV5.ui();
 
-    return { messages: uiMessages };
+    return {
+      messages: uiMessages,
+    };
   },
 });
 

@@ -49,6 +49,7 @@ export interface DeconfigResourceV2Options<
   directory: string;
   resourceName: string;
   dataSchema: TDataSchema;
+  group?: string;
   integrationId?: string;
   enhancements?: EnhancedResourcesV2Tools<TDataSchema>;
 }
@@ -139,6 +140,7 @@ export const deconfigResourceV2 = <TDataSchema extends BaseResourceDataSchema>(
     dataSchema,
     integrationId,
     enhancements,
+    group,
   } = options;
 
   if (!integrationId) {
@@ -148,7 +150,7 @@ export const deconfigResourceV2 = <TDataSchema extends BaseResourceDataSchema>(
   // Create resource-specific bindings using the provided data schema
   const resourceBindings = createResourceV2Bindings(resourceName, dataSchema);
 
-  return impl(resourceBindings, [
+  const tools = impl(resourceBindings, [
     // deco_resource_search
     {
       description:
@@ -545,4 +547,12 @@ export const deconfigResourceV2 = <TDataSchema extends BaseResourceDataSchema>(
       },
     },
   ]);
+
+  if (group) {
+    tools.forEach((tool) => {
+      tool.group = group;
+    });
+  }
+
+  return tools;
 };

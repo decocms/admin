@@ -1,6 +1,7 @@
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { MCPClient } from "../fetcher.ts";
 import type { MCPConnection } from "../models/mcp.ts";
+import { ProjectLocator } from "../locator.ts";
 export interface MCPTool {
   name: string;
   description?: string;
@@ -45,14 +46,17 @@ export const listTools = (
   ) as Promise<ToolsData>;
 
 export const callTool = (
-  connection: MCPConnection,
+  connection: MCPConnection | { id: string },
   toolCallArgs: MCPToolCall,
-) =>
-  MCPClient.INTEGRATIONS_CALL_TOOL({
-    connection,
+  locator?: ProjectLocator,
+) => {
+  const client = locator ? MCPClient.forLocator(locator) : MCPClient;
+  return client.INTEGRATIONS_CALL_TOOL({
+    ...("id" in connection ? { id: connection.id } : { connection }),
     // deno-lint-ignore no-explicit-any
     params: toolCallArgs as any,
   });
+};
 
 export function useTools(connection: MCPConnection, ignoreCache?: boolean) {
   const response = useQuery({
@@ -77,9 +81,12 @@ export function useTools(connection: MCPConnection, ignoreCache?: boolean) {
   };
 }
 
-export function useToolCall<T = unknown>(connection: MCPConnection) {
+export function useToolCall<T = unknown>(
+  params: MCPConnection | { id: string },
+  locator?: ProjectLocator,
+) {
   return useMutation<MCPToolCallResult<T>, Error, MCPToolCall>({
     mutationFn: (toolCall: MCPToolCall) =>
-      callTool(connection, toolCall) as Promise<MCPToolCallResult<T>>,
+      callTool(params, toolCall, locator) as Promise<MCPToolCallResult<T>>,
   });
 }

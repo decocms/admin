@@ -1,8 +1,9 @@
 import z from "zod";
+import { listViewsSchema } from "../bindings/views.ts";
 import { workspaceDB } from "../context.ts";
 import { assertHasWorkspace, assertWorkspaceResourceAccess } from "../index.ts";
 import { createDatabaseTool } from "./tool.ts";
-import { listViewsSchema } from "../bindings/views.ts";
+import { WellKnownMcpGroups } from "../groups.ts";
 
 export { getWorkspaceD1Database } from "./d1.ts";
 export { migrate } from "./migration.ts";
@@ -131,6 +132,7 @@ export const recovery = createDatabaseTool({
   },
 });
 
+const DEFAULT_INTEGRATION_ID = `i:${WellKnownMcpGroups.Databases}`;
 export const viewBinding = createDatabaseTool({
   name: "DECO_CHAT_VIEWS_LIST",
   description: "List views exposed by this MCP",
@@ -141,13 +143,23 @@ export const viewBinding = createDatabaseTool({
     // To open the studio the user will be checked for resource access.
     c.resourceAccess.grant();
     assertHasWorkspace(c);
+    const integrationId =
+      c.user &&
+      typeof c.user === "object" &&
+      "integrationId" in c.user &&
+      typeof c.user.integrationId === "string"
+        ? c.user.integrationId
+        : DEFAULT_INTEGRATION_ID;
 
     return {
       views: [
         {
-          title: "Database",
+          title:
+            integrationId === DEFAULT_INTEGRATION_ID
+              ? "Database"
+              : `Database (${integrationId})`,
           icon: "database",
-          url: `https://api.decocms.com/${c.workspace.root}/${c.workspace.slug}/i:databases-management/studio`,
+          url: `https://api.decocms.com/${c.workspace.root}/${c.workspace.slug}/${integrationId}/studio`,
         },
       ],
     };

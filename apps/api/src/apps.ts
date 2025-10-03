@@ -1,7 +1,7 @@
 import { domainSWRCache } from "@deco/sdk/cache/routing";
 import { Entrypoint } from "@deco/sdk/mcp";
 import { type Context, Hono } from "hono";
-import { APPS_DOMAIN_QS, appsDomainOf } from "./app.ts";
+import { appsDomainOf } from "./app.ts";
 import { withContextMiddleware } from "./middlewares/context.ts";
 import type { AppEnv } from "./utils/context.ts";
 
@@ -50,7 +50,7 @@ export const fetchScript = async (
 app.use(withContextMiddleware);
 app.all("/*", async (c: Context<AppEnv>) => {
   const url = new URL(c.req.url);
-  let host = appsDomainOf(c.req.raw) ?? c.req.header("host") ?? url.host;
+  const host = appsDomainOf(c.req.raw) ?? c.req.header("host") ?? url.host;
   if (!host) {
     return new Response("No host", { status: 400 });
   }
@@ -94,15 +94,6 @@ app.all("/*", async (c: Context<AppEnv>) => {
   if (!script) {
     return new Response("Not found", { status: 404 });
   }
-  host = Entrypoint.host(script);
-  if (url.host !== host) {
-    url.host = host;
-    url.protocol = "https";
-    url.port = `443`;
-    url.searchParams.delete(APPS_DOMAIN_QS);
-  }
-  const req = new Request(url, c.req.raw);
-
-  return await fetchScript(c, script, req);
+  return await fetchScript(c, script, new Request(url, c.req.raw));
 });
 export default app;

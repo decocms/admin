@@ -403,6 +403,8 @@ export async function deployToCloudflare({
     migrations: doMigrations,
     assets: {
       config: {
+        not_found_handling: wranglerAssetsConfig?.not_found_handling,
+        run_worker_first: wranglerAssetsConfig?.run_worker_first,
         _headers: DEFAULT_HEADERS_FILE(),
       },
     },

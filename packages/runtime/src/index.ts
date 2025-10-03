@@ -363,7 +363,8 @@ export const withRuntime = <TEnv, TSchema extends z.ZodTypeAny = never>(
             req.headers.get("x-deco-branch") ??
             new URL(req.url).searchParams.get("__b"),
           tokenOrContext: await getReqToken(req, env),
-          origin: referer ?? req.headers.get("origin"),
+          origin:
+            referer ?? req.headers.get("origin") ?? new URL(req.url).origin,
           url: req.url,
         });
         return await State.run(

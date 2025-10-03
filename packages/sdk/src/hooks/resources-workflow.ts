@@ -24,7 +24,7 @@ const WORKFLOW_TOOLS = {
 
 // Helper functions
 const workspaceResourceClient = (locator: ProjectLocator) =>
-  MCPClient.forLocator(locator, `/${WellKnownMcpGroups.Workflows}/mcp`);
+  MCPClient.forLocator(locator, `/mcp`);
 
 const integrationId = formatIntegrationId(WellKnownMcpGroups.Workflows);
 

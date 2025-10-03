@@ -154,18 +154,39 @@ const createIntegrationManagementTool = createToolGroup("Integration", {
     "Install, authorize, and manage third-party integrations and their tools.",
   icon: "https://assets.decocache.com/mcp/2ead84c2-2890-4d37-b61c-045f4760f2f7/Integration-Management.png",
 });
+
+const integrationCallToolInputSchema = IntegrationSchema.pick({
+  id: true,
+  connection: true,
+})
+  .partial()
+  .merge(CallToolRequestSchema.pick({ params: true }));
+
 export const callTool = createIntegrationManagementTool({
   name: "INTEGRATIONS_CALL_TOOL",
   description: "Call a given tool",
-  inputSchema: IntegrationSchema.pick({
-    connection: true,
-  }).merge(CallToolRequestSchema.pick({ params: true })),
-  handler: async ({ connection: reqConnection, params: toolCall }, c) => {
+  inputSchema: integrationCallToolInputSchema,
+  handler: async (input, c) => {
     c.resourceAccess.grant();
+    const toolCall = input.params;
 
-    const connection = shouldPatchDecoChatMCPConnection(reqConnection)
-      ? patchApiDecoChatTokenHTTPConnection(reqConnection, c.cookie)
-      : reqConnection;
+    let connection: MCPConnection | undefined = undefined;
+    if ("id" in input) {
+      assertHasWorkspace(c);
+      connection = patchApiDecoChatTokenHTTPConnection(
+        {
+          type: "HTTP",
+          url: new URL(`${c.workspace.value}/${input.id}/mcp`, DECO_CMS_API_URL)
+            .href,
+        },
+        c.cookie,
+      );
+    } else if (input.connection) {
+      const reqConnection = input.connection;
+      connection = shouldPatchDecoChatMCPConnection(reqConnection)
+        ? patchApiDecoChatTokenHTTPConnection(reqConnection, c.cookie)
+        : reqConnection;
+    }
 
     if (!connection || !toolCall) {
       return { error: "Missing url parameter" };
@@ -292,7 +313,7 @@ const virtualIntegrationsFor = (
     workspace: Locator.adaptToRootSlug(locator),
     created_at: new Date().toISOString(),
   };
-  const { url: workspaceMcp, projectPath } = projectUrlFromLocator(locator);
+  const { url: workspaceMcp } = projectUrlFromLocator(locator);
 
   const contractsMcp = new URL("/contracts/mcp", DECO_CMS_API_URL);
   const contractsIntegration = {
@@ -304,44 +325,7 @@ const virtualIntegrationsFor = (
       url: contractsMcp.href,
       token,
     },
-    workspace: Locator.adaptToRootSlug(locator),
-    created_at: new Date().toISOString(),
-  };
-
-  const toolsMcp = new URL(
-    `${projectPath}/${WellKnownMcpGroups.Tools}/mcp`,
-    DECO_CMS_API_URL,
-  );
-
-  const toolsIntegration = {
-    id: formatId("i", WellKnownMcpGroups.Tools),
-    name: "Tools Management",
-    description: "Manage your tools",
-    connection: {
-      type: "HTTP",
-      url: toolsMcp.href,
-      token,
-    },
-    icon: "https://assets.decocache.com/mcp/81d602bb-45e2-4361-b52a-23379520a34d/sandbox.png",
-    workspace: Locator.adaptToRootSlug(locator),
-    created_at: new Date().toISOString(),
-  };
-
-  const workflowsMcp = new URL(
-    `${projectPath}/${WellKnownMcpGroups.Workflows}/mcp`,
-    DECO_CMS_API_URL,
-  );
-
-  const workflowsIntegration = {
-    id: formatId("i", WellKnownMcpGroups.Workflows),
-    name: "Workflows Management",
-    description: "Manage your workflows",
-    connection: {
-      type: "HTTP",
-      url: workflowsMcp.href,
-      token,
-    },
-    icon: "https://assets.decocache.com/mcp/81d602bb-45e2-4361-b52a-23379520a34d/sandbox.png",
+    icon: "https://assets.decocache.com/mcp/10b5e8b4-a4e2-4868-8a7d-8cf9b46f0d79/contract.png",
     workspace: Locator.adaptToRootSlug(locator),
     created_at: new Date().toISOString(),
   };
@@ -388,8 +372,6 @@ const virtualIntegrationsFor = (
     userManagementIntegration,
     workspaceManagementIntegration,
     ...integrationGroups,
-    toolsIntegration,
-    workflowsIntegration,
     contractsIntegration,
     ...knowledgeBases.map((kb) => {
       return toKbIntegration(KnowledgeBaseID.format(kb), locator, token);
@@ -1142,6 +1124,8 @@ It's always handy to search for installed integrations with no query, since all 
   },
 });
 
+const NO_TOOL_FOUND_ERR =
+  "MCP error -32602: MCP error -32602: Tool DECO_CHAT_OAUTH_START not found";
 export const DECO_INTEGRATION_OAUTH_START = createIntegrationManagementTool({
   name: "DECO_INTEGRATION_OAUTH_START",
   description: "Start the OAuth flow for an integration",
@@ -1198,18 +1182,39 @@ export const DECO_INTEGRATION_OAUTH_START = createIntegrationManagementTool({
           returnUrl,
         },
       },
-    })) as {
-      structuredContent:
-        | { redirectUrl: string }
-        | {
-            stateSchema: unknown;
-            scopes?: string[];
-          };
-    };
+    })) as
+      | {
+          structuredContent:
+            | { redirectUrl: string }
+            | {
+                stateSchema: unknown;
+                scopes?: string[];
+              };
+        }
+      | {
+          error: string;
+        };
+    if (oauth && "error" in oauth) {
+      if (oauth.error === NO_TOOL_FOUND_ERR) {
+        return {
+          stateSchema: DEFAULT_APP_SCHEMA.schema,
+          scopes: DEFAULT_APP_SCHEMA.scopes,
+        };
+      }
+      throw new Error(oauth.error);
+    }
 
     return oauth.structuredContent;
   },
 });
+
+const DEFAULT_APP_SCHEMA = {
+  schema: {
+    type: "object",
+    properties: {},
+  },
+  scopes: [],
+};
 
 export const DECO_GET_APP_SCHEMA = createIntegrationManagementTool({
   name: "DECO_GET_APP_SCHEMA",
@@ -1237,22 +1242,34 @@ export const DECO_GET_APP_SCHEMA = createIntegrationManagementTool({
           returnUrl: "",
         },
       },
-    })) as {
-      structuredContent:
-        | { redirectUrl: string }
-        | {
-            stateSchema: unknown;
-            scopes?: string[];
-          };
-    };
+    })) as
+      | {
+          structuredContent:
+            | { redirectUrl: string }
+            | {
+                stateSchema: unknown;
+                scopes?: string[];
+              };
+        }
+      | { error: string };
 
-    if ("redirectUrl" in result.structuredContent) {
+    if ("error" in result) {
+      if (result.error === NO_TOOL_FOUND_ERR) {
+        return DEFAULT_APP_SCHEMA;
+      }
+      throw new Error(result.error);
+    }
+
+    const isObject = typeof result?.structuredContent === "object";
+
+    if ((isObject && "redirectUrl" in result.structuredContent) || !isObject) {
       throw new Error("Redirect URL returned, but we expected a state schema");
     }
 
     return {
-      schema: result.structuredContent.stateSchema,
-      scopes: result.structuredContent.scopes,
+      schema: (result.structuredContent as { stateSchema: unknown })
+        .stateSchema,
+      scopes: (result.structuredContent as { scopes: string[] }).scopes,
     };
   },
 });

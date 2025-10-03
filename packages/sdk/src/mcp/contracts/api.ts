@@ -11,6 +11,7 @@ import {
   State,
 } from "../context.ts";
 import {
+  assertWorkspaceResourceAccess,
   ForbiddenError,
   fromWorkspaceString,
   UserInputError,
@@ -149,6 +150,8 @@ export const contractRegister = createTool({
     appName: z.string(),
   }),
   handler: async (context, c) => {
+    await assertWorkspaceResourceAccess(c);
+
     const appName = AppName.build(context.author.scope, context.author.name);
     const assignor = ContractSignature.generate(
       appName,
@@ -205,6 +208,8 @@ export const contractAuthorize = createContractTool({
         "Could not authorize charge for unknown integration",
       );
     }
+
+    await assertWorkspaceResourceAccess(c);
 
     const state = c.state;
     const contractId = c.user.integrationId;
@@ -274,6 +279,8 @@ export const contractSettle = createContractTool({
         "Could not settle charge for unknown integration",
       );
     }
+
+    await assertWorkspaceResourceAccess(c);
 
     const state = c.state;
     const contractId = c.user.integrationId;

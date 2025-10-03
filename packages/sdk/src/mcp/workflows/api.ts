@@ -10,6 +10,7 @@ import {
   assertHasWorkspace,
   assertWorkspaceResourceAccess,
   createTool,
+  createToolGroup,
   DeconfigClient,
 } from "../index.ts";
 import { validate } from "../tools/utils.ts";
@@ -93,6 +94,7 @@ export type WorkflowStepDefinition = z.infer<
 export const WorkflowResourceV2 = DeconfigResourceV2.define({
   directory: "/src/workflows",
   resourceName: "workflow",
+  group: WellKnownMcpGroups.Workflows,
   dataSchema: WorkflowDefinitionSchema,
   enhancements: {
     DECO_RESOURCE_WORKFLOW_SEARCH: {
@@ -362,6 +364,11 @@ export function createWorkflowViewsV2() {
   return viewsV2Implementation;
 }
 
+const createWorkflowTool = createToolGroup("Workflows", {
+  name: "Workflows Management",
+  description: "Manage your workflows",
+  icon: "https://assets.decocache.com/mcp/81d602bb-45e2-4361-b52a-23379520a34d/sandbox.png",
+});
 /**
  * Creates legacy workflow views implementation for backward compatibility
  *
@@ -371,8 +378,9 @@ export function createWorkflowViewsV2() {
  *
  * @returns Legacy workflow views implementation using VIEW_BINDING_SCHEMA
  */
-export function createWorkflowViews() {
-  return impl(VIEW_BINDING_SCHEMA, [
+export const workflowViews = impl(
+  VIEW_BINDING_SCHEMA,
+  [
     // DECO_CHAT_VIEWS_LIST
     {
       description: "List views exposed by this MCP",
@@ -424,5 +432,6 @@ export function createWorkflowViews() {
         };
       },
     },
-  ]);
-}
+  ],
+  createWorkflowTool,
+);

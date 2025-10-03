@@ -4,6 +4,7 @@ import {
   DECO_CMS_WEB_URL,
   Locator,
   MCPConnection,
+  ProjectLocator,
   WellKnownMcpGroups,
 } from "@deco/sdk";
 import { DECO_CHAT_KEY_ID, getKeyPair } from "@deco/sdk/auth";
@@ -15,8 +16,13 @@ import {
   CONTRACTS_TOOLS,
   createDeconfigClientForContext,
   createMCPToolsStub,
+  createToolBindingImpl,
   createToolResourceV2Implementation,
+  createToolViewsV2,
+  createWorkflowBindingImpl,
   createWorkflowResourceV2Implementation,
+  workflowViews as legacyWorkflowViews,
+  createWorkflowViewsV2,
   DECONFIG_TOOLS,
   EMAIL_TOOLS,
   getIntegration,
@@ -28,12 +34,15 @@ import {
   ListToolsMiddleware,
   PrincipalExecutionContext,
   PROJECT_TOOLS,
+  runTool,
   toBindingsContext,
   Tool,
+  ToolBindingImplOptions,
   type ToolLike,
   watchSSE,
   withMCPAuthorization,
   withMCPErrorHandling,
+  WorkflowBindingImplOptions,
   wrapToolFn,
 } from "@deco/sdk/mcp";
 import { getApps, getGroupByAppName } from "@deco/sdk/mcp/groups";
@@ -51,17 +60,6 @@ import { logger } from "hono/logger";
 import { endTime, startTime } from "hono/timing";
 import type { ContentfulStatusCode } from "hono/utils/http-status";
 import { studio } from "outerbase-browsable-do-enforced";
-import {
-  createToolBindingImpl,
-  createToolViewsV2,
-  ToolBindingImplOptions,
-} from "packages/sdk/src/mcp/tools/api.ts";
-import {
-  createWorkflowBindingImpl,
-  createWorkflowViews,
-  createWorkflowViewsV2,
-  WorkflowBindingImplOptions,
-} from "packages/sdk/src/mcp/workflows/api.ts";
 import { z } from "zod";
 import { ROUTES as loginRoutes } from "./auth/index.ts";
 import { withActorsStubMiddleware } from "./middlewares/actors-stub.ts";
@@ -78,12 +76,20 @@ export const app = new Hono<AppEnv>();
 const contextToPrincipalExecutionContext = (
   c: Context<AppEnv>,
 ): PrincipalExecutionContext => {
-  const org = c.req.param("org") ?? c.req.param("root") ?? c.req.query("org");
-  const project =
+  let org = c.req.param("org") ?? c.req.param("root") ?? c.req.query("org");
+  let project =
     c.req.param("project") ?? c.req.param("slug") ?? c.req.query("project");
+  const user = c.get("user");
+  const userAud =
+    user && typeof user === "object" && "aud" in user ? user.aud : undefined;
+  // set org and project based on user aud
+  if (!org && !project && typeof userAud === "string") {
+    const parsed = Locator.parse(userAud as ProjectLocator);
+    org = parsed.org;
+    project = parsed.project;
+  }
   const locator = org && project ? Locator.from({ org, project }) : undefined;
 
-  const user = c.get("user");
   const uid = user?.id as string | undefined;
 
   const oldWorkspaceValue = locator
@@ -161,10 +167,17 @@ const createMCPHandlerFor = (
       { capabilities: { tools: {} } },
     );
 
+    const registeredTools = new Set<string>();
     for (const tool of await (typeof tools === "function" ? tools(c) : tools)) {
       if (group && tool.group !== group) {
         continue;
       }
+
+      if (registeredTools.has(tool.name)) {
+        continue;
+      }
+
+      registeredTools.add(tool.name);
 
       server.registerTool(
         tool.name,
@@ -213,11 +226,21 @@ const createMCPHandlerFor = (
 const createToolCallHandlerFor = <
   TDefinition extends readonly ToolLike[] = readonly ToolLike[],
 >(
-  tools: TDefinition,
+  toolsOrToolsFn: TDefinition | ((ctx: Context) => Promise<TDefinition>),
 ) => {
-  const toolMap = new Map(tools.map((t) => [t.name, t]));
+  const getToolsMap: (
+    ctx: Context,
+  ) => Promise<Map<string, ToolLike>> | Map<string, ToolLike> =
+    typeof toolsOrToolsFn === "function"
+      ? async (c: Context) => {
+          const tools = await toolsOrToolsFn(c);
+          return new Map(tools.map((t) => [t.name, t]));
+        }
+      : () => new Map(toolsOrToolsFn.map((t) => [t.name, t]));
 
   return async (c: Context) => {
+    const toolMap = await getToolsMap(c);
+    const tools = Array.from(toolMap.values());
     const client = createMCPToolsStub({ tools });
     const tool = c.req.param("tool");
     const args = await c.req.json();
@@ -366,7 +389,7 @@ const createMcpServerProxyForIntegration = async (
   const mcpServerProxy = proxy(integration.connection, {
     tokenEmitter: async (options) => {
       return await issuer.issue({
-        sub: `proxy:${callerApp}`,
+        sub: `proxy:${callerApp ?? crypto.randomUUID()}`,
         aud: ctx.locator?.value,
         iat: new Date().getTime(),
         exp: new Date(Date.now() + 1000 * 60).getTime(), //1 minute
@@ -499,101 +522,86 @@ app.get("/mcp/groups", (ctx) => {
   return ctx.json(getApps());
 });
 
-app.all(
-  "/mcp/:group",
-  createMCPHandlerFor((ctx) => {
-    const group = getGroupByAppName(ctx.req.param("group"));
-    return Promise.resolve(
-      PROJECT_TOOLS.filter((tool) => tool.group === group),
-    );
-  }),
-);
+const createContextBasedTools = (ctx: Context) => {
+  const appCtx = honoCtxToAppCtx(ctx);
+  const client = createDeconfigClientForContext(appCtx);
 
-app.all("/:org/:project/mcp", createMCPHandlerFor(PROJECT_TOOLS));
+  // Create Resources 2.0 tool resource implementation
+  const toolResourceV2 = createToolResourceV2Implementation(
+    client,
+    WellKnownMcpGroups.Tools,
+  );
 
-app.all(
-  `/:org/:project/${WellKnownMcpGroups.Workflows}/mcp`,
-  createMCPHandlerFor((ctx) => {
-    const appCtx = honoCtxToAppCtx(ctx);
-    const client = createDeconfigClientForContext(appCtx);
+  const resourcesClient = createMCPToolsStub({
+    tools: toolResourceV2,
+    context: appCtx,
+  });
 
-    // Create Resources 2.0 workflow resource implementation
-    const workflowResourceV2 = createWorkflowResourceV2Implementation(
-      client,
-      WellKnownMcpGroups.Workflows,
-    );
+  const resourceToolRead: ToolBindingImplOptions["resourceToolRead"] = ((uri) =>
+    State.run(
+      appCtx,
+      async () => await resourcesClient.DECO_RESOURCE_TOOL_READ({ uri }),
+    )) as ToolBindingImplOptions["resourceToolRead"];
 
-    const resourcesClient = createMCPToolsStub({
-      tools: workflowResourceV2,
-      context: appCtx,
-    });
+  // Create tool execution functionality using createToolBindingImpl
+  const callTool = createToolBindingImpl({ resourceToolRead });
 
-    const resourceWorkflowRead: WorkflowBindingImplOptions["resourceWorkflowRead"] =
-      ((uri) =>
-        State.run(
-          appCtx,
-          async () =>
-            await resourcesClient.DECO_RESOURCE_WORKFLOW_READ({ uri }),
-        )) as WorkflowBindingImplOptions["resourceWorkflowRead"];
+  // Create Views 2.0 implementation for tool views
+  const toolViewsV2 = createToolViewsV2();
 
-    // Create workflow execution tools using createWorkflowBindingImpl
-    const workflowBinding = createWorkflowBindingImpl({
-      resourceWorkflowRead,
-    });
+  // Create Resources 2.0 workflow resource implementation
+  const workflowResourceV2 = createWorkflowResourceV2Implementation(
+    client,
+    WellKnownMcpGroups.Workflows,
+  );
 
-    // Create Views 2.0 implementation for workflow views
-    const workflowViewsV2 = createWorkflowViewsV2();
-
-    // Create legacy workflow views for backward compatibility
-    const legacyWorkflowViews = createWorkflowViews();
-
-    return Promise.resolve([
-      ...workflowResourceV2, // Add new Resources 2.0 implementation
-      ...workflowBinding, // Add workflow execution tools
-      ...workflowViewsV2, // Add Views 2.0 implementation
-      ...legacyWorkflowViews, // Add legacy workflow views
-    ]);
-  }),
-);
-
-app.all(
-  `/:org/:project/${WellKnownMcpGroups.Tools}/mcp`,
-  createMCPHandlerFor((ctx) => {
-    const appCtx = honoCtxToAppCtx(ctx);
-    const client = createDeconfigClientForContext(appCtx);
-
-    // Create Resources 2.0 tool resource implementation
-    const toolResourceV2 = createToolResourceV2Implementation(
-      client,
-      WellKnownMcpGroups.Tools,
-    );
-
-    const resourcesClient = createMCPToolsStub({
-      tools: toolResourceV2,
-      context: appCtx,
-    });
-
-    const resourceToolRead: ToolBindingImplOptions["resourceToolRead"] = ((
-      uri,
-    ) =>
+  const resourceWorkflowRead: WorkflowBindingImplOptions["resourceWorkflowRead"] =
+    ((uri) =>
       State.run(
         appCtx,
-        async () => await resourcesClient.DECO_RESOURCE_TOOL_READ({ uri }),
-      )) as ToolBindingImplOptions["resourceToolRead"];
+        async () => await resourcesClient.DECO_RESOURCE_WORKFLOW_READ({ uri }),
+      )) as WorkflowBindingImplOptions["resourceWorkflowRead"];
 
-    // Create tool execution functionality using createToolBindingImpl
-    const runTool = createToolBindingImpl({ resourceToolRead });
+  // Create workflow execution tools using createWorkflowBindingImpl
+  const workflowBinding = createWorkflowBindingImpl({
+    resourceWorkflowRead,
+  });
 
-    // Create Views 2.0 implementation for tool views
-    const toolViewsV2 = createToolViewsV2();
+  // Create Views 2.0 implementation for workflow views
+  const workflowViewsV2 = createWorkflowViewsV2();
 
-    return Promise.resolve([
-      ...toolResourceV2, // Add new Resources 2.0 implementation
-      ...runTool, // Add tool execution functionality
-      ...toolViewsV2, // Add Views 2.0 implementation
-    ]);
+  // Create legacy workflow views for backward compatibility
+
+  const workflowTools = [
+    ...workflowResourceV2, // Add new Resources 2.0 implementation
+    ...workflowBinding, // Add workflow execution tools
+    ...workflowViewsV2, // Add Views 2.0 implementation
+    ...legacyWorkflowViews, // Add legacy workflow views
+  ].map((tool) => ({ ...tool, group: WellKnownMcpGroups.Workflows }));
+
+  const toolsManagementTools = [
+    ...toolResourceV2, // Add new Resources 2.0 implementation
+    ...callTool, // Add tool execution functionality
+    runTool,
+    ...toolViewsV2, // Add Views 2.0 implementation
+  ].map((tool) => ({ ...tool, group: WellKnownMcpGroups.Tools }));
+  return [...workflowTools, ...toolsManagementTools];
+};
+
+app.all(
+  "/mcp/:group",
+  createMCPHandlerFor(async (ctx) => {
+    const group = getGroupByAppName(ctx.req.param("group"));
+    const tools = await projectTools(ctx);
+    return tools.filter((tool) => tool.group === group);
   }),
 );
+
+const projectTools = (ctx: Context) => {
+  return Promise.resolve([...PROJECT_TOOLS, ...createContextBasedTools(ctx)]);
+};
+
+app.all("/:org/:project/mcp", createMCPHandlerFor(projectTools));
 
 app.all("/:org/:project/agents/:agentId/mcp", createMCPHandlerFor(AGENT_TOOLS));
 
@@ -602,7 +610,7 @@ app.post("/tools/call/:tool", createToolCallHandlerFor(GLOBAL_TOOLS));
 
 app.post(
   "/:org/:project/tools/call/:tool",
-  createToolCallHandlerFor(PROJECT_TOOLS),
+  createToolCallHandlerFor(projectTools),
 );
 
 app.post(
@@ -638,9 +646,11 @@ app.post("/:org/:project/:integrationId/tools/list", async (c) => {
   );
 });
 
-app.all("/:org/:project/i:databases-management/studio", async (c) => {
+app.all("/:org/:project/:integrationId/studio", async (c) => {
   const org = c.req.param("org");
   const project = c.req.param("project");
+  const integrationId = c.req.param("integrationId");
+  const isDefaultDb = integrationId === "i:databases-management";
   const ctx = honoCtxToAppCtx(c);
   const uid = ctx.user?.id as string | undefined;
   await assertWorkspaceResourceAccess(ctx, {
@@ -648,13 +658,14 @@ app.all("/:org/:project/i:databases-management/studio", async (c) => {
   });
 
   const locator = Locator.from({ org, project });
+  const id = Locator.adaptToRootSlug(locator, uid);
 
   // The DO id can be overridden by the client, both on the URL
   // for GET requests and on the body "id" property for POST requests
   // i've forked the library to add the ability to enforce the id
   return studio(c.req.raw, ctx.workspaceDO, {
     disableHomepage: true,
-    enforceId: Locator.adaptToRootSlug(locator, uid),
+    enforceId: isDefaultDb ? id : `${integrationId}-${id}`,
   });
 });
 

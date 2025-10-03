@@ -458,7 +458,7 @@ const SelectProjectAppInstance = ({
   }) => {
     const { redirectTo } = await createOAuthCode.mutateAsync({
       integrationId,
-      workspace: Locator.from({ org: org.slug, project }),
+      locator: Locator.from({ org: org.slug, project }),
       redirectUri,
       state,
       inlineApp: appSource.type === "inline" ? appSource.app : undefined,

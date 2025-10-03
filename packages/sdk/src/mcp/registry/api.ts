@@ -9,6 +9,8 @@ import {
   InnateConnectionSchema,
   SSEConnectionSchema,
   WebsocketConnectionSchema,
+  MCPConnectionSchema,
+  type InlineApp,
 } from "../../models/mcp.ts";
 import type { Json, QueryResult } from "../../storage/index.ts";
 import {
@@ -72,15 +74,6 @@ const SELECT_REGISTRY_APP_WITH_SCOPE_QUERY = `
   )
 ` as const;
 
-// MCPConnection schema for validation
-const MCPConnectionSchema = z.discriminatedUnion("type", [
-  HTTPConnectionSchema,
-  SSEConnectionSchema,
-  WebsocketConnectionSchema,
-  DecoConnectionSchema,
-  InnateConnectionSchema,
-]);
-
 // Zod schemas for output validation
 const RegistryScopeSchema = z.object({
   id: z.string(),
@@ -127,16 +120,6 @@ export type RegistryScope = {
 };
 
 export type RegistryApp = z.infer<typeof RegistryAppSchema>;
-
-// Minimal schema for localhost app development
-// Only includes technical OAuth details needed for the flow
-export const InlineAppSchema = z.object({
-  connection: MCPConnectionSchema,
-  scopes: z.array(z.string()).optional(),
-  stateSchema: z.record(z.unknown()).optional(),
-});
-
-export type InlineApp = z.infer<typeof InlineAppSchema>;
 
 export type AppSource =
   | { type: "registry"; clientId: string }

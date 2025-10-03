@@ -100,4 +100,22 @@ export type MCPConnection =
   | DecoConnection
   | HTTPConnection;
 
+export const MCPConnectionSchema = z.discriminatedUnion("type", [
+  HTTPConnectionSchema,
+  SSEConnectionSchema,
+  WebsocketConnectionSchema,
+  DecoConnectionSchema,
+  InnateConnectionSchema,
+]);
+
+// Minimal schema for localhost app development
+// Only includes technical OAuth details needed for the flow
+export const InlineAppSchema = z.object({
+  connection: MCPConnectionSchema,
+  scopes: z.array(z.string()).optional(),
+  stateSchema: z.record(z.unknown()).optional(),
+});
+
+export type InlineApp = z.infer<typeof InlineAppSchema>;
+
 export type Binder = z.infer<typeof BindingsSchema>;

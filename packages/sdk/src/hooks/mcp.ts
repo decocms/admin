@@ -327,26 +327,24 @@ export const useCreateOAuthCodeForIntegration = () => {
   const mutation = useMutation({
     mutationFn: async (params: {
       integrationId?: string;
-      workspace: ProjectLocator;
+      locator: ProjectLocator;
       redirectUri: string;
       state?: string;
       inlineApp?: InlineApp;
     }) => {
-      const { integrationId, workspace, redirectUri, state, inlineApp } =
-        params;
+      const { integrationId, locator, redirectUri, state, inlineApp } = params;
 
-      // Call OAUTH_CODE_CREATE with either integrationId or inlineApp
-      const result = await MCPClient.forLocator(workspace).OAUTH_CODE_CREATE({
+      const urlWithoutCode = new URL(redirectUri);
+      state && urlWithoutCode.searchParams.set("state", state);
+
+      const result = await MCPClient.forLocator(locator).OAUTH_CODE_CREATE({
         integrationId,
         inlineApp,
+        redirect_uri: urlWithoutCode.toString(),
       });
 
-      const url = new URL(redirectUri);
-      url.searchParams.set("code", result.code);
-      state && url.searchParams.set("state", state);
-
       return {
-        redirectTo: url.toString(),
+        redirectTo: result.callback_uri,
       };
     },
   });

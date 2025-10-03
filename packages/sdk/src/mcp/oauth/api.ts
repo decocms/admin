@@ -6,7 +6,7 @@ import {
 import { createToolGroup } from "../context.ts";
 import { MCPClient } from "../index.ts";
 import { decodeJwt } from "jose";
-import { InlineAppSchema } from "../registry/api.ts";
+import { InlineAppSchema } from "../../models/mcp.ts";
 
 const createTool = createToolGroup("OAuth", {
   name: "OAuth Management",
@@ -16,7 +16,8 @@ const createTool = createToolGroup("OAuth", {
 
 export const oauthCodeCreate = createTool({
   name: "OAUTH_CODE_CREATE",
-  description: "Create an OAuth code for a given API key or inline app",
+  description:
+    "Create an OAuth code for a given API key or inline app and return the full callback URI",
   inputSchema: z
     .object({
       integrationId: z
@@ -26,6 +27,12 @@ export const oauthCodeCreate = createTool({
       inlineApp: InlineAppSchema.describe(
         "The inline app configuration (for localhost development)",
       ).optional(),
+      redirect_uri: z
+        .string()
+        .url()
+        .describe(
+          "The redirect URI where the user will be sent with the OAuth code",
+        ),
     })
     .refine(
       (data) => {
@@ -39,11 +46,33 @@ export const oauthCodeCreate = createTool({
         message:
           "Either integrationId or inlineApp must be provided, but not both",
       },
+    )
+    .refine(
+      (data) => {
+        // Inline apps can only redirect to localhost
+        if (data.inlineApp) {
+          try {
+            const url = new URL(data.redirect_uri);
+            return url.hostname === "localhost";
+          } catch {
+            return false;
+          }
+        }
+        return true;
+      },
+      {
+        message: "Inline apps can only redirect to localhost URLs",
+        path: ["redirect_uri"],
+      },
     ),
   outputSchema: z.object({
-    code: z.string().describe("The OAuth code"),
+    callback_uri: z
+      .string()
+      .describe(
+        "The full callback URI with the OAuth code as a query parameter",
+      ),
   }),
-  handler: async ({ integrationId, inlineApp }, c) => {
+  handler: async ({ integrationId, inlineApp, redirect_uri }, c) => {
     assertHasWorkspace(c);
     await assertWorkspaceResourceAccess(c);
 
@@ -98,8 +127,14 @@ export const oauthCodeCreate = createTool({
     if (error) {
       throw new Error(error.message);
     }
+
+    // Build the full callback URI with the code as a query parameter
+    const callbackUrl = new URL(redirect_uri);
+    callbackUrl.searchParams.set("code", code);
+    const callback_uri = callbackUrl.toString();
+
     return {
-      code,
+      callback_uri,
     };
   },
 });

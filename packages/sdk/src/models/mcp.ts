@@ -1,6 +1,7 @@
 import { z } from "zod";
 import type { WellKnownBindingsName } from "../mcp/index.ts";
 import { ToolDefinitionSchema } from "../mcp/tools/schemas.ts";
+import { policiesSchema } from "../mcp/api-keys/api.ts";
 
 export const BindingsSchema = z.enum([
   "Channel",
@@ -117,5 +118,12 @@ export const InlineAppSchema = z.object({
 });
 
 export type InlineApp = z.infer<typeof InlineAppSchema>;
+
+export const InlineAppCreatorSchema = InlineAppSchema.extend({
+  policies: policiesSchema,
+  state: z.record(z.unknown()).optional(),
+});
+
+export type InlineAppCreator = z.infer<typeof InlineAppCreatorSchema>;
 
 export type Binder = z.infer<typeof BindingsSchema>;

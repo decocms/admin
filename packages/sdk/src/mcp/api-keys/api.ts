@@ -13,7 +13,7 @@ import {
   assertHasWorkspace,
   assertWorkspaceResourceAccess,
 } from "../assertions.ts";
-import { createToolGroup } from "../context.ts";
+import { AppContext, createToolGroup } from "../context.ts";
 import { MCPClient } from "../index.ts";
 import { getIntegration } from "../integrations/api.ts";
 import { getRegistryApp } from "../registry/api.ts";
@@ -101,7 +101,7 @@ export const listApiKeys = createTool({
   },
 });
 
-const policiesSchema = z
+export const policiesSchema = z
   .array(StatementSchema)
   .optional()
   .describe("Policies for the API key");
@@ -138,6 +138,39 @@ const ensureStateIsWellFormed = async (state: unknown) => {
 
   return state;
 };
+
+export const insertDbApiKey = async ({
+  name,
+  policies,
+  ctx,
+}: {
+  name: string;
+  policies: z.infer<typeof policiesSchema>;
+  ctx: AppContext;
+}) => {
+  assertHasWorkspace(ctx);
+
+  const db = ctx.db;
+  const workspace = ctx.workspace.value;
+
+  const { data: apiKey, error } = await db
+    .from("deco_chat_api_keys")
+    .insert({
+      name,
+      workspace,
+      enabled: true,
+      policies: policies || [],
+    })
+    .select(SELECT_API_KEY_QUERY)
+    .single();
+
+  if (error) {
+    throw new InternalServerError(error.message);
+  }
+
+  return apiKey;
+};
+
 export const createApiKey = createTool({
   name: "API_KEYS_CREATE",
   description: "Create a new API key",
@@ -187,23 +220,12 @@ export const createApiKey = createTool({
       }
     }
 
-    const db = c.db;
-
     // Insert the API key metadata
-    const { data: apiKey, error } = await db
-      .from("deco_chat_api_keys")
-      .insert({
-        name,
-        workspace,
-        enabled: true,
-        policies: policies || [],
-      })
-      .select(SELECT_API_KEY_QUERY)
-      .single();
-
-    if (error) {
-      throw new InternalServerError(error.message);
-    }
+    const apiKey = await insertDbApiKey({
+      name,
+      policies,
+      ctx: c,
+    });
 
     const issuer = await c.jwtIssuer();
     const value = await issuer.issue({

@@ -6,7 +6,8 @@ import {
 import { createToolGroup } from "../context.ts";
 import { MCPClient } from "../index.ts";
 import { decodeJwt } from "jose";
-import { InlineAppSchema } from "../../models/mcp.ts";
+import { InlineAppCreatorSchema } from "../../models/mcp.ts";
+import { insertDbApiKey } from "../api-keys/api.ts";
 
 const createTool = createToolGroup("OAuth", {
   name: "OAuth Management",
@@ -24,7 +25,7 @@ export const oauthCodeCreate = createTool({
         .string()
         .describe("The ID of the integration to create an OAuth code for")
         .optional(),
-      inlineApp: InlineAppSchema.describe(
+      inlineApp: InlineAppCreatorSchema.describe(
         "The inline app configuration (for localhost development)",
       ).optional(),
       redirect_uri: z
@@ -76,28 +77,33 @@ export const oauthCodeCreate = createTool({
     assertHasWorkspace(c);
     await assertWorkspaceResourceAccess(c);
 
-    let claims = {};
+    let currentClaims = {};
 
     if (inlineApp) {
       // For inline apps (localhost), generate JWT directly without creating an integration
       const issuer = await c.jwtIssuer();
 
+      const appName = "@localhost/app";
+
+      const apiKey = await insertDbApiKey({
+        name: appName,
+        policies: inlineApp.policies,
+        ctx: c,
+      });
+
       const jwtClaims = {
-        sub: c.workspace.value,
-        workspace: c.workspace.value,
-        appName: "localhost-app",
-        user: c.user,
+        state: inlineApp.state,
+        aud: c.workspace.value,
+        iat: new Date().getTime(),
+        sub: `api-key:${apiKey.id}`,
+
+        // ignored for localhost inline app auth
+        appName,
+        integrationId: `i:${crypto.randomUUID()}`,
       };
 
-      const token = await issuer.issue(jwtClaims);
-
-      // Claims include the JWT token and connection info
-      claims = {
-        ...jwtClaims,
-        user: JSON.stringify(c.user),
-        token, // The JWT that will be returned on code exchange
-        connection: inlineApp.connection, // Store connection for reference
-      };
+      const encoded = await issuer.issue(jwtClaims);
+      currentClaims = decodeJwt(encoded);
     } else {
       // Regular flow: use existing integration
       const mcpClient = MCPClient.forContext(c);
@@ -110,12 +116,13 @@ export const oauthCodeCreate = createTool({
           "Only authorized HTTP connections are supported for OAuth codes",
         );
       }
-      const currentClaims = decodeJwt(connection.token);
-      claims = {
-        ...currentClaims,
-        user: JSON.stringify(c.user),
-      };
+      currentClaims = decodeJwt(connection.token);
     }
+
+    const claims = {
+      ...currentClaims,
+      user: JSON.stringify(c.user),
+    };
 
     const code = crypto.randomUUID();
 

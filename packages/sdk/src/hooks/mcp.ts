@@ -20,7 +20,7 @@ import { KEYS } from "./api.ts";
 import { type MCPTool } from "./index.ts";
 import { useSDK } from "./store.tsx";
 import { ProjectLocator } from "../locator.ts";
-import type { InlineApp } from "../mcp/registry/api.ts";
+import type { InlineAppCreator } from "../models/mcp.ts";
 
 interface IntegrationToolsResult {
   integration: Integration;
@@ -330,7 +330,7 @@ export const useCreateOAuthCodeForIntegration = () => {
       locator: ProjectLocator;
       redirectUri: string;
       state?: string;
-      inlineApp?: InlineApp;
+      inlineApp?: InlineAppCreator;
     }) => {
       const { integrationId, locator, redirectUri, state, inlineApp } = params;
 

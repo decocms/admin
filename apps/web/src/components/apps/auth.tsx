@@ -10,6 +10,7 @@ import {
   useRegistryApp,
   type AppSource,
   type MCPConnection,
+  type InlineApp,
 } from "@deco/sdk";
 import { useMarketplaceIntegrations, useOrganizations } from "@deco/sdk/hooks";
 import { Button } from "@deco/ui/components/button.tsx";
@@ -376,6 +377,114 @@ const InlineInstallation = ({
   );
 };
 
+const LocalhostAppAuthorization = ({
+  app,
+  org,
+  inlineApp,
+  createOAuthCode,
+  selectAnotherProject,
+  createOAuthCodeAndRedirectBackToApp,
+}: {
+  app: UnifiedApp;
+  org: Team;
+  inlineApp: InlineApp;
+  createOAuthCode: ReturnType<typeof useCreateOAuthCodeForIntegration>;
+  selectAnotherProject: () => void;
+  createOAuthCodeAndRedirectBackToApp: (params: {
+    inlineAppState?: Record<string, unknown>;
+  }) => Promise<void>;
+}) => {
+  const formRef = useRef<UseFormReturn<Record<string, unknown>> | null>(null);
+  const hasStateSchema =
+    inlineApp.stateSchema && Object.keys(inlineApp.stateSchema).length > 0;
+
+  const handleAuthorize = async () => {
+    if (hasStateSchema && formRef.current) {
+      const isValid = await formRef.current.trigger();
+      if (!isValid) {
+        return;
+      }
+      const stateData = formRef.current.getValues();
+      await createOAuthCodeAndRedirectBackToApp({ inlineAppState: stateData });
+    } else {
+      await createOAuthCodeAndRedirectBackToApp({});
+    }
+  };
+
+  return (
+    <div className="flex flex-col items-center justify-center h-full w-full py-6">
+      <div className="text-center space-y-6 max-w-md w-full m-auto">
+        <div className="flex flex-col items-center gap-4">
+          <div className="flex items-center justify-center gap-2">
+            <div className="relative">
+              <Avatar
+                shape="square"
+                url={org.avatar_url}
+                fallback={org.name}
+                objectFit="contain"
+                size="xl"
+              />
+            </div>
+
+            <div className="relative -mx-4 z-50 bg-background border border-border rounded-lg w-8 h-8 flex items-center justify-center">
+              <Icon
+                name="sync_alt"
+                size={24}
+                className="text-muted-foreground"
+              />
+            </div>
+
+            <div className="relative">
+              <IntegrationAvatar
+                url={app.icon}
+                fallback={app.friendlyName ?? app.name}
+                size="xl"
+              />
+            </div>
+          </div>
+          <h1 className="text-xl font-semibold flex items-center gap-2">
+            <span>Authorize {app.friendlyName ?? app.name}</span>
+            <span className="text-xs bg-muted px-2 py-1 rounded">
+              Development
+            </span>
+          </h1>
+          <p className="text-sm text-muted-foreground">
+            This app is running in development mode on your local machine
+          </p>
+        </div>
+
+        {hasStateSchema && (
+          <DependencyStep
+            integration={
+              {
+                name: app.name,
+                friendlyName: app.friendlyName,
+                description: app.description,
+                icon: app.icon,
+              } as MarketplaceIntegration
+            }
+            dependencyName={null}
+            dependencySchema={inlineApp.stateSchema}
+            currentStep={1}
+            totalSteps={1}
+            formRef={formRef}
+            integrationState={null}
+            mode="column"
+          />
+        )}
+
+        <FooterButtons
+          backLabel="Change project"
+          onClickBack={selectAnotherProject}
+          onClickContinue={handleAuthorize}
+          continueDisabled={createOAuthCode.isPending}
+          continueLoading={createOAuthCode.isPending}
+        />
+      </div>
+    </div>
+  );
+};
+
 const FooterButtons = ({
   backLabel,
   onClickBack,
@@ -453,72 +562,42 @@ const SelectProjectAppInstance = ({
 
   const createOAuthCodeAndRedirectBackToApp = async ({
     integrationId,
+    inlineAppState,
   }: {
     integrationId?: string;
+    inlineAppState?: Record<string, unknown>;
   }) => {
     const { redirectTo } = await createOAuthCode.mutateAsync({
       integrationId,
       locator: Locator.from({ org: org.slug, project }),
       redirectUri,
       state,
-      inlineApp: appSource.type === "inline" ? appSource.app : undefined,
+      inlineApp:
+        appSource.type === "inline"
+          ? {
+              ...appSource.app,
+              state: inlineAppState,
+              // TODO: format scope string[] into that effect allow stuff
+              // policies: appSource.app.scopes || [],
+            }
+          : undefined,
     });
     globalThis.location.href = redirectTo;
   };
 
-  // For inline apps, skip integration selection and go straight to OAuth code creation
+  // For inline apps, show stateSchema form
   if (appSource.type === "inline") {
     return (
-      <div className="flex flex-col items-center justify-center h-full w-full py-6">
-        <div className="text-center space-y-6 max-w-md w-full m-auto">
-          <div className="flex flex-col items-center gap-4">
-            <div className="flex items-center justify-center gap-2">
-              <div className="relative">
-                <Avatar
-                  shape="square"
-                  url={org.avatar_url}
-                  fallback={org.name}
-                  objectFit="contain"
-                  size="xl"
-                />
-              </div>
-
-              <div className="relative -mx-4 z-50 bg-background border border-border rounded-lg w-8 h-8 flex items-center justify-center">
-                <Icon
-                  name="sync_alt"
-                  size={24}
-                  className="text-muted-foreground"
-                />
-              </div>
-
-              <div className="relative">
-                <IntegrationAvatar
-                  url={app.icon}
-                  fallback={app.friendlyName ?? app.name}
-                  size="xl"
-                />
-              </div>
-            </div>
-            <h1 className="text-xl font-semibold flex items-center gap-2">
-              <span>Authorize {app.friendlyName ?? app.name}</span>
-              <span className="text-xs bg-muted px-2 py-1 rounded">
-                Development
-              </span>
-            </h1>
-            <p className="text-sm text-muted-foreground">
-              This app is running in development mode on your local machine
-            </p>
-          </div>
-
-          <FooterButtons
-            backLabel="Change project"
-            onClickBack={selectAnotherProject}
-            onClickContinue={() => createOAuthCodeAndRedirectBackToApp({})}
-            continueDisabled={createOAuthCode.isPending}
-            continueLoading={createOAuthCode.isPending}
-          />
-        </div>
-      </div>
+      <LocalhostAppAuthorization
+        app={app}
+        org={org}
+        inlineApp={appSource.app}
+        createOAuthCode={createOAuthCode}
+        selectAnotherProject={selectAnotherProject}
+        createOAuthCodeAndRedirectBackToApp={
+          createOAuthCodeAndRedirectBackToApp
+        }
+      />
     );
   }
 

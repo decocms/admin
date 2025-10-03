@@ -271,17 +271,24 @@ export class Blobs extends DurableObject<unknown> {
       return result;
     }
 
-    // Create parameterized query for batch retrieval
-    const placeholders = hashes.map(() => "?").join(",");
-    const query = `SELECT hash, content FROM blobs WHERE hash IN (${placeholders})`;
+    // Use chunking to prevent SQLite "too many SQL variables" error
+    const MAX_HASHES_PER_QUERY = 100;
+    
+    for (let i = 0; i < hashes.length; i += MAX_HASHES_PER_QUERY) {
+      const chunk = hashes.slice(i, i + MAX_HASHES_PER_QUERY);
+      
+      // Create parameterized query for batch retrieval
+      const placeholders = chunk.map(() => "?").join(",");
+      const query = `SELECT hash, content FROM blobs WHERE hash IN (${placeholders})`;
 
-    const sqlResult = this.sql.exec(query, ...hashes);
+      const sqlResult = this.sql.exec(query, ...chunk);
 
-    // Update result map with found blobs
-    for (const row of sqlResult) {
-      const hash = row.hash as string;
-      const content = row.content as ArrayBuffer;
-      result.set(hash, content);
+      // Update result map with found blobs
+      for (const row of sqlResult) {
+        const hash = row.hash as string;
+        const content = row.content as ArrayBuffer;
+        result.set(hash, content);
+      }
     }
 
     return result;

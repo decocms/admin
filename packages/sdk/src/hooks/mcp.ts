@@ -17,16 +17,9 @@ import { MCPClient } from "../fetcher.ts";
 import type { Agent, Binder, Integration } from "../models/index.ts";
 import { applyDisplayNameToIntegration } from "../utils/integration-display-name.ts";
 import { KEYS } from "./api.ts";
-import { type MCPTool } from "./index.ts";
 import { useSDK } from "./store.tsx";
 import { ProjectLocator } from "../locator.ts";
 import type { InlineAppCreator } from "../models/mcp.ts";
-
-interface IntegrationToolsResult {
-  integration: Integration;
-  tools: MCPTool[];
-  success: boolean;
-}
 
 export const useCreateIntegration = () => {
   const client = useQueryClient();

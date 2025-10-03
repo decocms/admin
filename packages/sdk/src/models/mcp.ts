@@ -1,7 +1,6 @@
 import { z } from "zod";
 import type { WellKnownBindingsName } from "../mcp/index.ts";
 import { ToolDefinitionSchema } from "../mcp/tools/schemas.ts";
-import { policiesSchema } from "../mcp/api-keys/api.ts";
 
 export const BindingsSchema = z.enum([
   "Channel",
@@ -108,6 +107,29 @@ export const MCPConnectionSchema = z.discriminatedUnion("type", [
   DecoConnectionSchema,
   InnateConnectionSchema,
 ]);
+
+export const IsIntegrationSchema = z.object({
+  resource: z.literal("is_integration"),
+  integrationId: z.string(),
+});
+
+export const MatchConditionsSchema = z.discriminatedUnion("resource", [
+  IsIntegrationSchema,
+]);
+
+export const StatementSchema = z.object({
+  effect: z.enum(["allow", "deny"]),
+  resource: z.string(),
+  matchCondition: MatchConditionsSchema.optional(),
+});
+
+// Typed interfaces
+export type Statement = z.infer<typeof StatementSchema>;
+
+export const policiesSchema = z
+  .array(StatementSchema)
+  .optional()
+  .describe("Policies for the API key");
 
 // Minimal schema for localhost app development
 // Only includes technical OAuth details needed for the flow

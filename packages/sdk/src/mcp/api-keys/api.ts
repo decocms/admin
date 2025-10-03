@@ -1,6 +1,6 @@
 import { and, eq, or } from "drizzle-orm";
 import { z } from "zod";
-import { StatementSchema } from "../../auth/policy.ts";
+import { policiesSchema } from "../../models/mcp.ts";
 import { userFromJWT } from "../../auth/user.ts";
 import {
   InternalServerError,
@@ -100,11 +100,6 @@ export const listApiKeys = createTool({
     };
   },
 });
-
-export const policiesSchema = z
-  .array(StatementSchema)
-  .optional()
-  .describe("Policies for the API key");
 
 const AppClaimsSchema = z.object({
   appName: z.string(),

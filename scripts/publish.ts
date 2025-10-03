@@ -36,6 +36,10 @@ async function fetchApps(): Promise<App[]> {
   return apps;
 }
 
+const publicApps: Record<string, boolean> = {
+  database: true,
+};
+
 async function publishApp(
   app: App,
 ): Promise<{ success: boolean; error?: string }> {
@@ -66,7 +70,7 @@ async function publishApp(
       type: "HTTP",
       url: `https://api.decocms.com/mcp/${app.group}`,
     },
-    unlisted: true,
+    unlisted: !(app.group in publicApps),
   };
 
   const url = `https://api.decocms.com${project}/tools/call/REGISTRY_PUBLISH_APP`;

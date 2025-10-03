@@ -1,5 +1,4 @@
 import { MessageList } from "@mastra/core/agent";
-import type { Message as AIMessage } from "ai";
 import { z } from "zod";
 import { WorkspaceMemory } from "../../memory/memory.ts";
 import {
@@ -247,12 +246,15 @@ export const getThreadMessages = createTool({
 
     const list = new MessageList({ threadId: id });
     for (const message of messages) {
-      list.add(message as unknown as AIMessage, "memory");
+      // @ts-expect-error: I guess this is ok
+      list.add(message, "memory");
     }
 
-    const uiMessages = list.get.all.ui();
+    const uiMessages = list.get.all.aiV5.ui();
 
-    return { messages: uiMessages };
+    return {
+      messages: uiMessages,
+    };
   },
 });
 

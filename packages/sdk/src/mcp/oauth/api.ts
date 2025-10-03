@@ -6,6 +6,9 @@ import {
 import { createToolGroup } from "../context.ts";
 import { MCPClient } from "../index.ts";
 import { decodeJwt } from "jose";
+import { InlineAppCreatorSchema } from "../../models/mcp.ts";
+import { insertDbApiKey } from "../api-keys/api.ts";
+
 const createTool = createToolGroup("OAuth", {
   name: "OAuth Management",
   description: "Create and manage OAuth codes securely.",
@@ -14,33 +17,113 @@ const createTool = createToolGroup("OAuth", {
 
 export const oauthCodeCreate = createTool({
   name: "OAUTH_CODE_CREATE",
-  description: "Create an OAuth code for a given API key",
-  inputSchema: z.object({
-    integrationId: z
-      .string()
-      .describe("The ID of the integration to create an OAuth code for"),
-  }),
+  description:
+    "Create an OAuth code for a given API key or inline app and return the full callback URI",
+  inputSchema: z
+    .object({
+      integrationId: z
+        .string()
+        .describe("The ID of the integration to create an OAuth code for")
+        .optional(),
+      inlineApp: InlineAppCreatorSchema.describe(
+        "The inline app configuration (for localhost development)",
+      ).optional(),
+      redirect_uri: z
+        .string()
+        .url()
+        .describe(
+          "The redirect URI where the user will be sent with the OAuth code",
+        ),
+    })
+    .refine(
+      (data) => {
+        // Exactly one of integrationId or inlineApp must be provided
+        return (
+          (data.integrationId && !data.inlineApp) ||
+          (!data.integrationId && data.inlineApp)
+        );
+      },
+      {
+        message:
+          "Either integrationId or inlineApp must be provided, but not both",
+      },
+    )
+    .refine(
+      (data) => {
+        // Inline apps can only redirect to localhost
+        if (data.inlineApp) {
+          try {
+            const url = new URL(data.redirect_uri);
+            return url.hostname === "localhost";
+          } catch {
+            return false;
+          }
+        }
+        return true;
+      },
+      {
+        message: "Inline apps can only redirect to localhost URLs",
+        path: ["redirect_uri"],
+      },
+    ),
   outputSchema: z.object({
-    code: z.string().describe("The OAuth code"),
+    callback_uri: z
+      .string()
+      .describe(
+        "The full callback URI with the OAuth code as a query parameter",
+      ),
   }),
-  handler: async ({ integrationId }, c) => {
+  handler: async ({ integrationId, inlineApp, redirect_uri }, c) => {
     assertHasWorkspace(c);
     await assertWorkspaceResourceAccess(c);
-    const mcpClient = MCPClient.forContext(c);
-    const integration = await mcpClient.INTEGRATIONS_GET({
-      id: integrationId,
-    });
-    const connection = integration.connection;
-    if (connection.type !== "HTTP" || !connection.token) {
-      throw new Error(
-        "Only authorized HTTP connections are supported for OAuth codes",
-      );
+
+    let currentClaims = {};
+
+    if (inlineApp) {
+      // For inline apps (localhost), generate JWT directly without creating an integration
+      const issuer = await c.jwtIssuer();
+
+      const appName = "@localhost/app";
+
+      const apiKey = await insertDbApiKey({
+        name: appName,
+        policies: inlineApp.policies,
+        ctx: c,
+      });
+
+      const jwtClaims = {
+        state: inlineApp.state,
+        aud: c.workspace.value,
+        iat: new Date().getTime(),
+        sub: `api-key:${apiKey.id}`,
+
+        // ignored for localhost inline app auth
+        appName,
+        integrationId: `i:${crypto.randomUUID()}`,
+      };
+
+      const encoded = await issuer.issue(jwtClaims);
+      currentClaims = decodeJwt(encoded);
+    } else {
+      // Regular flow: use existing integration
+      const mcpClient = MCPClient.forContext(c);
+      const integration = await mcpClient.INTEGRATIONS_GET({
+        id: integrationId!,
+      });
+      const connection = integration.connection;
+      if (connection.type !== "HTTP" || !connection.token) {
+        throw new Error(
+          "Only authorized HTTP connections are supported for OAuth codes",
+        );
+      }
+      currentClaims = decodeJwt(connection.token);
     }
-    const currentClaims = decodeJwt(connection.token);
+
     const claims = {
       ...currentClaims,
       user: JSON.stringify(c.user),
     };
+
     const code = crypto.randomUUID();
 
     const { error } = await c.db.from("deco_chat_oauth_codes").insert({
@@ -51,8 +134,14 @@ export const oauthCodeCreate = createTool({
     if (error) {
       throw new Error(error.message);
     }
+
+    // Build the full callback URI with the code as a query parameter
+    const callbackUrl = new URL(redirect_uri);
+    callbackUrl.searchParams.set("code", code);
+    const callback_uri = callbackUrl.toString();
+
     return {
-      code,
+      callback_uri,
     };
   },
 });

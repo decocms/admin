@@ -17,15 +17,9 @@ import { MCPClient } from "../fetcher.ts";
 import type { Agent, Binder, Integration } from "../models/index.ts";
 import { applyDisplayNameToIntegration } from "../utils/integration-display-name.ts";
 import { KEYS } from "./api.ts";
-import { type MCPTool } from "./index.ts";
 import { useSDK } from "./store.tsx";
 import { ProjectLocator } from "../locator.ts";
-
-interface IntegrationToolsResult {
-  integration: Integration;
-  tools: MCPTool[];
-  success: boolean;
-}
+import type { InlineAppCreator } from "../models/mcp.ts";
 
 export const useCreateIntegration = () => {
   const client = useQueryClient();
@@ -325,23 +319,25 @@ export const useMarketplaceAppSchema = (appName?: string) => {
 export const useCreateOAuthCodeForIntegration = () => {
   const mutation = useMutation({
     mutationFn: async (params: {
-      integrationId: string;
-      workspace: ProjectLocator;
+      integrationId?: string;
+      locator: ProjectLocator;
       redirectUri: string;
       state?: string;
+      inlineApp?: InlineAppCreator;
     }) => {
-      const { integrationId, workspace, redirectUri, state } = params;
+      const { integrationId, locator, redirectUri, state, inlineApp } = params;
 
-      const { code } = await MCPClient.forLocator(workspace).OAUTH_CODE_CREATE({
+      const urlWithoutCode = new URL(redirectUri);
+      state && urlWithoutCode.searchParams.set("state", state);
+
+      const result = await MCPClient.forLocator(locator).OAUTH_CODE_CREATE({
         integrationId,
+        inlineApp,
+        redirect_uri: urlWithoutCode.toString(),
       });
 
-      const url = new URL(redirectUri);
-      url.searchParams.set("code", code);
-      state && url.searchParams.set("state", state);
-
       return {
-        redirectTo: url.toString(),
+        redirectTo: result.callback_uri,
       };
     },
   });

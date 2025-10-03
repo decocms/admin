@@ -100,4 +100,52 @@ export type MCPConnection =
   | DecoConnection
   | HTTPConnection;
 
+export const MCPConnectionSchema = z.discriminatedUnion("type", [
+  HTTPConnectionSchema,
+  SSEConnectionSchema,
+  WebsocketConnectionSchema,
+  DecoConnectionSchema,
+  InnateConnectionSchema,
+]);
+
+export const IsIntegrationSchema = z.object({
+  resource: z.literal("is_integration"),
+  integrationId: z.string(),
+});
+
+export const MatchConditionsSchema = z.discriminatedUnion("resource", [
+  IsIntegrationSchema,
+]);
+
+export const StatementSchema = z.object({
+  effect: z.enum(["allow", "deny"]),
+  resource: z.string(),
+  matchCondition: MatchConditionsSchema.optional(),
+});
+
+// Typed interfaces
+export type Statement = z.infer<typeof StatementSchema>;
+
+export const policiesSchema = z
+  .array(StatementSchema)
+  .optional()
+  .describe("Policies for the API key");
+
+// Minimal schema for localhost app development
+// Only includes technical OAuth details needed for the flow
+export const InlineAppSchema = z.object({
+  connection: MCPConnectionSchema,
+  scopes: z.array(z.string()).optional(),
+  stateSchema: z.record(z.unknown()).optional(),
+});
+
+export type InlineApp = z.infer<typeof InlineAppSchema>;
+
+export const InlineAppCreatorSchema = InlineAppSchema.extend({
+  policies: policiesSchema,
+  state: z.record(z.unknown()).optional(),
+});
+
+export type InlineAppCreator = z.infer<typeof InlineAppCreatorSchema>;
+
 export type Binder = z.infer<typeof BindingsSchema>;

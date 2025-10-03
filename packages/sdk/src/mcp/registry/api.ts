@@ -9,6 +9,8 @@ import {
   InnateConnectionSchema,
   SSEConnectionSchema,
   WebsocketConnectionSchema,
+  MCPConnectionSchema,
+  type InlineApp,
 } from "../../models/mcp.ts";
 import type { Json, QueryResult } from "../../storage/index.ts";
 import {
@@ -72,15 +74,6 @@ const SELECT_REGISTRY_APP_WITH_SCOPE_QUERY = `
   )
 ` as const;
 
-// MCPConnection schema for validation
-const MCPConnectionSchema = z.discriminatedUnion("type", [
-  HTTPConnectionSchema,
-  SSEConnectionSchema,
-  WebsocketConnectionSchema,
-  DecoConnectionSchema,
-  InnateConnectionSchema,
-]);
-
 // Zod schemas for output validation
 const RegistryScopeSchema = z.object({
   id: z.string(),
@@ -127,6 +120,10 @@ export type RegistryScope = {
 };
 
 export type RegistryApp = z.infer<typeof RegistryAppSchema>;
+
+export type AppSource =
+  | { type: "registry"; clientId: string }
+  | { type: "inline"; app: InlineApp };
 
 const Mappers = {
   toRegistryScope: (

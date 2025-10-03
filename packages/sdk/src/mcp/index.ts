@@ -200,7 +200,7 @@ export const PROJECT_TOOLS = [
   promptsAPI.renamePromptVersion,
   apiKeysAPI.checkAccess,
   apiKeysAPI.listApiKeys,
-  apiKeysAPI.createApiKey,
+  apiKeysAPI.insertDbApiKey,
   apiKeysAPI.getApiKey,
   apiKeysAPI.updateApiKey,
   apiKeysAPI.deleteApiKey,

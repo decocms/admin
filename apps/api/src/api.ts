@@ -81,7 +81,7 @@ const contextToPrincipalExecutionContext = (
     c.req.param("project") ?? c.req.param("slug") ?? c.req.query("project");
   const user = c.get("user");
   const userAud =
-    typeof user === "object" && "aud" in user ? user.aud : undefined;
+    user && typeof user === "object" && "aud" in user ? user.aud : undefined;
   // set org and project based on user aud
   if (!org && !project && typeof userAud === "string") {
     const parsed = Locator.parse(userAud as ProjectLocator);

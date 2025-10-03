@@ -325,8 +325,8 @@ export const aiGenerate = createTool({
   name: "AI_GENERATE",
   description:
     "Generate text using AI models directly without agent context (stateless)",
-  inputSchema: AIGenerateInputSchema,
-  outputSchema: AIGenerateOutputSchema,
+  inputSchema: z.lazy(() => AIGenerateInputSchema),
+  outputSchema: z.lazy(() => AIGenerateOutputSchema),
   handler: async (input, c) => {
     assertHasWorkspace(c);
     await assertWorkspaceResourceAccess(c);
@@ -376,8 +376,8 @@ export const aiGenerateObject = createTool({
   name: "AI_GENERATE_OBJECT",
   description:
     "Generate structured objects using AI models with JSON schema validation",
-  inputSchema: AIGenerateObjectInputSchema,
-  outputSchema: AIGenerateObjectOutputSchema,
+  inputSchema: z.lazy(() => AIGenerateObjectInputSchema),
+  outputSchema: z.lazy(() => AIGenerateObjectOutputSchema),
   handler: async (input, c) => {
     assertHasWorkspace(c);
     await assertWorkspaceResourceAccess(c);

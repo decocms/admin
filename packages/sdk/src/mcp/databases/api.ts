@@ -144,6 +144,7 @@ export const viewBinding = createDatabaseTool({
     c.resourceAccess.grant();
     assertHasWorkspace(c);
     const integrationId =
+      c.user &&
       typeof c.user === "object" &&
       "integrationId" in c.user &&
       typeof c.user.integrationId === "string"

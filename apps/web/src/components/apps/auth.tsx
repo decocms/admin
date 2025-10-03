@@ -8,6 +8,8 @@ import {
   useCreateOAuthCodeForIntegration,
   useIntegrations,
   useRegistryApp,
+  type AppSource,
+  type MCPConnection,
 } from "@deco/sdk";
 import { useMarketplaceIntegrations, useOrganizations } from "@deco/sdk/hooks";
 import { Button } from "@deco/ui/components/button.tsx";
@@ -412,6 +414,7 @@ const FooterButtons = ({
 
 const SelectProjectAppInstance = ({
   app,
+  appSource,
   org,
   project,
   selectAnotherProject,
@@ -419,15 +422,16 @@ const SelectProjectAppInstance = ({
   redirectUri,
   state,
 }: {
-  app: RegistryApp;
+  app: UnifiedApp;
+  appSource: AppSource;
   org: Team;
   project: string;
   selectAnotherProject: () => void;
-  clientId: string;
+  clientId: string | undefined;
   redirectUri: string;
   state: string | undefined;
 }) => {
-  const installedIntegrations = useAppIntegrations(clientId);
+  const installedIntegrations = useAppIntegrations(clientId ?? "");
   const createOAuthCode = useCreateOAuthCodeForIntegration();
   const installCreatingApiKeyAndIntegration =
     useInstallCreatingApiKeyAndIntegration();
@@ -435,7 +439,9 @@ const SelectProjectAppInstance = ({
   const [selectedIntegration, setSelectedIntegration] =
     useState<Integration | null>(() => installedIntegrations[0] ?? null);
   const [inlineCreatingIntegration, setInlineCreatingIntegration] =
-    useState<boolean>(() => installedIntegrations.length === 0);
+    useState<boolean>(
+      () => installedIntegrations.length === 0 && appSource.type === "registry",
+    );
   const [oauthCompletionDialog, setOauthCompletionDialog] =
     useState<OauthModalState>({
       open: false,
@@ -448,16 +454,73 @@ const SelectProjectAppInstance = ({
   const createOAuthCodeAndRedirectBackToApp = async ({
     integrationId,
   }: {
-    integrationId: string;
+    integrationId?: string;
   }) => {
     const { redirectTo } = await createOAuthCode.mutateAsync({
       integrationId,
       workspace: Locator.from({ org: org.slug, project }),
       redirectUri,
       state,
+      inlineApp: appSource.type === "inline" ? appSource.app : undefined,
     });
     globalThis.location.href = redirectTo;
   };
+
+  // For inline apps, skip integration selection and go straight to OAuth code creation
+  if (appSource.type === "inline") {
+    return (
+      <div className="flex flex-col items-center justify-center h-full w-full py-6">
+        <div className="text-center space-y-6 max-w-md w-full m-auto">
+          <div className="flex flex-col items-center gap-4">
+            <div className="flex items-center justify-center gap-2">
+              <div className="relative">
+                <Avatar
+                  shape="square"
+                  url={org.avatar_url}
+                  fallback={org.name}
+                  objectFit="contain"
+                  size="xl"
+                />
+              </div>
+
+              <div className="relative -mx-4 z-50 bg-background border border-border rounded-lg w-8 h-8 flex items-center justify-center">
+                <Icon
+                  name="sync_alt"
+                  size={24}
+                  className="text-muted-foreground"
+                />
+              </div>
+
+              <div className="relative">
+                <IntegrationAvatar
+                  url={app.icon}
+                  fallback={app.friendlyName ?? app.name}
+                  size="xl"
+                />
+              </div>
+            </div>
+            <h1 className="text-xl font-semibold flex items-center gap-2">
+              <span>Authorize {app.friendlyName ?? app.name}</span>
+              <span className="text-xs bg-muted px-2 py-1 rounded">
+                Development
+              </span>
+            </h1>
+            <p className="text-sm text-muted-foreground">
+              This app is running in development mode on your local machine
+            </p>
+          </div>
+
+          <FooterButtons
+            backLabel="Change project"
+            onClickBack={selectAnotherProject}
+            onClickContinue={() => createOAuthCodeAndRedirectBackToApp({})}
+            continueDisabled={createOAuthCode.isPending}
+            continueLoading={createOAuthCode.isPending}
+          />
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-col items-center justify-start h-full w-full py-6 overflow-y-auto">
@@ -514,7 +577,7 @@ const SelectProjectAppInstance = ({
             >
               <div className="h-[80vh]">
                 <InlineInstallation
-                  integrationName={clientId}
+                  integrationName={clientId ?? ""}
                   // create callback
                   onConfirm={({ connection, authorizeOauthUrl }) => {
                     if (authorizeOauthUrl) {
@@ -598,17 +661,76 @@ const SelectProjectAppInstance = ({
   );
 };
 
+type UnifiedApp = {
+  // Display info
+  name: string;
+  friendlyName?: string;
+  description?: string;
+  icon?: string;
+  verified?: boolean;
+
+  // Technical OAuth details
+  connection: MCPConnection;
+  scopes?: string[];
+  stateSchema?: Record<string, unknown>;
+
+  // Registry-only fields
+  id?: string;
+  workspace?: string;
+};
+
 function AppsOAuth({
   client_id,
+  inlineApp,
   redirect_uri,
   state,
   workspace_hint,
 }: OAuthSearchParams) {
-  const { data: registryApp } = useRegistryApp({ app: client_id });
+  // Determine app source
+  const appSource: AppSource = inlineApp
+    ? { type: "inline", app: inlineApp }
+    : { type: "registry", clientId: client_id! };
+
+  // Conditionally fetch from registry only if not inline
+  const { data: registryApp } = useRegistryApp({
+    app: appSource.type === "registry" ? appSource.clientId : "",
+    mode: "sync",
+  });
+
   const { data: orgs } = useOrganizations();
   const [org, setOrg] = useState<Team | null>(() =>
     preSelectTeam(orgs, workspace_hint),
   );
+
+  // Convert to unified app
+  const app: UnifiedApp | null = useMemo(() => {
+    if (appSource.type === "inline") {
+      return {
+        // Generic display info for localhost apps
+        name: "Localhost App",
+        friendlyName: "Development App",
+        description: "App in development",
+        verified: false,
+        // Technical OAuth details from inline schema
+        connection: appSource.app.connection,
+        scopes: appSource.app.scopes,
+        stateSchema: appSource.app.stateSchema,
+      };
+    }
+
+    if (!registryApp) return null;
+
+    return {
+      name: registryApp.name,
+      friendlyName: registryApp.friendlyName,
+      description: registryApp.description,
+      icon: registryApp.icon,
+      verified: registryApp.verified,
+      connection: registryApp.connection,
+      id: registryApp.id,
+      workspace: registryApp.workspace,
+    };
+  }, [appSource, registryApp]);
 
   const selectedOrgSlug = useMemo(() => {
     if (!org) {
@@ -619,14 +741,20 @@ function AppsOAuth({
 
   const selectedProject = "default";
 
-  if (!orgs || orgs.length === 0 || !registryApp) {
+  if (!orgs || orgs.length === 0 || !app) {
     return <NoProjectFound />;
   }
 
   if (!selectedOrgSlug || !org) {
     return (
       <SelectOrganization
-        registryApp={registryApp}
+        registryApp={
+          {
+            name: app.name,
+            friendlyName: app.friendlyName,
+            icon: app.icon,
+          } as RegistryApp
+        }
         orgs={orgs}
         setOrg={setOrg}
       />
@@ -641,7 +769,8 @@ function AppsOAuth({
   return (
     <SDKProvider locator={workspace}>
       <SelectProjectAppInstance
-        app={registryApp}
+        app={app}
+        appSource={appSource}
         org={org}
         project={selectedProject}
         selectAnotherProject={() => setOrg(null)}
@@ -668,7 +797,7 @@ export default function Page() {
           >
             <ErrorBoundary
               shouldCatch={(error) => error instanceof RegistryAppNotFoundError}
-              fallback={<NoAppFound client_id={props.client_id} />}
+              fallback={<NoAppFound client_id={props.client_id ?? "unknown"} />}
             >
               <AppsOAuth {...props} />
             </ErrorBoundary>

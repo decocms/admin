@@ -3,16 +3,47 @@ import { z } from "zod";
 import { Icon } from "@deco/ui/components/icon.tsx";
 import { Button } from "@deco/ui/components/button.tsx";
 import { SplitScreenLayout } from "../login/layout.tsx";
-import { DecoQueryClientProvider } from "@deco/sdk";
+import {
+  DecoQueryClientProvider,
+  InlineAppSchema,
+  type InlineApp,
+} from "@deco/sdk";
 
-export const OAuthSearchParamsSchema = z.object({
-  client_id: z.string(),
-  redirect_uri: z.string(),
-  state: z.string().optional(),
-  workspace_hint: z.string().optional(),
-});
+export const OAuthSearchParamsSchema = z
+  .object({
+    client_id: z.string().optional(),
+    app_data: z.string().optional(), // Base64-encoded JSON of InlineAppSchema
+    redirect_uri: z.string(),
+    state: z.string().optional(),
+    workspace_hint: z.string().optional(),
+  })
+  .refine(
+    (data) => {
+      // Exactly one of client_id or app_data must be provided
+      return (
+        (data.client_id && !data.app_data) || (!data.client_id && data.app_data)
+      );
+    },
+    {
+      message: "Either client_id or app_data must be provided, but not both",
+    },
+  );
 
-export type OAuthSearchParams = z.infer<typeof OAuthSearchParamsSchema>;
+export type OAuthSearchParams = z.infer<typeof OAuthSearchParamsSchema> & {
+  inlineApp?: InlineApp;
+};
+
+function decodeAppData(appData: string): InlineApp {
+  try {
+    const decoded = atob(appData);
+    const parsed = JSON.parse(decoded);
+    return InlineAppSchema.parse(parsed);
+  } catch (error) {
+    throw new Error(
+      `Invalid app_data: ${error instanceof Error ? error.message : "Unknown error"}`,
+    );
+  }
+}
 
 const ErrorPanel = () => (
   <div className="flex flex-col items-center justify-center h-full">
@@ -45,9 +76,8 @@ type AppsAuthLayoutProps = {
 
 export function AppsAuthLayout({ children }: AppsAuthLayoutProps) {
   const [searchParams] = useSearchParams();
-  const result = OAuthSearchParamsSchema.safeParse(
-    Object.fromEntries(searchParams),
-  );
+  const params = Object.fromEntries(searchParams);
+  const result = OAuthSearchParamsSchema.safeParse(params);
 
   if (!result.success) {
     return (
@@ -59,9 +89,17 @@ export function AppsAuthLayout({ children }: AppsAuthLayoutProps) {
     );
   }
 
+  // Decode inline app if provided
+  const processedParams: OAuthSearchParams = {
+    ...result.data,
+    inlineApp: result.data.app_data
+      ? decodeAppData(result.data.app_data)
+      : undefined,
+  };
+
   return (
     <DecoQueryClientProvider>
-      <SplitScreenLayout>{children(result.data)}</SplitScreenLayout>
+      <SplitScreenLayout>{children(processedParams)}</SplitScreenLayout>
     </DecoQueryClientProvider>
   );
 }

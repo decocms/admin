@@ -11,6 +11,8 @@ export * from "./crud/members.ts";
 export * from "./crud/projects.ts";
 export * from "./crud/prompts.ts";
 export * from "./crud/registry.ts";
+export type { InlineApp, AppSource } from "./mcp/registry/api.ts";
+export { InlineAppSchema } from "./mcp/registry/api.ts";
 export * from "./crud/roles.ts";
 export * from "./crud/teams.ts";
 export * from "./crud/thread.ts";

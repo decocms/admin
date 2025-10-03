@@ -37,15 +37,11 @@ export const OAuthSearchParamsSchema = z.object({
 **New Schema:**
 ```typescript
 // Inline app schema for localhost development
+// Only includes technical OAuth details, not presentation metadata
 const InlineAppSchema = z.object({
-  name: z.string(),
-  friendlyName: z.string().optional(),
-  description: z.string().optional(),
-  icon: z.string().optional(),
   connection: MCPConnectionSchema, // Import from packages/sdk
-  // Add other optional fields that mirror RegistryApp as needed
-  verified: z.boolean().optional(),
-  metadata: z.record(z.unknown()).optional(),
+  scopes: z.array(z.string()).optional(), // OAuth scopes
+  stateSchema: z.record(z.unknown()).optional(), // JSON Schema for app configuration
 });
 
 export const OAuthSearchParamsSchema = z.object({
@@ -133,13 +129,19 @@ type AppSource =
   | { type: 'inline'; app: InlineApp };
 
 type UnifiedApp = {
+  // Display info
   name: string;
   friendlyName?: string;
   description?: string;
   icon?: string;
   verified?: boolean;
+  
+  // Technical OAuth details
   connection: MCPConnection;
-  // For inline apps, we won't have these
+  scopes?: string[];
+  stateSchema?: Record<string, unknown>;
+  
+  // Registry-only fields
   id?: string;
   workspace?: string;
 };
@@ -174,12 +176,15 @@ function AppsOAuth({
   const app: UnifiedApp | null = useMemo(() => {
     if (appSource.type === 'inline') {
       return {
-        name: appSource.app.name,
-        friendlyName: appSource.app.friendlyName,
-        description: appSource.app.description,
-        icon: appSource.app.icon,
-        verified: appSource.app.verified ?? false,
+        // Generic display info for localhost apps
+        name: 'Localhost App',
+        friendlyName: 'Development App',
+        description: 'App in development',
+        verified: false,
+        // Technical OAuth details from inline schema
         connection: appSource.app.connection,
+        scopes: appSource.app.scopes,
+        stateSchema: appSource.app.stateSchema,
       };
     }
     
@@ -192,6 +197,8 @@ function AppsOAuth({
       icon: registryApp.icon,
       verified: registryApp.verified,
       connection: registryApp.connection,
+      scopes: registryApp.scopes,
+      stateSchema: registryApp.stateSchema,
       id: registryApp.id,
       workspace: registryApp.workspace,
     };
@@ -243,7 +250,7 @@ export const oauthCodeCreateForInlineApp = createTool({
       workspace: c.workspace.value,
       apiKeyId: integration.id,
       user: JSON.stringify(c.user),
-      appName: inlineApp.name,
+      appName: 'localhost-app', // Generic name for development apps
       // Add state if the integration has it
       state: integration.state,
     };
@@ -357,7 +364,7 @@ export const createIntegration = createIntegrationManagementTool({
     if (inlineApp) {
       // For inline apps, we don't have a registry ID
       appForIntegration = {
-        name: inlineApp.name,
+        name: 'localhost-app', // Generic name for development
         // No ID since it's not in registry
       };
     } else if (clientIdFromApp) {
@@ -396,14 +403,12 @@ export const createIntegration = createIntegrationManagementTool({
 
 **Create shared type definitions in `packages/sdk/src/mcp/registry/types.ts`:**
 ```typescript
+// Minimal schema for localhost app development
+// Only includes technical OAuth details needed for the flow
 export const InlineAppSchema = z.object({
-  name: z.string(),
-  friendlyName: z.string().optional(),
-  description: z.string().optional(),
-  icon: z.string().optional(),
   connection: MCPConnectionSchema,
-  verified: z.boolean().optional(),
-  metadata: z.record(z.unknown()).optional(),
+  scopes: z.array(z.string()).optional(),
+  stateSchema: z.record(z.unknown()).optional(),
 });
 
 export type InlineApp = z.infer<typeof InlineAppSchema>;
@@ -420,12 +425,212 @@ export type { InlineApp, AppSource } from './mcp/registry/types.ts';
 export { InlineAppSchema } from './mcp/registry/types.ts';
 ```
 
+## Runtime Package Changes
+
+### Key Finding: OAuth Redirect URL Construction
+
+In `packages/runtime/src/index.ts` (lines 260-271), when an unauthenticated request triggers `ensureAuthenticated()`, it constructs a redirect to the OAuth authorization page:
+
+```typescript
+const authUri = new URL("/apps/oauth", apiUrl);
+authUri.searchParams.set("client_id", env.DECO_APP_NAME);
+authUri.searchParams.set(
+  "redirect_uri",
+  new URL(AUTH_CALLBACK_ENDPOINT, origin ?? env.DECO_APP_ENTRYPOINT).href,
+);
+workspaceHint && authUri.searchParams.set("workspace_hint", workspaceHint);
+throw new UnauthorizedError("Unauthorized", authUri);
+```
+
+### Required Changes for Localhost Support
+
+**1. Detect Localhost Mode**
+The runtime already has an `IS_LOCAL` flag (line 189-192):
+```typescript
+env["IS_LOCAL"] =
+  (url?.startsWith("http://localhost") ||
+    url?.startsWith("http://127.0.0.1")) ??
+  false;
+```
+
+**2. Build Inline App Data**
+When in localhost mode, instead of passing `client_id`, we need to:
+- Get the MCP connection info (the app's own HTTP endpoint)
+- Get the OAuth config (scopes and stateSchema from `userFns.oauth`)
+- Base64-encode this as inline app data
+
+**3. Modify `ensureAuthenticated` in Localhost Mode**
+
+The `ensureAuthenticated` function needs to check if running locally and:
+- Build the inline app object with `connection`, `scopes`, and `stateSchema`
+- Base64-encode it
+- Pass as `app_data` instead of `client_id`
+
+### Implementation Details
+
+The challenge is that `ensureAuthenticated` is constructed in `withBindings`, but it needs access to:
+1. The server's OAuth configuration (from `userFns.oauth`)
+2. The connection URL (from `origin` or `env.DECO_APP_ENTRYPOINT`)
+3. The `IS_LOCAL` flag
+
+**Solution**: Pass these through the context or make them available when constructing `ensureAuthenticated`.
+
+### Code Example: Runtime Changes
+
+**In `withRuntime` function:**
+```typescript
+export const withRuntime = <TEnv, TSchema extends z.ZodTypeAny = never>(
+  userFns: UserDefaultExport<TEnv, TSchema>,
+): ExportedHandler<TEnv & DefaultEnv<TSchema>> & {
+  Workflow: ReturnType<typeof Workflow>;
+} => {
+  const server = createMCPServer<TEnv, TSchema>(userFns);
+  
+  // NEW: Capture OAuth config to pass to withBindings
+  const oauthConfig = userFns.oauth;
+  
+  const fetcher = async (
+    req: Request,
+    env: TEnv & DefaultEnv<TSchema>,
+    ctx: ExecutionContext,
+  ) => {
+    // ... existing routes ...
+  };
+  
+  return {
+    Workflow: Workflow(server, userFns.workflows),
+    fetch: async (
+      req: Request,
+      env: TEnv & DefaultEnv<TSchema>,
+      ctx: ExecutionContext,
+    ) => {
+      // ... existing code ...
+      try {
+        const bindings = withBindings({
+          env,
+          server,
+          oauthConfig, // NEW: Pass OAuth config
+          branch: /* ... */,
+          tokenOrContext: await getReqToken(req, env),
+          origin: /* ... */,
+          url: req.url,
+        });
+        // ... rest of code
+      }
+    },
+  };
+};
+```
+
+**In `withBindings` function:**
+```typescript
+export const withBindings = <TEnv>({
+  env: _env,
+  server,
+  tokenOrContext,
+  origin,
+  url,
+  branch,
+  oauthConfig, // NEW: Receive OAuth config
+}: {
+  env: TEnv;
+  server: MCPServer<TEnv, any>;
+  tokenOrContext?: string | RequestContext;
+  origin?: string | null;
+  url?: string;
+  branch?: string | null;
+  oauthConfig?: { state?: z.ZodTypeAny; scopes?: string[] }; // NEW
+}): TEnv => {
+  // ... existing code ...
+  
+  // Determine if running locally
+  const isLocal = 
+    url?.startsWith("http://localhost") ||
+    url?.startsWith("http://127.0.0.1");
+  
+  // ... existing tokenOrContext handling ...
+  
+  } else {
+    context = {
+      state: undefined,
+      token: env.DECO_API_TOKEN,
+      workspace: env.DECO_WORKSPACE,
+      branch,
+      ensureAuthenticated: (options?: { workspaceHint?: string }) => {
+        const workspaceHint = options?.workspaceHint ?? env.DECO_WORKSPACE;
+        const authUri = new URL("/apps/oauth", apiUrl);
+        
+        // NEW: Check if localhost and build inline app data
+        if (isLocal && oauthConfig) {
+          // Build inline app object
+          const mcpEndpoint = new URL("/mcp", origin ?? env.DECO_APP_ENTRYPOINT).href;
+          const inlineApp = {
+            connection: {
+              type: "HTTP" as const,
+              url: mcpEndpoint,
+            },
+            scopes: oauthConfig.scopes,
+            stateSchema: oauthConfig.state 
+              ? zodToJsonSchema(oauthConfig.state)
+              : { type: "object", properties: {} },
+          };
+          
+          // Base64 encode the inline app data
+          const appData = btoa(JSON.stringify(inlineApp));
+          authUri.searchParams.set("app_data", appData);
+        } else {
+          // Regular flow: use client_id
+          authUri.searchParams.set("client_id", env.DECO_APP_NAME);
+        }
+        
+        authUri.searchParams.set(
+          "redirect_uri",
+          new URL(AUTH_CALLBACK_ENDPOINT, origin ?? env.DECO_APP_ENTRYPOINT).href,
+        );
+        workspaceHint &&
+          authUri.searchParams.set("workspace_hint", workspaceHint);
+        throw new UnauthorizedError("Unauthorized", authUri);
+      },
+    };
+  }
+  
+  // ... rest of function
+};
+```
+
+### Key Points:
+
+1. **Detection**: Uses the URL to detect localhost (already happens for `IS_LOCAL`)
+2. **MCP Connection**: Builds HTTP connection pointing to the app's own `/mcp` endpoint
+3. **OAuth Config**: Gets `scopes` and `stateSchema` from `userFns.oauth`
+4. **Encoding**: Base64-encodes the inline app JSON
+5. **Parameter**: Uses `app_data` instead of `client_id` for localhost
+
+This way, when a localhost app redirects to the OAuth flow, it sends its own configuration inline, avoiding the need to be published to the registry.
+
 ## File Changes Summary
 
 ### Files to Create:
 1. None (all changes are modifications)
 
 ### Files to Modify:
+
+#### Backend Runtime (Localhost Detection & Redirect)
+
+8. **`packages/runtime/src/index.ts`**
+   - Modify `withRuntime` to capture OAuth config from `userFns`
+   - Pass OAuth config and origin to `withBindings`
+   - Update `ensureAuthenticated` to detect localhost and build inline app data
+   - When `IS_LOCAL`, base64-encode inline app and use `app_data` param
+
+9. **`packages/runtime/src/connection.ts`**
+   - Export `MCPConnectionSchema` for validation (if not already exported)
+
+10. **`packages/runtime/src/index.ts`** (imports)
+   - Import `zodToJsonSchema` from `zod-to-json-schema` (already used in mastra.ts)
+   - This is needed to convert the Zod schema to JSON schema for inline apps
+
+#### Backend API (OAuth Code Generation)
 
 1. **`apps/web/src/components/apps/layout.tsx`**
    - Update `OAuthSearchParamsSchema` to support both `client_id` and `app_data`
@@ -456,6 +661,15 @@ export { InlineAppSchema } from './mcp/registry/types.ts';
 
 7. **`packages/sdk/src/index.ts`**
    - Export new types and schemas
+
+8. **`packages/runtime/src/index.ts`** (NEW - Runtime Changes)
+   - Modify `withBindings` to pass OAuth config and IS_LOCAL flag to `ensureAuthenticated`
+   - Update `ensureAuthenticated` function to build inline app data in localhost mode
+   - Base64-encode inline app JSON and pass as `app_data` instead of `client_id`
+
+9. **`packages/runtime/src/mastra.ts`** (NEW - Runtime Changes)
+   - The `DECO_CHAT_OAUTH_START` tool already returns the right data, no changes needed
+   - This tool is what the API calls to get schema from published apps
 
 ## Testing Strategy
 
@@ -510,11 +724,106 @@ export { InlineAppSchema } from './mcp/registry/types.ts';
 4. Support transitioning inline apps to registry apps
 5. Add developer mode indicator in UI when using inline apps
 
+## Simplified Inline App Schema
+
+The inline app schema has been intentionally kept minimal to only include **technical OAuth details**:
+
+```typescript
+{
+  connection: MCPConnection,  // Where to connect to the MCP server
+  scopes?: string[],          // OAuth scopes if needed
+  stateSchema?: object        // JSON Schema for app configuration
+}
+```
+
+**Display metadata is NOT included** (no name, icon, description). The UI will show:
+- Name: "Localhost App"
+- Friendly Name: "Development App"
+- Description: "App in development"
+- Icon: Generic development icon
+- Verified: false
+
+**Example inline app JSON:**
+```json
+{
+  "connection": {
+    "type": "HTTP",
+    "url": "http://localhost:8080/mcp"
+  },
+  "scopes": ["read", "write"],
+  "stateSchema": {
+    "type": "object",
+    "properties": {
+      "apiKey": { "type": "string" },
+      "environment": { "type": "string", "enum": ["dev", "prod"] }
+    },
+    "required": ["apiKey"]
+  }
+}
+```
+
+This would be base64-encoded and passed as: `/apps/auth?app_data=<base64>&redirect_uri=...`
+
+## Summary: Complete Flow for Localhost Apps
+
+### 1. Developer Experience
+```typescript
+// In their MCP app main.ts
+export default withRuntime({
+  oauth: {
+    state: z.object({
+      apiKey: z.string(),
+      environment: z.enum(['dev', 'prod']),
+    }),
+    scopes: ['read', 'write'],
+  },
+  tools: [/* ... */],
+});
+```
+
+### 2. Runtime Detects Localhost (Automatic)
+When the app calls `ctx.ensureAuthenticated()` from `http://localhost:8080`:
+- Runtime detects it's running locally
+- Builds inline app data with connection, scopes, and stateSchema
+- Base64-encodes it
+- Redirects to: `https://api.decocms.com/apps/oauth?app_data=<base64>&redirect_uri=http://localhost:8080/oauth/callback`
+
+### 3. Web UI Handles Inline App
+- Layout decodes base64 `app_data` parameter
+- Validates against `InlineAppSchema`
+- Displays as "Localhost App" with generic icon
+- User selects organization/project
+- Creates/selects integration
+
+### 4. Backend Generates JWT
+- Creates OAuth code linked to integration
+- Generates JWT with claims:
+  - `workspace`, `apiKeyId`, `user`, `state`
+  - `appName: 'localhost-app'`
+- Stores in `deco_chat_oauth_codes` table
+
+### 5. OAuth Callback Completes
+- App exchanges code for JWT token
+- Token is stored in cookies
+- App can now make authenticated requests with the JWT
+
+### Key Benefits
+✅ No need to publish to registry for testing  
+✅ Iterate on OAuth schemas quickly  
+✅ Test authentication flow end-to-end locally  
+✅ Seamless transition to production (just publish to registry)  
+✅ Backwards compatible with existing apps  
+
 ## Questions to Resolve
 
 1. Should inline apps be restricted to localhost/development environments only?
+   - **Recommendation**: Yes, add a check in the API to only accept `app_data` from localhost origins
 2. Should we add a warning/indicator in the UI when using inline apps?
+   - **Recommendation**: Yes, show a "Development Mode" badge
 3. Do we need to store inline app information persistently, or is it ephemeral?
+   - **Answer**: Ephemeral - only exists in the URL and OAuth flow, not stored
 4. Should the OAuth code have a shorter expiration for inline apps?
+   - **Recommendation**: Use same expiration, but consider logging for monitoring
 5. Do inline apps need state validation like registry apps?
+   - **Recommendation**: No, skip the state validation call since there's no remote app to call
 

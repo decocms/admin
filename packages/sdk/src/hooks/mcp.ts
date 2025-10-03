@@ -20,6 +20,7 @@ import { KEYS } from "./api.ts";
 import { type MCPTool } from "./index.ts";
 import { useSDK } from "./store.tsx";
 import { ProjectLocator } from "../locator.ts";
+import type { InlineApp } from "../mcp/registry/api.ts";
 
 interface IntegrationToolsResult {
   integration: Integration;
@@ -325,19 +326,23 @@ export const useMarketplaceAppSchema = (appName?: string) => {
 export const useCreateOAuthCodeForIntegration = () => {
   const mutation = useMutation({
     mutationFn: async (params: {
-      integrationId: string;
+      integrationId?: string;
       workspace: ProjectLocator;
       redirectUri: string;
       state?: string;
+      inlineApp?: InlineApp;
     }) => {
-      const { integrationId, workspace, redirectUri, state } = params;
+      const { integrationId, workspace, redirectUri, state, inlineApp } =
+        params;
 
-      const { code } = await MCPClient.forLocator(workspace).OAUTH_CODE_CREATE({
+      // Call OAUTH_CODE_CREATE with either integrationId or inlineApp
+      const result = await MCPClient.forLocator(workspace).OAUTH_CODE_CREATE({
         integrationId,
+        inlineApp,
       });
 
       const url = new URL(redirectUri);
-      url.searchParams.set("code", code);
+      url.searchParams.set("code", result.code);
       state && url.searchParams.set("state", state);
 
       return {

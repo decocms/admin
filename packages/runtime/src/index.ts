@@ -2,6 +2,7 @@
 import type { ExecutionContext } from "@cloudflare/workers-types";
 import { decodeJwt } from "jose";
 import type { z } from "zod";
+import { zodToJsonSchema } from "zod-to-json-schema";
 import {
   getReqToken,
   handleAuthCallback,
@@ -219,6 +220,7 @@ export const withBindings = <TEnv>({
   origin,
   url,
   branch,
+  oauthConfig,
 }: {
   env: TEnv;
   server: MCPServer<TEnv, any>;
@@ -226,11 +228,17 @@ export const withBindings = <TEnv>({
   origin?: string | null;
   url?: string;
   branch?: string | null;
+  oauthConfig?: { state?: z.ZodTypeAny; scopes?: string[] };
 }): TEnv => {
   branch ??= undefined;
   const env = _env as DefaultEnv<any>;
 
   const apiUrl = env.DECO_API_URL ?? "https://api.decocms.com";
+
+  // Determine if running locally
+  const isLocal =
+    url?.startsWith("http://localhost") || url?.startsWith("http://127.0.0.1");
+
   let context;
   if (typeof tokenOrContext === "string") {
     const decoded = decodeJwt(tokenOrContext);
@@ -260,7 +268,31 @@ export const withBindings = <TEnv>({
       ensureAuthenticated: (options?: { workspaceHint?: string }) => {
         const workspaceHint = options?.workspaceHint ?? env.DECO_WORKSPACE;
         const authUri = new URL("/apps/oauth", apiUrl);
-        authUri.searchParams.set("client_id", env.DECO_APP_NAME);
+
+        // Check if localhost and build inline app data
+        if (isLocal && oauthConfig) {
+          // Build inline app object
+          const mcpEndpoint = new URL("/mcp", origin ?? env.DECO_APP_ENTRYPOINT)
+            .href;
+          const inlineApp = {
+            connection: {
+              type: "HTTP" as const,
+              url: mcpEndpoint,
+            },
+            scopes: oauthConfig.scopes,
+            stateSchema: oauthConfig.state
+              ? zodToJsonSchema(oauthConfig.state)
+              : { type: "object", properties: {} },
+          };
+
+          // Base64 encode the inline app data
+          const appData = btoa(JSON.stringify(inlineApp));
+          authUri.searchParams.set("app_data", appData);
+        } else {
+          // Regular flow: use client_id
+          authUri.searchParams.set("client_id", env.DECO_APP_NAME);
+        }
+
         authUri.searchParams.set(
           "redirect_uri",
           new URL(AUTH_CALLBACK_ENDPOINT, origin ?? env.DECO_APP_ENTRYPOINT)
@@ -298,6 +330,9 @@ export const withRuntime = <TEnv, TSchema extends z.ZodTypeAny = never>(
   Workflow: ReturnType<typeof Workflow>;
 } => {
   const server = createMCPServer<TEnv, TSchema>(userFns);
+  // Capture OAuth config to pass to withBindings
+  const oauthConfig = userFns.oauth;
+
   const fetcher = async (
     req: Request,
     env: TEnv & DefaultEnv<TSchema>,
@@ -359,6 +394,7 @@ export const withRuntime = <TEnv, TSchema extends z.ZodTypeAny = never>(
         const bindings = withBindings({
           env,
           server,
+          oauthConfig, // Pass OAuth config for localhost detection
           branch:
             req.headers.get("x-deco-branch") ??
             new URL(req.url).searchParams.get("__b"),

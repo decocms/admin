@@ -128,6 +128,20 @@ export type RegistryScope = {
 
 export type RegistryApp = z.infer<typeof RegistryAppSchema>;
 
+// Minimal schema for localhost app development
+// Only includes technical OAuth details needed for the flow
+export const InlineAppSchema = z.object({
+  connection: MCPConnectionSchema,
+  scopes: z.array(z.string()).optional(),
+  stateSchema: z.record(z.unknown()).optional(),
+});
+
+export type InlineApp = z.infer<typeof InlineAppSchema>;
+
+export type AppSource =
+  | { type: "registry"; clientId: string }
+  | { type: "inline"; app: InlineApp };
+
 const Mappers = {
   toRegistryScope: (
     data: QueryResult<

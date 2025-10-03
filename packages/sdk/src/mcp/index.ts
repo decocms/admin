@@ -212,7 +212,6 @@ export const PROJECT_TOOLS = [
   databasesAPI.getMeta,
   databasesAPI.recovery,
   databasesAPI.viewBinding,
-  databasesAPI.oauthStart,
   aiAPI.aiGenerate,
   aiAPI.aiGenerateObject,
   oauthAPI.oauthCodeCreate,

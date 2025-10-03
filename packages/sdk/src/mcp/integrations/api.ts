@@ -154,18 +154,39 @@ const createIntegrationManagementTool = createToolGroup("Integration", {
     "Install, authorize, and manage third-party integrations and their tools.",
   icon: "https://assets.decocache.com/mcp/2ead84c2-2890-4d37-b61c-045f4760f2f7/Integration-Management.png",
 });
+
+const integrationCallToolInputSchema = IntegrationSchema.pick({
+  id: true,
+  connection: true,
+})
+  .partial()
+  .merge(CallToolRequestSchema.pick({ params: true }));
+
 export const callTool = createIntegrationManagementTool({
   name: "INTEGRATIONS_CALL_TOOL",
   description: "Call a given tool",
-  inputSchema: IntegrationSchema.pick({
-    connection: true,
-  }).merge(CallToolRequestSchema.pick({ params: true })),
-  handler: async ({ connection: reqConnection, params: toolCall }, c) => {
+  inputSchema: integrationCallToolInputSchema,
+  handler: async (input, c) => {
     c.resourceAccess.grant();
+    const toolCall = input.params;
 
-    const connection = shouldPatchDecoChatMCPConnection(reqConnection)
-      ? patchApiDecoChatTokenHTTPConnection(reqConnection, c.cookie)
-      : reqConnection;
+    let connection: MCPConnection | undefined = undefined;
+    if ("id" in input) {
+      assertHasWorkspace(c);
+      connection = patchApiDecoChatTokenHTTPConnection(
+        {
+          type: "HTTP",
+          url: new URL(`${c.workspace.value}/${input.id}/mcp`, DECO_CMS_API_URL)
+            .href,
+        },
+        c.cookie,
+      );
+    } else if (input.connection) {
+      const reqConnection = input.connection;
+      connection = shouldPatchDecoChatMCPConnection(reqConnection)
+        ? patchApiDecoChatTokenHTTPConnection(reqConnection, c.cookie)
+        : reqConnection;
+    }
 
     if (!connection || !toolCall) {
       return { error: "Missing url parameter" };

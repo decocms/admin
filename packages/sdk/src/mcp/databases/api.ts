@@ -164,22 +164,3 @@ export const viewBinding = createDatabaseTool({
     };
   },
 });
-
-export const oauthStart = createDatabaseTool({
-  name: "DECO_CHAT_OAUTH_START",
-  description: "Start the OAuth flow for the contract app.",
-  inputSchema: z.object({
-    returnUrl: z.string(),
-  }),
-  outputSchema: z.object({
-    stateSchema: z.any(),
-    scopes: z.array(z.string()).optional(),
-  }),
-  handler: (_, c) => {
-    c.resourceAccess.grant();
-    return {
-      stateSchema: { type: "object", properties: {} },
-      scopes: [getMeta.name, runSql.name, recovery.name, viewBinding.name],
-    };
-  },
-});

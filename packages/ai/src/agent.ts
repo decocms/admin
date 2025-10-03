@@ -1088,11 +1088,14 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
     const converter = convertToModelMessages(this._agent);
     const aiMessages = await Promise.all(payload.map(converter));
 
-    const result = (await this._agent.generate(aiMessages, {
+    const result = (await this._agent.generateVNext(aiMessages, {
       ...this.thread,
       output: jsonSchema,
       maxSteps: this._maxSteps(),
-      maxTokens: this._maxTokens(),
+      modelSettings: {
+        temperature: this._configuration?.temperature ?? undefined,
+        maxOutputTokens: this._maxTokens(),
+      },
     })) as unknown as GenerateObjectResult<TObject>;
 
     assertConfiguration(this._configuration);
@@ -1128,10 +1131,13 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
     const converter = convertToModelMessages(this._agent);
     const aiMessages = await Promise.all(payload.map(converter));
 
-    const result = (await agent.generate(aiMessages, {
+    const result = (await agent.generateVNext(aiMessages, {
       ...this.thread,
       maxSteps: this._maxSteps(options?.maxSteps),
-      maxTokens: this._maxTokens(),
+      modelSettings: {
+        temperature: this._configuration?.temperature ?? undefined,
+        maxOutputTokens: this._maxTokens(),
+      },
       instructions: options?.instructions,
       toolsets,
     })) as unknown as GenerateTextResult<any, undefined>;
@@ -1354,6 +1360,7 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
         maxSteps: this._maxSteps(options.maxSteps),
         modelSettings: {
           temperature: this._configuration?.temperature ?? undefined,
+          maxOutputTokens: this._maxTokens(),
         },
         providerOptions: getProviderOptions({ budgetTokens }),
         onChunk: endTtfbSpan,

@@ -273,10 +273,10 @@ export class Blobs extends DurableObject<unknown> {
 
     // Use chunking to prevent SQLite "too many SQL variables" error
     const MAX_HASHES_PER_QUERY = 100;
-    
+
     for (let i = 0; i < hashes.length; i += MAX_HASHES_PER_QUERY) {
       const chunk = hashes.slice(i, i + MAX_HASHES_PER_QUERY);
-      
+
       // Create parameterized query for batch retrieval
       const placeholders = chunk.map(() => "?").join(",");
       const query = `SELECT hash, content FROM blobs WHERE hash IN (${placeholders})`;

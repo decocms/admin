@@ -284,9 +284,10 @@ export async function runTool(
   }
 
   // Check if the tool exists in the integration
-  const tools = "tools" in integration && Array.isArray(integration.tools)
-    ? integration.tools
-    : [];
+  const tools =
+    "tools" in integration && Array.isArray(integration.tools)
+      ? integration.tools
+      : [];
 
   const tool = tools.find((t) => t.name === step.tool_name);
 

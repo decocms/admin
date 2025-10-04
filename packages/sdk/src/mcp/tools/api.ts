@@ -174,42 +174,6 @@ export const runTool = createToolManagementTool({
   },
 });
 
-// const { items } = await resourceToolSearch({ page: 1, pageSize: Infinity });
-// const tools = items.map(async ({ uri }: any) => {
-//   const {
-//     data: { name, description, inputSchema, outputSchema, execute },
-//   } = await resourceToolRead(uri);
-//   return createTool({
-//     name,
-//     group: WellKnownMcpGroups.Tools,
-//     description: description,
-//     inputSchema: jsonSchemaToModel(inputSchema),
-//     outputSchema: jsonSchemaToModel(outputSchema),
-//     handler: async (input, c) => {
-//       const runtimeId = c.locator?.value ?? "default";
-//       const client = MCPClient.forContext(c);
-//       const envPromise = asEnv(client);
-//       // Use the inlined function code
-//       using evaluation = await evalCodeAndReturnDefaultHandle(
-//         execute,
-//         runtimeId,
-//       );
-//       const { ctx, defaultHandle, guestConsole: _guestConsole } = evaluation;
-//       // Call the function using the callFunction utility
-//       const callHandle = await callFunction(
-//         ctx,
-//         defaultHandle,
-//         undefined,
-//         input,
-//         { env: await envPromise },
-//       );
-//       const callResult = ctx.dump(ctx.unwrapResult(callHandle));
-//       return callResult;
-//     },
-//   });
-// });
-// return Promise.all(tools);
-
 /**
  * Tool Resource V2
  *

@@ -532,8 +532,14 @@ const createContextBasedTools = (ctx: Context) => {
     WellKnownMcpGroups.Tools,
   );
 
+  // Create Resources 2.0 workflow resource implementation
+  const workflowResourceV2 = createWorkflowResourceV2Implementation(
+    client,
+    WellKnownMcpGroups.Workflows,
+  );
+
   const resourcesClient = createMCPToolsStub({
-    tools: toolResourceV2,
+    tools: [...toolResourceV2, ...workflowResourceV2],
     context: appCtx,
   });
 
@@ -548,12 +554,6 @@ const createContextBasedTools = (ctx: Context) => {
 
   // Create Views 2.0 implementation for tool views
   const toolViewsV2 = createToolViewsV2();
-
-  // Create Resources 2.0 workflow resource implementation
-  const workflowResourceV2 = createWorkflowResourceV2Implementation(
-    client,
-    WellKnownMcpGroups.Workflows,
-  );
 
   const resourceWorkflowRead: WorkflowBindingImplOptions["resourceWorkflowRead"] =
     ((uri) =>

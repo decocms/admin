@@ -5,10 +5,12 @@ import { DeconfigResourceV2 } from "../deconfig-v2/index.ts";
 import {
   AppContext,
   assertWorkspaceResourceAccess,
+  createMCPToolsStub,
   createTool,
   createToolGroup,
   DeconfigClient,
   MCPClient,
+  PROJECT_TOOLS,
   WithTool,
 } from "../index.ts";
 import {
@@ -216,6 +218,39 @@ export const ToolResourceV2 = DeconfigResourceV2.define({
     DECO_RESOURCE_TOOL_DELETE: {
       description: TOOL_DELETE_PROMPT,
     },
+  },
+  validate: async (tool, context, _deconfig) => {
+    // Validate dependencies if provided
+    if (tool.dependencies && tool.dependencies.length > 0) {
+      // Create an MCPClientStub to call INTEGRATIONS_LIST
+      const client = createMCPToolsStub({
+        tools: PROJECT_TOOLS,
+        context,
+      });
+
+      const result = await client.INTEGRATIONS_LIST({});
+      const integrations = result.items;
+
+      for (const dependency of tool.dependencies) {
+        const integration = integrations.find(
+          (item: { id: string; name: string }) =>
+            item.id === dependency.integrationId,
+        );
+
+        if (!integration) {
+          const availableIntegrations = integrations.map(
+            (item: { id: string; name: string }) => ({
+              id: item.id,
+              name: item.name,
+            }),
+          );
+
+          throw new Error(
+            `Dependency validation failed: Integration '${dependency.integrationId}' not found.\n\nAvailable integrations:\n${JSON.stringify(availableIntegrations, null, 2)}`,
+          );
+        }
+      }
+    }
   },
 });
 

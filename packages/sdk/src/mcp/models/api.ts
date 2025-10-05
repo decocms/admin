@@ -1,5 +1,9 @@
 import { z } from "zod";
-import { type Model, WELL_KNOWN_MODELS } from "../../constants.ts";
+import {
+  type Model,
+  type ModelRuntimeStatus,
+  WELL_KNOWN_MODELS,
+} from "../../constants.ts";
 import {
   assertHasWorkspace,
   assertWorkspaceResourceAccess,
@@ -19,6 +23,165 @@ interface ModelRow {
   updated_at: string;
   description?: string | null;
 }
+
+const OLLAMA_PROVIDER_PREFIX = "ollama:";
+const OLLAMA_DEFAULT_MODEL_NAME = "qwen3:4b-instruct";
+const DEFAULT_OLLAMA_BASE_URL = "http://127.0.0.1:11434";
+
+const stripTrailingSlash = (value: string): string =>
+  value.endsWith("/") ? value.slice(0, -1) : value;
+
+const createTimeoutSignal = (timeoutMs: number): AbortSignal | undefined => {
+  const Abort = AbortSignal as typeof AbortSignal & {
+    timeout?: (delay: number) => AbortSignal;
+  };
+  return typeof Abort.timeout === "function"
+    ? Abort.timeout(timeoutMs)
+    : undefined;
+};
+
+const detectOllamaRuntimeStatus = async ({
+  baseUrl,
+  modelName,
+  timeoutMs = 1_500,
+}: {
+  baseUrl: string;
+  modelName: string;
+  timeoutMs?: number;
+}): Promise<ModelRuntimeStatus> => {
+  const checkedAt = new Date().toISOString();
+  const signal = createTimeoutSignal(timeoutMs);
+
+  const versionUrl = `${stripTrailingSlash(baseUrl)}/api/version`;
+
+  try {
+    const response = await fetch(versionUrl, { signal });
+    if (!response.ok) {
+      return {
+        state: "unavailable",
+        reason: `Ollama responded with status ${response.status}`,
+        checkedAt,
+      };
+    }
+  } catch (error) {
+    return {
+      state: "unavailable",
+      reason:
+        error instanceof Error
+          ? error.message
+          : "Failed to reach Ollama instance",
+      checkedAt,
+    };
+  }
+
+  const tagsUrl = `${stripTrailingSlash(baseUrl)}/api/tags`;
+
+  try {
+    const response = await fetch(tagsUrl, { signal });
+    if (!response.ok) {
+      return {
+        state: "model-missing",
+        reason: `Could not list models (status ${response.status})`,
+        checkedAt,
+      };
+    }
+
+    const payload = (await response.json()) as {
+      models?: Array<{ name?: string | null } | Record<string, unknown>>;
+    };
+    const models = Array.isArray(payload.models) ? payload.models : [];
+    const hasModel = models.some((entry) => {
+      const candidate = (entry as { name?: unknown }).name;
+      return typeof candidate === "string" && candidate === modelName;
+    });
+
+    if (!hasModel) {
+      return {
+        state: "model-missing",
+        reason: `Model '${modelName}' is not available in Ollama`,
+        checkedAt,
+      };
+    }
+
+    return {
+      state: "available",
+      checkedAt,
+    };
+  } catch (error) {
+    return {
+      state: "model-missing",
+      reason:
+        error instanceof Error
+          ? error.message
+          : "Failed to inspect Ollama models",
+      checkedAt,
+    };
+  }
+};
+
+const annotateOllamaRuntimeStatus = async (
+  models: Model[],
+  {
+    envVars,
+    db,
+    workspace,
+  }: {
+    envVars: AppContext["envVars"];
+    db: AppContext["db"];
+    workspace: string;
+  },
+): Promise<Model[]> => {
+  const hasOllamaModel = models.some((model) =>
+    model.model.startsWith(OLLAMA_PROVIDER_PREFIX),
+  );
+
+  if (!hasOllamaModel) {
+    return models;
+  }
+
+  const llmVault =
+    envVars.LLMS_ENCRYPTION_KEY && envVars.LLMS_ENCRYPTION_KEY.length === 32
+      ? new SupabaseLLMVault(db, envVars.LLMS_ENCRYPTION_KEY, workspace)
+      : undefined;
+
+  const annotateModel = async (model: Model): Promise<Model> => {
+    if (!model.model.startsWith(OLLAMA_PROVIDER_PREFIX)) {
+      return model;
+    }
+
+    let baseUrl = envVars.OLLAMA_BASE_URL || DEFAULT_OLLAMA_BASE_URL;
+
+    if (model.hasCustomKey && llmVault) {
+      try {
+        const { apiKey } = await llmVault.readApiKey(model.id);
+        if (apiKey?.trim()) {
+          baseUrl = apiKey.trim();
+        }
+      } catch (error) {
+        return {
+          ...model,
+          runtimeStatus: {
+            state: "unavailable",
+            reason:
+              error instanceof Error
+                ? error.message
+                : "Failed to read Ollama connection settings",
+            checkedAt: new Date().toISOString(),
+          },
+        };
+      }
+    }
+
+    const runtimeStatus = await detectOllamaRuntimeStatus({
+      baseUrl,
+      modelName: model.model.replace(OLLAMA_PROVIDER_PREFIX, ""),
+    });
+
+    return { ...model, runtimeStatus };
+  };
+
+  return await Promise.all(models.map(annotateModel));
+};
 
 const formatModelRow = (model: ModelRow, showApiKey = false): Model => {
   const defaultModel = WELL_KNOWN_MODELS.find((m) => m.model === model.model);
@@ -242,10 +405,12 @@ export type ListModelsInput = z.infer<typeof listModelsSchema>;
 export const listModelsForWorkspace = async ({
   workspace,
   db,
+  envVars,
   options,
 }: {
   workspace: string;
   db: AppContext["db"];
+  envVars: AppContext["envVars"];
   options?: {
     excludeDisabled?: boolean;
   };
@@ -287,7 +452,13 @@ export const listModelsForWorkspace = async ({
     .map((m) => formatModelRow(m))
     .filter((m) => !options?.excludeDisabled || m.isEnabled);
 
-  return allModels;
+  const annotatedModels = await annotateOllamaRuntimeStatus(allModels, {
+    envVars,
+    db,
+    workspace,
+  });
+
+  return annotatedModels;
 };
 
 export const listModels = createTool({
@@ -316,6 +487,7 @@ export const listModels = createTool({
     const models = await listModelsForWorkspace({
       workspace,
       db: c.db,
+      envVars: c.envVars,
       options: { excludeDisabled },
     });
 

@@ -244,7 +244,7 @@ const modelFormSchema = z.object({
   name: z.string().min(1, "Name is required"),
   model: z.string().min(1, "Model is required"),
   description: z.string().optional(),
-  apiKey: z.string().min(1, "API Key is required"),
+  apiKey: z.string().optional(),
 });
 
 type ModelForm = z.infer<typeof modelFormSchema>;
@@ -259,6 +259,13 @@ function TableView({ models }: { models: Model[] }) {
   const modalForm = useForm<ModelForm>({
     resolver: zodResolver(modelFormSchema),
   });
+  const watchedModel = modalForm.watch("model");
+  const isOllamaModel = (
+    watchedModel ||
+    modelRef.current?.model ||
+    ""
+  ).startsWith("ollama:");
+  const requiresApiKey = !isOllamaModel;
   const updateModel = useUpdateModel();
   const createModel = useCreateModel();
   const deleteModel = useDeleteModel();
@@ -399,6 +406,16 @@ function TableView({ models }: { models: Model[] }) {
   }
 
   async function onSubmit(data: ModelForm) {
+    const targetModelId = data.model || modelRef.current?.model || "";
+    const isOllama = targetModelId.startsWith("ollama:");
+    const hasStoredKey = !!modelRef.current?.hasCustomKey;
+
+    if (!isOllama && !data.apiKey && !hasStoredKey) {
+      modalForm.setError("apiKey", { message: "API Key is required" });
+      return;
+    }
+
+    const trimmedApiKey = data.apiKey?.trim() || undefined;
     const isDefaultModel = modelRef.current?.byDeco;
 
     if (isDefaultModel || !modelRef.current) {
@@ -408,7 +425,7 @@ function TableView({ models }: { models: Model[] }) {
         description: data.description,
         byDeco: false,
         isEnabled: true,
-        apiKey: data.apiKey,
+        apiKey: trimmedApiKey,
       });
     } else {
       await updateModel.mutateAsync({
@@ -417,7 +434,7 @@ function TableView({ models }: { models: Model[] }) {
           name: data.name,
           model: data.model,
           description: data.description,
-          apiKey: data.apiKey,
+          apiKey: trimmedApiKey,
         },
       });
     }
@@ -536,30 +553,58 @@ function TableView({ models }: { models: Model[] }) {
                   </FormItem>
                 )}
               />
-              <div className="flex items-end gap-3">
-                <FormField
-                  control={modalForm.control}
-                  name="apiKey"
-                  render={({ field }) => (
-                    <FormItem className="flex-1">
-                      <FormLabel>API Key</FormLabel>
-                      <FormControl>
-                        <Input
-                          type="password"
-                          {...field}
-                          placeholder={
-                            modelRef.current?.hasCustomKey
-                              ? "••••••••••••••••••••••••••••••••••••••••••"
-                              : ""
-                          }
-                          disabled={isMutating}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </div>
+              {requiresApiKey ? (
+                <div className="flex items-end gap-3">
+                  <FormField
+                    control={modalForm.control}
+                    name="apiKey"
+                    render={({ field }) => (
+                      <FormItem className="flex-1">
+                        <FormLabel>API Key</FormLabel>
+                        <FormControl>
+                          <Input
+                            type="password"
+                            {...field}
+                            placeholder={
+                              modelRef.current?.hasCustomKey
+                                ? "••••••••••••••••••••••••••••••••••••••••••"
+                                : ""
+                            }
+                            disabled={isMutating}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+              ) : (
+                <div className="space-y-2 rounded-md border border-dashed p-4">
+                  <FormField
+                    control={modalForm.control}
+                    name="apiKey"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Base URL (optional)</FormLabel>
+                        <FormControl>
+                          <Input
+                            type="text"
+                            placeholder="http://127.0.0.1:11434"
+                            {...field}
+                            disabled={isMutating}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    Deco automatically connects to Ollama at{" "}
+                    <code>http://127.0.0.1:11434</code>. Override this if your
+                    instance runs elsewhere (for example through a tunnel).
+                  </p>
+                </div>
+              )}
               <div className="flex items-center justify-end gap-3">
                 <Button type="submit" variant="default" disabled={isMutating}>
                   {isMutating ? "Saving..." : "Save"}

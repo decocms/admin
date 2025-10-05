@@ -199,6 +199,8 @@ const createTool = createToolGroup("AI", {
   icon: "https://assets.decocache.com/mcp/6e1418f7-c962-406b-aceb-137197902709/ai-gateway.png",
 });
 
+const isLocalOllamaModel = (modelId: string) => modelId.startsWith("ollama:");
+
 // Common input schema for messages
 export const baseMessageSchema = z
   .array(
@@ -315,8 +317,12 @@ export const aiGenerate = createTool({
     assertHasWorkspace(c);
     await assertWorkspaceResourceAccess(c);
 
-    const { wallet } = await validateWalletBalance(c);
     const modelId = input.model ?? DEFAULT_MODEL.id;
+    const requiresWallet = !isLocalOllamaModel(modelId);
+
+    const wallet = requiresWallet
+      ? (await validateWalletBalance(c)).wallet
+      : undefined;
     const { llm, llmConfig, usedVault } = await setupLLMInstance(modelId, c);
     const aiMessages = await prepareMessages(input.messages);
 
@@ -333,15 +339,16 @@ export const aiGenerate = createTool({
 
     const shouldSkip = (input.skipTransaction && usedVault) ?? false;
 
-    const transactionId = shouldSkip
-      ? undefined
-      : await processTransaction(
-          wallet,
-          result.usage,
-          hasCustomKey ? llmConfig.model : modelId,
-          hasCustomKey,
-          c,
-        );
+    const transactionId =
+      shouldSkip || !wallet
+        ? undefined
+        : await processTransaction(
+            wallet,
+            result.usage,
+            hasCustomKey ? llmConfig.model : modelId,
+            hasCustomKey,
+            c,
+          );
 
     return {
       text: result.text,
@@ -366,8 +373,12 @@ export const aiGenerateObject = createTool({
     assertHasWorkspace(c);
     await assertWorkspaceResourceAccess(c);
 
-    const { wallet } = await validateWalletBalance(c);
     const modelId = input.model ?? DEFAULT_MODEL.id;
+    const requiresWallet = !isLocalOllamaModel(modelId);
+
+    const wallet = requiresWallet
+      ? (await validateWalletBalance(c)).wallet
+      : undefined;
     const { llm, llmConfig, usedVault } = await setupLLMInstance(modelId, c);
     const aiMessages = await prepareMessages(input.messages);
 
@@ -385,15 +396,16 @@ export const aiGenerateObject = createTool({
 
     const shouldSkip = (input.skipTransaction && usedVault) ?? false;
 
-    const transactionId = shouldSkip
-      ? undefined
-      : await processTransaction(
-          wallet,
-          result.usage,
-          hasCustomKey ? llmConfig.model : modelId,
-          hasCustomKey,
-          c,
-        );
+    const transactionId =
+      shouldSkip || !wallet
+        ? undefined
+        : await processTransaction(
+            wallet,
+            result.usage,
+            hasCustomKey ? llmConfig.model : modelId,
+            hasCustomKey,
+            c,
+          );
 
     return {
       object: result.object,

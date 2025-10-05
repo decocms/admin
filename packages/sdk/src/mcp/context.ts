@@ -299,6 +299,7 @@ const envSchema = z.object({
   STRIPE_WEBHOOK_SECRET: z.string().nullish(),
   CURRENCY_API_KEY: z.string().nullish(),
   TESTING_CUSTOMER_ID: z.string().nullish(),
+  OLLAMA_BASE_URL: z.string().optional().readonly(),
 });
 
 export const getEnv = (ctx: AppContext): EnvVars =>

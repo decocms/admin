@@ -49,6 +49,14 @@ export const WELL_KNOWN_AGENT_IDS = {
   decopilotAgent: "decopilotAgent",
 } as const;
 
+export type ModelRuntimeState = "available" | "unavailable" | "model-missing";
+
+export interface ModelRuntimeStatus {
+  state: ModelRuntimeState;
+  reason?: string;
+  checkedAt?: string;
+}
+
 export interface Model {
   id: string;
   model: string;
@@ -61,6 +69,7 @@ export interface Model {
   isEnabled: boolean;
   hasCustomKey: boolean;
   apiKeyEncrypted?: string;
+  runtimeStatus?: ModelRuntimeStatus;
 }
 
 const LOGOS = {
@@ -71,6 +80,7 @@ const LOGOS = {
   gemini:
     "https://assets.decocache.com/webdraw/17df85af-1578-42ef-ae07-4300de0d1723/gemini.svg",
   xai: "https://assets.decocache.com/webdraw/7a8003ff-8f2d-4988-8693-3feb20e87eca/xai.svg",
+  ollama: "/logos/ollama.svg",
 };
 
 // TODO(@camudo): Make native web search work
@@ -203,6 +213,18 @@ export const WELL_KNOWN_MODELS: Model[] = [
     byDeco: true,
     isEnabled: true,
     hasCustomKey: false,
+  },
+  {
+    id: "ollama:qwen3:4b-instruct",
+    model: "ollama:qwen3:4b-instruct",
+    name: "Ollama Qwen 3 4B (Local)",
+    logo: LOGOS.ollama,
+    capabilities: ["reasoning"],
+    byDeco: true,
+    isEnabled: true,
+    hasCustomKey: false,
+    description:
+      "Use your local Ollama instance running at http://localhost:11434.",
   },
 ];
 

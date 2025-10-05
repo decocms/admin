@@ -54,7 +54,14 @@ export async function getLLMConfig({
 
   const id = isWellKnownModel(modelId) ? modelId : WELL_KNOWN_MODELS[0].id;
 
-  return { model: id, modelId: id };
+  const config: LLMConfigWithModelId = { model: id, modelId: id };
+
+  if (id.startsWith("ollama:")) {
+    config.bypassGateway = true;
+    config.bypassOpenRouter = true;
+  }
+
+  return config;
 }
 
 export function createLLMInstance({

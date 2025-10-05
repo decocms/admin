@@ -21,9 +21,6 @@ export const createResourceAccess = () => {
         },
       };
     },
-    reset: () => {
-      canAccess = false;
-    },
     granted: () => canAccess,
   };
 };

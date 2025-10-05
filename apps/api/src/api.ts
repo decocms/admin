@@ -150,6 +150,15 @@ const mapMCPErrorToHTTPExceptionOrThrow = (err: Error) => {
 
   throw err;
 };
+
+const getStoreSafe = () => {
+  try {
+    return State.getStore();
+  } catch {
+    return null;
+  }
+};
+
 /**
  * Creates and sets up an MCP server for the given tools
  */
@@ -206,9 +215,23 @@ const createMCPHandlerFor = (
     await server.connect(transport);
     endTime(c, "mcp-connect");
 
+    const parentContext = getStoreSafe();
+    const currentContext = honoCtxToAppCtx(c);
+
+    /**
+     * Gives access to this tool if parent context has access
+     *
+     * To be able to remove this code, create a workflow that calls
+     * ai-gateway to generate text with ai. If everything goes well
+     * withtout the following code, you'll be able to remove the next code.
+     *  */
+    if (parentContext?.resourceAccess.granted()) {
+      currentContext.resourceAccess.grant();
+    }
+
     startTime(c, "mcp-handle-message");
     const res = await State.run(
-      honoCtxToAppCtx(c),
+      currentContext,
       transport.handleMessage.bind(transport),
       c.req.raw,
     );

@@ -328,9 +328,10 @@ export const MCPClient = new Proxy(
 
 export { Entrypoint } from "./hosting/api.ts";
 
-export function createMCPToolsStub<TDefinition extends readonly ToolLike[]>(
-  options: CreateStubHandlerOptions<TDefinition>,
-): MCPClientStub<TDefinition> {
+export function createMCPToolsStub<TDefinition extends readonly ToolLike[]>({
+  tools,
+  context,
+}: CreateStubHandlerOptions<TDefinition>): MCPClientStub<TDefinition> {
   return new Proxy<MCPClientStub<TDefinition>>(
     {} as MCPClientStub<TDefinition>,
     {
@@ -339,7 +340,7 @@ export function createMCPToolsStub<TDefinition extends readonly ToolLike[]>(
           throw new Error("Name must be a string");
         }
         const toolMap = new Map<string, TDefinition[number]>(
-          options.tools.map((h) => [h.name, h]),
+          tools.map((h) => [h.name, h]),
         );
         return (props: unknown) => {
           const tool = toolMap.get(name);
@@ -347,13 +348,8 @@ export function createMCPToolsStub<TDefinition extends readonly ToolLike[]>(
             throw new Error(`Tool ${name} not found`);
           }
           return State.run(
-            options?.context ?? State.getStore(),
-            async (args) => {
-              // deno-lint-ignore no-explicit-any
-              const result = await tool.handler(args as any);
-
-              return result;
-            },
+            context ?? State.getStore(),
+            (args) => tool.handler(args),
             props,
           );
         };

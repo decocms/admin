@@ -326,7 +326,7 @@ function GenerateImageToolUI({ tool }: { tool: ToolInvocation }) {
     console.warn("Failed to parse image result:", error);
   }
 
-  const isGenerating = state === "call";
+  const isGenerating = state === "call" || state === "partial-call";
   const isGenerated = state === "result" && image;
   const hasError = state === "error";
 

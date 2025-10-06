@@ -6,12 +6,12 @@ import {
   type FormEvent,
   type KeyboardEvent,
   useEffect,
-  useState,
 } from "react";
 
 import { useUserPreferences } from "../../hooks/use-user-preferences.ts";
+import { useFileUpload } from "../../hooks/use-file-upload.ts";
 import { AudioButton } from "./audio-button.tsx";
-import { ContextResources, UploadedFile } from "./context-resources.tsx";
+import { ContextResources } from "./context-resources.tsx";
 import { useAgent } from "../agent/provider.tsx";
 import { ModelSelector } from "./model-selector.tsx";
 import { RichTextArea } from "./rich-text.tsx";
@@ -21,9 +21,20 @@ export function ChatInput({ disabled }: { disabled?: boolean } = {}) {
   const { stop, input, handleInputChange, handleSubmit, status } = chat;
   const { showModelSelector, showContextResources } = uiOptions;
   const isLoading = status === "submitted" || status === "streaming";
-  const [uploadedFiles, setUploadedFiles] = useState<UploadedFile[]>([]);
   const { preferences, setPreferences } = useUserPreferences();
   const model = preferences.defaultModel;
+
+  const {
+    uploadedFiles,
+    isDragging,
+    fileInputRef,
+    handleFileChange,
+    removeFile,
+    openFileDialog,
+    clearFiles,
+  } = useFileUpload({ maxFiles: 5 });
+
+  const enableFileUpload = false;
 
   const canSubmit =
     !isLoading &&
@@ -88,7 +99,7 @@ export function ChatInput({ disabled }: { disabled?: boolean } = {}) {
         url: uf.url,
       })),
     });
-    setUploadedFiles([]);
+    clearFiles();
   };
 
   return (
@@ -96,7 +107,12 @@ export function ChatInput({ disabled }: { disabled?: boolean } = {}) {
       {showContextResources && (
         <ContextResources
           uploadedFiles={uploadedFiles}
-          setUploadedFiles={setUploadedFiles}
+          isDragging={isDragging}
+          fileInputRef={fileInputRef}
+          handleFileChange={handleFileChange}
+          removeFile={removeFile}
+          openFileDialog={openFileDialog}
+          enableFileUpload={enableFileUpload}
         />
       )}
       <form

@@ -1,5 +1,10 @@
 import type { Message } from "@ai-sdk/react";
 import { Button } from "@deco/ui/components/button.tsx";
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@deco/ui/components/collapsible.tsx";
 import { Icon } from "@deco/ui/components/icon.tsx";
 import { Spinner } from "@deco/ui/components/spinner.tsx";
 import { cn } from "@deco/ui/lib/utils.ts";
@@ -195,6 +200,157 @@ function ToolStatus({
   );
 }
 
+function ImagePrompt({
+  prompt,
+  isCollapsible = true,
+}: {
+  prompt: string;
+  isCollapsible?: boolean;
+}) {
+  const [isOpen, setIsOpen] = useState(false);
+
+  if (!isCollapsible || prompt.length <= 60) {
+    return (
+      <p className="text-sm text-muted-foreground/80 leading-relaxed break-words whitespace-pre-wrap">
+        {prompt}
+      </p>
+    );
+  }
+
+  const truncatedPrompt = prompt.slice(0, 60) + "...";
+
+  return (
+    <Collapsible open={isOpen} onOpenChange={setIsOpen}>
+      <div className="space-y-2 w-full">
+        <CollapsibleTrigger asChild>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-auto p-0 text-sm text-muted-foreground/80 hover:text-muted-foreground font-normal justify-start w-full text-left"
+          >
+            <span className="leading-relaxed break-words flex-1 min-w-0">
+              {truncatedPrompt}
+            </span>
+            <Icon
+              name="chevron_right"
+              className={cn(
+                "ml-2 h-3 w-3 flex-shrink-0 transition-transform",
+                isOpen && "rotate-90",
+              )}
+            />
+          </Button>
+        </CollapsibleTrigger>
+        <CollapsibleContent>
+          <div className="text-sm text-muted-foreground/80 leading-relaxed pl-4 border-l-2 border-muted break-words whitespace-pre-wrap">
+            {prompt}
+          </div>
+        </CollapsibleContent>
+      </div>
+    </Collapsible>
+  );
+}
+
+function GeneratingStatus() {
+  return (
+    <>
+      <div className="flex items-center gap-3">
+        <div className="text-foreground relative overflow-hidden">
+          <span
+            className="relative inline-block font-medium"
+            style={{
+              background:
+                "linear-gradient(90deg, currentColor 0%, rgba(255,255,255,0.8) 50%, currentColor 100%)",
+              backgroundSize: "200% 100%",
+              WebkitBackgroundClip: "text",
+              backgroundClip: "text",
+              WebkitTextFillColor: "transparent",
+              animation: "shimmer 3s ease-in-out infinite",
+            }}
+          >
+            Generating image...
+          </span>
+        </div>
+        <Spinner size="xs" variant="default" />
+      </div>
+      <style
+        dangerouslySetInnerHTML={{
+          __html: `
+          @keyframes shimmer {
+            0% { background-position: -200% 0; }
+            100% { background-position: 200% 0; }
+          }
+        `,
+        }}
+      />
+    </>
+  );
+}
+
+function GenerateImageToolUI({ tool }: { tool: ToolInvocation }) {
+  const state = tool.state;
+  const prompt = tool.args?.prompt as string;
+
+  // Parse result safely
+  let image: string | null = null;
+  try {
+    if (tool.result && typeof tool.result === "string") {
+      const parsed = JSON.parse(tool.result);
+      image = parsed.image;
+    } else if (tool.result && typeof tool.result === "object") {
+      image = (tool.result as any).image;
+    }
+  } catch (error) {
+    console.warn("Failed to parse image result:", error);
+  }
+
+  const isGenerating = state === "call";
+  const isGenerated = state === "result" && image;
+  const hasError = state === "error";
+
+  if (hasError) {
+    return (
+      <div className="space-y-3 p-4 border border-destructive/20 rounded-lg bg-destructive/5 w-full max-w-full overflow-hidden">
+        <div className="flex items-center gap-2 text-destructive">
+          <Icon name="close" className="h-4 w-4" />
+          <span className="font-medium">Failed to generate image</span>
+        </div>
+        <ImagePrompt prompt={prompt} />
+      </div>
+    );
+  }
+
+  if (isGenerating) {
+    return (
+      <div className="space-y-3 p-4 border border-border rounded-lg bg-muted/20 w-full max-w-full overflow-hidden">
+        <GeneratingStatus />
+        <ImagePrompt prompt={prompt} />
+      </div>
+    );
+  }
+
+  if (isGenerated) {
+    return (
+      <div className="space-y-3 w-full max-w-full overflow-hidden">
+        <ImagePrompt prompt={prompt} />
+        <div className="rounded-lg overflow-hidden border border-border">
+          <img
+            src={image || ""}
+            alt={prompt}
+            className="w-full max-h-[400px] object-cover"
+          />
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-3 p-4 border border-border rounded-lg bg-muted/10 w-full max-w-full overflow-hidden">
+      <p className="text-muted-foreground">No image generated</p>
+      <ImagePrompt prompt={prompt} />
+    </div>
+  );
+}
+
 function CustomToolUI({
   tool,
   isLastMessage,
@@ -207,6 +363,10 @@ function CustomToolUI({
 
   if (tool.toolName === "HOSTING_APP_DEPLOY") {
     return <HostingAppDeploy tool={tool} />;
+  }
+
+  if (tool.toolName === "GENERATE_IMAGE") {
+    return <GenerateImageToolUI tool={tool} />;
   }
 
   if (tool.state !== "result" || !tool.result) return null;
@@ -267,7 +427,13 @@ export function ToolMessage({
     const customUI: ToolInvocation[] = [];
 
     toolInvocations.forEach((tool: ToolInvocation) => {
-      if (isCustomUITool(tool.toolName)) {
+      if (
+        tool.toolName === "GENERATE_IMAGE" &&
+        tool.args &&
+        "prompt" in tool.args
+      ) {
+        customUI.push(tool);
+      } else if (isCustomUITool(tool.toolName)) {
         customUI.push(tool);
       } else {
         timeline.push(tool);

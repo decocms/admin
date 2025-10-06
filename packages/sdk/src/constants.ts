@@ -333,9 +333,7 @@ When user asks for a prompt, you should use the PROMPTS_GET tool to get the actu
     name: "Decopilot",
     avatar: pickCapybaraAvatar(12),
     description: "Let's Deco!",
-    instructions: `You are a helpful assistant that helps users to accomplish tasks by using tools from your toolset.
-    <IMAGE_GENERATION_NOTE>If you call a GENERATE_IMAGE tool and it successfully returns a "image" field which is a valid image URL, you should not attempt to render the image in the response or return the image URL in the response. The UI will handle the image rendering.</IMAGE_GENERATION_NOTE>
-    `,
+    instructions: `You are a helpful assistant that helps users to accomplish tasks by using tools from your toolset.`,
   },
 } satisfies Record<string, Agent>;
 

@@ -290,14 +290,29 @@ function GenerateImageToolUI({ tool }: { tool: ToolInvocation }) {
   const state = tool.state;
   const prompt = tool.args?.prompt as string;
 
-  // Parse result safely
+  // Parse result safely with proper type guards
   let image: string | null = null;
   try {
     if (tool.result && typeof tool.result === "string") {
       const parsed = JSON.parse(tool.result);
-      image = parsed.image;
-    } else if (tool.result && typeof tool.result === "object") {
-      image = (tool.result as { image: string }).image;
+      // Validate parsed object has image string field
+      if (
+        parsed &&
+        typeof parsed === "object" &&
+        "image" in parsed &&
+        typeof parsed.image === "string"
+      ) {
+        image = parsed.image;
+      }
+    } else if (
+      tool.result &&
+      typeof tool.result === "object" &&
+      "image" in tool.result
+    ) {
+      const imageValue = (tool.result as Record<string, unknown>).image;
+      if (typeof imageValue === "string") {
+        image = imageValue;
+      }
     }
   } catch (error) {
     console.warn("Failed to parse image result:", error);

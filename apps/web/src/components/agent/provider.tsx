@@ -272,6 +272,29 @@ export function AgentProvider({
     form.reset(serverAgent);
   }, [form, serverAgent]);
 
+  const hasImageGeneration = useMemo(
+    () =>
+      Object.values(effectiveChatState.tools_set ?? {}).some((set) =>
+        set.includes("GENERATE_IMAGE"),
+      ),
+    [effectiveChatState.tools_set],
+  );
+
+  // feel free to revert this if you dont like it
+  const effectiveInstructions = useMemo(() => {
+    const baseInstructions = effectiveChatState.instructions ?? "";
+    const IMAGE_GENERATION_NOTE = `<IMAGE_GENERATION_NOTE>If you call a GENERATE_IMAGE tool and it successfully returns an "image" field, and "image" is a valid image URL, you should not attempt to render the image, or show the image URL in the response. The UI will handle the image rendering. Do not ask the user if they wish to see the image, since they will be able to see it in the UI.</IMAGE_GENERATION_NOTE>`;
+
+    if (
+      hasImageGeneration &&
+      !baseInstructions.includes("IMAGE_GENERATION_NOTE")
+    ) {
+      return `${baseInstructions}\n${IMAGE_GENERATION_NOTE}`;
+    }
+
+    return baseInstructions;
+  }, [hasImageGeneration, effectiveChatState.instructions]);
+
   // Initialize chat - always uses current agent state + overrides
   const chat = useChat({
     initialInput,
@@ -321,7 +344,7 @@ export function AgentProvider({
             model: mergedUiOptions.showModelSelector
               ? preferences.defaultModel
               : effectiveChatState.model,
-            instructions: effectiveChatState.instructions,
+            instructions: effectiveInstructions,
             bypassOpenRouter,
             sendReasoning: preferences.sendReasoning ?? true,
             threadTitle: thread?.title,

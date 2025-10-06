@@ -118,12 +118,13 @@ const createWorkspaceDB = async (
   const shouldUseSQLite = turso !== true;
 
   if (shouldUseSQLite) {
-    const dbId =
-      typeof options.user === "object" &&
-      "integrationId" in options.user &&
-      typeof options.user.integrationId === "string"
-        ? options.user.integrationId
-        : undefined;
+    // TODO(@mcandeia): make multiple dbs work again
+    const dbId = undefined;
+    // typeof options.user === "object" &&
+    // "integrationId" in options.user &&
+    // typeof options.user.integrationId === "string"
+    //   ? options.user.integrationId
+    // : undefined;
     const uniqueDbName = dbId ? `${dbId}-${workspace.value}` : workspace.value;
     return workspaceDO.get(
       workspaceDO.idFromName(uniqueDbName),

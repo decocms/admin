@@ -85,7 +85,7 @@ export const getErrorByStatusCode = (
   if (statusCode === 403) {
     return new ForbiddenError(
       message,
-      arrayProp(errorObject, "scopes"),
+      { resources: arrayProp(errorObject, "resources") ?? [] },
       traceId,
     );
   }

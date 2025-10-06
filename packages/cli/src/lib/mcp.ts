@@ -56,3 +56,44 @@ export const createWorkspaceClient = async ({
 
   return client;
 };
+
+export const createWorkspaceClientStub = async ({
+  workspace,
+  local,
+  integrationId,
+}: Options) => {
+  const { headers, url } = await workspaceClientParams({
+    workspace,
+    local,
+    integrationId,
+    pathname: "/tools/call",
+  });
+
+  return {
+    callTool: async ({
+      name,
+      arguments: props,
+    }: {
+      name: string;
+      arguments: unknown;
+    }) => {
+      const toolUrl = url.href + `/${name as string}`;
+      const response = await fetch(toolUrl, {
+        method: "POST",
+        headers,
+        body: JSON.stringify(props),
+      });
+      const textResponse = await response.text().catch(() => null);
+      if (!textResponse) {
+        return {
+          isError: true,
+          content: [{ text: `Error: ${response.status}` }],
+        };
+      }
+      if (!response.ok) {
+        return { isError: true, content: [{ text: textResponse }] };
+      }
+      return { structuredContent: JSON.parse(textResponse).data };
+    },
+  };
+};

@@ -796,7 +796,10 @@ app.get("/health", (c: Context) => c.json({ status: "ok" }));
 
 app.onError((err, c) => {
   return c.json(
-    { error: err?.message ?? "Internal server error" },
+    {
+      error: err?.message ?? "Internal server error",
+      name: err?.name ?? undefined,
+    },
     err instanceof HTTPException ? err.status : 500,
   );
 });

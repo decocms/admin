@@ -297,7 +297,7 @@ function GenerateImageToolUI({ tool }: { tool: ToolInvocation }) {
       const parsed = JSON.parse(tool.result);
       image = parsed.image;
     } else if (tool.result && typeof tool.result === "object") {
-      image = (tool.result as any).image;
+      image = (tool.result as { image: string }).image;
     }
   } catch (error) {
     console.warn("Failed to parse image result:", error);

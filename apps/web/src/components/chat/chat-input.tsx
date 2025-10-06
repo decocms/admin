@@ -34,6 +34,7 @@ export function ChatInput({ disabled }: { disabled?: boolean } = {}) {
     clearFiles,
   } = useFileUpload({ maxFiles: 5 });
 
+  // TODO(@viktormarinho): Bring this back
   const enableFileUpload = false;
 
   const canSubmit =

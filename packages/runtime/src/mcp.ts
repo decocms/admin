@@ -156,6 +156,7 @@ export interface CreateStubAPIOptions {
     statusCode: number,
     message?: string,
     traceId?: string,
+    errorObject?: unknown,
   ) => Error;
 }
 

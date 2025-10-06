@@ -63,7 +63,7 @@ export const getUser = async (
     SUPABASE_SERVER_TOKEN,
     DECO_CHAT_API_JWT_PRIVATE_KEY,
     DECO_CHAT_API_JWT_PUBLIC_KEY,
-  } = getEnv(honoCtxToAppCtx(ctx));
+  } = ctx.env;
 
   const cookies = getCookies(ctx.req.raw.headers);
   const supabase = createSupabaseClient(SUPABASE_URL, SUPABASE_SERVER_TOKEN, {

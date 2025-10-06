@@ -83,8 +83,10 @@ const createDeconfigTool = createToolFactory<DeconfigContext>(
     if ("state" in c && typeof c.state === "object" && c.state) {
       state = c.state as DeconfigState;
     }
+    const isProjectDefined = c.workspace || c.locator;
 
     if (
+      !isProjectDefined &&
       c.user &&
       "aud" in c.user &&
       typeof c.user.aud === "string" &&

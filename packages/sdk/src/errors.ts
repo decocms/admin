@@ -1,3 +1,6 @@
+import { ResourceAccessContext } from "./mcp/index.ts";
+import { arrayProp } from "./utils/fns.ts";
+
 export class HttpError extends Error {
   readonly code?: number;
   readonly traceId?: string;
@@ -30,6 +33,7 @@ export class ForbiddenError extends HttpError {
   override code = 403;
   constructor(
     message: string = "User does not have access to this resource",
+    public detail?: { resources: ResourceAccessContext[] },
     traceId?: string,
   ) {
     super(message, traceId);
@@ -68,6 +72,7 @@ export const getErrorByStatusCode = (
   statusCode: number,
   message?: string,
   traceId?: string,
+  errorObject?: unknown,
 ) => {
   if (statusCode === 400) {
     return new UserInputError(message, traceId);
@@ -78,7 +83,11 @@ export const getErrorByStatusCode = (
   }
 
   if (statusCode === 403) {
-    return new ForbiddenError(message, traceId);
+    return new ForbiddenError(
+      message,
+      arrayProp(errorObject, "scopes"),
+      traceId,
+    );
   }
 
   if (statusCode === 404) {

@@ -116,7 +116,8 @@ export const apiKeySWRCache = new SWRCache<ApiKeyWithProject | null>(
   },
 );
 
-interface ResourceAccessContext extends Partial<Omit<AuthContext, "user">> {
+export interface ResourceAccessContext
+  extends Partial<Omit<AuthContext, "user">> {
   resource: string;
 }
 
@@ -214,13 +215,14 @@ export const assertWorkspaceResourceAccess = async (
     }
   }
 
-  for (const toolOrResourceContext of resourcesOrContexts) {
-    try {
-      const { resource, ...authContext } =
-        typeof toolOrResourceContext === "string"
-          ? { resource: toolOrResourceContext }
-          : toolOrResourceContext;
+  const resources = resourcesOrContexts.map((toolOrResourceContext) => {
+    return typeof toolOrResourceContext === "string"
+      ? { resource: toolOrResourceContext }
+      : toolOrResourceContext;
+  });
 
+  for (const { resource, ...authContext } of resources) {
+    try {
       // agent tokens
       if (
         "aud" in user &&
@@ -303,9 +305,10 @@ export const assertWorkspaceResourceAccess = async (
 
   // If we reach here, none of the resources granted access
   throw new ForbiddenError(
-    `Cannot access any of the requested resources in workspace ${c.workspace.value} ${resourcesOrContexts}. Errors: ${errors.join(
+    `Cannot access any of the requested resources in workspace ${c.workspace.value} ${resources.map((r) => r.resource).join(", ")}. Errors: ${errors.join(
       "; ",
     )}`,
+    { resources },
   );
 };
 

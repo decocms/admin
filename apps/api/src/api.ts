@@ -21,7 +21,6 @@ import {
   createToolViewsV2,
   createWorkflowBindingImpl,
   createWorkflowResourceV2Implementation,
-  workflowViews as legacyWorkflowViews,
   createWorkflowViewsV2,
   DECONFIG_TOOLS,
   EMAIL_TOOLS,
@@ -31,6 +30,7 @@ import {
   getWorkspaceBucketName,
   GLOBAL_TOOLS,
   type IntegrationWithTools,
+  workflowViews as legacyWorkflowViews,
   ListToolsMiddleware,
   PrincipalExecutionContext,
   PROJECT_TOOLS,
@@ -142,10 +142,11 @@ export const honoCtxToAppCtx = (c: Context<AppEnv>): AppContext => {
 
 const mapMCPErrorToHTTPExceptionOrThrow = (err: Error) => {
   if ("code" in err) {
-    throw new HTTPException(
-      (err.code as ContentfulStatusCode | undefined) ?? 500,
-      { message: err.message ?? "Internal server error" },
-    );
+    // deno-lint-ignore no-explicit-any
+    const cause = (err as any as { detail?: unknown }).detail;
+    const status = (err.code as ContentfulStatusCode | undefined) ?? 500;
+    const message = err.message ?? "Internal server error";
+    throw new HTTPException(status, { message, cause });
   }
 
   throw err;
@@ -795,12 +796,14 @@ app.get("/apps/oauth", (c) => {
 app.get("/health", (c: Context) => c.json({ status: "ok" }));
 
 app.onError((err, c) => {
+  const isHttpException = err instanceof HTTPException;
   return c.json(
     {
       error: err?.message ?? "Internal server error",
       name: err?.name ?? undefined,
+      detail: isHttpException ? err.cause : err,
     },
-    err instanceof HTTPException ? err.status : 500,
+    isHttpException ? err.status : 500,
   );
 });
 

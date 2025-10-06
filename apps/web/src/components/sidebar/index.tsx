@@ -297,9 +297,18 @@ function WorkspaceViews() {
     return workspaceLink(path ?? "/");
   }
 
-  const wellKnownItems = ["Tools", "Views", "Workflows", "Documents", "Agents"];
+  const wellKnownItems = [
+    "Tools",
+    "Views",
+    "Workflows",
+    "Documents",
+    "Agents",
+    "Monitors",
+    "Site",
+  ];
   const legacyTitleMap: Record<string, string> = {
     Prompts: "Documents",
+    Healthchecks: "Monitors",
   };
   const canonicalTitle = (title: string) => legacyTitleMap[title] ?? title;
 
@@ -320,80 +329,38 @@ function WorkspaceViews() {
         predefinedOrder.indexOf(canonicalTitle(b.title))
       );
     });
+
+  // Building blocks
+  const toolsItem = mcpItems.find(
+    (item) => canonicalTitle(item.title) === "Tools",
+  );
+  const viewsItem = mcpItems.find(
+    (item) => canonicalTitle(item.title) === "Views",
+  );
+  const databaseItem = mcpItems.find(
+    (item) => canonicalTitle(item.title) === "Database",
+  );
+
+  // Core abstractions (Documents, Workflows, Agents) - main menu items
+  const coreAbstractionTitles = [
+    "Documents",
+    "Workflows",
+    "Agents",
+    "Monitors",
+    "Site",
+  ];
+  const coreItems = coreAbstractionTitles
+    .map((title) =>
+      mcpItems.find((item) => canonicalTitle(item.title) === title),
+    )
+    .filter((item): item is View => item !== undefined);
+
   const hasIntegrationMenus =
     Object.keys(fromIntegration).length > 0 ||
     Object.keys(fromIntegrationResources).length > 0;
 
   return (
     <>
-      <SidebarMenuItem>
-        <SidebarMenuButton
-          className="cursor-pointer"
-          onClick={() => {
-            navigateWorkspace("/store");
-          }}
-        >
-          <Icon
-            name="storefront"
-            size={20}
-            className="text-muted-foreground/75"
-          />
-          <span className="truncate">Store</span>
-        </SidebarMenuButton>
-      </SidebarMenuItem>
-
-      <SidebarMenuItem>
-        <SidebarMenuButton
-          className="cursor-pointer"
-          onClick={() => {
-            navigateWorkspace("/apps");
-          }}
-        >
-          <Icon
-            name="grid_view"
-            size={20}
-            className="text-muted-foreground/75"
-          />
-          <span className="truncate">Apps</span>
-        </SidebarMenuButton>
-      </SidebarMenuItem>
-
-      <SidebarSeparator className="my-2 -ml-1" />
-
-      {mcpItems.map((item) => {
-        const displayTitle = canonicalTitle(item.title);
-        const href = buildViewHrefFromView(item as View);
-        const view = item as View;
-
-        return (
-          <SidebarMenuItem key={item.title}>
-            <SidebarMenuButton asChild>
-              <Link
-                to={href}
-                onClick={() => {
-                  trackEvent("sidebar_navigation_click", {
-                    item: displayTitle,
-                  });
-                  isMobile && toggleSidebar();
-                }}
-              >
-                <Icon
-                  name={item.icon}
-                  size={20}
-                  className="text-muted-foreground/75"
-                />
-                <span className="truncate">{displayTitle}</span>
-                {view.badge && (
-                  <Badge variant="secondary" className="ml-auto text-xs">
-                    {view.badge}
-                  </Badge>
-                )}
-              </Link>
-            </SidebarMenuButton>
-          </SidebarMenuItem>
-        );
-      })}
-      {hasIntegrationMenus && <SidebarSeparator className="my-2 -ml-1" />}
       {Object.entries(fromIntegration).map(([integrationId, views]) => {
         const integration = integrationMap.get(integrationId);
         const isSingleView = views.length === 1;
@@ -591,6 +558,207 @@ function WorkspaceViews() {
           </SidebarMenuItem>
         );
       })}
+
+      {/* Generate button */}
+      <SidebarMenuItem>
+        <SidebarMenuButton
+          className="cursor-pointer"
+          onClick={() => {
+            navigateWorkspace("/generate");
+            isMobile && toggleSidebar();
+          }}
+        >
+          <Icon name="add" size={20} className="text-muted-foreground/75" />
+          <span className="truncate">Generate</span>
+        </SidebarMenuButton>
+      </SidebarMenuItem>
+
+      <SidebarSeparator className="my-2 -ml-1" />
+
+      {/* Apps with Store + button */}
+      <SidebarMenuItem>
+        <div className="group/item relative">
+          <SidebarMenuButton
+            className="cursor-pointer w-full pr-10"
+            onClick={() => {
+              navigateWorkspace("/apps");
+            }}
+          >
+            <Icon
+              name="grid_view"
+              size={20}
+              className="text-muted-foreground/75"
+            />
+            <span className="truncate">Apps</span>
+          </SidebarMenuButton>
+          <SidebarMenuAction
+            asChild
+            className="absolute right-1.5 inset-y-0 flex items-center"
+            showOnHover={false}
+          >
+            <Button
+              variant="outline"
+              size="sm"
+              className="h-[24px] w-[24px] p-0 bg-gradient-to-br from-[var(--primary-light)]/80 to-[var(--primary-light)]/15 hover:from-[var(--primary-light)]/90 hover:to-[var(--primary-light)]/0 border-[var(--primary-dark)]/30 hover:border-[var(--primary-dark)]/80 transition-all"
+              onClick={(e) => {
+                e.stopPropagation();
+                navigateWorkspace("/store");
+              }}
+              title="Browse Store"
+            >
+              <Icon
+                name="download"
+                size={16}
+                className="text-[var(--primary-dark)]"
+              />
+            </Button>
+          </SidebarMenuAction>
+        </div>
+      </SidebarMenuItem>
+
+      {/* Core abstractions: Documents, Workflows, Agents */}
+      {coreItems.map((item) => {
+        const displayTitle = canonicalTitle(item.title);
+        const href = buildViewHrefFromView(item as View);
+        const view = item as View;
+
+        return (
+          <SidebarMenuItem key={item.title}>
+            <SidebarMenuButton asChild>
+              <Link
+                to={href}
+                onClick={() => {
+                  trackEvent("sidebar_navigation_click", {
+                    item: displayTitle,
+                  });
+                  isMobile && toggleSidebar();
+                }}
+              >
+                <Icon
+                  name={item.icon}
+                  size={20}
+                  className="text-muted-foreground/75"
+                />
+                <span className="truncate">{displayTitle}</span>
+                {view.badge && (
+                  <Badge variant="secondary" className="ml-auto text-xs">
+                    {view.badge}
+                  </Badge>
+                )}
+              </Link>
+            </SidebarMenuButton>
+          </SidebarMenuItem>
+        );
+      })}
+
+      <SidebarSeparator className="my-2 -ml-1" />
+
+      {/* Project accordion */}
+      <SidebarMenuItem>
+        <Collapsible asChild defaultOpen className="group/collapsible">
+          <div>
+            <CollapsibleTrigger asChild>
+              <SidebarMenuButton className="w-full">
+                <Icon
+                  name="settings"
+                  size={20}
+                  className="text-muted-foreground/75"
+                />
+                <span className="truncate">Developer</span>
+                <Icon
+                  name="chevron_right"
+                  size={18}
+                  className="ml-auto transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90 text-muted-foreground/75"
+                />
+              </SidebarMenuButton>
+            </CollapsibleTrigger>
+            <CollapsibleContent>
+              <SidebarMenuSub>
+                {/* Tools */}
+                {toolsItem && (
+                  <SidebarMenuSubItem>
+                    <SidebarMenuSubButton asChild>
+                      <Link
+                        to={buildViewHrefFromView(toolsItem as View)}
+                        onClick={() => {
+                          trackEvent("sidebar_navigation_click", {
+                            item: "Tools",
+                          });
+                          isMobile && toggleSidebar();
+                        }}
+                      >
+                        <Icon
+                          name={toolsItem.icon}
+                          size={18}
+                          className="text-muted-foreground/75"
+                        />
+                        <span className="truncate">Tools</span>
+                        {(toolsItem as View).badge && (
+                          <Badge
+                            variant="secondary"
+                            className="ml-auto text-xs"
+                          >
+                            {(toolsItem as View).badge}
+                          </Badge>
+                        )}
+                      </Link>
+                    </SidebarMenuSubButton>
+                  </SidebarMenuSubItem>
+                )}
+
+                {/* Views */}
+                {viewsItem && (
+                  <SidebarMenuSubItem>
+                    <SidebarMenuSubButton asChild>
+                      <Link
+                        to={buildViewHrefFromView(viewsItem as View)}
+                        onClick={() => {
+                          trackEvent("sidebar_navigation_click", {
+                            item: "Views",
+                          });
+                          isMobile && toggleSidebar();
+                        }}
+                      >
+                        <Icon
+                          name={viewsItem.icon}
+                          size={18}
+                          className="text-muted-foreground/75"
+                        />
+                        <span className="truncate">Views</span>
+                        {(viewsItem as View).badge && (
+                          <Badge
+                            variant="secondary"
+                            className="ml-auto text-xs"
+                          >
+                            {(viewsItem as View).badge}
+                          </Badge>
+                        )}
+                      </Link>
+                    </SidebarMenuSubButton>
+                  </SidebarMenuSubItem>
+                )}
+
+                {/* Database */}
+                <SidebarMenuSubItem>
+                  <SidebarMenuSubButton
+                    onClick={() => {
+                      navigateWorkspace("/database");
+                      isMobile && toggleSidebar();
+                    }}
+                  >
+                    <Icon
+                      name="database"
+                      size={18}
+                      className="text-muted-foreground/75"
+                    />
+                    <span className="truncate">Database</span>
+                  </SidebarMenuSubButton>
+                </SidebarMenuSubItem>
+              </SidebarMenuSub>
+            </CollapsibleContent>
+          </div>
+        </Collapsible>
+      </SidebarMenuItem>
 
       {/* Resources section */}
       {Object.entries(fromIntegrationResources).map(

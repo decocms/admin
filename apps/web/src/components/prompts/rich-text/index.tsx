@@ -7,7 +7,7 @@ import StarterKit from "@tiptap/starter-kit";
 import { useEffect, useMemo, useRef } from "react";
 import { Markdown } from "tiptap-markdown";
 import BubbleMenu from "./bubble-menu.tsx";
-import { mentionToTag, removeMarkdownCodeBlock } from "./common.ts";
+import { mentionToTag, removeMarkdownCodeBlock, sanitizeMarkdown } from "./common.ts";
 import { Comment } from "./extensions/comment.tsx";
 import { mentions } from "./extensions/mentions/mentions.ts";
 
@@ -71,7 +71,7 @@ export default function RichTextArea({
   const editor = useEditor(
     {
       extensions,
-      content: mentionToTag(removeMarkdownCodeBlock(value), true),
+      content: mentionToTag(sanitizeMarkdown(removeMarkdownCodeBlock(value)), true),
       editable: !disabled,
       onUpdate: ({ editor }) => {
         const markdown = editor.storage.markdown.getMarkdown();
@@ -100,7 +100,7 @@ export default function RichTextArea({
   useEffect(() => {
     if (!editor) return;
 
-    const processedValue = mentionToTag(removeMarkdownCodeBlock(value), true);
+    const processedValue = mentionToTag(sanitizeMarkdown(removeMarkdownCodeBlock(value)), true);
     const currentContent = editor.storage.markdown.getMarkdown();
 
     // Only update if the content is actually different to avoid infinite loops
@@ -109,9 +109,17 @@ export default function RichTextArea({
       const wasUserInteraction = hadUserInteraction.current;
       hadUserInteraction.current = false;
 
-      editor.commands.setContent(processedValue, false, {
-        preserveWhitespace: "full",
-      });
+      try {
+        editor.commands.setContent(processedValue, false, {
+          preserveWhitespace: "full",
+        });
+      } catch (error) {
+        // If content setting still fails after sanitization, log and use empty content
+        console.error("Failed to set editor content after sanitization:", error);
+        editor.commands.setContent("", false, {
+          preserveWhitespace: "full",
+        });
+      }
 
       // Restore user interaction state
       hadUserInteraction.current = wasUserInteraction;

@@ -165,7 +165,13 @@ export function RichTextArea({
 
   useEffect(() => {
     if (editor && editor.storage.markdown.getMarkdown() !== value) {
-      editor.commands.setContent(value, false);
+      try {
+        editor.commands.setContent(value, false);
+      } catch (error) {
+        // If content setting fails due to unexpected parsing issues, use empty content
+        console.error("Failed to set editor content:", error);
+        editor.commands.setContent("", false);
+      }
     }
   }, [value, editor]);
 

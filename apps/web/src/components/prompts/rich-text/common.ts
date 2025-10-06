@@ -34,18 +34,20 @@ export function removeMarkdownCodeBlock(content: string) {
 
 export function sanitizeMarkdown(content: string) {
   // Remove or fix invalid markdown patterns that cause Tiptap parsing errors
-  return content
-    // Remove list items containing only <>
-    .replace(/^(\s*[-*+]\s*)<>\s*$/gm, "")
-    .replace(/^(\s*\d+\.\s*)<>\s*$/gm, "")
-    // Remove <> from within list items
-    .replace(/^(\s*[-*+]\s+)<>/gm, "$1")
-    .replace(/^(\s*\d+\.\s+)<>/gm, "$1")
-    // Replace standalone <> with empty string
-    .replace(/<>/g, "")
-    // Remove completely empty list items
-    .replace(/^(\s*[-*+]\s*)$/gm, "")
-    .replace(/^(\s*\d+\.\s*)$/gm, "")
-    // Remove multiple consecutive empty lines (keep max 2)
-    .replace(/\n{3,}/g, "\n\n");
+  return (
+    content
+      // Remove list items containing only <>
+      .replace(/^(\s*[-*+]\s*)<>\s*$/gm, "")
+      .replace(/^(\s*\d+\.\s*)<>\s*$/gm, "")
+      // Remove <> from within list items
+      .replace(/^(\s*[-*+]\s+)<>/gm, "$1")
+      .replace(/^(\s*\d+\.\s+)<>/gm, "$1")
+      // Replace standalone <> with empty string
+      .replace(/<>/g, "")
+      // Remove completely empty list items
+      .replace(/^(\s*[-*+]\s*)$/gm, "")
+      .replace(/^(\s*\d+\.\s*)$/gm, "")
+      // Remove multiple consecutive empty lines (keep max 2)
+      .replace(/\n{3,}/g, "\n\n")
+  );
 }

@@ -719,6 +719,7 @@ function WorkspaceViews() {
                 {/* Database */}
                 <SidebarMenuSubItem>
                   <SidebarMenuSubButton
+                    className="cursor-pointer"
                     onClick={() => setDatabaseModalOpen(true)}
                   >
                     <Icon

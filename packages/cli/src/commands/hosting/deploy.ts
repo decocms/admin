@@ -6,6 +6,8 @@ import { createWorkspaceClient } from "../../lib/mcp.js";
 import { getCurrentEnvVars } from "../../lib/wrangler.js";
 import { Buffer } from "node:buffer";
 import process from "node:process";
+import { getRequestAuthHeaders } from "../../lib/session.js";
+import { DECO_CMS_API_LOCAL, DECO_CMS_API_PROD } from "../../lib/constants.js";
 
 function tryParseJson(text: string): Record<string, unknown> | null {
   try {
@@ -207,45 +209,51 @@ export const deploy = async ({
     process.exit(0);
   }
 
-  const client = await createWorkspaceClient({ workspace, local });
   const deploy = async (options: typeof manifest) => {
-    const response = await client.callTool({
-      name: "HOSTING_APP_DEPLOY",
-      arguments: manifest,
+    const headers = await getRequestAuthHeaders();
+    const url = local ? DECO_CMS_API_LOCAL : DECO_CMS_API_PROD;
+    const DEPLOY_TOOL_ID = "HOSTING_APP_DEPLOY";
+    const DEPLOY_TOOL_URL = `${url}${workspace}/tools/call/${DEPLOY_TOOL_ID}`;
+
+    const response = await fetch(DEPLOY_TOOL_URL, {
+      method: "POST",
+      headers,
+      body: JSON.stringify(manifest),
     });
 
-    if (response.isError && Array.isArray(response.content)) {
-      console.error("Error deploying: ", response);
+    // if (response.isError && Array.isArray(response.content)) {
+    //   console.error("Error deploying: ", response);
 
-      const errorText = response.content[0]?.text;
-      const errorTextJson = tryParseJson(errorText ?? "");
-      if (errorTextJson?.name === "MCPBreakingChangeError" && !force) {
-        console.log("Looks like you have breaking changes in your app.");
-        console.log(errorTextJson.message);
-        if (skipConfirmation) {
-          console.error("Use --force (-f) to deploy with breaking changes");
-          process.exit(1);
-        }
-        const confirmed = await inquirer.prompt([
-          {
-            type: "confirm",
-            name: "proceed",
-            message: "Would you like to retry with the --force flag?",
-            default: true,
-          },
-        ]);
-        if (!confirmed) {
-          process.exit(1);
-        }
-        return deploy({ ...options, force: true });
-      }
-      throw new Error(errorTextJson ?? errorText ?? "Unknown error");
-    }
-    return response;
+    //   const errorText = response.content[0]?.text;
+    //   const errorTextJson = tryParseJson(errorText ?? "");
+    //   if (errorTextJson?.name === "MCPBreakingChangeError" && !force) {
+    //     console.log("Looks like you have breaking changes in your app.");
+    //     console.log(errorTextJson.message);
+    //     if (skipConfirmation) {
+    //       console.error("Use --force (-f) to deploy with breaking changes");
+    //       process.exit(1);
+    //     }
+    //     const confirmed = await inquirer.prompt([
+    //       {
+    //         type: "confirm",
+    //         name: "proceed",
+    //         message: "Would you like to retry with the --force flag?",
+    //         default: true,
+    //       },
+    //     ]);
+    //     if (!confirmed) {
+    //       process.exit(1);
+    //     }
+    //     return deploy({ ...options, force: true });
+    //   }
+    //   throw new Error(errorTextJson ?? errorText ?? "Unknown error");
+    // }
+
+    return response.json();
   };
 
   const response = await deploy(manifest);
-  const { hosts } = response.structuredContent as { hosts: string[] };
+  const { hosts } = response as { hosts: string[] };
   console.log(`\n🎉 Deployed! Available at:`);
   hosts.forEach((host) => console.log(`  ${host}`));
   console.log();

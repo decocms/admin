@@ -96,19 +96,27 @@ export default function RichTextArea({
     [prompts],
   );
 
-  // This sync is breaking, so we're disabling it for now
-  // More info at https://github.com/deco-cx/chat/pull/1291
-  // TODO: Fix this
-  // useEffect(() => {
-  //   if (!editor) return;
+  // Sync editor content with value prop changes
+  useEffect(() => {
+    if (!editor) return;
 
-  //   const _value = removeMarkdownCodeBlock(value);
-  //   if (mentionToTag(_value) !== editor.storage.markdown.getMarkdown()) {
-  //     editor.commands.setContent(mentionToTag(_value, true), false, {
-  //       preserveWhitespace: "full",
-  //     });
-  //   }
-  // }, [value, editor]);
+    const processedValue = mentionToTag(removeMarkdownCodeBlock(value), true);
+    const currentContent = editor.storage.markdown.getMarkdown();
+
+    // Only update if the content is actually different to avoid infinite loops
+    if (processedValue !== currentContent) {
+      // Temporarily disable user interaction tracking to prevent onChange from firing
+      const wasUserInteraction = hadUserInteraction.current;
+      hadUserInteraction.current = false;
+
+      editor.commands.setContent(processedValue, false, {
+        preserveWhitespace: "full",
+      });
+
+      // Restore user interaction state
+      hadUserInteraction.current = wasUserInteraction;
+    }
+  }, [value, editor]);
 
   useEffect(() => {
     editor?.setEditable(!disabled);

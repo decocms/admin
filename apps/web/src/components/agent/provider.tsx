@@ -28,7 +28,7 @@ import {
   AlertDialogTitle,
 } from "@deco/ui/components/alert-dialog.tsx";
 import { zodResolver } from "@hookform/resolvers/zod";
-import type { UIMessage } from "ai";
+import type { ToolCall, UIMessage } from "ai";
 import {
   createContext,
   type PropsWithChildren,
@@ -72,6 +72,7 @@ interface AgentProviderProps {
   autoSend?: boolean;
   onAutoSendComplete?: () => void;
   initialRules?: string[];
+  onToolCall?: (toolCall: ToolCall<string, unknown>) => void;
 }
 
 interface AgentContextValue {
@@ -152,6 +153,7 @@ export function AgentProvider({
   autoSend,
   onAutoSendComplete,
   initialRules,
+  onToolCall: _onToolCall,
 }: PropsWithChildren<AgentProviderProps>) {
   const { data: serverAgent } = useAgentData(agentId);
   const isPublic = serverAgent.visibility === "PUBLIC";
@@ -368,6 +370,7 @@ export function AgentProvider({
       console.error("Chat error:", error);
     },
     onToolCall: ({ toolCall }) => {
+      _onToolCall?.(toolCall);
       if (toolCall.toolName === "RENDER") {
         const { content, title } = toolCall.args as {
           content: string;

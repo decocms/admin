@@ -12,7 +12,11 @@ export function DecopilotChat() {
   const [threadId, _setThreadId] = useState(() => crypto.randomUUID());
   const { threadState, clearThreadState } = useDecopilotThread();
   const appAdditionalTools = useAppAdditionalTools();
-  const { additionalTools: contextTools, rules } = useDecopilotContext();
+  const {
+    additionalTools: contextTools,
+    rules,
+    onToolCall,
+  } = useDecopilotContext();
 
   // Merge all additional tools
   const allAdditionalTools = {
@@ -31,6 +35,7 @@ export function DecopilotChat() {
         onAutoSendComplete={clearThreadState}
         additionalTools={allAdditionalTools}
         initialRules={rules}
+        onToolCall={onToolCall}
         uiOptions={{
           showThreadTools: false,
           showModelSelector: true,

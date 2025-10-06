@@ -136,6 +136,8 @@ const isAutoScrollEnabled = (e: HTMLDivElement | null) => {
   return e?.dataset.disableAutoScroll !== "true";
 };
 
+const IMAGE_GENERATION_NOTE = `<IMAGE_GENERATION_NOTE>If you call a GENERATE_IMAGE tool and it successfully returns an "image" field, and "image" is a valid image URL, you should not attempt to render the image, or show the image URL in the response. The UI will handle the image rendering. Do not ask the user if they wish to see the image, since they will be able to see it in the UI.</IMAGE_GENERATION_NOTE>`;
+
 export function AgentProvider({
   agentId,
   threadId,
@@ -283,11 +285,10 @@ export function AgentProvider({
   // feel free to revert this if you dont like it
   const effectiveInstructions = useMemo(() => {
     const baseInstructions = effectiveChatState.instructions ?? "";
-    const IMAGE_GENERATION_NOTE = `<IMAGE_GENERATION_NOTE>If you call a GENERATE_IMAGE tool and it successfully returns an "image" field, and "image" is a valid image URL, you should not attempt to render the image, or show the image URL in the response. The UI will handle the image rendering. Do not ask the user if they wish to see the image, since they will be able to see it in the UI.</IMAGE_GENERATION_NOTE>`;
 
     if (
       hasImageGeneration &&
-      !baseInstructions.includes("IMAGE_GENERATION_NOTE")
+      !baseInstructions.includes(IMAGE_GENERATION_NOTE)
     ) {
       return `${baseInstructions}\n${IMAGE_GENERATION_NOTE}`;
     }

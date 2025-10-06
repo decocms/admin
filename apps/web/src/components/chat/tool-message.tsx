@@ -288,7 +288,15 @@ function GeneratingStatus() {
 
 function GenerateImageToolUI({ tool }: { tool: ToolInvocation }) {
   const state = tool.state;
-  const prompt = tool.args?.prompt as string;
+  const prompt = tool.args?.prompt;
+
+  if (!prompt || typeof prompt !== "string") {
+    return (
+      <div className="space-y-3 p-4 border border-border rounded-lg bg-muted/10 w-full max-w-full overflow-hidden">
+        <p className="text-muted-foreground">Missing image prompt</p>
+      </div>
+    );
+  }
 
   // Parse result safely with proper type guards
   let image: string | null = null;

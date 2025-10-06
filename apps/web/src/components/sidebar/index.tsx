@@ -573,24 +573,7 @@ function WorkspaceViews() {
             asChild
             className="absolute right-1.5 inset-y-0 flex items-center"
             showOnHover={false}
-          >
-            <Button
-              variant="outline"
-              size="sm"
-              className="h-[24px] w-[24px] p-0 bg-gradient-to-br from-[var(--primary-light)]/80 to-[var(--primary-light)]/15 hover:from-[var(--primary-light)]/90 hover:to-[var(--primary-light)]/0 border-[var(--primary-dark)]/30 hover:border-[var(--primary-dark)]/80 transition-all"
-              onClick={(e) => {
-                e.stopPropagation();
-                navigateWorkspace("/store");
-              }}
-              title="Browse Store"
-            >
-              <Icon
-                name="download"
-                size={16}
-                className="text-[var(--primary-dark)]"
-              />
-            </Button>
-          </SidebarMenuAction>
+          ></SidebarMenuAction>
         </div>
       </SidebarMenuItem>
 

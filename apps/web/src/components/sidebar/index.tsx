@@ -180,6 +180,9 @@ function WorkspaceViews() {
     open: boolean;
     integration?: Integration;
   }>({ open: false });
+  const [generateModalOpen, setGenerateModalOpen] = useState(false);
+  const [linkModalOpen, setLinkModalOpen] = useState(false);
+  const [filesModalOpen, setFilesModalOpen] = useState(false);
 
   const handleRemoveView = async (view: View) => {
     const isUserInView = globalThis.location.pathname.includes(
@@ -297,18 +300,9 @@ function WorkspaceViews() {
     return workspaceLink(path ?? "/");
   }
 
-  const wellKnownItems = [
-    "Tools",
-    "Views",
-    "Workflows",
-    "Documents",
-    "Agents",
-    "Monitors",
-    "Site",
-  ];
+  const wellKnownItems = ["Tools", "Views", "Workflows", "Documents", "Agents"];
   const legacyTitleMap: Record<string, string> = {
     Prompts: "Documents",
-    Healthchecks: "Monitors",
   };
   const canonicalTitle = (title: string) => legacyTitleMap[title] ?? title;
 
@@ -337,27 +331,13 @@ function WorkspaceViews() {
   const viewsItem = mcpItems.find(
     (item) => canonicalTitle(item.title) === "Views",
   );
-  const databaseItem = mcpItems.find(
-    (item) => canonicalTitle(item.title) === "Database",
-  );
-
   // Core abstractions (Documents, Workflows, Agents) - main menu items
-  const coreAbstractionTitles = [
-    "Documents",
-    "Workflows",
-    "Agents",
-    "Monitors",
-    "Site",
-  ];
+  const coreAbstractionTitles = ["Documents", "Workflows", "Agents"];
   const coreItems = coreAbstractionTitles
     .map((title) =>
       mcpItems.find((item) => canonicalTitle(item.title) === title),
     )
     .filter((item): item is View => item !== undefined);
-
-  const hasIntegrationMenus =
-    Object.keys(fromIntegration).length > 0 ||
-    Object.keys(fromIntegrationResources).length > 0;
 
   return (
     <>
@@ -563,10 +543,7 @@ function WorkspaceViews() {
       <SidebarMenuItem>
         <SidebarMenuButton
           className="cursor-pointer"
-          onClick={() => {
-            navigateWorkspace("/generate");
-            isMobile && toggleSidebar();
-          }}
+          onClick={() => setGenerateModalOpen(true)}
         >
           <Icon name="add" size={20} className="text-muted-foreground/75" />
           <span className="truncate">Generate</span>
@@ -653,7 +630,7 @@ function WorkspaceViews() {
 
       <SidebarSeparator className="my-2 -ml-1" />
 
-      {/* Project accordion */}
+      {/* Developer accordion */}
       <SidebarMenuItem>
         <Collapsible asChild defaultOpen className="group/collapsible">
           <div>
@@ -752,6 +729,36 @@ function WorkspaceViews() {
                       className="text-muted-foreground/75"
                     />
                     <span className="truncate">Database</span>
+                  </SidebarMenuSubButton>
+                </SidebarMenuSubItem>
+
+                {/* Link */}
+                <SidebarMenuSubItem>
+                  <SidebarMenuSubButton onClick={() => setLinkModalOpen(true)}>
+                    <Icon
+                      name="link"
+                      size={18}
+                      className="text-muted-foreground/75"
+                    />
+                    <span className="truncate">Link</span>
+                    <Badge variant="secondary" className="ml-auto text-xs">
+                      Soon
+                    </Badge>
+                  </SidebarMenuSubButton>
+                </SidebarMenuSubItem>
+
+                {/* Files */}
+                <SidebarMenuSubItem>
+                  <SidebarMenuSubButton onClick={() => setFilesModalOpen(true)}>
+                    <Icon
+                      name="folder"
+                      size={18}
+                      className="text-muted-foreground/75"
+                    />
+                    <span className="truncate">Files</span>
+                    <Badge variant="secondary" className="ml-auto text-xs">
+                      Soon
+                    </Badge>
                   </SidebarMenuSubButton>
                 </SidebarMenuSubItem>
               </SidebarMenuSub>
@@ -905,6 +912,134 @@ function WorkspaceViews() {
           );
         },
       )}
+
+      {/* Generate Modal */}
+      <Dialog open={generateModalOpen} onOpenChange={setGenerateModalOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Generate New</DialogTitle>
+            <DialogDescription>
+              Choose what you want to create
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex flex-col gap-2 py-4">
+            <Button
+              variant="outline"
+              className="w-full justify-start h-auto py-4"
+              onClick={() => {
+                setGenerateModalOpen(false);
+                navigateWorkspace("/generate?type=document");
+                isMobile && toggleSidebar();
+              }}
+            >
+              <div className="flex items-start gap-3 text-left">
+                <Icon
+                  name="description"
+                  size={24}
+                  className="text-muted-foreground/75 mt-0.5"
+                />
+                <div className="flex-1">
+                  <div className="font-semibold">Document</div>
+                  <div className="text-sm text-muted-foreground">
+                    Create a new document with AI assistance
+                  </div>
+                </div>
+              </div>
+            </Button>
+            <Button
+              variant="outline"
+              className="w-full justify-start h-auto py-4"
+              onClick={() => {
+                setGenerateModalOpen(false);
+                navigateWorkspace("/generate?type=workflow");
+                isMobile && toggleSidebar();
+              }}
+            >
+              <div className="flex items-start gap-3 text-left">
+                <Icon
+                  name="account_tree"
+                  size={24}
+                  className="text-muted-foreground/75 mt-0.5"
+                />
+                <div className="flex-1">
+                  <div className="font-semibold">Workflow</div>
+                  <div className="text-sm text-muted-foreground">
+                    Build an automated workflow
+                  </div>
+                </div>
+              </div>
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Link Modal */}
+      <Dialog open={linkModalOpen} onOpenChange={setLinkModalOpen}>
+        <DialogContent className="sm:max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Local Development</DialogTitle>
+            <DialogDescription>Coming soon to deco.cx</DialogDescription>
+          </DialogHeader>
+          <div className="py-6">
+            <div className="flex items-center justify-center mb-6">
+              <div className="w-16 h-16 rounded-xl bg-gradient-to-br from-primary/20 to-primary/10 flex items-center justify-center border border-primary/30">
+                <Icon name="terminal" size={32} className="text-primary" />
+              </div>
+            </div>
+            <div className="space-y-4 text-center">
+              <p className="text-sm text-muted-foreground">
+                Soon you'll be able to clone and work on your projects locally
+                using:
+              </p>
+              <div className="bg-muted/50 rounded-lg p-4 font-mono text-sm border">
+                <code className="text-foreground">
+                  git clone admin.decocms.com/my-team/my-project
+                </code>
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Work locally with your favorite editor and sync changes
+                seamlessly
+              </p>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Files Modal */}
+      <Dialog open={filesModalOpen} onOpenChange={setFilesModalOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>File System Access</DialogTitle>
+            <DialogDescription>Coming soon to deco.cx</DialogDescription>
+          </DialogHeader>
+          <div className="py-6">
+            <div className="flex items-center justify-center mb-6">
+              <div className="w-16 h-16 rounded-xl bg-gradient-to-br from-primary/20 to-primary/10 flex items-center justify-center border border-primary/30">
+                <Icon name="folder_open" size={32} className="text-primary" />
+              </div>
+            </div>
+            <div className="space-y-4 text-center">
+              <p className="text-sm text-muted-foreground">
+                Direct file system access is coming soon. You'll be able to
+                browse, edit, and manage your project files directly from the
+                dashboard.
+              </p>
+              <div className="flex items-center justify-center gap-2 text-xs text-muted-foreground">
+                <Icon name="check_circle" size={16} className="text-primary" />
+                <span>Browse project files</span>
+              </div>
+              <div className="flex items-center justify-center gap-2 text-xs text-muted-foreground">
+                <Icon name="check_circle" size={16} className="text-primary" />
+                <span>Edit files in-browser</span>
+              </div>
+              <div className="flex items-center justify-center gap-2 text-xs text-muted-foreground">
+                <Icon name="check_circle" size={16} className="text-primary" />
+                <span>Manage file structure</span>
+              </div>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       {addViewsDialogState.integration && (
         <AddViewsDialog

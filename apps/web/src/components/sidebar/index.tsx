@@ -734,24 +734,6 @@ function WorkspaceViews() {
                   </SidebarMenuSubButton>
                 </SidebarMenuSubItem>
 
-                {/* Link */}
-                <SidebarMenuSubItem>
-                  <SidebarMenuSubButton
-                    className="cursor-pointer"
-                    onClick={() => setLinkModalOpen(true)}
-                  >
-                    <Icon
-                      name="link"
-                      size={18}
-                      className="text-muted-foreground/75"
-                    />
-                    <span className="truncate">Link</span>
-                    <Badge variant="secondary" className="ml-auto text-xs">
-                      Soon
-                    </Badge>
-                  </SidebarMenuSubButton>
-                </SidebarMenuSubItem>
-
                 {/* Files */}
                 <SidebarMenuSubItem>
                   <SidebarMenuSubButton
@@ -770,6 +752,24 @@ function WorkspaceViews() {
                   </SidebarMenuSubButton>
                 </SidebarMenuSubItem>
               </SidebarMenuSub>
+
+              {/* Link */}
+              <SidebarMenuSubItem>
+                <SidebarMenuSubButton
+                  className="cursor-pointer"
+                  onClick={() => setLinkModalOpen(true)}
+                >
+                  <Icon
+                    name="link"
+                    size={18}
+                    className="text-muted-foreground/75"
+                  />
+                  <span className="truncate">Link</span>
+                  <Badge variant="secondary" className="ml-auto text-xs">
+                    Soon
+                  </Badge>
+                </SidebarMenuSubButton>
+              </SidebarMenuSubItem>
             </CollapsibleContent>
           </div>
         </Collapsible>

@@ -183,6 +183,7 @@ function WorkspaceViews() {
   const [generateModalOpen, setGenerateModalOpen] = useState(false);
   const [linkModalOpen, setLinkModalOpen] = useState(false);
   const [filesModalOpen, setFilesModalOpen] = useState(false);
+  const [databaseModalOpen, setDatabaseModalOpen] = useState(false);
 
   const handleRemoveView = async (view: View) => {
     const isUserInView = globalThis.location.pathname.includes(
@@ -718,10 +719,7 @@ function WorkspaceViews() {
                 {/* Database */}
                 <SidebarMenuSubItem>
                   <SidebarMenuSubButton
-                    onClick={() => {
-                      navigateWorkspace("/database");
-                      isMobile && toggleSidebar();
-                    }}
+                    onClick={() => setDatabaseModalOpen(true)}
                   >
                     <Icon
                       name="database"
@@ -729,12 +727,18 @@ function WorkspaceViews() {
                       className="text-muted-foreground/75"
                     />
                     <span className="truncate">Database</span>
+                    <Badge variant="secondary" className="ml-auto text-xs">
+                      Soon
+                    </Badge>
                   </SidebarMenuSubButton>
                 </SidebarMenuSubItem>
 
                 {/* Link */}
                 <SidebarMenuSubItem>
-                  <SidebarMenuSubButton onClick={() => setLinkModalOpen(true)}>
+                  <SidebarMenuSubButton
+                    className="cursor-pointer"
+                    onClick={() => setLinkModalOpen(true)}
+                  >
                     <Icon
                       name="link"
                       size={18}
@@ -749,7 +753,10 @@ function WorkspaceViews() {
 
                 {/* Files */}
                 <SidebarMenuSubItem>
-                  <SidebarMenuSubButton onClick={() => setFilesModalOpen(true)}>
+                  <SidebarMenuSubButton
+                    className="cursor-pointer"
+                    onClick={() => setFilesModalOpen(true)}
+                  >
                     <Icon
                       name="folder"
                       size={18}
@@ -978,7 +985,7 @@ function WorkspaceViews() {
         <DialogContent className="sm:max-w-lg">
           <DialogHeader>
             <DialogTitle>Local Development</DialogTitle>
-            <DialogDescription>Coming soon to deco.cx</DialogDescription>
+            <DialogDescription>Coming soon to decocms.com</DialogDescription>
           </DialogHeader>
           <div className="py-6">
             <div className="flex items-center justify-center mb-6">
@@ -1035,6 +1042,42 @@ function WorkspaceViews() {
               <div className="flex items-center justify-center gap-2 text-xs text-muted-foreground">
                 <Icon name="check_circle" size={16} className="text-primary" />
                 <span>Manage file structure</span>
+              </div>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Database Modal */}
+      <Dialog open={databaseModalOpen} onOpenChange={setDatabaseModalOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Database Management</DialogTitle>
+            <DialogDescription>Coming soon to deco.cx</DialogDescription>
+          </DialogHeader>
+          <div className="py-6">
+            <div className="flex items-center justify-center mb-6">
+              <div className="w-16 h-16 rounded-xl bg-gradient-to-br from-primary/20 to-primary/10 flex items-center justify-center border border-primary/30">
+                <Icon name="storage" size={32} className="text-primary" />
+              </div>
+            </div>
+            <div className="space-y-4 text-center">
+              <p className="text-sm text-muted-foreground">
+                A powerful database management interface is coming soon. You'll
+                be able to manage your data, run queries, and view schemas
+                directly from the dashboard.
+              </p>
+              <div className="flex items-center justify-center gap-2 text-xs text-muted-foreground">
+                <Icon name="check_circle" size={16} className="text-primary" />
+                <span>Browse tables and collections</span>
+              </div>
+              <div className="flex items-center justify-center gap-2 text-xs text-muted-foreground">
+                <Icon name="check_circle" size={16} className="text-primary" />
+                <span>Run queries and scripts</span>
+              </div>
+              <div className="flex items-center justify-center gap-2 text-xs text-muted-foreground">
+                <Icon name="check_circle" size={16} className="text-primary" />
+                <span>Manage data relationships</span>
               </div>
             </div>
           </div>

@@ -136,7 +136,7 @@ const isAutoScrollEnabled = (e: HTMLDivElement | null) => {
   return e?.dataset.disableAutoScroll !== "true";
 };
 
-const IMAGE_GENERATION_NOTE = `<IMAGE_GENERATION_NOTE>If you call a GENERATE_IMAGE tool and it successfully returns an "image" field, and "image" is a valid image URL, you should not attempt to render the image, or show the image URL in the response. The UI will handle the image rendering. Do not ask the user if they wish to see the image, since they will be able to see it in the UI.</IMAGE_GENERATION_NOTE>`;
+const IMAGE_GENERATION_NOTE = `<IMAGE_GENERATION_NOTE>If you call a GENERATE_IMAGE tool and it successfully returns an "image" field, and "image" is a valid image URL, you must not attempt to render the image, neither repeat the image URL in the response. The UI will handle the image rendering. Do not ask the user if they wish to see the image, since they will be able to see it in the UI. Do not inform the user about the image URL in the response.</IMAGE_GENERATION_NOTE>`;
 
 export function AgentProvider({
   agentId,

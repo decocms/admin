@@ -83,12 +83,12 @@ export const DEFAULT_VIEWS: View[] = [
     },
   },
   {
-    id: "prompts",
+    id: "documents",
     title: "Documents",
     icon: "docs",
     type: "default",
     metadata: {
-      path: "/prompts",
+      path: "/documents",
     },
   },
   {

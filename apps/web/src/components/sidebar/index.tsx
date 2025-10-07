@@ -3,6 +3,7 @@ import {
   Integration,
   Resource,
   useConnectionViews,
+  useCreatePrompt,
   useIntegrations,
   useRemoveResource,
   useRemoveView,
@@ -184,6 +185,9 @@ function WorkspaceViews() {
   const [linkModalOpen, setLinkModalOpen] = useState(false);
   const [filesModalOpen, setFilesModalOpen] = useState(false);
   const [databaseModalOpen, setDatabaseModalOpen] = useState(false);
+
+  // Hook for creating documents
+  const createPrompt = useCreatePrompt();
 
   const handleRemoveView = async (view: View) => {
     const isUserInView = globalThis.location.pathname.includes(
@@ -699,24 +703,6 @@ function WorkspaceViews() {
                   </SidebarMenuSubItem>
                 )}
 
-                {/* Database */}
-                <SidebarMenuSubItem>
-                  <SidebarMenuSubButton
-                    className="cursor-pointer"
-                    onClick={() => setDatabaseModalOpen(true)}
-                  >
-                    <Icon
-                      name="database"
-                      size={18}
-                      className="text-muted-foreground/75"
-                    />
-                    <span className="truncate">Database</span>
-                    <Badge variant="secondary" className="ml-auto text-xs">
-                      Soon
-                    </Badge>
-                  </SidebarMenuSubButton>
-                </SidebarMenuSubItem>
-
                 {/* Files */}
                 <SidebarMenuSubItem>
                   <SidebarMenuSubButton
@@ -917,10 +903,16 @@ function WorkspaceViews() {
             <Button
               variant="outline"
               className="w-full justify-start h-auto py-4"
-              onClick={() => {
+              onClick={async () => {
                 setGenerateModalOpen(false);
-                navigateWorkspace("/generate?type=document");
                 isMobile && toggleSidebar();
+
+                // Create a new empty prompt and navigate to it
+                const result = await createPrompt.mutateAsync({
+                  name: "",
+                  content: "",
+                });
+                navigateWorkspace(`/documents/${result.id}`);
               }}
             >
               <div className="flex items-start gap-3 text-left">
@@ -942,8 +934,15 @@ function WorkspaceViews() {
               className="w-full justify-start h-auto py-4"
               onClick={() => {
                 setGenerateModalOpen(false);
-                navigateWorkspace("/generate?type=workflow");
                 isMobile && toggleSidebar();
+
+                // Navigate to workflows with query params to trigger Decopilot
+                const message = encodeURIComponent(
+                  "Please help me create a new workflow",
+                );
+                navigateWorkspace(
+                  `/workflows?initialInput=${message}&autoSend=true&openDecopilot=true`,
+                );
               }}
             >
               <div className="flex items-start gap-3 text-left">

@@ -1,4 +1,10 @@
-import { createContext, useContext, useState, type ReactNode } from "react";
+import {
+  createContext,
+  useContext,
+  useEffect,
+  useState,
+  type ReactNode,
+} from "react";
 import { useSearchParams } from "react-router";
 
 export interface ThreadState {
@@ -60,6 +66,20 @@ export function DecopilotThreadProvider({
       autoSend: autoSend && Boolean(initialInput),
     };
   });
+
+  // Update thread state when query params change
+  useEffect(() => {
+    const initialInput = searchParams.get("initialInput");
+    const autoSend = searchParams.get("autoSend") === "true";
+
+    if (initialInput) {
+      setThreadState({
+        threadId: crypto.randomUUID(),
+        initialMessage: initialInput,
+        autoSend: autoSend && Boolean(initialInput),
+      });
+    }
+  }, [searchParams]);
 
   const clearThreadState = () =>
     setThreadState((old) => ({

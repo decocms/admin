@@ -141,7 +141,7 @@ export class FileProcessor {
     return getExtensionFromContentType(_contentType);
   }
 
-  private async processPDF(_file: File): Promise<string> {
+  private processPDF(_file: File): Promise<string> {
     throw new Error("PDF processing is disabled");
   }
 

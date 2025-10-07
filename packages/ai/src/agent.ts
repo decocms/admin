@@ -78,10 +78,6 @@ import {
   getLLMConfig,
 } from "./agent/llm.ts";
 import { getProviderOptions } from "./agent/provider-options.ts";
-import {
-  shouldSummarizePDFs,
-  summarizePDFMessages,
-} from "./agent/summarize-pdf.ts";
 import { AgentWallet } from "./agent/wallet.ts";
 import { pickCapybaraAvatar } from "./capybaras.ts";
 import { mcpServerTools } from "./mcp.ts";
@@ -94,6 +90,7 @@ import type {
   ThreadQueryOptions,
   Toolset,
 } from "./types.ts";
+import { hasPdf as hasPdfMessages } from "./agent/has-pdf.ts";
 
 const TURSO_AUTH_TOKEN_KEY = "turso-auth-token";
 const ANONYMOUS_INSTRUCTIONS =
@@ -1156,11 +1153,7 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
     const toolsets = await this._withToolOverrides(options?.tools);
 
     const isClaude = this._configuration?.model.includes("claude");
-    const hasPdf = payload.some((message) =>
-      message.experimental_attachments?.some(
-        (attachment) => attachment.contentType === "application/pdf",
-      ),
-    );
+    const hasPdf = hasPdfMessages(payload as Message[]);
     const bypassOpenRouter = isClaude && hasPdf;
 
     const agent = await this._withAgentOverrides({
@@ -1261,37 +1254,9 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
         this._configuration?.model ??
         ""
       ).includes("claude");
-      const { hasPdf, hasMinimumSizeForSummarization } = shouldSummarizePDFs(
-        payload as Message[],
-      );
+      const hasPdf = hasPdfMessages(payload as Message[]);
       let bypassOpenRouter = isClaude && hasPdf;
       bypassOpenRouter ||= options?.bypassOpenRouter || false;
-
-      if (
-        hasPdf &&
-        options?.pdfSummarization &&
-        hasMinimumSizeForSummarization
-      ) {
-        if (!this.metadata?.mcpClient) {
-          this._trackEvent("agent_mcp_client_error", {
-            error: "MCP client not found for PDF summarization",
-            method: "stream_pdf_summarization",
-          });
-          throw new Error("MCP client not found");
-        }
-        const processedMessages = await summarizePDFMessages(
-          payload as Message[],
-          this.metadata.mcpClient,
-          {
-            // TODO: fallback to a custom model if this one is disabled.
-            model: "openai:gpt-4.1-mini",
-            maxChunkSize: 8_000,
-            maxSummaryTokens: 2_000,
-            maxTotalTokens: 16_000,
-          },
-        );
-        payload = processedMessages as typeof payload;
-      }
 
       // Additional context from annotations
       const context = this._annotationsToContext(payload);

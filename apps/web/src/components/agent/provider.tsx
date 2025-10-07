@@ -353,7 +353,6 @@ export function AgentProvider({
             threadTitle: thread?.title,
             tools: effectiveChatState.tools_set,
             maxSteps: effectiveChatState.max_steps,
-            pdfSummarization: preferences.pdfSummarization ?? true,
             toolsets,
             smoothStream:
               preferences.smoothStream !== false

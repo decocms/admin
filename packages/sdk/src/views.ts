@@ -47,24 +47,6 @@ export const DEFAULT_VIEWS: View[] = [
     },
   },
   {
-    id: "monitors",
-    title: "Monitors",
-    icon: "monitor_heart",
-    type: "default",
-    metadata: {
-      path: "/monitors",
-    },
-  },
-  {
-    id: "site",
-    title: "Site",
-    icon: "globe",
-    type: "default",
-    metadata: {
-      path: "/site",
-    },
-  },
-  {
     id: "workflow-runs",
     title: "Workflow Runs",
     icon: "play_arrow",

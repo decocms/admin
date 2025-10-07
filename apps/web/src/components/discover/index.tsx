@@ -14,6 +14,7 @@ import { AppKeys, getConnectionAppKey } from "../integrations/apps.ts";
 import { VerifiedBadge } from "../integrations/marketplace.tsx";
 import { type DecopilotContextValue } from "../decopilot/context.tsx";
 import { DecopilotLayout } from "../layout/decopilot-layout.tsx";
+import { ReissueApiKeyDialog } from "../api-keys/reissue-api-key-dialog.tsx";
 
 // For the future, it should be controlled in a view
 const HIGHLIGHTS = [

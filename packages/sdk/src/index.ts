@@ -5,6 +5,7 @@ export * from "./plan.ts";
 export * from "./crud/agent.ts";
 export * from "./crud/fs.tsx";
 export * from "./crud/groups.ts";
+export * from "./crud/keys.ts";
 export * from "./crud/knowledge.ts";
 export * from "./crud/mcp.ts";
 export * from "./crud/members.ts";
@@ -20,6 +21,7 @@ export * from "./crud/wallet.ts";
 export * from "./crud/workflows.ts";
 
 export * from "./hooks/agent.ts";
+export * from "./hooks/api-keys.ts";
 export * from "./hooks/audit.ts";
 export * from "./hooks/fs.ts";
 export * from "./hooks/knowledge.ts";

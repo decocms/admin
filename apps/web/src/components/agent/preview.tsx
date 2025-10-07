@@ -4,16 +4,114 @@ import { Icon } from "@deco/ui/components/icon.tsx";
 import {
   type DetailedHTMLProps,
   type IframeHTMLAttributes,
+  useRef,
   useState,
 } from "react";
 import { useParams } from "react-router";
 import { ALLOWANCES } from "../../constants.ts";
 import { IMAGE_REGEXP } from "../chat/utils/preview.ts";
+import { createChannel } from "bidc";
+import { useEffect } from "react";
+import * as z from "zod";
+import { ReissueApiKeyDialog } from "../api-keys/reissue-api-key-dialog.tsx";
+
+const MessageSchema = z.lazy(() =>
+  z.discriminatedUnion("type", [
+    z.object({
+      type: z.literal("request_missing_scopes"),
+      payload: z.object({
+        scopes: z.array(z.string()),
+      }),
+    }),
+  ]),
+);
+
+type Message = z.infer<typeof MessageSchema>;
 
 type Props = DetailedHTMLProps<
   IframeHTMLAttributes<HTMLIFrameElement>,
   HTMLIFrameElement
 >;
+
+type ReissueKeyDialogProps = {
+  open: boolean;
+  integrationId: string;
+  missingScopes: string[];
+};
+
+function PreviewIframe(_props: Props) {
+  const props = { ..._props, src: "https://teste-camudo-workflowz.deco.page/" };
+  const id = `preview-iframe-${props.src}`;
+  const channelRef = useRef<ReturnType<typeof createChannel>>(null);
+  const [reissueKeyDialogProps, setReissueKeyDialogProps] =
+    useState<ReissueKeyDialogProps | null>(null);
+  const { integrationId } = useParams();
+
+  useEffect(() => {
+    if (!integrationId) {
+      console.warn("No integration ID found");
+      return;
+    }
+    const iframe = document.getElementById(id) as HTMLIFrameElement;
+
+    if (!iframe || !iframe.contentWindow) {
+      console.warn("No iframe or content window found");
+      return;
+    }
+
+    const channel = createChannel(iframe.contentWindow);
+    channelRef.current = channel;
+
+    const { receive, cleanup } = channel;
+
+    receive((message) => {
+      const parsed = MessageSchema.safeParse(message);
+      if (!parsed.success) {
+        console.warn("Invalid message", message);
+        return;
+      }
+      const { type, payload } = parsed.data;
+      if (type === "request_missing_scopes") {
+        setReissueKeyDialogProps({
+          open: true,
+          missingScopes: ["INTEGRATIONS_LIST"], // payload.scopes,
+          integrationId,
+        });
+      }
+    });
+
+    return () => {
+      cleanup();
+    };
+  }, []);
+
+  return (
+    <>
+      {reissueKeyDialogProps && (
+        <ReissueApiKeyDialog
+          open={reissueKeyDialogProps.open}
+          onOpenChange={(open) =>
+            setReissueKeyDialogProps((p) => (p ? { ...p, open } : null))
+          }
+          integrationId={reissueKeyDialogProps.integrationId}
+          newPolicies={reissueKeyDialogProps.missingScopes.map((scope) => ({
+            effect: "allow",
+            resource: scope,
+          }))}
+          onReissued={() => {}}
+        />
+      )}
+      <iframe
+        id={id}
+        allow={ALLOWANCES}
+        allowFullScreen
+        sandbox="allow-scripts allow-same-origin allow-popups allow-forms allow-downloads"
+        className="w-full h-full"
+        {...props}
+      />
+    </>
+  );
+}
 
 function Preview(props: Props) {
   const isImageLike = props.src && IMAGE_REGEXP.test(props.src);
@@ -30,15 +128,7 @@ function Preview(props: Props) {
 
   // Internal fallback removed; views should provide concrete URLs or use dynamic route
 
-  return (
-    <iframe
-      allow={ALLOWANCES}
-      allowFullScreen
-      sandbox="allow-scripts allow-same-origin allow-popups allow-forms allow-downloads"
-      className="w-full h-full"
-      {...props}
-    />
-  );
+  return <PreviewIframe {...props} />;
 }
 
 function _InternalResourceDetail({ name, uri }: { name: string; uri: string }) {

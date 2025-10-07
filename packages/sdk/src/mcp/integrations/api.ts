@@ -4,6 +4,7 @@ import {
   patchApiDecoChatTokenHTTPConnection,
   isApiDecoChatMCPConnection as shouldPatchDecoChatMCPConnection,
 } from "@deco/ai/mcp";
+import { ApiKeySchema, mapApiKey, SELECT_API_KEY_QUERY } from "../api-keys/api.ts";
 import { CallToolRequestSchema } from "@modelcontextprotocol/sdk/types.js";
 import { and, eq, or } from "drizzle-orm";
 import { z } from "zod";
@@ -88,6 +89,7 @@ const SELECT_INTEGRATION_QUERY = `
  * Returns a Drizzle OR condition that filters Integrations by workspace or project locator.
  * This version works with queries that don't include the agents table.
  */
+
 export const matchByWorkspaceOrProjectLocatorForIntegrations = (
   workspace: string,
   locator?: LocatorStructured,
@@ -1390,5 +1392,47 @@ export const DECO_INTEGRATION_INSTALL = createIntegrationManagementTool({
     }
 
     return { installationId: created.id };
+  },
+});
+
+export const getIntegrationApiKey = createIntegrationManagementTool({
+  name: "INTEGRATIONS_GET_API_KEY",
+  description: "Get the API key for an integration",
+  inputSchema: z.object({
+    integrationId: z.string(),
+  }),
+  outputSchema: ApiKeySchema,
+  handler: async ({ integrationId }, c) => {
+    // todo: remove
+    c.resourceAccess.grant();
+
+    assertHasWorkspace(c);
+    await assertWorkspaceResourceAccess(c);
+
+    const integration = await getIntegration.handler({ id: integrationId });
+
+    const appName = integration.appName?.startsWith("@") 
+     ? integration.appName.slice(1).split("/")[1]
+     : integration.appName;
+
+    if (!appName) {
+      throw new Error("No app name found for this integration");
+    }
+
+    console.log("appName", appName);
+    const name = `${appName}-${integrationId}`;
+
+   const apiKey = await c.db
+      .from("deco_chat_api_keys")
+      .select(SELECT_API_KEY_QUERY)
+      .eq("name", name)
+      .eq("workspace", c.workspace.value)
+      .single();
+
+    if (apiKey.error) {
+      throw new Error("No API key found for this integration");
+    }
+
+    return mapApiKey(apiKey.data);
   },
 });

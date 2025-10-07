@@ -1,6 +1,6 @@
 import { and, eq, or } from "drizzle-orm";
 import { z } from "zod";
-import { StatementSchema } from "../../auth/policy.ts";
+import { Statement, StatementSchema } from "../../auth/policy.ts";
 import { userFromJWT } from "../../auth/user.ts";
 import {
   InternalServerError,
@@ -10,16 +10,17 @@ import {
 import { LocatorStructured } from "../../locator.ts";
 import type { QueryResult } from "../../storage/index.ts";
 import {
+  apiKeySWRCache,
   assertHasWorkspace,
   assertWorkspaceResourceAccess,
 } from "../assertions.ts";
 import { createToolGroup } from "../context.ts";
 import { MCPClient } from "../index.ts";
-import { getIntegration } from "../integrations/api.ts";
+import { getIntegration, parseId } from "../integrations/api.ts";
 import { getRegistryApp } from "../registry/api.ts";
 import { apiKeys, organizations, projects } from "../schema.ts";
 
-const SELECT_API_KEY_QUERY = `
+export const SELECT_API_KEY_QUERY = `
   id,
   name,
   workspace,
@@ -30,7 +31,7 @@ const SELECT_API_KEY_QUERY = `
   deleted_at
 ` as const;
 
-function mapApiKey(
+export function mapApiKey(
   apiKey: QueryResult<"deco_chat_api_keys", typeof SELECT_API_KEY_QUERY>,
 ) {
   return {
@@ -38,7 +39,7 @@ function mapApiKey(
     name: apiKey.name,
     workspace: apiKey.workspace,
     enabled: apiKey.enabled,
-    policies: apiKey.policies,
+    policies: apiKey.policies as Statement[],
     createdAt: apiKey.created_at,
     updatedAt: apiKey.updated_at,
     deletedAt: apiKey.deleted_at,
@@ -226,8 +227,9 @@ export const reissueApiKey = createTool({
       .any()
       .optional()
       .describe("New claims to be added to the API key"),
+    policies: policiesSchema.optional().describe("Policies of the API key"),
   }),
-  handler: async ({ id, claims }, c) => {
+  handler: async ({ id, claims, policies }, c) => {
     assertHasWorkspace(c);
     await assertWorkspaceResourceAccess(c);
 
@@ -251,6 +253,22 @@ export const reissueApiKey = createTool({
       throw new NotFoundError("API key not found");
     }
 
+    const { error: updateError } = policies
+      ? await db
+          .from("deco_chat_api_keys")
+          .update({
+            policies,
+            updated_at: new Date().toISOString(),
+          })
+          .eq("id", id)
+          .eq("workspace", workspace)
+          .is("deleted_at", null)
+      : { error: null };
+
+    if (updateError) {
+      throw new InternalServerError(updateError.message);
+    }
+
     // Generate new JWT token with the provided claims
 
     const issuer = await c.jwtIssuer();
@@ -261,8 +279,22 @@ export const reissueApiKey = createTool({
       iat: new Date().getTime(),
     });
 
+    const cacheId = `${c.workspace.value}:${id}`;
+    await apiKeySWRCache.delete(cacheId);
+
     return { ...mapApiKey(apiKey), value };
   },
+});
+
+export const ApiKeySchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  workspace: z.string(),
+  enabled: z.boolean(),
+  policies: policiesSchema,
+  createdAt: z.string(),
+  updatedAt: z.string(),
+  deletedAt: z.string().nullable(),
 });
 
 export const getApiKey = createTool({

@@ -1,4 +1,4 @@
-import { useOrganizations, useProjects } from "@deco/sdk";
+import { useProjects } from "@deco/sdk";
 import { Button } from "@deco/ui/components/button.tsx";
 import { Icon } from "@deco/ui/components/icon.tsx";
 import { Input } from "@deco/ui/components/input.tsx";
@@ -46,23 +46,18 @@ function SwitcherProjects({ org, search }: { org: string; search: string }) {
 
 SwitcherProjects.Skeleton = () => (
   <div className="flex flex-col w-full gap-0.5 p-1 max-h-44 overflow-y-auto">
-    <div className="h-8 w-full bg-stone-100 rounded-lg animate-pulse"></div>
-    <div className="h-8 w-full bg-stone-100 rounded-lg animate-pulse"></div>
+    <div className="h-8 w-full bg-accent rounded-lg animate-pulse"></div>
+    <div className="h-8 w-full bg-accent rounded-lg animate-pulse"></div>
   </div>
 );
 
 export function BreadcrumbProjectSwitcher() {
   const { org, project: projectParam } = useParams();
-  const organizations = useOrganizations();
-  const currentOrg = useMemo(
-    () => organizations.data?.find((organization) => organization.slug === org),
-    [organizations.data, org],
-  );
 
   const projects = useProjects({ org: org ?? "" });
   const currentProject = useMemo(
     () => projects.find((project) => project.slug === projectParam),
-    [projects, projectParam],
+    [projects, projectParam]
   );
 
   const [projectSearch, setProjectSearch] = useState("");
@@ -106,5 +101,5 @@ export function BreadcrumbProjectSwitcher() {
 }
 
 BreadcrumbProjectSwitcher.Skeleton = () => (
-  <div className="h-4 w-16 bg-stone-100 rounded-full animate-pulse"></div>
+  <div className="h-4 w-16 bg-accent rounded-full animate-pulse"></div>
 );

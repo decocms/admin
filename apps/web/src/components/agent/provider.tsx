@@ -312,7 +312,6 @@ export function AgentProvider({
       dispatchMessages({ messages, threadId, agentId });
       const lastMessage = messages.at(-1);
 
-
       const bypassOpenRouter = !preferences.useOpenRouter;
 
       // Collect persisted rules from latest state provided via events

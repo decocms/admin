@@ -241,6 +241,7 @@ function ConfigureConnectionInstanceForm({
       });
 
       form.reset(data);
+      setIsEditing(false);
     } catch (error) {
       console.error(`Error updating integration:`, error);
 

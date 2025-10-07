@@ -981,6 +981,8 @@ export const updateIntegration = createIntegrationManagementTool({
 
     return IntegrationSchema.parse({
       ...data,
+      appName: integration.appName,
+      tools: integration.tools,
       id: formatId(type, data.id),
     });
   },

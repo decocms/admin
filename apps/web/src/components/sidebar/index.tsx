@@ -917,7 +917,7 @@ function WorkspaceViews() {
             >
               <div className="flex items-start gap-3 text-left">
                 <Icon
-                  name="description"
+                  name="docs"
                   size={24}
                   className="text-muted-foreground/75 mt-0.5"
                 />
@@ -947,7 +947,7 @@ function WorkspaceViews() {
             >
               <div className="flex items-start gap-3 text-left">
                 <Icon
-                  name="account_tree"
+                  name="flowchart"
                   size={24}
                   className="text-muted-foreground/75 mt-0.5"
                 />

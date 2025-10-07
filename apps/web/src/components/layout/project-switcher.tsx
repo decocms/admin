@@ -1,4 +1,3 @@
-// deno-lint-ignore-file ensure-tailwind-design-system-tokens/ensure-tailwind-design-system-tokens
 import { useOrganizations, useProjects } from "@deco/sdk";
 import { Button } from "@deco/ui/components/button.tsx";
 import { Icon } from "@deco/ui/components/icon.tsx";

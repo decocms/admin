@@ -63,18 +63,19 @@ export function ChatInput({ disabled }: { disabled?: boolean } = {}) {
     const handleDocumentPaste = (e: ClipboardEvent) => {
       // Only handle paste if the chat input area is focused
       const activeElement = document.activeElement;
-      const isInputFocused = activeElement?.closest('.ProseMirror') || 
-                           activeElement?.closest('form') === document.querySelector('form');
-      
+      const isInputFocused =
+        activeElement?.closest(".ProseMirror") ||
+        activeElement?.closest("form") === document.querySelector("form");
+
       if (isInputFocused && enableFileUpload) {
         handlePaste(e);
       }
     };
 
-    document.addEventListener('paste', handleDocumentPaste);
-    
+    document.addEventListener("paste", handleDocumentPaste);
+
     return () => {
-      document.removeEventListener('paste', handleDocumentPaste);
+      document.removeEventListener("paste", handleDocumentPaste);
     };
   }, [handlePaste, enableFileUpload]);
 
@@ -109,7 +110,10 @@ export function ChatInput({ disabled }: { disabled?: boolean } = {}) {
     const experimentalAttachments = await Promise.all(
       doneFiles.map(async (uf) => {
         // For images and PDFs, convert to base64 data URL to avoid authentication issues
-        if (uf.file.type.startsWith("image/") || uf.file.type === "application/pdf") {
+        if (
+          uf.file.type.startsWith("image/") ||
+          uf.file.type === "application/pdf"
+        ) {
           return new Promise<{
             name: string;
             type: string;
@@ -130,7 +134,7 @@ export function ChatInput({ disabled }: { disabled?: boolean } = {}) {
             reader.readAsDataURL(uf.file);
           });
         }
-        
+
         // For other file types, use the uploaded URL or object URL
         return {
           name: uf.file.name,
@@ -139,7 +143,7 @@ export function ChatInput({ disabled }: { disabled?: boolean } = {}) {
           size: uf.file.size,
           url: uf.url || URL.createObjectURL(uf.file),
         };
-      })
+      }),
     );
 
     handleSubmit(e, {

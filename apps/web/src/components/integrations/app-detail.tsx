@@ -522,7 +522,8 @@ function ConfigureConnectionInstanceForm({
                     )}
                   />
                 )}
-                {!isEditing && (
+                {/** Custom integrations can have multiple instances for now */}
+                {!isEditing && data.info?.appName && (
                   <div className="flex flex-col items-start gap-1">
                     <Label className="text-sm text-muted-foreground">
                       Instances

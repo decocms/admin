@@ -98,6 +98,12 @@ export function isWellKnownApp(appKey: string): boolean {
 
 export function getConnectionAppKey(connection: Integration): AppKey {
   try {
+    if (!connection.appName) {
+      return {
+        appId: connection.id,
+        provider: "custom",
+      };
+    }
     if (WellKnownMcpGroupIds.some((id) => connection.id.startsWith(id))) {
       return AppKeys.parse(WELL_KNOWN_DECO_CMS_APP_KEY);
     }
@@ -143,7 +149,10 @@ function groupConnections(integrations: Integration[]) {
 
   for (const integration of integrations) {
     const key = getConnectionAppKey(integration);
-    const appKey = AppKeys.build(key);
+
+    const appKey = key.appId
+      ? AppKeys.build(key)
+      : `custom:::${integration.id}`;
 
     if (!grouped[appKey]) {
       grouped[appKey] = [];

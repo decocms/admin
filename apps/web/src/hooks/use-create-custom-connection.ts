@@ -27,7 +27,7 @@ export const useCreateCustomApp = () => {
         },
       });
       const key = getConnectionAppKey(result);
-      navigateWorkspace(`/apps/${AppKeys.build(key)}?edit=${result.id}`);
+      navigateWorkspace(`/apps/${AppKeys.build(key)}`);
     } catch (err) {
       console.error(err);
       toast.error(

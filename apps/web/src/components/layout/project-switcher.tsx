@@ -56,13 +56,13 @@ export function BreadcrumbProjectSwitcher() {
   const organizations = useOrganizations();
   const currentOrg = useMemo(
     () => organizations.data?.find((organization) => organization.slug === org),
-    [organizations.data, org]
+    [organizations.data, org],
   );
 
   const projects = useProjects({ org: org ?? "" });
   const currentProject = useMemo(
     () => projects.find((project) => project.slug === projectParam),
-    [projects, projectParam]
+    [projects, projectParam],
   );
 
   const [projectSearch, setProjectSearch] = useState("");

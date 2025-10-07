@@ -108,7 +108,7 @@ export function ChatInput({ disabled }: { disabled?: boolean } = {}) {
 
     // Convert files to base64 for AI models to access without authentication
     const experimentalAttachments = await Promise.all(
-      doneFiles.map(async (uf) => {
+      doneFiles.map((uf) => {
         // For images and PDFs, convert to base64 data URL to avoid authentication issues
         if (
           uf.file.type.startsWith("image/") ||

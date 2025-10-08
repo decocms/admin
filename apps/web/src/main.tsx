@@ -244,6 +244,15 @@ const ToolsResourceList = lazy(() =>
   ),
 );
 
+// Onboarding
+const OnboardingView = lazy(() =>
+  wrapWithUILoadingFallback(
+    import("./components/onboarding/view.tsx").then((mod) => ({
+      default: mod.OnboardingView,
+    })),
+  ),
+);
+
 function NotFound(): null {
   throw new NotFoundError("The path was not found");
 }
@@ -413,6 +422,7 @@ const router = createBrowserRouter([
         Component: ProjectLayout,
         children: [
           { index: true, Component: ProjectHome },
+          { path: "start", Component: OnboardingView },
           { path: "store", Component: Store },
           {
             path: "discover",

@@ -23,6 +23,7 @@ import { useWorkspaceLink } from "../../hooks/use-navigate-workspace.ts";
 import { useUser } from "../../hooks/use-user.ts";
 import RegisterActivity from "../common/register-activity.tsx";
 import { DecopilotThreadProvider } from "../decopilot/thread-context.tsx";
+import { OnboardingProvider } from "../onboarding/context.tsx";
 import { ProfileModalProvider, useProfileModal } from "../profile-modal.tsx";
 import { ProjectSidebar } from "../sidebar/index.tsx";
 import { WithWorkspaceTheme } from "../theme.tsx";
@@ -69,14 +70,15 @@ export function ProjectLayout() {
   return (
     <BaseRouteLayout>
       <WithWorkspaceTheme>
-        <DecopilotThreadProvider>
-          <ProfileModalProvider
-            profileOpen={profileOpen}
-            setProfileOpen={setProfileOpen}
-            openProfileModal={openProfileModal}
-            closeProfileModal={closeProfileModal}
-            handlePhoneSaved={handlePhoneSaved}
-          >
+        <OnboardingProvider>
+          <DecopilotThreadProvider>
+            <ProfileModalProvider
+              profileOpen={profileOpen}
+              setProfileOpen={setProfileOpen}
+              openProfileModal={openProfileModal}
+              closeProfileModal={closeProfileModal}
+              handlePhoneSaved={handlePhoneSaved}
+            >
             <SidebarProvider
               open={sidebarOpen}
               onOpenChange={(open) => {
@@ -134,6 +136,7 @@ export function ProjectLayout() {
             </SidebarProvider>
           </ProfileModalProvider>
         </DecopilotThreadProvider>
+      </OnboardingProvider>
       </WithWorkspaceTheme>
     </BaseRouteLayout>
   );

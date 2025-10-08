@@ -556,8 +556,22 @@ function WorkspaceViews() {
         );
       })}
 
-      {/* Generate button */}
+      {/* Start button (onboarding) */}
       <SidebarMenuItem>
+        <SidebarMenuButton
+          className="cursor-pointer"
+          onClick={() => {
+            navigateWorkspace("/start");
+            isMobile && toggleSidebar();
+          }}
+        >
+          <Icon name="add" size={20} className="text-muted-foreground/75" />
+          <span className="truncate">Start</span>
+        </SidebarMenuButton>
+      </SidebarMenuItem>
+
+      {/* Generate button - hidden for now, using Start instead */}
+      {/* <SidebarMenuItem>
         <SidebarMenuButton
           className="cursor-pointer"
           onClick={() => setGenerateModalOpen(true)}
@@ -565,7 +579,7 @@ function WorkspaceViews() {
           <Icon name="add" size={20} className="text-muted-foreground/75" />
           <span className="truncate">Generate</span>
         </SidebarMenuButton>
-      </SidebarMenuItem>
+      </SidebarMenuItem> */}
 
       <SidebarSeparator className="my-2 -ml-1" />
 
@@ -924,9 +938,88 @@ function WorkspaceViews() {
               className="w-full justify-start h-auto py-4"
               onClick={() => {
                 setGenerateModalOpen(false);
+                setDatabaseModalOpen(true);
+              }}
+            >
+              <div className="flex items-start gap-3 text-left">
+                <Icon
+                  name="database"
+                  size={24}
+                  className="text-muted-foreground/75 mt-0.5"
+                />
+                <div className="flex-1">
+                  <div className="font-semibold">Database</div>
+                  <div className="text-sm text-muted-foreground">
+                    Define your data models
+                  </div>
+                </div>
+              </div>
+            </Button>
+            <Button
+              variant="outline"
+              className="w-full justify-start h-auto py-4"
+              onClick={() => {
+                setGenerateModalOpen(false);
                 isMobile && toggleSidebar();
 
-                // Navigate to workflows with query params to trigger Decopilot
+                const message = encodeURIComponent(
+                  "Please help me create a new view",
+                );
+                navigateWorkspace(
+                  `/views?initialInput=${message}&autoSend=true&openDecopilot=true`,
+                );
+              }}
+            >
+              <div className="flex items-start gap-3 text-left">
+                <Icon
+                  name="grid_view"
+                  size={24}
+                  className="text-muted-foreground/75 mt-0.5"
+                />
+                <div className="flex-1">
+                  <div className="font-semibold">View</div>
+                  <div className="text-sm text-muted-foreground">
+                    Design the UI/UX
+                  </div>
+                </div>
+              </div>
+            </Button>
+            <Button
+              variant="outline"
+              className="w-full justify-start h-auto py-4"
+              onClick={() => {
+                setGenerateModalOpen(false);
+                isMobile && toggleSidebar();
+
+                const message = encodeURIComponent(
+                  "Please help me create a new agent",
+                );
+                navigateWorkspace(
+                  `/agents?initialInput=${message}&autoSend=true&openDecopilot=true`,
+                );
+              }}
+            >
+              <div className="flex items-start gap-3 text-left">
+                <Icon
+                  name="robot_2"
+                  size={24}
+                  className="text-muted-foreground/75 mt-0.5"
+                />
+                <div className="flex-1">
+                  <div className="font-semibold">Agent</div>
+                  <div className="text-sm text-muted-foreground">
+                    Configure AI agents
+                  </div>
+                </div>
+              </div>
+            </Button>
+            <Button
+              variant="outline"
+              className="w-full justify-start h-auto py-4"
+              onClick={() => {
+                setGenerateModalOpen(false);
+                isMobile && toggleSidebar();
+
                 const message = encodeURIComponent(
                   "Please help me create a new workflow",
                 );

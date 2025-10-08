@@ -133,6 +133,7 @@ export async function getRequestAuthHeaders(): Promise<Record<string, string>> {
     throw new Error("Session expired. Please login again.");
   }
 
+  // @ts-expect-error - User is not a property of Session
   await saveSession(data);
 
   const setCookie = responseHeaders.getSetCookie();

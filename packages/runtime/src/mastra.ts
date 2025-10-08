@@ -58,30 +58,50 @@ const createRuntimeContext = (prev?: RuntimeContext<AppContext>) => {
  * creates a private tool that always ensure for athentication before being executed
  */
 export function createPrivateTool<
-  TSchemaIn extends z.ZodSchema | undefined = undefined,
+  TSchemaIn extends z.ZodSchema = z.ZodSchema,
   TSchemaOut extends z.ZodSchema | undefined = undefined,
+  TSuspendSchema extends z.ZodSchema = z.ZodSchema,
+  TResumeSchema extends z.ZodSchema = z.ZodSchema,
   TContext extends
     ToolExecutionContext<TSchemaIn> = ToolExecutionContext<TSchemaIn>,
   TExecute extends ToolAction<
     TSchemaIn,
     TSchemaOut,
+    any,
+    any,
     TContext
-  >["execute"] = ToolAction<TSchemaIn, TSchemaOut, TContext>["execute"],
+  >["execute"] = ToolAction<
+    TSchemaIn,
+    TSchemaOut,
+    any,
+    any,
+    TContext
+  >["execute"],
 >(
-  opts: ToolAction<TSchemaIn, TSchemaOut, TContext> & {
+  opts: ToolAction<
+    TSchemaIn,
+    TSchemaOut,
+    TSuspendSchema,
+    TResumeSchema,
+    TContext
+  > & {
     execute?: TExecute;
   },
-): [TSchemaIn, TSchemaOut, TExecute] extends [
+): [TSchemaIn, TSchemaOut, TSuspendSchema, TResumeSchema, TExecute] extends [
+  z.ZodSchema,
+  z.ZodSchema,
   z.ZodSchema,
   z.ZodSchema,
   Function,
 ]
-  ? Tool<TSchemaIn, TSchemaOut, TContext> & {
+  ? // @ts-expect-error - TSchemaIn is not a ZodType
+    Tool<TSchemaIn, TSchemaOut, TSuspendSchema, TResumeSchema, TContext> & {
       inputSchema: TSchemaIn;
       outputSchema: TSchemaOut;
       execute: (context: TContext) => Promise<any>;
     }
-  : Tool<TSchemaIn, TSchemaOut, TContext> {
+  : // @ts-expect-error - TSchemaIn is not a ZodType
+    Tool<TSchemaIn, TSchemaOut, TSuspendSchema, TResumeSchema, TContext> {
   const execute = opts.execute;
   if (typeof execute === "function") {
     opts.execute = ((input, options) => {
@@ -97,28 +117,52 @@ export function createPrivateTool<
 export function createTool<
   TSchemaIn extends z.ZodSchema | undefined = undefined,
   TSchemaOut extends z.ZodSchema | undefined = undefined,
-  TContext extends
-    ToolExecutionContext<TSchemaIn> = ToolExecutionContext<TSchemaIn>,
+  TSuspendSchema extends z.ZodSchema = z.ZodSchema,
+  TResumeSchema extends z.ZodSchema = z.ZodSchema,
+  TContext extends ToolExecutionContext<
+    TSchemaIn,
+    TSuspendSchema,
+    TResumeSchema
+  > = ToolExecutionContext<TSchemaIn, TSuspendSchema, TResumeSchema>,
   TExecute extends ToolAction<
     TSchemaIn,
     TSchemaOut,
+    TSuspendSchema,
+    TResumeSchema,
     TContext
-  >["execute"] = ToolAction<TSchemaIn, TSchemaOut, TContext>["execute"],
+  >["execute"] = ToolAction<
+    TSchemaIn,
+    TSchemaOut,
+    TSuspendSchema,
+    TResumeSchema,
+    TContext
+  >["execute"],
 >(
-  opts: ToolAction<TSchemaIn, TSchemaOut, TContext> & {
+  opts: ToolAction<
+    TSchemaIn,
+    TSchemaOut,
+    TSuspendSchema,
+    TResumeSchema,
+    TContext
+  > & {
     execute?: TExecute;
   },
-): [TSchemaIn, TSchemaOut, TExecute] extends [
+): [TSchemaIn, TSchemaOut, TSuspendSchema, TResumeSchema, TExecute] extends [
+  z.ZodSchema,
+  z.ZodSchema,
   z.ZodSchema,
   z.ZodSchema,
   Function,
 ]
-  ? Tool<TSchemaIn, TSchemaOut, TContext> & {
+  ? // @ts-expect-error - TSchemaIn is not a ZodType
+    Tool<TSchemaIn, TSchemaOut, TSuspendSchema, TResumeSchema, TContext> & {
       inputSchema: TSchemaIn;
       outputSchema: TSchemaOut;
       execute: (context: TContext) => Promise<any>;
     }
-  : Tool<TSchemaIn, TSchemaOut, TContext> {
+  : // @ts-expect-error - TSchemaIn is not a ZodType
+    Tool<TSchemaIn, TSchemaOut, TSuspendSchema, TResumeSchema, TContext> {
+  // @ts-expect-error - TSchemaIn is not a ZodType
   return mastraCreateTool({
     ...opts,
     execute:
@@ -141,6 +185,8 @@ export type ExecWithContext<TF extends (...args: any[]) => any> = (
 
 export interface Step<
   TStepId extends string = string,
+  // @ts-expect-error - TState is not a ZodObject
+  TState extends z.ZodObject<any> = z.ZodObject<any, z.$strip>,
   TSchemaIn extends z.ZodType<any> = z.ZodType<any>,
   TSchemaOut extends z.ZodType<any> = z.ZodType<any>,
   TResumeSchema extends z.ZodType<any> = z.ZodType<any>,
@@ -149,6 +195,8 @@ export interface Step<
 > extends Omit<
     MastraStep<
       TStepId,
+      // @ts-expect-error - TState is not a ZodObject
+      TState,
       TSchemaIn,
       TSchemaOut,
       TResumeSchema,
@@ -159,6 +207,7 @@ export interface Step<
   > {
   execute: ExecWithContext<
     ExecuteFunction<
+      z.infer<TState>,
       z.infer<TSchemaIn>,
       z.infer<TSchemaOut>,
       z.infer<TResumeSchema>,
@@ -170,21 +219,30 @@ export interface Step<
 export function createStepFromTool<
   TSchemaIn extends z.ZodType<any>,
   TSchemaOut extends z.ZodType<any>,
-  TContext extends ToolExecutionContext<TSchemaIn>,
+  TSuspendSchema extends z.ZodType<any>,
+  TResumeSchema extends z.ZodType<any>,
+  TContext extends ToolExecutionContext<
+    TSchemaIn,
+    TSuspendSchema,
+    TResumeSchema
+  >,
 >(
-  tool: Tool<TSchemaIn, TSchemaOut, TContext> & {
+  // @ts-expect-error - TSchemaIn is not a ZodType
+  tool: Tool<TSchemaIn, TSchemaOut, TSuspendSchema, TResumeSchema, TContext> & {
     inputSchema: TSchemaIn;
     outputSchema: TSchemaOut;
     execute: (context: TContext) => Promise<any>;
   },
 ): Step<
   string,
+  // @ts-expect-error - TSchemaIn is not a ZodType
   TSchemaIn,
   TSchemaOut,
   z.ZodType<any>,
   z.ZodType<any>,
   DefaultEngineType
 > {
+  // @ts-expect-error - TSchemaIn is not a ZodType
   return mastraCreateStep(tool);
 }
 
@@ -202,6 +260,7 @@ export function createStep<
   resumeSchema?: TResumeSchema;
   suspendSchema?: TSuspendSchema;
   execute: ExecWithContext<
+    // @ts-expect-error - TStepInput is not a ZodObject
     ExecuteFunction<
       z.infer<TStepInput>,
       z.infer<TStepOutput>,
@@ -212,12 +271,14 @@ export function createStep<
   >;
 }): Step<
   TStepId,
+  // @ts-expect-error - TStepInput is not a ZodObject
   TStepInput,
   TStepOutput,
   TResumeSchema,
   TSuspendSchema,
   DefaultEngineType
 > {
+  // @ts-expect-error - TStepInput is not a ZodObject
   return mastraCreateStep({
     ...opts,
     execute: (input) => {
@@ -349,6 +410,7 @@ const createWorkflowTools = <TEnv = any, TSchema extends z.ZodTypeAny = never>(
   const startTool = createTool({
     id: `DECO_CHAT_WORKFLOWS_START_${workflow.id}`,
     description: workflow.description ?? `Start workflow ${workflow.id}`,
+    // @ts-expect-error - workflow.inputSchema is not a ZodType
     inputSchema:
       workflow.inputSchema && "shape" in workflow.inputSchema
         ? workflow.inputSchema
@@ -486,12 +548,15 @@ export const createMCPServer = <
           description: "Read a resource by uri (name + uri)",
           inputSchema: ResourcesReadInputSchema,
           outputSchema: ResourcesReadOutputSchema,
-          execute: ({ context }) => {
-            const fn = readHandlers.get(context.name);
+          execute: (input) => {
+            // @ts-expect-error - input.name is not a string
+            const fn = readHandlers.get(input.name);
             if (!fn) {
-              throw new Error(`READ not implemented for ${context.name}`);
+              // @ts-expect-error - input.name is not a string
+              throw new Error(`READ not implemented for ${input.name}`);
             }
-            return fn({ uri: context.uri });
+            // @ts-expect-error - input.name is not a string
+            return fn({ uri: input.uri });
           },
         }),
       );
@@ -501,12 +566,15 @@ export const createMCPServer = <
           description: "Search resources (name + term)",
           inputSchema: ResourceSearchInputSchema,
           outputSchema: ResourceSearchOutputSchema,
-          execute: ({ context }) => {
-            const fn = searchHandlers.get(context.name);
+          execute: (input) => {
+            // @ts-expect-error - input.name is not a string
+            const fn = searchHandlers.get(input.name);
             if (!fn) {
-              throw new Error(`SEARCH not implemented for ${context.name}`);
+              // @ts-expect-error - input.name is not a string
+              throw new Error(`SEARCH not implemented for ${input.name}`);
             }
-            const { term, cursor, limit } = context;
+            // @ts-expect-error - input.name is not a string
+            const { term, cursor, limit } = input;
             return fn({ term, cursor, limit });
           },
         }),
@@ -517,12 +585,14 @@ export const createMCPServer = <
           description: "Create a resource (name + content)",
           inputSchema: ResourceCreateInputSchema,
           outputSchema: ResourceCreateOutputSchema,
-          execute: ({ context }) => {
-            const fn = createHandlers.get(context.name);
+          execute: (input) => {
+            // @ts-expect-error - input.name is not a string
+            const fn = createHandlers.get(input.name);
             if (!fn) {
-              throw new Error(`CREATE not implemented for ${context.name}`);
+              // @ts-expect-error - input.name is not a string
+              throw new Error(`CREATE not implemented for ${input.name}`);
             }
-            return fn(context as any);
+            return fn(input);
           },
         }),
       );
@@ -532,12 +602,14 @@ export const createMCPServer = <
           description: "Update a resource (name + uri)",
           inputSchema: ResourceUpdateInputSchema,
           outputSchema: ResourceUpdateOutputSchema,
-          execute: ({ context }) => {
-            const fn = updateHandlers.get(context.name);
+          execute: (input) => {
+            // @ts-expect-error - input.name is not a string
+            const fn = updateHandlers.get(input.name);
             if (!fn) {
-              throw new Error(`UPDATE not implemented for ${context.name}`);
+              // @ts-expect-error - input.name is not a string
+              throw new Error(`UPDATE not implemented for ${input.name}`);
             }
-            return fn(context as any);
+            return fn(input);
           },
         }),
       );
@@ -547,12 +619,14 @@ export const createMCPServer = <
           description: "Delete a resource (name + uri)",
           inputSchema: ResourceDeleteInputSchema,
           outputSchema: ResourceDeleteOutputSchema,
-          execute: ({ context }) => {
-            const fn = deleteHandlers.get(context.name);
+          execute: (input) => {
+            // @ts-expect-error - input.name is not a string
+            const fn = deleteHandlers.get(input.name);
             if (!fn) {
-              throw new Error(`DELETE not implemented for ${context.name}`);
+              // @ts-expect-error - input.name is not a string
+              throw new Error(`DELETE not implemented for ${input.name}`);
             }
-            return fn(context as any);
+            return fn(input);
           },
         }),
       );

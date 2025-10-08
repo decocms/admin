@@ -1,6 +1,6 @@
 import { useMemo } from "react";
 import { useIntegrationAPIKey, useReissueAPIKey } from "@deco/sdk/hooks";
-import type { ApiKeyPolicies, Statement } from "@deco/sdk";
+import type { Statement } from "@deco/sdk";
 import { Button } from "@deco/ui/components/button.tsx";
 import { Spinner } from "@deco/ui/components/spinner.tsx";
 import { Icon } from "@deco/ui/components/icon.tsx";
@@ -9,7 +9,7 @@ import { Separator } from "@deco/ui/components/separator.tsx";
 
 interface ReissueApiKeyForIntegrationProps {
   integrationId: string;
-  newPolicies: ApiKeyPolicies;
+  newPolicies: Statement[];
   onReissued?: (result: { id: string; value: string }) => void;
   onCancel?: () => void;
 }
@@ -96,11 +96,16 @@ export function ReissueApiKeyForIntegration({
 
     // Find policies that are in newPolicies but not in current policies
     const currentPolicyKeys = new Set(
-      currentPolicies.map((p) => `${p.effect}:${p.resource}`),
+      currentPolicies.map(
+        (p) => `${p.effect}:${p.resource}:${p.matchCondition?.resource ?? ""}`,
+      ),
     );
 
     return newPolicies.filter(
-      (p) => !currentPolicyKeys.has(`${p.effect}:${p.resource}`),
+      (p) =>
+        !currentPolicyKeys.has(
+          `${p.effect}:${p.resource}:${p.matchCondition?.resource ?? ""}`,
+        ),
     );
   }, [apiKey?.policies, newPolicies]);
 

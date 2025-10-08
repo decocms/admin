@@ -4,10 +4,10 @@ import {
   getAPIKeyForIntegration,
   reissueAPIKey,
   type ApiKeyClaims,
-  type ApiKeyPolicies,
 } from "../crud/keys.ts";
 import { useSDK } from "./store.tsx";
 import { KEYS } from "./api.ts";
+import { Statement } from "../models/index.ts";
 
 export const useCreateAPIKey = () => {
   const { locator } = useSDK();
@@ -16,7 +16,7 @@ export const useCreateAPIKey = () => {
     mutationFn: (params: {
       claims?: ApiKeyClaims;
       name: string;
-      policies: ApiKeyPolicies;
+      policies: Statement[];
     }) => createAPIKey(locator, params),
   });
 };
@@ -29,7 +29,7 @@ export const useReissueAPIKey = () => {
     mutationFn: (params: {
       id: string;
       claims?: ApiKeyClaims;
-      policies?: ApiKeyPolicies;
+      policies?: Statement[];
     }) => reissueAPIKey(locator, params),
     onSuccess: (result) => {
       client.invalidateQueries({

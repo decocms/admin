@@ -83,7 +83,7 @@ const AppClaimsSchema = z.object({
 });
 
 // Shared API key output schema
-const ApiKeySchema = z.object({
+export const ApiKeySchema = z.object({
   id: z.string().describe("The unique identifier of the API key"),
   name: z.string().describe("The name of the API key"),
   workspace: z.string().describe("The workspace ID"),

@@ -1,16 +1,12 @@
 import { MCPClient } from "../fetcher.ts";
 import { ProjectLocator } from "../locator.ts";
+import { Statement } from "../models/index.ts";
 
 export interface ApiKeyClaims {
   appName: string;
   integrationId: string;
   state: unknown;
 }
-
-export type ApiKeyPolicies = Array<{
-  effect: "allow" | "deny";
-  resource: string;
-}>;
 
 /**
  * Create an API key
@@ -23,7 +19,7 @@ export const createAPIKey = (
   params: {
     claims?: ApiKeyClaims;
     name: string;
-    policies: ApiKeyPolicies;
+    policies: Statement[];
   },
 ) => MCPClient.forLocator(locator).API_KEYS_CREATE(params);
 
@@ -32,7 +28,7 @@ export const reissueAPIKey = (
   params: {
     id: string;
     claims?: ApiKeyClaims;
-    policies?: ApiKeyPolicies;
+    policies?: Statement[];
   },
 ) => MCPClient.forLocator(locator).API_KEYS_REISSUE(params);
 

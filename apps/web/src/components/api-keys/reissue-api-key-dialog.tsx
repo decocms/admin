@@ -1,4 +1,4 @@
-import type { ApiKeyPolicies } from "@deco/sdk";
+import type { Statement } from "@deco/sdk";
 import {
   Dialog,
   DialogContent,
@@ -11,7 +11,7 @@ interface ReissueApiKeyDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   integrationId: string;
-  newPolicies: ApiKeyPolicies;
+  newPolicies: Statement[];
   onReissued?: (result: { id: string; value: string }) => void;
 }
 

@@ -391,7 +391,7 @@ export function AuditListContent({
               className="min-w-[240px]"
             >
               <div className="flex h-full min-w-0 flex-col bg-background">
-                <div className="flex flex-wrap items-end gap-2 px-2 pt-2">
+                <div className="flex flex-wrap items-end gap-2 px-2 pt-2 pb-2">
                   {showFilters ? (
                     <div className="flex min-w-0 flex-1 flex-col gap-3 sm:flex-row sm:items-end sm:gap-4">
                       <AuditFilters
@@ -406,7 +406,7 @@ export function AuditListContent({
                   ) : null}
                   {rowsPerPageControl}
                 </div>
-                <div className="flex-1 overflow-auto px-2 pb-2 pt-2">
+                <div className="flex-1 overflow-auto px-2 pb-2">
                   <AuditTable
                     threads={threads}
                     sort={sort}

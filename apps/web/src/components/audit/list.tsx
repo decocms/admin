@@ -90,7 +90,6 @@ export function AuditListContent({
       searchParams.get(USER_FILTER_SEARCH_PARAM) ??
       undefined,
   );
-  const [activeThreadId, setActiveThreadId] = useState<string | null>(null);
   const [pageSize, setPageSize] = useState<number>(() => {
     const fromFilter = filters?.limit;
     if (
@@ -243,27 +242,26 @@ export function AuditListContent({
   }, [threads, selectedThreadId]);
 
   const activeThreadIndex = useMemo(() => {
-    if (!activeThreadId) {
+    if (!selectedThreadId) {
       return -1;
     }
-    return threads.findIndex((thread) => thread.id === activeThreadId);
-  }, [threads, activeThreadId]);
+    return threads.findIndex((thread) => thread.id === selectedThreadId);
+  }, [threads, selectedThreadId]);
 
   useEffect(() => {
     if (threads.length === 0) {
-      setActiveThreadId(null);
+      setSelectedThreadId(null);
       return;
     }
 
-    if (!activeThreadId) {
+    if (!selectedThreadId) {
       return;
     }
 
-    if (!threads.some((thread) => thread.id === activeThreadId)) {
-      setActiveThreadId(null);
+    if (!threads.some((thread) => thread.id === selectedThreadId)) {
       setSelectedThreadId(null);
     }
-  }, [activeThreadId, threads]);
+  }, [selectedThreadId, threads]);
 
   function handlePageSizeChange(value: number) {
     setPageSize(value);
@@ -276,7 +274,6 @@ export function AuditListContent({
 
   function handleThreadSelect(threadId: string) {
     setSelectedThreadId(threadId);
-    setActiveThreadId(threadId);
   }
 
   function handleNavigateThread(direction: "previous" | "next") {
@@ -287,14 +284,13 @@ export function AuditListContent({
     const currentIndex =
       activeThreadIndex >= 0
         ? activeThreadIndex
-        : threads.findIndex((thread) => thread.id === activeThreadId);
+        : threads.findIndex((thread) => thread.id === selectedThreadId);
 
     if (currentIndex < 0) {
       // No thread currently selected, select first or last based on direction
       const initialThread =
         direction === "next" ? threads[0] : threads[threads.length - 1];
       if (initialThread) {
-        setActiveThreadId(initialThread.id);
         setSelectedThreadId(initialThread.id);
       }
       return;
@@ -306,7 +302,6 @@ export function AuditListContent({
     const nextThread = threads[nextIndex];
 
     if (nextThread) {
-      setActiveThreadId(nextThread.id);
       setSelectedThreadId(nextThread.id);
     }
   }
@@ -457,7 +452,7 @@ export function AuditListContent({
                       columnsDenyList={columnsDenyList}
                       onSortChange={handleSortChange}
                       onRowClick={handleThreadSelect}
-                      activeThreadId={activeThreadId}
+                      activeThreadId={selectedThreadId}
                       selectedAgent={selectedAgent}
                       selectedUser={selectedUser}
                     />

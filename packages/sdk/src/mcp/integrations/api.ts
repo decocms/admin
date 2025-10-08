@@ -1107,6 +1107,7 @@ It's always handy to search for installed integrations with no query, since all 
         }
         return {
           id: app.id,
+          appName: AppName.build(app.scopeName, app.name),
           name: AppName.build(app.scopeName, app.name),
           friendlyName: app.friendlyName,
           description: app.description,

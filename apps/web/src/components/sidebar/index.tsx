@@ -3,6 +3,7 @@ import {
   Integration,
   Resource,
   useConnectionViews,
+  useCreatePrompt,
   useIntegrations,
   useRemoveResource,
   useRemoveView,
@@ -180,6 +181,13 @@ function WorkspaceViews() {
     open: boolean;
     integration?: Integration;
   }>({ open: false });
+  const [generateModalOpen, setGenerateModalOpen] = useState(false);
+  const [linkModalOpen, setLinkModalOpen] = useState(false);
+  const [filesModalOpen, setFilesModalOpen] = useState(false);
+  const [databaseModalOpen, setDatabaseModalOpen] = useState(false);
+
+  // Hook for creating documents
+  const createPrompt = useCreatePrompt();
 
   const handleRemoveView = async (view: View) => {
     const isUserInView = globalThis.location.pathname.includes(
@@ -320,80 +328,24 @@ function WorkspaceViews() {
         predefinedOrder.indexOf(canonicalTitle(b.title))
       );
     });
-  const hasIntegrationMenus =
-    Object.keys(fromIntegration).length > 0 ||
-    Object.keys(fromIntegrationResources).length > 0;
+
+  // Building blocks
+  const toolsItem = mcpItems.find(
+    (item) => canonicalTitle(item.title) === "Tools",
+  );
+  const viewsItem = mcpItems.find(
+    (item) => canonicalTitle(item.title) === "Views",
+  );
+  // Core abstractions (Documents, Workflows, Agents) - main menu items
+  const coreAbstractionTitles = ["Documents", "Workflows", "Agents"];
+  const coreItems = coreAbstractionTitles
+    .map((title) =>
+      mcpItems.find((item) => canonicalTitle(item.title) === title),
+    )
+    .filter((item): item is View => item !== undefined);
 
   return (
     <>
-      <SidebarMenuItem>
-        <SidebarMenuButton
-          className="cursor-pointer"
-          onClick={() => {
-            navigateWorkspace("/store");
-          }}
-        >
-          <Icon
-            name="storefront"
-            size={20}
-            className="text-muted-foreground/75"
-          />
-          <span className="truncate">Store</span>
-        </SidebarMenuButton>
-      </SidebarMenuItem>
-
-      <SidebarMenuItem>
-        <SidebarMenuButton
-          className="cursor-pointer"
-          onClick={() => {
-            navigateWorkspace("/apps");
-          }}
-        >
-          <Icon
-            name="grid_view"
-            size={20}
-            className="text-muted-foreground/75"
-          />
-          <span className="truncate">Apps</span>
-        </SidebarMenuButton>
-      </SidebarMenuItem>
-
-      <SidebarSeparator className="my-2 -ml-1" />
-
-      {mcpItems.map((item) => {
-        const displayTitle = canonicalTitle(item.title);
-        const href = buildViewHrefFromView(item as View);
-        const view = item as View;
-
-        return (
-          <SidebarMenuItem key={item.title}>
-            <SidebarMenuButton asChild>
-              <Link
-                to={href}
-                onClick={() => {
-                  trackEvent("sidebar_navigation_click", {
-                    item: displayTitle,
-                  });
-                  isMobile && toggleSidebar();
-                }}
-              >
-                <Icon
-                  name={item.icon}
-                  size={20}
-                  className="text-muted-foreground/75"
-                />
-                <span className="truncate">{displayTitle}</span>
-                {view.badge && (
-                  <Badge variant="secondary" className="ml-auto text-xs">
-                    {view.badge}
-                  </Badge>
-                )}
-              </Link>
-            </SidebarMenuButton>
-          </SidebarMenuItem>
-        );
-      })}
-      {hasIntegrationMenus && <SidebarSeparator className="my-2 -ml-1" />}
       {Object.entries(fromIntegration).map(([integrationId, views]) => {
         const integration = integrationMap.get(integrationId);
         const isSingleView = views.length === 1;
@@ -409,7 +361,7 @@ function WorkspaceViews() {
                   <SidebarMenuButton
                     asChild
                     isActive={isActive}
-                    className="w-full pr-8"
+                    className="w-full pr-2!"
                   >
                     <Link
                       to={href}
@@ -473,6 +425,18 @@ function WorkspaceViews() {
                       <span className="truncate">
                         {view.title ?? integration?.name ?? "Custom"}
                       </span>
+                      {view.type === "custom" && (
+                        <Icon
+                          name="unpin"
+                          size={18}
+                          className="text-muted-foreground/75 opacity-0 group-hover/item:opacity-50 hover:opacity-100 transition-opacity cursor-pointer ml-auto"
+                          onClick={(event) => {
+                            event.preventDefault();
+                            event.stopPropagation();
+                            handleRemoveView(view);
+                          }}
+                        />
+                      )}
                     </Link>
                   </SidebarMenuButton>
                 )}
@@ -486,7 +450,7 @@ function WorkspaceViews() {
             <Collapsible asChild defaultOpen className="group/collapsible">
               <div className="group/integration-header relative">
                 <CollapsibleTrigger asChild>
-                  <SidebarMenuButton className="w-full">
+                  <SidebarMenuButton className="w-full pr-2!">
                     <div className="relative">
                       <IntegrationAvatar
                         size="xs"
@@ -591,6 +555,206 @@ function WorkspaceViews() {
           </SidebarMenuItem>
         );
       })}
+
+      {/* Generate button */}
+      <SidebarMenuItem>
+        <SidebarMenuButton
+          className="cursor-pointer"
+          onClick={() => setGenerateModalOpen(true)}
+        >
+          <Icon name="add" size={20} className="text-muted-foreground/75" />
+          <span className="truncate">Generate</span>
+        </SidebarMenuButton>
+      </SidebarMenuItem>
+
+      <SidebarSeparator className="my-2 -ml-1" />
+
+      {/* Apps with Store + button */}
+      <SidebarMenuItem>
+        <div className="group/item relative">
+          <SidebarMenuButton
+            className="cursor-pointer w-full pr-10"
+            onClick={() => {
+              navigateWorkspace("/apps");
+            }}
+          >
+            <Icon
+              name="grid_view"
+              size={20}
+              className="text-muted-foreground/75"
+            />
+            <span className="truncate">Apps</span>
+          </SidebarMenuButton>
+          <SidebarMenuAction
+            asChild
+            className="absolute right-1.5 inset-y-0 flex items-center"
+            showOnHover={false}
+          ></SidebarMenuAction>
+        </div>
+      </SidebarMenuItem>
+
+      {/* Core abstractions: Documents, Workflows, Agents */}
+      {coreItems.map((item) => {
+        const displayTitle = canonicalTitle(item.title);
+        const href = buildViewHrefFromView(item as View);
+        const view = item as View;
+
+        return (
+          <SidebarMenuItem key={item.title}>
+            <SidebarMenuButton asChild>
+              <Link
+                to={href}
+                onClick={() => {
+                  trackEvent("sidebar_navigation_click", {
+                    item: displayTitle,
+                  });
+                  isMobile && toggleSidebar();
+                }}
+              >
+                <Icon
+                  name={item.icon}
+                  size={20}
+                  className="text-muted-foreground/75"
+                />
+                <span className="truncate">{displayTitle}</span>
+                {view.badge && (
+                  <Badge variant="secondary" className="ml-auto text-xs">
+                    {view.badge}
+                  </Badge>
+                )}
+              </Link>
+            </SidebarMenuButton>
+          </SidebarMenuItem>
+        );
+      })}
+
+      <SidebarSeparator className="my-2 -ml-1" />
+
+      {/* Developer accordion */}
+      <SidebarMenuItem>
+        <Collapsible asChild defaultOpen className="group/collapsible">
+          <div>
+            <CollapsibleTrigger asChild>
+              <SidebarMenuButton className="w-full">
+                <Icon
+                  name="settings"
+                  size={20}
+                  className="text-muted-foreground/75"
+                />
+                <span className="truncate">Developer</span>
+                <Icon
+                  name="chevron_right"
+                  size={18}
+                  className="ml-auto transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90 text-muted-foreground/75"
+                />
+              </SidebarMenuButton>
+            </CollapsibleTrigger>
+            <CollapsibleContent>
+              <SidebarMenuSub>
+                {/* Tools */}
+                {toolsItem && (
+                  <SidebarMenuSubItem>
+                    <SidebarMenuSubButton asChild>
+                      <Link
+                        to={buildViewHrefFromView(toolsItem as View)}
+                        onClick={() => {
+                          trackEvent("sidebar_navigation_click", {
+                            item: "Tools",
+                          });
+                          isMobile && toggleSidebar();
+                        }}
+                      >
+                        <Icon
+                          name={toolsItem.icon}
+                          size={18}
+                          className="text-muted-foreground/75"
+                        />
+                        <span className="truncate">Tools</span>
+                        {(toolsItem as View).badge && (
+                          <Badge
+                            variant="secondary"
+                            className="ml-auto text-xs"
+                          >
+                            {(toolsItem as View).badge}
+                          </Badge>
+                        )}
+                      </Link>
+                    </SidebarMenuSubButton>
+                  </SidebarMenuSubItem>
+                )}
+
+                {/* Views */}
+                {viewsItem && (
+                  <SidebarMenuSubItem>
+                    <SidebarMenuSubButton asChild>
+                      <Link
+                        to={buildViewHrefFromView(viewsItem as View)}
+                        onClick={() => {
+                          trackEvent("sidebar_navigation_click", {
+                            item: "Views",
+                          });
+                          isMobile && toggleSidebar();
+                        }}
+                      >
+                        <Icon
+                          name={viewsItem.icon}
+                          size={18}
+                          className="text-muted-foreground/75"
+                        />
+                        <span className="truncate">Views</span>
+                        {(viewsItem as View).badge && (
+                          <Badge
+                            variant="secondary"
+                            className="ml-auto text-xs"
+                          >
+                            {(viewsItem as View).badge}
+                          </Badge>
+                        )}
+                      </Link>
+                    </SidebarMenuSubButton>
+                  </SidebarMenuSubItem>
+                )}
+
+                {/* Files */}
+                <SidebarMenuSubItem>
+                  <SidebarMenuSubButton
+                    className="cursor-pointer"
+                    onClick={() => setFilesModalOpen(true)}
+                  >
+                    <Icon
+                      name="folder"
+                      size={18}
+                      className="text-muted-foreground/75"
+                    />
+                    <span className="truncate">Files</span>
+                    <Badge variant="secondary" className="ml-auto text-xs">
+                      Soon
+                    </Badge>
+                  </SidebarMenuSubButton>
+                </SidebarMenuSubItem>
+              </SidebarMenuSub>
+
+              {/* Link */}
+              <SidebarMenuSubItem>
+                <SidebarMenuSubButton
+                  className="cursor-pointer"
+                  onClick={() => setLinkModalOpen(true)}
+                >
+                  <Icon
+                    name="link"
+                    size={18}
+                    className="text-muted-foreground/75"
+                  />
+                  <span className="truncate">Link</span>
+                  <Badge variant="secondary" className="ml-auto text-xs">
+                    Soon
+                  </Badge>
+                </SidebarMenuSubButton>
+              </SidebarMenuSubItem>
+            </CollapsibleContent>
+          </div>
+        </Collapsible>
+      </SidebarMenuItem>
 
       {/* Resources section */}
       {Object.entries(fromIntegrationResources).map(
@@ -737,6 +901,183 @@ function WorkspaceViews() {
           );
         },
       )}
+
+      {/* Generate Modal */}
+      <Dialog open={generateModalOpen} onOpenChange={setGenerateModalOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Generate New</DialogTitle>
+            <DialogDescription>
+              Choose what you want to create
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex flex-col gap-2 py-4">
+            <Button
+              variant="outline"
+              className="w-full justify-start h-auto py-4"
+              onClick={async () => {
+                setGenerateModalOpen(false);
+                isMobile && toggleSidebar();
+
+                // Create a new empty prompt and navigate to it
+                const result = await createPrompt.mutateAsync({
+                  name: "",
+                  content: "",
+                });
+                navigateWorkspace(`/documents/${result.id}`);
+              }}
+            >
+              <div className="flex items-start gap-3 text-left">
+                <Icon
+                  name="docs"
+                  size={24}
+                  className="text-muted-foreground/75 mt-0.5"
+                />
+                <div className="flex-1">
+                  <div className="font-semibold">Document</div>
+                  <div className="text-sm text-muted-foreground">
+                    Create a new document with AI assistance
+                  </div>
+                </div>
+              </div>
+            </Button>
+            <Button
+              variant="outline"
+              className="w-full justify-start h-auto py-4"
+              onClick={() => {
+                setGenerateModalOpen(false);
+                isMobile && toggleSidebar();
+
+                // Navigate to workflows with query params to trigger Decopilot
+                const message = encodeURIComponent(
+                  "Please help me create a new workflow",
+                );
+                navigateWorkspace(
+                  `/workflows?initialInput=${message}&autoSend=true&openDecopilot=true`,
+                );
+              }}
+            >
+              <div className="flex items-start gap-3 text-left">
+                <Icon
+                  name="flowchart"
+                  size={24}
+                  className="text-muted-foreground/75 mt-0.5"
+                />
+                <div className="flex-1">
+                  <div className="font-semibold">Workflow</div>
+                  <div className="text-sm text-muted-foreground">
+                    Build an automated workflow
+                  </div>
+                </div>
+              </div>
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Link Modal */}
+      <Dialog open={linkModalOpen} onOpenChange={setLinkModalOpen}>
+        <DialogContent className="sm:max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Local Development</DialogTitle>
+            <DialogDescription>Coming soon to decocms.com</DialogDescription>
+          </DialogHeader>
+          <div className="py-6">
+            <div className="flex items-center justify-center mb-6">
+              <div className="w-16 h-16 rounded-xl bg-gradient-to-br from-primary/20 to-primary/10 flex items-center justify-center border border-primary/30">
+                <Icon name="terminal" size={32} className="text-primary" />
+              </div>
+            </div>
+            <div className="space-y-4 text-center">
+              <p className="text-sm text-muted-foreground">
+                Soon you'll be able to clone and work on your projects locally
+                using:
+              </p>
+              <div className="bg-muted/50 rounded-lg p-4 font-mono text-sm border">
+                <code className="text-foreground">
+                  git clone admin.decocms.com/my-team/my-project
+                </code>
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Work locally with your favorite editor and sync changes
+                seamlessly
+              </p>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Files Modal */}
+      <Dialog open={filesModalOpen} onOpenChange={setFilesModalOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>File System Access</DialogTitle>
+            <DialogDescription>Coming soon to deco.cx</DialogDescription>
+          </DialogHeader>
+          <div className="py-6">
+            <div className="flex items-center justify-center mb-6">
+              <div className="w-16 h-16 rounded-xl bg-gradient-to-br from-primary/20 to-primary/10 flex items-center justify-center border border-primary/30">
+                <Icon name="folder_open" size={32} className="text-primary" />
+              </div>
+            </div>
+            <div className="space-y-4 text-center">
+              <p className="text-sm text-muted-foreground">
+                Direct file system access is coming soon. You'll be able to
+                browse, edit, and manage your project files directly from the
+                dashboard.
+              </p>
+              <div className="flex items-center justify-center gap-2 text-xs text-muted-foreground">
+                <Icon name="check_circle" size={16} className="text-primary" />
+                <span>Browse project files</span>
+              </div>
+              <div className="flex items-center justify-center gap-2 text-xs text-muted-foreground">
+                <Icon name="check_circle" size={16} className="text-primary" />
+                <span>Edit files in-browser</span>
+              </div>
+              <div className="flex items-center justify-center gap-2 text-xs text-muted-foreground">
+                <Icon name="check_circle" size={16} className="text-primary" />
+                <span>Manage file structure</span>
+              </div>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Database Modal */}
+      <Dialog open={databaseModalOpen} onOpenChange={setDatabaseModalOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Database Management</DialogTitle>
+            <DialogDescription>Coming soon to deco.cx</DialogDescription>
+          </DialogHeader>
+          <div className="py-6">
+            <div className="flex items-center justify-center mb-6">
+              <div className="w-16 h-16 rounded-xl bg-gradient-to-br from-primary/20 to-primary/10 flex items-center justify-center border border-primary/30">
+                <Icon name="storage" size={32} className="text-primary" />
+              </div>
+            </div>
+            <div className="space-y-4 text-center">
+              <p className="text-sm text-muted-foreground">
+                A powerful database management interface is coming soon. You'll
+                be able to manage your data, run queries, and view schemas
+                directly from the dashboard.
+              </p>
+              <div className="flex items-center justify-center gap-2 text-xs text-muted-foreground">
+                <Icon name="check_circle" size={16} className="text-primary" />
+                <span>Browse tables and collections</span>
+              </div>
+              <div className="flex items-center justify-center gap-2 text-xs text-muted-foreground">
+                <Icon name="check_circle" size={16} className="text-primary" />
+                <span>Run queries and scripts</span>
+              </div>
+              <div className="flex items-center justify-center gap-2 text-xs text-muted-foreground">
+                <Icon name="check_circle" size={16} className="text-primary" />
+                <span>Manage data relationships</span>
+              </div>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       {addViewsDialogState.integration && (
         <AddViewsDialog

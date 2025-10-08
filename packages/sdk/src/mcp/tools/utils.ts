@@ -5,6 +5,7 @@ import {
   installConsole,
   QuickJSHandle,
 } from "@deco/cf-sandbox";
+import { proxyConnectionForId } from "@deco/workers-runtime";
 import { Validator } from "jsonschema";
 import { WorkflowState } from "../../workflows/workflow-runner.ts";
 import { MCPClientStub } from "../context.ts";
@@ -79,7 +80,13 @@ export const evalCodeAndReturnDefaultHandle = async (
 };
 
 // Transform current workspace as callable integration environment
-export const asEnv = async (client: MCPClientStub<ProjectTools>) => {
+export const asEnv = async (
+  client: MCPClientStub<ProjectTools>,
+  {
+    authorization,
+    workspace,
+  }: { authorization?: string; workspace?: string } = {},
+) => {
   const { items } = await client.INTEGRATIONS_LIST({});
 
   const env: Record<
@@ -109,8 +116,17 @@ export const asEnv = async (client: MCPClientStub<ProjectTools>) => {
             );
           }
 
+          let connection = item.connection;
+
+          if (authorization && workspace) {
+            connection = proxyConnectionForId(item.id, {
+              workspace: workspace,
+              token: authorization,
+            });
+          }
+
           const response = await client.INTEGRATIONS_CALL_TOOL({
-            connection: item.connection,
+            connection,
             params: {
               name: tool.name,
               arguments: args as Record<string, unknown>,

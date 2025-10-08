@@ -153,13 +153,6 @@ export const AgentGenerateOptions = z.object({
   enableSemanticRecall: z.boolean().optional(),
   maxSteps: z.number().optional(),
   toolsets: z.array(ToolsetSchema).optional(),
-  pdfSummarization: z
-    .boolean()
-    .optional()
-    .describe(
-      `Preprocess PDFs before sending to the main LLM.
-      This can extend the max size of user inputted PDFs by summarizing them.`,
-    ),
 });
 
 export type GenerateOptions = z.infer<typeof AgentGenerateOptions>;

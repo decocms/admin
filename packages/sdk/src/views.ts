@@ -15,7 +15,6 @@ export const DEFAULT_VIEWS: View[] = [
     title: "Tools",
     icon: "build",
     type: "default",
-    badge: "New",
     metadata: {
       path: "/tools",
     },
@@ -66,12 +65,12 @@ export const DEFAULT_VIEWS: View[] = [
     },
   },
   {
-    id: "prompts",
+    id: "documents",
     title: "Documents",
-    icon: "local_library",
+    icon: "docs",
     type: "default",
     metadata: {
-      path: "/prompts",
+      path: "/documents",
     },
   },
   {

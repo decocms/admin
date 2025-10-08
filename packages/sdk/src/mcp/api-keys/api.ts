@@ -18,7 +18,7 @@ import { MCPClient } from "../index.ts";
 import { getIntegration } from "../integrations/api.ts";
 import { getRegistryApp } from "../registry/api.ts";
 import { apiKeys, organizations, projects } from "../schema.ts";
-import { policiesSchema, Statement } from "../../models/index.ts";
+import { policiesSchema, Statement, StatementSchema } from "../../models/index.ts";
 
 export const SELECT_API_KEY_QUERY = `
   id,
@@ -72,10 +72,44 @@ export const matchByWorkspaceOrProjectLocatorForApiKeys = (
   );
 };
 
+const AppClaimsSchema = z.object({
+  appName: z.string(),
+  integrationId: z.string(),
+  state: z.any(),
+});
+
+// Shared API key output schema
+const ApiKeySchema = z.object({
+  id: z.string().describe("The unique identifier of the API key"),
+  name: z.string().describe("The name of the API key"),
+  workspace: z.string().describe("The workspace ID"),
+  enabled: z.boolean().describe("Whether the API key is enabled"),
+  policies: z
+    .array(StatementSchema)
+    .describe("Access policies for the API key"),
+  createdAt: z.string().describe("Creation timestamp"),
+  updatedAt: z.string().describe("Last update timestamp"),
+  deletedAt: z
+    .string()
+    .nullable()
+    .describe("Deletion timestamp (null if not deleted)"),
+});
+
+const ApiKeyWithValueSchema = ApiKeySchema.extend({
+  value: z
+    .string()
+    .describe(
+      "The actual API key value (JWT token) - only returned on creation/reissue",
+    ),
+});
+
 export const listApiKeys = createTool({
   name: "API_KEYS_LIST",
   description: "List all API keys",
   inputSchema: z.object({}),
+  outputSchema: z.object({
+    apiKeys: z.array(ApiKeySchema).describe("List of API keys"),
+  }),
   handler: async (_, c) => {
     assertHasWorkspace(c);
     await assertWorkspaceResourceAccess(c);
@@ -102,11 +136,6 @@ export const listApiKeys = createTool({
   },
 });
 
-const AppClaimsSchema = z.object({
-  appName: z.string(),
-  integrationId: z.string(),
-  state: z.any(),
-});
 const ensureStateIsWellFormed = async (state: unknown) => {
   const promises: Promise<unknown>[] = [];
 
@@ -144,6 +173,7 @@ export const createApiKey = createTool({
       "App Claims to be added to the API key",
     ),
   }),
+  outputSchema: ApiKeyWithValueSchema,
   handler: async ({ name, policies, claims }, c) => {
     assertHasWorkspace(c);
     await assertWorkspaceResourceAccess(c);
@@ -224,6 +254,7 @@ export const reissueApiKey = createTool({
       .describe("New claims to be added to the API key"),
     policies: policiesSchema.optional().describe("Policies of the API key"),
   }),
+  outputSchema: ApiKeyWithValueSchema,
   handler: async ({ id, claims, policies }, c) => {
     assertHasWorkspace(c);
     await assertWorkspaceResourceAccess(c);
@@ -281,23 +312,13 @@ export const reissueApiKey = createTool({
   },
 });
 
-export const ApiKeySchema = z.object({
-  id: z.string(),
-  name: z.string(),
-  workspace: z.string(),
-  enabled: z.boolean(),
-  policies: policiesSchema,
-  createdAt: z.string(),
-  updatedAt: z.string(),
-  deletedAt: z.string().nullable(),
-});
-
 export const getApiKey = createTool({
   name: "API_KEYS_GET",
   description: "Get an API key by ID",
   inputSchema: z.object({
     id: z.string().describe("The ID of the API key"),
   }),
+  outputSchema: ApiKeySchema,
   handler: async ({ id }, c) => {
     assertHasWorkspace(c);
     await assertWorkspaceResourceAccess(c);
@@ -334,6 +355,7 @@ export const updateApiKey = createTool({
     enabled: z.boolean().optional().describe("Whether the API key is enabled"),
     policies: policiesSchema,
   }),
+  outputSchema: ApiKeySchema,
   handler: async ({ id, name, enabled, policies }, c) => {
     assertHasWorkspace(c);
     await assertWorkspaceResourceAccess(c);
@@ -371,6 +393,10 @@ export const deleteApiKey = createTool({
   inputSchema: z.object({
     id: z.string().describe("The ID of the API key to delete"),
   }),
+  outputSchema: z.object({
+    id: z.string().describe("The ID of the deleted API key"),
+    deleted: z.boolean().describe("Confirmation that the key was deleted"),
+  }),
   handler: async ({ id }, c) => {
     assertHasWorkspace(c);
     await assertWorkspaceResourceAccess(c);
@@ -405,6 +431,7 @@ export const enableApiKey = createTool({
   inputSchema: z.object({
     id: z.string().describe("The ID of the API key to enable"),
   }),
+  outputSchema: ApiKeySchema,
   handler: async ({ id }, c) => {
     assertHasWorkspace(c);
     await assertWorkspaceResourceAccess(c);
@@ -435,6 +462,7 @@ export const disableApiKey = createTool({
   inputSchema: z.object({
     id: z.string().describe("The ID of the API key to disable"),
   }),
+  outputSchema: ApiKeySchema,
   handler: async ({ id }, c) => {
     assertHasWorkspace(c);
     await assertWorkspaceResourceAccess(c);
@@ -513,6 +541,9 @@ export const validateApiKey = createTool({
   description: "Validate an API key by ID",
   inputSchema: z.object({
     id: z.string().describe("The ID of the API key to validate"),
+  }),
+  outputSchema: ApiKeySchema.extend({
+    valid: z.boolean().describe("Whether the API key is valid"),
   }),
   handler: async ({ id }, c) => {
     assertHasWorkspace(c);

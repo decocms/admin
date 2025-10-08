@@ -261,7 +261,7 @@ function ListPrompts() {
     ) ?? [];
 
   const handleConfigure = (prompt: Prompt) => {
-    navigateWorkspace(`/prompt/${prompt.id}`);
+    navigateWorkspace(`/documents/${prompt.id}`);
   };
   const handleDeleteConfirm = (promptId: string) => {
     dispatch({ type: "CONFIRM_DELETE", payload: promptId });
@@ -284,7 +284,7 @@ function ListPrompts() {
       name: "",
       content: "",
     });
-    navigateWorkspace(`/prompt/${result.id}`);
+    navigateWorkspace(`/documents/${result.id}`);
   };
   const handleDeleteDialogOpenChange = (open: boolean) => {
     if (!open && !deleting) {

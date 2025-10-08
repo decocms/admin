@@ -288,11 +288,17 @@ export interface CreateMCPServerOptions<
       };
     }
   >;
-  tools?: Array<
-    (
-      env: Env & DefaultEnv<TSchema>,
-    ) => Promise<ReturnType<typeof createTool>> | ReturnType<typeof createTool>
-  >;
+  tools?: 
+    | Array<
+        (
+          env: Env & DefaultEnv<TSchema>,
+        ) => Promise<ReturnType<typeof createTool>> | ReturnType<typeof createTool>
+      >
+    | Promise<Array<
+        (
+          env: Env & DefaultEnv<TSchema>,
+        ) => Promise<ReturnType<typeof createTool>> | ReturnType<typeof createTool>
+      >>;
   workflows?: Array<
     (
       env: Env & DefaultEnv<TSchema>,
@@ -578,11 +584,12 @@ export const createMCPServer = <
       );
     }
 
+    const resolvedToolsArray = await (options.tools ?? []);
     const tools = await Promise.all(
-      options.tools?.map(async (tool) => {
+      resolvedToolsArray.map(async (tool) => {
         const toolResult = tool(bindings);
         return isTool(toolResult) ? toolResult : await toolResult;
-      }) ?? [],
+      }),
     );
 
     // since mastra workflows are thenables, we need to await and add as a prop

@@ -35,7 +35,7 @@ export const useBidcOnIframe = <T extends z.ZodTypeAny>({
         console.warn("Invalid message", message);
         return;
       }
-      onMessage(message);
+      onMessage(parsed.data);
     });
 
     return () => {

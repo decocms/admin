@@ -18,7 +18,11 @@ import { MCPClient } from "../index.ts";
 import { getIntegration } from "../integrations/api.ts";
 import { getRegistryApp } from "../registry/api.ts";
 import { apiKeys, organizations, projects } from "../schema.ts";
-import { policiesSchema, Statement, StatementSchema } from "../../models/index.ts";
+import {
+  policiesSchema,
+  Statement,
+  StatementSchema,
+} from "../../models/index.ts";
 
 export const SELECT_API_KEY_QUERY = `
   id,

@@ -108,7 +108,7 @@ function CachedThreadMessages({
   }
 
   return (
-    <div className="flex flex-1 min-h-0 flex-col overflow-hidden">
+    <div className="flex flex-1 min-h-0 flex-col overflow-hidden h-full">
       <AgentProvider
         agentId={
           cachedData.threadDetail.metadata?.agentId ??
@@ -129,7 +129,7 @@ function CachedThreadMessages({
         <MainChat
           showInput={false}
           initialScrollBehavior="top"
-          className="flex-1 min-w-0"
+          className="flex-1 min-h-0 h-full"
           contentClassName="flex flex-col min-w-0"
         />
       </AgentProvider>
@@ -200,26 +200,28 @@ function ThreadMessages({ threadId }: { threadId: string }) {
   }
 
   return (
-    <AgentProvider
-      agentId={threadDetail.metadata?.agentId ?? threadDetail.id}
-      threadId={threadDetail.id}
-      uiOptions={{
-        showThreadTools: false,
-        showModelSelector: false,
-        showThreadMessages: true,
-        showAgentVisibility: false,
-        showEditAgent: false,
-        showContextResources: false,
-      }}
-      readOnly
-    >
-      <MainChat
-        showInput={false}
-        initialScrollBehavior="top"
-        className="flex-1 min-w-0"
-        contentClassName="flex flex-col min-w-0"
-      />
-    </AgentProvider>
+    <div className="flex flex-1 min-h-0 flex-col overflow-hidden h-full">
+      <AgentProvider
+        agentId={threadDetail.metadata?.agentId ?? threadDetail.id}
+        threadId={threadDetail.id}
+        uiOptions={{
+          showThreadTools: false,
+          showModelSelector: false,
+          showThreadMessages: true,
+          showAgentVisibility: false,
+          showEditAgent: false,
+          showContextResources: false,
+        }}
+        readOnly
+      >
+        <MainChat
+          showInput={false}
+          initialScrollBehavior="top"
+          className="flex-1 min-h-0 h-full"
+          contentClassName="flex flex-col min-w-0"
+        />
+      </AgentProvider>
+    </div>
   );
 }
 

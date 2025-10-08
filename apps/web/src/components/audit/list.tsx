@@ -374,7 +374,7 @@ export function AuditListContent({
 
   return (
     <div
-      className="flex min-h-0 flex-col"
+      className="flex h-full flex-col"
       onKeyDown={handleKeyboardNavigation}
       tabIndex={0}
     >
@@ -383,7 +383,7 @@ export function AuditListContent({
           <span className="text-lg font-medium">No audit events found</span>
         </div>
       ) : (
-        <div className="flex h-[calc(100vh-48px)]">
+        <div className="flex flex-1 min-h-0">
           <ResizablePanelGroup direction="horizontal" className="flex">
             <ResizablePanel
               defaultSize={55}

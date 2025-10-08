@@ -30,12 +30,19 @@ import {
   ResizablePanel,
   ResizablePanelGroup,
 } from "@deco/ui/components/resizable.tsx";
-import { type KeyboardEvent, useEffect, useMemo, useState } from "react";
+import {
+  Suspense,
+  type KeyboardEvent,
+  useEffect,
+  useMemo,
+  useState,
+} from "react";
 import { useParams, useSearchParams } from "react-router";
 import { ErrorBoundary } from "../../error-boundary.tsx";
 import { AuditFilters } from "./audit-filters.tsx";
 import { AuditTable } from "./audit-table.tsx";
 import { ThreadConversation } from "./thread-conversation.tsx";
+import { Skeleton } from "@deco/ui/components/skeleton.tsx";
 
 const CURSOR_PAGINATION_SEARCH_PARAM = "after";
 const AGENT_FILTER_SEARCH_PARAM = "agent";
@@ -373,7 +380,7 @@ export function AuditListContent({
         <div className="flex h-[calc(100vh-48px)]">
           <ResizablePanelGroup direction="horizontal" className="flex">
             <ResizablePanel
-              defaultSize={60}
+              defaultSize={55}
               minSize={20}
               className="min-w-[240px]"
             >
@@ -447,21 +454,41 @@ export function AuditListContent({
             </ResizablePanel>
             <ResizableHandle withHandle />
             <ResizablePanel
-              defaultSize={50}
+              defaultSize={45}
               minSize={30}
               className="min-w-[360px]"
             >
               <div className="flex h-full min-w-0 flex-col bg-background">
                 {activeThread ? (
-                  <ThreadConversation
-                    thread={activeThread}
-                    onNavigate={handleNavigateThread}
-                    canNavigatePrevious={activeThreadIndex > 0}
-                    canNavigateNext={
-                      activeThreadIndex >= 0 &&
-                      activeThreadIndex < threads.length - 1
+                  <Suspense
+                    fallback={
+                      <div className="flex h-full flex-col p-4 space-y-4">
+                        <div className="flex items-center justify-between">
+                          <Skeleton className="h-6 w-2/3" />
+                          <div className="flex gap-2">
+                            <Skeleton className="h-8 w-8 rounded" />
+                            <Skeleton className="h-8 w-8 rounded" />
+                          </div>
+                        </div>
+                        <Skeleton className="h-4 w-1/3" />
+                        <div className="flex-1 space-y-4">
+                          <Skeleton className="h-20 w-full rounded-lg" />
+                          <Skeleton className="h-24 w-3/4 rounded-lg ml-auto" />
+                          <Skeleton className="h-32 w-full rounded-lg" />
+                        </div>
+                      </div>
                     }
-                  />
+                  >
+                    <ThreadConversation
+                      thread={activeThread}
+                      onNavigate={handleNavigateThread}
+                      canNavigatePrevious={activeThreadIndex > 0}
+                      canNavigateNext={
+                        activeThreadIndex >= 0 &&
+                        activeThreadIndex < threads.length - 1
+                      }
+                    />
+                  </Suspense>
                 ) : (
                   <div className="flex flex-1 items-center justify-center text-muted-foreground">
                     Select a conversation to view

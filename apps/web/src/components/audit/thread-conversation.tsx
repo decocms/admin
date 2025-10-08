@@ -1,5 +1,5 @@
 import { Suspense, useEffect, useMemo, useRef, useState } from "react";
-import { Spinner } from "@deco/ui/components/spinner.tsx";
+import { Skeleton } from "@deco/ui/components/skeleton.tsx";
 import {
   useThread,
   useThreadMessages,
@@ -68,8 +68,11 @@ function ThreadMessagesWithCache({ threadId }: { threadId: string }) {
     <div className="flex flex-1 min-h-0 flex-col overflow-hidden">
       <Suspense
         fallback={
-          <div className="flex flex-1 items-center justify-center">
-            <Spinner />
+          <div className="flex-1 space-y-4 p-4">
+            <Skeleton className="h-20 w-full rounded-lg" />
+            <Skeleton className="h-24 w-3/4 rounded-lg ml-auto" />
+            <Skeleton className="h-32 w-full rounded-lg" />
+            <Skeleton className="h-20 w-2/3 rounded-lg ml-auto" />
           </div>
         }
       >
@@ -92,8 +95,11 @@ function CachedThreadMessages({
 }) {
   if (!cachedData.threadDetail || !cachedData.messages) {
     return (
-      <div className="flex flex-1 items-center justify-center">
-        <Spinner />
+      <div className="flex-1 space-y-4 p-4">
+        <Skeleton className="h-20 w-full rounded-lg" />
+        <Skeleton className="h-24 w-3/4 rounded-lg ml-auto" />
+        <Skeleton className="h-32 w-full rounded-lg" />
+        <Skeleton className="h-20 w-2/3 rounded-lg ml-auto" />
       </div>
     );
   }
@@ -183,8 +189,11 @@ function ThreadMessages({ threadId }: { threadId: string }) {
 
   if (!threadDetail || !messages) {
     return (
-      <div className="flex flex-1 items-center justify-center">
-        <Spinner />
+      <div className="flex-1 space-y-4 p-4">
+        <Skeleton className="h-20 w-full rounded-lg" />
+        <Skeleton className="h-24 w-3/4 rounded-lg ml-auto" />
+        <Skeleton className="h-32 w-full rounded-lg" />
+        <Skeleton className="h-20 w-2/3 rounded-lg ml-auto" />
       </div>
     );
   }

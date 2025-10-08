@@ -458,13 +458,13 @@ export function AuditListContent({
                 </div>
               </div>
             </ResizablePanel>
-            <ResizableHandle withHandle />
+            <ResizableHandle withHandle className="bg-transparent" />
             <ResizablePanel
               defaultSize={45}
               minSize={30}
               className="min-w-[360px]"
             >
-              <div className="flex h-full min-w-0 flex-col bg-background">
+              <div className="flex h-full min-w-0 flex-col bg-background border border-border rounded-xl overflow-hidden">
                 {activeThread ? (
                   <Suspense
                     fallback={

@@ -312,7 +312,9 @@ export const reissueApiKey = createTool({
     const cacheId = `${c.workspace.value}:${id}`;
     await apiKeySWRCache.delete(cacheId);
 
-    return { ...mapApiKey(apiKey), value };
+    // Return the API key with updated policies if they were provided
+    const updatedApiKey = policies ? { ...apiKey, policies } : apiKey;
+    return { ...mapApiKey(updatedApiKey), value };
   },
 });
 

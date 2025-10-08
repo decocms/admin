@@ -75,9 +75,13 @@ function IFrameMessageHandler({ id }: { id: string }) {
         resource: scope,
       }))}
       onReissued={({ value: token }) => {
-        if (integration.connection.type !== "HTTP") {
+        if (
+          !integration ||
+          !integration.connection ||
+          integration.connection.type !== "HTTP"
+        ) {
           console.warn(
-            "Integration connection type is not HTTP, skipping token update",
+            "Integration or connection not loaded, or connection type is not HTTP; skipping token update",
           );
           return;
         }

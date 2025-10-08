@@ -12,6 +12,7 @@
     "drizzle-orm": "^0.44.3",
     "jose": "^6.0.11",
     "zod": "^3.25.67",
+    "bidc": "0.0.3",
     "zod-to-json-schema": "^3.24.4",
     "zod-from-json-schema": "^0.0.5"
   },

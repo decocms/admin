@@ -121,6 +121,41 @@ export function AuditListContent({
       );
     })(),
   );
+
+  // Re-sync state when URL params change (e.g., browser back/forward)
+  useEffect(() => {
+    if (!filters?.agentId) {
+      const agentParam = searchParams.get(AGENT_FILTER_SEARCH_PARAM);
+      setSelectedAgent(agentParam ?? undefined);
+    }
+  }, [searchParams, filters?.agentId]);
+
+  useEffect(() => {
+    if (!filters?.resourceId) {
+      const userParam = searchParams.get(USER_FILTER_SEARCH_PARAM);
+      setSelectedUser(userParam ?? undefined);
+    }
+  }, [searchParams, filters?.resourceId]);
+
+  useEffect(() => {
+    if (!filters?.limit) {
+      const pageSizeParam = searchParams.get(PAGE_SIZE_SEARCH_PARAM);
+      const parsed = pageSizeParam ? Number.parseInt(pageSizeParam, 10) : null;
+      if (parsed && PAGE_SIZE_OPTIONS.includes(parsed)) {
+        setPageSize(parsed);
+      }
+    }
+  }, [searchParams, filters?.limit]);
+
+  useEffect(() => {
+    if (!filters?.orderBy) {
+      const sortParam = searchParams.get(SORT_SEARCH_PARAM);
+      const isValid = SORT_OPTIONS.some((o) => o.value === sortParam);
+      if (isValid) {
+        setSort(sortParam as AuditOrderBy);
+      }
+    }
+  }, [searchParams, filters?.orderBy]);
   const [selectedThreadId, setSelectedThreadId] = useState<string | null>(null);
 
   const { data: customAgents = [] } = useAgents();
@@ -155,7 +190,7 @@ export function AuditListContent({
       agentId: filters?.agentId ?? selectedAgent,
       resourceId:
         filters?.resourceId ??
-        (selectedUser === "unknown" ? undefined : selectedUser),
+        (selectedUser === "unknown" ? "__unknown__" : selectedUser),
       orderBy: filters?.orderBy ?? sort,
       cursor: filters?.cursor ?? currentCursor,
       limit: filters?.limit ?? pageSize,

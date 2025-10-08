@@ -616,7 +616,8 @@ export function AuditFilters({
           ]}
           value={selectedAgent ?? "all"}
           onChange={(value) => {
-            onAgentChange(value);
+            const nextValue = value === "" ? "all" : value;
+            onAgentChange(nextValue);
           }}
         />
       </div>

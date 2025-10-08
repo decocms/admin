@@ -12,8 +12,19 @@ import { AgentProvider } from "../agent/provider.tsx";
 import { MainChat } from "../agent/chat.tsx";
 import { threadCache } from "../../utils/thread-cache.ts";
 
-// Track which threads have already triggered title generation
-const titlesInProgress = new Set<string>();
+// Track title generation with timestamps to prevent memory leaks
+const TITLE_GENERATION_TTL = 5 * 60 * 1000; // 5 minutes
+const titlesInProgress = new Map<string, number>();
+
+// Cleanup expired entries periodically
+function cleanupExpiredTitles() {
+  const now = Date.now();
+  for (const [threadId, timestamp] of titlesInProgress.entries()) {
+    if (now - timestamp > TITLE_GENERATION_TTL) {
+      titlesInProgress.delete(threadId);
+    }
+  }
+}
 
 export function ThreadConversation({
   thread,
@@ -36,7 +47,7 @@ export function ThreadConversation({
     id: thread.id,
     title: thread.title || "Untitled conversation",
     resourceId: thread.resourceId,
-    metadata: (thread.metadata || {}) as Record<string, unknown>,
+    metadata: thread.metadata || {},
   };
 
   return (
@@ -96,17 +107,6 @@ function CachedThreadMessages({
     messages: { messages: UIMessage[] };
   };
 }) {
-  if (!cachedData.threadDetail || !cachedData.messages) {
-    return (
-      <div className="flex-1 space-y-4 p-4">
-        <Skeleton className="h-20 w-full rounded-lg" />
-        <Skeleton className="h-24 w-3/4 rounded-lg ml-auto" />
-        <Skeleton className="h-32 w-full rounded-lg" />
-        <Skeleton className="h-20 w-2/3 rounded-lg ml-auto" />
-      </div>
-    );
-  }
-
   return (
     <div className="flex flex-1 min-h-0 flex-col overflow-hidden h-full">
       <AgentProvider
@@ -158,8 +158,16 @@ function ThreadMessages({ threadId }: { threadId: string }) {
 
     const isGeneratedTitle = !/^new thread/i.test(title.trim());
 
-    // Check if this thread is already being processed or has a generated title
-    if (isGeneratedTitle || titlesInProgress.has(threadId)) {
+    // Clean up expired entries before checking
+    cleanupExpiredTitles();
+
+    // Check if this thread is already being processed (and not expired) or has a generated title
+    const inProgressTimestamp = titlesInProgress.get(threadId);
+    const isRecentlyInProgress =
+      inProgressTimestamp &&
+      Date.now() - inProgressTimestamp < TITLE_GENERATION_TTL;
+
+    if (isGeneratedTitle || isRecentlyInProgress) {
       return;
     }
 
@@ -169,8 +177,8 @@ function ThreadMessages({ threadId }: { threadId: string }) {
       return;
     }
 
-    // Mark this thread as in progress
-    titlesInProgress.add(threadId);
+    // Mark this thread as in progress with current timestamp
+    titlesInProgress.set(threadId, Date.now());
 
     // Fire and forget - let it complete in background
     updateThreadTitle.mutate(
@@ -207,12 +215,13 @@ function ThreadMessages({ threadId }: { threadId: string }) {
         uiOptions={{
           showThreadTools: false,
           showModelSelector: false,
-          showThreadMessages: true,
+          showThreadMessages: false,
           showAgentVisibility: false,
           showEditAgent: false,
           showContextResources: false,
         }}
         readOnly
+        initialMessages={messages.messages}
       >
         <MainChat
           showInput={false}
@@ -224,6 +233,9 @@ function ThreadMessages({ threadId }: { threadId: string }) {
     </div>
   );
 }
+
+const SUMMARY_MAX_LENGTH = 80;
+const SUMMARY_MIN_TRUNCATE_LENGTH = 40;
 
 function extractSummaryCandidate(
   messages: { role: string; content: unknown }[],
@@ -246,14 +258,16 @@ function extractSummaryCandidate(
     return null;
   }
 
-  if (normalized.length <= 80) {
+  if (normalized.length <= SUMMARY_MAX_LENGTH) {
     return normalized;
   }
 
-  const truncated = normalized.slice(0, 80);
+  const truncated = normalized.slice(0, SUMMARY_MAX_LENGTH);
   const lastSpace = truncated.lastIndexOf(" ");
 
-  return (lastSpace > 40 ? truncated.slice(0, lastSpace) : truncated).concat(
-    "…",
-  );
+  return (
+    lastSpace > SUMMARY_MIN_TRUNCATE_LENGTH
+      ? truncated.slice(0, lastSpace)
+      : truncated
+  ).concat("…");
 }

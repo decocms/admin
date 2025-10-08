@@ -30,13 +30,17 @@ export const MainChat = ({
   showInput = true,
   initialScrollBehavior = "bottom",
   className,
+  contentClassName,
 }: MainChatProps = {}) => {
   return (
     <div
       className={`w-full flex flex-col ${className ?? "h-[calc(100vh-48px)]"}`}
     >
       <ScrollArea className="flex-1 min-h-0">
-        <ChatMessages initialScrollBehavior={initialScrollBehavior} />
+        <ChatMessages
+          initialScrollBehavior={initialScrollBehavior}
+          className={contentClassName}
+        />
       </ScrollArea>
       {showInput && (
         <div className="p-2">

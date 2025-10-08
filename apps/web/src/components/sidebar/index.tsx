@@ -716,40 +716,18 @@ function WorkspaceViews() {
                 )}
 
                 {/* Files */}
-                <SidebarMenuSubItem>
-                  <SidebarMenuSubButton
-                    className="cursor-pointer"
-                    onClick={() => setFilesModalOpen(true)}
-                  >
-                    <Icon
-                      name="folder"
-                      size={18}
-                      className="text-muted-foreground/75"
-                    />
-                    <span className="truncate">Files</span>
-                    <Badge variant="secondary" className="ml-auto text-xs">
-                      Soon
-                    </Badge>
-                  </SidebarMenuSubButton>
-                </SidebarMenuSubItem>
+                <ComingSoonMenuItem
+                  iconName="folder"
+                  label="Files"
+                  onClick={() => setFilesModalOpen(true)}
+                />
 
                 {/* Link */}
-                <SidebarMenuSubItem>
-                  <SidebarMenuSubButton
-                    className="cursor-pointer"
-                    onClick={() => setLinkModalOpen(true)}
-                  >
-                    <Icon
-                      name="link"
-                      size={18}
-                      className="text-muted-foreground/75"
-                    />
-                    <span className="truncate">Link</span>
-                    <Badge variant="secondary" className="ml-auto text-xs">
-                      Soon
-                    </Badge>
-                  </SidebarMenuSubButton>
-                </SidebarMenuSubItem>
+                <ComingSoonMenuItem
+                  iconName="link"
+                  label="Link"
+                  onClick={() => setLinkModalOpen(true)}
+                />
               </SidebarMenuSub>
             </CollapsibleContent>
           </div>
@@ -1104,6 +1082,31 @@ WorkspaceViews.Skeleton = () => (
     ))}
   </div>
 );
+
+// Reusable component for "Coming Soon" menu items
+interface ComingSoonMenuItemProps {
+  iconName: string;
+  label: string;
+  onClick: () => void;
+}
+
+function ComingSoonMenuItem({
+  iconName,
+  label,
+  onClick,
+}: ComingSoonMenuItemProps) {
+  return (
+    <SidebarMenuSubItem>
+      <SidebarMenuSubButton className="cursor-pointer" onClick={onClick}>
+        <Icon name={iconName} size={18} className="text-muted-foreground/75" />
+        <span className="truncate">{label}</span>
+        <Badge variant="secondary" className="ml-auto text-xs">
+          Soon
+        </Badge>
+      </SidebarMenuSubButton>
+    </SidebarMenuSubItem>
+  );
+}
 
 export function ProjectSidebar() {
   return (

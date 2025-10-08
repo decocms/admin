@@ -332,106 +332,106 @@ export function AgentProvider({
     stop: () => undefined,
   };
 
+  // Always call useChat unconditionally to comply with React Hook Rules
+  const chatInstance = useChat({
+    initialInput,
+    initialMessages: initialMessages || threadMessages || [],
+    credentials: "include",
+    headers: {
+      "x-deno-isolate-instance-id": agentRoot,
+      "x-trace-debug-id": getTraceDebugId(),
+    },
+    api: new URL("/actors/AIAgent/invoke/stream", DECO_CMS_API_URL).href,
+    experimental_prepareRequestBody: ({ messages }) => {
+      dispatchMessages({ messages, threadId, agentId });
+      const lastMessage = messages.at(-1);
+
+      /** Add annotation so we can use the file URL as a parameter to a tool call */
+      if (lastMessage) {
+        lastMessage.annotations =
+          lastMessage?.["experimental_attachments"]?.map((attachment) => ({
+            type: "file",
+            url: attachment.url,
+            name: attachment.name ?? "unknown file",
+            contentType: attachment.contentType ?? "unknown content type",
+            content:
+              "This message refers to a file uploaded by the user. You might use the file URL as a parameter to a tool call.",
+          })) || lastMessage?.annotations;
+      }
+
+      const bypassOpenRouter = !preferences.useOpenRouter;
+
+      // Collect persisted rules from latest state provided via events
+      const rules = latestRulesRef.current;
+
+      // Merge rules into annotations on the outgoing message so we send a single
+      // message with annotations (files + rules) instead of separate system messages
+      if (lastMessage) {
+        lastMessage.annotations = [
+          ...(lastMessage?.annotations ?? []),
+          ...(rules?.map((r) => ({ role: "system", content: r })) ?? []),
+        ].filter(Boolean);
+      }
+
+      return {
+        metadata: { threadId: threadId ?? agentId },
+        args: [
+          [lastMessage],
+          {
+            model: mergedUiOptions.showModelSelector
+              ? preferences.defaultModel
+              : effectiveChatState.model,
+            instructions: effectiveInstructions,
+            bypassOpenRouter,
+            sendReasoning: preferences.sendReasoning ?? true,
+            threadTitle: thread?.title,
+            tools: effectiveChatState.tools_set,
+            maxSteps: effectiveChatState.max_steps,
+            pdfSummarization: preferences.pdfSummarization ?? true,
+            toolsets,
+            smoothStream:
+              preferences.smoothStream !== false
+                ? { delayInMs: 25, chunk: "word" }
+                : undefined,
+          },
+        ],
+      };
+    },
+    onFinish: (_result, { finishReason }) => {
+      setFinishReason(finishReason);
+    },
+    onError: (error) => {
+      console.error("Chat error:", error);
+    },
+    onToolCall: ({ toolCall }) => {
+      _onToolCall?.(toolCall);
+      if (toolCall.toolName === "RENDER") {
+        const { content, title } = toolCall.args as {
+          content: string;
+          title: string;
+        };
+
+        const isImageLike = content && IMAGE_REGEXP.test(content);
+
+        if (!isImageLike) {
+          openPreviewPanel(`preview-${toolCall.toolCallId}`, content, title);
+        }
+
+        return {
+          success: true,
+        };
+      }
+    },
+    onResponse: (response) => {
+      correlationIdRef.current = response.headers.get("x-trace-debug-id");
+    },
+    ...chatOptions, // Allow passing any additional useChat options
+  });
+
+  // Choose whether to expose the real chat instance or mock based on readOnly
   const chat = readOnly
     ? (mockChat as ReturnType<typeof useChat>)
-    : useChat({
-        initialInput,
-        initialMessages: initialMessages || threadMessages || [],
-        credentials: "include",
-        headers: {
-          "x-deno-isolate-instance-id": agentRoot,
-          "x-trace-debug-id": getTraceDebugId(),
-        },
-        api: new URL("/actors/AIAgent/invoke/stream", DECO_CMS_API_URL).href,
-        experimental_prepareRequestBody: ({ messages }) => {
-          dispatchMessages({ messages, threadId, agentId });
-          const lastMessage = messages.at(-1);
-
-          /** Add annotation so we can use the file URL as a parameter to a tool call */
-          if (lastMessage) {
-            lastMessage.annotations =
-              lastMessage?.["experimental_attachments"]?.map((attachment) => ({
-                type: "file",
-                url: attachment.url,
-                name: attachment.name ?? "unknown file",
-                contentType: attachment.contentType ?? "unknown content type",
-                content:
-                  "This message refers to a file uploaded by the user. You might use the file URL as a parameter to a tool call.",
-              })) || lastMessage?.annotations;
-          }
-
-          const bypassOpenRouter = !preferences.useOpenRouter;
-
-          // Collect persisted rules from latest state provided via events
-          const rules = latestRulesRef.current;
-
-          // Merge rules into annotations on the outgoing message so we send a single
-          // message with annotations (files + rules) instead of separate system messages
-          if (lastMessage) {
-            lastMessage.annotations = [
-              ...(lastMessage?.annotations ?? []),
-              ...(rules?.map((r) => ({ role: "system", content: r })) ?? []),
-            ].filter(Boolean);
-          }
-
-          return {
-            metadata: { threadId: threadId ?? agentId },
-            args: [
-              [lastMessage],
-              {
-                model: mergedUiOptions.showModelSelector
-                  ? preferences.defaultModel
-                  : effectiveChatState.model,
-                instructions: effectiveInstructions,
-                bypassOpenRouter,
-                sendReasoning: preferences.sendReasoning ?? true,
-                threadTitle: thread?.title,
-                tools: effectiveChatState.tools_set,
-                maxSteps: effectiveChatState.max_steps,
-                pdfSummarization: preferences.pdfSummarization ?? true,
-                toolsets,
-                smoothStream:
-                  preferences.smoothStream !== false
-                    ? { delayInMs: 25, chunk: "word" }
-                    : undefined,
-              },
-            ],
-          };
-        },
-        onFinish: (_result, { finishReason }) => {
-          setFinishReason(finishReason);
-        },
-        onError: (error) => {
-          console.error("Chat error:", error);
-        },
-        onToolCall: ({ toolCall }) => {
-          _onToolCall?.(toolCall);
-          if (toolCall.toolName === "RENDER") {
-            const { content, title } = toolCall.args as {
-              content: string;
-              title: string;
-            };
-
-            const isImageLike = content && IMAGE_REGEXP.test(content);
-
-            if (!isImageLike) {
-              openPreviewPanel(
-                `preview-${toolCall.toolCallId}`,
-                content,
-                title,
-              );
-            }
-
-            return {
-              success: true,
-            };
-          }
-        },
-        onResponse: (response) => {
-          correlationIdRef.current = response.headers.get("x-trace-debug-id");
-        },
-        ...chatOptions, // Allow passing any additional useChat options
-      });
+    : chatInstance;
 
   const hasUnsavedChanges = form.formState.isDirty;
   const blocked = useBlocker(hasUnsavedChanges && !isWellKnownAgent);

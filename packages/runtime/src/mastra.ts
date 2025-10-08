@@ -63,7 +63,7 @@ export function createPrivateTool<
   TSuspendSchema extends z.ZodSchema = z.ZodSchema,
   TResumeSchema extends z.ZodSchema = z.ZodSchema,
   TContext extends
-  ToolExecutionContext<TSchemaIn> = ToolExecutionContext<TSchemaIn>,
+    ToolExecutionContext<TSchemaIn> = ToolExecutionContext<TSchemaIn>,
   TExecute extends ToolAction<
     TSchemaIn,
     TSchemaOut,
@@ -95,10 +95,10 @@ export function createPrivateTool<
   Function,
 ]
   ? Tool<TSchemaIn, TSchemaOut, TSuspendSchema, TResumeSchema, TContext> & {
-    inputSchema: TSchemaIn;
-    outputSchema: TSchemaOut;
-    execute: (context: TContext) => Promise<any>;
-  }
+      inputSchema: TSchemaIn;
+      outputSchema: TSchemaOut;
+      execute: (context: TContext) => Promise<any>;
+    }
   : Tool<TSchemaIn, TSchemaOut, TSuspendSchema, TResumeSchema, TContext> {
   const execute = opts.execute;
   if (typeof execute === "function") {
@@ -153,10 +153,10 @@ export function createTool<
   Function,
 ]
   ? Tool<TSchemaIn, TSchemaOut, TSuspendSchema, TResumeSchema, TContext> & {
-    inputSchema: TSchemaIn;
-    outputSchema: TSchemaOut;
-    execute: (context: TContext) => Promise<any>;
-  }
+      inputSchema: TSchemaIn;
+      outputSchema: TSchemaOut;
+      execute: (context: TContext) => Promise<any>;
+    }
   : Tool<TSchemaIn, TSchemaOut, TSuspendSchema, TResumeSchema, TContext> {
   // @ts-expect-error - TSchemaIn is not a ZodType
   return mastraCreateTool({
@@ -164,11 +164,11 @@ export function createTool<
     execute:
       typeof opts?.execute === "function"
         ? (((input) => {
-          return opts.execute!({
-            ...input,
-            runtimeContext: createRuntimeContext(input.runtimeContext),
-          });
-        }) as TExecute)
+            return opts.execute!({
+              ...input,
+              runtimeContext: createRuntimeContext(input.runtimeContext),
+            });
+          }) as TExecute)
         : opts.execute,
   });
 }
@@ -189,17 +189,17 @@ export interface Step<
   TSuspendSchema extends z.ZodType<any> = z.ZodType<any>,
   TEngineType = any,
 > extends Omit<
-  MastraStep<
-    TStepId,
+    MastraStep<
+      TStepId,
       TState,
-    TSchemaIn,
-    TSchemaOut,
-    TResumeSchema,
-    TSuspendSchema,
-    TEngineType
-  >,
-  "execute"
-> {
+      TSchemaIn,
+      TSchemaOut,
+      TResumeSchema,
+      TSuspendSchema,
+      TEngineType
+    >,
+    "execute"
+  > {
   execute: ExecWithContext<
     ExecuteFunction<
       z.infer<TState>,
@@ -326,7 +326,7 @@ export type Resources<Env = any, TSchema extends z.ZodTypeAny = never> = Array<
       };
     };
   }
->
+>;
 export interface Integration {
   id: string;
   appId: string;
@@ -715,7 +715,8 @@ export const createMCPServer = <
               })();
 
               const defaultListRules: string[] = [
-                `You are viewing the ${r.title ?? r.name
+                `You are viewing the ${
+                  r.title ?? r.name
                 } resources list. Resources are changeable via Resource tools (DECO_CHAT_RESOURCES_*). Use the appropriate tools to read, search, create, update, or delete items; do not fabricate data.`,
               ];
 
@@ -766,8 +767,8 @@ export const createMCPServer = <
               : z.object({}).shape,
           outputSchema:
             tool.outputSchema &&
-              typeof tool.outputSchema === "object" &&
-              "shape" in tool.outputSchema
+            typeof tool.outputSchema === "object" &&
+            "shape" in tool.outputSchema
               ? (tool.outputSchema.shape as z.ZodRawShape)
               : z.object({}).shape,
         },

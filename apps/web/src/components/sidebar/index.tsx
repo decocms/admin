@@ -361,7 +361,7 @@ function WorkspaceViews() {
                   <SidebarMenuButton
                     asChild
                     isActive={isActive}
-                    className="w-full pr-8"
+                    className="w-full pr-2!"
                   >
                     <Link
                       to={href}
@@ -425,6 +425,18 @@ function WorkspaceViews() {
                       <span className="truncate">
                         {view.title ?? integration?.name ?? "Custom"}
                       </span>
+                      {view.type === "custom" && (
+                        <Icon
+                          name="unpin"
+                          size={18}
+                          className="text-muted-foreground/75 opacity-0 group-hover/item:opacity-50 hover:opacity-100 transition-opacity cursor-pointer ml-auto"
+                          onClick={(event) => {
+                            event.preventDefault();
+                            event.stopPropagation();
+                            handleRemoveView(view);
+                          }}
+                        />
+                      )}
                     </Link>
                   </SidebarMenuButton>
                 )}
@@ -438,7 +450,7 @@ function WorkspaceViews() {
             <Collapsible asChild defaultOpen className="group/collapsible">
               <div className="group/integration-header relative">
                 <CollapsibleTrigger asChild>
-                  <SidebarMenuButton className="w-full">
+                  <SidebarMenuButton className="w-full pr-2!">
                     <div className="relative">
                       <IntegrationAvatar
                         size="xs"

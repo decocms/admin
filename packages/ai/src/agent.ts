@@ -296,7 +296,7 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
     };
   }
 
-  _createMCPClient(ctx?: AppContext) {
+  _createMCPClient(ctx?: AppContext): MCPClientStub<ProjectTools> {
     return MCPClient.forContext(ctx ?? this._createAppContext(this.metadata));
   }
 

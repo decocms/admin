@@ -244,7 +244,7 @@ export const createApiKey = createTool({
     const value = await issuer.issue({
       ...claims,
       sub: `api-key:${apiKey.id}`,
-      aud: c.locator?.value,
+      aud: c.locator.value,
       iat: new Date().getTime(),
     });
 
@@ -295,7 +295,7 @@ export const reissueApiKey = createTool({
     const value = await issuer.issue({
       ...claims,
       sub: `api-key:${apiKey.id}`,
-      aud: c?.locator?.value,
+      aud: c.locator.value,
       iat: new Date().getTime(),
     });
 

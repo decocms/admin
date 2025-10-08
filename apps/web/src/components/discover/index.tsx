@@ -1,7 +1,7 @@
 import {
-  type Integration,
   MCPConnection,
   useMarketplaceIntegrations,
+  type Integration,
 } from "@deco/sdk";
 import { Button } from "@deco/ui/components/button.tsx";
 import { Icon } from "@deco/ui/components/icon.tsx";
@@ -10,9 +10,9 @@ import { useMemo, useState } from "react";
 import { useCreateCustomApp } from "../../hooks/use-create-custom-connection.ts";
 import { useNavigateWorkspace } from "../../hooks/use-navigate-workspace.ts";
 import { IntegrationAvatar } from "../common/avatar/integration.tsx";
+import { type DecopilotContextValue } from "../decopilot/context.tsx";
 import { AppKeys, getConnectionAppKey } from "../integrations/apps.ts";
 import { VerifiedBadge } from "../integrations/marketplace.tsx";
-import { type DecopilotContextValue } from "../decopilot/context.tsx";
 import { DecopilotLayout } from "../layout/decopilot-layout.tsx";
 
 // For the future, it should be controlled in a view
@@ -27,7 +27,13 @@ const HIGHLIGHTS = [
 ];
 
 // For the future, it should be controlled in a view
-const FEATURED = ["@deco/airtable", "@deco/slack", "@deco/google-docs"];
+const FEATURED = [
+  "@deco/google-gmail",
+  "@deco/google-calendar",
+  "@deco/notion",
+  "@deco/slack",
+  "@deco/google-sheets",
+];
 
 type FeaturedIntegration = Integration & {
   provider: string;
@@ -107,7 +113,13 @@ const Discover = () => {
     (integration) => FEATURED.includes(integration.name),
   );
   const verifiedIntegrations = integrations?.integrations.filter(
-    (integration) => integration.verified,
+    (integration) =>
+      integration.verified && !FEATURED.includes(integration.name),
+  );
+
+  const experimentalIntegrations = integrations?.integrations.filter(
+    (integration) =>
+      !integration.verified && !FEATURED.includes(integration.name),
   );
 
   const highlights = useMemo(() => {
@@ -241,14 +253,33 @@ const Discover = () => {
                 ))}
               </div>
 
+              {verifiedIntegrations?.length > 0 && (
+                <>
+                  <h2 className="text-lg pt-5 font-medium">
+                    Verified Apps
+                    <span className="text-muted-foreground font-mono font-normal text-sm ml-2">
+                      {verifiedIntegrations?.length}
+                    </span>
+                  </h2>
+                  <div className="grid grid-cols-3 gap-4">
+                    {verifiedIntegrations?.map((integration) => (
+                      <FeaturedCard
+                        key={integration.id}
+                        integration={integration}
+                      />
+                    ))}
+                  </div>
+                </>
+              )}
+
               <h2 className="text-lg pt-5 font-medium">
-                All Apps
+                Experimental Apps
                 <span className="text-muted-foreground font-mono font-normal text-sm ml-2">
-                  {integrations?.integrations?.length}
+                  {experimentalIntegrations?.length}
                 </span>
               </h2>
               <div className="grid grid-cols-3 gap-4">
-                {integrations?.integrations.map((integration) => (
+                {experimentalIntegrations?.map((integration) => (
                   <FeaturedCard
                     key={integration.id}
                     integration={integration}

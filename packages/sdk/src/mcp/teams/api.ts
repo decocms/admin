@@ -29,7 +29,8 @@ import { MicroDollar, type Transaction } from "../wallet/index.ts";
 import { WebCache } from "../../cache/index.ts";
 import { TeamWithViews } from "../../crud/teams.ts";
 import { type View } from "../../views.ts";
-import { RoleUpdateAction, Statement } from "../../auth/policy.ts";
+import { RoleUpdateAction } from "../../auth/policy.ts";
+import { Statement } from "../../models/index.ts";
 import { isRequired } from "../../utils/fns.ts";
 import { parseId } from "../integrations/api.ts";
 

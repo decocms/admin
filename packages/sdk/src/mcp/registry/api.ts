@@ -3,13 +3,7 @@ import { z } from "zod";
 import { AppName } from "../../common/index.ts";
 import { UserInputError } from "../../errors.ts";
 import type { MCPConnection } from "../../models/mcp.ts";
-import {
-  DecoConnectionSchema,
-  HTTPConnectionSchema,
-  InnateConnectionSchema,
-  SSEConnectionSchema,
-  WebsocketConnectionSchema,
-} from "../../models/mcp.ts";
+import { MCPConnectionSchema } from "../../models/mcp.ts";
 import type { Json, QueryResult } from "../../storage/index.ts";
 import {
   assertHasWorkspace,
@@ -71,15 +65,6 @@ const SELECT_REGISTRY_APP_WITH_SCOPE_QUERY = `
     metadata
   )
 ` as const;
-
-// MCPConnection schema for validation
-const MCPConnectionSchema = z.discriminatedUnion("type", [
-  HTTPConnectionSchema,
-  SSEConnectionSchema,
-  WebsocketConnectionSchema,
-  DecoConnectionSchema,
-  InnateConnectionSchema,
-]);
 
 // Zod schemas for output validation
 const RegistryScopeSchema = z.object({

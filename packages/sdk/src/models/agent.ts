@@ -1,12 +1,6 @@
 import { z } from "zod";
 import { DEFAULT_MODEL, WELL_KNOWN_MODELS } from "../constants.ts";
-import {
-  DecoConnectionSchema,
-  HTTPConnectionSchema,
-  InnateConnectionSchema,
-  SSEConnectionSchema,
-  WebsocketConnectionSchema,
-} from "./mcp.ts";
+import { MCPConnectionSchema } from "./mcp.ts";
 
 const wellKnownModelIds = [
   ...WELL_KNOWN_MODELS.map((m) => m.id),
@@ -141,14 +135,6 @@ export const AgentSchema = z.object({
     .nullable()
     .describe("Temperature of the LLM. Must be between 0 and 1."),
 });
-
-const MCPConnectionSchema = z.discriminatedUnion("type", [
-  HTTPConnectionSchema,
-  SSEConnectionSchema,
-  WebsocketConnectionSchema,
-  DecoConnectionSchema,
-  InnateConnectionSchema,
-]);
 
 export const ToolsetSchema = z.object({
   connection: MCPConnectionSchema,

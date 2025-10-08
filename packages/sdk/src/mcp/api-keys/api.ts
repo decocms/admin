@@ -1,6 +1,5 @@
 import { and, eq, or } from "drizzle-orm";
 import { z } from "zod";
-import { Statement, StatementSchema } from "../../auth/policy.ts";
 import { userFromJWT } from "../../auth/user.ts";
 import {
   InternalServerError,
@@ -19,6 +18,7 @@ import { MCPClient } from "../index.ts";
 import { getIntegration } from "../integrations/api.ts";
 import { getRegistryApp } from "../registry/api.ts";
 import { apiKeys, organizations, projects } from "../schema.ts";
+import { policiesSchema, Statement } from "../../models/index.ts";
 
 export const SELECT_API_KEY_QUERY = `
   id,
@@ -101,11 +101,6 @@ export const listApiKeys = createTool({
     };
   },
 });
-
-const policiesSchema = z
-  .array(StatementSchema)
-  .optional()
-  .describe("Policies for the API key");
 
 const AppClaimsSchema = z.object({
   appName: z.string(),

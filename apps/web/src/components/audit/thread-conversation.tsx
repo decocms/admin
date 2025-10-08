@@ -1,4 +1,4 @@
-import { Suspense, useEffect, useMemo, useRef, useState } from "react";
+import { Suspense, useEffect, useMemo, useState } from "react";
 import { Skeleton } from "@deco/ui/components/skeleton.tsx";
 import {
   useThread,

@@ -30,7 +30,6 @@ export const MainChat = ({
   showInput = true,
   initialScrollBehavior = "bottom",
   className,
-  contentClassName,
 }: MainChatProps = {}) => {
   return (
     <div

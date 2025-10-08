@@ -12,6 +12,9 @@ import { AgentProvider } from "../agent/provider.tsx";
 import { MainChat } from "../agent/chat.tsx";
 import { threadCache } from "../../utils/thread-cache.ts";
 
+// Track which threads have already triggered title generation
+const titlesInProgress = new Set<string>();
+
 export function ThreadConversation({
   thread,
   onNavigate,
@@ -140,7 +143,6 @@ function ThreadMessages({ threadId }: { threadId: string }) {
   const title = useMemo(() => threadDetail?.title ?? "", [threadDetail?.title]);
   const { data: messages } = useThreadMessages(threadId);
   const updateThreadTitle = useUpdateThreadTitle();
-  const hasTriggeredRef = useRef(false);
 
   // Cache the data after it loads
   useEffect(() => {
@@ -150,21 +152,14 @@ function ThreadMessages({ threadId }: { threadId: string }) {
   }, [threadDetail, messages, threadId]);
 
   useEffect(() => {
-    hasTriggeredRef.current = false;
-  }, [threadId, title]);
-
-  useEffect(() => {
     if (!title || !messages?.messages?.length) {
       return;
     }
 
     const isGeneratedTitle = !/^new thread/i.test(title.trim());
 
-    if (
-      isGeneratedTitle ||
-      updateThreadTitle.isPending ||
-      hasTriggeredRef.current
-    ) {
+    // Check if this thread is already being processed or has a generated title
+    if (isGeneratedTitle || titlesInProgress.has(threadId)) {
       return;
     }
 
@@ -173,19 +168,25 @@ function ThreadMessages({ threadId }: { threadId: string }) {
     if (!summaryCandidate) {
       return;
     }
-    hasTriggeredRef.current = true;
-    updateThreadTitle.mutate({
-      threadId,
-      title: summaryCandidate,
-      stream: true,
-    });
-  }, [
-    messages?.messages,
-    threadId,
-    title,
-    updateThreadTitle.isPending,
-    updateThreadTitle,
-  ]);
+
+    // Mark this thread as in progress
+    titlesInProgress.add(threadId);
+
+    // Fire and forget - let it complete in background
+    updateThreadTitle.mutate(
+      {
+        threadId,
+        title: summaryCandidate,
+        stream: true,
+      },
+      {
+        onSettled: () => {
+          // Clean up after mutation completes (success or error)
+          titlesInProgress.delete(threadId);
+        },
+      },
+    );
+  }, [messages?.messages, threadId, title, updateThreadTitle]);
 
   if (!threadDetail || !messages) {
     return (

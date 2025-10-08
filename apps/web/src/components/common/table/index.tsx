@@ -81,11 +81,11 @@ export function Table<T = Record<string, unknown>>({
               return (
                 <TableHead
                   key={col.id}
-                  className={
-                    getHeaderClass(idx, columns.length) +
-                    " group " +
-                    col.rowClassName
-                  }
+                  className={cn(
+                    getHeaderClass(idx, columns.length),
+                    "group",
+                    col.rowClassName,
+                  )}
                   style={{ cursor: col.sortable ? "pointer" : undefined }}
                   onClick={
                     col.sortable && onSort ? () => onSort(col.id) : undefined

@@ -111,9 +111,15 @@ export function AuditListContent({
     return DEFAULT_PAGE_SIZE;
   });
   const [sort, setSort] = useState<AuditOrderBy>(
-    (filters?.orderBy ??
-      (searchParams.get(SORT_SEARCH_PARAM) as AuditOrderBy) ??
-      SORT_OPTIONS[0].value) as AuditOrderBy,
+    (() => {
+      const sortParam = searchParams.get(SORT_SEARCH_PARAM);
+      const isValid = SORT_OPTIONS.some((o) => o.value === sortParam);
+      return (
+        filters?.orderBy ??
+        (isValid ? (sortParam as AuditOrderBy) : undefined) ??
+        SORT_OPTIONS[0].value
+      );
+    })(),
   );
   const [selectedThreadId, setSelectedThreadId] = useState<string | null>(null);
 

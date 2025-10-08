@@ -7,6 +7,7 @@ export interface UserPreferences {
   sendReasoning: boolean;
   defaultModel: string;
   showDecopilot: boolean;
+  pdfSummarization: boolean;
 }
 
 export const userPreferencesLabels = {
@@ -36,6 +37,7 @@ export function useUserPreferences() {
         smoothStream: true,
         sendReasoning: true,
         showDecopilot: false,
+        pdfSummarization: true,
       },
     });
 

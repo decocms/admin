@@ -349,7 +349,9 @@ const proxy = (
         await client({
           tool: req.params.name,
         })
-      ).callTool(req.params) as ReturnType<CallToolMiddleware>;
+      ).callTool(req.params, undefined, {
+        timeout: 3000000,
+      }) as ReturnType<CallToolMiddleware>;
     });
 
     return { listTools, callTool };

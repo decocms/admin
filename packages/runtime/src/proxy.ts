@@ -76,10 +76,16 @@ export function createMCPClientProxy<T extends Record<string, unknown>>(
           extraHeaders,
         );
 
-        const { structuredContent, isError, content } = await client.callTool({
-          name: String(name),
-          arguments: args as Record<string, unknown>,
-        });
+        const { structuredContent, isError, content } = await client.callTool(
+          {
+            name: String(name),
+            arguments: args as Record<string, unknown>,
+          },
+          undefined,
+          {
+            timeout: 3000000,
+          },
+        );
 
         if (isError) {
           // @ts-expect-error - content is not typed

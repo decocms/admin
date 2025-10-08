@@ -73,6 +73,7 @@ interface AgentProviderProps {
   onAutoSendComplete?: () => void;
   initialRules?: string[];
   onToolCall?: (toolCall: ToolCall<string, unknown>) => void;
+  readOnly?: boolean;
 }
 
 interface AgentContextValue {
@@ -92,7 +93,7 @@ interface AgentContextValue {
   setRules: (rules: string[]) => void;
 
   // Chat integration
-  chat: ReturnType<typeof useChat> & {
+  chat: (ReturnType<typeof useChat> | MockChat) & {
     finishReason: LanguageModelV1FinishReason | null;
   };
 
@@ -115,7 +116,23 @@ interface AgentContextValue {
   form: UseFormReturn<Agent>;
   handleSubmit: () => void;
   isPublic?: boolean;
+  isReadOnly?: boolean;
 }
+
+type MockChat = {
+  messages: UIMessage[];
+  isLoading: boolean;
+  status: ReturnType<typeof useChat>["status"];
+  setMessages: ReturnType<typeof useChat>["setMessages"];
+  handleInputChange: ReturnType<typeof useChat>["handleInputChange"];
+  handleSubmit: ReturnType<typeof useChat>["handleSubmit"];
+  input: string;
+  setInput: ReturnType<typeof useChat>["setInput"];
+  append: ReturnType<typeof useChat>["append"];
+  reload: ReturnType<typeof useChat>["reload"];
+  error: ReturnType<typeof useChat>["error"];
+  stop: ReturnType<typeof useChat>["stop"];
+};
 
 const DEFAULT_UI_OPTIONS: UiOptions = {
   showThreadTools: true,
@@ -154,6 +171,7 @@ export function AgentProvider({
   onAutoSendComplete,
   initialRules,
   onToolCall: _onToolCall,
+  readOnly = false,
 }: PropsWithChildren<AgentProviderProps>) {
   const { data: serverAgent } = useAgentData(agentId);
   const isPublic = serverAgent.visibility === "PUBLIC";
@@ -298,100 +316,126 @@ export function AgentProvider({
     return baseInstructions;
   }, [hasImageGeneration, effectiveChatState.instructions]);
 
-  // Initialize chat - always uses current agent state + overrides
-  const chat = useChat({
-    initialInput,
-    initialMessages: initialMessages || threadMessages || [],
-    credentials: "include",
-    headers: {
-      "x-deno-isolate-instance-id": agentRoot,
-      "x-trace-debug-id": getTraceDebugId(),
-    },
-    api: new URL("/actors/AIAgent/invoke/stream", DECO_CMS_API_URL).href,
-    experimental_prepareRequestBody: ({ messages }) => {
-      dispatchMessages({ messages, threadId, agentId });
-      const lastMessage = messages.at(-1);
+  // Initialize chat - readOnly should be stable (passed with key prop at parent)
+  // This conditional is safe because readOnly doesn't change during component lifetime
+  // When readOnly changes, parent should remount with different key
+  const chat = readOnly
+    ? ({
+        messages: initialMessages || threadMessages || [],
+        isLoading: false,
+        status: "ready",
+        setMessages: () => undefined,
+        handleInputChange: () => undefined,
+        handleSubmit: () => undefined,
+        input: "",
+        setInput: () => undefined,
+        append: () => Promise.resolve(undefined),
+        reload: () => Promise.resolve(undefined),
+        error: undefined,
+        stop: () => undefined,
+        addToolResult: () => undefined,
+        experimental_resume: () => undefined,
+        setData: () => undefined,
+        id: threadId ?? agentId,
+      } as ReturnType<typeof useChat>)
+    : useChat({
+        initialInput,
+        initialMessages: initialMessages || threadMessages || [],
+        credentials: "include",
+        headers: {
+          "x-deno-isolate-instance-id": agentRoot,
+          "x-trace-debug-id": getTraceDebugId(),
+        },
+        api: new URL("/actors/AIAgent/invoke/stream", DECO_CMS_API_URL).href,
+        experimental_prepareRequestBody: ({ messages }) => {
+          dispatchMessages({ messages, threadId, agentId });
+          const lastMessage = messages.at(-1);
 
-      /** Add annotation so we can use the file URL as a parameter to a tool call */
-      if (lastMessage) {
-        lastMessage.annotations =
-          lastMessage?.["experimental_attachments"]?.map((attachment) => ({
-            type: "file",
-            url: attachment.url,
-            name: attachment.name ?? "unknown file",
-            contentType: attachment.contentType ?? "unknown content type",
-            content:
-              "This message refers to a file uploaded by the user. You might use the file URL as a parameter to a tool call.",
-          })) || lastMessage?.annotations;
-      }
+          /** Add annotation so we can use the file URL as a parameter to a tool call */
+          if (lastMessage) {
+            lastMessage.annotations =
+              lastMessage?.["experimental_attachments"]?.map((attachment) => ({
+                type: "file",
+                url: attachment.url,
+                name: attachment.name ?? "unknown file",
+                contentType: attachment.contentType ?? "unknown content type",
+                content:
+                  "This message refers to a file uploaded by the user. You might use the file URL as a parameter to a tool call.",
+              })) || lastMessage?.annotations;
+          }
 
-      const bypassOpenRouter = !preferences.useOpenRouter;
+          const bypassOpenRouter = !preferences.useOpenRouter;
 
-      // Collect persisted rules from latest state provided via events
-      const rules = latestRulesRef.current;
+          // Collect persisted rules from latest state provided via events
+          const rules = latestRulesRef.current;
 
-      // Merge rules into annotations on the outgoing message so we send a single
-      // message with annotations (files + rules) instead of separate system messages
-      if (lastMessage) {
-        lastMessage.annotations = [
-          ...(lastMessage?.annotations ?? []),
-          ...(rules?.map((r) => ({ role: "system", content: r })) ?? []),
-        ].filter(Boolean);
-      }
+          // Merge rules into annotations on the outgoing message so we send a single
+          // message with annotations (files + rules) instead of separate system messages
+          if (lastMessage) {
+            lastMessage.annotations = [
+              ...(lastMessage?.annotations ?? []),
+              ...(rules?.map((r) => ({ role: "system", content: r })) ?? []),
+            ].filter(Boolean);
+          }
 
-      return {
-        metadata: { threadId: threadId ?? agentId },
-        args: [
-          [lastMessage],
-          {
-            model: mergedUiOptions.showModelSelector
-              ? preferences.defaultModel
-              : effectiveChatState.model,
-            instructions: effectiveInstructions,
-            bypassOpenRouter,
-            sendReasoning: preferences.sendReasoning ?? true,
-            threadTitle: thread?.title,
-            tools: effectiveChatState.tools_set,
-            maxSteps: effectiveChatState.max_steps,
-            toolsets,
-            smoothStream:
-              preferences.smoothStream !== false
-                ? { delayInMs: 25, chunk: "word" }
-                : undefined,
-          },
-        ],
-      };
-    },
-    onFinish: (_result, { finishReason }) => {
-      setFinishReason(finishReason);
-    },
-    onError: (error) => {
-      console.error("Chat error:", error);
-    },
-    onToolCall: ({ toolCall }) => {
-      _onToolCall?.(toolCall);
-      if (toolCall.toolName === "RENDER") {
-        const { content, title } = toolCall.args as {
-          content: string;
-          title: string;
-        };
+          return {
+            metadata: { threadId: threadId ?? agentId },
+            args: [
+              [lastMessage],
+              {
+                model: mergedUiOptions.showModelSelector
+                  ? preferences.defaultModel
+                  : effectiveChatState.model,
+                instructions: effectiveInstructions,
+                bypassOpenRouter,
+                sendReasoning: preferences.sendReasoning ?? true,
+                threadTitle: thread?.title,
+                tools: effectiveChatState.tools_set,
+                maxSteps: effectiveChatState.max_steps,
+                pdfSummarization: preferences.pdfSummarization ?? true,
+                toolsets,
+                smoothStream:
+                  preferences.smoothStream !== false
+                    ? { delayInMs: 25, chunk: "word" }
+                    : undefined,
+              },
+            ],
+          };
+        },
+        onFinish: (_result, { finishReason }) => {
+          setFinishReason(finishReason);
+        },
+        onError: (error) => {
+          console.error("Chat error:", error);
+        },
+        onToolCall: ({ toolCall }) => {
+          _onToolCall?.(toolCall);
+          if (toolCall.toolName === "RENDER") {
+            const { content, title } = toolCall.args as {
+              content: string;
+              title: string;
+            };
 
-        const isImageLike = content && IMAGE_REGEXP.test(content);
+            const isImageLike = content && IMAGE_REGEXP.test(content);
 
-        if (!isImageLike) {
-          openPreviewPanel(`preview-${toolCall.toolCallId}`, content, title);
-        }
+            if (!isImageLike) {
+              openPreviewPanel(
+                `preview-${toolCall.toolCallId}`,
+                content,
+                title,
+              );
+            }
 
-        return {
-          success: true,
-        };
-      }
-    },
-    onResponse: (response) => {
-      correlationIdRef.current = response.headers.get("x-trace-debug-id");
-    },
-    ...chatOptions, // Allow passing any additional useChat options
-  });
+            return {
+              success: true,
+            };
+          }
+        },
+        onResponse: (response) => {
+          correlationIdRef.current = response.headers.get("x-trace-debug-id");
+        },
+        ...chatOptions, // Allow passing any additional useChat options
+      });
 
   const hasUnsavedChanges = form.formState.isDirty;
   const blocked = useBlocker(hasUnsavedChanges && !isWellKnownAgent);

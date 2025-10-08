@@ -215,6 +215,9 @@ export const callTool = createIntegrationManagementTool({
         },
         // @ts-expect-error TODO: remove this once this is merged: https://github.com/modelcontextprotocol/typescript-sdk/pull/528
         CallToolResultSchema,
+        {
+          timeout: 3000000,
+        },
       );
 
       await client.close();

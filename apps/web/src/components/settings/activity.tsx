@@ -32,7 +32,7 @@ export default function ActivitySettings({
 
   return (
     <DecopilotLayout value={decopilotContextValue}>
-      <div className="h-full w-full text-foreground overflow-x-auto p-4 flex flex-col gap-2">
+      <div className="h-full w-full text-foreground flex flex-col p-4">
         {headerSlot}
         <ErrorBoundary fallback={<ActivityErrorFallback />}>
           <Suspense
@@ -42,7 +42,9 @@ export default function ActivitySettings({
               </div>
             }
           >
-            <AuditListContent />
+            <div className="flex-1 min-h-0 overflow-hidden overflow-x-auto">
+              <AuditListContent />
+            </div>
           </Suspense>
         </ErrorBoundary>
       </div>

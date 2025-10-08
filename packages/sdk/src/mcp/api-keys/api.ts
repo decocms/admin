@@ -278,7 +278,11 @@ export const reissueApiKey = createTool({
       .from("deco_chat_api_keys")
       .select(SELECT_API_KEY_QUERY)
       .eq("id", id)
-      .or(`workspace.eq.${workspace},project_id.eq.${projectId}`)
+      .or(
+        projectId
+          ? `workspace.eq.${workspace},project_id.eq.${projectId}`
+          : `workspace.eq.${workspace}`,
+      )
       .is("deleted_at", null)
       .single();
 

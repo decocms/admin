@@ -5,6 +5,7 @@ import {
   useOrganizations,
   useTeamMembersBySlug,
 } from "@deco/sdk";
+import { WELL_KNOWN_AGENTS } from "@deco/sdk/constants";
 import {
   Alert,
   AlertDescription,
@@ -116,7 +117,12 @@ export function AuditListContent({
   );
   const [selectedThreadId, setSelectedThreadId] = useState<string | null>(null);
 
-  const { data: agents = [] } = useAgents();
+  const { data: customAgents = [] } = useAgents();
+  // Include well-known agents like Decopilot
+  const agents = useMemo(
+    () => [...customAgents, ...Object.values(WELL_KNOWN_AGENTS)],
+    [customAgents],
+  );
   const params = useParams();
   const getSafeCursor = (cursor: string | null) => {
     if (!cursor) return;

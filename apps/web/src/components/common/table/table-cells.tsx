@@ -113,15 +113,39 @@ function UserInfo({
   const name = isCurrentUser
     ? user.metadata.full_name
     : member?.profiles?.metadata?.full_name;
-  const email = isCurrentUser ? user.email : member?.profiles?.email;
 
-  // Only get phone metadata if userId looks like a phone number
-  const isPhoneNumber = userId?.match(/^[\d+]/);
+  // Helper to check if email is valid (not just an ID)
+  const isValidEmail = (str?: string | null): boolean => {
+    if (!str || typeof str !== "string") return false;
+    // Must contain @ and match email pattern - reject numeric IDs like "4731879672448993;"
+    if (!str.includes("@")) return false;
+    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(str);
+  };
+
+  // Try to get email from profiles.email or metadata.email, whichever is valid
+  const profileEmail = member?.profiles?.email;
+  const metadataEmail = member?.profiles?.metadata?.email;
+  const currentUserEmail = user?.email;
+
+  const validEmail = isCurrentUser
+    ? isValidEmail(currentUserEmail)
+      ? currentUserEmail
+      : null
+    : isValidEmail(profileEmail)
+      ? profileEmail
+      : isValidEmail(metadataEmail)
+        ? metadataEmail
+        : null;
+
+  // Only get phone metadata if userId looks like a phone number AND we don't have a member
+  // (if we have a member, the userId is a user ID, not a phone number)
+  const isPhoneNumber = !member && userId?.match(/^[\d+]/);
   const phoneMetadata = isPhoneNumber ? getPhoneMetadata(userId) : {};
   const { country, stateCode, formattedNumber, flagEmoji } = phoneMetadata;
 
   const displayName = name || "Unknown";
-  const displayEmail = email || "";
+  // Only show email if it's actually a valid email address
+  const displayEmail = validEmail ?? "";
   const avatarFallback = stateCode
     ? stateCode
     : displayName.slice(0, 1).toUpperCase();
@@ -156,12 +180,14 @@ function UserInfo({
         >
           {displayName}
         </span>
-        <span
-          className="truncate block text-xs font-normal text-muted-foreground"
-          style={{ maxWidth }}
-        >
-          {formattedNumber || displayEmail}
-        </span>
+        {(formattedNumber || displayEmail) && (
+          <span
+            className="truncate block text-xs font-normal text-muted-foreground"
+            style={{ maxWidth }}
+          >
+            {formattedNumber || displayEmail}
+          </span>
+        )}
       </div>
     </div>
   );

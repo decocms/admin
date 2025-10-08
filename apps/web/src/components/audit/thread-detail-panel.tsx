@@ -2,6 +2,7 @@ import { Button } from "@deco/ui/components/button.tsx";
 import { Icon } from "@deco/ui/components/icon.tsx";
 import type { ReactNode } from "react";
 import { useMemo } from "react";
+import { UserInfo } from "../common/table/table-cells.tsx";
 
 interface ThreadDetailPanelProps {
   thread: {
@@ -39,12 +40,9 @@ export function ThreadDetailPanel({
             {title}
           </p>
           {thread.resourceId && (
-            <p
-              className="truncate text-xs text-muted-foreground"
-              title={thread.resourceId}
-            >
-              {thread.resourceId}
-            </p>
+            <div className="mt-1">
+              <UserInfo userId={thread.resourceId} nameOnly noTooltip />
+            </div>
           )}
         </div>
         <div className="flex items-center gap-2 flex-shrink-0">

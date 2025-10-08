@@ -57,7 +57,9 @@
     "verbatimModuleSyntax": false,
     "skipLibCheck": true,
     "resolveJsonModule": true,
-    "isolatedModules": true
+    "isolatedModules": true,
+    "incremental": true,
+    "tsBuildInfoFile": ".tsbuildinfo"
   },
   "include": ["apps/**/*", "packages/**/*", "plugins/**/*"],
   "exclude": [
@@ -71,6 +73,10 @@
     "packages/runtime/scripts/generate-cf-imports.ts",
     "packages/runtime/scripts/generate-json-schema.ts",
     "docs/server/**",
-    "plugins/*"
+    "plugins/*",
+    "**/*.test.ts",
+    "**/*.test.tsx",
+    "**/test/**",
+    "**/tests/**"
   ]
 }

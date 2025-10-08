@@ -41,3 +41,4 @@ kv
 kv-shm
 kv-wal
 .specstory/**
+.tsbuildinfo

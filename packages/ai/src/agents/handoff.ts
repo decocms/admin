@@ -31,45 +31,44 @@ export const createHandoffToolsFor = (
       threadId: z.string().describe("The ID of the new thread"),
       agentId: z.string().describe("The ID of the new agent"),
     }),
-    execute:
-      (agent) =>
-      async ({ context, threadId: _threadId, resourceId }) => {
-        const segments = integration.id.split(":");
-        const agentId = segments[1] || segments[0];
-        const threadId = `${_threadId}-${agentId}`;
-        const targetAgent = agent.state
-          .stub(AIAgent)
-          .new(
-            Path.resolveHome(Path.folders.Agent.root(agentId), agent.workspace)
-              .path,
-          )
-          .withMetadata({ threadId, resourceId });
+    execute: (agent) => async (context) => {
+      const segments = integration.id.split(":");
+      const agentId = segments[1] || segments[0];
+      const { threadId, resourceId } = agent.thread;
 
-        const userMessage = {
-          id: crypto.randomUUID(),
-          role: "user" as const,
-          content: context.message,
-        };
+      const targetAgent = agent.state
+        .stub(AIAgent)
+        .new(
+          Path.resolveHome(Path.folders.Agent.root(agentId), agent.workspace)
+            .path,
+        )
+        .withMetadata({ threadId, resourceId });
 
-        if (context.schema) {
-          const response = await targetAgent.generateObject(
-            [userMessage],
-            context.schema,
-          );
-          return {
-            object: response.object,
-            threadId,
-            agentId,
-          };
-        }
+      const userMessage = {
+        id: crypto.randomUUID(),
+        role: "user" as const,
+        parts: [{ type: "text" as const, text: context.message }],
+      };
 
-        const response = await targetAgent.generate([userMessage]);
-
+      if (context.schema) {
+        const response = await targetAgent.generateObject(
+          [userMessage],
+          context.schema,
+        );
         return {
-          text: response.text,
+          object: response.object,
           threadId,
           agentId,
         };
-      },
+      }
+
+      const response = await targetAgent.generate([userMessage]);
+
+      return {
+        text: response.text,
+        threadId,
+        agentId,
+      };
+    },
   }),
 });

@@ -128,7 +128,6 @@ export const PROJECT_TOOLS = [
   threadsAPI.listThreads,
   threadsAPI.getThread,
   threadsAPI.getThreadMessages,
-  threadsAPI.getThreadTools,
   threadsAPI.updateThreadTitle,
   threadsAPI.updateThreadMetadata,
   hostingAPI.listApps,

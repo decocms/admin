@@ -1,3 +1,4 @@
+import type { UIMessage } from "ai";
 import { z } from "zod";
 import { DEFAULT_MODEL, WELL_KNOWN_MODELS } from "../constants.ts";
 import {
@@ -157,32 +158,59 @@ export const ToolsetSchema = z.object({
 
 export type Toolset = z.infer<typeof ToolsetSchema>;
 
-export const AgentGenerateOptions = z.object({
-  instructions: z.string().optional(),
-  model: z.string().optional(),
-  tools: z.record(z.string(), z.array(z.string())).optional(),
-  bypassOpenRouter: z.boolean().optional(),
-  threadId: z.string().optional(),
-  resourceId: z.string().optional(),
-  enableSemanticRecall: z.boolean().optional(),
-  maxSteps: z.number().optional(),
-  toolsets: z.array(ToolsetSchema).optional(),
-});
+/**
+ * Options for agent generation
+ */
+export interface GenerateOptions {
+  /** Custom instructions to override agent's default instructions */
+  instructions?: string;
+  /** Model ID to use for generation */
+  model?: string;
+  /** Tools available for the generation */
+  tools?: Record<string, string[]>;
+  /** Bypass OpenRouter and use provider directly */
+  bypassOpenRouter?: boolean;
+  /** Thread ID for the conversation */
+  threadId?: string;
+  /** Resource ID for the conversation */
+  resourceId?: string;
+  /** Enable semantic recall for memory */
+  enableSemanticRecall?: boolean;
+  /** Maximum number of steps the agent can take */
+  maxSteps?: number;
+  /** Temperature for LLM generation (0-1) */
+  temperature?: number;
+  /** Number of recent messages to keep in context window */
+  lastMessages?: number;
+  /** Maximum number of tokens the agent can generate */
+  maxTokens?: number;
+}
 
-export type GenerateOptions = z.infer<typeof AgentGenerateOptions>;
+/**
+ * Options for agent streaming
+ */
+export interface StreamOptions extends GenerateOptions {
+  /** Whether to send reasoning in the stream */
+  sendReasoning?: boolean;
+  /** Title for the thread */
+  threadTitle?: string;
+  /** Smooth streaming configuration */
+  smoothStream?: {
+    delayInMs?: number;
+    chunking?: "word" | "line";
+  };
+  /**
+   * Additional context messages that are sent to the LLM but not persisted to the thread.
+   * Useful for providing temporary context like rules or instructions that shouldn't be part of the conversation history.
+   */
+  context?: UIMessage[];
+}
 
-export const AgentStreamOptions = AgentGenerateOptions.extend({
-  sendReasoning: z.boolean().optional(),
-  threadTitle: z.string().optional(),
-  smoothStream: z
-    .object({
-      delayInMs: z.number().optional(),
-      chunking: z.enum(["word", "line"]).optional(),
-    })
-    .optional(),
-});
-
-export type StreamOptions = z.infer<typeof AgentStreamOptions>;
+/**
+ * Type for request metadata containing all stream options
+ * Used as separate parameter in agent methods for type-safe configuration
+ */
+export type MessageMetadata = Omit<StreamOptions, "threadId" | "resourceId">;
 
 /**
  * Type representing an AI Agent derived from the Zod schema

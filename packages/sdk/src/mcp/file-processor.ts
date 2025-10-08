@@ -1,4 +1,3 @@
-import { MDocument } from "@mastra/rag";
 import { extname } from "@std/path/posix";
 import {
   type FileExt,
@@ -16,11 +15,17 @@ export const FileMetadataSchema = z.object({
   fileType: FileExtSchema,
 });
 
+// Document chunk structure
+export interface DocumentChunk {
+  content: string;
+  metadata?: Record<string, unknown>;
+}
+
 // File processing types
 export interface ProcessedDocument {
   filename: string;
   content: string;
-  chunks: Awaited<ReturnType<ReturnType<typeof MDocument.fromText>["chunk"]>>;
+  chunks: DocumentChunk[];
   metadata: z.infer<typeof FileMetadataSchema>;
 }
 
@@ -237,28 +242,163 @@ export class FileProcessor {
   /**
    * Text chunking with overlap
    */
-  private chunkText(text: string, fileExt: FileExt) {
+  private chunkText(text: string, fileExt: FileExt): DocumentChunk[] {
     switch (fileExt) {
-      case ".md": {
-        return MDocument.fromMarkdown(text).chunk({
-          size: this.config.chunkSize,
-          maxSize: this.config.chunkSize,
-          headers: [
-            ["#", "title"],
-            ["##", "section"],
-          ],
-        });
-      }
-      case ".txt":
+      case ".md":
+        return this.chunkMarkdown(text);
       case ".csv":
+        return this.chunkByLines(text);
+      case ".txt":
       case ".json":
-      case ".pdf": {
-        return MDocument.fromText(text).chunk({
-          size: this.config.chunkSize,
-          maxSize: this.config.chunkSize,
-          ...(fileExt === ".csv" ? { separators: ["\n"] } : {}),
+      case ".pdf":
+      default:
+        return this.chunkTextBySize(text);
+    }
+  }
+
+  /**
+   * Chunk markdown text while preserving section headers
+   */
+  private chunkMarkdown(text: string): DocumentChunk[] {
+    const chunks: DocumentChunk[] = [];
+    const lines = text.split("\n");
+    let currentChunk = "";
+    let currentHeaders: Record<string, string> = {};
+
+    for (const line of lines) {
+      // Check if line is a header
+      const headerMatch = line.match(/^(#{1,6})\s+(.+)$/);
+      if (headerMatch) {
+        const level = headerMatch[1].length;
+        const title = headerMatch[2];
+
+        // Update headers tracking
+        if (level === 1) {
+          currentHeaders = { title };
+        } else if (level === 2) {
+          currentHeaders.section = title;
+        }
+
+        // If current chunk is getting too large, save it
+        if (currentChunk.length > this.config.chunkSize) {
+          chunks.push({
+            content: currentChunk.trim(),
+            metadata: { ...currentHeaders },
+          });
+          // Start new chunk with overlap
+          const words = currentChunk.split(/\s+/);
+          const overlapWords = words.slice(-this.getOverlapWords());
+          currentChunk = overlapWords.join(" ") + "\n\n";
+        }
+      }
+
+      currentChunk += line + "\n";
+
+      // Check if chunk exceeds max size
+      if (currentChunk.length > this.config.chunkSize * 1.5) {
+        chunks.push({
+          content: currentChunk.trim(),
+          metadata: { ...currentHeaders },
         });
+        // Start new chunk with overlap
+        const words = currentChunk.split(/\s+/);
+        const overlapWords = words.slice(-this.getOverlapWords());
+        currentChunk = overlapWords.join(" ") + "\n";
       }
     }
+
+    // Add remaining content
+    if (currentChunk.trim().length > 0) {
+      chunks.push({
+        content: currentChunk.trim(),
+        metadata: { ...currentHeaders },
+      });
+    }
+
+    return chunks;
+  }
+
+  /**
+   * Chunk text by lines (for CSV)
+   */
+  private chunkByLines(text: string): DocumentChunk[] {
+    const lines = text.split("\n").filter((line) => line.trim().length > 0);
+    const chunks: DocumentChunk[] = [];
+    let currentChunk = "";
+
+    for (const line of lines) {
+      if (currentChunk.length + line.length + 1 > this.config.chunkSize) {
+        if (currentChunk.length > 0) {
+          chunks.push({ content: currentChunk.trim() });
+        }
+        currentChunk = line + "\n";
+      } else {
+        currentChunk += line + "\n";
+      }
+    }
+
+    if (currentChunk.trim().length > 0) {
+      chunks.push({ content: currentChunk.trim() });
+    }
+
+    return chunks;
+  }
+
+  /**
+   * Chunk text by size with overlap (for general text, PDF, JSON)
+   */
+  private chunkTextBySize(text: string): DocumentChunk[] {
+    const chunks: DocumentChunk[] = [];
+    // Split by sentences to try to keep semantic units together
+    const sentences = text.match(/[^.!?]+[.!?]+/g) || [text];
+
+    let currentChunk = "";
+
+    for (const sentence of sentences) {
+      const trimmedSentence = sentence.trim();
+
+      // If adding this sentence exceeds chunk size
+      if (
+        currentChunk.length + trimmedSentence.length >
+        this.config.chunkSize
+      ) {
+        if (currentChunk.length > 0) {
+          chunks.push({ content: currentChunk.trim() });
+
+          // Create overlap by taking last N words
+          const words = currentChunk.split(/\s+/);
+          const overlapWords = words.slice(-this.getOverlapWords());
+          currentChunk = overlapWords.join(" ") + " " + trimmedSentence + " ";
+        } else {
+          // Sentence itself is too long, split it by words
+          const words = trimmedSentence.split(/\s+/);
+          for (let i = 0; i < words.length; i += this.config.chunkSize / 10) {
+            const chunk = words
+              .slice(i, i + this.config.chunkSize / 10)
+              .join(" ");
+            chunks.push({ content: chunk });
+          }
+          currentChunk = "";
+        }
+      } else {
+        currentChunk += trimmedSentence + " ";
+      }
+    }
+
+    // Add remaining content
+    if (currentChunk.trim().length > 0) {
+      chunks.push({ content: currentChunk.trim() });
+    }
+
+    return chunks;
+  }
+
+  /**
+   * Calculate number of words for overlap based on chunk size and overlap setting
+   */
+  private getOverlapWords(): number {
+    // Convert overlap from characters to approximate word count
+    // Assuming average word length of 5 characters + 1 space
+    return Math.floor(this.config.chunkOverlap / 6);
   }
 }

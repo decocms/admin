@@ -166,6 +166,7 @@ const ensureStateIsWellFormed = async (state: unknown) => {
 
   return state;
 };
+
 export const createApiKey = createTool({
   name: "API_KEYS_CREATE",
   description: "Create a new API key",
@@ -470,21 +471,25 @@ export const disableApiKey = createTool({
   },
 });
 
+const CheckAccessInputSchema = z.object({
+  key: z
+    .string()
+    .optional()
+    .describe(
+      "The API key to check access for, if not provided, the current key from context will be used",
+    ),
+  tools: z.array(z.string()).describe("All tools that wants to check access"),
+});
+
+const CheckAccessOutputSchema = z.object({
+  access: z.record(z.string(), z.boolean()),
+});
+
 export const checkAccess = createTool({
   name: "API_KEYS_CHECK_ACCESS",
   description: "Check if an API key has access to a resource",
-  inputSchema: z.object({
-    key: z
-      .string()
-      .optional()
-      .describe(
-        "The API key to check access for, if not provided, the current key from context will be used",
-      ),
-    tools: z.array(z.string()).describe("All tools that wants to check access"),
-  }),
-  outputSchema: z.object({
-    access: z.record(z.string(), z.boolean()),
-  }),
+  inputSchema: CheckAccessInputSchema,
+  outputSchema: CheckAccessOutputSchema,
   handler: async ({ key, tools }, c) => {
     assertHasWorkspace(c);
     c.resourceAccess.grant(); // this is public because it uses the current key from context

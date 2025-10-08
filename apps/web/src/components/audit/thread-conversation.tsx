@@ -6,7 +6,7 @@ import {
   useUpdateThreadTitle,
   type ThreadDetails,
 } from "@deco/sdk";
-import type { UIMessage } from "ai";
+import type { UIMessage } from "@ai-sdk/react";
 import { ThreadDetailPanel } from "./thread-detail-panel.tsx";
 import { AgentProvider } from "../agent/provider.tsx";
 import { MainChat } from "../agent/chat.tsx";
@@ -237,22 +237,24 @@ function ThreadMessages({ threadId }: { threadId: string }) {
 const SUMMARY_MAX_LENGTH = 80;
 const SUMMARY_MIN_TRUNCATE_LENGTH = 40;
 
-function extractSummaryCandidate(
-  messages: { role: string; content: unknown }[],
-) {
+function extractSummaryCandidate(messages: UIMessage[]) {
   if (!messages.length) {
     return null;
   }
 
-  const firstUserMessage = messages.find(
-    (message) => message.role === "user" && typeof message.content === "string",
-  );
+  const firstUserMessage = messages.find((message) => message.role === "user");
 
-  if (typeof firstUserMessage?.content !== "string") {
+  if (!firstUserMessage) {
     return null;
   }
 
-  const normalized = firstUserMessage.content.trim();
+  // Extract text from UIMessage parts
+  const textContent =
+    firstUserMessage.parts
+      ?.map((part) => (part.type === "text" ? part.text : ""))
+      .join(" ") ?? "";
+
+  const normalized = textContent.trim();
 
   if (!normalized) {
     return null;

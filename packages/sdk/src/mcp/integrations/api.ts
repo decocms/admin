@@ -165,7 +165,7 @@ const integrationCallToolInputSchema = IntegrationSchema.pick({
 export const callTool = createIntegrationManagementTool({
   name: "INTEGRATIONS_CALL_TOOL",
   description: "Call a given tool",
-  inputSchema: integrationCallToolInputSchema,
+  inputSchema: z.lazy(() => integrationCallToolInputSchema),
   handler: async (input, c) => {
     c.resourceAccess.grant();
     const toolCall = input.params;
@@ -250,14 +250,16 @@ async function listToolsAndSortByName(
 export const listTools = createIntegrationManagementTool({
   name: "INTEGRATIONS_LIST_TOOLS",
   description: "List tools of a given integration",
-  inputSchema: IntegrationSchema.pick({
-    connection: true,
-  }).extend({
-    ignoreCache: z
-      .boolean()
-      .optional()
-      .describe("Whether to ignore the cache when listing tools"),
-  }),
+  inputSchema: z.lazy(() =>
+    IntegrationSchema.pick({
+      connection: true,
+    }).extend({
+      ignoreCache: z
+        .boolean()
+        .optional()
+        .describe("Whether to ignore the cache when listing tools"),
+    }),
+  ),
   handler: (props, c) => {
     c.resourceAccess.grant();
 
@@ -413,12 +415,16 @@ const extractToolsFromRegistry = (
 export const listIntegrations = createIntegrationManagementTool({
   name: "INTEGRATIONS_LIST",
   description: "List all integrations with their tools",
-  inputSchema: z.object({
-    binder: BindingsSchema.optional(),
-  }),
-  outputSchema: z.object({
-    items: z.array(IntegrationSchema),
-  }),
+  inputSchema: z.lazy(() =>
+    z.object({
+      binder: BindingsSchema.optional(),
+    }),
+  ),
+  outputSchema: z.lazy(() =>
+    z.object({
+      items: z.array(IntegrationSchema),
+    }),
+  ),
   handler: async ({ binder }, c) => {
     assertHasWorkspace(c);
     assertHasLocator(c);
@@ -635,9 +641,11 @@ export const convertFromDatabase = (
 export const getIntegration = createIntegrationManagementTool({
   name: "INTEGRATIONS_GET",
   description: "Get an integration by id with tools",
-  inputSchema: z.object({
-    id: z.string(),
-  }),
+  inputSchema: z.lazy(() =>
+    z.object({
+      id: z.string(),
+    }),
+  ),
   handler: async ({ id }, c) => {
     // preserve the logic of the old canAccess
     const isInnate =
@@ -848,12 +856,14 @@ export type IntegrationWithTools = Awaited<
 export const createIntegration = createIntegrationManagementTool({
   name: "INTEGRATIONS_CREATE",
   description: "Create a new integration",
-  inputSchema: IntegrationSchema.partial()
-    // TODO(@camudo): Remember why we omit this here and unify install process
-    .omit({ appName: true })
-    .extend({
-      clientIdFromApp: z.string().optional(),
-    }),
+  inputSchema: z.lazy(() =>
+    IntegrationSchema.partial()
+      // TODO(@camudo): Remember why we omit this here and unify install process
+      .omit({ appName: true })
+      .extend({
+        clientIdFromApp: z.string().optional(),
+      }),
+  ),
   handler: async (_integration, c) => {
     assertHasWorkspace(c);
     await assertWorkspaceResourceAccess(c);
@@ -935,10 +945,12 @@ export const createIntegration = createIntegrationManagementTool({
 export const updateIntegration = createIntegrationManagementTool({
   name: "INTEGRATIONS_UPDATE",
   description: "Update an existing integration",
-  inputSchema: z.object({
-    id: z.string(),
-    integration: IntegrationSchema,
-  }),
+  inputSchema: z.lazy(() =>
+    z.object({
+      id: z.string(),
+      integration: IntegrationSchema,
+    }),
+  ),
   handler: async ({ id, integration }, c) => {
     assertHasWorkspace(c);
     await assertWorkspaceResourceAccess(c);
@@ -994,9 +1006,11 @@ export const updateIntegration = createIntegrationManagementTool({
 export const deleteIntegration = createIntegrationManagementTool({
   name: "INTEGRATIONS_DELETE",
   description: "Delete an integration by id",
-  inputSchema: z.object({
-    id: z.string(),
-  }),
+  inputSchema: z.lazy(() =>
+    z.object({
+      id: z.string(),
+    }),
+  ),
   handler: async ({ id }, c) => {
     assertHasWorkspace(c);
     await assertWorkspaceResourceAccess(c);
@@ -1069,26 +1083,30 @@ Search for integrations in both marketplace and installed.
 If no query is provided, it will return all installed integrations. For better results, try searching for the service name, i.e. GoogleSheets, GoogleCalendar, Notion, etc.
 It's always handy to search for installed integrations with no query, since all integrations will be returned. Also, some integrations are handy agents that may help you with common tasks.
 `,
-  inputSchema: z.object({
-    query: z.string().describe("The query to search for").optional(),
-    showContracts: z
-      .boolean()
-      .describe("Whether to show contracts")
-      .optional()
-      .default(false),
-  }),
-  outputSchema: z.object({
-    integrations: z
-      .array(
-        IntegrationSchema.and(
-          z.object({
-            provider: z.string(),
-            friendlyName: z.string().optional(),
-          }),
-        ),
-      )
-      .describe("The Integrations that match the query"),
-  }),
+  inputSchema: z.lazy(() =>
+    z.object({
+      query: z.string().describe("The query to search for").optional(),
+      showContracts: z
+        .boolean()
+        .describe("Whether to show contracts")
+        .optional()
+        .default(false),
+    }),
+  ),
+  outputSchema: z.lazy(() =>
+    z.object({
+      integrations: z
+        .array(
+          IntegrationSchema.and(
+            z.object({
+              provider: z.string(),
+              friendlyName: z.string().optional(),
+            }),
+          ),
+        )
+        .describe("The Integrations that match the query"),
+    }),
+  ),
   handler: async ({ query, showContracts }, c) => {
     assertHasWorkspace(c);
     await assertWorkspaceResourceAccess(c);
@@ -1135,34 +1153,40 @@ const NO_TOOL_FOUND_ERR =
 export const DECO_INTEGRATION_OAUTH_START = createIntegrationManagementTool({
   name: "DECO_INTEGRATION_OAUTH_START",
   description: "Start the OAuth flow for an integration",
-  inputSchema: z.object({
-    appName: z
-      .string()
-      .describe("The id of the integration to start the OAuth flow for"),
-    returnUrl: z
-      .string()
-      .describe(
-        "The return URL for the OAuth flow. Will come with a query param including the mcp URL.",
-      ),
-    installId: z
-      .string()
-      .describe(
-        "The install id of the integration to start the OAuth flow for",
-      ),
-    provider: z
-      .string()
-      .optional()
-      .describe("The provider of the integration to start the OAuth flow for"),
-  }),
-  outputSchema: z.union([
+  inputSchema: z.lazy(() =>
     z.object({
-      redirectUrl: z.string(),
+      appName: z
+        .string()
+        .describe("The id of the integration to start the OAuth flow for"),
+      returnUrl: z
+        .string()
+        .describe(
+          "The return URL for the OAuth flow. Will come with a query param including the mcp URL.",
+        ),
+      installId: z
+        .string()
+        .describe(
+          "The install id of the integration to start the OAuth flow for",
+        ),
+      provider: z
+        .string()
+        .optional()
+        .describe(
+          "The provider of the integration to start the OAuth flow for",
+        ),
     }),
-    z.object({
-      stateSchema: z.unknown(),
-      scopes: z.array(z.string()).optional(),
-    }),
-  ]),
+  ),
+  outputSchema: z.lazy(() =>
+    z.union([
+      z.object({
+        redirectUrl: z.string(),
+      }),
+      z.object({
+        stateSchema: z.unknown(),
+        scopes: z.array(z.string()).optional(),
+      }),
+    ]),
+  ),
   handler: async ({ appName, returnUrl, installId, provider }, c) => {
     assertHasWorkspace(c);
     await assertWorkspaceResourceAccess(c);
@@ -1225,13 +1249,17 @@ const DEFAULT_APP_SCHEMA = {
 export const DECO_GET_APP_SCHEMA = createIntegrationManagementTool({
   name: "DECO_GET_APP_SCHEMA",
   description: "Get the schema for a marketplace app",
-  inputSchema: z.object({
-    appName: z.string(),
-  }),
-  outputSchema: z.object({
-    schema: z.unknown(),
-    scopes: z.array(z.string()).optional(),
-  }),
+  inputSchema: z.lazy(() =>
+    z.object({
+      appName: z.string(),
+    }),
+  ),
+  outputSchema: z.lazy(() =>
+    z.object({
+      schema: z.unknown(),
+      scopes: z.array(z.string()).optional(),
+    }),
+  ),
   handler: async ({ appName }, c) => {
     // Anyone can get the schema for an app
     c.resourceAccess.grant();
@@ -1295,32 +1323,36 @@ export const DECO_INTEGRATION_INSTALL = createIntegrationManagementTool({
   name: "DECO_INTEGRATION_INSTALL",
   description:
     "Install an integration. To know the available ids, use the DECO_INTEGRATIONS_SEARCH tool. Also, after installing, enable the integration using the INTEGRATION_ENABLE tool.",
-  inputSchema: z.object({
-    id: z
-      .string()
-      .describe(
-        "The id of the integration to install. To know the available ids, use the DECO_INTEGRATIONS_SEARCH tool",
-      ),
-    provider: z
-      .string()
-      .optional()
-      .describe(
-        "The provider of the integration to install. To know the available providers, use the DECO_INTEGRATIONS_SEARCH tool",
-      ),
-    appId: z
-      .string()
-      .optional()
-      .describe(
-        "The id of the app to install the integration for. To know the available app ids, use the DECO_INTEGRATIONS_SEARCH tool",
-      ),
-  }),
-  outputSchema: z.object({
-    installationId: z
-      .string()
-      .describe(
-        "The id of the installation. Use this id to enable the integration using the DECO_INTEGRATIONS_SEARCH tool",
-      ),
-  }),
+  inputSchema: z.lazy(() =>
+    z.object({
+      id: z
+        .string()
+        .describe(
+          "The id of the integration to install. To know the available ids, use the DECO_INTEGRATIONS_SEARCH tool",
+        ),
+      provider: z
+        .string()
+        .optional()
+        .describe(
+          "The provider of the integration to install. To know the available providers, use the DECO_INTEGRATIONS_SEARCH tool",
+        ),
+      appId: z
+        .string()
+        .optional()
+        .describe(
+          "The id of the app to install the integration for. To know the available app ids, use the DECO_INTEGRATIONS_SEARCH tool",
+        ),
+    }),
+  ),
+  outputSchema: z.lazy(() =>
+    z.object({
+      installationId: z
+        .string()
+        .describe(
+          "The id of the installation. Use this id to enable the integration using the DECO_INTEGRATIONS_SEARCH tool",
+        ),
+    }),
+  ),
   handler: async (args, c) => {
     assertHasWorkspace(c);
     await assertWorkspaceResourceAccess(c);

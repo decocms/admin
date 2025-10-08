@@ -30,7 +30,7 @@ import { addGroup, type GroupIntegration } from "./groups.ts";
 import { generateUUIDv5, toAlphanumericId } from "./slugify.ts";
 import {
   drizzle as drizzlePostgres,
-  PostgresJsDatabase,
+  type PostgresJsDatabase,
 } from "drizzle-orm/postgres-js";
 import postgres from "postgres";
 import { strProp } from "../utils/fns.ts";

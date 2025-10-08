@@ -241,6 +241,10 @@ export interface Integration {
   id: string;
   appId: string;
 }
+type ToolFactory<Env = any, TSchema extends z.ZodTypeAny = never> = (
+  env: Env & DefaultEnv<TSchema>,
+) => Promise<ReturnType<typeof createTool>> | ReturnType<typeof createTool>;
+
 export interface CreateMCPServerOptions<
   Env = any,
   TSchema extends z.ZodTypeAny = never,
@@ -289,22 +293,8 @@ export interface CreateMCPServerOptions<
     }
   >;
   tools?:
-    | Array<
-        (
-          env: Env & DefaultEnv<TSchema>,
-        ) =>
-          | Promise<ReturnType<typeof createTool>>
-          | ReturnType<typeof createTool>
-      >
-    | Promise<
-        Array<
-          (
-            env: Env & DefaultEnv<TSchema>,
-          ) =>
-            | Promise<ReturnType<typeof createTool>>
-            | ReturnType<typeof createTool>
-        >
-      >;
+    | Array<ToolFactory<Env, TSchema>>
+    | Promise<Array<ToolFactory<Env, TSchema>>>;
   workflows?: Array<
     (
       env: Env & DefaultEnv<TSchema>,

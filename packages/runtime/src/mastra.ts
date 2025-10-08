@@ -94,14 +94,12 @@ export function createPrivateTool<
   z.ZodSchema,
   Function,
 ]
-  ? // @ts-expect-error - TSchemaIn is not a ZodType
-    Tool<TSchemaIn, TSchemaOut, TSuspendSchema, TResumeSchema, TContext> & {
+  ? Tool<TSchemaIn, TSchemaOut, TSuspendSchema, TResumeSchema, TContext> & {
       inputSchema: TSchemaIn;
       outputSchema: TSchemaOut;
       execute: (context: TContext) => Promise<any>;
     }
-  : // @ts-expect-error - TSchemaIn is not a ZodType
-    Tool<TSchemaIn, TSchemaOut, TSuspendSchema, TResumeSchema, TContext> {
+  : Tool<TSchemaIn, TSchemaOut, TSuspendSchema, TResumeSchema, TContext> {
   const execute = opts.execute;
   if (typeof execute === "function") {
     opts.execute = ((input, options) => {
@@ -154,14 +152,12 @@ export function createTool<
   z.ZodSchema,
   Function,
 ]
-  ? // @ts-expect-error - TSchemaIn is not a ZodType
-    Tool<TSchemaIn, TSchemaOut, TSuspendSchema, TResumeSchema, TContext> & {
+  ? Tool<TSchemaIn, TSchemaOut, TSuspendSchema, TResumeSchema, TContext> & {
       inputSchema: TSchemaIn;
       outputSchema: TSchemaOut;
       execute: (context: TContext) => Promise<any>;
     }
-  : // @ts-expect-error - TSchemaIn is not a ZodType
-    Tool<TSchemaIn, TSchemaOut, TSuspendSchema, TResumeSchema, TContext> {
+  : Tool<TSchemaIn, TSchemaOut, TSuspendSchema, TResumeSchema, TContext> {
   // @ts-expect-error - TSchemaIn is not a ZodType
   return mastraCreateTool({
     ...opts,
@@ -195,7 +191,6 @@ export interface Step<
 > extends Omit<
     MastraStep<
       TStepId,
-      // @ts-expect-error - TState is not a ZodObject
       TState,
       TSchemaIn,
       TSchemaOut,
@@ -227,7 +222,6 @@ export function createStepFromTool<
     TResumeSchema
   >,
 >(
-  // @ts-expect-error - TSchemaIn is not a ZodType
   tool: Tool<TSchemaIn, TSchemaOut, TSuspendSchema, TResumeSchema, TContext> & {
     inputSchema: TSchemaIn;
     outputSchema: TSchemaOut;
@@ -410,7 +404,6 @@ const createWorkflowTools = <TEnv = any, TSchema extends z.ZodTypeAny = never>(
   const startTool = createTool({
     id: `DECO_CHAT_WORKFLOWS_START_${workflow.id}`,
     description: workflow.description ?? `Start workflow ${workflow.id}`,
-    // @ts-expect-error - workflow.inputSchema is not a ZodType
     inputSchema:
       workflow.inputSchema && "shape" in workflow.inputSchema
         ? workflow.inputSchema

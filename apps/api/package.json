@@ -23,7 +23,7 @@
     "mimetext": "^3.0.27",
     "outerbase-browsable-do-enforced": "0.2.0",
     "postal-mime": "^2.4.3",
-    "zod": "3.24.2"
+    "zod": "3.25.75"
   },
   "devDependencies": {
     "@cloudflare/workers-types": "^4.20250620.0",

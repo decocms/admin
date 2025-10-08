@@ -58,7 +58,7 @@
     "tailwind-merge": "^3.1.0",
     "tw-animate-css": "^1.2.5",
     "vaul": "^1.1.2",
-    "zod": "3.24.2"
+    "zod": "3.25.75"
   },
   "packageManager": "npm@10.5.0",
   "devDependencies": {

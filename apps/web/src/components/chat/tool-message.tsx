@@ -336,33 +336,17 @@ function GenerateImageToolUI({ tool }: { tool: ToolInvocation }) {
     );
   }
 
-  // Parse result safely with proper type guards
-  let image: string | null = null;
-  try {
-    if (tool.output && typeof tool.output === "string") {
-      const parsed = JSON.parse(tool.output);
-      // Validate parsed object has image string field
-      if (
-        parsed &&
-        typeof parsed === "object" &&
-        "image" in parsed &&
-        typeof parsed.image === "string"
-      ) {
-        image = parsed.image;
-      }
-    } else if (
-      tool.output &&
-      typeof tool.output === "object" &&
-      "image" in tool.output
-    ) {
-      const imageValue = (tool.output as Record<string, unknown>).image;
-      if (typeof imageValue === "string") {
-        image = imageValue;
-      }
-    }
-  } catch (error) {
-    console.warn("Failed to parse image result:", error);
-  }
+  // Extract image URL from output.structuredContent.image
+  const image =
+    tool.output &&
+    typeof tool.output === "object" &&
+    "structuredContent" in tool.output &&
+    tool.output.structuredContent &&
+    typeof tool.output.structuredContent === "object" &&
+    "image" in tool.output.structuredContent &&
+    typeof tool.output.structuredContent.image === "string"
+      ? tool.output.structuredContent.image
+      : null;
 
   const isGenerating =
     state === "input-streaming" || state === "input-available";
@@ -396,7 +380,7 @@ function GenerateImageToolUI({ tool }: { tool: ToolInvocation }) {
         <ImagePrompt prompt={prompt} />
         <div className="rounded-lg overflow-hidden border border-border">
           <img
-            src={image || ""}
+            src={image}
             alt={prompt}
             className="w-full max-h-[400px] object-cover"
           />

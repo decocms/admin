@@ -15,8 +15,9 @@ import {
   createServerClient,
   createTransport,
 } from "@deco/workers-runtime/mcp-client";
-import type { Tool, ToolCallOptions as _ToolCallOptions } from "ai";
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
+import type { Tool } from "ai";
+import { jsonSchema } from "ai";
 import type { AIAgent, Env } from "./agent.ts";
 import { getTools } from "./deco.ts";
 import { getToolsForInnateIntegration } from "./storage/tools.ts";
@@ -93,13 +94,14 @@ const getMCPServerTools = async (
           createTool({
             id: slug,
             description: tool.description ?? "",
-            // @ts-expect-error - tool.inputSchema is not a ZodType
-            inputSchema: tool.inputSchema,
-            // @ts-expect-error - tool.outputSchema is not a ZodType
-            outputSchema: tool.outputSchema ?? {
-              type: "object",
-              additionalProperties: true,
-            },
+            // @ts-expect-error - tool.inputSchema is not a JSONSchema7
+            inputSchema: jsonSchema(tool.inputSchema),
+            outputSchema: jsonSchema(
+              tool.outputSchema ?? {
+                type: "object",
+                additionalProperties: true,
+              },
+            ),
             execute: async (input) => {
               const innerClient = await createServerClient(mcpServer).catch(
                 console.error,
@@ -163,13 +165,13 @@ export const getDecoSiteTools = async (
       const createdTool = createTool({
         id: tool.name,
         description: tool.description,
-        // @ts-expect-error - tool.inputSchema is not a ZodType
-        inputSchema: tool.inputSchema,
-        // @ts-expect-error - tool.outputSchema is not a ZodType
-        outputSchema: tool.outputSchema ?? {
-          type: "object",
-          additionalProperties: true,
-        },
+        inputSchema: jsonSchema(tool.inputSchema),
+        outputSchema: jsonSchema(
+          tool.outputSchema ?? {
+            type: "object",
+            additionalProperties: true,
+          },
+        ),
         execute: async (context) => {
           const response = await fetch(
             new URL(`/live/invoke/${tool.resolveType}`, baseUrl),

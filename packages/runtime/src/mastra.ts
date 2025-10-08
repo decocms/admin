@@ -288,17 +288,23 @@ export interface CreateMCPServerOptions<
       };
     }
   >;
-  tools?: 
+  tools?:
     | Array<
         (
           env: Env & DefaultEnv<TSchema>,
-        ) => Promise<ReturnType<typeof createTool>> | ReturnType<typeof createTool>
+        ) =>
+          | Promise<ReturnType<typeof createTool>>
+          | ReturnType<typeof createTool>
       >
-    | Promise<Array<
-        (
-          env: Env & DefaultEnv<TSchema>,
-        ) => Promise<ReturnType<typeof createTool>> | ReturnType<typeof createTool>
-      >>;
+    | Promise<
+        Array<
+          (
+            env: Env & DefaultEnv<TSchema>,
+          ) =>
+            | Promise<ReturnType<typeof createTool>>
+            | ReturnType<typeof createTool>
+        >
+      >;
   workflows?: Array<
     (
       env: Env & DefaultEnv<TSchema>,

@@ -14,6 +14,7 @@ import {
   workspaceClient,
 } from "./bindings.ts";
 import { DECO_MCP_CLIENT_HEADER } from "./client.ts";
+import { DeprecatedEnv } from "./deprecated.ts";
 import {
   createMCPServer,
   type CreateMCPServerOptions,
@@ -24,13 +25,12 @@ import { State } from "./state.ts";
 import type { WorkflowDO } from "./workflow.ts";
 import { Workflow } from "./workflow.ts";
 import type { Binding, ContractBinding, MCPBinding } from "./wrangler.ts";
-import { DeprecatedEnv } from "./deprecated.ts";
+export { proxyConnectionForId } from "./bindings.ts";
 export {
   createMCPFetchStub,
   type CreateStubAPIOptions,
   type ToolBinder,
 } from "./mcp.ts";
-
 export interface WorkspaceDB {
   query: (params: {
     sql: string;

@@ -71,10 +71,49 @@ export const matchByWorkspaceOrProjectLocatorForApiKeys = (
   );
 };
 
+const policiesSchema = z
+  .array(StatementSchema)
+  .optional()
+  .describe("Policies for the API key");
+
+const AppClaimsSchema = z.object({
+  appName: z.string(),
+  integrationId: z.string(),
+  state: z.any(),
+});
+
+// Shared API key output schema
+const ApiKeySchema = z.object({
+  id: z.string().describe("The unique identifier of the API key"),
+  name: z.string().describe("The name of the API key"),
+  workspace: z.string().describe("The workspace ID"),
+  enabled: z.boolean().describe("Whether the API key is enabled"),
+  policies: z
+    .array(StatementSchema)
+    .describe("Access policies for the API key"),
+  createdAt: z.string().describe("Creation timestamp"),
+  updatedAt: z.string().describe("Last update timestamp"),
+  deletedAt: z
+    .string()
+    .nullable()
+    .describe("Deletion timestamp (null if not deleted)"),
+});
+
+const ApiKeyWithValueSchema = ApiKeySchema.extend({
+  value: z
+    .string()
+    .describe(
+      "The actual API key value (JWT token) - only returned on creation/reissue",
+    ),
+});
+
 export const listApiKeys = createTool({
   name: "API_KEYS_LIST",
   description: "List all API keys",
   inputSchema: z.object({}),
+  outputSchema: z.object({
+    apiKeys: z.array(ApiKeySchema).describe("List of API keys"),
+  }),
   handler: async (_, c) => {
     assertHasWorkspace(c);
     await assertWorkspaceResourceAccess(c);
@@ -99,17 +138,6 @@ export const listApiKeys = createTool({
       apiKeys: data.map(mapApiKey),
     };
   },
-});
-
-const policiesSchema = z
-  .array(StatementSchema)
-  .optional()
-  .describe("Policies for the API key");
-
-const AppClaimsSchema = z.object({
-  appName: z.string(),
-  integrationId: z.string(),
-  state: z.any(),
 });
 const ensureStateIsWellFormed = async (state: unknown) => {
   const promises: Promise<unknown>[] = [];
@@ -148,6 +176,7 @@ export const createApiKey = createTool({
       "App Claims to be added to the API key",
     ),
   }),
+  outputSchema: ApiKeyWithValueSchema,
   handler: async ({ name, policies, claims }, c) => {
     assertHasWorkspace(c);
     await assertWorkspaceResourceAccess(c);
@@ -227,6 +256,7 @@ export const reissueApiKey = createTool({
       .optional()
       .describe("New claims to be added to the API key"),
   }),
+  outputSchema: ApiKeyWithValueSchema,
   handler: async ({ id, claims }, c) => {
     assertHasWorkspace(c);
     await assertWorkspaceResourceAccess(c);
@@ -271,6 +301,7 @@ export const getApiKey = createTool({
   inputSchema: z.object({
     id: z.string().describe("The ID of the API key"),
   }),
+  outputSchema: ApiKeySchema,
   handler: async ({ id }, c) => {
     assertHasWorkspace(c);
     await assertWorkspaceResourceAccess(c);
@@ -307,6 +338,7 @@ export const updateApiKey = createTool({
     enabled: z.boolean().optional().describe("Whether the API key is enabled"),
     policies: policiesSchema,
   }),
+  outputSchema: ApiKeySchema,
   handler: async ({ id, name, enabled, policies }, c) => {
     assertHasWorkspace(c);
     await assertWorkspaceResourceAccess(c);
@@ -344,6 +376,10 @@ export const deleteApiKey = createTool({
   inputSchema: z.object({
     id: z.string().describe("The ID of the API key to delete"),
   }),
+  outputSchema: z.object({
+    id: z.string().describe("The ID of the deleted API key"),
+    deleted: z.boolean().describe("Confirmation that the key was deleted"),
+  }),
   handler: async ({ id }, c) => {
     assertHasWorkspace(c);
     await assertWorkspaceResourceAccess(c);
@@ -378,6 +414,7 @@ export const enableApiKey = createTool({
   inputSchema: z.object({
     id: z.string().describe("The ID of the API key to enable"),
   }),
+  outputSchema: ApiKeySchema,
   handler: async ({ id }, c) => {
     assertHasWorkspace(c);
     await assertWorkspaceResourceAccess(c);
@@ -408,6 +445,7 @@ export const disableApiKey = createTool({
   inputSchema: z.object({
     id: z.string().describe("The ID of the API key to disable"),
   }),
+  outputSchema: ApiKeySchema,
   handler: async ({ id }, c) => {
     assertHasWorkspace(c);
     await assertWorkspaceResourceAccess(c);
@@ -486,6 +524,9 @@ export const validateApiKey = createTool({
   description: "Validate an API key by ID",
   inputSchema: z.object({
     id: z.string().describe("The ID of the API key to validate"),
+  }),
+  outputSchema: ApiKeySchema.extend({
+    valid: z.boolean().describe("Whether the API key is valid"),
   }),
   handler: async ({ id }, c) => {
     assertHasWorkspace(c);

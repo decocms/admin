@@ -35,7 +35,7 @@ export function ReissueApiKeyDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Reissue API Key</DialogTitle>
+          <DialogTitle>Update app permissions</DialogTitle>
         </DialogHeader>
         <ReissueApiKeyForIntegration
           integrationId={integrationId}

@@ -1,7 +1,6 @@
 import { useMemo } from "react";
 import { useIntegrationAPIKey, useReissueAPIKey } from "@deco/sdk/hooks";
-import type { ApiKeyPolicies } from "@deco/sdk";
-import type { Statement } from "@deco/sdk";
+import type { ApiKeyPolicies, Statement } from "@deco/sdk";
 import { Button } from "@deco/ui/components/button.tsx";
 import { Spinner } from "@deco/ui/components/spinner.tsx";
 import { Icon } from "@deco/ui/components/icon.tsx";
@@ -80,7 +79,11 @@ export function ReissueApiKeyForIntegration({
   onReissued,
   onCancel,
 }: ReissueApiKeyForIntegrationProps) {
-  const { data: apiKey, isLoading, error } = useIntegrationAPIKey(integrationId);
+  const {
+    data: apiKey,
+    isLoading,
+    error,
+  } = useIntegrationAPIKey(integrationId);
   const reissueMutation = useReissueAPIKey();
 
   const additionalPolicies = useMemo(() => {
@@ -133,9 +136,7 @@ export function ReissueApiKeyForIntegration({
     return (
       <Alert variant="destructive">
         <Icon name="error" className="h-4 w-4" />
-        <AlertDescription>
-          Failed to load API key. Please try again.
-        </AlertDescription>
+        <AlertDescription>{error.message}</AlertDescription>
       </Alert>
     );
   }
@@ -153,39 +154,28 @@ export function ReissueApiKeyForIntegration({
 
   return (
     <div className="space-y-6">
-      {/* API Key Info */}
       <div>
-        <h2 className="text-lg font-semibold mb-1">{apiKey.name}</h2>
+        <h2 className="text-lg font-semibold mb-1">Update app permissions</h2>
         <p className="text-sm text-muted-foreground">
-          You are about to reissue this API key
+          You are about to update the permissions for this app.
         </p>
       </div>
 
       <Separator />
 
-      {/* Current Policies */}
-      <PoliciesSection
-        title="Current Permissions"
-        policies={
-          (Array.isArray(apiKey.policies) ? apiKey.policies : []) as Statement[]
-        }
-        emptyMessage="No permissions configured"
-      />
-
-      {/* Additional Permissions */}
       {hasAdditionalPermissions && (
         <>
           <div className="flex items-center gap-2">
             <Icon name="add_circle" className="text-primary" size={20} />
             <span className="font-semibold text-sm">
-              Additional permissions being requested
+              New permissions being requested
             </span>
           </div>
 
           <PoliciesSection
-            title="New Permissions"
+            title="New permissions"
             policies={additionalPolicies}
-            emptyMessage="No additional permissions"
+            emptyMessage="No new permissions"
           />
         </>
       )}
@@ -194,23 +184,19 @@ export function ReissueApiKeyForIntegration({
         <Alert>
           <Icon name="info" className="h-4 w-4" />
           <AlertDescription>
-            No additional permissions are being requested. The key will be
-            reissued with the same permissions.
+            No new permissions are being requested. The app will have the same
+            permissions after the update.
           </AlertDescription>
         </Alert>
       )}
 
-      {/* Error Display */}
       {reissueMutation.error && (
         <Alert variant="destructive">
           <Icon name="error" className="h-4 w-4" />
-          <AlertDescription>
-            Failed to reissue key: {reissueMutation.error.message}
-          </AlertDescription>
+          <AlertDescription>{reissueMutation.error.message}</AlertDescription>
         </Alert>
       )}
 
-      {/* Actions */}
       <div className="flex justify-end gap-2 pt-4">
         {onCancel && (
           <Button
@@ -229,12 +215,12 @@ export function ReissueApiKeyForIntegration({
           {reissueMutation.isPending ? (
             <>
               <Spinner />
-              Reissuing...
+              Updating...
             </>
           ) : (
             <>
               <Icon name="key" size={16} />
-              Reissue Key
+              Update permissions
             </>
           )}
         </Button>

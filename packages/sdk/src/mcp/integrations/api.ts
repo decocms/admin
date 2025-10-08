@@ -4,7 +4,11 @@ import {
   patchApiDecoChatTokenHTTPConnection,
   isApiDecoChatMCPConnection as shouldPatchDecoChatMCPConnection,
 } from "@deco/ai/mcp";
-import { ApiKeySchema, mapApiKey, SELECT_API_KEY_QUERY } from "../api-keys/api.ts";
+import {
+  ApiKeySchema,
+  mapApiKey,
+  SELECT_API_KEY_QUERY,
+} from "../api-keys/api.ts";
 import { CallToolRequestSchema } from "@modelcontextprotocol/sdk/types.js";
 import { and, eq, or } from "drizzle-orm";
 import { z } from "zod";
@@ -1411,9 +1415,9 @@ export const getIntegrationApiKey = createIntegrationManagementTool({
 
     const integration = await getIntegration.handler({ id: integrationId });
 
-    const appName = integration.appName?.startsWith("@") 
-     ? integration.appName.slice(1).split("/")[1]
-     : integration.appName;
+    const appName = integration.appName?.startsWith("@")
+      ? integration.appName.slice(1).split("/")[1]
+      : integration.appName;
 
     if (!appName) {
       throw new Error("No app name found for this integration");
@@ -1422,7 +1426,7 @@ export const getIntegrationApiKey = createIntegrationManagementTool({
     console.log("appName", appName);
     const name = `${appName}-${integrationId}`;
 
-   const apiKey = await c.db
+    const apiKey = await c.db
       .from("deco_chat_api_keys")
       .select(SELECT_API_KEY_QUERY)
       .eq("name", name)

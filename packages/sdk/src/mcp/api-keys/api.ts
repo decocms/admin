@@ -16,7 +16,7 @@ import {
 } from "../assertions.ts";
 import { createToolGroup } from "../context.ts";
 import { MCPClient } from "../index.ts";
-import { getIntegration, parseId } from "../integrations/api.ts";
+import { getIntegration } from "../integrations/api.ts";
 import { getRegistryApp } from "../registry/api.ts";
 import { apiKeys, organizations, projects } from "../schema.ts";
 

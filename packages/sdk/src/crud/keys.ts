@@ -40,6 +40,6 @@ export const getAPIKeyForIntegration = ({
   locator,
   integrationId,
 }: {
-  locator: ProjectLocator,
-  integrationId: string,
+  locator: ProjectLocator;
+  integrationId: string;
 }) => MCPClient.forLocator(locator).INTEGRATIONS_GET_API_KEY({ integrationId });

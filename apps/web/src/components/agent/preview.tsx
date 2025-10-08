@@ -1,19 +1,17 @@
-import { callTool, useIntegration } from "@deco/sdk";
+import { callTool, useIntegration, useUpdateIntegration } from "@deco/sdk";
 import { Button } from "@deco/ui/components/button.tsx";
 import { Icon } from "@deco/ui/components/icon.tsx";
 import {
   type DetailedHTMLProps,
   type IframeHTMLAttributes,
-  useRef,
   useState,
 } from "react";
 import { useParams } from "react-router";
 import { ALLOWANCES } from "../../constants.ts";
 import { IMAGE_REGEXP } from "../chat/utils/preview.ts";
-import { createChannel } from "bidc";
-import { useEffect } from "react";
 import * as z from "zod";
 import { ReissueApiKeyDialog } from "../api-keys/reissue-api-key-dialog.tsx";
+import { useBidcOnIframe } from "../../lib/bidc.ts";
 
 const MessageSchema = z.lazy(() =>
   z.discriminatedUnion("type", [
@@ -26,8 +24,6 @@ const MessageSchema = z.lazy(() =>
   ]),
 );
 
-type Message = z.infer<typeof MessageSchema>;
-
 type Props = DetailedHTMLProps<
   IframeHTMLAttributes<HTMLIFrameElement>,
   HTMLIFrameElement
@@ -39,68 +35,71 @@ type ReissueKeyDialogProps = {
   missingScopes: string[];
 };
 
-function PreviewIframe(_props: Props) {
-  const props = { ..._props, src: "https://teste-camudo-workflowz.deco.page/" };
-  const id = `preview-iframe-${props.src}`;
-  const channelRef = useRef<ReturnType<typeof createChannel>>(null);
+function IFrameMessageHandler({ id }: { id: string }) {
   const [reissueKeyDialogProps, setReissueKeyDialogProps] =
-    useState<ReissueKeyDialogProps | null>(null);
+    useState<ReissueKeyDialogProps>({
+      open: false,
+      missingScopes: [],
+      integrationId: "",
+    });
   const { integrationId } = useParams();
+  const { mutate: updateIntegration } = useUpdateIntegration();
+  const { data: integration } = useIntegration(integrationId!);
 
-  useEffect(() => {
-    if (!integrationId) {
-      console.warn("No integration ID found");
-      return;
-    }
-    const iframe = document.getElementById(id) as HTMLIFrameElement;
-
-    if (!iframe || !iframe.contentWindow) {
-      console.warn("No iframe or content window found");
-      return;
-    }
-
-    const channel = createChannel(iframe.contentWindow);
-    channelRef.current = channel;
-
-    const { receive, cleanup } = channel;
-
-    receive((message) => {
-      const parsed = MessageSchema.safeParse(message);
-      if (!parsed.success) {
-        console.warn("Invalid message", message);
-        return;
-      }
-      const { type, payload } = parsed.data;
+  useBidcOnIframe({
+    iframeIdOrElement: id,
+    messageSchema: MessageSchema,
+    onMessage: ({ type, payload }) => {
       if (type === "request_missing_scopes") {
+        if (!integrationId) {
+          console.warn("No integration ID found, skipping key reissue");
+          return;
+        }
+
         setReissueKeyDialogProps({
           open: true,
-          missingScopes: ["INTEGRATIONS_LIST"], // payload.scopes,
+          missingScopes: payload.scopes,
           integrationId,
         });
       }
-    });
+    },
+  });
 
-    return () => {
-      cleanup();
-    };
-  }, []);
+  return (
+    <ReissueApiKeyDialog
+      open={reissueKeyDialogProps.open}
+      onOpenChange={(open) => setReissueKeyDialogProps((p) => ({ ...p, open }))}
+      integrationId={reissueKeyDialogProps.integrationId}
+      newPolicies={reissueKeyDialogProps.missingScopes.map((scope) => ({
+        effect: "allow",
+        resource: scope,
+      }))}
+      onReissued={({ value: token }) => {
+        if (integration.connection.type !== "HTTP") {
+          console.warn(
+            "Integration connection type is not HTTP, skipping token update",
+          );
+          return;
+        }
+
+        updateIntegration({
+          ...integration,
+          connection: {
+            ...integration.connection,
+            token,
+          },
+        });
+      }}
+    />
+  );
+}
+
+function PreviewIframe(props: Props) {
+  const id = `preview-iframe-${props.src}`;
 
   return (
     <>
-      {reissueKeyDialogProps && (
-        <ReissueApiKeyDialog
-          open={reissueKeyDialogProps.open}
-          onOpenChange={(open) =>
-            setReissueKeyDialogProps((p) => (p ? { ...p, open } : null))
-          }
-          integrationId={reissueKeyDialogProps.integrationId}
-          newPolicies={reissueKeyDialogProps.missingScopes.map((scope) => ({
-            effect: "allow",
-            resource: scope,
-          }))}
-          onReissued={() => {}}
-        />
-      )}
+      <IFrameMessageHandler id={id} />
       <iframe
         id={id}
         allow={ALLOWANCES}

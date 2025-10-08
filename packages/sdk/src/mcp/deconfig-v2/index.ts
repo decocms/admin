@@ -4,7 +4,7 @@ import {
   assertHasWorkspace,
   assertWorkspaceResourceAccess,
 } from "../assertions.ts";
-import { impl } from "../bindings/binder.ts";
+import { impl } from "../bindings/index.ts";
 import { AppContext } from "../context.ts";
 import { createMCPToolsStub, DeconfigClient, MCPClientStub } from "../index.ts";
 import {
@@ -567,7 +567,7 @@ export const deconfigResourceV2 = <TDataSchema extends BaseResourceDataSchema>(
   ]);
 
   if (group) {
-    tools.forEach((tool) => {
+    tools.forEach((tool: { group?: string }) => {
       tool.group = group;
     });
   }

@@ -21,45 +21,47 @@ export interface ToolLike<
   inputSchema: z.ZodType<TInput>;
   outputSchema?: z.ZodType<TReturn>;
   handler: (props: TInput) => Promise<TReturn> | TReturn;
+  group?: string;
+  annotations?: any;
 }
 
-export type Binder<TDefinition extends readonly ToolBinder[] = any> = {
-  [K in keyof TDefinition]: TDefinition[K];
-};
+export type Binder<
+  TDefinition extends readonly ToolBinder[] = readonly ToolBinder[],
+> = TDefinition;
 
 export type BinderImplementation<
   TBinder extends Binder<any>,
   TContext = any,
 > = TBinder extends Binder<infer TDefinition>
   ? {
-    [K in keyof TDefinition]: Omit<
-      ToolLike<
-        TDefinition[K]["name"],
-        z.infer<TDefinition[K]["inputSchema"]>,
-        TDefinition[K] extends { outputSchema: infer Schema }
-        ? Schema extends z.ZodType
-        ? z.infer<Schema>
-        : never
-        : never
-      >,
-      "name" | "inputSchema" | "outputSchema" | "handler"
-    > & {
-      handler: (
-        props: z.infer<TDefinition[K]["inputSchema"]>,
-        c?: TContext,
-      ) => ReturnType<
+      [K in keyof TDefinition]: Omit<
         ToolLike<
           TDefinition[K]["name"],
           z.infer<TDefinition[K]["inputSchema"]>,
           TDefinition[K] extends { outputSchema: infer Schema }
-          ? Schema extends z.ZodType
-          ? z.infer<Schema>
-          : never
-          : never
-        >["handler"]
-      >;
-    };
-  }
+            ? Schema extends z.ZodType
+              ? z.infer<Schema>
+              : never
+            : never
+        >,
+        "name" | "inputSchema" | "outputSchema" | "handler"
+      > & {
+        handler: (
+          props: z.infer<TDefinition[K]["inputSchema"]>,
+          c?: TContext,
+        ) => ReturnType<
+          ToolLike<
+            TDefinition[K]["name"],
+            z.infer<TDefinition[K]["inputSchema"]>,
+            TDefinition[K] extends { outputSchema: infer Schema }
+              ? Schema extends z.ZodType
+                ? z.infer<Schema>
+                : never
+              : never
+          >["handler"]
+        >;
+      };
+    }
   : never;
 
 export const bindingClient = <TDefinition extends readonly ToolBinder[]>(
@@ -108,12 +110,24 @@ export const ViewBinding = bindingClient(VIEW_BINDING_SCHEMA);
 
 export type { Callbacks } from "./channels.ts";
 
-export const impl = <TBinder extends Binder<any>>(
+export type CreateToolOptions = {
+  name: string;
+  description: string;
+  inputSchema: z.ZodTypeAny;
+  outputSchema?: z.ZodTypeAny;
+  handler: (...args: unknown[]) => unknown;
+  group?: string;
+  annotations?: unknown;
+};
+
+type CreateToolFunction = (opts: CreateToolOptions) => ToolLike;
+
+export const impl = <TBinder extends Binder>(
   schema: TBinder,
   implementation: BinderImplementation<TBinder>,
-  createToolFn: typeof createTool = createTool,
-) => {
-  const impl = [];
+  createToolFn: CreateToolFunction = createTool as unknown as CreateToolFunction,
+): ToolLike[] => {
+  const impl: ToolLike[] = [];
   for (const key in schema) {
     const toolSchema = schema[key];
     const toolImplementation = implementation[key];
@@ -126,7 +140,7 @@ export const impl = <TBinder extends Binder<any>>(
       throw new Error(`Implementation for ${key} is required`);
     }
 
-    impl.push(createToolFn({ ...toolSchema, ...toolImplementation } as any));
+    impl.push(createToolFn({ ...toolSchema, ...toolImplementation }));
   }
   return impl;
 };

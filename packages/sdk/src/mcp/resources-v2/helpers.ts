@@ -1,5 +1,5 @@
 import { z } from "zod";
-import type { BinderImplementation } from "../bindings/binder.ts";
+import type { BinderImplementation } from "../bindings/index.ts";
 import { impl, type AppContext, type ToolBinder } from "../index.ts";
 import {
   createCreateInputSchema,

@@ -1,5 +1,5 @@
 import z from "zod";
-import { listViewsSchema } from "../bindings/views.ts";
+import { listViewsSchema } from "../bindings/index.ts";
 import { workspaceDB } from "../context.ts";
 import { assertHasWorkspace, assertWorkspaceResourceAccess } from "../index.ts";
 import { createDatabaseTool } from "./tool.ts";

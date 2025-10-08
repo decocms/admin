@@ -9,7 +9,7 @@ import {
   assertHasWorkspace,
   assertWorkspaceResourceAccess,
 } from "../assertions.ts";
-import { ChannelBinding } from "../bindings/binder.ts";
+import { ChannelBinding } from "../bindings/index.ts";
 import { type AppContext, createToolGroup } from "../context.ts";
 import { convertFromDatabase } from "../integrations/api.ts";
 

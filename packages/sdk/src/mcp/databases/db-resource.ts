@@ -4,7 +4,7 @@ import {
   assertHasWorkspace,
   assertWorkspaceResourceAccess,
 } from "../assertions.ts";
-import { impl, WellKnownBindings } from "../bindings/binder.ts";
+import { impl, WellKnownBindings } from "../bindings/index.ts";
 import { IWorkspaceDB } from "../context.ts";
 
 export interface DBResourceOptions {

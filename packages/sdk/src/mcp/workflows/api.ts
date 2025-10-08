@@ -1,9 +1,13 @@
 import { inspect } from "@deco/cf-sandbox";
 import z from "zod";
 import { formatIntegrationId, WellKnownMcpGroups } from "../../crud/groups.ts";
-import { impl } from "../bindings/binder.ts";
-import { WellKnownBindings } from "../bindings/index.ts";
-import { VIEW_BINDING_SCHEMA } from "../bindings/views.ts";
+import {
+  impl,
+  WellKnownBindings,
+  VIEW_BINDING_SCHEMA,
+  type ToolLike,
+} from "../bindings/index.ts";
+import type { CreateToolOptions } from "@deco/workers-runtime/bindings";
 import { DeconfigResourceV2 } from "../deconfig-v2/index.ts";
 import { DeconfigResource } from "../deconfig/deconfig-resource.ts";
 import {
@@ -544,5 +548,5 @@ export const workflowViews = impl(
       },
     },
   ],
-  createWorkflowTool,
+  createWorkflowTool as (opts: CreateToolOptions) => ToolLike,
 );

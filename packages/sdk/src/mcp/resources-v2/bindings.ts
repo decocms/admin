@@ -1,5 +1,5 @@
 import { z } from "zod";
-import type { Binder } from "../bindings/binder.ts";
+import type { Binder } from "../bindings/index.ts";
 import {
   createCreateInputSchema,
   createCreateOutputSchema,

@@ -5,13 +5,38 @@ import { VIEW_BINDING_SCHEMA } from "./views.ts";
 // Import new Resources 2.0 bindings function
 import { createResourceV2Bindings } from "./resources/bindings.ts";
 
-export { type Binder } from "./binder.ts";
+// Export types and utilities from binder
+export {
+  type Binder,
+  type BinderImplementation,
+  type ToolLike,
+  type CreateToolOptions,
+  bindingClient,
+  type MCPBindingClient,
+  ChannelBinding,
+  ViewBinding,
+  impl,
+} from "./binder.ts";
+
+// Export all channel types and schemas
 export * from "./channels.ts";
+
+// Export binding utilities
 export * from "./utils.ts";
-// should not export binder.ts because it is a server-side only file
+
+// Export resources schemas (v1)
+export * from "./resources.ts";
+
+// Export views schemas
+export * from "./views.ts";
 
 // Re-export Resources 2.0 bindings function for convenience
 export { createResourceV2Bindings };
+
+// Export resources v2 types and schemas
+export * from "./resources/schemas.ts";
+export * from "./resources/bindings.ts";
+export * from "./resources/helpers.ts";
 
 export const WellKnownBindings = {
   Channel: CHANNEL_BINDING_SCHEMA,

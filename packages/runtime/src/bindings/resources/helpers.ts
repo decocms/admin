@@ -1,4 +1,3 @@
-import { z } from "zod";
 import {
   ResourceUriSchema,
   type CreateInput,

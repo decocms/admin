@@ -39,7 +39,7 @@ export * from "../errors.ts";
 export { FileProcessor } from "../mcp/file-processor.ts";
 export * from "./assertions.ts";
 export { createResourceAccess } from "./auth/index.ts";
-export * from "./bindings/binder.ts";
+export * from "./bindings/index.ts";
 export * from "./context.ts";
 export { createTool, createToolGroup } from "./context.ts";
 export type { ContractState } from "./contracts/api.ts";

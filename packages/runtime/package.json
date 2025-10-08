@@ -26,7 +26,8 @@
     "./d1": "./src/d1-store.ts",
     "./resources": "./src/resources.ts",
     "./views": "./src/views.ts",
-    "./mcp-client": "./src/mcp-client.ts"
+    "./mcp-client": "./src/mcp-client.ts",
+    "./bindings": "./src/bindings/index.ts"
   },
   "devDependencies": {
     "@types/mime-db": "^1.43.6",

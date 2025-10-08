@@ -73,8 +73,8 @@ export function Table<T = Record<string, unknown>>({
 
   return (
     <div className="flex flex-1 min-h-0 overflow-y-auto overflow-x-auto w-full border border-border rounded-xl bg-background">
-      <UITable className="w-full border-collapse table-fixed">
-        <TableHeader className="sticky top-0 z-10 border-b-[1px] border-border">
+      <UITable className="w-full border-collapse">
+        <TableHeader className="sticky top-0 z-10 border-b-[1px] border-border bg-background">
           <TableRow className="h-10 hover:!bg-transparent [&:hover]:!bg-transparent">
             {columns.map((col, idx) => {
               const isActiveSort = sortKey === col.id;
@@ -83,7 +83,7 @@ export function Table<T = Record<string, unknown>>({
                   key={col.id}
                   className={
                     getHeaderClass(idx, columns.length) +
-                    " sticky top-0 z-10 group " +
+                    " group " +
                     col.rowClassName
                   }
                   style={{ cursor: col.sortable ? "pointer" : undefined }}

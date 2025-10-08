@@ -1408,9 +1408,6 @@ export const getIntegrationApiKey = createIntegrationManagementTool({
   }),
   outputSchema: ApiKeySchema,
   handler: async ({ integrationId }, c) => {
-    // todo: remove
-    c.resourceAccess.grant();
-
     assertHasWorkspace(c);
     await assertWorkspaceResourceAccess(c);
 

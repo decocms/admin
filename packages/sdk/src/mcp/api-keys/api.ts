@@ -271,12 +271,14 @@ export const reissueApiKey = createTool({
     const db = c.db;
     const workspace = c.workspace.value;
 
+    const projectId = await getProjectIdFromContext(c);
+
     // First, verify the API key exists and is accessible
     const { data: apiKey, error } = await db
       .from("deco_chat_api_keys")
       .select(SELECT_API_KEY_QUERY)
       .eq("id", id)
-      .eq("workspace", workspace)
+      .or(`workspace.eq.${workspace},project_id.eq.${projectId}`)
       .is("deleted_at", null)
       .single();
 
@@ -287,8 +289,6 @@ export const reissueApiKey = createTool({
     if (!apiKey) {
       throw new NotFoundError("API key not found");
     }
-
-    const projectId = await getProjectIdFromContext(c);
 
     // Generate new JWT token with the provided claims
     const issuer = await c.jwtIssuer();

@@ -1421,7 +1421,6 @@ export const getIntegrationApiKey = createIntegrationManagementTool({
       throw new Error("No app name found for this integration");
     }
 
-    console.log("appName", appName);
     const name = `${appName}-${integrationId}`;
 
     const apiKey = await c.db

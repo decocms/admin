@@ -24,7 +24,7 @@ export default function Page() {
   const promptId = id!;
   const threadId = promptId;
 
-  const { data: _prompt } = usePrompt(promptId);
+  const { data: _prompt, refetch: refetchPrompt } = usePrompt(promptId);
   const prompt = _prompt || {
     id: crypto.randomUUID(),
     name: "",
@@ -47,6 +47,12 @@ export default function Page() {
       content: selectedPrompt.content,
     },
   });
+
+  useEffect(() => {
+    if (_prompt) {
+      setSelectedPrompt(_prompt);
+    }
+  }, [_prompt]);
 
   useEffect(() => {
     form.reset(selectedPrompt);
@@ -107,7 +113,15 @@ export default function Page() {
   // passed via chat overrides instead of modifying cached agent data.
 
   const decopilotContextValue: DecopilotContextValue = {
-    additionalTools: {},
+    additionalTools: {
+      "i:prompt-management": ["PROMPTS_GET", "PROMPTS_UPDATE"],
+    },
+    rules: [`You are editing the prompt with id: ${promptId}.`],
+    onToolCall: (toolCall) => {
+      if (toolCall.toolName === "PROMPTS_UPDATE") {
+        refetchPrompt();
+      }
+    },
   };
 
   return (

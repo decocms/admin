@@ -21,7 +21,6 @@ import {
   createToolViewsV2,
   createWorkflowBindingImpl,
   createWorkflowResourceV2Implementation,
-  workflowViews as legacyWorkflowViews,
   createWorkflowViewsV2,
   DECONFIG_TOOLS,
   EMAIL_TOOLS,
@@ -31,6 +30,7 @@ import {
   getWorkspaceBucketName,
   GLOBAL_TOOLS,
   type IntegrationWithTools,
+  workflowViews as legacyWorkflowViews,
   ListToolsMiddleware,
   PrincipalExecutionContext,
   PROJECT_TOOLS,
@@ -142,14 +142,24 @@ export const honoCtxToAppCtx = (c: Context<AppEnv>): AppContext => {
 
 const mapMCPErrorToHTTPExceptionOrThrow = (err: Error) => {
   if ("code" in err) {
-    throw new HTTPException(
-      (err.code as ContentfulStatusCode | undefined) ?? 500,
-      { message: err.message ?? "Internal server error" },
-    );
+    // deno-lint-ignore no-explicit-any
+    const cause = (err as any as { detail?: unknown }).detail;
+    const status = (err.code as ContentfulStatusCode | undefined) ?? 500;
+    const message = err.message ?? "Internal server error";
+    throw new HTTPException(status, { message, cause });
   }
 
   throw err;
 };
+
+const getStoreSafe = () => {
+  try {
+    return State.getStore();
+  } catch {
+    return null;
+  }
+};
+
 /**
  * Creates and sets up an MCP server for the given tools
  */
@@ -179,28 +189,20 @@ const createMCPHandlerFor = (
 
       registeredTools.add(tool.name);
 
-      const evalInputSchema =
-        tool.inputSchema instanceof z.ZodLazy
-          ? tool.inputSchema.schema
-          : tool.inputSchema;
-
-      const evalOutputSchema =
-        tool.outputSchema instanceof z.ZodLazy
-          ? tool.outputSchema.schema
-          : tool.outputSchema;
-
       server.registerTool(
         tool.name,
         {
           annotations: tool.annotations,
           description: tool.description,
           inputSchema:
-            "shape" in evalInputSchema
-              ? (evalInputSchema.shape as z.ZodRawShape)
+            "shape" in tool.inputSchema
+              ? (tool.inputSchema.shape as z.ZodRawShape)
               : z.object({}).shape,
           outputSchema:
-            evalOutputSchema && "shape" in evalOutputSchema
-              ? (evalOutputSchema.shape as z.ZodRawShape)
+            tool.outputSchema &&
+            typeof tool.outputSchema === "object" &&
+            "shape" in tool.outputSchema
+              ? (tool.outputSchema.shape as z.ZodRawShape)
               : z.object({}).shape,
         },
         // @ts-expect-error: zod shape is not typed
@@ -214,9 +216,23 @@ const createMCPHandlerFor = (
     await server.connect(transport);
     endTime(c, "mcp-connect");
 
+    const parentContext = getStoreSafe();
+    const currentContext = honoCtxToAppCtx(c);
+
+    /**
+     * Gives access to this tool if parent context has access
+     *
+     * To be able to remove this code, create a workflow that calls
+     * ai-gateway to generate text with ai. If everything goes well
+     * withtout the following code, you'll be able to remove the next code.
+     *  */
+    if (parentContext?.resourceAccess.granted()) {
+      currentContext.resourceAccess.grant();
+    }
+
     startTime(c, "mcp-handle-message");
     const res = await State.run(
-      honoCtxToAppCtx(c),
+      currentContext,
       transport.handleMessage.bind(transport),
       c.req.raw,
     );
@@ -540,8 +556,14 @@ const createContextBasedTools = (ctx: Context) => {
     WellKnownMcpGroups.Tools,
   );
 
+  // Create Resources 2.0 workflow resource implementation
+  const workflowResourceV2 = createWorkflowResourceV2Implementation(
+    client,
+    WellKnownMcpGroups.Workflows,
+  );
+
   const resourcesClient = createMCPToolsStub({
-    tools: toolResourceV2,
+    tools: [...toolResourceV2, ...workflowResourceV2],
     context: appCtx,
   });
 
@@ -556,12 +578,6 @@ const createContextBasedTools = (ctx: Context) => {
 
   // Create Views 2.0 implementation for tool views
   const toolViewsV2 = createToolViewsV2();
-
-  // Create Resources 2.0 workflow resource implementation
-  const workflowResourceV2 = createWorkflowResourceV2Implementation(
-    client,
-    WellKnownMcpGroups.Workflows,
-  );
 
   const resourceWorkflowRead: WorkflowBindingImplOptions["resourceWorkflowRead"] =
     ((uri) =>
@@ -780,9 +796,14 @@ app.get("/apps/oauth", (c) => {
 app.get("/health", (c: Context) => c.json({ status: "ok" }));
 
 app.onError((err, c) => {
+  const isHttpException = err instanceof HTTPException;
   return c.json(
-    { error: err?.message ?? "Internal server error" },
-    err instanceof HTTPException ? err.status : 500,
+    {
+      error: err?.message ?? "Internal server error",
+      name: err?.name ?? undefined,
+      detail: isHttpException ? err.cause : err,
+    },
+    isHttpException ? err.status : 500,
   );
 });
 

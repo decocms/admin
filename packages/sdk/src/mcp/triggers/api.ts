@@ -115,8 +115,8 @@ const createTool = createToolGroup("Triggers", {
 export const listTriggers = createTool({
   name: "TRIGGERS_LIST",
   description: "List all triggers",
-  inputSchema: z.lazy(() => z.object({ agentId: z.string().optional() })),
-  outputSchema: z.lazy(() => ListTriggersOutputSchema),
+  inputSchema: z.object({ agentId: z.string().optional() }),
+  outputSchema: ListTriggersOutputSchema,
   handler: async ({ agentId }, c): Promise<ListTriggersOutput> => {
     assertHasWorkspace(c);
 
@@ -149,12 +149,10 @@ export const listTriggers = createTool({
 export const upsertTrigger = createTool({
   name: "TRIGGERS_UPSERT",
   description: "Create or update a trigger",
-  inputSchema: z.lazy(() =>
-    z.object({
-      id: z.string().optional(),
-      data: TriggerSchema,
-    }),
-  ),
+  inputSchema: z.object({
+    id: z.string().optional(),
+    data: TriggerSchema,
+  }),
   handler: async ({ id, data }, c) => {
     assertHasWorkspace(c);
 
@@ -221,7 +219,7 @@ export const upsertTrigger = createTool({
 export const createTrigger = createTool({
   name: "TRIGGERS_CREATE",
   description: "Create a trigger",
-  inputSchema: z.lazy(() => z.object({ trigger: TriggerSchema })),
+  inputSchema: z.object({ trigger: TriggerSchema }),
   handler: async ({ trigger }, c) => {
     assertHasWorkspace(c);
 
@@ -236,12 +234,10 @@ export const createTrigger = createTool({
 export const updateTrigger = createTool({
   name: "TRIGGERS_UPDATE",
   description: "Update a trigger",
-  inputSchema: z.lazy(() =>
-    z.object({
-      id: z.string(),
-      data: TriggerSchema,
-    }),
-  ),
+  inputSchema: z.object({
+    id: z.string(),
+    data: TriggerSchema,
+  }),
   handler: async ({ id, data }, c) => {
     assertHasWorkspace(c);
 
@@ -256,7 +252,7 @@ export const updateTrigger = createTool({
 export const createCronTrigger = createTool({
   name: "TRIGGERS_CREATE_CRON",
   description: "Create a cron trigger",
-  inputSchema: z.lazy(() => CreateCronTriggerInputSchema),
+  inputSchema: CreateCronTriggerInputSchema,
   handler: async (data, c): Promise<CreateTriggerOutput> => {
     assertHasWorkspace(c);
 
@@ -271,8 +267,8 @@ export const createCronTrigger = createTool({
 export const createWebhookTrigger = createTool({
   name: "TRIGGERS_CREATE_WEBHOOK",
   description: "Create a webhook trigger",
-  inputSchema: z.lazy(() => CreateWebhookTriggerInputSchema),
-  outputSchema: z.lazy(() => CreateTriggerOutputSchema),
+  inputSchema: CreateWebhookTriggerInputSchema,
+  outputSchema: CreateTriggerOutputSchema,
   handler: async (data, c): Promise<CreateTriggerOutput> => {
     assertHasWorkspace(c);
 
@@ -287,8 +283,8 @@ export const createWebhookTrigger = createTool({
 export const deleteTrigger = createTool({
   name: "TRIGGERS_DELETE",
   description: "Delete a trigger",
-  inputSchema: z.lazy(() => z.object({ id: z.string() })),
-  outputSchema: z.lazy(() => DeleteTriggerOutputSchema),
+  inputSchema: z.object({ id: z.string() }),
+  outputSchema: DeleteTriggerOutputSchema,
   handler: async ({ id }, c): Promise<DeleteTriggerOutput> => {
     assertHasWorkspace(c);
 
@@ -317,8 +313,8 @@ export const deleteTrigger = createTool({
 export const getWebhookTriggerUrl = createTool({
   name: "TRIGGERS_GET_WEBHOOK_URL",
   description: "Get the webhook URL for a trigger",
-  inputSchema: z.lazy(() => z.object({ id: z.string() })),
-  outputSchema: z.lazy(() => GetWebhookTriggerUrlOutputSchema),
+  inputSchema: z.object({ id: z.string() }),
+  outputSchema: GetWebhookTriggerUrlOutputSchema,
   handler: async ({ id }, c): Promise<GetWebhookTriggerUrlOutput> => {
     assertHasWorkspace(c);
 
@@ -351,7 +347,7 @@ export const getWebhookTriggerUrl = createTool({
 export const getTrigger = createTool({
   name: "TRIGGERS_GET",
   description: "Get a trigger by ID",
-  inputSchema: z.lazy(() => z.object({ id: z.string() })),
+  inputSchema: z.object({ id: z.string() }),
   handler: async (
     { id: triggerId },
     c,
@@ -389,7 +385,7 @@ export const getTrigger = createTool({
 export const activateTrigger = createTool({
   name: "TRIGGERS_ACTIVATE",
   description: "Activate a trigger",
-  inputSchema: z.lazy(() => z.object({ id: z.string() })),
+  inputSchema: z.object({ id: z.string() }),
   handler: async ({ id }, c) => {
     assertHasWorkspace(c);
 
@@ -459,7 +455,7 @@ export const activateTrigger = createTool({
 export const deactivateTrigger = createTool({
   name: "TRIGGERS_DEACTIVATE",
   description: "Deactivate a trigger",
-  inputSchema: z.lazy(() => z.object({ id: z.string() })),
+  inputSchema: z.object({ id: z.string() }),
   handler: async ({ id }, c) => {
     assertHasWorkspace(c);
 

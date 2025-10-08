@@ -5,10 +5,12 @@ import { DeconfigResourceV2 } from "../deconfig-v2/index.ts";
 import {
   AppContext,
   assertWorkspaceResourceAccess,
+  createMCPToolsStub,
   createTool,
   createToolGroup,
   DeconfigClient,
   MCPClient,
+  PROJECT_TOOLS,
   WithTool,
 } from "../index.ts";
 import {
@@ -100,27 +102,23 @@ export function createToolBindingImpl({
   const runTool = createTool({
     name: "DECO_TOOL_CALL_TOOL",
     description: "Invoke a tool created with DECO_RESOURCE_TOOL_CREATE",
-    inputSchema: z.lazy(() =>
-      z.object({
-        uri: z.string().describe("The URI of the tool to run"),
-        input: z.object({}).passthrough().describe("The input of the code"),
-      }),
-    ),
-    outputSchema: z.lazy(() =>
-      z.object({
-        result: z.any().optional().describe("The result of the tool execution"),
-        error: z.any().optional().describe("Error if any"),
-        logs: z
-          .array(
-            z.object({
-              type: z.enum(["log", "warn", "error"]),
-              content: z.string(),
-            }),
-          )
-          .optional()
-          .describe("Console logs from the execution"),
-      }),
-    ),
+    inputSchema: z.object({
+      uri: z.string().describe("The URI of the tool to run"),
+      input: z.object({}).passthrough().describe("The input of the code"),
+    }),
+    outputSchema: z.object({
+      result: z.any().optional().describe("The result of the tool execution"),
+      error: z.any().optional().describe("Error if any"),
+      logs: z
+        .array(
+          z.object({
+            type: z.enum(["log", "warn", "error"]),
+            content: z.string(),
+          }),
+        )
+        .optional()
+        .describe("Console logs from the execution"),
+    }),
     handler: async ({ uri, input }, c) => {
       try {
         const { data: tool } = await resourceToolRead(uri);
@@ -152,27 +150,23 @@ const createToolManagementTool = createToolGroup("Tools", {
 export const runTool = createToolManagementTool({
   name: "DECO_TOOL_RUN_TOOL",
   description: "Invoke the tool passed as input",
-  inputSchema: z.lazy(() =>
-    z.object({
-      tool: ToolDefinitionSchema,
-      input: z.object({}).passthrough().describe("The input of the code"),
-    }),
-  ),
-  outputSchema: z.lazy(() =>
-    z.object({
-      result: z.any().optional().describe("The result of the tool execution"),
-      error: z.any().optional().describe("Error if any"),
-      logs: z
-        .array(
-          z.object({
-            type: z.enum(["log", "warn", "error"]),
-            content: z.string(),
-          }),
-        )
-        .optional()
-        .describe("Console logs from the execution"),
-    }),
-  ),
+  inputSchema: z.object({
+    tool: ToolDefinitionSchema,
+    input: z.object({}).passthrough().describe("The input of the code"),
+  }),
+  outputSchema: z.object({
+    result: z.any().optional().describe("The result of the tool execution"),
+    error: z.any().optional().describe("Error if any"),
+    logs: z
+      .array(
+        z.object({
+          type: z.enum(["log", "warn", "error"]),
+          content: z.string(),
+        }),
+      )
+      .optional()
+      .describe("Console logs from the execution"),
+  }),
   handler: async ({ tool, input }, c) => {
     try {
       return await executeToolWithValidation(tool, input, c);
@@ -181,42 +175,6 @@ export const runTool = createToolManagementTool({
     }
   },
 });
-
-// const { items } = await resourceToolSearch({ page: 1, pageSize: Infinity });
-// const tools = items.map(async ({ uri }: any) => {
-//   const {
-//     data: { name, description, inputSchema, outputSchema, execute },
-//   } = await resourceToolRead(uri);
-//   return createTool({
-//     name,
-//     group: WellKnownMcpGroups.Tools,
-//     description: description,
-//     inputSchema: jsonSchemaToModel(inputSchema),
-//     outputSchema: jsonSchemaToModel(outputSchema),
-//     handler: async (input, c) => {
-//       const runtimeId = c.locator?.value ?? "default";
-//       const client = MCPClient.forContext(c);
-//       const envPromise = asEnv(client);
-//       // Use the inlined function code
-//       using evaluation = await evalCodeAndReturnDefaultHandle(
-//         execute,
-//         runtimeId,
-//       );
-//       const { ctx, defaultHandle, guestConsole: _guestConsole } = evaluation;
-//       // Call the function using the callFunction utility
-//       const callHandle = await callFunction(
-//         ctx,
-//         defaultHandle,
-//         undefined,
-//         input,
-//         { env: await envPromise },
-//       );
-//       const callResult = ctx.dump(ctx.unwrapResult(callHandle));
-//       return callResult;
-//     },
-//   });
-// });
-// return Promise.all(tools);
 
 /**
  * Tool Resource V2
@@ -260,6 +218,39 @@ export const ToolResourceV2 = DeconfigResourceV2.define({
     DECO_RESOURCE_TOOL_DELETE: {
       description: TOOL_DELETE_PROMPT,
     },
+  },
+  validate: async (tool, context, _deconfig) => {
+    // Validate dependencies if provided
+    if (tool.dependencies && tool.dependencies.length > 0) {
+      // Create an MCPClientStub to call INTEGRATIONS_LIST
+      const client = createMCPToolsStub({
+        tools: PROJECT_TOOLS,
+        context,
+      });
+
+      const result = await client.INTEGRATIONS_LIST({});
+      const integrations = result.items;
+
+      for (const dependency of tool.dependencies) {
+        const integration = integrations.find(
+          (item: { id: string; name: string }) =>
+            item.id === dependency.integrationId,
+        );
+
+        if (!integration) {
+          const availableIntegrations = integrations.map(
+            (item: { id: string; name: string }) => ({
+              id: item.id,
+              name: item.name,
+            }),
+          );
+
+          throw new Error(
+            `Dependency validation failed: Integration '${dependency.integrationId}' not found.\n\nAvailable integrations:\n${JSON.stringify(availableIntegrations, null, 2)}`,
+          );
+        }
+      }
+    }
   },
 });
 

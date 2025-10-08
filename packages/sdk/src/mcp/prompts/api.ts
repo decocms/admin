@@ -17,13 +17,11 @@ const createTool = createToolGroup("Prompt", {
 export const createPrompt = createTool({
   name: "PROMPTS_CREATE",
   description: "Create a new prompt",
-  inputSchema: z.lazy(() =>
-    z.object({
-      name: z.string(),
-      description: z.string().optional(),
-      content: z.string(),
-    }),
-  ),
+  inputSchema: z.object({
+    name: z.string(),
+    description: z.string().optional(),
+    content: z.string(),
+  }),
   handler: async (props, c) => {
     assertHasWorkspace(c);
     const workspace = c.workspace.value;
@@ -64,17 +62,15 @@ export const createPrompt = createTool({
 export const updatePrompt = createTool({
   name: "PROMPTS_UPDATE",
   description: "Update an existing prompt",
-  inputSchema: z.lazy(() =>
-    z.object({
-      id: z.string(),
-      data: z.object({
-        name: z.string().optional(),
-        description: z.string().optional().nullable(),
-        content: z.string().optional(),
-      }),
-      versionName: z.string().optional(),
+  inputSchema: z.object({
+    id: z.string(),
+    data: z.object({
+      name: z.string().optional(),
+      description: z.string().optional().nullable(),
+      content: z.string().optional(),
     }),
-  ),
+    versionName: z.string().optional(),
+  }),
   handler: async (props, c) => {
     assertHasWorkspace(c);
     const workspace = c.workspace.value;
@@ -114,11 +110,9 @@ export const updatePrompt = createTool({
 export const deletePrompt = createTool({
   name: "PROMPTS_DELETE",
   description: "Delete a prompt by id",
-  inputSchema: z.lazy(() =>
-    z.object({
-      id: z.string(),
-    }),
-  ),
+  inputSchema: z.object({
+    id: z.string(),
+  }),
   handler: async (props, c) => {
     assertHasWorkspace(c);
     const workspace = c.workspace.value;
@@ -183,24 +177,20 @@ const virtualPromptsFor = (
 export const listPrompts = createTool({
   name: "PROMPTS_LIST",
   description: "List prompts for the current workspace",
-  inputSchema: z.lazy(() =>
-    z.object({
-      ids: z.array(z.string()).optional().describe("Filter prompts by ids"),
-      resolveMentions: z
-        .boolean()
-        .optional()
-        .describe("Resolve mentions in the prompts"),
-      excludeIds: z
-        .array(z.string())
-        .optional()
-        .describe("Exclude prompts by ids"),
-    }),
-  ),
-  outputSchema: z.lazy(() =>
-    z.object({
-      items: z.array(z.any()),
-    }),
-  ),
+  inputSchema: z.object({
+    ids: z.array(z.string()).optional().describe("Filter prompts by ids"),
+    resolveMentions: z
+      .boolean()
+      .optional()
+      .describe("Resolve mentions in the prompts"),
+    excludeIds: z
+      .array(z.string())
+      .optional()
+      .describe("Exclude prompts by ids"),
+  }),
+  outputSchema: z.object({
+    items: z.array(z.any()),
+  }),
   handler: async (props, c) => {
     assertHasWorkspace(c);
     const workspace = c.workspace.value;
@@ -259,40 +249,31 @@ export const listPrompts = createTool({
 export const getPrompt = createTool({
   name: "PROMPTS_GET",
   description: "Get a prompt by id",
-  inputSchema: z.lazy(() =>
-    z
-      .object({
-        id: z.string(),
-      })
-      .describe("The id of the prompt to get"),
-  ),
-  outputSchema: z.lazy(() =>
-    z.object({
-      id: z.string().describe("The id of the prompt"),
-      name: z.string().describe("The name of the prompt"),
-      description: z
-        .string()
-        .nullable()
-        .describe("The description of the prompt"),
-      content: z.string().describe("The content of the prompt"),
-      created_at: z
-        .string()
-        .describe("The date and time the prompt was created"),
-      updated_at: z
-        .string()
-        .nullable()
-        .optional()
-        .describe("The date and time the prompt was last updated"),
-      workspace: z
-        .string()
-        .optional()
-        .describe("The workspace the prompt belongs to"),
-      readonly: z
-        .boolean()
-        .optional()
-        .describe("Whether the prompt is readonly"),
-    }),
-  ),
+  inputSchema: z
+    .object({
+      id: z.string(),
+    })
+    .describe("The id of the prompt to get"),
+  outputSchema: z.object({
+    id: z.string().describe("The id of the prompt"),
+    name: z.string().describe("The name of the prompt"),
+    description: z
+      .string()
+      .nullable()
+      .describe("The description of the prompt"),
+    content: z.string().describe("The content of the prompt"),
+    created_at: z.string().describe("The date and time the prompt was created"),
+    updated_at: z
+      .string()
+      .nullable()
+      .optional()
+      .describe("The date and time the prompt was last updated"),
+    workspace: z
+      .string()
+      .optional()
+      .describe("The workspace the prompt belongs to"),
+    readonly: z.boolean().optional().describe("Whether the prompt is readonly"),
+  }),
   handler: async (props, c) => {
     assertHasWorkspace(c);
     await assertWorkspaceResourceAccess(c);
@@ -319,13 +300,11 @@ export const getPrompt = createTool({
 export const searchPrompts = createTool({
   name: "PROMPTS_SEARCH",
   description: "Search for prompts",
-  inputSchema: z.lazy(() =>
-    z.object({
-      query: z.string(),
-      limit: z.number().optional(),
-      offset: z.number().optional(),
-    }),
-  ),
+  inputSchema: z.object({
+    query: z.string(),
+    limit: z.number().optional(),
+    offset: z.number().optional(),
+  }),
   handler: async (props, c) => {
     assertHasWorkspace(c);
     const workspace = c.workspace.value;
@@ -350,28 +329,24 @@ export const searchPrompts = createTool({
 export const getPromptVersions = createTool({
   name: "PROMPTS_GET_VERSIONS",
   description: "Get the versions of a prompt",
-  inputSchema: z.lazy(() =>
-    z.object({
-      id: z.string(),
-      limit: z.number().optional(),
-      offset: z.number().optional(),
-    }),
-  ),
-  outputSchema: z.lazy(() =>
-    z.object({
-      items: z.array(
-        z.object({
-          content: z.string().nullable(),
-          created_at: z.string(),
-          created_by: z.string().nullable(),
-          id: z.string(),
-          name: z.string().nullable(),
-          prompt_id: z.string(),
-          version_name: z.string().nullable(),
-        }),
-      ),
-    }),
-  ),
+  inputSchema: z.object({
+    id: z.string(),
+    limit: z.number().optional(),
+    offset: z.number().optional(),
+  }),
+  outputSchema: z.object({
+    items: z.array(
+      z.object({
+        content: z.string().nullable(),
+        created_at: z.string(),
+        created_by: z.string().nullable(),
+        id: z.string(),
+        name: z.string().nullable(),
+        prompt_id: z.string(),
+        version_name: z.string().nullable(),
+      }),
+    ),
+  }),
   handler: async (props, c) => {
     assertHasWorkspace(c);
     const { id, limit = 50, offset = 0 } = props;
@@ -396,12 +371,10 @@ export const getPromptVersions = createTool({
 export const renamePromptVersion = createTool({
   name: "PROMPTS_RENAME_VERSION",
   description: "Rename a prompt version",
-  inputSchema: z.lazy(() =>
-    z.object({
-      id: z.string(),
-      versionName: z.string(),
-    }),
-  ),
+  inputSchema: z.object({
+    id: z.string(),
+    versionName: z.string(),
+  }),
   handler: async (props, c) => {
     assertHasWorkspace(c);
     const { id, versionName } = props;

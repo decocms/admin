@@ -117,12 +117,10 @@ export const createTool = createToolGroup("Team", {
 export const getTeamMembers = createTool({
   name: "TEAM_MEMBERS_GET",
   description: "Get all members of a team",
-  inputSchema: z.lazy(() =>
-    z.object({
-      teamId: z.number(),
-      withActivity: z.boolean().optional(),
-    }),
-  ),
+  inputSchema: z.object({
+    teamId: z.number(),
+    withActivity: z.boolean().optional(),
+  }),
   handler: async (
     props,
     c,
@@ -204,15 +202,13 @@ export const getTeamMembers = createTool({
 export const updateTeamMember = createTool({
   name: "TEAM_MEMBERS_UPDATE",
   description: "Update a team member. Usefull for updating admin status.",
-  inputSchema: z.lazy(() =>
-    z.object({
-      teamId: z.number(),
-      memberId: z.number(),
-      data: z.object({
-        admin: z.boolean().optional(),
-      }),
+  inputSchema: z.object({
+    teamId: z.number(),
+    memberId: z.number(),
+    data: z.object({
+      admin: z.boolean().optional(),
     }),
-  ),
+  }),
   handler: async (props, c) => {
     const { teamId, memberId, data } = props;
 
@@ -249,12 +245,10 @@ export const updateTeamMember = createTool({
 export const removeTeamMember = createTool({
   name: "TEAM_MEMBERS_REMOVE",
   description: "Remove a member from a team",
-  inputSchema: z.lazy(() =>
-    z.object({
-      teamId: z.number(),
-      memberId: z.number(),
-    }),
-  ),
+  inputSchema: z.object({
+    teamId: z.number(),
+    memberId: z.number(),
+  }),
   handler: async (props, c) => {
     const { teamId, memberId } = props;
 
@@ -330,11 +324,9 @@ export const removeTeamMember = createTool({
 export const registerMemberActivity = createTool({
   name: "TEAM_MEMBER_ACTIVITY_REGISTER",
   description: "Register that the user accessed a team",
-  inputSchema: z.lazy(() =>
-    z.object({
-      teamId: z.number(),
-    }),
-  ),
+  inputSchema: z.object({
+    teamId: z.number(),
+  }),
   handler: async (props, c) => {
     const { teamId } = props;
 
@@ -357,12 +349,10 @@ export const registerMemberActivity = createTool({
 export const registerProjectActivity = createTool({
   name: "PROJECT_ACTIVITY_REGISTER",
   description: "Register that the user accessed a project",
-  inputSchema: z.lazy(() =>
-    z.object({
-      org: z.string(),
-      project: z.string(),
-    }),
-  ),
+  inputSchema: z.object({
+    org: z.string(),
+    project: z.string(),
+  }),
   handler: async (props, c) => {
     assertPrincipalIsUser(c);
     c.resourceAccess.grant();
@@ -407,12 +397,10 @@ export const registerProjectActivity = createTool({
 export const getMyInvites = createTool({
   name: "MY_INVITES_LIST",
   description: "List all team invites for the current logged in user",
-  inputSchema: z.lazy(() => z.object({})),
-  outputSchema: z.lazy(() =>
-    z.object({
-      items: z.array(z.any()),
-    }),
-  ),
+  inputSchema: z.object({}),
+  outputSchema: z.object({
+    items: z.array(z.any()),
+  }),
   handler: async (_props, c) => {
     c.resourceAccess.grant();
 
@@ -476,22 +464,20 @@ export const inviteTeamMembers = createTool({
   name: "TEAM_MEMBERS_INVITE",
   description:
     "Invite users to join a team via email. When no specific roles are provided, use default role: { id: 1, name: 'owner' }",
-  inputSchema: z.lazy(() =>
-    z.object({
-      teamId: z.string(),
-      invitees: z.array(
-        z.object({
-          email: z.string().email(),
-          roles: z.array(
-            z.object({
-              id: z.number(),
-              name: z.string(),
-            }),
-          ),
-        }),
-      ),
-    }),
-  ),
+  inputSchema: z.object({
+    teamId: z.string(),
+    invitees: z.array(
+      z.object({
+        email: z.string().email(),
+        roles: z.array(
+          z.object({
+            id: z.number(),
+            name: z.string(),
+          }),
+        ),
+      }),
+    ),
+  }),
   handler: async (props, c) => {
     assertPrincipalIsUser(c);
 
@@ -615,11 +601,9 @@ export const inviteTeamMembers = createTool({
 export const acceptInvite = createTool({
   name: "TEAM_INVITE_ACCEPT",
   description: "Accept a team invitation",
-  inputSchema: z.lazy(() =>
-    z.object({
-      id: z.string(),
-    }),
-  ),
+  inputSchema: z.object({
+    id: z.string(),
+  }),
   handler: async (props, c) => {
     c.resourceAccess.grant();
 
@@ -748,11 +732,9 @@ export const acceptInvite = createTool({
 export const deleteInvite = createTool({
   name: "TEAM_INVITE_DELETE",
   description: "Delete a team invitation",
-  inputSchema: z.lazy(() =>
-    z.object({
-      id: z.string(),
-    }),
-  ),
+  inputSchema: z.object({
+    id: z.string(),
+  }),
   handler: async (props, c) => {
     const { id } = props;
     const db = c.db;
@@ -799,16 +781,12 @@ export const deleteInvite = createTool({
 export const teamRolesList = createTool({
   name: "TEAM_ROLES_LIST",
   description: "Get all roles available for a team, including basic deco roles",
-  inputSchema: z.lazy(() =>
-    z.object({
-      teamId: z.number(),
-    }),
-  ),
-  outputSchema: z.lazy(() =>
-    z.object({
-      items: z.array(z.any()),
-    }),
-  ),
+  inputSchema: z.object({
+    teamId: z.number(),
+  }),
+  outputSchema: z.object({
+    items: z.array(z.any()),
+  }),
   handler: async (props, c) => {
     const { teamId } = props;
 
@@ -822,14 +800,12 @@ export const teamRolesList = createTool({
 export const updateMemberRole = createTool({
   name: "TEAM_MEMBERS_UPDATE_ROLE",
   description: "Update a member's role in a team",
-  inputSchema: z.lazy(() =>
-    z.object({
-      teamId: z.number(),
-      userId: z.string(),
-      roleId: z.number(),
-      action: z.enum(["grant", "revoke"]),
-    }),
-  ),
+  inputSchema: z.object({
+    teamId: z.number(),
+    userId: z.string(),
+    roleId: z.number(),
+    action: z.enum(["grant", "revoke"]),
+  }),
   handler: async (props, c) => {
     const { teamId } = props;
 
@@ -857,16 +833,14 @@ export const updateMemberRole = createTool({
 export const createIssue = createTool({
   name: "TEAM_REPORT_ISSUE_CREATE",
   description: "Report a bug or idea within a team/project context",
-  inputSchema: z.lazy(() =>
-    z.object({
-      orgSlug: z.string().optional(),
-      projectSlug: z.string().optional(),
-      type: z.enum(["Bug", "Idea"]),
-      content: z.string().min(1),
-      url: z.string().optional(),
-      path: z.string().optional(),
-    }),
-  ),
+  inputSchema: z.object({
+    orgSlug: z.string().optional(),
+    projectSlug: z.string().optional(),
+    type: z.enum(["Bug", "Idea"]),
+    content: z.string().min(1),
+    url: z.string().optional(),
+    path: z.string().optional(),
+  }),
   handler: async (props, c) => {
     c.resourceAccess.grant();
     const { orgSlug, projectSlug, type, content, url, path } = props;

@@ -1,4 +1,4 @@
-import { convertToModelMessages } from "@deco/ai/agent/ai-message";
+import { convertToAIMessage } from "@deco/ai/agent/ai-message";
 import { createLLMInstance, getLLMConfig } from "@deco/ai/agent/llm";
 import {
   generateObject,
@@ -15,7 +15,7 @@ import {
 } from "../assertions.ts";
 import { type AppContext, createToolGroup } from "../context.ts";
 import { InternalServerError, SupabaseLLMVault } from "../index.ts";
-import type { LLMUsageEvent, Transaction } from "../wallet/client.ts";
+import type { Transaction } from "../wallet/client.ts";
 import {
   createWalletClient,
   MicroDollar,
@@ -35,14 +35,8 @@ const createLLMUsageTransaction = (opts: {
   const usage = {
     workspace: opts.workspace,
     model: opts.model,
-    usage: {
-      ...opts.usage,
-      promptTokens: opts.usage.inputTokens ?? 0,
-      completionTokens: opts.usage.outputTokens ?? 0,
-      totalTokens: opts.usage.totalTokens ?? 0,
-    },
-  } satisfies LLMUsageEvent;
-
+    usage: opts.usage,
+  };
   return {
     type: "LLMGeneration" as const,
     generatedBy: {
@@ -133,7 +127,7 @@ const setupLLMInstance = async (modelId: string, c: AppContext) => {
   return { llm, llmConfig, usedVault: !!llmVault };
 };
 
-const prepareMessages = (
+const prepareMessages = async (
   messages: Array<{
     id?: string;
     role: "user" | "assistant" | "system";
@@ -146,23 +140,13 @@ const prepareMessages = (
     }>;
   }>,
 ) => {
-  const converter = convertToModelMessages();
-
-  return Promise.all(
+  return await Promise.all(
     messages.map((msg) =>
-      converter({
-        ...msg,
-        parts: [
-          { type: "text", text: msg.content },
-          ...(msg.experimental_attachments?.map((attachment) => ({
-            type: "file" as const,
-            url: attachment.url,
-            name: attachment.name,
-            mediaType: attachment.contentType ?? "",
-            size: 0,
-          })) ?? []),
-        ],
-        id: msg.id || crypto.randomUUID(),
+      convertToAIMessage({
+        message: {
+          ...msg,
+          id: msg.id || crypto.randomUUID(),
+        },
       }),
     ),
   );
@@ -325,8 +309,8 @@ export const aiGenerate = createTool({
   name: "AI_GENERATE",
   description:
     "Generate text using AI models directly without agent context (stateless)",
-  inputSchema: z.lazy(() => AIGenerateInputSchema),
-  outputSchema: z.lazy(() => AIGenerateOutputSchema),
+  inputSchema: AIGenerateInputSchema,
+  outputSchema: AIGenerateOutputSchema,
   handler: async (input, c) => {
     assertHasWorkspace(c);
     await assertWorkspaceResourceAccess(c);
@@ -339,7 +323,7 @@ export const aiGenerate = createTool({
     const result = await generateText({
       model: llm,
       messages: aiMessages,
-      maxOutputTokens: input.maxTokens,
+      maxTokens: input.maxTokens,
       temperature: input.temperature,
     });
 
@@ -362,9 +346,9 @@ export const aiGenerate = createTool({
     return {
       text: result.text,
       usage: {
-        promptTokens: result.usage.inputTokens ?? 0,
-        completionTokens: result.usage.outputTokens ?? 0,
-        totalTokens: result.usage.totalTokens ?? 0,
+        promptTokens: result.usage.promptTokens,
+        completionTokens: result.usage.completionTokens,
+        totalTokens: result.usage.totalTokens,
         transactionId: transactionId ?? undefined,
       },
       finishReason: result.finishReason,
@@ -376,8 +360,8 @@ export const aiGenerateObject = createTool({
   name: "AI_GENERATE_OBJECT",
   description:
     "Generate structured objects using AI models with JSON schema validation",
-  inputSchema: z.lazy(() => AIGenerateObjectInputSchema),
-  outputSchema: z.lazy(() => AIGenerateObjectOutputSchema),
+  inputSchema: AIGenerateObjectInputSchema,
+  outputSchema: AIGenerateObjectOutputSchema,
   handler: async (input, c) => {
     assertHasWorkspace(c);
     await assertWorkspaceResourceAccess(c);
@@ -395,7 +379,7 @@ export const aiGenerateObject = createTool({
       model: llm,
       messages: aiMessages,
       schema: jsonSchema(input.schema),
-      maxOutputTokens: input.maxTokens,
+      maxTokens: input.maxTokens,
       temperature: input.temperature,
     });
 
@@ -414,9 +398,9 @@ export const aiGenerateObject = createTool({
     return {
       object: result.object,
       usage: {
-        promptTokens: result.usage.inputTokens ?? 0,
-        completionTokens: result.usage.outputTokens ?? 0,
-        totalTokens: result.usage.totalTokens ?? 0,
+        promptTokens: result.usage.promptTokens,
+        completionTokens: result.usage.completionTokens,
+        totalTokens: result.usage.totalTokens,
         transactionId: transactionId ?? undefined,
       },
       finishReason: result.finishReason,

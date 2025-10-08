@@ -16,6 +16,21 @@ export const CodeStepDefinitionSchema = z.object({
     .describe(
       "ES module code that exports a default async function: (ctx: WellKnownOptions) => Promise<any>. Use ctx.readWorkflowInput() or ctx.readStepResult(stepName) to access data",
     ),
+  dependencies: z
+    .array(
+      z.object({
+        integrationId: z
+          .string()
+          .min(1)
+          .describe(
+            "The integration ID (format: i:<uuid> or a:<uuid>) that this code step depends on",
+          ),
+      }),
+    )
+    .optional()
+    .describe(
+      "List of integrations this code step calls via ctx.env['{INTEGRATION_ID}'].{TOOL_NAME}(). These integrations must be installed and available for the step to execute successfully. Use INTEGRATIONS_LIST to find available integration IDs.",
+    ),
 });
 
 export const RetriesSchema = z.object({

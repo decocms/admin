@@ -48,19 +48,15 @@ export type DatatabasesRunSqlInput = z.infer<
 export const getMeta = createDatabaseTool({
   name: "DATABASES_GET_META",
   description: "Run a SQL query against the workspace database",
-  inputSchema: z.lazy(() =>
-    z.object({
-      _legacy: z
-        .boolean()
-        .optional()
-        .describe("If true, the query will be run against the legacy database"),
-    }),
-  ),
-  outputSchema: z.lazy(() =>
-    z.object({
-      bytes: z.number().optional(),
-    }),
-  ),
+  inputSchema: z.object({
+    _legacy: z
+      .boolean()
+      .optional()
+      .describe("If true, the query will be run against the legacy database"),
+  }),
+  outputSchema: z.object({
+    bytes: z.number().optional(),
+  }),
   handler: async ({ _legacy }, c) => {
     assertHasWorkspace(c);
     await assertWorkspaceResourceAccess(c, "DATABASES_RUN_SQL");
@@ -92,11 +88,9 @@ export const runSql = createDatabaseTool({
       .optional()
       .describe("If true, the query will be run against the legacy database"),
   }),
-  outputSchema: z.lazy(() =>
-    z.object({
-      result: z.array(QueryResult),
-    }),
-  ),
+  outputSchema: z.object({
+    result: z.array(QueryResult),
+  }),
   handler: async ({ sql, params, _legacy }, c) => {
     assertHasWorkspace(c);
     await assertWorkspaceResourceAccess(c);
@@ -119,20 +113,16 @@ export const runSql = createDatabaseTool({
 export const recovery = createDatabaseTool({
   name: "DATABASES_RECOVERY",
   description: "Run a SQL query against the workspace database",
-  inputSchema: z.lazy(() =>
-    z.object({
-      date: z.string().describe("The date to recover to"),
-      _legacy: z
-        .boolean()
-        .optional()
-        .describe("If true, the query will be run against the legacy database"),
-    }),
-  ),
-  outputSchema: z.lazy(() =>
-    z.object({
-      success: z.boolean(),
-    }),
-  ),
+  inputSchema: z.object({
+    date: z.string().describe("The date to recover to"),
+    _legacy: z
+      .boolean()
+      .optional()
+      .describe("If true, the query will be run against the legacy database"),
+  }),
+  outputSchema: z.object({
+    success: z.boolean(),
+  }),
   handler: async ({ date, _legacy }, c) => {
     assertHasWorkspace(c);
     await assertWorkspaceResourceAccess(c, "DATABASES_RUN_SQL");

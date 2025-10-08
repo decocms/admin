@@ -241,6 +241,7 @@ function ConfigureConnectionInstanceForm({
       });
 
       form.reset(data);
+      setIsEditing(false);
     } catch (error) {
       console.error(`Error updating integration:`, error);
 
@@ -521,6 +522,7 @@ function ConfigureConnectionInstanceForm({
                     )}
                   />
                 )}
+                {/** Custom integrations can have multiple instances for now */}
                 {!isEditing && (
                   <div className="flex flex-col items-start gap-1">
                     <Label className="text-sm text-muted-foreground">

@@ -1,21 +1,23 @@
-import { Icon } from "@deco/ui/components/icon.tsx";
-import { cn } from "@deco/ui/lib/utils.ts";
-import { useEffect, useState } from "react";
 import { MemoizedMarkdown } from "./chat-markdown.tsx";
+import { Icon } from "@deco/ui/components/icon.tsx";
+import { useEffect, useState } from "react";
+import { cn } from "@deco/ui/lib/utils.ts";
 
 interface ReasoningPartProps {
-  part: {
-    type: "reasoning";
-    text: string;
-    state?: "streaming" | "done";
-  };
+  reasoning: string;
   messageId: string;
   index: number;
+  isStreaming?: boolean;
+  isResponseStreaming?: boolean;
 }
 
-export function ReasoningPart({ part, index, messageId }: ReasoningPartProps) {
-  const { state } = part;
-  const isPartStreaming = state === "streaming";
+export function ReasoningPart({
+  reasoning,
+  messageId,
+  index,
+  isStreaming = false,
+  isResponseStreaming = false,
+}: ReasoningPartProps) {
   const [isExpanded, setIsExpanded] = useState(false);
   const [wasManuallyExpanded, setWasManuallyExpanded] = useState(false);
 
@@ -23,12 +25,12 @@ export function ReasoningPart({ part, index, messageId }: ReasoningPartProps) {
   useEffect(() => {
     if (wasManuallyExpanded) return; // Don't auto-collapse if user manually expanded
 
-    if (isPartStreaming) {
+    if (isStreaming && !isResponseStreaming) {
       setIsExpanded(true);
-    } else {
+    } else if (isResponseStreaming) {
       setIsExpanded(false);
     }
-  }, [isPartStreaming, wasManuallyExpanded]);
+  }, [isStreaming, isResponseStreaming, wasManuallyExpanded]);
 
   const handleToggle = () => {
     setIsExpanded(!isExpanded);
@@ -42,7 +44,7 @@ export function ReasoningPart({ part, index, messageId }: ReasoningPartProps) {
         onClick={handleToggle}
         className={cn(
           "flex items-center justify-between p-4 transition-colors",
-          isPartStreaming ? "bg-muted animate-pulse" : "hover:bg-muted",
+          isStreaming ? "bg-muted animate-pulse" : "hover:bg-muted",
         )}
       >
         <div className="flex items-center gap-2">
@@ -62,21 +64,17 @@ export function ReasoningPart({ part, index, messageId }: ReasoningPartProps) {
           isExpanded ? "max-h-[1000px] opacity-100" : "max-h-0 opacity-0",
         )}
       >
-        <div className={cn("p-4 border-t", isPartStreaming && "bg-muted")}>
+        <div className={cn("p-4 border-t", isStreaming && "bg-muted")}>
           <div
             className={cn(
               "prose prose-sm max-w-none text-sm",
-              isPartStreaming && "text-xs text-muted-foreground",
+              isStreaming && "text-xs text-muted-foreground",
             )}
           >
             <MemoizedMarkdown
               key={index}
-              messageId={`${messageId}-${index}-reasoning`}
-              part={
-                "details" in part && Array.isArray(part.details)
-                  ? part.details[0]
-                  : { type: "text", text: part.text }
-              }
+              id={`${messageId}-${index}-reasoning`}
+              content={reasoning}
             />
           </div>
         </div>

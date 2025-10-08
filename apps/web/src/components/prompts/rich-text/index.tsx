@@ -7,7 +7,11 @@ import StarterKit from "@tiptap/starter-kit";
 import { useEffect, useMemo, useRef } from "react";
 import { Markdown } from "tiptap-markdown";
 import BubbleMenu from "./bubble-menu.tsx";
-import { mentionToTag, removeMarkdownCodeBlock } from "./common.ts";
+import {
+  mentionToTag,
+  removeMarkdownCodeBlock,
+  sanitizeMarkdown,
+} from "./common.ts";
 import { Comment } from "./extensions/comment.tsx";
 import { mentions } from "./extensions/mentions/mentions.ts";
 
@@ -71,7 +75,10 @@ export default function RichTextArea({
   const editor = useEditor(
     {
       extensions,
-      content: mentionToTag(removeMarkdownCodeBlock(value), true),
+      content: mentionToTag(
+        sanitizeMarkdown(removeMarkdownCodeBlock(value)),
+        true,
+      ),
       editable: !disabled,
       onUpdate: ({ editor }) => {
         const markdown = editor.storage.markdown.getMarkdown();
@@ -96,19 +103,41 @@ export default function RichTextArea({
     [prompts],
   );
 
-  // This sync is breaking, so we're disabling it for now
-  // More info at https://github.com/deco-cx/chat/pull/1291
-  // TODO: Fix this
-  // useEffect(() => {
-  //   if (!editor) return;
+  // Sync editor content with value prop changes
+  useEffect(() => {
+    if (!editor) return;
 
-  //   const _value = removeMarkdownCodeBlock(value);
-  //   if (mentionToTag(_value) !== editor.storage.markdown.getMarkdown()) {
-  //     editor.commands.setContent(mentionToTag(_value, true), false, {
-  //       preserveWhitespace: "full",
-  //     });
-  //   }
-  // }, [value, editor]);
+    const processedValue = mentionToTag(
+      sanitizeMarkdown(removeMarkdownCodeBlock(value)),
+      true,
+    );
+    const currentContent = editor.storage.markdown.getMarkdown();
+
+    // Only update if the content is actually different to avoid infinite loops
+    if (processedValue !== currentContent) {
+      // Temporarily disable user interaction tracking to prevent onChange from firing
+      const wasUserInteraction = hadUserInteraction.current;
+      hadUserInteraction.current = false;
+
+      try {
+        editor.commands.setContent(processedValue, false, {
+          preserveWhitespace: "full",
+        });
+      } catch (error) {
+        // If content setting still fails after sanitization, log and use empty content
+        console.error(
+          "Failed to set editor content after sanitization:",
+          error,
+        );
+        editor.commands.setContent("", false, {
+          preserveWhitespace: "full",
+        });
+      }
+
+      // Restore user interaction state
+      hadUserInteraction.current = wasUserInteraction;
+    }
+  }, [value, editor]);
 
   useEffect(() => {
     editor?.setEditable(!disabled);

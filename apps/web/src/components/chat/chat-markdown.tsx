@@ -256,17 +256,12 @@ function CodeBlock({
 MemoizedMarkdownBlock.displayName = "MemoizedMarkdownBlock";
 
 export const MemoizedMarkdown = ({
-  messageId: id,
-  part,
+  content,
+  id,
 }: {
-  messageId: string;
-  part: {
-    type: "text";
-    text: string;
-    state?: "streaming" | "done";
-  };
+  content: string;
+  id: string;
 }) => {
-  const { text: content = "" } = part;
   const blocks = useMemo(() => marked.lexer(content), [content]);
 
   return blocks.map((block, index) => {

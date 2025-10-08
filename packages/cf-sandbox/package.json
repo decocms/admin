@@ -16,9 +16,6 @@
     "quickjs-emscripten-core": "^0.31.0"
   },
   "devDependencies": {
-    "@types/node": "^24.6.2"
-  },
-  "engines": {
-    "node": ">=24.0.0"
+    "@types/node": "^22.10.6"
   }
 }

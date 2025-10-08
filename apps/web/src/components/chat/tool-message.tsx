@@ -1,16 +1,19 @@
+import type { Message } from "@ai-sdk/react";
 import { Button } from "@deco/ui/components/button.tsx";
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@deco/ui/components/collapsible.tsx";
 import { Icon } from "@deco/ui/components/icon.tsx";
 import { Spinner } from "@deco/ui/components/spinner.tsx";
 import { cn } from "@deco/ui/lib/utils.ts";
 import { useMemo, useRef, useState } from "react";
-import { useAgent } from "../agent/provider.tsx";
 import { Picker } from "./chat-picker.tsx";
+import { useAgent } from "../agent/provider.tsx";
 import { AgentCard } from "./tools/agent-card.tsx";
-import {
-  HostingAppDeploy,
-  HostingAppToolLike,
-} from "./tools/hosting-app-deploy.tsx";
 import { Preview } from "./tools/render-preview.tsx";
+import { HostingAppDeploy } from "./tools/hosting-app-deploy.tsx";
 import { formatToolName } from "./utils/format-tool-name.ts";
 
 interface ConfirmOption {
@@ -18,32 +21,8 @@ interface ConfirmOption {
   label: string;
 }
 
-// Map ToolInvocation state to ToolLike state for custom UI components
-const mapToToolLikeState = (
-  state: ToolInvocation["state"],
-): "call" | "result" | "error" | "partial-call" => {
-  switch (state) {
-    case "input-streaming":
-    case "input-available":
-      return "call";
-    case "output-available":
-      return "result";
-    case "output-error":
-      return "error";
-    default:
-      return "call";
-  }
-};
-
 interface ToolMessageProps {
-  part: {
-    type: string;
-    toolCallId: string;
-    state?: string;
-    input?: unknown;
-    output?: unknown;
-    errorText?: string;
-  };
+  toolInvocations: NonNullable<Message["toolInvocations"]>;
   isLastMessage?: boolean;
 }
 
@@ -61,14 +40,10 @@ type CustomUITool = (typeof CUSTOM_UI_TOOLS)[number];
 interface ToolInvocation {
   toolCallId: string;
   toolName: string;
-  state:
-    | "input-streaming"
-    | "input-available"
-    | "output-available"
-    | "output-error";
-  input?: unknown;
-  output?: unknown;
-  errorText?: string;
+  state: "call" | "result" | "error" | "partial-call";
+  args?: Record<string, unknown>;
+  result?: Record<string, unknown>;
+  error?: unknown;
 }
 
 function isCustomUITool(toolName: string): toolName is CustomUITool {
@@ -90,12 +65,11 @@ function ToolStatus({
 
   const getIcon = (state: string) => {
     switch (state) {
-      case "input-streaming":
-      case "input-available":
+      case "call":
         return <Spinner size="xs" variant="default" />;
-      case "output-available":
+      case "result":
         return <Icon name="check" className="text-muted-foreground" />;
-      case "output-error":
+      case "error":
         return <Icon name="close" className="text-muted-foreground" />;
       default:
         return "•";
@@ -103,9 +77,6 @@ function ToolStatus({
   };
 
   const getToolName = () => {
-    if (!tool.toolName) {
-      return "Unknown tool";
-    }
     if (tool.toolName.startsWith("AGENT_GENERATE_")) {
       return `Delegating to agent`;
     }
@@ -117,9 +88,9 @@ function ToolStatus({
       {
         toolName: tool.toolName,
         state: tool.state,
-        input: tool.input,
-        output: tool.output,
-        errorText: tool.errorText,
+        args: tool.args,
+        result: tool.result,
+        error: tool.error,
       },
       null,
       2,
@@ -229,6 +200,180 @@ function ToolStatus({
   );
 }
 
+function ImagePrompt({
+  prompt,
+  isCollapsible = true,
+}: {
+  prompt: string;
+  isCollapsible?: boolean;
+}) {
+  const [isOpen, setIsOpen] = useState(false);
+
+  if (!isCollapsible || prompt.length <= 60) {
+    return (
+      <p className="text-sm text-muted-foreground/80 leading-relaxed break-words whitespace-pre-wrap">
+        {prompt}
+      </p>
+    );
+  }
+
+  const truncatedPrompt = prompt.slice(0, 60) + "...";
+
+  return (
+    <Collapsible open={isOpen} onOpenChange={setIsOpen}>
+      <div className="space-y-2 w-full">
+        <CollapsibleTrigger asChild>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-auto p-0 text-sm text-muted-foreground/80 hover:text-muted-foreground font-normal justify-start w-full text-left"
+          >
+            <span className="leading-relaxed break-words flex-1 min-w-0">
+              {truncatedPrompt}
+            </span>
+            <Icon
+              name="chevron_right"
+              className={cn(
+                "ml-2 h-3 w-3 flex-shrink-0 transition-transform",
+                isOpen && "rotate-90",
+              )}
+            />
+          </Button>
+        </CollapsibleTrigger>
+        <CollapsibleContent>
+          <div className="text-sm text-muted-foreground/80 leading-relaxed pl-4 border-l-2 border-muted break-words whitespace-pre-wrap">
+            {prompt}
+          </div>
+        </CollapsibleContent>
+      </div>
+    </Collapsible>
+  );
+}
+
+function GeneratingStatus() {
+  return (
+    <>
+      <div className="flex items-center gap-3">
+        <div className="text-foreground relative overflow-hidden">
+          <span
+            className="relative inline-block font-medium"
+            style={{
+              background:
+                "linear-gradient(90deg, currentColor 0%, rgba(255,255,255,0.8) 50%, currentColor 100%)",
+              backgroundSize: "200% 100%",
+              WebkitBackgroundClip: "text",
+              backgroundClip: "text",
+              WebkitTextFillColor: "transparent",
+              animation: "shimmer 3s ease-in-out infinite",
+            }}
+          >
+            Generating image...
+          </span>
+        </div>
+        <Spinner size="xs" variant="default" />
+      </div>
+      <style
+        dangerouslySetInnerHTML={{
+          __html: `
+          @keyframes shimmer {
+            0% { background-position: -200% 0; }
+            100% { background-position: 200% 0; }
+          }
+        `,
+        }}
+      />
+    </>
+  );
+}
+
+function GenerateImageToolUI({ tool }: { tool: ToolInvocation }) {
+  const state = tool.state;
+  const prompt = tool.args?.prompt;
+
+  if (!prompt || typeof prompt !== "string") {
+    return (
+      <div className="space-y-3 p-4 border border-border rounded-lg bg-muted/10 w-full max-w-full overflow-hidden">
+        <p className="text-muted-foreground">Missing image prompt</p>
+      </div>
+    );
+  }
+
+  // Parse result safely with proper type guards
+  let image: string | null = null;
+  try {
+    if (tool.result && typeof tool.result === "string") {
+      const parsed = JSON.parse(tool.result);
+      // Validate parsed object has image string field
+      if (
+        parsed &&
+        typeof parsed === "object" &&
+        "image" in parsed &&
+        typeof parsed.image === "string"
+      ) {
+        image = parsed.image;
+      }
+    } else if (
+      tool.result &&
+      typeof tool.result === "object" &&
+      "image" in tool.result
+    ) {
+      const imageValue = (tool.result as Record<string, unknown>).image;
+      if (typeof imageValue === "string") {
+        image = imageValue;
+      }
+    }
+  } catch (error) {
+    console.warn("Failed to parse image result:", error);
+  }
+
+  const isGenerating = state === "call" || state === "partial-call";
+  const isGenerated = state === "result" && image;
+  const hasError = state === "error";
+
+  if (hasError) {
+    return (
+      <div className="space-y-3 p-4 border border-destructive/20 rounded-lg bg-destructive/5 w-full max-w-full overflow-hidden">
+        <div className="flex items-center gap-2 text-destructive">
+          <Icon name="close" className="h-4 w-4" />
+          <span className="font-medium">Failed to generate image</span>
+        </div>
+        <ImagePrompt prompt={prompt} />
+      </div>
+    );
+  }
+
+  if (isGenerating) {
+    return (
+      <div className="space-y-3 p-4 border border-border rounded-lg bg-muted/20 w-full max-w-full overflow-hidden">
+        <GeneratingStatus />
+        <ImagePrompt prompt={prompt} />
+      </div>
+    );
+  }
+
+  if (isGenerated) {
+    return (
+      <div className="space-y-3 w-full max-w-full overflow-hidden">
+        <ImagePrompt prompt={prompt} />
+        <div className="rounded-lg overflow-hidden border border-border">
+          <img
+            src={image || ""}
+            alt={prompt}
+            className="w-full max-h-[400px] object-cover"
+          />
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-3 p-4 border border-border rounded-lg bg-muted/10 w-full max-w-full overflow-hidden">
+      <p className="text-muted-foreground">No image generated</p>
+      <ImagePrompt prompt={prompt} />
+    </div>
+  );
+}
+
 function CustomToolUI({
   tool,
   isLastMessage,
@@ -237,19 +382,17 @@ function CustomToolUI({
   isLastMessage?: boolean;
 }) {
   const { select } = useAgent();
-  const result = (tool.output ?? {}) as Record<string, unknown>;
+  const result = (tool.result ?? {}) as Record<string, unknown>;
 
   if (tool.toolName === "HOSTING_APP_DEPLOY") {
-    const toolLike: HostingAppToolLike = {
-      toolCallId: tool.toolCallId,
-      toolName: tool.toolName,
-      state: mapToToolLikeState(tool.state),
-      args: tool.input as HostingAppToolLike["args"],
-    };
-    return <HostingAppDeploy tool={toolLike} />;
+    return <HostingAppDeploy tool={tool} />;
   }
 
-  if (tool.state !== "output-available" || !tool.output) return null;
+  if (tool.toolName === "GENERATE_IMAGE") {
+    return <GenerateImageToolUI tool={tool} />;
+  }
+
+  if (tool.state !== "result" || !tool.result) return null;
 
   switch (tool.toolName) {
     case "RENDER": {
@@ -297,32 +440,23 @@ function CustomToolUI({
   }
 }
 
-export function ToolMessage({ part, isLastMessage }: ToolMessageProps) {
-  // Extract tool name from part type
-  const toolName = part.type.startsWith("tool-")
-    ? part.type.substring(5)
-    : "UNKNOWN_TOOL";
-
-  // Create tool invocation from part
-  const toolInvocations: ToolInvocation[] = [
-    {
-      toolCallId: part.toolCallId,
-      toolName: toolName,
-      state: (part.state as ToolInvocation["state"]) || "input-available",
-      input: part.input,
-      output: part.output,
-      errorText: part.errorText,
-    },
-  ];
+export function ToolMessage({
+  toolInvocations,
+  isLastMessage,
+}: ToolMessageProps) {
   // Separate tools into timeline tools and custom UI tools using memoization
   const { timelineTools, customUITools } = useMemo(() => {
     const timeline: ToolInvocation[] = [];
     const customUI: ToolInvocation[] = [];
 
     toolInvocations.forEach((tool: ToolInvocation) => {
-      // Extract tool name from the tool object - it should have a toolName property
-      const toolName = tool.toolName || "Unknown tool";
-      if (isCustomUITool(toolName)) {
+      if (
+        tool.toolName === "GENERATE_IMAGE" &&
+        tool.args &&
+        "prompt" in tool.args
+      ) {
+        customUI.push(tool);
+      } else if (isCustomUITool(tool.toolName)) {
         customUI.push(tool);
       } else {
         timeline.push(tool);

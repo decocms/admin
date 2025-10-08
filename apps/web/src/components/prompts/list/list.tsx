@@ -134,7 +134,7 @@ function PromptCard({
         <div className="grid grid-cols-[1fr_min-content] gap-4 items-start">
           <div className="flex flex-col gap-1 min-w-0">
             <div className="text-base font-semibold truncate">
-              {prompt.name || "Untitled prompt"}
+              {prompt.name || "Untitled document"}
             </div>
             <div className="text-sm text-muted-foreground line-clamp-3">
               {prompt.description || prompt.content}
@@ -261,7 +261,7 @@ function ListPrompts() {
     ) ?? [];
 
   const handleConfigure = (prompt: Prompt) => {
-    navigateWorkspace(`/prompt/${prompt.id}`);
+    navigateWorkspace(`/documents/${prompt.id}`);
   };
   const handleDeleteConfirm = (promptId: string) => {
     dispatch({ type: "CONFIRM_DELETE", payload: promptId });
@@ -284,7 +284,7 @@ function ListPrompts() {
       name: "",
       content: "",
     });
-    navigateWorkspace(`/prompt/${result.id}`);
+    navigateWorkspace(`/documents/${result.id}`);
   };
   const handleDeleteDialogOpenChange = (open: boolean) => {
     if (!open && !deleting) {
@@ -310,7 +310,7 @@ function ListPrompts() {
             actionsRight={
               <Button variant="special" onClick={handleCreate}>
                 <Icon name="add" size={16} />
-                New prompt
+                New document
               </Button>
             }
           />
@@ -324,10 +324,10 @@ function ListPrompts() {
           ) : filteredPrompts.length === 0 ? (
             <EmptyState
               icon="local_library"
-              title="No prompts yet"
-              description="Create a prompt to get started."
+              title="No documents yet"
+              description="Create a document to get started."
               buttonProps={{
-                children: "Create a prompt",
+                children: "Create a document",
                 onClick: handleCreate,
               }}
             />
@@ -353,7 +353,7 @@ function ListPrompts() {
             <AlertDialogHeader>
               <AlertDialogTitle>Are you sure?</AlertDialogTitle>
               <AlertDialogDescription>
-                This will permanently delete the prompt. This action cannot be
+                This will permanently delete the document. This action cannot be
                 undone.
               </AlertDialogDescription>
             </AlertDialogHeader>

@@ -225,7 +225,7 @@ export const useUIInstallIntegration = ({
     if (!integration || !isValid) return;
 
     const returnUrl = new URL(
-      buildWorkspaceUrl("/connections/success"),
+      buildWorkspaceUrl("/apps/success"),
       globalThis.location.origin,
     );
 

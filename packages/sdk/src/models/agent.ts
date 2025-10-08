@@ -167,13 +167,6 @@ export const AgentGenerateOptions = z.object({
   enableSemanticRecall: z.boolean().optional(),
   maxSteps: z.number().optional(),
   toolsets: z.array(ToolsetSchema).optional(),
-  pdfSummarization: z
-    .boolean()
-    .optional()
-    .describe(
-      `Preprocess PDFs before sending to the main LLM.
-      This can extend the max size of user inputted PDFs by summarizing them.`,
-    ),
 });
 
 export type GenerateOptions = z.infer<typeof AgentGenerateOptions>;
@@ -187,16 +180,9 @@ export const AgentStreamOptions = AgentGenerateOptions.extend({
       chunking: z.enum(["word", "line"]).optional(),
     })
     .optional(),
-  annotations: z.array(z.any()).optional(),
 });
 
 export type StreamOptions = z.infer<typeof AgentStreamOptions>;
-
-/**
- * Type for UIMessage metadata containing all stream options
- * Used with UIMessage<MessageMetadata> for type-safe message passing
- */
-export type MessageMetadata = Omit<StreamOptions, "threadId" | "resourceId">;
 
 /**
  * Type representing an AI Agent derived from the Zod schema

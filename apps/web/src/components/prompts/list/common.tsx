@@ -17,7 +17,7 @@ export const Header = ({
   return (
     <ListPageHeader
       input={{
-        placeholder: "Search prompt",
+        placeholder: "Search document",
         value: value,
         onChange: (e) => setValue(e.target.value),
       }}

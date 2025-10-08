@@ -54,14 +54,14 @@ export function createResourceV2Bindings<
   return [
     {
       name: `DECO_RESOURCE_${resourceName.toUpperCase()}_SEARCH` as const,
-      inputSchema: z.lazy(() => SearchInputSchema),
+      inputSchema: SearchInputSchema,
       outputSchema: createSearchOutputSchema(
         createItemSchema(dataSchema.pick({ name: true, description: true })),
       ),
     },
     {
       name: `DECO_RESOURCE_${resourceName.toUpperCase()}_READ` as const,
-      inputSchema: z.lazy(() => ReadInputSchema),
+      inputSchema: ReadInputSchema,
       outputSchema: createReadOutputSchema(dataSchema),
     },
     {
@@ -78,8 +78,8 @@ export function createResourceV2Bindings<
     },
     {
       name: `DECO_RESOURCE_${resourceName.toUpperCase()}_DELETE` as const,
-      inputSchema: z.lazy(() => DeleteInputSchema),
-      outputSchema: z.lazy(() => DeleteOutputSchema),
+      inputSchema: DeleteInputSchema,
+      outputSchema: DeleteOutputSchema,
       opt: true,
     },
   ] as const satisfies Binder;

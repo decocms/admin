@@ -114,12 +114,10 @@ const createTool = createToolGroup("Hosting", {
 export const listApps = createTool({
   name: "HOSTING_APPS_LIST",
   description: "List all apps for the current tenant",
-  inputSchema: z.lazy(() => z.object({})),
-  outputSchema: z.lazy(() =>
-    z.object({
-      items: z.array(AppSchema),
-    }),
-  ),
+  inputSchema: z.object({}),
+  outputSchema: z.object({
+    items: z.array(AppSchema),
+  }),
   handler: async (_, c) => {
     await assertWorkspaceResourceAccess(c);
 
@@ -330,22 +328,18 @@ export const promoteApp = createTool({
   name: "HOSTING_APPS_PROMOTE",
   description:
     "Promote a specific deployment to an existing route pattern and update routing cache",
-  inputSchema: z.lazy(() =>
-    z.object({
-      deploymentId: z.string().describe("The deployment ID to promote"),
-      routePattern: z
-        .string()
-        .describe(
-          "Route pattern to promote the deployment to (can be custom domain or .deco.page)",
-        ),
-    }),
-  ),
-  outputSchema: z.lazy(() =>
-    z.object({
-      success: z.boolean().describe("Whether the promotion was successful"),
-      promotedRoute: z.string().describe("The route pattern that was promoted"),
-    }),
-  ),
+  inputSchema: z.object({
+    deploymentId: z.string().describe("The deployment ID to promote"),
+    routePattern: z
+      .string()
+      .describe(
+        "Route pattern to promote the deployment to (can be custom domain or .deco.page)",
+      ),
+  }),
+  outputSchema: z.object({
+    success: z.boolean().describe("Whether the promotion was successful"),
+    promotedRoute: z.string().describe("The route pattern that was promoted"),
+  }),
   handler: async ({ deploymentId, routePattern }, c) => {
     await assertWorkspaceResourceAccess(c);
 
@@ -454,66 +448,62 @@ const splitFiles = (
 export const deployFiles = createTool({
   name: "HOSTING_APP_DEPLOY",
   description: HOSTING_APP_DEPLOY_PROMPT,
-  inputSchema: z.lazy(() =>
-    z.object({
-      force: z
-        .boolean()
-        .describe(
-          "If true, force the deployment even if there are breaking changes",
-        )
-        .optional(),
-      promote: z
-        .boolean()
-        .describe(
-          "If true, promotes the deployment to production routes. The deployment will be available at a unique URL but won't replace the production version.",
-        )
-        .optional()
-        .default(true),
-      appSlug: z
-        .string()
-        .optional()
-        .describe(
-          "The slug identifier for the app, if not provided, you should use the wrangler.toml file to determine the slug (using the name field).",
-        ),
-      files: z
-        .array(FileSchema)
-        .describe(
-          "An array of files with their paths and contents. Must include main.ts as entrypoint and package.json for dependencies",
-        ),
-      envVars: z
-        .record(z.string(), z.string())
-        .optional()
-        .describe(
-          "An optional object of environment variables to be set on the worker",
-        ),
-      bundle: z
-        .boolean()
-        .optional()
-        .default(true)
-        .describe(
-          "If false, skip the bundler step and upload the files as-is. Default: true (bundle files)",
-        ),
-      unlisted: z
-        .boolean()
-        .optional()
-        .default(true)
-        .describe(
-          "Whether the app should be unlisted in the registry. Default: true (unlisted)",
-        ),
-    }),
-  ),
-  outputSchema: z.lazy(() =>
-    z.object({
-      entrypoint: z.string().describe("The entrypoint of the app"),
-      hosts: z.array(z.string()).describe("The hosts of the app"),
-      id: z.string().describe("The id of the app"),
-      workspace: z.string().describe("The workspace of the app"),
-      deploymentId: z
-        .string()
-        .describe("The deployment id of the app")
-        .optional(),
-    }),
-  ),
+  inputSchema: z.object({
+    force: z
+      .boolean()
+      .describe(
+        "If true, force the deployment even if there are breaking changes",
+      )
+      .optional(),
+    promote: z
+      .boolean()
+      .describe(
+        "If true, promotes the deployment to production routes. The deployment will be available at a unique URL but won't replace the production version.",
+      )
+      .optional()
+      .default(true),
+    appSlug: z
+      .string()
+      .optional()
+      .describe(
+        "The slug identifier for the app, if not provided, you should use the wrangler.toml file to determine the slug (using the name field).",
+      ),
+    files: z
+      .array(FileSchema)
+      .describe(
+        "An array of files with their paths and contents. Must include main.ts as entrypoint and package.json for dependencies",
+      ),
+    envVars: z
+      .record(z.string(), z.string())
+      .optional()
+      .describe(
+        "An optional object of environment variables to be set on the worker",
+      ),
+    bundle: z
+      .boolean()
+      .optional()
+      .default(true)
+      .describe(
+        "If false, skip the bundler step and upload the files as-is. Default: true (bundle files)",
+      ),
+    unlisted: z
+      .boolean()
+      .optional()
+      .default(true)
+      .describe(
+        "Whether the app should be unlisted in the registry. Default: true (unlisted)",
+      ),
+  }),
+  outputSchema: z.object({
+    entrypoint: z.string().describe("The entrypoint of the app"),
+    hosts: z.array(z.string()).describe("The hosts of the app"),
+    id: z.string().describe("The id of the app"),
+    workspace: z.string().describe("The workspace of the app"),
+    deploymentId: z
+      .string()
+      .describe("The deployment id of the app")
+      .optional(),
+  }),
   handler: async (
     {
       force,
@@ -729,7 +719,7 @@ export const deployFiles = createTool({
 export const deleteApp = createTool({
   name: "HOSTING_APP_DELETE",
   description: "Delete an app and its worker",
-  inputSchema: z.lazy(() => AppInputSchema),
+  inputSchema: AppInputSchema,
   handler: async ({ appSlug }, c) => {
     await assertWorkspaceResourceAccess(c);
     assertHasWorkspace(c);
@@ -771,7 +761,7 @@ export const deleteApp = createTool({
 export const getAppInfo = createTool({
   name: "HOSTING_APP_INFO",
   description: "Get info/metadata for an app (including endpoint)",
-  inputSchema: z.lazy(() => AppInputSchema),
+  inputSchema: AppInputSchema,
   handler: async ({ appSlug }, c) => {
     await assertWorkspaceResourceAccess(c);
     assertHasWorkspace(c);
@@ -798,30 +788,26 @@ export const getAppInfo = createTool({
 export const listAppDeployments = createTool({
   name: "HOSTING_APP_DEPLOYMENTS_LIST",
   description: "List all deployments for a specific app",
-  inputSchema: z.lazy(() => AppInputSchema),
-  outputSchema: z.lazy(() =>
-    z.object({
-      deployments: z.array(
-        z.object({
-          id: z.string().describe("The deployment ID"),
-          cloudflare_deployment_id: z
-            .string()
-            .nullable()
-            .describe("The Cloudflare worker ID"),
-          entrypoint: z.string().describe("The deployment entrypoint URL"),
-          created_at: z.string().describe("When the deployment was created"),
-          updated_at: z
-            .string()
-            .describe("When the deployment was last updated"),
-        }),
-      ),
-      app: z.object({
-        id: z.string(),
-        slug: z.string(),
-        workspace: z.string(),
+  inputSchema: AppInputSchema,
+  outputSchema: z.object({
+    deployments: z.array(
+      z.object({
+        id: z.string().describe("The deployment ID"),
+        cloudflare_deployment_id: z
+          .string()
+          .nullable()
+          .describe("The Cloudflare worker ID"),
+        entrypoint: z.string().describe("The deployment entrypoint URL"),
+        created_at: z.string().describe("When the deployment was created"),
+        updated_at: z.string().describe("When the deployment was last updated"),
       }),
+    ),
+    app: z.object({
+      id: z.string(),
+      slug: z.string(),
+      workspace: z.string(),
     }),
-  ),
+  }),
   handler: async ({ appSlug }, c) => {
     await assertWorkspaceResourceAccess(c);
     assertHasWorkspace(c);
@@ -907,56 +893,52 @@ export const listWorkflowRuns = createTool({
   name: "HOSTING_APP_WORKFLOWS_LIST_RUNS",
   description:
     "List workflow runs. If workflowName is provided, shows runs for that specific workflow. If not provided, shows recent runs from any workflow.",
-  inputSchema: z.lazy(() =>
-    InputPaginationListSchema.extend({
-      workflowName: z
-        .string()
-        .optional()
-        .describe(
-          "Optional: The name of the workflow to list runs for. If not provided, shows recent runs from any workflow.",
-        ),
-      fromDate: z.string().optional(),
-      toDate: z.string().optional(),
-    }),
-  ),
-  outputSchema: z.lazy(() =>
-    z.object({
-      runs: z
-        .array(
-          z.object({
-            workflowName: z.string(),
-            runId: z.string(),
-            createdAt: z.number(),
-            updatedAt: z.number().nullable().optional(),
+  inputSchema: InputPaginationListSchema.extend({
+    workflowName: z
+      .string()
+      .optional()
+      .describe(
+        "Optional: The name of the workflow to list runs for. If not provided, shows recent runs from any workflow.",
+      ),
+    fromDate: z.string().optional(),
+    toDate: z.string().optional(),
+  }),
+  outputSchema: z.object({
+    runs: z
+      .array(
+        z.object({
+          workflowName: z.string(),
+          runId: z.string(),
+          createdAt: z.number(),
+          updatedAt: z.number().nullable().optional(),
+          status: z.string(),
+        }),
+      )
+      .describe("The workflow runs"),
+    stats: z
+      .object({
+        totalRuns: z.number(),
+        successCount: z.number(),
+        errorCount: z.number(),
+        runningCount: z.number(),
+        pendingCount: z.number(),
+        successRate: z.number(),
+        firstRun: z
+          .object({
+            date: z.number(),
             status: z.string(),
-          }),
-        )
-        .describe("The workflow runs"),
-      stats: z
-        .object({
-          totalRuns: z.number(),
-          successCount: z.number(),
-          errorCount: z.number(),
-          runningCount: z.number(),
-          pendingCount: z.number(),
-          successRate: z.number(),
-          firstRun: z
-            .object({
-              date: z.number(),
-              status: z.string(),
-            })
-            .nullable(),
-          lastRun: z
-            .object({
-              date: z.number(),
-              status: z.string(),
-            })
-            .nullable(),
-        })
-        .describe("Workflow statistics"),
-      pagination: OutputPaginationListSchema,
-    }),
-  ),
+          })
+          .nullable(),
+        lastRun: z
+          .object({
+            date: z.number(),
+            status: z.string(),
+          })
+          .nullable(),
+      })
+      .describe("Workflow statistics"),
+    pagination: OutputPaginationListSchema,
+  }),
   handler: async (
     { page = 1, per_page = 25, workflowName, fromDate, toDate },
     c,
@@ -1191,14 +1173,12 @@ export const listWorkflowRuns = createTool({
 export const listWorkflowNames = createTool({
   name: "HOSTING_APP_WORKFLOWS_LIST_NAMES",
   description: "List all unique workflow names in the workspace",
-  inputSchema: z.lazy(() => z.object({})),
-  outputSchema: z.lazy(() =>
-    z.object({
-      workflowNames: z
-        .array(z.string())
-        .describe("List of unique workflow names"),
-    }),
-  ),
+  inputSchema: z.object({}),
+  outputSchema: z.object({
+    workflowNames: z
+      .array(z.string())
+      .describe("List of unique workflow names"),
+  }),
   handler: async (_, c) => {
     await assertWorkspaceResourceAccess(c);
     assertHasWorkspace(c);
@@ -1258,17 +1238,15 @@ export const listWorkflowNames = createTool({
 export const getWorkflowStatus = createTool({
   name: "HOSTING_APP_WORKFLOWS_STATUS",
   description: "Get the status of a workflow instance",
-  inputSchema: z.lazy(() =>
-    z.object({
-      instanceId: z
-        .string()
-        .describe(
-          "The instance ID of the workflow. To get this, use the HOSTING_APP_WORKFLOWS_INSTANCES_LIST or HOSTING_APP_WORKFLOWS_START tool.",
-        ),
-      workflowName: z.string(),
-    }),
-  ),
-  outputSchema: z.lazy(() => z.any()),
+  inputSchema: z.object({
+    instanceId: z
+      .string()
+      .describe(
+        "The instance ID of the workflow. To get this, use the HOSTING_APP_WORKFLOWS_INSTANCES_LIST or HOSTING_APP_WORKFLOWS_START tool.",
+      ),
+    workflowName: z.string(),
+  }),
+  outputSchema: z.any(),
   handler: async ({ instanceId, workflowName }, c) => {
     await assertWorkspaceResourceAccess(c);
     const store = await getStore(c);

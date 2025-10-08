@@ -273,7 +273,34 @@ export async function runTool(
   );
 
   if (!integration) {
-    throw new Error(`Integration '${step.integration}' not found`);
+    const availableIntegrations = items.map((item) => ({
+      id: item.id,
+      name: item.name,
+    }));
+
+    throw new Error(
+      `Integration '${step.integration}' not found.\n\nAvailable integrations:\n${JSON.stringify(availableIntegrations, null, 2)}`,
+    );
+  }
+
+  // Check if the tool exists in the integration
+  const tools =
+    "tools" in integration && Array.isArray(integration.tools)
+      ? integration.tools
+      : [];
+
+  const tool = tools.find((t) => t.name === step.tool_name);
+
+  if (!tool) {
+    const availableTools = tools.map((t) => ({
+      name: t.name,
+      inputSchema: t.inputSchema,
+      outputSchema: t.outputSchema,
+    }));
+
+    throw new Error(
+      `Tool '${step.tool_name}' not found in integration '${integration.name}' (${integration.id}).\n\nAvailable tools:\n${JSON.stringify(availableTools, null, 2)}`,
+    );
   }
 
   const response = await client.INTEGRATIONS_CALL_TOOL({

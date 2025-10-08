@@ -1,5 +1,5 @@
 import { useAgents, useOrganizations, useTeamMembers } from "@deco/sdk";
-import { WELL_KNOWN_AGENT_IDS } from "@deco/sdk/constants";
+import { WELL_KNOWN_AGENT_IDS, WELL_KNOWN_AGENTS } from "@deco/sdk/constants";
 import {
   Tooltip,
   TooltipContent,
@@ -20,9 +20,13 @@ interface AgentInfoProps {
 
 function AgentInfo({ agentId, className }: AgentInfoProps) {
   const { data: agents } = useAgents();
+  const allAgents = useMemo(
+    () => [...agents, ...Object.values(WELL_KNOWN_AGENTS)],
+    [agents],
+  );
   const agent = useMemo(
-    () => agents?.find((a) => a.id === agentId),
-    [agents, agentId],
+    () => allAgents?.find((a) => a.id === agentId),
+    [allAgents, agentId],
   );
 
   return (

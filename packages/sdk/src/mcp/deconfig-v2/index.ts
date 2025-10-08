@@ -1,9 +1,11 @@
+import { z } from "zod";
 import { NotFoundError, UserInputError } from "../../index.ts";
 import {
   assertHasWorkspace,
   assertWorkspaceResourceAccess,
 } from "../assertions.ts";
 import { impl } from "../bindings/binder.ts";
+import { AppContext } from "../context.ts";
 import { createMCPToolsStub, DeconfigClient, MCPClientStub } from "../index.ts";
 import {
   BaseResourceDataSchema,
@@ -52,6 +54,11 @@ export interface DeconfigResourceV2Options<
   group?: string;
   integrationId?: string;
   enhancements?: EnhancedResourcesV2Tools<TDataSchema>;
+  validate?: (
+    data: z.infer<TDataSchema>,
+    context: AppContext,
+    deconfig: DeconfigClient,
+  ) => Promise<void>;
 }
 
 const normalizeDirectory = (dir: string) => {
@@ -141,6 +148,7 @@ export const deconfigResourceV2 = <TDataSchema extends BaseResourceDataSchema>(
     integrationId,
     enhancements,
     group,
+    validate: semanticValidate,
   } = options;
 
   if (!integrationId) {
@@ -400,6 +408,11 @@ export const deconfigResourceV2 = <TDataSchema extends BaseResourceDataSchema>(
         // Validate data against schema
         const validatedData = dataSchema.parse(data);
 
+        // Run semantic validation if provided
+        if (semanticValidate) {
+          await semanticValidate(validatedData, c, deconfig);
+        }
+
         // Extract resource ID from name or generate one
         const resourceId =
           (validatedData.name as string)?.replace(/[^a-zA-Z0-9-_]/g, "-") ||
@@ -477,6 +490,11 @@ export const deconfigResourceV2 = <TDataSchema extends BaseResourceDataSchema>(
 
         // Validate new data against schema
         const validatedData = dataSchema.parse(data);
+
+        // Run semantic validation if provided
+        if (semanticValidate) {
+          await semanticValidate(validatedData, c, deconfig);
+        }
 
         // Merge existing data with updates
         const updatedData = {

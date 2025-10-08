@@ -160,7 +160,7 @@ const createTool = createToolGroup("KnowledgeBaseManagement", {
 export const listKnowledgeBases = createTool({
   name: "KNOWLEDGE_BASE_LIST",
   description: "List all knowledge bases",
-  inputSchema: z.lazy(() => z.object({})),
+  inputSchema: z.object({}),
   handler: async (_, c) => {
     assertHasWorkspace(c);
 
@@ -183,11 +183,9 @@ export const listKnowledgeBases = createTool({
 export const deleteBase = createTool({
   name: "KNOWLEDGE_BASE_DELETE",
   description: "Delete a knowledge base",
-  inputSchema: z.lazy(() =>
-    z.object({
-      name: z.string().describe("The name of the knowledge base"),
-    }),
-  ),
+  inputSchema: z.object({
+    name: z.string().describe("The name of the knowledge base"),
+  }),
   handler: async ({ name }, c) => {
     assertHasWorkspace(c);
 
@@ -204,21 +202,19 @@ export const deleteBase = createTool({
 export const createBase = createTool({
   name: "KNOWLEDGE_BASE_CREATE",
   description: "Create a knowledge base",
-  inputSchema: z.lazy(() =>
-    z.object({
-      name: z
-        .string()
-        .regex(
-          /^[a-z0-9-_]+$/,
-          "Name can only contain lowercase letters, numbers, hyphens, and underscores",
-        )
-        .describe("The name of the knowledge base"),
-      dimension: z
-        .number()
-        .describe("The dimension of the knowledge base")
-        .optional(),
-    }),
-  ),
+  inputSchema: z.object({
+    name: z
+      .string()
+      .regex(
+        /^[a-z0-9-_]+$/,
+        "Name can only contain lowercase letters, numbers, hyphens, and underscores",
+      )
+      .describe("The name of the knowledge base"),
+    dimension: z
+      .number()
+      .describe("The dimension of the knowledge base")
+      .optional(),
+  }),
   handler: async ({ name, dimension }, c) => {
     assertHasWorkspace(c);
 
@@ -236,11 +232,9 @@ export const createBase = createTool({
 export const forget = createKnowledgeBaseTool({
   name: "KNOWLEDGE_BASE_FORGET",
   description: "Forget something",
-  inputSchema: z.lazy(() =>
-    z.object({
-      docIds: z.array(z.string()).describe("The id of the content to forget"),
-    }),
-  ),
+  inputSchema: z.object({
+    docIds: z.array(z.string()).describe("The id of the content to forget"),
+  }),
   handler: async ({ docIds }, c) => {
     assertHasWorkspace(c);
 
@@ -261,19 +255,17 @@ export const forget = createKnowledgeBaseTool({
 export const remember = createKnowledgeBaseTool({
   name: "KNOWLEDGE_BASE_REMEMBER",
   description: "Remember something",
-  inputSchema: z.lazy(() =>
-    z.object({
-      docId: z
-        .string()
-        .optional()
-        .describe("The id of the content being remembered"),
-      content: z.string().describe("The content to remember"),
-      metadata: z
-        .record(z.string(), z.string())
-        .describe("The metadata to remember")
-        .optional(),
-    }),
-  ),
+  inputSchema: z.object({
+    docId: z
+      .string()
+      .optional()
+      .describe("The id of the content being remembered"),
+    content: z.string().describe("The content to remember"),
+    metadata: z
+      .record(z.string(), z.string())
+      .describe("The metadata to remember")
+      .optional(),
+  }),
   handler: async ({ content, metadata, docId }, c) => {
     assertHasWorkspace(c);
 
@@ -299,15 +291,14 @@ export const remember = createKnowledgeBaseTool({
 export const search = createKnowledgeBaseTool({
   name: "KNOWLEDGE_BASE_SEARCH",
   description: "Search the knowledge base",
-  inputSchema: z.lazy(() =>
-    z.object({
-      query: z.string().describe("The query to search the knowledge base"),
-      topK: z.number().describe("The number of results to return").optional(),
-      content: z.boolean().describe("Whether to return the content").optional(),
-      filter: z
-        .record(z.string(), z.any())
-        .describe(
-          `Filters to match against document metadata and narrow search results. Supports MongoDB-style query operators:
+  inputSchema: z.object({
+    query: z.string().describe("The query to search the knowledge base"),
+    topK: z.number().describe("The number of results to return").optional(),
+    content: z.boolean().describe("Whether to return the content").optional(),
+    filter: z
+      .record(z.string(), z.any())
+      .describe(
+        `Filters to match against document metadata and narrow search results. Supports MongoDB-style query operators:
         comparison ($eq, $ne, $gt, $gte, $lt, $lte), array ($in, $nin), logical ($and, $or), and existence ($exists).
         Only returns documents whose metadata matches the specified filter conditions.
         Examples:
@@ -315,10 +306,9 @@ export const search = createKnowledgeBaseTool({
         { "metadata": {{"priority": {"$gte": 3}}},
         { "metadata": {{"status": {"$in": ["active", "pending"]}}},
         { "metadata": {{"$and": [{"type": "pdf"}, {"size": {"$lt": 1000}}]}}}`,
-        )
-        .optional(),
-    }),
-  ),
+      )
+      .optional(),
+  }),
   handler: async ({ query, topK, filter }, c) => {
     assertHasWorkspace(c);
     if (!c.envVars.OPENAI_API_KEY) {
@@ -350,19 +340,17 @@ export const search = createKnowledgeBaseTool({
 export const addFile = createKnowledgeBaseTool({
   name: "KNOWLEDGE_BASE_ADD_FILE",
   description: "Add a file content into knowledge base",
-  inputSchema: z.lazy(() =>
-    z.object({
-      fileUrl: z.string(),
-      path: z
-        .string()
-        .describe("File path from file added using workspace fs_write tool")
-        .optional(),
-      filename: z.string().describe("The name of the file").optional(),
-      metadata: z
-        .record(z.string(), z.union([z.string(), z.boolean()]))
-        .optional(),
-    }),
-  ),
+  inputSchema: z.object({
+    fileUrl: z.string(),
+    path: z
+      .string()
+      .describe("File path from file added using workspace fs_write tool")
+      .optional(),
+    filename: z.string().describe("The name of the file").optional(),
+    metadata: z
+      .record(z.string(), z.union([z.string(), z.boolean()]))
+      .optional(),
+  }),
   handler: async ({ fileUrl, metadata: _metadata, path, filename }, c) => {
     await assertWorkspaceResourceAccess(c);
     assertKbFileProcessor(c);
@@ -408,12 +396,10 @@ export const addFile = createKnowledgeBaseTool({
 export const listFiles = createKnowledgeBaseTool({
   name: "KNOWLEDGE_BASE_LIST_FILES",
   description: "List all files in the knowledge base",
-  inputSchema: z.lazy(() => z.object({})),
-  outputSchema: z.lazy(() =>
-    z.object({
-      items: z.array(z.any()),
-    }),
-  ),
+  inputSchema: z.object({}),
+  outputSchema: z.object({
+    items: z.array(z.any()),
+  }),
   handler: async (_, c) => {
     await assertWorkspaceResourceAccess(c);
     assertHasWorkspace(c);
@@ -433,11 +419,9 @@ export const listFiles = createKnowledgeBaseTool({
 export const deleteFile = createKnowledgeBaseTool({
   name: "KNOWLEDGE_BASE_DELETE_FILE",
   description: "Delete a file from the knowledge base",
-  inputSchema: z.lazy(() =>
-    z.object({
-      fileUrl: z.string(),
-    }),
-  ),
+  inputSchema: z.object({
+    fileUrl: z.string(),
+  }),
   handler: async ({ fileUrl }, c) => {
     await assertWorkspaceResourceAccess(c);
     assertHasWorkspace(c);

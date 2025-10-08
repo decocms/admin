@@ -1,11 +1,11 @@
-import inquirer from "inquirer";
 import { promises as fs } from "fs";
-import { join, posix, relative } from "path";
-import { walk } from "../../lib/fs.js";
-import { createWorkspaceClient } from "../../lib/mcp.js";
-import { getCurrentEnvVars } from "../../lib/wrangler.js";
+import inquirer from "inquirer";
 import { Buffer } from "node:buffer";
 import process from "node:process";
+import { join, posix, relative } from "path";
+import { walk } from "../../lib/fs.js";
+import { createWorkspaceClientStub } from "../../lib/mcp.js";
+import { getCurrentEnvVars } from "../../lib/wrangler.js";
 
 function tryParseJson(text: string): Record<string, unknown> | null {
   try {
@@ -207,7 +207,7 @@ export const deploy = async ({
     process.exit(0);
   }
 
-  const client = await createWorkspaceClient({ workspace, local });
+  const client = await createWorkspaceClientStub({ workspace, local });
   const deploy = async (options: typeof manifest) => {
     const response = await client.callTool({
       name: "HOSTING_APP_DEPLOY",
@@ -239,7 +239,7 @@ export const deploy = async ({
         }
         return deploy({ ...options, force: true });
       }
-      throw new Error(errorTextJson ?? errorText ?? "Unknown error");
+      throw new Error(errorText ?? "Unknown error");
     }
     return response;
   };

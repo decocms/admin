@@ -120,17 +120,15 @@ const AGENT_FIELDS_SELECT = {
 export const listAgents = createTool({
   name: "AGENTS_LIST",
   description: "List all agents",
-  inputSchema: z.lazy(() => z.object({})),
-  outputSchema: z.lazy(() =>
-    z.object({
-      items: z.array(
-        AgentSchema.extend({
-          lastAccess: z.string().nullable().optional(),
-          lastAccessor: z.string().nullable().optional(),
-        }),
-      ),
-    }),
-  ),
+  inputSchema: z.object({}),
+  outputSchema: z.object({
+    items: z.array(
+      AgentSchema.extend({
+        lastAccess: z.string().nullable().optional(),
+        lastAccessor: z.string().nullable().optional(),
+      }),
+    ),
+  }),
   handler: async (_, c: WithTool<AppContext>) => {
     assertHasWorkspace(c);
 
@@ -236,8 +234,8 @@ export const listAgents = createTool({
 export const getAgent = createTool({
   name: "AGENTS_GET",
   description: "Get an agent by id",
-  inputSchema: z.lazy(() => z.object({ id: z.string() })),
-  outputSchema: z.lazy(() => AgentSchema),
+  inputSchema: z.object({ id: z.string() }),
+  outputSchema: AgentSchema,
   handler: async ({ id }, c) => {
     assertHasWorkspace(c);
 
@@ -284,8 +282,8 @@ export const getAgent = createTool({
 export const createAgent = createTool({
   name: "AGENTS_CREATE",
   description: "Create a new agent",
-  inputSchema: z.lazy(() => AgentSchema.partial()),
-  outputSchema: z.lazy(() => AgentSchema),
+  inputSchema: AgentSchema.partial(),
+  outputSchema: AgentSchema,
   handler: async (agent, c) => {
     assertHasWorkspace(c);
 
@@ -315,13 +313,11 @@ export const createAgentSetupTool = createToolGroup("AgentSetup", {
 export const updateAgent = createAgentSetupTool({
   name: "AGENTS_UPDATE",
   description: "Update an existing agent",
-  inputSchema: z.lazy(() =>
-    z.object({
-      id: z.string(),
-      agent: AgentSchema.partial(),
-    }),
-  ),
-  outputSchema: z.lazy(() => AgentSchema),
+  inputSchema: z.object({
+    id: z.string(),
+    agent: AgentSchema.partial(),
+  }),
+  outputSchema: AgentSchema,
   handler: async ({ id, agent }, c) => {
     assertHasWorkspace(c);
 
@@ -352,8 +348,8 @@ export const updateAgent = createAgentSetupTool({
 export const deleteAgent = createTool({
   name: "AGENTS_DELETE",
   description: "Delete an agent by id",
-  inputSchema: z.lazy(() => z.object({ id: z.string() })),
-  outputSchema: z.lazy(() => z.object({ deleted: z.boolean() })),
+  inputSchema: z.object({ id: z.string() }),
+  outputSchema: z.object({ deleted: z.boolean() }),
   handler: async ({ id }, c) => {
     assertHasWorkspace(c);
 

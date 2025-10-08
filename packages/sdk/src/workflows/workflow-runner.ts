@@ -1,14 +1,16 @@
 import {
+  WorkflowStep as CloudflareWorkflowStep,
   WorkflowEntrypoint,
   WorkflowEvent,
-  WorkflowStep as CloudflareWorkflowStep,
   WorkflowStepConfig,
 } from "cloudflare:workers";
+import { contextStorage } from "../fetch.ts";
 import {
   AppContext,
   type Bindings,
   type BindingsContext,
   PrincipalExecutionContext,
+  State,
   toBindingsContext,
 } from "../mcp/context.ts";
 import {
@@ -53,9 +55,12 @@ export interface WorkflowRunnerProps<T = unknown> {
 
 export class WorkflowRunner extends WorkflowEntrypoint<Bindings> {
   protected bindingsCtx: BindingsContext;
+  protected executionCtx: ExecutionContext;
+
   constructor(ctx: ExecutionContext, env: Bindings) {
     super(ctx, env);
     this.bindingsCtx = toBindingsContext(env);
+    this.executionCtx = ctx;
   }
 
   async principalContextFromRunnerProps(
@@ -143,16 +148,21 @@ export class WorkflowRunner extends WorkflowEntrypoint<Bindings> {
     for (const step of steps) {
       prev =
         state?.[step.name] ??
-        (await cfStep.do(step.name, step.config ?? {}, async () => {
-          const runResult = await step.fn(prev, {
-            ...workflowState,
-            sleepUntil: (name, date) =>
-              cfStep.sleepUntil(`${step.name}-${name}`, date),
-            sleep: (name, duration) =>
-              cfStep.sleep(`${step.name}-${name}`, duration),
-          });
-          return runResult as Rpc.Serializable<unknown>;
-        }));
+        (await cfStep.do(step.name, step.config ?? {}, () =>
+          contextStorage.run({ env: this.env, ctx: this.executionCtx }, () =>
+            State.run(
+              appContext,
+              () =>
+                step.fn(prev, {
+                  ...workflowState,
+                  sleepUntil: (name, date) =>
+                    cfStep.sleepUntil(`${step.name}-${name}`, date),
+                  sleep: (name, duration) =>
+                    cfStep.sleep(`${step.name}-${name}`, duration),
+                }) as Promise<Rpc.Serializable<unknown>>,
+            ),
+          ),
+        ));
       workflowState.steps[step.name] = prev;
       if (event.payload.stopAfter === step.name) {
         break;

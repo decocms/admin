@@ -9,9 +9,11 @@ import { DeconfigResource } from "../deconfig/deconfig-resource.ts";
 import {
   assertHasWorkspace,
   assertWorkspaceResourceAccess,
+  createMCPToolsStub,
   createTool,
   createToolGroup,
   DeconfigClient,
+  PROJECT_TOOLS,
 } from "../index.ts";
 import { validate } from "../tools/utils.ts";
 import {
@@ -113,6 +115,103 @@ export const WorkflowResourceV2 = DeconfigResourceV2.define({
       description: WORKFLOW_DELETE_PROMPT,
     },
   },
+  validate: async (workflow, context, _deconfig) => {
+    // Create an MCPClientStub to call INTEGRATIONS_LIST
+    const client = createMCPToolsStub({
+      tools: PROJECT_TOOLS,
+      context,
+    });
+
+    const result = await client.INTEGRATIONS_LIST({});
+    const integrations = result.items;
+
+    // Validate code step dependencies
+    const codeSteps = workflow.steps
+      .filter((step) => step.type === "code")
+      .map((step) => step.def as CodeStepDefinition);
+
+    for (const codeDef of codeSteps) {
+      if (codeDef.dependencies && codeDef.dependencies.length > 0) {
+        for (const dependency of codeDef.dependencies) {
+          const integration = integrations.find(
+            (item: { id: string; name: string }) =>
+              item.id === dependency.integrationId,
+          );
+
+          if (!integration) {
+            const availableIntegrations = integrations.map(
+              (item: { id: string; name: string }) => ({
+                id: item.id,
+                name: item.name,
+              }),
+            );
+
+            throw new Error(
+              `Code step '${codeDef.name}': Dependency validation failed. Integration '${dependency.integrationId}' not found.\n\nAvailable integrations:\n${JSON.stringify(availableIntegrations, null, 2)}`,
+            );
+          }
+        }
+      }
+    }
+
+    // Validate tool_call steps against available integrations
+    const toolCallSteps = workflow.steps
+      .filter((step) => step.type === "tool_call")
+      .map((step) => step.def as ToolCallStepDefinition);
+
+    if (toolCallSteps.length === 0) {
+      return; // No tool_call steps to validate
+    }
+
+    for (const stepDef of toolCallSteps) {
+      // Find the integration by name or id
+      const integration = integrations.find(
+        (item: { id: string; name: string }) =>
+          item.name === stepDef.integration || item.id === stepDef.integration,
+      );
+
+      if (!integration) {
+        const availableIntegrations = integrations.map(
+          (item: { id: string; name: string }) => ({
+            id: item.id,
+            name: item.name,
+          }),
+        );
+
+        throw new Error(
+          `Tool call step '${stepDef.name}': Integration '${stepDef.integration}' not found.\n\nAvailable integrations:\n${JSON.stringify(availableIntegrations, null, 2)}`,
+        );
+      }
+
+      // Check if the tool exists in the integration
+      const tools =
+        "tools" in integration && Array.isArray(integration.tools)
+          ? integration.tools
+          : [];
+
+      const tool = tools.find(
+        (t: { name: string }) => t.name === stepDef.tool_name,
+      );
+
+      if (!tool) {
+        const availableTools = tools.map(
+          (t: {
+            name: string;
+            inputSchema?: unknown;
+            outputSchema?: unknown;
+          }) => ({
+            name: t.name,
+            inputSchema: t.inputSchema,
+            outputSchema: t.outputSchema,
+          }),
+        );
+
+        throw new Error(
+          `Tool call step '${stepDef.name}': Tool '${stepDef.tool_name}' not found in integration '${integration.name}' (${integration.id}).\n\nAvailable tools:\n${JSON.stringify(availableTools, null, 2)}`,
+        );
+      }
+    }
+  },
 });
 
 // Export types for TypeScript usage
@@ -151,44 +250,40 @@ export function createWorkflowBindingImpl({
   const decoWorkflowStart = createTool({
     name: "DECO_WORKFLOW_START",
     description: WORKFLOWS_START_WITH_URI_PROMPT,
-    inputSchema: z.lazy(() =>
-      z.object({
-        uri: z
-          .string()
-          .describe("The Resources 2.0 URI of the workflow to execute"),
-        input: z
-          .object({})
-          .passthrough()
-          .describe(
-            "The input data that will be validated against the workflow's input schema and passed to the first step",
-          ),
-        stopAfter: z
-          .string()
-          .optional()
-          .describe(
-            "Optional step name where execution should halt. The workflow will execute up to and including this step, then stop. Useful for partial execution, debugging, or step-by-step testing.",
-          ),
-        state: z
-          .object({})
-          .passthrough()
-          .optional()
-          .describe(
-            "Optional pre-computed step results to inject into the workflow state. Format: { 'step-name': STEP_RESULT }. Allows skipping steps by providing their expected outputs, useful for resuming workflows or testing with known intermediate results.",
-          ),
-      }),
-    ),
-    outputSchema: z.lazy(() =>
-      z.object({
-        runId: z
-          .string()
-          .optional()
-          .describe("The unique ID for tracking this workflow run"),
-        error: z
-          .string()
-          .optional()
-          .describe("Error message if workflow start failed"),
-      }),
-    ),
+    inputSchema: z.object({
+      uri: z
+        .string()
+        .describe("The Resources 2.0 URI of the workflow to execute"),
+      input: z
+        .object({})
+        .passthrough()
+        .describe(
+          "The input data that will be validated against the workflow's input schema and passed to the first step",
+        ),
+      stopAfter: z
+        .string()
+        .optional()
+        .describe(
+          "Optional step name where execution should halt. The workflow will execute up to and including this step, then stop. Useful for partial execution, debugging, or step-by-step testing.",
+        ),
+      state: z
+        .object({})
+        .passthrough()
+        .optional()
+        .describe(
+          "Optional pre-computed step results to inject into the workflow state. Format: { 'step-name': STEP_RESULT }. Allows skipping steps by providing their expected outputs, useful for resuming workflows or testing with known intermediate results.",
+        ),
+    }),
+    outputSchema: z.object({
+      runId: z
+        .string()
+        .optional()
+        .describe("The unique ID for tracking this workflow run"),
+      error: z
+        .string()
+        .optional()
+        .describe("Error message if workflow start failed"),
+    }),
     handler: async ({ uri, input, stopAfter, state }, c) => {
       assertHasWorkspace(c);
       await assertWorkspaceResourceAccess(c);
@@ -238,52 +333,44 @@ export function createWorkflowBindingImpl({
   const decoWorkflowGetStatus = createTool({
     name: "DECO_WORKFLOW_GET_STATUS",
     description: WORKFLOWS_GET_STATUS_PROMPT,
-    inputSchema: z.lazy(() =>
-      z.object({
-        runId: z.string().describe("The unique ID of the workflow run"),
-      }),
-    ),
-    outputSchema: z.lazy(() =>
-      z.object({
-        status: z
-          .enum(["pending", "running", "completed", "failed"])
-          .describe("The current status of the workflow run"),
-        currentStep: z
-          .string()
-          .optional()
-          .describe(
-            "The name of the step currently being executed (if running)",
-          ),
-        stepResults: z.record(z.any()).describe("Results from completed steps"),
-        finalResult: z
-          .any()
-          .optional()
-          .describe("The final workflow result (if completed)"),
-        partialResult: z
-          .any()
-          .optional()
-          .describe(
-            "Partial results from completed steps (if pending/running)",
-          ),
-        error: z
-          .string()
-          .optional()
-          .describe("Error message if the workflow failed"),
-        logs: z
-          .array(
-            z.object({
-              type: z.enum(["log", "warn", "error"]),
-              content: z.string(),
-            }),
-          )
-          .describe("Console logs from the execution"),
-        startTime: z.number().describe("When the workflow started (timestamp)"),
-        endTime: z
-          .number()
-          .optional()
-          .describe("When the workflow ended (timestamp, if completed/failed)"),
-      }),
-    ),
+    inputSchema: z.object({
+      runId: z.string().describe("The unique ID of the workflow run"),
+    }),
+    outputSchema: z.object({
+      status: z
+        .enum(["pending", "running", "completed", "failed"])
+        .describe("The current status of the workflow run"),
+      currentStep: z
+        .string()
+        .optional()
+        .describe("The name of the step currently being executed (if running)"),
+      stepResults: z.record(z.any()).describe("Results from completed steps"),
+      finalResult: z
+        .any()
+        .optional()
+        .describe("The final workflow result (if completed)"),
+      partialResult: z
+        .any()
+        .optional()
+        .describe("Partial results from completed steps (if pending/running)"),
+      error: z
+        .string()
+        .optional()
+        .describe("Error message if the workflow failed"),
+      logs: z
+        .array(
+          z.object({
+            type: z.enum(["log", "warn", "error"]),
+            content: z.string(),
+          }),
+        )
+        .describe("Console logs from the execution"),
+      startTime: z.number().describe("When the workflow started (timestamp)"),
+      endTime: z
+        .number()
+        .optional()
+        .describe("When the workflow ended (timestamp, if completed/failed)"),
+    }),
     handler: async ({ runId }, c) => {
       await assertWorkspaceResourceAccess(c);
 

@@ -58,7 +58,7 @@ const createTool = createToolGroup("Model", {
 export const createModel = createTool({
   name: "MODELS_CREATE",
   description: "Create a new model",
-  inputSchema: z.lazy(() => createModelSchema),
+  inputSchema: createModelSchema,
   handler: async (props, c) => {
     assertHasWorkspace(c);
     const workspace = c.workspace.value;
@@ -129,7 +129,7 @@ const keyMap: Record<string, keyof ModelRow> = {
 export const updateModel = createTool({
   name: "MODELS_UPDATE",
   description: "Update an existing model",
-  inputSchema: z.lazy(() => updateModelSchema),
+  inputSchema: updateModelSchema,
   handler: async (props, c) => {
     assertHasWorkspace(c);
     const workspace = c.workspace.value;
@@ -212,7 +212,7 @@ export type DeleteModelInput = z.infer<typeof deleteModelSchema>;
 export const deleteModel = createTool({
   name: "MODELS_DELETE",
   description: "Delete a model by id",
-  inputSchema: z.lazy(() => deleteModelSchema),
+  inputSchema: deleteModelSchema,
   handler: async (props, c) => {
     assertHasWorkspace(c);
     const workspace = c.workspace.value;
@@ -293,12 +293,10 @@ export const listModelsForWorkspace = async ({
 export const listModels = createTool({
   name: "MODELS_LIST",
   description: "List models for the current user",
-  inputSchema: z.lazy(() => listModelsSchema),
-  outputSchema: z.lazy(() =>
-    z.object({
-      items: z.array(z.any()),
-    }),
-  ),
+  inputSchema: listModelsSchema,
+  outputSchema: z.object({
+    items: z.array(z.any()),
+  }),
   handler: async (props, c) => {
     assertHasWorkspace(c);
     const workspace = c.workspace.value;
@@ -334,7 +332,7 @@ export type GetModelInput = z.infer<typeof getModelSchema>;
 export const getModel = createTool({
   name: "MODELS_GET",
   description: "Get a model by id",
-  inputSchema: z.lazy(() => getModelSchema),
+  inputSchema: getModelSchema,
   handler: async (props, c) => {
     assertHasWorkspace(c);
     const workspace = c.workspace.value;

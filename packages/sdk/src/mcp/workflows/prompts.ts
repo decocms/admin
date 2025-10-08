@@ -5,171 +5,140 @@
  * creation, updating, and management using the Resources 2.0 system.
  */
 
-export const WORKFLOW_CREATE_PROMPT = `Create a new workflow in the workspace using Resources 2.0.
+export const WORKFLOW_CREATE_PROMPT = `Create a workflow with alternating code and tool_call steps.
 
-## Overview
+## Execution Pattern
 
-Workflows are powerful automation tools that execute a sequence of steps sequentially to accomplish complex tasks. Each workflow consists of:
+Workflows follow a strict alternating pattern where **each step receives the previous step's output**:
 
-- **Input Schema**: Defines the data structure and parameters required to start the workflow
-- **Output Schema**: Defines the final result structure after all steps complete
-- **Steps**: An ordered array of individual operations that run one after another (alternating between tool calls and code steps)
+\`\`\`
+Input → Code → Tool Call → Code → Tool Call → Code (final) → Output
+\`\`\`
 
-The workflow's final output is determined by the last step in the sequence, which should be a code step that aggregates and returns the desired result.
+**Key Rules:**
+1. **Code steps transform data** for the next tool_call or final output
+2. **Tool calls receive** the previous step's output as their input
+3. **Final step must be code** that returns data matching the workflow's output schema
 
-## Required Data Fields
+## Code Step Execute Function
 
-The workflow data must include:
-- **name**: A descriptive name for the workflow
-- **definition**: Complete workflow definition with steps and schemas
-- **status**: Workflow status (draft, active, inactive)
+Code steps must export a default async function. Available API:
 
-Optional fields:
-- **description**: Additional description of the workflow
-- **tags**: Array of tags for categorization
-- **category**: Category for organizing workflows
-- **version**: Workflow version (defaults to "1.0.0")
-- **author**: Workflow author information
-
-## Workflow Steps
-
-Workflows alternate between two types of steps:
-
-### 1. Tool Call Steps
-Execute tools from integrations using the workflow input:
-- **type**: "tool_call"
-- **def**: Tool call step definition containing:
-  - **name**: Unique identifier within the workflow
-  - **description**: Clear explanation of the step's purpose
-  - **options**: Configuration with retry/timeout settings and custom properties
-  - **tool_name**: The name of the tool to call
-  - **integration**: The integration ID of the integration that provides this tool
-
-**Important**: The \`integration\` property must be set to the integration ID (format: \`i:<uuid>\`), not the integration name. To find the correct integration ID:
-1. Use the \`integration_list\` tool to get available integrations
-2. Look for the integration that provides the tool you need
-3. Use the integration's ID (e.g., \`i:123e4567-e89b-12d3-a456-426614174000\`) in the \`integration\` property
-
-Tool calls receive the workflow input directly. Use code steps before tool calls to transform the input as needed.
-
-### 2. Code Steps
-Transform data between tool calls:
-- **type**: "code"
-- **def**: Code step definition containing:
-  - **name**: Unique identifier within the workflow
-  - **description**: Clear explanation of the step's purpose
-  - **execute**: ES module code with a default async function
-
-### Code Step Execution Function
-Each code step's execute function follows this pattern:
 \`\`\`javascript
 export default async function(ctx) {
-  // ctx contains WellKnownOptions helper functions:
-  // - await ctx.readWorkflowInput(): Returns the initial workflow input
-  // - await ctx.readStepResult(stepName): Returns output from a previous step
-  // - await ctx.sleep(name, duration): Sleeps for a specified duration
-  // - await ctx.sleepUntil(name, date): Sleeps until a specified date or timestamp
+  // Read workflow input (original input passed to workflow)
+  const workflowInput = await ctx.readWorkflowInput();
   
-  // Transform data between tool calls
-  const input = await ctx.readWorkflowInput();
-  const previousResult = await ctx.readStepResult('previous-step');
+  // Read result from a previous step by name
+  const prevResult = await ctx.readStepResult('step-name');
   
-  // Your code logic here
-  return transformedData;
+  // Call integration tools (must declare in dependencies array)
+  const result = await ctx.env['i:slack-123'].send_message({
+    channel: '#general',
+    text: 'Hello'
+  });
+  
+  // Sleep utilities
+  await ctx.sleep('wait-name', 5000);  // milliseconds
+  await ctx.sleepUntil('wait-name', Date.now() + 5000);  // timestamp
+  
+  // Return data for next step (must match next tool's input schema)
+  return { field1: prevResult.data, field2: workflowInput.userId };
 }
 \`\`\`
 
-## Final Output
+**Code Step Structure:**
+\`\`\`json
+{
+  "type": "code",
+  "def": {
+    "name": "transform-data",
+    "description": "Transform previous result for next tool",
+    "execute": "export default async function(ctx) { ... }",
+    "dependencies": [{ "integrationId": "i:slack-123" }]  // Optional, only if using ctx.env
+  }
+}
+\`\`\`
 
-The workflow's final output is automatically determined by the last step in the sequence. This should be a code step that:
-1. Aggregates data from previous steps using ctx.readStepResult(stepName)
-2. Transforms the data to match the workflow's output schema
-3. Returns the final result
+## Tool Call Step Structure
+
+Tool calls execute external integrations with the previous step's output:
+
+\`\`\`json
+{
+  "type": "tool_call",
+  "def": {
+    "name": "call-external-api",
+    "description": "Execute external tool",
+    "tool_name": "send_message",
+    "integration": "i:slack",
+    "options": {
+      "retries": { "limit": 3, "delay": 1000 },
+      "timeout": 30000
+    }
+  }
+}
+\`\`\`
+
+**Integration IDs:**
+- Don't know the ID? Use a placeholder like \`i:slack\` or \`i:database\`
+- Validation will show available integrations if the ID doesn't exist
+- The system will guide you to the correct ID
 
 ## Best Practices
 
-1. **Alternating Steps**: Design workflows to alternate between tool calls and code
-2. **Final Code Step**: Always end with a code step that aggregates and returns the final result
-3. **Input Transformation**: Use code steps before tool calls to transform workflow input as needed
-4. **Integration Discovery**: Always use the \`integration_list\` tool to find the correct integration ID before creating tool_call steps
-5. **Minimal Output**: Keep code step outputs minimal to improve performance
-6. **Error Handling**: Use retry and timeout configurations appropriately for tool calls
-7. **Schema Validation**: Define clear input/output schemas for type safety
-8. **Step Independence**: Design steps to be testable in isolation
-9. **Business Configuration**: Use options to expose tunable parameters for tool calls
-10. **Sequential Execution**: Steps run in order - design accordingly
-11. **Data Flow**: Use code to transform data between tool calls
+1. **Alternate code → tool_call → code → tool_call** - Code prepares data for tools
+2. **Each code step returns data** matching the next tool call's input schema
+3. **Use placeholders for integration IDs** - Validation errors will list available integrations
+4. **Final code step** aggregates results and returns output matching workflow's output schema
+5. **Keep transformations simple** - Each code step should do one thing
+6. **Use stopAfter parameter** to test steps incrementally`;
 
-The workflow definition will be validated against the existing workflow schema system.`;
+export const WORKFLOW_UPDATE_PROMPT = `Update a workflow while maintaining the alternating code → tool_call pattern.
 
-export const WORKFLOW_UPDATE_PROMPT = `Update an existing workflow using Resources 2.0.
+## Execution Pattern Reminder
 
-## Overview
+\`\`\`
+Input → Code → Tool Call → Code → Tool Call → Code (final) → Output
+\`\`\`
 
-You can update any part of the workflow:
-- Workflow metadata (title, description, status, tags, etc.)
-- Workflow definition (steps, schemas, etc.)
-- Execution statistics
+**Key Rules:**
+1. **Each step receives the previous step's output**
+2. **Code steps transform data** for the next tool_call
+3. **Final step must be code** returning data matching output schema
 
-## Workflow Structure
+## Code Step Execute API
 
-Workflows are powerful automation tools that execute a sequence of steps sequentially to accomplish complex tasks. Each workflow consists of:
-
-- **Input Schema**: Defines the data structure and parameters required to start the workflow
-- **Output Schema**: Defines the final result structure after all steps complete
-- **Steps**: An ordered array of individual operations that run one after another (alternating between tool calls and code steps)
-
-## Step Types
-
-### 1. Tool Call Steps
-Execute tools from integrations using the workflow input:
-- **type**: "tool_call"
-- **def**: Tool call step definition containing:
-  - **name**: Unique identifier within the workflow
-  - **description**: Clear explanation of the step's purpose
-  - **options**: Configuration with retry/timeout settings and custom properties
-  - **tool_name**: The name of the tool to call
-  - **integration**: The integration ID of the integration that provides this tool
-
-**Important**: The \`integration\` property must be set to the integration ID (format: \`i:<uuid>\`), not the integration name. Use the \`integration_list\` tool to find the correct integration ID.
-
-### 2. Code Steps
-Transform data between tool calls:
-- **type**: "code"
-- **def**: Code step definition containing:
-  - **name**: Unique identifier within the workflow
-  - **description**: Clear explanation of the step's purpose
-  - **execute**: ES module code with a default async function
-
-### Code Step Context
-Each code step's execute function has access to:
 \`\`\`javascript
 export default async function(ctx) {
-  // ctx contains WellKnownOptions helper functions:
-  // - await ctx.readWorkflowInput(): Returns the initial workflow input
-  // - await ctx.readStepResult(stepName): Returns output from a previous step
-  // - await ctx.sleep(name, duration): Sleeps for a specified duration
-  // - await ctx.sleepUntil(name, date): Sleeps until a specified date or timestamp
-  
-  // Transform data between tool calls
-  const input = await ctx.readWorkflowInput();
-  const previousResult = await ctx.readStepResult('previous-step');
-  
-  // Your code logic here
-  return transformedData;
+  const workflowInput = await ctx.readWorkflowInput();
+  const prevResult = await ctx.readStepResult('step-name');
+  const toolResult = await ctx.env['i:integration'].tool_name({ args });
+  await ctx.sleep('name', 5000);
+  await ctx.sleepUntil('name', timestamp);
+  return { data: 'for next step' };
 }
 \`\`\`
 
 ## Update Guidelines
 
-When updating workflows:
-1. **Schema Validation**: The updated workflow definition will be validated against the existing workflow schema system
-2. **Step Consistency**: Ensure step names are unique and references are correct
-3. **Integration IDs**: Verify integration IDs are still valid using \`integration_list\`
-4. **Output Schema**: Ensure the final code step returns data matching the output schema
-5. **Best Practices**: Follow the same best practices as workflow creation
+1. **Maintain alternation** - code → tool_call → code → tool_call
+2. **Match schemas** - Each code step output must match next tool's input schema
+3. **Use placeholders for integration IDs** - Validation will show available integrations
+4. **Update dependencies** - Add \`{ integrationId }\` to code step's dependencies if using ctx.env
+5. **Test incrementally** - Use stopAfter to test each updated step
 
-The updated workflow definition will be validated against the existing workflow schema system.`;
+## Common Patterns
+
+**Adding a tool call:**
+- Add code step before it to transform data
+- Add tool_call with placeholder ID (e.g., \`i:slack\`)
+- Add code step after to handle result
+- Validation will guide you to correct IDs
+
+**Fixing integration IDs:**
+- Use placeholder IDs - validation errors list all available integrations
+- Copy the correct ID from the error message`;
 
 export const WORKFLOW_SEARCH_PROMPT = `Search workflows in the workspace. 
 

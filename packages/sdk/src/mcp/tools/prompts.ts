@@ -14,113 +14,73 @@ modified, and executed in a secure environment.
 Use this to discover available tools before creating new ones or to find existing tools
 for modification or execution.`;
 
-export const TOOL_READ_PROMPT = `Read a tool definition and its associated function code.
+export const TOOL_READ_PROMPT = `Read a tool definition including metadata, schemas, and execute code.
 
-This operation retrieves the complete definition of a tool, including:
+Returns:
 - Tool metadata (name, description)
-- Input and output JSON schemas for validation
-- The execute code (inline ES module)
+- Input/output JSON schemas
+- Execute code (inline ES module)
+- Dependencies (integration IDs used in ctx.env calls)
 
-The tool definition includes all necessary information to understand how to use
-the tool and what data it expects and returns.
+The tool's execute code uses \`ctx.env['{INTEGRATION_ID}'].{TOOL_NAME}(args)\` to call integrations.`;
 
-If the tool calls other tools, use INTEGRATIONS_LIST to discover available
-integrations and their tools to understand the context.env['{INTEGRATION_ID}'].{TOOL_NAME}
-calls in the execute code. Note that integration IDs often contain special characters
-and require bracket notation.`;
+export const TOOL_CREATE_PROMPT = `Create an executable tool with JSON Schema validation.
 
-export const TOOL_CREATE_PROMPT = `Create a new tool with JSON Schema validation.
+## Tool Execute Function
 
-Create executable tools that can be run in a secure environment with
-automatic input/output validation using JSON schemas.
-
-## How to Use Tools in Your Code
-
-**Discovering Available Tools:**
-Before creating tools that interact with other services, use INTEGRATIONS_LIST to discover all available integrations and their tools:
-- Call INTEGRATIONS_LIST to get a list of all integrations in the workspace
-- Each integration contains its available tools with their schemas
-- Use this information to understand what tools you can call
-
-**Calling Tools from Your Tool:**
-Tools can call other tools using the ctx.env object:
-- Format: ctx.env['{INTEGRATION_ID}'].{TOOL_NAME}(args) (use bracket notation for integration IDs)
-- The integration ID comes from the integration's connection field
-- Integration IDs often contain special characters (e.g., 'i:123dsa123sf124fsd'), so always use bracket notation
-- Tool names are exactly as listed in the integration's tools array
-- Arguments must match the tool's input schema
-
-**Example Tool Usage:**
-
-Before writing your tool code, use INTEGRATIONS_LIST to discover available integrations and their tools. Then write clean code that calls the tools directly:
+Tools must export a default async function:
 
 \`\`\`javascript
-export default async function (input, ctx) {
-  // Call the tool directly using the discovered integration ID and tool name
-  // Note: Use bracket notation for integration IDs with special characters
-  const result = await ctx.env['i:slack_workspace_123'].send_message({
+export default async function(input, ctx) {
+  // input: validated against tool's inputSchema
+  
+  // Call integration tools (must declare in dependencies array)
+  const result = await ctx.env['i:slack'].send_message({
     channel: input.channel,
     text: input.message
   });
   
+  // Return: must match tool's outputSchema
   return { success: true, messageId: result.ts };
 }
 \`\`\`
 
-## Tool Creation Example
+**Key Points:**
+- **inputSchema** defines the \`input\` parameter type and validation
+- **outputSchema** defines the return value type and validation
+- **execute** is the function code as an inline ES module string
+- **dependencies** (optional): Array of \`{ integrationId }\` for ctx.env calls
 
-Example tool creation:
-{
-  "name": "SendSlackNotification",
-  "description": "Send a notification message to a Slack channel",
-  "inputSchema": {
-    "type": "object",
-    "properties": {
-      "channel": { "type": "string", "description": "Slack channel name" },
-      "message": { "type": "string", "description": "Message to send" }
-    },
-    "required": ["channel", "message"]
-  },
-  "outputSchema": {
-    "type": "object", 
-    "properties": {
-      "success": { "type": "boolean" },
-      "messageId": { "type": "string" }
-    },
-    "required": ["success", "messageId"]
-  },
-  "execute": "export default async function (input, ctx) { const result = await ctx.env['i:slack_workspace_123'].send_message({ channel: input.channel, text: input.message }); return { success: true, messageId: result.ts }; }"
-}
-
-## Technical Requirements
-
-The execute field must be inline ES module code (saved to /src/functions/{name}.ts)
-
-The execute function signature must be:
-async (input: typeof inputSchema, ctx: { env: Record<string, any> }): Promise<typeof outputSchema>
-
-**Important:** Always use INTEGRATIONS_LIST to discover available tools before writing your tool code. This ensures you use the correct integration IDs and tool names, and understand the expected input/output schemas. Do not include the INTEGRATIONS_LIST call in your final tool code.
-
+**Integration IDs:**
+- Don't know the ID? Use a placeholder like \`i:slack\` or \`i:database\`
+- Validation will show available integrations if the ID doesn't exist
+- System will guide you to the correct ID
 `;
 
-export const TOOL_UPDATE_PROMPT = `Update an existing tool definition.
+export const TOOL_UPDATE_PROMPT = `Update a tool's metadata, schemas, or execution code.
 
-Modify the metadata, schemas, or execution code of an existing tool.
-This allows you to refine tool behavior, update validation schemas, or fix bugs
-in the execution logic.
+## Execute Function API
 
-When updating the execute code, ensure it maintains the same function signature
-and that any changes are compatible with the existing input/output schemas.
+\`\`\`javascript
+export default async function(input, ctx) {
+  // Call integration tools
+  const result = await ctx.env['i:integration'].tool_name({ args });
+  return { output: result };
+}
+\`\`\`
 
-## Tool Usage Reminders
+## Update Guidelines
 
-When updating tools that call other tools:
-- Use INTEGRATIONS_LIST to discover available integrations and their tools before writing code
-- Call tools using ctx.env['{INTEGRATION_ID}'].{TOOL_NAME}(args) (use bracket notation for integration IDs)
-- Integration IDs often contain special characters, so always use bracket notation
-- Ensure arguments match the target tool's input schema
-- Handle errors appropriately when calling external tools
-- Do not include INTEGRATIONS_LIST calls in the final tool code`;
+1. **Maintain function signature** - Keep \`async function(input, ctx)\` format
+2. **Match schemas** - Input/output must match updated schemas
+3. **Use placeholder integration IDs** - Validation will show available integrations
+4. **Update dependencies** - Add \`{ integrationId }\` for any ctx.env calls
+5. **Test thoroughly** - Input/output are validated automatically
+
+**Integration IDs:**
+- Use placeholders like \`i:slack\` if you don't know the ID
+- Validation errors will list all available integrations
+- Copy the correct ID from the error message`;
 
 export const TOOL_DELETE_PROMPT = `Delete a tool from the code environment.
 

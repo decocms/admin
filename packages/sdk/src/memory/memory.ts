@@ -238,7 +238,7 @@ const patchToolCallProcessor = (
         continue;
       }
 
-      const toolCallContent: TextPart[] = [];
+      const toolCallContent: (TextPart | ToolCallPart)[] = [];
 
       // Add any text parts first
       for (const part of toolCallMessage.content) {
@@ -258,7 +258,7 @@ const patchToolCallProcessor = (
         text: JSON.stringify({
           type: "tool-call",
           toolName: toolCallPart.toolName,
-          args: toolCallPart.input,
+          args: toolCallPart.args,
         }),
       });
 

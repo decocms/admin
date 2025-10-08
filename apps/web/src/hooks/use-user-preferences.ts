@@ -6,7 +6,6 @@ export interface UserPreferences {
   smoothStream: boolean;
   sendReasoning: boolean;
   defaultModel: string;
-  pdfSummarization: boolean;
   showDecopilot: boolean;
 }
 
@@ -23,11 +22,6 @@ export const userPreferencesLabels = {
     label: "Send Reasoning",
     description: "Send reasoning to the AI model.",
   },
-  pdfSummarization: {
-    label: "Summarize PDFs",
-    description:
-      "Summarize large PDFs to reduce token usage and enable larger PDF support.",
-  },
 };
 
 const USER_PREFERENCES_KEY = "user-preferences";
@@ -41,7 +35,6 @@ export function useUserPreferences() {
         useOpenRouter: true,
         smoothStream: true,
         sendReasoning: true,
-        pdfSummarization: true,
         showDecopilot: false,
       },
     });

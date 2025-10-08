@@ -21,7 +21,7 @@ export const suggestion: (
             {
               id: "prompts",
               type: "category",
-              label: "Prompts",
+              label: "Documents",
               icon: "text_snippet",
               children: items
                 .filter((prompt) =>

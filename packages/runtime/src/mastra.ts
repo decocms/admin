@@ -60,46 +60,28 @@ const createRuntimeContext = (prev?: RuntimeContext<AppContext>) => {
 export function createPrivateTool<
   TSchemaIn extends z.ZodSchema | undefined = undefined,
   TSchemaOut extends z.ZodSchema | undefined = undefined,
-  TSuspendSchema extends z.ZodSchema = z.ZodSchema,
-  TResumeSchema extends z.ZodSchema = z.ZodSchema,
   TContext extends
     ToolExecutionContext<TSchemaIn> = ToolExecutionContext<TSchemaIn>,
   TExecute extends ToolAction<
     TSchemaIn,
     TSchemaOut,
-    any,
-    any,
     TContext
-  >["execute"] = ToolAction<
-    TSchemaIn,
-    TSchemaOut,
-    any,
-    any,
-    TContext
-  >["execute"],
+  >["execute"] = ToolAction<TSchemaIn, TSchemaOut, TContext>["execute"],
 >(
-  opts: ToolAction<
-    TSchemaIn,
-    TSchemaOut,
-    TSuspendSchema,
-    TResumeSchema,
-    TContext
-  > & {
+  opts: ToolAction<TSchemaIn, TSchemaOut, TContext> & {
     execute?: TExecute;
   },
 ): [TSchemaIn, TSchemaOut, TExecute] extends [
   z.ZodSchema,
   z.ZodSchema,
-  z.ZodSchema,
-  z.ZodSchema,
   Function,
 ]
-  ? Tool<TSchemaIn, TSchemaOut, TSuspendSchema, TResumeSchema, TContext> & {
+  ? Tool<TSchemaIn, TSchemaOut, TContext> & {
       inputSchema: TSchemaIn;
       outputSchema: TSchemaOut;
       execute: (context: TContext) => Promise<any>;
     }
-  : Tool<TSchemaIn, TSchemaOut, TSuspendSchema, TResumeSchema, TContext> {
+  : Tool<TSchemaIn, TSchemaOut, TContext> {
   const execute = opts.execute;
   if (typeof execute === "function") {
     opts.execute = ((input, options) => {
@@ -115,49 +97,28 @@ export function createPrivateTool<
 export function createTool<
   TSchemaIn extends z.ZodSchema | undefined = undefined,
   TSchemaOut extends z.ZodSchema | undefined = undefined,
-  TSuspendSchema extends z.ZodSchema = z.ZodSchema,
-  TResumeSchema extends z.ZodSchema = z.ZodSchema,
-  TContext extends ToolExecutionContext<
-    TSchemaIn,
-    TSuspendSchema,
-    TResumeSchema
-  > = ToolExecutionContext<TSchemaIn, TSuspendSchema, TResumeSchema>,
+  TContext extends
+    ToolExecutionContext<TSchemaIn> = ToolExecutionContext<TSchemaIn>,
   TExecute extends ToolAction<
     TSchemaIn,
     TSchemaOut,
-    TSuspendSchema,
-    TResumeSchema,
     TContext
-  >["execute"] = ToolAction<
-    TSchemaIn,
-    TSchemaOut,
-    TSuspendSchema,
-    TResumeSchema,
-    TContext
-  >["execute"],
+  >["execute"] = ToolAction<TSchemaIn, TSchemaOut, TContext>["execute"],
 >(
-  opts: ToolAction<
-    TSchemaIn,
-    TSchemaOut,
-    TSuspendSchema,
-    TResumeSchema,
-    TContext
-  > & {
+  opts: ToolAction<TSchemaIn, TSchemaOut, TContext> & {
     execute?: TExecute;
   },
 ): [TSchemaIn, TSchemaOut, TExecute] extends [
   z.ZodSchema,
   z.ZodSchema,
-  z.ZodSchema,
-  z.ZodSchema,
   Function,
 ]
-  ? Tool<TSchemaIn, TSchemaOut, TSuspendSchema, TResumeSchema, TContext> & {
+  ? Tool<TSchemaIn, TSchemaOut, TContext> & {
       inputSchema: TSchemaIn;
       outputSchema: TSchemaOut;
       execute: (context: TContext) => Promise<any>;
     }
-  : Tool<TSchemaIn, TSchemaOut, TSuspendSchema, TResumeSchema, TContext> {
+  : Tool<TSchemaIn, TSchemaOut, TContext> {
   return mastraCreateTool({
     ...opts,
     execute:
@@ -209,15 +170,9 @@ export interface Step<
 export function createStepFromTool<
   TSchemaIn extends z.ZodType<any>,
   TSchemaOut extends z.ZodType<any>,
-  TSuspendSchema extends z.ZodType<any>,
-  TResumeSchema extends z.ZodType<any>,
-  TContext extends ToolExecutionContext<
-    TSchemaIn,
-    TSuspendSchema,
-    TResumeSchema
-  >,
+  TContext extends ToolExecutionContext<TSchemaIn>,
 >(
-  tool: Tool<TSchemaIn, TSchemaOut, TSuspendSchema, TResumeSchema, TContext> & {
+  tool: Tool<TSchemaIn, TSchemaOut, TContext> & {
     inputSchema: TSchemaIn;
     outputSchema: TSchemaOut;
     execute: (context: TContext) => Promise<any>;

@@ -33,6 +33,7 @@ import {
   PostgresJsDatabase,
 } from "drizzle-orm/postgres-js";
 import postgres from "postgres";
+import { strProp } from "../utils/fns.ts";
 
 export type UserPrincipal = Pick<SupaUser, "id" | "email" | "is_anonymous">;
 
@@ -102,6 +103,7 @@ const wrapIWorkspaceDB = (
   };
 };
 
+const DECO_DATABASE_APP_NAME = "@deco/database";
 const createWorkspaceDB = async (
   options: Pick<AppContext, "workspaceDO"> & {
     user?: AppContext["user"];
@@ -118,11 +120,11 @@ const createWorkspaceDB = async (
   const shouldUseSQLite = turso !== true;
 
   if (shouldUseSQLite) {
+    const integrationId = strProp(options.user, "integrationId");
+    const appName = strProp(options.user, "appName");
     const dbId =
-      typeof options.user === "object" &&
-      "integrationId" in options.user &&
-      typeof options.user.integrationId === "string"
-        ? options.user.integrationId
+      integrationId && appName && appName === DECO_DATABASE_APP_NAME
+        ? integrationId
         : undefined;
     const uniqueDbName = dbId ? `${dbId}-${workspace.value}` : workspace.value;
     return workspaceDO.get(

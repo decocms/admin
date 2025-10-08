@@ -6,10 +6,7 @@ import {
   useAgents,
   useIntegrations,
   useModels,
-  useSDK,
-  useWriteFile,
 } from "@deco/sdk";
-import { Hosts } from "@deco/sdk/hosts";
 import { Button } from "@deco/ui/components/button.tsx";
 import { Checkbox } from "@deco/ui/components/checkbox.tsx";
 import { Icon } from "@deco/ui/components/icon.tsx";
@@ -25,100 +22,36 @@ import {
   TooltipTrigger,
 } from "@deco/ui/components/tooltip.tsx";
 import { cn } from "@deco/ui/lib/utils.ts";
-import {
-  type ChangeEvent,
-  type DragEvent,
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-} from "react";
+import { useMemo, useState } from "react";
 import { useAgentSettingsToolsSet } from "../../hooks/use-agent-settings-tools-set.ts";
 import { useUserPreferences } from "../../hooks/use-user-preferences.ts";
-import { formatFilename } from "../../utils/format.ts";
+import type { UploadedFile } from "../../hooks/use-file-upload.ts";
 import { useAgent } from "../agent/provider.tsx";
 import { IntegrationIcon } from "../integrations/common.tsx";
 import { SelectConnectionDialog } from "../integrations/select-connection-dialog.tsx";
 import { formatToolName } from "./utils/format-tool-name.ts";
-import {
-  onResourceError,
-  onResourceLoaded,
-  onResourceLoading,
-} from "../../utils/events.ts";
 // Rules now derived from the agent context
-
-export interface UploadedFile {
-  file: File;
-  url?: string;
-  status: "uploading" | "done" | "error";
-  error?: string;
-  clientId?: string;
-}
-
-const useGlobalDrop = (handleFileDrop: (e: DragEvent) => void) => {
-  const [isDragging, setIsDragging] = useState(false);
-
-  /** Global file drop handler */
-  useEffect(() => {
-    /**
-     * These drag events conflict with the ones from dockview.
-     * This variable is drue when dragging elements from dockview, preventing
-     * us setting the dragging state to true.
-     */
-    let skip = false;
-
-    function handleDrop(e: Event) {
-      setIsDragging(false);
-      skip = false;
-      const dragEvent = e as unknown as DragEvent;
-      handleFileDrop(dragEvent);
-    }
-    function handleDragOver(e: Event) {
-      if (skip) {
-        return;
-      }
-      e.preventDefault();
-      setIsDragging(true);
-    }
-    function handleDragEnd() {
-      skip = false;
-      setIsDragging(false);
-    }
-    /**
-     * This is fired when dragging elements from dockview. Dragging files
-     * do not fire this event
-     */
-    function handleDrag() {
-      skip = true;
-    }
-
-    globalThis.addEventListener("drop", handleDrop);
-    globalThis.addEventListener("drag", handleDrag);
-    globalThis.addEventListener("dragover", handleDragOver);
-    globalThis.addEventListener("dragend", handleDragEnd);
-
-    return () => {
-      globalThis.removeEventListener("drop", handleDrop);
-      globalThis.removeEventListener("drag", handleDrag);
-      globalThis.removeEventListener("dragover", handleDragOver);
-      globalThis.removeEventListener("dragend", handleDragEnd);
-    };
-  }, [handleFileDrop]);
-
-  return isDragging;
-};
 
 interface ContextResourcesProps {
   uploadedFiles: UploadedFile[];
-  setUploadedFiles: React.Dispatch<React.SetStateAction<UploadedFile[]>>;
+  isDragging: boolean;
+  fileInputRef: React.RefObject<HTMLInputElement | null>;
+  handleFileChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  removeFile: (index: number) => void;
+  openFileDialog: () => void;
+  enableFileUpload: boolean;
 }
 
 export function ContextResources({
   uploadedFiles,
-  setUploadedFiles,
+  isDragging,
+  fileInputRef,
+  handleFileChange,
+  removeFile,
+  openFileDialog,
+  enableFileUpload,
 }: ContextResourcesProps) {
   const { agent, rules, setRules } = useAgent();
-  const { locator } = useSDK();
   const { data: integrations = [] } = useIntegrations();
   const { data: agents = [] } = useAgents();
   const { data: models } = useModels({
@@ -127,8 +60,6 @@ export function ContextResources({
   const { preferences } = useUserPreferences();
   const { disableAllTools, enableAllTools, setIntegrationTools } =
     useAgentSettingsToolsSet();
-  const fileInputRef = useRef<HTMLInputElement>(null);
-  const writeFileMutation = useWriteFile();
 
   const selectedModel =
     models.find((m: Model) => m.id === preferences.defaultModel) ||
@@ -225,89 +156,6 @@ export function ContextResources({
     enableAllTools(integration.id);
   };
 
-  const handleFileChange = (e: ChangeEvent<HTMLInputElement>) => {
-    const fileList = e.target.files;
-
-    if (fileList?.length) {
-      uploadFileList(fileList);
-    }
-
-    if (fileInputRef.current) {
-      fileInputRef.current.value = "";
-    }
-  };
-
-  function handleFileDrop(e: DragEvent) {
-    e.preventDefault();
-
-    const fileList = e.dataTransfer?.files;
-    if (fileList?.length) {
-      uploadFileList(fileList);
-    }
-  }
-
-  async function uploadFileList(fileList: FileList) {
-    const newFiles = Array.from(fileList);
-
-    // Prevent duplicates and limit to 5 files
-    const allFiles = [...uploadedFiles.map((uf) => uf.file), ...newFiles].slice(
-      0,
-      5,
-    );
-
-    const uniqueFiles = Array.from(
-      new Map(allFiles.map((f) => [f.name + f.size, f])).values(),
-    );
-
-    const filesToUpload = uniqueFiles
-      .filter(
-        (file) =>
-          !uploadedFiles.some(
-            (uf) => uf.file.name === file.name && uf.file.size === file.size,
-          ),
-      )
-      .map((file): UploadedFile => ({ file, status: "uploading" }));
-
-    setUploadedFiles((prev) => [...prev, ...filesToUpload]);
-    await Promise.all(filesToUpload.map(({ file }) => uploadFile(file)));
-  }
-
-  async function uploadFile(file: File) {
-    try {
-      const path = `uploads/${formatFilename(file.name)}-${Date.now()}`;
-      const buffer = await file.arrayBuffer();
-      await writeFileMutation.mutateAsync({
-        path,
-        contentType: file.type,
-        content: new Uint8Array(buffer),
-      });
-
-      const url = `https://${Hosts.API_LEGACY}/files/${locator}/${path}`; // does not work when running locally
-
-      setUploadedFiles((prev) =>
-        prev.map((uf) =>
-          uf.file === file
-            ? { ...uf, url: url || undefined, status: "done" }
-            : uf,
-        ),
-      );
-    } catch (error) {
-      setUploadedFiles((prev) =>
-        prev.map((uf) =>
-          uf.file === file
-            ? {
-                ...uf,
-                status: "error",
-                error: error instanceof Error ? error.message : "Upload failed",
-              }
-            : uf,
-        ),
-      );
-    }
-  }
-
-  const isDragging = useGlobalDrop(handleFileDrop);
-
   // Convert rules to persistedRules format for display
   const persistedRules = rules.map((text: string, idx: number) => ({
     id: `agent-rule-${idx}`,
@@ -320,96 +168,35 @@ export function ContextResources({
     setRules(newRules);
   };
 
-  // Listen for resource lifecycle events from mentions and manage uploadedFiles
-  useEffect(() => {
-    const offLoading = onResourceLoading(({ detail }) => {
-      if (!detail?.clientId) return;
-      const file = new File([new Blob()], detail.name || "resource", {
-        type: detail.contentType || "application/octet-stream",
-      });
-      setUploadedFiles((prev) => [
-        ...prev,
-        { file, status: "uploading", clientId: detail.clientId },
-      ]);
-    });
-
-    const offLoaded = onResourceLoaded(async ({ detail }) => {
-      if (!detail?.clientId || !detail?.url) return;
-      try {
-        const res = await fetch(detail.url);
-        const blob = await res.blob();
-        const file = new File([blob], detail.name || "resource", {
-          type: detail.contentType || blob.type || "application/octet-stream",
-        });
-        setUploadedFiles((prev) =>
-          prev.map((uf) =>
-            uf.clientId === detail.clientId
-              ? { ...uf, file, url: detail.url, status: "done" }
-              : uf,
-          ),
-        );
-      } catch (err) {
-        setUploadedFiles((prev) =>
-          prev.map((uf) =>
-            uf.clientId === detail.clientId
-              ? {
-                  ...uf,
-                  status: "error",
-                  error: err instanceof Error ? err.message : "Failed to load",
-                }
-              : uf,
-          ),
-        );
-      }
-    });
-
-    const offError = onResourceError(({ detail }) => {
-      if (!detail?.clientId) return;
-      setUploadedFiles((prev) =>
-        prev.map((uf) =>
-          uf.clientId === detail.clientId
-            ? {
-                ...uf,
-                status: "error",
-                error: detail.error || "Failed to read",
-              }
-            : uf,
-        ),
-      );
-    });
-
-    return () => {
-      offLoading();
-      offLoaded();
-      offError();
-    };
-  }, [setUploadedFiles]);
-
   return (
     <div className="w-full mx-auto">
       <FileDropOverlay display={isDragging} />
       <div className="flex flex-wrap gap-2 mb-4 overflow-visible">
         {/* rules now rendered after add button below */}
         {/* File Upload Button */}
-        <input
-          type="file"
-          ref={fileInputRef}
-          onChange={handleFileChange}
-          multiple
-          className="hidden"
-          accept={getAcceptedFileTypes()}
-        />
-        {(selectedModel.capabilities.includes("file-upload") ||
-          selectedModel.capabilities.includes("image-upload")) && (
-          <Button
-            type="button"
-            variant="outline"
-            size="icon"
-            title="Upload files"
-            onClick={() => fileInputRef.current?.click()}
-          >
-            <Icon name="file_upload" />
-          </Button>
+        {enableFileUpload && (
+          <>
+            <input
+              type="file"
+              ref={fileInputRef}
+              onChange={handleFileChange}
+              multiple
+              className="hidden"
+              accept={getAcceptedFileTypes()}
+            />
+            {(selectedModel.capabilities.includes("file-upload") ||
+              selectedModel.capabilities.includes("image-upload")) && (
+              <Button
+                type="button"
+                variant="outline"
+                size="icon"
+                title="Upload files"
+                onClick={openFileDialog}
+              >
+                <Icon name="file_upload" />
+              </Button>
+            )}
+          </>
         )}
         <SelectConnectionDialog
           onSelect={handleAddIntegration}
@@ -478,9 +265,7 @@ export function ContextResources({
           <FilePreviewItem
             key={uf.file.name + uf.file.size}
             uploadedFile={uf}
-            removeFile={() => {
-              setUploadedFiles((prev) => prev.filter((_, i) => i !== index));
-            }}
+            removeFile={() => removeFile(index)}
           />
         ))}
       </div>

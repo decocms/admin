@@ -81,6 +81,16 @@ type Capability = "reasoning" | "image-upload" | "file-upload" | "web-search";
  */
 export const WELL_KNOWN_MODELS: Model[] = [
   {
+    id: "anthropic:claude-sonnet-4.5",
+    model: "anthropic:claude-sonnet-4.5",
+    name: "Claude Sonnet 4.5",
+    logo: LOGOS.anthropic,
+    capabilities: ["reasoning", "image-upload", "file-upload"],
+    byDeco: true,
+    isEnabled: true,
+    hasCustomKey: false,
+  },
+  {
     id: "openai:gpt-4.1-mini",
     model: "openai:gpt-4.1-mini",
     name: "OpenAI GPT-4.1 mini",
@@ -126,16 +136,6 @@ export const WELL_KNOWN_MODELS: Model[] = [
     model: "google:gemini-2.5-flash-lite-preview-06-17",
     name: "Google: Gemini 2.5 Flash Lite",
     logo: LOGOS.gemini,
-    capabilities: ["reasoning", "image-upload", "file-upload"],
-    byDeco: true,
-    isEnabled: true,
-    hasCustomKey: false,
-  },
-  {
-    id: "anthropic:claude-sonnet-4.5",
-    model: "anthropic:claude-sonnet-4.5",
-    name: "Claude Sonnet 4.5",
-    logo: LOGOS.anthropic,
     capabilities: ["reasoning", "image-upload", "file-upload"],
     byDeco: true,
     isEnabled: true,

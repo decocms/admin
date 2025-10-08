@@ -41,7 +41,6 @@ export function ChatMessages({
   const hasInitializedScrollRef = useRef(false);
   const isInitialRenderRef = useRef(true);
 
-  const isStreaming = chat.status === "streaming";
   const { messages } = chat;
 
   const scrollToBottom = useCallback(() => {
@@ -123,7 +122,6 @@ export function ChatMessages({
             <ChatMessage
               key={message.id}
               message={message}
-              isStreaming={isStreaming}
               isLastMessage={messages.length === index + 1}
             />
           ))}

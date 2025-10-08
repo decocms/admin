@@ -90,9 +90,9 @@ export const useThreads = (partialOptions: ThreadFilterOptions = {}) => {
           }
 
           const temporaryTitle =
-            typeof messages[0]?.content === "string"
-              ? messages[0].content.slice(0, 20)
-              : "New chat";
+            messages[0]?.parts
+              ?.find((p) => p.type === "text")
+              ?.text?.slice(0, 20) ?? "New chat";
 
           const updated = {
             pagination: {
@@ -129,7 +129,15 @@ export const useThreads = (partialOptions: ThreadFilterOptions = {}) => {
     queryFn: ({ signal }) =>
       options.enabled
         ? listThreads(locator, options, { signal })
-        : { threads: [], pagination: { hasMore: false, nextCursor: null } },
+        : {
+            threads: [],
+            pagination: {
+              hasMore: false,
+              nextCursor: null,
+              prevCursor: null,
+              hasPrev: false,
+            },
+          },
   });
 };
 

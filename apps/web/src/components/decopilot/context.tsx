@@ -1,10 +1,9 @@
 import { createContext, useContext, type ReactNode } from "react";
-import { ToolCall } from "ai";
 
 export interface DecopilotContextValue {
   additionalTools?: Record<string, string[]>;
   rules?: string[];
-  onToolCall?: (toolCall: ToolCall<string, unknown>) => void;
+  onToolCall?: (toolCall: { toolName: string }) => void;
 }
 
 const DecopilotContext = createContext<DecopilotContextValue | undefined>(

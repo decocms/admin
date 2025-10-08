@@ -14,17 +14,15 @@
 import type { JSONSchema7 } from "@ai-sdk/provider";
 import type { ActorState, InvokeMiddlewareOptions } from "@deco/actors";
 import { Actor } from "@deco/actors";
+import type { MCPConnection, ProjectLocator } from "@deco/sdk";
 import { type Agent as Configuration, Locator } from "@deco/sdk";
 import { type AuthMetadata, BaseActor } from "@deco/sdk/actors";
 import {
   DEFAULT_MAX_STEPS,
-  DEFAULT_MAX_THINKING_TOKENS,
   DEFAULT_MAX_TOKENS,
-  DEFAULT_MEMORY,
   DEFAULT_MODEL,
   MAX_MAX_STEPS,
   MAX_MAX_TOKENS,
-  MIN_MAX_TOKENS,
   WELL_KNOWN_AGENTS,
 } from "@deco/sdk/constants";
 import { contextStorage } from "@deco/sdk/fetch";
@@ -41,63 +39,56 @@ import {
   serializeError,
   SupabaseLLMVault,
   toBindingsContext,
+  workspaceDB,
 } from "@deco/sdk/mcp";
-import type { AgentMemoryConfig } from "@deco/sdk/memory";
-import { AgentMemory, slugify, toAlphanumericId } from "@deco/sdk/memory";
-import { trace } from "@deco/sdk/observability";
+import { slugify, toAlphanumericId } from "@deco/sdk/mcp/slugify";
+import { createWalletClient } from "@deco/sdk/mcp/wallet";
 import {
   createServerTimings,
   type ServerTimingsBuilder,
 } from "@deco/sdk/timings";
-import { Telemetry, type WorkingMemory } from "@mastra/core";
-import type { ToolsetsInput, ToolsInput } from "@mastra/core/agent";
-import { Agent } from "@mastra/core/agent";
-import type { MastraMemory } from "@mastra/core/memory";
-import { TokenLimiter } from "@mastra/memory/processors";
-import type { CoreMessage } from "ai";
+import { resolveMentions } from "@deco/sdk/utils";
+import { D1Store } from "@mastra/cloudflare-d1";
+import { convertMessages, MessageList } from "@mastra/core/agent";
+import type { LanguageModelUsage, UIMessage } from "ai";
 import {
+  convertToModelMessages,
+  generateObject,
   type GenerateObjectResult,
+  generateText,
   type GenerateTextResult,
-  type LanguageModelUsage,
-  type Message,
-  smoothStream,
+  jsonSchema,
+  stepCountIs,
+  streamText,
+  type Tool,
 } from "ai";
 import { getRuntimeKey } from "hono/adapter";
-import jsonSchemaToZod from "json-schema-to-zod";
 import process from "node:process";
-import { Readable } from "node:stream";
-import { z } from "zod";
-import type { MCPConnection, ProjectLocator } from "../../sdk/src/index.ts";
-import { createWalletClient } from "../../sdk/src/mcp/wallet/index.ts";
-import { resolveMentions } from "../../sdk/src/utils/prompt-mentions.ts";
-import { convertToAIMessage } from "./agent/ai-message.ts";
 import { createAgentOpenAIVoice } from "./agent/audio.ts";
 import {
   createLLMInstance,
   DEFAULT_ACCOUNT_ID,
   getLLMConfig,
 } from "./agent/llm.ts";
-import { getProviderOptions } from "./agent/provider-options.ts";
 import { AgentWallet } from "./agent/wallet.ts";
 import { pickCapybaraAvatar } from "./capybaras.ts";
 import { mcpServerTools } from "./mcp.ts";
 import type {
-  AIAgent as IIAgent,
+  CompletionsOptions,
   GenerateOptions,
-  Message as AIMessage,
+  AIAgent as IIAgent,
+  MessageMetadata,
   StreamOptions,
   Thread,
   ThreadQueryOptions,
-  Toolset,
 } from "./types.ts";
-import { hasPdf as hasPdfMessages } from "./agent/has-pdf.ts";
-
-const TURSO_AUTH_TOKEN_KEY = "turso-auth-token";
 const ANONYMOUS_INSTRUCTIONS =
   "You should help users to configure yourself. Users should give you your name, instructions, and optionally a model (leave it default if the user don't mention it, don't force they to set it). This is your only task for now. Tell the user that you are ready to configure yourself when you have all the information.";
 
 const ANONYMOUS_NAME = "Anonymous";
 const LOAD_TOOLS_TIMEOUT_MS = 5_000;
+
+const MAX_MAX_MESSAGES = 30;
 
 export interface Env {
   ANTHROPIC_API_KEY: string;
@@ -119,7 +110,6 @@ export interface AgentMetadata extends AuthMetadata {
   userCookie?: string | null;
   timings?: ServerTimingsBuilder;
   mcpClient?: MCPClientStub<ProjectTools>;
-  toolsets?: Toolset[];
 }
 
 const normalizeMCPId = (mcpId: string | MCPConnection) => {
@@ -161,57 +151,23 @@ interface ThreadLocator {
   resourceId: string;
 }
 
-const agentWorkingMemoryToWorkingMemoryConfig = (
-  workingMemory: NonNullable<Configuration["memory"]>["working_memory"],
-): WorkingMemory => {
-  if (!workingMemory?.enabled) {
-    return { enabled: false };
-  }
-
-  const template = workingMemory.template;
-  if (template) {
-    try {
-      const parsed = JSON.parse(template);
-
-      // in case parsed is a string
-      if (typeof parsed === "object") {
-        const getSchema = new Function(
-          "z",
-          // @ts-ignore: jsonSchemaToZod is a function
-          `return ${jsonSchemaToZod(parsed)}`,
-        );
-        return { enabled: true, schema: getSchema(z) };
-      }
-
-      return { enabled: true, template };
-    } catch {
-      // Not JSON, treat as markdown template
-      return { enabled: true, template };
-    }
-  }
-  return { enabled: true };
-};
-
 @Actor()
 export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
-  private _maybeAgent?: Agent;
-
   /**
    * Contains all tools from all servers that have ever been enabled for this agent.
    * These tools are ready to be used. To use them, just filter using the pickCallableTools function.
    */
-  protected callableToolSet: ToolsetsInput = {};
+  protected callableToolSet: Record<string, Record<string, any>> = {};
   protected context: BindingsContext;
 
   public locator: ProjectLocator;
   private id: string;
   public _configuration?: Configuration;
-  private agentMemoryConfig: AgentMemoryConfig;
   private agentId: string;
   private wallet: AgentWallet;
   private agentScoppedMcpClient: MCPClientStub<ProjectTools>;
-  private telemetry?: Telemetry;
   private branch: string = "main"; // TODO(@mcandeia) for now only main branch is supported
+  private storePromise?: Promise<D1Store>;
 
   constructor(
     public readonly state: ActorState,
@@ -226,7 +182,6 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
     };
     this.context = toBindingsContext(this.actorEnv);
     this.locator = Locator.asFirstTwoSegmentsOf(this.state.id);
-    this.agentMemoryConfig = null as unknown as AgentMemoryConfig;
     this.agentId = this.state.id.split("/").pop() ?? "";
     this.agentScoppedMcpClient = this._createMCPClient();
     this.wallet = new AgentWallet({
@@ -310,7 +265,7 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
   protected async _getOrCreateCallableToolSet(
     connection: string | MCPConnection,
     signal?: AbortSignal,
-  ): Promise<ToolsInput | null> {
+  ): Promise<Record<string, Tool> | null> {
     const mcpId =
       typeof connection === "string" ? connection : normalizeMCPId(connection);
 
@@ -360,140 +315,65 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
   protected async _pickCallableTools(
     tool_set: Configuration["tools_set"],
     timings?: ServerTimingsBuilder,
-    toolsetsFromOptions?: Toolset[],
-  ): Promise<ToolsetsInput> {
-    const tools: ToolsetsInput = {};
-    const toolsets =
-      toolsetsFromOptions?.map(({ connection, filters }) => {
-        return [connection, filters] as [MCPConnection, string[]];
-      }) ?? [];
+  ): Promise<Record<string, Record<string, Tool>>> {
+    const tools: Record<string, Record<string, Tool>> = {};
     await Promise.all(
-      [...Object.entries(tool_set), ...toolsets].map(
-        async ([connection, filterList]) => {
-          const mcpId = normalizeMCPId(connection);
-          const getOrCreateCallableToolSetTiming = timings?.start(
-            `connect-mcp-${mcpId}`,
-          );
-          const timeout = new AbortController();
-          const allToolsFor = await Promise.race([
-            this._getOrCreateCallableToolSet(connection, timeout.signal).catch(
-              (err) => {
-                console.error("list tools error", err);
-                this._trackEvent("agent_tool_connection_error", {
-                  error: serializeError(err),
-                  integrationId: mcpId,
-                  method: "_pickCallableTools",
-                });
-                return null;
-              },
-            ),
-            new Promise((resolve) =>
-              setTimeout(() => resolve(null), LOAD_TOOLS_TIMEOUT_MS),
-            ).then(() => {
-              // should not rely only on timeout abort because it also aborts subsequent requests
-              timeout.abort();
+      Object.entries(tool_set).map(async ([connection, filterList]) => {
+        const mcpId = normalizeMCPId(connection);
+        const getOrCreateCallableToolSetTiming = timings?.start(
+          `connect-mcp-${mcpId}`,
+        );
+        const timeout = new AbortController();
+        const allToolsFor: Record<string, Tool> | null = await Promise.race([
+          this._getOrCreateCallableToolSet(connection, timeout.signal).catch(
+            (err) => {
+              console.error("list tools error", err);
+              this._trackEvent("agent_tool_connection_error", {
+                error: serializeError(err),
+                integrationId: mcpId,
+                method: "_pickCallableTools",
+              });
               return null;
-            }),
-          ]);
-          if (!allToolsFor) {
-            console.warn(`No tools found for server: ${mcpId}. Skipping.`);
-            getOrCreateCallableToolSetTiming?.end("timeout"); // sinalize timeout for timings
-            return;
-          }
-          getOrCreateCallableToolSetTiming?.end();
+            },
+          ),
+          new Promise((resolve) =>
+            setTimeout(() => resolve(null), LOAD_TOOLS_TIMEOUT_MS),
+          ).then(() => {
+            // should not rely only on timeout abort because it also aborts subsequent requests
+            timeout.abort();
+            return null;
+          }),
+        ]);
+        if (!allToolsFor) {
+          console.warn(`No tools found for server: ${mcpId}. Skipping.`);
+          getOrCreateCallableToolSetTiming?.end("timeout"); // sinalize timeout for timings
+          return;
+        }
+        getOrCreateCallableToolSetTiming?.end();
 
-          if (filterList.length === 0) {
-            tools[mcpId] = allToolsFor;
-            return;
-          }
-          const toolsInput: ToolsInput = {};
-          for (const item of filterList) {
-            const slug = slugify(item);
-            if (slug in allToolsFor) {
-              toolsInput[slug] = allToolsFor[slug];
-              continue;
-            }
-
-            console.warn(`Tool ${item} not found in callableToolSet[${mcpId}]`);
+        if (filterList.length === 0) {
+          tools[mcpId] = allToolsFor;
+          return;
+        }
+        const toolsInput: Record<string, any> = {};
+        for (const item of filterList) {
+          const slug = slugify(item);
+          if (slug in allToolsFor) {
+            toolsInput[slug] = allToolsFor[slug];
+            continue;
           }
 
-          tools[mcpId] = toolsInput;
-        },
-      ),
+          console.warn(`Tool ${item} not found in callableToolSet[${mcpId}]`);
+        }
+
+        tools[mcpId] = toolsInput;
+      }),
     );
 
     return tools;
   }
 
-  private async _initMemory(config: Configuration, tokenLimit: number) {
-    const tursoOrganization = this.env.TURSO_ORGANIZATION ?? "decoai";
-    const tokenStorage = this.env.TURSO_GROUP_DATABASE_TOKEN ?? {
-      getToken: (memoryId: string) => {
-        return this.state.storage.get<string>(
-          `${TURSO_AUTH_TOKEN_KEY}-${memoryId}-${tursoOrganization}`,
-        );
-      },
-      setToken: async (memoryId: string, token: string) => {
-        await this.state.storage.put(
-          `${TURSO_AUTH_TOKEN_KEY}-${memoryId}-${tursoOrganization}`,
-          token,
-        );
-      },
-    };
-
-    const { id: agentId, memory } = config;
-
-    // @ts-ignore: "ignore this for now"
-    this.agentMemoryConfig = await AgentMemory.buildAgentMemoryConfig({
-      agentId,
-      tursoAdminToken: this.env.TURSO_ADMIN_TOKEN,
-      tursoOrganization,
-      tokenStorage,
-      workspaceDO: this.actorEnv.WORKSPACE_DB,
-      processors: [new TokenLimiter({ limit: tokenLimit })],
-      openAPIKey: this.env.OPENAI_API_KEY ?? undefined,
-      workspace: this.workspace,
-      options: {
-        threads: {
-          /**
-           * Thread title generation breaks the Working Memory
-           * TODO(@gimenes): Bring this back once this is fixed: https://github.com/mastra-ai/mastra/issues/5354
-           * Maybe we can create a custom thread title generator that uses a small LLM to generate a title.
-           */
-          generateTitle: false,
-        },
-        workingMemory: agentWorkingMemoryToWorkingMemoryConfig(
-          memory?.working_memory ?? DEFAULT_MEMORY.working_memory,
-        ),
-        semanticRecall:
-          memory?.semantic_recall ?? DEFAULT_MEMORY.semantic_recall,
-        lastMessages: memory?.last_messages ?? DEFAULT_MEMORY.last_messages,
-      },
-    });
-  }
-
   private async _initAgent(config: Configuration) {
-    const llmConfig = await getLLMConfig({
-      modelId: config.model,
-      llmVault: this.llmVault,
-    });
-
-    const { llm, tokenLimit } = createLLMInstance({
-      ...llmConfig,
-      envs: this.env,
-      metadata: {
-        workspace: this.workspace,
-        agentId: config.id,
-        threadId: this.metadata?.threadId || "",
-        resourceId: this.metadata?.resourceId || "",
-      },
-    });
-
-    await this._initMemory(config, tokenLimit);
-
-    this.telemetry = Telemetry.init({ serviceName: "agent" });
-    this.telemetry.tracer = trace.getTracer("agent");
-
     // Process instructions to replace prompt mentions
     const processedInstructions = await resolveMentions(
       config.instructions,
@@ -501,60 +381,24 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
       this.metadata?.mcpClient,
     );
 
-    this._maybeAgent = new Agent({
-      memory: this._memory as unknown as MastraMemory,
-      name: config.name,
+    // Store processed instructions for later use
+    this._configuration = {
+      ...config,
       instructions: processedInstructions,
-      model: llm,
-      mastra: {
-        // @ts-ignore: Mastra requires a logger, but we don't use it
-        getLogger: () => undefined,
-        getTelemetry: () => this.telemetry,
-        generateId: () => this._memory.generateId(),
-      },
-      voice: this.env.OPENAI_API_KEY
-        ? createAgentOpenAIVoice({ apiKey: this.env.OPENAI_API_KEY })
-        : undefined,
-    });
+    };
   }
 
   public async _init(config?: Configuration | null) {
     config ??= await this.configuration();
 
     await this._initAgent(config);
-  }
 
-  private get _anonymous(): Agent {
-    return new Agent({
-      memory: this._memory as unknown as MastraMemory,
-      name: ANONYMOUS_NAME,
-      instructions: ANONYMOUS_INSTRUCTIONS,
-      model: createLLMInstance({
-        model: DEFAULT_MODEL.id,
-        envs: this.env,
-        metadata: {
-          workspace: this.workspace,
-          agentId: "anonymous",
-        },
-      }).llm,
-      mastra: {
-        // @ts-ignore: Mastra requires a logger, but we don't use it
-        getLogger: () => undefined,
-        getTelemetry: () => this.telemetry,
-        generateId: () => this._memory.generateId(),
-      },
-    });
-  }
-  private get _agent(): Agent {
-    return this._maybeAgent ?? this._anonymous;
-  }
-
-  public get _memory(): AgentMemory {
-    return new AgentMemory(this.agentMemoryConfig);
+    // Initialize D1Store and Memory for the Durable Object lifecycle
+    await this._initializeMemoryStore();
   }
 
   public get _thread(): ThreadLocator {
-    const threadId = this.metadata?.threadId ?? this._memory.generateId(); // private thread with the given resource
+    const threadId = this.metadata?.threadId ?? crypto.randomUUID(); // private thread with the given resource
     return {
       threadId,
       resourceId:
@@ -569,114 +413,69 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
     );
   }
 
-  private _maxTokens(): number {
+  private _maxOutputTokens(override?: number): number {
     return Math.min(
-      this._configuration?.max_tokens ?? DEFAULT_MAX_TOKENS,
+      override ?? this._configuration?.max_tokens ?? DEFAULT_MAX_TOKENS,
       MAX_MAX_TOKENS,
     );
   }
 
-  // Build additional context from message.annotations, supporting explicit role/content
-  private _annotationsToContext(payload: AIMessage[]): CoreMessage[] {
-    return payload.flatMap((message) =>
-      Array.isArray(message.annotations)
-        ? message.annotations.map((annotation) => {
-            if (
-              typeof annotation === "string" ||
-              typeof annotation === "number" ||
-              typeof annotation === "boolean"
-            ) {
-              return {
-                role: "user" as const,
-                content: String(annotation),
-              } as CoreMessage;
-            }
-
-            if (
-              annotation &&
-              !Array.isArray(annotation) &&
-              typeof annotation.role === "string" &&
-              typeof annotation.content === "string"
-            ) {
-              return {
-                role: annotation.role,
-                content: annotation.content,
-              } as CoreMessage;
-            }
-
-            return {
-              role: "user" as const,
-              content: JSON.stringify(annotation),
-            } as CoreMessage;
-          })
-        : [],
+  private _maxMessages(override?: number): number {
+    return Math.min(
+      override ??
+        this._configuration?.memory?.last_messages ??
+        MAX_MAX_MESSAGES,
+      MAX_MAX_MESSAGES,
     );
+  }
+
+  private _temperature(override?: number): number | undefined {
+    const temp = override ?? this._configuration?.temperature;
+    // Only return if explicitly set, otherwise let the model use its default
+    return temp !== null && temp !== undefined ? temp : undefined;
+  }
+
+  /**
+   * Wraps an async function with timing and tracing instrumentation
+   */
+  private async _withTelemetry<T>(
+    name: string,
+    fn: () => Promise<T>,
+    timings?: ServerTimingsBuilder,
+    tracer?: any,
+  ): Promise<T> {
+    const [timing, span] = [timings?.start(name), tracer?.startSpan(name)];
+    try {
+      return await fn();
+    } finally {
+      timing?.end();
+      span?.end();
+    }
   }
 
   private async _withToolOverrides(
     tools?: Record<string, string[]>,
     timings?: ServerTimingsBuilder,
-    thread = this._thread,
-    toolsetsFromOptions?: Toolset[],
-  ): Promise<ToolsetsInput> {
-    const getThreadToolsTiming = timings?.start("get-thread-tools");
-    const tool_set = tools ?? (await this.getThreadTools(thread));
-    getThreadToolsTiming?.end();
+  ): Promise<Record<string, Record<string, Tool>>> {
+    const getToolsTiming = timings?.start("get-tools");
+    const tool_set = tools ?? this.getTools();
+    getToolsTiming?.end();
 
     const pickCallableToolsTiming = timings?.start("pick-callable-tools");
-    const toolsets = await this._pickCallableTools(
-      tool_set,
-      timings,
-      toolsetsFromOptions,
-    );
+    const toolsets = await this._pickCallableTools(tool_set, timings);
     pickCallableToolsTiming?.end();
 
     return toolsets;
   }
 
-  private async _withAgentOverrides(options?: GenerateOptions): Promise<Agent> {
-    let agent = this._agent;
-    if (!options) {
-      return agent;
-    }
-
-    if (options.model) {
-      const llmConfig = await getLLMConfig({
-        modelId: options.model,
-        llmVault: this.llmVault,
-      });
-      const { llm } = createLLMInstance({
-        ...llmConfig,
-        bypassOpenRouter: options.bypassOpenRouter,
-        envs: this.env,
-        metadata: {
-          workspace: this.workspace,
-          agentId: this.agentId,
-          threadId: this._thread.threadId,
-          resourceId: this._thread.resourceId,
-        },
-      });
-
-      // TODO(@mcandeia) for now, token limiter is not being used because we are avoiding instantiating a new memory.
-      agent = new Agent({
-        memory: this._memory,
-        name: this._configuration?.name ?? ANONYMOUS_NAME,
-        model: llm,
-        instructions:
-          this._configuration?.instructions ?? ANONYMOUS_INSTRUCTIONS,
-        voice: this.env.OPENAI_API_KEY
-          ? createAgentOpenAIVoice({ apiKey: this.env.OPENAI_API_KEY })
-          : undefined,
-        mastra: {
-          // @ts-ignore: Mastra requires a logger, but we don't use it
-          getLogger: () => undefined,
-          getTelemetry: () => this.telemetry,
-          generateId: () => this._memory.generateId(),
-        },
-      });
-    }
-
-    return agent;
+  private _withAgentOverrides(options?: GenerateOptions): any {
+    // Simplified - no longer using Mastra Agent
+    return {
+      name: this._configuration?.name ?? ANONYMOUS_NAME,
+      instructions: this._configuration?.instructions ?? ANONYMOUS_INSTRUCTIONS,
+      model: options?.model ?? this._configuration?.model,
+      bypassOpenRouter: options?.bypassOpenRouter,
+    };
   }
   private _runWithContext<T>(fn: () => Promise<T>) {
     return contextStorage.run(
@@ -699,6 +498,49 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
         aud: this.workspace,
       }),
     );
+  }
+
+  /**
+   * Initialize D1Store and Memory during Durable Object initialization
+   * This runs once when the DO starts up
+   */
+  private _initializeMemoryStore() {
+    const doInit = async () => {
+      const db = await workspaceDB({
+        workspaceDO: this.context.workspaceDO,
+        workspace: { value: this.workspace },
+        // @ts-expect-error - this is a valid field
+        envVars: this.env,
+      });
+
+      // Create D1Client adapter for IWorkspaceDB
+      const d1Store = new D1Store({
+        client: {
+          query: async (args) => {
+            const result = await db.exec(args);
+            return { result: result.result || [] };
+          },
+        },
+      });
+      await d1Store.init();
+
+      return d1Store;
+    };
+
+    this.storePromise ??= doInit().catch((error) => {
+      this.storePromise = undefined;
+      throw error;
+    });
+
+    return this.storePromise;
+  }
+
+  /**
+   * Get memory storage, initializing if needed
+   * Provides retry logic if initialization failed during _init
+   */
+  private _getMemoryStore() {
+    return this._initializeMemoryStore();
   }
 
   async _handleGenerationFinish({
@@ -846,69 +688,93 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
   }
 
   async createThread(thread: Thread): Promise<Thread> {
-    return await this._memory.createThread({
-      ...this._thread,
-      ...thread,
-    });
+    const storage = await this._getMemoryStore();
+    const now = new Date();
+    const threadData = {
+      id: thread.threadId,
+      resourceId: thread.resourceId,
+      title: thread.title || "New chat",
+      metadata: thread.metadata,
+      createdAt: now,
+      updatedAt: now,
+    };
+    await storage.saveThread({ thread: threadData });
+    return {
+      threadId: threadData.id,
+      resourceId: threadData.resourceId,
+      title: threadData.title,
+      metadata: threadData.metadata,
+    };
   }
 
-  async query(options?: ThreadQueryOptions): Promise<Message[]> {
-    const currentThreadId = this._thread;
-    const { uiMessages, messages } = await this._memory
-      .query({
-        ...currentThreadId,
-        threadId: options?.threadId ?? currentThreadId.threadId,
-      })
-      .catch((error) => {
-        console.error("Error querying memory", error);
-        this._trackEvent("agent_memory_query_error", {
-          error: serializeError(error),
-          threadId: options?.threadId ?? currentThreadId.threadId,
-        });
-        return {
-          messages: [],
-          uiMessages: [],
-        };
-      });
+  /**
+   * Ensures a thread exists, creating it if necessary
+   * @param threadId - The thread ID
+   * @param resourceId - The resource ID
+   * @param title - Optional thread title
+   * @returns The memory store instance
+   */
+  private async _ensureThread(
+    threadId: string,
+    resourceId: string,
+    title?: string,
+  ): Promise<D1Store> {
+    const store = await this._getMemoryStore();
 
-    const messagesById: Record<string, Message> = {};
-    for (const msg of messages as Message[]) {
-      if (msg.id) {
-        messagesById[msg.id] = msg;
-      }
+    // Check if thread already exists
+    const existingThread = await store.getThreadById({ threadId });
+
+    if (!existingThread) {
+      const now = new Date();
+      await store.saveThread({
+        thread: {
+          id: threadId,
+          resourceId,
+          title: title || "New chat",
+          metadata: { agentId: this.agentId },
+          createdAt: now,
+          updatedAt: now,
+        },
+      });
     }
 
-    // Workaround for ui messages missing createdAt property
-    // Messages are typed as CoreMessage but contain id and createdAt
-    // See: https://github.com/mastra-ai/mastra/issues/3535
-    return uiMessages.map((uiMessage) => {
-      const message = messagesById[uiMessage.id];
-      if (message?.createdAt) {
-        return { ...uiMessage, createdAt: message.createdAt };
-      }
-      return uiMessage;
+    return store;
+  }
+
+  async query(options?: ThreadQueryOptions): Promise<UIMessage[]> {
+    const storage = await this._getMemoryStore();
+    const threadId = options?.threadId ?? this._thread.threadId;
+    const resourceId = options?.resourceId ?? this._thread.resourceId;
+
+    // Get messages from storage (adapter handles conversion)
+    const messages = await storage.getMessages({
+      threadId,
+      resourceId,
+      format: "v2",
     });
+
+    return convertMessages(messages).to("AIV5.UI");
   }
 
   async speak(text: string, options?: { voice?: string; speed?: number }) {
-    if (!this._maybeAgent) {
-      this._trackEvent("agent_generate_error", {
-        error: "Agent not initialized for speak",
-        method: "speak",
-      });
-      throw new Error("Agent not initialized");
+    if (!this.env.OPENAI_API_KEY) {
+      throw new Error("OpenAI API key not configured for speech generation");
     }
 
     try {
-      const readableStream = await this._maybeAgent.voice.speak(text, {
-        speaker: options?.voice || "echo",
-        properties: {
-          speed: options?.speed || 1.0,
-          pitch: "default",
-        },
+      const voiceHandler = createAgentOpenAIVoice({
+        apiKey: this.env.OPENAI_API_KEY,
       });
 
-      return readableStream;
+      const audioBuffer = await voiceHandler.speak(text, options);
+
+      // Convert Uint8Array to ReadableStream for compatibility
+      return new ReadableStream({
+        start(controller) {
+          controller.enqueue(audioBuffer);
+          controller.close();
+        },
+      });
     } catch (error) {
       this._trackEvent("agent_generate_error", {
         error: serializeError(error),
@@ -919,22 +785,16 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
   }
 
   async listen(buffer: Uint8Array) {
-    if (!this._maybeAgent) {
-      this._trackEvent("agent_generate_error", {
-        error: "Agent not initialized for listen",
-        method: "listen",
-      });
-      throw new Error("Agent not initialized");
+    if (!this.env.OPENAI_API_KEY) {
+      throw new Error("OpenAI API key not configured for speech transcription");
     }
+
     try {
-      const nodeStream = new Readable({
-        read() {
-          this.push(buffer);
-          this.push(null);
-        },
+      const voiceHandler = createAgentOpenAIVoice({
+        apiKey: this.env.OPENAI_API_KEY,
       });
-      const transcription = await this._maybeAgent.voice.listen(nodeStream);
-      return transcription;
+
+      return await voiceHandler.listen(buffer);
     } catch (error) {
       this._trackEvent("agent_generate_error", {
         error: serializeError(error),
@@ -944,54 +804,8 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
     }
   }
 
-  public async updateThreadTools(tool_set: Configuration["tools_set"]) {
-    const thread = await this._memory.getThreadById(this._thread);
-    if (!thread) {
-      return {
-        success: false,
-        message: "Thread not found",
-      };
-    }
-    const metadata = thread?.metadata ?? {};
-
-    const updated = { ...metadata, tool_set };
-
-    const updatedThread = {
-      ...thread,
-      metadata: updated,
-    };
-
-    await this._memory.saveThread({
-      thread: updatedThread,
-    });
-
-    this._resetCallableToolSet();
-
-    return {
-      success: true,
-      message: "Thread updated",
-    };
-  }
-
-  public async getThreadTools(
-    threadLocator = this._thread,
-  ): Promise<Configuration["tools_set"]> {
-    const thread = await this._memory
-      .getThreadById(threadLocator)
-      .catch(() => null);
-
-    if (!thread) {
-      return this.getTools();
-    }
-    const metadata = thread?.metadata ?? {};
-    const tool_set = metadata?.tool_set as
-      | Configuration["tools_set"]
-      | undefined;
-    return tool_set ?? this.getTools();
-  }
-
-  public getTools(): Promise<Configuration["tools_set"]> {
-    return Promise.resolve(this._configuration?.tools_set ?? {});
+  public getTools(): Configuration["tools_set"] {
+    return this._configuration?.tools_set ?? {};
   }
 
   // Warning: This method also updates the configuration in memory
@@ -1034,7 +848,7 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
     try {
       const [integrationId, toolName] = toolId.split(".");
 
-      const toolSet = await this.getThreadTools();
+      const toolSet = this.getTools();
 
       if (!toolSet[integrationId]) {
         this._trackEvent("agent_tool_connection_error", {
@@ -1085,12 +899,8 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
     }
   }
 
-  public get memory(): AgentMemory {
-    return new AgentMemory(this.agentMemoryConfig);
-  }
-
   public get thread(): { threadId: string; resourceId: string } {
-    const threadId = this.metadata?.threadId ?? this.memory.generateId(); // private thread with the given resource
+    const threadId = this.metadata?.threadId ?? crypto.randomUUID(); // private thread with the given resource
     return {
       threadId,
       resourceId:
@@ -1098,9 +908,51 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
     };
   }
 
+  /**
+   * Convert toolsets to AI SDK 5 tools format
+   */
+  private _convertToolsToAISDKFormat(
+    toolsets: Record<string, Record<string, Tool>>,
+  ): Record<string, Tool> {
+    const convertedTools: Record<string, Tool> = {};
+
+    for (const [_integrationId, toolSet] of Object.entries(toolsets)) {
+      for (const [toolName, toolDef] of Object.entries(toolSet)) {
+        if (toolName in convertedTools) {
+          throw new Error(
+            `Tool ${toolName} already exists on this agent. Please remove it from the agent's toolset.`,
+          );
+        }
+
+        convertedTools[toolName] = toolDef;
+      }
+    }
+
+    return convertedTools;
+  }
+
+  /**
+   * Preprocesses a JSON schema to ensure all object properties are required
+   * This helps ensure the LLM generates complete structured outputs
+   */
+  private _preprocessSchema(schema: JSONSchema7): JSONSchema7 {
+    // If the schema is an object type with properties, make all properties required
+    if (schema.type === "object" && schema.properties) {
+      const allPropertyKeys = Object.keys(schema.properties);
+      return {
+        ...schema,
+        required: allPropertyKeys,
+      };
+    }
+
+    // Return schema unchanged if not an object or has no properties
+    return schema;
+  }
+
   async generateObject<TObject = any>(
-    payload: AIMessage[],
-    jsonSchema: JSONSchema7,
+    payload: UIMessage[],
+    schema: JSONSchema7,
+    options?: GenerateOptions,
   ): Promise<GenerateObjectResult<TObject>> {
     const hasBalance = await this.wallet.canProceed(this.workspace);
     if (!hasBalance) {
@@ -1111,34 +963,164 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
       throw new Error("Insufficient funds");
     }
 
-    const aiMessages = await Promise.all(
-      payload.map((msg) =>
-        convertToAIMessage({ message: msg, agent: this._agent }),
+    const thread = {
+      threadId: this._thread.threadId,
+      resourceId: this._thread.resourceId,
+    };
+
+    const tracer = (this as any).telemetry?.tracer;
+    const timings = this.metadata?.timings ?? createServerTimings();
+
+    // Parallelize independent operations
+    const parallelTiming = timings.start("parallel-preprocessing");
+
+    type LLMConfig = Awaited<ReturnType<typeof getLLMConfig>>;
+    type StorageResult = { store: any; threadMessages: any[] };
+
+    const [
+      agentOverrides,
+      processedInstructions,
+      llmConfig,
+      { store, threadMessages },
+    ]: [any, string | undefined, LLMConfig, StorageResult] = await Promise.all([
+      // Get agent overrides
+      Promise.resolve(
+        this._withAgentOverrides({
+          ...options,
+          bypassOpenRouter: options?.bypassOpenRouter || false,
+        }),
       ),
+
+      // Resolve instructions mentions if provided
+      this._withTelemetry(
+        "resolve-instructions-mentions",
+        async () => {
+          if (!options?.instructions) return undefined;
+          return await resolveMentions(
+            options.instructions,
+            this.workspace,
+            this.metadata?.mcpClient,
+          );
+        },
+        timings,
+        tracer,
+      ),
+
+      // Get LLM configuration
+      this._withTelemetry(
+        "get-llm-config",
+        async () =>
+          await getLLMConfig({
+            modelId:
+              options?.model ?? this._configuration?.model ?? DEFAULT_MODEL.id,
+            llmVault: this.llmVault,
+          }),
+        timings,
+        tracer,
+      ),
+
+      // Initialize storage and ensure thread exists
+      this._withTelemetry(
+        "init-storage-and-thread",
+        async (): Promise<StorageResult> => {
+          const title =
+            payload[0]?.parts
+              ?.find((p) => p.type === "text")
+              ?.text?.slice(0, 50) || "New chat";
+
+          const store = await this._ensureThread(
+            thread.threadId,
+            thread.resourceId,
+            title,
+          );
+
+          const threadMessages = await store.getMessagesPaginated({
+            format: "v2",
+            threadId: thread.threadId,
+            selectBy: {
+              last: this._maxMessages(),
+            },
+          });
+
+          return {
+            store,
+            threadMessages: threadMessages.messages,
+          };
+        },
+        timings,
+        tracer,
+      ),
+    ]);
+
+    parallelTiming.end();
+
+    // Create MessageList with historical messages and add new messages
+    const messageList = new MessageList(thread);
+    messageList.add(threadMessages, "memory");
+    messageList.add(payload, "user");
+
+    // Save new messages to storage
+    await store.saveMessages({
+      format: "v2",
+      messages: messageList.get.input.v2(),
+    });
+
+    // Get all messages in AI SDK format
+    const allMessages = messageList.get.all.aiV5.model();
+
+    const { llm } = createLLMInstance({
+      ...llmConfig,
+      envs: this.env,
+      metadata: {
+        workspace: this.workspace,
+        agentId: this.agentId,
+        threadId: thread.threadId,
+        resourceId: thread.resourceId,
+      },
+    });
+
+    // Preprocess schema to ensure all properties are required
+    const processedSchema = this._preprocessSchema(schema);
+
+    // Use AI SDK 5's generateObject for structured data generation
+    const result = await generateObject({
+      model: llm,
+      system: processedInstructions ?? agentOverrides.instructions,
+      messages: allMessages,
+      schema: jsonSchema(processedSchema),
+      mode: "json",
+      maxRetries: 1,
+      temperature: this._temperature(options?.temperature),
+      maxOutputTokens: this._maxOutputTokens(options?.maxTokens),
+    });
+
+    // Add result to MessageList using Mastra-compatible format
+    const outputText = JSON.stringify(result.object);
+    messageList.add(
+      {
+        role: "assistant",
+        content: [{ type: "text", text: outputText }],
+      },
+      "response",
     );
 
-    // Build additional context from annotations using the same helper as stream()
-    const annotationsContextForObject = this._annotationsToContext(aiMessages);
-    const result = (await this._agent.generate(aiMessages, {
-      ...this.thread,
-      context: annotationsContextForObject,
-      output: jsonSchema,
-      maxSteps: this._maxSteps(),
-      maxTokens: this._maxTokens(),
-    })) as GenerateObjectResult<TObject>;
+    await store.saveMessages({
+      format: "v2",
+      messages: messageList.get.response.v2(),
+    });
 
     assertConfiguration(this._configuration);
     this._handleGenerationFinish({
-      threadId: this.thread.threadId,
+      threadId: thread.threadId,
       usedModelId: this._configuration.model,
       usage: result.usage,
     });
 
-    return result;
+    return result as unknown as GenerateObjectResult<TObject>;
   }
 
   async generate(
-    payload: AIMessage[],
+    payload: UIMessage[],
     options?: GenerateOptions,
   ): Promise<GenerateTextResult<any, any>> {
     const hasBalance = await this.wallet.canProceed(this.workspace);
@@ -1150,43 +1132,153 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
       throw new Error("Insufficient funds");
     }
 
-    const toolsets = await this._withToolOverrides(options?.tools);
+    const thread = {
+      threadId: this._thread.threadId,
+      resourceId: this._thread.resourceId,
+    };
 
-    const isClaude = this._configuration?.model.includes("claude");
-    const hasPdf = hasPdfMessages(payload as Message[]);
-    const bypassOpenRouter = isClaude && hasPdf;
+    const tracer = (this as any).telemetry?.tracer;
+    const timings = this.metadata?.timings ?? createServerTimings();
 
-    const agent = await this._withAgentOverrides({
-      ...options,
-      bypassOpenRouter: bypassOpenRouter || options?.bypassOpenRouter || false,
+    // Parallelize independent operations
+    const parallelTiming = timings.start("parallel-preprocessing");
+
+    const [
+      toolsets,
+      agentOverrides,
+      processedInstructions,
+      llmConfig,
+      { store, threadMessages },
+    ] = await Promise.all([
+      // Get tools if specified
+      this._withToolOverrides(options?.tools, timings),
+
+      // Get agent overrides
+      Promise.resolve(
+        this._withAgentOverrides({
+          ...options,
+          bypassOpenRouter: options?.bypassOpenRouter || false,
+        }),
+      ),
+
+      // Resolve instructions mentions if provided
+      this._withTelemetry(
+        "resolve-instructions-mentions",
+        async () => {
+          if (!options?.instructions) return undefined;
+          return await resolveMentions(
+            options.instructions,
+            this.workspace,
+            this.metadata?.mcpClient,
+          );
+        },
+        timings,
+        tracer,
+      ),
+
+      // Get LLM configuration
+      this._withTelemetry(
+        "get-llm-config",
+        async () =>
+          await getLLMConfig({
+            modelId:
+              options?.model ?? this._configuration?.model ?? DEFAULT_MODEL.id,
+            llmVault: this.llmVault,
+          }),
+        timings,
+        tracer,
+      ),
+
+      // Initialize storage and ensure thread exists
+      this._withTelemetry(
+        "init-storage-and-thread",
+        async () => {
+          const title =
+            payload[0]?.parts
+              ?.find((p) => p.type === "text")
+              ?.text?.slice(0, 50) || "New chat";
+
+          const store = await this._ensureThread(
+            thread.threadId,
+            thread.resourceId,
+            title,
+          );
+
+          const threadMessages = await store.getMessagesPaginated({
+            format: "v2",
+            threadId: thread.threadId,
+            selectBy: {
+              last: this._maxMessages(options?.lastMessages),
+            },
+          });
+
+          return {
+            store,
+            threadMessages: threadMessages.messages,
+          };
+        },
+        timings,
+        tracer,
+      ),
+    ]);
+
+    parallelTiming.end();
+
+    // Create MessageList with historical messages and add new messages
+    const messageList = new MessageList(thread);
+    messageList.add(threadMessages, "memory");
+    messageList.add(payload, "user");
+
+    // Save new messages to storage
+    await store.saveMessages({
+      format: "v2",
+      messages: messageList.get.input.v2(),
     });
 
-    const aiMessages = await Promise.all(
-      payload.map((msg) =>
-        convertToAIMessage({ message: msg, agent: this._agent }),
-      ),
-    );
+    // Get all messages in AI SDK format
+    const allMessages = messageList.get.all.aiV5.model();
 
-    // Build additional context from annotations using the same helper as stream() and generateObject()
-    const annotationsContext = this._annotationsToContext(aiMessages);
+    const { llm } = createLLMInstance({
+      ...llmConfig,
+      bypassOpenRouter: options?.bypassOpenRouter,
+      envs: this.env,
+      metadata: {
+        workspace: this.workspace,
+        agentId: this.agentId,
+        threadId: thread.threadId,
+        resourceId: thread.resourceId,
+      },
+    });
 
-    const result = (await agent.generate(aiMessages, {
-      ...this.thread,
-      context: annotationsContext,
-      maxSteps: this._maxSteps(options?.maxSteps),
-      maxTokens: this._maxTokens(),
-      instructions: options?.instructions,
-      toolsets,
-    })) as GenerateTextResult<any, any>;
+    // Convert toolsets to AI SDK 5 tools format
+    const tools = this._convertToolsToAISDKFormat(toolsets);
+
+    // Use AI SDK 5's generateText
+    const result = await generateText({
+      model: llm,
+      messages: allMessages,
+      tools,
+      temperature: this._temperature(options?.temperature),
+      maxOutputTokens: this._maxOutputTokens(options?.maxTokens),
+      system: processedInstructions ?? agentOverrides.instructions,
+    });
+
+    // Add result to MessageList and save assistant response to storage
+    messageList.add(result.response.messages, "response");
+
+    await store.saveMessages({
+      format: "v2",
+      messages: messageList.get.response.v2(),
+    });
 
     assertConfiguration(this._configuration);
     this._handleGenerationFinish({
-      threadId: this.thread.threadId,
+      threadId: thread.threadId,
       usedModelId: options?.model ?? this._configuration.model,
       usage: result.usage,
     });
 
-    return result;
+    return result as unknown as GenerateTextResult<any, any>;
   }
 
   async generateThreadTitle(content: string) {
@@ -1211,76 +1303,134 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
     return result.text;
   }
 
-  private async resolveThreadTitle(
-    firstMessageContent: string,
-    thread: { threadId: string; resourceId: string },
-  ): Promise<string | undefined> {
-    try {
-      const existing = await this._memory
-        .getThreadById(thread)
-        .catch(() => null);
-
-      if (existing?.title) {
-        return existing.title;
-      }
-
-      const generated = await this.generateThreadTitle(firstMessageContent);
-      if (existing) {
-        await this._memory.saveThread({
-          thread: { ...existing, title: generated },
-        });
-      }
-      return generated;
-    } catch {
-      // returns undefined so mastra can generate a title
-    }
-  }
-
   async stream(
-    payload: AIMessage[],
-    options?: StreamOptions,
+    messages: UIMessage[],
+    metadata?: MessageMetadata,
+    { threadId, resourceId } = {} as CompletionsOptions,
   ): Promise<Response> {
     try {
-      const tracer = this.telemetry?.tracer;
+      const tracer = (this as any).telemetry?.tracer;
       const timings = this.metadata?.timings ?? createServerTimings();
 
-      const thread = {
-        threadId: options?.threadId ?? this._thread.threadId,
-        resourceId: options?.resourceId ?? this._thread.resourceId,
+      // Use metadata from request args instead of message metadata
+      const requestMetadata = metadata || ({} as MessageMetadata);
+
+      // Parse options from metadata
+      const options: StreamOptions = {
+        model: requestMetadata.model,
+        instructions: requestMetadata.instructions,
+        bypassOpenRouter: requestMetadata.bypassOpenRouter ?? false,
+        sendReasoning: requestMetadata.sendReasoning ?? true,
+        threadTitle: requestMetadata.threadTitle,
+        tools: requestMetadata.tools,
+        maxSteps: requestMetadata.maxSteps,
+        temperature: requestMetadata.temperature,
+        lastMessages: requestMetadata.lastMessages,
+        maxTokens: requestMetadata.maxTokens,
+        context: requestMetadata.context,
+        threadId: threadId ?? this.metadata?.threadId,
+        resourceId: resourceId ?? this.metadata?.resourceId,
       };
 
-      const isClaude = (
-        options?.model ??
-        this._configuration?.model ??
-        ""
-      ).includes("claude");
-      const hasPdf = hasPdfMessages(payload as Message[]);
-      let bypassOpenRouter = isClaude && hasPdf;
-      bypassOpenRouter ||= options?.bypassOpenRouter || false;
+      const thread = {
+        threadId: options.threadId ?? this._thread.threadId,
+        resourceId: options.resourceId ?? this._thread.resourceId,
+      };
 
-      // Additional context from annotations
-      const context = this._annotationsToContext(payload);
+      const bypassOpenRouter = options.bypassOpenRouter ?? false;
 
-      const toolsets = await this._withToolOverrides(
-        options?.tools,
-        timings,
-        thread,
-        options?.toolsets,
-      );
+      // Context messages are additional UIMessages sent to LLM but not persisted to thread
+      const contextMessages = options.context ?? [];
 
-      const agentOverridesTiming = timings.start("agent-overrides");
-      const agent = await this._withAgentOverrides({
-        ...options,
-        bypassOpenRouter,
-      });
-      agentOverridesTiming.end();
+      // Parallelize all independent preprocessing operations
+      const parallelTiming = timings.start("parallel-preprocessing");
 
-      const wallet = this.wallet;
-      const walletTiming = timings.start("init-wallet");
-      const hasBalance = await wallet.canProceed(this.workspace);
-      walletTiming.end();
+      const [
+        tools,
+        hasBalance,
+        processedInstructions,
+        llmConfig,
+        { store, threadMessages },
+      ] = await Promise.all([
+        // Fetch tools with overrides
+        this._withToolOverrides(options.tools, timings),
 
+        // Check wallet balance
+        this._withTelemetry(
+          "init-wallet",
+          async () => await this.wallet.canProceed(this.workspace),
+          timings,
+          tracer,
+        ),
+
+        // Resolve instructions mentions if provided
+        this._withTelemetry(
+          "resolve-instructions-mentions",
+          async () => {
+            if (!options.instructions) return undefined;
+            return await resolveMentions(
+              options.instructions,
+              this.workspace,
+              this.metadata?.mcpClient,
+            );
+          },
+          timings,
+          tracer,
+        ),
+
+        // Get LLM configuration
+        this._withTelemetry(
+          "get-llm-config",
+          async () =>
+            await getLLMConfig({
+              modelId:
+                options.model ?? this._configuration?.model ?? DEFAULT_MODEL.id,
+              llmVault: this.llmVault,
+            }),
+          timings,
+          tracer,
+        ),
+
+        // Initialize storage and ensure thread exists
+        this._withTelemetry(
+          "init-storage-and-thread",
+          async () => {
+            const title =
+              options.threadTitle ||
+              messages[0]?.parts
+                ?.find((p) => p.type === "text")
+                ?.text?.slice(0, 50) ||
+              "New chat";
+
+            const store = await this._ensureThread(
+              thread.threadId,
+              thread.resourceId,
+              title,
+            );
+
+            const threadMessages = await store.getMessagesPaginated({
+              format: "v2",
+              threadId: thread.threadId,
+              selectBy: {
+                last: this._maxMessages(options.lastMessages),
+              },
+            });
+
+            return {
+              store,
+              threadMessages: threadMessages.messages,
+            };
+          },
+          timings,
+          tracer,
+        ),
+      ]);
+
+      parallelTiming.end();
+
+      // Check wallet balance after parallel operations
       if (!hasBalance) {
+        store;
         this._trackEvent("agent_insufficient_funds_error", {
           error: "Insufficient funds for stream",
           method: "stream",
@@ -1288,10 +1438,11 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
         throw new Error("Insufficient funds");
       }
 
+      // Step 3: Perform synchronous operations with preprocessed data
       const ttfbSpan = tracer?.startSpan("stream-ttfb", {
         attributes: {
           "agent.id": this.state.id,
-          model: options?.model ?? this._configuration?.model,
+          model: options.model ?? this._configuration?.model,
           "thread.id": thread.threadId,
           "openrouter.bypass": `${bypassOpenRouter}`,
         },
@@ -1306,105 +1457,89 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
       };
       const streamTiming = timings.start("stream");
 
-      const experimentalTransform = options?.smoothStream
-        ? smoothStream({
-            delayInMs: options.smoothStream.delayInMs,
-            // The default chunking breaks cloudflare due to using too much CPU.
-            // This is a simpler function that does the job.
-            chunking: (buffer) => buffer.slice(0, 15) || null,
-          })
-        : undefined;
+      // Create LLM instance with preprocessed config
+      const { llm } = createLLMInstance({
+        ...llmConfig,
+        bypassOpenRouter,
+        envs: this.env,
+        metadata: {
+          workspace: this.workspace,
+          agentId: this.agentId,
+          threadId: thread.threadId,
+          resourceId: thread.resourceId,
+        },
+      });
 
-      const maxLimit = Math.max(MIN_MAX_TOKENS, this._maxTokens());
-      const budgetTokens = Math.min(
-        DEFAULT_MAX_THINKING_TOKENS,
-        maxLimit - this._maxTokens(),
-      );
+      // Use AI SDK 5's streamText with built-in stop conditions
+      const maxSteps = this._maxSteps(options.maxSteps);
 
-      const aiMessages = await Promise.all(
-        payload.map((msg) =>
-          convertToAIMessage({ message: msg, agent: this._agent }),
-        ),
-      );
+      const messageList = new MessageList(thread);
+      messageList.add(threadMessages, "memory");
+      messageList.add(messages, "user");
 
-      // Process instructions if provided in options
-      let processedInstructions = options?.instructions;
-      if (processedInstructions) {
-        const [resolveInstructionsTimings, resolveInstructionsSpan] = [
-          timings.start("resolve-instructions-mentions"),
-          tracer?.startSpan("resolve-instructions-mentions"),
-        ];
-        processedInstructions = await resolveMentions(
-          processedInstructions,
-          this.workspace,
-          this.metadata?.mcpClient,
-        );
-        resolveInstructionsTimings.end();
-        resolveInstructionsSpan?.end();
-      }
+      let threadQueue = store.saveMessages({
+        format: "v2",
+        messages: messageList.get.input.v2(),
+      });
 
-      const response = await agent.stream(aiMessages, {
-        ...thread,
-        context,
-        toolsets,
-        instructions: processedInstructions,
-        maxSteps: this._maxSteps(options?.maxSteps),
-        maxTokens: this._maxTokens(),
-        temperature: this._configuration?.temperature ?? undefined,
-        experimental_transform: experimentalTransform,
-        providerOptions: getProviderOptions({ budgetTokens }),
+      // Convert toolsets to AI SDK 5 tools format
+      const allTools = this._convertToolsToAISDKFormat(tools);
+
+      const allMessages = [
+        ...convertToModelMessages(contextMessages),
+        ...messageList.get.all.aiV5.model(),
+      ];
+
+      const stream = streamText({
+        model: llm,
+        messages: allMessages,
+        tools: allTools,
+        temperature: this._temperature(options.temperature),
+        maxOutputTokens: this._maxOutputTokens(options.maxTokens),
+        system: processedInstructions,
+        stopWhen: [stepCountIs(maxSteps)],
         onChunk: endTtfbSpan,
         onError: (err) => {
           console.error("agent stream error", err);
           this._trackEvent("agent_stream_error", {
             error: serializeError(err),
             threadId: thread.threadId,
-            model: options?.model ?? this._configuration?.model,
+            model: options.model ?? this._configuration?.model,
           });
         },
-        memory: {
-          ...this.memory,
-          thread: {
-            title:
-              options?.threadTitle ??
-              (await this.resolveThreadTitle(aiMessages[0].content, thread)),
-            id: thread.threadId,
-          },
-          resource: thread.resourceId,
+        onStepFinish: ({ response }) => {
+          messageList.add(response.messages, "response");
+
+          threadQueue = threadQueue.then(() =>
+            store.saveMessages({
+              messages: messageList.get.response.v2(),
+              format: "v2",
+            }),
+          );
         },
-        onFinish: (result) => {
+        onFinish: async (result) => {
           assertConfiguration(this._configuration);
-          this._handleGenerationFinish({
+
+          await this._handleGenerationFinish({
             threadId: thread.threadId,
-            usedModelId: options?.model ?? this._configuration.model,
-            usage: result.usage,
+            usedModelId: options.model ?? this._configuration.model,
+            usage: result.usage as unknown as LanguageModelUsage,
           });
+
+          await threadQueue;
+        },
+        onAbort: (props) => {
+          console.error("stream aborted", props);
         },
       });
       streamTiming.end();
 
-      const dataStreamResponseTiming = timings.start("data-stream-response");
-      const dataStreamResponse = response.toDataStreamResponse({
-        sendReasoning: options?.sendReasoning,
-        getErrorMessage: (error) => {
-          if (error == null) {
-            return "unknown error";
-          }
-
-          if (typeof error === "string") {
-            return error;
-          }
-
-          if (error instanceof Error) {
-            return error.message;
-          }
-
-          return JSON.stringify(error);
-        },
+      return stream.toUIMessageStreamResponse({
+        messageMetadata: ({ part }) => ({
+          finishReason: (part as unknown as { finishReason?: string })
+            .finishReason,
+        }),
       });
-      dataStreamResponseTiming.end();
-
-      return dataStreamResponse;
     } catch (err) {
       console.error("Error on stream", err);
       this._trackEvent("agent_stream_error", {

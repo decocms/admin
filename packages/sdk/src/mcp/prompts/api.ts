@@ -24,6 +24,27 @@ export const createPrompt = createTool({
       content: z.string(),
     }),
   ),
+  outputSchema: z.lazy(() =>
+    z.object({
+      id: z.string().describe("The id of the created prompt"),
+      name: z.string().describe("The name of the prompt"),
+      description: z
+        .string()
+        .nullable()
+        .optional()
+        .describe("The description of the prompt"),
+      content: z.string().describe("The content of the prompt"),
+      workspace: z.string().describe("The workspace the prompt belongs to"),
+      created_at: z
+        .string()
+        .describe("The date and time the prompt was created"),
+      updated_at: z
+        .string()
+        .nullable()
+        .optional()
+        .describe("The date and time the prompt was last updated"),
+    }),
+  ),
   handler: async (props, c) => {
     assertHasWorkspace(c);
     const workspace = c.workspace.value;
@@ -75,6 +96,27 @@ export const updatePrompt = createTool({
       versionName: z.string().optional(),
     }),
   ),
+  outputSchema: z.lazy(() =>
+    z.object({
+      id: z.string().describe("The id of the prompt"),
+      name: z.string().describe("The name of the prompt"),
+      description: z
+        .string()
+        .nullable()
+        .optional()
+        .describe("The description of the prompt"),
+      content: z.string().describe("The content of the prompt"),
+      workspace: z.string().describe("The workspace the prompt belongs to"),
+      created_at: z
+        .string()
+        .describe("The date and time the prompt was created"),
+      updated_at: z
+        .string()
+        .nullable()
+        .optional()
+        .describe("The date and time the prompt was last updated"),
+    }),
+  ),
   handler: async (props, c) => {
     assertHasWorkspace(c);
     const workspace = c.workspace.value;
@@ -117,6 +159,11 @@ export const deletePrompt = createTool({
   inputSchema: z.lazy(() =>
     z.object({
       id: z.string(),
+    }),
+  ),
+  outputSchema: z.lazy(() =>
+    z.object({
+      success: z.boolean().describe("Whether the deletion was successful"),
     }),
   ),
   handler: async (props, c) => {
@@ -326,6 +373,29 @@ export const searchPrompts = createTool({
       offset: z.number().optional(),
     }),
   ),
+  outputSchema: z.lazy(() =>
+    z.array(
+      z.object({
+        id: z.string().describe("The id of the prompt"),
+        name: z.string().describe("The name of the prompt"),
+        description: z
+          .string()
+          .nullable()
+          .optional()
+          .describe("The description of the prompt"),
+        content: z.string().describe("The content of the prompt"),
+        workspace: z.string().describe("The workspace the prompt belongs to"),
+        created_at: z
+          .string()
+          .describe("The date and time the prompt was created"),
+        updated_at: z
+          .string()
+          .nullable()
+          .optional()
+          .describe("The date and time the prompt was last updated"),
+      }),
+    ),
+  ),
   handler: async (props, c) => {
     assertHasWorkspace(c);
     const workspace = c.workspace.value;
@@ -400,6 +470,35 @@ export const renamePromptVersion = createTool({
     z.object({
       id: z.string(),
       versionName: z.string(),
+    }),
+  ),
+  outputSchema: z.lazy(() =>
+    z.object({
+      id: z.string().describe("The id of the version"),
+      prompt_id: z.string().describe("The id of the prompt"),
+      name: z
+        .string()
+        .nullable()
+        .optional()
+        .describe("The name of the version"),
+      content: z
+        .string()
+        .nullable()
+        .optional()
+        .describe("The content of the version"),
+      version_name: z
+        .string()
+        .nullable()
+        .optional()
+        .describe("The version name"),
+      created_by: z
+        .string()
+        .nullable()
+        .optional()
+        .describe("The user who created the version"),
+      created_at: z
+        .string()
+        .describe("The date and time the version was created"),
     }),
   ),
   handler: async (props, c) => {

@@ -97,10 +97,9 @@ export type DeconfigClient = MCPClientFetchStub<typeof deconfigTools>;
 export interface DeconfigResourceOptions<
   TDataSchema extends BaseResourceDataSchema,
 > {
-  deconfig: DeconfigClient;
-  directory: string;
+  directory?: string; // defaults to /resources/$resourceName
   resourceName: string;
-  env: DefaultEnv;
+  env: DefaultEnv & { DECONFIG: DeconfigClient };
   dataSchema: TDataSchema;
   enhancements?: EnhancedResourcesTools<TDataSchema>;
   validate?: (data: z.infer<TDataSchema>) => Promise<void>;

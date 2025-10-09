@@ -54,14 +54,15 @@ export const createDeconfigResource = <
   options: DeconfigResourceOptions<TDataSchema>,
 ) => {
   const {
-    deconfig,
-    directory,
     resourceName,
     dataSchema,
     enhancements,
     env,
+    directory: dir,
     validate: semanticValidate,
   } = options;
+  const deconfig = env.DECONFIG;
+  const directory = dir ? dir : `/resources/${resourceName}`;
 
   // Create resource-specific bindings using the provided data schema
   const resourceBindings = createResourceBindings(resourceName, dataSchema);

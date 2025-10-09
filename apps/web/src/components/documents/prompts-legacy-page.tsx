@@ -11,15 +11,17 @@ export default function PromptsLegacyPage() {
       <div className="p-4 pb-0">
         <DocumentsTabs active="prompts" />
       </div>
-      <Suspense
-        fallback={
-          <div className="flex items-center justify-center h-full">
-            <Spinner />
-          </div>
-        }
-      >
-        <PromptsListLegacy />
-      </Suspense>
+      <div className="flex-1 flex flex-col">
+        <Suspense
+          fallback={
+            <div className="flex flex-1 items-center justify-center">
+              <Spinner />
+            </div>
+          }
+        >
+          <PromptsListLegacy />
+        </Suspense>
+      </div>
     </div>
   );
 }

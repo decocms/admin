@@ -62,21 +62,6 @@ export const deletePrompt = (
     success: boolean;
   }>;
 
-interface SearchPromptsInput {
-  query: string;
-  limit?: number;
-  offset?: number;
-}
-
-export const searchPrompts = (
-  locator: ProjectLocator,
-  input: SearchPromptsInput,
-  init?: RequestInit,
-): Promise<Prompt[]> =>
-  MCPClient.forLocator(locator).PROMPTS_SEARCH(input, init) as Promise<
-    Prompt[]
-  >;
-
 interface GetPromptVersionsInput {
   id: string;
   limit?: number;

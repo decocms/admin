@@ -196,7 +196,6 @@ export const PROJECT_TOOLS = [
   promptsAPI.deletePrompt,
   promptsAPI.listPrompts,
   promptsAPI.getPrompt,
-  promptsAPI.searchPrompts,
   promptsAPI.getPromptVersions,
   promptsAPI.renamePromptVersion,
   apiKeysAPI.checkAccess,

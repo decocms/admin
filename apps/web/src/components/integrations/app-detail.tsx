@@ -1,9 +1,9 @@
 import {
-  type Integration,
-  type MCPConnection,
   useTools,
   useUpdateIntegration,
   useWriteFile,
+  type Integration,
+  type MCPConnection,
 } from "@deco/sdk";
 import { Button } from "@deco/ui/components/button.tsx";
 import {
@@ -34,12 +34,12 @@ import {
 import { Spinner } from "@deco/ui/components/spinner.tsx";
 import { cn } from "@deco/ui/lib/utils.ts";
 import {
-  type Dispatch,
-  type SetStateAction,
   useEffect,
   useMemo,
   useRef,
   useState,
+  type Dispatch,
+  type SetStateAction,
 } from "react";
 import { useForm } from "react-hook-form";
 import { useParams } from "react-router";
@@ -49,6 +49,8 @@ import {
   useIntegrationInstallState,
 } from "../../hooks/use-integration-install.tsx";
 import { useNavigateWorkspace } from "../../hooks/use-navigate-workspace.ts";
+import { type DecopilotContextValue } from "../decopilot/context.tsx";
+import { DecopilotLayout } from "../layout/decopilot-layout.tsx";
 import {
   AppKeys,
   getConnectionAppKey,
@@ -69,8 +71,6 @@ import {
   useUIInstallIntegration,
 } from "./select-connection-dialog.tsx";
 import { ConnectionTabs } from "./tabs/connection-tabs.tsx";
-import { type DecopilotContextValue } from "../decopilot/context.tsx";
-import { DecopilotLayout } from "../layout/decopilot-layout.tsx";
 
 function ConnectionInstanceActions({
   onDelete,

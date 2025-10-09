@@ -3,13 +3,7 @@ import { z } from "zod";
 import { AppName } from "../../common/index.ts";
 import { UserInputError } from "../../errors.ts";
 import type { MCPConnection } from "../../models/mcp.ts";
-import {
-  DecoConnectionSchema,
-  HTTPConnectionSchema,
-  InnateConnectionSchema,
-  SSEConnectionSchema,
-  WebsocketConnectionSchema,
-} from "../../models/mcp.ts";
+import { MCPConnectionSchema } from "../../models/mcp.ts";
 import type { Json, QueryResult } from "../../storage/index.ts";
 import {
   assertHasWorkspace,
@@ -71,15 +65,6 @@ const SELECT_REGISTRY_APP_WITH_SCOPE_QUERY = `
     metadata
   )
 ` as const;
-
-// MCPConnection schema for validation
-const MCPConnectionSchema = z.discriminatedUnion("type", [
-  HTTPConnectionSchema,
-  SSEConnectionSchema,
-  WebsocketConnectionSchema,
-  DecoConnectionSchema,
-  InnateConnectionSchema,
-]);
 
 // Zod schemas for output validation
 const RegistryScopeSchema = z.object({
@@ -195,13 +180,17 @@ const createTool = createToolGroup("Registry", {
 export const listRegistryScopes = createTool({
   name: "REGISTRY_LIST_SCOPES",
   description: "List all registry scopes",
-  inputSchema: z.object({
-    search: z
-      .string()
-      .optional()
-      .describe("Search term to filter scopes by name"),
-  }),
-  outputSchema: z.object({ scopes: z.array(RegistryScopeSchema) }),
+  inputSchema: z.lazy(() =>
+    z.object({
+      search: z
+        .string()
+        .optional()
+        .describe("Search term to filter scopes by name"),
+    }),
+  ),
+  outputSchema: z.lazy(() =>
+    z.object({ scopes: z.array(RegistryScopeSchema) }),
+  ),
   handler: async ({ search }, c) => {
     await assertWorkspaceResourceAccess(c);
 
@@ -282,11 +271,13 @@ async function ensureScope(
 export const getRegistryApp = createTool({
   name: "REGISTRY_GET_APP",
   description: "Get an app from the registry",
-  inputSchema: z.object({
-    name: z.string().describe("The name of the app to get").optional(),
-    id: z.string().describe("The id of the app to get").optional(),
-  }),
-  outputSchema: RegistryAppSchema,
+  inputSchema: z.lazy(() =>
+    z.object({
+      name: z.string().describe("The name of the app to get").optional(),
+      id: z.string().describe("The id of the app to get").optional(),
+    }),
+  ),
+  outputSchema: z.lazy(() => RegistryAppSchema),
   handler: async (ctx, c) => {
     c.resourceAccess.grant(); // this method is public
     let data: QueryResult<
@@ -324,14 +315,16 @@ export const getRegistryApp = createTool({
 export const listRegistryApps = createTool({
   name: "REGISTRY_LIST_APPS",
   description: "List all apps in the registry for the current workspace",
-  inputSchema: z.object({
-    search: z
-      .string()
-      .optional()
-      .describe("Search term to filter apps by name or description"),
-    scopeName: z.string().optional().describe("Filter apps by scope name"),
-  }),
-  outputSchema: z.object({ apps: z.array(RegistryAppSchema) }),
+  inputSchema: z.lazy(() =>
+    z.object({
+      search: z
+        .string()
+        .optional()
+        .describe("Search term to filter apps by name or description"),
+      scopeName: z.string().optional().describe("Filter apps by scope name"),
+    }),
+  ),
+  outputSchema: z.lazy(() => z.object({ apps: z.array(RegistryAppSchema) })),
   handler: async ({ search, scopeName }, c) => {
     await assertWorkspaceResourceAccess(c);
 
@@ -375,13 +368,15 @@ export const listRegistryApps = createTool({
 export const listPublishedApps = createTool({
   name: "REGISTRY_LIST_PUBLISHED_APPS",
   description: "List published apps by the current workspace",
-  inputSchema: z.object({
-    search: z
-      .string()
-      .optional()
-      .describe("Search term to filter apps by name or description"),
-  }),
-  outputSchema: z.object({ apps: z.array(RegistryAppSchema) }),
+  inputSchema: z.lazy(() =>
+    z.object({
+      search: z
+        .string()
+        .optional()
+        .describe("Search term to filter apps by name or description"),
+    }),
+  ),
+  outputSchema: z.lazy(() => z.object({ apps: z.array(RegistryAppSchema) })),
   handler: async ({ search }, c) => {
     c.resourceAccess.grant(); // Public tool, no policies needed
 
@@ -414,26 +409,34 @@ export const publishApp = createTool({
   name: "REGISTRY_PUBLISH_APP",
   description:
     "Publish an app to the registry (automatically claims scope on first use)",
-  inputSchema: z.object({
-    scopeName: z
-      .string()
-      .describe(
-        "The scope to publish to (defaults to team slug, automatically claimed on first use)",
+  inputSchema: z.lazy(() =>
+    z.object({
+      scopeName: z
+        .string()
+        .describe(
+          "The scope to publish to (defaults to team slug, automatically claimed on first use)",
+        ),
+      name: z.string().describe("The name of the app"),
+      friendlyName: z
+        .string()
+        .optional()
+        .describe("A friendly name for the app"),
+      description: z.string().optional().describe("A description of the app"),
+      icon: z.string().optional().describe("URL to an icon for the app"),
+      connection: MCPConnectionSchema.describe(
+        "The MCP connection configuration for the app",
       ),
-    name: z.string().describe("The name of the app"),
-    friendlyName: z.string().optional().describe("A friendly name for the app"),
-    description: z.string().optional().describe("A description of the app"),
-    icon: z.string().optional().describe("URL to an icon for the app"),
-    connection: MCPConnectionSchema.describe(
-      "The MCP connection configuration for the app",
-    ),
-    metadata: z.record(z.unknown()).optional().describe("Metadata for the app"),
-    unlisted: z
-      .boolean()
-      .optional()
-      .describe("Whether the app should be unlisted"),
-  }),
-  outputSchema: RegistryAppSchema,
+      metadata: z
+        .record(z.unknown())
+        .optional()
+        .describe("Metadata for the app"),
+      unlisted: z
+        .boolean()
+        .optional()
+        .describe("Whether the app should be unlisted"),
+    }),
+  ),
+  outputSchema: z.lazy(() => RegistryAppSchema),
   handler: async (
     {
       scopeName: scope_name,
@@ -524,6 +527,7 @@ export const publishApp = createTool({
       tools.map((tool) =>
         c.db.from(DECO_CHAT_REGISTRY_APPS_TOOLS_TABLE).upsert(
           {
+            // @ts-expect-error - this is a valid field
             app_id: data.id,
             name: tool.name,
             description: tool.description || null,

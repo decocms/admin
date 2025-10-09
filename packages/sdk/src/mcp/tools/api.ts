@@ -42,12 +42,17 @@ async function executeToolWithValidation(
   tool: z.infer<typeof ToolDefinitionSchema>,
   input: Record<string, unknown>,
   context: WithTool<AppContext>,
+  authorization?: string,
 ) {
   await assertWorkspaceResourceAccess(context);
 
   const runtimeId = context.locator?.value ?? "default";
   const client = MCPClient.forContext(context);
-  const envPromise = asEnv(client);
+  // missing authorization from input
+  const envPromise = asEnv(client, {
+    authorization,
+    workspace: context.workspace?.value,
+  });
 
   // Validate input against the tool's input schema
   const inputValidation = validate(input, tool.inputSchema);
@@ -105,6 +110,10 @@ export function createToolBindingImpl({
     inputSchema: z.object({
       uri: z.string().describe("The URI of the tool to run"),
       input: z.object({}).passthrough().describe("The input of the code"),
+      authorization: z
+        .string()
+        .optional()
+        .describe("The token to use for the tool execution"),
     }),
     outputSchema: z.object({
       result: z.any().optional().describe("The result of the tool execution"),
@@ -119,7 +128,7 @@ export function createToolBindingImpl({
         .optional()
         .describe("Console logs from the execution"),
     }),
-    handler: async ({ uri, input }, c) => {
+    handler: async ({ uri, input, authorization }, c) => {
       try {
         const { data: tool } = await resourceToolRead(uri);
 
@@ -127,7 +136,7 @@ export function createToolBindingImpl({
           return { error: "Tool not found" };
         }
 
-        return await executeToolWithValidation(tool, input, c);
+        return await executeToolWithValidation(tool, input, c, authorization);
       } catch (error) {
         return { error: inspect(error) };
       }
@@ -153,6 +162,10 @@ export const runTool = createToolManagementTool({
   inputSchema: z.object({
     tool: ToolDefinitionSchema,
     input: z.object({}).passthrough().describe("The input of the code"),
+    authorization: z
+      .string()
+      .optional()
+      .describe("The token to use for the tool execution"),
   }),
   outputSchema: z.object({
     result: z.any().optional().describe("The result of the tool execution"),
@@ -167,9 +180,9 @@ export const runTool = createToolManagementTool({
       .optional()
       .describe("Console logs from the execution"),
   }),
-  handler: async ({ tool, input }, c) => {
+  handler: async ({ tool, input, authorization }, c) => {
     try {
-      return await executeToolWithValidation(tool, input, c);
+      return await executeToolWithValidation(tool, input, c, authorization);
     } catch (error) {
       return { error: inspect(error) };
     }

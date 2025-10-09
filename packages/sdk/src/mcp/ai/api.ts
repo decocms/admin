@@ -1,5 +1,5 @@
-import { convertToAIMessage } from "@deco/ai/agent/ai-message";
 import { createLLMInstance, getLLMConfig } from "@deco/ai/agent/llm";
+import { convertMessages } from "@mastra/core/agent";
 import {
   generateObject,
   generateText,
@@ -15,7 +15,7 @@ import {
 } from "../assertions.ts";
 import { type AppContext, createToolGroup } from "../context.ts";
 import { InternalServerError, SupabaseLLMVault } from "../index.ts";
-import type { Transaction } from "../wallet/client.ts";
+import type { LLMUsageEvent, Transaction } from "../wallet/client.ts";
 import {
   createWalletClient,
   MicroDollar,
@@ -35,8 +35,14 @@ const createLLMUsageTransaction = (opts: {
   const usage = {
     workspace: opts.workspace,
     model: opts.model,
-    usage: opts.usage,
-  };
+    usage: {
+      ...opts.usage,
+      promptTokens: opts.usage.inputTokens ?? 0,
+      completionTokens: opts.usage.outputTokens ?? 0,
+      totalTokens: opts.usage.totalTokens ?? 0,
+    },
+  } satisfies LLMUsageEvent;
+
   return {
     type: "LLMGeneration" as const,
     generatedBy: {
@@ -125,31 +131,6 @@ const setupLLMInstance = async (modelId: string, c: AppContext) => {
   });
 
   return { llm, llmConfig, usedVault: !!llmVault };
-};
-
-const prepareMessages = async (
-  messages: Array<{
-    id?: string;
-    role: "user" | "assistant" | "system";
-    content: string;
-    createdAt?: Date;
-    experimental_attachments?: Array<{
-      name?: string;
-      contentType?: string;
-      url: string;
-    }>;
-  }>,
-) => {
-  return await Promise.all(
-    messages.map((msg) =>
-      convertToAIMessage({
-        message: {
-          ...msg,
-          id: msg.id || crypto.randomUUID(),
-        },
-      }),
-    ),
-  );
 };
 
 const processTransaction = async (
@@ -318,12 +299,12 @@ export const aiGenerate = createTool({
     const { wallet } = await validateWalletBalance(c);
     const modelId = input.model ?? DEFAULT_MODEL.id;
     const { llm, llmConfig, usedVault } = await setupLLMInstance(modelId, c);
-    const aiMessages = await prepareMessages(input.messages);
+    const aiMessages = convertMessages(input.messages).to("AIV5.Model");
 
     const result = await generateText({
       model: llm,
       messages: aiMessages,
-      maxTokens: input.maxTokens,
+      maxOutputTokens: input.maxTokens,
       temperature: input.temperature,
     });
 
@@ -346,9 +327,9 @@ export const aiGenerate = createTool({
     return {
       text: result.text,
       usage: {
-        promptTokens: result.usage.promptTokens,
-        completionTokens: result.usage.completionTokens,
-        totalTokens: result.usage.totalTokens,
+        promptTokens: result.usage.inputTokens ?? 0,
+        completionTokens: result.usage.outputTokens ?? 0,
+        totalTokens: result.usage.totalTokens ?? 0,
         transactionId: transactionId ?? undefined,
       },
       finishReason: result.finishReason,
@@ -369,17 +350,20 @@ export const aiGenerateObject = createTool({
     const { wallet } = await validateWalletBalance(c);
     const modelId = input.model ?? DEFAULT_MODEL.id;
     const { llm, llmConfig, usedVault } = await setupLLMInstance(modelId, c);
-    const aiMessages = await prepareMessages(input.messages);
 
     const hasCustomKey =
       !!c.envVars.LLMS_ENCRYPTION_KEY &&
       !WELL_KNOWN_MODELS.find((model) => model.id === modelId);
 
     const result = await generateObject({
+      system:
+        "You are a helpful assistant that generates JSON objects based on the user's messages and the schema provided.",
       model: llm,
-      messages: aiMessages,
+      mode: "json",
+      maxRetries: 1,
+      messages: convertMessages(input.messages).to("AIV5.Model"),
       schema: jsonSchema(input.schema),
-      maxTokens: input.maxTokens,
+      maxOutputTokens: input.maxTokens,
       temperature: input.temperature,
     });
 
@@ -398,9 +382,9 @@ export const aiGenerateObject = createTool({
     return {
       object: result.object,
       usage: {
-        promptTokens: result.usage.promptTokens,
-        completionTokens: result.usage.completionTokens,
-        totalTokens: result.usage.totalTokens,
+        promptTokens: result.usage.inputTokens ?? 0,
+        completionTokens: result.usage.outputTokens ?? 0,
+        totalTokens: result.usage.totalTokens ?? 0,
         transactionId: transactionId ?? undefined,
       },
       finishReason: result.finishReason,

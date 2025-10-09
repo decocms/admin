@@ -79,13 +79,13 @@ const mcpClientForAppName = (appName: string, decoChatApiUrl?: string) => {
   return MCPClient.forConnection(mcpConnection);
 };
 
-const mcpClientForIntegrationId = (
+export const proxyConnectionForId = (
   integrationId: string,
   ctx: WorkspaceClientContext,
   decoChatApiUrl?: string,
   appName?: string,
-) => {
-  const mcpConnection: MCPConnection = {
+): MCPConnection => {
+  return {
     type: "HTTP",
     url: createIntegrationsUrl({
       integrationId,
@@ -96,6 +96,19 @@ const mcpClientForIntegrationId = (
     token: ctx.token,
     headers: appName ? { "x-caller-app": appName } : undefined,
   };
+};
+const mcpClientForIntegrationId = (
+  integrationId: string,
+  ctx: WorkspaceClientContext,
+  decoChatApiUrl?: string,
+  appName?: string,
+) => {
+  const mcpConnection = proxyConnectionForId(
+    integrationId,
+    ctx,
+    decoChatApiUrl,
+    appName,
+  );
 
   // TODO(@igorbrasileiro): Switch this proxy to be a proxy that call MCP Client.toolCall from @modelcontextprotocol
   return MCPClient.forConnection(mcpConnection);

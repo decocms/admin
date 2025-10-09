@@ -101,3 +101,34 @@ export type MCPConnection =
   | HTTPConnection;
 
 export type Binder = z.infer<typeof BindingsSchema>;
+
+export const MCPConnectionSchema = z.discriminatedUnion("type", [
+  HTTPConnectionSchema,
+  SSEConnectionSchema,
+  WebsocketConnectionSchema,
+  DecoConnectionSchema,
+  InnateConnectionSchema,
+]);
+
+export const IsIntegrationSchema = z.object({
+  resource: z.literal("is_integration"),
+  integrationId: z.string(),
+});
+
+export const MatchConditionsSchema = z.discriminatedUnion("resource", [
+  IsIntegrationSchema,
+]);
+
+export const StatementSchema = z.object({
+  effect: z.enum(["allow", "deny"]),
+  resource: z.string(),
+  matchCondition: MatchConditionsSchema.optional(),
+});
+
+// Typed interfaces
+export type Statement = z.infer<typeof StatementSchema>;
+
+export const policiesSchema = z
+  .array(StatementSchema)
+  .optional()
+  .describe("Policies for the API key");

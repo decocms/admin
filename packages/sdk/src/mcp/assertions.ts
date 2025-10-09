@@ -1,5 +1,6 @@
 import { and, eq } from "drizzle-orm";
-import type { AuthContext, Statement } from "../auth/policy.ts";
+import type { AuthContext } from "../auth/policy.ts";
+import { Statement } from "../models/index.ts";
 import { SWRCache } from "../cache/swr.ts";
 import { ForbiddenError, NotFoundError, UnauthorizedError } from "../errors.ts";
 import { ProjectLocator } from "../locator.ts";

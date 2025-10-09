@@ -156,6 +156,11 @@ export const KEYS = {
     locator: ProjectLocator,
     range: "day" | "week" | "month" | "year",
   ) => ["wallet-contracts-commits", locator, range],
+  INTEGRATION_API_KEY: (locator: ProjectLocator, integrationId: string) => [
+    "integration-api-key",
+    locator,
+    integrationId,
+  ],
   WORKSPACE_PLAN: (locator: ProjectLocator) => ["workspace-plan", locator],
   WORKFLOWS: (locator: ProjectLocator, page?: number, per_page?: number) => [
     "workflows",

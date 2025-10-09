@@ -79,7 +79,7 @@ type Capability = "reasoning" | "image-upload" | "file-upload" | "web-search";
 /**
  * First one is the default model for agents, so choose wisely.
  */
-export const WELL_KNOWN_MODELS: Model[] = [
+export const WELL_KNOWN_MODELS: readonly Model[] = [
   {
     id: "anthropic:claude-sonnet-4.5",
     model: "anthropic:claude-sonnet-4.5",

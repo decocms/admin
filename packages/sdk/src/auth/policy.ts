@@ -2,6 +2,7 @@ import type { Client, Json } from "@deco/sdk/storage";
 import { WebCache } from "../cache/index.ts";
 import type { UserPrincipal } from "../mcp/index.ts";
 import { z } from "zod";
+import { IsIntegrationSchema, Statement } from "../models/index.ts";
 
 // Cache duration in seconds (WebCache expects seconds)
 const TWO_MIN_TTL = 60 * 2;
@@ -22,24 +23,6 @@ const BLOCKED_ROLES = new Set([
   BASE_ROLES_ID.PUBLIC,
   BASE_ROLES_ID.PRIVATE,
 ]);
-
-const IsIntegrationSchema = z.object({
-  resource: z.literal("is_integration"),
-  integrationId: z.string(),
-});
-
-export const MatchConditionsSchema = z.discriminatedUnion("resource", [
-  IsIntegrationSchema,
-]);
-
-export const StatementSchema = z.object({
-  effect: z.enum(["allow", "deny"]),
-  resource: z.string(),
-  matchCondition: MatchConditionsSchema.optional(),
-});
-
-// Typed interfaces
-export type Statement = z.infer<typeof StatementSchema>;
 
 export interface Policy {
   id: number;

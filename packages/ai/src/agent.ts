@@ -1267,6 +1267,7 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
       temperature: this._temperature(options?.temperature),
       maxOutputTokens: this._maxOutputTokens(options?.maxTokens),
       system: processedInstructions ?? agentOverrides.instructions,
+      stopWhen: [stepCountIs(this._maxSteps(options?.maxSteps))],
     });
 
     // Add result to MessageList and save assistant response to storage

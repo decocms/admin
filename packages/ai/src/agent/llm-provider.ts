@@ -54,6 +54,7 @@ type Provider = {
   creator: NativeLLMCreator;
   envVarName: string;
   supportsOpenRouter?: boolean;
+  /** Maps openrouter model name to native model name so we can use the api directly, bypassing openrouter. */
   mapOpenRouterModel?: Record<string, string>;
   tokenLimit?: Record<string | "default", number>;
 };
@@ -62,11 +63,13 @@ type Provider = {
  */
 const providers: Record<string, Provider> = {
   anthropic: {
+    supportsOpenRouter: false, // generateObject fails when using openrouter.
     creator: anthropic,
     envVarName: "ANTHROPIC_API_KEY",
     mapOpenRouterModel: {
       "claude-3.7-sonnet:thinking": "claude-3-7-sonnet-latest",
       "claude-sonnet-4": "claude-sonnet-4-20250514",
+      "claude-sonnet-4.5": "claude-sonnet-4-5-20250929",
     } satisfies Partial<Record<string, ModelsOf<AnthropicProvider>>>,
     tokenLimit: {
       default: 200_000,
@@ -145,9 +148,10 @@ export const createLLMProvider: ProviderFactory = (opts) => {
         : undefined,
     });
     return (model: string) => {
-      model = opts.bypassOpenRouter
-        ? (provider.mapOpenRouterModel?.[model] ?? model)
-        : model;
+      model =
+        opts.bypassOpenRouter || provider.supportsOpenRouter === false
+          ? (provider.mapOpenRouterModel?.[model] ?? model)
+          : model;
       return { llm: creator(model), tokenLimit: modelLimit(provider, model) };
     };
   }

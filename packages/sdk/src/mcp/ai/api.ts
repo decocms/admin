@@ -1,6 +1,6 @@
 import { createLLMInstance, getLLMConfig } from "@deco/ai/agent/llm";
+import { convertMessages } from "@mastra/core/agent";
 import {
-  convertToModelMessages,
   generateObject,
   generateText,
   jsonSchema,
@@ -132,36 +132,6 @@ const setupLLMInstance = async (modelId: string, c: AppContext) => {
 
   return { llm, llmConfig, usedVault: !!llmVault };
 };
-
-const prepareMessages = (
-  messages: Array<{
-    id?: string;
-    role: "user" | "assistant" | "system";
-    content: string;
-    createdAt?: Date;
-    experimental_attachments?: Array<{
-      name?: string;
-      contentType?: string;
-      url: string;
-    }>;
-  }>,
-) =>
-  convertToModelMessages(
-    messages.map((msg) => ({
-      ...msg,
-      parts: [
-        { type: "text", text: msg.content },
-        ...(msg.experimental_attachments?.map((attachment) => ({
-          type: "file" as const,
-          url: attachment.url,
-          name: attachment.name,
-          mediaType: attachment.contentType ?? "",
-          size: 0,
-        })) ?? []),
-      ],
-      id: msg.id || crypto.randomUUID(),
-    })),
-  );
 
 const processTransaction = async (
   wallet: ReturnType<typeof getWalletClient>,
@@ -329,7 +299,7 @@ export const aiGenerate = createTool({
     const { wallet } = await validateWalletBalance(c);
     const modelId = input.model ?? DEFAULT_MODEL.id;
     const { llm, llmConfig, usedVault } = await setupLLMInstance(modelId, c);
-    const aiMessages = await prepareMessages(input.messages);
+    const aiMessages = convertMessages(input.messages).to("AIV5.Model");
 
     const result = await generateText({
       model: llm,
@@ -380,15 +350,18 @@ export const aiGenerateObject = createTool({
     const { wallet } = await validateWalletBalance(c);
     const modelId = input.model ?? DEFAULT_MODEL.id;
     const { llm, llmConfig, usedVault } = await setupLLMInstance(modelId, c);
-    const aiMessages = await prepareMessages(input.messages);
 
     const hasCustomKey =
       !!c.envVars.LLMS_ENCRYPTION_KEY &&
       !WELL_KNOWN_MODELS.find((model) => model.id === modelId);
 
     const result = await generateObject({
+      system:
+        "You are a helpful assistant that generates JSON objects based on the user's messages and the schema provided.",
       model: llm,
-      messages: aiMessages,
+      mode: "json",
+      maxRetries: 1,
+      messages: convertMessages(input.messages).to("AIV5.Model"),
       schema: jsonSchema(input.schema),
       maxOutputTokens: input.maxTokens,
       temperature: input.temperature,

@@ -72,11 +72,6 @@ function ProjectCard({
               size="lg"
               objectFit="contain"
             />
-            <Icon
-              name="chevron_right"
-              size={20}
-              className="text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity"
-            />
           </div>
           <div className="flex flex-col gap-[2px]">
             {!hideSlug && (
@@ -114,9 +109,8 @@ function ProjectCard({
           <Button
             variant="ghost"
             size="sm"
-            className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity p-1 h-8 w-8"
+            className="absolute top-2 right-2 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity p-1 h-8 w-8"
             onClick={(e) => {
-              e.preventDefault();
               e.stopPropagation();
               setNewName(project.title);
             }}
@@ -153,7 +147,10 @@ function ProjectCard({
               >
                 Cancel
               </Button>
-              <Button type="submit" disabled={updateProjectMutation.isPending || !newName.trim()}>
+              <Button
+                type="submit"
+                disabled={updateProjectMutation.isPending || !newName.trim()}
+              >
                 {updateProjectMutation.isPending ? "Renaming..." : "Rename"}
               </Button>
             </div>

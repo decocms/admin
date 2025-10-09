@@ -83,6 +83,7 @@ export * from "./models/mcp.ts";
 export * from "./models/prompt.ts";
 export * from "./models/tool-call.ts";
 export * from "./models/trigger.ts";
+export * from "./models/project.ts";
 
 export * from "./errors.ts";
 export * from "./theme.ts";

@@ -92,28 +92,31 @@ export function useUpdateProject() {
     mutationFn: (input: UpdateProjectInput) => updateProject(input),
     onSuccess: (result, variables) => {
       // Update the specific project in the projects list cache
-      client.setQueryData<Project[]>(
-        KEYS.PROJECTS(variables.org),
-        (old) => {
-          if (!old) return [result];
-          return old.map((project) =>
-            project.slug === variables.project ? result : project
-          );
-        }
-      );
-      
+      client.setQueryData<Project[]>(KEYS.PROJECTS(variables.org), (old) => {
+        if (!old) return [result];
+        return old.map((project) =>
+          project.slug === variables.project
+            ? {
+                ...project,
+                title: result.title,
+              }
+            : project,
+        );
+      });
+
       // Also update recent projects cache if it exists
-      client.setQueryData<Project[]>(
-        KEYS.RECENT_PROJECTS(),
-        (old) => {
-          if (!old) return old;
-          return old.map((project) =>
-            project.slug === variables.project && project.org.slug === variables.org 
-              ? result 
-              : project
-          );
-        }
-      );
+      client.setQueryData<Project[]>(KEYS.RECENT_PROJECTS(), (old) => {
+        if (!old) return old;
+        return old.map((project) =>
+          project.slug === variables.project &&
+          project.org.slug === variables.org
+            ? {
+                ...project,
+                title: result.title,
+              }
+            : project,
+        );
+      });
     },
   });
 }

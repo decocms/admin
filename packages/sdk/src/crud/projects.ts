@@ -28,4 +28,5 @@ export interface UpdateProjectInput {
 export const updateProject = (
   input: UpdateProjectInput,
   init?: RequestInit,
-): Promise<Project> => MCPClient.PROJECT_UPDATE(input, init) as Promise<Project>;
+): Promise<Project> =>
+  MCPClient.PROJECTS_UPDATE(input, init) as Promise<Project>;

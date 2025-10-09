@@ -25,7 +25,7 @@ export function DecopilotChat() {
   };
 
   return (
-    <div className="flex flex-col h-full">
+    <div className="flex h-full w-full flex-col">
       <AgentProvider
         key={threadState.threadId}
         agentId={WELL_KNOWN_AGENTS.decopilotAgent.id}
@@ -44,9 +44,7 @@ export function DecopilotChat() {
           showEditAgent: false,
         }}
       >
-        <div className="h-full">
-          <MainChat />
-        </div>
+        <MainChat />
       </AgentProvider>
     </div>
   );

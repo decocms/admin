@@ -19,15 +19,34 @@ interface Props {
   showThreadMessages?: boolean;
 }
 
-export const MainChat = () => {
+interface MainChatProps {
+  showInput?: boolean;
+  initialScrollBehavior?: "top" | "bottom";
+  className?: string;
+  contentClassName?: string;
+}
+
+export const MainChat = ({
+  showInput = true,
+  initialScrollBehavior = "bottom",
+  className,
+  contentClassName,
+}: MainChatProps = {}) => {
   return (
-    <div className="h-[calc(100vh-48px)] w-full flex flex-col">
+    <div
+      className={`w-full flex flex-col ${className ?? "h-[calc(100vh-48px)]"}`}
+    >
       <ScrollArea className="flex-1 min-h-0">
-        <ChatMessages />
+        <ChatMessages
+          initialScrollBehavior={initialScrollBehavior}
+          className={contentClassName}
+        />
       </ScrollArea>
-      <div className="p-2">
-        <ChatInput />
-      </div>
+      {showInput && (
+        <div className="p-2">
+          <ChatInput />
+        </div>
+      )}
     </div>
   );
 };

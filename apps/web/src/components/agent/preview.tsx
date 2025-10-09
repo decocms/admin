@@ -1,4 +1,4 @@
-import { callTool, useIntegration } from "@deco/sdk";
+import { callTool, useIntegration, useUpdateIntegration } from "@deco/sdk";
 import { Button } from "@deco/ui/components/button.tsx";
 import { Icon } from "@deco/ui/components/icon.tsx";
 import {
@@ -9,11 +9,112 @@ import {
 import { useParams } from "react-router";
 import { ALLOWANCES } from "../../constants.ts";
 import { IMAGE_REGEXP } from "../chat/utils/preview.ts";
+import * as z from "zod";
+import { ReissueApiKeyDialog } from "../api-keys/reissue-api-key-dialog.tsx";
+import { useBidcOnIframe } from "../../lib/bidc.ts";
+
+const MessageSchema = z.lazy(() =>
+  z.discriminatedUnion("type", [
+    z.object({
+      type: z.literal("request_missing_scopes"),
+      payload: z.object({
+        scopes: z.array(z.string()),
+      }),
+    }),
+  ]),
+);
 
 type Props = DetailedHTMLProps<
   IframeHTMLAttributes<HTMLIFrameElement>,
   HTMLIFrameElement
 >;
+
+type ReissueKeyDialogProps = {
+  open: boolean;
+  integrationId: string;
+  missingScopes: string[];
+};
+
+function IFrameMessageHandler({ id }: { id: string }) {
+  const [reissueKeyDialogProps, setReissueKeyDialogProps] =
+    useState<ReissueKeyDialogProps>({
+      open: false,
+      missingScopes: [],
+      integrationId: "",
+    });
+  const { integrationId } = useParams();
+  const { mutate: updateIntegration } = useUpdateIntegration();
+  const { data: integration } = useIntegration(integrationId!);
+
+  useBidcOnIframe({
+    iframeIdOrElement: id,
+    messageSchema: MessageSchema,
+    onMessage: ({ type, payload }) => {
+      if (type === "request_missing_scopes") {
+        if (!integrationId) {
+          console.warn("No integration ID found, skipping key reissue");
+          return;
+        }
+
+        setReissueKeyDialogProps({
+          open: true,
+          missingScopes: payload.scopes,
+          integrationId,
+        });
+      }
+    },
+  });
+
+  return (
+    <ReissueApiKeyDialog
+      open={reissueKeyDialogProps.open}
+      onOpenChange={(open) => setReissueKeyDialogProps((p) => ({ ...p, open }))}
+      integrationId={reissueKeyDialogProps.integrationId}
+      newPolicies={reissueKeyDialogProps.missingScopes.map((scope) => ({
+        effect: "allow",
+        resource: scope,
+      }))}
+      onReissued={({ value: token }) => {
+        if (
+          !integration ||
+          !integration.connection ||
+          integration.connection.type !== "HTTP"
+        ) {
+          console.warn(
+            "Integration or connection not loaded, or connection type is not HTTP; skipping token update",
+          );
+          return;
+        }
+
+        updateIntegration({
+          ...integration,
+          connection: {
+            ...integration.connection,
+            token,
+          },
+        });
+      }}
+    />
+  );
+}
+
+function PreviewIframe(props: Props) {
+  const id = `preview-iframe-${props.src}`;
+
+  return (
+    <>
+      <IFrameMessageHandler id={id} />
+      <iframe
+        id={id}
+        allow={ALLOWANCES}
+        allowFullScreen
+        sandbox="allow-scripts allow-same-origin allow-popups allow-forms allow-downloads"
+        className="w-full h-full"
+        {...props}
+      />
+    </>
+  );
+}
 
 function Preview(props: Props) {
   const isImageLike = props.src && IMAGE_REGEXP.test(props.src);
@@ -30,15 +131,7 @@ function Preview(props: Props) {
 
   // Internal fallback removed; views should provide concrete URLs or use dynamic route
 
-  return (
-    <iframe
-      allow={ALLOWANCES}
-      allowFullScreen
-      sandbox="allow-scripts allow-same-origin allow-popups allow-forms allow-downloads"
-      className="w-full h-full"
-      {...props}
-    />
-  );
+  return <PreviewIframe {...props} />;
 }
 
 function _InternalResourceDetail({ name, uri }: { name: string; uri: string }) {

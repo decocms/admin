@@ -1,0 +1,177 @@
+import { useMutation, useQuery, useSuspenseQuery } from "@tanstack/react-query";
+import { WellKnownMcpGroups, formatIntegrationId } from "../crud/groups.ts";
+import { InternalServerError } from "../errors.ts";
+import { MCPClient } from "../fetcher.ts";
+import type { ProjectLocator } from "../locator.ts";
+import type { ReadOutput } from "../mcp/resources-v2/schemas.ts";
+import { DocumentDefinitionSchema } from "../mcp/documents/schemas.ts";
+import { useSDK } from "./store.tsx";
+
+// Resources V2 document names for documents
+const RESOURCE_DOCUMENT = {
+  SEARCH: "DECO_RESOURCE_DOCUMENT_SEARCH" as const,
+  READ: "DECO_RESOURCE_DOCUMENT_READ" as const,
+  CREATE: "DECO_RESOURCE_DOCUMENT_CREATE" as const,
+  UPDATE: "DECO_RESOURCE_DOCUMENT_UPDATE" as const,
+  DELETE: "DECO_RESOURCE_DOCUMENT_DELETE" as const,
+};
+
+// Helper functions
+const workspaceResourceClient = (locator: ProjectLocator) =>
+  MCPClient.forLocator(locator, `/mcp`);
+
+const integrationId = formatIntegrationId(WellKnownMcpGroups.Documents);
+
+export function buildDocumentUri(name: string): string {
+  // rsc://i:documents-management/document/<id>
+  return `rsc://${integrationId}/document/${name}`;
+}
+
+// CRUD Functions (Resources V2)
+export type DocumentReadResult = ReadOutput<typeof DocumentDefinitionSchema>;
+
+export function getDocumentByName(
+  locator: ProjectLocator,
+  name: string,
+  signal?: AbortSignal,
+): Promise<DocumentReadResult> {
+  // Deprecated: prefer getDocumentByUri with rsc:// URI
+  return getDocumentByUri(locator, buildDocumentUri(name), signal);
+}
+
+export function getDocumentByUri(
+  locator: ProjectLocator,
+  uri: string,
+  signal?: AbortSignal,
+): Promise<DocumentReadResult> {
+  // deno-lint-ignore no-explicit-any
+  const client = workspaceResourceClient(locator) as any;
+  return client[RESOURCE_DOCUMENT.READ](
+    { uri },
+    { signal },
+  ) as Promise<DocumentReadResult>;
+}
+
+export interface DocumentUpsertParamsV2 {
+  name: string;
+  description?: string;
+  content: string;
+  tags?: string[];
+}
+
+export function upsertDocumentV2(
+  locator: ProjectLocator,
+  params: DocumentUpsertParamsV2,
+  signal?: AbortSignal,
+): Promise<DocumentReadResult> {
+  // deno-lint-ignore no-explicit-any
+  const client = workspaceResourceClient(locator) as any;
+  return client[RESOURCE_DOCUMENT.CREATE](
+    {
+      data: params,
+    },
+    { signal },
+  ) as Promise<DocumentReadResult>;
+}
+
+export function updateDocumentV2(
+  locator: ProjectLocator,
+  uri: string,
+  params: Partial<DocumentUpsertParamsV2>,
+  signal?: AbortSignal,
+): Promise<DocumentReadResult> {
+  // deno-lint-ignore no-explicit-any
+  const client = workspaceResourceClient(locator) as any;
+  return client[RESOURCE_DOCUMENT.UPDATE](
+    {
+      uri,
+      data: params,
+    },
+    { signal },
+  ) as Promise<DocumentReadResult>;
+}
+
+export function deleteDocumentV2(
+  locator: ProjectLocator,
+  uri: string,
+  signal?: AbortSignal,
+): Promise<void> {
+  // deno-lint-ignore no-explicit-any
+  const client = workspaceResourceClient(locator) as any;
+  return client[RESOURCE_DOCUMENT.DELETE]({ uri }, { signal }) as Promise<void>;
+}
+
+// React Hooks
+export function useDocumentByUriV2(uri: string) {
+  const { locator } = useSDK();
+  if (!locator) {
+    throw new InternalServerError("No locator available");
+  }
+
+  return useQuery({
+    queryKey: ["document", uri],
+    queryFn: ({ signal }) => getDocumentByUri(locator, uri, signal),
+    retry: false,
+  });
+}
+
+export function useDocumentSuspense(uri: string) {
+  const { locator } = useSDK();
+  if (!locator) {
+    throw new InternalServerError("No locator available");
+  }
+
+  return useSuspenseQuery({
+    queryKey: ["document", uri],
+    queryFn: ({ signal }) => getDocumentByUri(locator, uri, signal),
+    retry: false,
+  });
+}
+
+export function useUpsertDocument() {
+  const { locator } = useSDK();
+  if (!locator) {
+    throw new InternalServerError("No locator available");
+  }
+
+  return useMutation({
+    mutationFn: ({
+      params,
+      signal,
+    }: {
+      params: DocumentUpsertParamsV2;
+      signal?: AbortSignal;
+    }) => upsertDocumentV2(locator, params, signal),
+  });
+}
+
+export function useUpdateDocument() {
+  const { locator } = useSDK();
+  if (!locator) {
+    throw new InternalServerError("No locator available");
+  }
+
+  return useMutation({
+    mutationFn: ({
+      uri,
+      params,
+      signal,
+    }: {
+      uri: string;
+      params: Partial<DocumentUpsertParamsV2>;
+      signal?: AbortSignal;
+    }) => updateDocumentV2(locator, uri, params, signal),
+  });
+}
+
+export function useDeleteDocument() {
+  const { locator } = useSDK();
+  if (!locator) {
+    throw new InternalServerError("No locator available");
+  }
+
+  return useMutation({
+    mutationFn: ({ uri, signal }: { uri: string; signal?: AbortSignal }) =>
+      deleteDocumentV2(locator, uri, signal),
+  });
+}

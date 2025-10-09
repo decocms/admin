@@ -93,11 +93,9 @@ export const RENDER = createInnateTool({
     "Display content in a preview iframe. Accepts either a URL or HTML content.",
   inputSchema: RenderInputSchema,
   outputSchema: RenderInputSchema,
-  execute:
-    () =>
-    async ({ context }) => {
-      return await Promise.resolve(context);
-    },
+  execute: () => async (args) => {
+    return await Promise.resolve(args);
+  },
 });
 
 export const FETCH = createInnateTool({
@@ -108,9 +106,7 @@ export const FETCH = createInnateTool({
   outputSchema: FetchOutputSchema,
   execute:
     () =>
-    async ({ context }) => {
-      const { url: targetUrl, method, headers = {}, body, timeout } = context;
-
+    async ({ url: targetUrl, method, headers = {}, body, timeout }) => {
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), timeout);
 
@@ -159,13 +155,11 @@ export const POLL_FOR_CONTENT = createInnateTool({
   outputSchema: PollForContentOutputSchema,
   execute:
     () =>
-    async ({ context }) => {
-      const {
-        url,
-        maxAttempts = RETRY_CONFIG.maxAttempts,
-        maxDelay = RETRY_CONFIG.maxDelay,
-      } = context;
-
+    async ({
+      url,
+      maxAttempts = RETRY_CONFIG.maxAttempts,
+      maxDelay = RETRY_CONFIG.maxDelay,
+    }) => {
       try {
         new URL(url);
       } catch {
@@ -354,11 +348,9 @@ export const SHOW_PICKER = createInnateTool({
     "Don't repeat the question in text before calling the tool, just call the tool with the question and options.",
   inputSchema: ShowPickerInputSchema,
   outputSchema: ShowPickerInputSchema,
-  execute:
-    () =>
-    async ({ context }) => {
-      return await Promise.resolve(context);
-    },
+  execute: () => async (args) => {
+    return await Promise.resolve(args);
+  },
 });
 
 const ConfirmInputSchema = z.object({
@@ -375,23 +367,21 @@ export const CONFIRM = createInnateTool({
     "for example when confirming a payment, deleting a file, etc.",
   inputSchema: ConfirmInputSchema,
   outputSchema: ShowPickerInputSchema,
-  execute:
-    () =>
-    async ({ context }) => {
-      return await Promise.resolve({
-        question: context.message,
-        options: [
-          {
-            label: "Confirm",
-            value: "confirm",
-          },
-          {
-            label: "Cancel",
-            value: "cancel",
-          },
-        ],
-      });
-    },
+  execute: () => async (args) => {
+    return await Promise.resolve({
+      question: args.message,
+      options: [
+        {
+          label: "Confirm",
+          value: "confirm",
+        },
+        {
+          label: "Cancel",
+          value: "cancel",
+        },
+      ],
+    });
+  },
 });
 
 const CreatePresignedUrlInputSchema = z.object({
@@ -415,8 +405,7 @@ export const CREATE_PRESIGNED_URL = createInnateTool({
   outputSchema: CreatePresignedUrlOutputSchema,
   execute:
     (agent, env) =>
-    async ({ context }) => {
-      const { expiresIn = 3600, fileExtension } = context;
+    async ({ expiresIn = 3600, fileExtension }) => {
       if (!env) {
         throw new Error("Env is required");
       }
@@ -581,99 +570,97 @@ export const SPEAK = createInnateTool({
     "For example: ![audio]({audioUrl})",
   inputSchema: SpeakInputSchema,
   outputSchema: SpeakOutputSchema,
-  execute:
-    (agent, env) =>
-    async ({ context }) => {
-      let s3Client: S3Client | null = null;
-      // deno-lint-ignore no-explicit-any
-      let readableStream: any = null;
+  execute: (agent, env) => async (context) => {
+    let s3Client: S3Client | null = null;
+    // deno-lint-ignore no-explicit-any
+    let readableStream: any = null;
 
-      try {
-        const { text, emotion, speed, voice } = context;
+    try {
+      const { text, emotion, speed, voice } = context;
 
-        // Add emotional context to the text if specified
-        let enhancedText = text;
-        if (emotion && emotion !== "neutral") {
-          enhancedText = `[Speaking in a ${emotion} tone] ${text}`;
-        }
+      // Add emotional context to the text if specified
+      let enhancedText = text;
+      if (emotion && emotion !== "neutral") {
+        enhancedText = `[Speaking in a ${emotion} tone] ${text}`;
+      }
 
-        // Use the agent's speak method with voice and speed options
-        const speedMap = { slow: 0.75, normal: 1.0, fast: 1.25 };
-        const speakOptions = {
-          voice,
-          speed: speed ? speedMap[speed] : undefined,
-        };
+      // Use the agent's speak method with voice and speed options
+      const speedMap = { slow: 0.75, normal: 1.0, fast: 1.25 };
+      const speakOptions = {
+        voice,
+        speed: speed ? speedMap[speed] : undefined,
+      };
 
-        readableStream = await agent.speak(enhancedText, speakOptions);
+      readableStream = await agent.speak(enhancedText, speakOptions);
 
-        // Check if we got a valid ReadableStream
-        if (!readableStream) {
-          return {
-            success: false,
-            message: "Voice synthesis is not available for this agent",
-          };
-        }
-
-        const {
-          DECO_CHAT_DATA_BUCKET_NAME,
-          AWS_REGION,
-          AWS_ACCESS_KEY_ID,
-          AWS_SECRET_ACCESS_KEY,
-        } = env ?? {};
-
-        let audioUrl: string | undefined;
-
-        if (
-          DECO_CHAT_DATA_BUCKET_NAME &&
-          AWS_REGION &&
-          AWS_ACCESS_KEY_ID &&
-          AWS_SECRET_ACCESS_KEY
-        ) {
-          try {
-            s3Client = new S3Client({
-              region: AWS_REGION,
-              credentials: {
-                accessKeyId: AWS_ACCESS_KEY_ID,
-                secretAccessKey: AWS_SECRET_ACCESS_KEY,
-              },
-            });
-
-            const timestamp = Date.now();
-            const audioFileName = `audio/speech-${timestamp}.mp3`;
-            const { workspace } = agent;
-            const s3Key = `${workspace}/${audioFileName}`;
-
-            audioUrl = await processAudioStream(
-              readableStream,
-              s3Client,
-              DECO_CHAT_DATA_BUCKET_NAME,
-              s3Key,
-            );
-          } catch (uploadError) {
-            console.error("💥 Error uploading audio:", uploadError);
-          }
-        }
-
-        return {
-          success: true,
-          message: `Successfully generated speech for: "${text.substring(0, 50)}${
-            text.length > 50 ? "..." : ""
-          }"`,
-          audioUrl,
-        };
-      } catch (error) {
-        console.error("💥 Error in SPEAK tool:", error);
+      // Check if we got a valid ReadableStream
+      if (!readableStream) {
         return {
           success: false,
-          message: `Failed to generate speech: ${
-            error instanceof Error ? error.message : "Unknown error"
-          }`,
+          message: "Voice synthesis is not available for this agent",
         };
-      } finally {
-        // Cleanup resources
-        await cleanupResources(readableStream, s3Client);
       }
-    },
+
+      const {
+        DECO_CHAT_DATA_BUCKET_NAME,
+        AWS_REGION,
+        AWS_ACCESS_KEY_ID,
+        AWS_SECRET_ACCESS_KEY,
+      } = env ?? {};
+
+      let audioUrl: string | undefined;
+
+      if (
+        DECO_CHAT_DATA_BUCKET_NAME &&
+        AWS_REGION &&
+        AWS_ACCESS_KEY_ID &&
+        AWS_SECRET_ACCESS_KEY
+      ) {
+        try {
+          s3Client = new S3Client({
+            region: AWS_REGION,
+            credentials: {
+              accessKeyId: AWS_ACCESS_KEY_ID,
+              secretAccessKey: AWS_SECRET_ACCESS_KEY,
+            },
+          });
+
+          const timestamp = Date.now();
+          const audioFileName = `audio/speech-${timestamp}.mp3`;
+          const { workspace } = agent;
+          const s3Key = `${workspace}/${audioFileName}`;
+
+          audioUrl = await processAudioStream(
+            readableStream,
+            s3Client,
+            DECO_CHAT_DATA_BUCKET_NAME,
+            s3Key,
+          );
+        } catch (uploadError) {
+          console.error("💥 Error uploading audio:", uploadError);
+        }
+      }
+
+      return {
+        success: true,
+        message: `Successfully generated speech for: "${text.substring(0, 50)}${
+          text.length > 50 ? "..." : ""
+        }"`,
+        audioUrl,
+      };
+    } catch (error) {
+      console.error("💥 Error in SPEAK tool:", error);
+      return {
+        success: false,
+        message: `Failed to generate speech: ${
+          error instanceof Error ? error.message : "Unknown error"
+        }`,
+      };
+    } finally {
+      // Cleanup resources
+      await cleanupResources(readableStream, s3Client);
+    }
+  },
 });
 
 // Helper function to process audio stream with memory efficiency

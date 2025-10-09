@@ -14,6 +14,7 @@ import {
   workspaceClient,
 } from "./bindings.ts";
 import { DECO_MCP_CLIENT_HEADER } from "./client.ts";
+import { DeprecatedEnv } from "./deprecated.ts";
 import {
   createMCPServer,
   type CreateMCPServerOptions,
@@ -24,13 +25,12 @@ import { State } from "./state.ts";
 import type { WorkflowDO } from "./workflow.ts";
 import { Workflow } from "./workflow.ts";
 import type { Binding, ContractBinding, MCPBinding } from "./wrangler.ts";
-import { DeprecatedEnv } from "./deprecated.ts";
+export { proxyConnectionForId } from "./bindings.ts";
 export {
   createMCPFetchStub,
   type CreateStubAPIOptions,
   type ToolBinder,
 } from "./mcp.ts";
-
 export interface WorkspaceDB {
   query: (params: {
     sql: string;
@@ -233,11 +233,12 @@ export const withBindings = <TEnv>({
   const apiUrl = env.DECO_API_URL ?? "https://api.decocms.com";
   let context;
   if (typeof tokenOrContext === "string") {
-    const decoded = decodeJwt(tokenOrContext);
+    const isJwt = tokenOrContext.split(".").length === 3;
+    const decoded = isJwt ? decodeJwt(tokenOrContext) : {};
     const workspace = decoded.aud as string;
 
     context = {
-      state: decoded.state as Record<string, unknown>,
+      state: decoded?.state as Record<string, unknown>,
       token: tokenOrContext,
       workspace,
       ensureAuthenticated: AUTHENTICATED(decoded.user, workspace),

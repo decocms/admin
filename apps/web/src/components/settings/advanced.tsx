@@ -26,11 +26,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@deco/ui/components/select.tsx";
-import { Switch } from "@deco/ui/components/switch.tsx";
-import { Textarea } from "@deco/ui/components/textarea.tsx";
 import { cn } from "@deco/ui/lib/utils.ts";
 import { useState } from "react";
-import { useWatch } from "react-hook-form";
 import { getPublicChatLink } from "../agent/chats.tsx";
 import { useAgent } from "../agent/provider.tsx";
 import { useCurrentTeam } from "../sidebar/team-selector.tsx";
@@ -76,12 +73,6 @@ function CopyLinkButton({
 function AdvancedTab() {
   const { form, agent, handleSubmit } = useAgent();
   const roles = useCurrentTeamRoles();
-
-  const useWorkingMemory = useWatch({
-    control: form.control,
-    name: "memory.working_memory.enabled",
-    defaultValue: form.getValues("memory.working_memory.enabled"),
-  });
 
   return (
     <ScrollArea className="h-full w-full">
@@ -289,111 +280,6 @@ function AdvancedTab() {
                 </FormItem>
               )}
             />
-            <FormField
-              control={form.control}
-              name="memory.semantic_recall"
-              render={({ field }) => (
-                <FormItem className="flex flex-row items-center justify-between">
-                  <div className="flex flex-col gap-2">
-                    <FormLabel>
-                      Semantic Recall{" "}
-                      <a
-                        href="https://mastra.ai/en/docs/memory/semantic-recall"
-                        target="_blank"
-                        rel="noopener noreferrer"
-                      >
-                        <Icon name="open_in_new" className="w-4 h-4" />
-                      </a>
-                    </FormLabel>
-                    <FormDescription>
-                      Enable the agent to recall relevant information from past
-                      conversations.
-                    </FormDescription>
-                  </div>
-                  <FormControl>
-                    <Switch
-                      checked={field.value}
-                      onCheckedChange={field.onChange}
-                    />
-                  </FormControl>
-                </FormItem>
-              )}
-            />
-            <div className="flex flex-col items-center justify-between gap-4">
-              <div className="flex flex-row items-center justify-between w-full">
-                <FormField
-                  control={form.control}
-                  name="memory.working_memory.enabled"
-                  render={({ field }) => (
-                    <FormItem className="flex flex-row items-center justify-between w-full">
-                      <div className="flex flex-col gap-2">
-                        <FormLabel>
-                          Working Memory{" "}
-                          <a
-                            href="https://mastra.ai/en/docs/memory/working-memory"
-                            target="_blank"
-                            rel="noopener noreferrer"
-                          >
-                            <Icon name="open_in_new" className="w-4 h-4" />
-                          </a>
-                        </FormLabel>
-                        <FormDescription>
-                          Allow the agent to maintain a short-term memory for
-                          ongoing tasks.
-                        </FormDescription>
-                      </div>
-                      <FormControl>
-                        <Switch
-                          checked={field.value}
-                          onCheckedChange={field.onChange}
-                        />
-                      </FormControl>
-                    </FormItem>
-                  )}
-                />
-              </div>
-              {useWorkingMemory && (
-                <FormField
-                  control={form.control}
-                  name="memory.working_memory.template"
-                  render={({ field }) => {
-                    let isJson = false;
-                    try {
-                      if (field.value && typeof field.value === "string") {
-                        JSON.parse(field.value);
-                        isJson = true;
-                      }
-                    } catch {
-                      isJson = false;
-                    }
-                    return (
-                      <FormItem>
-                        <div className="flex items-center gap-2">
-                          <FormLabel>Working Memory Template</FormLabel>
-                          {isJson && (
-                            <span className="px-2 py-0.5 text-xs bg-muted rounded text-muted-foreground border border-muted-foreground/20">
-                              Schema
-                            </span>
-                          )}
-                        </div>
-                        <FormControl>
-                          <Textarea
-                            placeholder="Define a template (markdown or JSON schema) for the working memory..."
-                            {...field}
-                            value={field.value ?? ""}
-                          />
-                        </FormControl>
-                        <FormDescription>
-                          Use markdown for a text template, or paste a JSON
-                          schema to structure the agent's working memory.
-                        </FormDescription>
-                        <FormMessage />
-                      </FormItem>
-                    );
-                  }}
-                />
-              )}
-            </div>
 
             {/* --- End Memory Settings Section --- */}
 
@@ -496,30 +382,6 @@ AdvancedTab.Skeleton = () => (
             <Skeleton className="h-4 w-72" />
           </div>
           <Skeleton className="h-10 w-full" />
-        </div>
-
-        {/* Switch Fields */}
-        {Array.from({ length: 2 }).map((_, i) => (
-          <div key={i} className="flex flex-row items-center justify-between">
-            <div className="flex flex-col gap-2">
-              <div className="flex items-center gap-2">
-                <Skeleton className="h-4 w-32" />
-                <Skeleton className="h-4 w-4" />
-              </div>
-              <Skeleton className="h-4 w-96" />
-            </div>
-            <Skeleton className="h-6 w-11" />
-          </div>
-        ))}
-
-        {/* Working Memory Template (conditional) */}
-        <div className="space-y-4">
-          <div className="flex items-center gap-2">
-            <Skeleton className="h-4 w-40" />
-            <Skeleton className="h-5 w-16" />
-          </div>
-          <Skeleton className="h-24 w-full" />
-          <Skeleton className="h-4 w-80" />
         </div>
 
         {/* Team Access Section */}

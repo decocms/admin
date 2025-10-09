@@ -120,6 +120,7 @@ export const PROJECT_TOOLS = [
   integrationsAPI.updateIntegration,
   integrationsAPI.deleteIntegration,
   integrationsAPI.listIntegrations,
+  integrationsAPI.getIntegrationApiKey,
   integrationsAPI.callTool,
   integrationsAPI.DECO_INTEGRATION_OAUTH_START,
   integrationsAPI.DECO_GET_APP_SCHEMA,
@@ -128,7 +129,6 @@ export const PROJECT_TOOLS = [
   threadsAPI.listThreads,
   threadsAPI.getThread,
   threadsAPI.getThreadMessages,
-  threadsAPI.getThreadTools,
   threadsAPI.updateThreadTitle,
   threadsAPI.updateThreadMetadata,
   hostingAPI.listApps,
@@ -202,6 +202,7 @@ export const PROJECT_TOOLS = [
   apiKeysAPI.listApiKeys,
   apiKeysAPI.createApiKey,
   apiKeysAPI.getApiKey,
+  apiKeysAPI.reissueApiKey,
   apiKeysAPI.updateApiKey,
   apiKeysAPI.deleteApiKey,
   apiKeysAPI.enableApiKey,
@@ -377,6 +378,14 @@ export {
   type ToolBindingImplOptions,
   type ToolDataV2,
 } from "./tools/api.ts";
+
+export {
+  createDocumentResourceV2Implementation,
+  createDocumentViewsV2,
+  documentViews,
+  DocumentResourceV2,
+  type DocumentDataV2,
+} from "./documents/api.ts";
 
 // Export Resources 2.0 bindings function
 export { createResourceV2Bindings } from "./resources-v2/bindings.ts";

@@ -183,8 +183,14 @@ const SalesDeck = lazy(() =>
   wrapWithUILoadingFallback(import("./components/sales-deck/deck.tsx")),
 );
 
-const ListDocuments = lazy(() =>
-  wrapWithUILoadingFallback(import("./components/prompts/list/list.tsx")),
+const DocumentsListPage = lazy(() =>
+  wrapWithUILoadingFallback(import("./components/documents/list-page.tsx")),
+);
+
+const PromptsLegacyPage = lazy(() =>
+  wrapWithUILoadingFallback(
+    import("./components/documents/prompts-legacy-page.tsx"),
+  ),
 );
 
 const DocumentEdit = lazy(() =>
@@ -433,7 +439,8 @@ const router = createBrowserRouter([
           { path: "views", Component: ViewsList },
           { path: "views/:integrationId/:viewName", Component: ViewDetail },
           { path: "views/:id", Component: LegacyViewRedirect },
-          { path: "documents", Component: ListDocuments },
+          { path: "documents", Component: DocumentsListPage },
+          { path: "documents/prompts", Component: PromptsLegacyPage },
           { path: "documents/:id", Component: DocumentEdit },
           {
             path: "workflow-runs",

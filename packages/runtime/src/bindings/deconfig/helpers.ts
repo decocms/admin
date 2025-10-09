@@ -6,9 +6,18 @@ export const normalizeDirectory = (dir: string) => {
   return normalized.endsWith("/") ? normalized.slice(0, -1) : normalized;
 };
 
-export const buildFilePath = (directory: string, resourceId: string) => {
-  const normalizedDir = normalizeDirectory(directory);
-  return `${normalizedDir}/${resourceId}.json`;
+export const ResourcePath = {
+  build: (directory: string, resourceId: string) => {
+    const normalizedDir = normalizeDirectory(directory);
+    return `${normalizedDir}/${resourceId}.json`;
+  },
+  extract: (path: string) => {
+    const match = path.match(/^(.+)\/(.+)\.json$/);
+    if (!match) {
+      throw new Error("Invalid resource path");
+    }
+    return { directory: match[1], resourceId: match[2] };
+  },
 };
 
 export const extractResourceId = (uri: string) => {
@@ -46,3 +55,40 @@ export function getMetadataString(
   const value = getMetadataValue(metadata, key);
   return typeof value === "string" ? value : undefined;
 }
+
+export const toAsyncIterator = <T>(emitter: EventSource): AsyncIterable<T> => {
+  const queue: T[] = [];
+  let done = false;
+  let waitPromise: ((data?: T) => void) | null = null;
+
+  const triggerLoop = () => {
+    if (waitPromise) {
+      waitPromise();
+      waitPromise = null;
+    }
+  };
+
+  emitter.addEventListener("change", (data) => {
+    queue.push(JSON.parse(data.data));
+    triggerLoop();
+  });
+
+  emitter.addEventListener("error", () => {
+    done = true;
+    triggerLoop();
+  });
+
+  return {
+    async *[Symbol.asyncIterator]() {
+      while (true) {
+        const value = queue.shift();
+        if (value) {
+          yield value;
+        } else {
+          if (done) return;
+          await new Promise((resolve) => (waitPromise = resolve));
+        }
+      }
+    },
+  };
+};

@@ -13,16 +13,18 @@
  * - Support for custom resource schemas and enhancements
  */
 
+import { DefaultEnv } from "../../index.ts";
 import { impl } from "../binder.ts";
 import type { BaseResourceDataSchema } from "../resources/bindings.ts";
 import { createResourceBindings } from "../resources/bindings.ts";
 import { ResourceUriSchema } from "../resources/schemas.ts";
 import {
-  buildFilePath,
+  ResourcePath,
   constructResourceUri,
   extractResourceId,
   getMetadataString,
   normalizeDirectory,
+  toAsyncIterator,
 } from "./helpers.ts";
 import type { DeconfigClient, DeconfigResourceOptions } from "./types.ts";
 
@@ -48,6 +50,16 @@ export class UserInputError extends Error {
   }
 }
 
+const dirOf = (
+  options: Pick<
+    DeconfigResourceOptions<BaseResourceDataSchema>,
+    "directory" | "resourceName"
+  >,
+) => {
+  return options.directory
+    ? options.directory
+    : `/resources/${options.resourceName}`;
+};
 export const createDeconfigResource = <
   TDataSchema extends BaseResourceDataSchema,
 >(
@@ -58,11 +70,10 @@ export const createDeconfigResource = <
     dataSchema,
     enhancements,
     env,
-    directory: dir,
     validate: semanticValidate,
   } = options;
   const deconfig = env.DECONFIG;
-  const directory = dir ? dir : `/resources/${resourceName}`;
+  const directory = dirOf(options);
 
   // Create resource-specific bindings using the provided data schema
   const resourceBindings = createResourceBindings(resourceName, dataSchema);
@@ -250,7 +261,7 @@ export const createDeconfigResource = <
         ResourceUriSchema.parse(uri);
 
         const resourceId = extractResourceId(uri);
-        const filePath = buildFilePath(directory, resourceId);
+        const filePath = ResourcePath.build(directory, resourceId);
 
         try {
           const fileData = await deconfig.READ_FILE({
@@ -323,7 +334,7 @@ export const createDeconfigResource = <
           resourceName,
           resourceId,
         );
-        const filePath = buildFilePath(directory, resourceId);
+        const filePath = ResourcePath.build(directory, resourceId);
 
         const user = env.DECO_REQUEST_CONTEXT.ensureAuthenticated();
         // Prepare resource data with metadata
@@ -373,7 +384,7 @@ export const createDeconfigResource = <
         ResourceUriSchema.parse(uri);
 
         const resourceId = extractResourceId(uri);
-        const filePath = buildFilePath(directory, resourceId);
+        const filePath = ResourcePath.build(directory, resourceId);
 
         // Read existing file to get current data
         let existingData: Record<string, unknown> = {};
@@ -443,7 +454,7 @@ export const createDeconfigResource = <
         ResourceUriSchema.parse(uri);
 
         const resourceId = extractResourceId(uri);
-        const filePath = buildFilePath(directory, resourceId);
+        const filePath = ResourcePath.build(directory, resourceId);
 
         try {
           await deconfig.DELETE_FILE({
@@ -465,4 +476,49 @@ export const createDeconfigResource = <
   ]);
 
   return tools;
+};
+
+export const DeconfigResource = {
+  define: <TDataSchema extends BaseResourceDataSchema>(
+    options: Omit<DeconfigResourceOptions<TDataSchema>, "env">,
+  ) => {
+    return {
+      watcher: async function* (
+        env: DefaultEnv & { DECONFIG: DeconfigClient },
+      ) {
+        const url = new URL(
+          `${env.DECO_API_URL ?? "https://api.decocms.com"}/deconfig/watch`,
+        );
+        url.searchParams.set("pathFilter", dirOf(options));
+        url.searchParams.set(
+          "branch",
+          env.DECO_REQUEST_CONTEXT.branch ?? "main",
+        );
+        url.searchParams.set("auth-token", env.DECO_REQUEST_CONTEXT.token);
+        url.searchParams.set("fromCtime", "1");
+        const eventSource = new EventSource(url);
+        const it = toAsyncIterator<{
+          path: string;
+          metadata: { address: string };
+        }>(eventSource);
+        for await (const event of it) {
+          const { path } = event;
+          const { resourceId } = ResourcePath.extract(path);
+          yield {
+            id: constructResourceUri(
+              env.DECO_REQUEST_CONTEXT.integrationId as string,
+              options.resourceName,
+              resourceId,
+            ),
+          };
+        }
+      },
+      create: (env: DefaultEnv & { DECONFIG: DeconfigClient }) => {
+        return createDeconfigResource({
+          env,
+          ...options,
+        });
+      },
+    };
+  },
 };

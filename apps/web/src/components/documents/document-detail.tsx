@@ -162,7 +162,7 @@ export function DocumentDetail({ resourceUri }: DocumentDetailProps) {
   );
 
   const numberOfChanges = Object.keys(form.formState.dirtyFields).length;
-  const isMutating = form.formState.isSubmitting;
+  const isMutating = form.formState.isSubmitting || updateMutation.isPending;
 
   if (isLoading) {
     return (
@@ -224,9 +224,7 @@ export function DocumentDetail({ resourceUri }: DocumentDetailProps) {
             <Button
               size="sm"
               className="bg-primary-light text-primary-dark hover:bg-primary-light/90 gap-2"
-              onClick={() => {
-                onSubmit(form.getValues());
-              }}
+              onClick={form.handleSubmit(onSubmit)}
               disabled={isMutating}
             >
               {isMutating ? (

@@ -14,7 +14,6 @@ import {
   index,
 } from "drizzle-orm/pg-core";
 import { WELL_KNOWN_PLANS } from "../plan";
-import { sql } from "drizzle-orm";
 
 /**
  * create table public.deco_chat_plans (
@@ -87,7 +86,7 @@ export const organizations = pgTable("teams", {
 export const projects = pgTable(
   "deco_chat_projects",
   {
-    id: uuid("id").primaryKey().default(sql`gen_random_uuid ()`),
+    id: uuid("id").primaryKey().defaultRandom(),
     slug: text("slug").notNull(),
     title: text("title").notNull(),
     icon: text("icon"),
@@ -124,7 +123,7 @@ export const decoVisibilityType = pgEnum("deco_chat_visibility_type", [
 ]);
 
 export const access = pgTable("deco_chat_access", {
-  id: uuid("id").primaryKey().default(sql`gen_random_uuid ()`),
+  id: uuid("id").primaryKey().defaultRandom(),
   visibility: decoVisibilityType("visibility").notNull().default("private"),
   owner_id: uuid("owner_id").notNull(),
   allowed_roles: text("allowed_roles").array(),
@@ -163,7 +162,7 @@ export const visibilityType = pgEnum("visibility_type", [
 ]);
 
 export const agents = pgTable("deco_chat_agents", {
-  id: uuid("id").primaryKey().default(sql`gen_random_uuid ()`),
+  id: uuid("id").primaryKey().defaultRandom(),
   name: text("name").notNull(),
   avatar: text("avatar").notNull(),
   instructions: text("instructions").notNull(),
@@ -215,7 +214,7 @@ create index IF not exists idx_registry_apps_name on public.deco_chat_apps_regis
 export const registryApps = pgTable(
   "deco_chat_apps_registry",
   {
-    id: uuid("id").primaryKey().default(sql`gen_random_uuid ()`),
+    id: uuid("id").primaryKey().defaultRandom(),
     workspace: text("workspace").notNull(),
     scope_id: uuid("scope_id")
       .notNull()
@@ -264,7 +263,7 @@ create index IF not exists idx_registry_tools_name on public.deco_chat_apps_regi
 export const registryTools = pgTable(
   "deco_chat_apps_registry_tools",
   {
-    id: uuid("id").primaryKey().default(sql`gen_random_uuid ()`),
+    id: uuid("id").primaryKey().defaultRandom(),
     app_id: uuid("app_id")
       .notNull()
       .references(() => registryApps.id),
@@ -302,7 +301,7 @@ create index IF not exists idx_registry_scopes_workspace on public.deco_chat_reg
 export const registryScopes = pgTable(
   "deco_chat_registry_scopes",
   {
-    id: uuid("id").primaryKey().default(sql`gen_random_uuid ()`),
+    id: uuid("id").primaryKey().defaultRandom(),
     scope_name: text("scope_name").notNull().unique(),
     workspace: text("workspace").notNull(),
     created_at: timestamp("created_at").defaultNow(),
@@ -339,7 +338,7 @@ create index IF not exists idx_integrations_app_id on public.deco_chat_integrati
  */
 
 export const integrations = pgTable("deco_chat_integrations", {
-  id: uuid("id").primaryKey().default(sql`gen_random_uuid ()`),
+  id: uuid("id").primaryKey().defaultRandom(),
   name: text("name").notNull(),
   description: text("description"),
   icon: text("icon"),
@@ -371,7 +370,7 @@ export const integrations = pgTable("deco_chat_integrations", {
 export const apiKeys = pgTable(
   "deco_chat_api_keys",
   {
-    id: uuid("id").primaryKey().default(sql`gen_random_uuid ()`),
+    id: uuid("id").primaryKey().defaultRandom(),
     name: text("name").notNull(),
     workspace: text("workspace").notNull(),
     enabled: boolean("enabled").notNull().default(true),
@@ -520,7 +519,7 @@ export const members = pgTable(
 export const issues = pgTable(
   "deco_chat_issues",
   {
-    id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+    id: uuid("id").primaryKey().defaultRandom(),
     org_id: bigint("org_id", { mode: "bigint" }).references(
       () => organizations.id,
       { onDelete: "cascade" },
@@ -539,5 +538,49 @@ export const issues = pgTable(
     index("idx_deco_chat_issues_org_id").on(table.org_id),
     index("idx_deco_chat_issues_reporter_user_id").on(table.reporter_user_id),
     index("idx_deco_chat_issues_created_at").on(table.created_at),
+  ],
+);
+
+/**
+ * create table public.deco_chat_triggers (
+  id uuid not null default gen_random_uuid (),
+  created_at timestamp with time zone not null default now(),
+  updated_at timestamp with time zone not null default now(),
+  workspace text not null,
+  agent_id text not null,
+  metadata jsonb not null,
+  user_id uuid null,
+  active boolean not null default true,
+  binding_id uuid null,
+  access_id uuid null,
+  project_id uuid null,
+  constraint deco_chat_triggers_pkey primary key (id),
+  constraint deco_chat_triggers_access_id_fkey foreign KEY (access_id) references deco_chat_access (id) on delete CASCADE,
+  constraint deco_chat_triggers_binding_id_fkey foreign KEY (binding_id) references deco_chat_integrations (id),
+  constraint deco_chat_triggers_user_id_fkey foreign KEY (user_id) references profiles (user_id),
+  constraint fk_deco_chat_triggers_project_id foreign KEY (project_id) references deco_chat_projects (id) on delete set null
+) TABLESPACE pg_default;
+ */
+
+export const triggers = pgTable(
+  "deco_chat_triggers",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    created_at: timestamp("created_at").defaultNow(),
+    updated_at: timestamp("updated_at").defaultNow(),
+    workspace: text("workspace").notNull(),
+    agent_id: text("agent_id").notNull(),
+    metadata: jsonb("metadata").notNull(),
+    user_id: uuid("user_id").references(() => profiles.user_id),
+    active: boolean("active").notNull().default(true),
+    binding_id: uuid("binding_id").references(() => integrations.id),
+    access_id: uuid("access_id").references(() => access.id),
+    project_id: uuid("project_id").references(() => projects.id),
+  },
+  (table) => [
+    index("idx_deco_chat_triggers_access_id").on(table.access_id),
+    index("idx_deco_chat_triggers_binding_id").on(table.binding_id),
+    index("idx_deco_chat_triggers_user_id").on(table.user_id),
+    index("idx_deco_chat_triggers_project_id").on(table.project_id),
   ],
 );

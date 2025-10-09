@@ -4,7 +4,7 @@ import { InternalServerError, UserInputError } from "../../errors.ts";
 import { Markup } from "../../plan.ts";
 import { isRequired } from "../../utils/fns.ts";
 import {
-  assertHasWorkspace,
+  assertHasLocator,
   assertWorkspaceResourceAccess,
 } from "../assertions.ts";
 import { type AppContext, createToolGroup } from "../context.ts";
@@ -16,6 +16,24 @@ import {
 } from "./index.ts";
 import { getPlan } from "./plans.ts";
 import { createCheckoutSession as createStripeCheckoutSession } from "./stripe/checkout.ts";
+import { Locator, ProjectLocator } from "../../locator.ts";
+
+/**
+ * Since we don't yet have a setup that connects to an ORGANIZATION's MCP,
+ * the wallet tools use a project locator, and are served from the PROJECT mcp.
+ *
+ * Even though the wallet tools are served from the PROJECT mcp, they are organization scoped.
+ *
+ * We care only about the organization itself here, and the project slug coming from the
+ * context is only used to identify (FOR NOW) the type of wallet (workpaces had different types,
+ * which are /users/{userId} and /shared/{slug}.) We assume that you will connect to the project
+ * mcp using a project slug called "default" for /shared wallets (most of the cases) and use a
+ * project slug called "personal" for /users/{userId} wallets.
+ *
+ * I will soon remove this assumption probably, and migrate the wallets to use the same id ideally.
+ * Otherwise i will need to always identify the type of wallet for the organization in some way,
+ * storing org metadata or something like that.
+ */
 
 export const getWalletClient = (c: AppContext) => {
   if (!c.envVars.WALLET_API_KEY) {
@@ -190,6 +208,23 @@ const createTool = createToolGroup("Wallet", {
   icon: "https://assets.decocache.com/mcp/c179a1cd-4933-40ac-a9c1-18f24e19e592/Wallet--Billing.png",
 });
 
+export const organizationWalletWorkspace = (
+  locator: ProjectLocator,
+  userId?: unknown,
+) => {
+  return Locator.adaptToRootSlug(locator, userId ? String(userId) : undefined);
+};
+
+export const organizationWalletId = (
+  locator: ProjectLocator,
+  userId?: unknown,
+) => {
+  const workspace = organizationWalletWorkspace(locator, userId);
+  return WellKnownWallets.build(
+    ...WellKnownWallets.workspace.genCredits(workspace),
+  );
+};
+
 export const getWalletAccount = createTool({
   name: "GET_WALLET_ACCOUNT",
   description: "Get the wallet account for the current tenant",
@@ -201,16 +236,14 @@ export const getWalletAccount = createTool({
     }),
   ),
   handler: async (_, c) => {
-    assertHasWorkspace(c);
+    assertHasLocator(c);
 
     await assertWorkspaceResourceAccess(c);
 
     const wallet = getWalletClient(c);
 
-    const workspaceWalletId = WellKnownWallets.build(
-      ...WellKnownWallets.workspace.genCredits(c.workspace.value),
-    );
-    const data = await Account.fetch(wallet, workspaceWalletId);
+    const walletId = organizationWalletId(c.locator.value, c.user.id);
+    const data = await Account.fetch(wallet, walletId);
 
     if (!data) {
       return {
@@ -234,13 +267,17 @@ export const getThreadsUsage = createTool({
     }),
   ),
   handler: async ({ range }, c) => {
-    assertHasWorkspace(c);
+    assertHasLocator(c);
 
     await assertWorkspaceResourceAccess(c);
 
     const wallet = getWalletClient(c);
 
-    const usage = await ThreadsUsage.fetch(wallet, c.workspace.value, range);
+    const usage = await ThreadsUsage.fetch(
+      wallet,
+      organizationWalletWorkspace(c.locator.value, c.user.id),
+      range,
+    );
     return ThreadsUsage.format(usage);
   },
 });
@@ -275,13 +312,17 @@ export const getAgentsUsage = createTool({
     }),
   ),
   handler: async ({ range }, c) => {
-    assertHasWorkspace(c);
+    assertHasLocator(c);
 
     await assertWorkspaceResourceAccess(c);
 
     const wallet = getWalletClient(c);
 
-    const usage = await AgentsUsage.fetch(wallet, c.workspace.value, range);
+    const usage = await AgentsUsage.fetch(
+      wallet,
+      organizationWalletWorkspace(c.locator.value, c.user.id),
+      range,
+    );
     return AgentsUsage.format(usage);
   },
 });
@@ -309,7 +350,7 @@ export const getBillingHistory = createTool({
     }),
   ),
   handler: async ({ range }, c) => {
-    assertHasWorkspace(c);
+    assertHasLocator(c);
 
     await assertWorkspaceResourceAccess(c);
 
@@ -317,7 +358,7 @@ export const getBillingHistory = createTool({
 
     const history = await BillingHistory.fetch(
       wallet,
-      c.workspace.value,
+      organizationWalletWorkspace(c.locator.value, c.user.id),
       range,
     );
     return BillingHistory.format(history);
@@ -353,8 +394,7 @@ export const getContractsCommits = createTool({
     }),
   ),
   handler: async ({ range }, c) => {
-    c.resourceAccess.grant();
-    assertHasWorkspace(c);
+    assertHasLocator(c);
 
     await assertWorkspaceResourceAccess(c);
 
@@ -362,7 +402,7 @@ export const getContractsCommits = createTool({
 
     const history = await ContractsCommits.fetch(
       wallet,
-      c.workspace.value,
+      organizationWalletWorkspace(c.locator.value, c.user.id),
       range,
     );
 
@@ -387,8 +427,7 @@ export const createCheckoutSession = createTool({
     }),
   ),
   handler: async ({ amountUSDCents, successUrl, cancelUrl }, ctx) => {
-    assertHasWorkspace(ctx);
-
+    assertHasLocator(ctx);
     await assertWorkspaceResourceAccess(ctx);
     const plan = await getPlan(ctx);
     const amount = Markup.add({
@@ -434,7 +473,7 @@ export const createWalletVoucher = createTool({
     }),
   ),
   handler: async ({ amount }, c) => {
-    assertHasWorkspace(c);
+    assertHasLocator(c);
 
     await assertWorkspaceResourceAccess(c);
 
@@ -451,7 +490,7 @@ export const createWalletVoucher = createTool({
       type: "WorkspaceCreateVoucher" as const,
       amount: amountMicroDollars.toMicrodollarString(),
       voucherId: id,
-      workspace: c.workspace.value,
+      workspace: organizationWalletWorkspace(c.locator.value, c.user.id),
     } as const;
 
     const response = await wallet["POST /transactions"](
@@ -485,7 +524,7 @@ export const redeemWalletVoucher = createTool({
     }),
   ),
   handler: async ({ voucher }, c) => {
-    assertHasWorkspace(c);
+    assertHasLocator(c);
 
     await assertWorkspaceResourceAccess(c);
 
@@ -511,7 +550,7 @@ export const redeemWalletVoucher = createTool({
       type: "WorkspaceRedeemVoucher" as const,
       amount: amountMicroDollars.toMicrodollarString(),
       voucherId,
-      workspace: c.workspace.value,
+      workspace: organizationWalletWorkspace(c.locator.value, c.user.id),
     } as const;
 
     const response = await wallet["POST /transactions"](
@@ -536,7 +575,7 @@ export const getWorkspacePlan = createTool({
   description: "Get the plan for the current tenant's workspace",
   inputSchema: z.lazy(() => z.object({})),
   handler: async (_, c) => {
-    assertHasWorkspace(c);
+    assertHasLocator(c);
     await assertWorkspaceResourceAccess(c);
 
     return await getPlan(c);
@@ -563,7 +602,7 @@ export const preAuthorizeAmount = createTool({
     }),
   ),
   handler: async ({ amount, metadata }, c) => {
-    assertHasWorkspace(c);
+    assertHasLocator(c);
     await assertWorkspaceResourceAccess(c);
 
     const wallet = getWalletClient(c);
@@ -580,11 +619,11 @@ export const preAuthorizeAmount = createTool({
       identifier: id,
       payer: {
         type: "wallet",
-        id: c.workspace.value,
+        id: organizationWalletWorkspace(c.locator.value, c.user.id),
       },
       metadata: {
         ...metadata,
-        workspace: c.workspace.value,
+        workspace: organizationWalletWorkspace(c.locator.value, c.user.id),
       },
     } as const;
 
@@ -633,7 +672,7 @@ export const commitPreAuthorizedAmount = createTool({
     { amount, metadata, contractId, vendorId, identifier },
     c,
   ) => {
-    assertHasWorkspace(c);
+    assertHasLocator(c);
 
     await assertWorkspaceResourceAccess(c);
 
@@ -657,7 +696,7 @@ export const commitPreAuthorizedAmount = createTool({
       },
       metadata: {
         ...metadata,
-        workspace: c.workspace.value,
+        workspace: organizationWalletWorkspace(c.locator.value, c.user.id),
       },
     } as const;
 

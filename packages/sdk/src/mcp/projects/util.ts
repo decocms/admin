@@ -1,6 +1,7 @@
 import { eq } from "drizzle-orm";
 import { projects } from "../schema";
 import { AppContext } from "../context";
+import { assertHasWorkspace } from "../assertions";
 
 export async function getProjectIdFromContext(
   c: AppContext,
@@ -15,4 +16,23 @@ export async function getProjectIdFromContext(
     .limit(1)
     .then((r) => r[0]);
   return project?.id ?? null;
+}
+
+/**
+ * Supabase OR condition that filters by workspace or project id.
+ * Used temporarily for the migration to the new schema. Soon will be removed in favor of
+ * always using the project locator.
+ *
+ * Also is kinda bad doing 2 queries
+ */
+export async function workspaceOrProjectIdConditions(
+  c: AppContext,
+): Promise<string> {
+  assertHasWorkspace(c);
+  const projectId = await getProjectIdFromContext(c);
+  const orConditions = [`workspace.eq.${c.workspace.value}`];
+  if (projectId) {
+    orConditions.push(`project_id.eq.${projectId}`);
+  }
+  return orConditions.join(",");
 }

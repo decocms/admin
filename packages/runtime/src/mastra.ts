@@ -345,15 +345,19 @@ export interface CreateMCPServerOptions<
     env: Env & DefaultEnv<TSchema>,
   ) => Promise<ViewExport[]> | ViewExport[];
   resources?: Resources<Env, TSchema>;
-  tools?: Array<
-    (
-      env: Env & DefaultEnv<TSchema>,
-    ) =>
-      | Promise<CreatedTool>
-      | CreatedTool
-      | CreatedTool[]
-      | Promise<CreatedTool[]>
-  >;
+  tools?:
+    | Array<
+        (
+          env: Env & DefaultEnv<TSchema>,
+        ) =>
+          | Promise<CreatedTool>
+          | CreatedTool
+          | CreatedTool[]
+          | Promise<CreatedTool[]>
+      >
+    | ((
+        env: Env & DefaultEnv<TSchema>,
+      ) => CreatedTool[] | Promise<CreatedTool[]>);
   workflows?: Array<
     (
       env: Env & DefaultEnv<TSchema>,
@@ -648,16 +652,25 @@ export const createMCPServer = <
       );
     }
 
-    const tools = await Promise.all(
-      options.tools?.flatMap(async (tool) => {
-        const toolResult = tool(bindings);
-        const awaited = await toolResult;
-        if (Array.isArray(awaited)) {
-          return awaited;
-        }
-        return [awaited];
-      }) ?? [],
-    ).then((t) => t.flat());
+    const toolsFn =
+      typeof options.tools === "function"
+        ? options.tools
+        : async (bindings: TEnv & DefaultEnv<TSchema>) => {
+            if (typeof options.tools === "function") {
+              return await options.tools(bindings);
+            }
+            return await Promise.all(
+              options.tools?.flatMap(async (tool) => {
+                const toolResult = tool(bindings);
+                const awaited = await toolResult;
+                if (Array.isArray(awaited)) {
+                  return awaited;
+                }
+                return [awaited];
+              }) ?? [],
+            ).then((t) => t.flat());
+          };
+    const tools = await toolsFn(bindings);
 
     // since mastra workflows are thenables, we need to await and add as a prop
     const workflows = await Promise.all(

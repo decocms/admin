@@ -79,7 +79,7 @@ function Chat() {
   const isEmpty = messages.length === 0;
 
   return (
-    <div className="flex flex-col h-full min-w-[320px] bg-muted/50">
+    <div className="flex flex-col h-full min-w-[320px]">
       <div className="flex-none p-4">
         <div className="justify-self-start flex items-center gap-3 text-muted-foreground w-full">
           <div

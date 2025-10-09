@@ -311,7 +311,7 @@ const Discover = () => {
           {/* Right column - verified apps with independent scroll */}
           <div className="col-span-2 overflow-y-auto">
             <div className="flex flex-col gap-2">
-              <div className="sticky top-0 bg-background pb-2">
+              <div className="sticky top-0 bg-background pb-2 z-10">
                 <h2 className="text-muted-foreground text-sm font-mono">
                   VERIFIED BY DECO
                 </h2>

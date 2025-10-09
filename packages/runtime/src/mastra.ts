@@ -670,6 +670,7 @@ export const createMCPServer = <
         .flat() ?? [];
 
     tools.push(...workflowTools);
+    tools.push(...decoChatOAuthToolsFor<TSchema>(options.oauth));
     tools.push(createStateValidationTool(options.oauth?.state));
 
     tools.push(

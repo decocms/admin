@@ -7,6 +7,7 @@ import { Badge } from "@deco/ui/components/badge.tsx";
 import { Button } from "@deco/ui/components/button.tsx";
 import { Icon } from "@deco/ui/components/icon.tsx";
 import { Input } from "@deco/ui/components/input.tsx";
+import { cn } from "@deco/ui/lib/utils.ts";
 import { useMemo, useState } from "react";
 import { useCreateCustomApp } from "../../hooks/use-create-custom-connection.ts";
 import { useNavigateWorkspace } from "../../hooks/use-navigate-workspace.ts";
@@ -159,6 +160,8 @@ const Discover = () => {
     additionalTools: {},
   };
 
+  const hasVerifiedIntegrations = verifiedIntegrations?.length > 0;
+
   return (
     <DecopilotLayout value={decopilotContextValue}>
       <div className="flex flex-col h-full">
@@ -202,7 +205,12 @@ const Discover = () => {
         {/* Scrollable content with independent columns */}
         <div className="flex-1 p-4 grid grid-cols-6 gap-8 overflow-hidden">
           {/* Left column - main content with independent scroll */}
-          <div className="col-span-4 overflow-y-auto">
+          <div
+            className={cn(
+              "overflow-y-auto",
+              hasVerifiedIntegrations ? "col-span-4" : "col-span-6",
+            )}
+          >
             <div className="flex flex-col gap-4">
               {highlights.map((item) => {
                 if (!item.id) {
@@ -262,7 +270,7 @@ const Discover = () => {
                 ))}
               </div>
 
-              {verifiedIntegrations?.length > 0 && (
+              {hasVerifiedIntegrations && (
                 <>
                   <h2 className="text-lg pt-5 font-medium">
                     Verified Apps
@@ -309,23 +317,25 @@ const Discover = () => {
           </div>
 
           {/* Right column - verified apps with independent scroll */}
-          <div className="col-span-2 overflow-y-auto">
-            <div className="flex flex-col gap-2">
-              <div className="sticky top-0 bg-background pb-2 z-10">
-                <h2 className="text-muted-foreground text-sm font-mono">
-                  VERIFIED BY DECO
-                </h2>
-              </div>
-              <div className="grid gap-2">
-                {verifiedIntegrations?.map((integration) => (
-                  <SimpleFeaturedCard
-                    key={integration.id}
-                    integration={integration}
-                  />
-                ))}
+          {hasVerifiedIntegrations && (
+            <div className="col-span-2 overflow-y-auto">
+              <div className="flex flex-col gap-2">
+                <div className="sticky top-0 bg-background pb-2 z-10">
+                  <h2 className="text-muted-foreground text-sm font-mono">
+                    VERIFIED BY DECO
+                  </h2>
+                </div>
+                <div className="grid gap-2">
+                  {verifiedIntegrations?.map((integration) => (
+                    <SimpleFeaturedCard
+                      key={integration.id}
+                      integration={integration}
+                    />
+                  ))}
+                </div>
               </div>
             </div>
-          </div>
+          )}
         </div>
       </div>
     </DecopilotLayout>

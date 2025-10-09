@@ -379,6 +379,14 @@ export {
   type ToolDataV2,
 } from "./tools/api.ts";
 
+export {
+  createDocumentResourceV2Implementation,
+  createDocumentViewsV2,
+  documentViews,
+  DocumentResourceV2,
+  type DocumentDataV2,
+} from "./documents/api.ts";
+
 // Export Resources 2.0 bindings function
 export { createResourceV2Bindings } from "./resources-v2/bindings.ts";
 export type {

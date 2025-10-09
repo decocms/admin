@@ -15,6 +15,8 @@ import {
   compose,
   CONTRACTS_TOOLS,
   createDeconfigClientForContext,
+  createDocumentResourceV2Implementation,
+  createDocumentViewsV2,
   createMCPToolsStub,
   createToolBindingImpl,
   createToolResourceV2Implementation,
@@ -23,6 +25,7 @@ import {
   createWorkflowResourceV2Implementation,
   createWorkflowViewsV2,
   DECONFIG_TOOLS,
+  documentViews as legacyDocumentViews,
   EMAIL_TOOLS,
   getIntegration,
   getPresignedReadUrl_WITHOUT_CHECKING_AUTHORIZATION,
@@ -572,8 +575,14 @@ const createContextBasedTools = (ctx: Context) => {
     WellKnownMcpGroups.Workflows,
   );
 
+  // Create Resources 2.0 document resource implementation
+  const documentResourceV2 = createDocumentResourceV2Implementation(
+    client,
+    WellKnownMcpGroups.Documents,
+  );
+
   const resourcesClient = createMCPToolsStub({
-    tools: [...toolResourceV2, ...workflowResourceV2],
+    tools: [...toolResourceV2, ...workflowResourceV2, ...documentResourceV2],
     context: appCtx,
   });
 
@@ -604,6 +613,9 @@ const createContextBasedTools = (ctx: Context) => {
   // Create Views 2.0 implementation for workflow views
   const workflowViewsV2 = createWorkflowViewsV2();
 
+  // Create Views 2.0 implementation for document views
+  const documentViewsV2 = createDocumentViewsV2();
+
   // Create legacy workflow views for backward compatibility
 
   const workflowTools = [
@@ -619,7 +631,14 @@ const createContextBasedTools = (ctx: Context) => {
     runTool,
     ...toolViewsV2, // Add Views 2.0 implementation
   ].map((tool) => ({ ...tool, group: WellKnownMcpGroups.Tools }));
-  return [...workflowTools, ...toolsManagementTools];
+
+  const documentsTools = [
+    ...documentResourceV2, // Add new Resources 2.0 implementation
+    ...documentViewsV2, // Add Views 2.0 implementation
+    ...legacyDocumentViews, // Add legacy document views
+  ].map((tool) => ({ ...tool, group: WellKnownMcpGroups.Documents }));
+
+  return [...workflowTools, ...toolsManagementTools, ...documentsTools];
 };
 
 app.all(

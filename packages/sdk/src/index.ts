@@ -44,6 +44,13 @@ export {
   useTool as useToolByUriV2,
   useToolCallV2,
 } from "./hooks/resources-tools.ts";
+export {
+  useDocumentByUriV2,
+  useUpdateDocument,
+  useUpsertDocument,
+  useDeleteDocument,
+  buildDocumentUri,
+} from "./hooks/documents.ts";
 export * from "./hooks/store.tsx";
 export * from "./hooks/teams.ts";
 export * from "./hooks/thread.ts";
@@ -65,6 +72,11 @@ export {
   ToolDefinitionSchema,
   type ToolDefinition,
 } from "./mcp/tools/schemas.ts";
+
+export {
+  DocumentDefinitionSchema,
+  type DocumentDefinition,
+} from "./mcp/documents/schemas.ts";
 
 export * from "./models/agent.ts";
 export * from "./models/mcp.ts";

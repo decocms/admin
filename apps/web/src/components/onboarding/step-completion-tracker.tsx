@@ -25,7 +25,7 @@ export function StepCompletionTracker() {
 
       if (hasDocument && !state.completedSteps.has("document")) {
         completeStep("document");
-        // Move to next step
+        // Move to next step: database
         setTimeout(() => {
           setCurrentStep("database");
         }, 2000);
@@ -59,8 +59,9 @@ export function StepCompletionTracker() {
 
       if (hasAgent && !state.completedSteps.has("agent")) {
         completeStep("agent");
+        // Move to next step: view
         setTimeout(() => {
-          setCurrentStep("workflow");
+          setCurrentStep("view");
         }, 2000);
       }
     }

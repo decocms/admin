@@ -23,22 +23,22 @@ const STEPS: StepConfig[] = [
     description: "Define your data models",
   },
   {
-    id: "view",
-    label: "View",
-    icon: "grid_view",
-    description: "Design the UI/UX",
-  },
-  {
     id: "agent",
     label: "Agent",
     icon: "robot_2",
-    description: "Configure AI agents",
+    description: "Transform input to structured data",
+  },
+  {
+    id: "view",
+    label: "View",
+    icon: "grid_view",
+    description: "Display your entities",
   },
   {
     id: "workflow",
     label: "Workflow",
     icon: "flowchart",
-    description: "Build automation",
+    description: "Automate data collection",
   },
 ];
 

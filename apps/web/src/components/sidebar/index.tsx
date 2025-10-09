@@ -556,18 +556,18 @@ function WorkspaceViews() {
         );
       })}
 
-      {/* Start button (onboarding) */}
+      {/* Start button (onboarding) - fancy with gradient */}
       <SidebarMenuItem>
-        <SidebarMenuButton
-          className="cursor-pointer"
+        <button
+          className="w-full flex items-center gap-2 px-3 py-2 rounded-lg bg-gradient-to-r from-[#9be000] to-[#7bc000] hover:from-[#8cd000] hover:to-[#6ab000] text-[#07401a] font-medium text-sm transition-all shadow-sm hover:shadow-md cursor-pointer outline-none focus-visible:ring-2 focus-visible:ring-[#9be000]/50"
           onClick={() => {
             navigateWorkspace("/start");
             isMobile && toggleSidebar();
           }}
         >
-          <Icon name="add" size={20} className="text-muted-foreground/75" />
+          <Icon name="add" size={20} className="text-[#07401a]" />
           <span className="truncate">Start</span>
-        </SidebarMenuButton>
+        </button>
       </SidebarMenuItem>
 
       {/* Generate button - hidden for now, using Start instead */}

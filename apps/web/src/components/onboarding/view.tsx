@@ -2,10 +2,12 @@ import { useEffect, useMemo } from "react";
 import { useNavigateWorkspace } from "../../hooks/use-navigate-workspace.ts";
 import { WELL_KNOWN_AGENTS } from "@deco/sdk";
 import { AgentProvider } from "../agent/provider.tsx";
-import { ChatInput } from "../chat/chat-input.tsx";
+import { MainChat } from "../agent/chat.tsx";
 import { OnboardingStepsSidebar } from "./steps-sidebar.tsx";
 import { StepCompletionTracker } from "./step-completion-tracker.tsx";
 import { useOnboarding } from "./context.tsx";
+import { useDecopilotContext } from "../decopilot/context.tsx";
+import { useAppAdditionalTools } from "../decopilot/use-app-additional-tools.ts";
 
 const STEP_MESSAGES = {
   document: {
@@ -16,17 +18,17 @@ const STEP_MESSAGES = {
     en: "Great! Now let's read your PRD to implement the database tables and sample data.",
     pt: "Ótimo! Agora vamos ler seu PRD para implementar as tabelas do banco de dados e dados de exemplo.",
   },
-  view: {
-    en: "Perfect! Now let's create your view based on the PRD.",
-    pt: "Perfeito! Agora vamos criar sua view baseada no PRD.",
-  },
   agent: {
-    en: "Excellent! Let's configure the agents that will power your application.",
-    pt: "Excelente! Vamos configurar os agentes que vão alimentar sua aplicação.",
+    en: "Perfect! Now let's create an agent that can take input and transform it into structured data for your tables.",
+    pt: "Perfeito! Agora vamos criar um agente que pode receber entrada e transformá-la em dados estruturados para suas tabelas.",
+  },
+  view: {
+    en: "Excellent! Let's create your view to display the entities from your database.",
+    pt: "Excelente! Vamos criar sua view para exibir as entidades do seu banco de dados.",
   },
   workflow: {
-    en: "Almost there! Let's create the workflow to tie everything together.",
-    pt: "Quase lá! Vamos criar o workflow para conectar tudo.",
+    en: "Almost there! Let's create the workflow to automate data collection and use your agent to fill your tables.",
+    pt: "Quase lá! Vamos criar o workflow para automatizar a coleta de dados e usar seu agente para preencher suas tabelas.",
   },
 };
 
@@ -36,56 +38,66 @@ function getStepMessage(step: keyof typeof STEP_MESSAGES, userLanguage: "en" | "
 
 function OnboardingChat({ initialMessage }: { initialMessage: string }) {
   const threadId = useMemo(() => crypto.randomUUID(), [initialMessage]);
+  const appAdditionalTools = useAppAdditionalTools();
+  const {
+    additionalTools: contextTools,
+    rules,
+    onToolCall,
+  } = useDecopilotContext();
+
+  // Merge all additional tools
+  const allAdditionalTools = {
+    ...appAdditionalTools,
+    ...contextTools,
+  };
+
+  // Create onboarding-specific rules
+  const onboardingRules = useMemo(() => {
+    const baseRules = rules || [];
+    const stepRules = [
+      "You are helping a user through the onboarding process to create their first AI application.",
+      `Current step guidance: ${initialMessage}`,
+      "Guide them step by step, and help them create the necessary components using the available tools.",
+    ];
+    return [...baseRules, ...stepRules];
+  }, [rules, initialMessage]);
 
   return (
-    <AgentProvider
-      key={threadId}
-      agentId={WELL_KNOWN_AGENTS.decopilotAgent.id}
-      threadId={threadId}
-      uiOptions={{
-        showThreadTools: false,
-        showModelSelector: true,
-        showThreadMessages: false,
-        showAgentVisibility: false,
-        showEditAgent: false,
-      }}
-    >
-      <OnboardingChatContent initialMessage={initialMessage} />
-    </AgentProvider>
-  );
-}
-
-function OnboardingChatContent({ initialMessage }: { initialMessage: string }) {
-  const timestamp = useMemo(() => 
-    new Date().toLocaleTimeString([], {
-      hour: "2-digit",
-      minute: "2-digit",
-    }), 
-    []
-  );
-
-  return (
-    <div className="w-full flex flex-col h-full">
-      <div className="flex-1 min-h-0 overflow-auto">
-        <div className="flex flex-col gap-4 min-w-0 p-4">
-          {/* Initial Assistant Message */}
-          {initialMessage && (
-            <div className="w-full min-w-0 group relative flex items-start gap-4 px-4 text-foreground flex-row">
-              <div className="flex flex-col gap-1 min-w-0 w-full items-start max-w-[85%]">
-                <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                  <span>{timestamp}</span>
-                </div>
-                <div className="w-full min-w-0 rounded-2xl text-base break-words overflow-wrap-anywhere bg-muted/50 p-4">
-                  <p className="text-foreground">{initialMessage}</p>
-                </div>
+    <div className="relative flex h-full w-full flex-col">
+      {/* Floating instruction banner - centered vertically */}
+      {initialMessage && (
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-10 max-w-lg w-full px-4">
+          <div className="bg-background/80 border border-primary/20 rounded-xl p-4 shadow-lg backdrop-blur-md">
+            <div className="flex items-start gap-3">
+              <div className="flex-shrink-0 w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
+                <span className="text-lg">👋</span>
+              </div>
+              <div className="flex-1">
+                <p className="text-sm text-foreground">{initialMessage}</p>
               </div>
             </div>
-          )}
+          </div>
         </div>
-      </div>
-      <div className="p-2">
-        <ChatInput />
-      </div>
+      )}
+
+      {/* Chat area */}
+      <AgentProvider
+        key={threadId}
+        agentId={WELL_KNOWN_AGENTS.decopilotAgent.id}
+        threadId={threadId}
+        additionalTools={allAdditionalTools}
+        initialRules={onboardingRules}
+        onToolCall={onToolCall}
+        uiOptions={{
+          showThreadTools: false,
+          showModelSelector: true,
+          showThreadMessages: false,
+          showAgentVisibility: false,
+          showEditAgent: false,
+        }}
+      >
+        <MainChat showInput={true} initialScrollBehavior="bottom" />
+      </AgentProvider>
     </div>
   );
 }

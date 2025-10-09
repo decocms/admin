@@ -62,7 +62,7 @@ import { getProjectIdFromContext } from "../projects/util.ts";
 import {
   getRegistryApp,
   listRegistryApps,
-  RegistryApp,
+  type RegistryApp,
 } from "../registry/api.ts";
 import {
   agents,

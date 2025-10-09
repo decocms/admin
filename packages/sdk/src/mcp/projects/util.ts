@@ -18,6 +18,17 @@ export async function getProjectIdFromContext(
   return project?.id ?? null;
 }
 
+export function buildWorkspaceOrProjectIdConditions(
+  workspace: string,
+  projectId: string | null,
+): string {
+  const orConditions = [`workspace.eq.${workspace}`];
+  if (projectId !== null) {
+    orConditions.push(`project_id.eq.${projectId}`);
+  }
+  return orConditions.join(",");
+}
+
 /**
  * Supabase OR condition that filters by workspace or project id.
  * Used temporarily for the migration to the new schema. Soon will be removed in favor of
@@ -30,9 +41,5 @@ export async function workspaceOrProjectIdConditions(
 ): Promise<string> {
   assertHasWorkspace(c);
   const projectId = await getProjectIdFromContext(c);
-  const orConditions = [`workspace.eq.${c.workspace.value}`];
-  if (projectId) {
-    orConditions.push(`project_id.eq.${projectId}`);
-  }
-  return orConditions.join(",");
+  return buildWorkspaceOrProjectIdConditions(c.workspace.value, projectId);
 }

@@ -14,6 +14,7 @@ import {
   index,
 } from "drizzle-orm/pg-core";
 import { WELL_KNOWN_PLANS } from "../plan";
+import type { MCPConnection } from "../models";
 
 /**
  * create table public.deco_chat_plans (
@@ -222,13 +223,17 @@ export const registryApps = pgTable(
     name: text("name").notNull(),
     description: text("description"),
     icon: text("icon"),
-    connection: jsonb("connection").notNull(),
-    created_at: timestamp("created_at").defaultNow(),
-    updated_at: timestamp("updated_at").defaultNow(),
+    connection: jsonb("connection").$type<MCPConnection>().notNull(),
+    created_at: timestamp("created_at", { mode: "string" })
+      .defaultNow()
+      .notNull(),
+    updated_at: timestamp("updated_at", { mode: "string" })
+      .defaultNow()
+      .notNull(),
     unlisted: boolean("unlisted").notNull().default(false),
     friendly_name: text("friendly_name"),
     verified: boolean("verified").default(false),
-    metadata: jsonb("metadata"),
+    metadata: jsonb("metadata").$type<Record<string, unknown>>(),
     project_id: uuid("project_id").references(() => projects.id),
   },
   (table) => [
@@ -269,11 +274,11 @@ export const registryTools = pgTable(
       .references(() => registryApps.id),
     name: text("name").notNull(),
     description: text("description"),
-    input_schema: jsonb("input_schema"),
-    output_schema: jsonb("output_schema"),
-    metadata: jsonb("metadata"),
-    created_at: timestamp("created_at").defaultNow(),
-    updated_at: timestamp("updated_at").defaultNow(),
+    input_schema: jsonb("input_schema").$type<Record<string, unknown>>(),
+    output_schema: jsonb("output_schema").$type<Record<string, unknown>>(),
+    metadata: jsonb("metadata").$type<Record<string, unknown>>(),
+    created_at: timestamp("created_at", { mode: "string" }).defaultNow(),
+    updated_at: timestamp("updated_at", { mode: "string" }).defaultNow(),
   },
   (table) => [
     uniqueIndex("unique_registry_tool_app_name").on(table.app_id, table.name),
@@ -304,8 +309,8 @@ export const registryScopes = pgTable(
     id: uuid("id").primaryKey().defaultRandom(),
     scope_name: text("scope_name").notNull().unique(),
     workspace: text("workspace").notNull(),
-    created_at: timestamp("created_at").defaultNow(),
-    updated_at: timestamp("updated_at").defaultNow(),
+    created_at: timestamp("created_at", { mode: "string" }).defaultNow(),
+    updated_at: timestamp("updated_at", { mode: "string" }).defaultNow(),
     project_id: uuid("project_id").references(() => projects.id),
   },
   (table) => [

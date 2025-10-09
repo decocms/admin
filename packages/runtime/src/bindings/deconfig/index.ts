@@ -482,25 +482,20 @@ export const DeconfigResource = {
   define: <TDataSchema extends BaseResourceDataSchema>(
     options: Omit<DeconfigResourceOptions<TDataSchema>, "env">,
   ) => {
-    return {
-      watcher: async function* (
-        env: DefaultEnv & { DECONFIG: DeconfigClient },
-      ) {
-        const url = new URL(
-          `${env.DECO_API_URL ?? "https://api.decocms.com"}/deconfig/watch`,
-        );
-        url.searchParams.set("pathFilter", dirOf(options));
-        url.searchParams.set(
-          "branch",
-          env.DECO_REQUEST_CONTEXT.branch ?? "main",
-        );
-        url.searchParams.set("auth-token", env.DECO_REQUEST_CONTEXT.token);
-        url.searchParams.set("fromCtime", "1");
-        const eventSource = new EventSource(url);
-        const it = toAsyncIterator<{
-          path: string;
-          metadata: { address: string };
-        }>(eventSource);
+    const watcher = (env: DefaultEnv & { DECONFIG: DeconfigClient }) => {
+      const url = new URL(
+        `${env.DECO_API_URL ?? "https://api.decocms.com"}/deconfig/watch`,
+      );
+      url.searchParams.set("pathFilter", dirOf(options));
+      url.searchParams.set("branch", env.DECO_REQUEST_CONTEXT.branch ?? "main");
+      url.searchParams.set("auth-token", env.DECO_REQUEST_CONTEXT.token);
+      url.searchParams.set("fromCtime", "1");
+      const eventSource = new EventSource(url);
+      const it = toAsyncIterator<{
+        path: string;
+        metadata: { address: string };
+      }>(eventSource);
+      const iterator = async function* () {
         for await (const event of it) {
           const { path } = event;
           const { resourceId } = ResourcePath.extract(path);
@@ -512,7 +507,55 @@ export const DeconfigResource = {
             ),
           };
         }
+      };
+      return {
+        it: iterator(),
+        [Symbol.dispose]: () => {
+          eventSource.close();
+        },
+      };
+    };
+    return {
+      watchAPI: (
+        _req: Request,
+        env: DefaultEnv & { DECONFIG: DeconfigClient },
+      ) => {
+        const watch = watcher(env);
+
+        // Create SSE-compatible ReadableStream
+        const sseStream = new ReadableStream({
+          async start(controller) {
+            const encoder = new TextEncoder();
+
+            try {
+              for await (const event of watch.it) {
+                // Format as SSE: data: {json}\n\n
+                const sseData = `data: ${JSON.stringify(event)}\n\n`;
+                controller.enqueue(encoder.encode(sseData));
+              }
+              controller.close();
+            } catch (error) {
+              controller.error(error);
+            }
+          },
+          cancel() {
+            watch[Symbol.dispose]();
+            // Clean up the async iterator if needed
+          },
+        });
+
+        return new Response(sseStream, {
+          status: 200,
+          headers: {
+            "Content-Type": "text/event-stream",
+            "Cache-Control": "no-cache",
+            Connection: "keep-alive",
+            "Access-Control-Allow-Origin": "*",
+            "Access-Control-Allow-Headers": "Cache-Control",
+          },
+        });
       },
+      watcher,
       create: (env: DefaultEnv & { DECONFIG: DeconfigClient }) => {
         return createDeconfigResource({
           env,

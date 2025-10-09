@@ -115,6 +115,7 @@ export interface RequestContext<TSchema extends z.ZodTypeAny = any> {
     workspaceHint?: string;
   }) => User | undefined;
   callerApp?: string;
+  integrationId?: string;
 }
 
 // 2. Map binding type to its creator function
@@ -239,6 +240,7 @@ export const withBindings = <TEnv>({
     context = {
       state: decoded.state as Record<string, unknown>,
       token: tokenOrContext,
+      integrationId: decoded.integrationId as string,
       workspace,
       ensureAuthenticated: AUTHENTICATED(decoded.user, workspace),
       branch,
@@ -247,9 +249,9 @@ export const withBindings = <TEnv>({
     context = tokenOrContext;
     const decoded = decodeJwt(tokenOrContext.token);
     const workspace = decoded.aud as string;
-
     const appName = decoded.appName as string | undefined;
     context.callerApp = appName;
+    context.integrationId ??= decoded.integrationId as string;
     context.ensureAuthenticated = AUTHENTICATED(decoded.user, workspace);
   } else {
     context = {

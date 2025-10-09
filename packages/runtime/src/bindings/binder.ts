@@ -1,17 +1,31 @@
 // deno-lint-ignore-file no-explicit-any
 import type { z } from "zod";
-import type { MCPConnection } from "../../models/mcp.ts";
+import type { MCPConnection } from "../connection.ts";
+import { createPrivateTool } from "../mastra.ts";
 import {
   createMCPFetchStub,
-  createTool,
+  type MCPClientFetchStub,
   type ToolBinder,
-  type ToolLike,
-} from "../index.ts";
-import type { MCPClientFetchStub } from "../stub.ts";
-import { WellKnownBindings } from "./index.ts";
-export type Binder<TDefinition extends readonly ToolBinder[] = any> = {
-  [K in keyof TDefinition]: TDefinition[K];
-};
+} from "../mcp.ts";
+import { CHANNEL_BINDING_SCHEMA } from "./channels.ts";
+import { VIEW_BINDING_SCHEMA } from "./views.ts";
+
+// ToolLike is a simplified version of the Tool interface that matches what we need for bindings
+export interface ToolLike<
+  TName extends string = string,
+  TInput = any,
+  TReturn extends object | null | boolean = object,
+> {
+  name: TName;
+  description: string;
+  inputSchema: z.ZodType<TInput>;
+  outputSchema?: z.ZodType<TReturn>;
+  handler: (props: TInput) => Promise<TReturn> | TReturn;
+}
+
+export type Binder<
+  TDefinition extends readonly ToolBinder[] = readonly ToolBinder[],
+> = TDefinition;
 
 export type BinderImplementation<
   TBinder extends Binder<any>,
@@ -53,8 +67,9 @@ export const bindingClient = <TDefinition extends readonly ToolBinder[]>(
 ) => {
   return {
     implements: (tools: ToolBinder[]) => {
-      return binder.every((tool) =>
-        (tools ?? []).some((t) => t.name === tool.name),
+      return binder.every(
+        (tool) =>
+          tool.opt === true || (tools ?? []).some((t) => t.name === tool.name),
       );
     },
     forConnection: (
@@ -88,19 +103,18 @@ export const bindingClient = <TDefinition extends readonly ToolBinder[]>(
 export type MCPBindingClient<T extends ReturnType<typeof bindingClient>> =
   ReturnType<T["forConnection"]>;
 
-export const ChannelBinding = bindingClient(WellKnownBindings.Channel);
+export const ChannelBinding = bindingClient(CHANNEL_BINDING_SCHEMA);
 
-export const ViewBinding = bindingClient(WellKnownBindings.View);
+export const ViewBinding = bindingClient(VIEW_BINDING_SCHEMA);
 
 export type { Callbacks } from "./channels.ts";
-export * from "./index.ts";
 
-export const impl = <TBinder extends Binder<any>>(
+export const impl = <TBinder extends Binder>(
   schema: TBinder,
   implementation: BinderImplementation<TBinder>,
-  createToolFn: typeof createTool = createTool,
-) => {
-  const impl = [];
+  createToolFn = createPrivateTool,
+): ReturnType<typeof createToolFn>[] => {
+  const impl: ReturnType<typeof createToolFn>[] = [];
   for (const key in schema) {
     const toolSchema = schema[key];
     const toolImplementation = implementation[key];
@@ -113,7 +127,17 @@ export const impl = <TBinder extends Binder<any>>(
       throw new Error(`Implementation for ${key} is required`);
     }
 
-    impl.push(createToolFn({ ...toolSchema, ...toolImplementation }));
+    const { name, handler, ...toolLike }: ToolLike = {
+      ...toolSchema,
+      ...toolImplementation,
+    };
+    impl.push(
+      createToolFn({
+        ...toolLike,
+        id: name,
+        execute: (arg) => Promise.resolve(handler(arg)),
+      }),
+    );
   }
-  return impl satisfies ToolLike[];
+  return impl;
 };

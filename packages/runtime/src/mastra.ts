@@ -292,10 +292,46 @@ export interface ViewExport {
   rules?: string[];
 }
 
+export type Resources<Env = any, TSchema extends z.ZodTypeAny = never> = Array<
+  (env: Env & DefaultEnv<TSchema>) => {
+    name: string;
+    icon: string;
+    title: string;
+    description?: string;
+    tools: {
+      read: (args: { uri: string }) => Promise<unknown>;
+      search: (args: {
+        term: string;
+        cursor?: string;
+        limit?: number;
+      }) => Promise<unknown>;
+      create?: (
+        args: z.infer<typeof ResourceCreateInputSchema>,
+      ) => Promise<unknown>;
+      update?: (
+        args: z.infer<typeof ResourceUpdateInputSchema>,
+      ) => Promise<unknown>;
+      delete?: (
+        args: z.infer<typeof ResourceDeleteInputSchema>,
+      ) => Promise<unknown>;
+    };
+    views?: {
+      list?: { url?: string; tools?: string[]; rules?: string[] };
+      detail?: {
+        url?: string;
+        mimeTypePattern?: string;
+        resourceName?: string;
+        tools?: string[];
+        rules?: string[];
+      };
+    };
+  }
+>;
 export interface Integration {
   id: string;
   appId: string;
 }
+export type CreatedTool = ReturnType<typeof createTool>;
 export interface CreateMCPServerOptions<
   Env = any,
   TSchema extends z.ZodTypeAny = never,
@@ -308,46 +344,20 @@ export interface CreateMCPServerOptions<
   views?: (
     env: Env & DefaultEnv<TSchema>,
   ) => Promise<ViewExport[]> | ViewExport[];
-  resources?: Array<
-    (env: Env & DefaultEnv<TSchema>) => {
-      name: string;
-      icon: string;
-      title: string;
-      description?: string;
-      tools: {
-        read: (args: { uri: string }) => Promise<unknown>;
-        search: (args: {
-          term: string;
-          cursor?: string;
-          limit?: number;
-        }) => Promise<unknown>;
-        create?: (
-          args: z.infer<typeof ResourceCreateInputSchema>,
-        ) => Promise<unknown>;
-        update?: (
-          args: z.infer<typeof ResourceUpdateInputSchema>,
-        ) => Promise<unknown>;
-        delete?: (
-          args: z.infer<typeof ResourceDeleteInputSchema>,
-        ) => Promise<unknown>;
-      };
-      views?: {
-        list?: { url?: string; tools?: string[]; rules?: string[] };
-        detail?: {
-          url?: string;
-          mimeTypePattern?: string;
-          resourceName?: string;
-          tools?: string[];
-          rules?: string[];
-        };
-      };
-    }
-  >;
-  tools?: Array<
-    (
-      env: Env & DefaultEnv<TSchema>,
-    ) => Promise<ReturnType<typeof createTool>> | ReturnType<typeof createTool>
-  >;
+  resources?: Resources<Env, TSchema>;
+  tools?:
+    | Array<
+        (
+          env: Env & DefaultEnv<TSchema>,
+        ) =>
+          | Promise<CreatedTool>
+          | CreatedTool
+          | CreatedTool[]
+          | Promise<CreatedTool[]>
+      >
+    | ((
+        env: Env & DefaultEnv<TSchema>,
+      ) => CreatedTool[] | Promise<CreatedTool[]>);
   workflows?: Array<
     (
       env: Env & DefaultEnv<TSchema>,
@@ -492,9 +502,6 @@ export type MCPServer<TEnv = any, TSchema extends z.ZodTypeAny = never> = {
 
 export const isWorkflow = (value: any): value is Workflow => {
   return value && !(value instanceof Promise);
-};
-const isTool = (value: any): value is Tool => {
-  return value && value instanceof Tool;
 };
 
 export const createMCPServer = <
@@ -645,12 +652,25 @@ export const createMCPServer = <
       );
     }
 
-    const tools = await Promise.all(
-      options.tools?.map(async (tool) => {
-        const toolResult = tool(bindings);
-        return isTool(toolResult) ? toolResult : await toolResult;
-      }) ?? [],
-    );
+    const toolsFn =
+      typeof options.tools === "function"
+        ? options.tools
+        : async (bindings: TEnv & DefaultEnv<TSchema>) => {
+            if (typeof options.tools === "function") {
+              return await options.tools(bindings);
+            }
+            return await Promise.all(
+              options.tools?.flatMap(async (tool) => {
+                const toolResult = tool(bindings);
+                const awaited = await toolResult;
+                if (Array.isArray(awaited)) {
+                  return awaited;
+                }
+                return [awaited];
+              }) ?? [],
+            ).then((t) => t.flat());
+          };
+    const tools = await toolsFn(bindings);
 
     // since mastra workflows are thenables, we need to await and add as a prop
     const workflows = await Promise.all(
@@ -665,9 +685,9 @@ export const createMCPServer = <
     ).then((w) => w.map((w) => w.workflow));
 
     const workflowTools =
-      workflows
-        ?.map((workflow) => createWorkflowTools(workflow, bindings))
-        .flat() ?? [];
+      workflows?.flatMap((workflow) =>
+        createWorkflowTools(workflow, bindings),
+      ) ?? [];
 
     tools.push(...workflowTools);
     tools.push(...decoChatOAuthToolsFor<TSchema>(options.oauth));

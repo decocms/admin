@@ -1,4 +1,4 @@
-import { useProjects, updateProject, type Project } from "@deco/sdk";
+import { useProjects, useUpdateProject, type Project } from "@deco/sdk";
 import { Button } from "@deco/ui/components/button.tsx";
 import {
   Dialog,
@@ -39,7 +39,7 @@ function ProjectCard({
 }) {
   const [isRenameDialogOpen, setIsRenameDialogOpen] = useState(false);
   const [newName, setNewName] = useState(project.title);
-  const [isRenaming, setIsRenaming] = useState(false);
+  const updateProjectMutation = useUpdateProject();
 
   const handleRename = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -48,20 +48,16 @@ function ProjectCard({
       return;
     }
 
-    setIsRenaming(true);
     try {
-      await updateProject({
+      await updateProjectMutation.mutateAsync({
         org: project.org.slug,
         project: project.slug,
         data: { title: newName.trim() },
       });
       setIsRenameDialogOpen(false);
-      // Optionally trigger a refetch or show success message
     } catch (error) {
       console.error("Failed to rename project:", error);
-      // Optionally show error message
-    } finally {
-      setIsRenaming(false);
+      // Error state is handled by the mutation hook
     }
   };
 
@@ -140,20 +136,25 @@ function ProjectCard({
                 value={newName}
                 onChange={(e) => setNewName(e.target.value)}
                 placeholder="Enter project name"
-                disabled={isRenaming}
+                disabled={updateProjectMutation.isPending}
               />
+              {updateProjectMutation.error && (
+                <p className="text-sm text-destructive">
+                  Failed to rename project. Please try again.
+                </p>
+              )}
             </div>
             <div className="flex justify-end space-x-2">
               <Button
                 type="button"
                 variant="outline"
                 onClick={() => setIsRenameDialogOpen(false)}
-                disabled={isRenaming}
+                disabled={updateProjectMutation.isPending}
               >
                 Cancel
               </Button>
-              <Button type="submit" disabled={isRenaming || !newName.trim()}>
-                {isRenaming ? "Renaming..." : "Rename"}
+              <Button type="submit" disabled={updateProjectMutation.isPending || !newName.trim()}>
+                {updateProjectMutation.isPending ? "Renaming..." : "Rename"}
               </Button>
             </div>
           </form>

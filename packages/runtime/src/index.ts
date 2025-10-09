@@ -233,12 +233,11 @@ export const withBindings = <TEnv>({
   const apiUrl = env.DECO_API_URL ?? "https://api.decocms.com";
   let context;
   if (typeof tokenOrContext === "string") {
-    const isJwt = tokenOrContext.split(".").length === 3;
-    const decoded = isJwt ? decodeJwt(tokenOrContext) : {};
+    const decoded = decodeJwt(tokenOrContext);
     const workspace = decoded.aud as string;
 
     context = {
-      state: decoded?.state as Record<string, unknown>,
+      state: decoded.state as Record<string, unknown>,
       token: tokenOrContext,
       workspace,
       ensureAuthenticated: AUTHENTICATED(decoded.user, workspace),

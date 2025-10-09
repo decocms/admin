@@ -48,7 +48,7 @@ export type BaseResourceDataSchema = z.ZodObject<{
  * @param dataSchema - The Zod schema for the resource data type
  * @returns Array of tool bindings for Resources 2.0 CRUD operations
  */
-export function createResourceV2Bindings<
+export function createResourceBindings<
   TDataSchema extends BaseResourceDataSchema,
 >(resourceName: string, dataSchema: TDataSchema) {
   return [
@@ -86,6 +86,6 @@ export function createResourceV2Bindings<
 }
 
 // Export types for TypeScript usage
-export type ResourceV2Binding<TDataSchema extends BaseResourceDataSchema> =
-  ReturnType<typeof createResourceV2Bindings<TDataSchema>>;
-export type ResourceV2BindingsFunction = typeof createResourceV2Bindings;
+export type ResourceBinding<TDataSchema extends BaseResourceDataSchema> =
+  ReturnType<typeof createResourceBindings<TDataSchema>>;
+export type ResourceBindingsFunction = typeof createResourceBindings;

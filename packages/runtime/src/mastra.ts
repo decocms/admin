@@ -331,6 +331,7 @@ export interface Integration {
   id: string;
   appId: string;
 }
+export type CreatedTool = ReturnType<typeof createTool>;
 export interface CreateMCPServerOptions<
   Env = any,
   TSchema extends z.ZodTypeAny = never,
@@ -347,7 +348,11 @@ export interface CreateMCPServerOptions<
   tools?: Array<
     (
       env: Env & DefaultEnv<TSchema>,
-    ) => Promise<ReturnType<typeof createTool>> | ReturnType<typeof createTool>
+    ) =>
+      | Promise<CreatedTool>
+      | CreatedTool
+      | CreatedTool[]
+      | Promise<CreatedTool[]>
   >;
   workflows?: Array<
     (
@@ -493,9 +498,6 @@ export type MCPServer<TEnv = any, TSchema extends z.ZodTypeAny = never> = {
 
 export const isWorkflow = (value: any): value is Workflow => {
   return value && !(value instanceof Promise);
-};
-const isTool = (value: any): value is Tool => {
-  return value && value instanceof Tool;
 };
 
 export const createMCPServer = <
@@ -647,11 +649,15 @@ export const createMCPServer = <
     }
 
     const tools = await Promise.all(
-      options.tools?.map(async (tool) => {
+      options.tools?.flatMap(async (tool) => {
         const toolResult = tool(bindings);
-        return isTool(toolResult) ? toolResult : await toolResult;
+        const awaited = await toolResult;
+        if (Array.isArray(awaited)) {
+          return awaited;
+        }
+        return [awaited];
       }) ?? [],
-    );
+    ).then((t) => t.flat());
 
     // since mastra workflows are thenables, we need to await and add as a prop
     const workflows = await Promise.all(
@@ -666,9 +672,9 @@ export const createMCPServer = <
     ).then((w) => w.map((w) => w.workflow));
 
     const workflowTools =
-      workflows
-        ?.map((workflow) => createWorkflowTools(workflow, bindings))
-        .flat() ?? [];
+      workflows?.flatMap((workflow) =>
+        createWorkflowTools(workflow, bindings),
+      ) ?? [];
 
     tools.push(...workflowTools);
     tools.push(...decoChatOAuthToolsFor<TSchema>(options.oauth));

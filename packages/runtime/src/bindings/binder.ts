@@ -1,12 +1,12 @@
 // deno-lint-ignore-file no-explicit-any
 import type { z } from "zod";
 import type { MCPConnection } from "../connection.ts";
+import { createPrivateTool } from "../mastra.ts";
 import {
   createMCPFetchStub,
   type MCPClientFetchStub,
   type ToolBinder,
 } from "../mcp.ts";
-import { createTool } from "../mastra.ts";
 import { CHANNEL_BINDING_SCHEMA } from "./channels.ts";
 import { VIEW_BINDING_SCHEMA } from "./views.ts";
 
@@ -21,8 +21,6 @@ export interface ToolLike<
   inputSchema: z.ZodType<TInput>;
   outputSchema?: z.ZodType<TReturn>;
   handler: (props: TInput) => Promise<TReturn> | TReturn;
-  group?: string;
-  annotations?: any;
 }
 
 export type Binder<
@@ -110,24 +108,12 @@ export const ViewBinding = bindingClient(VIEW_BINDING_SCHEMA);
 
 export type { Callbacks } from "./channels.ts";
 
-export type CreateToolOptions = {
-  name: string;
-  description: string;
-  inputSchema: z.ZodTypeAny;
-  outputSchema?: z.ZodTypeAny;
-  handler: (...args: unknown[]) => unknown;
-  group?: string;
-  annotations?: unknown;
-};
-
-type CreateToolFunction = (opts: CreateToolOptions) => ToolLike;
-
 export const impl = <TBinder extends Binder>(
   schema: TBinder,
   implementation: BinderImplementation<TBinder>,
-  createToolFn: CreateToolFunction = createTool as unknown as CreateToolFunction,
-): ToolLike[] => {
-  const impl: ToolLike[] = [];
+  createToolFn = createPrivateTool,
+): ReturnType<typeof createToolFn>[] => {
+  const impl: ReturnType<typeof createToolFn>[] = [];
   for (const key in schema) {
     const toolSchema = schema[key];
     const toolImplementation = implementation[key];
@@ -140,7 +126,17 @@ export const impl = <TBinder extends Binder>(
       throw new Error(`Implementation for ${key} is required`);
     }
 
-    impl.push(createToolFn({ ...toolSchema, ...toolImplementation }));
+    const { name, handler, ...toolLike }: ToolLike = {
+      ...toolSchema,
+      ...toolImplementation,
+    };
+    impl.push(
+      createToolFn({
+        ...toolLike,
+        id: name,
+        execute: (arg) => Promise.resolve(handler(arg)),
+      }),
+    );
   }
   return impl;
 };

@@ -17,3 +17,15 @@ export const registerProjectActivity = (
   project: string,
 ): Promise<{ success: boolean }> =>
   MCPClient.PROJECT_ACTIVITY_REGISTER({ org, project });
+
+export interface UpdateProjectInput {
+  org: string;
+  project: string;
+  data: Partial<Pick<Project, "title">>;
+  [key: string]: unknown;
+}
+
+export const updateProject = (
+  input: UpdateProjectInput,
+  init?: RequestInit,
+): Promise<Project> => MCPClient.PROJECT_UPDATE(input, init) as Promise<Project>;

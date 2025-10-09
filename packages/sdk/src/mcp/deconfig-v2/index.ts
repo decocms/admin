@@ -4,7 +4,7 @@ import {
   assertHasWorkspace,
   assertWorkspaceResourceAccess,
 } from "../assertions.ts";
-import { impl } from "../bindings/index.ts";
+import { impl } from "../bindings/binder.ts";
 import { AppContext } from "../context.ts";
 import { createMCPToolsStub, DeconfigClient, MCPClientStub } from "../index.ts";
 import {

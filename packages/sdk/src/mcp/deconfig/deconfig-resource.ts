@@ -1,12 +1,13 @@
 import { mimeType } from "@deco/workers-runtime/resources";
+import z from "zod";
 import { NotFoundError, UserInputError } from "../../index.ts";
 import {
   assertHasWorkspace,
   assertWorkspaceResourceAccess,
 } from "../assertions.ts";
-import { impl, WellKnownBindings } from "../bindings/index.ts";
+import { impl } from "../bindings/binder.ts";
+import { WellKnownBindings } from "../bindings/index.ts";
 import { createMCPToolsStub, DeconfigClient, MCPClientStub } from "../index.ts";
-import z from "zod";
 
 export type ResourcesBinding = (typeof WellKnownBindings)["Resources"];
 export type ResourcesTools = ResourcesBinding[number]["name"];

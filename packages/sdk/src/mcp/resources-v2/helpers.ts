@@ -1,6 +1,6 @@
 import { z } from "zod";
-import type { BinderImplementation } from "../bindings/index.ts";
-import { impl, type AppContext, type ToolBinder } from "../index.ts";
+import { type BinderImplementation, impl } from "../bindings/binder.ts";
+import { type AppContext, type ToolBinder } from "../index.ts";
 import {
   createCreateInputSchema,
   createCreateOutputSchema,
@@ -198,7 +198,7 @@ export function createResourceImplementation<TDataSchema extends z.ZodTypeAny>(
   ];
 
   // Use existing impl function from packages/sdk/src/mcp/bindings/binder.ts
-  return impl(tools, handlers as unknown as BinderImplementation<typeof tools>);
+  return impl(tools, handlers as BinderImplementation<typeof tools>);
 }
 
 /**

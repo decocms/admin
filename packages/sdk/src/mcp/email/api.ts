@@ -4,7 +4,8 @@ import {
   assertHasWorkspace,
   assertWorkspaceResourceAccess,
 } from "../assertions.ts";
-import { impl, WellKnownBindings } from "../bindings/index.ts";
+import { impl } from "../bindings/binder.ts";
+import { WellKnownBindings } from "../bindings/index.ts";
 
 const EMAIL_GROUP = WellKnownMcpGroups.Email;
 export const EMAIL_TOOLS = impl(WellKnownBindings.Channel, [

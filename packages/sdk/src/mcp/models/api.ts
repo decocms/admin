@@ -100,6 +100,7 @@ export const createModel = createTool({
         c.db,
         c.envVars.LLMS_ENCRYPTION_KEY,
         workspace,
+        await getProjectIdFromContext(c),
       );
       await llmVault.storeApiKey(data.id, apiKey);
     }
@@ -151,6 +152,7 @@ export const updateModel = createTool({
             c.db,
             c.envVars.LLMS_ENCRYPTION_KEY,
             workspace,
+            await getProjectIdFromContext(c),
           );
 
           await llmVault.updateApiKey(id, value);

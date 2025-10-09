@@ -212,6 +212,8 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
           this.context.db,
           this.env.LLMS_ENCRYPTION_KEY,
           this.workspace,
+          // TODO(@viktormarinho): figure out what to do here
+          null,
         )
       : undefined;
   }

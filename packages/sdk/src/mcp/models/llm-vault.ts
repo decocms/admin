@@ -1,6 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { Buffer } from "node:buffer";
 import crypto from "node:crypto";
+import { buildWorkspaceOrProjectIdConditions } from "../projects/util";
 
 export interface LLMVault {
   readApiKey(modelId: string): Promise<{ model: string; apiKey: string }>;
@@ -12,18 +13,19 @@ export interface LLMVault {
 export class SupabaseLLMVault implements LLMVault {
   private encryptionKey: Buffer;
   private ivLength = 16; // AES block size
-  private workspace: string;
+  private projectSupaConditions: string;
 
   constructor(
     private db: SupabaseClient,
     encryptionKey: string,
     workspace: string,
+    projectId: string | null
   ) {
     if (encryptionKey.length !== 32) {
       throw new Error("Encryption key must be 32 characters long for AES-256");
     }
     this.encryptionKey = Buffer.from(encryptionKey);
-    this.workspace = workspace;
+    this.projectSupaConditions = buildWorkspaceOrProjectIdConditions(workspace, projectId);
   }
 
   private encrypt(text: string): string {
@@ -41,7 +43,7 @@ export class SupabaseLLMVault implements LLMVault {
       .from("models")
       .select("model, api_key_hash")
       .eq("id", modelId)
-      .eq("workspace", this.workspace)
+      .or(this.projectSupaConditions)
       .single();
 
     if (error) throw error;
@@ -72,7 +74,7 @@ export class SupabaseLLMVault implements LLMVault {
       .from("models")
       .update({ api_key_hash: encryptedKey })
       .eq("id", modelId)
-      .eq("workspace", this.workspace);
+      .or(this.projectSupaConditions);
 
     if (error) throw error;
   }
@@ -84,7 +86,7 @@ export class SupabaseLLMVault implements LLMVault {
       .from("models")
       .update({ api_key_hash: encryptedKey })
       .eq("id", modelId)
-      .eq("workspace", this.workspace);
+      .or(this.projectSupaConditions);
 
     if (error) throw error;
   }
@@ -94,7 +96,7 @@ export class SupabaseLLMVault implements LLMVault {
       .from("models")
       .update({ api_key_hash: null })
       .eq("id", modelId)
-      .eq("workspace", this.workspace);
+      .or(this.projectSupaConditions);
 
     if (error) throw error;
   }

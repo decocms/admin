@@ -67,8 +67,9 @@ export const bindingClient = <TDefinition extends readonly ToolBinder[]>(
 ) => {
   return {
     implements: (tools: ToolBinder[]) => {
-      return binder.every((tool) =>
-        (tools ?? []).some((t) => t.name === tool.name),
+      return binder.every(
+        (tool) =>
+          tool.opt === true || (tools ?? []).some((t) => t.name === tool.name),
       );
     },
     forConnection: (

@@ -68,26 +68,40 @@ export const toAsyncIterator = <T>(emitter: EventSource): AsyncIterable<T> => {
     }
   };
 
-  emitter.addEventListener("change", (data) => {
-    queue.push(JSON.parse(data.data));
+  const changeHandler = (data: MessageEvent) => {
+    try {
+      queue.push(JSON.parse(data.data));
+    } catch {
+      // Silently ignore malformed data or optionally log error
+      return;
+    }
     triggerLoop();
-  });
+  };
 
-  emitter.addEventListener("error", () => {
+  const errorHandler = () => {
     done = true;
     triggerLoop();
-  });
+  };
+
+  emitter.addEventListener("change", changeHandler);
+  emitter.addEventListener("error", errorHandler);
 
   return {
     async *[Symbol.asyncIterator]() {
-      while (true) {
-        const value = queue.shift();
-        if (value) {
-          yield value;
-        } else {
-          if (done) return;
-          await new Promise((resolve) => (waitPromise = resolve));
+      try {
+        while (true) {
+          const value = queue.shift();
+          if (value) {
+            yield value;
+          } else {
+            if (done) return;
+            await new Promise((resolve) => (waitPromise = resolve));
+          }
         }
+      } finally {
+        emitter.removeEventListener("change", changeHandler);
+        emitter.removeEventListener("error", errorHandler);
+        emitter.close();
       }
     },
   };

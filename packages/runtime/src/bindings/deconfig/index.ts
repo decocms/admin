@@ -349,7 +349,7 @@ export const createDeconfigResource = <
 
         const fileContent = JSON.stringify(resourceData, null, 2);
 
-        await deconfig.PUT_FILE({
+        const putResult = await deconfig.PUT_FILE({
           path: filePath,
           content: fileContent,
           metadata: {
@@ -360,6 +360,12 @@ export const createDeconfigResource = <
             description: validatedData.description || "",
           },
         });
+
+        if (putResult.conflict) {
+          throw new UserInputError(
+            "Resource write conflicted. Please refresh and retry.",
+          );
+        }
 
         return {
           uri,
@@ -408,18 +414,24 @@ export const createDeconfigResource = <
 
         const user = env.DECO_REQUEST_CONTEXT.ensureAuthenticated();
 
+        const previousCreatedBy =
+          typeof existingData["created_by"] === "string"
+            ? (existingData["created_by"] as string)
+            : undefined;
+
         // Merge existing data with updates
         const updatedData = {
           ...existingData,
           ...validatedData,
           id: resourceId,
+          createdBy: previousCreatedBy,
           updated_at: new Date().toISOString(),
           updated_by: user?.id ? String(user.id) : undefined,
         };
 
         const fileContent = JSON.stringify(updatedData, null, 2);
 
-        await deconfig.PUT_FILE({
+        const putResult = await deconfig.PUT_FILE({
           path: filePath,
           content: fileContent,
           metadata: {
@@ -430,6 +442,12 @@ export const createDeconfigResource = <
             description: validatedData.description || "",
           },
         });
+
+        if (putResult.conflict) {
+          throw new UserInputError(
+            "Resource write conflicted. Please refresh and retry.",
+          );
+        }
 
         return {
           uri,

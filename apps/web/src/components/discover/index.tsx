@@ -29,12 +29,12 @@ const HIGHLIGHTS = [
 ];
 
 // For the future, it should be controlled in a view
-const FEATURED = [
-  "@deco/google-gmail",
-  "@deco/google-calendar",
-  "@deco/notion",
-  "@deco/slack",
-  "@deco/google-sheets",
+const FEATURED: string[] = [
+  // "@deco/google-gmail",
+  // "@deco/google-calendar",
+  // "@deco/notion",
+  // "@deco/slack",
+  // "@deco/google-sheets",
 ];
 
 type FeaturedIntegration = Integration & {
@@ -123,8 +123,7 @@ const Discover = () => {
     (integration) => FEATURED.includes(integration.name),
   );
   const verifiedIntegrations = integrations?.integrations.filter(
-    (integration) =>
-      integration.verified && !FEATURED.includes(integration.name),
+    (integration) => integration.verified,
   );
 
   const experimentalIntegrations = integrations?.integrations.filter(
@@ -255,20 +254,24 @@ const Discover = () => {
                 );
               })}
 
-              <h2 className="text-lg pt-5 font-medium">
-                Featured Apps
-                <span className="text-muted-foreground font-mono font-normal text-sm ml-2">
-                  {featuredIntegrations?.length}
-                </span>
-              </h2>
-              <div className="grid grid-cols-3 gap-4">
-                {featuredIntegrations?.map((integration) => (
-                  <FeaturedCard
-                    key={integration.id}
-                    integration={integration}
-                  />
-                ))}
-              </div>
+              {featuredIntegrations?.length > 0 && (
+                <>
+                  <h2 className="text-lg pt-5 font-medium">
+                    Featured Apps
+                    <span className="text-muted-foreground font-mono font-normal text-sm ml-2">
+                      {featuredIntegrations?.length}
+                    </span>
+                  </h2>
+                  <div className="grid grid-cols-3 gap-4">
+                    {featuredIntegrations?.map((integration) => (
+                      <FeaturedCard
+                        key={integration.id}
+                        integration={integration}
+                      />
+                    ))}
+                  </div>
+                </>
+              )}
 
               {hasVerifiedIntegrations && (
                 <>
@@ -279,7 +282,7 @@ const Discover = () => {
                     </span>
                   </h2>
                   <div className="grid grid-cols-3 gap-4">
-                    {verifiedIntegrations?.map((integration) => (
+                    {verifiedIntegrations.map((integration) => (
                       <FeaturedCard
                         key={integration.id}
                         integration={integration}

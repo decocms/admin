@@ -58,7 +58,10 @@ import {
   WellKnownBindings,
 } from "../index.ts";
 import { listKnowledgeBases } from "../knowledge/api.ts";
-import { getProjectIdFromContext, workspaceOrProjectIdConditions } from "../projects/util.ts";
+import {
+  getProjectIdFromContext,
+  workspaceOrProjectIdConditions,
+} from "../projects/util.ts";
 import {
   getRegistryApp,
   listRegistryApps,

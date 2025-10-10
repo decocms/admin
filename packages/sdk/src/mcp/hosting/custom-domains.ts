@@ -58,7 +58,8 @@ export const assertsDomainUniqueness = async (
     if (
       hostingApp &&
       hostingApp.slug === slug &&
-      (hostingApp.workspace === c.workspace?.value || hostingApp.project_id === projectId)
+      (hostingApp.workspace === c.workspace?.value ||
+        hostingApp.project_id === projectId)
     ) {
       // Domain is already allocated to the same script, so skip the check
       return;

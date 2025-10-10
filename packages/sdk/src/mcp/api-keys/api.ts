@@ -22,7 +22,11 @@ import {
 import { createToolGroup } from "../context.ts";
 import { MCPClient } from "../index.ts";
 import { getIntegration } from "../integrations/api.ts";
-import { buildWorkspaceOrProjectIdConditions, getProjectIdFromContext, workspaceOrProjectIdConditions } from "../projects/util.ts";
+import {
+  buildWorkspaceOrProjectIdConditions,
+  getProjectIdFromContext,
+  workspaceOrProjectIdConditions,
+} from "../projects/util.ts";
 import { getRegistryApp } from "../registry/api.ts";
 import { apiKeys, organizations, projects } from "../schema.ts";
 
@@ -369,9 +373,6 @@ export const updateApiKey = createTool({
     assertHasWorkspace(c);
     await assertWorkspaceResourceAccess(c);
 
-    const db = c.db;
-    const workspace = c.workspace.value;
-
     // deno-lint-ignore no-explicit-any
     const updateData: Record<string, any> = {};
     if (name !== undefined) updateData.name = name;
@@ -379,7 +380,7 @@ export const updateApiKey = createTool({
     if (policies !== undefined) updateData.policies = policies;
     updateData.updated_at = new Date().toISOString();
 
-    const { data: apiKey, error } = await db
+    const { data: apiKey, error } = await c.db
       .from("deco_chat_api_keys")
       .update(updateData)
       .eq("id", id)

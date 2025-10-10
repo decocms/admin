@@ -18,7 +18,9 @@ export async function getProjectIdFromContext(
   return project?.id ?? null;
 }
 
-export async function getOrgIdFromContext(c: AppContext): Promise<number | null> {
+export async function getOrgIdFromContext(
+  c: AppContext,
+): Promise<number | null> {
   if (!c.locator?.org) {
     return null;
   }

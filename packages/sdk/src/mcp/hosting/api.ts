@@ -25,7 +25,10 @@ import { assertsDomainUniqueness } from "./custom-domains.ts";
 import { type DeployResult, deployToCloudflare } from "./deployment.ts";
 import type { WranglerConfig } from "./wrangler.ts";
 import { HOSTING_APP_DEPLOY_PROMPT } from "./hosting-app-deploy-prompt.ts";
-import { getProjectIdFromContext, workspaceOrProjectIdConditions } from "../projects/util.ts";
+import {
+  getProjectIdFromContext,
+  workspaceOrProjectIdConditions,
+} from "../projects/util.ts";
 
 const SCRIPT_FILE_NAME = "script.mjs";
 export const HOSTING_APPS_DOMAIN = ".deco.page";
@@ -1326,7 +1329,9 @@ export async function promoteDeployment(
       )
     `)
     .eq("id", deploymentId)
-    .or(`deco_chat_hosting_apps.workspace.eq.${workspace},deco_chat_hosting_apps.project_id.eq.${projectId}`)
+    .or(
+      `deco_chat_hosting_apps.workspace.eq.${workspace},deco_chat_hosting_apps.project_id.eq.${projectId}`,
+    )
     .single();
 
   if (deploymentError || !deployment) {

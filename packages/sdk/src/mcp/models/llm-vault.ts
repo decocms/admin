@@ -19,13 +19,16 @@ export class SupabaseLLMVault implements LLMVault {
     private db: SupabaseClient,
     encryptionKey: string,
     workspace: string,
-    projectId: string | null
+    projectId: string | null,
   ) {
     if (encryptionKey.length !== 32) {
       throw new Error("Encryption key must be 32 characters long for AES-256");
     }
     this.encryptionKey = Buffer.from(encryptionKey);
-    this.projectSupaConditions = buildWorkspaceOrProjectIdConditions(workspace, projectId);
+    this.projectSupaConditions = buildWorkspaceOrProjectIdConditions(
+      workspace,
+      projectId,
+    );
   }
 
   private encrypt(text: string): string {

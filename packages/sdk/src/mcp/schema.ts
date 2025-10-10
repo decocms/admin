@@ -574,7 +574,9 @@ export const triggers = pgTable(
     created_at: timestamp("created_at").defaultNow(),
     updated_at: timestamp("updated_at").defaultNow(),
     workspace: text("workspace").notNull(),
-    agent_id: uuid("agent_id").notNull().references(() => agents.id),
+    agent_id: uuid("agent_id")
+      .notNull()
+      .references(() => agents.id),
     metadata: jsonb("metadata").notNull(),
     user_id: uuid("user_id").references(() => profiles.user_id),
     active: boolean("active").notNull().default(true),

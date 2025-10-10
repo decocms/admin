@@ -12,7 +12,11 @@ import {
 import { ChannelBinding } from "../bindings/binder.ts";
 import { type AppContext, createToolGroup } from "../context.ts";
 import { convertFromDatabase } from "../integrations/api.ts";
-import { getProjectIdFromContext, buildWorkspaceOrProjectIdConditions, workspaceOrProjectIdConditions } from "../projects/util.ts";
+import {
+  getProjectIdFromContext,
+  buildWorkspaceOrProjectIdConditions,
+  workspaceOrProjectIdConditions,
+} from "../projects/util.ts";
 
 const SELECT_CHANNEL_QUERY = `
   *,
@@ -323,10 +327,7 @@ export const getChannel = createTool({
     assertHasWorkspace(c);
     await assertWorkspaceResourceAccess(c);
 
-    const db = c.db;
-    const workspace = c.workspace.value;
-
-    const { data: channel, error } = await db
+    const { data: channel, error } = await c.db
       .from("deco_chat_channels")
       .select(SELECT_CHANNEL_QUERY)
       .eq("id", id)

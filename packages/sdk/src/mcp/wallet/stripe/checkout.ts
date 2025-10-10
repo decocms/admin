@@ -33,7 +33,11 @@ const getOrCreateWorkspaceStripeCustomer = async (
   const { data: maybeCustomer } = await ctx.db
     .from("deco_chat_customer")
     .select("customer_id")
-    .or(orgId ? `workspace.eq.${workspace},org_id.eq.${orgId}` : `workspace.eq.${workspace}`)
+    .or(
+      orgId
+        ? `workspace.eq.${workspace},org_id.eq.${orgId}`
+        : `workspace.eq.${workspace}`,
+    )
     .maybeSingle();
 
   if (maybeCustomer) {

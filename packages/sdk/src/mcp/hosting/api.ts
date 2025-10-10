@@ -25,6 +25,7 @@ import { assertsDomainUniqueness } from "./custom-domains.ts";
 import { type DeployResult, deployToCloudflare } from "./deployment.ts";
 import type { WranglerConfig } from "./wrangler.ts";
 import { HOSTING_APP_DEPLOY_PROMPT } from "./hosting-app-deploy-prompt.ts";
+import { getProjectIdFromContext, workspaceOrProjectIdConditions } from "../projects/util.ts";
 
 const SCRIPT_FILE_NAME = "script.mjs";
 export const HOSTING_APPS_DOMAIN = ".deco.page";
@@ -123,13 +124,10 @@ export const listApps = createTool({
   handler: async (_, c) => {
     await assertWorkspaceResourceAccess(c);
 
-    assertHasWorkspace(c);
-    const workspace = c.workspace.value;
-
     const { data, error } = await c.db
       .from(DECO_CHAT_HOSTING_APPS_TABLE)
       .select("*")
-      .eq("workspace", workspace);
+      .or(await workspaceOrProjectIdConditions(c));
 
     if (error) throw error;
 
@@ -170,7 +168,7 @@ async function updateDatabase({
       updated_at: new Date().toISOString(),
     })
     .eq("slug", scriptSlug)
-    .eq("workspace", workspace)
+    .or(await workspaceOrProjectIdConditions(c))
     .select("*")
     .single();
 
@@ -185,6 +183,7 @@ async function updateDatabase({
       .from(DECO_CHAT_HOSTING_APPS_TABLE)
       .upsert({
         workspace,
+        project_id: await getProjectIdFromContext(c),
         slug: scriptSlug,
         updated_at: new Date().toISOString(),
       })
@@ -732,8 +731,6 @@ export const deleteApp = createTool({
   inputSchema: z.lazy(() => AppInputSchema),
   handler: async ({ appSlug }, c) => {
     await assertWorkspaceResourceAccess(c);
-    assertHasWorkspace(c);
-    const workspace = c.workspace.value;
     const scriptSlug = appSlug;
 
     const cf = c.cf;
@@ -758,7 +755,7 @@ export const deleteApp = createTool({
     const { error: dbError } = await c.db
       .from(DECO_CHAT_HOSTING_APPS_TABLE)
       .delete()
-      .eq("workspace", workspace)
+      .or(await workspaceOrProjectIdConditions(c))
       .eq("slug", scriptSlug);
 
     if (dbError) throw dbError;
@@ -774,15 +771,13 @@ export const getAppInfo = createTool({
   inputSchema: z.lazy(() => AppInputSchema),
   handler: async ({ appSlug }, c) => {
     await assertWorkspaceResourceAccess(c);
-    assertHasWorkspace(c);
-    const workspace = c.workspace.value;
     const scriptSlug = appSlug;
 
     // 1. Fetch from DB
     const { data, error } = await c.db
       .from(DECO_CHAT_HOSTING_APPS_TABLE)
       .select("*")
-      .eq("workspace", workspace)
+      .or(await workspaceOrProjectIdConditions(c))
       .eq("slug", scriptSlug)
       .single();
 
@@ -819,20 +814,19 @@ export const listAppDeployments = createTool({
         id: z.string(),
         slug: z.string(),
         workspace: z.string(),
+        project_id: z.string(),
       }),
     }),
   ),
   handler: async ({ appSlug }, c) => {
     await assertWorkspaceResourceAccess(c);
-    assertHasWorkspace(c);
-    const workspace = c.workspace.value;
     const scriptSlug = appSlug;
 
     // 1. First verify the app exists and get app info
     const { data: app, error: appError } = await c.db
       .from(DECO_CHAT_HOSTING_APPS_TABLE)
-      .select("id, slug, workspace")
-      .eq("workspace", workspace)
+      .select("id, slug, workspace, project_id")
+      .or(await workspaceOrProjectIdConditions(c))
       .eq("slug", scriptSlug)
       .single();
 
@@ -864,6 +858,7 @@ export const listAppDeployments = createTool({
         id: app.id,
         slug: app.slug,
         workspace: app.workspace,
+        project_id: app.project_id,
       },
     };
   },
@@ -1315,6 +1310,7 @@ export async function promoteDeployment(
 ): Promise<void> {
   assertHasWorkspace(c);
   const workspace = c.workspace.value;
+  const projectId = await getProjectIdFromContext(c);
 
   // Verify the deployment exists and belongs to this workspace
   const { data: deployment, error: deploymentError } = await c.db
@@ -1325,11 +1321,12 @@ export async function promoteDeployment(
       deco_chat_hosting_apps!inner(
         id,
         slug,
-        workspace
+        workspace,
+        project_id
       )
     `)
     .eq("id", deploymentId)
-    .eq("deco_chat_hosting_apps.workspace", workspace)
+    .or(`deco_chat_hosting_apps.workspace.eq.${workspace},deco_chat_hosting_apps.project_id.eq.${projectId}`)
     .single();
 
   if (deploymentError || !deployment) {

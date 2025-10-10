@@ -12,6 +12,7 @@ import {
 import { ChannelBinding } from "../bindings/binder.ts";
 import { type AppContext, createToolGroup } from "../context.ts";
 import { convertFromDatabase } from "../integrations/api.ts";
+import { getProjectIdFromContext, buildWorkspaceOrProjectIdConditions, workspaceOrProjectIdConditions } from "../projects/util.ts";
 
 const SELECT_CHANNEL_QUERY = `
   *,
@@ -61,12 +62,11 @@ export const listChannels = createTool({
     await assertWorkspaceResourceAccess(c);
 
     const db = c.db;
-    const workspace = c.workspace.value;
 
     const query = db
       .from("deco_chat_channels")
       .select(SELECT_CHANNEL_QUERY)
-      .eq("workspace", workspace);
+      .or(await workspaceOrProjectIdConditions(c));
 
     const { data, error } = await query;
 
@@ -97,13 +97,14 @@ export const createChannel = createTool({
   handler: async ({ discriminator, integrationId, agentId, name }, c) => {
     assertHasWorkspace(c);
     await assertWorkspaceResourceAccess(c);
+    const projectId = await getProjectIdFromContext(c);
     const workspace = c.workspace.value;
 
     const integrationIdWithoutPrefix = integrationId.replace("i:", "");
     const { data: integration, error: integrationError } = await c.db
       .from("deco_chat_integrations")
       .select("*")
-      .eq("workspace", workspace) // this ensures the integration is in the same workspace as the channel
+      .or(buildWorkspaceOrProjectIdConditions(workspace, projectId))
       .eq("id", integrationIdWithoutPrefix)
       .maybeSingle();
     if (integrationError) {
@@ -122,6 +123,7 @@ export const createChannel = createTool({
       .insert({
         discriminator,
         workspace,
+        project_id: projectId,
         integration_id: integrationIdWithoutPrefix,
         name,
       })
@@ -216,7 +218,7 @@ export const channelJoin = createTool({
       .from("deco_chat_channels")
       .select(SELECT_CHANNEL_QUERY)
       .eq("id", id)
-      .eq("workspace", workspace)
+      .or(await workspaceOrProjectIdConditions(c))
       .single();
 
     if (error) {
@@ -280,7 +282,7 @@ export const channelLeave = createTool({
       .from("deco_chat_channels")
       .select(SELECT_CHANNEL_QUERY)
       .eq("id", id)
-      .eq("workspace", workspace)
+      .or(await workspaceOrProjectIdConditions(c))
       .single();
 
     if (error) {
@@ -328,7 +330,7 @@ export const getChannel = createTool({
       .from("deco_chat_channels")
       .select(SELECT_CHANNEL_QUERY)
       .eq("id", id)
-      .eq("workspace", workspace)
+      .or(await workspaceOrProjectIdConditions(c))
       .maybeSingle();
 
     if (error) {
@@ -381,11 +383,13 @@ export const deleteChannel = createTool({
     const db = c.db;
     const workspace = c.workspace.value;
 
+    const conditions = await workspaceOrProjectIdConditions(c);
+
     const { data: channel, error: selectError } = await db
       .from("deco_chat_channels")
       .select(SELECT_CHANNEL_QUERY)
       .eq("id", id)
-      .eq("workspace", workspace)
+      .or(conditions)
       .single();
 
     if (selectError) {
@@ -404,7 +408,7 @@ export const deleteChannel = createTool({
       .from("deco_chat_channels")
       .delete()
       .eq("id", id)
-      .eq("workspace", workspace);
+      .or(conditions);
 
     if (error) {
       throw new InternalServerError(error.message);

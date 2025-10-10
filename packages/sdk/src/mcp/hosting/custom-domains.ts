@@ -2,6 +2,7 @@ import { resolveCname } from "node:dns";
 import { UserInputError } from "../../errors.ts";
 import type { AppContext } from "../context.ts";
 import { Entrypoint } from "./api.ts";
+import { getProjectIdFromContext } from "../projects/util.ts";
 
 export const assertsDomainOwnership = async (
   domain: string,
@@ -33,13 +34,14 @@ export const assertsDomainUniqueness = async (
   domain: string,
   slug: string,
 ) => {
+  const projectId = await getProjectIdFromContext(c);
   const { data, error } = await c.db
     .from("deco_chat_hosting_routes")
     .select(`
       *,
       deco_chat_hosting_apps_deployments!deployment_id(
         id,
-        deco_chat_hosting_apps!hosting_app_id(slug, workspace)
+        deco_chat_hosting_apps!hosting_app_id(slug, workspace, project_id)
       )
     `)
     .eq("route_pattern", domain)
@@ -56,7 +58,7 @@ export const assertsDomainUniqueness = async (
     if (
       hostingApp &&
       hostingApp.slug === slug &&
-      hostingApp.workspace === c.workspace?.value
+      (hostingApp.workspace === c.workspace?.value || hostingApp.project_id === projectId)
     ) {
       // Domain is already allocated to the same script, so skip the check
       return;

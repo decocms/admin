@@ -317,7 +317,7 @@ function ConfigureConnectionInstanceForm({
         const views = viewsResult.views || [];
 
         const viewsToPin = views.filter(
-          (view) => view.installBehavior === "autoPin",
+          (view) => view.installBehavior === "autoPin" || view.installBehavior === "open",
         );
         const viewToOpen = views.find(
           (view) => view.installBehavior === "open",

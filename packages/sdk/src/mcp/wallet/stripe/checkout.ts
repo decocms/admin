@@ -45,7 +45,7 @@ const getOrCreateWorkspaceStripeCustomer = async (
 
   const customer = await stripe.customers.create({
     metadata: {
-      product: "deco.chat",
+      product: "decocms",
       workspace,
     },
   });

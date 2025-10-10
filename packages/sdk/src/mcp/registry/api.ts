@@ -120,9 +120,12 @@ export const listRegistryScopes = createTool({
     const workspace = c.workspace.value;
     const projectId = await getProjectIdFromContext(c);
 
-    const ownerFilter = projectId ?
-      or(eq(registryScopes.project_id, projectId), eq(registryScopes.workspace, workspace)) :
-      eq(registryScopes.workspace, workspace);
+    const ownerFilter = projectId
+      ? or(
+          eq(registryScopes.project_id, projectId),
+          eq(registryScopes.workspace, workspace),
+        )
+      : eq(registryScopes.workspace, workspace);
 
     const filter = and(
       ownerFilter,
@@ -237,19 +240,16 @@ export const getRegistryApp = createTool({
         {
           AND: [
             { unlisted: true },
-            { OR: [ projectId ? { project_id: projectId } : {}, { workspace } ] },
+            { OR: [projectId ? { project_id: projectId } : {}, { workspace }] },
           ],
         },
       ],
-    };    
+    };
 
     if ("id" in ctx && ctx.id) {
       app = await c.drizzle.query.registryApps.findFirst({
         where: {
-          AND: [
-            { id: ctx.id },
-            visibility,
-          ],
+          AND: [{ id: ctx.id }, visibility],
         },
         with: {
           tools: true,
@@ -262,7 +262,7 @@ export const getRegistryApp = createTool({
       app = await c.drizzle.query.registryApps.findFirst({
         where: {
           AND: [
-            { 
+            {
               name: appName,
               scope: {
                 scope_name: scopeName,

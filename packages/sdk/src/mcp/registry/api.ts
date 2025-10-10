@@ -77,16 +77,8 @@ const Filters = {
     return query
       ? {
           OR: [
-            {
-              name: {
-                ilike: `%${query}%`,
-              },
-            },
-            {
-              description: {
-                ilike: `%${query}%`,
-              },
-            },
+            { name: { ilike: `%${query}%` } },
+            { description: { ilike: `%${query}%` } },
           ],
         }
       : {};

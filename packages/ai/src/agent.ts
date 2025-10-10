@@ -1003,7 +1003,7 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
           if (!agentInstructions) return undefined;
           return await resolveMentions(
             agentInstructions,
-            this.workspace,
+            this.locator,
             this.metadata?.mcpClient,
           );
         },
@@ -1176,7 +1176,7 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
           if (!agentInstructions) return undefined;
           return await resolveMentions(
             agentInstructions,
-            this.workspace,
+            this.locator,
             this.metadata?.mcpClient,
           );
         },
@@ -1378,7 +1378,7 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
             if (!options.instructions) return undefined;
             return await resolveMentions(
               options.instructions,
-              this.workspace,
+              this.locator,
               this.metadata?.mcpClient,
             );
           },

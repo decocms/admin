@@ -309,8 +309,8 @@ export const registryScopes = pgTable(
     id: uuid("id").primaryKey().defaultRandom(),
     scope_name: text("scope_name").notNull().unique(),
     workspace: text("workspace").notNull(),
-    created_at: timestamp("created_at", { mode: "string" }).defaultNow(),
-    updated_at: timestamp("updated_at", { mode: "string" }).defaultNow(),
+    created_at: timestamp("created_at", { mode: "string" }).defaultNow().notNull(),
+    updated_at: timestamp("updated_at", { mode: "string" }).defaultNow().notNull(),
     project_id: uuid("project_id").references(() => projects.id),
   },
   (table) => [

@@ -223,14 +223,33 @@ export const getRegistryApp = createTool({
   ),
   outputSchema: z.lazy(() => RegistryAppSchema),
   handler: async (ctx, c) => {
+    assertHasWorkspace(c);
     c.resourceAccess.grant(); // this method is public
 
     let app: DbApp | undefined = undefined;
 
+    const workspace = c.workspace.value;
+    const projectId = await getProjectIdFromContext(c);
+
+    const visibility = {
+      OR: [
+        { unlisted: false },
+        {
+          AND: [
+            { unlisted: true },
+            { OR: [ projectId ? { project_id: projectId } : {}, { workspace } ] },
+          ],
+        },
+      ],
+    };    
+
     if ("id" in ctx && ctx.id) {
       app = await c.drizzle.query.registryApps.findFirst({
         where: {
-          id: ctx.id,
+          AND: [
+            { id: ctx.id },
+            visibility,
+          ],
         },
         with: {
           tools: true,
@@ -242,10 +261,15 @@ export const getRegistryApp = createTool({
 
       app = await c.drizzle.query.registryApps.findFirst({
         where: {
-          name: appName,
-          scope: {
-            scope_name: scopeName,
-          },
+          AND: [
+            { 
+              name: appName,
+              scope: {
+                scope_name: scopeName,
+              },
+            },
+            visibility,
+          ],
         },
         with: {
           tools: true,

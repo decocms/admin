@@ -316,8 +316,12 @@ function ConfigureConnectionInstanceForm({
         );
         const views = viewsResult.views || [];
 
-        const viewsToPin = views.filter((view) => view.installBehavior === "autoPin");
-        const viewToOpen = views.find((view) => view.installBehavior === "open");
+        const viewsToPin = views.filter(
+          (view) => view.installBehavior === "autoPin",
+        );
+        const viewToOpen = views.find(
+          (view) => view.installBehavior === "open",
+        );
 
         const promisesViewsToPin = viewsToPin.map((view) => {
           return addViewMutation.mutateAsync({

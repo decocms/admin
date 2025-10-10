@@ -10,7 +10,6 @@ import {
   getPrompt,
   getPromptVersions,
   listPrompts,
-  searchPrompts,
   updatePrompt,
   type UpdatePromptInput,
 } from "../crud/prompts.ts";
@@ -93,21 +92,6 @@ export function useDeletePrompt() {
         queryKey: KEYS.PROMPTS(locator).slice(0, 2),
       });
     },
-  });
-}
-
-export function useSearchPrompts(
-  query: string,
-  limit: number = 10,
-  offset: number = 0,
-) {
-  const { locator } = useSDK();
-  return useSuspenseQuery({
-    queryKey: KEYS.PROMPTS_SEARCH(locator, query, limit, offset),
-    queryFn: ({ signal }) =>
-      searchPrompts(locator, { query, limit, offset }, { signal }),
-    retry: (failureCount, error) =>
-      error instanceof InternalServerError && failureCount < 2,
   });
 }
 

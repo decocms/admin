@@ -127,7 +127,7 @@ export type MCPClientFetchStub<TDefinition extends readonly ToolBinder[]> = {
     infer TInput,
     infer TReturn
   >
-    ? (params: TInput, init?: RequestInit) => Promise<TReturn>
+    ? (params: TInput, init?: RequestInit) => Promise<Awaited<TReturn>>
     : never;
 };
 

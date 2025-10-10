@@ -1,18 +1,3 @@
-import { z } from "zod";
-import { NotFoundError, UserInputError } from "../../index.ts";
-import {
-  assertHasWorkspace,
-  assertWorkspaceResourceAccess,
-} from "../assertions.ts";
-import { impl } from "../bindings/binder.ts";
-import { AppContext } from "../context.ts";
-import { createMCPToolsStub, DeconfigClient, MCPClientStub } from "../index.ts";
-import {
-  BaseResourceDataSchema,
-  createResourceV2Bindings,
-} from "../resources-v2/bindings.ts";
-import { ResourceUriSchema } from "../resources-v2/schemas.ts";
-
 /**
  * DeconfigResources 2.0
  *
@@ -28,135 +13,70 @@ import { ResourceUriSchema } from "../resources-v2/schemas.ts";
  * - Support for custom resource schemas and enhancements
  */
 
-export type ResourcesV2Binding<TDataSchema extends BaseResourceDataSchema> =
-  ReturnType<typeof createResourceV2Bindings<TDataSchema>>;
-export type ResourcesV2Tools<TDataSchema extends BaseResourceDataSchema> =
-  ResourcesV2Binding<TDataSchema>[number]["name"];
+import { DefaultEnv } from "../../index.ts";
+import { impl } from "../binder.ts";
+import type { BaseResourceDataSchema } from "../resources/bindings.ts";
+import { createResourceBindings } from "../resources/bindings.ts";
+import { ResourceUriSchema } from "../resources/schemas.ts";
+import {
+  ResourcePath,
+  constructResourceUri,
+  extractResourceId,
+  getMetadataString,
+  normalizeDirectory,
+  toAsyncIterator,
+} from "./helpers.ts";
+import type { DeconfigClient, DeconfigResourceOptions } from "./types.ts";
 
-export type EnhancedResourcesV2Tools<
-  TDataSchema extends BaseResourceDataSchema,
-> = Partial<
-  Record<
-    ResourcesV2Tools<TDataSchema>,
-    {
-      description: string;
-    }
-  >
->;
+export type {
+  EnhancedResourcesTools,
+  ResourcesBinding,
+  ResourcesTools,
+} from "./types.ts";
+export type { DeconfigClient, DeconfigResourceOptions };
 
-export interface DeconfigResourceV2Options<
-  TDataSchema extends BaseResourceDataSchema,
-> {
-  deconfig: DeconfigClient;
-  directory: string;
-  resourceName: string;
-  dataSchema: TDataSchema;
-  group?: string;
-  integrationId?: string;
-  enhancements?: EnhancedResourcesV2Tools<TDataSchema>;
-  validate?: (
-    data: z.infer<TDataSchema>,
-    context: AppContext,
-    deconfig: DeconfigClient,
-  ) => Promise<void>;
+// Error classes - these will be imported from SDK when used there
+export class NotFoundError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "NotFoundError";
+  }
 }
 
-const normalizeDirectory = (dir: string) => {
-  // Ensure directory starts with / and doesn't end with /
-  const normalized = dir.startsWith("/") ? dir : `/${dir}`;
-  return normalized.endsWith("/") ? normalized.slice(0, -1) : normalized;
-};
-
-const buildFilePath = (directory: string, resourceId: string) => {
-  const normalizedDir = normalizeDirectory(directory);
-  return `${normalizedDir}/${resourceId}.json`;
-};
-
-const extractResourceId = (uri: string) => {
-  // Extract ID from Resources 2.0 URI format: rsc://integrationId/resourceName/resource-id
-  const match = uri.match(/^rsc:\/\/[^\/]+\/[^\/]+\/(.+)$/);
-  if (!match) {
-    throw new UserInputError("Invalid Resources 2.0 URI format");
+export class UserInputError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "UserInputError";
   }
-  return match[1];
-};
+}
 
-const constructResourceUri = (
-  integrationId: string,
-  resourceName: string,
-  resourceId: string,
+const dirOf = (
+  options: Pick<
+    DeconfigResourceOptions<BaseResourceDataSchema>,
+    "directory" | "resourceName"
+  >,
 ) => {
-  return `rsc://${integrationId}/${resourceName}/${resourceId}`;
+  return options.directory
+    ? options.directory
+    : `/resources/${options.resourceName}`;
 };
-
-function getMetadataValue(metadata: unknown, key: string): unknown {
-  if (!metadata || typeof metadata !== "object") return undefined;
-  const metaObj = metadata as Record<string, unknown>;
-  if (key in metaObj) return metaObj[key];
-  const nested = metaObj.metadata;
-  if (nested && typeof nested === "object" && key in nested) {
-    return (nested as Record<string, unknown>)[key];
-  }
-  return undefined;
-}
-
-function getMetadataString(metadata: unknown, key: string): string | undefined {
-  const value = getMetadataValue(metadata, key);
-  return typeof value === "string" ? value : undefined;
-}
-
-export const DeconfigResourceV2 = {
-  define: <TDataSchema extends BaseResourceDataSchema>(
-    options: Omit<
-      DeconfigResourceV2Options<TDataSchema>,
-      "deconfig" | "integrationId"
-    >,
-  ) => {
-    return {
-      client: (
-        deconfig: DeconfigClient,
-        integrationId: string,
-      ): MCPClientStub<ResourcesV2Binding<TDataSchema>> => {
-        const tools = deconfigResourceV2({
-          deconfig,
-          ...options,
-          integrationId,
-        });
-        return createMCPToolsStub({
-          tools,
-        }) as MCPClientStub<ResourcesV2Binding<TDataSchema>>;
-      },
-      create: (deconfig: DeconfigClient, integrationId: string) => {
-        return deconfigResourceV2({
-          deconfig,
-          ...options,
-          integrationId,
-        });
-      },
-    };
-  },
-};
-
-export const deconfigResourceV2 = <TDataSchema extends BaseResourceDataSchema>(
-  options: DeconfigResourceV2Options<TDataSchema>,
+export const createDeconfigResource = <
+  TDataSchema extends BaseResourceDataSchema,
+>(
+  options: DeconfigResourceOptions<TDataSchema>,
 ) => {
   const {
-    deconfig,
-    directory,
     resourceName,
     dataSchema,
-    integrationId,
     enhancements,
-    group,
+    env,
     validate: semanticValidate,
   } = options;
-
-  if (!integrationId) {
-    throw new Error("integrationId is required for DeconfigResourceV2");
-  }
+  const deconfig = env.DECONFIG;
+  const directory = dirOf(options);
 
   // Create resource-specific bindings using the provided data schema
-  const resourceBindings = createResourceV2Bindings(resourceName, dataSchema);
+  const resourceBindings = createResourceBindings(resourceName, dataSchema);
 
   const tools = impl(resourceBindings, [
     // deco_resource_search
@@ -166,13 +86,14 @@ export const deconfigResourceV2 = <TDataSchema extends BaseResourceDataSchema>(
           `DECO_RESOURCE_${resourceName.toUpperCase()}_SEARCH` as keyof typeof enhancements
         ]?.description ||
         `Search ${resourceName} resources in the DECONFIG directory ${directory}`,
-      handler: async (
-        { term, page = 1, pageSize = 10, filters, sortBy, sortOrder },
-        c,
-      ) => {
-        assertHasWorkspace(c);
-        await assertWorkspaceResourceAccess(c, "LIST_FILES");
-
+      handler: async ({
+        term,
+        page = 1,
+        pageSize = 10,
+        filters,
+        sortBy,
+        sortOrder,
+      }) => {
         const normalizedDir = normalizeDirectory(directory);
         const offset = pageSize !== Infinity ? (page - 1) * pageSize : 0;
 
@@ -230,7 +151,7 @@ export const deconfigResourceV2 = <TDataSchema extends BaseResourceDataSchema>(
           if (createdByFilter) {
             const createdBySet = new Set(
               Array.isArray(createdByFilter)
-                ? createdByFilter.map((v) => String(v))
+                ? createdByFilter.map((v: unknown) => String(v))
                 : [String(createdByFilter)],
             );
             filteredFiles = filteredFiles.filter(({ metadata }) => {
@@ -242,7 +163,7 @@ export const deconfigResourceV2 = <TDataSchema extends BaseResourceDataSchema>(
           if (updatedByFilter) {
             const updatedBySet = new Set(
               Array.isArray(updatedByFilter)
-                ? updatedByFilter.map((v) => String(v))
+                ? updatedByFilter.map((v: unknown) => String(v))
                 : [String(updatedByFilter)],
             );
             filteredFiles = filteredFiles.filter(({ metadata }) => {
@@ -291,18 +212,15 @@ export const deconfigResourceV2 = <TDataSchema extends BaseResourceDataSchema>(
           items: items.map(({ resourceId, metadata }) => {
             // Construct Resources 2.0 URI
             const uri = constructResourceUri(
-              options.integrationId!, // integrationId
-              options.resourceName, // resourceName
+              env.DECO_REQUEST_CONTEXT.integrationId as string,
+              resourceName,
               resourceId,
             );
 
             // Extract title and description from metadata, with fallbacks
-            const name = getMetadataString(metadata, "name") || resourceId; // Fallback to resourceId (basename)
+            const name = getMetadataString(metadata, "name") || resourceId;
             const description =
-              getMetadataString(metadata, "description") || ""; // Fallback to empty string
-
-            // For search operations, we only return title and description
-            // The full data structure is available through the read operation
+              getMetadataString(metadata, "description") || "";
 
             return {
               uri,
@@ -338,15 +256,12 @@ export const deconfigResourceV2 = <TDataSchema extends BaseResourceDataSchema>(
           `DECO_RESOURCE_${resourceName.toUpperCase()}_READ` as keyof typeof enhancements
         ]?.description ||
         `Read a ${resourceName} resource from the DECONFIG directory ${directory}`,
-      handler: async ({ uri }, c) => {
-        assertHasWorkspace(c);
-        await assertWorkspaceResourceAccess(c, "READ_FILE");
-
+      handler: async ({ uri }) => {
         // Validate URI format
         ResourceUriSchema.parse(uri);
 
         const resourceId = extractResourceId(uri);
-        const filePath = buildFilePath(directory, resourceId);
+        const filePath = ResourcePath.build(directory, resourceId);
 
         try {
           const fileData = await deconfig.READ_FILE({
@@ -401,16 +316,13 @@ export const deconfigResourceV2 = <TDataSchema extends BaseResourceDataSchema>(
           `DECO_RESOURCE_${resourceName.toUpperCase()}_CREATE` as keyof typeof enhancements
         ]?.description ||
         `Create a new ${resourceName} resource in the DECONFIG directory ${directory}`,
-      handler: async ({ data }, c) => {
-        assertHasWorkspace(c);
-        await assertWorkspaceResourceAccess(c, "PUT_FILE");
-
+      handler: async ({ data }) => {
         // Validate data against schema
         const validatedData = dataSchema.parse(data);
 
         // Run semantic validation if provided
         if (semanticValidate) {
-          await semanticValidate(validatedData, c, deconfig);
+          await semanticValidate(validatedData);
         }
 
         // Extract resource ID from name or generate one
@@ -418,43 +330,48 @@ export const deconfigResourceV2 = <TDataSchema extends BaseResourceDataSchema>(
           (validatedData.name as string)?.replace(/[^a-zA-Z0-9-_]/g, "-") ||
           crypto.randomUUID();
         const uri = constructResourceUri(
-          options.integrationId!, // integrationId
-          options.resourceName, // resourceName
+          env.DECO_REQUEST_CONTEXT.integrationId as string,
+          resourceName,
           resourceId,
         );
-        const filePath = buildFilePath(directory, resourceId);
-
+        const filePath = ResourcePath.build(directory, resourceId);
+        const user = env.DECO_REQUEST_CONTEXT.ensureAuthenticated();
         // Prepare resource data with metadata
         const resourceData = {
           ...validatedData,
           id: resourceId,
           created_at: new Date().toISOString(),
           updated_at: new Date().toISOString(),
-          created_by: c.user?.id ? String(c.user.id) : undefined,
-          updated_by: c.user?.id ? String(c.user.id) : undefined,
+          created_by: user?.id ? String(user.id) : undefined,
+          updated_by: user?.id ? String(user.id) : undefined,
         };
 
         const fileContent = JSON.stringify(resourceData, null, 2);
-
-        await deconfig.PUT_FILE({
+        const putResult = await deconfig.PUT_FILE({
           path: filePath,
           content: fileContent,
           metadata: {
             resourceType: resourceName,
             resourceId,
-            createdBy: c.user?.id,
+            createdBy: user?.id,
             name: validatedData.name || resourceId,
             description: validatedData.description || "",
           },
         });
+
+        if (putResult.conflict) {
+          throw new UserInputError(
+            "Resource write conflicted. Please refresh and retry.",
+          );
+        }
 
         return {
           uri,
           data: validatedData,
           created_at: resourceData.created_at,
           updated_at: resourceData.updated_at,
-          created_by: c.user?.id ? String(c.user.id) : undefined,
-          updated_by: c.user?.id ? String(c.user.id) : undefined,
+          created_by: user?.id ? String(user.id) : undefined,
+          updated_by: user?.id ? String(user.id) : undefined,
         };
       },
     },
@@ -466,15 +383,12 @@ export const deconfigResourceV2 = <TDataSchema extends BaseResourceDataSchema>(
           `DECO_RESOURCE_${resourceName.toUpperCase()}_UPDATE` as keyof typeof enhancements
         ]?.description ||
         `Update a ${resourceName} resource in the DECONFIG directory ${directory}`,
-      handler: async ({ uri, data }, c) => {
-        assertHasWorkspace(c);
-        await assertWorkspaceResourceAccess(c, "READ_FILE");
-
+      handler: async ({ uri, data }) => {
         // Validate URI format
         ResourceUriSchema.parse(uri);
 
         const resourceId = extractResourceId(uri);
-        const filePath = buildFilePath(directory, resourceId);
+        const filePath = ResourcePath.build(directory, resourceId);
 
         // Read existing file to get current data
         let existingData: Record<string, unknown> = {};
@@ -493,31 +407,45 @@ export const deconfigResourceV2 = <TDataSchema extends BaseResourceDataSchema>(
 
         // Run semantic validation if provided
         if (semanticValidate) {
-          await semanticValidate(validatedData, c, deconfig);
+          await semanticValidate(validatedData);
         }
+
+        const user = env.DECO_REQUEST_CONTEXT.ensureAuthenticated();
+
+        const previousCreatedBy =
+          typeof existingData["created_by"] === "string"
+            ? (existingData["created_by"] as string)
+            : undefined;
 
         // Merge existing data with updates
         const updatedData = {
           ...existingData,
           ...validatedData,
           id: resourceId,
+          createdBy: previousCreatedBy,
           updated_at: new Date().toISOString(),
-          updated_by: c.user?.id ? String(c.user.id) : undefined,
+          updated_by: user?.id ? String(user.id) : undefined,
         };
 
         const fileContent = JSON.stringify(updatedData, null, 2);
 
-        await deconfig.PUT_FILE({
+        const putResult = await deconfig.PUT_FILE({
           path: filePath,
           content: fileContent,
           metadata: {
             resourceType: resourceName,
             resourceId,
-            updatedBy: c.user?.id,
+            updatedBy: user?.id,
             name: validatedData.name || resourceId,
             description: validatedData.description || "",
           },
         });
+
+        if (putResult.conflict) {
+          throw new UserInputError(
+            "Resource write conflicted. Please refresh and retry.",
+          );
+        }
 
         return {
           uri,
@@ -525,7 +453,7 @@ export const deconfigResourceV2 = <TDataSchema extends BaseResourceDataSchema>(
           created_at: existingData.created_at as string,
           updated_at: updatedData.updated_at,
           created_by: existingData.created_by as string,
-          updated_by: c.user?.id ? String(c.user.id) : undefined,
+          updated_by: user?.id ? String(user.id) : undefined,
         };
       },
     },
@@ -537,15 +465,12 @@ export const deconfigResourceV2 = <TDataSchema extends BaseResourceDataSchema>(
           `DECO_RESOURCE_${resourceName.toUpperCase()}_DELETE` as keyof typeof enhancements
         ]?.description ||
         `Delete a ${resourceName} resource from the DECONFIG directory ${directory}`,
-      handler: async ({ uri }, c) => {
-        assertHasWorkspace(c);
-        await assertWorkspaceResourceAccess(c, "DELETE_FILE");
-
+      handler: async ({ uri }) => {
         // Validate URI format
         ResourceUriSchema.parse(uri);
 
         const resourceId = extractResourceId(uri);
-        const filePath = buildFilePath(directory, resourceId);
+        const filePath = ResourcePath.build(directory, resourceId);
 
         try {
           await deconfig.DELETE_FILE({
@@ -566,11 +491,97 @@ export const deconfigResourceV2 = <TDataSchema extends BaseResourceDataSchema>(
     },
   ]);
 
-  if (group) {
-    tools.forEach((tool: { group?: string }) => {
-      tool.group = group;
-    });
-  }
-
   return tools;
+};
+
+const removeLeadingSlash = (url: string) => {
+  return url.startsWith("/") ? url.slice(1) : url;
+};
+export const DeconfigResource = {
+  define: <TDataSchema extends BaseResourceDataSchema>(
+    options: Omit<DeconfigResourceOptions<TDataSchema>, "env">,
+  ) => {
+    const watcher = (env: DefaultEnv & { DECONFIG: DeconfigClient }) => {
+      const url = new URL(
+        `/${removeLeadingSlash(env.DECO_REQUEST_CONTEXT.workspace)}/deconfig/watch`,
+        `${env.DECO_API_URL ?? "https://api.decocms.com"}`,
+      );
+      url.searchParams.set("pathFilter", dirOf(options));
+      url.searchParams.set("branch", env.DECO_REQUEST_CONTEXT.branch ?? "main");
+      url.searchParams.set("auth-token", env.DECO_REQUEST_CONTEXT.token);
+      url.searchParams.set("fromCtime", "1");
+      const eventSource = new EventSource(url);
+      const it = toAsyncIterator<{
+        path: string;
+        metadata: { address: string };
+      }>(eventSource);
+      const iterator = async function* () {
+        for await (const event of it) {
+          const { path } = event;
+          const { resourceId } = ResourcePath.extract(path);
+          yield {
+            id: constructResourceUri(
+              env.DECO_REQUEST_CONTEXT.integrationId as string,
+              options.resourceName,
+              resourceId,
+            ),
+          };
+        }
+      };
+      return {
+        it: iterator(),
+        [Symbol.dispose]: () => {
+          eventSource.close();
+        },
+      };
+    };
+    return {
+      watchAPI: (
+        _req: Request,
+        env: DefaultEnv & { DECONFIG: DeconfigClient },
+      ) => {
+        const watch = watcher(env);
+
+        // Create SSE-compatible ReadableStream
+        const sseStream = new ReadableStream({
+          async start(controller) {
+            const encoder = new TextEncoder();
+
+            try {
+              for await (const event of watch.it) {
+                // Format as SSE: data: {json}\n\n
+                const sseData = `data: ${JSON.stringify(event)}\n\n`;
+                controller.enqueue(encoder.encode(sseData));
+              }
+              controller.close();
+            } catch (error) {
+              controller.error(error);
+            }
+          },
+          cancel() {
+            watch[Symbol.dispose]();
+            // Clean up the async iterator if needed
+          },
+        });
+
+        return new Response(sseStream, {
+          status: 200,
+          headers: {
+            "Content-Type": "text/event-stream",
+            "Cache-Control": "no-cache",
+            Connection: "keep-alive",
+            "Access-Control-Allow-Origin": "*",
+            "Access-Control-Allow-Headers": "Cache-Control",
+          },
+        });
+      },
+      watcher,
+      create: (env: DefaultEnv & { DECONFIG: DeconfigClient }) => {
+        return createDeconfigResource({
+          env,
+          ...options,
+        });
+      },
+    };
+  },
 };

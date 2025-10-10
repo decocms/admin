@@ -49,7 +49,7 @@ const hasMentions = (content: string) => {
 // TODO: Resolve all types of mentions
 export async function resolveMentions(
   content: string,
-  workspace: ProjectLocator,
+  locator: ProjectLocator,
   client?: ReturnType<(typeof MCPClient)["forLocator"]>,
   options?: {
     /**
@@ -78,7 +78,7 @@ export async function resolveMentions(
   }
 
   const prompts = await listPrompts(
-    workspace,
+    locator,
     {
       ids: promptIds,
       resolveMentions: true,

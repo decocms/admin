@@ -1,5 +1,5 @@
 import { z } from "zod";
-import type { Binder } from "../bindings/index.ts";
+import type { ToolBinder } from "../../mcp.ts";
 import {
   createCreateInputSchema,
   createCreateOutputSchema,
@@ -48,20 +48,20 @@ export type BaseResourceDataSchema = z.ZodObject<{
  * @param dataSchema - The Zod schema for the resource data type
  * @returns Array of tool bindings for Resources 2.0 CRUD operations
  */
-export function createResourceV2Bindings<
+export function createResourceBindings<
   TDataSchema extends BaseResourceDataSchema,
 >(resourceName: string, dataSchema: TDataSchema) {
   return [
     {
       name: `DECO_RESOURCE_${resourceName.toUpperCase()}_SEARCH` as const,
-      inputSchema: z.lazy(() => SearchInputSchema),
+      inputSchema: SearchInputSchema,
       outputSchema: createSearchOutputSchema(
         createItemSchema(dataSchema.pick({ name: true, description: true })),
       ),
     },
     {
       name: `DECO_RESOURCE_${resourceName.toUpperCase()}_READ` as const,
-      inputSchema: z.lazy(() => ReadInputSchema),
+      inputSchema: ReadInputSchema,
       outputSchema: createReadOutputSchema(dataSchema),
     },
     {
@@ -78,14 +78,14 @@ export function createResourceV2Bindings<
     },
     {
       name: `DECO_RESOURCE_${resourceName.toUpperCase()}_DELETE` as const,
-      inputSchema: z.lazy(() => DeleteInputSchema),
-      outputSchema: z.lazy(() => DeleteOutputSchema),
+      inputSchema: DeleteInputSchema,
+      outputSchema: DeleteOutputSchema,
       opt: true,
     },
-  ] as const satisfies Binder;
+  ] as const satisfies readonly ToolBinder[];
 }
 
 // Export types for TypeScript usage
-export type ResourceV2Binding<TDataSchema extends BaseResourceDataSchema> =
-  ReturnType<typeof createResourceV2Bindings<TDataSchema>>;
-export type ResourceV2BindingsFunction = typeof createResourceV2Bindings;
+export type ResourceBinding<TDataSchema extends BaseResourceDataSchema> =
+  ReturnType<typeof createResourceBindings<TDataSchema>>;
+export type ResourceBindingsFunction = typeof createResourceBindings;

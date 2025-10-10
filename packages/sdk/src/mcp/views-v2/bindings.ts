@@ -1,5 +1,5 @@
 import { z } from "zod";
-import type { Binder } from "../bindings/binder.ts";
+import type { Binder } from "../bindings/index.ts";
 import { createResourceV2Bindings } from "../resources-v2/bindings.ts";
 import { ViewDataSchema } from "./schemas.ts";
 import { ViewRenderOutputSchema } from "./schemas.ts";

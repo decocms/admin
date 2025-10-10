@@ -22,6 +22,7 @@ import {
   WellKnownWallets,
 } from "../wallet/index.ts";
 import { getPlan } from "../wallet/plans.ts";
+import { getProjectIdFromContext } from "../projects/util.ts";
 
 const createLLMUsageTransaction = (opts: {
   usage: LanguageModelUsage;
@@ -116,6 +117,7 @@ const setupLLMInstance = async (modelId: string, c: AppContext) => {
           c.db,
           c.envVars.LLMS_ENCRYPTION_KEY,
           c.workspace.value,
+          await getProjectIdFromContext(c),
         );
   const llmConfig = await getLLMConfig({
     modelId,

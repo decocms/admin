@@ -294,25 +294,14 @@ export const listRegistryApps = createTool({
           Filters.searchApp(search),
           {
             OR: [
-              {
-                unlisted: false,
-              },
+              { unlisted: false },
               {
                 AND: [
+                  { unlisted: true },
                   {
-                    unlisted: true,
-                  },
-                  {
-                    OR: [
-                      projectId
-                        ? {
-                            project_id: projectId,
-                          }
-                        : {},
-                      {
-                        workspace,
-                      },
-                    ],
+                    OR: projectId
+                      ? [{ project_id: projectId }, { workspace }]
+                      : [{ workspace }],
                   },
                 ],
               },
@@ -320,9 +309,7 @@ export const listRegistryApps = createTool({
           },
           scopeName
             ? {
-                scope: {
-                  scope_name: scopeName,
-                },
+                scope: { scope_name: scopeName },
               }
             : {},
         ],
@@ -360,13 +347,18 @@ export const listPublishedApps = createTool({
 
     assertHasWorkspace(c);
     const workspace = c.workspace.value;
+    const projectId = await getProjectIdFromContext(c);
+
+    const ownerFilter = projectId
+      ? [{ project_id: projectId }, { workspace }]
+      : [{ workspace }];
 
     const data = await c.drizzle.query.registryApps.findMany({
       where: {
         AND: [
           Filters.searchApp(search),
           {
-            workspace: workspace,
+            OR: ownerFilter,
           },
         ],
       },

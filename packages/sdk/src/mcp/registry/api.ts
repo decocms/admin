@@ -1,5 +1,5 @@
 import { listToolsByConnectionType } from "@deco/ai/mcp";
-import { desc, ilike } from "drizzle-orm";
+import { and, desc, eq, ilike, or } from "drizzle-orm";
 import { z } from "zod";
 import { AppName } from "../../common/index.ts";
 import { UserInputError } from "../../errors.ts";
@@ -114,20 +114,32 @@ export const listRegistryScopes = createTool({
     z.object({ scopes: z.array(RegistryScopeSchema) }),
   ),
   handler: async ({ search }, c) => {
+    assertHasWorkspace(c);
     await assertWorkspaceResourceAccess(c);
+
+    const workspace = c.workspace.value;
+    const projectId = await getProjectIdFromContext(c);
+
+    const ownerFilter = projectId ?
+      or(eq(registryScopes.project_id, projectId), eq(registryScopes.workspace, workspace)) :
+      eq(registryScopes.workspace, workspace);
+
+    const filter = and(
+      ownerFilter,
+      search ? ilike(registryScopes.scope_name, `%${search}%`) : undefined,
+    );
 
     const scopes = await c.drizzle
       .select({
         id: registryScopes.id,
         scopeName: registryScopes.scope_name,
         workspace: registryScopes.workspace,
+        projectId: registryScopes.project_id,
         createdAt: registryScopes.created_at,
         updatedAt: registryScopes.updated_at,
       })
       .from(registryScopes)
-      .where(
-        search ? ilike(registryScopes.scope_name, `%${search}%`) : undefined,
-      )
+      .where(filter)
       .orderBy(desc(registryScopes.created_at));
 
     return { scopes };

@@ -2,6 +2,7 @@ import Stripe from "stripe";
 import type { AppContext } from "../../context.ts";
 import { assertHasWorkspace } from "../../assertions.ts";
 import { createCurrencyClient } from "../index.ts";
+import { getOrgIdFromContext } from "../../projects/util.ts";
 
 const getStripeClient = (secretKey: string) => {
   return new Stripe(secretKey, {
@@ -27,10 +28,12 @@ const getOrCreateWorkspaceStripeCustomer = async (
 
   const workspace = ctx.workspace.value;
 
+  const orgId = await getOrgIdFromContext(ctx);
+
   const { data: maybeCustomer } = await ctx.db
     .from("deco_chat_customer")
     .select("customer_id")
-    .eq("workspace", workspace)
+    .or(orgId ? `workspace.eq.${workspace},org_id.eq.${orgId}` : `workspace.eq.${workspace}`)
     .maybeSingle();
 
   if (maybeCustomer) {

@@ -316,22 +316,22 @@ function ConfigureConnectionInstanceForm({
         );
         const views = viewsResult.views || [];
 
-        if (views.length > 0) {
-          const firstView = views[0];
+        const viewsToPin = views.filter((view) => view.installBehavior === "autoPin");
+        const viewToOpen = views.find((view) => view.installBehavior === "open");
 
-          // Pin the first view
-          await addViewMutation.mutateAsync({
+        const promisesViewsToPin = viewsToPin.map((view) => {
+          return addViewMutation.mutateAsync({
             view: buildAddViewPayload({
-              view: {
-                name: firstView.name || firstView.title,
-                title: firstView.title,
-                icon: firstView.icon,
-                url: firstView.url,
-              },
+              view: view,
               integrationId: connection.id,
             }),
           });
-          navigateWorkspace(`/views/${connection.id}/${firstView.name}`);
+        });
+
+        await Promise.all(promisesViewsToPin);
+
+        if (viewToOpen) {
+          navigateWorkspace(`/views/${connection.id}/${viewToOpen.name}`);
         } else {
           // Fallback to original behavior if no views available
           onSelect();

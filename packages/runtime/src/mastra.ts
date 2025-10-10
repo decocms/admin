@@ -290,6 +290,7 @@ export interface ViewExport {
   url: string;
   tools?: string[];
   rules?: string[];
+  installBehavior?: "none" | "open" | "autoPin";
 }
 
 export type Resources<Env = any, TSchema extends z.ZodTypeAny = never> = Array<
@@ -710,6 +711,7 @@ export const createMCPServer = <
             url: v.url,
             tools: v.tools ?? [],
             rules: v.rules ?? [],
+            installBehavior: v.installBehavior ?? "none",
           }));
           const resourceViews = resolvedResources
             .map((r) => {

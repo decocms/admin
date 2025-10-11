@@ -1,9 +1,9 @@
 import z from "zod";
-import { listViewsSchema } from "../bindings/views.ts";
 import { workspaceDB } from "../context.ts";
 import { assertHasWorkspace, assertWorkspaceResourceAccess } from "../index.ts";
 import { createDatabaseTool } from "./tool.ts";
 import { WellKnownMcpGroups } from "../groups.ts";
+import { listViewsSchema } from "../bindings/views.ts";
 
 export { getWorkspaceD1Database } from "./d1.ts";
 export { migrate } from "./migration.ts";

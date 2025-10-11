@@ -6,6 +6,7 @@ import {
 import { createToolGroup } from "../context.ts";
 import { MCPClient } from "../index.ts";
 import { decodeJwt } from "jose";
+import { getProjectIdFromContext } from "../projects/util.ts";
 const createTool = createToolGroup("OAuth", {
   name: "OAuth Management",
   description: "Create and manage OAuth codes securely.",
@@ -51,6 +52,7 @@ export const oauthCodeCreate = createTool({
       code,
       claims,
       workspace: c.workspace.value,
+      project_id: await getProjectIdFromContext(c),
     });
     if (error) {
       throw new Error(error.message);

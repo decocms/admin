@@ -12,6 +12,7 @@ import { polyfill } from "./fs-polyfill.ts";
 import { isDoBinding, migrationDiff } from "./migrations.ts";
 import type { Contract, WranglerConfig } from "./wrangler.ts";
 import ShortUniqueId from "short-unique-id";
+import { getProjectIdFromContext } from "../projects/util.ts";
 const uid = new ShortUniqueId({
   dictionary: "alphanum_lower",
   length: 10,
@@ -398,11 +399,22 @@ export async function deployToCloudflare({
       : []),
   ];
 
+  const projectId = await getProjectIdFromContext(c);
+  const tags = [c.workspace.value] as string[];
+
+  if (projectId) {
+    tags.push(projectId);
+  }
+
+  if (c.locator?.value) {
+    tags.push(c.locator.value);
+  }
+
   const metadata: ScriptUpdateParams.Metadata = {
     main_module: mainModule,
     compatibility_flags: compatibility_flags ?? ["nodejs_compat"],
     compatibility_date: compatibility_date ?? "2024-11-27",
-    tags: [c.workspace.value],
+    tags,
     bindings: wranglerBindings,
     observability: {
       enabled: true,

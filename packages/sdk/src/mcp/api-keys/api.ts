@@ -22,7 +22,11 @@ import {
 import { createToolGroup } from "../context.ts";
 import { MCPClient } from "../index.ts";
 import { getIntegration } from "../integrations/api.ts";
-import { getProjectIdFromContext } from "../projects/util.ts";
+import {
+  buildWorkspaceOrProjectIdConditions,
+  getProjectIdFromContext,
+  workspaceOrProjectIdConditions,
+} from "../projects/util.ts";
 import { getRegistryApp } from "../registry/api.ts";
 import { apiKeys, organizations, projects } from "../schema.ts";
 
@@ -30,6 +34,7 @@ export const SELECT_API_KEY_QUERY = `
   id,
   name,
   workspace,
+  project_id,
   enabled,
   policies,
   created_at,
@@ -44,6 +49,7 @@ export function mapApiKey(
     id: apiKey.id,
     name: apiKey.name,
     workspace: apiKey.workspace,
+    projectId: apiKey.project_id,
     enabled: apiKey.enabled,
     policies: apiKey.policies as Statement[],
     createdAt: apiKey.created_at,
@@ -120,13 +126,10 @@ export const listApiKeys = createTool({
     assertHasWorkspace(c);
     await assertWorkspaceResourceAccess(c);
 
-    const db = c.db;
-    const workspace = c.workspace.value;
-
-    const query = db
+    const query = c.db
       .from("deco_chat_api_keys")
       .select(SELECT_API_KEY_QUERY)
-      .eq("workspace", workspace)
+      .or(await workspaceOrProjectIdConditions(c))
       .is("deleted_at", null)
       .order("created_at", { ascending: false });
 
@@ -231,9 +234,9 @@ export const createApiKey = createTool({
       .insert({
         name,
         workspace,
+        project_id: projectId,
         enabled: true,
         policies: policies || [],
-        project_id: projectId,
       })
       .select(SELECT_API_KEY_QUERY)
       .single();
@@ -271,21 +274,15 @@ export const reissueApiKey = createTool({
     assertHasLocator(c);
     await assertWorkspaceResourceAccess(c);
 
-    const db = c.db;
+    const projectId = await getProjectIdFromContext(c);
     const workspace = c.workspace.value;
 
-    const projectId = await getProjectIdFromContext(c);
-
     // First, verify the API key exists and is accessible
-    const { data: apiKey, error } = await db
+    const { data: apiKey, error } = await c.db
       .from("deco_chat_api_keys")
       .select(SELECT_API_KEY_QUERY)
       .eq("id", id)
-      .or(
-        projectId
-          ? `workspace.eq.${workspace},project_id.eq.${projectId}`
-          : `workspace.eq.${workspace}`,
-      )
+      .or(buildWorkspaceOrProjectIdConditions(workspace, projectId))
       .is("deleted_at", null)
       .single();
 
@@ -298,14 +295,14 @@ export const reissueApiKey = createTool({
     }
 
     const { error: updateError } = policies
-      ? await db
+      ? await c.db
           .from("deco_chat_api_keys")
           .update({
             policies,
             updated_at: new Date().toISOString(),
           })
           .eq("id", id)
-          .eq("workspace", workspace)
+          .or(buildWorkspaceOrProjectIdConditions(workspace, projectId))
           .is("deleted_at", null)
       : { error: null };
 
@@ -342,14 +339,11 @@ export const getApiKey = createTool({
     assertHasWorkspace(c);
     await assertWorkspaceResourceAccess(c);
 
-    const db = c.db;
-    const workspace = c.workspace.value;
-
-    const { data: apiKey, error } = await db
+    const { data: apiKey, error } = await c.db
       .from("deco_chat_api_keys")
       .select(SELECT_API_KEY_QUERY)
       .eq("id", id)
-      .eq("workspace", workspace)
+      .or(await workspaceOrProjectIdConditions(c))
       .is("deleted_at", null)
       .maybeSingle();
 
@@ -379,9 +373,6 @@ export const updateApiKey = createTool({
     assertHasWorkspace(c);
     await assertWorkspaceResourceAccess(c);
 
-    const db = c.db;
-    const workspace = c.workspace.value;
-
     // deno-lint-ignore no-explicit-any
     const updateData: Record<string, any> = {};
     if (name !== undefined) updateData.name = name;
@@ -389,11 +380,11 @@ export const updateApiKey = createTool({
     if (policies !== undefined) updateData.policies = policies;
     updateData.updated_at = new Date().toISOString();
 
-    const { data: apiKey, error } = await db
+    const { data: apiKey, error } = await c.db
       .from("deco_chat_api_keys")
       .update(updateData)
       .eq("id", id)
-      .eq("workspace", workspace)
+      .or(await workspaceOrProjectIdConditions(c))
       .is("deleted_at", null)
       .select(SELECT_API_KEY_QUERY)
       .single();
@@ -420,15 +411,12 @@ export const deleteApiKey = createTool({
     assertHasWorkspace(c);
     await assertWorkspaceResourceAccess(c);
 
-    const db = c.db;
-    const workspace = c.workspace.value;
-
     // Soft delete by setting deleted_at timestamp
-    const { data: apiKey, error } = await db
+    const { data: apiKey, error } = await c.db
       .from("deco_chat_api_keys")
       .update({ deleted_at: new Date().toISOString() })
       .eq("id", id)
-      .eq("workspace", workspace)
+      .or(await workspaceOrProjectIdConditions(c))
       .is("deleted_at", null)
       .select("id")
       .single();
@@ -455,14 +443,11 @@ export const enableApiKey = createTool({
     assertHasWorkspace(c);
     await assertWorkspaceResourceAccess(c);
 
-    const db = c.db;
-    const workspace = c.workspace.value;
-
-    const { data: apiKey, error } = await db
+    const { data: apiKey, error } = await c.db
       .from("deco_chat_api_keys")
       .update({ enabled: true, updated_at: new Date().toISOString() })
       .eq("id", id)
-      .eq("workspace", workspace)
+      .or(await workspaceOrProjectIdConditions(c))
       .is("deleted_at", null)
       .select(SELECT_API_KEY_QUERY)
       .single();
@@ -486,14 +471,11 @@ export const disableApiKey = createTool({
     assertHasWorkspace(c);
     await assertWorkspaceResourceAccess(c);
 
-    const db = c.db;
-    const workspace = c.workspace.value;
-
-    const { data: apiKey, error } = await db
+    const { data: apiKey, error } = await c.db
       .from("deco_chat_api_keys")
       .update({ enabled: false, updated_at: new Date().toISOString() })
       .eq("id", id)
-      .eq("workspace", workspace)
+      .or(await workspaceOrProjectIdConditions(c))
       .is("deleted_at", null)
       .select(SELECT_API_KEY_QUERY)
       .single();
@@ -572,14 +554,11 @@ export const validateApiKey = createTool({
     assertHasWorkspace(c);
     await assertWorkspaceResourceAccess(c);
 
-    const db = c.db;
-    const workspace = c.workspace.value;
-
-    const { data: apiKey, error } = await db
+    const { data: apiKey, error } = await c.db
       .from("deco_chat_api_keys")
       .select(SELECT_API_KEY_QUERY)
       .eq("id", id)
-      .eq("workspace", workspace)
+      .or(await workspaceOrProjectIdConditions(c))
       .eq("enabled", true)
       .is("deleted_at", null)
       .single();

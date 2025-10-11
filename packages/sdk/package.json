@@ -33,7 +33,7 @@
     "@zenfs/core": "^2.0.0",
     "ai": "^5.0.61",
     "cloudflare": "^4.5.0",
-    "drizzle-orm": "0.44.5",
+    "drizzle-orm": "1.0.0-beta.1-ac4ce44",
     "jose": "^6.0.11",
     "jsonschema": "^1.5.0",
     "lru-cache": "^11.1.0",

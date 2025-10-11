@@ -33,6 +33,10 @@ import {
 import { type AppContext, createToolGroup } from "../context.ts";
 import { convertFromDatabase } from "../integrations/api.ts";
 import { userFromDatabase } from "../user.ts";
+import {
+  getProjectIdFromContext,
+  workspaceOrProjectIdConditions,
+} from "../projects/util.ts";
 
 const SELECT_TRIGGER_QUERY = `
   *,
@@ -118,17 +122,12 @@ export const listTriggers = createTool({
   inputSchema: z.lazy(() => z.object({ agentId: z.string().optional() })),
   outputSchema: z.lazy(() => ListTriggersOutputSchema),
   handler: async ({ agentId }, c): Promise<ListTriggersOutput> => {
-    assertHasWorkspace(c);
-
     await assertWorkspaceResourceAccess(c);
 
-    const db = c.db;
-    const workspace = c.workspace.value;
-
-    const query = db
+    const query = c.db
       .from("deco_chat_triggers")
       .select(SELECT_TRIGGER_QUERY)
-      .eq("workspace", workspace);
+      .or(await workspaceOrProjectIdConditions(c));
 
     if (agentId) {
       query.eq("agent_id", agentId);
@@ -146,6 +145,10 @@ export const listTriggers = createTool({
   },
 });
 
+/**
+ * TODO(@viktormarinho): Revisit the trigger/webhook creation
+ * to stop using workspace and go for project locator instead
+ */
 export const upsertTrigger = createTool({
   name: "TRIGGERS_UPSERT",
   description: "Create or update a trigger",
@@ -164,7 +167,6 @@ export const upsertTrigger = createTool({
     const workspace = c.workspace.value;
     const user = c.user;
     const stub = c.stub;
-
     const triggerId = id || crypto.randomUUID();
 
     if (data.type === "webhook") {
@@ -200,6 +202,7 @@ export const upsertTrigger = createTool({
       .upsert({
         id: triggerId,
         workspace,
+        project_id: await getProjectIdFromContext(c),
         agent_id: agentId,
         user_id: userId,
         metadata: data as Json,
@@ -305,7 +308,7 @@ export const deleteTrigger = createTool({
       .from("deco_chat_triggers")
       .delete()
       .eq("id", id)
-      .eq("workspace", workspace);
+      .or(await workspaceOrProjectIdConditions(c));
 
     if (error) {
       throw new InternalServerError(error.message);
@@ -320,18 +323,13 @@ export const getWebhookTriggerUrl = createTool({
   inputSchema: z.lazy(() => z.object({ id: z.string() })),
   outputSchema: z.lazy(() => GetWebhookTriggerUrlOutputSchema),
   handler: async ({ id }, c): Promise<GetWebhookTriggerUrlOutput> => {
-    assertHasWorkspace(c);
-
     await assertWorkspaceResourceAccess(c);
 
-    const db = c.db;
-    const workspace = c.workspace.value;
-
-    const { data, error } = await db
+    const { data, error } = await c.db
       .from("deco_chat_triggers")
       .select("metadata")
       .eq("id", id)
-      .eq("workspace", workspace)
+      .or(await workspaceOrProjectIdConditions(c))
       .single();
 
     if (error) {
@@ -360,18 +358,13 @@ export const getTrigger = createTool({
       binding: z.infer<typeof IntegrationSchema> | null;
     }
   > => {
-    assertHasWorkspace(c);
-
     await assertWorkspaceResourceAccess(c);
 
-    const db = c.db;
-    const workspace = c.workspace.value;
-
-    const { data: trigger, error } = await db
+    const { data: trigger, error } = await c.db
       .from("deco_chat_triggers")
       .select(SELECT_TRIGGER_QUERY)
       .eq("id", triggerId)
-      .eq("workspace", workspace)
+      .or(await workspaceOrProjectIdConditions(c))
       .maybeSingle();
 
     if (error) {
@@ -400,12 +393,14 @@ export const activateTrigger = createTool({
     const stub = c.stub;
     const user = c.user;
 
+    const orConditions = await workspaceOrProjectIdConditions(c);
+
     try {
       const { data, error: selectError } = await db
         .from("deco_chat_triggers")
         .select(SELECT_TRIGGER_QUERY)
         .eq("id", id)
-        .eq("workspace", workspace)
+        .or(orConditions)
         .single();
 
       if (selectError) {
@@ -434,7 +429,7 @@ export const activateTrigger = createTool({
         .from("deco_chat_triggers")
         .update({ active: true })
         .eq("id", id)
-        .eq("workspace", workspace);
+        .or(orConditions);
 
       if (error) {
         return {
@@ -468,13 +463,14 @@ export const deactivateTrigger = createTool({
     const db = c.db;
     const workspace = c.workspace.value;
     const stub = c.stub;
+    const orConditions = await workspaceOrProjectIdConditions(c);
 
     try {
       const { data, error: selectError } = await db
         .from("deco_chat_triggers")
         .select("*")
         .eq("id", id)
-        .eq("workspace", workspace)
+        .or(orConditions)
         .single();
 
       if (selectError) {
@@ -498,7 +494,7 @@ export const deactivateTrigger = createTool({
         .from("deco_chat_triggers")
         .update({ active: false })
         .eq("id", id)
-        .eq("workspace", workspace);
+        .or(orConditions);
 
       if (error) {
         return {

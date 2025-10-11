@@ -162,7 +162,7 @@ const Discover = () => {
     <DecopilotLayout value={decopilotContextValue}>
       <div className="flex flex-col h-full">
         {/* Sticky header */}
-        <div className="sticky top-0 z-10 bg-background p-4">
+        <div className="sticky top-0 z-20 bg-background p-4">
           <div className="flex justify-between items-center">
             <div className="relative">
               <Icon

@@ -184,6 +184,7 @@ type ViewListItem = {
   resourceName?: string;
   rules?: string[];
   tools?: string[];
+  installBehavior?: "none" | "open" | "autoPin";
   prompt?: string;
   instructions?: string;
 };

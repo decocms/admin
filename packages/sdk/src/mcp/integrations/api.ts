@@ -58,11 +58,14 @@ import {
   WellKnownBindings,
 } from "../index.ts";
 import { listKnowledgeBases } from "../knowledge/api.ts";
-import { getProjectIdFromContext } from "../projects/util.ts";
+import {
+  getProjectIdFromContext,
+  workspaceOrProjectIdConditions,
+} from "../projects/util.ts";
 import {
   getRegistryApp,
   listRegistryApps,
-  RegistryApp,
+  type RegistryApp,
 } from "../registry/api.ts";
 import {
   agents,
@@ -1462,7 +1465,7 @@ export const getIntegrationApiKey = createIntegrationManagementTool({
       .from("deco_chat_api_keys")
       .select(SELECT_API_KEY_QUERY)
       .eq("name", name)
-      .eq("workspace", c.workspace.value)
+      .or(await workspaceOrProjectIdConditions(c))
       .single();
 
     if (apiKey.error) {

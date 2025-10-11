@@ -74,9 +74,9 @@ import { AgentWallet } from "./agent/wallet.ts";
 import { pickCapybaraAvatar } from "./capybaras.ts";
 import { mcpServerTools } from "./mcp.ts";
 import type {
+  AIAgent as IIAgent,
   CompletionsOptions,
   GenerateOptions,
-  AIAgent as IIAgent,
   MessageMetadata,
   StreamOptions,
   Thread,
@@ -212,6 +212,8 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
           this.context.db,
           this.env.LLMS_ENCRYPTION_KEY,
           this.workspace,
+          // TODO(@viktormarinho): figure out what to do here
+          null,
         )
       : undefined;
   }
@@ -974,6 +976,9 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
     // Parallelize independent operations
     const parallelTiming = timings.start("parallel-preprocessing");
 
+    const agentInstructions =
+      options?.instructions ?? this._configuration?.instructions;
+
     type LLMConfig = Awaited<ReturnType<typeof getLLMConfig>>;
     type StorageResult = { store: any; threadMessages: any[] };
 
@@ -995,10 +1000,10 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
       this._withTelemetry(
         "resolve-instructions-mentions",
         async () => {
-          if (!options?.instructions) return undefined;
+          if (!agentInstructions) return undefined;
           return await resolveMentions(
-            options.instructions,
-            this.workspace,
+            agentInstructions,
+            this.locator,
             this.metadata?.mcpClient,
           );
         },
@@ -1143,6 +1148,9 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
     // Parallelize independent operations
     const parallelTiming = timings.start("parallel-preprocessing");
 
+    const agentInstructions =
+      options?.instructions ?? this._configuration?.instructions;
+
     const [
       toolsets,
       agentOverrides,
@@ -1165,10 +1173,10 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
       this._withTelemetry(
         "resolve-instructions-mentions",
         async () => {
-          if (!options?.instructions) return undefined;
+          if (!agentInstructions) return undefined;
           return await resolveMentions(
-            options.instructions,
-            this.workspace,
+            agentInstructions,
+            this.locator,
             this.metadata?.mcpClient,
           );
         },
@@ -1261,6 +1269,7 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
       temperature: this._temperature(options?.temperature),
       maxOutputTokens: this._maxOutputTokens(options?.maxTokens),
       system: processedInstructions ?? agentOverrides.instructions,
+      stopWhen: [stepCountIs(this._maxSteps(options?.maxSteps))],
     });
 
     // Add result to MessageList and save assistant response to storage
@@ -1370,7 +1379,7 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
             if (!options.instructions) return undefined;
             return await resolveMentions(
               options.instructions,
-              this.workspace,
+              this.locator,
               this.metadata?.mcpClient,
             );
           },

@@ -2,11 +2,18 @@ import { z } from "zod";
 import { WELL_KNOWN_PROMPT_IDS } from "../../constants.ts";
 import { resolveMentions as resolveMentionsFn } from "../../utils/prompt-mentions.ts";
 import {
+  assertHasLocator,
   assertHasWorkspace,
   assertWorkspaceResourceAccess,
 } from "../assertions.ts";
 import { createToolGroup } from "../context.ts";
 import { MCPClient } from "../index.ts";
+import {
+  getProjectIdFromContext,
+  workspaceOrProjectIdConditions,
+} from "../projects/util.ts";
+import { ProjectLocator } from "../../locator.ts";
+import { PromptSchema } from "./schemas.ts";
 
 const createTool = createToolGroup("Prompt", {
   name: "Prompt Management",
@@ -24,11 +31,13 @@ export const createPrompt = createTool({
       content: z.string(),
     }),
   ),
+  outputSchema: PromptSchema,
   handler: async (props, c) => {
     assertHasWorkspace(c);
     const workspace = c.workspace.value;
 
     await assertWorkspaceResourceAccess(c);
+    const projectId = await getProjectIdFromContext(c);
 
     const { name, description, content } = props;
 
@@ -36,6 +45,7 @@ export const createPrompt = createTool({
       .from("deco_chat_prompts")
       .insert({
         workspace,
+        project_id: projectId,
         name,
         content,
         description,
@@ -75,9 +85,9 @@ export const updatePrompt = createTool({
       versionName: z.string().optional(),
     }),
   ),
+  outputSchema: PromptSchema,
   handler: async (props, c) => {
     assertHasWorkspace(c);
-    const workspace = c.workspace.value;
 
     await assertWorkspaceResourceAccess(c);
 
@@ -87,7 +97,7 @@ export const updatePrompt = createTool({
       .from("deco_chat_prompts")
       .update(data)
       .eq("id", id)
-      .eq("workspace", workspace)
+      .or(await workspaceOrProjectIdConditions(c))
       .select("*")
       .single();
 
@@ -119,9 +129,13 @@ export const deletePrompt = createTool({
       id: z.string(),
     }),
   ),
+  outputSchema: z.lazy(() =>
+    z.object({
+      success: z.boolean().describe("Whether the deletion was successful"),
+    }),
+  ),
   handler: async (props, c) => {
     assertHasWorkspace(c);
-    const workspace = c.workspace.value;
     const { id } = props;
 
     await assertWorkspaceResourceAccess(c);
@@ -130,7 +144,7 @@ export const deletePrompt = createTool({
       .from("deco_chat_prompts")
       .delete()
       .eq("id", id)
-      .eq("workspace", workspace);
+      .or(await workspaceOrProjectIdConditions(c));
 
     if (error) throw error;
 
@@ -139,7 +153,7 @@ export const deletePrompt = createTool({
 });
 
 const virtualPromptsFor = (
-  workspace: string,
+  locator: ProjectLocator,
   ids?: string[],
 ): [
   {
@@ -155,11 +169,11 @@ const virtualPromptsFor = (
   const now = new Date().toISOString();
   const virtualPrompts = [
     {
-      content: workspace,
+      content: locator,
       created_at: now,
-      description: "The workspace name",
-      id: WELL_KNOWN_PROMPT_IDS.workspace,
-      name: "workspace",
+      description: "The locator of the current project",
+      id: WELL_KNOWN_PROMPT_IDS.locator,
+      name: "locator",
       readonly: true,
     },
     {
@@ -198,18 +212,20 @@ export const listPrompts = createTool({
   ),
   outputSchema: z.lazy(() =>
     z.object({
-      items: z.array(z.any()),
+      items: z.array(PromptSchema),
     }),
   ),
   handler: async (props, c) => {
-    assertHasWorkspace(c);
-    const workspace = c.workspace.value;
+    assertHasLocator(c);
 
     await assertWorkspaceResourceAccess(c);
 
     const { ids = [], resolveMentions = false, excludeIds = [] } = props;
 
-    const [virtualPrompts, remainingIds] = virtualPromptsFor(workspace, ids);
+    const [virtualPrompts, remainingIds] = virtualPromptsFor(
+      c.locator.value,
+      ids,
+    );
 
     // If the ids filter list contains some id, and after getting the virtual prompts
     // no ids are left, we can return the virtual prompts
@@ -220,7 +236,7 @@ export const listPrompts = createTool({
     let query = c.db
       .from("deco_chat_prompts")
       .select("*")
-      .eq("workspace", workspace);
+      .or(await workspaceOrProjectIdConditions(c));
 
     if (remainingIds.length > 0) {
       query = query.in("id", remainingIds);
@@ -239,7 +255,11 @@ export const listPrompts = createTool({
     if (resolveMentions) {
       const resolvedPrompts = await Promise.allSettled(
         prompts.map((prompt) =>
-          resolveMentionsFn(prompt.content, workspace, MCPClient.forContext(c)),
+          resolveMentionsFn(
+            prompt.content,
+            c.locator.value,
+            MCPClient.forContext(c),
+          ),
         ),
       );
 
@@ -252,7 +272,9 @@ export const listPrompts = createTool({
       }));
     }
 
-    return { items: [...prompts, ...virtualPrompts] };
+    return {
+      items: [...prompts, ...virtualPrompts],
+    };
   },
 });
 
@@ -266,40 +288,13 @@ export const getPrompt = createTool({
       })
       .describe("The id of the prompt to get"),
   ),
-  outputSchema: z.lazy(() =>
-    z.object({
-      id: z.string().describe("The id of the prompt"),
-      name: z.string().describe("The name of the prompt"),
-      description: z
-        .string()
-        .nullable()
-        .describe("The description of the prompt"),
-      content: z.string().describe("The content of the prompt"),
-      created_at: z
-        .string()
-        .describe("The date and time the prompt was created"),
-      updated_at: z
-        .string()
-        .nullable()
-        .optional()
-        .describe("The date and time the prompt was last updated"),
-      workspace: z
-        .string()
-        .optional()
-        .describe("The workspace the prompt belongs to"),
-      readonly: z
-        .boolean()
-        .optional()
-        .describe("Whether the prompt is readonly"),
-    }),
-  ),
+  outputSchema: z.lazy(() => PromptSchema),
   handler: async (props, c) => {
-    assertHasWorkspace(c);
+    assertHasLocator(c);
     await assertWorkspaceResourceAccess(c);
 
-    const workspace = c.workspace.value;
     const { id } = props;
-    const [virtualPrompts, _] = virtualPromptsFor(workspace, [id]);
+    const [virtualPrompts, _] = virtualPromptsFor(c.locator.value, [id]);
     const prompt = virtualPrompts[0];
     if (prompt) return prompt;
 
@@ -307,39 +302,8 @@ export const getPrompt = createTool({
       .from("deco_chat_prompts")
       .select("*")
       .eq("id", id)
-      .eq("workspace", workspace)
+      .or(await workspaceOrProjectIdConditions(c))
       .single();
-
-    if (error) throw error;
-
-    return data;
-  },
-});
-
-export const searchPrompts = createTool({
-  name: "PROMPTS_SEARCH",
-  description: "Search for prompts",
-  inputSchema: z.lazy(() =>
-    z.object({
-      query: z.string(),
-      limit: z.number().optional(),
-      offset: z.number().optional(),
-    }),
-  ),
-  handler: async (props, c) => {
-    assertHasWorkspace(c);
-    const workspace = c.workspace.value;
-
-    await assertWorkspaceResourceAccess(c);
-
-    const { query, limit = 10, offset = 0 } = props;
-
-    const { data, error } = await c.db
-      .from("deco_chat_prompts")
-      .select("*")
-      .eq("workspace", workspace)
-      .textSearch("name", query)
-      .range(offset * limit, (offset + 1) * limit);
 
     if (error) throw error;
 
@@ -402,6 +366,35 @@ export const renamePromptVersion = createTool({
       versionName: z.string(),
     }),
   ),
+  outputSchema: z.lazy(() =>
+    z.object({
+      id: z.string().describe("The id of the version"),
+      prompt_id: z.string().describe("The id of the prompt"),
+      name: z
+        .string()
+        .nullable()
+        .optional()
+        .describe("The name of the version"),
+      content: z
+        .string()
+        .nullable()
+        .optional()
+        .describe("The content of the version"),
+      version_name: z
+        .string()
+        .nullable()
+        .optional()
+        .describe("The version name"),
+      created_by: z
+        .string()
+        .nullable()
+        .optional()
+        .describe("The user who created the version"),
+      created_at: z
+        .string()
+        .describe("The date and time the version was created"),
+    }),
+  ),
   handler: async (props, c) => {
     assertHasWorkspace(c);
     const { id, versionName } = props;
@@ -412,6 +405,7 @@ export const renamePromptVersion = createTool({
       .from("deco_chat_prompts_versions")
       .update({ version_name: versionName })
       .eq("id", id)
+      .or(await workspaceOrProjectIdConditions(c))
       .single();
 
     if (error) throw error;

@@ -302,6 +302,7 @@ const Discover = () => {
                 <Button
                   variant="outline"
                   onClick={() => setShowExperimental(!showExperimental)}
+                  aria-expanded={showExperimental}
                 >
                   {showExperimental ? "Hide" : "Show"} Experimental Apps
                 </Button>

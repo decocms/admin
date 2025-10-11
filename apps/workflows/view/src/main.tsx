@@ -1,29 +1,21 @@
-import { StrictMode } from "react";
-import ReactDOM from "react-dom/client";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import {
   createRootRoute,
   createRouter,
   Outlet,
   RouterProvider,
 } from "@tanstack/react-router";
-import WorkflowsPage from "./routes/workflows.tsx";
-import CustomViewsPage from "./routes/custom-views.tsx";
-import AboutPage from "./routes/about.tsx";
+import { StrictMode } from "react";
+import ReactDOM from "react-dom/client";
 import { Toaster } from "sonner";
-
-// @ts-ignore - CSS import
-import "./styles.css";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import CustomViewsPage from "./routes/custom-views.tsx";
+import WorkflowsPage from "./routes/workflows.tsx";
 
 export const rootRoute = createRootRoute({
   component: () => <Outlet />,
 });
 
-const routeTree = rootRoute.addChildren([
-  WorkflowsPage,
-  CustomViewsPage,
-  AboutPage,
-]);
+const routeTree = rootRoute.addChildren([WorkflowsPage, CustomViewsPage]);
 
 const queryClient = new QueryClient();
 

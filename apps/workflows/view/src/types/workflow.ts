@@ -24,7 +24,7 @@ export interface WorkflowStep {
   title: string;
   description: string;
   status: StepStatus;
-  toolCalls: string[];
+  toolCalls: string[]; // Deprecated - kept for backward compat
   icon?: string; // Material Symbols icon name for visual representation
   inputSchema?: Record<string, unknown>;
   outputSchema?: Record<string, unknown>;
@@ -35,6 +35,17 @@ export interface WorkflowStep {
   logs?: Array<{ type: string; content: string }>;
   duration?: number;
   code?: string;
+  
+  // New fields from refactored schema
+  dependencies?: Array<{ integrationId: string }>;
+  options?: {
+    retries?: {
+      limit?: number;
+      delay?: number;
+      backoff?: "constant" | "linear" | "exponential";
+    };
+    timeout?: number;
+  };
 
   // Custom Views - Multiple views per step!
   outputViews?: Record<string, string>; // { view1: "HTML+JS", view2: "HTML+JS" }

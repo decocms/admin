@@ -7,40 +7,179 @@
  * - Right: Execution monitor (toggle)
  */
 
-import { createRoute } from "@tanstack/react-router";
-import { rootRoute } from "../main";
-import { useState } from "react";
-import { WorkflowLayout } from "../components/WorkflowLayout";
-import { ToolList } from "../components/ToolList";
-import { useWorkflowStore } from "../store/workflowStore";
-import { useIntegrations } from "../hooks/useIntegrations";
-import { useGenerateStep } from "../hooks/useGenerateStep";
-import { useExecuteStep } from "../hooks/useExecuteStep";
-import { useExecuteWorkflow } from "../hooks/useExecuteWorkflow";
-import type { WorkflowStep } from "../types/workflow";
-import { Play } from "lucide-react";
-import { StepPlayer } from "../components/StepPlayer";
-import { IframeViewRenderer } from "../components/IframeViewRenderer";
-import { CreateViewModal } from "../components/CreateViewModal";
-import { RichTextEditor } from "../components/RichTextEditor";
-import { useMentionItems } from "../hooks/useMentionItems";
 import { Button } from "@deco/ui/components/button.tsx";
 import { Input } from "@deco/ui/components/input.tsx";
+import { useQuery } from "@tanstack/react-query";
+import { createRoute, useSearch } from "@tanstack/react-router";
+import { AlertCircle, Play } from "lucide-react";
+import { useEffect, useState } from "react";
+import { CreateViewModal } from "../components/CreateViewModal";
+import { IframeViewRenderer } from "../components/IframeViewRenderer";
+import { RichTextEditor } from "../components/RichTextEditor";
+import { ToolList } from "../components/ToolList";
+import { WorkflowLayout } from "../components/WorkflowLayout";
+import { useExecuteStep } from "../hooks/useExecuteStep";
+import { useExecuteWorkflow } from "../hooks/useExecuteWorkflow";
+import { useGenerateStep } from "../hooks/useGenerateStep";
+import { useIntegrations } from "../hooks/useIntegrations";
+import { useMentionItems } from "../hooks/useMentionItems";
+import { client } from "../lib/rpc";
+import { rootRoute } from "../main";
+import { useWorkflowStore } from "../store/workflowStore";
+import type { Workflow, WorkflowStep } from "../types/workflow";
 
 function WorkflowsPage() {
-  const [copied, setCopied] = useState(false); // Efêmero, pode ficar
+  // Read resourceURI from search params
+  const searchParams = useSearch({ from: "/workflow" });
+  const resourceURI = (searchParams as { resourceURI?: string })?.resourceURI;
 
-  // Zustand store - subscribe to get live updates!
-  const workflow = useWorkflowStore((state) => {
-    let wf = state.getCurrentWorkflow();
-    if (!wf) {
-      const id = state.createWorkflow("Untitled Workflow", "New workflow");
-      wf = state.getWorkflow(id);
-    }
-    return wf;
+  // Fetch workflow from API if resourceURI is provided
+  const {
+    data: workflowData,
+    isLoading: isLoadingWorkflow,
+    error: workflowError,
+  } = useQuery({
+    queryKey: ["workflow", resourceURI],
+    queryFn: async () => {
+      if (!resourceURI) return null;
+      return await client.DECO_RESOURCE_WORKFLOW_READ({ uri: resourceURI });
+    },
+    enabled: !!resourceURI,
   });
 
+  // Show missing param page if no resourceURI
+  if (!resourceURI) {
+    return (
+      <div className="flex items-center justify-center h-screen bg-background">
+        <div className="max-w-md p-8 rounded-xl border border-border bg-card/50 text-center">
+          <div className="flex justify-center mb-4">
+            <div className="w-16 h-16 rounded-full bg-destructive/10 flex items-center justify-center">
+              <AlertCircle className="w-8 h-8 text-destructive" />
+            </div>
+          </div>
+          <h2 className="text-2xl font-bold mb-3 text-foreground">
+            Missing Parameter
+          </h2>
+          <p className="text-muted-foreground mb-4">
+            No workflow resource URI provided. Please provide a{" "}
+            <code className="px-2 py-1 bg-muted rounded text-sm">
+              resourceURI
+            </code>{" "}
+            search parameter.
+          </p>
+          <p className="text-sm text-muted-foreground/70">
+            Example:{" "}
+            <code className="px-2 py-1 bg-muted rounded text-xs">
+              /workflow?resourceURI=workflow://my-workflow
+            </code>
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  // Show loading state
+  if (isLoadingWorkflow) {
+    return (
+      <div className="flex items-center justify-center h-screen text-muted-foreground">
+        <div className="flex flex-col items-center gap-4">
+          <div className="w-8 h-8 border-4 border-muted border-t-primary rounded-full animate-spin" />
+          <p>Loading workflow...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Show error state
+  if (workflowError) {
+    return (
+      <div className="flex items-center justify-center h-screen bg-background">
+        <div className="max-w-md p-8 rounded-xl border border-destructive/50 bg-destructive/10 text-center">
+          <div className="flex justify-center mb-4">
+            <div className="w-16 h-16 rounded-full bg-destructive/20 flex items-center justify-center">
+              <AlertCircle className="w-8 h-8 text-destructive" />
+            </div>
+          </div>
+          <h2 className="text-2xl font-bold mb-3 text-destructive">
+            Failed to Load Workflow
+          </h2>
+          <p className="text-sm text-muted-foreground mb-4">
+            {workflowError instanceof Error
+              ? workflowError.message
+              : String(workflowError)}
+          </p>
+          <p className="text-xs text-muted-foreground/70">
+            Resource URI:{" "}
+            <code className="px-2 py-1 bg-muted rounded">{resourceURI}</code>
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  // If no workflow data, show error
+  if (!workflowData) {
+    return (
+      <div className="flex items-center justify-center h-screen text-muted-foreground">
+        <div className="text-center">
+          <p>No workflow data found</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Render the workflow
+  return <WorkflowPageContent workflowData={workflowData} />;
+}
+
+function WorkflowPageContent({
+  workflowData,
+}: {
+  workflowData: {
+    uri: string;
+    data: { name: string; description: string; steps: any[] };
+  };
+}) {
+  const [copied, setCopied] = useState(false);
+
   const store = useWorkflowStore();
+
+  // 🐛 BISECT: Initialize workflow from API data ONCE using useEffect
+  const workflow = useWorkflowStore(
+    (state) => state.storage.workflows[workflowData.uri],
+  );
+
+  // Import workflow on mount if it doesn't exist
+  useEffect(() => {
+    if (!workflow) {
+      console.log("🔄 Importing workflow from API data");
+      const importedWorkflow: Workflow = {
+        id: workflowData.uri,
+        name: workflowData.data.name,
+        description: workflowData.data.description,
+        steps: workflowData.data.steps.map((step: any, index: number) => ({
+          id: `step-${index}`,
+          title: step.name || `Step ${index + 1}`,
+          description: step.description || "",
+          status: "pending" as const,
+          toolCalls: [], // No longer using separate tool calls
+          code: step.execute,
+          inputSchema: step.inputSchema || {},
+          outputSchema: step.outputSchema || {},
+          input: step.input || {},
+          dependencies: step.dependencies || [],
+          options: step.options,
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+        })),
+        currentStepIndex: 0,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      };
+
+      store.importWorkflow(importedWorkflow);
+    }
+  }, [workflowData.uri, workflow, store]);
   const isPlaying = useWorkflowStore((state) => state.isPlaying);
   const editingCode = useWorkflowStore((state) => state.editingCode);
   const editedCode = useWorkflowStore((state) => state.editedCode);
@@ -250,7 +389,13 @@ function WorkflowsPage() {
         }
 
         // Execute the step
-        const result = await new Promise((resolve, reject) => {
+        const result = await new Promise<{
+          success: boolean;
+          output?: unknown;
+          error?: unknown;
+          logs?: unknown;
+          duration?: number;
+        }>((resolve, reject) => {
           executeStepMutation.mutate(
             {
               step: { ...step, input: resolvedInput },
@@ -281,7 +426,7 @@ function WorkflowsPage() {
         });
 
         // If step failed, stop execution
-        if (!result.success) {
+        if (!(result as { success: boolean }).success) {
           console.log(`🛑 Workflow stopped at step ${i + 1} due to error`);
           break;
         }
@@ -1217,7 +1362,7 @@ function WorkflowsPage() {
 }
 
 export default createRoute({
-  path: "/",
+  path: "/workflow",
   component: WorkflowsPage,
   getParentRoute: () => rootRoute,
 });

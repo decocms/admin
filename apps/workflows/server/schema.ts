@@ -1,13 +1,45 @@
 /**
- * This file is used to define the schema for the database.
+ * Workflow Type Definitions
  *
- * After making changes to this file, run `npm run db:generate` to generate the migration file.
- * Then, by just using the app, the migration is lazily ensured at runtime.
+ * This file defines the TypeScript types for workflows used in the frontend.
+ * These types match the schema defined in packages/sdk/src/mcp/workflows/schemas.ts
  */
-import { integer, sqliteTable, text } from "@deco/workers-runtime/drizzle";
 
-export const todosTable = sqliteTable("todos", {
-  id: integer("id").primaryKey(),
-  title: text("title"),
-  completed: integer("completed").default(0),
-});
+// JSON Schema type
+export type JSONSchema = Record<string, unknown>;
+
+// Workflow step definition
+export interface WorkflowStepDefinition {
+  name: string;
+  description: string;
+  inputSchema: JSONSchema;
+  outputSchema: JSONSchema;
+  input: Record<string, unknown>;
+  execute: string;
+  dependencies?: Array<{ integrationId: string }>;
+  options?: {
+    retries?: {
+      limit?: number;
+      delay?: number;
+      backoff?: "constant" | "linear" | "exponential";
+    };
+    timeout?: number;
+  };
+}
+
+// Workflow definition
+export interface WorkflowDefinition {
+  name: string;
+  description: string;
+  inputSchema: JSONSchema;
+  outputSchema: JSONSchema;
+  steps: WorkflowStepDefinition[];
+}
+
+// Step execution result
+export interface StepExecutionResult {
+  executedAt: string;
+  value: unknown;
+  error?: string;
+  duration?: number;
+}

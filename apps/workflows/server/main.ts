@@ -10,7 +10,6 @@ import {
   Scopes,
   StateSchema,
 } from "../shared/deco.gen.ts";
-
 import { tools } from "./tools/index.ts";
 import { views } from "./views.ts";
 import { workflows } from "./workflows/index.ts";
@@ -39,12 +38,7 @@ const runtime = withRuntime<Env, typeof StateSchema>({
      * and utilize the user's own AI Gateway, without having to
      * deploy your own, setup any API keys, etc.
      */
-    scopes: [
-      Scopes.AI_GATEWAY.AI_GENERATE,
-      Scopes.AI_GATEWAY.AI_GENERATE_OBJECT,
-      Scopes.DATABASE.DATABASES_RUN_SQL,
-      Scopes.TOOLS.DECO_TOOL_RUN_TOOL,
-    ],
+    scopes: Object.values(Scopes).flatMap((scope) => Object.values(scope)),
     /**
      * The state schema of your Application defines what
      * your installed App state will look like. When a user
@@ -65,39 +59,25 @@ const runtime = withRuntime<Env, typeof StateSchema>({
   },
   views,
   workflows,
-  tools,
+  tools: [
+    ...tools,
+    // Workflows Management tools
+    // (env) => env.WORKFLOWS_MANAGEMENT.DECO_CHAT_VIEWS_LIST.asTool(),
+    (env) => env.WORKFLOWS_MANAGEMENT.DECO_RESOURCE_WORKFLOW_CREATE.asTool(),
+    (env) => env.WORKFLOWS_MANAGEMENT.DECO_RESOURCE_WORKFLOW_DELETE.asTool(),
+    (env) => env.WORKFLOWS_MANAGEMENT.DECO_RESOURCE_WORKFLOW_READ.asTool(),
+    (env) => env.WORKFLOWS_MANAGEMENT.DECO_RESOURCE_WORKFLOW_SEARCH.asTool(),
+    (env) => env.WORKFLOWS_MANAGEMENT.DECO_RESOURCE_WORKFLOW_UPDATE.asTool(),
+    (env) => env.WORKFLOWS_MANAGEMENT.DECO_VIEW_RENDER_WORKFLOW_DETAIL.asTool(),
+    (env) => env.WORKFLOWS_MANAGEMENT.DECO_WORKFLOW_GET_STATUS.asTool(),
+    (env) => env.WORKFLOWS_MANAGEMENT.DECO_WORKFLOW_START.asTool(),
+  ],
   /**
    * Fallback directly to assets for all requests that do not match a tool, workflow or auth.
    * If you wanted to add custom api routes that dont make sense to be a tool or workflow,
    * you can add them on this handler.
    */
   fetch: async (req, env) => {
-    const url = new URL(req.url);
-
-    // Auth check: redirect to /about if not logged in on root
-    if (url.pathname === "/") {
-      try {
-        // GET_USER is a private tool - will throw if not authenticated
-        const user = await env.SELF.GET_USER({});
-
-        if (!user || !user.email) {
-          // Not logged in, redirect to about page
-          console.log("🔒 User not found, redirecting to /about");
-          return Response.redirect(new URL("/about", req.url).toString(), 302);
-        }
-
-        // User is logged in, continue to app
-        console.log("✅ User authenticated:", user.email);
-      } catch (_error) {
-        // GET_USER is private tool or user not authenticated
-        // Redirect to about page
-        console.log(
-          "🔒 Auth check failed (expected for non-logged users), redirecting to /about",
-        );
-        return Response.redirect(new URL("/about", req.url).toString(), 302);
-      }
-    }
-
     // Default: serve assets
     return env.ASSETS.fetch(req);
   },

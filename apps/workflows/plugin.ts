@@ -57,6 +57,13 @@ async function fixCloudflareBuild({
 }: {
   outputDirectory: string;
 }) {
+  // Return early if output directory doesn't exist
+  try {
+    await fs.access(outputDirectory);
+  } catch {
+    return;
+  }
+  
   const files = await fs.readdir(outputDirectory);
 
   const isCloudflareViteBuild = files.some((file) => file === "wrangler.json");

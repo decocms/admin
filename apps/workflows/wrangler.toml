@@ -14,7 +14,7 @@ run_worker_first = true
 [deco]
 workspace = "deco-team"
 enable_workflows = true
-local = false
+local = true
 
 [deco.integration]
 description = "Workflowz é seu assistente de automação com IA. Crie workflows complexos apenas descrevendo o que você quer, execute steps individuais ou em sequência, e visualize resultados com interfaces customizadas. Ideal para automação, processamento de dados, e orquestração de APIs."
@@ -23,19 +23,24 @@ icon = "https://assets.decocache.com/mcp/workflowz/icon.png"
 source = "https://github.com/deco-cx/workflowz"
 
 [[deco.bindings]]
-name = "AI_GATEWAY"
-type = "mcp"
-integration_name = "i:ai-generation"
-
-[[deco.bindings]]
-name = "DATABASE"
-type = "mcp"
-integration_id = "i:databases-management"
-
-[[deco.bindings]]
 name = "TOOLS"
 type = "mcp"
-integration_id = "i:tools-management"
+integration_name = "@deco/tools"
+
+[[deco.bindings]]
+name = "WORKFLOWS_MANAGEMENT"
+type = "mcp"
+integration_name = "@deco/workflows"
+
+[[deco.bindings]]
+name = "AI_GATEWAY"
+type = "mcp"
+integration_name = "@deco/ai-gateway"
+
+[[deco.bindings]]
+name = "DECONFIG"
+type = "mcp"
+integration_name = "@deco/deconfig"
 
 [[migrations]]
 tag = "v1"

@@ -11,4 +11,14 @@ const options = {
 export const ajvResolver: typeof rawAjvResolver = (
   schema,
   instanceOptions = {},
-) => rawAjvResolver(schema, { ...options, ...instanceOptions });
+) => {
+  // Filter out incompatible options
+  const { strictNumbers, ...compatibleOptions } = instanceOptions as Options & {
+    strictNumbers?: boolean | "log";
+  };
+  return rawAjvResolver(schema, {
+    ...options,
+    ...compatibleOptions,
+    ...(typeof strictNumbers === "boolean" ? { strictNumbers } : {}),
+  });
+};

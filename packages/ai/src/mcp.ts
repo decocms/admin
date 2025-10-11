@@ -115,7 +115,7 @@ const getMCPServerTools = async (
                     name: tool.name,
                     arguments: input,
                   },
-                  // @ts-expect-error - Zod version conflict between packages
+                  // @ts-expect-error - Zod version conflict between MCP SDK packages
                   CallToolResultSchema,
                 );
 

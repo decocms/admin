@@ -216,7 +216,7 @@ export const callTool = createIntegrationManagementTool({
           name: toolCall.name,
           arguments: toolCall.arguments || {},
         },
-        // @ts-expect-error - Zod version conflict between packages
+        // @ts-expect-error - Zod version conflict between MCP SDK packages
         CallToolResultSchema,
         {
           timeout: 3000000,

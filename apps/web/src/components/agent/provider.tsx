@@ -297,7 +297,13 @@ export function AgentProvider({
           "x-deno-isolate-instance-id": agentRoot,
           "x-trace-debug-id": getTraceDebugId(),
         },
-        prepareSendMessagesRequest: ({ messages, requestMetadata }) => ({
+        prepareSendMessagesRequest: ({
+          messages,
+          requestMetadata,
+        }: {
+          messages: UIMessage[];
+          requestMetadata?: unknown;
+        }) => ({
           body: {
             metadata: { threadId: threadId ?? agentId },
             args: [messages.slice(-1), requestMetadata],

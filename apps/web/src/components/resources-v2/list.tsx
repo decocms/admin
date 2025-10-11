@@ -309,6 +309,11 @@ function ResourcesV2ListTab({
                         },
                       ];
                       data.triggers = [];
+                    } else if (resourceName === "tool") {
+                      data.inputSchema = {};
+                      data.outputSchema = {};
+                      data.execute =
+                        "// Add your tool code here\nexport default function(input) {\n  return {};\n}";
                     }
 
                     const result = await callTool(integration.connection, {

@@ -204,6 +204,14 @@ export function AgentProvider({
     return () => off();
   }, []);
 
+  // Update rules when initialRules prop changes
+  useEffect(() => {
+    if (initialRules !== undefined) {
+      latestRulesRef.current = initialRules;
+      setRulesState(initialRules);
+    }
+  }, [initialRules]);
+
   const thread = useMemo(() => {
     return threads?.threads.find((t) => t.id === threadId);
   }, [threads, threadId]);

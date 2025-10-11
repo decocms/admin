@@ -175,8 +175,12 @@ function ResourcesV2Detail() {
   const hasToolsData = Boolean(toolsQuery.data);
   const hasViewData = Boolean(viewQuery.data || !viewRenderTool);
 
+  // Wait for view query to complete so rules are available immediately
   const isLoading =
-    !hasResourceData || !hasToolsData || (!hasViewData && viewQuery.isLoading);
+    !hasResourceData ||
+    !hasToolsData ||
+    !hasViewData ||
+    (viewRenderTool && viewQuery.isLoading);
 
   const readError = resourceReadQuery.isError
     ? (resourceReadQuery.error as Error).message

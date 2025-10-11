@@ -305,6 +305,9 @@ export function createToolViewsV2() {
     ],
     prompt:
       "You are helping the user manage a tool. You can read the tool definition, update its properties, test its execution, and view its usage. Always confirm actions before executing them.",
+    rules: [
+      "You are a tool management specialist. Use the tool operations to read, update, test, and manage tools. Help the user understand tool definitions and test tool execution.",
+    ],
     handler: (input, _c) => {
       const url = createDetailViewUrl("tool", integrationId, input.resource);
       return Promise.resolve({ url });

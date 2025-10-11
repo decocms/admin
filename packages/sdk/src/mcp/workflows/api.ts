@@ -457,6 +457,9 @@ export function createWorkflowViewsV2() {
     ],
     prompt:
       "You are helping the user manage a workflow. You can read the workflow details, update its properties, start or stop the workflow, and view its logs. Always confirm actions before executing them.",
+    rules: [
+      "You are a workflow editing specialist. Use the workflow tools to edit the current workflow. A good strategy is to test each step, one at a time in isolation and check how they affect the overall workflow.",
+    ],
     handler: (input, _c) => {
       const url = createDetailViewUrl(
         "workflow",

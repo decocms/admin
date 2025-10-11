@@ -51,6 +51,11 @@ export {
   useDeleteDocument,
   buildDocumentUri,
 } from "./hooks/documents.ts";
+export {
+  useViewByUriV2,
+  useUpdateView,
+  useDeleteView,
+} from "./hooks/views.ts";
 export * from "./hooks/store.tsx";
 export * from "./hooks/teams.ts";
 export * from "./hooks/thread.ts";
@@ -77,6 +82,11 @@ export {
   DocumentDefinitionSchema,
   type DocumentDefinition,
 } from "./mcp/documents/schemas.ts";
+
+export {
+  ViewDefinitionSchema,
+  type ViewDefinition,
+} from "./mcp/views/schemas.ts";
 
 export * from "./models/agent.ts";
 export * from "./models/mcp.ts";

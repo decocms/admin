@@ -213,12 +213,16 @@ const ViewDetail = lazy(() =>
   wrapWithUILoadingFallback(import("./components/views/detail.tsx")),
 );
 
-const ViewsList = lazy(() =>
-  wrapWithUILoadingFallback(import("./components/views/list.tsx")),
-);
-
 const LegacyViewRedirect = lazy(() =>
   wrapWithUILoadingFallback(import("./components/views/legacy-redirect.tsx")),
+);
+
+const ViewsListPage = lazy(() =>
+  wrapWithUILoadingFallback(import("./components/views/list-page.tsx")),
+);
+
+const ViewsLegacyPage = lazy(() =>
+  wrapWithUILoadingFallback(import("./components/views/legacy-list-page.tsx")),
 );
 
 const Store = lazy(() =>
@@ -436,7 +440,8 @@ const router = createBrowserRouter([
             Component: () => <Navigate to="../workflows/triggers" replace />,
           },
           { path: "trigger/:id", Component: TriggerDetails },
-          { path: "views", Component: ViewsList },
+          { path: "views", Component: ViewsListPage },
+          { path: "views/legacy", Component: ViewsLegacyPage },
           { path: "views/:integrationId/:viewName", Component: ViewDetail },
           { path: "views/:id", Component: LegacyViewRedirect },
           { path: "documents", Component: DocumentsListPage },

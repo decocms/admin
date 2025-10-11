@@ -1,0 +1,121 @@
+import { Spinner } from "@deco/ui/components/spinner.tsx";
+import { Button } from "@deco/ui/components/button.tsx";
+import { useCallback, useState } from "react";
+import { useViewByUriV2 } from "@deco/sdk";
+import { Icon } from "@deco/ui/components/icon.tsx";
+
+interface ViewDetailProps {
+  resourceUri: string;
+}
+
+/**
+ * View detail view with full-screen HTML preview
+ * Displays the view HTML content in an iframe
+ */
+export function ViewDetail({ resourceUri }: ViewDetailProps) {
+  const {
+    data: resource,
+    isLoading: isLoading,
+    refetch,
+  } = useViewByUriV2(resourceUri);
+  const effectiveView = resource?.data;
+
+  // Local loading state for refresh functionality
+  const [isRefreshing, setIsRefreshing] = useState(false);
+
+  const handleRefresh = useCallback(async () => {
+    if (isRefreshing) return;
+    try {
+      setIsRefreshing(true);
+      await refetch();
+    } finally {
+      setIsRefreshing(false);
+    }
+  }, [isRefreshing, refetch]);
+
+  // Get current HTML value for preview
+  const htmlValue = effectiveView?.html;
+
+  if (isLoading) {
+    return (
+      <div className="flex-1 flex items-center justify-center">
+        <Spinner />
+      </div>
+    );
+  }
+
+  if (!effectiveView) {
+    return (
+      <div className="flex-1 flex items-center justify-center">
+        <div className="text-center">
+          <Icon
+            name="error"
+            className="w-12 h-12 mx-auto mb-4 text-muted-foreground"
+          />
+          <p className="text-lg font-medium">View not found</p>
+          <p className="text-sm text-muted-foreground mt-2">
+            The view could not be loaded. It may have been deleted.
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="h-full flex flex-col">
+      {/* Header */}
+      <div className="border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 px-4 py-3">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <Icon name="visibility" className="w-6 h-6 text-primary" />
+            <div>
+              <h1 className="text-lg font-semibold">{effectiveView.name}</h1>
+              {effectiveView.description && (
+                <p className="text-sm text-muted-foreground">
+                  {effectiveView.description}
+                </p>
+              )}
+            </div>
+          </div>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={handleRefresh}
+              disabled={isRefreshing}
+            >
+              <Icon name="refresh" className="w-4 h-4 mr-2" />
+              Refresh
+            </Button>
+          </div>
+        </div>
+      </div>
+
+      {/* Content */}
+      <div className="flex-1 overflow-hidden">
+        {htmlValue ? (
+          <iframe
+            srcDoc={htmlValue}
+            className="w-full h-full border-0"
+            title="View Preview"
+            sandbox="allow-scripts allow-same-origin allow-popups allow-forms"
+          />
+        ) : (
+          <div className="flex items-center justify-center h-full">
+            <div className="text-center">
+              <Icon
+                name="visibility_off"
+                className="w-12 h-12 mx-auto mb-4 text-muted-foreground"
+              />
+              <p className="text-sm text-muted-foreground">
+                No HTML content to preview
+              </p>
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+export default ViewDetail;

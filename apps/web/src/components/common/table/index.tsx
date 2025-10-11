@@ -25,7 +25,7 @@ export interface TableProps<T = Record<string, unknown>> {
   columns: TableColumn<T>[];
   data: T[];
   sortKey?: string;
-  sortDirection?: "asc" | "desc";
+  sortDirection?: "asc" | "desc" | null;
   onSort?: (key: string) => void;
   onRowClick?: (row: T) => void;
   rowClassName?: (row: T) => string | undefined;
@@ -42,39 +42,29 @@ export function Table<T = Record<string, unknown>>({
 }: TableProps<T>) {
   function renderSortIcon(_key: string, isActive: boolean) {
     // Only show icon if this column is actively sorted
-    if (!isActive) {
+    if (!isActive || !sortDirection) {
       return null;
     }
 
     return (
       <Icon
-        name={sortDirection === "asc" ? "arrow_downward" : "arrow_upward"}
+        name={sortDirection === "asc" ? "arrow_upward" : "arrow_downward"}
         size={16}
-        className="text-foreground group-hover:text-muted-foreground transition-colors"
-      />
-    );
-  }
-
-  function renderHoverSortIcon() {
-    return (
-      <Icon
-        name="arrow_downward"
-        size={16}
-        className="text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity"
+        className="text-muted-foreground transition-colors"
       />
     );
   }
 
   function getHeaderClass(idx: number, total: number) {
-    let base = "px-3 py-2 text-left font-medium text-foreground text-sm h-8";
+    let base = "px-3 py-2 text-left font-mono font-normal text-muted-foreground text-sm h-10 uppercase";
     if (idx === total - 1) base += " w-8";
     return base;
   }
 
   return (
-    <div className="flex flex-1 min-h-0 overflow-y-auto overflow-x-auto w-full border border-border rounded-xl bg-background">
+    <div className="w-full bg-background">
       <UITable className="w-full border-collapse">
-        <TableHeader className="sticky top-0 z-10 border-b-[1px] border-border bg-background">
+        <TableHeader className="sticky top-0 z-10 border-b border-border bg-background">
           <TableRow className="h-10 hover:!bg-transparent [&:hover]:!bg-transparent">
             {columns.map((col, idx) => {
               const isActiveSort = sortKey === col.id;
@@ -83,7 +73,8 @@ export function Table<T = Record<string, unknown>>({
                   key={col.id}
                   className={cn(
                     getHeaderClass(idx, columns.length),
-                    "group",
+                    "group transition-colors",
+                    col.sortable && "hover:bg-accent/50",
                     col.rowClassName,
                   )}
                   style={{ cursor: col.sortable ? "pointer" : undefined }}
@@ -93,12 +84,7 @@ export function Table<T = Record<string, unknown>>({
                 >
                   <span className="flex items-center gap-1">
                     {col.header}
-                    {col.sortable && (
-                      <>
-                        {renderSortIcon(col.id, isActiveSort)}
-                        {!isActiveSort && renderHoverSortIcon()}
-                      </>
-                    )}
+                    {col.sortable && renderSortIcon(col.id, isActiveSort)}
                   </span>
                 </TableHead>
               );
@@ -114,7 +100,7 @@ export function Table<T = Record<string, unknown>>({
                 key={i}
                 data-row-index={i}
                 className={cn(
-                  "group/data-row transition-colors border-b border-border/60 last:border-b-0",
+                  "group/data-row transition-colors border-b border-border/50 last:border-b-0 hover:bg-accent/50",
                   onRowClick ? "cursor-pointer" : "",
                   extraClasses,
                 )}
@@ -124,7 +110,7 @@ export function Table<T = Record<string, unknown>>({
                   <TableCell
                     key={col.id}
                     className={cn(
-                      "px-3 py-2 align-top min-w-0",
+                      "p-2 h-[36px] align-middle min-w-0 text-sm text-foreground",
                       col.cellClassName,
                       col.wrap
                         ? "whitespace-normal break-words"

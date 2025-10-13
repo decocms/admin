@@ -15,9 +15,7 @@ import { z } from "zod";
 import { EmptyState } from "../common/empty-state.tsx";
 import { DocumentEditor } from "./document-editor.tsx";
 import { toast } from "@deco/ui/components/sonner.tsx";
-import {
-  addResourceUpdateListener,
-} from "../../lib/broadcast-channels.ts";
+import { addResourceUpdateListener } from "../../lib/broadcast-channels.ts";
 import { useSearchParams } from "react-router";
 import { useQueryClient } from "@tanstack/react-query";
 

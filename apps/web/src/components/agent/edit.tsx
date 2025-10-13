@@ -44,6 +44,7 @@ import { AgentAvatar } from "../common/avatar/agent.tsx";
 import { useDecopilotContext } from "../decopilot/context.tsx";
 import { useDecopilotThread } from "../decopilot/thread-context.tsx";
 import { useAppAdditionalTools } from "../decopilot/use-app-additional-tools.ts";
+import { DecopilotProvider } from "../decopilot/context.tsx";
 import { DecopilotLayout } from "../layout/decopilot-layout.tsx";
 import AdvancedTab from "../settings/advanced.tsx";
 import AgentProfileTab from "../settings/agent-profile.tsx";
@@ -293,6 +294,9 @@ function ChatWithProvider() {
   // Decopilot-specific hooks
   const { threadState, clearThreadState } = useDecopilotThread();
 
+  // Use threadState.threadId when available for decopilot mode
+  const effectiveDecopilotThreadId = threadState.threadId ?? decopilotThreadId;
+
   // Only use initial input if there's an actual message and we're in decopilot mode
   const shouldUseInitialInput =
     chatMode === "decopilot" &&
@@ -338,7 +342,7 @@ function ChatWithProvider() {
   // Render both providers but only show the active one
   // This way both chats maintain their state
   return (
-    <DecopilotLayout value={decopilotContextValue}>
+    <DecopilotProvider value={decopilotContextValue}>
       <div className="h-full w-full">
         {/* Agent chat - hidden when in decopilot mode */}
         <div className={chatMode === "agent" ? "block h-full" : "hidden"}>
@@ -360,9 +364,9 @@ function ChatWithProvider() {
         {/* Decopilot chat - hidden when in agent mode */}
         <div className={chatMode === "decopilot" ? "block h-full" : "hidden"}>
           <AgentProvider
-            key={threadState.threadId}
+            key={effectiveDecopilotThreadId}
             agentId={WELL_KNOWN_AGENTS.decopilotAgent.id}
-            threadId={decopilotThreadId}
+            threadId={effectiveDecopilotThreadId}
             initialInput={
               shouldUseInitialInput
                 ? (threadState.initialMessage ?? undefined)
@@ -385,7 +389,7 @@ function ChatWithProvider() {
           </AgentProvider>
         </div>
       </div>
-    </DecopilotLayout>
+    </DecopilotProvider>
   );
 }
 

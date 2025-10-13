@@ -208,9 +208,9 @@ export function ContextResources({
                 type="button"
                 variant="outline"
                 size="icon"
-                title="Add files or integrations"
+                title="Add integrations"
               >
-                <Icon name="alternate_email" />
+                <Icon name="add" />
               </Button>
             }
           />
@@ -273,8 +273,7 @@ export function ContextResources({
           ))}
         </div>
 
-        {/* Optional right node (e.g., preview toggle) */}
-        {rightNode && <div>{rightNode}</div>}
+        {rightNode}
       </div>
     </div>
   );

@@ -165,7 +165,11 @@ function AgentChatModeSwitch() {
 
   // Get agent ID from URL params
   const agentId = params.id;
-  const { data: agent } = useAgentData(agentId || "");
+
+  // Early return if no agent ID
+  if (!agentId) return null;
+
+  const { data: agent } = useAgentData(agentId);
 
   // Get current chat mode from URL (default to 'agent')
   const currentMode =

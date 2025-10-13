@@ -2,6 +2,7 @@ import { BreadcrumbSeparator } from "@deco/ui/components/breadcrumb.tsx";
 import { Button } from "@deco/ui/components/button.tsx";
 import { Icon } from "@deco/ui/components/icon.tsx";
 import { useSidebar } from "@deco/ui/components/sidebar.tsx";
+import { Suspense } from "react";
 import { Link } from "react-router";
 import { ErrorBoundary } from "../../error-boundary.tsx";
 import { ReportIssueButton } from "../common/report-issue-button.tsx";
@@ -54,7 +55,9 @@ export function Topbar({ breadcrumb }: { breadcrumb: BreadcrumbItem[] }) {
       </div>
       <div className="flex items-center gap-3">
         <ReportIssueButton />
-        <TopbarControls />
+        <Suspense fallback={null}>
+          <TopbarControls />
+        </Suspense>
         <LoggedUser
           trigger={(user) => <LoggedUserAvatarTrigger user={user} />}
           align="end"

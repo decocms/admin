@@ -1,8 +1,20 @@
 import { MCPClient } from "../fetcher.ts";
 import { ProjectLocator } from "../locator.ts";
 
-export const getWalletAccount = (locator: ProjectLocator): Promise<{ balance: string; balanceExact?: string; refetch?: () => Promise<void>; isRefetching?: boolean }> =>
-  MCPClient.forLocator(locator).GET_WALLET_ACCOUNT({}) as Promise<{ balance: string; balanceExact?: string; refetch?: () => Promise<void>; isRefetching?: boolean }>;
+export const getWalletAccount = (
+  locator: ProjectLocator,
+): Promise<{
+  balance: string;
+  balanceExact?: string;
+  refetch?: () => Promise<void>;
+  isRefetching?: boolean;
+}> =>
+  MCPClient.forLocator(locator).GET_WALLET_ACCOUNT({}) as Promise<{
+    balance: string;
+    balanceExact?: string;
+    refetch?: () => Promise<void>;
+    isRefetching?: boolean;
+  }>;
 
 export const getThreadsUsage = (
   locator: ProjectLocator,
@@ -75,8 +87,28 @@ export const createWalletVoucher = ({
     amount,
   });
 
-export const getWorkspacePlan = async (locator: ProjectLocator): Promise<{ id: string; title: string; user_seats: number; remainingSeats: number; isAtSeatLimit: boolean; created_at: string; monthly_credit_in_dollars: number; markup: number }> => {
-  const plan = await MCPClient.forLocator(locator).GET_WORKSPACE_PLAN({}) as { id: string; title: string; user_seats: number; remainingSeats: number; isAtSeatLimit: boolean; created_at: string; monthly_credit_in_dollars: number; markup: number };
+export const getWorkspacePlan = async (
+  locator: ProjectLocator,
+): Promise<{
+  id: string;
+  title: string;
+  user_seats: number;
+  remainingSeats: number;
+  isAtSeatLimit: boolean;
+  created_at: string;
+  monthly_credit_in_dollars: number;
+  markup: number;
+}> => {
+  const plan = (await MCPClient.forLocator(locator).GET_WORKSPACE_PLAN({})) as {
+    id: string;
+    title: string;
+    user_seats: number;
+    remainingSeats: number;
+    isAtSeatLimit: boolean;
+    created_at: string;
+    monthly_credit_in_dollars: number;
+    markup: number;
+  };
 
   return plan;
 };

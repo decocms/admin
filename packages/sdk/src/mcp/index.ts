@@ -28,6 +28,7 @@ import type { CreateStubHandlerOptions, MCPClientStub } from "./stub.ts";
 import * as teamsAPI from "./teams/api.ts";
 import * as threadsAPI from "./threads/api.ts";
 import * as triggersAPI from "./triggers/api.ts";
+import * as utilsAPI from "./utils/api.ts";
 import * as walletAPI from "./wallet/api.ts";
 export {
   createToolBindingImpl as createToolTools,
@@ -39,7 +40,7 @@ export * from "../errors.ts";
 export { FileProcessor } from "../mcp/file-processor.ts";
 export * from "./assertions.ts";
 export { createResourceAccess } from "./auth/index.ts";
-export * from "./bindings/binder.ts";
+export * from "./bindings/index.ts";
 export * from "./context.ts";
 export { createTool, createToolGroup } from "./context.ts";
 export type { ContractState } from "./contracts/api.ts";
@@ -86,6 +87,7 @@ export const GLOBAL_TOOLS = [
   teamsAPI.getTeamRole,
   teamsAPI.getWorkspaceTheme,
   teamsAPI.listProjects,
+  teamsAPI.updateProject,
   membersAPI.getTeamMembers,
   membersAPI.updateTeamMember,
   membersAPI.removeTeamMember,
@@ -103,6 +105,7 @@ export const GLOBAL_TOOLS = [
   integrationsAPI.callTool,
   integrationsAPI.listTools,
   registryAPI.getRegistryApp,
+  utilsAPI.httpFetch,
 ] as const;
 
 // Tools tied to an specific workspace
@@ -195,7 +198,6 @@ export const PROJECT_TOOLS = [
   promptsAPI.deletePrompt,
   promptsAPI.listPrompts,
   promptsAPI.getPrompt,
-  promptsAPI.searchPrompts,
   promptsAPI.getPromptVersions,
   promptsAPI.renamePromptVersion,
   apiKeysAPI.checkAccess,

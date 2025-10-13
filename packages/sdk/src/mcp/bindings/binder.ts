@@ -2,8 +2,7 @@
 import type { z } from "zod";
 import type { MCPConnection } from "../../models/mcp.ts";
 import {
-  type AppContext,
-  createGlobalForContext,
+  createMCPFetchStub,
   createTool,
   type ToolBinder,
   type ToolLike,
@@ -14,10 +13,27 @@ export type Binder<TDefinition extends readonly ToolBinder[] = any> = {
   [K in keyof TDefinition]: TDefinition[K];
 };
 
-export type BinderImplementation<TBinder extends Binder<any>> =
-  TBinder extends Binder<infer TDefinition>
-    ? {
-        [K in keyof TDefinition]: Omit<
+export type BinderImplementation<
+  TBinder extends Binder<any>,
+  TContext = any,
+> = TBinder extends Binder<infer TDefinition>
+  ? {
+      [K in keyof TDefinition]: Omit<
+        ToolLike<
+          TDefinition[K]["name"],
+          z.infer<TDefinition[K]["inputSchema"]>,
+          TDefinition[K] extends { outputSchema: infer Schema }
+            ? Schema extends z.ZodType
+              ? z.infer<Schema>
+              : never
+            : never
+        >,
+        "name" | "inputSchema" | "outputSchema" | "handler"
+      > & {
+        handler: (
+          props: z.infer<TDefinition[K]["inputSchema"]>,
+          c?: TContext,
+        ) => ReturnType<
           ToolLike<
             TDefinition[K]["name"],
             z.infer<TDefinition[K]["inputSchema"]>,
@@ -26,54 +42,27 @@ export type BinderImplementation<TBinder extends Binder<any>> =
                 ? z.infer<Schema>
                 : never
               : never
-          >,
-          "name" | "inputSchema" | "outputSchema" | "handler"
-        > & {
-          handler: (
-            props: z.infer<TDefinition[K]["inputSchema"]>,
-            c: AppContext,
-          ) => ReturnType<
-            ToolLike<
-              TDefinition[K]["name"],
-              z.infer<TDefinition[K]["inputSchema"]>,
-              TDefinition[K] extends { outputSchema: infer Schema }
-                ? Schema extends z.ZodType
-                  ? z.infer<Schema>
-                  : never
-                : never
-            >["handler"]
-          >;
-        };
-      }
-    : never;
+          >["handler"]
+        >;
+      };
+    }
+  : never;
 
 export const bindingClient = <TDefinition extends readonly ToolBinder[]>(
   binder: TDefinition,
 ) => {
   return {
-    implements: async (
-      connectionOrTools: MCPConnection | ToolBinder[],
-      ctx?: AppContext,
-    ) => {
-      const client = createGlobalForContext(ctx);
-      const listedTools = Array.isArray(connectionOrTools)
-        ? connectionOrTools
-        : await client
-            .INTEGRATIONS_LIST_TOOLS({
-              connection: connectionOrTools,
-            })
-            .then((r) => r.tools)
-            .catch(() => []);
-
+    implements: (tools: ToolBinder[]) => {
       return binder.every((tool) =>
-        (listedTools ?? []).some((t) => t.name === tool.name),
+        (tools ?? []).some((t) => t.name === tool.name),
       );
     },
     forConnection: (
       mcpConnection: MCPConnection,
-      ctx?: AppContext,
     ): MCPClientFetchStub<TDefinition> => {
-      const client = createGlobalForContext(ctx);
+      const stub = createMCPFetchStub<TDefinition>({
+        connection: mcpConnection,
+      });
       return new Proxy<MCPClientFetchStub<TDefinition>>(
         {} as MCPClientFetchStub<TDefinition>,
         {
@@ -83,13 +72,11 @@ export const bindingClient = <TDefinition extends readonly ToolBinder[]>(
             }
 
             return (args: Record<string, unknown>) => {
-              return client.INTEGRATIONS_CALL_TOOL({
-                connection: mcpConnection,
-                params: {
-                  name,
-                  arguments: args,
-                },
-              });
+              return (
+                stub[name as keyof MCPClientFetchStub<TDefinition>] as (
+                  args: Record<string, unknown>,
+                ) => Promise<unknown>
+              )(args);
             };
           },
         },

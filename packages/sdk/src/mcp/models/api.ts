@@ -7,6 +7,10 @@ import {
 import { createToolGroup } from "../context.ts";
 import type { AppContext } from "../index.ts";
 import { SupabaseLLMVault } from "./llm-vault.ts";
+import {
+  getProjectIdFromContext,
+  workspaceOrProjectIdConditions,
+} from "../projects/util.ts";
 
 interface ModelRow {
   id: string;
@@ -78,6 +82,7 @@ export const createModel = createTool({
       .from("models")
       .insert({
         workspace,
+        project_id: await getProjectIdFromContext(c),
         name: modelName,
         model,
         api_key_hash: null,
@@ -95,6 +100,7 @@ export const createModel = createTool({
         c.db,
         c.envVars.LLMS_ENCRYPTION_KEY,
         workspace,
+        await getProjectIdFromContext(c),
       );
       await llmVault.storeApiKey(data.id, apiKey);
     }
@@ -146,6 +152,7 @@ export const updateModel = createTool({
             c.db,
             c.envVars.LLMS_ENCRYPTION_KEY,
             workspace,
+            await getProjectIdFromContext(c),
           );
 
           await llmVault.updateApiKey(id, value);
@@ -174,7 +181,7 @@ export const updateModel = createTool({
         .from("models")
         .delete()
         .eq("id", id)
-        .eq("workspace", workspace);
+        .or(await workspaceOrProjectIdConditions(c));
 
       return wellKnownModel;
     }
@@ -183,7 +190,7 @@ export const updateModel = createTool({
       .from("models")
       .update(updateData)
       .eq("id", id)
-      .eq("workspace", workspace)
+      .or(await workspaceOrProjectIdConditions(c))
       .select(`
         id,
         name,
@@ -214,8 +221,6 @@ export const deleteModel = createTool({
   description: "Delete a model by id",
   inputSchema: z.lazy(() => deleteModelSchema),
   handler: async (props, c) => {
-    assertHasWorkspace(c);
-    const workspace = c.workspace.value;
     const { id } = props;
 
     await assertWorkspaceResourceAccess(c);
@@ -224,7 +229,7 @@ export const deleteModel = createTool({
       .from("models")
       .delete()
       .eq("id", id)
-      .eq("workspace", workspace);
+      .or(await workspaceOrProjectIdConditions(c));
 
     if (error) throw error;
 
@@ -240,17 +245,15 @@ export const listModelsSchema = z.object({
 export type ListModelsInput = z.infer<typeof listModelsSchema>;
 
 export const listModelsForWorkspace = async ({
-  workspace,
-  db,
+  c,
   options,
 }: {
-  workspace: string;
-  db: AppContext["db"];
+  c: AppContext;
   options?: {
     excludeDisabled?: boolean;
   };
 }) => {
-  const { data, error } = await db
+  const { data, error } = await c.db
     .from("models")
     .select(`
         id,
@@ -262,7 +265,7 @@ export const listModelsForWorkspace = async ({
         name,
         description
       `)
-    .eq("workspace", workspace);
+    .or(await workspaceOrProjectIdConditions(c));
 
   if (error) throw error;
 
@@ -300,8 +303,6 @@ export const listModels = createTool({
     }),
   ),
   handler: async (props, c) => {
-    assertHasWorkspace(c);
-    const workspace = c.workspace.value;
     const { excludeDisabled = false } = props;
 
     c.resourceAccess.grant();
@@ -316,8 +317,7 @@ export const listModels = createTool({
     }
 
     const models = await listModelsForWorkspace({
-      workspace,
-      db: c.db,
+      c,
       options: { excludeDisabled },
     });
 
@@ -336,8 +336,6 @@ export const getModel = createTool({
   description: "Get a model by id",
   inputSchema: z.lazy(() => getModelSchema),
   handler: async (props, c) => {
-    assertHasWorkspace(c);
-    const workspace = c.workspace.value;
     const { id } = props;
 
     await assertWorkspaceResourceAccess(c);
@@ -362,7 +360,7 @@ export const getModel = createTool({
         description
       `)
       .eq("id", id)
-      .eq("workspace", workspace)
+      .or(await workspaceOrProjectIdConditions(c))
       .single();
 
     if (error) throw error;

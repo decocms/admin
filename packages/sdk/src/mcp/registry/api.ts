@@ -1,17 +1,24 @@
 import { listToolsByConnectionType } from "@deco/ai/mcp";
+import { and, desc, eq, ilike, or } from "drizzle-orm";
 import { z } from "zod";
 import { AppName } from "../../common/index.ts";
 import { UserInputError } from "../../errors.ts";
-import type { MCPConnection } from "../../models/mcp.ts";
 import { MCPConnectionSchema } from "../../models/mcp.ts";
-import type { Json, QueryResult } from "../../storage/index.ts";
 import {
   assertHasWorkspace,
   assertWorkspaceResourceAccess,
 } from "../assertions.ts";
 import { type AppContext, createToolGroup } from "../context.ts";
+import {
+  buildWorkspaceOrProjectIdConditions,
+  getProjectIdFromContext,
+} from "../projects/util.ts";
+import { registryApps, registryScopes, registryTools } from "../schema.ts";
+import { RegistryAppSchema, RegistryScopeSchema } from "./schemas.ts";
+
 export { AppName };
-const DECO_CHAT_APPS_REGISTRY_TABLE = "deco_chat_apps_registry" as const;
+export type { RegistryApp } from "./schemas.ts";
+
 const DECO_CHAT_REGISTRY_SCOPES_TABLE = "deco_chat_registry_scopes" as const;
 const DECO_CHAT_REGISTRY_APPS_TOOLS_TABLE =
   "deco_chat_apps_registry_tools" as const;
@@ -29,145 +36,52 @@ const OMITTED_APPS = [
   "fc348403-4bb9-4b95-8cda-b73e8beac4fd",
 ];
 
-const SELECT_REGISTRY_SCOPE_QUERY = `
-  id,
-  scope_name,
-  workspace,
-  created_at,
-  updated_at
-` as const;
+type DbTool = typeof registryTools.$inferSelect;
 
-const SELECT_REGISTRY_APP_QUERY = `
-  id,
-  workspace,
-  scope_id,
-  metadata,
-  name,
-  description,
-  icon,
-  connection,
-  created_at,
-  updated_at,
-  unlisted,
-  friendly_name,
-  verified
-` as const;
-
-const SELECT_REGISTRY_APP_WITH_SCOPE_QUERY = `
-  ${SELECT_REGISTRY_APP_QUERY},
-  deco_chat_registry_scopes!inner(scope_name),
-  deco_chat_apps_registry_tools(
-    id,
-    name,
-    description,
-    input_schema,
-    output_schema,
-    metadata
-  )
-` as const;
-
-// Zod schemas for output validation
-const RegistryScopeSchema = z.object({
-  id: z.string(),
-  scopeName: z.string(),
-  workspace: z.string(),
-  createdAt: z.string(),
-  updatedAt: z.string(),
-});
-
-const RegistryToolSchema = z.object({
-  id: z.string(),
-  name: z.string(),
-  description: z.string().optional(),
-  inputSchema: z.record(z.unknown()),
-  outputSchema: z.record(z.unknown()).optional(),
-  metadata: z.record(z.unknown()).optional(),
-});
-
-const RegistryAppSchema = z.object({
-  id: z.string(),
-  workspace: z.string(),
-  scopeId: z.string(),
-  scopeName: z.string(),
-  appName: z.string(),
-  name: z.string(),
-  description: z.string().optional(),
-  icon: z.string().optional(),
-  connection: MCPConnectionSchema,
-  createdAt: z.string(),
-  updatedAt: z.string(),
-  unlisted: z.boolean(),
-  friendlyName: z.string().optional(),
-  verified: z.boolean().optional(),
-  tools: z.array(RegistryToolSchema).optional(),
-  metadata: z.record(z.unknown()).optional().nullable(),
-});
-
-export type RegistryScope = {
-  id: string;
-  scopeName: string;
-  workspace: string;
-  createdAt: string;
-  updatedAt: string;
+type DbApp = typeof registryApps.$inferSelect & { tools: DbTool[] } & {
+  scope: Pick<typeof registryScopes.$inferSelect, "scope_name">;
 };
 
-export type RegistryApp = z.infer<typeof RegistryAppSchema>;
-
 const Mappers = {
-  toRegistryScope: (
-    data: QueryResult<
-      typeof DECO_CHAT_REGISTRY_SCOPES_TABLE,
-      typeof SELECT_REGISTRY_SCOPE_QUERY
-    >,
-  ): RegistryScope => {
-    return {
-      id: data.id,
-      scopeName: data.scope_name,
-      workspace: data.workspace,
-      createdAt: data.created_at,
-      updatedAt: data.updated_at,
-    };
-  },
-  toRegistryApp: (
-    data: QueryResult<
-      typeof DECO_CHAT_APPS_REGISTRY_TABLE,
-      typeof SELECT_REGISTRY_APP_WITH_SCOPE_QUERY
-    >,
-  ): RegistryApp => {
-    const tools = Array.isArray(data.deco_chat_apps_registry_tools)
-      ? data.deco_chat_apps_registry_tools.map((tool) => ({
-          id: tool.id,
-          name: tool.name,
-          description: tool.description ?? undefined,
-          inputSchema:
-            (tool.input_schema as Record<string, unknown>) ?? undefined,
-          outputSchema:
-            (tool.output_schema as Record<string, unknown>) ?? undefined,
-          metadata: (tool.metadata as Record<string, unknown>) ?? undefined,
-        }))
-      : [];
+  mapTool: (tool: DbTool) => ({
+    id: tool.id,
+    name: tool.name,
+    description: tool.description ?? undefined,
+    inputSchema: tool.input_schema ?? {},
+    outputSchema: tool.output_schema ?? undefined,
+    metadata: tool.metadata ?? undefined,
+  }),
 
-    return {
-      id: data.id,
-      workspace: data.workspace,
-      scopeId: data.scope_id,
-      scopeName: data.deco_chat_registry_scopes.scope_name,
-      name: data.name,
-      appName: AppName.build(
-        data.deco_chat_registry_scopes.scope_name,
-        data.name,
-      ),
-      friendlyName: data.friendly_name ?? undefined,
-      description: data.description ?? undefined,
-      icon: data.icon ?? undefined,
-      connection: data.connection as MCPConnection,
-      createdAt: data.created_at,
-      updatedAt: data.updated_at,
-      unlisted: data.unlisted,
-      verified: data.verified ?? false,
-      metadata: data.metadata as Record<string, unknown> | undefined,
-      tools,
-    };
+  mapApp: (app: DbApp) => ({
+    id: app.id,
+    workspace: app.workspace,
+    scopeId: app.scope_id,
+    scopeName: app.scope.scope_name,
+    name: app.name,
+    appName: AppName.build(app.scope.scope_name, app.name),
+    description: app.description ?? undefined,
+    icon: app.icon ?? undefined,
+    connection: app.connection,
+    createdAt: app.created_at,
+    updatedAt: app.updated_at,
+    unlisted: app.unlisted,
+    friendlyName: app.friendly_name ?? undefined,
+    verified: app.verified ?? false,
+    metadata: app.metadata ?? undefined,
+    tools: app.tools.map(Mappers.mapTool),
+  }),
+};
+
+const Filters = {
+  searchApp: (query?: string) => {
+    return query
+      ? {
+          OR: [
+            { name: { ilike: `%${query}%` } },
+            { description: { ilike: `%${query}%` } },
+          ],
+        }
+      : {};
   },
 };
 
@@ -192,36 +106,57 @@ export const listRegistryScopes = createTool({
     z.object({ scopes: z.array(RegistryScopeSchema) }),
   ),
   handler: async ({ search }, c) => {
+    assertHasWorkspace(c);
     await assertWorkspaceResourceAccess(c);
 
-    let query = c.db
-      .from(DECO_CHAT_REGISTRY_SCOPES_TABLE)
-      .select(SELECT_REGISTRY_SCOPE_QUERY);
+    const workspace = c.workspace.value;
+    const projectId = await getProjectIdFromContext(c);
 
-    if (search) {
-      query = query.ilike("scope_name", `%${search}%`);
-    }
+    const ownerFilter = projectId
+      ? or(
+          eq(registryScopes.project_id, projectId),
+          eq(registryScopes.workspace, workspace),
+        )
+      : eq(registryScopes.workspace, workspace);
 
-    const { data, error } = await query.order("created_at", {
-      ascending: false,
-    });
+    const filter = and(
+      ownerFilter,
+      search ? ilike(registryScopes.scope_name, `%${search}%`) : undefined,
+    );
 
-    if (error) throw error;
+    const scopes = await c.drizzle
+      .select({
+        id: registryScopes.id,
+        scopeName: registryScopes.scope_name,
+        workspace: registryScopes.workspace,
+        projectId: registryScopes.project_id,
+        createdAt: registryScopes.created_at,
+        updatedAt: registryScopes.updated_at,
+      })
+      .from(registryScopes)
+      .where(filter)
+      .orderBy(desc(registryScopes.created_at));
 
-    return { scopes: data.map(Mappers.toRegistryScope) };
+    return { scopes };
   },
 });
 
 const MAX_SCOPES_PER_WORKSPACE = 5;
-async function ensureScope(
-  scopeName: string,
-  workspace: string,
-  db: AppContext["db"],
-): Promise<string> {
+async function ensureScope({
+  scopeName,
+  workspace,
+  projectId,
+  db,
+}: {
+  scopeName: string;
+  workspace: string;
+  projectId: string | null;
+  db: AppContext["db"];
+}): Promise<string> {
   // First, try to find existing scope
   const { data: existingScope, error: findError } = await db
     .from(DECO_CHAT_REGISTRY_SCOPES_TABLE)
-    .select("id, workspace")
+    .select("id, workspace, project_id")
     .eq("scope_name", scopeName)
     .maybeSingle();
 
@@ -229,9 +164,12 @@ async function ensureScope(
 
   if (existingScope) {
     // Check ownership - only the workspace that owns the scope can publish to it
-    if (existingScope.workspace !== workspace) {
+    if (
+      existingScope.project_id !== projectId &&
+      existingScope.workspace !== workspace
+    ) {
       throw new UserInputError(
-        `Scope "${scopeName}" is owned by another workspace`,
+        `Scope "${scopeName}" is owned by another project`,
       );
     }
     return existingScope.id;
@@ -241,7 +179,7 @@ async function ensureScope(
   const { data: existingScopes, error: countError } = await db
     .from(DECO_CHAT_REGISTRY_SCOPES_TABLE)
     .select("id", { count: "exact" })
-    .eq("workspace", workspace);
+    .or(buildWorkspaceOrProjectIdConditions(workspace, projectId));
 
   if (countError) throw countError;
 
@@ -258,6 +196,7 @@ async function ensureScope(
     .insert({
       scope_name: scopeName,
       workspace,
+      project_id: projectId,
       updated_at: new Date().toISOString(),
     })
     .select("id")
@@ -280,38 +219,46 @@ export const getRegistryApp = createTool({
   outputSchema: z.lazy(() => RegistryAppSchema),
   handler: async (ctx, c) => {
     c.resourceAccess.grant(); // this method is public
-    let data: QueryResult<
-      typeof DECO_CHAT_APPS_REGISTRY_TABLE,
-      typeof SELECT_REGISTRY_APP_WITH_SCOPE_QUERY
-    > | null = null;
+
+    let app: DbApp | undefined = undefined;
 
     if ("id" in ctx && ctx.id) {
-      const result = await c.db
-        .from(DECO_CHAT_APPS_REGISTRY_TABLE)
-        .select(SELECT_REGISTRY_APP_WITH_SCOPE_QUERY)
-        .eq("id", ctx.id)
-        .maybeSingle();
-
-      if (result.error) throw result.error;
-      data = result.data;
+      app = await c.drizzle.query.registryApps.findFirst({
+        where: {
+          id: ctx.id,
+        },
+        with: {
+          tools: true,
+          scope: { columns: { scope_name: true } },
+        },
+      });
     } else if ("name" in ctx && ctx.name) {
       const { scopeName, name: appName } = AppName.parse(ctx.name);
-      const result = await c.db
-        .from(DECO_CHAT_APPS_REGISTRY_TABLE)
-        .select(SELECT_REGISTRY_APP_WITH_SCOPE_QUERY)
-        .eq(`${DECO_CHAT_REGISTRY_SCOPES_TABLE}.scope_name`, scopeName)
-        .eq("name", appName)
-        .maybeSingle();
 
-      if (result.error) throw result.error;
-      data = result.data;
+      app = await c.drizzle.query.registryApps.findFirst({
+        where: {
+          name: appName,
+          scope: {
+            scope_name: scopeName,
+          },
+        },
+        with: {
+          tools: true,
+          scope: {
+            columns: { scope_name: true },
+          },
+        },
+      });
     }
-    if (!data) {
+
+    if (!app) {
       throw new UserInputError("App not found");
     }
-    return Mappers.toRegistryApp(data!);
+
+    return Mappers.mapApp(app);
   },
 });
+
 export const listRegistryApps = createTool({
   name: "REGISTRY_LIST_APPS",
   description: "List all apps in the registry for the current workspace",
@@ -329,39 +276,49 @@ export const listRegistryApps = createTool({
     await assertWorkspaceResourceAccess(c);
 
     assertHasWorkspace(c);
-    // added both scenarios to the query
-    // because we used to registry personal apps workspace as /users/userId
-    // and now we save them as /shared/slug
     const workspace = c.workspace.value;
-    const personalSlug = `/shared/${c.locator?.org}`;
 
-    let query = c.db
-      .from(DECO_CHAT_APPS_REGISTRY_TABLE)
-      .select(SELECT_REGISTRY_APP_WITH_SCOPE_QUERY)
-      .or(
-        `unlisted.eq.false,` +
-          `and(workspace.eq."${workspace}",unlisted.eq.true),` +
-          `and(workspace.eq."${personalSlug}",unlisted.eq.true)`,
-      );
+    const projectId = await getProjectIdFromContext(c);
 
-    if (scopeName) {
-      query = query.eq("deco_chat_registry_scopes.scope_name", scopeName);
-    }
-
-    if (search) {
-      query = query.or(`name.ilike.%${search}%,description.ilike.%${search}%`);
-    }
-
-    const { data, error } = await query.order("created_at", {
-      ascending: false,
+    const apps = await c.drizzle.query.registryApps.findMany({
+      where: {
+        AND: [
+          Filters.searchApp(search),
+          {
+            OR: [
+              { unlisted: false },
+              {
+                AND: [
+                  { unlisted: true },
+                  {
+                    OR: projectId
+                      ? [{ project_id: projectId }, { workspace }]
+                      : [{ workspace }],
+                  },
+                ],
+              },
+            ],
+          },
+          scopeName
+            ? {
+                scope: { scope_name: scopeName },
+              }
+            : {},
+        ],
+      },
+      with: {
+        tools: true,
+        scope: { columns: { scope_name: true } },
+      },
+      orderBy: (a, { desc }) => desc(a.created_at),
     });
 
-    if (error) throw error;
-
     // Filter out omitted apps
-    const filteredData = data.filter((app) => !OMITTED_APPS.includes(app.id));
+    const filteredApps = apps.filter((app) => !OMITTED_APPS.includes(app.id));
 
-    return { apps: filteredData.map(Mappers.toRegistryApp) };
+    return {
+      apps: filteredApps.map(Mappers.mapApp),
+    };
   },
 });
 
@@ -382,26 +339,34 @@ export const listPublishedApps = createTool({
 
     assertHasWorkspace(c);
     const workspace = c.workspace.value;
+    const projectId = await getProjectIdFromContext(c);
 
-    let query = c.db
-      .from(DECO_CHAT_APPS_REGISTRY_TABLE)
-      .select(SELECT_REGISTRY_APP_WITH_SCOPE_QUERY)
-      .eq("workspace", workspace);
+    const ownerFilter = projectId
+      ? [{ project_id: projectId }, { workspace }]
+      : [{ workspace }];
 
-    if (search) {
-      query = query.or(`name.ilike.%${search}%,description.ilike.%${search}%`);
-    }
-
-    const { data, error } = await query.order("created_at", {
-      ascending: false,
+    const data = await c.drizzle.query.registryApps.findMany({
+      where: {
+        AND: [
+          Filters.searchApp(search),
+          {
+            OR: ownerFilter,
+          },
+        ],
+      },
+      with: {
+        tools: true,
+        scope: { columns: { scope_name: true } },
+      },
+      orderBy: {
+        created_at: "desc",
+      },
     });
-
-    if (error) throw error;
 
     // Filter out omitted apps
     const filteredData = data.filter((app) => !OMITTED_APPS.includes(app.id));
 
-    return { apps: filteredData.map(Mappers.toRegistryApp) };
+    return { apps: filteredData.map(Mappers.mapApp) };
   },
 });
 
@@ -454,6 +419,7 @@ export const publishApp = createTool({
 
     assertHasWorkspace(c);
     const workspace = c.workspace.value;
+    const projectId = await getProjectIdFromContext(c);
 
     if (!name.trim()) {
       throw new UserInputError("App name cannot be empty");
@@ -463,31 +429,53 @@ export const publishApp = createTool({
     const scopeName = scope_name.trim();
 
     // Ensure scope exists (automatically claim if needed)
-    const scopeId = await ensureScope(scopeName, workspace, c.db);
+    const scopeId = await ensureScope({
+      scopeName,
+      workspace,
+      projectId,
+      db: c.db,
+    });
 
-    const { data, error } = await c.db
-      .from(DECO_CHAT_APPS_REGISTRY_TABLE)
-      .upsert(
-        {
-          workspace,
-          scope_id: scopeId,
-          friendly_name: friendlyName?.trim() || null,
-          name: name.trim(),
-          metadata: metadata as Json,
-          description: description?.trim() || null,
-          icon: icon?.trim() || null,
-          connection,
-          updated_at: new Date().toISOString(),
-          unlisted: unlisted ?? true,
-        },
-        {
-          onConflict: "scope_id,name",
-        },
-      )
-      .select(SELECT_REGISTRY_APP_WITH_SCOPE_QUERY)
-      .single();
+    const now = new Date().toISOString();
 
-    if (error) throw error;
+    const values = {
+      workspace,
+      project_id: projectId,
+      scope_id: scopeId,
+      friendly_name: friendlyName?.trim() || null,
+      name: name.trim(),
+      metadata: metadata,
+      description: description?.trim() || null,
+      icon: icon?.trim() || null,
+      connection,
+      updated_at: now,
+      unlisted: unlisted ?? true,
+    };
+
+    const [{ id }] = await c.drizzle
+      .insert(registryApps)
+      .values(values)
+      .onConflictDoUpdate({
+        target: [registryApps.scope_id, registryApps.name],
+        set: values,
+      })
+      .returning({
+        id: registryApps.id,
+      });
+
+    const data = await c.drizzle.query.registryApps.findFirst({
+      where: {
+        id: id,
+      },
+      with: {
+        tools: true,
+        scope: { columns: { scope_name: true } },
+      },
+    });
+
+    if (!data) {
+      throw new Error("Failed to create app");
+    }
 
     const { tools = [] } = await listToolsByConnectionType(
       connection,
@@ -543,6 +531,6 @@ export const publishApp = createTool({
       ),
     );
 
-    return Mappers.toRegistryApp(data);
+    return Mappers.mapApp(data);
   },
 });

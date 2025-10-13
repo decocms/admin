@@ -25,6 +25,7 @@ export const WellKnownMcpGroups = {
   Triggers: "triggers-management",
   Wallet: "wallet-management",
   Tools: "tools-management",
+  HTTP: "http",
   Workflows: "workflows-management",
   Self: "self",
 } as const;
@@ -60,6 +61,7 @@ export const WellKnownAppNames: Partial<WellKnownMcpGroupRecord> = {
   "triggers-management": "triggers",
   "wallet-management": "wallet",
   "tools-management": "tools",
+  http: "http",
   "workflows-management": "workflows",
 };
 

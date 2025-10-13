@@ -1456,3 +1456,86 @@ export const listRecentProjects = createTool({
     return { items };
   },
 });
+
+export const updateProject = createTool({
+  name: "PROJECTS_UPDATE",
+  description: "Update an existing project's properties",
+  inputSchema: z.lazy(() =>
+    z.object({
+      org: z.string().describe("The organization slug"),
+      project: z.string().describe("The project slug"),
+      data: z.object({
+        title: z.string().optional().describe("The new title for the project"),
+      }),
+    }),
+  ),
+  outputSchema: z.lazy(() =>
+    z.object({
+      id: z.string(),
+      title: z.string(),
+      slug: z.string(),
+      avatar_url: z.string().nullable(),
+      org: z.object({
+        id: z.number(),
+        slug: z.string(),
+        avatar_url: z.string().nullable().optional(),
+      }),
+    }),
+  ),
+  handler: async (props, c) => {
+    assertPrincipalIsUser(c);
+    c.resourceAccess.grant();
+
+    const user = c.user;
+    const { org, project, data } = props;
+
+    // First, verify the user has access to this project
+    const { data: projectData, error: fetchError } = await c.db
+      .from("deco_chat_projects")
+      .select(
+        "*, teams!inner(id, slug, theme, members!inner(user_id, deleted_at))",
+      )
+      .eq("teams.slug", org)
+      .eq("slug", project)
+      .eq("teams.members.user_id", user.id)
+      .is("teams.members.deleted_at", null)
+      .single();
+
+    if (fetchError || !projectData) {
+      throw new Error("Project not found or access denied");
+    }
+
+    // Update the project
+    const updateData: Record<string, unknown> = {};
+    if (data.title !== undefined) {
+      updateData.title = data.title;
+    }
+
+    const { data: updatedProject, error: updateError } = await c.db
+      .from("deco_chat_projects")
+      .update(updateData)
+      .eq("id", projectData.id)
+      .select("*, teams!inner(id, slug, theme)")
+      .single();
+
+    if (updateError || !updatedProject) {
+      throw new Error("Failed to update project");
+    }
+
+    if (typeof updatedProject.teams.slug !== "string") {
+      throw new InternalServerError("Team slug is not a string");
+    }
+
+    return {
+      id: updatedProject.id,
+      title: updatedProject.title,
+      slug: updatedProject.slug,
+      avatar_url: updatedProject.icon,
+      org: {
+        id: updatedProject.teams.id,
+        slug: updatedProject.teams.slug,
+        avatar_url: ((updatedProject.teams.theme as Theme) || null)?.picture,
+      },
+    };
+  },
+});

@@ -98,9 +98,14 @@ export const RENDER = createInnateTool({
   },
 });
 
+/**
+ * @deprecated This tool is deprecated. Use HTTP_FETCH from the HTTP toolset instead.
+ * The HTTP_FETCH tool provides the same functionality with better organization and maintainability.
+ */
 export const FETCH = createInnateTool({
   id: "FETCH",
   description:
+    "[DEPRECATED] This tool is deprecated. Use HTTP_FETCH instead. " +
     "Fetch to a URL. Use only when you don't have a specific integration, so make sure to try to use the other tools first. Supports multiple HTTP methods, custom headers, request body, and optional proxy usage. With this you can get the content of a URL or make requests to APIs.",
   inputSchema: FetchInputSchema,
   outputSchema: FetchOutputSchema,

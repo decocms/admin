@@ -138,10 +138,8 @@ function RecentProjectsSection() {
         {recent.map((project) => (
           <ProjectCard
             key={`${project.org.slug}/${project.slug}`}
-            name={project.title}
-            slug={`${project.org.slug}/${project.slug}`}
+            project={project}
             url={`/${project.org.slug}/${project.slug}`}
-            avatarUrl={project.avatar_url || project.org.avatar_url || ""}
             slugPrefix="/"
             showMembers={false}
             hideSlug

@@ -4,6 +4,9 @@ import {
   useTools,
   useUpdateIntegration,
   useWriteFile,
+  useAddView,
+  buildAddViewPayload,
+  listAvailableViewsForConnection,
 } from "@deco/sdk";
 import { Button } from "@deco/ui/components/button.tsx";
 import {
@@ -306,6 +309,46 @@ function ConfigureConnectionInstanceForm({
       navigateWorkspace(`/apps/${appKey}`);
     }
 
+    async function onSelectWithViews() {
+      try {
+        const viewsResult = await listAvailableViewsForConnection(
+          connection.connection,
+        );
+        const views = viewsResult.views || [];
+
+        const viewsToPin = views.filter(
+          (view) =>
+            view.installBehavior === "autoPin" ||
+            view.installBehavior === "open",
+        );
+        const viewToOpen = views.find(
+          (view) => view.installBehavior === "open",
+        );
+
+        const promisesViewsToPin = viewsToPin.map((view) => {
+          return addViewMutation.mutateAsync({
+            view: buildAddViewPayload({
+              view: view,
+              integrationId: connection.id,
+            }),
+          });
+        });
+
+        await Promise.all(promisesViewsToPin);
+
+        if (viewToOpen) {
+          navigateWorkspace(`/views/${connection.id}/${viewToOpen.name}`);
+        } else {
+          // Fallback to original behavior if no views available
+          onSelect();
+        }
+      } catch (error) {
+        console.error("Error getting available views:", error);
+        // Fallback to original behavior on error
+        onSelect();
+      }
+    }
+
     if (authorizeOauthUrl) {
       const popup = globalThis.open(authorizeOauthUrl, "_blank");
       if (!popup || popup.closed || typeof popup.closed === "undefined") {
@@ -317,12 +360,16 @@ function ConfigureConnectionInstanceForm({
           connection: connection,
         });
       } else {
-        onSelect();
+        onSelectWithViews();
       }
+    } else {
+      onSelectWithViews();
     }
   };
 
   const integrationState = useIntegrationInstallState(data.info?.name);
+  const addViewMutation = useAddView();
+
   // Setup direct install functionality
   const { install, isLoading: isInstallingLoading } = useUIInstallIntegration({
     onConfirm: handleIntegrationInstalled,

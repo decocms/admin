@@ -12,6 +12,11 @@ import {
 import { ChannelBinding } from "../bindings/binder.ts";
 import { type AppContext, createToolGroup } from "../context.ts";
 import { convertFromDatabase } from "../integrations/api.ts";
+import {
+  getProjectIdFromContext,
+  buildWorkspaceOrProjectIdConditions,
+  workspaceOrProjectIdConditions,
+} from "../projects/util.ts";
 
 const SELECT_CHANNEL_QUERY = `
   *,
@@ -61,12 +66,11 @@ export const listChannels = createTool({
     await assertWorkspaceResourceAccess(c);
 
     const db = c.db;
-    const workspace = c.workspace.value;
 
     const query = db
       .from("deco_chat_channels")
       .select(SELECT_CHANNEL_QUERY)
-      .eq("workspace", workspace);
+      .or(await workspaceOrProjectIdConditions(c));
 
     const { data, error } = await query;
 
@@ -97,13 +101,14 @@ export const createChannel = createTool({
   handler: async ({ discriminator, integrationId, agentId, name }, c) => {
     assertHasWorkspace(c);
     await assertWorkspaceResourceAccess(c);
+    const projectId = await getProjectIdFromContext(c);
     const workspace = c.workspace.value;
 
     const integrationIdWithoutPrefix = integrationId.replace("i:", "");
     const { data: integration, error: integrationError } = await c.db
       .from("deco_chat_integrations")
       .select("*")
-      .eq("workspace", workspace) // this ensures the integration is in the same workspace as the channel
+      .or(buildWorkspaceOrProjectIdConditions(workspace, projectId))
       .eq("id", integrationIdWithoutPrefix)
       .maybeSingle();
     if (integrationError) {
@@ -122,6 +127,7 @@ export const createChannel = createTool({
       .insert({
         discriminator,
         workspace,
+        project_id: projectId,
         integration_id: integrationIdWithoutPrefix,
         name,
       })
@@ -139,7 +145,7 @@ export const createChannel = createTool({
       );
 
       const [trigger, { data, error }] = await Promise.all([
-        createWebhookTrigger(discriminator, agentId, c),
+        createWebhookTrigger(agentId, c),
         c.db.from("deco_chat_agents").select("name").eq("id", agentId).single(),
       ]);
       if (error) {
@@ -216,7 +222,7 @@ export const channelJoin = createTool({
       .from("deco_chat_channels")
       .select(SELECT_CHANNEL_QUERY)
       .eq("id", id)
-      .eq("workspace", workspace)
+      .or(await workspaceOrProjectIdConditions(c))
       .single();
 
     if (error) {
@@ -228,11 +234,7 @@ export const channelJoin = createTool({
       const binding = ChannelBinding.forConnection(
         convertFromDatabase(channel.integration).connection,
       );
-      const trigger = await createWebhookTrigger(
-        channel.discriminator,
-        agentId,
-        c,
-      );
+      const trigger = await createWebhookTrigger(agentId, c);
       const agentName = getAgentName(channel, agentId);
       await binding.DECO_CHAT_CHANNELS_JOIN({
         agentName,
@@ -280,7 +282,7 @@ export const channelLeave = createTool({
       .from("deco_chat_channels")
       .select(SELECT_CHANNEL_QUERY)
       .eq("id", id)
-      .eq("workspace", workspace)
+      .or(await workspaceOrProjectIdConditions(c))
       .single();
 
     if (error) {
@@ -321,14 +323,11 @@ export const getChannel = createTool({
     assertHasWorkspace(c);
     await assertWorkspaceResourceAccess(c);
 
-    const db = c.db;
-    const workspace = c.workspace.value;
-
-    const { data: channel, error } = await db
+    const { data: channel, error } = await c.db
       .from("deco_chat_channels")
       .select(SELECT_CHANNEL_QUERY)
       .eq("id", id)
-      .eq("workspace", workspace)
+      .or(await workspaceOrProjectIdConditions(c))
       .maybeSingle();
 
     if (error) {
@@ -343,19 +342,16 @@ export const getChannel = createTool({
   },
 });
 
-const createWebhookTrigger = async (
-  discriminator: string,
-  agentId: string,
-  c: AppContext,
-) => {
+const createWebhookTrigger = async (agentId: string, c: AppContext) => {
   assertHasWorkspace(c);
+  const triggerId = crypto.randomUUID();
 
   // Create new trigger
   const trigger = await c
     .stub(Trigger)
-    .new(`${c.workspace.value}/triggers/${discriminator}`)
+    .new(`${c.workspace.value}/triggers/${triggerId}`)
     .create({
-      id: discriminator,
+      id: triggerId,
       type: "webhook" as const,
       passphrase: crypto.randomUUID() as string,
       title: "Channel Webhook",
@@ -381,11 +377,13 @@ export const deleteChannel = createTool({
     const db = c.db;
     const workspace = c.workspace.value;
 
+    const conditions = await workspaceOrProjectIdConditions(c);
+
     const { data: channel, error: selectError } = await db
       .from("deco_chat_channels")
       .select(SELECT_CHANNEL_QUERY)
       .eq("id", id)
-      .eq("workspace", workspace)
+      .or(conditions)
       .single();
 
     if (selectError) {
@@ -404,7 +402,7 @@ export const deleteChannel = createTool({
       .from("deco_chat_channels")
       .delete()
       .eq("id", id)
-      .eq("workspace", workspace);
+      .or(conditions);
 
     if (error) {
       throw new InternalServerError(error.message);

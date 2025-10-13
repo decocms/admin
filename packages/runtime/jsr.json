@@ -1,6 +1,6 @@
 {
   "name": "@deco/workers-runtime",
-  "version": "0.22.1",
+  "version": "0.22.13",
   "exports": {
     ".": "./src/index.ts",
     "./proxy": "./src/proxy.ts",
@@ -11,6 +11,8 @@
     "./d1": "./src/d1-store.ts",
     "./resources": "./src/resources.ts",
     "./views": "./src/views.ts",
-    "./mcp-client": "./src/mcp-client.ts"
+    "./mcp-client": "./src/mcp-client.ts",
+    "./bindings": "./src/bindings/index.ts",
+    "./deconfig": "./src/bindings/deconfig/index.ts"
   }
 }

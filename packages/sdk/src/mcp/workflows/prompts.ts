@@ -85,6 +85,12 @@ Tool calls execute external integrations with the previous step's output:
 - Validation will show available integrations if the ID doesn't exist
 - The system will guide you to the correct ID
 
+**HTTP Requests:**
+- \`fetch\` is NOT available in this environment
+- To make HTTP requests, use the \`i:http\` integration with the \`HTTP_FETCH\` tool
+- Example: \`await ctx.env['i:http'].HTTP_FETCH({ url: '...', method: 'GET' })\`
+- Remember to add \`{ integrationId: 'i:http' }\` to dependencies
+
 ## Best Practices
 
 1. **Alternate code → tool_call → code → tool_call** - Code prepares data for tools
@@ -138,7 +144,13 @@ export default async function(ctx) {
 
 **Fixing integration IDs:**
 - Use placeholder IDs - validation errors list all available integrations
-- Copy the correct ID from the error message`;
+- Copy the correct ID from the error message
+
+**HTTP Requests:**
+- \`fetch\` is NOT available in this environment
+- To make HTTP requests, use the \`i:http\` integration with the \`HTTP_FETCH\` tool
+- Example: \`await ctx.env['i:http'].HTTP_FETCH({ url: '...', method: 'GET' })\`
+- Remember to add \`{ integrationId: 'i:http' }\` to dependencies`;
 
 export const WORKFLOW_SEARCH_PROMPT = `Search workflows in the workspace. 
 

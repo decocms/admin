@@ -1,7 +1,15 @@
-import { useProjects } from "@deco/sdk";
+import { useProjects, useUpdateProject, type Project } from "@deco/sdk";
 import { Button } from "@deco/ui/components/button.tsx";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@deco/ui/components/dialog.tsx";
 import { Icon } from "@deco/ui/components/icon.tsx";
 import { Input } from "@deco/ui/components/input.tsx";
+import { Label } from "@deco/ui/components/label.tsx";
 import {
   Tooltip,
   TooltipContent,
@@ -15,74 +23,141 @@ import { CommunityCallBanner } from "../common/event/community-call-banner";
 import { OrgAvatars, OrgMemberCount } from "./members";
 
 function ProjectCard({
-  name,
-  slug,
+  project,
   url,
-  avatarUrl,
-  teamId,
   slugPrefix = "@",
   showMembers = true,
   additionalInfo,
   hideSlug = false,
 }: {
-  name: string;
-  slug: string;
+  project: Project;
   url: string;
-  avatarUrl: string;
-  teamId?: number;
   slugPrefix?: string;
   showMembers?: boolean;
   additionalInfo?: string;
   hideSlug?: boolean;
 }) {
+  const [isRenameDialogOpen, setIsRenameDialogOpen] = useState(false);
+  const [newName, setNewName] = useState(project.title);
+  const updateProjectMutation = useUpdateProject();
+
+  const handleRename = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (newName.trim() === project.title || !newName.trim()) {
+      setIsRenameDialogOpen(false);
+      return;
+    }
+
+    try {
+      await updateProjectMutation.mutateAsync({
+        org: project.org.slug,
+        project: project.slug,
+        data: { title: newName.trim() },
+      });
+      setIsRenameDialogOpen(false);
+    } catch (error) {
+      console.error("Failed to rename project:", error);
+      // Error state is handled by the mutation hook
+    }
+  };
+
   return (
-    <Link
-      to={url}
-      className="group bg-card hover:bg-accent transition-colors flex flex-col rounded-lg"
-    >
-      <div className="p-4 flex flex-col gap-4">
-        <div className="flex justify-between items-start">
-          <Avatar
-            url={avatarUrl}
-            fallback={name || slug}
-            size="lg"
-            objectFit="contain"
-          />
-          <Icon
-            name="chevron_right"
-            size={20}
-            className="text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity"
-          />
+    <div className="group bg-card hover:bg-accent transition-colors flex flex-col rounded-lg relative">
+      <Link to={url} className="flex flex-col">
+        <div className="p-4 flex flex-col gap-4">
+          <div className="flex justify-between items-start">
+            <Avatar
+              url={project.avatar_url || project.org.avatar_url || ""}
+              fallback={project.title || project.slug}
+              size="lg"
+              objectFit="contain"
+            />
+          </div>
+          <div className="flex flex-col gap-[2px]">
+            {!hideSlug && (
+              <h3 className="text-sm text-muted-foreground truncate">
+                {slugPrefix}
+                {project.slug}
+              </h3>
+            )}
+            <p className="font-medium truncate">{project.title}</p>
+            {additionalInfo && (
+              <span className="text-xs text-muted-foreground">
+                {additionalInfo}
+              </span>
+            )}
+          </div>
         </div>
-        <div className="flex flex-col gap-[2px]">
-          {!hideSlug && (
-            <h3 className="text-sm text-muted-foreground truncate">
-              {slugPrefix}
-              {slug}
-            </h3>
-          )}
-          <p className="font-medium truncate">{name}</p>
-          {additionalInfo && (
-            <span className="text-xs text-muted-foreground">
-              {additionalInfo}
-            </span>
-          )}
-        </div>
-      </div>
-      {/* Show organization members on the project card for now */}
-      {showMembers && typeof teamId === "number" && (
-        <div className="p-4 border-t border-border flex justify-between items-center">
-          <ErrorBoundary fallback={<div className="w-full h-8"></div>}>
-            <Suspense fallback={<OrgAvatars.Skeleton />}>
-              <OrgAvatars teamId={teamId} />
-            </Suspense>
-            <Suspense fallback={<OrgMemberCount.Skeleton />}>
-              <OrgMemberCount teamId={teamId} />
-            </Suspense>
-          </ErrorBoundary>
-        </div>
-      )}
-    </Link>
+        {/* Show organization members on the project card for now */}
+        {showMembers && typeof project.org.id === "number" && (
+          <div className="p-4 border-t border-border flex justify-between items-center">
+            <ErrorBoundary fallback={<div className="w-full h-8"></div>}>
+              <Suspense fallback={<OrgAvatars.Skeleton />}>
+                <OrgAvatars teamId={project.org.id} />
+              </Suspense>
+              <Suspense fallback={<OrgMemberCount.Skeleton />}>
+                <OrgMemberCount teamId={project.org.id} />
+              </Suspense>
+            </ErrorBoundary>
+          </div>
+        )}
+      </Link>
+
+      {/* Config Icon */}
+      <Dialog open={isRenameDialogOpen} onOpenChange={setIsRenameDialogOpen}>
+        <DialogTrigger asChild>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="absolute top-2 right-2 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity p-1 h-8 w-8"
+            onClick={(e) => {
+              e.stopPropagation();
+              setNewName(project.title);
+            }}
+          >
+            <Icon name="settings" size={16} />
+          </Button>
+        </DialogTrigger>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Rename Project</DialogTitle>
+          </DialogHeader>
+          <form onSubmit={handleRename} className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="project-name">Project Name</Label>
+              <Input
+                id="project-name"
+                value={newName}
+                onChange={(e) => setNewName(e.target.value)}
+                placeholder="Enter project name"
+                disabled={updateProjectMutation.isPending}
+              />
+              {updateProjectMutation.error && (
+                <p className="text-sm text-destructive">
+                  Failed to rename project. Please try again.
+                </p>
+              )}
+            </div>
+            <div className="flex justify-end space-x-2">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setIsRenameDialogOpen(false)}
+                disabled={updateProjectMutation.isPending}
+              >
+                Cancel
+              </Button>
+              <Button
+                type="submit"
+                disabled={updateProjectMutation.isPending || !newName.trim()}
+              >
+                {updateProjectMutation.isPending ? "Renaming..." : "Rename"}
+              </Button>
+            </div>
+          </form>
+        </DialogContent>
+      </Dialog>
+    </div>
   );
 }
 
@@ -98,11 +173,8 @@ function Projects({ query, org }: { query?: string; org: string }) {
       {projects.map((project) => (
         <ProjectCard
           key={project.id}
-          name={project.title}
-          slug={project.slug}
+          project={project}
           url={`/${project.org.slug}/${project.slug}`}
-          avatarUrl={project.avatar_url || project.org.avatar_url || ""}
-          teamId={project.org.id}
         />
       ))}
     </div>

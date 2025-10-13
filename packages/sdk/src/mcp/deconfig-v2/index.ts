@@ -567,7 +567,7 @@ export const deconfigResourceV2 = <TDataSchema extends BaseResourceDataSchema>(
   ]);
 
   if (group) {
-    tools.forEach((tool) => {
+    tools.forEach((tool: { group?: string }) => {
       tool.group = group;
     });
   }

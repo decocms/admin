@@ -34,6 +34,7 @@ import {
 } from "drizzle-orm/postgres-js";
 import postgres from "postgres";
 import { strProp } from "../utils/fns.ts";
+import { relations } from "./relations.ts";
 
 export type UserPrincipal = Pick<SupaUser, "id" | "email" | "is_anonymous">;
 
@@ -212,7 +213,7 @@ export interface PrincipalExecutionContext {
 
 export interface Vars extends PrincipalExecutionContext {
   db: Client;
-  drizzle: PostgresJsDatabase;
+  drizzle: PostgresJsDatabase<any, typeof relations>;
   policy: PolicyClient;
   authorization: AuthorizationClient;
   cf: Cloudflare;
@@ -468,7 +469,7 @@ export const toBindingsContext = (bindings: Bindings): BindingsContext => {
   const sql = postgres(bindings.DATABASE_URL, {
     max: 5,
   });
-  const drizzle = drizzlePostgres(sql);
+  const drizzle = drizzlePostgres(sql, { relations });
 
   return {
     drizzle,

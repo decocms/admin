@@ -10,11 +10,11 @@
     "@mastra/core": "^0.20.2",
     "@modelcontextprotocol/sdk": "^1.19.1",
     "bidc": "0.0.3",
-    "drizzle-orm": "^0.44.3",
+    "drizzle-orm": "1.0.0-beta.1-ac4ce44",
     "jose": "^6.0.11",
     "mime-db": "1.52.0",
     "zod": "^3.25.76",
-    "zod-from-json-schema": "^0.5.0",
+    "zod-from-json-schema": "^0.0.5",
     "zod-to-json-schema": "^3.24.4"
   },
   "exports": {
@@ -26,7 +26,9 @@
     "./d1": "./src/d1-store.ts",
     "./resources": "./src/resources.ts",
     "./views": "./src/views.ts",
-    "./mcp-client": "./src/mcp-client.ts"
+    "./mcp-client": "./src/mcp-client.ts",
+    "./bindings": "./src/bindings/index.ts",
+    "./deconfig": "./src/bindings/deconfig/index.ts"
   },
   "devDependencies": {
     "@types/mime-db": "^1.43.6",

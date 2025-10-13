@@ -74,9 +74,9 @@ import { AgentWallet } from "./agent/wallet.ts";
 import { pickCapybaraAvatar } from "./capybaras.ts";
 import { mcpServerTools } from "./mcp.ts";
 import type {
+  AIAgent as IIAgent,
   CompletionsOptions,
   GenerateOptions,
-  AIAgent as IIAgent,
   MessageMetadata,
   StreamOptions,
   Thread,
@@ -212,6 +212,8 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
           this.context.db,
           this.env.LLMS_ENCRYPTION_KEY,
           this.workspace,
+          // TODO(@viktormarinho): figure out what to do here
+          null,
         )
       : undefined;
   }
@@ -974,6 +976,9 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
     // Parallelize independent operations
     const parallelTiming = timings.start("parallel-preprocessing");
 
+    const agentInstructions =
+      options?.instructions ?? this._configuration?.instructions;
+
     type LLMConfig = Awaited<ReturnType<typeof getLLMConfig>>;
     type StorageResult = { store: any; threadMessages: any[] };
 
@@ -995,10 +1000,10 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
       this._withTelemetry(
         "resolve-instructions-mentions",
         async () => {
-          if (!options?.instructions) return undefined;
+          if (!agentInstructions) return undefined;
           return await resolveMentions(
-            options.instructions,
-            this.workspace,
+            agentInstructions,
+            this.locator,
             this.metadata?.mcpClient,
           );
         },
@@ -1133,8 +1138,8 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
     }
 
     const thread = {
-      threadId: this._thread.threadId,
-      resourceId: this._thread.resourceId,
+      threadId: options?.threadId ?? this._thread.threadId,
+      resourceId: options?.resourceId ?? this._thread.resourceId,
     };
 
     const tracer = (this as any).telemetry?.tracer;
@@ -1142,6 +1147,9 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
 
     // Parallelize independent operations
     const parallelTiming = timings.start("parallel-preprocessing");
+
+    const agentInstructions =
+      options?.instructions ?? this._configuration?.instructions;
 
     const [
       toolsets,
@@ -1165,10 +1173,10 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
       this._withTelemetry(
         "resolve-instructions-mentions",
         async () => {
-          if (!options?.instructions) return undefined;
+          if (!agentInstructions) return undefined;
           return await resolveMentions(
-            options.instructions,
-            this.workspace,
+            agentInstructions,
+            this.locator,
             this.metadata?.mcpClient,
           );
         },
@@ -1261,6 +1269,7 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
       temperature: this._temperature(options?.temperature),
       maxOutputTokens: this._maxOutputTokens(options?.maxTokens),
       system: processedInstructions ?? agentOverrides.instructions,
+      stopWhen: [stepCountIs(this._maxSteps(options?.maxSteps))],
     });
 
     // Add result to MessageList and save assistant response to storage
@@ -1370,7 +1379,7 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
             if (!options.instructions) return undefined;
             return await resolveMentions(
               options.instructions,
-              this.workspace,
+              this.locator,
               this.metadata?.mcpClient,
             );
           },
@@ -1477,7 +1486,7 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
       messageList.add(threadMessages, "memory");
       messageList.add(messages, "user");
 
-      let threadQueue = store.saveMessages({
+      const threadQueue: Promise<unknown> = store.saveMessages({
         format: "v2",
         messages: messageList.get.input.v2(),
       });
@@ -1509,24 +1518,27 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
         },
         onStepFinish: ({ response }) => {
           messageList.add(response.messages, "response");
-
-          threadQueue = threadQueue.then(() =>
-            store.saveMessages({
-              messages: messageList.get.response.v2(),
-              format: "v2",
-            }),
-          );
         },
-        onFinish: async (result) => {
+        onFinish: (result) => {
           assertConfiguration(this._configuration);
+          const onFinishId = crypto.randomUUID();
+          console.log("onFinish start", onFinishId);
 
-          await this._handleGenerationFinish({
+          this._handleGenerationFinish({
             threadId: thread.threadId,
             usedModelId: options.model ?? this._configuration.model,
             usage: result.usage as unknown as LanguageModelUsage,
           });
 
-          await threadQueue;
+          threadQueue.then(() =>
+            store.saveMessages({
+              messages: messageList.get.response.v2(),
+              format: "v2",
+            }),
+          );
+
+          console.log("onFinish await threadQueue", onFinishId);
+          console.log("onFinish end", onFinishId);
         },
         onAbort: (props) => {
           console.error("stream aborted", props);

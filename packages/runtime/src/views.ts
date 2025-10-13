@@ -1,5 +1,7 @@
 import { z } from "zod";
 
+const installBehavior = z.enum(["none", "open", "autoPin"]);
+
 // New, richer schema with backward-compat fields kept optional
 export const ViewsListOutputSchema = z.object({
   views: z.array(
@@ -16,6 +18,7 @@ export const ViewsListOutputSchema = z.object({
       // Legacy/compat fields
       tools: z.array(z.string()).optional().default([]),
       rules: z.array(z.string()).optional().default([]),
+      installBehavior: installBehavior.optional(),
     }),
   ),
 });

@@ -130,7 +130,26 @@ function UserInfo({
 
   // Only get phone metadata if userId looks like a phone number AND we don't have a member
   // (if we have a member, the userId is a user ID, not a phone number)
-  const isPhoneNumber = !member && userId?.match(/^[\d+]/);
+  const isPhoneNumber = useMemo(() => {
+    if (!userId || member) return false;
+
+    // Exclude UUIDs (format: 8-4-4-4-12 with hex characters)
+    if (
+      /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(
+        userId,
+      )
+    ) {
+      return false;
+    }
+
+    // Phone numbers should:
+    // - Start with + or digit
+    // - Contain 10-15 digits after removing formatting
+    // - Not contain letters (UUIDs and IDs often have letters)
+    const normalized = userId.replace(/[\s\-()]/g, "");
+    return /^\+?\d{10,15}$/.test(normalized);
+  }, [userId, member]);
+
   const phoneMetadata = isPhoneNumber ? getPhoneMetadata(userId) : {};
   const { country, stateCode, formattedNumber, flagEmoji } = phoneMetadata;
 

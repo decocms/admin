@@ -6,7 +6,12 @@ import {
   assertHasWorkspace,
   assertWorkspaceResourceAccess,
 } from "../assertions.ts";
-import { type AppContext, createToolGroup, workspaceDB } from "../context.ts";
+import {
+  type AppContext,
+  createToolGroup,
+  type DatatabasesRunSqlInput,
+  workspaceDB,
+} from "../context.ts";
 import { InternalServerError, NotFoundError } from "../index.ts";
 
 const createTool = createToolGroup("Thread", {
@@ -26,7 +31,7 @@ async function getD1Store(c: AppContext): Promise<D1Store> {
   // Create D1Client adapter for IWorkspaceDB
   const d1Store = new D1Store({
     client: {
-      query: async (args) => {
+      query: async (args: DatatabasesRunSqlInput) => {
         const result = await db.exec(args);
         return { result: result.result || [] };
       },

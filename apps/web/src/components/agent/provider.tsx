@@ -204,6 +204,14 @@ export function AgentProvider({
     return () => off();
   }, []);
 
+  // Update rules when initialRules prop changes
+  useEffect(() => {
+    if (initialRules !== undefined) {
+      latestRulesRef.current = initialRules;
+      setRulesState(initialRules);
+    }
+  }, [initialRules]);
+
   const thread = useMemo(() => {
     return threads?.threads.find((t) => t.id === threadId);
   }, [threads, threadId]);
@@ -297,7 +305,13 @@ export function AgentProvider({
           "x-deno-isolate-instance-id": agentRoot,
           "x-trace-debug-id": getTraceDebugId(),
         },
-        prepareSendMessagesRequest: ({ messages, requestMetadata }) => ({
+        prepareSendMessagesRequest: ({
+          messages,
+          requestMetadata,
+        }: {
+          messages: UIMessage[];
+          requestMetadata?: unknown;
+        }) => ({
           body: {
             metadata: { threadId: threadId ?? agentId },
             args: [messages.slice(-1), requestMetadata],

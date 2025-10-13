@@ -27,11 +27,11 @@ export const updateAgent = async (locator: ProjectLocator, agent: Agent) => {
 export const createAgent = (
   locator: ProjectLocator,
   template: Partial<Agent> = {},
-) =>
+): Promise<Agent> =>
   MCPClient.forLocator(locator).AGENTS_CREATE({
     id: crypto.randomUUID(),
     ...template,
-  });
+  }) as Promise<Agent>;
 
 /**
  * Load an agent from the file system
@@ -45,10 +45,10 @@ export const loadAgent = async (
   agentId: string,
   signal?: AbortSignal,
 ): Promise<Agent> => {
-  const result = await MCPClient.forLocator(locator).AGENTS_GET(
+  const result = (await MCPClient.forLocator(locator).AGENTS_GET(
     { id: agentId },
     { signal },
-  );
+  )) as Agent;
   return {
     ...result,
     model: result.model ?? DEFAULT_MODEL.id,

@@ -12,22 +12,24 @@ export const listModels = (
   locator: ProjectLocator,
   options: ListModelsInput = {},
   init?: RequestInit,
-) =>
+): Promise<Model[]> =>
   MCPClient.forLocator(locator)
     .MODELS_LIST(options, init)
-    .then((res) => res.items);
+    .then((res) => (res as { items: Model[] }).items);
 
 export const getModel = (
   locator: ProjectLocator,
   id: string,
   init?: RequestInit,
-) => MCPClient.forLocator(locator).MODELS_GET({ id }, init);
+): Promise<Model> =>
+  MCPClient.forLocator(locator).MODELS_GET({ id }, init) as Promise<Model>;
 
 export const createModel = (
   locator: ProjectLocator,
   input: CreateModelInput,
   init?: RequestInit,
-) => MCPClient.forLocator(locator).MODELS_CREATE(input, init);
+): Promise<Model> =>
+  MCPClient.forLocator(locator).MODELS_CREATE(input, init) as Promise<Model>;
 
 export interface UpdateModelInput {
   id: string;

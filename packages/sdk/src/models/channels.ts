@@ -19,6 +19,9 @@ export const ChannelSchema = z.object({
   )
     .optional()
     .nullable(),
+  // Additional properties for connection channels
+  label: z.string().optional().describe("The display label of the channel"),
+  value: z.string().optional().describe("The value/identifier of the channel"),
 });
 
 export type Channel = z.infer<typeof ChannelSchema>;

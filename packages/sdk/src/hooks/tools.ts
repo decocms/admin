@@ -49,13 +49,23 @@ export const callTool = (
   connection: MCPConnection | { id: string },
   toolCallArgs: MCPToolCall,
   locator?: ProjectLocator,
-) => {
+): Promise<{
+  structuredContent?: unknown;
+  content?: unknown;
+  isError?: boolean;
+  [key: string]: unknown;
+}> => {
   const client = locator ? MCPClient.forLocator(locator) : MCPClient;
   return client.INTEGRATIONS_CALL_TOOL({
     ...("id" in connection ? { id: connection.id } : { connection }),
     // deno-lint-ignore no-explicit-any
     params: toolCallArgs as any,
-  });
+  }) as Promise<{
+    structuredContent?: unknown;
+    content?: unknown;
+    isError?: boolean;
+    [key: string]: unknown;
+  }>;
 };
 
 export function useTools(connection: MCPConnection, ignoreCache?: boolean) {

@@ -114,7 +114,7 @@ export const inviteTeamMembers = (
   MCPClient.forLocator(locator).TEAM_MEMBERS_INVITE({
     teamId: teamId.toString(),
     invitees,
-  });
+  }) as Promise<{ message: string }>;
 
 /**
  * Remove a member from a team
@@ -126,7 +126,9 @@ export const removeTeamMember = (
   teamId: number,
   memberId: number,
 ): Promise<{ success: boolean }> =>
-  MCPClient.TEAM_MEMBERS_REMOVE({ teamId, memberId });
+  MCPClient.TEAM_MEMBERS_REMOVE({ teamId, memberId }) as Promise<{
+    success: boolean;
+  }>;
 
 export const registerActivity = (teamId: number) => {
   MCPClient.TEAM_MEMBER_ACTIVITY_REGISTER({ teamId });

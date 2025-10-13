@@ -6,10 +6,13 @@ interface ListOptions {
   root: string;
 }
 
-export const listFiles = async ({ locator, root }: ListOptions) => {
-  const data = await MCPClient.forLocator(locator).FS_LIST({
+export const listFiles = async ({
+  locator,
+  root,
+}: ListOptions): Promise<unknown[]> => {
+  const data = (await MCPClient.forLocator(locator).FS_LIST({
     prefix: root,
-  });
+  })) as { items: unknown[] };
 
   return data.items;
 };
@@ -30,13 +33,13 @@ export const writeFile = async ({
   contentType,
   expiresIn,
   metadata,
-}: WriteOptions) => {
-  const { url: uploadUrl } = await MCPClient.forLocator(locator).FS_WRITE({
+}: WriteOptions): Promise<{ url: string }> => {
+  const { url: uploadUrl } = (await MCPClient.forLocator(locator).FS_WRITE({
     path,
     contentType,
     metadata,
     ...(expiresIn ? { expiresIn } : {}),
-  });
+  })) as { url: string };
 
   const response = await fetch(uploadUrl!, {
     method: "PUT",
@@ -52,7 +55,7 @@ export const writeFile = async ({
     throw new Error("Failed to upload file");
   }
 
-  return response;
+  return { url: uploadUrl };
 };
 
 interface ReadOptions {
@@ -61,17 +64,21 @@ interface ReadOptions {
   expiresIn?: number;
 }
 
-export const readFile = async ({ locator, path, expiresIn }: ReadOptions) => {
+export const readFile = async ({
+  locator,
+  path,
+  expiresIn,
+}: ReadOptions): Promise<{ url: string } | null> => {
   if (!path) {
     return null;
   }
 
-  const { url } = await MCPClient.forLocator(locator).FS_READ({
+  const { url } = (await MCPClient.forLocator(locator).FS_READ({
     path,
     ...(expiresIn ? { expiresIn } : {}),
-  });
+  })) as { url: string };
 
-  return url;
+  return { url };
 };
 
 interface DeleteOptions {

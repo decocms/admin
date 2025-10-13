@@ -19,34 +19,120 @@ export const getWalletAccount = (
 export const getThreadsUsage = (
   locator: ProjectLocator,
   range: "day" | "week" | "month",
-): Promise<{ items: unknown[] }> =>
+): Promise<{
+  items: Array<{
+    id: string;
+    agentId: string;
+    generatedBy: string;
+    total: string | number;
+    tokens?: {
+      totalTokens?: number;
+      promptTokens?: number;
+      completionTokens?: number;
+    };
+    [key: string]: unknown;
+  }>;
+}> =>
   MCPClient.forLocator(locator).GET_THREADS_USAGE({
     range,
-  }) as Promise<{ items: unknown[] }>;
+  }) as Promise<{
+    items: Array<{
+      id: string;
+      agentId: string;
+      generatedBy: string;
+      total: string | number;
+      tokens?: {
+        totalTokens?: number;
+        promptTokens?: number;
+        completionTokens?: number;
+      };
+      [key: string]: unknown;
+    }>;
+  }>;
 
 export const getAgentsUsage = (
   locator: ProjectLocator,
   range: "day" | "week" | "month",
-): Promise<{ items: unknown[] }> =>
+): Promise<{
+  items: Array<{
+    id: string;
+    label?: string;
+    total: number;
+    transactions?: unknown[];
+    [key: string]: unknown;
+  }>;
+}> =>
   MCPClient.forLocator(locator).GET_AGENTS_USAGE({
     range,
-  }) as Promise<{ items: unknown[] }>;
+  }) as Promise<{
+    items: Array<{
+      id: string;
+      label?: string;
+      total: number;
+      transactions?: unknown[];
+      [key: string]: unknown;
+    }>;
+  }>;
 
 export const getBillingHistory = (
   locator: ProjectLocator,
   range: "day" | "week" | "month" | "year",
-): Promise<{ items: unknown[] }> =>
+): Promise<{
+  items: Array<{
+    type: string;
+    amount: string;
+    timestamp?: string;
+    callerApp?: string;
+    id?: string;
+    [key: string]: unknown;
+  }>;
+}> =>
   MCPClient.forLocator(locator).GET_BILLING_HISTORY({
     range,
-  }) as Promise<{ items: unknown[] }>;
+  }) as Promise<{
+    items: Array<{
+      type: string;
+      amount: string;
+      timestamp?: string;
+      callerApp?: string;
+      id?: string;
+      [key: string]: unknown;
+    }>;
+  }>;
 
 export const getContractsCommits = (
   locator: ProjectLocator,
   range: "day" | "week" | "month" | "year",
-): Promise<{ items: unknown[] }> =>
+): Promise<{
+  items: Array<{
+    contractId?: string;
+    amount?: number;
+    clauses?: Array<{
+      clauseId: string;
+      amount: number;
+      [key: string]: unknown;
+    }>;
+    callerApp?: string;
+    updatedAt?: string;
+    [key: string]: unknown;
+  }>;
+}> =>
   MCPClient.forLocator(locator).GET_CONTRACTS_COMMITS({
     range,
-  }) as Promise<{ items: unknown[] }>;
+  }) as Promise<{
+    items: Array<{
+      contractId?: string;
+      amount?: number;
+      clauses?: Array<{
+        clauseId: string;
+        amount: number;
+        [key: string]: unknown;
+      }>;
+      callerApp?: string;
+      updatedAt?: string;
+      [key: string]: unknown;
+    }>;
+  }>;
 
 export const createWalletCheckoutSession = ({
   locator,

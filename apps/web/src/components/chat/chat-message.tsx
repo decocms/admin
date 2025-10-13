@@ -211,7 +211,7 @@ function ImagePart({ part }: { part: FileUIPart }) {
 
   return (
     <img
-      src={fileUrl}
+      src={fileUrl.url}
       alt={part.filename || "Uploaded image"}
       className="rounded-lg max-h-[300px] object-cover"
     />

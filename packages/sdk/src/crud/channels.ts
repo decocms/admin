@@ -15,7 +15,9 @@ export const listChannels = (
   locator: ProjectLocator,
   signal?: AbortSignal,
 ): Promise<{ channels: Channel[] }> =>
-  MCPClient.forLocator(locator).CHANNELS_LIST({}, { signal });
+  MCPClient.forLocator(locator).CHANNELS_LIST({}, { signal }) as Promise<{
+    channels: Channel[];
+  }>;
 
 /**
  * Create a new channel
@@ -31,7 +33,8 @@ export const createChannel = (
     agentId?: string;
     name?: string;
   },
-): Promise<Channel> => MCPClient.forLocator(locator).CHANNELS_CREATE(channel);
+): Promise<Channel> =>
+  MCPClient.forLocator(locator).CHANNELS_CREATE(channel) as Promise<Channel>;
 
 /**
  * Get a channel by ID
@@ -45,7 +48,10 @@ export const getChannel = (
   id: string,
   signal?: AbortSignal,
 ): Promise<Channel> =>
-  MCPClient.forLocator(locator).CHANNELS_GET({ id }, { signal });
+  MCPClient.forLocator(locator).CHANNELS_GET(
+    { id },
+    { signal },
+  ) as Promise<Channel>;
 
 /**
  * Make a agent join the channel
@@ -62,7 +68,7 @@ export const joinChannel = (
   MCPClient.forLocator(locator).CHANNELS_JOIN({
     id: channelId,
     agentId,
-  });
+  }) as Promise<Channel>;
 
 /**
  * List available channels for a given connection
@@ -70,12 +76,12 @@ export const joinChannel = (
 export const listAvailableChannelsForConnection = (
   locator: ProjectLocator,
   connection: MCPConnection,
-) =>
-  MCPClient.forConnection<(typeof WellKnownBindings)["Channel"]>(
-    connection,
-  ).DECO_CHAT_CHANNELS_LIST({
-    workspace: locator,
-  });
+): Promise<{ channels: Channel[] }> =>
+  MCPClient.forConnection<(typeof WellKnownBindings)["Channel"]>(connection)
+    .DECO_CHAT_CHANNELS_LIST({
+      workspace: locator,
+    })
+    .then((channels) => ({ channels })) as Promise<{ channels: Channel[] }>;
 
 /**
  * Remove an agent from a channel
@@ -91,7 +97,7 @@ export const leaveChannel = (
   MCPClient.forLocator(locator).CHANNELS_LEAVE({
     id: channelId,
     agentId: agentId,
-  });
+  }) as Promise<Channel>;
 
 /**
  * Delete a channel
@@ -99,7 +105,10 @@ export const leaveChannel = (
  * @param channelId - The ID of the channel to delete
  * @returns Delete response with id and agentId
  */
-export const deleteChannel = (locator: ProjectLocator, channelId: string) =>
+export const deleteChannel = (
+  locator: ProjectLocator,
+  channelId: string,
+): Promise<Channel> =>
   MCPClient.forLocator(locator).CHANNELS_DELETE({
     id: channelId,
-  });
+  }) as Promise<Channel>;

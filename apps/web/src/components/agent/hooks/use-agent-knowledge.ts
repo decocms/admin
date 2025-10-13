@@ -158,7 +158,7 @@ export const useUploadAgentKnowledgeFiles = ({
           const savedResponse =
             await writeFileMutation.mutateAsync(fileMutateData);
 
-          if (!savedResponse.ok) {
+          if (!savedResponse) {
             throw new Error(`Failed to upload file ${filename}`);
           }
 
@@ -175,7 +175,7 @@ export const useUploadAgentKnowledgeFiles = ({
 
           await addFileToKnowledgeBase.mutateAsync({
             connection: knowledgeIntegration?.connection,
-            fileUrl,
+            fileUrl: fileUrl.url,
             metadata: {
               agentId: agent.id,
             },

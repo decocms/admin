@@ -18,9 +18,11 @@ export interface WorkflowDeleteParams {
 export function listWorkflowNames(
   locator: ProjectLocator,
   signal?: AbortSignal,
-) {
+): Promise<{ workflowNames: string[] }> {
   const client = MCPClient.forLocator(locator);
-  return client.HOSTING_APP_WORKFLOWS_LIST_NAMES({}, { signal });
+  return client.HOSTING_APP_WORKFLOWS_LIST_NAMES({}, { signal }) as Promise<{
+    workflowNames: string[];
+  }>;
 }
 
 export function listWorkflowRuns(
@@ -29,7 +31,7 @@ export function listWorkflowRuns(
   per_page = 25,
   workflowName?: string,
   signal?: AbortSignal,
-) {
+): Promise<{ runs: unknown[] }> {
   const client = MCPClient.forLocator(locator);
   return client.HOSTING_APP_WORKFLOWS_LIST_RUNS(
     {
@@ -38,7 +40,7 @@ export function listWorkflowRuns(
       ...(workflowName && { workflowName }),
     },
     { signal },
-  );
+  ) as Promise<{ runs: unknown[] }>;
 }
 
 export function getWorkflowStatus(

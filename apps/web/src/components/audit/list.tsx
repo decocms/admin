@@ -1,4 +1,4 @@
-import type { ThreadFilterOptions } from "@deco/sdk";
+import type { Thread, ThreadFilterOptions } from "@deco/sdk";
 import {
   useAgents,
   useAuditEvents,
@@ -210,8 +210,20 @@ export function AuditListContent({
 
   const { data: auditData, isLoading, error } = useAuditEvents(auditOptions);
 
-  const threads = auditData?.threads ?? [];
-  const pagination = auditData?.pagination;
+  const typedAuditData = auditData as
+    | {
+        threads: Thread[];
+        pagination?: {
+          hasMore?: boolean;
+          nextCursor?: string;
+          prevCursor?: string;
+          hasPrev?: boolean;
+        };
+        [key: string]: unknown;
+      }
+    | undefined;
+  const threads = typedAuditData?.threads ?? [];
+  const pagination = typedAuditData?.pagination;
 
   const rowsPerPageControl = (
     <div className="flex items-center gap-2 text-sm text-muted-foreground sm:ml-auto">

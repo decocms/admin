@@ -42,7 +42,11 @@ export const listThreads = (
   locator: ProjectLocator,
   options: ThreadFilterOptions,
   init?: RequestInit,
-) => MCPClient.forLocator(locator).THREADS_LIST(options, init);
+): Promise<ThreadList> =>
+  MCPClient.forLocator(locator).THREADS_LIST(
+    options,
+    init,
+  ) as Promise<ThreadList>;
 
 export interface ThreadDetails {
   id: string;
@@ -58,7 +62,10 @@ export const getThread = (
   threadId: string,
   init: RequestInit = {},
 ): Promise<ThreadDetails> =>
-  MCPClient.forLocator(locator).THREADS_GET({ id: threadId }, init);
+  MCPClient.forLocator(locator).THREADS_GET(
+    { id: threadId },
+    init,
+  ) as Promise<ThreadDetails>;
 
 export interface ThreadMessage {
   id: string;
@@ -74,7 +81,10 @@ export const getThreadMessages = (
   threadId: string,
   init: RequestInit = {},
 ): Promise<{ messages: UIMessage[] }> =>
-  MCPClient.forLocator(locator).THREADS_GET_MESSAGES({ id: threadId }, init);
+  MCPClient.forLocator(locator).THREADS_GET_MESSAGES(
+    { id: threadId },
+    init,
+  ) as Promise<{ messages: UIMessage[] }>;
 
 export const updateThreadTitle = (
   locator: ProjectLocator,

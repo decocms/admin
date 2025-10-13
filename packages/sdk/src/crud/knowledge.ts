@@ -33,23 +33,44 @@ export const knowledgeAddFile = ({
   path,
   filename,
   connection,
-}: KnowledgeAddFileParams) =>
+}: KnowledgeAddFileParams): Promise<unknown> =>
   getClientFor(locator, connection).KNOWLEDGE_BASE_ADD_FILE({
     fileUrl,
     metadata,
     path,
     filename,
-  });
+  }) as Promise<unknown>;
 
 interface KnowledgeListFilesParams extends FromWorkspace, ForConnection {}
 
 export const knowledgeListFiles = ({
   locator: locator,
   connection,
-}: KnowledgeListFilesParams) =>
+}: KnowledgeListFilesParams): Promise<
+  Array<{
+    fileUrl: string;
+    metadata: unknown;
+    filename: string;
+    status: string;
+    [key: string]: unknown;
+  }>
+> =>
   getClientFor(locator, connection)
     .KNOWLEDGE_BASE_LIST_FILES({})
-    .then((res) => res.items);
+    .then(
+      (res) =>
+        (
+          res as {
+            items: Array<{
+              fileUrl: string;
+              metadata: unknown;
+              filename: string;
+              status: string;
+              [key: string]: unknown;
+            }>;
+          }
+        ).items,
+    );
 
 interface KnowledgeDeleteFileParams extends FromWorkspace, ForConnection {
   fileUrl: string;
@@ -59,8 +80,10 @@ export const knowledgeDeleteFile = ({
   locator: locator,
   connection,
   fileUrl,
-}: KnowledgeDeleteFileParams) =>
-  getClientFor(locator, connection).KNOWLEDGE_BASE_DELETE_FILE({ fileUrl });
+}: KnowledgeDeleteFileParams): Promise<unknown> =>
+  getClientFor(locator, connection).KNOWLEDGE_BASE_DELETE_FILE({
+    fileUrl,
+  }) as Promise<unknown>;
 
 interface CreateKnowledgeParams extends FromWorkspace {
   name: string;
@@ -69,7 +92,7 @@ interface CreateKnowledgeParams extends FromWorkspace {
 export const createKnowledge = ({
   locator: locator,
   name,
-}: CreateKnowledgeParams) =>
+}: CreateKnowledgeParams): Promise<unknown> =>
   MCPClient.forLocator(locator).KNOWLEDGE_BASE_CREATE({
     name,
-  });
+  }) as Promise<unknown>;

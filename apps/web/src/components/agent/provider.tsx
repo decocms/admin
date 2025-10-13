@@ -18,6 +18,7 @@ import {
   useUpdateAgent,
   WELL_KNOWN_AGENTS,
 } from "@deco/sdk";
+import type { Thread, ThreadList } from "@deco/sdk";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -213,7 +214,8 @@ export function AgentProvider({
   }, [initialRules]);
 
   const thread = useMemo(() => {
-    return threads?.threads.find((t) => t.id === threadId);
+    const list = threads as ThreadList | undefined;
+    return list?.threads.find((t: Thread) => t.id === threadId);
   }, [threads, threadId]);
 
   // Merge additionalTools into serverAgent tools_set

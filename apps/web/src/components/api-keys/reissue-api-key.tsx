@@ -86,12 +86,16 @@ export function ReissueApiKeyForIntegration({
   } = useIntegrationAPIKey(integrationId);
   const reissueMutation = useReissueAPIKey();
 
+  const typedApiKey = apiKey as
+    | { policies?: Statement[]; [key: string]: unknown }
+    | undefined;
+
   const additionalPolicies = useMemo(() => {
-    if (!apiKey?.policies || !newPolicies) return newPolicies || [];
+    if (!typedApiKey?.policies || !newPolicies) return newPolicies || [];
 
     // Ensure policies are arrays and properly typed
     const currentPolicies = (
-      Array.isArray(apiKey.policies) ? apiKey.policies : []
+      Array.isArray(typedApiKey.policies) ? typedApiKey.policies : []
     ) as Statement[];
 
     // Find policies that are in newPolicies but not in current policies
@@ -107,22 +111,25 @@ export function ReissueApiKeyForIntegration({
           `${p.effect}:${p.resource}:${p.matchCondition?.resource ?? ""}`,
         ),
     );
-  }, [apiKey?.policies, newPolicies]);
+  }, [typedApiKey?.policies, newPolicies]);
 
   const handleReissue = async () => {
-    if (!apiKey) return;
+    const typedApiKey = apiKey as
+      | { id: string; policies?: Statement[]; [key: string]: unknown }
+      | undefined;
+    if (!typedApiKey) return;
 
     try {
-      const existingPolicies = (apiKey.policies || []) as Statement[];
+      const existingPolicies = (typedApiKey.policies || []) as Statement[];
 
-      const result = await reissueMutation.mutateAsync({
-        id: apiKey.id,
+      const result = (await reissueMutation.mutateAsync({
+        id: typedApiKey.id,
         policies: [...existingPolicies, ...newPolicies],
-      });
+      })) as { id: string; value?: string; [key: string]: unknown };
 
       onReissued?.({
         id: result.id,
-        value: result.value,
+        value: result.value ?? "",
       });
     } catch (err) {
       console.error("Failed to reissue API key:", err);

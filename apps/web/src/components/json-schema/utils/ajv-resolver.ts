@@ -15,20 +15,23 @@ export const ajvResolver: typeof rawAjvResolver = (
 ) => {
   // Filter out incompatible options and only pass known safe options
   const safeOptions: Partial<Options> = {};
-  
+
   // Only include options that are definitely compatible
-  if ('strictNumbers' in instanceOptions && typeof instanceOptions.strictNumbers === 'boolean') {
+  if (
+    "strictNumbers" in instanceOptions &&
+    typeof instanceOptions.strictNumbers === "boolean"
+  ) {
     safeOptions.strictNumbers = instanceOptions.strictNumbers;
   }
-  
-  if ('useDefaults' in instanceOptions) {
+
+  if ("useDefaults" in instanceOptions) {
     const useDefaults = instanceOptions.useDefaults;
-    if (typeof useDefaults === 'boolean') {
+    if (typeof useDefaults === "boolean") {
       safeOptions.useDefaults = useDefaults;
     }
     // Skip "empty" and "shared" values to avoid version conflicts
   }
-  
+
   return rawAjvResolver(schema, {
     ...options,
     ...safeOptions,

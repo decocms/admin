@@ -1,4 +1,8 @@
 import { cn } from "@deco/ui/lib/utils.ts";
+import { createUnifiedMentions } from "@deco/ui/components/rich-text-editor/extensions/unified-mentions.ts";
+import { MentionNode } from "@deco/ui/components/rich-text-editor/extensions/mention-node.tsx";
+import { MentionDropdown } from "@deco/ui/components/rich-text-editor/components/mention-dropdown.tsx";
+import { Icon } from "@deco/ui/components/icon.tsx";
 import Color from "@tiptap/extension-color";
 import Highlight from "@tiptap/extension-highlight";
 import Link from "@tiptap/extension-link";
@@ -10,18 +14,14 @@ import TextStyle from "@tiptap/extension-text-style";
 // import Underline from "@tiptap/extension-underline"; // TODO: Package hangs on install, add back later
 import { EditorContent, type Extensions, useEditor } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
-import { useEffect, useMemo, useRef } from "react";
+import { useEffect, useMemo, useRef, useCallback } from "react";
 import { Markdown } from "tiptap-markdown";
 import { DocumentBubbleMenu } from "./extensions/bubble-menu.tsx";
-import {
-  createCombinedMentions,
-  type Tool,
-  type DocumentItem,
-} from "./extensions/mentions.tsx";
 import { createSlashCommands } from "../editor/slash-commands.tsx";
 import type { ProjectLocator } from "@deco/sdk";
-import { useIntegrations, callTool, useIntegration } from "@deco/sdk";
+import { type Integration, useIntegrations, callTool, useIntegration } from "@deco/sdk";
 import { useQuery } from "@tanstack/react-query";
+import { IntegrationAvatar } from "../common/avatar/integration.tsx";
 
 interface DocumentEditorProps {
   value: string;
@@ -79,47 +79,100 @@ export function DocumentEditor({
     staleTime: 30000, // Cache for 30 seconds
   });
 
-  // Build tools array from integrations (like chat does)
+  // Extend Integration type to include tools
+  type IntegrationWithTools = Integration & {
+    tools?: Array<{ name: string; description?: string }>;
+  };
+
+  // Tool interface for flattened tools
+  interface Tool {
+    id: string;
+    name: string;
+    description?: string;
+    integration: {
+      id: string;
+      name: string;
+      icon?: string;
+    };
+  }
+
+  // Build tools array from integrations
   const tools: Tool[] = useMemo(() => {
-    return integrations.flatMap((integration) =>
-      (integration.tools || []).map(
-        (tool: { name: string; description?: string }) => ({
-          id: `${integration.id}-${tool.name}`,
-          name: tool.name,
-          description: tool.description,
+    return (integrations as IntegrationWithTools[])
+      .filter(
+        (integration) =>
+          integration.tools &&
+          Array.isArray(integration.tools) &&
+          integration.tools.length > 0,
+      )
+      .flatMap((integration) =>
+        integration.tools!.map(
+          (tool: { name: string; description?: string }) => ({
+            id: `${integration.id}-${tool.name}`,
+            name: tool.name,
+            description: tool.description,
+            integration: {
+              id: integration.id,
+              name: integration.name,
+              icon: integration.icon,
+            },
+          }),
+        ),
+      );
+  }, [integrations]);
+
+  const resourceSearchers = useMemo(() => {
+    // Match DECO_RESOURCE_<NAME>_SEARCH pattern
+    const SEARCH_TOOL_RE = /^DECO_RESOURCE_[A-Z_]+_SEARCH$/;
+    return (integrations as IntegrationWithTools[])
+      .filter((integration) => {
+        // Only include Documents Management integration to avoid duplicates
+        // (Workspace Management also provides document resources but we want to use the dedicated integration)
+        if (integration.id !== DOCUMENTS_INTEGRATION_ID) {
+          return false;
+        }
+        const toolsList = integration.tools ?? [];
+        return toolsList.some((t) => SEARCH_TOOL_RE.test(t.name));
+      })
+      .map((integration) => {
+        const searchToolNames = (integration.tools ?? [])
+          .map((t) => t.name)
+          .filter((name) => SEARCH_TOOL_RE.test(name));
+        return {
           integration: {
             id: integration.id,
             name: integration.name,
             icon: integration.icon,
           },
-        }),
-      ),
-    );
+          connection: (integration as Integration).connection,
+          searchToolNames,
+        };
+      })
+      .filter((s) => s.searchToolNames.length > 0);
   }, [integrations]);
 
-  // Build documents array for mentions
-  const documents: DocumentItem[] = useMemo(() => {
-    return documentsData
-      .filter((doc) => doc.data?.name)
-      .map((doc) => ({
-        id: doc.uri,
-        uri: doc.uri,
-        name: doc.data!.name,
-        description: doc.data?.description,
-      }));
-  }, [documentsData]);
+  // Wrap MentionNode with integration avatar support
+  const MentionNodeWithAvatar = useCallback(
+    (props: any) => (
+      <MentionNode
+        {...props}
+        IntegrationAvatar={IntegrationAvatar}
+        ResourceIcon={() => <Icon name="description" />}
+      />
+    ),
+    [],
+  );
 
-  // Use refs to always get the latest tools and documents
-  const toolsRef = useRef<Tool[]>(tools);
-  const documentsRef = useRef<DocumentItem[]>(documents);
-
-  useEffect(() => {
-    toolsRef.current = tools;
-  }, [tools]);
-
-  useEffect(() => {
-    documentsRef.current = documents;
-  }, [documents]);
+  // Wrap MentionDropdown with integration avatar support
+  const MentionDropdownWithAvatar = useCallback(
+    (props: any) => (
+      <MentionDropdown
+        {...props}
+        IntegrationAvatar={IntegrationAvatar}
+      />
+    ),
+    [],
+  );
 
   const extensions: Extensions = useMemo(() => {
     return [
@@ -166,37 +219,50 @@ export function DocumentEditor({
       createSlashCommands({
         includeFormatting: true,
       }),
-      createCombinedMentions(
-        () => toolsRef.current,
-        () => documentsRef.current,
-      ),
+      createUnifiedMentions({
+        tools,
+        resourceSearchers,
+        callTool,
+        MentionNode: MentionNodeWithAvatar,
+        MentionDropdown: MentionDropdownWithAvatar,
+      }),
     ];
-  }, [placeholder, locator]);
+  }, [
+    placeholder,
+    locator,
+    tools,
+    resourceSearchers,
+    MentionNodeWithAvatar,
+    MentionDropdownWithAvatar,
+  ]);
 
-  const editor = useEditor({
-    extensions,
-    content: value,
-    editable: !disabled,
-    editorProps: {
-      attributes: {
-        class: cn(
-          "prose prose-lg max-w-none w-full outline-none pb-20 break-words overflow-wrap-anywhere",
-          className,
-        ),
+  const editor = useEditor(
+    {
+      extensions,
+      content: value,
+      editable: !disabled,
+      editorProps: {
+        attributes: {
+          class: cn(
+            "prose prose-lg max-w-none w-full outline-none pb-20 break-words overflow-wrap-anywhere",
+            className,
+          ),
+        },
+      },
+      onUpdate: ({ editor }) => {
+        // Debounce all changes to prevent expensive markdown conversions on every keystroke
+        if (updateTimeoutRef.current) {
+          clearTimeout(updateTimeoutRef.current);
+        }
+
+        updateTimeoutRef.current = setTimeout(() => {
+          const markdown = editor.storage.markdown.getMarkdown();
+          onChange(markdown);
+        }, 300);
       },
     },
-    onUpdate: ({ editor }) => {
-      // Debounce all changes to prevent expensive markdown conversions on every keystroke
-      if (updateTimeoutRef.current) {
-        clearTimeout(updateTimeoutRef.current);
-      }
-
-      updateTimeoutRef.current = setTimeout(() => {
-        const markdown = editor.storage.markdown.getMarkdown();
-        onChange(markdown);
-      }, 300);
-    },
-  });
+    [extensions],
+  );
 
   // Store locator in editor storage for extensions
   useEffect(() => {

@@ -44,7 +44,6 @@ import { AgentAvatar } from "../common/avatar/agent.tsx";
 import { useDecopilotContext } from "../decopilot/context.tsx";
 import { useDecopilotThread } from "../decopilot/thread-context.tsx";
 import { useAppAdditionalTools } from "../decopilot/use-app-additional-tools.ts";
-import { DecopilotProvider } from "../decopilot/context.tsx";
 import { DecopilotLayout } from "../layout/decopilot-layout.tsx";
 import AdvancedTab from "../settings/advanced.tsx";
 import AgentProfileTab from "../settings/agent-profile.tsx";
@@ -342,54 +341,52 @@ function ChatWithProvider() {
   // Render both providers but only show the active one
   // This way both chats maintain their state
   return (
-    <DecopilotProvider value={decopilotContextValue}>
-      <div className="h-full w-full">
-        {/* Agent chat - hidden when in decopilot mode */}
-        <div className={chatMode === "agent" ? "block h-full" : "hidden"}>
-          <AgentProvider
-            agentId={agentId || ""}
-            threadId={agentThreadId}
-            uiOptions={{
-              showThreadTools: false,
-              showEditAgent: false,
-              showModelSelector: false,
-              showThreadMessages: false,
-              showAgentVisibility: false,
-            }}
-          >
-            <UnifiedChat />
-          </AgentProvider>
-        </div>
-
-        {/* Decopilot chat - hidden when in agent mode */}
-        <div className={chatMode === "decopilot" ? "block h-full" : "hidden"}>
-          <AgentProvider
-            key={effectiveDecopilotThreadId}
-            agentId={WELL_KNOWN_AGENTS.decopilotAgent.id}
-            threadId={effectiveDecopilotThreadId}
-            initialInput={
-              shouldUseInitialInput
-                ? (threadState.initialMessage ?? undefined)
-                : undefined
-            }
-            autoSend={shouldUseInitialInput ? threadState.autoSend : false}
-            onAutoSendComplete={clearThreadState}
-            additionalTools={allAdditionalTools}
-            initialRules={allRules}
-            onToolCall={onToolCall}
-            uiOptions={{
-              showThreadTools: false,
-              showEditAgent: false,
-              showModelSelector: true,
-              showThreadMessages: false,
-              showAgentVisibility: false,
-            }}
-          >
-            <UnifiedChat />
-          </AgentProvider>
-        </div>
+    <div className="h-full w-full">
+      {/* Agent chat - hidden when in decopilot mode */}
+      <div className={chatMode === "agent" ? "block h-full" : "hidden"}>
+        <AgentProvider
+          agentId={agentId || ""}
+          threadId={agentThreadId}
+          uiOptions={{
+            showThreadTools: false,
+            showEditAgent: false,
+            showModelSelector: false,
+            showThreadMessages: false,
+            showAgentVisibility: false,
+          }}
+        >
+          <UnifiedChat />
+        </AgentProvider>
       </div>
-    </DecopilotProvider>
+
+      {/* Decopilot chat - hidden when in agent mode */}
+      <div className={chatMode === "decopilot" ? "block h-full" : "hidden"}>
+        <AgentProvider
+          key={effectiveDecopilotThreadId}
+          agentId={WELL_KNOWN_AGENTS.decopilotAgent.id}
+          threadId={effectiveDecopilotThreadId}
+          initialInput={
+            shouldUseInitialInput
+              ? (threadState.initialMessage ?? undefined)
+              : undefined
+          }
+          autoSend={shouldUseInitialInput ? threadState.autoSend : false}
+          onAutoSendComplete={clearThreadState}
+          additionalTools={allAdditionalTools}
+          initialRules={allRules}
+          onToolCall={onToolCall}
+          uiOptions={{
+            showThreadTools: false,
+            showEditAgent: false,
+            showModelSelector: true,
+            showThreadMessages: false,
+            showAgentVisibility: false,
+          }}
+        >
+          <UnifiedChat />
+        </AgentProvider>
+      </div>
+    </div>
   );
 }
 

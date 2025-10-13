@@ -14,7 +14,7 @@ const safeBaseOptions: Partial<Options> = {};
 Object.entries(options).forEach(([key, value]) => {
   // Only include options that are definitely compatible
   if (key !== "useDefaults" || typeof value === "boolean") {
-    (safeBaseOptions as any)[key] = value;
+    (safeBaseOptions as Record<string, unknown>)[key] = value;
   }
 });
 

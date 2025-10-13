@@ -6,7 +6,7 @@
  * it will use the localhost version.
  */
 
-import { pickCapybaraAvatar } from "@deco/ai/capybaras";
+import { pickCapybaraAvatar, withImageOptimizeUrl } from "@deco/ai/capybaras";
 import type { Agent } from "./models/agent.ts";
 import type { Integration } from "./models/mcp.ts";
 
@@ -274,6 +274,10 @@ export const NEW_AGENT_TEMPLATE: Omit<Agent, "id"> = {
   memory: DEFAULT_MEMORY,
 };
 
+export const DECOPILOT_IMAGE = withImageOptimizeUrl(
+  "https://assets.decocache.com/decocms/fd07a578-6b1c-40f1-bc05-88a3b981695d/f7fc4ffa81aec04e37ae670c3cd4936643a7b269.png",
+);
+
 /**
  * TODO: something is weird with the tools set here.
  * There's something off with the innate agents having to have
@@ -331,8 +335,8 @@ When user asks for a prompt, you should use the PROMPTS_GET tool to get the actu
     memory: { last_messages: 8 },
     id: "decopilotAgent",
     name: "Decopilot",
-    avatar: pickCapybaraAvatar(12),
-    description: "Let's Deco!",
+    avatar: DECOPILOT_IMAGE,
+    description: "Ask, search or create anything.",
     instructions: `You are a helpful assistant that helps users to accomplish tasks by using tools from your toolset.`,
   },
 } satisfies Record<string, Agent>;

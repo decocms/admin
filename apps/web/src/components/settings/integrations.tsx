@@ -1,17 +1,9 @@
 import {
   type Integration,
-  useIntegrationViews,
-  useKnowledgeListFiles,
+  useKnowledgeListFiles
 } from "@deco/sdk";
 import { getExtensionFromContentType, KnowledgeBaseID } from "@deco/sdk/utils";
 import { Button } from "@deco/ui/components/button.tsx";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@deco/ui/components/dialog.tsx";
 import {
   Form,
   FormDescription,
@@ -21,7 +13,6 @@ import {
 import { Icon } from "@deco/ui/components/icon.tsx";
 import { Input } from "@deco/ui/components/input.tsx";
 import { ScrollArea } from "@deco/ui/components/scroll-area.tsx";
-import { Spinner } from "@deco/ui/components/spinner.tsx";
 import { useCallback, useDeferredValue, useMemo, useState } from "react";
 import { LEGACY_INTEGRATIONS } from "../../constants.ts";
 import { useAgentSettingsToolsSet } from "../../hooks/use-agent-settings-tools-set.ts";
@@ -367,129 +358,6 @@ function MultiAgent() {
         </div>
       )}
     </div>
-  );
-}
-
-function AddViewButton() {
-  const [open, setOpen] = useState(false);
-  const { agent, form } = useAgent();
-  const { data: allViews = [], isLoading: isLoadingViews } =
-    useIntegrationViews({
-      enabled: open,
-    });
-  const [searchTerm, setSearchTerm] = useState("");
-  const deferredSearchTerm = useDeferredValue(searchTerm);
-
-  // Filter out views that are already added to the agent
-  const agentViewUrls = new Set(agent.views?.map((view) => view.url) || []);
-  const availableViews = allViews.filter(
-    (view) => !agentViewUrls.has(view.url),
-  );
-
-  const filteredViews = useMemo(() => {
-    if (!deferredSearchTerm) return availableViews;
-    const lowercaseSearch = deferredSearchTerm.toLowerCase();
-    return availableViews.filter(
-      (view) =>
-        view.title?.toLowerCase().includes(lowercaseSearch) ||
-        view.integration.name.toLowerCase().includes(lowercaseSearch),
-    );
-  }, [availableViews, deferredSearchTerm]);
-
-  const handleViewSelect = (view: { url: string; title: string }) => {
-    const newViews = [
-      ...(agent.views || []),
-      {
-        url: view.url,
-        name: view.title,
-      },
-    ];
-    form.setValue("views", newViews, { shouldDirty: true });
-  };
-
-  const handleOpenChange = (newOpen: boolean) => {
-    setOpen(newOpen);
-    if (!newOpen) {
-      setSearchTerm("");
-    }
-  };
-
-  return (
-    <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogTrigger asChild>
-        <Button variant="outline">
-          <Icon name="add" /> Add view
-        </Button>
-      </DialogTrigger>
-      <DialogContent className="max-w-2xl w-full">
-        <DialogHeader>
-          <DialogTitle>Select a View</DialogTitle>
-        </DialogHeader>
-        <div className="flex flex-col gap-4 h-[500px]">
-          <div className="flex gap-2 w-full">
-            <div className="border border-border rounded-xl w-full">
-              <div className="flex items-center h-10 px-4 gap-2">
-                <Icon
-                  name="search"
-                  size={20}
-                  className="text-muted-foreground"
-                />
-                <Input
-                  placeholder="Search views..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="flex-1 h-full border-none focus-visible:ring-0 placeholder:text-muted-foreground bg-transparent px-2"
-                />
-              </div>
-            </div>
-          </div>
-          {isLoadingViews && (
-            <div className="flex items-center justify-center w-full h-full">
-              <Spinner />
-            </div>
-          )}
-          <ScrollArea className="w-full flex-1 min-h-0">
-            <div className="space-y-2">
-              {filteredViews.length === 0 && !isLoadingViews ? (
-                <div className="flex flex-col gap-2 items-center justify-center h-32 text-muted-foreground">
-                  <Icon name="dashboard" size={24} />
-                  <span className="text-sm">
-                    {availableViews.length === 0
-                      ? "All available views are already added"
-                      : "No views found"}
-                  </span>
-                </div>
-              ) : (
-                filteredViews.map((view) => (
-                  <div
-                    key={view.url}
-                    className="flex items-center justify-between p-3 border border-border rounded-lg hover:bg-muted/50 cursor-pointer transition-colors"
-                    onClick={() => handleViewSelect(view)}
-                  >
-                    <div className="flex items-center gap-3">
-                      <div className="w-8 h-8 rounded-lg bg-muted flex items-center justify-center">
-                        <Icon name={view.icon || "dashboard"} size={16} />
-                      </div>
-                      <div className="flex flex-col">
-                        <span className="font-medium text-sm">
-                          {view.title}
-                        </span>
-                        <span className="text-xs text-muted-foreground">
-                          {view.integration.name}
-                        </span>
-                      </div>
-                    </div>
-                    <Button variant="ghost" size="sm">
-                      <Icon name="add" size={16} />
-                    </Button>
-                  </div>
-                ))
-              )}
-            </div>
-          </ScrollArea>
-        </div>
-      </DialogContent>
-    </Dialog>
   );
 }
 

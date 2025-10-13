@@ -44,6 +44,7 @@ export * from "./bindings/index.ts";
 export * from "./context.ts";
 export { createTool, createToolGroup } from "./context.ts";
 export type { ContractState } from "./contracts/api.ts";
+export type { MCPConnection } from "../models/mcp.ts";
 export type { DatatabasesRunSqlInput } from "./databases/api.ts";
 export { Blobs, Branch } from "./deconfig/api.ts";
 export { watchSSE } from "./deconfig/watch-sse.ts";

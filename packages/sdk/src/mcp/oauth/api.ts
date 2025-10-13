@@ -32,9 +32,12 @@ export const oauthCodeCreate = createTool({
     assertHasWorkspace(c);
     await assertWorkspaceResourceAccess(c);
     const mcpClient = MCPClient.forContext(c);
-    const integration = await mcpClient.INTEGRATIONS_GET({
+    const integration = (await mcpClient.INTEGRATIONS_GET({
       id: integrationId,
-    });
+    })) as {
+      connection: { type: string; token?: string; [key: string]: unknown };
+      [key: string]: unknown;
+    };
     const connection = integration.connection;
     if (connection.type !== "HTTP" || !connection.token) {
       throw new Error(

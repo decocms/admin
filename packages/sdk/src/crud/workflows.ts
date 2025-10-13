@@ -31,7 +31,14 @@ export function listWorkflowRuns(
   per_page = 25,
   workflowName?: string,
   signal?: AbortSignal,
-): Promise<{ runs: unknown[] }> {
+): Promise<{
+  runs: Array<{
+    workflowName: string;
+    runId: string;
+    createdAt: string;
+    [key: string]: unknown;
+  }>;
+}> {
   const client = MCPClient.forLocator(locator);
   return client.HOSTING_APP_WORKFLOWS_LIST_RUNS(
     {
@@ -40,14 +47,27 @@ export function listWorkflowRuns(
       ...(workflowName && { workflowName }),
     },
     { signal },
-  ) as Promise<{ runs: unknown[] }>;
+  ) as Promise<{
+    runs: Array<{
+      workflowName: string;
+      runId: string;
+      createdAt: string;
+      [key: string]: unknown;
+    }>;
+  }>;
 }
 
 export function getWorkflowStatus(
   locator: ProjectLocator,
   params: WorkflowStatusParams,
   signal?: AbortSignal,
-) {
+): Promise<{
+  snapshot?: { status?: string; [key: string]: unknown } | string;
+  [key: string]: unknown;
+}> {
   const client = MCPClient.forLocator(locator);
-  return client.HOSTING_APP_WORKFLOWS_STATUS(params, { signal });
+  return client.HOSTING_APP_WORKFLOWS_STATUS(params, { signal }) as Promise<{
+    snapshot?: { status?: string; [key: string]: unknown } | string;
+    [key: string]: unknown;
+  }>;
 }

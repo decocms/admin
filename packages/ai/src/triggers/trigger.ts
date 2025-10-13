@@ -23,6 +23,7 @@ import {
   fromWorkspaceString,
   MCPClient,
   type MCPClientStub,
+  type MCPConnection,
   PrincipalExecutionContext,
   type ProjectTools,
   toBindingsContext,
@@ -74,18 +75,33 @@ function mapTriggerToTriggerData(
     Awaited<ReturnType<MCPClientStub<ProjectTools>["TRIGGERS_GET"]>>
   >,
 ): TriggerData {
+  const typedTrigger = trigger as {
+    id: string;
+    user: {
+      id: string;
+      metadata: {
+        full_name: string;
+        email: string;
+        avatar_url: string;
+      };
+    };
+    createdAt: string;
+    updatedAt: string;
+    data: Record<string, unknown>;
+  };
+
   return {
-    id: trigger.id,
-    resourceId: trigger.user.id,
-    createdAt: trigger.createdAt,
-    updatedAt: trigger.updatedAt,
+    id: typedTrigger.id,
+    resourceId: typedTrigger.user.id,
+    createdAt: typedTrigger.createdAt,
+    updatedAt: typedTrigger.updatedAt,
     author: {
-      id: trigger.user.id,
-      name: trigger.user.metadata.full_name,
-      email: trigger.user.metadata.email,
-      avatar: trigger.user.metadata.avatar_url,
+      id: typedTrigger.user.id,
+      name: typedTrigger.user.metadata.full_name,
+      email: typedTrigger.user.metadata.email,
+      avatar: typedTrigger.user.metadata.avatar_url,
     },
-    ...trigger.data,
+    ...typedTrigger.data,
   } as TriggerData;
 }
 
@@ -217,9 +233,9 @@ export class Trigger {
   public _callTool(tool: CallTool, args?: Record<string, unknown>) {
     return this._runWithContext(async () => {
       try {
-        const integration = await this.mcpClient.INTEGRATIONS_GET({
+        const integration = (await this.mcpClient.INTEGRATIONS_GET({
           id: tool.integrationId,
-        });
+        })) as { connection: MCPConnection; [key: string]: unknown };
 
         const patchedConnection = isApiDecoChatMCPConnection(
           integration.connection,

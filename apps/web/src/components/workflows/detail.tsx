@@ -477,7 +477,15 @@ function WorkflowDetail() {
 
   const badgeVariant = getStatusBadgeVariant(status);
   const statusIcon = getStatusIcon(status);
-  const context = typeof snapshot === "string" ? undefined : snapshot?.context;
+  const context =
+    typeof snapshot === "string"
+      ? undefined
+      : (
+          snapshot as {
+            context?: { input?: unknown; [key: string]: unknown };
+            [key: string]: unknown;
+          }
+        )?.context;
   const stepGraph =
     typeof snapshot === "string" ? [] : snapshot?.serializedStepGraph || [];
 

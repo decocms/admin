@@ -22,14 +22,14 @@ export interface ThreadList {
 
 export interface Pagination {
   hasMore: boolean;
-  nextCursor: string;
+  nextCursor: string | null;
 }
 
 export interface Thread {
   id: string;
   resourceId: string;
   title: string;
-  metadata?: Metadata;
+  metadata?: Record<string, unknown>;
   createdAt: string;
   updatedAt: string;
 }

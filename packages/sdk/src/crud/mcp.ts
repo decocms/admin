@@ -50,7 +50,10 @@ export const loadIntegration = (
   mcpId: string,
   signal?: AbortSignal,
 ): Promise<Integration> =>
-  MCPClient.forLocator(locator).INTEGRATIONS_GET({ id: mcpId }, { signal });
+  MCPClient.forLocator(locator).INTEGRATIONS_GET(
+    { id: mcpId },
+    { signal },
+  ) as Promise<Integration>;
 
 export interface ListIntegrationsFilter {
   binder?: Binder;
@@ -63,7 +66,7 @@ export const listIntegrations = (
 ): Promise<Integration[]> =>
   MCPClient.forLocator(locator)
     .INTEGRATIONS_LIST({ binder: filter?.binder }, { signal })
-    .then((res) => res.items);
+    .then((res) => (res as { items: Integration[] }).items);
 
 /**
  * Delete an MCP from the file system

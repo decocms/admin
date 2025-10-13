@@ -75,7 +75,9 @@ export const getPromptVersions = (
 ): Promise<PromptVersion[]> =>
   MCPClient.forLocator(locator)
     .PROMPTS_GET_VERSIONS(input, init)
-    .then((data) => data.items) as Promise<PromptVersion[]>;
+    .then((data) => (data as { items: PromptVersion[] }).items) as Promise<
+    PromptVersion[]
+  >;
 
 interface RenamePromptVersionInput {
   id: string;

@@ -30,7 +30,10 @@ export const getThreadsUsage = (
       promptTokens?: number;
       completionTokens?: number;
     };
-    [key: string]: unknown;
+    transactions?: Array<{
+      timestamp: string;
+      amount: number;
+    }>;
   }>;
 }> =>
   MCPClient.forLocator(locator).GET_THREADS_USAGE({
@@ -46,7 +49,10 @@ export const getThreadsUsage = (
         promptTokens?: number;
         completionTokens?: number;
       };
-      [key: string]: unknown;
+      transactions?: Array<{
+        timestamp: string;
+        amount: number;
+      }>;
     }>;
   }>;
 
@@ -58,8 +64,10 @@ export const getAgentsUsage = (
     id: string;
     label?: string;
     total: number;
-    transactions?: unknown[];
-    [key: string]: unknown;
+    transactions?: Array<{
+      timestamp: string;
+      amount: number;
+    }>;
   }>;
 }> =>
   MCPClient.forLocator(locator).GET_AGENTS_USAGE({
@@ -69,8 +77,10 @@ export const getAgentsUsage = (
       id: string;
       label?: string;
       total: number;
-      transactions?: unknown[];
-      [key: string]: unknown;
+      transactions?: Array<{
+        timestamp: string;
+        amount: number;
+      }>;
     }>;
   }>;
 
@@ -79,24 +89,22 @@ export const getBillingHistory = (
   range: "day" | "week" | "month" | "year",
 ): Promise<{
   items: Array<{
+    id: string;
     type: string;
     amount: string;
-    timestamp?: string;
+    timestamp: string;
     callerApp?: string;
-    id?: string;
-    [key: string]: unknown;
   }>;
 }> =>
   MCPClient.forLocator(locator).GET_BILLING_HISTORY({
     range,
   }) as Promise<{
     items: Array<{
+      id: string;
       type: string;
       amount: string;
-      timestamp?: string;
+      timestamp: string;
       callerApp?: string;
-      id?: string;
-      [key: string]: unknown;
     }>;
   }>;
 
@@ -105,32 +113,32 @@ export const getContractsCommits = (
   range: "day" | "week" | "month" | "year",
 ): Promise<{
   items: Array<{
-    contractId?: string;
-    amount?: number;
-    clauses?: Array<{
+    contractId: string;
+    amount: number;
+    clauses: Array<{
       clauseId: string;
       amount: number;
-      [key: string]: unknown;
     }>;
     callerApp?: string;
-    updatedAt?: string;
-    [key: string]: unknown;
+    updatedAt: string;
+    timestamp: string;
+    type: string;
   }>;
 }> =>
   MCPClient.forLocator(locator).GET_CONTRACTS_COMMITS({
     range,
   }) as Promise<{
     items: Array<{
-      contractId?: string;
-      amount?: number;
-      clauses?: Array<{
+      contractId: string;
+      amount: number;
+      clauses: Array<{
         clauseId: string;
         amount: number;
-        [key: string]: unknown;
       }>;
       callerApp?: string;
-      updatedAt?: string;
-      [key: string]: unknown;
+      updatedAt: string;
+      timestamp: string;
+      type: string;
     }>;
   }>;
 
@@ -182,6 +190,7 @@ export const getWorkspacePlan = async (
   remainingSeats: number;
   isAtSeatLimit: boolean;
   created_at: string;
+  updated_at: string | null;
   monthly_credit_in_dollars: number;
   markup: number;
 }> => {
@@ -192,6 +201,7 @@ export const getWorkspacePlan = async (
     remainingSeats: number;
     isAtSeatLimit: boolean;
     created_at: string;
+    updated_at: string | null;
     monthly_credit_in_dollars: number;
     markup: number;
   };

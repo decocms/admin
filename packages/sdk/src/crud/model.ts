@@ -45,7 +45,11 @@ export const updateModel = (
   locator: ProjectLocator,
   input: UpdateModelInput,
   init?: RequestInit,
-) => MCPClient.forLocator(locator).MODELS_UPDATE(input, init);
+): Promise<{ id: string; [key: string]: unknown }> =>
+  MCPClient.forLocator(locator).MODELS_UPDATE(input, init) as Promise<{
+    id: string;
+    [key: string]: unknown;
+  }>;
 
 export const deleteModel = (
   locator: ProjectLocator,

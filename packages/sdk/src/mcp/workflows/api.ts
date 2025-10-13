@@ -122,7 +122,10 @@ export const WorkflowResourceV2 = DeconfigResourceV2.define({
       context,
     });
 
-    const result = await client.INTEGRATIONS_LIST({});
+    const result = (await client.INTEGRATIONS_LIST({})) as {
+      items: Array<{ id: string; name: string; [key: string]: unknown }>;
+      [key: string]: unknown;
+    };
     const integrations = result.items;
 
     // Validate code step dependencies

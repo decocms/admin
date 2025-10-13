@@ -9,6 +9,7 @@ import {
   type AppContext,
   createToolGroup,
   type DatatabasesRunSqlInput,
+  type Tool,
   workspaceDB,
 } from "../context.ts";
 import { InternalServerError, NotFoundError } from "../index.ts";

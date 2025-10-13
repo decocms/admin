@@ -34,10 +34,12 @@ export function ThreadConversation({
 }: {
   thread: {
     id: string;
-    title?: string;
-    resourceId?: string;
+    title: string;
+    resourceId: string;
     metadata?: Record<string, unknown>;
-  } & Record<string, unknown>;
+    createdAt: string;
+    updatedAt: string;
+  };
   onNavigate: (direction: "previous" | "next") => void;
   canNavigatePrevious: boolean;
   canNavigateNext: boolean;

@@ -87,7 +87,15 @@ export const asEnv = async (
     workspace,
   }: { authorization?: string; workspace?: string } = {},
 ) => {
-  const { items } = await client.INTEGRATIONS_LIST({});
+  const { items } = (await client.INTEGRATIONS_LIST({})) as {
+    items: Array<{
+      id: string;
+      name: string;
+      tools?: unknown;
+      [key: string]: unknown;
+    }>;
+    [key: string]: unknown;
+  };
 
   const env: Record<
     string,
@@ -125,13 +133,18 @@ export const asEnv = async (
             });
           }
 
-          const response = await client.INTEGRATIONS_CALL_TOOL({
+          const response = (await client.INTEGRATIONS_CALL_TOOL({
             connection,
             params: {
               name: tool.name,
               arguments: args as Record<string, unknown>,
             },
-          });
+          })) as {
+            isError?: boolean;
+            structuredContent?: unknown;
+            content?: unknown;
+            [key: string]: unknown;
+          };
 
           if (response.isError) {
             throw new Error(
@@ -282,7 +295,10 @@ export async function runTool(
   client: MCPClientStub<ProjectTools>,
 ): Promise<Rpc.Serializable<unknown>> {
   // Find the integration by name or id
-  const { items } = await client.INTEGRATIONS_LIST({});
+  const { items } = (await client.INTEGRATIONS_LIST({})) as {
+    items: Array<{ id: string; name: string; [key: string]: unknown }>;
+    [key: string]: unknown;
+  };
 
   const integration = items.find(
     (item) => item.name === step.integration || item.id === step.integration,
@@ -319,13 +335,18 @@ export async function runTool(
     );
   }
 
-  const response = await client.INTEGRATIONS_CALL_TOOL({
+  const response = (await client.INTEGRATIONS_CALL_TOOL({
     connection: integration.connection,
     params: {
       name: step.tool_name,
       arguments: input as Record<string, unknown>,
     },
-  });
+  })) as {
+    isError?: boolean;
+    structuredContent?: unknown;
+    content?: unknown;
+    [key: string]: unknown;
+  };
 
   if (response.isError) {
     throw new Error(`Tool call failed: ${inspect(response)}`);

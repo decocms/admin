@@ -49,10 +49,9 @@ export const knowledgeListFiles = ({
 }: KnowledgeListFilesParams): Promise<
   Array<{
     fileUrl: string;
-    metadata: unknown;
+    metadata: Record<string, unknown>;
     filename: string;
     status: string;
-    [key: string]: unknown;
   }>
 > =>
   getClientFor(locator, connection)
@@ -63,10 +62,9 @@ export const knowledgeListFiles = ({
           res as {
             items: Array<{
               fileUrl: string;
-              metadata: unknown;
+              metadata: Record<string, unknown>;
               filename: string;
               status: string;
-              [key: string]: unknown;
             }>;
           }
         ).items,

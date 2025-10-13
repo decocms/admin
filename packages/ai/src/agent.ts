@@ -276,9 +276,16 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
     }
     const integration =
       typeof connection === "string"
-        ? await this.metadata?.mcpClient?.INTEGRATIONS_GET({
+        ? ((await this.metadata?.mcpClient?.INTEGRATIONS_GET({
             id: connection,
-          })
+          })) as
+            | {
+                connection: MCPConnection;
+                id: string;
+                name: string;
+                [key: string]: unknown;
+              }
+            | undefined)
         : { connection };
 
     if (!integration) {
@@ -660,10 +667,10 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
         avatar: config.avatar || parsed.avatar || pickCapybaraAvatar(),
       };
 
-      const dbConfig = await this.metadata?.mcpClient?.AGENTS_UPDATE({
+      const dbConfig = (await this.metadata?.mcpClient?.AGENTS_UPDATE({
         agent: updatedConfig,
         id: parsed.id,
-      });
+      })) as { model?: string; [key: string]: unknown } | undefined;
 
       if (!dbConfig) {
         throw new Error("Failed to update agent");
@@ -673,7 +680,7 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
       const configWithModel: Configuration = {
         ...dbConfig,
         model: dbConfig.model ?? DEFAULT_MODEL.id,
-      };
+      } as Configuration;
 
       await this._initAgent(configWithModel);
       this._configuration = configWithModel;
@@ -818,6 +825,10 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
         ? WELL_KNOWN_AGENTS[this.agentId as keyof typeof WELL_KNOWN_AGENTS]
         : await client
             .AGENTS_GET({ id: this.agentId })
+            .then(
+              (result) =>
+                result as { model?: string; [key: string]: unknown } | null,
+            )
             .catch((err: unknown) => {
               console.error("Error getting agent", err);
               this._trackEvent("agent_mcp_client_error", {
@@ -1292,7 +1303,7 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
 
   async generateThreadTitle(content: string) {
     const mcpClient = this.metadata?.mcpClient ?? this.agentScoppedMcpClient;
-    const result = await mcpClient.AI_GENERATE({
+    const result = (await mcpClient.AI_GENERATE({
       model: "openai:gpt-4.1-nano",
       messages: [
         {
@@ -1308,7 +1319,7 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
             </UserMessage>`,
         },
       ],
-    });
+    })) as { text: string; [key: string]: unknown };
     return result.text;
   }
 

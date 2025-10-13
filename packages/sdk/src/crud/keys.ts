@@ -21,7 +21,18 @@ export const createAPIKey = (
     name: string;
     policies: Statement[];
   },
-) => MCPClient.forLocator(locator).API_KEYS_CREATE(params);
+): Promise<{
+  id: string;
+  value: string;
+  policies?: Statement[];
+  [key: string]: unknown;
+}> =>
+  MCPClient.forLocator(locator).API_KEYS_CREATE(params) as Promise<{
+    id: string;
+    value: string;
+    policies?: Statement[];
+    [key: string]: unknown;
+  }>;
 
 export const reissueAPIKey = (
   locator: ProjectLocator,
@@ -30,7 +41,18 @@ export const reissueAPIKey = (
     claims?: ApiKeyClaims;
     policies?: Statement[];
   },
-) => MCPClient.forLocator(locator).API_KEYS_REISSUE(params);
+): Promise<{
+  id: string;
+  value: string;
+  policies?: Statement[];
+  [key: string]: unknown;
+}> =>
+  MCPClient.forLocator(locator).API_KEYS_REISSUE(params) as Promise<{
+    id: string;
+    value: string;
+    policies?: Statement[];
+    [key: string]: unknown;
+  }>;
 
 export const getAPIKeyForIntegration = ({
   locator,
@@ -38,4 +60,17 @@ export const getAPIKeyForIntegration = ({
 }: {
   locator: ProjectLocator;
   integrationId: string;
-}) => MCPClient.forLocator(locator).INTEGRATIONS_GET_API_KEY({ integrationId });
+}): Promise<{
+  id: string;
+  value: string;
+  policies?: Statement[];
+  [key: string]: unknown;
+}> =>
+  MCPClient.forLocator(locator).INTEGRATIONS_GET_API_KEY({
+    integrationId,
+  }) as Promise<{
+    id: string;
+    value: string;
+    policies?: Statement[];
+    [key: string]: unknown;
+  }>;

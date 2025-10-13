@@ -195,8 +195,10 @@ export const useMarketplaceIntegrations = () => {
     queryFn: () =>
       MCPClient.forLocator(locator)
         .DECO_INTEGRATIONS_SEARCH({ query: "" })
-        .then((r: IntegrationsResult | string) =>
-          typeof r === "string" ? { integrations: [] } : r,
+        .then((r: unknown) =>
+          typeof r === "string"
+            ? { integrations: [] }
+            : (r as IntegrationsResult),
         ),
   });
 };
@@ -241,9 +243,12 @@ export const useInstallFromMarketplace = () => {
       provider: string;
       appId?: string;
     }) => {
-      const result: { installationId: string } = await MCPClient.forLocator(
+      const result = (await MCPClient.forLocator(
         locator,
-      ).DECO_INTEGRATION_INSTALL({ id: appName, provider, appId });
+      ).DECO_INTEGRATION_INSTALL({ id: appName, provider, appId })) as {
+        installationId: string;
+        [key: string]: unknown;
+      };
 
       const integration = await loadIntegration(locator, result.installationId);
 
@@ -254,18 +259,23 @@ export const useInstallFromMarketplace = () => {
           provider === "deco") ||
         provider === "marketplace"
       ) {
-        const result = await MCPClient.forLocator(
+        const result = (await MCPClient.forLocator(
           locator,
         ).DECO_INTEGRATION_OAUTH_START({
           appName: appName,
           returnUrl,
           installId: integration.id.split(":").pop()!,
           provider,
-        });
+        })) as {
+          redirectUrl?: string | null;
+          stateSchema?: unknown;
+          scopes?: string[];
+          [key: string]: unknown;
+        };
 
         // Handle both return types: { redirectUrl } or { stateSchema }
         if (result && "redirectUrl" in result) {
-          redirectUrl = result.redirectUrl;
+          redirectUrl = result.redirectUrl ?? null;
         } else if (result && "stateSchema" in result) {
           // Return integration with stateSchema for modal handling
           return {
@@ -316,7 +326,9 @@ export const useMarketplaceAppSchema = (appName?: string) => {
     queryKey: ["integrations", "marketplace", appName, "schema"],
     queryFn: () =>
       canRunQuery
-        ? MCPClient.forLocator(locator).DECO_GET_APP_SCHEMA({ appName })
+        ? (MCPClient.forLocator(locator).DECO_GET_APP_SCHEMA({
+            appName,
+          }) as Promise<{ schema: unknown; scopes: string[] }>)
         : null,
     enabled: canRunQuery,
   });
@@ -332,9 +344,11 @@ export const useCreateOAuthCodeForIntegration = () => {
     }) => {
       const { integrationId, workspace, redirectUri, state } = params;
 
-      const { code } = await MCPClient.forLocator(workspace).OAUTH_CODE_CREATE({
-        integrationId,
-      });
+      const { code } = (await MCPClient.forLocator(workspace).OAUTH_CODE_CREATE(
+        {
+          integrationId,
+        },
+      )) as { code: string; [key: string]: unknown };
 
       const url = new URL(redirectUri);
       url.searchParams.set("code", code);

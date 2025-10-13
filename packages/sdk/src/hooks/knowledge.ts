@@ -58,7 +58,10 @@ export const useKnowledgeAddFile = () => {
       client.cancelQueries({ queryKey: knowledgeFilesKey });
       client.setQueryData<Awaited<ReturnType<typeof knowledgeListFiles>>>(
         knowledgeFilesKey,
-        (old) => (!old ? [fileResponse] : [fileResponse, ...old]),
+        (old) =>
+          (!old ? [fileResponse] : [fileResponse, ...old]) as Awaited<
+            ReturnType<typeof knowledgeListFiles>
+          >,
       );
     },
   });

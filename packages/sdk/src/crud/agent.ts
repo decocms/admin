@@ -61,7 +61,7 @@ export const listAgents = (
 ): Promise<Agent[]> =>
   MCPClient.forLocator(locator)
     .AGENTS_LIST({}, { signal })
-    .then((res) => res.items) as Promise<Agent[]>;
+    .then((res) => (res as { items: Agent[] }).items) as Promise<Agent[]>;
 
 export interface AgentWithActivity extends Agent {
   lastAccess?: string | null;

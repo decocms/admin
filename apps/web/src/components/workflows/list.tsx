@@ -193,7 +193,12 @@ function WorkflowRuns({ headerSlot }: { headerSlot?: ReactNode } = {}) {
       ? useWorkflowRuns(selectedWorkflow, 1, 25)
       : useRecentWorkflowRuns(1, 25);
 
-  const runs = data?.runs || [];
+  const runs = (data?.runs || []) as Array<{
+    workflowName: string;
+    runId: string;
+    createdAt: string;
+    [key: string]: unknown;
+  }>;
 
   const filteredRuns = useMemo(() => {
     if (!filter) return runs;
@@ -206,7 +211,11 @@ function WorkflowRuns({ headerSlot }: { headerSlot?: ReactNode } = {}) {
 
   // Sort runs by default (Created At, newest first) for card view consistency
   const sortedAndFilteredRuns = useMemo(() => {
-    return sortWorkflowRuns(filteredRuns, "createdAt", "desc");
+    return sortWorkflowRuns(
+      filteredRuns as unknown as WorkflowRun[],
+      "createdAt",
+      "desc",
+    );
   }, [filteredRuns]);
 
   function handleRunClick(run: WorkflowRun) {

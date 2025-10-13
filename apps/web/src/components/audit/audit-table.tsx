@@ -9,7 +9,7 @@ type Thread = {
   id: string;
   resourceId: string;
   title: string;
-  metadata?: { agentId: string };
+  metadata?: Record<string, unknown>;
   createdAt: string;
   updatedAt: string;
 };
@@ -59,7 +59,10 @@ export function AuditTable({
           rowClassName: "w-[150px]",
           cellClassName: "w-[150px] max-w-[150px]",
           accessor: (cell: Thread) => (
-            <AgentInfo agentId={cell.metadata?.agentId} noTooltip />
+            <AgentInfo
+              agentId={cell.metadata?.agentId as string | undefined}
+              noTooltip
+            />
           ),
         }
       : null,

@@ -279,9 +279,16 @@ export async function listToolsByConnectionType(
             : undefined),
       });
 
-      const maybeIntegration = await mcpClient.INTEGRATIONS_GET({
+      const maybeIntegration = (await mcpClient.INTEGRATIONS_GET({
         id: connection.name,
-      });
+      })) as
+        | {
+            connection: MCPConnection;
+            id: string;
+            name: string;
+            [key: string]: unknown;
+          }
+        | undefined;
 
       if (!maybeIntegration) {
         return { error: `Integration ${connection.name} not found` };

@@ -9,6 +9,8 @@ import { Icon } from "@deco/ui/components/icon.tsx";
 import { Badge } from "@deco/ui/components/badge.tsx";
 import { ScrollArea } from "@deco/ui/components/scroll-area.tsx";
 import { Spinner } from "@deco/ui/components/spinner.tsx";
+import { Textarea } from "@deco/ui/components/textarea.tsx";
+import { Tabs, TabsList, TabsTrigger } from "@deco/ui/components/tabs.tsx";
 import { cn } from "@deco/ui/lib/utils.ts";
 import { useCallback, useState, useEffect, useRef, useMemo } from "react";
 import { z } from "zod";
@@ -57,6 +59,11 @@ export function DocumentDetail({ resourceUri }: DocumentDetailProps) {
   const [isAddingTag, setIsAddingTag] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [editorMode, setEditorMode] = useState<"pretty" | "raw">(() => {
+    // Load from localStorage, default to "pretty"
+    const saved = localStorage.getItem("document-editor-mode");
+    return saved === "raw" ? "raw" : "pretty";
+  });
   const tagInputRef = useRef<HTMLInputElement>(null);
   const titleRef = useRef<HTMLDivElement>(null);
   const descriptionRef = useRef<HTMLDivElement>(null);
@@ -106,6 +113,11 @@ export function DocumentDetail({ resourceUri }: DocumentDetailProps) {
   useEffect(() => {
     shouldSyncRef.current = true;
   }, [resourceUri]);
+
+  // Save editor mode preference to localStorage
+  useEffect(() => {
+    localStorage.setItem("document-editor-mode", editorMode);
+  }, [editorMode]);
 
   // Listen for resource updates (e.g., when agent updates the document)
   useEffect(() => {
@@ -289,7 +301,7 @@ export function DocumentDetail({ resourceUri }: DocumentDetailProps) {
       <ScrollArea className="h-full w-full [&_[data-radix-scroll-area-viewport]>div]:!block [&_[data-radix-scroll-area-viewport]>div]:!min-w-0 [&_[data-radix-scroll-area-viewport]>div]:!w-full">
         <div className="w-full max-w-3xl mx-auto pt-12">
           {/* Header section with title, description, and action buttons */}
-          <div className="p-4 sm:px-6 md:px-8 border-b border-border">
+          <div className="p-2 sm:px-4 md:px-6">
             <div className="flex items-start justify-between gap-4">
               {/* Title and description */}
               <div className="flex-1 min-w-0 space-y-2.5">
@@ -463,13 +475,37 @@ export function DocumentDetail({ resourceUri }: DocumentDetailProps) {
             </div>
           </div>
 
+          {/* Editor mode toggle */}
+          <div className="px-2 sm:px-4 md:px-6 pb-4">
+            <Tabs
+              value={editorMode}
+              onValueChange={(value) =>
+                setEditorMode(value as "pretty" | "raw")
+              }
+            >
+              <TabsList className="grid w-full max-w-[200px] grid-cols-2">
+                <TabsTrigger value="pretty">Pretty</TabsTrigger>
+                <TabsTrigger value="raw">Raw</TabsTrigger>
+              </TabsList>
+            </Tabs>
+          </div>
+
           {/* Document editor */}
-          <div className="px-4 sm:px-6 md:px-8 pt-10 pb-20">
-            <DocumentEditor
-              value={content}
-              onChange={handleContentChange}
-              locator={locator}
-            />
+          <div className="px-4 sm:px-6 md:px-8 pt-4 pb-20">
+            {editorMode === "pretty" ? (
+              <DocumentEditor
+                value={content}
+                onChange={handleContentChange}
+                locator={locator}
+              />
+            ) : (
+              <Textarea
+                value={content}
+                onChange={(e) => handleContentChange(e.target.value)}
+                placeholder="Write your markdown here..."
+                className="min-h-[500px] font-mono text-sm resize-y"
+              />
+            )}
           </div>
         </div>
       </ScrollArea>

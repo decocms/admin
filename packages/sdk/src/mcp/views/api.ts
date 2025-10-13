@@ -1,4 +1,4 @@
-import z from "zod";
+import { z } from "zod";
 import { formatIntegrationId, WellKnownMcpGroups } from "../../crud/groups.ts";
 import { impl } from "../bindings/binder.ts";
 import { WellKnownBindings } from "../bindings/index.ts";
@@ -103,7 +103,7 @@ export function createViewViewsV2() {
     name: "view_detail",
     title: "View Detail",
     description: "View and edit view HTML content with live preview",
-    icon: "https://example.com/icons/view-detail.svg",
+    icon: "https://assets.decocache.com/mcp/81d602bb-45e2-4361-b52a-23379520a34d/sandbox.png",
     inputSchema: DetailViewRenderInputSchema,
     tools: [
       "DECO_RESOURCE_VIEW_READ",

@@ -4,6 +4,7 @@ import { Icon } from "@deco/ui/components/icon.tsx";
 import { Spinner } from "@deco/ui/components/spinner.tsx";
 import { useCallback, useMemo, useState } from "react";
 import { useParams } from "react-router";
+import { PreviewIframe } from "../agent/preview.tsx";
 import { generateViewHTML } from "../../utils/view-template.ts";
 
 interface ViewDetailProps {
@@ -112,11 +113,10 @@ export function ViewDetail({ resourceUri }: ViewDetailProps) {
       {/* Content */}
       <div className="flex-1 overflow-hidden">
         {htmlValue ? (
-          <iframe
+          <PreviewIframe
             srcDoc={htmlValue}
-            className="w-full h-full border-0"
             title="View Preview"
-            sandbox="allow-scripts allow-same-origin allow-popups allow-forms"
+            className="w-full h-full border-0"
           />
         ) : (
           <div className="flex items-center justify-center h-full">

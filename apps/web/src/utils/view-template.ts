@@ -15,6 +15,17 @@ const DEFAULT_IMPORT_MAP: Record<string, string> = {
 };
 
 /**
+ * Escapes closing script tags in user code to prevent premature script tag closure
+ * @param code - The user code that may contain closing script tags
+ * @returns Escaped code safe for embedding in <script type="text/template">
+ */
+function escapeScriptTags(code: string): string {
+  // Replace </script> with <\/script> to prevent premature closing
+  // Case-insensitive to catch </SCRIPT>, </Script>, etc.
+  return code.replace(/<\/script>/gi, "<\\/script>");
+}
+
+/**
  * Generates complete HTML document from React component code
  *
  * @param code - The React component code (must define `export const App = () => {}`)
@@ -33,6 +44,9 @@ export function generateViewHTML(
 ): string {
   const ws = workspace;
   const proj = project;
+
+  // Escape closing script tags in user code to prevent HTML parsing issues
+  const escapedCode = escapeScriptTags(code);
 
   // Merge custom import map with defaults
   const finalImportMap = {
@@ -171,7 +185,7 @@ ${JSON.stringify({ imports: finalImportMap }, null, 4)}
   
   <!-- User's React component - visible for debugging -->
   <script type="text/template" id="user-code">
-${code}
+${escapedCode}
   </script>
   
   <script type="module">

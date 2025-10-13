@@ -24,7 +24,7 @@ const integrationId = formatIntegrationId(WellKnownMcpGroups.Views);
 
 export function buildViewUri(name: string): string {
   // rsc://i:views-management/view/<id>
-  return `rsc://${integrationId}/view/${name}`;
+  return `rsc://${integrationId}/view/${encodeURIComponent(name)}`;
 }
 
 // CRUD Functions (Resources V2)
@@ -86,7 +86,7 @@ export function useViewByUriV2(uri: string) {
   }
 
   return useQuery({
-    queryKey: ["view", uri],
+    queryKey: ["view", locator, uri],
     queryFn: ({ signal }) => getViewByUri(locator, uri, signal),
     retry: false,
   });

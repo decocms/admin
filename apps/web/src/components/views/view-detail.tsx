@@ -1,8 +1,10 @@
-import { Spinner } from "@deco/ui/components/spinner.tsx";
+import { DECO_CMS_API_URL, useViewByUriV2 } from "@deco/sdk";
 import { Button } from "@deco/ui/components/button.tsx";
-import { useCallback, useState } from "react";
-import { useViewByUriV2 } from "@deco/sdk";
 import { Icon } from "@deco/ui/components/icon.tsx";
+import { Spinner } from "@deco/ui/components/spinner.tsx";
+import { useCallback, useMemo, useState } from "react";
+import { useParams } from "react-router";
+import { generateViewHTML } from "../../utils/view-template.ts";
 
 interface ViewDetailProps {
   resourceUri: string;
@@ -13,6 +15,7 @@ interface ViewDetailProps {
  * Displays the view HTML content in an iframe
  */
 export function ViewDetail({ resourceUri }: ViewDetailProps) {
+  const { org, project } = useParams<{ org: string; project: string }>();
   const {
     data: resource,
     isLoading: isLoading,
@@ -33,8 +36,23 @@ export function ViewDetail({ resourceUri }: ViewDetailProps) {
     }
   }, [isRefreshing, refetch]);
 
-  // Get current HTML value for preview
-  const htmlValue = effectiveView?.html;
+  // Generate HTML from React code on the client side
+  const htmlValue = useMemo(() => {
+    if (!effectiveView?.code || !org || !project) return null;
+
+    try {
+      return generateViewHTML(
+        effectiveView.code,
+        DECO_CMS_API_URL,
+        org,
+        project,
+        effectiveView.importmap,
+      );
+    } catch (error) {
+      console.error("Failed to generate view HTML:", error);
+      return null;
+    }
+  }, [effectiveView?.code, effectiveView?.importmap, org, project]);
 
   if (isLoading) {
     return (
@@ -108,7 +126,7 @@ export function ViewDetail({ resourceUri }: ViewDetailProps) {
                 className="w-12 h-12 mx-auto mb-4 text-muted-foreground"
               />
               <p className="text-sm text-muted-foreground">
-                No HTML content to preview
+                No React code to preview
               </p>
             </div>
           </div>

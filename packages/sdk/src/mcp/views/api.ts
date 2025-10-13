@@ -73,6 +73,7 @@ export function createViewResourceV2Implementation(
   deconfig: DeconfigClient,
   integrationId: string,
 ) {
+  // No transformation needed - frontend will generate HTML from code
   return ViewResourceV2.create(deconfig, integrationId);
 }
 

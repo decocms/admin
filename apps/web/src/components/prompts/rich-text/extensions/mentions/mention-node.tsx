@@ -16,7 +16,6 @@ export default function MentionNode({
   editor,
   getPos,
 }: ReactNodeViewProps<HTMLSpanElement>) {
-  const label = node.attrs.label;
   const id = node.attrs.id;
   const { mutateAsync: updatePrompt } = useUpdatePrompt();
 

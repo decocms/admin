@@ -9,6 +9,15 @@ const options = {
   discriminator: false,
 } as const;
 
+// Filter out any incompatible options from the base options
+const safeBaseOptions: Partial<Options> = {};
+Object.entries(options).forEach(([key, value]) => {
+  // Only include options that are definitely compatible
+  if (key !== 'useDefaults' || typeof value === 'boolean') {
+    (safeBaseOptions as any)[key] = value;
+  }
+});
+
 export const ajvResolver: typeof rawAjvResolver = (
   schema,
   instanceOptions = {},
@@ -33,7 +42,7 @@ export const ajvResolver: typeof rawAjvResolver = (
   }
 
   return rawAjvResolver(schema, {
-    ...options,
+    ...safeBaseOptions,
     ...safeOptions,
   });
 };

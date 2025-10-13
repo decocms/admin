@@ -22,10 +22,9 @@ export default function MentionNode({
 
   const items =
     extension.options.suggestion
-      ?.items?.({ query: label })
+      ?.items?.({ query: "" })
       ?.find((option: SlashCommandOption) => option.id === "references")
-      ?.children?.flatMap((options: SlashCommandOption) => options.children) ||
-    [];
+      ?.children || [];
 
   const prompt = items?.find((option: SlashCommandOption) => option?.id === id);
 

@@ -55,8 +55,9 @@ export const mentions = (prompts: Prompt[]) => {
   }).configure({
     suggestion: suggestion(prompts ?? []),
     renderText({ node }) {
-      const prompt = promptMap.get(node.attrs.id) || node.attrs.id;
-      return toMention(prompt.id, "prompt");
+      const prompt = promptMap.get(node.attrs.id);
+      const promptId = prompt?.id || node.attrs.id;
+      return toMention(promptId, "prompt");
     },
   });
 };

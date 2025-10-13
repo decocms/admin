@@ -14,31 +14,38 @@ export const suggestion: (
     items: (props) => {
       const { query } = props;
 
+      const filteredPrompts = items
+        .filter((prompt) => {
+          if (!query) return true;
+          return prompt.name.toLowerCase().includes(query.toLowerCase());
+        })
+        .map(
+          (prompt): SlashCommandOption => ({
+            id: prompt.id,
+            type: "option",
+            label: prompt.name,
+            icon: "text_snippet",
+            tooltip: prompt.content,
+            handle: ({
+              command,
+            }: {
+              command: (props: Record<string, unknown>) => void;
+            }) => command({ id: prompt.id, label: prompt.name }),
+          }),
+        );
+
+      // Only limit to 10 when the user is actively searching (has a query)
+      // When query is empty (like when looking up existing mentions), return all
+      const limitedPrompts = query
+        ? filteredPrompts.slice(0, 10)
+        : filteredPrompts;
+
       return [
         {
           id: "references",
           type: "category",
           label: "References",
-          children: items
-            .filter((prompt) => {
-              if (!query) return true;
-              return prompt.name.toLowerCase().includes(query.toLowerCase());
-            })
-            .map(
-              (prompt): SlashCommandOption => ({
-                id: prompt.id,
-                type: "option",
-                label: prompt.name,
-                icon: "text_snippet",
-                tooltip: prompt.content,
-                handle: ({
-                  command,
-                }: {
-                  command: (props: Record<string, unknown>) => void;
-                }) => command({ id: prompt.id, label: prompt.name }),
-              }),
-            )
-            .slice(0, 10),
+          children: limitedPrompts,
         },
       ];
     },

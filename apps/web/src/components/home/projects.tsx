@@ -223,7 +223,7 @@ Projects.Empty = () => (
   </div>
 );
 
-function CreateProjectDialog({ org }: { org: string }) {
+function CreateProject({ org, disabled }: { org: string, disabled?: boolean }) {
   const [isOpen, setIsOpen] = useState(false);
   const [slug, setSlug] = useState("");
   const [title, setTitle] = useState("");
@@ -266,7 +266,7 @@ function CreateProjectDialog({ org }: { org: string }) {
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogTrigger asChild>
-        <Button variant="special">
+        <Button variant="special" disabled={disabled}>
           <Icon name="add" size={16} />
           <span>New project</span>
         </Button>
@@ -374,7 +374,7 @@ function OrgProjectListContent() {
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
             />
-            <CreateProjectDialog org={org ?? ""} />
+            <CreateProject org={org ?? ""} disabled />
           </div>
         </div>
         <div className="@container overflow-y-auto flex-1 pb-28">

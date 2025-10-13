@@ -1,4 +1,9 @@
-import { Locator, SDKProvider, useAgentData } from "@deco/sdk";
+import {
+  Locator,
+  SDKProvider,
+  useAgentData,
+  WELL_KNOWN_AGENTS,
+} from "@deco/sdk";
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -197,7 +202,14 @@ function AgentChatModeSwitch() {
         onClick={() => handleModeChange("decopilot")}
         className="flex items-center gap-1.5"
       >
-        <img src="/img/logo-tiny.svg" alt="Deco" className="w-4 h-4" />
+        <AgentAvatar
+          className="rounded-sm border-none"
+          url={WELL_KNOWN_AGENTS.decopilotAgent.avatar}
+          fallback={
+            <img src="/img/logo-tiny.svg" alt="Deco" className="w-4 h-4" />
+          }
+          size="2xs"
+        />
         Chat
       </Button>
     </ButtonGroup>
@@ -214,7 +226,14 @@ export const ToggleDecopilotButton = () => {
 
   return (
     <Button size="sm" variant="special" onClick={toggle}>
-      <img src="/img/logo-tiny.svg" alt="Deco logo" className="w-4 h-4" />
+      <AgentAvatar
+        className="rounded-sm border-none"
+        url={WELL_KNOWN_AGENTS.decopilotAgent.avatar}
+        fallback={
+          <img src="/img/logo-tiny.svg" alt="Deco" className="w-4 h-4" />
+        }
+        size="2xs"
+      />
       Chat
     </Button>
   );

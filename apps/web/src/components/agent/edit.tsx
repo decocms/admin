@@ -117,25 +117,19 @@ function UnifiedChat() {
 
   return (
     <div className="flex flex-col h-full min-w-[320px] bg-sidebar relative">
-      <div className="flex-none p-4">
+      <div className="flex-none p-4 relative">
         <div className="justify-self-start flex items-center gap-3 text-muted-foreground w-full">
           <div
             className={cn(
-              "flex justify-between items-center gap-2 w-full",
-              isEmpty ? "justify-end" : "",
+              "flex items-center gap-2 w-full pr-24",
+              isEmpty ? "hidden" : "",
             )}
           >
-            <div
-              className={cn(
-                "flex items-center gap-2 w-full",
-                isEmpty ? "hidden" : "",
-              )}
-            >
-              <AgentAvatar url={agent.avatar} fallback={agent.name} size="sm" />
-              <h1 className="text-sm font-medium tracking-tight">
-                {agent.name}
-              </h1>
-            </div>
+            <AgentAvatar url={agent.avatar} fallback={agent.name} size="sm" />
+            <h1 className="text-sm font-medium tracking-tight">{agent.name}</h1>
+          </div>
+          {/* Use absolute positioning for buttons to prevent layout shift */}
+          <div className="absolute right-4 top-4 flex items-center gap-2">
             {showNewThread && (
               <Button
                 variant="outline"
@@ -298,6 +292,12 @@ function ChatWithProvider() {
 
   // Decopilot-specific hooks
   const { threadState, clearThreadState } = useDecopilotThread();
+
+  // Only use initial input if there's an actual message and we're in decopilot mode
+  const shouldUseInitialInput =
+    chatMode === "decopilot" &&
+    threadState.initialMessage &&
+    threadState.autoSend;
   const appAdditionalTools = useAppAdditionalTools();
   const {
     additionalTools: contextTools,
@@ -361,10 +361,15 @@ function ChatWithProvider() {
         {/* Decopilot chat - hidden when in agent mode */}
         <div className={chatMode === "decopilot" ? "block h-full" : "hidden"}>
           <AgentProvider
+            key={threadState.threadId}
             agentId={WELL_KNOWN_AGENTS.decopilotAgent.id}
             threadId={decopilotThreadId}
-            initialInput={threadState.initialMessage ?? undefined}
-            autoSend={threadState.autoSend}
+            initialInput={
+              shouldUseInitialInput
+                ? (threadState.initialMessage ?? undefined)
+                : undefined
+            }
+            autoSend={shouldUseInitialInput ? threadState.autoSend : false}
             onAutoSendComplete={clearThreadState}
             additionalTools={allAdditionalTools}
             initialRules={allRules}

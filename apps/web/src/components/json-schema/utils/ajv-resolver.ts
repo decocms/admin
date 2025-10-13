@@ -42,5 +42,8 @@ export const ajvResolver: typeof rawAjvResolver = (
   }
 
   // Cast to unknown then to the expected type to bypass version conflicts
-  return rawAjvResolver(schema, safeOptions as unknown as Parameters<typeof rawAjvResolver>[1]);
+  return rawAjvResolver(
+    schema,
+    safeOptions as unknown as Parameters<typeof rawAjvResolver>[1],
+  );
 };

@@ -310,6 +310,7 @@ export function AgentProvider({
   // Initialize chat - always uses current agent state + overrides
   const chat = useChat({
     messages: initialMessages || threadMessages || [],
+    id: threadId,
     transport,
     onFinish: (result) => {
       const metadata = result?.message?.metadata as

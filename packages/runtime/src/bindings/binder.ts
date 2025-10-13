@@ -113,7 +113,7 @@ export const impl = <TBinder extends Binder>(
   schema: TBinder,
   implementation: BinderImplementation<TBinder>,
   createToolFn = createPrivateTool,
-): ReturnType<typeof createToolFn>[] => {
+) => {
   const impl: ReturnType<typeof createToolFn>[] = [];
   for (const key in schema) {
     const toolSchema = schema[key];

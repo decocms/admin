@@ -763,7 +763,7 @@ app.get("/files/:org/:project/:path{.+}", async (c) => {
   const locator = Locator.from({ org, project });
 
   const appCtx = honoCtxToAppCtx(c);
-  const uid = appCtx.user.id as string | undefined;
+  const uid = appCtx.user?.id as string | undefined;
 
   const bucketName = getWorkspaceBucketName(
     Locator.adaptToRootSlug(locator, uid),

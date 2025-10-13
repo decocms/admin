@@ -145,7 +145,7 @@ export const createChannel = createTool({
       );
 
       const [trigger, { data, error }] = await Promise.all([
-        createWebhookTrigger(discriminator, agentId, c),
+        createWebhookTrigger(agentId, c),
         c.db.from("deco_chat_agents").select("name").eq("id", agentId).single(),
       ]);
       if (error) {
@@ -234,11 +234,7 @@ export const channelJoin = createTool({
       const binding = ChannelBinding.forConnection(
         convertFromDatabase(channel.integration).connection,
       );
-      const trigger = await createWebhookTrigger(
-        channel.discriminator,
-        agentId,
-        c,
-      );
+      const trigger = await createWebhookTrigger(agentId, c);
       const agentName = getAgentName(channel, agentId);
       await binding.DECO_CHAT_CHANNELS_JOIN({
         agentName,
@@ -346,19 +342,16 @@ export const getChannel = createTool({
   },
 });
 
-const createWebhookTrigger = async (
-  discriminator: string,
-  agentId: string,
-  c: AppContext,
-) => {
+const createWebhookTrigger = async (agentId: string, c: AppContext) => {
   assertHasWorkspace(c);
+  const triggerId = crypto.randomUUID();
 
   // Create new trigger
   const trigger = await c
     .stub(Trigger)
-    .new(`${c.workspace.value}/triggers/${discriminator}`)
+    .new(`${c.workspace.value}/triggers/${triggerId}`)
     .create({
-      id: discriminator,
+      id: triggerId,
       type: "webhook" as const,
       passphrase: crypto.randomUUID() as string,
       title: "Channel Webhook",

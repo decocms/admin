@@ -55,6 +55,12 @@ export default async function(input, ctx) {
 - Don't know the ID? Use a placeholder like \`i:slack\` or \`i:database\`
 - Validation will show available integrations if the ID doesn't exist
 - System will guide you to the correct ID
+
+**HTTP Requests:**
+- \`fetch\` is NOT available in this environment
+- To make HTTP requests, use the \`i:http\` integration with the \`HTTP_FETCH\` tool
+- Example: \`await ctx.env['i:http'].HTTP_FETCH({ url: '...', method: 'GET' })\`
+- Remember to add \`{ integrationId: 'i:http' }\` to dependencies
 `;
 
 export const TOOL_UPDATE_PROMPT = `Update a tool's metadata, schemas, or execution code.
@@ -80,7 +86,13 @@ export default async function(input, ctx) {
 **Integration IDs:**
 - Use placeholders like \`i:slack\` if you don't know the ID
 - Validation errors will list all available integrations
-- Copy the correct ID from the error message`;
+- Copy the correct ID from the error message
+
+**HTTP Requests:**
+- \`fetch\` is NOT available in this environment
+- To make HTTP requests, use the \`i:http\` integration with the \`HTTP_FETCH\` tool
+- Example: \`await ctx.env['i:http'].HTTP_FETCH({ url: '...', method: 'GET' })\`
+- Remember to add \`{ integrationId: 'i:http' }\` to dependencies`;
 
 export const TOOL_DELETE_PROMPT = `Delete a tool from the code environment.
 

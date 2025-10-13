@@ -1138,8 +1138,8 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
     }
 
     const thread = {
-      threadId: this._thread.threadId,
-      resourceId: this._thread.resourceId,
+      threadId: options?.threadId ?? this._thread.threadId,
+      resourceId: options?.resourceId ?? this._thread.resourceId,
     };
 
     const tracer = (this as any).telemetry?.tracer;
@@ -1486,7 +1486,7 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
       messageList.add(threadMessages, "memory");
       messageList.add(messages, "user");
 
-      let threadQueue = store.saveMessages({
+      const threadQueue: Promise<unknown> = store.saveMessages({
         format: "v2",
         messages: messageList.get.input.v2(),
       });
@@ -1518,24 +1518,27 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
         },
         onStepFinish: ({ response }) => {
           messageList.add(response.messages, "response");
-
-          threadQueue = threadQueue.then(() =>
-            store.saveMessages({
-              messages: messageList.get.response.v2(),
-              format: "v2",
-            }),
-          );
         },
-        onFinish: async (result) => {
+        onFinish: (result) => {
           assertConfiguration(this._configuration);
+          const onFinishId = crypto.randomUUID();
+          console.log("onFinish start", onFinishId);
 
-          await this._handleGenerationFinish({
+          this._handleGenerationFinish({
             threadId: thread.threadId,
             usedModelId: options.model ?? this._configuration.model,
             usage: result.usage as unknown as LanguageModelUsage,
           });
 
-          await threadQueue;
+          threadQueue.then(() =>
+            store.saveMessages({
+              messages: messageList.get.response.v2(),
+              format: "v2",
+            }),
+          );
+
+          console.log("onFinish await threadQueue", onFinishId);
+          console.log("onFinish end", onFinishId);
         },
         onAbort: (props) => {
           console.error("stream aborted", props);

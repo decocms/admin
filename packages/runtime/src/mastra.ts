@@ -38,7 +38,7 @@ export { createWorkflow };
 
 export { cloneStep, cloneWorkflow } from "@mastra/core/workflows";
 
-const createRuntimeContext = (prev?: RuntimeContext<AppContext>) => {
+export const createRuntimeContext = (prev?: RuntimeContext<AppContext>) => {
   const runtimeContext = new RuntimeContext<AppContext>();
   const store = State.getStore();
   if (!store) {

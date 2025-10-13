@@ -28,6 +28,7 @@ import { HOSTING_APP_DEPLOY_PROMPT } from "./hosting-app-deploy-prompt.ts";
 import {
   getProjectIdFromContext,
   workspaceOrProjectIdConditions,
+  buildWorkspaceOrProjectIdConditions,
 } from "../projects/util.ts";
 
 const SCRIPT_FILE_NAME = "script.mjs";
@@ -1329,9 +1330,9 @@ export async function promoteDeployment(
       )
     `)
     .eq("id", deploymentId)
-    .or(
-      `deco_chat_hosting_apps.workspace.eq.${workspace},deco_chat_hosting_apps.project_id.eq.${projectId}`,
-    )
+    .or(buildWorkspaceOrProjectIdConditions(workspace, projectId), {
+      foreignTable: "deco_chat_hosting_apps",
+    })
     .single();
 
   if (deploymentError || !deployment) {

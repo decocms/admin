@@ -28,6 +28,7 @@ import type { CreateStubHandlerOptions, MCPClientStub } from "./stub.ts";
 import * as teamsAPI from "./teams/api.ts";
 import * as threadsAPI from "./threads/api.ts";
 import * as triggersAPI from "./triggers/api.ts";
+import * as utilsAPI from "./utils/api.ts";
 import * as walletAPI from "./wallet/api.ts";
 export {
   createToolBindingImpl as createToolTools,
@@ -104,6 +105,7 @@ export const GLOBAL_TOOLS = [
   integrationsAPI.callTool,
   integrationsAPI.listTools,
   registryAPI.getRegistryApp,
+  utilsAPI.httpFetch,
 ] as const;
 
 // Tools tied to an specific workspace

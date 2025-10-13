@@ -50,7 +50,10 @@ export function ChatMessage({
   isLastMessage = false,
 }: ChatMessageProps) {
   const isUser = message.role === "user";
-  const timestamp = new Date(Date.now()).toLocaleTimeString([], {
+  const createdAt =
+    (message.metadata as { createdAt?: string })?.createdAt ?? Date.now();
+
+  const timestamp = new Date(createdAt).toLocaleTimeString([], {
     hour: "2-digit",
     minute: "2-digit",
   });

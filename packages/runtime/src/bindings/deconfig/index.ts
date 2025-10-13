@@ -14,6 +14,7 @@
  */
 
 import { DefaultEnv } from "../../index.ts";
+import { createRuntimeContext } from "../../mastra.ts";
 import { impl } from "../binder.ts";
 import type { BaseResourceDataSchema } from "../resources/bindings.ts";
 import { createResourceBindings } from "../resources/bindings.ts";
@@ -497,11 +498,17 @@ export const createDeconfigResource = <
 const removeLeadingSlash = (url: string) => {
   return url.startsWith("/") ? url.slice(1) : url;
 };
+
+const R_READ = 1;
 export const DeconfigResource = {
   define: <TDataSchema extends BaseResourceDataSchema>(
     options: Omit<DeconfigResourceOptions<TDataSchema>, "env">,
   ) => {
     const watcher = (env: DefaultEnv & { DECONFIG: DeconfigClient }) => {
+      const resources = createDeconfigResource({
+        env,
+        ...options,
+      });
       const url = new URL(
         `/${removeLeadingSlash(env.DECO_REQUEST_CONTEXT.workspace)}/deconfig/watch`,
         `${env.DECO_API_URL ?? "https://api.decocms.com"}`,
@@ -510,6 +517,7 @@ export const DeconfigResource = {
       url.searchParams.set("branch", env.DECO_REQUEST_CONTEXT.branch ?? "main");
       url.searchParams.set("auth-token", env.DECO_REQUEST_CONTEXT.token);
       url.searchParams.set("fromCtime", "1");
+
       const eventSource = new EventSource(url);
       const it = toAsyncIterator<{
         path: string;
@@ -519,13 +527,26 @@ export const DeconfigResource = {
         for await (const event of it) {
           const { path } = event;
           const { resourceId } = ResourcePath.extract(path);
-          yield {
-            id: constructResourceUri(
-              env.DECO_REQUEST_CONTEXT.integrationId as string,
-              options.resourceName,
-              resourceId,
-            ),
-          };
+          const uri = constructResourceUri(
+            env.DECO_REQUEST_CONTEXT.integrationId as string,
+            options.resourceName,
+            resourceId,
+          );
+          try {
+            const { data } = await resources[R_READ].execute!({
+              runId: crypto.randomUUID(),
+              runtimeContext: createRuntimeContext(),
+              context: {
+                uri,
+              },
+            });
+            yield {
+              uri,
+              data,
+            };
+          } catch {
+            // ignore
+          }
         }
       };
       return {

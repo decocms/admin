@@ -163,7 +163,7 @@ export function createMCPClientProxy<T extends Record<string, unknown>>(
             ? convertJsonSchemaToZod(tool.outputSchema)
             : undefined,
           execute: (input: any) => {
-            return callToolFn(input);
+            return callToolFn(input.context);
           },
         };
       };

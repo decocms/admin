@@ -254,10 +254,6 @@ function Tool({ tool, params: connection, readOnly }: ToolProps) {
         data: response,
         latency: endTime - startTime,
       });
-      setTimeout(() => {
-        const resultElement = document.querySelector("[data-tool-result]");
-        resultElement?.scrollIntoView({ behavior: "smooth", block: "start" });
-      }, 100);
     } catch (error) {
       if (error instanceof DOMException && error.name === "AbortError") return;
       if (abortControllerRef.current?.signal.aborted) return;
@@ -733,9 +729,8 @@ function V2Section({
           <Icon name="info" size={16} className="text-muted-foreground" />
           <span>
             {" "}
-            This integration does not implement {featureName}. {
-              missingMessage
-            }{" "}
+            This integration does not implement {featureName}.{" "}
+            {missingMessage}{" "}
           </span>
         </div>
       </div>

@@ -1,31 +1,32 @@
 import { ajvResolver as rawAjvResolver } from "@hookform/resolvers/ajv";
-import type { Options } from "ajv";
 
-const options = {
+// Define our own safe options interface that works across AJV versions
+interface SafeAjvOptions {
+  allErrors?: boolean;
+  multipleOfPrecision?: number;
+  strict?: boolean;
+  verbose?: boolean;
+  discriminator?: boolean;
+  strictNumbers?: boolean;
+  useDefaults?: boolean; // Only boolean, no string values
+}
+
+const options: SafeAjvOptions = {
   allErrors: true,
   multipleOfPrecision: 8,
   strict: false,
   verbose: true,
   discriminator: false,
-} as const;
-
-// Filter out any incompatible options from the base options
-const safeBaseOptions: Partial<Options> = {};
-Object.entries(options).forEach(([key, value]) => {
-  // Only include options that are definitely compatible
-  if (key !== "useDefaults" || typeof value === "boolean") {
-    (safeBaseOptions as Record<string, unknown>)[key] = value;
-  }
-});
+};
 
 export const ajvResolver: typeof rawAjvResolver = (
   schema,
   instanceOptions = {},
 ) => {
-  // Filter out incompatible options and only pass known safe options
-  const safeOptions: Partial<Options> = {};
+  // Create safe options object with only compatible properties
+  const safeOptions: SafeAjvOptions = { ...options };
 
-  // Only include options that are definitely compatible
+  // Only include boolean values for problematic options
   if (
     "strictNumbers" in instanceOptions &&
     typeof instanceOptions.strictNumbers === "boolean"
@@ -33,16 +34,13 @@ export const ajvResolver: typeof rawAjvResolver = (
     safeOptions.strictNumbers = instanceOptions.strictNumbers;
   }
 
-  if ("useDefaults" in instanceOptions) {
-    const useDefaults = instanceOptions.useDefaults;
-    if (typeof useDefaults === "boolean") {
-      safeOptions.useDefaults = useDefaults;
-    }
-    // Skip "empty" and "shared" values to avoid version conflicts
+  if (
+    "useDefaults" in instanceOptions &&
+    typeof instanceOptions.useDefaults === "boolean"
+  ) {
+    safeOptions.useDefaults = instanceOptions.useDefaults;
   }
 
-  return rawAjvResolver(schema, {
-    ...safeBaseOptions,
-    ...safeOptions,
-  });
+  // Cast to unknown then to the expected type to bypass version conflicts
+  return rawAjvResolver(schema, safeOptions as unknown as Parameters<typeof rawAjvResolver>[1]);
 };

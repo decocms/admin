@@ -161,12 +161,14 @@ export function useFileUpload(options: UseFileUploadOptions = {}) {
     globalThis.addEventListener("drag", handleDrag);
     globalThis.addEventListener("dragover", handleDragOver);
     globalThis.addEventListener("dragend", handleDragEnd);
+    globalThis.addEventListener("dragleave", handleDragEnd);
 
     return () => {
       globalThis.removeEventListener("drop", handleDrop);
       globalThis.removeEventListener("drag", handleDrag);
       globalThis.removeEventListener("dragover", handleDragOver);
       globalThis.removeEventListener("dragend", handleDragEnd);
+      globalThis.removeEventListener("dragleave", handleDragEnd);
     };
   }, [handleFileDrop]);
 

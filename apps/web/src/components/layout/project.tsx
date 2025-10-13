@@ -22,7 +22,6 @@ import {
 import { Toaster } from "@deco/ui/components/sonner.tsx";
 import { Spinner } from "@deco/ui/components/spinner.tsx";
 import { useIsMobile } from "@deco/ui/hooks/use-mobile.ts";
-import { cn } from "@deco/ui/lib/utils.ts";
 import { Fragment, Suspense, useState, type ReactNode } from "react";
 import {
   Link,

@@ -308,7 +308,6 @@ function ChatWithProvider() {
   // Determine which agent and threadId to use based on mode
   const chatAgentId =
     chatMode === "decopilot" ? WELL_KNOWN_AGENTS.decopilotAgent.id : agentId;
-  const threadId = chatMode === "decopilot" ? decopilotThreadId : agentThreadId;
 
   // Prepare decopilot context when in decopilot mode
   const decopilotContextValue = useMemo(() => {

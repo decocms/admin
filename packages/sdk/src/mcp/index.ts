@@ -109,7 +109,7 @@ export const GLOBAL_TOOLS = [
 ] as const;
 
 // Tools tied to an specific workspace
-export const PROJECT_TOOLS = [
+export const PROJECT_TOOLS: readonly Tool[] = [
   teamsAPI.addView,
   teamsAPI.removeView,
   membersAPI.inviteTeamMembers,

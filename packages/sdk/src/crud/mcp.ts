@@ -13,11 +13,11 @@ import { ProjectLocator } from "../locator.ts";
 export const saveIntegration = (
   locator: ProjectLocator,
   integration: Integration,
-) =>
+): Promise<Integration> =>
   MCPClient.forLocator(locator).INTEGRATIONS_UPDATE({
     id: integration.id,
     integration,
-  });
+  }) as Promise<Integration>;
 
 export type CreateIntegrationPayload = Partial<Integration> & {
   clientIdFromApp?: string;
@@ -30,7 +30,7 @@ export type CreateIntegrationPayload = Partial<Integration> & {
 export const createIntegration = (
   locator: ProjectLocator,
   template: CreateIntegrationPayload = {},
-) =>
+): Promise<Integration> =>
   MCPClient.forLocator(locator).INTEGRATIONS_CREATE({
     id: crypto.randomUUID(),
     name: "New Integration",
@@ -38,7 +38,7 @@ export const createIntegration = (
     icon: "",
     connection: { type: "HTTP", url: "https://example.com/mcp" },
     ...template,
-  });
+  }) as Promise<Integration>;
 
 /**
  * Load an MCP from the file system

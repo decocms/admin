@@ -219,7 +219,7 @@ export const listThreads = createTool({
   },
 });
 
-export const getThreadMessages = createTool({
+export const getThreadMessages: Tool = createTool({
   name: "THREADS_GET_MESSAGES",
   description: "Get only the messages for a thread by thread id",
   inputSchema: z.lazy(() => z.object({ id: z.string() })),

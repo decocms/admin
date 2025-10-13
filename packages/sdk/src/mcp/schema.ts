@@ -216,7 +216,7 @@ export const registryApps = pgTable(
   "deco_chat_apps_registry",
   {
     id: uuid("id").primaryKey().defaultRandom(),
-    workspace: text("workspace").notNull(),
+    workspace: text("workspace"),
     scope_id: uuid("scope_id")
       .notNull()
       .references(() => registryScopes.id),
@@ -308,7 +308,7 @@ export const registryScopes = pgTable(
   {
     id: uuid("id").primaryKey().defaultRandom(),
     scope_name: text("scope_name").notNull().unique(),
-    workspace: text("workspace").notNull(),
+    workspace: text("workspace"),
     created_at: timestamp("created_at", { mode: "string" })
       .defaultNow()
       .notNull(),
@@ -353,7 +353,7 @@ export const integrations = pgTable("deco_chat_integrations", {
   icon: text("icon"),
   connection: jsonb("connection").notNull(),
   created_at: timestamp("created_at").defaultNow(),
-  workspace: text("workspace").notNull(),
+  workspace: text("workspace"),
   access: text("access"),
   access_id: uuid("access_id").references(() => access.id),
   app_id: uuid("app_id").references(() => registryApps.id),
@@ -581,7 +581,7 @@ export const triggers = pgTable(
     id: uuid("id").primaryKey().defaultRandom(),
     created_at: timestamp("created_at").defaultNow(),
     updated_at: timestamp("updated_at").defaultNow(),
-    workspace: text("workspace").notNull(),
+    workspace: text("workspace"),
     agent_id: uuid("agent_id")
       .notNull()
       .references(() => agents.id),
@@ -599,3 +599,12 @@ export const triggers = pgTable(
     index("idx_deco_chat_triggers_project_id").on(table.project_id),
   ],
 );
+
+export const customers = pgTable("deco_chat_customer", {
+  customer_id: text("customer_id").notNull(),
+  workspace: text("workspace"),
+  created_at: timestamp("created_at").defaultNow().notNull(),
+  org_id: bigint("org_id", { mode: "number" }).references(
+    () => organizations.id,
+  ),
+});

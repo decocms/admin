@@ -56,7 +56,10 @@ export const Locator = {
       return `/${org}/${project}`;
     }
 
-    if (project === "personal" && userId) {
+    if (project === "personal") {
+      if (!userId) {
+        throw new Error("User ID is required to adapt `personal` root slug");
+      }
       return `/users/${userId}`;
     }
 

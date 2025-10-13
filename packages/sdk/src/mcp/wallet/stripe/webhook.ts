@@ -1,10 +1,13 @@
 import Stripe from "stripe";
 import { WebhookEventIgnoredError } from "../../../errors.ts";
-import type { AppContext } from "../../context.ts";
+import { serializeError, type AppContext } from "../../context.ts";
 import type { Transaction } from "../client.ts";
 import { createCurrencyClient, MicroDollar } from "../index.ts";
 import { getPlan } from "../plans.ts";
 import { Markup, type PlanWithTeamMetadata } from "../../../plan.ts";
+import { customers, organizations, projects } from "../../schema.ts";
+import { eq } from "drizzle-orm";
+import { Locator } from "packages/sdk/src/locator.ts";
 
 export const verifyAndParseStripeEvent = (
   payload: string,
@@ -97,19 +100,55 @@ async function getWorkspaceByCustomerId({
   customerId: string;
 }): Promise<string> {
   const customerId = context.envVars.TESTING_CUSTOMER_ID || argsCustomerId;
-  const { data, error } = await context.db
-    .from("deco_chat_customer")
-    .select("workspace")
-    .eq("customer_id", customerId)
-    .maybeSingle();
 
-  if (!data || error) {
+  try {
+    const [data] = await context.drizzle
+      .select({
+        workspace: customers.workspace,
+        orgId: customers.org_id,
+      })
+      .from(customers)
+      .where(eq(customers.customer_id, customerId))
+      .limit(1);
+
+    if (!data) {
+      throw new Error("Customer not found");
+    }
+
+    if (data.workspace) {
+      return data.workspace;
+    }
+
+    if (!data.orgId) {
+      throw new Error("Organization ID not found");
+    }
+
+    const [result] = await context.drizzle
+      .select({
+        orgSlug: organizations.slug,
+        projectSlug: projects.slug,
+      })
+      .from(organizations)
+      .leftJoin(projects, eq(organizations.id, projects.org_id))
+      .where(eq(organizations.id, data.orgId))
+      .limit(1);
+
+    if (!result || !result.orgSlug || !result.projectSlug) {
+      throw new Error("Organization or project not found");
+    }
+
+    const locator = Locator.from({
+      org: result.orgSlug,
+      project: result.projectSlug,
+    });
+
+    return Locator.adaptToRootSlug(locator);
+  } catch (error) {
+    console.error("[Stripe Webhook] Error", serializeError(error));
     throw new WebhookEventIgnoredError(
       "Failed to get workspace by customer ID, skipping",
     );
   }
-
-  return data.workspace;
 }
 
 const paymentIntentSucceeded: EventHandler<

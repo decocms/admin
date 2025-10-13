@@ -389,7 +389,7 @@ const VISIBILITY_LABELS = {
 type Visibility = (typeof VISIBILITIES)[number];
 type TabId = "active" | Visibility;
 
-const useFocusTeamAgent = () => {
+export const useFocusTeamAgent = () => {
   const focusChat = useFocusChat();
   const handleCreate = () => {
     focusChat(WELL_KNOWN_AGENT_IDS.teamAgent, crypto.randomUUID(), {

@@ -3,10 +3,10 @@ import {
   Integration,
   Resource,
   useConnectionViews,
-  useCreatePrompt,
   useIntegrations,
   useRemoveResource,
   useRemoveView,
+  useUpsertDocument,
   View,
 } from "@deco/sdk";
 import { Badge } from "@deco/ui/components/badge.tsx";
@@ -42,7 +42,7 @@ import {
 } from "@deco/ui/components/sidebar.tsx";
 import { Skeleton } from "@deco/ui/components/skeleton.tsx";
 import { type ReactNode, Suspense, useMemo, useState } from "react";
-import { Link, useMatch } from "react-router";
+import { Link, useMatch, useNavigate } from "react-router";
 import { trackEvent } from "../../hooks/analytics.ts";
 import {
   useNavigateWorkspace,
@@ -52,6 +52,7 @@ import { IntegrationAvatar } from "../common/avatar/integration.tsx";
 import { TogglePin } from "../views/list.tsx";
 import { SidebarFooter } from "./footer.tsx";
 import { useCurrentTeam } from "./team-selector.tsx";
+import { useFocusTeamAgent } from "../agents/list.tsx";
 
 const WithActive = ({
   children,
@@ -177,6 +178,7 @@ function WorkspaceViews() {
   const team = useCurrentTeam();
   const removeViewMutation = useRemoveView();
   const navigateWorkspace = useNavigateWorkspace();
+  const navigate = useNavigate();
   const [addViewsDialogState, setAddViewsDialogState] = useState<{
     open: boolean;
     integration?: Integration;
@@ -187,7 +189,9 @@ function WorkspaceViews() {
   const [databaseModalOpen, setDatabaseModalOpen] = useState(false);
 
   // Hook for creating documents
-  const createPrompt = useCreatePrompt();
+  const upsertDocument = useUpsertDocument();
+
+  const handleCreateAgent = useFocusTeamAgent();
 
   const handleRemoveView = async (view: View) => {
     const isUserInView = globalThis.location.pathname.includes(
@@ -896,16 +900,27 @@ function WorkspaceViews() {
               onClick={async () => {
                 setGenerateModalOpen(false);
                 isMobile && toggleSidebar();
+                const timestamp = new Date()
+                  .toISOString()
+                  .replace(/[:.]/g, "-");
 
-                // Create a new empty prompt and navigate to it
-                const result = await createPrompt.mutateAsync({
-                  name: "",
-                  content: "",
+                const result = await upsertDocument.mutateAsync({
+                  params: {
+                    name: `Untitled-${timestamp}`,
+                    content: "",
+                    description: "",
+                  },
                 });
-                navigateWorkspace(`/documents/${result.id}`);
+
+                const documentResource = {
+                  integration_id: "i:documents-management",
+                  name: "document",
+                };
+                const href = buildResourceHrefFromResource(documentResource);
+                navigate(`${href}/${encodeURIComponent(result.uri)}`);
               }}
             >
-              <div className="flex items-start gap-3 text-left">
+              <div className="flex items-center gap-3 text-left">
                 <Icon
                   name="docs"
                   size={24}
@@ -935,7 +950,7 @@ function WorkspaceViews() {
                 );
               }}
             >
-              <div className="flex items-start gap-3 text-left">
+              <div className="flex items-center gap-3 text-left">
                 <Icon
                   name="flowchart"
                   size={24}
@@ -945,6 +960,30 @@ function WorkspaceViews() {
                   <div className="font-semibold">Workflow</div>
                   <div className="text-sm text-muted-foreground">
                     Build an automated workflow
+                  </div>
+                </div>
+              </div>
+            </Button>
+            <Button
+              variant="outline"
+              className="w-full justify-start h-auto py-4"
+              onClick={() => {
+                setGenerateModalOpen(false);
+                isMobile && toggleSidebar();
+
+                handleCreateAgent();
+              }}
+            >
+              <div className="flex items-center gap-3 text-left">
+                <Icon
+                  name="robot_2"
+                  size={24}
+                  className="text-muted-foreground/75 mt-0.5"
+                />
+                <div className="flex-1">
+                  <div className="font-semibold">Agent</div>
+                  <div className="text-sm text-muted-foreground">
+                    Create an AI agent with specialized capabilities
                   </div>
                 </div>
               </div>

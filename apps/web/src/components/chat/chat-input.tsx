@@ -20,7 +20,10 @@ import { RichTextArea } from "./rich-text.tsx";
 export function ChatInput({
   disabled,
   rightNode,
-}: { disabled?: boolean; rightNode?: ReactNode } = {}) {
+}: {
+  disabled?: boolean;
+  rightNode?: ReactNode;
+} = {}) {
   const { chat, uiOptions, input, setInput, isLoading, setIsLoading } =
     useAgent();
   const { stop, sendMessage } = chat;

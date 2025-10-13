@@ -40,6 +40,7 @@ interface ContextResourcesProps {
   removeFile: (index: number) => void;
   openFileDialog: () => void;
   enableFileUpload: boolean;
+  rightNode?: React.ReactNode;
 }
 
 export function ContextResources({
@@ -50,6 +51,7 @@ export function ContextResources({
   removeFile,
   openFileDialog,
   enableFileUpload,
+  rightNode,
 }: ContextResourcesProps) {
   const { agent, rules, setRules } = useAgent();
   const { data: integrations = [] } = useIntegrations();
@@ -171,103 +173,108 @@ export function ContextResources({
   return (
     <div className="w-full mx-auto">
       <FileDropOverlay display={isDragging} />
-      <div className="flex flex-wrap gap-2 mb-4 overflow-visible">
-        {/* rules now rendered after add button below */}
-        {/* File Upload Button */}
-        {enableFileUpload && (
-          <>
-            <input
-              type="file"
-              ref={fileInputRef}
-              onChange={handleFileChange}
-              multiple
-              className="hidden"
-              accept={getAcceptedFileTypes()}
-            />
-            {(selectedModel.capabilities.includes("file-upload") ||
-              selectedModel.capabilities.includes("image-upload")) && (
-              <Button
-                type="button"
-                variant="outline"
-                size="icon"
-                title="Upload files"
-                onClick={openFileDialog}
-              >
-                <Icon name="file_upload" />
-              </Button>
-            )}
-          </>
-        )}
-        <SelectConnectionDialog
-          onSelect={handleAddIntegration}
-          trigger={
-            <Button
-              type="button"
-              variant="outline"
-              size="icon"
-              title="Add files or integrations"
-            >
-              <Icon name="alternate_email" />
-            </Button>
-          }
-        />
-
-        {persistedRules.map((rule) => (
-          <div key={rule.id} className="relative group">
-            <Tooltip>
-              <TooltipTrigger asChild>
+      <div className="flex justify-between items-end gap-2 mb-4 overflow-visible">
+        <div className="flex flex-wrap gap-2 overflow-visible">
+          {/* rules now rendered after add button below */}
+          {/* File Upload Button */}
+          {enableFileUpload && (
+            <>
+              <input
+                type="file"
+                ref={fileInputRef}
+                onChange={handleFileChange}
+                multiple
+                className="hidden"
+                accept={getAcceptedFileTypes()}
+              />
+              {(selectedModel.capabilities.includes("file-upload") ||
+                selectedModel.capabilities.includes("image-upload")) && (
                 <Button
                   type="button"
                   variant="outline"
                   size="icon"
-                  title="View rule"
+                  title="Upload files"
+                  onClick={openFileDialog}
                 >
-                  <Icon name="rule" />
+                  <Icon name="file_upload" />
                 </Button>
-              </TooltipTrigger>
-              <TooltipContent className="max-w-xs break-words">
-                {rule.text.length > 160
-                  ? `${rule.text.slice(0, 160)}…`
-                  : rule.text}
-              </TooltipContent>
-            </Tooltip>
-            <Button
-              type="button"
-              variant="ghost"
-              size="icon"
-              onClick={() => removeRule(rule.id)}
-              className="absolute -top-1 -right-1 h-4 w-4 opacity-0 group-hover:opacity-100 transition-opacity rounded-full shadow-sm bg-primary text-primary-foreground hover:bg-primary/50 hover:text-sidebar"
-              title="Remove rule"
-            >
-              <Icon name="close" size={10} />
-            </Button>
-          </div>
-        ))}
-
-        {/* Integration Items */}
-        {integrationsWithTotalTools.map(
-          ({ integration, enabledTools, integrationId, totalTools }) => (
-            <IntegrationResourceItem
-              key={integrationId}
-              integration={integration}
-              enabledTools={enabledTools}
-              totalTools={totalTools}
-              onRemove={() => handleRemoveIntegration(integrationId)}
-              onToggleTool={(toolName, isEnabled) =>
-                handleToggleTool(integrationId, toolName, isEnabled)
-              }
-            />
-          ),
-        )}
-
-        {/* File Preview Items */}
-        {uploadedFiles.map((uf, index) => (
-          <FilePreviewItem
-            key={uf.file.name + uf.file.size}
-            uploadedFile={uf}
-            removeFile={() => removeFile(index)}
+              )}
+            </>
+          )}
+          <SelectConnectionDialog
+            onSelect={handleAddIntegration}
+            trigger={
+              <Button
+                type="button"
+                variant="outline"
+                size="icon"
+                title="Add files or integrations"
+              >
+                <Icon name="alternate_email" />
+              </Button>
+            }
           />
-        ))}
+
+          {persistedRules.map((rule) => (
+            <div key={rule.id} className="relative group">
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="icon"
+                    title="View rule"
+                  >
+                    <Icon name="rule" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent className="max-w-xs break-words">
+                  {rule.text.length > 160
+                    ? `${rule.text.slice(0, 160)}…`
+                    : rule.text}
+                </TooltipContent>
+              </Tooltip>
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                onClick={() => removeRule(rule.id)}
+                className="absolute -top-1 -right-1 h-4 w-4 opacity-0 group-hover:opacity-100 transition-opacity rounded-full shadow-sm bg-primary text-primary-foreground hover:bg-primary/50 hover:text-sidebar"
+                title="Remove rule"
+              >
+                <Icon name="close" size={10} />
+              </Button>
+            </div>
+          ))}
+
+          {/* Integration Items */}
+          {integrationsWithTotalTools.map(
+            ({ integration, enabledTools, integrationId, totalTools }) => (
+              <IntegrationResourceItem
+                key={integrationId}
+                integration={integration}
+                enabledTools={enabledTools}
+                totalTools={totalTools}
+                onRemove={() => handleRemoveIntegration(integrationId)}
+                onToggleTool={(toolName, isEnabled) =>
+                  handleToggleTool(integrationId, toolName, isEnabled)
+                }
+              />
+            ),
+          )}
+
+          {/* File Preview Items */}
+          {uploadedFiles.map((uf, index) => (
+            <FilePreviewItem
+              key={uf.file.name + uf.file.size}
+              uploadedFile={uf}
+              removeFile={() => removeFile(index)}
+            />
+          ))}
+        </div>
+
+        {/* Optional right node (e.g., preview toggle) */}
+        {rightNode && <div>{rightNode}</div>}
       </div>
     </div>
   );

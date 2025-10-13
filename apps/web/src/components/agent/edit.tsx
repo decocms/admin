@@ -24,8 +24,9 @@ import {
   TabsList,
   TabsTrigger,
 } from "@deco/ui/components/tabs.tsx";
+import { useIsMobile } from "@deco/ui/hooks/use-mobile.ts";
 import { cn } from "@deco/ui/lib/utils.ts";
-import { Suspense, useMemo } from "react";
+import { createContext, Suspense, useContext, useMemo, useState } from "react";
 import { useParams } from "react-router";
 import { useDocumentMetadata } from "../../hooks/use-document-metadata.ts";
 import { isFilePath } from "../../utils/path.ts";
@@ -44,6 +45,25 @@ import Threads from "./threads.tsx";
 interface Props {
   agentId?: string;
   threadId?: string;
+}
+
+// Context for managing preview visibility on mobile
+interface PreviewContextValue {
+  showPreview: boolean;
+  togglePreview: () => void;
+  isMobile: boolean;
+}
+
+const PreviewContext = createContext<PreviewContextValue | undefined>(
+  undefined,
+);
+
+function usePreviewContext() {
+  const context = useContext(PreviewContext);
+  if (!context) {
+    throw new Error("usePreviewContext must be used within PreviewProvider");
+  }
+  return context;
 }
 
 function ThreadsButton() {
@@ -77,7 +97,7 @@ function Chat() {
   const isEmpty = messages.length === 0;
 
   return (
-    <div className="flex flex-col h-full min-w-[320px] bg-muted/50">
+    <div className="flex flex-col h-full min-w-[320px] bg-muted/50 relative">
       <div className="flex-none p-4">
         <div className="justify-self-start flex items-center gap-3 text-muted-foreground w-full">
           <div
@@ -119,7 +139,7 @@ function Chat() {
         <ChatMessages />
       </ScrollArea>
       <div className="flex-none pb-4 px-4">
-        <ChatInput />
+        <ChatInput rightNode={<PreviewToggleButton />} />
       </div>
     </div>
   );
@@ -182,9 +202,31 @@ function ActionButtons() {
   );
 }
 
-function AgentConfigs() {
+// Unified preview toggle button for mobile
+function PreviewToggleButton() {
+  const { showPreview, togglePreview, isMobile } = usePreviewContext();
+
+  if (!isMobile) return null;
+
   return (
-    <div className="h-full flex flex-col gap-2 py-2">
+    <Button
+      type="button"
+      variant="outline"
+      size="icon"
+      onClick={togglePreview}
+      title={showPreview ? "Back to settings" : "Show preview"}
+      className="h-10 w-10"
+    >
+      <Icon name={showPreview ? "settings" : "visibility"} size={16} />
+    </Button>
+  );
+}
+
+function AgentConfigs() {
+  const { isMobile } = usePreviewContext();
+
+  return (
+    <div className="h-full flex flex-col gap-2 py-2 relative">
       <Tabs defaultValue="profile">
         <div className="flex items-center justify-between px-4">
           <TabsList>
@@ -212,7 +254,39 @@ function AgentConfigs() {
           </TabsContent>
         </ScrollArea>
       </Tabs>
+      {/* Floating preview toggle button for mobile - bottom right corner */}
+      {isMobile && (
+        <div className="fixed bottom-6 right-6 z-50">
+          <PreviewToggleButton />
+        </div>
+      )}
     </div>
+  );
+}
+
+function ResponsiveLayout() {
+  const { showPreview, isMobile } = usePreviewContext();
+
+  if (isMobile) {
+    // Mobile layout: stack or toggle between config and preview
+    return (
+      <div className="h-[calc(100vh-48px)] flex flex-col">
+        {!showPreview ? <AgentConfigs /> : <Chat />}
+      </div>
+    );
+  }
+
+  // Desktop layout: resizable panels
+  return (
+    <ResizablePanelGroup direction="horizontal">
+      <ResizablePanel className="h-[calc(100vh-48px)]" defaultSize={60}>
+        <AgentConfigs />
+      </ResizablePanel>
+      <ResizableHandle />
+      <ResizablePanel className="h-[calc(100vh-48px)]" defaultSize={40}>
+        <Chat />
+      </ResizablePanel>
+    </ResizablePanelGroup>
   );
 }
 
@@ -222,6 +296,12 @@ function FormProvider(props: Props & { agentId: string; threadId: string }) {
   const { data: resolvedAvatar } = useFile(
     agent?.avatar && isFilePath(agent.avatar) ? agent.avatar : "",
   );
+
+  // Mobile detection
+  const isMobile = useIsMobile();
+  const [showPreview, setShowPreview] = useState(false);
+
+  const togglePreview = () => setShowPreview((prev) => !prev);
 
   // Prepare decopilot context value for agent edit
   const decopilotContextValue = useMemo(() => {
@@ -252,25 +332,19 @@ function FormProvider(props: Props & { agentId: string; threadId: string }) {
 
   return (
     <DecopilotLayout value={decopilotContextValue}>
-      <AgentProvider
-        agentId={agentId}
-        threadId={threadId}
-        uiOptions={{
-          showThreadTools: false,
-          showEditAgent: false,
-          showModelSelector: false,
-        }}
-      >
-        <ResizablePanelGroup direction="horizontal">
-          <ResizablePanel className="h-[calc(100vh-48px)]" defaultSize={60}>
-            <AgentConfigs />
-          </ResizablePanel>
-          <ResizableHandle />
-          <ResizablePanel className="h-[calc(100vh-48px)]" defaultSize={40}>
-            <Chat />
-          </ResizablePanel>
-        </ResizablePanelGroup>
-      </AgentProvider>
+      <PreviewContext.Provider value={{ showPreview, togglePreview, isMobile }}>
+        <AgentProvider
+          agentId={agentId}
+          threadId={threadId}
+          uiOptions={{
+            showThreadTools: false,
+            showEditAgent: false,
+            showModelSelector: false,
+          }}
+        >
+          <ResponsiveLayout />
+        </AgentProvider>
+      </PreviewContext.Provider>
     </DecopilotLayout>
   );
 }

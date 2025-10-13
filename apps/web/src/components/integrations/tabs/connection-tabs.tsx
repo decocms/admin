@@ -728,10 +728,7 @@ function V2Section({
         <div className="flex items-center gap-2 text-sm text-muted-foreground">
           <Icon name="info" size={16} className="text-muted-foreground" />
           <span>
-            {" "}
-            This integration does not implement {featureName}. {
-              missingMessage
-            }{" "}
+            This integration does not implement {featureName}. {missingMessage}
           </span>
         </div>
       </div>

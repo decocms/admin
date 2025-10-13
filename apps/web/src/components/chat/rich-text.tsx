@@ -156,7 +156,7 @@ export function RichTextArea({
           const readToolName = `DECO_RESOURCE_${item.resourceType.toUpperCase()}_READ`;
           appendIntegrationTool(item.integration.id, readToolName);
         }
-        
+
         // Call the original command to insert the mention
         props.command(item);
       };
@@ -190,7 +190,11 @@ export function RichTextArea({
         createUnifiedMentions({
           tools,
           resourceSearchers,
-          callTool: (connection, args) => callTool(connection as Parameters<typeof callTool>[0], args as Parameters<typeof callTool>[1]),
+          callTool: (connection, args) =>
+            callTool(
+              connection as Parameters<typeof callTool>[0],
+              args as Parameters<typeof callTool>[1],
+            ),
           MentionNode: MentionNodeWithAvatar,
           MentionDropdown: MentionDropdownWithAvatar,
         }),

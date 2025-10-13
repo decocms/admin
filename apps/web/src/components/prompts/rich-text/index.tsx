@@ -163,7 +163,11 @@ export default function RichTextArea({
         createUnifiedMentions({
           tools,
           resourceSearchers,
-          callTool: (connection, args) => callTool(connection as Parameters<typeof callTool>[0], args as Parameters<typeof callTool>[1]),
+          callTool: (connection, args) =>
+            callTool(
+              connection as Parameters<typeof callTool>[0],
+              args as Parameters<typeof callTool>[1],
+            ),
           MentionNode: MentionNodeWithAvatar,
           MentionDropdown: MentionDropdownWithAvatar,
         }),

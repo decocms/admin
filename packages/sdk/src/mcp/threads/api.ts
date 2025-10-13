@@ -1,5 +1,6 @@
 import { D1Store } from "@mastra/cloudflare-d1";
 import { MessageList } from "@mastra/core/agent";
+import { UIMessage } from "ai";
 import { z } from "zod";
 import {
   assertHasWorkspace,
@@ -218,7 +219,7 @@ export const getThreadMessages = createTool({
   name: "THREADS_GET_MESSAGES",
   description: "Get only the messages for a thread by thread id",
   inputSchema: z.lazy(() => z.object({ id: z.string() })),
-  handler: async ({ id }, c) => {
+  handler: async ({ id }, c): Promise<{ messages: UIMessage[] }> => {
     assertHasWorkspace(c);
     await assertWorkspaceResourceAccess(c);
 

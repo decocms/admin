@@ -1,7 +1,4 @@
-import {
-  type Integration,
-  useKnowledgeListFiles
-} from "@deco/sdk";
+import { type Integration, useKnowledgeListFiles } from "@deco/sdk";
 import { getExtensionFromContentType, KnowledgeBaseID } from "@deco/sdk/utils";
 import { Button } from "@deco/ui/components/button.tsx";
 import {

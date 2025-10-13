@@ -17,7 +17,6 @@ import { DocumentEditor } from "./document-editor.tsx";
 import { toast } from "@deco/ui/components/sonner.tsx";
 import {
   addResourceUpdateListener,
-  type ResourceMessage,
 } from "../../lib/broadcast-channels.ts";
 import { useSearchParams } from "react-router";
 import { useQueryClient } from "@tanstack/react-query";

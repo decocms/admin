@@ -26,14 +26,22 @@ import {
 } from "@deco/ui/components/tabs.tsx";
 import { useIsMobile } from "@deco/ui/hooks/use-mobile.ts";
 import { cn } from "@deco/ui/lib/utils.ts";
-import { createContext, Suspense, useContext, useMemo, useState } from "react";
-import { useParams } from "react-router";
+import {
+  createContext,
+  Suspense,
+  useContext,
+  useEffect,
+  useMemo,
+  useState,
+} from "react";
+import { useLocation, useParams } from "react-router";
 import { useDocumentMetadata } from "../../hooks/use-document-metadata.ts";
 import { isFilePath } from "../../utils/path.ts";
 import { useFocusChat } from "../agents/hooks.ts";
 import { ChatInput } from "../chat/chat-input.tsx";
 import { ChatMessages } from "../chat/chat-messages.tsx";
 import { AgentAvatar } from "../common/avatar/agent.tsx";
+import { DecopilotChat } from "../decopilot/index.tsx";
 import { DecopilotLayout } from "../layout/decopilot-layout.tsx";
 import AdvancedTab from "../settings/advanced.tsx";
 import AgentProfileTab from "../settings/agent-profile.tsx";
@@ -47,11 +55,13 @@ interface Props {
   threadId?: string;
 }
 
-// Context for managing preview visibility on mobile
+// Context for managing preview visibility on mobile and chat mode
 interface PreviewContextValue {
   showPreview: boolean;
   togglePreview: () => void;
   isMobile: boolean;
+  chatMode: "agent" | "decopilot";
+  setChatMode: (mode: "agent" | "decopilot") => void;
 }
 
 const PreviewContext = createContext<PreviewContextValue | undefined>(
@@ -265,10 +275,11 @@ function AgentConfigs() {
 }
 
 function ResponsiveLayout() {
-  const { showPreview, isMobile } = usePreviewContext();
+  const { showPreview, isMobile, chatMode } = usePreviewContext();
 
   if (isMobile) {
-    // Mobile layout: stack or toggle between config and preview
+    // Mobile layout: stack or toggle between config and agent chat
+    // (Mobile always shows agent chat, not decopilot)
     return (
       <div className="h-[calc(100vh-48px)] flex flex-col">
         {!showPreview ? <AgentConfigs /> : <Chat />}
@@ -284,7 +295,7 @@ function ResponsiveLayout() {
       </ResizablePanel>
       <ResizableHandle />
       <ResizablePanel className="h-[calc(100vh-48px)]" defaultSize={40}>
-        <Chat />
+        {chatMode === "agent" ? <Chat /> : <DecopilotChat />}
       </ResizablePanel>
     </ResizablePanelGroup>
   );
@@ -302,6 +313,19 @@ function FormProvider(props: Props & { agentId: string; threadId: string }) {
   const [showPreview, setShowPreview] = useState(false);
 
   const togglePreview = () => setShowPreview((prev) => !prev);
+
+  // Chat mode state (agent chat vs decopilot chat)
+  const location = useLocation();
+  const searchParams = new URLSearchParams(location.search);
+  const urlChatMode =
+    (searchParams.get("chat") as "agent" | "decopilot") || "agent";
+
+  const [chatMode, setChatMode] = useState<"agent" | "decopilot">(urlChatMode);
+
+  // Sync with URL changes
+  useEffect(() => {
+    setChatMode(urlChatMode);
+  }, [urlChatMode]);
 
   // Prepare decopilot context value for agent edit
   const decopilotContextValue = useMemo(() => {
@@ -332,7 +356,9 @@ function FormProvider(props: Props & { agentId: string; threadId: string }) {
 
   return (
     <DecopilotLayout value={decopilotContextValue}>
-      <PreviewContext.Provider value={{ showPreview, togglePreview, isMobile }}>
+      <PreviewContext.Provider
+        value={{ showPreview, togglePreview, isMobile, chatMode, setChatMode }}
+      >
         <AgentProvider
           agentId={agentId}
           threadId={threadId}

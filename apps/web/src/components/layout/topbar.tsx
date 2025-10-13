@@ -6,7 +6,7 @@ import { Link } from "react-router";
 import { ErrorBoundary } from "../../error-boundary.tsx";
 import { ReportIssueButton } from "../common/report-issue-button.tsx";
 import { LoggedUser, LoggedUserAvatarTrigger } from "../sidebar/footer";
-import { DefaultBreadcrumb, ToggleDecopilotButton } from "./project";
+import { DefaultBreadcrumb, TopbarControls } from "./project";
 
 interface BreadcrumbItem {
   label: string | React.ReactNode;
@@ -54,7 +54,7 @@ export function Topbar({ breadcrumb }: { breadcrumb: BreadcrumbItem[] }) {
       </div>
       <div className="flex items-center gap-3">
         <ReportIssueButton />
-        <ToggleDecopilotButton />
+        <TopbarControls />
         <LoggedUser
           trigger={(user) => <LoggedUserAvatarTrigger user={user} />}
           align="end"

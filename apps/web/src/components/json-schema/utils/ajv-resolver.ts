@@ -1,4 +1,5 @@
 import { ajvResolver as rawAjvResolver } from "@hookform/resolvers/ajv";
+import type { Options } from "ajv";
 
 const options = {
   allErrors: true,

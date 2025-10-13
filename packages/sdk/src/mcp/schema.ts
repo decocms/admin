@@ -95,7 +95,9 @@ export const projects = pgTable(
     org_id: bigint("org_id", { mode: "number" })
       .notNull()
       .references(() => organizations.id),
-    created_at: timestamp("created_at", { mode: "string" }).defaultNow().notNull(),
+    created_at: timestamp("created_at", { mode: "string" })
+      .defaultNow()
+      .notNull(),
   },
   (table) => [
     uniqueIndex("deco_chat_projects_slug_org_id_unique").on(
@@ -533,7 +535,7 @@ export const issues = pgTable(
   "deco_chat_issues",
   {
     id: uuid("id").primaryKey().defaultRandom(),
-    org_id: bigint("org_id", { mode: "bigint" }).references(
+    org_id: bigint("org_id", { mode: "number" }).references(
       () => organizations.id,
       { onDelete: "cascade" },
     ),

@@ -1,4 +1,5 @@
 import { createClient } from "@supabase/supabase-js";
+import process from "node:process";
 
 const SUPABASE_URL = "https://auth.deco.cx";
 const SUPABASE_SERVER_KEY = process.env.SUPABASE_SERVER_KEY;

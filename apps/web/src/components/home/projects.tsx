@@ -223,7 +223,7 @@ Projects.Empty = () => (
   </div>
 );
 
-function CreateProject({ org, disabled }: { org: string, disabled?: boolean }) {
+function CreateProject({ org, disabled }: { org: string; disabled?: boolean }) {
   const [isOpen, setIsOpen] = useState(false);
   const [slug, setSlug] = useState("");
   const [title, setTitle] = useState("");

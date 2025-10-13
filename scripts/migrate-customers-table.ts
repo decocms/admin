@@ -8,6 +8,7 @@ import {
 } from "../packages/sdk/src/mcp/schema.ts";
 import { isNull, eq } from "drizzle-orm";
 import { WELL_KNOWN_PLANS } from "../packages/sdk/src/plan.ts";
+import process from "node:process";
 
 const db = drizzle(process.env.DATABASE_URL!, { relations });
 
@@ -105,17 +106,25 @@ for (const customer of stuff) {
       console.log("user email is", user.email);
       console.log("orgsWithOnlyPersonalProject", orgsWithOnlyPersonalProject);
       if (orgsWithOnlyPersonalProject.length === 0) {
-        const newOrg = await db.insert(organizations).values({
+        const newOrg = await db
+          .insert(organizations)
+          .values({
             name: `${user.name}'s org`,
             slug: `${user.name}'s org`,
             plan_id: WELL_KNOWN_PLANS.FREE,
-        }).returning().then((r) => r[0]);
+          })
+          .returning()
+          .then((r) => r[0]);
 
-        const newOrgProject = await db.insert(projects).values({
-          org_id: newOrg.id,
-          slug: "personal",
-          title: `${newOrg.name} Personal project`,
-        }).returning().then((r) => r[0]);
+        const newOrgProject = await db
+          .insert(projects)
+          .values({
+            org_id: newOrg.id,
+            slug: "personal",
+            title: `${newOrg.name} Personal project`,
+          })
+          .returning()
+          .then((r) => r[0]);
 
         console.log("New org project created", newOrgProject);
 
@@ -124,7 +133,7 @@ for (const customer of stuff) {
           .set({ org_id: newOrgProject.org_id })
           .where(eq(customers.customer_id, customer.customer_id));
 
-        console.log("Done ok for user id", userId); 
+        console.log("Done ok for user id", userId);
         continue;
       } else {
         throw new Error(

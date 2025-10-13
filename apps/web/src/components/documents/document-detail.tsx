@@ -15,6 +15,11 @@ import { z } from "zod";
 import { EmptyState } from "../common/empty-state.tsx";
 import { DocumentEditor } from "./document-editor.tsx";
 import { toast } from "@deco/ui/components/sonner.tsx";
+import {
+  addResourceUpdateListener,
+  type ResourceMessage,
+} from "../../lib/broadcast-channels.ts";
+import { useSearchParams } from "react-router";
 
 // Document type inferred from the Zod schema
 export type DocumentDefinition = z.infer<typeof DocumentDefinitionSchema>;
@@ -36,6 +41,7 @@ interface DocumentDetailProps {
  */
 export function DocumentDetail({ resourceUri }: DocumentDetailProps) {
   const { locator } = useSDK();
+  const [searchParams, setSearchParams] = useSearchParams();
   const {
     data: resource,
     isLoading: isLoading,
@@ -101,6 +107,32 @@ export function DocumentDetail({ resourceUri }: DocumentDetailProps) {
   useEffect(() => {
     shouldSyncRef.current = true;
   }, [resourceUri]);
+
+  // Listen for resource updates (e.g., when agent updates the document)
+  useEffect(() => {
+    const cleanup = addResourceUpdateListener((message) => {
+      if (
+        message.type === "RESOURCE_UPDATED" &&
+        message.resourceUri === resourceUri
+      ) {
+        // Auto-refresh when this resource is updated
+        shouldSyncRef.current = true;
+        refetch();
+      }
+    });
+
+    return cleanup;
+  }, [resourceUri, refetch]);
+
+  // Update URL when resource URI changes (e.g., after agent renames the document)
+  useEffect(() => {
+    if (resource?.uri && resource.uri !== resourceUri) {
+      // Update the URL search params to reflect the new URI
+      const newParams = new URLSearchParams(searchParams);
+      newParams.set("uri", resource.uri);
+      setSearchParams(newParams, { replace: true });
+    }
+  }, [resource?.uri, resourceUri, searchParams, setSearchParams]);
 
   const handleTitleChange = (newTitle: string) => {
     setTitle(newTitle);

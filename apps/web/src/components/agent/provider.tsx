@@ -340,12 +340,41 @@ export function AgentProvider({
       } else {
         setFinishReason(null);
       }
+
+      // Broadcast resource updates when assistant message completes
+      // Check if the last message has resource update tool calls
+      if (result?.message?.role === "assistant" && result.message.parts) {
+        for (const part of result.message.parts) {
+          if (
+            part.type.startsWith("tool-") &&
+            "toolName" in part &&
+            part.toolName?.includes("_UPDATE") &&
+            part.toolName?.startsWith("DECO_RESOURCE_") &&
+            "input" in part &&
+            part.input &&
+            typeof part.input === "object"
+          ) {
+            const input = part.input as Record<string, unknown>;
+            const resourceUri = input.uri || input.resource;
+
+            if (typeof resourceUri === "string") {
+              import("../../lib/broadcast-channels.ts").then(
+                ({ notifyResourceUpdate }) => {
+                  notifyResourceUpdate(resourceUri);
+                },
+              );
+            }
+          }
+        }
+      }
     },
     onError: (error) => {
       console.error("Chat error:", error);
     },
     onToolCall: ({ toolCall }) => {
       _onToolCall?.(toolCall);
+
+      // Handle RENDER tool
       if (toolCall.toolName === "RENDER") {
         const { content, title } = (toolCall.input ?? {}) as {
           content?: string;
@@ -359,6 +388,27 @@ export function AgentProvider({
             `preview-${toolCall.toolCallId}`,
             content || "",
             title || "",
+          );
+        }
+      }
+
+      // Broadcast resource updates for auto-refresh
+      if (
+        toolCall.toolName?.includes("_UPDATE") &&
+        toolCall.toolName?.startsWith("DECO_RESOURCE_") &&
+        toolCall.input &&
+        typeof toolCall.input === "object"
+      ) {
+        // Extract resource URI from input
+        const input = toolCall.input as Record<string, unknown>;
+        const resourceUri = input.uri || input.resource;
+
+        if (typeof resourceUri === "string") {
+          // Import and call notifyResourceUpdate
+          import("../../lib/broadcast-channels.ts").then(
+            ({ notifyResourceUpdate }) => {
+              notifyResourceUpdate(resourceUri);
+            },
           );
         }
       }

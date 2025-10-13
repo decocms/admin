@@ -13,13 +13,24 @@ export const ajvResolver: typeof rawAjvResolver = (
   schema,
   instanceOptions = {},
 ) => {
-  // Filter out incompatible options
-  const { strictNumbers, ...compatibleOptions } = instanceOptions as Options & {
-    strictNumbers?: boolean | "log";
-  };
+  // Filter out incompatible options and only pass known safe options
+  const safeOptions: Partial<Options> = {};
+  
+  // Only include options that are definitely compatible
+  if ('strictNumbers' in instanceOptions && typeof instanceOptions.strictNumbers === 'boolean') {
+    safeOptions.strictNumbers = instanceOptions.strictNumbers;
+  }
+  
+  if ('useDefaults' in instanceOptions) {
+    const useDefaults = instanceOptions.useDefaults;
+    if (typeof useDefaults === 'boolean') {
+      safeOptions.useDefaults = useDefaults;
+    }
+    // Skip "empty" and "shared" values to avoid version conflicts
+  }
+  
   return rawAjvResolver(schema, {
     ...options,
-    ...compatibleOptions,
-    ...(typeof strictNumbers === "boolean" ? { strictNumbers } : {}),
+    ...safeOptions,
   });
 };

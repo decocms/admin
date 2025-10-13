@@ -22,7 +22,6 @@ import { Icon } from "@deco/ui/components/icon.tsx";
 import { Input } from "@deco/ui/components/input.tsx";
 import { ScrollArea } from "@deco/ui/components/scroll-area.tsx";
 import { Spinner } from "@deco/ui/components/spinner.tsx";
-import { cn } from "@deco/ui/lib/utils.ts";
 import { useCallback, useDeferredValue, useMemo, useState } from "react";
 import { LEGACY_INTEGRATIONS } from "../../constants.ts";
 import { useAgentSettingsToolsSet } from "../../hooks/use-agent-settings-tools-set.ts";
@@ -290,10 +289,16 @@ const agentConnectionFilter = (integration: Integration) =>
 
 function AddAgentConnectionButton() {
   const { setIntegrationTools } = useAgentSettingsToolsSet();
+  const { agent } = useAgent();
+
   return (
     <SelectConnectionDialog
       title="Connect agent"
-      filter={agentConnectionFilter}
+      // Filter in only agents
+      // Filter out the current agent opened
+      filter={(connection) =>
+        agentConnectionFilter(connection) && connection.id !== `a:${agent.id}`
+      }
       forceTab="my-connections"
       myConnectionsEmptyState={
         <div className="flex flex-col gap-2 items-center justify-center h-full min-h-[200px] rounded-xl bg-muted border border-border border-dashed">
@@ -488,81 +493,6 @@ function AddViewButton() {
   );
 }
 
-function Views() {
-  const { agent, form } = useAgent();
-  const agentViews = agent.views || [];
-
-  const handleRemoveView = (viewUrl: string, viewName: string) => {
-    const newAgent = {
-      ...agent,
-      views: agent.views?.filter(
-        (view) => view.url !== viewUrl && view.name !== viewName,
-      ),
-    };
-    form.setValue("views", newAgent.views, { shouldDirty: true });
-  };
-
-  return (
-    <div className="flex flex-col gap-2">
-      <FormLabel>Views</FormLabel>
-      <div className="flex justify-between items-center">
-        <FormDescription className="pb-2">
-          Create views to display your agent's knowledge in a specific format.
-        </FormDescription>
-        {agentViews.length !== 0 && <AddViewButton />}
-      </div>
-      <div
-        className={cn(
-          "flex flex-col gap-2 items-center justify-center h-full min-h-[200px] rounded-xl bg-muted border border-border border-dashed",
-          agentViews.length !== 0 && "hidden",
-        )}
-      >
-        <div className="flex flex-col items-center gap-2">
-          <Icon name="dashboard" size={32} className="text-muted-foreground" />
-          <span className="text-sm text-muted-foreground">
-            No views added to this agent
-          </span>
-          <AddViewButton />
-        </div>
-      </div>
-      {agentViews.length !== 0 && (
-        <div className="space-y-2">
-          <div className="grid gap-2">
-            {agentViews.map((view) => (
-              <div
-                key={view.url}
-                className="flex items-center justify-between p-3 border border-border rounded-lg"
-              >
-                <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 rounded-lg bg-muted flex items-center justify-center">
-                    <Icon name="dashboard" size={16} />
-                  </div>
-                  <div className="flex flex-col">
-                    <span className="font-medium text-sm">{view.name}</span>
-                    <span className="text-xs text-muted-foreground">
-                      {view.url}
-                    </span>
-                  </div>
-                </div>
-                <div className="flex items-center gap-1">
-                  <Button
-                    variant="ghost"
-                    type="button"
-                    size="sm"
-                    onClick={() => handleRemoveView(view.url, view.name)}
-                  >
-                    <Icon name="delete" size={16} />
-                  </Button>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-    </div>
-  );
-}
-
 function ToolsAndKnowledgeTab() {
   const { form, handleSubmit } = useAgent();
 
@@ -575,7 +505,6 @@ function ToolsAndKnowledgeTab() {
             {/* TODO: bring this back. The flow it buggs is adding a file to kb <Knowledge /> */}
             {/* <Knowledge /> */}
             <MultiAgent />
-            <Views />
           </form>
         </div>
       </Form>

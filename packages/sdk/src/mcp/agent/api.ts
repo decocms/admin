@@ -74,7 +74,11 @@ export const agentGenerateText = createAgentTool({
 
     const response = await agentStub.generate(asMessage);
 
-    return { text: response.text };
+    return {
+      text:
+        response.text ||
+        (response.steps?.[0]?.content?.[0] as { text: string })?.text,
+    };
   },
 });
 

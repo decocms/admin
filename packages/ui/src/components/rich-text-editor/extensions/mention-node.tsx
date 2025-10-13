@@ -3,7 +3,9 @@ import { NodeViewWrapper, type ReactNodeViewProps } from "@tiptap/react";
 import { cn } from "../../../lib/utils.ts";
 
 interface MentionNodeProps extends ReactNodeViewProps<HTMLSpanElement> {
+  // deno-lint-ignore no-explicit-any
   IntegrationAvatar?: React.ComponentType<any>;
+  // deno-lint-ignore no-explicit-any
   ResourceIcon?: React.ComponentType<any>;
 }
 

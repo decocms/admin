@@ -130,6 +130,7 @@ export function RichTextArea({
 
   // Create wrapper for MentionNode - use a ref to ensure stable function reference
   const MentionNodeWithAvatar = useMemo(() => {
+    // deno-lint-ignore no-explicit-any
     return function MentionNodeWrapper(props: any) {
       return (
         <MentionNode
@@ -143,6 +144,7 @@ export function RichTextArea({
 
   // Create wrapper for MentionDropdown - use a ref to ensure stable function reference
   const MentionDropdownWithAvatar = useMemo(() => {
+    // deno-lint-ignore no-explicit-any
     return function MentionDropdownWrapper(props: any) {
       const wrappedCommand = (item: MentionItem) => {
         // Handle tool selection - add to agent's toolset

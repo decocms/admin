@@ -19,7 +19,12 @@ import { Markdown } from "tiptap-markdown";
 import { DocumentBubbleMenu } from "./extensions/bubble-menu.tsx";
 import { createSlashCommands } from "../editor/slash-commands.tsx";
 import type { ProjectLocator } from "@deco/sdk";
-import { type Integration, useIntegrations, callTool, useIntegration } from "@deco/sdk";
+import {
+  type Integration,
+  useIntegrations,
+  callTool,
+  useIntegration,
+} from "@deco/sdk";
 import { useQuery } from "@tanstack/react-query";
 import { IntegrationAvatar } from "../common/avatar/integration.tsx";
 
@@ -49,7 +54,7 @@ export function DocumentEditor({
   const documentsIntegration = useIntegration(DOCUMENTS_INTEGRATION_ID).data;
 
   // Fetch all documents for mentions
-  const { data: documentsData = [] } = useQuery({
+  const { data: _documentsData = [] } = useQuery({
     queryKey: ["documents-for-mentions", locator],
     queryFn: async () => {
       if (!documentsIntegration?.connection) return [];
@@ -166,10 +171,7 @@ export function DocumentEditor({
   // Wrap MentionDropdown with integration avatar support
   const MentionDropdownWithAvatar = useCallback(
     (props: any) => (
-      <MentionDropdown
-        {...props}
-        IntegrationAvatar={IntegrationAvatar}
-      />
+      <MentionDropdown {...props} IntegrationAvatar={IntegrationAvatar} />
     ),
     [],
   );
@@ -222,7 +224,7 @@ export function DocumentEditor({
       createUnifiedMentions({
         tools,
         resourceSearchers,
-        callTool,
+        callTool: (connection, args) => callTool(connection as Parameters<typeof callTool>[0], args as Parameters<typeof callTool>[1]),
         MentionNode: MentionNodeWithAvatar,
         MentionDropdown: MentionDropdownWithAvatar,
       }),

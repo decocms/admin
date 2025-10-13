@@ -66,7 +66,7 @@ export default function RichTextArea({
   className,
   enableMentions = false,
   hideMentionsLabel = false,
-  excludeIds = [],
+  excludeIds: _excludeIds = [],
 }: Props) {
   const hadUserInteraction = useRef(false);
   const { data: integrations = [] } = useIntegrations();
@@ -103,7 +103,7 @@ export default function RichTextArea({
       .filter((integration) => {
         // Filter out workspace-management to avoid duplicate document results
         if (integration.id === "i:workspace-management") return false;
-        
+
         const toolsList = integration.tools ?? [];
         return toolsList.some((t) => SEARCH_TOOL_RE.test(t.name));
       })
@@ -139,10 +139,7 @@ export default function RichTextArea({
   // Wrap MentionDropdown with integration avatar support
   const MentionDropdownWithAvatar = useCallback(
     (props: any) => (
-      <MentionDropdown
-        {...props}
-        IntegrationAvatar={IntegrationAvatar}
-      />
+      <MentionDropdown {...props} IntegrationAvatar={IntegrationAvatar} />
     ),
     [],
   );
@@ -166,7 +163,7 @@ export default function RichTextArea({
         createUnifiedMentions({
           tools,
           resourceSearchers,
-          callTool,
+          callTool: (connection, args) => callTool(connection as Parameters<typeof callTool>[0], args as Parameters<typeof callTool>[1]),
           MentionNode: MentionNodeWithAvatar,
           MentionDropdown: MentionDropdownWithAvatar,
         }),
@@ -259,7 +256,9 @@ export default function RichTextArea({
       {enableMentions && !hideMentionsLabel && (
         <div className="rounded-full flex gap-1 bg-muted text-muted-foreground w-fit items-center px-1.5 py-0.5 mb-2.5 select-none">
           <Icon name="info" size={10} />
-          <p className="text-xs font-medium">Type @ to mention tools and resources</p>
+          <p className="text-xs font-medium">
+            Type @ to mention tools and resources
+          </p>
         </div>
       )}
       <BubbleMenu editor={editor} />

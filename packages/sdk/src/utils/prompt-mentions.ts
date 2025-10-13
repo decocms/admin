@@ -48,7 +48,7 @@ const hasMentions = (content: string) => {
 
 /**
  * Resolve mentions in content
- * 
+ *
  * Note: Currently only resolves prompt mentions. Tool and resource mentions
  * are preserved as-is in the content and handled by the AI model or other systems.
  */

@@ -49,7 +49,10 @@ export function parseMentions(content: string): ParsedMention[] {
     const mentionType = extractAttribute(spanHtml, "data-mention-type");
 
     if (!mentionType) {
-      console.warn("Mention span missing data-mention-type attribute:", spanHtml);
+      console.warn(
+        "Mention span missing data-mention-type attribute:",
+        spanHtml,
+      );
       continue;
     }
 
@@ -57,7 +60,10 @@ export function parseMentions(content: string): ParsedMention[] {
       if (mentionType === "tool") {
         const tool_id = extractAttribute(spanHtml, "data-tool-id");
         const tool_name = extractAttribute(spanHtml, "data-tool-name");
-        const integration_id = extractAttribute(spanHtml, "data-integration-id");
+        const integration_id = extractAttribute(
+          spanHtml,
+          "data-integration-id",
+        );
 
         if (!tool_id || !tool_name || !integration_id) {
           console.warn("Tool mention missing required attributes:", spanHtml);
@@ -71,12 +77,18 @@ export function parseMentions(content: string): ParsedMention[] {
           integration_id,
         });
       } else if (mentionType === "resource") {
-        const integration_id = extractAttribute(spanHtml, "data-integration-id");
+        const integration_id = extractAttribute(
+          spanHtml,
+          "data-integration-id",
+        );
         const resource_name = extractAttribute(spanHtml, "data-resource-name");
         const resource_uri = extractAttribute(spanHtml, "data-resource-uri");
 
         if (!integration_id || !resource_name || !resource_uri) {
-          console.warn("Resource mention missing required attributes:", spanHtml);
+          console.warn(
+            "Resource mention missing required attributes:",
+            spanHtml,
+          );
           continue;
         }
 
@@ -105,7 +117,10 @@ export function serializeMention(mention: ParsedMention): string {
     return `<span data-type="mention" data-mention-type="tool" data-tool-id="${mention.tool_id}" data-tool-name="${mention.tool_name}" data-integration-id="${mention.integration_id}">@${mention.tool_name}</span>`;
   } else {
     // For resources, we use the resource name or a truncated URI for display
-    const displayName = mention.resource_name || mention.resource_uri.split("/").pop() || "resource";
+    const displayName =
+      mention.resource_name ||
+      mention.resource_uri.split("/").pop() ||
+      "resource";
     return `<span data-type="mention" data-mention-type="resource" data-integration-id="${mention.integration_id}" data-resource-name="${mention.resource_name}" data-resource-uri="${mention.resource_uri}">@${displayName}</span>`;
   }
 }
@@ -133,4 +148,3 @@ export function extractResourceUris(content: string): string[] {
     .filter((m): m is ResourceMention => m.type === "resource")
     .map((m) => m.resource_uri);
 }
-

@@ -9,7 +9,11 @@ import {
   useRef,
   useState,
 } from "react";
-import type { MentionItem, ResourceMentionItem, ToolMentionItem } from "../types.ts";
+import type {
+  MentionItem,
+  ResourceMentionItem,
+  ToolMentionItem,
+} from "../types.ts";
 
 interface MentionDropdownProps {
   items: MentionItem[];
@@ -17,12 +21,7 @@ interface MentionDropdownProps {
   editor: unknown;
   isLoading?: boolean;
   pendingCategories?: string[]; // keys: `${integrationId}:${resourceType}`
-  IntegrationAvatar?: React.ComponentType<{
-    url?: string;
-    fallback: string;
-    size: string;
-    className?: string;
-  }>;
+  IntegrationAvatar?: React.ComponentType<any>;
 }
 
 export const MentionDropdown = forwardRef<
@@ -294,4 +293,3 @@ export const MentionDropdown = forwardRef<
     </div>
   );
 });
-

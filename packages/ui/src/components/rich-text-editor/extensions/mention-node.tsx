@@ -3,15 +3,8 @@ import { NodeViewWrapper, type ReactNodeViewProps } from "@tiptap/react";
 import { cn } from "../../../lib/utils.ts";
 
 interface MentionNodeProps extends ReactNodeViewProps<HTMLSpanElement> {
-  IntegrationAvatar?: React.ComponentType<{
-    url?: string;
-    fallback: string;
-    size: string;
-    className?: string;
-  }>;
-  ResourceIcon?: React.ComponentType<{
-    className?: string;
-  }>;
+  IntegrationAvatar?: React.ComponentType<any>;
+  ResourceIcon?: React.ComponentType<any>;
 }
 
 export function MentionNode({
@@ -58,4 +51,3 @@ export function MentionNode({
     </NodeViewWrapper>
   );
 }
-

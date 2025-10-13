@@ -12,13 +12,17 @@ interface UnifiedMentionsOptions {
     connection: unknown;
     searchToolNames: string[];
   }>;
-  callTool: (connection: unknown, args: { name: string; arguments: Record<string, unknown> }) => Promise<unknown>;
+  callTool: (
+    connection: unknown,
+    args: { name: string; arguments: Record<string, unknown> },
+  ) => Promise<unknown>;
   MentionNode: React.ComponentType<any>;
   MentionDropdown: React.ComponentType<any>;
 }
 
 export function createUnifiedMentions(options: UnifiedMentionsOptions) {
-  const { tools, resourceSearchers, callTool, MentionNode, MentionDropdown } = options;
+  const { tools, resourceSearchers, callTool, MentionNode, MentionDropdown } =
+    options;
   const toolMap = new Map<string, Tool>(tools.map((tool) => [tool.id, tool]));
 
   const suggestion: Partial<SuggestionOptions<MentionItem>> = {
@@ -48,7 +52,7 @@ export function createUnifiedMentions(options: UnifiedMentionsOptions) {
     },
     command: ({ editor, range, props }) => {
       const item = props as MentionItem;
-      
+
       // Build the attributes object based on mention type
       const attrs: Record<string, string> = {
         type: "mention",
@@ -95,7 +99,7 @@ export function createUnifiedMentions(options: UnifiedMentionsOptions) {
       let debounceTimer: number | undefined;
 
       const perIntegrationLimit = 5;
-      
+
       const updateProgressively = (
         baseProps: Record<string, unknown>,
         baseItems: MentionItem[],
@@ -126,7 +130,9 @@ export function createUnifiedMentions(options: UnifiedMentionsOptions) {
         // Prime pending counts for resource searches
         resourceSearchers.forEach((searcher) => {
           searcher.searchToolNames.forEach((toolName) => {
-            const resourceName = toolName.replace(/^DECO_RESOURCE_/, "").replace(/_SEARCH$/, "");
+            const resourceName = toolName
+              .replace(/^DECO_RESOURCE_/, "")
+              .replace(/_SEARCH$/, "");
             const pendingKey = `${searcher.integration.id}:${resourceName}`;
             pendingCount.set(pendingKey, 1);
           });
@@ -142,9 +148,11 @@ export function createUnifiedMentions(options: UnifiedMentionsOptions) {
         const searches = resourceSearchers.flatMap((searcher) =>
           searcher.searchToolNames.map((toolName) => {
             // Extract resource name from tool name: DECO_RESOURCE_<NAME>_SEARCH
-            const resourceName = toolName.replace(/^DECO_RESOURCE_/, "").replace(/_SEARCH$/, "");
+            const resourceName = toolName
+              .replace(/^DECO_RESOURCE_/, "")
+              .replace(/_SEARCH$/, "");
             const pendingKey = `${searcher.integration.id}:${resourceName}`;
-            
+
             return callTool(searcher.connection, {
               name: toolName,
               arguments: {
@@ -165,29 +173,35 @@ export function createUnifiedMentions(options: UnifiedMentionsOptions) {
                   .map((r: unknown): MentionItem => {
                     const resource = r as Record<string, unknown>;
                     // Handle both flat and nested data structures
-                    const data = (resource?.data as Record<string, unknown>) ?? resource;
-                    const name = (data?.name as string) ?? (resource?.name as string);
-                    const title = (data?.title as string) ?? (resource?.title as string);
-                    const description = (data?.description as string) ?? (resource?.description as string);
-                    
+                    const data =
+                      (resource?.data as Record<string, unknown>) ?? resource;
+                    const name =
+                      (data?.name as string) ?? (resource?.name as string);
+                    const title =
+                      (data?.title as string) ?? (resource?.title as string);
+                    const description =
+                      (data?.description as string) ??
+                      (resource?.description as string);
+
                     return {
                       id:
                         (resource?.uri as string) ??
                         `${searcher.integration.id}:${name ?? ""}`,
                       type: "resource",
                       label:
-                        title ??
-                        name ??
-                        (resource?.uri as string) ??
-                        "Unknown",
+                        title ?? name ?? (resource?.uri as string) ?? "Unknown",
                       description: description,
                       resource: {
                         name: name ?? resourceName,
                         title: title,
                         description: description,
                         uri: resource?.uri as string,
-                        mimeType: (data?.mimeType as string) ?? (resource?.mimeType as string),
-                        annotations: (data?.annotations as Record<string, string>) ?? (resource?.annotations as Record<string, string>),
+                        mimeType:
+                          (data?.mimeType as string) ??
+                          (resource?.mimeType as string),
+                        annotations:
+                          (data?.annotations as Record<string, string>) ??
+                          (resource?.annotations as Record<string, string>),
                       },
                       integration: searcher.integration,
                       resourceType: resourceName,
@@ -221,7 +235,7 @@ export function createUnifiedMentions(options: UnifiedMentionsOptions) {
               });
           }),
         );
-        
+
         // Finalize loading state once all searches have settled
         Promise.allSettled(searches).then(() => {
           if (mySerial !== activeSerial) return; // cancelled
@@ -430,4 +444,3 @@ export function createUnifiedMentions(options: UnifiedMentionsOptions) {
     },
   });
 }
-

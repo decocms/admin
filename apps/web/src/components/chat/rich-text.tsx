@@ -1,13 +1,13 @@
 import { type Integration, useIntegrations, callTool } from "@deco/sdk";
-import { Binding, WellKnownBindings } from "@deco/sdk/mcp/bindings";
 import { cn } from "@deco/ui/lib/utils.ts";
 import { createUnifiedMentions } from "@deco/ui/components/rich-text-editor/extensions/unified-mentions.ts";
 import { MentionNode } from "@deco/ui/components/rich-text-editor/extensions/mention-node.tsx";
 import { MentionDropdown } from "@deco/ui/components/rich-text-editor/components/mention-dropdown.tsx";
+import type { MentionItem } from "@deco/ui/components/rich-text-editor/types.ts";
 import Placeholder from "@tiptap/extension-placeholder";
 import { EditorContent, type Extensions, useEditor } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
-import { useEffect, useMemo, useCallback } from "react";
+import { useEffect, useMemo } from "react";
 import { Markdown } from "tiptap-markdown";
 import { NoNewLine } from "./extensions/no-new-line.ts";
 import { useAgent } from "../agent/provider.tsx";
@@ -105,7 +105,7 @@ export function RichTextArea({
       .filter((integration) => {
         // Filter out workspace-management to avoid duplicate document results
         if (integration.id === "i:workspace-management") return false;
-        
+
         const toolsList = integration.tools ?? [];
         return toolsList.some((t) => SEARCH_TOOL_RE.test(t.name));
       })
@@ -144,7 +144,7 @@ export function RichTextArea({
   // Create wrapper for MentionDropdown - use a ref to ensure stable function reference
   const MentionDropdownWithAvatar = useMemo(() => {
     return function MentionDropdownWrapper(props: any) {
-      const wrappedCommand = (item: any) => {
+      const wrappedCommand = (item: MentionItem) => {
         // Handle tool selection - add to agent's toolset
         if (item.type === "tool") {
           appendIntegrationTool(item.tool.integration.id, item.tool.name);
@@ -190,7 +190,7 @@ export function RichTextArea({
         createUnifiedMentions({
           tools,
           resourceSearchers,
-          callTool,
+          callTool: (connection, args) => callTool(connection as Parameters<typeof callTool>[0], args as Parameters<typeof callTool>[1]),
           MentionNode: MentionNodeWithAvatar,
           MentionDropdown: MentionDropdownWithAvatar,
         }),

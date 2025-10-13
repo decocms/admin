@@ -42,4 +42,3 @@ export interface ResourceMentionItem {
 }
 
 export type MentionItem = ToolMentionItem | ResourceMentionItem;
-

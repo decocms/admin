@@ -2,7 +2,7 @@ import { PgSelect } from "drizzle-orm/pg-core";
 import { PgTableWithColumns } from "drizzle-orm/pg-core";
 import { AppContext } from "./context.ts";
 import { assertHasWorkspace, assertHasLocator } from "./assertions.ts";
-import { projects, organizations, agents } from "./schema.ts";
+import { projects, organizations } from "./schema.ts";
 import { eq, or, and } from "drizzle-orm";
 
 /**
@@ -10,14 +10,12 @@ import { eq, or, and } from "drizzle-orm";
  * Curently filters by workspace or project locator.
  * also adds a join to projects and organizations.
  * usable for any table that has a workspace and project_id column.
+ *
+ * https://orm.drizzle.team/docs/dynamic-query-building
  */
 export function withOwnershipChecking<
   T extends PgSelect,
-  Name extends string,
-  Cols extends {
-    workspace: (typeof agents)["workspace"];
-    project_id: (typeof agents)["project_id"];
-  },
+  TableName extends string,
 >({
   query,
   table,
@@ -25,10 +23,11 @@ export function withOwnershipChecking<
 }: {
   query: T;
   table: PgTableWithColumns<{
-    name: Name;
+    name: TableName;
     dialect: "pg";
     schema: undefined;
-    columns: Cols;
+    // deno-lint-ignore no-explicit-any
+    columns: any;
   }>;
   ctx: AppContext;
 }) {

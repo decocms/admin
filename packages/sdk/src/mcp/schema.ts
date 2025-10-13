@@ -14,7 +14,7 @@ import {
   index,
 } from "drizzle-orm/pg-core";
 import { WELL_KNOWN_PLANS } from "../plan";
-import type { MCPConnection } from "../models";
+import type { MCPConnection, Statement } from "../models";
 
 /**
  * create table public.deco_chat_plans (
@@ -381,12 +381,16 @@ export const apiKeys = pgTable(
   {
     id: uuid("id").primaryKey().defaultRandom(),
     name: text("name").notNull(),
-    workspace: text("workspace").notNull(),
+    workspace: text("workspace"),
     enabled: boolean("enabled").notNull().default(true),
-    policies: jsonb("policies"),
-    created_at: timestamp("created_at").defaultNow(),
-    updated_at: timestamp("updated_at").defaultNow(),
-    deleted_at: timestamp("deleted_at"),
+    policies: jsonb("policies").$type<Statement[]>(),
+    created_at: timestamp("created_at", { mode: "string" })
+      .defaultNow()
+      .notNull(),
+    updated_at: timestamp("updated_at", { mode: "string" })
+      .defaultNow()
+      .notNull(),
+    deleted_at: timestamp("deleted_at", { mode: "string" }),
     project_id: uuid("project_id").references(() => projects.id),
   },
   (table) => [

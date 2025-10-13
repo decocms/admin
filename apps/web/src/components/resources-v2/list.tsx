@@ -163,6 +163,8 @@ function ResourcesV2ListTab({
   const listQuery = useQuery({
     queryKey: ["resources-v2-list", integrationId, resourceName, deferredQ],
     enabled: Boolean(integration && resourceName),
+    staleTime: 0, // Always consider data stale so it refetches when invalidated
+    refetchOnMount: "always", // Always refetch when component mounts
     queryFn: async () => {
       const result = (await callTool(integration!.connection, {
         name: `DECO_RESOURCE_${resourceName!.toUpperCase()}_SEARCH`,

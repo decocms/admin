@@ -20,6 +20,7 @@ import {
   type ResourceMessage,
 } from "../../lib/broadcast-channels.ts";
 import { useSearchParams } from "react-router";
+import { useQueryClient } from "@tanstack/react-query";
 
 // Document type inferred from the Zod schema
 export type DocumentDefinition = z.infer<typeof DocumentDefinitionSchema>;
@@ -42,6 +43,7 @@ interface DocumentDetailProps {
 export function DocumentDetail({ resourceUri }: DocumentDetailProps) {
   const { locator } = useSDK();
   const [searchParams, setSearchParams] = useSearchParams();
+  const queryClient = useQueryClient();
   const {
     data: resource,
     isLoading: isLoading,
@@ -118,11 +120,27 @@ export function DocumentDetail({ resourceUri }: DocumentDetailProps) {
         // Auto-refresh when this resource is updated
         shouldSyncRef.current = true;
         refetch();
+
+        // Invalidate queries so the list and other views show updated data
+        // Extract integration ID from resource URI (format: rsc://integration-id/resource-type/resource-name)
+        const integrationId = resourceUri.split("/")[2];
+
+        // Invalidate the specific document detail query
+        queryClient.invalidateQueries({
+          queryKey: ["document"],
+          refetchType: "all",
+        });
+
+        // Invalidate the document list query
+        queryClient.invalidateQueries({
+          queryKey: ["resources-v2-list", integrationId, "document"],
+          refetchType: "all",
+        });
       }
     });
 
     return cleanup;
-  }, [resourceUri, refetch]);
+  }, [resourceUri, refetch, queryClient]);
 
   // Update URL when resource URI changes (e.g., after agent renames the document)
   useEffect(() => {

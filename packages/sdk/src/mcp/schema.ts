@@ -92,10 +92,10 @@ export const projects = pgTable(
     title: text("title").notNull(),
     icon: text("icon"),
     description: text("description"),
-    org_id: bigint("org_id", { mode: "bigint" })
+    org_id: bigint("org_id", { mode: "number" })
       .notNull()
       .references(() => organizations.id),
-    created_at: timestamp("created_at").defaultNow(),
+    created_at: timestamp("created_at", { mode: "string" }).defaultNow().notNull(),
   },
   (table) => [
     uniqueIndex("deco_chat_projects_slug_org_id_unique").on(

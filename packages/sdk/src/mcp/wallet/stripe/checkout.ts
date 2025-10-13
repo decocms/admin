@@ -60,6 +60,7 @@ const getOrCreateWorkspaceStripeCustomer = async (
   await ctx.db.from("deco_chat_customer").insert({
     customer_id: customer.id,
     workspace,
+    org_id: orgId,
   });
 
   return customer;

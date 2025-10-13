@@ -25,4 +25,20 @@ export const relations = defineRelations(schema, (r) => ({
       to: r.registryApps.scope_id,
     }),
   },
+  organizations: {
+    members: r.many.members({
+      from: r.organizations.id,
+      to: r.members.team_id,
+    }),
+  },
+  members: {
+    organization: r.one.organizations({
+      from: r.members.team_id,
+      to: r.organizations.id,
+    }),
+    user: r.one.profiles({
+      from: r.members.user_id,
+      to: r.profiles.user_id,
+    }),
+  },
 }));

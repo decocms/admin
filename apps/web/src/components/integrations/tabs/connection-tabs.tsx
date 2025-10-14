@@ -698,7 +698,6 @@ function V2Section({
   selectedIntegration,
   checker,
   uiComponent,
-  featureName,
   emptyStateConfig,
 }: {
   selectedIntegration: Integration;
@@ -718,7 +717,7 @@ function V2Section({
     description: string;
   };
 }) {
-  const { isLoading, isCompliant, missingMessage } = useCompliance(
+  const { isLoading, isCompliant } = useCompliance(
     selectedIntegration.connection,
     checker,
   );

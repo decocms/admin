@@ -7,10 +7,12 @@ import {
 import { Icon } from "@deco/ui/components/icon.tsx";
 import { Spinner } from "@deco/ui/components/spinner.tsx";
 import { cn } from "@deco/ui/lib/utils.ts";
-import { useMemo, useRef, useState } from "react";
+import { lazy, Suspense, useMemo, useRef, useState } from "react";
 import { useAgent } from "../agent/provider.tsx";
 import { Picker } from "./chat-picker.tsx";
 import { AgentCard } from "./tools/agent-card.tsx";
+
+const LazyHighlighter = lazy(() => import("./lazy-highlighter.tsx"));
 import {
   HostingAppDeploy,
   HostingAppToolLike,
@@ -81,6 +83,126 @@ function isCustomUITool(toolName: string): toolName is CustomUITool {
   return CUSTOM_UI_TOOLS.includes(toolName as CustomUITool);
 }
 
+function TreeNode({
+  nodeKey,
+  value,
+  level = 0,
+}: {
+  nodeKey?: string;
+  value: unknown;
+  level?: number;
+}) {
+  const [isOpen, setIsOpen] = useState(level === 0);
+  const indent = level * 16;
+
+  const getValueType = (val: unknown): string => {
+    if (val === null) return "null";
+    if (Array.isArray(val)) return "array";
+    if (typeof val === "object") return "object";
+    return typeof val;
+  };
+
+  const getCount = (val: unknown): number | null => {
+    if (Array.isArray(val)) return val.length;
+    if (val && typeof val === "object") return Object.keys(val).length;
+    return null;
+  };
+
+  const isExpandable = (val: unknown): boolean => {
+    return (
+      (Array.isArray(val) && val.length > 0) ||
+      (val !== null &&
+        typeof val === "object" &&
+        Object.keys(val as object).length > 0)
+    );
+  };
+
+  const valueType = getValueType(value);
+  const count = getCount(value);
+  const canExpand = isExpandable(value);
+
+  // Render primitive values
+  if (!canExpand) {
+    return (
+      <div
+        style={{ paddingLeft: `${indent}px` }}
+        className="flex items-start gap-2 py-1 text-sm leading-normal"
+      >
+        <div className="w-4 flex-shrink-0" />{" "}
+        {/* Space for chevron alignment */}
+        {nodeKey && (
+          <span className="text-[#82AAFF] flex-shrink-0">{nodeKey}:</span>
+        )}
+        {value === null ? (
+          <span className="text-[#C792EA] break-words">null</span>
+        ) : typeof value === "boolean" ? (
+          <span className="text-[#C792EA] break-words">{value.toString()}</span>
+        ) : typeof value === "number" ? (
+          <span className="text-[#F78C6C] break-words">{value}</span>
+        ) : typeof value === "string" ? (
+          <span className="text-[#C3E88D] break-words">{value}</span>
+        ) : (
+          <span className="text-[#EEFFFF] break-words">{String(value)}</span>
+        )}
+      </div>
+    );
+  }
+
+  // Render expandable objects/arrays
+  const entries = Array.isArray(value)
+    ? value.map((item, index) => [index.toString(), item] as const)
+    : Object.entries(value as Record<string, unknown>);
+
+  return (
+    <div className="text-sm">
+      <button
+        type="button"
+        onClick={(e) => {
+          e.stopPropagation();
+          setIsOpen(!isOpen);
+        }}
+        style={{ paddingLeft: `${indent}px` }}
+        className="flex items-start gap-2 py-1 w-full text-left hover:bg-white/5 transition-colors rounded leading-normal"
+      >
+        <Icon
+          name="chevron_right"
+          className={cn(
+            "w-4 h-4 text-[#546E7A] transition-transform flex-shrink-0 mt-0.5",
+            isOpen && "rotate-90",
+          )}
+        />
+        {nodeKey && (
+          <span className="text-[#82AAFF] flex-shrink-0">{nodeKey}</span>
+        )}
+        <span className="text-[#546E7A]">
+          {valueType}{" "}
+          {count !== null && (
+            <span className="text-[#89DDFF]">{`{${count}}`}</span>
+          )}
+        </span>
+      </button>
+      {isOpen && (
+        <div>
+          {entries.map(([key, val]) => (
+            <TreeNode key={key} nodeKey={key} value={val} level={level + 1} />
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function JsonTreeView({ data }: { data: unknown }) {
+  return (
+    <div
+      className="p-4 text-sm overflow-auto rounded-lg max-h-[500px]"
+      style={{ background: "#263238" }}
+    >
+      <TreeNode value={data} level={0} />
+    </div>
+  );
+}
+
 function ToolStatus({
   tool,
   isLast,
@@ -91,7 +213,8 @@ function ToolStatus({
   isSingle: boolean;
 }) {
   const [isExpanded, setIsExpanded] = useState(false);
-  const [showCopyButton, setShowCopyButton] = useState(false);
+  const [showButtons, setShowButtons] = useState(false);
+  const [viewMode, setViewMode] = useState<"code" | "tree">("code");
   const contentRef = useRef<HTMLDivElement>(null);
 
   const getIcon = (state: string) => {
@@ -153,15 +276,25 @@ function ToolStatus({
     navigator.clipboard.writeText(getToolJson());
   };
 
+  const getToolData = () => {
+    return {
+      toolName: tool.toolName,
+      state: tool.state,
+      input: tool.input,
+      output: tool.output,
+      errorText: tool.errorText,
+    };
+  };
+
   return (
     <div
       className={cn(
         "flex flex-col relative",
-        isSingle && "p-4 hover:bg-accent rounded-2xl",
+        isSingle && "p-4 hover:bg-accent/25 rounded-2xl",
       )}
       onClick={isSingle ? onClick : undefined}
-      onMouseEnter={() => setShowCopyButton(true)}
-      onMouseLeave={() => setShowCopyButton(false)}
+      onMouseEnter={() => setShowButtons(true)}
+      onMouseLeave={() => setShowButtons(false)}
     >
       <div className="flex items-start gap-2">
         <button
@@ -184,7 +317,7 @@ function ToolStatus({
               <div className="w-[1px] h-[150%] bg-muted absolute top-5 left-1/2 transform -translate-x-1/2" />
             )}
           </div>
-          <div className="flex-1">
+          <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2">
               <div className="font-medium truncate max-w-[60vw] md:max-w-full">
                 {getToolName()}
@@ -194,43 +327,77 @@ function ToolStatus({
                 name="chevron_right"
               />
             </div>
-
-            {isExpanded && (
-              <div
-                ref={contentRef}
-                className="text-left mt-2 rounded-lg bg-primary border border-border overflow-hidden w-full relative"
-                onClick={(e) => e.stopPropagation()}
-              >
-                {showCopyButton && (
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleCopy();
-                    }}
-                    className="absolute top-2 right-2 p-1 rounded-full hover:bg-muted transition-colors"
-                    title="Copy tool details"
-                  >
-                    <Icon
-                      name="content_copy"
-                      className="w-4 h-4 text-muted-foreground"
-                    />
-                  </Button>
-                )}
-                <pre
-                  className="p-4 text-xs whitespace-pre-wrap break-all overflow-y-auto max-h-[500px]"
-                  onClick={(e) => e.stopPropagation()}
-                >
-                  <code className="text-primary-foreground select-text cursor-auto">
-                    {getToolJson()}
-                  </code>
-                </pre>
-              </div>
-            )}
           </div>
         </button>
       </div>
+
+      {isExpanded && (
+        <div
+          ref={contentRef}
+          className="text-left mt-2 rounded-lg overflow-hidden w-full relative min-w-0 grid"
+          onClick={(e) => e.stopPropagation()}
+        >
+          {showButtons && (
+            <div className="absolute top-2 right-2 flex items-center bg-background gap-0.5 shadow-sm rounded-md z-10">
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setViewMode((prev) => (prev === "code" ? "tree" : "code"));
+                }}
+                className="size-8 rounded-none rounded-l-md hover:bg-accent/50 transition-colors"
+                title={
+                  viewMode === "code" ? "Show tree view" : "Show code view"
+                }
+              >
+                <Icon
+                  name={viewMode === "code" ? "account_tree" : "code"}
+                  className="w-4 h-4 text-muted-foreground"
+                />
+              </Button>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleCopy();
+                }}
+                className="size-8 rounded-none rounded-r-md hover:bg-accent/50 transition-colors"
+                title="Copy tool details"
+              >
+                <Icon
+                  name="content_copy"
+                  className="w-4 h-4 text-muted-foreground"
+                />
+              </Button>
+            </div>
+          )}
+          <div
+            className="overflow-x-auto overflow-y-auto max-h-[500px] min-w-0"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {viewMode === "code" ? (
+              <Suspense
+                fallback={
+                  <pre
+                    className="p-4 text-xs whitespace-pre-wrap break-all rounded-lg m-0"
+                    style={{ background: "#263238", color: "#EEFFFF" }}
+                  >
+                    <code className="select-text cursor-auto">
+                      {getToolJson()}
+                    </code>
+                  </pre>
+                }
+              >
+                <LazyHighlighter language="json" content={getToolJson()} />
+              </Suspense>
+            ) : (
+              <JsonTreeView data={getToolData()} />
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

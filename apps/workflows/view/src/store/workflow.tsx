@@ -147,9 +147,9 @@ export const WorkflowStoreProvider = ({
         }),
         {
           name: STORAGE_KEY,
-          // OPTIMIZED: Don't persist currentStepIndex to avoid localStorage writes on every navigation
           partialize: (state) => ({
             workflow: state.workflow,
+            currentStepIndex: state.currentStepIndex,
           }),
         },
       ),

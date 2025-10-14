@@ -12,7 +12,11 @@ import { useExecuteStep } from "../../../hooks/useExecuteStep";
 import { useState, memo, useMemo, useCallback } from "react";
 import { RichTextEditor } from "../../RichTextEditor";
 import { RenderInputViewModal } from "../../RenderInputViewModal";
-import { useCurrentWorkflow, useWorkflowStoreActions } from "@/store/workflow";
+import {
+  useCurrentWorkflow,
+  useWorkflowStoreActions,
+  useWorkflowStepByName,
+} from "@/store/workflow";
 import { StepOutput } from "./step-output";
 import type { WorkflowStep, WorkflowDependency } from "shared/types/workflows";
 
@@ -96,6 +100,7 @@ function JsonView({ jsonString, lines }: JsonViewProps) {
   return (
     <div className="bg-background p-4">
       <div
+        data-scrollable="true"
         className="border border-border rounded bg-muted/30"
         style={{
           maxHeight: "500px",
@@ -259,11 +264,12 @@ export const StepNode = memo(function StepNode({
     viewCode: string;
   } | null>(null);
 
-  const workflow = useCurrentWorkflow();
-  const step = workflow?.steps?.find(
-    (s: WorkflowStep) => s.name === data.stepId,
-  );
+  // OPTIMIZED: Only subscribe to the specific step we need, not entire workflow
+  const step = useWorkflowStepByName(data.stepId);
   const workflowActions = useWorkflowStoreActions();
+
+  // Only get workflow for auth token (used in handleExecuteStep)
+  const workflow = useCurrentWorkflow();
 
   const executeStepMutation = useExecuteStep();
 

@@ -147,6 +147,7 @@ export const WorkflowStoreProvider = ({
         }),
         {
           name: STORAGE_KEY,
+          // OPTIMIZED: Don't persist currentStepIndex to avoid localStorage writes on every navigation
           partialize: (state) => ({
             workflow: state.workflow,
           }),
@@ -823,4 +824,11 @@ export const useNewStepPrompt = () => {
 
 export const useCurrentStepIndex = () => {
   return useWorkflowStore((state) => state.currentStepIndex);
+};
+
+// OPTIMIZED: Selector that only subscribes to a specific step by name
+export const useWorkflowStepByName = (stepName: string) => {
+  return useWorkflowStore((state) =>
+    state.workflow.data.steps?.find((s: WorkflowStep) => s.name === stepName),
+  );
 };

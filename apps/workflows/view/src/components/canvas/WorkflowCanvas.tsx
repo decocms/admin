@@ -63,51 +63,36 @@ const Inner = forwardRef<WorkflowCanvasRef>(function Inner(_, ref) {
     return { x: centeredX, y: 0, zoom: 1 };
   }, []); // Only calculate once on mount
 
-  // Center the viewport on the current step
+  // OPTIMIZED: Center the viewport without expensive DOM queries
   const centerViewport = useCallback(
     (stepIndex: number, animated = true) => {
       if (!steps) return;
 
       isCenteringRef.current = true;
 
-      // Wait for next frame and a bit longer to ensure dynamic content (like StepOutput) is rendered
-      requestAnimationFrame(() => {
-        setTimeout(() => {
-          const container = document.querySelector(".react-flow");
-          if (!container) {
-            isCenteringRef.current = false;
-            return;
-          }
+      // Calculate the X position for the current step
+      const stepX = stepIndex * (CARD_WIDTH + CARD_GAP);
+      const targetX = stepX + CARD_WIDTH / 2;
 
-          // Calculate the X position for the current step
-          const stepX = stepIndex * (CARD_WIDTH + CARD_GAP);
+      // Use fixed estimated height instead of DOM measurement
+      // Most nodes are ~200-400px, center at 250px is a good compromise
+      const estimatedNodeHeight = 250;
+      const targetY = estimatedNodeHeight / 2;
+      const toolbarOffset = 80; // Account for toolbar at bottom
+      const adjustedY = Math.max(0, targetY - toolbarOffset / 2);
 
-          // Get the actual node to calculate its height for proper vertical centering
-          const nodeId =
-            stepIndex === stepsLength ? "new" : steps?.[stepIndex]?.name;
-          const node = document.querySelector(`[data-id="${nodeId}"]`);
-          const nodeHeight = node?.clientHeight || 200; // fallback to 200px if node not found
-
-          // Use setCenter for accurate centering regardless of container size
-          const targetX = stepX + CARD_WIDTH / 2;
-          const targetY = nodeHeight / 2;
-          const toolbarOffset = 80; // Account for toolbar at bottom
-          const adjustedY = Math.max(0, targetY - toolbarOffset / 2);
-
-          rf.setCenter(targetX, adjustedY, {
-            zoom: 1,
-            duration: animated ? 300 : 0,
-          });
-
-          // Allow movement after centering animation completes
-          const delay = animated ? 350 : 50;
-          setTimeout(() => {
-            isCenteringRef.current = false;
-          }, delay);
-        }, 100); // Wait 100ms for dynamic content to render
+      rf.setCenter(targetX, adjustedY, {
+        zoom: 1,
+        duration: animated ? 300 : 0,
       });
+
+      // Allow movement after centering animation completes
+      const delay = animated ? 350 : 50;
+      setTimeout(() => {
+        isCenteringRef.current = false;
+      }, delay);
     },
-    [steps, stepsLength, rf],
+    [steps, rf],
   );
 
   // Center viewport when current step changes - only if step actually changed
@@ -265,41 +250,18 @@ const Inner = forwardRef<WorkflowCanvasRef>(function Inner(_, ref) {
     return;
   }, []);
 
-  // Handle horizontal scroll to navigate between steps
-  // OPTIMIZED: Reduced DOM traversal and better memoization
+  // OPTIMIZED: Handle horizontal scroll to navigate between steps with minimal DOM traversal
   const handleWheel = useCallback(
     (event: React.WheelEvent) => {
       if (!steps || isCenteringRef.current) return;
 
-      // Quick check: if inside a scrollable element, let it scroll
+      // OPTIMIZED: Quick check using closest() - much faster than manual traversal
       const target = event.target as HTMLElement;
 
-      // Check only closest scrollable parents (max 5 levels) instead of traversing entire tree
-      let element: HTMLElement | null = target;
-      let depth = 0;
-      const MAX_DEPTH = 5;
-
-      while (element && element !== event.currentTarget && depth < MAX_DEPTH) {
-        // Use cached styles check - getComputedStyle is expensive
-        const hasScrollableY = element.scrollHeight > element.clientHeight;
-        const hasScrollableX = element.scrollWidth > element.clientWidth;
-
-        if (hasScrollableY || hasScrollableX) {
-          const computedStyle = window.getComputedStyle(element);
-          const overflowY = computedStyle.overflowY;
-          const overflowX = computedStyle.overflowX;
-
-          if (
-            ((overflowY === "auto" || overflowY === "scroll") &&
-              hasScrollableY) ||
-            ((overflowX === "auto" || overflowX === "scroll") && hasScrollableX)
-          ) {
-            return; // Allow native scrolling
-          }
-        }
-
-        element = element.parentElement;
-        depth++;
+      // If target is inside a scrollable container, allow native scrolling
+      // Mark scrollable containers with data-scrollable="true" attribute
+      if (target.closest('[data-scrollable="true"]')) {
+        return;
       }
 
       // Detect horizontal scroll

@@ -59,6 +59,7 @@ export function StepOutput({ step }: { step: StepExecutionResult }) {
         </div>
 
         <div
+          data-scrollable="true"
           className="border border-border rounded bg-muted/30"
           style={{
             maxHeight: "500px",

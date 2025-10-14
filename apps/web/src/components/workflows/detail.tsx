@@ -1,11 +1,11 @@
 // deno-lint-ignore-file no-explicit-any
-import { useWorkflowStatus } from "@deco/sdk";
+import { useWorkflowStatus, useSDK, useRecentResources } from "@deco/sdk";
 import { Badge } from "@deco/ui/components/badge.tsx";
 import { Button } from "@deco/ui/components/button.tsx";
 import { Card, CardContent } from "@deco/ui/components/card.tsx";
 import { Icon } from "@deco/ui/components/icon.tsx";
 import { ScrollArea } from "@deco/ui/components/scroll-area.tsx";
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect, useRef } from "react";
 import { useParams } from "react-router";
 import { DecopilotLayout } from "../layout/decopilot-layout.tsx";
 import { WorkflowFlowVisualization } from "./workflow-flow-visualization.tsx";
@@ -452,6 +452,41 @@ function processStepGraph(graph: any): any[] {
 function WorkflowDetail() {
   const { workflowName = "", instanceId = "" } = useParams();
   const { data } = useWorkflowStatus(workflowName, instanceId);
+  const { locator } = useSDK();
+  const projectKey = typeof locator === "string" ? locator : undefined;
+  const { addRecent } = useRecentResources(projectKey);
+  const params = useParams<{ org: string; project: string }>();
+  const hasTrackedRecentRef = useRef(false);
+
+  // Track as recently opened when workflow is loaded (only once)
+  useEffect(() => {
+    if (
+      data &&
+      workflowName &&
+      instanceId &&
+      projectKey &&
+      params.org &&
+      params.project &&
+      !hasTrackedRecentRef.current
+    ) {
+      hasTrackedRecentRef.current = true;
+      addRecent({
+        id: `${workflowName}-${instanceId}`,
+        name: workflowName,
+        type: "workflow",
+        icon: "account_tree",
+        path: `/${projectKey}/workflows/runs/${workflowName}/instances/${instanceId}`,
+      });
+    }
+  }, [
+    data,
+    workflowName,
+    instanceId,
+    projectKey,
+    params.org,
+    params.project,
+    addRecent,
+  ]);
 
   // Prepare decopilot context value for workflow detail
   const decopilotContextValue = useMemo(() => {

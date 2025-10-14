@@ -3,6 +3,8 @@ import {
   useDocumentByUriV2,
   useUpdateDocument,
   useSDK,
+  useRecentResources,
+  usePinnedResources,
 } from "@deco/sdk";
 import { Button } from "@deco/ui/components/button.tsx";
 import { Icon } from "@deco/ui/components/icon.tsx";
@@ -50,6 +52,12 @@ export function DocumentDetail({ resourceUri }: DocumentDetailProps) {
   } = useDocumentByUriV2(resourceUri);
   const effectiveDocument = resource?.data;
 
+  // Track recent resources
+  // Locator is a string "org/project", not an object
+  const projectKey = typeof locator === "string" ? locator : undefined;
+  const { addRecent } = useRecentResources(projectKey);
+  const { updatePinnedResource } = usePinnedResources(projectKey);
+
   // Local state for inline editing
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
@@ -68,6 +76,7 @@ export function DocumentDetail({ resourceUri }: DocumentDetailProps) {
   const titleRef = useRef<HTMLDivElement>(null);
   const descriptionRef = useRef<HTMLDivElement>(null);
   const shouldSyncRef = useRef(true); // Control when to sync from server
+  const hasTrackedRecentRef = useRef(false); // Track if we've already added to recents
 
   // Update mutation
   const updateMutation = useUpdateDocument();
@@ -104,10 +113,34 @@ export function DocumentDetail({ resourceUri }: DocumentDetailProps) {
           effectiveDocument.description || "";
       }
 
+      // Track as recently opened (only once)
+      if (locator && projectKey && !hasTrackedRecentRef.current) {
+        hasTrackedRecentRef.current = true;
+        addRecent({
+          id: resourceUri,
+          name: effectiveDocument.name,
+          type: "document",
+          icon: "description",
+          path: `/${projectKey}/rsc/i:documents-management/document/${encodeURIComponent(resourceUri)}`,
+        });
+      }
+
+      // Also update pinned resource name if it's pinned
+      updatePinnedResource(resourceUri, {
+        name: effectiveDocument.name,
+      });
+
       // After syncing, don't sync again until explicitly requested
       shouldSyncRef.current = false;
     }
-  }, [effectiveDocument]);
+  }, [
+    effectiveDocument,
+    resourceUri,
+    locator,
+    addRecent,
+    projectKey,
+    updatePinnedResource,
+  ]);
 
   // Reset sync flag when navigating to a different document
   useEffect(() => {

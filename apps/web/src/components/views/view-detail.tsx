@@ -1,8 +1,13 @@
-import { DECO_CMS_API_URL, useViewByUriV2 } from "@deco/sdk";
+import {
+  DECO_CMS_API_URL,
+  useViewByUriV2,
+  useSDK,
+  useRecentResources,
+} from "@deco/sdk";
 import { Button } from "@deco/ui/components/button.tsx";
 import { Icon } from "@deco/ui/components/icon.tsx";
 import { Spinner } from "@deco/ui/components/spinner.tsx";
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useMemo, useState, useEffect, useRef } from "react";
 import { useParams } from "react-router";
 import { PreviewIframe } from "../agent/preview.tsx";
 import { generateViewHTML } from "../../utils/view-template.ts";
@@ -23,6 +28,36 @@ export function ViewDetail({ resourceUri }: ViewDetailProps) {
     refetch,
   } = useViewByUriV2(resourceUri);
   const effectiveView = resource?.data;
+  const { locator } = useSDK();
+  const projectKey = typeof locator === "string" ? locator : undefined;
+  const { addRecent } = useRecentResources(projectKey);
+  const hasTrackedRecentRef = useRef(false);
+
+  // Track as recently opened when view is loaded (only once)
+  useEffect(() => {
+    if (
+      effectiveView &&
+      resourceUri &&
+      projectKey &&
+      org &&
+      project &&
+      !hasTrackedRecentRef.current
+    ) {
+      hasTrackedRecentRef.current = true;
+      // Parse the resource URI to extract integration and resource name
+      // Format: rsc://integration-id/resource-name/resource-id
+      const uriWithoutPrefix = resourceUri.replace("rsc://", "");
+      const [integrationId, resourceName] = uriWithoutPrefix.split("/");
+
+      addRecent({
+        id: resourceUri,
+        name: effectiveView.name,
+        type: "view",
+        icon: "visibility",
+        path: `/${projectKey}/rsc/i:${integrationId}/${resourceName}/${encodeURIComponent(resourceUri)}`,
+      });
+    }
+  }, [effectiveView, resourceUri, projectKey, org, project, addRecent]);
 
   // Local loading state for refresh functionality
   const [isRefreshing, setIsRefreshing] = useState(false);

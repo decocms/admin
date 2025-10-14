@@ -8,6 +8,7 @@ import { Icon } from "@deco/ui/components/icon.tsx";
 import { Spinner } from "@deco/ui/components/spinner.tsx";
 import { cn } from "@deco/ui/lib/utils.ts";
 import { lazy, Suspense, useMemo, useRef, useState } from "react";
+import { ErrorBoundary } from "../../error-boundary.tsx";
 import { useAgent } from "../agent/provider.tsx";
 import { Picker } from "./chat-picker.tsx";
 import { AgentCard } from "./tools/agent-card.tsx";
@@ -83,14 +84,18 @@ function isCustomUITool(toolName: string): toolName is CustomUITool {
   return CUSTOM_UI_TOOLS.includes(toolName as CustomUITool);
 }
 
+const MAX_TREE_DEPTH = 10;
+
 function TreeNode({
   nodeKey,
   value,
   level = 0,
+  visited,
 }: {
   nodeKey?: string;
   value: unknown;
   level?: number;
+  visited?: WeakSet<object>;
 }) {
   const [isOpen, setIsOpen] = useState(level === 0);
   const indent = level * 16;
@@ -120,6 +125,44 @@ function TreeNode({
   const valueType = getValueType(value);
   const count = getCount(value);
   const canExpand = isExpandable(value);
+
+  // Check for max depth
+  if (level >= MAX_TREE_DEPTH && canExpand) {
+    return (
+      <div
+        style={{ paddingLeft: `${indent}px` }}
+        className="flex items-start gap-2 py-1 text-sm leading-normal"
+      >
+        <div className="w-4 flex-shrink-0" />
+        {nodeKey && (
+          <span className="text-[#82AAFF] flex-shrink-0">{nodeKey}:</span>
+        )}
+        <span className="text-[#546E7A] break-words">[Truncated]</span>
+      </div>
+    );
+  }
+
+  // Check for circular reference
+  if (
+    canExpand &&
+    visited &&
+    typeof value === "object" &&
+    value !== null &&
+    visited.has(value)
+  ) {
+    return (
+      <div
+        style={{ paddingLeft: `${indent}px` }}
+        className="flex items-start gap-2 py-1 text-sm leading-normal"
+      >
+        <div className="w-4 flex-shrink-0" />
+        {nodeKey && (
+          <span className="text-[#82AAFF] flex-shrink-0">{nodeKey}:</span>
+        )}
+        <span className="text-[#C792EA] break-words">[Circular]</span>
+      </div>
+    );
+  }
 
   // Render primitive values
   if (!canExpand) {
@@ -153,6 +196,12 @@ function TreeNode({
     ? value.map((item, index) => [index.toString(), item] as const)
     : Object.entries(value as Record<string, unknown>);
 
+  // Add current object to visited set for child nodes
+  const nextVisited = visited || new WeakSet();
+  if (typeof value === "object" && value !== null && !nextVisited.has(value)) {
+    nextVisited.add(value);
+  }
+
   return (
     <div className="text-sm">
       <button
@@ -184,7 +233,13 @@ function TreeNode({
       {isOpen && (
         <div>
           {entries.map(([key, val]) => (
-            <TreeNode key={key} nodeKey={key} value={val} level={level + 1} />
+            <TreeNode
+              key={key}
+              nodeKey={key}
+              value={val}
+              level={level + 1}
+              visited={nextVisited}
+            />
           ))}
         </div>
       )}
@@ -302,6 +357,12 @@ function ToolStatus({
       onClick={isSingle ? onClick : undefined}
       onMouseEnter={() => setShowButtons(true)}
       onMouseLeave={() => setShowButtons(false)}
+      onFocus={() => setShowButtons(true)}
+      onBlur={(e) => {
+        if (!e.currentTarget.contains(e.relatedTarget as Node)) {
+          setShowButtons(false);
+        }
+      }}
     >
       <div className="flex items-start gap-2">
         <button
@@ -391,7 +452,7 @@ function ToolStatus({
             onClick={(e) => e.stopPropagation()}
           >
             {viewMode === "code" ? (
-              <Suspense
+              <ErrorBoundary
                 fallback={
                   <pre
                     className="p-4 text-xs whitespace-pre-wrap break-all rounded-lg m-0"
@@ -403,8 +464,21 @@ function ToolStatus({
                   </pre>
                 }
               >
-                <LazyHighlighter language="json" content={getToolJson()} />
-              </Suspense>
+                <Suspense
+                  fallback={
+                    <pre
+                      className="p-4 text-xs whitespace-pre-wrap break-all rounded-lg m-0"
+                      style={{ background: "#263238", color: "#EEFFFF" }}
+                    >
+                      <code className="select-text cursor-auto">
+                        {getToolJson()}
+                      </code>
+                    </pre>
+                  }
+                >
+                  <LazyHighlighter language="json" content={getToolJson()} />
+                </Suspense>
+              </ErrorBoundary>
             ) : (
               <JsonTreeView data={getToolData()} />
             )}

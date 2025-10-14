@@ -36,7 +36,6 @@ function LazyHighlighter({ language, content }: LazyHighlighterProps) {
         },
       }}
       wrapLongLines
-      PreTag="div"
     >
       {content}
     </SyntaxHighlighter>

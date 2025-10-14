@@ -10,6 +10,7 @@ import { Validator } from "jsonschema";
 import { MCPClientStub } from "../context.ts";
 import { slugify } from "../deconfig/api.ts";
 import { ProjectTools } from "../index.ts";
+import { MCPConnection } from "../../models/mcp.ts";
 
 // Utility functions for consistent naming
 export const toolNameSlugify = (txt: string) => slugify(txt).toUpperCase();
@@ -74,88 +75,82 @@ export const evalCodeAndReturnDefaultHandle = async (
   };
 };
 
+// Symbol to mark lazy env proxies
+export const LAZY_ENV_PROXY = Symbol.for("LAZY_ENV_PROXY");
+
 // Transform current workspace as callable integration environment
-export const asEnv = async (
+export const asEnv = (
   client: MCPClientStub<ProjectTools>,
   {
     authorization,
     workspace,
   }: { authorization?: string; workspace?: string } = {},
 ) => {
-  const { items } = await client.INTEGRATIONS_LIST({});
-
-  const env: Record<
-    string,
-    Record<string, (args: unknown) => Promise<unknown>>
-  > = {};
-
-  for (const item of items) {
-    if (!("tools" in item)) {
-      continue;
-    }
-    const tools = item.tools;
-
-    if (!Array.isArray(tools)) {
-      continue;
-    }
-
-    env[item.id] = Object.fromEntries(
-      tools.map((tool) => [
-        tool.name,
-        async (args: unknown) => {
-          const inputValidation = validate(args, tool.inputSchema);
-
-          if (!inputValidation.valid) {
-            throw new Error(
-              `Input validation failed: ${inspect(inputValidation)}`,
-            );
-          }
-
-          let connection = item.connection;
-
-          if (authorization && workspace) {
-            connection = proxyConnectionForId(item.id, {
-              workspace: workspace,
-              token: authorization,
-            });
-          }
-
-          const response = await client.INTEGRATIONS_CALL_TOOL({
-            connection,
-            params: {
-              name: tool.name,
-              arguments: args as Record<string, unknown>,
-            },
+  const cache = new Map<string, MCPConnection>();
+  // Create a function that can be called to access integrations and tools
+  // This function will be properly serialized to QuickJS
+  const envAccessor = (integrationId: string, toolName: string) => {
+    return async (args: unknown) => {
+      let connection;
+      if (authorization && workspace) {
+        connection = proxyConnectionForId(integrationId, {
+          workspace: workspace,
+          token: authorization,
+        });
+      } else {
+        connection = cache.get(integrationId);
+        if (!connection) {
+          const mConnection = await client.INTEGRATIONS_GET({
+            id: integrationId,
           });
-
-          if (response.isError) {
-            throw new Error(
-              `Tool ${tool.name} returned an error: ${inspect(response)}`,
-            );
-          }
-
-          if (response.structuredContent && tool.outputSchema) {
-            const outputValidation = validate(
-              response.structuredContent,
-              tool.outputSchema,
-            );
-
-            if (!outputValidation.valid) {
-              throw new Error(
-                `Output validation failed: ${inspect(outputValidation)}`,
-              );
-            }
-
-            return response.structuredContent;
-          }
-
-          return response.structuredContent || response.content;
+          cache.set(integrationId, mConnection.connection);
+        }
+        connection = cache.get(integrationId);
+      }
+      const response = await client.INTEGRATIONS_CALL_TOOL({
+        connection,
+        params: {
+          name: toolName,
+          arguments: args as Record<string, unknown>,
         },
-      ]),
-    );
-  }
+      });
 
-  return env;
+      if (response.isError) {
+        throw new Error(
+          `Tool ${toolName} returned an error: ${inspect(response)}`,
+        );
+      }
+
+      return response.structuredContent || response.content;
+    };
+  };
+
+  // Create a target object that will hold the accessor function
+  const target: Record<string | symbol, unknown> = {
+    [LAZY_ENV_PROXY]: envAccessor,
+  };
+
+  // Create the nested proxy structure
+  const envProxy = new Proxy(target, {
+    get(targetObj, prop) {
+      // Return the symbol property directly from the target
+      if (prop === LAZY_ENV_PROXY) {
+        return targetObj[LAZY_ENV_PROXY];
+      }
+
+      // For integration IDs, return a nested proxy for tool access
+      return new Proxy(
+        {},
+        {
+          get(_, toolName) {
+            return envAccessor(prop as string, toolName as string);
+          },
+        },
+      );
+    },
+  });
+
+  return envProxy;
 };
 
 // Helper function to process execute code (inline only)
@@ -206,4 +201,126 @@ export async function validateExecuteCode(
       error: `Validation error for ${name}: ${inspect(error)}`,
     };
   }
+}
+
+/**
+ * Run code in a workflow step context
+ */
+export async function runCode(
+  workflowInput: unknown,
+  state: WorkflowState,
+  step: CodeStepDefinition,
+  client: MCPClientStub<ProjectTools>,
+  runtimeId: string = "default",
+): Promise<Rpc.Serializable<unknown>> {
+  // Load and execute the code step function
+  using stepEvaluation = await evalCodeAndReturnDefaultHandle(
+    step.execute,
+    runtimeId,
+  );
+  const {
+    ctx: stepCtx,
+    defaultHandle: stepDefaultHandle,
+    guestConsole: stepConsole,
+  } = stepEvaluation;
+
+  // Create step context with WellKnownOptions
+  const stepContext = {
+    sleep: async (name: string, duration: number) => {
+      await state.sleep(name, duration);
+    },
+    sleepUntil: async (name: string, date: Date | number) => {
+      await state.sleepUntil(name, date);
+    },
+    readWorkflowInput() {
+      return workflowInput;
+    },
+    readStepResult(stepName: string) {
+      if (!state.steps[stepName]) {
+        throw new Error(`Step '${stepName}' has not been executed yet`);
+      }
+      return state.steps[stepName];
+    },
+    env: asEnv(client),
+  };
+
+  // Call the function
+  const stepCallHandle = await callFunction(
+    stepCtx,
+    stepDefaultHandle,
+    undefined,
+    stepContext,
+    {},
+  );
+
+  const result = stepCtx.dump(stepCtx.unwrapResult(stepCallHandle));
+
+  // Log any console output from the step execution
+  if (stepConsole.logs.length > 0) {
+    console.log(`Code step '${step.name}' logs:`, stepConsole.logs);
+  }
+
+  return result as Rpc.Serializable<unknown>;
+}
+
+/**
+ * Run a tool call step in a workflow
+ */
+export async function runTool(
+  input: unknown,
+  step: ToolCallStepDefinition,
+  client: MCPClientStub<ProjectTools>,
+): Promise<Rpc.Serializable<unknown>> {
+  // Find the integration by name or id
+  const { items } = await client.INTEGRATIONS_LIST({});
+
+  const integration = items.find(
+    (item) => item.name === step.integration || item.id === step.integration,
+  );
+
+  if (!integration) {
+    const availableIntegrations = items.map((item) => ({
+      id: item.id,
+      name: item.name,
+    }));
+
+    throw new Error(
+      `Integration '${step.integration}' not found.\n\nAvailable integrations:\n${JSON.stringify(availableIntegrations, null, 2)}`,
+    );
+  }
+
+  // Check if the tool exists in the integration
+  const tools =
+    "tools" in integration && Array.isArray(integration.tools)
+      ? integration.tools
+      : [];
+
+  const tool = tools.find((t) => t.name === step.tool_name);
+
+  if (!tool) {
+    const availableTools = tools.map((t) => ({
+      name: t.name,
+      inputSchema: t.inputSchema,
+      outputSchema: t.outputSchema,
+    }));
+
+    throw new Error(
+      `Tool '${step.tool_name}' not found in integration '${integration.name}' (${integration.id}).\n\nAvailable tools:\n${JSON.stringify(availableTools, null, 2)}`,
+    );
+  }
+
+  const response = await client.INTEGRATIONS_CALL_TOOL({
+    connection: integration.connection,
+    params: {
+      name: step.tool_name,
+      arguments: input as Record<string, unknown>,
+    },
+  });
+
+  if (response.isError) {
+    throw new Error(`Tool call failed: ${inspect(response)}`);
+  }
+
+  return (response.structuredContent ||
+    response.content) as Rpc.Serializable<unknown>;
 }

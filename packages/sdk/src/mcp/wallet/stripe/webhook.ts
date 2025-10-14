@@ -1,10 +1,12 @@
 import Stripe from "stripe";
 import { WebhookEventIgnoredError } from "../../../errors.ts";
-import type { AppContext } from "../../context.ts";
+import { serializeError, type AppContext } from "../../context.ts";
 import type { Transaction } from "../client.ts";
 import { createCurrencyClient, MicroDollar } from "../index.ts";
 import { getPlan } from "../plans.ts";
 import { Markup, type PlanWithTeamMetadata } from "../../../plan.ts";
+import { customers, organizations } from "../../schema.ts";
+import { eq } from "drizzle-orm";
 
 export const verifyAndParseStripeEvent = (
   payload: string,
@@ -97,19 +99,39 @@ async function getWorkspaceByCustomerId({
   customerId: string;
 }): Promise<string> {
   const customerId = context.envVars.TESTING_CUSTOMER_ID || argsCustomerId;
-  const { data, error } = await context.db
-    .from("deco_chat_customer")
-    .select("workspace")
-    .eq("customer_id", customerId)
-    .maybeSingle();
 
-  if (!data || error) {
+  try {
+    const [data] = await context.drizzle
+      .select({ orgId: customers.org_id })
+      .from(customers)
+      .where(eq(customers.customer_id, customerId))
+      .limit(1);
+
+    if (!data) {
+      throw new Error("Customer not found");
+    }
+
+    if (!data.orgId) {
+      throw new Error("Organization ID not found");
+    }
+
+    const [result] = await context.drizzle
+      .select({ orgSlug: organizations.slug })
+      .from(organizations)
+      .where(eq(organizations.id, data.orgId))
+      .limit(1);
+
+    if (!result || !result.orgSlug) {
+      throw new Error("Organization or project not found");
+    }
+
+    return `/shared/${result.orgSlug}`;
+  } catch (error) {
+    console.error("[Stripe Webhook] Error", serializeError(error));
     throw new WebhookEventIgnoredError(
       "Failed to get workspace by customer ID, skipping",
     );
   }
-
-  return data.workspace;
 }
 
 const paymentIntentSucceeded: EventHandler<

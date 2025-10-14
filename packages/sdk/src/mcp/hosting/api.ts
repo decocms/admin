@@ -90,7 +90,7 @@ const Mappers = {
     data: AppRow,
   ): App & {
     id: string;
-    workspace: string;
+    workspace: string | null;
     files: z.infer<typeof FileSchema>[];
   } => {
     const files = Object.entries(
@@ -510,7 +510,7 @@ export const deployFiles = createTool({
       entrypoint: z.string().describe("The entrypoint of the app"),
       hosts: z.array(z.string()).describe("The hosts of the app"),
       id: z.string().describe("The id of the app"),
-      workspace: z.string().describe("The workspace of the app"),
+      workspace: z.string().nullable().describe("The workspace of the app"),
       deploymentId: z
         .string()
         .describe("The deployment id of the app")

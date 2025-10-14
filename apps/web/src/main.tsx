@@ -198,9 +198,13 @@ const DocumentEdit = lazy(() =>
 );
 
 const WorkflowsRunsPage = lazy(() =>
-  wrapWithUILoadingFallback(import("./components/workflows/runs-page.tsx")),
+  wrapWithUILoadingFallback(import("./components/workflows/runs-v2-page.tsx")),
 );
-
+const WorkflowsRunsLegacyPage = lazy(() =>
+  wrapWithUILoadingFallback(
+    import("./components/workflows/runs-legacy-page.tsx"),
+  ),
+);
 const WorkflowDetailPage = lazy(() =>
   wrapWithUILoadingFallback(import("./components/workflows/detail.tsx")),
 );
@@ -213,12 +217,16 @@ const ViewDetail = lazy(() =>
   wrapWithUILoadingFallback(import("./components/views/detail.tsx")),
 );
 
-const ViewsList = lazy(() =>
-  wrapWithUILoadingFallback(import("./components/views/list.tsx")),
-);
-
 const LegacyViewRedirect = lazy(() =>
   wrapWithUILoadingFallback(import("./components/views/legacy-redirect.tsx")),
+);
+
+const ViewsListPage = lazy(() =>
+  wrapWithUILoadingFallback(import("./components/views/list-page.tsx")),
+);
+
+const ViewsLegacyPage = lazy(() =>
+  wrapWithUILoadingFallback(import("./components/views/legacy-list-page.tsx")),
 );
 
 const Store = lazy(() =>
@@ -230,8 +238,9 @@ const ResourcesV2List = lazy(() =>
   wrapWithUILoadingFallback(import("./components/resources-v2/list.tsx")),
 );
 
-const ResourcesV2Detail = lazy(() =>
-  wrapWithUILoadingFallback(import("./components/resources-v2/detail.tsx")),
+// Detail component has its own loading state, no additional Suspense needed
+const ResourcesV2Detail = lazy(
+  () => import("./components/resources-v2/detail.tsx"),
 );
 
 // Workflows resource list
@@ -436,7 +445,8 @@ const router = createBrowserRouter([
             Component: () => <Navigate to="../workflows/triggers" replace />,
           },
           { path: "trigger/:id", Component: TriggerDetails },
-          { path: "views", Component: ViewsList },
+          { path: "views", Component: ViewsListPage },
+          { path: "views/legacy", Component: ViewsLegacyPage },
           { path: "views/:integrationId/:viewName", Component: ViewDetail },
           { path: "views/:id", Component: LegacyViewRedirect },
           { path: "documents", Component: DocumentsListPage },
@@ -444,7 +454,7 @@ const router = createBrowserRouter([
           { path: "documents/:id", Component: DocumentEdit },
           {
             path: "workflow-runs",
-            Component: () => <Navigate to="../workflows/runs" replace />,
+            Component: () => <Navigate to="../workflows/runs-legacy" replace />,
           },
           {
             path: "workflow-runs/:workflowName/instances/:instanceId",
@@ -452,6 +462,7 @@ const router = createBrowserRouter([
           },
           { path: "workflows", Component: WorkflowsListPage },
           { path: "workflows/runs", Component: WorkflowsRunsPage },
+          { path: "workflows/runs-legacy", Component: WorkflowsRunsLegacyPage },
           {
             path: "workflows/runs/:workflowName/instances/:instanceId",
             Component: WorkflowDetailPage,

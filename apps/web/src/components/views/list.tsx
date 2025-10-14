@@ -9,17 +9,13 @@ import { Button } from "@deco/ui/components/button.tsx";
 import { Card, CardContent } from "@deco/ui/components/card.tsx";
 import { Icon } from "@deco/ui/components/icon.tsx";
 import { toast } from "@deco/ui/components/sonner.tsx";
-import { useViewMode } from "@deco/ui/hooks/use-view-mode.ts";
 import { cn } from "@deco/ui/lib/utils.ts";
 import { useDeferredValue, useMemo, useState } from "react";
 import { useNavigateWorkspace } from "../../hooks/use-navigate-workspace.ts";
 import { EmptyState } from "../common/empty-state.tsx";
-import { ListPageHeader } from "../common/list-page-header.tsx";
 import { Table, TableColumn } from "../common/table/index.tsx";
 import { useCurrentTeam } from "../sidebar/team-selector";
 import { Spinner } from "@deco/ui/components/spinner.tsx";
-import { type DecopilotContextValue } from "../decopilot/context.tsx";
-import { DecopilotLayout } from "../layout/decopilot-layout.tsx";
 
 export interface ViewWithStatus {
   isAdded: boolean;
@@ -191,14 +187,17 @@ export function TogglePin({ view }: { view: ViewWithStatus }) {
   );
 }
 
-function ViewsList() {
+interface ViewsListProps {
+  searchTerm?: string;
+  viewMode?: "cards" | "table";
+}
+
+function ViewsList({ searchTerm = "", viewMode = "cards" }: ViewsListProps) {
   const currentTeam = useCurrentTeam();
   const navigateWorkspace = useNavigateWorkspace();
-  const [viewMode, setViewMode] = useViewMode();
   const { data: views = [], isLoading: isLoadingViews } = useIntegrationViews(
     {},
   );
-  const [searchTerm, setSearchTerm] = useState("");
   const deferredSearchTerm = useDeferredValue(searchTerm);
 
   const allViews = useMemo(() => {
@@ -244,79 +243,69 @@ function ViewsList() {
     );
   };
 
-  const decopilotContextValue: DecopilotContextValue = {
-    additionalTools: {},
-  };
-
   return (
-    <DecopilotLayout value={decopilotContextValue}>
-      <div className="flex flex-col h-full p-4">
-        <ListPageHeader
-          input={{
-            placeholder: "Search views",
-            value: searchTerm,
-            onChange: (e) => setSearchTerm(e.target.value),
-          }}
-          view={{ viewMode, onChange: setViewMode }}
-          controlsAlign="start"
-        />
+    <>
+      {isLoadingViews && (
+        <div className="flex justify-center items-center py-8">
+          <Spinner />
+        </div>
+      )}
 
-        {isLoadingViews && (
-          <div className="flex justify-center items-center h-full">
-            <Spinner />
-          </div>
-        )}
-
-        {filteredViews.length > 0 && viewMode === "cards" && (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 py-4">
-            {filteredViews.map((view) => (
-              <Card
-                key={`${view.integration.id}-${view.title}`}
-                className={cn(
-                  "hover:shadow-md transition-shadow cursor-pointer",
-                )}
-                onClick={() => handleViewClick(view)}
-              >
-                <CardContent className="p-4">
-                  <div className="flex items-center gap-3">
-                    <Icon
-                      name={view.icon.toLowerCase()}
-                      className="w-6 h-6 shrink-0"
-                      size={24}
-                    />
-                    <div className="flex-1 min-w-0">
-                      <h3 className="font-medium truncate">
-                        {beautifyViewName(view.title || "")}
-                      </h3>
-                      <p className="text-sm text-muted-foreground truncate">
-                        {view.integration.name}
-                      </p>
-                    </div>
+      {filteredViews.length > 0 && viewMode === "cards" && (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {filteredViews.map((view) => (
+            <Card
+              key={`${view.integration.id}-${view.title}`}
+              className={cn(
+                "group cursor-pointer hover:shadow-sm transition-shadow overflow-hidden bg-card border-0 min-h-48",
+              )}
+              onClick={() => handleViewClick(view)}
+            >
+              <CardContent className="p-5 h-full">
+                <div className="flex items-center gap-3 h-full">
+                  <Icon
+                    name={view.icon.toLowerCase()}
+                    className="w-6 h-6 shrink-0"
+                    size={24}
+                  />
+                  <div className="flex-1 min-w-0">
+                    <h3 className="font-medium truncate text-base">
+                      {beautifyViewName(view.title || "")}
+                    </h3>
+                    <p className="text-sm text-muted-foreground truncate">
+                      {view.integration.name}
+                    </p>
+                  </div>
+                  <div onClick={(e) => e.stopPropagation()}>
                     <TogglePin view={view} />
                   </div>
-                </CardContent>
-              </Card>
-            ))}
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      )}
+
+      {filteredViews.length > 0 && viewMode === "table" && (
+        <div className="overflow-x-auto -mx-16 px-16">
+          <div className="w-fit min-w-full max-w-[1500px] mx-auto">
+            <TableView views={filteredViews} onConfigure={handleViewClick} />
           </div>
-        )}
+        </div>
+      )}
 
-        {filteredViews.length > 0 && viewMode === "table" && (
-          <TableView views={filteredViews} onConfigure={handleViewClick} />
-        )}
-
-        {filteredViews.length === 0 && !isLoadingViews && (
-          <EmptyState
-            icon="dashboard"
-            title="No views found"
-            description={
-              deferredSearchTerm
-                ? "No views match your search."
-                : "No view tools are available from your integrations."
-            }
-          />
-        )}
-      </div>
-    </DecopilotLayout>
+      {filteredViews.length === 0 && !isLoadingViews && (
+        <EmptyState
+          icon="dashboard"
+          title="No views found"
+          description={
+            deferredSearchTerm
+              ? "No views match your search."
+              : "No view tools are available from your integrations."
+          }
+        />
+      )}
+    </>
   );
 }
 

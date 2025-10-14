@@ -45,11 +45,14 @@ export const pickCapybaraAvatar = (id?: number) => {
     id ?? Math.floor(WELL_KNOWN_CAPYBARA_AVATARS.length * Math.random());
   const url = WELL_KNOWN_CAPYBARA_AVATARS[index];
 
+  return withImageOptimizeUrl(url);
+};
+
+export const withImageOptimizeUrl = (url: string) => {
   const avatar = new URL("/image-optimize", "https://admin.decocms.com");
   avatar.searchParams.set("src", url);
   avatar.searchParams.set("width", "128");
   avatar.searchParams.set("height", "128");
   avatar.searchParams.set("fit", "cover");
-
   return avatar.href;
 };

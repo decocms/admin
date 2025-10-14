@@ -36,10 +36,7 @@ export {
   useStartWorkflow,
   buildWorkflowUri,
 } from "./hooks/resources-workflow.ts";
-export {
-  useWorkflow as useWorkflowByUriV2,
-  useWorkflowStatus as useWorkflowStatusV2,
-} from "./hooks/resources-workflow.ts";
+export { useWorkflow as useWorkflowByUriV2 } from "./hooks/resources-workflow.ts";
 export {
   useTool as useToolByUriV2,
   useToolCallV2,
@@ -50,7 +47,13 @@ export {
   useUpsertDocument,
   useDeleteDocument,
   buildDocumentUri,
+  useDocuments,
 } from "./hooks/documents.ts";
+export {
+  useViewByUriV2,
+  useUpdateView,
+  useDeleteView,
+} from "./hooks/views.ts";
 export * from "./hooks/store.tsx";
 export * from "./hooks/teams.ts";
 export * from "./hooks/thread.ts";
@@ -60,11 +63,15 @@ export * from "./hooks/wallet.ts";
 export * from "./hooks/workflow-builder.ts";
 export * from "./hooks/workflow-step-generator.ts";
 export * from "./hooks/workflows.ts";
+export * from "./hooks/use-recent-resources.ts";
+export * from "./hooks/use-pinned-resources.ts";
 export {
   WorkflowDefinitionSchema,
   WorkflowStepDefinitionSchema,
+  WorkflowRunDataSchema,
   type WorkflowDefinition,
   type WorkflowStep,
+  type WorkflowRunData,
 } from "./mcp/workflows/schemas.ts";
 
 export {
@@ -76,6 +83,11 @@ export {
   DocumentDefinitionSchema,
   type DocumentDefinition,
 } from "./mcp/documents/schemas.ts";
+
+export {
+  ViewDefinitionSchema,
+  type ViewDefinition,
+} from "./mcp/views/schemas.ts";
 
 export * from "./models/agent.ts";
 export * from "./models/mcp.ts";
@@ -89,3 +101,4 @@ export * from "./theme.ts";
 export * from "./utils/index.ts";
 export * from "./views-pinning.ts";
 export * from "./views.ts";
+export { MCPClient } from "./fetcher.ts";

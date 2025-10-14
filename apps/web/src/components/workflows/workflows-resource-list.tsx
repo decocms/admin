@@ -1,19 +1,21 @@
-import { type ReactNode, useEffect } from "react";
+import { useEffect } from "react";
 import { useSearchParams } from "react-router";
 import { useDecopilotOpen } from "../layout/decopilot-layout.tsx";
 import { ResourcesV2List } from "../resources-v2/list.tsx";
+import { useWorkflowTabs } from "./use-workflow-tabs.ts";
 
 /**
  * Workflows resource list component that renders the ResourcesV2List
  * with the specific integration ID for workflows management
  */
 export function WorkflowsResourceList({
-  headerSlot,
+  resourceName = "workflow",
 }: {
-  headerSlot?: ReactNode;
+  resourceName?: "workflow" | "workflow_run";
 } = {}) {
   const [searchParams] = useSearchParams();
   const { setOpen: setDecopilotOpen } = useDecopilotOpen();
+  const { tabs, activeTab } = useWorkflowTabs();
 
   // Automatically open Decopilot if openDecopilot query param is present
   useEffect(() => {
@@ -26,8 +28,9 @@ export function WorkflowsResourceList({
   return (
     <ResourcesV2List
       integrationId="i:workflows-management"
-      resourceName="workflow"
-      headerSlot={headerSlot}
+      resourceName={resourceName}
+      tabs={tabs}
+      activeTab={activeTab}
     />
   );
 }

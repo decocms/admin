@@ -45,6 +45,7 @@ import { fileURLToPath } from "url";
 import { spawn } from "child_process";
 import { deleteSession, readSession, setToken } from "./lib/session.js";
 import { DECO_CMS_API_LOCAL } from "./lib/constants.js";
+import { readDeconfigHead, writeDeconfigHead } from "./lib/deconfig-head.js";
 import {
   getAppDomain,
   getConfig,
@@ -550,16 +551,37 @@ const deconfigGet = new Command("get")
   .option("-w, --workspace <workspace>", "Workspace name")
   .action(async (path, options) => {
     try {
+      // Read from HEAD file
+      const headConfig = await readDeconfigHead();
+
+      // Merge: CLI flags override HEAD values
+      const finalOptions = {
+        branch: options.branch || headConfig?.branch || "main",
+        workspace: options.workspace || headConfig?.workspace,
+      };
+
       const config = await getConfig({
-        inlineOptions: { workspace: options.workspace },
+        inlineOptions: { workspace: finalOptions.workspace },
       });
+
       await getCommand({
         path,
-        branch: options.branch,
+        branch: finalOptions.branch,
         output: options.output,
         workspace: config.workspace,
         local: config.local,
       });
+
+      // Update HEAD with values used (if flags were provided or HEAD exists)
+      if (options.branch || options.workspace || headConfig) {
+        await writeDeconfigHead({
+          workspace: config.workspace,
+          branch: finalOptions.branch,
+          path: headConfig?.path || ".",
+          pathFilter: headConfig?.pathFilter,
+          local: config.local,
+        });
+      }
     } catch (error) {
       console.error(
         "❌ Get failed:",
@@ -580,18 +602,39 @@ const deconfigPut = new Command("put")
   .option("-w, --workspace <workspace>", "Workspace name")
   .action(async (path, options) => {
     try {
+      // Read from HEAD file
+      const headConfig = await readDeconfigHead();
+
+      // Merge: CLI flags override HEAD values
+      const finalOptions = {
+        branch: options.branch || headConfig?.branch || "main",
+        workspace: options.workspace || headConfig?.workspace,
+      };
+
       const config = await getConfig({
-        inlineOptions: { workspace: options.workspace },
+        inlineOptions: { workspace: finalOptions.workspace },
       });
+
       await putCommand({
         path,
-        branch: options.branch,
+        branch: finalOptions.branch,
         file: options.file,
         content: options.content,
         metadata: options.metadata,
         workspace: config.workspace,
         local: config.local,
       });
+
+      // Update HEAD with values used (if flags were provided or HEAD exists)
+      if (options.branch || options.workspace || headConfig) {
+        await writeDeconfigHead({
+          workspace: config.workspace,
+          branch: finalOptions.branch,
+          path: headConfig?.path || ".",
+          pathFilter: headConfig?.pathFilter,
+          local: config.local,
+        });
+      }
     } catch (error) {
       console.error(
         "❌ Put failed:",
@@ -605,7 +648,7 @@ const deconfigPut = new Command("put")
 const deconfigWatch = new Command("watch")
   .description("Watch a deconfig branch for changes.")
   .option("-b, --branch <branchName>", "Branch name", "main")
-  .option("-p, --path <path>", "Path filter for watching specific files")
+  .option("-p, --path <path>", "Path filter for watching specific files", ".")
   .option(
     "--from-ctime <ctime>",
     "Start watching from this ctime",
@@ -615,16 +658,38 @@ const deconfigWatch = new Command("watch")
   .option("-w, --workspace <workspace>", "Workspace name")
   .action(async (options) => {
     try {
+      // Read from HEAD file
+      const headConfig = await readDeconfigHead();
+
+      // Merge: CLI flags override HEAD values
+      const finalOptions = {
+        branch: options.branch || headConfig?.branch || "main",
+        workspace: options.workspace || headConfig?.workspace,
+        path: options.path || headConfig?.path || ".",
+      };
+
       const config = await getConfig({
-        inlineOptions: { workspace: options.workspace },
+        inlineOptions: { workspace: finalOptions.workspace },
       });
+
       await watchCommand({
-        branch: options.branch,
-        path: options.path,
+        branch: finalOptions.branch,
+        path: finalOptions.path,
         fromCtime: options.fromCtime,
         workspace: config.workspace,
         local: config.local,
       });
+
+      // Update HEAD with values used (if flags were provided or HEAD exists)
+      if (options.branch || options.workspace || options.path || headConfig) {
+        await writeDeconfigHead({
+          workspace: config.workspace,
+          branch: finalOptions.branch,
+          path: finalOptions.path,
+          pathFilter: headConfig?.pathFilter,
+          local: config.local,
+        });
+      }
     } catch (error) {
       console.error(
         "❌ Watch failed:",
@@ -638,7 +703,11 @@ const deconfigWatch = new Command("watch")
 const deconfigClone = new Command("clone")
   .description("Clone a deconfig branch to a local directory.")
   .option("-b, --branch <branchName>", "Branch name to clone", "main")
-  .requiredOption("--path <path>", "Local directory path to clone files to")
+  .requiredOption(
+    "--path <path>",
+    "Local directory path to clone files to",
+    ".",
+  )
   .option("--path-filter <filter>", "Filter files by path pattern")
   .option("-w, --workspace <workspace>", "Workspace name")
   .action(async (options) => {
@@ -668,7 +737,11 @@ const deconfigPush = new Command("push")
     "Push local files to a deconfig branch (rsync-like behavior with change detection)",
   )
   .option("-b, --branch <branchName>", "Branch name to push to", "main")
-  .requiredOption("--path <path>", "Local directory path to push files from")
+  .requiredOption(
+    "--path <path>",
+    "Local directory path to push files from",
+    ".",
+  )
   .option("--path-filter <filter>", "Filter files by path pattern")
   .option("--dry-run", "Show what would be pushed without making changes")
   .option("--watch", "Watch directory for changes and auto-push modified files")
@@ -685,7 +758,7 @@ This command works like rsync:
 - Compares local file hashes with remote file hashes
 - Only uploads changed files (new or modified content)
 - Respects .deconfigignore files (gitignore-style patterns)
-- Built-in patterns: node_modules/, .git/, .DS_Store, *.tmp, *.temp, .env.local
+- Built-in patterns: node_modules/, .git/, .deconfig/, .DS_Store, *.tmp, *.temp, .env.local
 - Watch mode: Monitors directory and auto-pushes changes (500ms debounce)
 
 .deconfigignore syntax (like .gitignore):
@@ -706,18 +779,47 @@ will remain on the remote branch until manually deleted with 'deco deconfig dele
   )
   .action(async (options) => {
     try {
+      // Read from HEAD file
+      const headConfig = await readDeconfigHead();
+
+      // Merge: CLI flags override HEAD values
+      const finalOptions = {
+        branch: options.branch || headConfig?.branch || "main",
+        workspace: options.workspace || headConfig?.workspace,
+        path: options.path || headConfig?.path || ".",
+        pathFilter: options.pathFilter || headConfig?.pathFilter,
+      };
+
       const config = await getConfig({
-        inlineOptions: { workspace: options.workspace },
+        inlineOptions: { workspace: finalOptions.workspace },
       });
+
       await pushCommand({
-        branchName: options.branch,
-        path: options.path,
-        pathFilter: options.pathFilter,
+        branchName: finalOptions.branch,
+        path: finalOptions.path,
+        pathFilter: finalOptions.pathFilter,
         dryRun: options.dryRun,
         watch: options.watch,
         workspace: config.workspace,
         local: config.local,
       });
+
+      // Update HEAD with values used (if flags were provided or HEAD exists)
+      if (
+        options.branch ||
+        options.workspace ||
+        options.path ||
+        options.pathFilter ||
+        headConfig
+      ) {
+        await writeDeconfigHead({
+          workspace: config.workspace,
+          branch: finalOptions.branch,
+          path: finalOptions.path,
+          pathFilter: finalOptions.pathFilter,
+          local: config.local,
+        });
+      }
     } catch (error) {
       console.error(
         "❌ Push failed:",
@@ -731,23 +833,52 @@ will remain on the remote branch until manually deleted with 'deco deconfig dele
 const deconfigPull = new Command("pull")
   .description("Pull changes from a deconfig branch to local directory.")
   .option("-b, --branch <branchName>", "Branch name to pull from", "main")
-  .requiredOption("--path <path>", "Local directory path to pull files to")
+  .requiredOption("--path <path>", "Local directory path to pull files to", ".")
   .option("--path-filter <filter>", "Filter files by path pattern")
   .option("--dry-run", "Show what would be changed without making changes")
   .option("-w, --workspace <workspace>", "Workspace name")
   .action(async (options) => {
     try {
+      // Read from HEAD file
+      const headConfig = await readDeconfigHead();
+
+      // Merge: CLI flags override HEAD values
+      const finalOptions = {
+        branch: options.branch || headConfig?.branch || "main",
+        workspace: options.workspace || headConfig?.workspace,
+        path: options.path || headConfig?.path || ".",
+        pathFilter: options.pathFilter || headConfig?.pathFilter,
+      };
+
       const config = await getConfig({
-        inlineOptions: { workspace: options.workspace },
+        inlineOptions: { workspace: finalOptions.workspace },
       });
+
       await pullCommand({
-        branchName: options.branch,
-        path: options.path,
-        pathFilter: options.pathFilter,
+        branchName: finalOptions.branch,
+        path: finalOptions.path,
+        pathFilter: finalOptions.pathFilter,
         dryRun: options.dryRun,
         workspace: config.workspace,
         local: config.local,
       });
+
+      // Update HEAD with values used (if flags were provided or HEAD exists)
+      if (
+        options.branch ||
+        options.workspace ||
+        options.path ||
+        options.pathFilter ||
+        headConfig
+      ) {
+        await writeDeconfigHead({
+          workspace: config.workspace,
+          branch: finalOptions.branch,
+          path: finalOptions.path,
+          pathFilter: finalOptions.pathFilter,
+          local: config.local,
+        });
+      }
     } catch (error) {
       console.error(
         "❌ Pull failed:",
@@ -770,16 +901,43 @@ const deconfigList = new Command("list")
   .option("-w, --workspace <workspace>", "Workspace name")
   .action(async (options) => {
     try {
+      // Read from HEAD file
+      const headConfig = await readDeconfigHead();
+
+      // Merge: CLI flags override HEAD values
+      const finalOptions = {
+        branch: options.branch || headConfig?.branch || "main",
+        workspace: options.workspace || headConfig?.workspace,
+        pathFilter: options.pathFilter || headConfig?.pathFilter,
+      };
+
       const config = await getConfig({
-        inlineOptions: { workspace: options.workspace },
+        inlineOptions: { workspace: finalOptions.workspace },
       });
+
       await listCommand({
-        branchName: options.branch,
-        pathFilter: options.pathFilter,
+        branchName: finalOptions.branch,
+        pathFilter: finalOptions.pathFilter,
         format: options.format,
         workspace: config.workspace,
         local: config.local,
       });
+
+      // Update HEAD with values used (if flags were provided or HEAD exists)
+      if (
+        options.branch ||
+        options.workspace ||
+        options.pathFilter ||
+        headConfig
+      ) {
+        await writeDeconfigHead({
+          workspace: config.workspace,
+          branch: finalOptions.branch,
+          path: headConfig?.path || ".",
+          pathFilter: finalOptions.pathFilter,
+          local: config.local,
+        });
+      }
     } catch (error) {
       console.error(
         "❌ List failed:",
@@ -797,15 +955,36 @@ const deconfigDelete = new Command("delete")
   .option("-w, --workspace <workspace>", "Workspace name")
   .action(async (path, options) => {
     try {
+      // Read from HEAD file
+      const headConfig = await readDeconfigHead();
+
+      // Merge: CLI flags override HEAD values
+      const finalOptions = {
+        branch: options.branch || headConfig?.branch || "main",
+        workspace: options.workspace || headConfig?.workspace,
+      };
+
       const config = await getConfig({
-        inlineOptions: { workspace: options.workspace },
+        inlineOptions: { workspace: finalOptions.workspace },
       });
+
       await deleteCommand({
         path,
-        branchName: options.branch,
+        branchName: finalOptions.branch,
         workspace: config.workspace,
         local: config.local,
       });
+
+      // Update HEAD with values used (if flags were provided or HEAD exists)
+      if (options.branch || options.workspace || headConfig) {
+        await writeDeconfigHead({
+          workspace: config.workspace,
+          branch: finalOptions.branch,
+          path: headConfig?.path || ".",
+          pathFilter: headConfig?.pathFilter,
+          local: config.local,
+        });
+      }
     } catch (error) {
       console.error(
         "❌ Delete failed:",

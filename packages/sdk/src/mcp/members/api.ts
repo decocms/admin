@@ -876,7 +876,7 @@ export const createIssue = createTool({
     const user = c.user;
 
     // 2. Resolve org_id if orgSlug provided and assert user membership
-    let orgId: bigint | null = null;
+    let orgId: number | null = null;
     if (orgSlug) {
       const [org] = await c.drizzle
         .select({ id: organizations.id })
@@ -894,7 +894,7 @@ export const createIssue = createTool({
 
       if (!org)
         throw new Error("Organization not found or user is not a member");
-      orgId = BigInt(org.id);
+      orgId = org.id;
     }
 
     // 3. Resolve project_id if projectSlug provided

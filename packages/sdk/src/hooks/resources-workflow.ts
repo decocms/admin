@@ -1,4 +1,4 @@
-import { useMutation, useQuery, useSuspenseQuery } from "@tanstack/react-query";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import { WellKnownMcpGroups, formatIntegrationId } from "../crud/groups.ts";
 import { InternalServerError } from "../errors.ts";
 import { MCPClient } from "../fetcher.ts";
@@ -19,7 +19,6 @@ const RESOURCE_WORKFLOW = {
 // Workflow execution tools
 const WORKFLOW_TOOLS = {
   START: "DECO_WORKFLOW_START" as const,
-  GET_STATUS: "DECO_WORKFLOW_GET_STATUS" as const,
 };
 
 // Helper functions
@@ -132,10 +131,6 @@ export interface WorkflowStartParamsV2 {
   state?: Record<string, unknown>;
 }
 
-export interface WorkflowStatusParamsV2 {
-  runId: string;
-}
-
 export function startWorkflow(
   locator: ProjectLocator,
   params: WorkflowStartParamsV2,
@@ -145,17 +140,6 @@ export function startWorkflow(
   const client = workspaceResourceClient(locator) as any;
   // deno-lint-ignore no-explicit-any
   return client[WORKFLOW_TOOLS.START](params as any, { signal });
-}
-
-export function getWorkflowStatus(
-  locator: ProjectLocator,
-  params: WorkflowStatusParamsV2,
-  signal?: AbortSignal,
-) {
-  // deno-lint-ignore no-explicit-any
-  const client = workspaceResourceClient(locator) as any;
-  // deno-lint-ignore no-explicit-any
-  return client[WORKFLOW_TOOLS.GET_STATUS](params as any, { signal });
 }
 
 export const useWorkflow = (workflowUri: string) => {
@@ -187,30 +171,12 @@ export const useStartWorkflow = () => {
       const result = (await startWorkflow(locator, params)) as {
         error?: string;
         runId?: string;
+        uri?: string;
       };
       if (result.error) {
         throw new Error(result.error);
       }
       return result;
-    },
-  });
-};
-
-export const useWorkflowStatus = (runId: string) => {
-  const { locator } = useSDK();
-
-  return useSuspenseQuery({
-    queryKey: ["workflow-status-v2", locator, runId],
-    queryFn: ({ signal }) => getWorkflowStatus(locator, { runId }, signal),
-    retry: (failureCount, error) =>
-      error instanceof InternalServerError && failureCount < 2,
-    refetchInterval: (query) => {
-      const data = query.state.data as { status?: string } | undefined;
-      const status = data?.status;
-      if (status === "completed" || status === "failed") {
-        return false;
-      }
-      return 1000;
     },
   });
 };

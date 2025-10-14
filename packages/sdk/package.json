@@ -7,11 +7,13 @@
     "@ai-sdk/openai": "^2.0.42",
     "@aws-sdk/client-s3": "3.808.0",
     "@aws-sdk/s3-request-presigner": "3.808.0",
-    "@deco/actors": "npm:@jsr/deco__actors@0.34.2",
+    "@deco/actors": "npm:@jsr/deco__actors@0.35.1",
     "@deco/ai": "^1.0.0",
     "@deco/cf-sandbox": "workspace:*",
     "@deco/workers-runtime": "^0.1.0",
     "@libsql/client": "^0.15.10",
+    "@mastra/cloudflare-d1": "^0.13.4",
+    "@mastra/core": "^0.20.2",
     "@microlabs/otel-cf-workers": "^1.0.0-rc.49",
     "@modelcontextprotocol/sdk": "^1.19.1",
     "@opentelemetry/api": "^1.7.0",
@@ -30,6 +32,7 @@
     "@supabase/supabase-js": "2.49.4",
     "@tanstack/react-query": "^5.80.6",
     "@tursodatabase/api": "^1.9.0",
+    "@xyflow/react": "^12.8.6",
     "@zenfs/core": "^2.0.0",
     "ai": "^5.0.61",
     "cloudflare": "^4.5.0",
@@ -44,7 +47,8 @@
     "smol-toml": "^1.3.4",
     "stripe": "18.0.0",
     "uuid": "^11.1.0",
-    "zod": "^3.25.76"
+    "zod": "^3.25.76",
+    "zod-to-json-schema": "^3.24.4"
   },
   "devDependencies": {
     "@cloudflare/workers-types": "^4.20250510.0",

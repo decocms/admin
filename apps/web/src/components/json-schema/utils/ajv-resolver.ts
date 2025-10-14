@@ -1,7 +1,6 @@
 import { ajvResolver as rawAjvResolver } from "@hookform/resolvers/ajv";
-import { Options } from "ajv";
 
-const options: Options = {
+const options = {
   allErrors: true,
   multipleOfPrecision: 8,
   strict: false,

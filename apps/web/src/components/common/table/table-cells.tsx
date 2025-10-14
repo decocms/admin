@@ -39,7 +39,7 @@ function AgentInfo({ agentId, className, noTooltip = false }: AgentInfoProps) {
         }
         size="sm"
       />
-      <span className="truncate hidden md:inline">
+      <span className="truncate hidden md:inline text-sm font-medium text-foreground">
         {agentId === WELL_KNOWN_AGENT_IDS.teamAgent
           ? "New chat"
           : agent
@@ -66,6 +66,8 @@ interface UserInfoProps {
   maxWidth?: string; // Custom max-width for name/email text
   noTooltip?: boolean; // If true, do not wrap with tooltip
   nameOnly?: boolean; // If true, show only the user name (no avatar or email)
+  showEmail?: boolean; // If false, hide email/phone (default true)
+  size?: "default" | "sm" | "xs"; // Avatar and text size (default "default")
 }
 
 function UserInfo({
@@ -75,6 +77,8 @@ function UserInfo({
   maxWidth = "200px", // Default to 200px, but allow customization
   noTooltip = false,
   nameOnly = false,
+  showEmail = true,
+  size = "default",
 }: UserInfoProps) {
   const user = useUser();
   const params = useParams();
@@ -130,7 +134,26 @@ function UserInfo({
 
   // Only get phone metadata if userId looks like a phone number AND we don't have a member
   // (if we have a member, the userId is a user ID, not a phone number)
-  const isPhoneNumber = !member && userId?.match(/^[\d+]/);
+  const isPhoneNumber = useMemo(() => {
+    if (!userId || member) return false;
+
+    // Exclude UUIDs (format: 8-4-4-4-12 with hex characters)
+    if (
+      /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(
+        userId,
+      )
+    ) {
+      return false;
+    }
+
+    // Phone numbers should:
+    // - Start with + or digit
+    // - Contain 10-15 digits after removing formatting
+    // - Not contain letters (UUIDs and IDs often have letters)
+    const normalized = userId.replace(/[\s\-()]/g, "");
+    return /^\+?\d{10,15}$/.test(normalized);
+  }, [userId, member]);
+
   const phoneMetadata = isPhoneNumber ? getPhoneMetadata(userId) : {};
   const { country, stateCode, formattedNumber, flagEmoji } = phoneMetadata;
 
@@ -141,17 +164,25 @@ function UserInfo({
     ? stateCode
     : displayName.slice(0, 1).toUpperCase();
 
+  const avatarSize = size === "xs" ? "2xs" : size === "sm" ? "xs" : "sm";
+  const nameTextSize = "text-sm";
+  const emailTextSize =
+    size === "xs" ? "text-xs" : size === "sm" ? "text-xs" : "text-sm";
+  const avatarGap = size === "xs" ? "gap-1" : "gap-2";
+
   const content = nameOnly ? (
     <span className={`text-xs text-muted-foreground ${className ?? ""}`}>
       {name || "Unknown"}
     </span>
   ) : (
-    <div className={`flex items-center gap-2 min-w-[48px] ${className ?? ""}`}>
+    <div
+      className={`flex items-center ${avatarGap} min-w-[48px] ${className ?? ""}`}
+    >
       <div className="relative">
         <UserAvatar
           url={avatarUrl}
           fallback={avatarFallback}
-          size="sm"
+          size={avatarSize}
           className={stateCode ? "text-[13px] font-semibold" : undefined}
         />
         {flagEmoji ? (
@@ -166,14 +197,14 @@ function UserInfo({
         }`}
       >
         <span
-          className="truncate block text-xs font-medium text-foreground"
+          className={`truncate block ${nameTextSize} font-normal text-foreground`}
           style={{ maxWidth }}
         >
           {displayName}
         </span>
-        {(formattedNumber || displayEmail) && (
+        {showEmail && (formattedNumber || displayEmail) && (
           <span
-            className="truncate block text-xs font-normal text-muted-foreground"
+            className={`truncate block ${emailTextSize} font-normal text-muted-foreground`}
             style={{ maxWidth }}
           >
             {formattedNumber || displayEmail}
@@ -223,10 +254,10 @@ export function DateTimeCell({
     <div
       className={`flex flex-col items-start text-left leading-tight ${className}`}
     >
-      <span className="font-medium text-foreground">
+      <span className="text-sm font-medium text-foreground">
         {format(dateObj, dateFormat)}
       </span>
-      <span className="font-normal text-muted-foreground">
+      <span className="text-xs font-normal text-muted-foreground">
         {format(dateObj, timeFormat)}
       </span>
     </div>
@@ -325,7 +356,9 @@ function ActivityStatusCell({
   return (
     <div className={`flex items-center gap-2 ${className}`}>
       {isActive && <div className="w-2 h-2 bg-success rounded-full"></div>}
-      <span className={isActive ? "text-foreground" : "text-muted-foreground"}>
+      <span
+        className={`text-sm font-medium ${isActive ? "text-foreground" : "text-muted-foreground"}`}
+      >
         {relativeTime}
       </span>
     </div>
@@ -378,7 +411,11 @@ function TimeAgoCell({ value, className = "" }: TimeAgoCellProps) {
   const dateObj = typeof value === "string" ? new Date(value) : value;
   const relativeTime = formatRelativeTime(dateObj);
 
-  return <span className={className}>{relativeTime}</span>;
+  return (
+    <span className={`text-sm text-foreground ${className}`}>
+      {relativeTime}
+    </span>
+  );
 }
 
 export {

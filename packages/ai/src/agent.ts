@@ -1138,8 +1138,8 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
     }
 
     const thread = {
-      threadId: this._thread.threadId,
-      resourceId: this._thread.resourceId,
+      threadId: options?.threadId ?? this._thread.threadId,
+      resourceId: options?.resourceId ?? this._thread.resourceId,
     };
 
     const tracer = (this as any).telemetry?.tracer;

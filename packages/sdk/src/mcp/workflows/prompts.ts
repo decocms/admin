@@ -208,10 +208,20 @@ This allows you to:
 ## Return Value
 
 Returns an object with:
-- \`runId\`: Unique identifier for tracking this workflow execution
-- \`error\`: Error message if workflow failed to start (validation errors, missing workflow, etc.)`;
+- \`runId\`: Unique identifier for tracking this workflow execution (legacy)
+- \`uri\`: The Resources 2.0 URI of the workflow run (format: rsc://i:workflows-management/workflow_run/{runId})
+- \`error\`: Error message if workflow failed to start (validation errors, missing workflow, etc.)
+
+## Monitoring Workflow Execution
+
+After starting a workflow, use the returned \`uri\` with **DECO_RESOURCE_WORKFLOW_RUN_READ** to monitor progress and retrieve results:
+- The workflow_run resource includes status, current step, step results, logs, and timing information
+- For running workflows, call DECO_RESOURCE_WORKFLOW_RUN_READ repeatedly to poll for updates
+- The resource automatically refreshes with the latest execution state`;
 
 export const WORKFLOWS_GET_STATUS_PROMPT = `Get the status and output of a workflow run.
+
+**DEPRECATED**: This tool is deprecated. Use DECO_RESOURCE_WORKFLOW_RUN_READ instead, which provides the same information through the workflow_run resource.
 
 This tool retrieves the current status and results of a workflow execution, including:
 - Current execution status (pending, running, completed, failed)
@@ -221,6 +231,83 @@ This tool retrieves the current status and results of a workflow execution, incl
 - Execution logs and timing information
 
 Use this tool to monitor workflow progress, retrieve results, or debug failed executions.`;
+
+export const WORKFLOW_RUN_READ_PROMPT = `Read the status and results of a workflow run using its Resources 2.0 URI.
+
+## Overview
+
+This tool retrieves comprehensive information about a workflow execution, including real-time status, step results, logs, and timing information. Use this after starting a workflow with DECO_WORKFLOW_START to monitor progress and retrieve results.
+
+## Input
+
+- **uri**: The Resources 2.0 URI of the workflow run (format: rsc://i:workflows-management/workflow_run/{runId})
+  - This URI is returned by DECO_WORKFLOW_START when you start a workflow
+  - You can also search for workflow runs using DECO_RESOURCE_WORKFLOW_RUN_SEARCH
+
+## Return Value
+
+Returns a workflow_run resource object with:
+
+### Core Fields
+- **status**: Current execution status ("pending", "running", "completed", "failed", "errored")
+- **runId**: Unique identifier for this execution
+- **workflowURI**: The URI of the workflow definition that was executed
+
+### Execution Details
+- **currentStep**: Name of the step currently executing (if status is "running")
+- **stepResults**: Object mapping step names to their output values (for completed steps)
+- **finalResult**: The final workflow output (if status is "completed")
+- **partialResult**: Intermediate results from completed steps (if still running)
+
+### Error Information
+- **error**: Error message and details (if status is "failed" or "errored")
+- **logs**: Array of log entries from step execution, including errors and warnings
+
+### Timing
+- **startTime**: Unix timestamp when the workflow started
+- **endTime**: Unix timestamp when the workflow finished (if completed/failed)
+- **created_at**: ISO 8601 timestamp when the run was created
+- **updated_at**: ISO 8601 timestamp of the last status update
+
+### Raw Data
+- **workflowStatus**: Complete raw workflow status from Cloudflare Workflows (for advanced use cases)
+
+## Usage Pattern
+
+\`\`\`javascript
+// 1. Start a workflow
+const { uri } = await DECO_WORKFLOW_START({
+  uri: "rsc://workflow/my-workflow",
+  input: { userId: "123" }
+});
+
+// 2. Monitor execution
+const run = await DECO_RESOURCE_WORKFLOW_RUN_READ({ uri });
+console.log(run.data.status); // "running"
+console.log(run.data.currentStep); // "step-2-process-data"
+
+// 3. Poll until complete
+while (run.data.status === "running" || run.data.status === "pending") {
+  await sleep(2000);
+  run = await DECO_RESOURCE_WORKFLOW_RUN_READ({ uri });
+}
+
+// 4. Get results
+if (run.data.status === "completed") {
+  console.log(run.data.finalResult);
+} else {
+  console.error(run.data.error);
+  console.log(run.data.logs);
+}
+\`\`\`
+
+## Common Use Cases
+
+- **Monitor Progress**: Poll this tool to track workflow execution in real-time
+- **Retrieve Results**: Get the final output once a workflow completes
+- **Debug Failures**: Access error messages and logs when workflows fail
+- **Inspect Steps**: View intermediate results from each completed step
+- **Resume Workflows**: Use partialResult to continue from a checkpoint`;
 export const WORKFLOWS_START_PROMPT = `Execute a multi-step workflow with optional partial execution and state injection.
 
 ## Overview

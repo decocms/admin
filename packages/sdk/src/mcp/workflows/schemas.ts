@@ -142,3 +142,134 @@ export type WorkflowStepDefinition = z.infer<
 // Additional types for compatibility with hooks
 export type Workflow = WorkflowDefinition;
 export type WorkflowStep = WorkflowStepDefinition;
+
+// Workflow run data schema for Resources 2.0
+export const WorkflowRunDataSchema = z.object({
+  name: z.string(),
+  description: z.string().optional(),
+  icon: z.string().optional(),
+  status: z.string(),
+  runId: z.string(),
+  workflowURI: z.string().optional(),
+  // Processed status fields (computed from workflowStatus)
+  currentStep: z
+    .string()
+    .optional()
+    .describe("The name of the step currently being executed (if running)"),
+  stepResults: z
+    .record(z.any())
+    .optional()
+    .describe("Results from completed steps"),
+  finalResult: z
+    .any()
+    .optional()
+    .describe("The final workflow result (if completed)"),
+  partialResult: z
+    .any()
+    .optional()
+    .describe("Partial results from completed steps (if pending/running)"),
+  error: z.string().optional().describe("Error message if the workflow failed"),
+  logs: z
+    .array(
+      z.object({
+        type: z.enum(["log", "warn", "error"]),
+        content: z.string(),
+      }),
+    )
+    .optional()
+    .describe("Console logs from the execution"),
+  startTime: z
+    .number()
+    .optional()
+    .describe("When the workflow started (timestamp)"),
+  endTime: z
+    .number()
+    .optional()
+    .describe("When the workflow ended (timestamp, if completed/failed)"),
+  // Raw workflow status from Cloudflare - frontend handles all transformations
+  workflowStatus: z
+    .object({
+      params: z
+        .object({
+          input: z.any().optional(),
+          steps: z.array(z.any()).optional(),
+          name: z.string().optional(),
+          context: z
+            .object({
+              workspace: z.any().optional(),
+              locator: z.any().optional(),
+              workflowURI: z.string().optional(),
+              startedBy: z
+                .object({
+                  id: z.string(),
+                  email: z.string().optional(),
+                  name: z.string().optional(),
+                })
+                .optional(),
+              startedAt: z.string().optional(),
+            })
+            .passthrough()
+            .optional(),
+        })
+        .passthrough()
+        .nullable()
+        .optional(),
+      trigger: z.object({ source: z.string() }).passthrough().optional(),
+      versionId: z.string().optional(),
+      queued: z.string().optional(),
+      start: z.string().nullable().optional(),
+      end: z.string().nullable().optional(),
+      success: z.boolean().nullable().optional(),
+      steps: z
+        .array(
+          z
+            .object({
+              name: z.string().optional(),
+              type: z.string().optional(),
+              start: z.string().nullable().optional(),
+              end: z.string().nullable().optional(),
+              success: z.boolean().nullable().optional(),
+              output: z.any().optional(),
+              error: z
+                .object({
+                  name: z.string().optional(),
+                  message: z.string().optional(),
+                })
+                .nullable()
+                .optional(),
+              attempts: z
+                .array(
+                  z.object({
+                    start: z.string().nullable().optional(),
+                    end: z.string().nullable().optional(),
+                    success: z.boolean().nullable().optional(),
+                    error: z
+                      .object({
+                        name: z.string().optional(),
+                        message: z.string().optional(),
+                      })
+                      .nullable()
+                      .optional(),
+                  }),
+                )
+                .optional(),
+              config: z.any().optional(),
+            })
+            .passthrough(),
+        )
+        .optional(),
+      error: z
+        .object({
+          name: z.string().optional(),
+          message: z.string().optional(),
+        })
+        .nullable()
+        .optional(),
+      output: z.any().optional(),
+      status: z.string().optional(),
+    })
+    .passthrough()
+    .optional(),
+});
+
+export type WorkflowRunData = z.infer<typeof WorkflowRunDataSchema>;

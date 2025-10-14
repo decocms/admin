@@ -38,6 +38,7 @@ export class DeconfigIgnore {
     const defaultPatterns = [
       "node_modules/",
       ".git/",
+      ".deconfig/",
       ".DS_Store",
       "*.tmp",
       "*.temp",

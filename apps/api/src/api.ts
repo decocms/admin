@@ -21,12 +21,16 @@ import {
   createToolBindingImpl,
   createToolResourceV2Implementation,
   createToolViewsV2,
+  createViewResourceV2Implementation,
+  createViewViewsV2,
   createWorkflowBindingImpl,
   createWorkflowResourceV2Implementation,
+  createWorkflowRunsResourceV2Implementation,
   createWorkflowViewsV2,
   DECONFIG_TOOLS,
   documentViews as legacyDocumentViews,
   EMAIL_TOOLS,
+  viewViews as legacyViewViews,
   getIntegration,
   getPresignedReadUrl_WITHOUT_CHECKING_AUTHORIZATION,
   getRegistryApp,
@@ -575,14 +579,32 @@ const createContextBasedTools = (ctx: Context) => {
     WellKnownMcpGroups.Workflows,
   );
 
+  // Create Resources 2.0 workflow runs resource implementation
+  const workflowRunsResourceV2 = createWorkflowRunsResourceV2Implementation(
+    client,
+    WellKnownMcpGroups.Workflows,
+  );
+
   // Create Resources 2.0 document resource implementation
   const documentResourceV2 = createDocumentResourceV2Implementation(
     client,
     WellKnownMcpGroups.Documents,
   );
 
+  // Create Resources 2.0 view resource implementation
+  const viewResourceV2 = createViewResourceV2Implementation(
+    client,
+    WellKnownMcpGroups.Views,
+  );
+
   const resourcesClient = createMCPToolsStub({
-    tools: [...toolResourceV2, ...workflowResourceV2, ...documentResourceV2],
+    tools: [
+      ...toolResourceV2,
+      ...workflowResourceV2,
+      ...workflowRunsResourceV2,
+      ...documentResourceV2,
+      ...viewResourceV2,
+    ],
     context: appCtx,
   });
 
@@ -616,10 +638,14 @@ const createContextBasedTools = (ctx: Context) => {
   // Create Views 2.0 implementation for document views
   const documentViewsV2 = createDocumentViewsV2();
 
+  // Create Views 2.0 implementation for view views
+  const viewViewsV2 = createViewViewsV2();
+
   // Create legacy workflow views for backward compatibility
 
   const workflowTools = [
     ...workflowResourceV2, // Add new Resources 2.0 implementation
+    ...workflowRunsResourceV2, // Add runs resource implementation
     ...workflowBinding, // Add workflow execution tools
     ...workflowViewsV2, // Add Views 2.0 implementation
     ...legacyWorkflowViews, // Add legacy workflow views
@@ -638,7 +664,18 @@ const createContextBasedTools = (ctx: Context) => {
     ...legacyDocumentViews, // Add legacy document views
   ].map((tool) => ({ ...tool, group: WellKnownMcpGroups.Documents }));
 
-  return [...workflowTools, ...toolsManagementTools, ...documentsTools];
+  const viewsTools = [
+    ...viewResourceV2, // Add new Resources 2.0 implementation
+    ...viewViewsV2, // Add Views 2.0 implementation
+    ...legacyViewViews, // Add legacy view views
+  ].map((tool) => ({ ...tool, group: WellKnownMcpGroups.Views }));
+
+  return [
+    ...workflowTools,
+    ...toolsManagementTools,
+    ...documentsTools,
+    ...viewsTools,
+  ];
 };
 
 app.all(

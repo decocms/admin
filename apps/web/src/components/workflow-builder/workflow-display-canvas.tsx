@@ -1,5 +1,5 @@
 import type { WorkflowDefinition } from "@deco/sdk";
-import { useWorkflowByUriV2 } from "@deco/sdk";
+import { useSDK, useRecentResources, useWorkflowByUriV2 } from "@deco/sdk";
 import { Button } from "@deco/ui/components/button.tsx";
 import { Icon } from "@deco/ui/components/icon.tsx";
 import {
@@ -11,7 +11,7 @@ import {
   useNodesState,
 } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { WorkflowSinkNode } from "./nodes/workflow-sink-node.tsx";
 import { WorkflowSourceNode } from "./nodes/workflow-source-node.tsx";
 import { WorkflowStepDisplayNode } from "./nodes/workflow-step-display-node.tsx";
@@ -57,6 +57,33 @@ export function WorkflowDisplayCanvas({
     refetch,
   } = useWorkflowByUriV2(resourceUri);
   const effectiveWorkflow = resource?.data;
+
+  // Track recent workflows (Resources v2 workflow detail)
+  const { locator } = useSDK();
+  const projectKey = typeof locator === "string" ? locator : undefined;
+  const { addRecent } = useRecentResources(projectKey);
+  const hasTrackedRecentRef = useRef(false);
+
+  useEffect(() => {
+    if (
+      effectiveWorkflow &&
+      resourceUri &&
+      projectKey &&
+      !hasTrackedRecentRef.current
+    ) {
+      hasTrackedRecentRef.current = true;
+      // Defer to next tick to avoid setState during render warnings
+      setTimeout(() => {
+        addRecent({
+          id: resourceUri,
+          name: effectiveWorkflow.name || resourceUri,
+          type: "workflow",
+          icon: "flowchart",
+          path: `/${projectKey}/rsc/i:workflows-management/workflow/${encodeURIComponent(resourceUri)}`,
+        });
+      }, 0);
+    }
+  }, [effectiveWorkflow, resourceUri, projectKey, addRecent]);
 
   // Local loading state for refresh functionality
   const [isRefreshing, setIsRefreshing] = useState(false);

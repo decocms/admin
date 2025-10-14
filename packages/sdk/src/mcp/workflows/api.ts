@@ -1,6 +1,7 @@
 import { inspect } from "@deco/cf-sandbox";
 import { z } from "zod";
 import { formatIntegrationId, WellKnownMcpGroups } from "../../crud/groups.ts";
+import { NotFoundError } from "../../errors.ts";
 import { impl } from "../bindings/binder.ts";
 import { WellKnownBindings } from "../bindings/index.ts";
 import { VIEW_BINDING_SCHEMA } from "../bindings/views.ts";
@@ -25,13 +26,14 @@ import {
   WORKFLOW_CREATE_PROMPT,
   WORKFLOW_DELETE_PROMPT,
   WORKFLOW_READ_PROMPT,
+  WORKFLOW_RUN_READ_PROMPT,
   WORKFLOW_SEARCH_PROMPT,
   WORKFLOW_UPDATE_PROMPT,
-  WORKFLOWS_GET_STATUS_PROMPT,
   WORKFLOWS_START_WITH_URI_PROMPT,
 } from "./prompts.ts";
 import {
   WorkflowDefinitionSchema,
+  WorkflowRunDataSchema,
   WorkflowStepDefinitionSchema,
 } from "./schemas.ts";
 import {
@@ -43,6 +45,45 @@ import {
   mapWorkflowStatus,
   processWorkflowSteps,
 } from "./utils.ts";
+import {
+  createResourceImplementation,
+  type ResourceDefinition,
+} from "../resources-v2/helpers.ts";
+import type {
+  InstanceGetResponse as CFInstanceGetResponse,
+  InstanceListResponse as CFInstanceListResponse,
+} from "cloudflare/resources/workflows/instances/instances";
+
+/**
+ * Metadata stored in workflow instance params.context
+ */
+interface WorkflowInstanceMetadata {
+  workflowURI?: string;
+  startedBy?: {
+    id: string;
+    email: string | undefined;
+    name: string | undefined;
+  };
+  startedAt?: string;
+}
+
+/**
+ * Structure of params passed to Cloudflare Workflows instances
+ */
+interface WorkflowInstanceParams {
+  context?: WorkflowInstanceMetadata & {
+    workspace?: unknown;
+    locator?: unknown;
+  };
+  [key: string]: unknown;
+}
+
+/**
+ * Extended Cloudflare instance detail with typed params
+ */
+interface CFInstanceWithParams extends CFInstanceGetResponse {
+  params: WorkflowInstanceParams;
+}
 
 /**
  * Legacy WorkflowResource for backward compatibility
@@ -213,6 +254,12 @@ export function createWorkflowBindingImpl({
           .string()
           .optional()
           .describe("The unique ID for tracking this workflow run"),
+        uri: z
+          .string()
+          .optional()
+          .describe(
+            "The Resources 2.0 URI of the workflow run (rsc://i:workflows-management/workflow_run/{runId}). Use DECO_RESOURCE_WORKFLOW_RUN_READ to get status and results.",
+          ),
         error: z
           .string()
           .optional()
@@ -239,6 +286,20 @@ export function createWorkflowBindingImpl({
           };
         }
 
+        // Prepare metadata to be passed via context (persisted in instance params)
+        const startedBy = c.user
+          ? {
+              // normalize to strings to avoid circular/complex structures
+              id: String((c.user as { id?: string | number }).id ?? ""),
+              email: (c.user as { email?: string })?.email,
+              name:
+                (c.user as { metadata?: { full_name?: string }; name?: string })
+                  ?.metadata?.full_name ?? (c.user as { name?: string })?.name,
+            }
+          : undefined;
+        const workflowURI = uri;
+        const startedAt = new Date().toISOString();
+
         // Create workflow instance using Cloudflare Workflows
         const workflowInstance = await c.workflowRunner.create({
           params: {
@@ -250,13 +311,17 @@ export function createWorkflowBindingImpl({
             context: {
               workspace: c.workspace,
               locator: c.locator,
+              workflowURI,
+              startedBy,
+              startedAt,
             },
           },
         });
 
-        // Return the workflow instance ID directly from Cloudflare
+        // Return the workflow instance ID and Resources 2.0 URI
         const runId = workflowInstance.id;
-        return { runId };
+        const runUri = `rsc://i:workflows-management/workflow_run/${encodeURIComponent(runId)}`;
+        return { runId, uri: runUri };
       } catch (error) {
         return {
           error: `Workflow start failed: ${inspect(error)}`,
@@ -265,99 +330,7 @@ export function createWorkflowBindingImpl({
     },
   });
 
-  const decoWorkflowGetStatus = createTool({
-    name: "DECO_WORKFLOW_GET_STATUS",
-    description: WORKFLOWS_GET_STATUS_PROMPT,
-    inputSchema: z.lazy(() =>
-      z.object({
-        runId: z.string().describe("The unique ID of the workflow run"),
-      }),
-    ),
-    outputSchema: z.lazy(() =>
-      z.object({
-        status: z
-          .enum(["pending", "running", "completed", "failed"])
-          .describe("The current status of the workflow run"),
-        currentStep: z
-          .string()
-          .optional()
-          .describe(
-            "The name of the step currently being executed (if running)",
-          ),
-        stepResults: z.record(z.any()).describe("Results from completed steps"),
-        finalResult: z
-          .any()
-          .optional()
-          .describe("The final workflow result (if completed)"),
-        partialResult: z
-          .any()
-          .optional()
-          .describe(
-            "Partial results from completed steps (if pending/running)",
-          ),
-        error: z
-          .string()
-          .optional()
-          .describe("Error message if the workflow failed"),
-        logs: z
-          .array(
-            z.object({
-              type: z.enum(["log", "warn", "error"]),
-              content: z.string(),
-            }),
-          )
-          .describe("Console logs from the execution"),
-        startTime: z.number().describe("When the workflow started (timestamp)"),
-        endTime: z
-          .number()
-          .optional()
-          .describe("When the workflow ended (timestamp, if completed/failed)"),
-      }),
-    ),
-    handler: async ({ runId }, c) => {
-      await assertWorkspaceResourceAccess(c);
-
-      try {
-        // Get workflow status from both sources
-        const workflowStatus = await fetchWorkflowStatus(c, runId);
-
-        // Map to our standardized status format
-        const status = mapWorkflowStatus(workflowStatus.status);
-
-        // Process workflow data
-        const stepResults = processWorkflowSteps(workflowStatus);
-        const currentStep = findCurrentStep(workflowStatus.steps, status);
-        const logs = extractStepLogs(workflowStatus.steps);
-        const { startTime, endTime } = extractWorkflowTiming(workflowStatus);
-        const error = formatWorkflowError(workflowStatus);
-
-        // Calculate partial result for ongoing workflows
-        const partialResult =
-          Object.keys(stepResults).length > 0 && status !== "completed"
-            ? {
-                completedSteps: Object.keys(stepResults),
-                stepResults,
-              }
-            : undefined;
-
-        return {
-          status,
-          currentStep,
-          stepResults,
-          finalResult: workflowStatus.output,
-          partialResult,
-          error,
-          logs,
-          startTime,
-          endTime,
-        };
-      } catch (error) {
-        throw new Error(`Workflow run '${runId}' not found: ${inspect(error)}`);
-      }
-    },
-  });
-
-  return [decoWorkflowStart, decoWorkflowGetStatus];
+  return [decoWorkflowStart];
 }
 
 /**
@@ -384,10 +357,10 @@ export function createWorkflowViewsV2() {
       "DECO_RESOURCE_WORKFLOW_UPDATE",
       "DECO_RESOURCE_WORKFLOW_DELETE",
       "DECO_WORKFLOW_START",
-      "DECO_WORKFLOW_GET_STATUS",
+      "DECO_RESOURCE_WORKFLOW_RUN_READ",
     ],
     prompt:
-      "You are helping the user manage a workflow. You can read the workflow details, update its properties, start or stop the workflow, and view its logs. Always confirm actions before executing them.",
+      "You are a workflow editing specialist helping the user manage a workflow. You can read the workflow details, update its properties, start workflows, and monitor their execution. When you start a workflow using DECO_WORKFLOW_START, it returns a workflow_run URI. Use DECO_RESOURCE_WORKFLOW_RUN_READ with that URI to monitor execution status, view step results, and retrieve logs. Always confirm actions before executing them. A good strategy is to test each step one at a time in isolation and check how they affect the overall workflow.",
     handler: (input, _c) => {
       // TODO: Do not ship it to main
 
@@ -404,9 +377,31 @@ export function createWorkflowViewsV2() {
     },
   });
 
+  // Workflow Run Detail renderer (Resources V2: resourceName = workflow_run)
+  const workflowRunDetailRenderer = createViewRenderer({
+    name: "workflow_run",
+    title: "Workflow Run Detail",
+    description: "Inspect a specific workflow run details and status",
+    icon: "https://example.com/icons/workflow-run-detail.svg",
+    inputSchema: DetailViewRenderInputSchema,
+    tools: ["DECO_RESOURCE_WORKFLOW_RUN_READ"],
+    prompt:
+      "You are viewing a workflow run. Use DECO_RESOURCE_WORKFLOW_RUN_READ to show current status, step results, logs, and timing information. Help the user understand the run outcome and any errors. The workflow_run resource automatically refreshes with the latest execution state.",
+    handler: (input, _c) => {
+      // Reuse the same React view component used for workflows
+      // It reads the resource URI and fetches details accordingly
+      const url = createDetailViewUrl(
+        "workflow_run",
+        integrationId,
+        input.resource,
+      );
+      return Promise.resolve({ url });
+    },
+  });
+
   // Create Views 2.0 implementation
   const viewsV2Implementation = createViewImplementation({
-    renderers: [workflowDetailRenderer],
+    renderers: [workflowDetailRenderer, workflowRunDetailRenderer],
   });
 
   return viewsV2Implementation;
@@ -454,9 +449,8 @@ export const workflowViews = impl(
               tools: WellKnownBindings.Resources.map(
                 (resource) => resource.name,
               ),
-              rules: [
+              prompt:
                 "You are a specialist for crud operations on resources. Use the resource tools to read, search, create, update, or delete items; do not fabricate data.",
-              ],
             },
             // Workflow Detail View (for individual workflow management)
             {
@@ -469,12 +463,11 @@ export const workflowViews = impl(
               resourceName: "workflow",
               tools: [
                 "DECO_WORKFLOW_START",
-                "DECO_WORKFLOW_GET_STATUS",
+                "DECO_RESOURCE_WORKFLOW_RUN_READ",
                 "DECO_RESOURCE_WORKFLOW_UPDATE",
               ],
-              rules: [
-                "You are a workflow editing specialist. Use the workflow tools to edit the current workflow. A good strategy is to test each step, one at a time in isolation and check how they affect the overall workflow.",
-              ],
+              prompt:
+                "You are a workflow editing specialist. Use DECO_WORKFLOW_START to execute workflows, which returns a workflow_run URI. Then use DECO_RESOURCE_WORKFLOW_RUN_READ to monitor execution and retrieve results. A good strategy is to test each step one at a time in isolation and check how they affect the overall workflow.",
             },
           ],
         };
@@ -483,3 +476,273 @@ export const workflowViews = impl(
   ],
   createWorkflowTool,
 );
+
+function isCFInstance(value: unknown): value is CFInstanceListResponse {
+  return (
+    typeof value === "object" &&
+    value != null &&
+    // deno-lint-ignore no-explicit-any
+    typeof (value as any).id === "string" &&
+    // deno-lint-ignore no-explicit-any
+    (typeof (value as any).created_on === "string" ||
+      // deno-lint-ignore no-explicit-any
+      typeof (value as any).modified_on === "string")
+  );
+}
+
+/**
+ * Workflow Runs Resource V2 (dynamic)
+ *
+ * Exposes workflow runs as a Resources 2.0 collection using the standard
+ * DECO_RESOURCE_WORKFLOW_RUN_* tool naming. Backed by the existing
+ * HOSTING_APP_WORKFLOWS_LIST_RUNS tool for search, and DECO_WORKFLOW_GET_STATUS
+ * for read, so we can render a list with status using the generic Resources V2 UI.
+ */
+export function createWorkflowRunsResourceV2Implementation(
+  _deconfig: DeconfigClient,
+  _integrationId: string,
+) {
+  const definition: ResourceDefinition<typeof WorkflowRunDataSchema> = {
+    name: "workflow_run",
+    dataSchema: WorkflowRunDataSchema,
+    // List runs from Cloudflare Workflows instances API, map into Resource 2.0 items
+    searchHandler: async ({ pageSize = 10 }, c) => {
+      await assertWorkspaceResourceAccess(c);
+
+      const accountId = c.envVars.CF_ACCOUNT_ID;
+      const now = new Date();
+      const yearAgo = new Date(now);
+      yearAgo.setFullYear(now.getFullYear() - 1);
+
+      const listResult = await c.cf.workflows.instances
+        .list(
+          "workflow-runner",
+          {
+            account_id: accountId,
+            date_start: yearAgo.toISOString(),
+            date_end: now.toISOString(),
+            per_page: pageSize,
+            // @ts-expect-error non-typed param, but it works
+            direction: "desc",
+          },
+          { maxRetries: 0 },
+        )
+        .catch(() => ({ result: [] }) as const);
+
+      const instances = listResult.result?.filter(isCFInstance) ?? [];
+
+      // Get current workspace identifier for filtering
+      const currentWorkspaceValue = c.workspace?.value;
+
+      // Prefetch details using fetchWorkflowStatus to derive metadata
+      const detailsById = new Map<string, CFInstanceGetResponse | null>();
+      await Promise.all(
+        instances.map(async (inst) => {
+          const runId = String(inst.id);
+          const detail = await fetchWorkflowStatus(c, runId).catch(() => null);
+          detailsById.set(runId, detail);
+        }),
+      );
+
+      const items = instances
+        .map((inst) => {
+          const runId = String(inst.id);
+          const detail = detailsById.get(runId);
+
+          // Enrich with metadata from instance params (if present in detailed status)
+          const ctx = (detail as unknown as { params?: WorkflowInstanceParams })
+            ?.params?.context;
+
+          // Filter: only include runs from the current workspace
+          const runWorkspaceValue = (ctx?.workspace as { value?: string })
+            ?.value;
+          if (
+            currentWorkspaceValue &&
+            runWorkspaceValue !== currentWorkspaceValue
+          ) {
+            return null;
+          }
+
+          const workflowURI = ctx?.workflowURI;
+          const displayName = workflowURI
+            ? decodeURIComponent(workflowURI.split("/").pop() ?? "")
+            : String(inst.id ?? "");
+
+          // Normalize status using our helper
+          const status = detail
+            ? mapWorkflowStatus(detail.status)
+            : String(inst.status ?? "unknown");
+
+          // Extract timestamps from detailed status or fallback to instance list data
+          let createdAt: string | undefined;
+          let updatedAt: string | undefined;
+          if (detail) {
+            const { startTime, endTime } = extractWorkflowTiming(detail);
+            createdAt = new Date(startTime).toISOString();
+            updatedAt = endTime ? new Date(endTime).toISOString() : undefined;
+          } else {
+            createdAt = inst.started_on || inst.created_on;
+            updatedAt = inst.ended_on || inst.modified_on;
+          }
+
+          const uri = `rsc://i:workflows-management/workflow_run/${encodeURIComponent(runId)}`;
+
+          const createdBy = ctx?.startedBy?.id
+            ? String(ctx.startedBy.id)
+            : undefined;
+
+          return {
+            uri,
+            data: {
+              name: displayName,
+              description: status,
+              status,
+              runId,
+              workflowURI,
+            },
+            created_at: createdAt
+              ? new Date(createdAt).toISOString()
+              : undefined,
+            updated_at: updatedAt
+              ? new Date(updatedAt).toISOString()
+              : undefined,
+            created_by: createdBy,
+            updated_by: createdBy,
+          };
+        })
+        .filter((item): item is NonNullable<typeof item> => item !== null);
+
+      // Fixed-size single page for UI simplicity
+      return {
+        items,
+        totalCount: items.length,
+        page: 1,
+        pageSize: 25,
+        totalPages: 1,
+        hasNextPage: false,
+        hasPreviousPage: false,
+      };
+    },
+    // Read returns the latest status for the run (normalized with fallback)
+    readHandler: async ({ uri }, c) => {
+      await assertWorkspaceResourceAccess(c);
+
+      // Parse resource id back into runId
+      const segments = uri.split("/");
+      const runId = decodeURIComponent(segments[segments.length - 1]);
+
+      // Fetch detailed status with fallback (includes params when available)
+      const workflowStatus = await fetchWorkflowStatus(c, runId).catch(
+        () => null,
+      );
+
+      // Enrich with metadata from instance params (if present in detailed status)
+      const ctx = (
+        workflowStatus as unknown as { params?: WorkflowInstanceParams }
+      )?.params?.context;
+
+      // Filter: verify the run belongs to the current workspace
+      const currentWorkspaceValue = c.workspace?.value;
+      const runWorkspaceValue = (ctx?.workspace as { value?: string })?.value;
+
+      if (
+        currentWorkspaceValue &&
+        runWorkspaceValue &&
+        runWorkspaceValue !== currentWorkspaceValue
+      ) {
+        throw new NotFoundError(
+          `Workflow run '${runId}' not found or not accessible in this workspace`,
+        );
+      }
+
+      // Normalize status string
+      const status = workflowStatus
+        ? mapWorkflowStatus(workflowStatus.status)
+        : "pending";
+
+      const workflowURI = ctx?.workflowURI;
+      const displayName = workflowURI
+        ? decodeURIComponent(workflowURI.split("/").pop() ?? "")
+        : runId;
+      const createdBy = ctx?.startedBy?.id
+        ? String(ctx.startedBy.id)
+        : undefined;
+
+      // Timestamps from the status payload
+      let createdAtIso: string | undefined;
+      let updatedAtIso: string | undefined;
+      let startTime: number | undefined;
+      let endTime: number | undefined;
+      if (workflowStatus) {
+        const timing = extractWorkflowTiming(workflowStatus);
+        startTime = timing.startTime;
+        endTime = timing.endTime;
+        createdAtIso = new Date(startTime).toISOString();
+        updatedAtIso = endTime ? new Date(endTime).toISOString() : undefined;
+      }
+
+      // Process workflow data to include all status fields
+      const stepResults = workflowStatus
+        ? processWorkflowSteps(workflowStatus)
+        : undefined;
+      const currentStep = workflowStatus
+        ? findCurrentStep(workflowStatus.steps, status)
+        : undefined;
+      const logs = workflowStatus
+        ? extractStepLogs(workflowStatus.steps)
+        : undefined;
+      const error = workflowStatus
+        ? formatWorkflowError(workflowStatus)
+        : undefined;
+
+      // Calculate partial result for ongoing workflows
+      const partialResult =
+        stepResults &&
+        Object.keys(stepResults).length > 0 &&
+        status !== "completed"
+          ? {
+              completedSteps: Object.keys(stepResults),
+              stepResults,
+            }
+          : undefined;
+
+      return {
+        uri,
+        data: {
+          name: displayName,
+          description: status,
+          status,
+          runId,
+          workflowURI,
+          // Processed status fields from DECO_WORKFLOW_GET_STATUS
+          currentStep,
+          stepResults,
+          finalResult: workflowStatus?.output,
+          partialResult,
+          error,
+          logs: logs && logs.length > 0 ? logs : undefined,
+          startTime,
+          endTime,
+          // Raw workflow status data - let frontend handle transformations
+          workflowStatus: workflowStatus ?? undefined,
+        },
+        created_at: createdAtIso,
+        updated_at: updatedAtIso,
+        created_by: createdBy,
+        updated_by: createdBy,
+      };
+    },
+  };
+
+  const implementation = createResourceImplementation(definition);
+
+  // Apply enhanced description to the READ tool
+  const readToolIndex = implementation.findIndex(
+    (tool) => tool.name === "DECO_RESOURCE_WORKFLOW_RUN_READ",
+  );
+  if (readToolIndex >= 0) {
+    implementation[readToolIndex].description = WORKFLOW_RUN_READ_PROMPT;
+  }
+
+  return implementation;
+}

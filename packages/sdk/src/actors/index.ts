@@ -54,7 +54,7 @@ export abstract class BaseActor<TMetadata extends AuthMetadata = AuthMetadata> {
   }
 }
 
-export const runtime = new RuntimeClass();
+export const runtime: InstanceType<typeof RuntimeClass> = new RuntimeClass();
 export const stubFor = (env: Bindings) => {
   return <TActor extends Actor, Constructor extends ActorConstructor<TActor>>(
     c: Constructor,

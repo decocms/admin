@@ -101,6 +101,7 @@ function UserPreferencesModal({
       smoothStream: preferences.smoothStream,
       sendReasoning: preferences.sendReasoning,
       pdfSummarization: preferences.pdfSummarization,
+      enableWorkflowRuns: preferences.enableWorkflowRuns,
     },
   });
   const {
@@ -449,9 +450,9 @@ function Skeleton() {
   );
 }
 
-export function SidebarFooter() {
+export function SidebarFooter({ className }: { className?: string }) {
   return (
-    <SidebarFooterInner>
+    <SidebarFooterInner className={cn("bg-sidebar pt-4", className)}>
       <SidebarMenu>
         <SidebarMenuItem>
           <Suspense fallback={<Skeleton />}>

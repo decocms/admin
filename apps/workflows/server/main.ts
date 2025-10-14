@@ -61,16 +61,17 @@ const runtime = withRuntime<Env, typeof StateSchema>({
   workflows,
   tools: [
     ...tools,
-    // Workflows Management tools
+    // Workflows Management tools - COMMENTED OUT TO AVOID CIRCULAR DEPENDENCY
+    // These tools are already exposed by the @deco/workflows MCP server
     // (env) => env.WORKFLOWS_MANAGEMENT.DECO_CHAT_VIEWS_LIST.asTool(),
-    (env) => env.WORKFLOWS_MANAGEMENT.DECO_RESOURCE_WORKFLOW_CREATE.asTool(),
-    (env) => env.WORKFLOWS_MANAGEMENT.DECO_RESOURCE_WORKFLOW_DELETE.asTool(),
-    (env) => env.WORKFLOWS_MANAGEMENT.DECO_RESOURCE_WORKFLOW_READ.asTool(),
-    (env) => env.WORKFLOWS_MANAGEMENT.DECO_RESOURCE_WORKFLOW_SEARCH.asTool(),
-    (env) => env.WORKFLOWS_MANAGEMENT.DECO_RESOURCE_WORKFLOW_UPDATE.asTool(),
-    (env) => env.WORKFLOWS_MANAGEMENT.DECO_VIEW_RENDER_WORKFLOW_DETAIL.asTool(),
-    (env) => env.WORKFLOWS_MANAGEMENT.DECO_WORKFLOW_GET_STATUS.asTool(),
-    (env) => env.WORKFLOWS_MANAGEMENT.DECO_WORKFLOW_START.asTool(),
+    // (env) => env.WORKFLOWS_MANAGEMENT.DECO_RESOURCE_WORKFLOW_CREATE.asTool(),
+    // (env) => env.WORKFLOWS_MANAGEMENT.DECO_RESOURCE_WORKFLOW_DELETE.asTool(),
+    // (env) => env.WORKFLOWS_MANAGEMENT.DECO_RESOURCE_WORKFLOW_READ.asTool(),
+    // (env) => env.WORKFLOWS_MANAGEMENT.DECO_RESOURCE_WORKFLOW_SEARCH.asTool(),
+    // (env) => env.WORKFLOWS_MANAGEMENT.DECO_RESOURCE_WORKFLOW_UPDATE.asTool(),
+    // (env) => env.WORKFLOWS_MANAGEMENT.DECO_VIEW_RENDER_WORKFLOW_DETAIL.asTool(),
+    // (env) => env.WORKFLOWS_MANAGEMENT.DECO_WORKFLOW_GET_STATUS.asTool(),
+    // (env) => env.WORKFLOWS_MANAGEMENT.DECO_WORKFLOW_START.asTool(),
   ],
   /**
    * Fallback directly to assets for all requests that do not match a tool, workflow or auth.

@@ -545,7 +545,7 @@ function WorkspaceViews() {
                   >
                     <Link
                       to={href}
-                      className="group/item"
+                      className="group/item relative"
                       onClick={() => {
                         trackEvent("sidebar_navigation_click", {
                           item: view.title,
@@ -604,14 +604,20 @@ function WorkspaceViews() {
                           </SidebarMenuAction>
                         )}
                       </div>
-                      <span className="truncate">
+                      <span
+                        className={
+                          view.type === "custom"
+                            ? "truncate group-hover/item:pr-8"
+                            : "truncate"
+                        }
+                      >
                         {view.title ?? integration?.name ?? "Custom"}
                       </span>
                       {view.type === "custom" && (
                         <Icon
                           name="unpin"
                           size={18}
-                          className="text-muted-foreground/75 opacity-0 group-hover/item:opacity-50 hover:opacity-100 transition-opacity cursor-pointer ml-auto"
+                          className="text-muted-foreground opacity-0 group-hover/item:opacity-50 hover:opacity-100 cursor-pointer absolute right-1 top-1/2 -translate-y-1/2"
                           onClick={(event) => {
                             event.preventDefault();
                             event.stopPropagation();
@@ -705,7 +711,7 @@ function WorkspaceViews() {
                           <SidebarMenuSubButton asChild>
                             <Link
                               to={href}
-                              className="group/item"
+                              className="group/item relative"
                               onClick={() => {
                                 trackEvent("sidebar_navigation_click", {
                                   item: view.title,
@@ -718,12 +724,20 @@ function WorkspaceViews() {
                                 size={18}
                                 className="text-muted-foreground/75"
                               />
-                              <span className="truncate">{view.title}</span>
+                              <span
+                                className={
+                                  view.type === "custom"
+                                    ? "truncate group-hover/item:pr-8"
+                                    : "truncate"
+                                }
+                              >
+                                {view.title}
+                              </span>
                               {view.type === "custom" && (
                                 <Icon
                                   name="unpin"
                                   size={18}
-                                  className="text-muted-foreground/75 opacity-0 group-hover/item:opacity-50 hover:opacity-100 transition-opacity cursor-pointer ml-auto"
+                                  className="text-muted-foreground opacity-0 group-hover/item:opacity-50 hover:opacity-100 cursor-pointer absolute right-1 top-1/2 -translate-y-1/2"
                                   onClick={(event) => {
                                     event.preventDefault();
                                     event.stopPropagation();
@@ -765,7 +779,7 @@ function WorkspaceViews() {
                     >
                       <Link
                         to={href}
-                        className="group/item"
+                        className="group/item relative"
                         onClick={() => {
                           trackEvent("sidebar_navigation_click", {
                             item: resource.title,
@@ -781,25 +795,19 @@ function WorkspaceViews() {
                             className="!w-[18px] !h-[18px] !rounded-md"
                           />
                         </div>
-                        <span className="truncate">
+                        <span className="truncate group-hover/item:pr-8">
                           {resource.title ?? integration?.name ?? "Resource"}
                         </span>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          className="text-destructive hover:text-destructive ml-auto group-hover/item:block! hidden! p-0.5 h-6"
+                        <Icon
+                          name="remove"
+                          size={18}
+                          className="text-muted-foreground opacity-0 group-hover/item:opacity-50 hover:opacity-100 cursor-pointer absolute right-1 top-1/2 -translate-y-1/2"
                           onClick={(e) => {
                             e.preventDefault();
                             e.stopPropagation();
                             handleRemoveResource({ resourceId: resource.id });
                           }}
-                        >
-                          <Icon
-                            name="remove"
-                            size={18}
-                            className="text-muted-foreground ml-auto group-hover/item:block! hidden!"
-                          />
-                        </Button>
+                        />
                       </Link>
                     </SidebarMenuButton>
                   )}
@@ -846,7 +854,7 @@ function WorkspaceViews() {
                             <SidebarMenuSubButton asChild>
                               <Link
                                 to={href}
-                                className="group/item"
+                                className="group/item relative"
                                 onClick={() => {
                                   trackEvent("sidebar_navigation_click", {
                                     item: resource.title,
@@ -859,13 +867,13 @@ function WorkspaceViews() {
                                   size={18}
                                   className="text-muted-foreground/75"
                                 />
-                                <span className="truncate">
+                                <span className="truncate group-hover/item:pr-8">
                                   {resource.title}
                                 </span>
-                                <Button
-                                  variant="outline"
-                                  size="sm"
-                                  className="text-destructive hover:text-destructive ml-auto group-hover/item:flex! hidden! p-0.5 h-6 w-6 items-center justify-center"
+                                <Icon
+                                  name="remove"
+                                  size={18}
+                                  className="text-muted-foreground opacity-0 group-hover/item:opacity-50 hover:opacity-100 cursor-pointer absolute right-1 top-1/2 -translate-y-1/2"
                                   onClick={(e) => {
                                     e.preventDefault();
                                     e.stopPropagation();
@@ -873,13 +881,7 @@ function WorkspaceViews() {
                                       resourceId: resource.id,
                                     });
                                   }}
-                                >
-                                  <Icon
-                                    name="remove"
-                                    size={16}
-                                    className="text-muted-foreground"
-                                  />
-                                </Button>
+                                />
                               </Link>
                             </SidebarMenuSubButton>
                           </SidebarMenuSubItem>
@@ -907,7 +909,7 @@ function WorkspaceViews() {
                   >
                     <Link
                       to={resource.path}
-                      className="group/item"
+                      className="group/item relative"
                       onClick={() => {
                         trackEvent("sidebar_navigation_click", {
                           item: resource.name,
@@ -930,21 +932,19 @@ function WorkspaceViews() {
                           className="text-muted-foreground/75 shrink-0"
                         />
                       ) : null}
-                      <span className="truncate flex-1 min-w-0">
+                      <span className="truncate flex-1 min-w-0 group-hover/item:pr-8">
                         {resource.name}
                       </span>
-                      <div className="ml-auto flex items-center shrink-0">
-                        <Icon
-                          name="unpin"
-                          size={18}
-                          className="text-primary opacity-0 group-hover/item:opacity-100 transition-opacity cursor-pointer"
-                          onClick={(e) => {
-                            e.preventDefault();
-                            e.stopPropagation();
-                            _togglePin(resource);
-                          }}
-                        />
-                      </div>
+                      <Icon
+                        name="unpin"
+                        size={18}
+                        className="text-muted-foreground opacity-0 group-hover/item:opacity-50 hover:opacity-100 cursor-pointer absolute right-1 top-1/2 -translate-y-1/2"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          _togglePin(resource);
+                        }}
+                      />
                     </Link>
                   </SidebarMenuButton>
                 )}
@@ -976,7 +976,7 @@ function WorkspaceViews() {
                   >
                     <Link
                       to={resource.path}
-                      className="group/item"
+                      className="group/item relative"
                       onClick={() => {
                         trackEvent("sidebar_navigation_click", {
                           item: resource.name,
@@ -999,26 +999,24 @@ function WorkspaceViews() {
                           className="text-muted-foreground/75 shrink-0"
                         />
                       ) : null}
-                      <span className="truncate flex-1 min-w-0">
+                      <span className="truncate flex-1 min-w-0 group-hover/item:pr-10">
                         {resource.name}
                       </span>
-                      <div className="ml-auto flex items-center gap-1 opacity-0 group-hover/item:opacity-100 transition-opacity shrink-0">
-                        {_showAllRecents && (
-                          <Icon
-                            name="close"
-                            size={16}
-                            className="text-muted-foreground hover:text-foreground cursor-pointer"
-                            onClick={(e) => {
-                              e.preventDefault();
-                              e.stopPropagation();
-                              _removeRecent(resource.id);
-                            }}
-                          />
-                        )}
+                      <div className="absolute right-1 top-1/2 -translate-y-1/2 flex items-center gap-1">
+                        <Icon
+                          name="close"
+                          size={18}
+                          className="text-muted-foreground opacity-0 group-hover/item:opacity-50 hover:opacity-100 cursor-pointer"
+                          onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            _removeRecent(resource.id);
+                          }}
+                        />
                         <Icon
                           name="push_pin"
                           size={18}
-                          className="text-muted-foreground hover:text-primary cursor-pointer"
+                          className="text-muted-foreground opacity-0 group-hover/item:opacity-50 hover:opacity-100 cursor-pointer"
                           onClick={(e) => {
                             e.preventDefault();
                             e.stopPropagation();

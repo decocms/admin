@@ -36,10 +36,7 @@ export {
   useStartWorkflow,
   buildWorkflowUri,
 } from "./hooks/resources-workflow.ts";
-export {
-  useWorkflow as useWorkflowByUriV2,
-  useWorkflowStatus as useWorkflowStatusV2,
-} from "./hooks/resources-workflow.ts";
+export { useWorkflow as useWorkflowByUriV2 } from "./hooks/resources-workflow.ts";
 export {
   useTool as useToolByUriV2,
   useToolCallV2,
@@ -71,9 +68,11 @@ export * from "./hooks/use-pinned-resources.ts";
 export {
   WorkflowDefinitionSchema,
   WorkflowStepDefinitionSchema,
+  WorkflowRunDataSchema,
   type StepExecutionResult,
   type WorkflowDefinition,
   type WorkflowStep,
+  type WorkflowRunData,
 } from "./mcp/workflows/schemas.ts";
 
 export {

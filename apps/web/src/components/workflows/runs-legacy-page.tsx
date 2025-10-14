@@ -1,11 +1,8 @@
 import { Tabs, TabsList, TabsTrigger } from "@deco/ui/components/tabs.tsx";
-import { lazy, Suspense } from "react";
-import { Spinner } from "@deco/ui/components/spinner.tsx";
+import WorkflowRuns from "./list.tsx";
 import { useWorkflowTabs } from "./use-workflow-tabs.ts";
 
-const ListTriggers = lazy(() => import("../triggers/list.tsx"));
-
-export default function WorkflowsTriggersPage() {
+export default function WorkflowsRunsLegacyPage() {
   const { tabs, activeTab } = useWorkflowTabs();
 
   return (
@@ -30,15 +27,7 @@ export default function WorkflowsTriggersPage() {
         </Tabs>
       </div>
       <div className="flex-1 overflow-auto">
-        <Suspense
-          fallback={
-            <div className="h-full flex items-center justify-center">
-              <Spinner />
-            </div>
-          }
-        >
-          <ListTriggers />
-        </Suspense>
+        <WorkflowRuns />
       </div>
     </div>
   );

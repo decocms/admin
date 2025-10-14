@@ -50,7 +50,15 @@ export interface WorkflowRunnerProps<T = unknown> {
   steps: WorkflowStepDefinition[]; // Changed from WorkflowStep[] to WorkflowStepDefinition[]
   stopAfter?: string;
   state?: Record<string, unknown>;
-  context: Pick<PrincipalExecutionContext, "workspace" | "locator">;
+  context: Pick<PrincipalExecutionContext, "workspace" | "locator"> & {
+    workflowURI: string;
+    startedBy?: {
+      id: string;
+      email: string | undefined;
+      name: string | undefined;
+    };
+    startedAt?: string;
+  };
 }
 
 export class WorkflowRunner extends WorkflowEntrypoint<Bindings> {

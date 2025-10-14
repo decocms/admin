@@ -285,7 +285,7 @@ export const createAgent = createTool({
       .values({
         ...NEW_AGENT_TEMPLATE,
         ...agent,
-        workspace: null,
+        workspace: projectId ? null : c.workspace?.value,
         project_id: projectId,
       })
       .returning(AGENT_FIELDS_SELECT);

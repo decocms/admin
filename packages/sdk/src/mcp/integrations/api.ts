@@ -860,7 +860,7 @@ export const createIntegration = createIntegrationManagementTool({
     const baseIntegration = {
       ...NEW_INTEGRATION_TEMPLATE,
       ...integration,
-      workspace: null,
+      workspace: projectId ? null : c.workspace?.value,
       project_id: projectId,
       id: integration.id ? parseId(integration.id).uuid : undefined,
     };

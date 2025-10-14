@@ -233,7 +233,7 @@ export const createApiKey = createTool({
       .from("deco_chat_api_keys")
       .insert({
         name,
-        workspace: null,
+        workspace: projectId ? null : c.workspace?.value,
         project_id: projectId,
         enabled: true,
         policies: policies || [],

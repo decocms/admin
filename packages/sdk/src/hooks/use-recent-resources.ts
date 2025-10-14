@@ -1,9 +1,8 @@
 import {
   useCallback,
-  useMemo,
-  useState,
   useEffect,
-  useLayoutEffect,
+  useMemo,
+  useState
 } from "react";
 
 export interface RecentResource {

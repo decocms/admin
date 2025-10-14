@@ -50,6 +50,7 @@ export {
   useUpsertDocument,
   useDeleteDocument,
   buildDocumentUri,
+  useDocuments,
 } from "./hooks/documents.ts";
 export {
   useViewByUriV2,

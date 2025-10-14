@@ -4,12 +4,12 @@ import {
   Resource,
   useConnectionViews,
   useIntegrations,
+  usePinnedResources,
+  useRecentResources,
   useRemoveResource,
   useRemoveView,
   useUpsertDocument,
   View,
-  useRecentResources,
-  usePinnedResources,
 } from "@deco/sdk";
 import { Badge } from "@deco/ui/components/badge.tsx";
 import { Button } from "@deco/ui/components/button.tsx";
@@ -51,11 +51,16 @@ import {
   useWorkspaceLink,
 } from "../../hooks/use-navigate-workspace.ts";
 import { IntegrationAvatar } from "../common/avatar/integration.tsx";
+import { AgentAvatar } from "../common/avatar/agent.tsx";
 import { TogglePin } from "../views/list.tsx";
 import { SidebarFooter } from "./footer.tsx";
 import { useCurrentTeam } from "./team-selector.tsx";
 import { useFocusTeamAgent } from "../agents/list.tsx";
 import { SearchComingSoonModal } from "../modals/search-coming-soon-modal.tsx";
+import {
+  CommandPalette,
+  useCommandPalette,
+} from "../search/command-palette.tsx";
 
 const WithActive = ({
   children,
@@ -205,10 +210,17 @@ function WorkspaceViews() {
     isPinned: _isPinned,
   } = usePinnedResources(projectKey);
 
+  // Command palette
+  const commandPalette = useCommandPalette();
+
   // Hook for creating documents
   const upsertDocument = useUpsertDocument();
 
   const handleCreateAgent = useFocusTeamAgent();
+
+  const handleOpenSearch = () => {
+    commandPalette.setOpen(true);
+  };
 
   const handleRemoveView = async (view: View) => {
     const isUserInView = globalThis.location.pathname.includes(
@@ -289,7 +301,6 @@ function WorkspaceViews() {
 
         result.firstLevelViews.push(view);
       }
-
       // Process resources (stored as views with type="resource")
       const resources = team?.resources ?? [];
       for (const resource of resources) {
@@ -400,17 +411,34 @@ function WorkspaceViews() {
     <>
       {/* SECTION 1: SEARCH + RESOURCE INSTANCES */}
 
-      {/* Search Button */}
+      {/* Search button */}
+      <SidebarMenuItem>
+        <SidebarMenuButton
+          className="cursor-pointer justify-between"
+          onClick={() => handleOpenSearch()}
+        >
+          <div className="flex items-center gap-2">
+            <Icon
+              name="search"
+              size={20}
+              className="text-muted-foreground/75"
+            />
+            <span className="truncate">Search</span>
+          </div>
+          <kbd className="pointer-events-none inline-flex h-5 select-none items-center gap-1 rounded border border-border/50 bg-muted px-1.5 font-mono text-[10px] font-medium text-muted-foreground opacity-100">
+            <span className="text-xs">⌘</span>K
+          </kbd>
+        </SidebarMenuButton>
+      </SidebarMenuItem>
+
+      {/* Generate button */}
       <SidebarMenuItem>
         <SidebarMenuButton
           className="cursor-pointer"
-          onClick={() => _setSearchModalOpen(true)}
+          onClick={() => setGenerateModalOpen(true)}
         >
-          <Icon name="search" size={20} className="text-muted-foreground/75" />
-          <span className="truncate">Search</span>
-          <Badge variant="secondary" className="ml-auto text-xs">
-            Soon
-          </Badge>
+          <Icon name="add" size={20} className="text-muted-foreground/75" />
+          <span className="truncate">Generate</span>
         </SidebarMenuButton>
       </SidebarMenuItem>
 
@@ -544,7 +572,9 @@ function WorkspaceViews() {
                                 integration,
                               });
                             }}
-                            aria-label={`Add view to ${integration?.name ?? "integration"}`}
+                            aria-label={`Add view to ${
+                              integration?.name ?? "integration"
+                            }`}
                             showOnHover
                           >
                             <span
@@ -622,7 +652,9 @@ function WorkspaceViews() {
                               integration,
                             });
                           }}
-                          aria-label={`Add view to ${integration?.name ?? "integration"}`}
+                          aria-label={`Add view to ${
+                            integration?.name ?? "integration"
+                          }`}
                           showOnHover
                         >
                           <span
@@ -853,9 +885,6 @@ function WorkspaceViews() {
           );
         },
       )}
-
-      <SidebarSeparator className="my-2 -ml-1" />
-
       {/* Pinned Resource Instances */}
       {_pinnedResources.length > 0 && (
         <>
@@ -879,13 +908,20 @@ function WorkspaceViews() {
                         isMobile && toggleSidebar();
                       }}
                     >
-                      {resource.icon && (
+                      {resource.type === "agent" ? (
+                        <AgentAvatar
+                          size="xs"
+                          url={resource.icon}
+                          fallback={resource.name}
+                          className="!w-[20px] !h-[20px] shrink-0"
+                        />
+                      ) : resource.icon ? (
                         <Icon
                           name={resource.icon}
                           size={20}
                           className="text-muted-foreground/75 shrink-0"
                         />
-                      )}
+                      ) : null}
                       <span className="truncate flex-1 min-w-0">
                         {resource.name}
                       </span>
@@ -910,15 +946,12 @@ function WorkspaceViews() {
         </>
       )}
 
-      {/* Generate button */}
+      <SidebarSeparator className="my-2 -ml-1" />
+
       <SidebarMenuItem>
-        <SidebarMenuButton
-          className="cursor-pointer"
-          onClick={() => setGenerateModalOpen(true)}
-        >
-          <Icon name="add" size={20} className="text-muted-foreground/75" />
-          <span className="truncate">Generate</span>
-        </SidebarMenuButton>
+        <div className="px-2 py-1 text-xs font-medium text-muted-foreground">
+          Recents
+        </div>
       </SidebarMenuItem>
 
       {/* Recent Resource Instances */}
@@ -944,13 +977,20 @@ function WorkspaceViews() {
                         isMobile && toggleSidebar();
                       }}
                     >
-                      {resource.icon && (
+                      {resource.type === "agent" ? (
+                        <AgentAvatar
+                          size="xs"
+                          url={resource.icon}
+                          fallback={resource.name}
+                          className="!w-[20px] !h-[20px] shrink-0"
+                        />
+                      ) : resource.icon ? (
                         <Icon
                           name={resource.icon}
                           size={20}
                           className="text-muted-foreground/75 shrink-0"
                         />
-                      )}
+                      ) : null}
                       <span className="truncate flex-1 min-w-0">
                         {resource.name}
                       </span>
@@ -1197,6 +1237,10 @@ function WorkspaceViews() {
           }
         />
       )}
+      <CommandPalette
+        open={commandPalette.open}
+        onOpenChange={commandPalette.onOpenChange}
+      />
     </>
   );
 }

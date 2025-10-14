@@ -242,11 +242,16 @@ function FormProvider(props: Props & { agentId: string; threadId: string }) {
       !hasTrackedRecentRef.current
     ) {
       hasTrackedRecentRef.current = true;
+      // Use the resolved avatar URL if available, otherwise fall back to the agent's avatar or default icon
+      const avatarUrl =
+        resolvedAvatar ||
+        (agent.avatar && !isFilePath(agent.avatar) ? agent.avatar : undefined);
+
       addRecent({
         id: `${agentId}-${threadId}`,
         name: agent.name,
         type: "agent",
-        icon: "robot_2",
+        icon: avatarUrl || "robot_2",
         path: `/${projectKey}/agent/${agentId}/${threadId}`,
       });
     }
@@ -258,6 +263,7 @@ function FormProvider(props: Props & { agentId: string; threadId: string }) {
     params.org,
     params.project,
     addRecent,
+    resolvedAvatar,
   ]);
 
   // Prepare decopilot context value for agent edit

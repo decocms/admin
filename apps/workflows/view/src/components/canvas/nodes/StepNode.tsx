@@ -20,6 +20,228 @@ interface StepNodeData {
   stepId: string;
 }
 
+// Type guards
+function hasErrorOutput(output: unknown): output is { error: string } {
+  return (
+    typeof output === "object" &&
+    output !== null &&
+    "error" in output &&
+    typeof (output as { error: unknown }).error === "string"
+  );
+}
+
+function hasSuccessOutput(output: unknown): output is Record<string, unknown> {
+  return (
+    typeof output === "object" &&
+    output !== null &&
+    Object.keys(output).length > 0 &&
+    !hasErrorOutput(output) // Use the error check to ensure no error exists
+  );
+}
+
+function hasExecutionResult(output: unknown): output is {
+  success: boolean;
+  output?: unknown;
+  duration?: number;
+} {
+  return (
+    typeof output === "object" &&
+    output !== null &&
+    "success" in output &&
+    typeof (output as { success: unknown }).success === "boolean" &&
+    (output as { success: boolean }).success === true &&
+    !hasErrorOutput(output) // Only consider it a successful result if no error exists
+  );
+}
+
+// Components
+interface StepErrorProps {
+  error: string;
+}
+
+function StepError({ error }: StepErrorProps) {
+  return (
+    <div className="mt-3 p-3 bg-red-950/30 border border-red-900/50 rounded-lg">
+      <p className="text-xs text-red-400 font-mono whitespace-pre-wrap">
+        {error}
+      </p>
+    </div>
+  );
+}
+
+function StepSuccessIndicator() {
+  return (
+    <div className="flex items-center gap-2 text-sm text-green-500 font-medium">
+      <Icon name="check_circle" size={20} />
+      <span>Executed successfully</span>
+    </div>
+  );
+}
+
+function StepErrorIndicator() {
+  return (
+    <div className="flex items-center gap-2 text-sm text-red-500 font-medium">
+      <Icon name="error" size={20} />
+      <span>Execution failed</span>
+    </div>
+  );
+}
+
+interface JsonViewProps {
+  jsonString: string;
+  lines: string[];
+}
+
+function JsonView({ jsonString, lines }: JsonViewProps) {
+  return (
+    <div className="bg-background p-4">
+      <div
+        className="border border-border rounded bg-muted/30"
+        style={{
+          maxHeight: "500px",
+          minHeight: "120px",
+          overflowY: "auto",
+          overflowX: "hidden",
+          cursor: "text",
+          pointerEvents: "auto",
+        }}
+        onWheel={(e) => {
+          e.stopPropagation();
+        }}
+        onMouseDown={(e) => e.stopPropagation()}
+        onPointerDown={(e) => e.stopPropagation()}
+      >
+        <div className="flex gap-5 p-4">
+          {/* Line numbers */}
+          <div className="flex flex-col font-mono text-xs text-muted-foreground leading-[1.5] opacity-50 select-none shrink-0">
+            {lines.map((_, i) => (
+              <span key={i + 1}>{i + 1}</span>
+            ))}
+          </div>
+
+          {/* Code content */}
+          <div className="flex-1 min-w-0">
+            <pre className="font-mono text-xs text-foreground leading-[1.5] m-0 whitespace-pre-wrap break-words">
+              {jsonString}
+            </pre>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+interface StepFormViewProps {
+  step: WorkflowStep;
+  inputSchemaEntries: Array<[string, unknown]>;
+  workflowActions: ReturnType<typeof useWorkflowStoreActions>;
+  onCreateInputView: (key: string) => void;
+}
+
+function StepFormView({
+  step,
+  inputSchemaEntries,
+  workflowActions,
+  onCreateInputView,
+}: StepFormViewProps) {
+  return (
+    <>
+      {/* Tools Used Section */}
+      {step.dependencies && step.dependencies.length > 0 && (
+        <div className="bg-background border-b border-border p-4">
+          <p className="font-mono text-sm text-muted-foreground uppercase mb-4">
+            TOOLS USED
+          </p>
+          <div className="flex gap-3 flex-wrap">
+            {step.dependencies.map((tool: WorkflowDependency) => (
+              <Badge
+                key={tool.integrationId}
+                variant="secondary"
+                className="bg-muted border border-border px-1 py-0.5 text-foreground text-sm font-normal gap-1"
+              >
+                <div className="size-4 bg-background border border-border/20 rounded-md flex items-center justify-center">
+                  <Icon name="build" size={12} />
+                </div>
+                {tool.integrationId}
+              </Badge>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Input Parameters Section */}
+      {step.inputSchema && (
+        <div className="bg-background border-b border-border p-4">
+          <div
+            className="nodrag"
+            onMouseDown={(e) => e.stopPropagation()}
+            onPointerDown={(e) => e.stopPropagation()}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <p className="font-mono text-sm text-muted-foreground uppercase mb-4">
+              INPUT PARAMETERS
+            </p>
+            <div className="flex flex-col gap-5">
+              {inputSchemaEntries.map(([key, schema]: [string, unknown]) => {
+                const schemaObj = schema as Record<string, unknown>;
+                const description =
+                  typeof schemaObj.description === "string"
+                    ? schemaObj.description
+                    : "";
+                const inputKey = `${step.name}_${key}`;
+
+                // Get the current value from step.input
+                const currentValue = step.input?.[key];
+                const stringValue =
+                  typeof currentValue === "string"
+                    ? currentValue
+                    : currentValue !== undefined
+                      ? JSON.stringify(currentValue, null, 2)
+                      : "";
+
+                return (
+                  <div key={`${inputKey}_wrapper`}>
+                    <div className="flex items-center justify-between mb-2">
+                      <label className="text-sm font-medium text-foreground leading-none">
+                        {key}
+                      </label>
+                      <Button
+                        variant="secondary"
+                        size="sm"
+                        onClick={() => onCreateInputView(key)}
+                        className="text-xs h-6 px-2"
+                      >
+                        + Add View
+                      </Button>
+                    </div>
+
+                    <RichTextEditor
+                      key={inputKey}
+                      placeholder={description || `Enter ${key}...`}
+                      minHeight="40px"
+                      value={stringValue}
+                      onChange={(newValue) => {
+                        // Update the step input in the workflow store
+                        const updatedInput = {
+                          ...step.input,
+                          [key]: newValue,
+                        };
+                        workflowActions.updateStep(step.name, {
+                          input: updatedInput,
+                        });
+                      }}
+                    />
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      )}
+    </>
+  );
+}
+
 export const StepNode = memo(function StepNode({
   data,
 }: NodeProps<StepNodeData>) {
@@ -45,7 +267,7 @@ export const StepNode = memo(function StepNode({
   const compact = zoom < 0.7;
 
   // Memoize input schema entries to prevent recalculation on every render
-  const inputSchemaEntries = useMemo(() => {
+  const inputSchemaEntries = useMemo((): Array<[string, unknown]> => {
     if (!step?.inputSchema) return [];
     return Object.entries(
       (step.inputSchema as Record<string, unknown>).properties || {},
@@ -53,7 +275,7 @@ export const StepNode = memo(function StepNode({
   }, [step?.inputSchema]);
 
   // Memoize JSON view lines to prevent expensive string operations on every render
-  const jsonViewData = useMemo(() => {
+  const jsonViewData = useMemo((): { jsonString: string; lines: string[] } => {
     if (!step) return { jsonString: "", lines: [] };
     const jsonString = JSON.stringify(step, null, 2);
     const lines = jsonString.split("\n");
@@ -74,9 +296,16 @@ export const StepNode = memo(function StepNode({
       const previousSteps = workflow.steps?.slice(0, currentStepIndex);
 
       previousSteps?.forEach((prevStep: WorkflowStep) => {
-        // Only include steps that have output data
+        // Only include steps that have successful execution with output data
+        // step.output now contains: { success, output, duration, ... }
         // The resolver expects: previousStepResults[stepName] = { output: actualOutput }
-        if (prevStep.output && Object.keys(prevStep.output).length > 0) {
+        if (
+          prevStep.output &&
+          typeof prevStep.output === "object" &&
+          "success" in prevStep.output &&
+          prevStep.output.success &&
+          "output" in prevStep.output
+        ) {
           previousStepResults[prevStep.name] = prevStep.output;
         }
       });
@@ -109,20 +338,15 @@ export const StepNode = memo(function StepNode({
             resolvedResult,
           );
 
-          // Save the output to the workflow store so subsequent steps can reference it
-          if (resolvedResult.success && resolvedResult.output) {
-            workflowActions.updateStep(step.name, {
-              output: resolvedResult.output as Record<string, unknown>,
-            });
+          // Save the FULL result to the workflow store (including success, output, duration, etc.)
+          // This allows: 1) StepOutput component to access all fields, 2) subsequent steps to reference via @refs
+          workflowActions.updateStep(step.name, {
+            output: resolvedResult as unknown as Record<string, unknown>,
+          });
+
+          if (resolvedResult.success) {
             console.log("💾 [StepNode] Saved step output to store");
-          } else if (!resolvedResult.success) {
-            // Store error in output field since it's not part of WorkflowStep schema
-            const errorData: Record<string, unknown> = {
-              error: resolvedResult.error,
-            };
-            workflowActions.updateStep(step.name, {
-              output: errorData,
-            });
+          } else {
             console.error(
               "❌ [StepNode] Step execution failed:",
               resolvedResult.error,
@@ -155,13 +379,11 @@ export const StepNode = memo(function StepNode({
           style={{ opacity: 0 }}
         />
         <div className="flex items-start gap-2">
-          {
-            <Icon
-              name={"build"}
-              size={18}
-              className="text-muted-foreground flex-shrink-0 mt-0.5"
-            />
-          }
+          <Icon
+            name={"build"}
+            size={18}
+            className="text-muted-foreground flex-shrink-0 mt-0.5"
+          />
           <div className="flex-1 min-w-0">
             <div className="text-sm font-semibold text-foreground truncate">
               {step.name}
@@ -186,13 +408,7 @@ export const StepNode = memo(function StepNode({
       {/* Header */}
       <div className="flex items-center justify-between h-10 px-4 py-2 rounded-t-xl overflow-clip">
         <div className="flex items-center gap-2 flex-1 min-w-0">
-          {
-            <Icon
-              name={"build"}
-              size={16}
-              className="shrink-0 text-background"
-            />
-          }
+          <Icon name={"build"} size={16} className="shrink-0 text-background" />
           <span className="text-sm font-medium text-background leading-5 truncate">
             {step.name}
           </span>
@@ -260,135 +476,19 @@ export const StepNode = memo(function StepNode({
 
       {/* Body */}
       <div className="flex flex-col rounded-xl overflow-hidden">
-        {showJsonView ? (
-          <div className="bg-background p-4">
-            <div
-              className="border border-border rounded"
-              style={{
-                height: "400px",
-                overflowY: "auto",
-                overflowX: "hidden",
-                cursor: "text",
-                pointerEvents: "auto",
-              }}
-              onWheel={(e) => {
-                e.stopPropagation();
-              }}
-            >
-              <div className="flex gap-5 p-2">
-                {/* Line numbers */}
-                <div className="flex flex-col font-mono text-sm text-muted-foreground leading-[1.5] opacity-50 select-none">
-                  {jsonViewData.lines.map((_, i) => (
-                    <span key={i + 1}>{i + 1}</span>
-                  ))}
-                </div>
-
-                {/* Code content */}
-                <div className="flex-1">
-                  <pre className="font-mono text-sm text-foreground leading-[1.5] m-0 whitespace-pre-wrap break-words">
-                    {jsonViewData.jsonString}
-                  </pre>
-                </div>
-              </div>
-            </div>
-          </div>
-        ) : (
-          <>
-            {/* Tools Used Section */}
-            {step.dependencies && step.dependencies.length > 0 && (
-              <div className="bg-background border-b border-border p-4">
-                <p className="font-mono text-sm text-muted-foreground uppercase mb-4">
-                  TOOLS USED
-                </p>
-                <div className="flex gap-3 flex-wrap">
-                  {step.dependencies.map((tool: WorkflowDependency) => (
-                    <Badge
-                      key={tool.integrationId}
-                      variant="secondary"
-                      className="bg-muted border border-border px-1 py-0.5 text-foreground text-sm font-normal gap-1"
-                    >
-                      <div className="size-4 bg-background border border-border/20 rounded-md flex items-center justify-center">
-                        <Icon name="build" size={12} />
-                      </div>
-                      {tool.integrationId}
-                    </Badge>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* Input Parameters Section */}
-            {step.inputSchema && (
-              <div className="bg-background border-b border-border p-4">
-                <div
-                  className="nodrag"
-                  onMouseDown={(e) => e.stopPropagation()}
-                  onPointerDown={(e) => e.stopPropagation()}
-                  onClick={(e) => e.stopPropagation()}
-                >
-                  <p className="font-mono text-sm text-muted-foreground uppercase mb-4">
-                    INPUT PARAMETERS
-                  </p>
-                  <div className="flex flex-col gap-5">
-                    {inputSchemaEntries.map(
-                      ([key, schema]: [string, unknown]) => {
-                        const schemaObj = schema as Record<string, unknown>;
-                        const description =
-                          typeof schemaObj.description === "string"
-                            ? schemaObj.description
-                            : "";
-                        const inputKey = `${step.name}_${key}`;
-
-                        // Get the current value from step.input
-                        const currentValue = step.input?.[key];
-                        const stringValue =
-                          typeof currentValue === "string"
-                            ? currentValue
-                            : currentValue !== undefined
-                              ? JSON.stringify(currentValue, null, 2)
-                              : "";
-
-                        return (
-                          <div key={`${inputKey}_wrapper`}>
-                            <div className="flex items-center justify-between mb-2">
-                              <label className="text-sm font-medium text-foreground leading-none">
-                                {key}
-                              </label>
-                              <Button
-                                variant="secondary"
-                                size="sm"
-                                onClick={() => setCreatingInputViewFor(key)}
-                                className="text-xs h-6 px-2"
-                              >
-                                + Add View
-                              </Button>
-                            </div>
-
-                            <RichTextEditor
-                              key={inputKey}
-                              placeholder={description || `Enter ${key}...`}
-                              minHeight="40px"
-                              value={stringValue}
-                              onChange={(newValue) => {
-                                // Update the step input in the workflow store
-                                const updatedInput = {
-                                  ...step.input,
-                                  [key]: newValue,
-                                };
-                                workflowActions.updateStep(step.name, {
-                                  input: updatedInput,
-                                });
-                              }}
-                            />
-                          </div>
-                        );
-                      },
-                    )}
-                  </div>
-                </div>
-              </div>
-            )}
-          </>
+        {showJsonView && (
+          <JsonView
+            jsonString={jsonViewData.jsonString}
+            lines={jsonViewData.lines}
+          />
+        )}
+        {!showJsonView && (
+          <StepFormView
+            step={step}
+            inputSchemaEntries={inputSchemaEntries}
+            workflowActions={workflowActions}
+            onCreateInputView={setCreatingInputViewFor}
+          />
         )}
 
         {/* Execute Button Section */}
@@ -400,22 +500,8 @@ export const StepNode = memo(function StepNode({
             className="flex items-center gap-3"
           >
             {/* Execution Status Indicator */}
-            {step.output &&
-              Object.keys(step.output).length > 0 &&
-              !("error" in step.output) && (
-                <div className="flex items-center gap-2 text-sm text-green-500 font-medium">
-                  <Icon name="check_circle" size={20} />
-                  <span>Executed successfully</span>
-                </div>
-              )}
-            {step.output &&
-              "error" in step.output &&
-              typeof step.output.error === "string" && (
-                <div className="flex items-center gap-2 text-sm text-red-500 font-medium">
-                  <Icon name="error" size={20} />
-                  <span>Execution failed</span>
-                </div>
-              )}
+            {hasSuccessOutput(step.output) && <StepSuccessIndicator />}
+            {hasErrorOutput(step.output) && <StepErrorIndicator />}
 
             <div className="flex-1" />
 
@@ -440,15 +526,9 @@ export const StepNode = memo(function StepNode({
           </div>
 
           {/* Error Details */}
-          {step.output &&
-            "error" in step.output &&
-            typeof step.output.error === "string" && (
-              <div className="mt-3 p-3 bg-red-950/30 border border-red-900/50 rounded-lg">
-                <p className="text-xs text-red-400 font-mono whitespace-pre-wrap">
-                  {step.output.error as string}
-                </p>
-              </div>
-            )}
+          {hasErrorOutput(step.output) && (
+            <StepError error={step.output.error} />
+          )}
         </div>
       </div>
 
@@ -471,13 +551,8 @@ export const StepNode = memo(function StepNode({
         />
       )}
 
-      {/* Render Output View Modal - only if output has a result property */}
-      {step.output &&
-        "result" in step.output &&
-        typeof step.output.result === "object" &&
-        step.output.result !== null && (
-          <StepOutput step={step.output.result as Record<string, unknown>} />
-        )}
+      {/* Render Output View - only if output exists and has success property */}
+      {hasExecutionResult(step.output) && <StepOutput step={step.output} />}
     </div>
   );
 });

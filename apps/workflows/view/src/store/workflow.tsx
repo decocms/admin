@@ -56,22 +56,40 @@ export const WorkflowStoreProvider = ({
             },
             updateStep: (stepId: string, updates: Partial<WorkflowStep>) => {
               set(() => ({
-                workflow: { ...get().workflow, steps: get().workflow.data.steps.map((step) =>
-                  step.name === stepId
-                    ? { ...step, ...updates }
-                    : step,
-                )},
+                workflow: { 
+                  ...get().workflow, 
+                  data: {
+                    ...get().workflow.data,
+                    steps: get().workflow.data.steps.map((step) =>
+                      step.name === stepId
+                        ? { ...step, ...updates }
+                        : step,
+                    ) as any
+                  }
+                } as any,
               }));
             },
             addStep: (step: WorkflowStep) => {
               set(() => ({
-                workflow: { ...get().workflow, steps: [...get().workflow.data.steps, step] },
+                workflow: { 
+                  ...get().workflow, 
+                  data: {
+                    ...get().workflow.data,
+                    steps: [...get().workflow.data.steps, step] as any
+                  }
+                } as any,
                 currentStepIndex: get().workflow.data.steps.length,
               }));
             },
             removeStep: (stepId: string) => {
               set(() => ({
-                workflow: { ...get().workflow, steps: get().workflow.data.steps.filter((step) => step.name !== stepId) },
+                workflow: { 
+                  ...get().workflow, 
+                  data: {
+                    ...get().workflow.data,
+                    steps: get().workflow.data.steps.filter((step) => step.name !== stepId) as any
+                  }
+                } as any,
                 currentStepIndex: get().workflow.data.steps.length,
               }));
             },
@@ -104,7 +122,14 @@ export const WorkflowStoreProvider = ({
             },
             clearStore: () => {
               set(() => ({
-                workflow: { ...get().workflow, steps: [], currentStepIndex: 0 },
+                workflow: { 
+                  ...get().workflow, 
+                  data: {
+                    ...get().workflow.data,
+                    steps: [] as any
+                  }
+                } as any,
+                currentStepIndex: 0,
               }));
             },
           },
@@ -805,11 +830,7 @@ export const useWorkflowStoreActions = () =>
   useWorkflowStore((state) => state.actions);
 
 export const useCurrentWorkflow = () => {
-  const currentWorkflow = useWorkflowStore((state) =>
-    state.workflow,
-  );
-  
-  return currentWorkflow.data;
+  return useWorkflowStore((state) => state.workflow.data);
 };
 
 export const useCurrentStepIndex = () => {

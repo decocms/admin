@@ -9,16 +9,16 @@ import {
   DropdownMenuTrigger,
 } from "@deco/ui/components/dropdown-menu.tsx";
 import { useExecuteStep } from "../../../hooks/useExecuteStep";
-import { useState } from "react";
+import { useState, memo } from "react";
 import { RichTextEditor } from "../../RichTextEditor";
 import { RenderInputViewModal } from "../../RenderInputViewModal";
-import { useCurrentWorkflow } from "@/store/workflow";
+import { useCurrentWorkflow, useWorkflowStoreActions } from "@/store/workflow";
 
 interface StepNodeData {
   stepId: string;
 }
 
-export function StepNode({ data }: NodeProps<StepNodeData>) {
+export const StepNode = memo(function StepNode({ data }: NodeProps<StepNodeData>) {
   const zoom = useStore((s) => s.transform[2]);
   const [showJsonView, setShowJsonView] = useState(false);
   const [_creatingInputViewFor, setCreatingInputViewFor] = useState<
@@ -29,8 +29,10 @@ export function StepNode({ data }: NodeProps<StepNodeData>) {
     viewName: string;
     viewCode: string;
   } | null>(null);
-  const workflow = useCurrentWorkflow()
-  const step = workflow?.steps?.find((s) => s.name === data.stepId)
+  
+  const workflow = useCurrentWorkflow();
+  const step = workflow?.steps?.find((s) => s.name === data.stepId);
+  const workflowActions = useWorkflowStoreActions();
 
   const executeStepMutation = useExecuteStep();
 
@@ -274,14 +276,53 @@ export function StepNode({ data }: NodeProps<StepNodeData>) {
         )}
 
         {/* Execute Button Section */}
-        <div className="bg-background border-b border-border flex items-center justify-end gap-2 p-4">
+        <div className="bg-background border-b border-border p-4">
           <div
             onMouseDown={(e) => e.stopPropagation()}
             onPointerDown={(e) => e.stopPropagation()}
             onClick={(e) => e.stopPropagation()}
+            className="flex items-center gap-3"
           >
+            {/* Execution Status Indicator */}
+            {step.output && Object.keys(step.output).length > 0 && !(step as any).error && (
+              <div className="flex items-center gap-2 text-sm text-green-500 font-medium">
+                <Icon name="check_circle" size={20} />
+                <span>Executed successfully</span>
+              </div>
+            )}
+            {(step as any).error && (
+              <div className="flex items-center gap-2 text-sm text-red-500 font-medium">
+                <Icon name="error" size={20} />
+                <span>Execution failed</span>
+              </div>
+            )}
+            
+            <div className="flex-1" />
+            
+            {/* Execute Button */}
             <Button
               onClick={() => {
+                // Collect outputs from all previous steps for @ref resolution
+                const previousStepResults: Record<string, any> = {};
+                const currentStepIndex = workflow.steps?.findIndex(
+                  (s) => s.name === step.name,
+                );
+
+                if (currentStepIndex !== undefined && currentStepIndex > 0) {
+                  // Get all steps before the current one
+                  const previousSteps = workflow.steps?.slice(0, currentStepIndex);
+                  
+                  previousSteps?.forEach((prevStep) => {
+                    // Only include steps that have output data
+                    // The resolver expects: previousStepResults[stepName] = { output: actualOutput }
+                    if (prevStep.output && Object.keys(prevStep.output).length > 0) {
+                      previousStepResults[prevStep.name] = prevStep.output;
+                    }
+                  });
+                }
+
+                console.log('🔍 [StepNode] Executing step with previousStepResults:', previousStepResults);
+
                 executeStepMutation.mutate({
                   step: {
                     id: step.name,
@@ -291,11 +332,40 @@ export function StepNode({ data }: NodeProps<StepNodeData>) {
                     outputSchema: step.outputSchema,
                     input: step.input,
                   },
+                  previousStepResults,
                   authToken: workflow.authorization?.token,
+                }, {
+                  onSuccess: async (result) => {
+                    // Await the result if it's a promise
+                    const resolvedResult = await result;
+                    console.log('✅ [StepNode] Step executed successfully:', resolvedResult);
+                    
+                    // Save the output to the workflow store so subsequent steps can reference it
+                    if (resolvedResult.success && resolvedResult.output) {
+                      workflowActions.updateStep(step.name, {
+                        output: resolvedResult.output,
+                        error: undefined, // Clear any previous error
+                      } as any);
+                      console.log('💾 [StepNode] Saved step output to store');
+                    } else if (!resolvedResult.success) {
+                      workflowActions.updateStep(step.name, {
+                        error: resolvedResult.error as any,
+                        output: {}, // Clear output on error
+                      } as any);
+                      console.error('❌ [StepNode] Step execution failed:', resolvedResult.error);
+                    }
+                  },
+                  onError: (error) => {
+                    console.error('❌ [StepNode] Step execution error:', error);
+                    workflowActions.updateStep(step.name, {
+                      error: String(error),
+                      output: {}, // Clear output on error
+                    } as any);
+                  },
                 });
               }}
               disabled={executeStepMutation.isPending}
-              className="bg-primary-light text-primary-dark hover:bg-[#c5e015] h-8 px-3 py-2 rounded-xl text-sm font-medium leading-5 nodrag"
+              className="bg-primary-light text-primary-dark hover:bg-[#c5e015] h-8 px-3 py-2 rounded-xl text-sm font-medium leading-5 nodrag disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {executeStepMutation.isPending ? (
                 <span className="flex items-center justify-center gap-2">
@@ -303,10 +373,20 @@ export function StepNode({ data }: NodeProps<StepNodeData>) {
                   Executing...
                 </span>
               ) : (
-                "Execute step"
+                <span className="flex items-center gap-2">
+                  <Icon name="play_arrow" size={16} />
+                  Execute step
+                </span>
               )}
             </Button>
           </div>
+          
+          {/* Error Details */}
+          {(step as any).error && typeof (step as any).error === 'string' && (
+            <div className="mt-3 p-3 bg-red-950/30 border border-red-900/50 rounded-lg">
+              <p className="text-xs text-red-400 font-mono whitespace-pre-wrap">{(step as any).error}</p>
+            </div>
+          )}
         </div>
       </div>
 
@@ -330,4 +410,4 @@ export function StepNode({ data }: NodeProps<StepNodeData>) {
       )}
     </div>
   );
-}
+});

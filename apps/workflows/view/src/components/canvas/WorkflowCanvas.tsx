@@ -25,6 +25,7 @@ export interface WorkflowCanvasRef {
 const CARD_WIDTH = 640;
 const CARD_GAP = 200;
 
+// Move nodeTypes outside component to prevent recreation on every render
 const nodeTypes = {
   step: StepNode,
   newStep: NewStepNode,
@@ -39,9 +40,31 @@ const Inner = forwardRef<WorkflowCanvasRef>(function Inner(_, ref) {
 
   const isCenteringRef = useRef<boolean>(false);
   const lastScrollTimeRef = useRef<number>(0);
+  const lastCenteredStepRef = useRef<number>(-1);
+
+  // Calculate initial viewport position to center the current step
+  const initialViewport = useMemo(() => {
+    if (!workflow) return { x: 0, y: 0, zoom: 1 };
+
+    // Get container dimensions (approximate if not available yet)
+    const viewportWidth = window.innerWidth;
+    const viewportHeight = window.innerHeight;
+
+    // Calculate the X position for the current step
+    const stepX = currentStepIndex * (CARD_WIDTH + CARD_GAP);
+    
+    // Center the step horizontally
+    const centeredX = (viewportWidth / 2) - (stepX + CARD_WIDTH / 2);
+    
+    // Use approximate node height for vertical centering
+    const nodeHeight = 400; // Approximate height
+    const centeredY = (viewportHeight / 2) - (nodeHeight / 2);
+
+    return { x: centeredX, y: centeredY, zoom: 1 };
+  }, []); // Only calculate once on mount
 
   // Center the viewport on the current step
-  const centerViewport = useCallback(() => {
+  const centerViewport = useCallback((stepIndex: number, animated = true) => {
     if (!workflow) return;
 
     isCenteringRef.current = true;
@@ -58,15 +81,15 @@ const Inner = forwardRef<WorkflowCanvasRef>(function Inner(_, ref) {
       const viewportHeight = container.clientHeight;
 
       // Calculate the X position for the current step
-      const stepX = currentStepIndex * (CARD_WIDTH + CARD_GAP);
+      const stepX = stepIndex * (CARD_WIDTH + CARD_GAP);
       
       // Center the step horizontally
       const centeredX = (viewportWidth / 2) - (stepX + CARD_WIDTH / 2);
       
       // Get the actual node to calculate its height for proper vertical centering
-      const nodeId = currentStepIndex === workflow.steps?.length 
+      const nodeId = stepIndex === workflow.steps?.length 
         ? "new" 
-        : workflow.steps?.[currentStepIndex]?.name;
+        : workflow.steps?.[stepIndex]?.name;
       const node = document.querySelector(`[data-id="${nodeId}"]`);
       const nodeHeight = node?.clientHeight || 200; // fallback to 200px if node not found
       
@@ -76,25 +99,32 @@ const Inner = forwardRef<WorkflowCanvasRef>(function Inner(_, ref) {
 
       rf.setViewport(
         { x: centeredX, y: centeredY, zoom: 1 },
-        { duration: 300 }
+        { duration: animated ? 300 : 0 }
       );
 
       // Allow movement after centering animation completes
+      const delay = animated ? 350 : 50;
       setTimeout(() => {
         isCenteringRef.current = false;
-      }, 350);
+      }, delay);
     });
-  }, [workflow, currentStepIndex, rf]);
+  }, [workflow, rf]);
 
-  // Center viewport when current step changes
+  // Center viewport when current step changes - only if step actually changed
   useEffect(() => {
+    if (lastCenteredStepRef.current === currentStepIndex) {
+      return; // Already centered on this step
+    }
+    
+    lastCenteredStepRef.current = currentStepIndex;
+    
     // Small delay to ensure nodes are rendered
     const timer = setTimeout(() => {
-      centerViewport();
+      centerViewport(currentStepIndex);
     }, 50);
     
     return () => clearTimeout(timer);
-  }, [centerViewport]);
+  }, [currentStepIndex, centerViewport]);
 
   const stepIds = useMemo(
     () => workflow?.steps?.map((s) => s.name).join(",") || "",
@@ -222,10 +252,10 @@ const Inner = forwardRef<WorkflowCanvasRef>(function Inner(_, ref) {
 
   // Lock canvas - prevent any panning
   const handleMove = useCallback(() => {
-    if (isCenteringRef.current) return;
-    // Re-center to lock the canvas in place
-    centerViewport();
-  }, [centerViewport]);
+    // Don't prevent centering animation from completing
+    // We rely on panOnDrag={false} and other ReactFlow props to prevent manual panning
+    return;
+  }, []);
 
   // Handle horizontal scroll to navigate between steps
   const handleWheel = useCallback(
@@ -279,7 +309,9 @@ const Inner = forwardRef<WorkflowCanvasRef>(function Inner(_, ref) {
     ref,
     () => ({
       centerOnStep: (index: number) => {
-        if (workflow) setCurrentStepIndex(index);
+        if (workflow) {
+          setCurrentStepIndex(index);
+        }
       },
       centerOnNext: () => {
         if (workflow) {
@@ -321,7 +353,7 @@ const Inner = forwardRef<WorkflowCanvasRef>(function Inner(_, ref) {
         preventScrolling
         minZoom={1}
         maxZoom={1}
-        defaultViewport={{ x: 0, y: 0, zoom: 1 }}
+        defaultViewport={initialViewport}
         className="h-full w-full bg-background [&_.react-flow__pane]:!cursor-default [&_.react-flow__renderer]:cursor-default"
         proOptions={{ hideAttribution: true }}
         nodeOrigin={[0, 0]}

@@ -5,8 +5,9 @@ import { RichTextEditor } from "../../RichTextEditor";
 import { useGenerateStep } from "../../../hooks/useGenerateStep";
 import { useCurrentWorkflow } from "@/store/workflow";
 import { useStepEditorPrompt } from "@/store/step-editor";
+import { memo } from "react";
 
-export function NewStepNode(_props: NodeProps) {
+export const NewStepNode = memo(function NewStepNode(_props: NodeProps) {
   const workflow = useCurrentWorkflow();
   const generateStepMutation = useGenerateStep();
   const prompt = useStepEditorPrompt();
@@ -102,4 +103,4 @@ export function NewStepNode(_props: NodeProps) {
       )}
     </div>
   );
-}
+});

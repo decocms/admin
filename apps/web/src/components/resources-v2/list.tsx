@@ -316,6 +316,9 @@ function ResourcesV2ListTab({
                       data.outputSchema = {};
                       data.execute =
                         "// Add your tool code here\nexport default function(input) {\n  return {};\n}";
+                    } else if (resourceName === "view") {
+                      data.code =
+                        "export const App = () => <div>Hello, World!</div>";
                     }
 
                     const result = await callTool(integration.connection, {
@@ -325,13 +328,23 @@ function ResourcesV2ListTab({
 
                     // Extract URI from response (can be at different levels)
                     const uri =
+                      // direct top-level uri
                       (result as { uri?: string })?.uri ||
+                      // common pattern: { data: { uri } }
                       (result as { data?: { uri?: string } })?.data?.uri ||
+                      // nested under structuredContent.uri
                       (
                         result as {
                           structuredContent?: { uri?: string };
                         }
                       )?.structuredContent?.uri ||
+                      // sometimes nested one level deeper: structuredContent.data.uri
+                      (
+                        result as {
+                          structuredContent?: { data?: { uri?: string } };
+                        }
+                      )?.structuredContent?.data?.uri ||
+                      // fallback: first content text chunk
                       (
                         result as {
                           content?: Array<{ text?: string }>;

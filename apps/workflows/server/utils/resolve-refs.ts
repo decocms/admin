@@ -143,45 +143,109 @@ export function resolveAtRef(
 }
 
 /**
- * Recursively resolve all @refs in an input object
+ * Coerce a value to match the expected type from the schema
+ */
+function coerceValueToSchemaType(
+  value: unknown,
+  schema: Record<string, unknown> | undefined,
+): unknown {
+  if (!schema || typeof schema !== "object") {
+    return value;
+  }
+
+  const schemaType = schema.type;
+
+  // Handle string values that should be numbers
+  if (schemaType === "number" && typeof value === "string") {
+    const num = Number(value);
+    if (!Number.isNaN(num)) {
+      return num;
+    }
+  }
+
+  // Handle string values that should be booleans
+  if (schemaType === "boolean" && typeof value === "string") {
+    if (value.toLowerCase() === "true") return true;
+    if (value.toLowerCase() === "false") return false;
+  }
+
+  // Handle string values that should be integers
+  if (schemaType === "integer" && typeof value === "string") {
+    const num = Number.parseInt(value, 10);
+    if (!Number.isNaN(num)) {
+      return num;
+    }
+  }
+
+  return value;
+}
+
+/**
+ * Recursively resolve all @refs in an input object and coerce types based on schema
  */
 export function resolveAtRefsInInput(
   input: Record<string, unknown>,
   context: WorkflowExecutionContext,
+  inputSchema?: Record<string, unknown>,
 ): ResolvedInput {
   const resolved: Record<string, unknown> = {};
   const errors: Array<{ ref: string; error: string }> = [];
 
-  function resolveValue(value: unknown): unknown {
+  // Extract schema properties if available
+  const schemaProperties =
+    inputSchema && typeof inputSchema === "object"
+      ? (inputSchema.properties as Record<string, unknown> | undefined)
+      : undefined;
+
+  function resolveValue(
+    value: unknown,
+    propertySchema?: Record<string, unknown>,
+  ): unknown {
     // If it's an @ref, resolve it
     if (isAtRef(value)) {
       const result = resolveAtRef(value, context);
       if (result.error) {
         errors.push({ ref: value, error: result.error });
       }
-      return result.value;
+      // Coerce the resolved value based on schema
+      return coerceValueToSchemaType(result.value, propertySchema);
     }
 
     // If it's an array, resolve each element
     if (Array.isArray(value)) {
-      return value.map(resolveValue);
+      const itemSchema =
+        propertySchema && typeof propertySchema === "object"
+          ? (propertySchema.items as Record<string, unknown> | undefined)
+          : undefined;
+      return value.map((v) => resolveValue(v, itemSchema));
     }
 
     // If it's an object, resolve each property
     if (value !== null && typeof value === "object") {
       const resolvedObj: Record<string, unknown> = {};
+      const nestedProperties =
+        propertySchema && typeof propertySchema === "object"
+          ? (propertySchema.properties as Record<string, unknown> | undefined)
+          : undefined;
+
       for (const [key, val] of Object.entries(value)) {
-        resolvedObj[key] = resolveValue(val);
+        const nestedSchema = nestedProperties
+          ? (nestedProperties[key] as Record<string, unknown> | undefined)
+          : undefined;
+        resolvedObj[key] = resolveValue(val, nestedSchema);
       }
       return resolvedObj;
     }
 
-    // Primitive value, return as-is
-    return value;
+    // Primitive value, coerce type based on schema
+    return coerceValueToSchemaType(value, propertySchema);
   }
 
   for (const [key, value] of Object.entries(input)) {
-    resolved[key] = resolveValue(value);
+    const propertySchema = schemaProperties
+      ? (schemaProperties[key] as Record<string, unknown> | undefined)
+      : undefined;
+    resolved[key] = resolveValue(value, propertySchema);
   }
 
   return { resolved, errors: errors.length > 0 ? errors : undefined };

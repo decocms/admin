@@ -70,21 +70,25 @@ export const createRunWorkflowStepTool = (env: Env) =>
       const { step, previousStepResults, globalInput } = context;
 
       try {
-        // 1. Resolve @refs in input
+        // 1. Resolve @refs in input and coerce types based on schema
         const stepResultsMap = new Map(
           Object.entries(previousStepResults || {}),
         );
-        const resolutionResult = resolveAtRefsInInput(step.input, {
-          workflow: {
-            id: "",
-            name: "",
-            steps: [],
-            createdAt: "",
-            updatedAt: "",
+        const resolutionResult = resolveAtRefsInInput(
+          step.input,
+          {
+            workflow: {
+              id: "",
+              name: "",
+              steps: [],
+              createdAt: "",
+              updatedAt: "",
+            },
+            stepResults: stepResultsMap,
+            globalInput: globalInput || {},
           },
-          stepResults: stepResultsMap,
-          globalInput: globalInput || {},
-        });
+          step.inputSchema,
+        );
 
         // If there are resolution errors, return them
         if (resolutionResult.errors && resolutionResult.errors.length > 0) {

@@ -797,9 +797,3 @@ export const useCurrentWorkflow = () => {
 export const useCurrentStepIndex = () => {
   return useWorkflowStore((state) => state.currentStepIndex);
 };
-
-export const useCurrentWorkflowToken = () => {
-  //   const currentWorkflow = useCurrentWorkflow();
-  return "";
-  //   return currentWorkflow.data.authorization?.token;
-};

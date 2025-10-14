@@ -526,8 +526,8 @@ export const listIntegrations = createIntegrationManagementTool({
           org_id: organizations.id,
         })
         .from(agents)
-        .innerJoin(projects, eq(agents.project_id, projects.id))
-        .innerJoin(organizations, eq(projects.org_id, organizations.id))
+        .leftJoin(projects, eq(agents.project_id, projects.id))
+        .leftJoin(organizations, eq(projects.org_id, organizations.id))
         .where(
           filterByWorkspaceOrLocator({
             table: agents,
@@ -764,8 +764,8 @@ export const getIntegration = createIntegrationManagementTool({
               org_id: organizations.id,
             })
             .from(agents)
-            .innerJoin(projects, eq(agents.project_id, projects.id))
-            .innerJoin(organizations, eq(projects.org_id, organizations.id))
+            .leftJoin(projects, eq(agents.project_id, projects.id))
+            .leftJoin(organizations, eq(projects.org_id, organizations.id))
             .where(
               and(
                 filterByWorkspaceOrLocator({
@@ -880,8 +880,8 @@ export const createIntegration = createIntegrationManagementTool({
             id: integrations.id,
           })
           .from(integrations)
-          .innerJoin(projects, eq(integrations.project_id, projects.id))
-          .innerJoin(organizations, eq(projects.org_id, organizations.id))
+          .leftJoin(projects, eq(integrations.project_id, projects.id))
+          .leftJoin(organizations, eq(projects.org_id, organizations.id))
           .where(
             and(
               filterByWorkspaceOrLocator({

@@ -294,8 +294,8 @@ export const reissueApiKey = createTool({
         workspace: apiKeys.workspace,
       })
       .from(apiKeys)
-      .innerJoin(projects, eq(apiKeys.project_id, projects.id))
-      .innerJoin(organizations, eq(projects.org_id, organizations.id))
+      .leftJoin(projects, eq(apiKeys.project_id, projects.id))
+      .leftJoin(organizations, eq(projects.org_id, organizations.id))
       .where(and(...filters))
       .limit(1);
 

@@ -128,8 +128,8 @@ export const listAgents = createTool({
     const data = await c.drizzle
       .select(AGENT_FIELDS_SELECT)
       .from(agents)
-      .innerJoin(projects, eq(agents.project_id, projects.id))
-      .innerJoin(organizations, eq(projects.org_id, organizations.id))
+      .leftJoin(projects, eq(agents.project_id, projects.id))
+      .leftJoin(organizations, eq(projects.org_id, organizations.id))
       .where(filter)
       .orderBy(desc(agents.created_at));
 
@@ -247,8 +247,8 @@ export const getAgent = createTool({
         : c.drizzle
             .select(AGENT_FIELDS_SELECT)
             .from(agents)
-            .innerJoin(projects, eq(agents.project_id, projects.id))
-            .innerJoin(organizations, eq(projects.org_id, organizations.id))
+            .leftJoin(projects, eq(agents.project_id, projects.id))
+            .leftJoin(organizations, eq(projects.org_id, organizations.id))
             .where(and(filter, eq(agents.id, id)))
             .limit(1)
             .then((r) => r[0]),
@@ -328,8 +328,8 @@ export const updateAgent = createAgentSetupTool({
         projectId: agents.project_id,
       })
       .from(agents)
-      .innerJoin(projects, eq(agents.project_id, projects.id))
-      .innerJoin(organizations, eq(projects.org_id, organizations.id))
+      .leftJoin(projects, eq(agents.project_id, projects.id))
+      .leftJoin(organizations, eq(projects.org_id, organizations.id))
       .where(and(filter, eq(agents.id, id)))
       .limit(1)
       .then((r) => r[0]);
@@ -377,8 +377,8 @@ export const deleteAgent = createTool({
     const agentExists = await c.drizzle
       .select({ id: agents.id })
       .from(agents)
-      .innerJoin(projects, eq(agents.project_id, projects.id))
-      .innerJoin(organizations, eq(projects.org_id, organizations.id))
+      .leftJoin(projects, eq(agents.project_id, projects.id))
+      .leftJoin(organizations, eq(projects.org_id, organizations.id))
       .where(and(filter, eq(agents.id, id)))
       .limit(1);
 

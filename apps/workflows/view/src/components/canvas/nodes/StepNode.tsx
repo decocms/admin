@@ -9,7 +9,7 @@ import {
   DropdownMenuTrigger,
 } from "@deco/ui/components/dropdown-menu.tsx";
 import { useExecuteStep } from "../../../hooks/useExecuteStep";
-import { useState, memo, useMemo, useCallback } from "react";
+import { useState, memo, useMemo, useCallback, useRef, useEffect } from "react";
 import { RichTextEditor } from "../../RichTextEditor";
 import { RenderInputViewModal } from "../../RenderInputViewModal";
 import { useCurrentWorkflow, useWorkflowStoreActions } from "@/store/workflow";
@@ -138,12 +138,15 @@ interface StepFormViewProps {
   onCreateInputView: (key: string) => void;
 }
 
-function StepFormView({
+// OPTIMIZED: Memoize to prevent re-renders when parent updates
+const StepFormView = memo(function StepFormView({
   step,
   inputSchemaEntries,
   workflowActions,
   onCreateInputView,
 }: StepFormViewProps) {
+  // Use hook directly instead of prop drilling
+  const workflow = useCurrentWorkflow();
   return (
     <>
       {/* Tools Used Section */}
@@ -188,7 +191,6 @@ function StepFormView({
                   typeof schemaObj.description === "string"
                     ? schemaObj.description
                     : "";
-                const inputKey = `${step.name}_${key}`;
 
                 // Get the current value from step.input
                 const currentValue = step.input?.[key];
@@ -200,7 +202,7 @@ function StepFormView({
                       : "";
 
                 return (
-                  <div key={`${inputKey}_wrapper`}>
+                  <div key={key}>
                     <div className="flex items-center justify-between mb-2">
                       <label className="text-sm font-medium text-foreground leading-none">
                         {key}
@@ -216,7 +218,6 @@ function StepFormView({
                     </div>
 
                     <RichTextEditor
-                      key={inputKey}
                       placeholder={description || `Enter ${key}...`}
                       minHeight="40px"
                       value={stringValue}
@@ -240,12 +241,23 @@ function StepFormView({
       )}
     </>
   );
-}
+});
 
 export const StepNode = memo(function StepNode({
   data,
 }: NodeProps<StepNodeData>) {
-  const zoom = useStore((s) => s.transform[2]);
+  // 🔵 PERFORMANCE LOGGING
+  const renderCount = useRef(0);
+  useEffect(() => {
+    renderCount.current++;
+    console.log(`🔵 [StepNode:${data.stepId}] RENDER #${renderCount.current}`);
+  });
+
+  // OPTIMIZED: Only subscribe to zoom, and add equality check to prevent re-renders
+  const zoom = useStore(
+    (s) => s.transform[2],
+    (a, b) => Math.abs(a - b) < 0.01,
+  );
   const [showJsonView, setShowJsonView] = useState(false);
   const [_creatingInputViewFor, setCreatingInputViewFor] = useState<
     string | null
@@ -266,7 +278,7 @@ export const StepNode = memo(function StepNode({
 
   const compact = zoom < 0.7;
 
-  // Memoize input schema entries to prevent recalculation on every render
+  // OPTIMIZED: Only compute when actually needed (when showJsonView is true)
   const inputSchemaEntries = useMemo((): Array<[string, unknown]> => {
     if (!step?.inputSchema) return [];
     return Object.entries(
@@ -274,31 +286,38 @@ export const StepNode = memo(function StepNode({
     );
   }, [step?.inputSchema]);
 
-  // Memoize JSON view lines to prevent expensive string operations on every render
+  // OPTIMIZED: Only compute JSON when viewing JSON (expensive operation)
   const jsonViewData = useMemo((): { jsonString: string; lines: string[] } => {
-    if (!step) return { jsonString: "", lines: [] };
+    if (!step || !showJsonView) return { jsonString: "", lines: [] };
     const jsonString = JSON.stringify(step, null, 2);
     const lines = jsonString.split("\n");
     return { jsonString, lines };
-  }, [step]);
+  }, [step, showJsonView]);
 
-  // Memoize the execute step handler to prevent recreation on every render
+  // OPTIMIZED: Extract stable values to reduce callback recreation
+  const stepName = step?.name;
+  const stepExecute = step?.execute;
+  const stepInputSchema = step?.inputSchema;
+  const stepOutputSchema = step?.outputSchema;
+  const stepInput = step?.input;
+  const authToken = workflow?.authorization?.token;
+
+  // Memoize the execute step handler with stable dependencies
   const handleExecuteStep = useCallback(() => {
-    if (!step) return;
+    if (!step || !stepName) return;
+
     // Collect outputs from all previous steps for @ref resolution
     const previousStepResults: Record<string, unknown> = {};
-    const currentStepIndex = workflow.steps?.findIndex(
-      (s: WorkflowStep) => s.name === step.name,
+    const currentStepIndex = workflow?.steps?.findIndex(
+      (s: WorkflowStep) => s.name === stepName,
     );
 
     if (currentStepIndex !== undefined && currentStepIndex > 0) {
       // Get all steps before the current one
-      const previousSteps = workflow.steps?.slice(0, currentStepIndex);
+      const previousSteps = workflow?.steps?.slice(0, currentStepIndex);
 
       previousSteps?.forEach((prevStep: WorkflowStep) => {
         // Only include steps that have successful execution with output data
-        // step.output now contains: { success, output, duration, ... }
-        // The resolver expects: previousStepResults[stepName] = { output: actualOutput }
         if (
           prevStep.output &&
           typeof prevStep.output === "object" &&
@@ -319,28 +338,25 @@ export const StepNode = memo(function StepNode({
     executeStepMutation.mutate(
       {
         step: {
-          id: step.name,
-          name: step.name,
-          code: step.execute,
-          inputSchema: step.inputSchema,
-          outputSchema: step.outputSchema,
-          input: step.input,
+          id: stepName,
+          name: stepName,
+          code: (stepExecute || "") as string,
+          inputSchema: (stepInputSchema || {}) as any,
+          outputSchema: (stepOutputSchema || {}) as any,
+          input: (stepInput || {}) as any,
         },
         previousStepResults,
-        authToken: workflow.authorization?.token,
+        authToken,
       },
       {
         onSuccess: async (result) => {
-          // Await the result if it's a promise
           const resolvedResult = await result;
           console.log(
             "✅ [StepNode] Step executed successfully:",
             resolvedResult,
           );
 
-          // Save the FULL result to the workflow store (including success, output, duration, etc.)
-          // This allows: 1) StepOutput component to access all fields, 2) subsequent steps to reference via @refs
-          workflowActions.updateStep(step.name, {
+          workflowActions.updateStep(stepName, {
             output: resolvedResult as unknown as Record<string, unknown>,
           });
 
@@ -355,17 +371,27 @@ export const StepNode = memo(function StepNode({
         },
         onError: (error) => {
           console.error("❌ [StepNode] Step execution error:", error);
-          // Store error in output field
           const errorData: Record<string, unknown> = {
             error: String(error),
           };
-          workflowActions.updateStep(step.name, {
+          workflowActions.updateStep(stepName, {
             output: errorData,
           });
         },
       },
     );
-  }, [workflow, step, executeStepMutation, workflowActions]);
+  }, [
+    workflow?.steps,
+    step,
+    stepName,
+    stepExecute,
+    stepInputSchema,
+    stepOutputSchema,
+    stepInput,
+    authToken,
+    executeStepMutation,
+    workflowActions,
+  ]);
 
   if (!step) return null;
 

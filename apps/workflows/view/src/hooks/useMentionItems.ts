@@ -1,11 +1,13 @@
 /**
  * Hook to generate mention items for Tiptap
  * Combines tools from integrations + previous workflow steps
+ *
+ * OPTIMIZED: Use specific dependencies instead of entire objects
  */
 import { useMemo } from "react";
 import { useIntegrations } from "./useIntegrations";
-import type { Workflow } from "../types/workflow";
-import type { WorkflowStep } from "shared/types/workflows";
+import { Workflow, WorkflowStep } from "shared/types/workflows";
+import { useCurrentWorkflow } from "@/store/workflow";
 
 interface ToolItem {
   id: string;
@@ -26,64 +28,53 @@ interface StepItem {
 
 export type MentionItem = ToolItem | StepItem;
 
-export function useMentionItems(workflow?: Workflow): MentionItem[] {
+export function useMentionItems(): MentionItem[] {
   const { data: integrations = [] } = useIntegrations();
+  const workflow = useCurrentWorkflow();
+
+  console.log({ integrations });
+
+  // Extract stable primitive values instead of using entire workflow object
+  const workflowSteps = workflow?.steps;
+  const stepsKey = useMemo(
+    () => workflowSteps?.map((s) => s.name).join(",") || "",
+    [workflowSteps],
+  );
 
   return useMemo(() => {
     const items: MentionItem[] = [];
+
     // Add tools from integrations
-    integrations.forEach(
-      (integration: {
-        id: string;
-        name: string;
-        tools?: Array<{
-          id: string;
-          name: string;
-          description?: string;
-          integration: string;
-        }>;
-      }) => {
-        integration.tools?.forEach(
-          (tool: {
-            id: string;
-            name: string;
-            description?: string;
-            integration: string;
-          }) => {
-            items.push({
-              id: `@${tool.name}`,
-              type: "tool",
-              label: tool.name,
-              description: tool.description,
-              category: integration.name,
-              integration: {
-                id: integration.id,
-                name: integration.name,
-                icon: undefined,
-              },
-            });
+    integrations.forEach((integration) => {
+      integration.tools?.forEach((tool) => {
+        items.push({
+          id: `@${tool.name}`,
+          type: "tool",
+          label: tool.name,
+          description: tool.description,
+          category: integration.name,
+          integration: {
+            id: integration.id,
+            name: integration.name,
+            icon: integration.icon,
           },
-        );
-      },
-    );
+        });
+      });
+    });
 
     // Add previous steps (if workflow provided)
-    if (workflow) {
-      workflow.steps?.forEach((step: WorkflowStep, index: number) => {
-        if (!workflow.steps) return;
-        if (index < workflow.steps?.length) {
-          // Add the step reference without property suffix - user can type it
-          items.push({
-            id: `@${step.id}`,
-            type: "step",
-            label: `${step.title}`,
-            description: `Reference output: @${step.id}.output`,
-            category: "Previous Steps",
-          });
-        }
+    if (workflowSteps?.length) {
+      workflowSteps.forEach((step: WorkflowStep) => {
+        items.push({
+          id: `@${step.name}`,
+          type: "step",
+          label: `${step.name}`,
+          description: `Reference output: @${step.name}.output`,
+          category: "Previous Steps",
+        });
       });
     }
 
     return items;
-  }, [integrations, workflow]);
+  }, [integrations, stepsKey, workflowSteps]);
 }

@@ -794,6 +794,13 @@ export const useCurrentWorkflow = () => {
   return useWorkflowStore((state) => state.workflow.data);
 };
 
+export const useNewStepPrompt = () => {
+  return useWorkflowStore(
+    (state) =>
+      state.workflow.data.steps[state.currentStepIndex - 1].prompt || "",
+  );
+};
+
 export const useCurrentStepIndex = () => {
   return useWorkflowStore((state) => state.currentStepIndex);
 };

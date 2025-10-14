@@ -3,15 +3,19 @@ import { Button } from "@deco/ui/components/button.tsx";
 import { Icon } from "@deco/ui/components/icon.tsx";
 import { RichTextEditor } from "../../RichTextEditor";
 import { useGenerateStep } from "../../../hooks/useGenerateStep";
-import { useCurrentWorkflow } from "@/store/workflow";
-import { useStepEditorPrompt } from "@/store/step-editor";
+import {
+  useCurrentWorkflow,
+  useNewStepPrompt,
+  useWorkflowStoreActions,
+} from "@/store/workflow";
 import { memo } from "react";
 import type { WorkflowStep } from "shared/types/workflows";
 
 export const NewStepNode = memo(function NewStepNode(_props: NodeProps) {
   const workflow = useCurrentWorkflow();
+  const workflowActions = useWorkflowStoreActions();
   const generateStepMutation = useGenerateStep();
-  const prompt = useStepEditorPrompt();
+  const prompt = useNewStepPrompt();
 
   const handleGenerateStep = () => {
     if (!prompt.trim() || !workflow) {
@@ -71,6 +75,10 @@ export const NewStepNode = memo(function NewStepNode(_props: NodeProps) {
             <RichTextEditor
               placeholder="Type @ to mention tools or steps"
               minHeight="120px"
+              value={prompt}
+              onChange={(value) =>
+                workflowActions.updateStep(prompt, { prompt: value })
+              }
             />
           </div>
         </div>

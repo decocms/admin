@@ -47,27 +47,18 @@ const Inner = forwardRef<WorkflowCanvasRef>(function Inner(_, ref) {
   const lastScrollTimeRef = useRef<number>(0);
   const lastCenteredStepRef = useRef<number>(-1);
 
-  // Calculate initial viewport position to center the current step
+  // Initial mount flag to trigger centering on first render
+  const isInitialMountRef = useRef(true);
+
+  // Calculate a rough initial viewport to prevent initial jump
   const initialViewport = useMemo(() => {
-    if (!workflow) return { x: 0, y: 0, zoom: 1 };
-
-    // Get container dimensions (approximate if not available yet)
-    const viewportWidth = window.innerWidth;
-    const viewportHeight = window.innerHeight;
-
-    // Calculate the X position for the current step
+    // Start with a basic X offset to roughly center the current step
     const stepX = currentStepIndex * (CARD_WIDTH + CARD_GAP);
+    const estimatedViewportWidth = window.innerWidth;
+    const centeredX = estimatedViewportWidth / 2 - (stepX + CARD_WIDTH / 2);
 
-    // Center the step horizontally
-    const centeredX = viewportWidth / 2 - (stepX + CARD_WIDTH / 2);
-
-    // Use approximate node height for vertical centering
-    const nodeHeight = 400; // Approximate height
-    const toolbarOffset = 80; // Account for toolbar at bottom
-    const availableHeight = viewportHeight - toolbarOffset;
-    const centeredY = availableHeight / 2 - nodeHeight / 2;
-
-    return { x: centeredX, y: centeredY, zoom: 1 };
+    // Y will be adjusted by the centering effect shortly after mount
+    return { x: centeredX, y: 0, zoom: 1 };
   }, []); // Only calculate once on mount
 
   // Center the viewport on the current step
@@ -86,14 +77,8 @@ const Inner = forwardRef<WorkflowCanvasRef>(function Inner(_, ref) {
             return;
           }
 
-          const viewportWidth = container.clientWidth;
-          const viewportHeight = container.clientHeight;
-
           // Calculate the X position for the current step
           const stepX = stepIndex * (CARD_WIDTH + CARD_GAP);
-
-          // Center the step horizontally (kept for reference)
-          // const centeredX = viewportWidth / 2 - (stepX + CARD_WIDTH / 2);
 
           // Get the actual node to calculate its height for proper vertical centering
           const nodeId =
@@ -103,23 +88,16 @@ const Inner = forwardRef<WorkflowCanvasRef>(function Inner(_, ref) {
           const node = document.querySelector(`[data-id="${nodeId}"]`);
           const nodeHeight = node?.clientHeight || 200; // fallback to 200px if node not found
 
-          // Center vertically - account for node height and toolbar at bottom
-          // The toolbar is ~100px from bottom (6 * 4px = 24px bottom margin + toolbar height)
-          // Adjust the vertical position to account for this
-          const toolbarOffsetLocal = 80; // Account for toolbar at bottom
-          const availableHeight = viewportHeight - toolbarOffsetLocal;
-          // const centeredY = availableHeight / 2 - nodeHeight / 2;
+          // Use setCenter for accurate centering regardless of container size
+          const targetX = stepX + CARD_WIDTH / 2;
+          const targetY = nodeHeight / 2;
+          const toolbarOffset = 80; // Account for toolbar at bottom
+          const adjustedY = Math.max(0, targetY - toolbarOffset / 2);
 
-        // Prefer setCenter for accurate centering regardless of container size
-        const targetX = stepX + CARD_WIDTH / 2;
-        const targetY = nodeHeight / 2;
-        const toolbarOffsetGlobal = 80;
-        const adjustedY = Math.max(0, targetY - toolbarOffsetGlobal / 2);
-
-        rf.setCenter(targetX, adjustedY, {
-          zoom: 1,
-          duration: animated ? 300 : 0,
-        });
+          rf.setCenter(targetX, adjustedY, {
+            zoom: 1,
+            duration: animated ? 300 : 0,
+          });
 
           // Allow movement after centering animation completes
           const delay = animated ? 350 : 50;
@@ -134,23 +112,62 @@ const Inner = forwardRef<WorkflowCanvasRef>(function Inner(_, ref) {
 
   // Center viewport when current step changes - only if step actually changed
   useEffect(() => {
-    if (lastCenteredStepRef.current === currentStepIndex) {
+    const isInitial = isInitialMountRef.current;
+
+    if (lastCenteredStepRef.current === currentStepIndex && !isInitial) {
       return; // Already centered on this step
     }
 
     lastCenteredStepRef.current = currentStepIndex;
+    isInitialMountRef.current = false;
 
     // Small delay to ensure nodes are rendered
+    const delay = isInitial ? 100 : 50;
     const timer = setTimeout(() => {
-      centerViewport(currentStepIndex);
-    }, 50);
+      centerViewport(currentStepIndex, !isInitial);
+    }, delay);
 
     return () => clearTimeout(timer);
   }, [currentStepIndex, centerViewport]);
 
+  // Track the current step's output to detect when execution completes
+  const currentStepOutput = useMemo(() => {
+    if (!workflow?.steps || currentStepIndex >= workflow.steps.length) {
+      return null;
+    }
+    return workflow.steps[currentStepIndex]?.output;
+  }, [workflow?.steps, currentStepIndex]);
+
+  // Re-center when current step's output changes (execution completes)
+  useEffect(() => {
+    if (!currentStepOutput) {
+      return; // No output yet
+    }
+
+    // Wait for the DOM to update with the new output content, then re-center
+    const timer = setTimeout(() => {
+      centerViewport(currentStepIndex, true);
+    }, 150);
+
+    return () => clearTimeout(timer);
+  }, [currentStepOutput, currentStepIndex, centerViewport]);
+
+  // OPTIMIZED: Use primitive values instead of complex objects for dependencies
+  const stepsLength = workflow?.steps?.length || 0;
   const stepIds = useMemo(
     () => workflow?.steps?.map((s: WorkflowStep) => s.name).join(",") || "",
     [workflow?.steps],
+  );
+
+  // Memoize the plus button onClick to prevent React Flow warnings
+  const handlePlusClick = useCallback(() => {
+    setCurrentStepIndex(stepsLength);
+  }, [stepsLength, setCurrentStepIndex]);
+
+  // Memoize the data object for plus button to maintain stable reference
+  const plusButtonData = useMemo(
+    () => ({ onClick: handlePlusClick }),
+    [handlePlusClick],
   );
 
   const nodes = useMemo(() => {
@@ -160,7 +177,7 @@ const Inner = forwardRef<WorkflowCanvasRef>(function Inner(_, ref) {
     const Y_POSITION = 0; // All nodes at same Y level for proper centering
 
     // Case 1: No steps yet - show new step node
-    if (workflow.steps?.length === 0) {
+    if (stepsLength === 0) {
       result.push({
         id: "new",
         type: "newStep",
@@ -185,11 +202,9 @@ const Inner = forwardRef<WorkflowCanvasRef>(function Inner(_, ref) {
     });
 
     // Case 3: Add appropriate node at the end
-    const nextX = workflow.steps?.length
-      ? workflow.steps.length * (CARD_WIDTH + CARD_GAP)
-      : 0;
+    const nextX = stepsLength * (CARD_WIDTH + CARD_GAP);
 
-    if (currentStepIndex === workflow.steps?.length) {
+    if (currentStepIndex === stepsLength) {
       // User is on the "new step" screen - show new step node
       result.push({
         id: "new",
@@ -204,34 +219,25 @@ const Inner = forwardRef<WorkflowCanvasRef>(function Inner(_, ref) {
         id: "plus-end",
         type: "plusButton",
         position: {
-          x:
-            (workflow.steps?.length ? workflow.steps.length - 1 : 0) *
-              (CARD_WIDTH + CARD_GAP) +
-            CARD_WIDTH +
-            80,
+          x: (stepsLength - 1) * (CARD_WIDTH + CARD_GAP) + CARD_WIDTH + 80,
           y: Y_POSITION, // Aligned with step nodes
         },
-        data: {
-          onClick: () => {
-            if (workflow) {
-              setCurrentStepIndex(workflow.steps?.length || 0);
-            }
-          },
-        },
+        data: plusButtonData,
         draggable: false,
       });
     }
 
     return result;
-  }, [stepIds, workflow, currentStepIndex, setCurrentStepIndex]);
+  }, [stepIds, stepsLength, workflow, currentStepIndex, plusButtonData]);
 
+  // OPTIMIZED: Simplified dependencies
   const edges = useMemo<Edge[]>(() => {
-    if (!workflow || !workflow.steps) return [];
+    if (!workflow?.steps || stepsLength === 0) return [];
 
     const result: Edge[] = [];
 
     // Connect all consecutive step nodes
-    for (let i = 0; i < workflow.steps?.length - 1; i++) {
+    for (let i = 0; i < stepsLength - 1; i++) {
       result.push({
         id: `${workflow.steps[i].name}-${workflow.steps[i + 1].name}`,
         source: workflow.steps[i].name,
@@ -241,20 +247,17 @@ const Inner = forwardRef<WorkflowCanvasRef>(function Inner(_, ref) {
     }
 
     // Connect last step to new step node when on "new step" screen
-    if (
-      workflow.steps.length > 0 &&
-      currentStepIndex === workflow.steps.length
-    ) {
+    if (currentStepIndex === stepsLength) {
       result.push({
-        id: `${workflow.steps[workflow.steps.length - 1].name}-new`,
-        source: workflow.steps[workflow.steps.length - 1].name,
+        id: `${workflow.steps[stepsLength - 1].name}-new`,
+        source: workflow.steps[stepsLength - 1].name,
         target: "new",
         animated: true,
       });
     }
 
     return result;
-  }, [stepIds, workflow, currentStepIndex]);
+  }, [stepIds, stepsLength, workflow?.steps, currentStepIndex]);
 
   const onNodeClick = useCallback(
     (_event: React.MouseEvent, node: Node) => {
@@ -284,36 +287,41 @@ const Inner = forwardRef<WorkflowCanvasRef>(function Inner(_, ref) {
     return;
   }, []);
 
-  // Handle horizontal scroll to navigate between steps  
+  // Handle horizontal scroll to navigate between steps
+  // OPTIMIZED: Reduced DOM traversal and better memoization
   const handleWheel = useCallback(
     (event: React.WheelEvent) => {
       if (!workflow || isCenteringRef.current) return;
 
-      // Check if the event target is inside a scrollable container
+      // Quick check: if inside a scrollable element, let it scroll
       const target = event.target as HTMLElement;
+
+      // Check only closest scrollable parents (max 5 levels) instead of traversing entire tree
       let element: HTMLElement | null = target;
-      
-      // Traverse up the DOM tree to check if we're inside a scrollable element
-      while (element && element !== event.currentTarget) {
-        const computedStyle = window.getComputedStyle(element);
-        const overflowY = computedStyle.overflowY;
-        const overflowX = computedStyle.overflowX;
-        
-        // If this element is scrollable and has scrollable content, don't intercept
-        if (
-          (overflowY === "auto" || overflowY === "scroll") &&
-          element.scrollHeight > element.clientHeight
-        ) {
-          return; // Allow native scrolling
+      let depth = 0;
+      const MAX_DEPTH = 5;
+
+      while (element && element !== event.currentTarget && depth < MAX_DEPTH) {
+        // Use cached styles check - getComputedStyle is expensive
+        const hasScrollableY = element.scrollHeight > element.clientHeight;
+        const hasScrollableX = element.scrollWidth > element.clientWidth;
+
+        if (hasScrollableY || hasScrollableX) {
+          const computedStyle = window.getComputedStyle(element);
+          const overflowY = computedStyle.overflowY;
+          const overflowX = computedStyle.overflowX;
+
+          if (
+            ((overflowY === "auto" || overflowY === "scroll") &&
+              hasScrollableY) ||
+            ((overflowX === "auto" || overflowX === "scroll") && hasScrollableX)
+          ) {
+            return; // Allow native scrolling
+          }
         }
-        if (
-          (overflowX === "auto" || overflowX === "scroll") &&
-          element.scrollWidth > element.clientWidth
-        ) {
-          return; // Allow native scrolling
-        }
-        
+
         element = element.parentElement;
+        depth++;
       }
 
       // Detect horizontal scroll
@@ -321,17 +329,17 @@ const Inner = forwardRef<WorkflowCanvasRef>(function Inner(_, ref) {
         Math.abs(event.deltaX) > Math.abs(event.deltaY);
 
       if (isHorizontalScroll) {
-        // Prevent default scroll behavior
         event.preventDefault();
         event.stopPropagation();
 
         const now = Date.now();
         const timeSinceLastScroll = now - lastScrollTimeRef.current;
 
-        // Debounce: only trigger navigation if 600ms have passed since last scroll
+        // Debounce: only trigger navigation if 600ms have passed
         if (timeSinceLastScroll < 600) return;
 
         const scrollAmount = event.deltaX;
+        const maxSteps = workflow.steps?.length || 0;
 
         // Threshold to trigger navigation
         if (Math.abs(scrollAmount) > 10) {
@@ -339,10 +347,7 @@ const Inner = forwardRef<WorkflowCanvasRef>(function Inner(_, ref) {
 
           if (scrollAmount > 0) {
             // Scroll right -> next step
-            const nextIndex = Math.min(
-              currentStepIndex + 1,
-              workflow.steps?.length || 0,
-            );
+            const nextIndex = Math.min(currentStepIndex + 1, maxSteps);
             if (nextIndex !== currentStepIndex) {
               setCurrentStepIndex(nextIndex);
             }

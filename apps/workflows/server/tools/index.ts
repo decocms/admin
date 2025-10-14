@@ -10,6 +10,7 @@ import { userTools } from "./user.ts";
 import { viewTools } from "./views.ts";
 import { workflowTools } from "./workflows.ts";
 import { workspaceTools } from "./workspace.ts";
+import { integrationTools } from "./integrations.ts";
 
 // Export all tools from all domains
 export const tools = [
@@ -18,4 +19,5 @@ export const tools = [
   ...workspaceTools,
   ...workflowTools,
   ...viewTools,
+  ...integrationTools,
 ];

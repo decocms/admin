@@ -36,6 +36,7 @@ export function RichTextEditor({
   onChange,
 }: RichTextEditorProps) {
   const mentions = useMentionItems();
+  console.log({ mentions });
   const { setPrompt } = useStepEditorActions();
   const globalPrompt = useStepEditorPrompt();
 

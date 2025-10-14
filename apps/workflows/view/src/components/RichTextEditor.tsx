@@ -8,16 +8,18 @@ import Mention from '@tiptap/extension-mention';
 import Placeholder from '@tiptap/extension-placeholder';
 import tippy, { Instance as TippyInstance } from 'tippy.js';
 import { MentionNode } from './MentionNode';
-import { useMentionItems } from '@/hooks/useMentionItems';
+import { useMentionItems, type MentionItem } from '@/hooks/useMentionItems';
 import { useStepEditorActions, useStepEditorPrompt } from '@/store/step-editor';
 import { useRef, useEffect } from 'react';
 
-interface MentionItem {
-  id: string;
-  label: string;
-  type: 'tool' | 'step';
-  description?: string;
-  category?: string;
+interface TiptapSuggestionProps {
+  items: MentionItem[];
+  clientRect?: (() => DOMRect | null) | null;
+  command: (item: { id: string; label: string; type: 'tool' | 'step' }) => void;
+}
+
+interface TiptapKeyDownProps {
+  event: KeyboardEvent;
 }
 
 export function RichTextEditor({ minHeight = '120px', placeholder = 'Type @ to mention...'}: { minHeight?: string, placeholder?: string }) {
@@ -78,15 +80,20 @@ export function RichTextEditor({ minHeight = '120px', placeholder = 'Type @ to m
             let selectedIndex = 0;
 
             return {
-              onStart: (props: any) => {
+              onStart: (props: TiptapSuggestionProps) => {
                 component = document.createElement('div');
                 component.className = 'mention-dropdown';
                 selectedIndex = 0;
                 
                 if (!props.clientRect) return;
 
+                const getRect = (): DOMRect | ClientRect => {
+                  const rect = props.clientRect?.();
+                  return rect ?? new DOMRect();
+                };
+
                 popup = tippy(document.body, {
-                  getReferenceClientRect: props.clientRect,
+                  getReferenceClientRect: getRect,
                   appendTo: () => document.body,
                   content: component,
                   showOnCreate: true,
@@ -97,17 +104,23 @@ export function RichTextEditor({ minHeight = '120px', placeholder = 'Type @ to m
 
                 renderItems(component, props.items, selectedIndex, props.command);
               },
-              onUpdate: (props: any) => {
+              onUpdate: (props: TiptapSuggestionProps) => {
                 if (popup && component) {
                   renderItems(component, props.items, selectedIndex, props.command);
-                  popup.setProps({ getReferenceClientRect: props.clientRect });
+                  if (props.clientRect) {
+                    const getRect = (): DOMRect | ClientRect => {
+                      const rect = props.clientRect?.();
+                      return rect ?? new DOMRect();
+                    };
+                    popup.setProps({ getReferenceClientRect: getRect });
+                  }
                 }
               },
-              onKeyDown: (props: any) => {
+              onKeyDown: (props: TiptapKeyDownProps & { items?: MentionItem[]; command?: (item: { id: string; label: string; type: 'tool' | 'step' }) => void }) => {
                 console.log('⌨️ [Tiptap] Key pressed:', props.event.key, 'Items:', props.items?.length, 'Component:', !!component);
                 
                 // Validate props.items exists and component is ready
-                if (!props.items || props.items.length === 0 || !component) {
+                if (!props.items || props.items.length === 0 || !component || !props.command) {
                   console.log('⚠️ [Tiptap] Skipping - no items or component');
                   return false;
                 }
@@ -213,7 +226,7 @@ function renderItems(
   container: HTMLDivElement,
   items: MentionItem[],
   selectedIndex: number,
-  command: (item: any) => void
+  command: (item: { id: string; label: string; type: 'tool' | 'step' }) => void
 ) {
   if (items.length === 0) {
     container.innerHTML = '<div style="padding: 8px; color: var(--muted-foreground); font-size: 14px;">No results</div>';
@@ -245,7 +258,9 @@ function renderItems(
       const id = btn.getAttribute('data-id');
       const label = btn.getAttribute('data-label');
       const type = btn.getAttribute('data-type');
-      command({ id, label, type });
+      if (id && label && (type === 'tool' || type === 'step')) {
+        command({ id, label, type });
+      }
     });
   });
   

@@ -52,7 +52,9 @@ export function IframeViewRenderer({
 
       // Also set as global (for simpler access in scripts)
       try {
-        (iframe.contentWindow as any).viewData = data;
+        if (iframe.contentWindow) {
+          (iframe.contentWindow as Window & { viewData: Record<string, unknown> }).viewData = data;
+        }
         console.log("✅ [IframeView] window.viewData set successfully");
       } catch (e) {
         console.warn(

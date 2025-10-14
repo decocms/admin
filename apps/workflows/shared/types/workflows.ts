@@ -1,9 +1,11 @@
 /**
  * Workflow Data Models
  * Based on plans/00-IMPORTANTE-LEIA-PRIMEIRO.md and plans/02-data-model-and-refs.md
+ * 
+ * ALL TYPES ARE DERIVED FROM RPC RETURN TYPES - NO NEW TYPES CREATED
  */
 
-import type { ViewDefinition } from "./views.ts";
+import { client } from "@/lib/rpc.ts";
 
 /**
  * Reference to data from previous steps or external sources
@@ -14,79 +16,76 @@ export type AtRef = `@${string}`;
 /**
  * A single step in a workflow
  */
-export interface WorkflowStep {
-  id: string; // Unique identifier (step-1, step-2, etc)
-  name: string; // Human-readable name
-  description?: string; // What this step does
-
-  // Tool execution
-  code: string; // ES module code: "export default async function (input, ctx) { ... }"
-  inputSchema: Record<string, unknown>; // JSON Schema for input validation
-  outputSchema: Record<string, unknown>; // JSON Schema for output validation
-
-  // Input can contain @refs that need resolution
-  input: Record<
-    string,
-    | string
-    | number
-    | boolean
-    | null
-    | AtRef
-    | Record<string, unknown>
-    | Array<unknown>
-  >;
-
-  // Execution metadata
-  primaryIntegration?: string; // Main integration ID used (e.g., "SELF", "i:slack_123")
-  primaryTool?: string; // Main tool called (e.g., "LIST_TODOS")
-  usedTools?: Array<{
-    // All tools used in this step
-    integration: string;
-    tool: string;
-  }>;
-
-  // Custom Views (optional)
-  inputView?: ViewDefinition; // Custom view for rendering input form
-  outputView?: ViewDefinition; // Custom view for rendering output data
-
-  // Execution results (filled after running)
-  result?: {
-    success: boolean;
-    output?: unknown;
-    error?: unknown;
-    logs?: Array<{ type: string; content: string }>;
-    executedAt?: string; // ISO timestamp
-    duration?: number; // Execution time in ms
-  };
-}
+export type WorkflowStep = NonNullable<Awaited<ReturnType<typeof client.DECO_RESOURCE_WORKFLOW_READ>>>["data"]["steps"][number];
 
 /**
- * A workflow is a sequence of steps
+ * Workflow resource (full response from READ operation)
  */
-export interface Workflow {
-  id: string; // Unique identifier
-  name: string; // Human-readable name
-  description?: string; // What this workflow does
+export type WorkflowResource = NonNullable<Awaited<ReturnType<typeof client.DECO_RESOURCE_WORKFLOW_READ>>>;
 
-  steps: WorkflowStep[]; // Ordered list of steps
+/**
+ * Workflow data only (without resource metadata)
+ */
+export type Workflow = WorkflowResource["data"];
 
-  // Metadata
-  createdAt: string; // ISO timestamp
-  updatedAt: string; // ISO timestamp
-  createdBy?: string; // User ID
+/**
+ * Tool dependency structure
+ */
+export type WorkflowDependency = NonNullable<WorkflowStep["dependencies"]>[number];
 
-  // Execution state
-  status?: "draft" | "running" | "completed" | "failed";
-  currentStepIndex?: number; // Which step is currently running
+/**
+ * RUN_WORKFLOW_STEP input parameters
+ */
+export type RunWorkflowStepInput = Parameters<typeof client.RUN_WORKFLOW_STEP>[0];
 
-  // Global workflow input (can be referenced in steps as @input.fieldName)
-  input?: Record<
-    string,
-    string | number | boolean | null | Record<string, unknown>
-  >;
+/**
+ * RUN_WORKFLOW_STEP output/result
+ */
+export type RunWorkflowStepOutput = Awaited<ReturnType<typeof client.RUN_WORKFLOW_STEP>>;
 
-  // Final workflow output (result from last step)
-  output?: Record<string, unknown> | string | number | boolean | null;
+/**
+ * GENERATE_STEP input parameters
+ */
+export type GenerateStepInput = Parameters<typeof client.GENERATE_STEP>[0];
+
+/**
+ * GENERATE_STEP output/result
+ */
+export type GenerateStepOutput = Awaited<ReturnType<typeof client.GENERATE_STEP>>;
+
+/**
+ * Generated step from GENERATE_STEP tool
+ */
+export type GeneratedStep = GenerateStepOutput["step"];
+
+/**
+ * IMPORT_TOOL_AS_STEP input parameters
+ */
+export type ImportToolAsStepInput = Parameters<typeof client.IMPORT_TOOL_AS_STEP>[0];
+
+/**
+ * IMPORT_TOOL_AS_STEP output/result
+ */
+export type ImportToolAsStepOutput = Awaited<ReturnType<typeof client.IMPORT_TOOL_AS_STEP>>;
+
+/**
+ * AUTHORIZE_WORKFLOW input parameters
+ */
+export type AuthorizeWorkflowInput = Parameters<typeof client.AUTHORIZE_WORKFLOW>[0];
+
+/**
+ * AUTHORIZE_WORKFLOW output/result
+ */
+export type AuthorizeWorkflowOutput = Awaited<ReturnType<typeof client.AUTHORIZE_WORKFLOW>>;
+
+/**
+ * Tool used in a workflow step
+ * Note: usedTools is not in the official schema but is added by server-side generation
+ */
+export interface UsedTool {
+  toolName: string;
+  integrationId: string;
+  integrationName: string;
 }
 
 /**

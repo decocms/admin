@@ -5,6 +5,7 @@
 import { useMemo } from "react";
 import { useIntegrations } from "./useIntegrations";
 import type { Workflow } from "../types/workflow";
+import type { WorkflowStep } from "shared/types/workflows";
 
 interface ToolItem {
   id: string;
@@ -31,8 +32,8 @@ export function useMentionItems(workflow?: Workflow): MentionItem[] {
   return useMemo(() => {
     const items: MentionItem[] = [];
     // Add tools from integrations
-    integrations.forEach((integration) => {
-      integration.tools?.forEach((tool) => {
+    integrations.forEach((integration: { id: string; name: string; tools?: Array<{ id: string; name: string; description?: string; integration: string }> }) => {
+      integration.tools?.forEach((tool: { id: string; name: string; description?: string; integration: string }) => {
         items.push({
           id: `@${tool.name}`,
           type: "tool",
@@ -50,7 +51,7 @@ export function useMentionItems(workflow?: Workflow): MentionItem[] {
 
     // Add previous steps (if workflow provided)
     if (workflow) {
-      workflow.steps?.forEach((step, index) => {
+      workflow.steps?.forEach((step: WorkflowStep, index: number) => {
         if (!workflow.steps) return;
         if (index < workflow.steps?.length) {
           // Add the step reference without property suffix - user can type it

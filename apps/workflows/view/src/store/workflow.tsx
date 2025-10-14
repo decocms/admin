@@ -1,5 +1,5 @@
 import { createStore, StoreApi, useStore } from "zustand";
-import { createContext, useContext, useState } from "react";
+import { createContext, useContext, useState, useMemo } from "react";
 import { client } from "@/lib/rpc";
 import { persist } from "zustand/middleware";
 import { useSearch } from "@tanstack/react-router";
@@ -60,13 +60,13 @@ export const WorkflowStoreProvider = ({
                   ...get().workflow, 
                   data: {
                     ...get().workflow.data,
-                    steps: get().workflow.data.steps.map((step) =>
+                    steps: get().workflow.data.steps.map((step: WorkflowStep) =>
                       step.name === stepId
                         ? { ...step, ...updates }
                         : step,
-                    ) as any
+                    )
                   }
-                } as any,
+                },
               }));
             },
             addStep: (step: WorkflowStep) => {
@@ -75,9 +75,9 @@ export const WorkflowStoreProvider = ({
                   ...get().workflow, 
                   data: {
                     ...get().workflow.data,
-                    steps: [...get().workflow.data.steps, step] as any
+                    steps: [...get().workflow.data.steps, step]
                   }
-                } as any,
+                },
                 currentStepIndex: get().workflow.data.steps.length,
               }));
             },
@@ -87,16 +87,17 @@ export const WorkflowStoreProvider = ({
                   ...get().workflow, 
                   data: {
                     ...get().workflow.data,
-                    steps: get().workflow.data.steps.filter((step) => step.name !== stepId) as any
+                    steps: get().workflow.data.steps.filter((step: WorkflowStep) => step.name !== stepId)
                   }
-                } as any,
+                },
                 currentStepIndex: get().workflow.data.steps.length,
               }));
             },
             updateDependencyToolCalls: () => {
-              const allToolsMap = new Map<string, any>();
-              get().workflow.data.steps.forEach((step) => {
-                step.dependencies?.forEach((dependency) => {
+              type DependencyEntry = NonNullable<WorkflowStep["dependencies"]>[number];
+              const allToolsMap = new Map<string, DependencyEntry>();
+              get().workflow.data.steps.forEach((step: WorkflowStep) => {
+                step.dependencies?.forEach((dependency: DependencyEntry) => {
                   const key = `${dependency.integrationId}`;
                   if (!allToolsMap.has(key)) {
                     allToolsMap.set(key, dependency);
@@ -126,9 +127,9 @@ export const WorkflowStoreProvider = ({
                   ...get().workflow, 
                   data: {
                     ...get().workflow.data,
-                    steps: [] as any
+                    steps: []
                   }
-                } as any,
+                },
                 currentStepIndex: 0,
               }));
             },
@@ -793,16 +794,21 @@ export const WorkflowProvider = ({
 //     );
 //   }
   // Transform steps to match expected schema (id -> name, code -> execute)
-  const transformedSteps = WORKFLOW.steps.map((step: any) => ({
-    ...step,
-    name: step.id, // Use id as name since that's the unique identifier
-    execute: step.code || 'export default async function(input, ctx) { return input; }', // Use code as execute
-  }));
+  // Memoize this to prevent recreating on every render
+  type MockedStep = typeof WORKFLOW.steps[number];
+  const transformedSteps = useMemo(() => 
+    WORKFLOW.steps.map((step: MockedStep) => ({
+      ...step,
+      name: step.id, // Use id as name since that's the unique identifier
+      execute: step.code || 'export default async function(input, ctx) { return input; }', // Use code as execute
+    }))
+  , []);
 
-  const defaultWorkflow = {
+  type MockedWorkflow = typeof WORKFLOW;
+  const defaultWorkflow = useMemo(() => ({
     ...WORKFLOW,
     steps: transformedSteps,
-  } as any; // Mocked data doesn't perfectly match API types
+  }), [transformedSteps]) as MockedWorkflow & { steps: typeof transformedSteps };
 
   console.log({defaultWorkflow})
 
@@ -811,7 +817,7 @@ export const WorkflowProvider = ({
       workflow={{
         uri: resourceURI || '',
         data: defaultWorkflow,
-      } as any}
+      } as Workflow}
     >
       {children}
     </WorkflowStoreProvider>

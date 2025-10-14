@@ -43,7 +43,7 @@ export const createRunWorkflowStepTool = (env: Env) =>
         type: z.string(),
         content: z.string(),
       })).optional(),
-      resolvedInput: z.record(z.any()).optional(),
+      resolvedInput: z.record(z.unknown()).optional(),
       resolutionErrors: z.array(z.object({
         ref: z.string(),
         error: z.string(),
@@ -84,7 +84,7 @@ export const createRunWorkflowStepTool = (env: Env) =>
         }
 
         // 2. Execute code via DECO_TOOL_RUN_TOOL
-        const toolRunParams: any = {
+        const toolRunParams = {
           tool: {
             name: step.name,
             description: `Workflow step: ${step.name}`,
@@ -93,14 +93,13 @@ export const createRunWorkflowStepTool = (env: Env) =>
             execute: step.code,
           },
           input: resolutionResult.resolved,
+          // 🔐 Authorization token should be a string (JWT token)
+          authorization: context.authToken,
         };
         
-        // 🔐 Add authorization if provided
+        // 🔐 Log authorization if provided
         if (context.authToken) {
           console.log(`🔐 Running step with workflow authorization token`);
-          toolRunParams.authorization = {
-            token: context.authToken,
-          };
         }
         
         const result = await env.TOOLS.DECO_TOOL_RUN_TOOL(toolRunParams);
@@ -337,8 +336,7 @@ export const createGenerateStepTool = (env: Env) =>
               inputSchema: {},
               outputSchema: {},
               input: {},
-              usedTools: [] as any,
-            } as any,
+            },
             reasoning: 'AI generation failed - no valid object returned',
           };
         }
@@ -350,11 +348,16 @@ export const createGenerateStepTool = (env: Env) =>
         const codeAnalysis = extractToolsFromCode(generatedStep.code);
         
         if (generatedStep.usedTools && generatedStep.usedTools.length > 0) {
+          interface UsedTool {
+            toolName: string;
+            integrationId: string;
+            integrationName: string;
+          }
           const validation = validateUsedTools(
             generatedStep.code,
-            generatedStep.usedTools.map(t => ({
-              toolName: t.tool,
-              integrationId: t.integration,
+            (generatedStep.usedTools as UsedTool[]).map(t => ({
+              toolName: t.toolName,
+              integrationId: t.integrationId,
             }))
           );
           
@@ -364,12 +367,26 @@ export const createGenerateStepTool = (env: Env) =>
             console.warn('Extra:', validation.extra);
             
             // Auto-fix: merge AI declared tools with code analysis
-            const allToolsMap = new Map<string, any>();
+            interface UsedToolEntry {
+              toolName: string;
+              integrationId: string;
+              integrationName: string;
+            }
+            const allToolsMap = new Map<string, UsedToolEntry>();
             
             // Add tools from AI
-            generatedStep.usedTools.forEach(tool => {
-              const key = `${tool.integration}:${tool.tool}`;
-              allToolsMap.set(key, tool);
+            interface UsedTool {
+              toolName: string;
+              integrationId: string;
+              integrationName: string;
+            }
+            (generatedStep.usedTools as UsedTool[]).forEach((tool: UsedTool) => {
+              const key = `${tool.integrationId}:${tool.toolName}`;
+              allToolsMap.set(key, {
+                toolName: tool.toolName,
+                integrationId: tool.integrationId,
+                integrationName: tool.integrationName,
+              });
             });
             
             // Add missing tools from code analysis
@@ -390,7 +407,12 @@ export const createGenerateStepTool = (env: Env) =>
         } else {
           // AI didn't provide usedTools - extract from code
           console.warn('⚠️ AI did not provide usedTools. Extracting from code...');
-          const uniqueTools = new Map<string, any>();
+          interface UsedToolEntry {
+            toolName: string;
+            integrationId: string;
+            integrationName: string;
+          }
+          const uniqueTools = new Map<string, UsedToolEntry>();
           
           codeAnalysis.forEach(tool => {
             const key = `${tool.integrationId}:${tool.toolName}`;
@@ -411,7 +433,7 @@ export const createGenerateStepTool = (env: Env) =>
           step: {
             ...generatedStep,
             description: generatedStep.description || 'No description',
-          } as any,
+          },
           reasoning: stepResult.reasoning,
         };
       } catch (_error) {
@@ -424,7 +446,7 @@ export const createGenerateStepTool = (env: Env) =>
             inputSchema: {},
             outputSchema: {},
             input: {},
-          } as any,
+          },
           reasoning: 'Exception during generation: ' + String(_error),
         };
       }
@@ -475,17 +497,21 @@ export const createImportToolAsStepTool = (_env: Env) =>
       const stepId = `step_${Date.now()}_${Math.random().toString(36).slice(2, 11)}`;
 
       // Extract input fields from inputSchema
-      const inputProperties = inputSchema?.properties || {};
-      const requiredFields = (inputSchema?.required as string[]) || [];
+      const inputProperties = (inputSchema && typeof inputSchema === 'object' && 'properties' in inputSchema 
+        ? inputSchema.properties 
+        : {}) as Record<string, unknown>;
+      const requiredFields = (inputSchema && typeof inputSchema === 'object' && 'required' in inputSchema
+        ? (inputSchema.required as string[])
+        : []) || [];
 
       // Generate default input values
-      const defaultInput: Record<string, any> = {};
+      const defaultInput: Record<string, unknown> = {};
       const inputDescriptions: Record<string, string> = {};
 
       for (const [fieldName, fieldSchema] of Object.entries(inputProperties)) {
-        const schema = fieldSchema as any;
-        const fieldType = schema.type || 'string';
-        const description = schema.description || fieldName;
+        const schema = fieldSchema as Record<string, unknown>;
+        const fieldType = (schema.type as string) || 'string';
+        const description = (schema.description as string) || fieldName;
 
         // Set default value based on type
         if (fieldType === 'string') {
@@ -542,7 +568,7 @@ ${inputAssignments}
 }`;
 
       // Generate output schema
-      const generatedOutputSchema = {
+      const generatedOutputSchema: Record<string, unknown> = {
         type: 'object',
         properties: {
           success: {
@@ -550,9 +576,13 @@ ${inputAssignments}
             description: 'Whether the tool call succeeded',
           },
           result: {
-            type: outputSchema?.type || 'object',
+            type: (outputSchema && typeof outputSchema === 'object' && 'type' in outputSchema 
+              ? outputSchema.type 
+              : 'object') as string,
             description: 'Result from the tool',
-            ...(outputSchema?.properties ? { properties: outputSchema.properties } : {}),
+            ...(outputSchema && typeof outputSchema === 'object' && 'properties' in outputSchema 
+              ? { properties: outputSchema.properties } 
+              : {}),
           },
           error: {
             type: 'string',
@@ -563,7 +593,7 @@ ${inputAssignments}
       };
 
       // Generate input schema (ensure it has proper structure)
-      const generatedInputSchema = {
+      const generatedInputSchema: Record<string, unknown> = {
         type: 'object',
         properties: inputProperties,
         required: requiredFields,
@@ -581,13 +611,7 @@ ${inputAssignments}
           inputDescription: Object.keys(inputDescriptions).length > 0 ? inputDescriptions : undefined,
           primaryIntegration: integrationId,
           primaryTool: toolName,
-          // 🔐 Add usedTools for authorization
-          usedTools: [{
-            toolName: toolName,
-            integrationId: integrationId,
-            integrationName: integrationName,
-          }],
-        } as any,
+        },
       };
     },
   });  
@@ -645,7 +669,9 @@ export const createAuthorizeWorkflowTool = (env: Env) =>
         });
         
         // Extract JWT token
-        const jwtToken = (output as any).value;
+        const jwtToken = typeof output === 'object' && output !== null && 'value' in output 
+          ? (output as { value: string }).value 
+          : undefined;
         
         const uniqueIntegrations = new Set(context.tools.map(t => t.integrationId)).size;
         

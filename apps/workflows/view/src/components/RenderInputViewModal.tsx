@@ -14,12 +14,13 @@ import {
 } from "@deco/ui/components/dialog.tsx";
 import { IframeViewRenderer } from "./IframeViewRenderer";
 import { useCurrentWorkflow } from "@/store/workflow";
+import type { WorkflowStep } from "shared/types/workflows";
 
 interface RenderInputViewModalProps {
   fieldName: string;
   viewName: string;
   viewCode: string;
-  step: any; // TODO: fix this
+  step: { name: string; output?: Record<string, unknown> };
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onSubmit: (data: Record<string, unknown>) => void;
@@ -36,7 +37,7 @@ export function RenderInputViewModal({
 }: RenderInputViewModalProps) {
   const workflow = useCurrentWorkflow();
   // Get previous step data for this step
-  const stepIndex = workflow.steps?.findIndex((s) => s.name === step.name);
+  const stepIndex = workflow.steps?.findIndex((s: WorkflowStep) => s.name === step.name);
   const previousSteps = workflow.steps?.slice(0, stepIndex);
   const previousStepResults: Record<string, unknown> = {};
   // for (const s of previousSteps || []) {

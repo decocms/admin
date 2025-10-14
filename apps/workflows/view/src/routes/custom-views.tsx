@@ -705,7 +705,7 @@ const step: WorkflowStep = {
                         definition={generatedView}
                         data={exampleData || {}}
                         formValues={formValues}
-                        onChange={(name, value) =>
+                        onChange={(name: string, value: unknown) =>
                           setFormValues((prev) => ({ ...prev, [name]: value }))
                         }
                       />

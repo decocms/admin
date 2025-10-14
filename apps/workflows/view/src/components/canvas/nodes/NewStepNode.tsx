@@ -6,6 +6,7 @@ import { useGenerateStep } from "../../../hooks/useGenerateStep";
 import { useCurrentWorkflow } from "@/store/workflow";
 import { useStepEditorPrompt } from "@/store/step-editor";
 import { memo } from "react";
+import type { WorkflowStep } from "shared/types/workflows";
 
 export const NewStepNode = memo(function NewStepNode(_props: NodeProps) {
   const workflow = useCurrentWorkflow();
@@ -20,10 +21,15 @@ export const NewStepNode = memo(function NewStepNode(_props: NodeProps) {
 
     console.log("⚡ [NewStepNode] Generating step with prompt:", prompt);
 
-    const previousSteps = workflow.steps?.map((step: any) => ({
-      id: step.id,
+    interface StepInfo {
+      id: string;
+      name: string;
+      outputSchema: Record<string, unknown>;
+    }
+    const previousSteps: StepInfo[] | undefined = workflow.steps?.map((step: WorkflowStep): StepInfo => ({
+      id: step.name,
       name: step.name,
-      outputSchema: step.outputSchema || {},
+      outputSchema: (step.outputSchema as Record<string, unknown>) || {},
     }));
 
     generateStepMutation.mutate(

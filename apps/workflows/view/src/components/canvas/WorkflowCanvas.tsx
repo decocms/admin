@@ -15,6 +15,7 @@ import ReactFlow, {
 } from "reactflow";
 import { StepNode, NewStepNode, PlusButtonNode } from "./nodes";
 import { useCurrentWorkflow, useWorkflowStoreActions, useCurrentStepIndex } from "@/store/workflow";
+import type { WorkflowStep } from "shared/types/workflows";
 
 export interface WorkflowCanvasRef {
   centerOnStep: (index: number) => void;
@@ -127,7 +128,7 @@ const Inner = forwardRef<WorkflowCanvasRef>(function Inner(_, ref) {
   }, [currentStepIndex, centerViewport]);
 
   const stepIds = useMemo(
-    () => workflow?.steps?.map((s) => s.name).join(",") || "",
+    () => workflow?.steps?.map((s: WorkflowStep) => s.name).join(",") || "",
     [workflow?.steps],
   );
 
@@ -150,7 +151,7 @@ const Inner = forwardRef<WorkflowCanvasRef>(function Inner(_, ref) {
     }
 
     // Case 2: Create step nodes horizontally aligned
-    workflow.steps?.forEach((step, index) => {
+    workflow.steps?.forEach((step: WorkflowStep, index: number) => {
       const stepX = index * (CARD_WIDTH + CARD_GAP);
 
       result.push({
@@ -242,7 +243,7 @@ const Inner = forwardRef<WorkflowCanvasRef>(function Inner(_, ref) {
         return;
       }
 
-      const stepIndex = workflow.steps?.findIndex((s) => s.name === node.id);
+      const stepIndex = workflow.steps?.findIndex((s: WorkflowStep) => s.name === node.id);
       if (stepIndex !== -1 && stepIndex !== currentStepIndex) {
         setCurrentStepIndex(stepIndex || 0);
       }

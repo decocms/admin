@@ -27,14 +27,13 @@ function getData(data: Record<string, unknown>, path?: string): unknown {
   if (!path) return null;
 
   const parts = path.split(".");
-  let current: any = data;
+  let current: unknown = data;
 
   for (const part of parts) {
-    if (current && typeof current === "object") {
-      current = current[part];
-    } else {
-      return null;
+    if (typeof current !== 'object' || current === null) {
+      return undefined;
     }
+    current = (current as Record<string, unknown>)[part];
   }
 
   return current;

@@ -88,7 +88,6 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
     for (const document of documents) {
       const documentName = document.data?.name || "Untitled Document";
       const documentId = document.uri;
-      console.log(document);
       results.push({
         id: `document-${documentId}`,
         title: documentName,

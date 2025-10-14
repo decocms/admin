@@ -13,7 +13,7 @@ import type { WorkflowStep } from "shared/types/workflows";
 
 export const NewStepNode = memo(function NewStepNode(_props: NodeProps) {
   const workflow = useCurrentWorkflow();
-  const workflowActions = useWorkflowStoreActions();
+  const { updateStep, addStep } = useWorkflowStoreActions();
   const generateStepMutation = useGenerateStep();
   const prompt = useNewStepPrompt();
 
@@ -35,7 +35,52 @@ export const NewStepNode = memo(function NewStepNode(_props: NodeProps) {
       }),
     );
 
-    generateStepMutation.mutate({ objective: prompt, previousSteps });
+    generateStepMutation.mutate(
+      { objective: prompt, previousSteps },
+      {
+        onSuccess: (result) => {
+          console.log("✅ Step generated successfully:", result);
+
+          // Add the new step to the workflow
+          if (result?.step) {
+            // Store the current last step name before adding the new step
+            const lastStepBeforeAdd =
+              workflow?.steps?.[workflow.steps.length - 1];
+
+            const newStep = {
+              ...result.step,
+              name: result.step.id, // Use id as name for the step identifier
+              execute:
+                result.step.code ||
+                "export default async function(input, ctx) { return input; }",
+              status: "pending" as const,
+              output: {},
+              logs: [],
+              duration: 0,
+              createdAt: new Date().toISOString(),
+              updatedAt: new Date().toISOString(),
+            };
+
+            // Add the new step
+            addStep(newStep as WorkflowStep);
+
+            // Clear the prompt from the step that had it (the last step before adding)
+            if (lastStepBeforeAdd) {
+              updateStep(lastStepBeforeAdd.name, { prompt: "" });
+            }
+          }
+        },
+        onError: (error) => {
+          console.error("❌ Failed to generate step:", error);
+        },
+      },
+    );
+  };
+
+  const currentStep = workflow?.steps?.[workflow.steps.length - 1];
+
+  const handleUpdateStep = (_prompt: string, value: string) => {
+    updateStep(currentStep?.name || "", { prompt: value });
   };
 
   return (
@@ -73,9 +118,7 @@ export const NewStepNode = memo(function NewStepNode(_props: NodeProps) {
               placeholder="Type @ to mention tools or steps"
               minHeight="120px"
               value={prompt}
-              onChange={(value) =>
-                workflowActions.updateStep(prompt, { prompt: value })
-              }
+              onChange={(value) => handleUpdateStep(prompt, value)}
             />
           </div>
         </div>

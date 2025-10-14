@@ -809,10 +809,13 @@ export const useWorkflowStepOutput = (index: number) => {
 };
 
 export const useNewStepPrompt = () => {
-  return useWorkflowStore(
-    (state) =>
-      state.workflow.data.steps[state.currentStepIndex - 1].prompt || "",
-  );
+  return useWorkflowStore((state) => {
+    const stepIndex = state.currentStepIndex - 1;
+    if (stepIndex >= 0 && stepIndex < state.workflow.data.steps.length) {
+      return state.workflow.data.steps[stepIndex]?.prompt || "";
+    }
+    return "";
+  });
 };
 
 export const useCurrentStepIndex = () => {

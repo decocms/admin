@@ -28,12 +28,17 @@ export function DocumentsTabs({ active }: DocumentsTabsProps) {
   }
 
   return (
-    <Tabs value={active} onValueChange={handleChange} className="w-full">
-      <TabsList className="h-9 gap-2 bg-muted/60 px-2 mb-2">
-        <TabsTrigger value="documents" className="px-4">
+    <Tabs
+      value={active}
+      onValueChange={handleChange}
+      variant="underline"
+      className="w-full"
+    >
+      <TabsList variant="underline">
+        <TabsTrigger value="documents" variant="underline">
           Documents
         </TabsTrigger>
-        <TabsTrigger value="prompts" className="px-4">
+        <TabsTrigger value="prompts" variant="underline">
           Prompts (Legacy)
         </TabsTrigger>
       </TabsList>

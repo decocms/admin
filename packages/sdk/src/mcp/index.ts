@@ -87,6 +87,7 @@ export const GLOBAL_TOOLS = [
   teamsAPI.getTeamRole,
   teamsAPI.getWorkspaceTheme,
   teamsAPI.listProjects,
+  teamsAPI.createProject,
   teamsAPI.updateProject,
   membersAPI.getTeamMembers,
   membersAPI.updateTeamMember,
@@ -388,6 +389,14 @@ export {
   DocumentResourceV2,
   type DocumentDataV2,
 } from "./documents/api.ts";
+
+export {
+  createViewResourceV2Implementation,
+  createViewViewsV2,
+  viewViews,
+  ViewResourceV2,
+  type ViewDataV2,
+} from "./views/api.ts";
 
 // Export Resources 2.0 bindings function
 export { createResourceV2Bindings } from "./resources-v2/bindings.ts";

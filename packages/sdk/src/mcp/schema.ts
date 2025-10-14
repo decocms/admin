@@ -14,7 +14,7 @@ import {
   index,
 } from "drizzle-orm/pg-core";
 import { WELL_KNOWN_PLANS } from "../plan";
-import type { MCPConnection } from "../models";
+import type { MCPConnection, Statement } from "../models";
 
 /**
  * create table public.deco_chat_plans (
@@ -92,10 +92,12 @@ export const projects = pgTable(
     title: text("title").notNull(),
     icon: text("icon"),
     description: text("description"),
-    org_id: bigint("org_id", { mode: "bigint" })
+    org_id: bigint("org_id", { mode: "number" })
       .notNull()
       .references(() => organizations.id),
-    created_at: timestamp("created_at").defaultNow(),
+    created_at: timestamp("created_at", { mode: "string" })
+      .defaultNow()
+      .notNull(),
   },
   (table) => [
     uniqueIndex("deco_chat_projects_slug_org_id_unique").on(
@@ -175,7 +177,7 @@ export const agents = pgTable("deco_chat_agents", {
   memory: jsonb("memory"),
   views: jsonb("views").notNull(),
   created_at: timestamp("created_at").defaultNow(),
-  workspace: text("workspace").notNull(),
+  workspace: text("workspace"),
   temperature: real("temperature"),
   visibility: visibilityType("visibility").notNull().default("WORKSPACE"),
   access: text("access"),
@@ -216,7 +218,7 @@ export const registryApps = pgTable(
   "deco_chat_apps_registry",
   {
     id: uuid("id").primaryKey().defaultRandom(),
-    workspace: text("workspace").notNull(),
+    workspace: text("workspace"),
     scope_id: uuid("scope_id")
       .notNull()
       .references(() => registryScopes.id),
@@ -308,7 +310,7 @@ export const registryScopes = pgTable(
   {
     id: uuid("id").primaryKey().defaultRandom(),
     scope_name: text("scope_name").notNull().unique(),
-    workspace: text("workspace").notNull(),
+    workspace: text("workspace"),
     created_at: timestamp("created_at", { mode: "string" })
       .defaultNow()
       .notNull(),
@@ -353,7 +355,7 @@ export const integrations = pgTable("deco_chat_integrations", {
   icon: text("icon"),
   connection: jsonb("connection").notNull(),
   created_at: timestamp("created_at").defaultNow(),
-  workspace: text("workspace").notNull(),
+  workspace: text("workspace"),
   access: text("access"),
   access_id: uuid("access_id").references(() => access.id),
   app_id: uuid("app_id").references(() => registryApps.id),
@@ -381,12 +383,16 @@ export const apiKeys = pgTable(
   {
     id: uuid("id").primaryKey().defaultRandom(),
     name: text("name").notNull(),
-    workspace: text("workspace").notNull(),
+    workspace: text("workspace"),
     enabled: boolean("enabled").notNull().default(true),
-    policies: jsonb("policies"),
-    created_at: timestamp("created_at").defaultNow(),
-    updated_at: timestamp("updated_at").defaultNow(),
-    deleted_at: timestamp("deleted_at"),
+    policies: jsonb("policies").$type<Statement[]>(),
+    created_at: timestamp("created_at", { mode: "string" })
+      .defaultNow()
+      .notNull(),
+    updated_at: timestamp("updated_at", { mode: "string" })
+      .defaultNow()
+      .notNull(),
+    deleted_at: timestamp("deleted_at", { mode: "string" }),
     project_id: uuid("project_id").references(() => projects.id),
   },
   (table) => [
@@ -529,7 +535,7 @@ export const issues = pgTable(
   "deco_chat_issues",
   {
     id: uuid("id").primaryKey().defaultRandom(),
-    org_id: bigint("org_id", { mode: "bigint" }).references(
+    org_id: bigint("org_id", { mode: "number" }).references(
       () => organizations.id,
       { onDelete: "cascade" },
     ),
@@ -577,7 +583,7 @@ export const triggers = pgTable(
     id: uuid("id").primaryKey().defaultRandom(),
     created_at: timestamp("created_at").defaultNow(),
     updated_at: timestamp("updated_at").defaultNow(),
-    workspace: text("workspace").notNull(),
+    workspace: text("workspace"),
     agent_id: uuid("agent_id")
       .notNull()
       .references(() => agents.id),
@@ -595,3 +601,11 @@ export const triggers = pgTable(
     index("idx_deco_chat_triggers_project_id").on(table.project_id),
   ],
 );
+
+export const customers = pgTable("deco_chat_customer", {
+  customer_id: text("customer_id").notNull(),
+  created_at: timestamp("created_at").defaultNow().notNull(),
+  org_id: bigint("org_id", { mode: "number" }).references(
+    () => organizations.id,
+  ),
+});

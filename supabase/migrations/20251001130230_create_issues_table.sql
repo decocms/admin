@@ -10,8 +10,8 @@ CREATE TABLE IF NOT EXISTS deco_chat_issues (
   created_at timestamptz DEFAULT now() NOT NULL
 );
 
-CREATE INDEX idx_deco_chat_issues_org_id ON deco_chat_issues(org_id);
-CREATE INDEX idx_deco_chat_issues_reporter_user_id ON deco_chat_issues(reporter_user_id);
-CREATE INDEX idx_deco_chat_issues_created_at ON deco_chat_issues(created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_deco_chat_issues_org_id ON deco_chat_issues(org_id);
+CREATE INDEX IF NOT EXISTS idx_deco_chat_issues_reporter_user_id ON deco_chat_issues(reporter_user_id);
+CREATE INDEX IF NOT EXISTS idx_deco_chat_issues_created_at ON deco_chat_issues(created_at DESC);
 
 ALTER TABLE deco_chat_issues ENABLE ROW LEVEL SECURITY;

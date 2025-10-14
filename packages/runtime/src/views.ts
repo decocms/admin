@@ -17,7 +17,7 @@ export const ViewsListOutputSchema = z.object({
       resourceName: z.string().optional(),
       // Legacy/compat fields
       tools: z.array(z.string()).optional().default([]),
-      rules: z.array(z.string()).optional().default([]),
+      prompt: z.string().optional(),
       installBehavior: installBehavior.optional(),
     }),
   ),

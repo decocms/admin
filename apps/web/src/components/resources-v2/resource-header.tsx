@@ -81,11 +81,11 @@ export function ResourceHeader({
     <div className="flex flex-col gap-3 w-full">
       {/* Title */}
       <div className="flex items-center">
-        <h1 className="text-2xl font-medium text-foreground">{title}</h1>
+        <h1 className="text-xl md:text-2xl font-medium text-foreground">{title}</h1>
       </div>
 
       {/* Tabs and Actions Row */}
-      <div className="flex items-center justify-between border-b border-border w-full">
+      <div className="flex items-center justify-between border-b border-border w-full min-w-0">
         {/* Left: Tabs (if provided) */}
         {tabs && tabs.length > 0 ? (
           <Tabs
@@ -101,7 +101,7 @@ export function ResourceHeader({
             }}
             variant="underline"
           >
-            <TabsList variant="underline" className="border-0">
+            <TabsList variant="underline" className="border-0 flex-nowrap">
               {tabs.map((tab) => (
                 <TabsTrigger key={tab.id} value={tab.id} variant="underline">
                   {tab.label}
@@ -114,7 +114,7 @@ export function ResourceHeader({
         )}
 
         {/* Right: Action Buttons */}
-        <div className="flex items-center gap-2 py-2">
+        <div className="flex items-center gap-2 py-2 flex-shrink-0">
           <div className="flex items-center gap-1">
             {/* Refresh Button */}
             {onRefresh && (
@@ -147,7 +147,7 @@ export function ResourceHeader({
                 onBlur={onSearchBlur}
                 onKeyDown={onSearchKeyDown}
                 placeholder="Search..."
-                className="border-0 shadow-none focus-visible:ring-0 px-0 h-9"
+                className="border-0 shadow-none focus-visible:ring-0 px-0 h-9 w-32 md:w-auto"
               />
             )}
 
@@ -332,12 +332,19 @@ export function ResourceHeader({
           {/* Divider + CTA Button */}
           {ctaButton && (
             <>
-              <div className="self-stretch border-l border-border" />
-              {ctaButton}
+              <div className="self-stretch border-l border-border hidden md:block" />
+              <div className="hidden md:block">{ctaButton}</div>
             </>
           )}
         </div>
       </div>
+
+      {/* Mobile CTA Button */}
+      {ctaButton && (
+        <div className="md:hidden w-full">
+          {ctaButton}
+        </div>
+      )}
 
       {/* Filter Bar */}
       {filterBarVisible && onFiltersChange && (

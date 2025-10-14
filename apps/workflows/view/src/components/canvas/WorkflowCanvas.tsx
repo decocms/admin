@@ -63,7 +63,9 @@ const Inner = forwardRef<WorkflowCanvasRef>(function Inner(_, ref) {
 
     // Use approximate node height for vertical centering
     const nodeHeight = 400; // Approximate height
-    const centeredY = viewportHeight / 2 - nodeHeight / 2;
+    const toolbarOffset = 80; // Account for toolbar at bottom
+    const availableHeight = viewportHeight - toolbarOffset;
+    const centeredY = availableHeight / 2 - nodeHeight / 2;
 
     return { x: centeredX, y: centeredY, zoom: 1 };
   }, []); // Only calculate once on mount
@@ -75,45 +77,56 @@ const Inner = forwardRef<WorkflowCanvasRef>(function Inner(_, ref) {
 
       isCenteringRef.current = true;
 
-      // Wait for next frame to ensure ReactFlow is fully rendered
+      // Wait for next frame and a bit longer to ensure dynamic content (like StepOutput) is rendered
       requestAnimationFrame(() => {
-        const container = document.querySelector(".react-flow");
-        if (!container) {
-          isCenteringRef.current = false;
-          return;
-        }
-
-        const viewportWidth = container.clientWidth;
-        const viewportHeight = container.clientHeight;
-
-        // Calculate the X position for the current step
-        const stepX = stepIndex * (CARD_WIDTH + CARD_GAP);
-
-        // Center the step horizontally
-        const centeredX = viewportWidth / 2 - (stepX + CARD_WIDTH / 2);
-
-        // Get the actual node to calculate its height for proper vertical centering
-        const nodeId =
-          stepIndex === workflow.steps?.length
-            ? "new"
-            : workflow.steps?.[stepIndex]?.name;
-        const node = document.querySelector(`[data-id="${nodeId}"]`);
-        const nodeHeight = node?.clientHeight || 200; // fallback to 200px if node not found
-
-        // Center vertically - account for node height
-        // We want the center of the node to be at the center of the viewport
-        const centeredY = viewportHeight / 2 - nodeHeight / 2;
-
-        rf.setViewport(
-          { x: centeredX, y: centeredY, zoom: 1 },
-          { duration: animated ? 300 : 0 },
-        );
-
-        // Allow movement after centering animation completes
-        const delay = animated ? 350 : 50;
         setTimeout(() => {
-          isCenteringRef.current = false;
-        }, delay);
+          const container = document.querySelector(".react-flow");
+          if (!container) {
+            isCenteringRef.current = false;
+            return;
+          }
+
+          const viewportWidth = container.clientWidth;
+          const viewportHeight = container.clientHeight;
+
+          // Calculate the X position for the current step
+          const stepX = stepIndex * (CARD_WIDTH + CARD_GAP);
+
+          // Center the step horizontally (kept for reference)
+          // const centeredX = viewportWidth / 2 - (stepX + CARD_WIDTH / 2);
+
+          // Get the actual node to calculate its height for proper vertical centering
+          const nodeId =
+            stepIndex === workflow.steps?.length
+              ? "new"
+              : workflow.steps?.[stepIndex]?.name;
+          const node = document.querySelector(`[data-id="${nodeId}"]`);
+          const nodeHeight = node?.clientHeight || 200; // fallback to 200px if node not found
+
+          // Center vertically - account for node height and toolbar at bottom
+          // The toolbar is ~100px from bottom (6 * 4px = 24px bottom margin + toolbar height)
+          // Adjust the vertical position to account for this
+          const toolbarOffsetLocal = 80; // Account for toolbar at bottom
+          const availableHeight = viewportHeight - toolbarOffsetLocal;
+          // const centeredY = availableHeight / 2 - nodeHeight / 2;
+
+        // Prefer setCenter for accurate centering regardless of container size
+        const targetX = stepX + CARD_WIDTH / 2;
+        const targetY = nodeHeight / 2;
+        const toolbarOffsetGlobal = 80;
+        const adjustedY = Math.max(0, targetY - toolbarOffsetGlobal / 2);
+
+        rf.setCenter(targetX, adjustedY, {
+          zoom: 1,
+          duration: animated ? 300 : 0,
+        });
+
+          // Allow movement after centering animation completes
+          const delay = animated ? 350 : 50;
+          setTimeout(() => {
+            isCenteringRef.current = false;
+          }, delay);
+        }, 100); // Wait 100ms for dynamic content to render
       });
     },
     [workflow, rf],
@@ -271,10 +284,37 @@ const Inner = forwardRef<WorkflowCanvasRef>(function Inner(_, ref) {
     return;
   }, []);
 
-  // Handle horizontal scroll to navigate between steps
+  // Handle horizontal scroll to navigate between steps  
   const handleWheel = useCallback(
     (event: React.WheelEvent) => {
       if (!workflow || isCenteringRef.current) return;
+
+      // Check if the event target is inside a scrollable container
+      const target = event.target as HTMLElement;
+      let element: HTMLElement | null = target;
+      
+      // Traverse up the DOM tree to check if we're inside a scrollable element
+      while (element && element !== event.currentTarget) {
+        const computedStyle = window.getComputedStyle(element);
+        const overflowY = computedStyle.overflowY;
+        const overflowX = computedStyle.overflowX;
+        
+        // If this element is scrollable and has scrollable content, don't intercept
+        if (
+          (overflowY === "auto" || overflowY === "scroll") &&
+          element.scrollHeight > element.clientHeight
+        ) {
+          return; // Allow native scrolling
+        }
+        if (
+          (overflowX === "auto" || overflowX === "scroll") &&
+          element.scrollWidth > element.clientWidth
+        ) {
+          return; // Allow native scrolling
+        }
+        
+        element = element.parentElement;
+      }
 
       // Detect horizontal scroll
       const isHorizontalScroll =
@@ -364,7 +404,7 @@ const Inner = forwardRef<WorkflowCanvasRef>(function Inner(_, ref) {
         zoomOnScroll={false}
         zoomOnPinch={false}
         zoomOnDoubleClick={false}
-        preventScrolling
+        preventScrolling={false}
         minZoom={1}
         maxZoom={1}
         defaultViewport={initialViewport}

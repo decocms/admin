@@ -272,6 +272,24 @@ const Discover = () => {
                   </div>
                 </>
               )}
+              {featuredIntegrations?.length > 0 && (
+                <>
+                  <h2 className="text-lg pt-5 font-medium">
+                    Featured Apps
+                    <span className="text-muted-foreground font-mono font-normal text-sm ml-2">
+                      {featuredIntegrations?.length}
+                    </span>
+                  </h2>
+                  <div className="grid grid-cols-3 gap-4">
+                    {featuredIntegrations?.map((integration) => (
+                      <FeaturedCard
+                        key={integration.id}
+                        integration={integration}
+                      />
+                    ))}
+                  </div>
+                </>
+              )}
 
               {hasVerifiedIntegrations && (
                 <>

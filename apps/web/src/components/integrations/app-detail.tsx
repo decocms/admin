@@ -1,10 +1,10 @@
 import {
+  buildAddViewPayload,
+  listAvailableViewsForConnection,
+  useAddView,
   useTools,
   useUpdateIntegration,
   useWriteFile,
-  useAddView,
-  buildAddViewPayload,
-  listAvailableViewsForConnection,
   type Integration,
   type MCPConnection,
 } from "@deco/sdk";

@@ -712,9 +712,7 @@ export const WorkflowProvider = ({
   children: React.ReactNode;
 }) => {
   const searchParams = useSearch({ from: "/workflow" });
-  console.log({ searchParams });
   const resourceURI = (searchParams as { resourceURI?: string })?.resourceURI;
-  console.log({ resourceURI });
   // Fetch workflow from API if resourceURI is provided
   //   const {
   //     data: workflowData,
@@ -727,7 +725,6 @@ export const WorkflowProvider = ({
   //     },
   //     enabled: !!resourceURI,
   //   });
-  //   console.log({workflowData})
 
   //   if (!workflowData || isLoadingWorkflow || !resourceURI) {
   //     return (
@@ -762,8 +759,6 @@ export const WorkflowProvider = ({
     }),
     [transformedSteps],
   ) as MockedWorkflow & { steps: typeof transformedSteps };
-
-  console.log({ defaultWorkflow });
 
   return (
     <WorkflowStoreProvider

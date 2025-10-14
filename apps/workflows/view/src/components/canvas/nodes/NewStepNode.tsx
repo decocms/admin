@@ -19,11 +19,8 @@ export const NewStepNode = memo(function NewStepNode(_props: NodeProps) {
 
   const handleGenerateStep = () => {
     if (!prompt.trim() || !workflow) {
-      console.warn("⚠️ Empty prompt or no workflow");
       return;
     }
-
-    console.log("⚡ [NewStepNode] Generating step with prompt:", prompt);
 
     interface StepInfo {
       id: string;

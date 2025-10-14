@@ -224,20 +224,10 @@ export const useIntegrations = () => {
   return useQuery({
     queryKey: ["integrations"],
     queryFn: async () => {
-      console.log("📥 [useIntegrations] Loading installed integrations...");
-
       // @ts-ignore - Will be typed after gen:self
       const result = await client.LIST_INSTALLED_INTEGRATIONS({});
 
-      console.log("📦 [useIntegrations] Result:", result);
-
       if (result.success && result.integrations) {
-        console.log(
-          "✅ [useIntegrations] Loaded",
-          result.integrations.length,
-          "integrations",
-        );
-
         // Ensure tools array exists for each integration
         // Do this ONCE in queryFn instead of on every render in select
         const normalized = result.integrations.map(
@@ -253,9 +243,6 @@ export const useIntegrations = () => {
         return normalized as Integration[];
       }
 
-      console.warn(
-        "⚠️ [useIntegrations] No integrations found or success=false",
-      );
       return [];
     },
     staleTime: 10 * 60 * 1000, // Cache 10 min (increased from 5)

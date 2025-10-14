@@ -6,7 +6,7 @@
  */
 import { useMemo } from "react";
 import { useIntegrations } from "./useIntegrations";
-import { Workflow, WorkflowStep } from "shared/types/workflows";
+import { WorkflowStep } from "shared/types/workflows";
 import { useCurrentWorkflow } from "@/store/workflow";
 
 interface ToolItem {
@@ -32,13 +32,17 @@ export function useMentionItems(): MentionItem[] {
   const { data: integrations = [] } = useIntegrations();
   const workflow = useCurrentWorkflow();
 
-  console.log({ integrations });
-
   // Extract stable primitive values instead of using entire workflow object
   const workflowSteps = workflow?.steps;
   const stepsKey = useMemo(
     () => workflowSteps?.map((s) => s.name).join(",") || "",
     [workflowSteps],
+  );
+
+  // OPTIMIZATION: Create stable string key for integrations to prevent recalculation
+  const integrationsKey = useMemo(
+    () => integrations.map((i) => `${i.id}:${i.tools?.length || 0}`).join(","),
+    [integrations],
   );
 
   return useMemo(() => {
@@ -76,5 +80,5 @@ export function useMentionItems(): MentionItem[] {
     }
 
     return items;
-  }, [integrations, stepsKey, workflowSteps]);
+  }, [integrationsKey, stepsKey, integrations, workflowSteps]);
 }

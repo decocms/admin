@@ -36,7 +36,6 @@ export function RichTextEditor({
   onChange,
 }: RichTextEditorProps) {
   const mentions = useMentionItems();
-  console.log({ mentions });
   const { setPrompt } = useStepEditorActions();
   const globalPrompt = useStepEditorPrompt();
 
@@ -86,18 +85,11 @@ export function RichTextEditor({
           suggestion: {
             items: ({ query }) => {
               const currentMentions = mentionsRef.current;
-              console.log(
-                "🔍 [Tiptap] Filtering mentions - Total available:",
-                currentMentions.length,
-                "Query:",
-                query,
-              );
               const filtered = currentMentions
                 .filter((item) =>
                   item.label.toLowerCase().includes(query.toLowerCase()),
                 )
                 .slice(0, 20);
-              console.log("✅ [Tiptap] Filtered results:", filtered.length);
               return filtered;
             },
             render: () => {
@@ -162,15 +154,6 @@ export function RichTextEditor({
                     }) => void;
                   },
                 ) => {
-                  console.log(
-                    "⌨️ [Tiptap] Key pressed:",
-                    props.event.key,
-                    "Items:",
-                    props.items?.length,
-                    "Component:",
-                    !!component,
-                  );
-
                   // Validate props.items exists and component is ready
                   if (
                     !props.items ||
@@ -178,15 +161,10 @@ export function RichTextEditor({
                     !component ||
                     !props.command
                   ) {
-                    console.log("⚠️ [Tiptap] Skipping - no items or component");
                     return false;
                   }
 
                   if (props.event.key === "ArrowUp") {
-                    console.log(
-                      "⬆️ [Tiptap] Arrow Up - selectedIndex:",
-                      selectedIndex,
-                    );
                     selectedIndex = Math.max(0, selectedIndex - 1);
                     renderItems(
                       component,
@@ -194,18 +172,10 @@ export function RichTextEditor({
                       selectedIndex,
                       props.command,
                     );
-                    console.log(
-                      "✅ [Tiptap] New selectedIndex:",
-                      selectedIndex,
-                    );
                     return true;
                   }
 
                   if (props.event.key === "ArrowDown") {
-                    console.log(
-                      "⬇️ [Tiptap] Arrow Down - selectedIndex:",
-                      selectedIndex,
-                    );
                     selectedIndex = Math.min(
                       props.items.length - 1,
                       selectedIndex + 1,
@@ -216,21 +186,12 @@ export function RichTextEditor({
                       selectedIndex,
                       props.command,
                     );
-                    console.log(
-                      "✅ [Tiptap] New selectedIndex:",
-                      selectedIndex,
-                    );
                     return true;
                   }
 
                   if (props.event.key === "Enter") {
-                    console.log(
-                      "⏎ [Tiptap] Enter - selectedIndex:",
-                      selectedIndex,
-                    );
                     const item = props.items[selectedIndex];
                     if (item) {
-                      console.log("✅ [Tiptap] Selecting item:", item.label);
                       props.command({
                         id: item.id,
                         label: item.label,
@@ -241,7 +202,6 @@ export function RichTextEditor({
                   }
 
                   if (props.event.key === "Escape") {
-                    console.log("⎋ [Tiptap] Escape - closing popup");
                     popup?.hide();
                     return true;
                   }
@@ -337,11 +297,6 @@ function renderItems(
       '<div style="padding: 8px; color: var(--muted-foreground); font-size: 14px;">No results</div>';
     return;
   }
-
-  console.log(
-    "🎨 [renderItems] Items:",
-    items.map((i) => ({ id: i.id, label: i.label, type: i.type })),
-  );
 
   container.innerHTML = items
     .map((item, index) => {

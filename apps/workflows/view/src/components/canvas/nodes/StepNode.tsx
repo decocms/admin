@@ -9,7 +9,7 @@ import {
   DropdownMenuTrigger,
 } from "@deco/ui/components/dropdown-menu.tsx";
 import { useExecuteStep } from "../../../hooks/useExecuteStep";
-import { useState, memo, useMemo, useCallback, useRef, useEffect } from "react";
+import { useState, memo, useMemo, useCallback } from "react";
 import { RichTextEditor } from "../../RichTextEditor";
 import { RenderInputViewModal } from "../../RenderInputViewModal";
 import { useCurrentWorkflow, useWorkflowStoreActions } from "@/store/workflow";
@@ -145,8 +145,6 @@ const StepFormView = memo(function StepFormView({
   workflowActions,
   onCreateInputView,
 }: StepFormViewProps) {
-  // Use hook directly instead of prop drilling
-  const workflow = useCurrentWorkflow();
   return (
     <>
       {/* Tools Used Section */}
@@ -246,13 +244,6 @@ const StepFormView = memo(function StepFormView({
 export const StepNode = memo(function StepNode({
   data,
 }: NodeProps<StepNodeData>) {
-  // 🔵 PERFORMANCE LOGGING
-  const renderCount = useRef(0);
-  useEffect(() => {
-    renderCount.current++;
-    console.log(`🔵 [StepNode:${data.stepId}] RENDER #${renderCount.current}`);
-  });
-
   // OPTIMIZED: Only subscribe to zoom, and add equality check to prevent re-renders
   const zoom = useStore(
     (s) => s.transform[2],
@@ -330,11 +321,6 @@ export const StepNode = memo(function StepNode({
       });
     }
 
-    console.log(
-      "🔍 [StepNode] Executing step with previousStepResults:",
-      previousStepResults,
-    );
-
     executeStepMutation.mutate(
       {
         step: {
@@ -351,26 +337,11 @@ export const StepNode = memo(function StepNode({
       {
         onSuccess: async (result) => {
           const resolvedResult = await result;
-          console.log(
-            "✅ [StepNode] Step executed successfully:",
-            resolvedResult,
-          );
-
           workflowActions.updateStep(stepName, {
             output: resolvedResult as unknown as Record<string, unknown>,
           });
-
-          if (resolvedResult.success) {
-            console.log("💾 [StepNode] Saved step output to store");
-          } else {
-            console.error(
-              "❌ [StepNode] Step execution failed:",
-              resolvedResult.error,
-            );
-          }
         },
         onError: (error) => {
-          console.error("❌ [StepNode] Step execution error:", error);
           const errorData: Record<string, unknown> = {
             error: String(error),
           };
@@ -569,9 +540,7 @@ export const StepNode = memo(function StepNode({
           onOpenChange={(open) => {
             if (!open) setRenderingInputView(null);
           }}
-          onSubmit={(data) => {
-            console.log("📝 [StepNode] Input view submitted:", data);
-
+          onSubmit={(_data) => {
             // Update the field value
           }}
         />

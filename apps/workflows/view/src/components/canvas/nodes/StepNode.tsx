@@ -347,7 +347,7 @@ export const StepNode = memo(function StepNode({
         prevStep.output.success &&
         "output" in prevStep.output
       ) {
-        const stepId = (prevStep as WorkflowStep & { id: string }).id;
+        const stepId = prevStep.def.name;
         results[stepId] = (prevStep.output as { output: unknown }).output;
       }
     });

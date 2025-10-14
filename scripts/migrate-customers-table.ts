@@ -43,6 +43,16 @@ for (const customer of stuff) {
       .limit(1)
       .then((r) => r[0]);
 
+    if (!user) {
+      console.warn(
+        "User not found for userId:",
+        userId,
+        "workspace:",
+        workspace,
+      );
+      continue;
+    }
+
     // find org with a personal project
     // and a single member that is the user
 

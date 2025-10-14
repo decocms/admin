@@ -59,18 +59,19 @@ export const WorkflowStoreProvider = ({
               }));
             },
             updateStep: (stepId: string, updates: Partial<WorkflowStep>) => {
-              set(() => ({
+              const currentWorkflow = get().workflow;
+              set({
                 workflow: {
-                  ...get().workflow,
+                  ...currentWorkflow,
                   data: {
-                    ...get().workflow.data,
-                    steps: get().workflow.data.steps.map(
+                    ...currentWorkflow.data,
+                    steps: currentWorkflow.data.steps.map(
                       (step: WorkflowStep) =>
                         step.name === stepId ? { ...step, ...updates } : step,
                     ),
                   },
-                },
-              }));
+                } as Workflow,
+              });
             },
             addStep: (step: WorkflowStep) => {
               set(() => ({
@@ -85,18 +86,19 @@ export const WorkflowStoreProvider = ({
               }));
             },
             removeStep: (stepId: string) => {
-              set(() => ({
+              const currentWorkflow = get().workflow;
+              set({
                 workflow: {
-                  ...get().workflow,
+                  ...currentWorkflow,
                   data: {
-                    ...get().workflow.data,
-                    steps: get().workflow.data.steps.filter(
+                    ...currentWorkflow.data,
+                    steps: currentWorkflow.data.steps.filter(
                       (step: WorkflowStep) => step.name !== stepId,
                     ),
                   },
-                },
-                currentStepIndex: get().workflow.data.steps.length,
-              }));
+                } as Workflow,
+                currentStepIndex: currentWorkflow.data.steps.length,
+              });
             },
             updateDependencyToolCalls: () => {
               type DependencyEntry = NonNullable<
@@ -129,16 +131,17 @@ export const WorkflowStoreProvider = ({
               }));
             },
             clearStore: () => {
-              set(() => ({
+              const currentWorkflow = get().workflow;
+              set({
                 workflow: {
-                  ...get().workflow,
+                  ...currentWorkflow,
                   data: {
-                    ...get().workflow.data,
-                    steps: [],
+                    ...currentWorkflow.data,
+                    steps: [] as any,
                   },
-                },
+                } as Workflow,
                 currentStepIndex: 0,
-              }));
+              });
             },
           },
         }),
@@ -766,7 +769,7 @@ export const WorkflowProvider = ({
         {
           uri: resourceURI || "",
           data: defaultWorkflow,
-        } as Workflow
+        } as unknown as Workflow
       }
     >
       {children}

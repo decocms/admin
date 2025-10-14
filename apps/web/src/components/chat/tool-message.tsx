@@ -230,9 +230,9 @@ function ToolStatus({
           </div>
         );
       case "output-available":
-        return <Icon name="check" className="text-muted-foreground" />;
+        return <Icon name="check" className="text-primary-dark" />;
       case "output-error":
-        return <Icon name="close" className="text-muted-foreground" />;
+        return <Icon name="close" className="text-destructive" />;
       default:
         return "•";
     }
@@ -297,7 +297,7 @@ function ToolStatus({
     <div
       className={cn(
         "flex flex-col relative",
-        isSingle && "p-4 hover:bg-accent/25 rounded-2xl",
+        isSingle && "p-2.5 hover:bg-accent/25 rounded-2xl",
       )}
       onClick={isSingle ? onClick : undefined}
       onMouseEnter={() => setShowButtons(true)}
@@ -308,14 +308,14 @@ function ToolStatus({
           type="submit"
           onClick={isSingle ? undefined : onClick}
           className={cn(
-            "w-full flex items-start gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors",
+            "w-full flex items-start gap-2 py-2 px-1 text-sm text-muted-foreground hover:text-foreground transition-colors",
             !isSingle && "hover:bg-accent rounded-lg p-2",
           )}
         >
           <div className="relative flex flex-col items-center min-h-[20px]">
             <div
               className={cn(
-                "w-5 h-5 rounded-full border flex items-center justify-center bg-muted",
+                "size-5 rounded-full flex items-center justify-center bg-primary-light",
               )}
             >
               {getIcon(tool.state)}
@@ -467,37 +467,12 @@ function ImagePrompt({
 
 function GeneratingStatus() {
   return (
-    <>
-      <div className="flex items-center gap-3">
-        <div className="text-foreground relative overflow-hidden">
-          <span
-            className="relative inline-block font-medium"
-            style={{
-              background:
-                "linear-gradient(90deg, currentColor 0%, rgba(255,255,255,0.8) 50%, currentColor 100%)",
-              backgroundSize: "200% 100%",
-              WebkitBackgroundClip: "text",
-              backgroundClip: "text",
-              WebkitTextFillColor: "transparent",
-              animation: "shimmer 3s ease-in-out infinite",
-            }}
-          >
-            Generating image...
-          </span>
-        </div>
-        <Spinner size="xs" variant="default" />
-      </div>
-      <style
-        dangerouslySetInnerHTML={{
-          __html: `
-          @keyframes shimmer {
-            0% { background-position: -200% 0; }
-            100% { background-position: 200% 0; }
-          }
-        `,
-        }}
-      />
-    </>
+    <div className="flex items-center gap-3">
+      <span className="font-medium bg-gradient-to-r from-foreground via-foreground/50 to-foreground bg-[length:200%_100%] animate-shimmer bg-clip-text text-transparent">
+        Generating image...
+      </span>
+      <Spinner size="xs" variant="default" />
+    </div>
   );
 }
 

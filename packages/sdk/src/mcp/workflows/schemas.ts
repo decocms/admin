@@ -5,6 +5,10 @@ export type JSONSchema = Record<string, unknown>;
 
 // Workflow step definition - each step can reference previous steps using @ references
 export const WorkflowStepDefinitionSchema = z.object({
+  id: z
+    .string()
+    .min(1)
+    .describe("The unique ID of the step within the workflow"),
   name: z
     .string()
     .min(1)

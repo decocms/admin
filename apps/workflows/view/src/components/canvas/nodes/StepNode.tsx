@@ -150,6 +150,7 @@ const StepFormView = memo(function StepFormView({
   workflowActions,
   onCreateInputView,
 }: StepFormViewProps) {
+  console.log("StepFormView", step);
   return (
     <>
       {/* Tools Used Section */}
@@ -266,6 +267,7 @@ export const StepNode = memo(function StepNode({
 
   // OPTIMIZED: Only subscribe to the specific step we need, not entire workflow
   const step = useWorkflowStepByName(data.stepId);
+  console.log("StepNode", step);
   const workflowActions = useWorkflowStoreActions();
 
   // Only get workflow for auth token (used in handleExecuteStep)
@@ -322,7 +324,14 @@ export const StepNode = memo(function StepNode({
           prevStep.output.success &&
           "output" in prevStep.output
         ) {
-          previousStepResults[prevStep.name] = prevStep.output;
+          // Use step.id as the key (not step.name) since @refs use IDs
+          // Note: id field exists in runtime data but not in generated schema
+          const stepId = (prevStep as WorkflowStep & { id: string }).id;
+          // Store just the actual output data (not the execution wrapper)
+          // so @ref resolution works: @step.output.data instead of @step.output.output.data
+          previousStepResults[stepId] = (
+            prevStep.output as { output: unknown }
+          ).output;
         }
       });
     }
@@ -343,6 +352,8 @@ export const StepNode = memo(function StepNode({
       {
         onSuccess: async (result) => {
           const resolvedResult = await result;
+          // Store the entire execution result (includes success, output, logs, duration)
+          // This allows the UI to show execution details
           workflowActions.updateStep(stepName, {
             output: resolvedResult as unknown as Record<string, unknown>,
           });

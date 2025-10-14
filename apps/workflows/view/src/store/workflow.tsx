@@ -178,7 +178,7 @@ const WORKFLOW = {
   steps: [
     {
       id: "step_1759939748244_slbq2rim5",
-      title: "List Federal Units",
+      name: "List Federal Units",
       description: "Lists all federal units (UFs) from IBGE",
       status: "completed",
       toolCalls: ["IBGE_LIST_FEDERAL_UNITS"],
@@ -224,7 +224,7 @@ const WORKFLOW = {
     },
     {
       id: "step_1759944204619_vnoy7ipmv",
-      title: "Match Federal Unit by Acronym",
+      name: "Match Federal Unit by Acronym",
       description:
         "Receives a UF acronym and matches it with the federal units list, returning the complete UF data (id, acronym, name)",
       status: "completed",
@@ -312,7 +312,7 @@ const WORKFLOW = {
     },
     {
       id: "step_1759946000000_search_surveys",
-      title: "Search Surveys for UF with Details",
+      name: "Search Surveys for UF with Details",
       description:
         "Searches for surveys (pesquisas) related to the selected UF, gets the first one found and fetches its complete details including questions and answers",
       status: "completed",
@@ -395,7 +395,7 @@ const WORKFLOW = {
     },
     {
       id: "step_1759945000000_ibge_indicators",
-      title: "Fetch IBGE Indicators",
+      name: "Fetch IBGE Indicators",
       description:
         "Fetches well-known IBGE indicators (population, area, density, education, economy) for the selected UF and returns a simplified array with name, value, and unit",
       status: "completed",
@@ -460,7 +460,7 @@ const WORKFLOW = {
     },
     {
       id: "step_1759942500000_newstep3",
-      title: "Get Most Voted Parties",
+      name: "Get Most Voted Parties",
       description:
         "Query database to get the top 10 most voted parties in the specified UF (state) with total votes and number of candidates",
       status: "completed",
@@ -509,7 +509,7 @@ const WORKFLOW = {
     },
     {
       id: "step_1759947330226_vh11yeadj",
-      title: "Generate Political Analysis for UF",
+      name: "Generate Political Analysis for UF",
       description:
         "Uses AI to generate a comprehensive political analysis in markdown format based on the federal unit data, 2024 election results, 2026 voting intentions, and IBGE indicators",
       status: "completed",
@@ -631,7 +631,7 @@ const WORKFLOW = {
     },
     {
       id: "step_1759947500000_save_prompt",
-      title: "Save Political Analysis as Prompt",
+      name: "Save Political Analysis as Prompt",
       description:
         "Takes the markdown output from Generate Political Analysis for UF and saves it as a prompt using PROMPTS_CREATE with the analysis name + state",
       status: "completed",
@@ -747,7 +747,7 @@ export const WorkflowProvider = ({
     () =>
       WORKFLOW.steps.map((step: MockedStep) => ({
         ...step,
-        name: step.id, // Use id as name since that's the unique identifier
+        name: step.name, // Use id as name since that's the unique identifier
         execute:
           step.code ||
           "export default async function(input, ctx) { return input; }", // Use code as execute

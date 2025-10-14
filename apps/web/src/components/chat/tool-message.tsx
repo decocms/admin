@@ -217,11 +217,18 @@ function ToolStatus({
   const [viewMode, setViewMode] = useState<"code" | "tree">("code");
   const contentRef = useRef<HTMLDivElement>(null);
 
+  const isLoading =
+    tool.state === "input-streaming" || tool.state === "input-available";
+
   const getIcon = (state: string) => {
     switch (state) {
       case "input-streaming":
       case "input-available":
-        return <Spinner size="xs" variant="default" />;
+        return (
+          <div className="[&>div>svg]:!animate-[spin_0.7s_linear_infinite]">
+            <Spinner size="xs" variant="default" />
+          </div>
+        );
       case "output-available":
         return <Icon name="check" className="text-muted-foreground" />;
       case "output-error":
@@ -319,7 +326,13 @@ function ToolStatus({
           </div>
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2">
-              <div className="font-medium truncate max-w-[60vw] md:max-w-full">
+              <div
+                className={cn(
+                  "font-medium truncate max-w-[60vw] md:max-w-full",
+                  isLoading &&
+                    "bg-gradient-to-r from-foreground via-foreground/50 to-foreground bg-[length:200%_100%] animate-shimmer bg-clip-text text-transparent",
+                )}
+              >
                 {getToolName()}
               </div>
               <Icon

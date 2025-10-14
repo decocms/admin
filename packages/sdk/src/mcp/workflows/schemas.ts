@@ -239,9 +239,9 @@ export const WorkflowRunDataSchema = z.object({
               attempts: z
                 .array(
                   z.object({
-                    start: z.string().optional(),
-                    end: z.string().optional(),
-                    success: z.boolean().optional(),
+                    start: z.string().nullable().optional(),
+                    end: z.string().nullable().optional(),
+                    success: z.boolean().nullable().optional(),
                     error: z
                       .object({
                         name: z.string().optional(),
@@ -270,3 +270,5 @@ export const WorkflowRunDataSchema = z.object({
     .passthrough()
     .optional(),
 });
+
+export type WorkflowRunData = z.infer<typeof WorkflowRunDataSchema>;

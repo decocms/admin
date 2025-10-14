@@ -22,10 +22,25 @@ interface TiptapKeyDownProps {
   event: KeyboardEvent;
 }
 
-export function RichTextEditor({ minHeight = '120px', placeholder = 'Type @ to mention...'}: { minHeight?: string, placeholder?: string }) {
+interface RichTextEditorProps {
+  minHeight?: string;
+  placeholder?: string;
+  value?: string;
+  onChange?: (value: string) => void;
+}
+
+export function RichTextEditor({ 
+  minHeight = '120px', 
+  placeholder = 'Type @ to mention...', 
+  value,
+  onChange 
+}: RichTextEditorProps) {
   const mentions = useMentionItems();
   const { setPrompt } = useStepEditorActions();
-  const prompt = useStepEditorPrompt();
+  const globalPrompt = useStepEditorPrompt();
+  
+  // Use provided value or fall back to global prompt (for backward compatibility)
+  const content = value !== undefined ? value : globalPrompt;
   
   // Use ref to store mentions so they're accessible in closure without recreating editor
   const mentionsRef = useRef<MentionItem[]>(mentions);
@@ -168,10 +183,23 @@ export function RichTextEditor({ minHeight = '120px', placeholder = 'Type @ to m
       }),
     ],
     onUpdate: ({ editor }) => { 
-      setPrompt(editor.getText());
+      const text = editor.getText();
+      // If onChange callback provided, use it; otherwise fall back to global store
+      if (onChange) {
+        onChange(text);
+      } else {
+        setPrompt(text);
+      }
     },
-    content: prompt,
+    content,
   }, []); // Empty deps - mentions are accessed via ref, avoiding recreation
+  
+  // Update editor content when value prop changes
+  useEffect(() => {
+    if (editor && value !== undefined && editor.getText() !== value) {
+      editor.commands.setContent(value);
+    }
+  }, [editor, value]);
 
   return (
     <div className="relative">

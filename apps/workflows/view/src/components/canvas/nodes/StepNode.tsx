@@ -322,6 +322,14 @@ export const StepNode = memo(function StepNode({ data }: NodeProps<StepNodeData>
                           ? schemaObj.description
                           : "";
                       const inputKey = `${step.name}_${key}`;
+                      
+                      // Get the current value from step.input
+                      const currentValue = step.input?.[key];
+                      const stringValue = typeof currentValue === 'string' 
+                        ? currentValue 
+                        : currentValue !== undefined 
+                        ? JSON.stringify(currentValue, null, 2) 
+                        : '';
 
                       return (
                         <div key={`${inputKey}_wrapper`}>
@@ -343,6 +351,15 @@ export const StepNode = memo(function StepNode({ data }: NodeProps<StepNodeData>
                             key={inputKey}
                             placeholder={description || `Enter ${key}...`}
                             minHeight="40px"
+                            value={stringValue}
+                            onChange={(newValue) => {
+                              // Update the step input in the workflow store
+                              const updatedInput = {
+                                ...step.input,
+                                [key]: newValue,
+                              };
+                              workflowActions.updateStep(step.name, { input: updatedInput });
+                            }}
                           />
                         </div>
                       );

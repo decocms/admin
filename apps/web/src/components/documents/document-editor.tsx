@@ -1,7 +1,7 @@
 import { cn } from "@deco/ui/lib/utils.ts";
-import { createUnifiedMentions } from "@deco/ui/components/rich-text-editor/extensions/unified-mentions.ts";
-import { MentionNode } from "@deco/ui/components/rich-text-editor/extensions/mention-node.tsx";
-import { MentionDropdown } from "@deco/ui/components/rich-text-editor/components/mention-dropdown.tsx";
+import { createUnifiedMentions } from "../rich-text-editor/extensions/unified-mentions.ts";
+import { MentionNode } from "../rich-text-editor/extensions/mention-node.tsx";
+import { MentionDropdown } from "../rich-text-editor/components/mention-dropdown.tsx";
 import { Icon } from "@deco/ui/components/icon.tsx";
 import Color from "@tiptap/extension-color";
 import Highlight from "@tiptap/extension-highlight";

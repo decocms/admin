@@ -26,12 +26,17 @@ export function AgentsTabs({ active }: AgentsTabsProps) {
   }
 
   return (
-    <Tabs value={active} onValueChange={handleChange} className="w-full">
-      <TabsList className="h-9 gap-2 bg-muted/60 px-2 mb-2">
-        <TabsTrigger value="agents" className="px-4">
+    <Tabs
+      value={active}
+      onValueChange={handleChange}
+      variant="underline"
+      className="w-full"
+    >
+      <TabsList variant="underline">
+        <TabsTrigger value="agents" variant="underline">
           Agents
         </TabsTrigger>
-        <TabsTrigger value="threads" className="px-4">
+        <TabsTrigger value="threads" variant="underline">
           Threads
         </TabsTrigger>
       </TabsList>

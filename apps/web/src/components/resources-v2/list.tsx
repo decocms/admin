@@ -33,7 +33,7 @@ import { useSortable } from "../../hooks/use-sortable.ts";
 import { EmptyState } from "../common/empty-state.tsx";
 import { Table, type TableColumn } from "../common/table/index.tsx";
 import { TimeAgoCell, UserInfo } from "../common/table/table-cells.tsx";
-import type { TabItem } from "../common/tabs-underline.tsx";
+import type { TabItem } from "./resource-header.tsx";
 import { DecopilotLayout } from "../layout/decopilot-layout.tsx";
 import { ResourceHeader } from "./resource-header.tsx";
 import { ResourceRouteProvider } from "./route-context.tsx";

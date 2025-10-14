@@ -8,9 +8,16 @@ import {
 } from "@deco/ui/components/dropdown-menu.tsx";
 import { Icon } from "@deco/ui/components/icon.tsx";
 import { Input } from "@deco/ui/components/input.tsx";
+import { Tabs, TabsList, TabsTrigger } from "@deco/ui/components/tabs.tsx";
 import { useEffect, useRef, type KeyboardEvent, type ReactNode } from "react";
-import { TabsUnderline, type TabItem } from "../common/tabs-underline.tsx";
 import { FilterBar, type Filter } from "./filter-bar.tsx";
+
+export interface TabItem {
+  id: string;
+  label: string;
+  onClick?: () => void;
+  href?: string;
+}
 
 interface ResourceHeaderProps {
   title: string;
@@ -78,18 +85,33 @@ export function ResourceHeader({
       </div>
 
       {/* Tabs and Actions Row */}
-      <div className="flex items-end border-b border-border w-full">
+      <div className="flex items-center justify-between border-b border-border w-full">
         {/* Left: Tabs (if provided) */}
-        {tabs && tabs.length > 0 && (
-          <TabsUnderline
-            tabs={tabs}
-            activeTab={activeTab}
-            onTabChange={onTabChange}
-          />
+        {tabs && tabs.length > 0 ? (
+          <Tabs
+            value={activeTab}
+            onValueChange={(tabId) => {
+              // Prefer onTabChange if provided, otherwise use tab.onClick
+              if (onTabChange) {
+                onTabChange(tabId);
+              } else {
+                const tab = tabs.find((t) => t.id === tabId);
+                tab?.onClick?.();
+              }
+            }}
+            variant="underline"
+          >
+            <TabsList variant="underline" className="border-0">
+              {tabs.map((tab) => (
+                <TabsTrigger key={tab.id} value={tab.id} variant="underline">
+                  {tab.label}
+                </TabsTrigger>
+              ))}
+            </TabsList>
+          </Tabs>
+        ) : (
+          <div className="flex-1" />
         )}
-
-        {/* Center: Spacer */}
-        <div className="flex-1" />
 
         {/* Right: Action Buttons */}
         <div className="flex items-center gap-2 py-2">

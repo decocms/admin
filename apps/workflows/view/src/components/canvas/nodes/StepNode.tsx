@@ -13,9 +13,11 @@ import { useState, memo, useMemo, useCallback } from "react";
 import { RichTextEditor } from "../../RichTextEditor";
 import { RenderInputViewModal } from "../../RenderInputViewModal";
 import {
-  useCurrentWorkflow,
   useWorkflowStoreActions,
   useWorkflowStepByName,
+  useWorkflowAuthToken,
+  useWorkflowStepsArray,
+  useWorkflowStepIndex,
 } from "@/store/workflow";
 import { StepOutput } from "./step-output";
 import type { WorkflowStep, WorkflowDependency } from "shared/types/workflows";
@@ -141,111 +143,133 @@ interface StepFormViewProps {
   inputSchemaEntries: Array<[string, unknown]>;
   workflowActions: ReturnType<typeof useWorkflowStoreActions>;
   onCreateInputView: (key: string) => void;
+  stepName: string;
 }
 
 // OPTIMIZED: Memoize to prevent re-renders when parent updates
-const StepFormView = memo(function StepFormView({
-  step,
-  inputSchemaEntries,
-  workflowActions,
-  onCreateInputView,
-}: StepFormViewProps) {
-  console.log("StepFormView", step);
-  return (
-    <>
-      {/* Tools Used Section */}
-      {step.dependencies && step.dependencies.length > 0 && (
-        <div className="bg-background border-b border-border p-4">
-          <p className="font-mono text-sm text-muted-foreground uppercase mb-4">
-            TOOLS USED
-          </p>
-          <div className="flex gap-3 flex-wrap">
-            {step.dependencies.map((tool: WorkflowDependency) => (
-              <Badge
-                key={tool.integrationId}
-                variant="secondary"
-                className="bg-muted border border-border px-1 py-0.5 text-foreground text-sm font-normal gap-1"
-              >
-                <div className="size-4 bg-background border border-border/20 rounded-md flex items-center justify-center">
-                  <Icon name="build" size={12} />
-                </div>
-                {tool.integrationId}
-              </Badge>
-            ))}
-          </div>
-        </div>
-      )}
+const StepFormView = memo(
+  function StepFormView({
+    step,
+    inputSchemaEntries,
+    workflowActions,
+    onCreateInputView,
+    stepName,
+  }: StepFormViewProps) {
+    // PERFORMANCE: Memoize onChange handlers to prevent recreation
+    // Create one handler per field that's stable across renders
+    const handleFieldChange = useCallback(
+      (fieldKey: string, newValue: string) => {
+        // Update only the specific field - Zustand will merge with current state
+        workflowActions.updateStep(stepName, {
+          input: {
+            ...step.input,
+            [fieldKey]: newValue,
+          },
+        });
+      },
+      [workflowActions, stepName, step.input],
+    );
 
-      {/* Input Parameters Section */}
-      {step.inputSchema && (
-        <div className="bg-background border-b border-border p-4">
-          <div
-            className="nodrag"
-            onMouseDown={(e) => e.stopPropagation()}
-            onPointerDown={(e) => e.stopPropagation()}
-            onClick={(e) => e.stopPropagation()}
-          >
+    return (
+      <>
+        {/* Tools Used Section */}
+        {step.dependencies && step.dependencies.length > 0 && (
+          <div className="bg-background border-b border-border p-4">
             <p className="font-mono text-sm text-muted-foreground uppercase mb-4">
-              INPUT PARAMETERS
+              TOOLS USED
             </p>
-            <div className="flex flex-col gap-5">
-              {inputSchemaEntries.map(([key, schema]: [string, unknown]) => {
-                const schemaObj = schema as Record<string, unknown>;
-                const description =
-                  typeof schemaObj.description === "string"
-                    ? schemaObj.description
-                    : "";
-
-                // Get the current value from step.input
-                const currentValue = step.input?.[key];
-                const stringValue =
-                  typeof currentValue === "string"
-                    ? currentValue
-                    : currentValue !== undefined
-                      ? JSON.stringify(currentValue, null, 2)
-                      : "";
-
-                return (
-                  <div key={key}>
-                    <div className="flex items-center justify-between mb-2">
-                      <label className="text-sm font-medium text-foreground leading-none">
-                        {key}
-                      </label>
-                      <Button
-                        variant="secondary"
-                        size="sm"
-                        onClick={() => onCreateInputView(key)}
-                        className="text-xs h-6 px-2"
-                      >
-                        + Add View
-                      </Button>
-                    </div>
-
-                    <RichTextEditor
-                      placeholder={description || `Enter ${key}...`}
-                      minHeight="40px"
-                      value={stringValue}
-                      onChange={(newValue) => {
-                        // Update the step input in the workflow store
-                        const updatedInput = {
-                          ...step.input,
-                          [key]: newValue,
-                        };
-                        workflowActions.updateStep(step.name, {
-                          input: updatedInput,
-                        });
-                      }}
-                    />
+            <div className="flex gap-3 flex-wrap">
+              {step.dependencies.map((tool: WorkflowDependency) => (
+                <Badge
+                  key={tool.integrationId}
+                  variant="secondary"
+                  className="bg-muted border border-border px-1 py-0.5 text-foreground text-sm font-normal gap-1"
+                >
+                  <div className="size-4 bg-background border border-border/20 rounded-md flex items-center justify-center">
+                    <Icon name="build" size={12} />
                   </div>
-                );
-              })}
+                  {tool.integrationId}
+                </Badge>
+              ))}
             </div>
           </div>
-        </div>
-      )}
-    </>
-  );
-});
+        )}
+
+        {/* Input Parameters Section */}
+        {step.inputSchema && (
+          <div className="bg-background border-b border-border p-4">
+            <div
+              className="nodrag"
+              onMouseDown={(e) => e.stopPropagation()}
+              onPointerDown={(e) => e.stopPropagation()}
+              onClick={(e) => e.stopPropagation()}
+            >
+              <p className="font-mono text-sm text-muted-foreground uppercase mb-4">
+                INPUT PARAMETERS
+              </p>
+              <div className="flex flex-col gap-5">
+                {inputSchemaEntries.map(([key, schema]: [string, unknown]) => {
+                  const schemaObj = schema as Record<string, unknown>;
+                  const description =
+                    typeof schemaObj.description === "string"
+                      ? schemaObj.description
+                      : "";
+
+                  // Get the current value from step.input
+                  const currentValue = step.input?.[key];
+                  const stringValue =
+                    typeof currentValue === "string"
+                      ? currentValue
+                      : currentValue !== undefined
+                        ? JSON.stringify(currentValue, null, 2)
+                        : "";
+
+                  return (
+                    <div key={key}>
+                      <div className="flex items-center justify-between mb-2">
+                        <label className="text-sm font-medium text-foreground leading-none">
+                          {key}
+                        </label>
+                        <Button
+                          variant="secondary"
+                          size="sm"
+                          onClick={() => onCreateInputView(key)}
+                          className="text-xs h-6 px-2"
+                        >
+                          + Add View
+                        </Button>
+                      </div>
+
+                      <RichTextEditor
+                        placeholder={description || `Enter ${key}...`}
+                        minHeight="40px"
+                        value={stringValue}
+                        onChange={(newValue) =>
+                          handleFieldChange(key, newValue)
+                        }
+                      />
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+        )}
+      </>
+    );
+  },
+  (prevProps, nextProps) => {
+    // Custom comparison - only re-render if these actually changed
+    return (
+      prevProps.step === nextProps.step &&
+      prevProps.stepName === nextProps.stepName &&
+      prevProps.inputSchemaEntries.length ===
+        nextProps.inputSchemaEntries.length &&
+      prevProps.workflowActions === nextProps.workflowActions &&
+      prevProps.onCreateInputView === nextProps.onCreateInputView
+    );
+  },
+);
 
 export const StepNode = memo(function StepNode({
   data,
@@ -267,11 +291,10 @@ export const StepNode = memo(function StepNode({
 
   // OPTIMIZED: Only subscribe to the specific step we need, not entire workflow
   const step = useWorkflowStepByName(data.stepId);
-  console.log("StepNode", step);
   const workflowActions = useWorkflowStoreActions();
 
-  // Only get workflow for auth token (used in handleExecuteStep)
-  const workflow = useCurrentWorkflow();
+  // OPTIMIZED: Atomic selectors - only subscribe to what we actually need
+  const authToken = useWorkflowAuthToken();
 
   const executeStepMutation = useExecuteStep();
 
@@ -299,42 +322,37 @@ export const StepNode = memo(function StepNode({
   const stepInputSchema = step?.inputSchema;
   const stepOutputSchema = step?.outputSchema;
   const stepInput = step?.input;
-  const authToken = workflow?.authorization?.token;
+
+  // OPTIMIZED: Get step index and all steps, then compute previous results locally
+  const stepIndex = useWorkflowStepIndex(stepName || "");
+  const allSteps = useWorkflowStepsArray();
+
+  // Memoize previous step results - only recompute when steps before this one change
+  const previousStepResults = useMemo(() => {
+    if (stepIndex <= 0) return {};
+
+    const results: Record<string, unknown> = {};
+    const previousSteps = allSteps.slice(0, stepIndex);
+
+    previousSteps.forEach((prevStep: WorkflowStep) => {
+      if (
+        prevStep.output &&
+        typeof prevStep.output === "object" &&
+        "success" in prevStep.output &&
+        prevStep.output.success &&
+        "output" in prevStep.output
+      ) {
+        const stepId = (prevStep as WorkflowStep & { id: string }).id;
+        results[stepId] = (prevStep.output as { output: unknown }).output;
+      }
+    });
+
+    return results;
+  }, [stepIndex, allSteps]);
 
   // Memoize the execute step handler with stable dependencies
   const handleExecuteStep = useCallback(() => {
     if (!step || !stepName) return;
-
-    // Collect outputs from all previous steps for @ref resolution
-    const previousStepResults: Record<string, unknown> = {};
-    const currentStepIndex = workflow?.steps?.findIndex(
-      (s: WorkflowStep) => s.name === stepName,
-    );
-
-    if (currentStepIndex !== undefined && currentStepIndex > 0) {
-      // Get all steps before the current one
-      const previousSteps = workflow?.steps?.slice(0, currentStepIndex);
-
-      previousSteps?.forEach((prevStep: WorkflowStep) => {
-        // Only include steps that have successful execution with output data
-        if (
-          prevStep.output &&
-          typeof prevStep.output === "object" &&
-          "success" in prevStep.output &&
-          prevStep.output.success &&
-          "output" in prevStep.output
-        ) {
-          // Use step.id as the key (not step.name) since @refs use IDs
-          // Note: id field exists in runtime data but not in generated schema
-          const stepId = (prevStep as WorkflowStep & { id: string }).id;
-          // Store just the actual output data (not the execution wrapper)
-          // so @ref resolution works: @step.output.data instead of @step.output.output.data
-          previousStepResults[stepId] = (
-            prevStep.output as { output: unknown }
-          ).output;
-        }
-      });
-    }
 
     executeStepMutation.mutate(
       {
@@ -369,13 +387,13 @@ export const StepNode = memo(function StepNode({
       },
     );
   }, [
-    workflow?.steps,
     step,
     stepName,
     stepExecute,
     stepInputSchema,
     stepOutputSchema,
     stepInput,
+    previousStepResults,
     authToken,
     executeStepMutation,
     workflowActions,
@@ -455,7 +473,8 @@ export const StepNode = memo(function StepNode({
             <DropdownMenuContent align="end">
               <DropdownMenuItem
                 onClick={() => {
-                  if (workflow) void 0;
+                  // TODO: Implement duplicate functionality
+                  void 0;
                 }}
               >
                 <Icon name="content_copy" size={16} className="mr-2" />
@@ -463,8 +482,9 @@ export const StepNode = memo(function StepNode({
               </DropdownMenuItem>
               <DropdownMenuItem
                 onClick={() => {
-                  const newTitle = prompt("Enter new name:", step.name);
-                  if (newTitle && workflow) {
+                  const newTitle = prompt("Enter new name:", step?.name);
+                  if (newTitle) {
+                    // TODO: Implement rename functionality
                     void 0;
                   }
                 }}
@@ -474,7 +494,8 @@ export const StepNode = memo(function StepNode({
               </DropdownMenuItem>
               <DropdownMenuItem
                 onClick={() => {
-                  if (workflow && confirm(`Delete step "${step.name}"?`)) {
+                  if (step && confirm(`Delete step "${step.name}"?`)) {
+                    // TODO: Implement delete functionality
                     void 0;
                   }
                 }}
@@ -496,9 +517,10 @@ export const StepNode = memo(function StepNode({
             lines={jsonViewData.lines}
           />
         )}
-        {!showJsonView && (
+        {!showJsonView && stepName && (
           <StepFormView
             step={step}
+            stepName={stepName}
             inputSchemaEntries={inputSchemaEntries}
             workflowActions={workflowActions}
             onCreateInputView={setCreatingInputViewFor}
@@ -547,7 +569,7 @@ export const StepNode = memo(function StepNode({
       </div>
 
       {/* Render Input View Modal */}
-      {renderingInputView && workflow && step && (
+      {renderingInputView && step && (
         <RenderInputViewModal
           step={step}
           fieldName={renderingInputView.fieldName}

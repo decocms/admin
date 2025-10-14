@@ -15,6 +15,8 @@ export function useGenerateStep() {
     mutationFn: async (input: GenerateStepInput): GenerateStepOutput => {
       const result = await client.GENERATE_STEP({
         objective: input.objective,
+        availableIntegrations: input.availableIntegrations,
+        selectedTools: input.selectedTools,
         previousSteps:
           input.previousSteps?.map((step: StepInfo) => ({
             id: step.id,

@@ -10,12 +10,17 @@ import {
 } from "@/store/workflow";
 import { memo } from "react";
 import type { WorkflowStep } from "shared/types/workflows";
+import { extractMentionedTools } from "@/utils/extract-mentioned-tools";
+import { useIntegrations } from "@/hooks/useIntegrations";
 
 export const NewStepNode = memo(function NewStepNode(_props: NodeProps) {
   const workflow = useCurrentWorkflow();
   const { updateStep, addStep } = useWorkflowStoreActions();
   const generateStepMutation = useGenerateStep();
   const prompt = useNewStepPrompt();
+  const { data: integrations } = useIntegrations();
+
+  const mentionedTools = extractMentionedTools(prompt, integrations || []);
 
   const handleGenerateStep = () => {
     if (!prompt.trim() || !workflow) {
@@ -36,7 +41,7 @@ export const NewStepNode = memo(function NewStepNode(_props: NodeProps) {
     );
 
     generateStepMutation.mutate(
-      { objective: prompt, previousSteps },
+      { objective: prompt, previousSteps, selectedTools: mentionedTools },
       {
         onSuccess: (result) => {
           console.log("✅ Step generated successfully:", result);

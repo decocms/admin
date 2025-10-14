@@ -10,7 +10,7 @@ import tippy, { Instance as TippyInstance } from "tippy.js";
 import { MentionNode } from "./MentionNode";
 import { useMentionItems, type MentionItem } from "@/hooks/useMentionItems";
 import { useStepEditorActions, useStepEditorPrompt } from "@/store/step-editor";
-import { useRef, useEffect } from "react";
+import { useRef, useEffect, useCallback } from "react";
 
 interface TiptapSuggestionProps {
   items: MentionItem[];
@@ -45,10 +45,41 @@ export function RichTextEditor({
   // Use ref to store mentions so they're accessible in closure without recreating editor
   const mentionsRef = useRef<MentionItem[]>(mentions);
 
+  // PERFORMANCE: Debounce timer ref to prevent store updates on every keystroke
+  const debounceTimerRef = useRef<NodeJS.Timeout | null>(null);
+
   // Update ref when mentions change
   useEffect(() => {
     mentionsRef.current = mentions;
   }, [mentions]);
+
+  // PERFORMANCE: Debounced onChange handler
+  // Stores updates are expensive - batch them with 300ms delay
+  const debouncedOnChange = useCallback(
+    (text: string) => {
+      if (debounceTimerRef.current) {
+        clearTimeout(debounceTimerRef.current);
+      }
+
+      debounceTimerRef.current = setTimeout(() => {
+        if (onChange) {
+          onChange(text);
+        } else {
+          setPrompt(text);
+        }
+      }, 300); // 300ms debounce - good balance between UX and performance
+    },
+    [onChange, setPrompt],
+  );
+
+  // Cleanup debounce timer on unmount
+  useEffect(() => {
+    return () => {
+      if (debounceTimerRef.current) {
+        clearTimeout(debounceTimerRef.current);
+      }
+    };
+  }, []);
 
   const editor = useEditor(
     {
@@ -218,17 +249,13 @@ export function RichTextEditor({
       ],
       onUpdate: ({ editor }) => {
         const text = editor.getText();
-        // If onChange callback provided, use it; otherwise fall back to global store
-        if (onChange) {
-          onChange(text);
-        } else {
-          setPrompt(text);
-        }
+        // PERFORMANCE: Use debounced handler to batch store updates
+        debouncedOnChange(text);
       },
       content,
     },
-    [],
-  ); // Empty deps - mentions are accessed via ref, avoiding recreation
+    [debouncedOnChange],
+  ); // Only depend on debounced handler - mentions are accessed via ref
 
   // Update editor content when value prop changes
   useEffect(() => {

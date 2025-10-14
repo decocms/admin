@@ -17,10 +17,9 @@ import { StepNode, NewStepNode, PlusButtonNode } from "./nodes";
 import {
   useWorkflowStoreActions,
   useCurrentStepIndex,
-  useWorkflowSteps,
+  useWorkflowStepIds,
   useWorkflowStepsLength,
 } from "@/store/workflow";
-import type { WorkflowStep } from "shared/types/workflows";
 
 export interface WorkflowCanvasRef {
   centerOnStep: (index: number) => void;
@@ -40,7 +39,6 @@ const nodeTypes = {
 
 const Inner = forwardRef<WorkflowCanvasRef>(function Inner(_, ref) {
   const rf = useReactFlow();
-  const steps = useWorkflowSteps();
   const stepsLength = useWorkflowStepsLength();
   const currentStepIndex = useCurrentStepIndex();
   const { setCurrentStepIndex } = useWorkflowStoreActions();
@@ -51,6 +49,10 @@ const Inner = forwardRef<WorkflowCanvasRef>(function Inner(_, ref) {
 
   // Initial mount flag to trigger centering on first render
   const isInitialMountRef = useRef(true);
+
+  // OPTIMIZED: Subscribe to primitive string of step IDs instead of full array
+  // This prevents re-renders when step content changes, only when IDs change
+  const stepIds = useWorkflowStepIds();
 
   // Calculate a rough initial viewport to prevent initial jump
   const initialViewport = useMemo(() => {
@@ -66,7 +68,7 @@ const Inner = forwardRef<WorkflowCanvasRef>(function Inner(_, ref) {
   // Center the viewport using actual node measurements from ReactFlow
   const centerViewport = useCallback(
     (stepIndex: number, animated = true) => {
-      if (!steps) return;
+      if (stepsLength === 0 && stepIndex > 0) return;
 
       isCenteringRef.current = true;
 
@@ -75,7 +77,10 @@ const Inner = forwardRef<WorkflowCanvasRef>(function Inner(_, ref) {
       const targetX = stepX + CARD_WIDTH / 2;
 
       // Get actual node height from ReactFlow's measurements
-      const nodeId = stepIndex < steps.length ? steps[stepIndex].name : "new";
+      // Get node ID from stepIds string
+      const stepNames = stepIds.split(",").filter(Boolean);
+      const nodeId =
+        stepIndex < stepNames.length ? stepNames[stepIndex] : "new";
       const node = rf.getNode(nodeId);
       // ReactFlow stores measured dimensions internally after render
       const nodeHeight = (node as any)?.measured?.height || node?.height || 250;
@@ -92,7 +97,7 @@ const Inner = forwardRef<WorkflowCanvasRef>(function Inner(_, ref) {
         isCenteringRef.current = false;
       }, delay);
     },
-    [steps, rf],
+    [stepsLength, stepIds, rf],
   );
 
   // Center viewport when current step changes - only if step actually changed
@@ -116,12 +121,6 @@ const Inner = forwardRef<WorkflowCanvasRef>(function Inner(_, ref) {
     return () => clearTimeout(timer);
   }, [currentStepIndex, centerViewport]);
 
-  // OPTIMIZED: Use primitive values instead of complex objects for dependencies
-  const stepIds = useMemo(
-    () => steps?.map((s: WorkflowStep) => s.name).join(",") || "",
-    [steps],
-  );
-
   // Memoize the plus button onClick to prevent React Flow warnings
   const handlePlusClick = useCallback(() => {
     setCurrentStepIndex(stepsLength);
@@ -134,8 +133,6 @@ const Inner = forwardRef<WorkflowCanvasRef>(function Inner(_, ref) {
   );
 
   const nodes = useMemo(() => {
-    if (!steps) return [];
-
     const result: Node[] = [];
     const Y_POSITION = 0; // All nodes at same Y level for proper centering
 
@@ -152,14 +149,16 @@ const Inner = forwardRef<WorkflowCanvasRef>(function Inner(_, ref) {
     }
 
     // Case 2: Create step nodes horizontally aligned
-    steps?.forEach((step: WorkflowStep, index: number) => {
+    // Split stepIds to get individual step names
+    const stepNames = stepIds.split(",").filter(Boolean);
+    stepNames.forEach((stepName: string, index: number) => {
       const stepX = index * (CARD_WIDTH + CARD_GAP);
 
       result.push({
-        id: step.name,
+        id: stepName,
         type: "step",
         position: { x: stepX, y: Y_POSITION },
-        data: { stepId: step.name },
+        data: { stepId: stepName },
         draggable: false,
       });
     });
@@ -191,40 +190,41 @@ const Inner = forwardRef<WorkflowCanvasRef>(function Inner(_, ref) {
     }
 
     return result;
-  }, [stepIds, stepsLength, steps, currentStepIndex, plusButtonData]);
+  }, [stepIds, stepsLength, currentStepIndex, plusButtonData]);
 
-  // OPTIMIZED: Simplified dependencies
+  // OPTIMIZED: Simplified dependencies - only depend on stepIds, not full steps array
   const edges = useMemo<Edge[]>(() => {
-    if (!steps || stepsLength === 0) return [];
+    if (stepsLength === 0) return [];
 
     const result: Edge[] = [];
+    const stepNames = stepIds.split(",").filter(Boolean);
 
     // Connect all consecutive step nodes
-    for (let i = 0; i < stepsLength - 1; i++) {
+    for (let i = 0; i < stepNames.length - 1; i++) {
       result.push({
-        id: `${steps[i].name}-${steps[i + 1].name}`,
-        source: steps[i].name,
-        target: steps[i + 1].name,
+        id: `${stepNames[i]}-${stepNames[i + 1]}`,
+        source: stepNames[i],
+        target: stepNames[i + 1],
         animated: true,
       });
     }
 
     // Connect last step to new step node when on "new step" screen
-    if (currentStepIndex === stepsLength) {
+    if (currentStepIndex === stepsLength && stepNames.length > 0) {
       result.push({
-        id: `${steps[stepsLength - 1].name}-new`,
-        source: steps[stepsLength - 1].name,
+        id: `${stepNames[stepNames.length - 1]}-new`,
+        source: stepNames[stepNames.length - 1],
         target: "new",
         animated: true,
       });
     }
 
     return result;
-  }, [stepIds, stepsLength, steps, currentStepIndex]);
+  }, [stepIds, stepsLength, currentStepIndex]);
 
   const onNodeClick = useCallback(
     (_event: React.MouseEvent, node: Node) => {
-      if (!steps || node.type === "plusButton") return;
+      if (node.type === "plusButton") return;
 
       if (node.id === "new") {
         if (currentStepIndex !== stepsLength) {
@@ -233,14 +233,15 @@ const Inner = forwardRef<WorkflowCanvasRef>(function Inner(_, ref) {
         return;
       }
 
-      const stepIndex = steps?.findIndex(
-        (s: WorkflowStep) => s.name === node.id,
-      );
+      // Find step index by name using stepIds string
+      const stepNames = stepIds.split(",").filter(Boolean);
+      const stepIndex = stepNames.indexOf(node.id);
+
       if (stepIndex !== -1 && stepIndex !== currentStepIndex) {
-        setCurrentStepIndex(stepIndex || 0);
+        setCurrentStepIndex(stepIndex);
       }
     },
-    [steps, stepsLength, currentStepIndex, setCurrentStepIndex],
+    [stepIds, stepsLength, currentStepIndex, setCurrentStepIndex],
   );
 
   // Lock canvas - prevent any panning
@@ -253,7 +254,7 @@ const Inner = forwardRef<WorkflowCanvasRef>(function Inner(_, ref) {
   // OPTIMIZED: Handle horizontal scroll to navigate between steps with minimal DOM traversal
   const handleWheel = useCallback(
     (event: React.WheelEvent) => {
-      if (!steps || isCenteringRef.current) return;
+      if (isCenteringRef.current) return;
 
       // OPTIMIZED: Quick check using closest() - much faster than manual traversal
       const target = event.target as HTMLElement;
@@ -301,31 +302,25 @@ const Inner = forwardRef<WorkflowCanvasRef>(function Inner(_, ref) {
         }
       }
     },
-    [steps, stepsLength, currentStepIndex, setCurrentStepIndex],
+    [stepsLength, currentStepIndex, setCurrentStepIndex],
   );
 
   useImperativeHandle(
     ref,
     () => ({
       centerOnStep: (index: number) => {
-        if (steps) {
-          setCurrentStepIndex(index);
-        }
+        setCurrentStepIndex(index);
       },
       centerOnNext: () => {
-        if (steps) {
-          const nextIndex = Math.min(currentStepIndex + 1, stepsLength);
-          setCurrentStepIndex(nextIndex);
-        }
+        const nextIndex = Math.min(currentStepIndex + 1, stepsLength);
+        setCurrentStepIndex(nextIndex);
       },
       centerOnPrev: () => {
-        if (steps) {
-          const prevIndex = Math.max(currentStepIndex - 1, 0);
-          setCurrentStepIndex(prevIndex);
-        }
+        const prevIndex = Math.max(currentStepIndex - 1, 0);
+        setCurrentStepIndex(prevIndex);
       },
     }),
-    [steps, stepsLength, currentStepIndex, setCurrentStepIndex],
+    [stepsLength, currentStepIndex, setCurrentStepIndex],
   );
 
   return (

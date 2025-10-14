@@ -1,4 +1,4 @@
-import { useProjects } from "@deco/sdk";
+import { Project, useProjects } from "@deco/sdk";
 import { Button } from "@deco/ui/components/button.tsx";
 import { Icon } from "@deco/ui/components/icon.tsx";
 import { Input } from "@deco/ui/components/input.tsx";
@@ -10,10 +10,48 @@ import {
 import { Suspense, useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router";
 import { Avatar } from "../common/avatar";
+import { useFile } from "@deco/sdk";
 
-function SwitcherProjects({ org, search }: { org: string; search: string }) {
-  const projects = useProjects({ searchQuery: search, org });
+function SwitcherProjectItem({
+  project,
+  org,
+}: {
+  project: Project;
+  org: string;
+}) {
   const navigate = useNavigate();
+  const { data: resolvedAvatar } = useFile(project.avatar_url ?? "");
+
+  return (
+    <Button
+      key={project.id}
+      variant="ghost"
+      size="sm"
+      className="w-full justify-start font-normal"
+      onClick={() => navigate(`/${org}/${project.slug}`)}
+    >
+      <Avatar
+        url={resolvedAvatar ?? undefined}
+        fallback={project.slug}
+        size="xs"
+        objectFit="contain"
+      />
+      <span className="overflow-hidden text-ellipsis whitespace-nowrap">
+        {project.title}
+      </span>
+    </Button>
+  );
+}
+
+export function SwitcherProjects({
+  org,
+  search,
+}: {
+  org: string;
+  search: string;
+}) {
+  const projects = useProjects({ searchQuery: search, org });
+
   return (
     <div className="flex flex-col gap-0.5 p-1 max-h-44 overflow-y-auto">
       {projects.length === 0 && (
@@ -22,23 +60,7 @@ function SwitcherProjects({ org, search }: { org: string; search: string }) {
         </div>
       )}
       {projects.map((project) => (
-        <Button
-          key={project.id}
-          variant="ghost"
-          size="sm"
-          className="w-full justify-start font-normal"
-          onClick={() => navigate(`/${org}/${project.slug}`)}
-        >
-          <Avatar
-            url={project.avatar_url ?? undefined}
-            fallback={project.slug}
-            size="xs"
-            objectFit="contain"
-          />
-          <span className="overflow-hidden text-ellipsis whitespace-nowrap">
-            {project.title}
-          </span>
-        </Button>
+        <SwitcherProjectItem key={project.id} org={org} project={project} />
       ))}
     </div>
   );
@@ -60,6 +82,8 @@ export function BreadcrumbProjectSwitcher() {
     [projects, projectParam],
   );
 
+  const { data: resolvedAvatar } = useFile(currentProject?.avatar_url ?? "");
+
   const [projectSearch, setProjectSearch] = useState("");
 
   return (
@@ -68,7 +92,7 @@ export function BreadcrumbProjectSwitcher() {
         <PopoverTrigger asChild>
           <div className="flex items-center gap-2 cursor-pointer hover:bg-muted-foreground/10 px-2 py-1 rounded-md">
             <Avatar
-              url={currentProject?.avatar_url ?? undefined}
+              url={resolvedAvatar ?? undefined}
               fallback={currentProject?.title ?? projectParam}
               size="xs"
               objectFit="contain"

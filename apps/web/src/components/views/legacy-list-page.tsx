@@ -15,6 +15,7 @@ export default function ViewsLegacyPage() {
       getActiveTab={(pathname) =>
         pathname.includes("/views/legacy") ? "legacy" : "all"
       }
+      viewModeKey="views-legacy"
     />
   );
 }

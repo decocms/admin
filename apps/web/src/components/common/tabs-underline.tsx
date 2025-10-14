@@ -21,11 +21,11 @@ export function TabsUnderline({
   className,
 }: TabsUnderlineProps) {
   function handleTabClick(tab: TabItem) {
-    if (tab.onClick) {
-      tab.onClick();
-    }
+    // Prefer onTabChange if provided, otherwise use tab.onClick
     if (onTabChange) {
       onTabChange(tab.id);
+    } else if (tab.onClick) {
+      tab.onClick();
     }
   }
 

@@ -34,7 +34,10 @@ export function useSearchControls(): SearchControls {
   const onSearchKeyDown = useCallback(
     (e: React.KeyboardEvent<HTMLInputElement>) => {
       if (e.key === "Escape") {
+        setSearchValue("");
         setSearchOpen(false);
+        // Blur the input to remove focus
+        (e.target as HTMLInputElement).blur();
       }
     },
     [],

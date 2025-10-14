@@ -6,14 +6,12 @@ import {
 import { Badge } from "@deco/ui/components/badge.tsx";
 import { Card, CardContent } from "@deco/ui/components/card.tsx";
 import { Icon } from "@deco/ui/components/icon.tsx";
-import { useMemo, useState, type ReactNode } from "react";
+import { useMemo, useState } from "react";
 import { useSearchParams } from "react-router";
 import { useNavigateWorkspace } from "../../hooks/use-navigate-workspace.ts";
 import { formatToolName } from "../chat/utils/format-tool-name.ts";
 import { EmptyState } from "../common/empty-state.tsx";
 import { Table, type TableColumn } from "../common/table/index.tsx";
-import { type DecopilotContextValue } from "../decopilot/context.tsx";
-import { DecopilotLayout } from "../layout/decopilot-layout.tsx";
 import type { WorkflowRun } from "./types.ts";
 import {
   formatStatus,
@@ -113,13 +111,11 @@ function WorkflowRunsTableView({
 }
 
 interface WorkflowRunsProps {
-  headerSlot?: ReactNode;
   searchTerm?: string;
   viewMode?: "cards" | "table";
 }
 
 function WorkflowRuns({
-  headerSlot,
   searchTerm = "",
   viewMode = "cards",
 }: WorkflowRunsProps) {
@@ -164,13 +160,8 @@ function WorkflowRuns({
     );
   }
 
-  const decopilotContextValue: DecopilotContextValue = {
-    additionalTools: {},
-  };
-
   return (
-    <DecopilotLayout value={decopilotContextValue}>
-      {headerSlot}
+    <>
       {sortedAndFilteredRuns.length === 0 ? (
         <EmptyState
           icon="flowchart"
@@ -224,7 +215,7 @@ function WorkflowRuns({
           </div>
         </div>
       )}
-    </DecopilotLayout>
+    </>
   );
 }
 

@@ -95,7 +95,8 @@ function ResourcesV2ListTab({
   const q = searchParams.get("q") ?? "";
   const deferredQ = useDeferredValue(q);
 
-  const toolsQuery = useTools(integration!.connection!, false);
+  const connection = integration?.connection;
+  const toolsQuery = useTools(connection!, false);
   const capabilities = useMemo(() => {
     const tools: Array<{ name: string }> = toolsQuery?.data?.tools ?? [];
     const has = (suffix: string) =>
@@ -426,7 +427,13 @@ function ResourcesV2ListTab({
                 listQuery.refetch();
               }
               if (e.key === "Escape") {
+                setSearchParams((prev) => {
+                  const next = new URLSearchParams(prev);
+                  next.delete("q");
+                  return next;
+                });
                 setSearchOpen(false);
+                (e.target as HTMLInputElement).blur();
               }
             }}
             onRefresh={() => listQuery.refetch()}
@@ -772,7 +779,8 @@ export function ResourcesV2List({
   const integration = useIntegration(integrationId ?? "").data;
 
   // Fetch tools for the integration
-  const toolsQuery = useTools(integration!.connection, false);
+  const connection = integration?.connection;
+  const toolsQuery = useTools(connection!, false);
   const tools = toolsQuery?.data?.tools ?? [];
 
   // Prepare decopilot context value for resource list

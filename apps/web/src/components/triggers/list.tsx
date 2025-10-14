@@ -1,7 +1,7 @@
 import type { TriggerOutput } from "@deco/sdk";
 import { useAgents, useIntegrations, useListTriggers } from "@deco/sdk";
 import { Skeleton } from "@deco/ui/components/skeleton.tsx";
-import { Suspense, useCallback, useState, type ReactNode } from "react";
+import { Suspense, useCallback, useState } from "react";
 import { useNavigateWorkspace } from "../../hooks/use-navigate-workspace.ts";
 import { EmptyState } from "../common/empty-state.tsx";
 import { Table, type TableColumn } from "../common/table/index.tsx";
@@ -16,8 +16,6 @@ import { TriggerCard } from "./trigger-card.tsx";
 import { TriggerModal } from "./trigger-dialog.tsx";
 import { TriggerToggle } from "./trigger-toggle.tsx";
 import { TriggerType } from "./trigger-type.tsx";
-import { type DecopilotContextValue } from "../decopilot/context.tsx";
-import { DecopilotLayout } from "../layout/decopilot-layout.tsx";
 
 const SORTABLE_KEYS = ["title", "type", "target", "author"] as const;
 
@@ -56,33 +54,25 @@ function ListTriggersSkeleton() {
 }
 
 interface ListTriggersProps {
-  headerSlot?: ReactNode;
   searchTerm?: string;
   viewMode?: "cards" | "table";
 }
 
 export default function ListTriggers({
-  headerSlot,
   searchTerm = "",
   viewMode = "cards",
 }: ListTriggersProps) {
   return (
     <Suspense fallback={<ListTriggersSkeleton />}>
-      <ListTriggersSuspended
-        headerSlot={headerSlot}
-        searchTerm={searchTerm}
-        viewMode={viewMode}
-      />
+      <ListTriggersSuspended searchTerm={searchTerm} viewMode={viewMode} />
     </Suspense>
   );
 }
 
 function ListTriggersSuspended({
-  headerSlot,
   searchTerm = "",
   viewMode = "cards",
 }: {
-  headerSlot?: ReactNode;
   searchTerm?: string;
   viewMode?: "cards" | "table";
 }) {
@@ -110,13 +100,8 @@ function ListTriggersSuspended({
     return <ListTriggersSkeleton />;
   }
 
-  const decopilotContextValue: DecopilotContextValue = {
-    additionalTools: {},
-  };
-
   return (
-    <DecopilotLayout value={decopilotContextValue}>
-      {headerSlot}
+    <>
       {isCreateModalOpen && (
         <TriggerModal
           isOpen={isCreateModalOpen}
@@ -155,7 +140,7 @@ function ListTriggersSuspended({
           ))}
         </div>
       )}
-    </DecopilotLayout>
+    </>
   );
 }
 

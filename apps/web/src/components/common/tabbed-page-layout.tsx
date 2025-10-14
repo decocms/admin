@@ -4,6 +4,8 @@ import { Suspense, useMemo, type ComponentType } from "react";
 import { useLocation } from "react-router";
 import { useSearchControls } from "../../hooks/use-search-controls.ts";
 import { useNavigateWorkspace } from "../../hooks/use-navigate-workspace.ts";
+import { type DecopilotContextValue } from "../decopilot/context.tsx";
+import { DecopilotLayout } from "../layout/decopilot-layout.tsx";
 import { ResourceHeader } from "../resources-v2/resource-header.tsx";
 
 export interface TabConfig {
@@ -14,7 +16,10 @@ export interface TabConfig {
 
 export interface TabbedPageLayoutProps {
   /** The component to render (must accept searchTerm and viewMode props) */
-  component: ComponentType<{ searchTerm: string; viewMode: "cards" | "table" }>;
+  component: ComponentType<{
+    searchTerm: string;
+    viewMode: "cards" | "table";
+  }>;
   /** Page title shown in header */
   title: string;
   /** Tab configuration */
@@ -58,41 +63,50 @@ export function TabbedPageLayout({
     [tabs, navigateWorkspace],
   );
 
+  const decopilotContextValue: DecopilotContextValue = useMemo(
+    () => ({
+      additionalTools: {},
+    }),
+    [],
+  );
+
   return (
-    <div className="h-screen p-0 overflow-y-auto overflow-x-hidden">
-      <div className="py-16 px-16 space-y-8">
-        <div className="max-w-[1500px] mx-auto w-full space-y-8">
-          <ResourceHeader
-            title={title}
-            tabs={tabsWithHandlers}
-            activeTab={activeTab}
-            onTabChange={(tabId) => {
-              const tab = tabsWithHandlers.find((t) => t.id === tabId);
-              tab?.onClick?.();
-            }}
-            searchOpen={searchControls.searchOpen}
-            searchValue={searchControls.searchValue}
-            onSearchToggle={searchControls.onSearchToggle}
-            onSearchChange={searchControls.onSearchChange}
-            onSearchBlur={searchControls.onSearchBlur}
-            onSearchKeyDown={searchControls.onSearchKeyDown}
-            viewMode={viewMode}
-            onViewModeChange={setViewMode}
-          />
-          <Suspense
-            fallback={
-              <div className="flex items-center justify-center py-8">
-                <Spinner />
-              </div>
-            }
-          >
-            <Component
-              searchTerm={searchControls.searchValue}
+    <DecopilotLayout value={decopilotContextValue}>
+      <div className="h-screen p-0 overflow-y-auto overflow-x-hidden">
+        <div className="py-16 px-16 space-y-8">
+          <div className="max-w-[1500px] mx-auto w-full space-y-8">
+            <ResourceHeader
+              title={title}
+              tabs={tabsWithHandlers}
+              activeTab={activeTab}
+              onTabChange={(tabId) => {
+                const tab = tabsWithHandlers.find((t) => t.id === tabId);
+                tab?.onClick?.();
+              }}
+              searchOpen={searchControls.searchOpen}
+              searchValue={searchControls.searchValue}
+              onSearchToggle={searchControls.onSearchToggle}
+              onSearchChange={searchControls.onSearchChange}
+              onSearchBlur={searchControls.onSearchBlur}
+              onSearchKeyDown={searchControls.onSearchKeyDown}
               viewMode={viewMode}
+              onViewModeChange={setViewMode}
             />
-          </Suspense>
+            <Suspense
+              fallback={
+                <div className="flex items-center justify-center py-8">
+                  <Spinner />
+                </div>
+              }
+            >
+              <Component
+                searchTerm={searchControls.searchValue}
+                viewMode={viewMode}
+              />
+            </Suspense>
+          </div>
         </div>
       </div>
-    </div>
+    </DecopilotLayout>
   );
 }

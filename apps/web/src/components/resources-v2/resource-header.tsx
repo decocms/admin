@@ -8,7 +8,7 @@ import {
 } from "@deco/ui/components/dropdown-menu.tsx";
 import { Icon } from "@deco/ui/components/icon.tsx";
 import { Input } from "@deco/ui/components/input.tsx";
-import { useEffect, useRef, type ReactNode } from "react";
+import { useEffect, useRef, type KeyboardEvent, type ReactNode } from "react";
 import { TabsUnderline, type TabItem } from "../common/tabs-underline.tsx";
 import { FilterBar, type Filter } from "./filter-bar.tsx";
 
@@ -22,7 +22,7 @@ interface ResourceHeaderProps {
   onSearchToggle?: () => void;
   onSearchChange?: (value: string) => void;
   onSearchBlur?: () => void;
-  onSearchKeyDown?: (e: React.KeyboardEvent<HTMLInputElement>) => void;
+  onSearchKeyDown?: (e: KeyboardEvent<HTMLInputElement>) => void;
   onFilterClick?: () => void;
   onRefresh?: () => void;
   ctaButton?: ReactNode;

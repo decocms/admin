@@ -29,8 +29,6 @@ import { useReducer, useState } from "react";
 import { useNavigateWorkspace } from "../../../hooks/use-navigate-workspace.ts";
 import { EmptyState } from "../../common/empty-state.tsx";
 import { Table, type TableColumn } from "../../common/table/index.tsx";
-import { type DecopilotContextValue } from "../../decopilot/context.tsx";
-import { DecopilotLayout } from "../../layout/decopilot-layout.tsx";
 
 interface ListState {
   deleteDialogOpen: boolean;
@@ -229,10 +227,11 @@ function ListPrompts({
 
   const { deleteDialogOpen, promptToDelete, deleting } = state;
 
+  const search = (searchTerm ?? "").toLowerCase();
   const filteredPrompts =
     prompts?.filter(
       (prompt) =>
-        prompt.name.toLowerCase().includes(searchTerm.toLowerCase()) &&
+        (prompt.name ?? "").toLowerCase().includes(search) &&
         !isWellKnownPromptId(prompt.id),
     ) ?? [];
 
@@ -268,12 +267,8 @@ function ListPrompts({
     }
   };
 
-  const decopilotContextValue: DecopilotContextValue = {
-    additionalTools: {},
-  };
-
   return (
-    <DecopilotLayout value={decopilotContextValue}>
+    <>
       {!prompts ? (
         <div className="flex items-center justify-center py-8">
           <Spinner />
@@ -338,7 +333,7 @@ function ListPrompts({
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-    </DecopilotLayout>
+    </>
   );
 }
 

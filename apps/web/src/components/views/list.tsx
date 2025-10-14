@@ -16,8 +16,6 @@ import { EmptyState } from "../common/empty-state.tsx";
 import { Table, TableColumn } from "../common/table/index.tsx";
 import { useCurrentTeam } from "../sidebar/team-selector";
 import { Spinner } from "@deco/ui/components/spinner.tsx";
-import { type DecopilotContextValue } from "../decopilot/context.tsx";
-import { DecopilotLayout } from "../layout/decopilot-layout.tsx";
 
 export interface ViewWithStatus {
   isAdded: boolean;
@@ -245,12 +243,8 @@ function ViewsList({ searchTerm = "", viewMode = "cards" }: ViewsListProps) {
     );
   };
 
-  const decopilotContextValue: DecopilotContextValue = {
-    additionalTools: {},
-  };
-
   return (
-    <DecopilotLayout value={decopilotContextValue}>
+    <>
       {isLoadingViews && (
         <div className="flex justify-center items-center py-8">
           <Spinner />
@@ -311,7 +305,7 @@ function ViewsList({ searchTerm = "", viewMode = "cards" }: ViewsListProps) {
           }
         />
       )}
-    </DecopilotLayout>
+    </>
   );
 }
 

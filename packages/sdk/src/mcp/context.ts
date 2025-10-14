@@ -1,7 +1,6 @@
 // deno-lint-ignore-file no-explicit-any
 import type { ActorConstructor, StubFactory } from "@deco/actors";
 import type { AIAgent, Trigger } from "@deco/ai/actors";
-import type { Client, KyselyDatabase } from "@deco/sdk/storage";
 import { createClient } from "@libsql/client/web";
 import type { ToolAnnotations } from "@modelcontextprotocol/sdk/types.d.ts";
 import * as api from "@opentelemetry/api";
@@ -33,8 +32,6 @@ import {
   type PostgresJsDatabase,
 } from "drizzle-orm/postgres-js";
 import postgres from "postgres";
-import { Kysely } from "kysely";
-import { PostgresJSDialect } from "kysely-postgres-js";
 
 import { strProp } from "../utils/fns.ts";
 import { relations } from "./relations.ts";
@@ -218,7 +215,6 @@ export interface PrincipalExecutionContext {
 export interface Vars extends PrincipalExecutionContext {
   db: Client;
   drizzle: PostgresJsDatabase<any, typeof relations>;
-  kysely: Kysely<KyselyDatabase>;
   policy: PolicyClient;
   authorization: AuthorizationClient;
   cf: Cloudflare;
@@ -475,15 +471,9 @@ export const toBindingsContext = (bindings: Bindings): BindingsContext => {
     max: 5,
   });
   const drizzle = drizzlePostgres(sql, { relations });
-  const kysely = new Kysely<KyselyDatabase>({
-    dialect: new PostgresJSDialect({
-      postgres: sql,
-    }),
-  });
 
   return {
     drizzle,
-    kysely,
     blobsDO: bindings.BLOBS,
     branchDO: bindings.BRANCH,
     envVars: bindings,

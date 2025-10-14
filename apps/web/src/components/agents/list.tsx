@@ -27,6 +27,7 @@ import {
 import { Icon } from "@deco/ui/components/icon.tsx";
 import { Spinner } from "@deco/ui/components/spinner.tsx";
 import { useViewMode } from "@deco/ui/hooks/use-view-mode.ts";
+import type { KeyboardEvent } from "react";
 import { useCallback, useMemo, useReducer, useState } from "react";
 import { trackEvent } from "../../hooks/analytics.ts";
 import { useCreateAgent } from "../../hooks/use-create-agent.ts";
@@ -496,7 +497,7 @@ function AgentsList() {
                   setSearchOpen(false);
                 }
               }}
-              onSearchKeyDown={(e: React.KeyboardEvent<HTMLInputElement>) => {
+              onSearchKeyDown={(e: KeyboardEvent<HTMLInputElement>) => {
                 if (e.key === "Escape") {
                   dispatch({ type: "SET_FILTER", payload: "" });
                   setSearchOpen(false);

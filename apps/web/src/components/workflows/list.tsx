@@ -118,20 +118,27 @@ interface WorkflowRunsProps {
   viewMode?: "cards" | "table";
 }
 
-function WorkflowRuns({ headerSlot, searchTerm = "", viewMode = "cards" }: WorkflowRunsProps) {
+function WorkflowRuns({
+  headerSlot,
+  searchTerm = "",
+  viewMode = "cards",
+}: WorkflowRunsProps) {
   const [_searchParams, _setSearchParams] = useSearchParams();
-  const [selectedWorkflow, setSelectedWorkflow] = useState<string>("all");
+  const [selectedWorkflow, _setSelectedWorkflow] = useState<string>("all");
   const navigateWorkspace = useNavigateWorkspace();
 
   // Get all workflow names for the select dropdown
   const { data: workflowNamesData } = useWorkflowNames();
-  const workflowNames = workflowNamesData?.workflowNames || [];
+  const _workflowNames = workflowNamesData?.workflowNames || [];
 
   // Get workflow runs - either filtered by workflow name or all recent runs
-  const { data, refetch, isRefetching } =
-    selectedWorkflow !== "all"
-      ? useWorkflowRuns(selectedWorkflow, 1, 25)
-      : useRecentWorkflowRuns(1, 25);
+  const {
+    data,
+    refetch: _refetch,
+    isRefetching: _isRefetching,
+  } = selectedWorkflow !== "all"
+    ? useWorkflowRuns(selectedWorkflow, 1, 25)
+    : useRecentWorkflowRuns(1, 25);
 
   const runs = data?.runs || [];
 

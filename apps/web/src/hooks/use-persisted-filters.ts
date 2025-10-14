@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import type { Filter } from "../components/resources-v2/filter-bar.tsx";
 
 export function usePersistedFilters(
@@ -31,4 +31,3 @@ export function usePersistedFilters(
 
   return [filters, setFiltersWithStorage];
 }
-

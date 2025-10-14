@@ -34,7 +34,6 @@ import { Table, type TableColumn } from "../common/table/index.tsx";
 import { TimeAgoCell, UserInfo } from "../common/table/table-cells.tsx";
 import type { TabItem } from "../common/tabs-underline.tsx";
 import { DecopilotLayout } from "../layout/decopilot-layout.tsx";
-import type { Filter } from "./filter-bar.tsx";
 import { ResourceHeader } from "./resource-header.tsx";
 import { ResourceRouteProvider } from "./route-context.tsx";
 
@@ -72,8 +71,10 @@ function ResourcesV2ListTab({
   const [dontAskAgain, setDontAskAgain] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
   const [sortKey, setSortKey] = useState<string | undefined>("updated_at");
-  const [sortDirection, setSortDirection] = useState<"asc" | "desc" | null>("desc");
-  
+  const [sortDirection, setSortDirection] = useState<"asc" | "desc" | null>(
+    "desc",
+  );
+
   // Session storage key for skip confirmation preference
   const skipConfirmationKey = `skip-delete-confirmation-${integrationId}-${resourceName}`;
 
@@ -85,7 +86,7 @@ function ResourcesV2ListTab({
   // Use persisted filters with a unique key based on integration and resource
   const filterKey = `${integrationId}-${resourceName}`;
   const [filters, setFilters] = usePersistedFilters(filterKey);
-  
+
   // Persist filter bar visibility
   const filterBarVisibilityKey = `deco-filter-bar-visible-${filterKey}`;
   const [filterBarVisible, setFilterBarVisible] = useState(() => {
@@ -140,7 +141,9 @@ function ResourcesV2ListTab({
       {
         id: "updated_by",
         header: "Updated by",
-        render: (row) => <UserInfo userId={row.updated_by} showEmail={false} size="sm" />,
+        render: (row) => (
+          <UserInfo userId={row.updated_by} showEmail={false} size="sm" />
+        ),
         cellClassName: "max-w-3xs",
         sortable: true,
       },
@@ -336,7 +339,9 @@ function ResourcesV2ListTab({
               default:
                 return true;
             }
-            const cutoff = new Date(now.getTime() - daysAgo * 24 * 60 * 60 * 1000);
+            const cutoff = new Date(
+              now.getTime() - daysAgo * 24 * 60 * 60 * 1000,
+            );
             return itemDate >= cutoff;
           }
         }
@@ -351,8 +356,8 @@ function ResourcesV2ListTab({
     if (!sortKey || !sortDirection) return filteredItems;
 
     return [...filteredItems].sort((a, b) => {
-      let aValue: any;
-      let bValue: any;
+      let aValue: string | number;
+      let bValue: string | number;
 
       // Get values based on column
       switch (sortKey) {
@@ -528,7 +533,9 @@ function ResourcesV2ListTab({
 
                       if (!uri) {
                         console.error("Create result:", result);
-                        throw new Error("No URI returned from create operation");
+                        throw new Error(
+                          "No URI returned from create operation",
+                        );
                       }
 
                       // Invalidate list query so it refreshes when user navigates back
@@ -593,8 +600,8 @@ function ResourcesV2ListTab({
           ) : viewMode === "cards" ? (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {sortedItems.map((it) => (
-                <Card 
-                  key={it.uri} 
+                <Card
+                  key={it.uri}
                   className="group cursor-pointer hover:shadow-sm transition-shadow overflow-hidden bg-card border-0 min-h-48"
                   onClick={() =>
                     navigateWorkspace(
@@ -628,7 +635,10 @@ function ResourcesV2ListTab({
                                 );
                               }}
                             >
-                              <Icon name="open_in_new" className="w-4 h-4 mr-2" />
+                              <Icon
+                                name="open_in_new"
+                                className="w-4 h-4 mr-2"
+                              />
                               Open
                             </DropdownMenuItem>
                             {capabilities.hasDelete && (
@@ -649,9 +659,9 @@ function ResourcesV2ListTab({
                       <h3 className="text-base font-medium text-foreground truncate pr-10">
                         {it.data?.name ?? ""}
                       </h3>
-                        <p className="text-sm text-muted-foreground line-clamp-2 leading-normal">
-                          {it.data?.description ?? ""}
-                        </p>
+                      <p className="text-sm text-muted-foreground line-clamp-2 leading-normal">
+                        {it.data?.description ?? ""}
+                      </p>
                     </div>
 
                     {/* Footer Section */}
@@ -664,7 +674,12 @@ function ResourcesV2ListTab({
                       </div>
                       <div className="flex items-center gap-1">
                         <span className="text-muted-foreground">by</span>
-                        <UserInfo userId={it.updated_by} size="xs" showEmail={false} noTooltip />
+                        <UserInfo
+                          userId={it.updated_by}
+                          size="xs"
+                          showEmail={false}
+                          noTooltip
+                        />
                       </div>
                     </div>
                   </div>

@@ -166,7 +166,8 @@ function UserInfo({
 
   const avatarSize = size === "xs" ? "2xs" : size === "sm" ? "xs" : "sm";
   const nameTextSize = "text-sm";
-  const emailTextSize = size === "xs" ? "text-xs" : size === "sm" ? "text-xs" : "text-sm";
+  const emailTextSize =
+    size === "xs" ? "text-xs" : size === "sm" ? "text-xs" : "text-sm";
   const avatarGap = size === "xs" ? "gap-1" : "gap-2";
 
   const content = nameOnly ? (
@@ -174,7 +175,9 @@ function UserInfo({
       {name || "Unknown"}
     </span>
   ) : (
-    <div className={`flex items-center ${avatarGap} min-w-[48px] ${className ?? ""}`}>
+    <div
+      className={`flex items-center ${avatarGap} min-w-[48px] ${className ?? ""}`}
+    >
       <div className="relative">
         <UserAvatar
           url={avatarUrl}
@@ -353,7 +356,9 @@ function ActivityStatusCell({
   return (
     <div className={`flex items-center gap-2 ${className}`}>
       {isActive && <div className="w-2 h-2 bg-success rounded-full"></div>}
-      <span className={`text-sm font-medium ${isActive ? "text-foreground" : "text-muted-foreground"}`}>
+      <span
+        className={`text-sm font-medium ${isActive ? "text-foreground" : "text-muted-foreground"}`}
+      >
         {relativeTime}
       </span>
     </div>
@@ -406,7 +411,11 @@ function TimeAgoCell({ value, className = "" }: TimeAgoCellProps) {
   const dateObj = typeof value === "string" ? new Date(value) : value;
   const relativeTime = formatRelativeTime(dateObj);
 
-  return <span className={`text-sm text-foreground ${className}`}>{relativeTime}</span>;
+  return (
+    <span className={`text-sm text-foreground ${className}`}>
+      {relativeTime}
+    </span>
+  );
 }
 
 export {

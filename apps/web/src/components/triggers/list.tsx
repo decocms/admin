@@ -68,8 +68,8 @@ export default function ListTriggers({
 }: ListTriggersProps) {
   return (
     <Suspense fallback={<ListTriggersSkeleton />}>
-      <ListTriggersSuspended 
-        headerSlot={headerSlot} 
+      <ListTriggersSuspended
+        headerSlot={headerSlot}
         searchTerm={searchTerm}
         viewMode={viewMode}
       />
@@ -77,11 +77,11 @@ export default function ListTriggers({
   );
 }
 
-function ListTriggersSuspended({ 
-  headerSlot, 
+function ListTriggersSuspended({
+  headerSlot,
   searchTerm = "",
-  viewMode = "cards"
-}: { 
+  viewMode = "cards",
+}: {
   headerSlot?: ReactNode;
   searchTerm?: string;
   viewMode?: "cards" | "table";
@@ -91,7 +91,7 @@ function ListTriggersSuspended({
   const navigate = useNavigateWorkspace();
 
   const triggers = (data?.triggers || []) as TriggerOutput[];
-  
+
   const handleTriggerClick = useCallback(
     (trigger: TriggerOutput) => {
       navigate(`/trigger/${trigger.id}`);
@@ -123,7 +123,7 @@ function ListTriggersSuspended({
           onOpenChange={setIsCreateModalOpen}
         />
       )}
-      
+
       {filteredTriggers.length === 0 ? (
         <EmptyState
           icon="cable"
@@ -147,8 +147,8 @@ function ListTriggersSuspended({
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {filteredTriggers.map((trigger) => (
-            <TriggerCard 
-              key={trigger.id} 
+            <TriggerCard
+              key={trigger.id}
               trigger={trigger}
               onClick={handleTriggerClick}
             />

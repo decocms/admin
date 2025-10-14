@@ -217,7 +217,10 @@ interface ListPromptsProps {
   viewMode?: "cards" | "table";
 }
 
-function ListPrompts({ searchTerm = "", viewMode = "cards" }: ListPromptsProps) {
+function ListPrompts({
+  searchTerm = "",
+  viewMode = "cards",
+}: ListPromptsProps) {
   const [state, dispatch] = useReducer(listReducer, initialState);
   const { data: prompts } = usePrompts();
   const create = useCreatePrompt();
@@ -252,7 +255,7 @@ function ListPrompts({ searchTerm = "", viewMode = "cards" }: ListPromptsProps) 
       dispatch({ type: "DELETE_END" });
     }
   };
-  const handleCreate = async () => {
+  const _handleCreate = async () => {
     const result = await create.mutateAsync({
       name: "",
       content: "",

@@ -56,7 +56,8 @@ export function Table<T = Record<string, unknown>>({
   }
 
   function getHeaderClass(idx: number, total: number) {
-    let base = "px-3 py-2 text-left font-mono font-normal text-muted-foreground text-sm h-10 uppercase";
+    let base =
+      "px-3 py-2 text-left font-mono font-normal text-muted-foreground text-sm h-10 uppercase";
     if (idx === total - 1) base += " w-8";
     return base;
   }

@@ -137,10 +137,14 @@ export function ResourceHeader({
                 onClick={onFilterClick}
                 className="h-9 w-9 rounded-xl flex items-center justify-center"
               >
-                <Icon 
-                  name="filter_list" 
-                  size={20} 
-                  className={filters && filters.length > 0 ? "text-violet-500" : "text-muted-foreground"}
+                <Icon
+                  name="filter_list"
+                  size={20}
+                  className={
+                    filters && filters.length > 0
+                      ? "text-violet-500"
+                      : "text-muted-foreground"
+                  }
                 />
               </Button>
             )}
@@ -158,26 +162,34 @@ export function ResourceHeader({
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-56 p-1">
                 {/* View Mode Toggle */}
-                  <div className="flex items-center p-1">
-                    <div className="flex gap-1 w-full">
-                      <Button
-                        variant={viewMode === "cards" ? "secondary" : "ghost"}
-                        size="sm"
-                        onClick={() => onViewModeChange?.("cards")}
-                        className="flex-1 h-10 rounded-xl "
-                      >
-                        <Icon name="grid_view" size={20} className="text-muted-foreground" />
-                      </Button>
-                      <Button
-                        variant={viewMode === "table" ? "secondary" : "ghost"}
-                        size="sm"
-                        onClick={() => onViewModeChange?.("table")}
-                        className="flex-1 h-10 rounded-xl"
-                      >
-                        <Icon name="view_list" size={20} className="text-muted-foreground" />
-                      </Button>
-                    </div>
+                <div className="flex items-center p-1">
+                  <div className="flex gap-1 w-full">
+                    <Button
+                      variant={viewMode === "cards" ? "secondary" : "ghost"}
+                      size="sm"
+                      onClick={() => onViewModeChange?.("cards")}
+                      className="flex-1 h-10 rounded-xl "
+                    >
+                      <Icon
+                        name="grid_view"
+                        size={20}
+                        className="text-muted-foreground"
+                      />
+                    </Button>
+                    <Button
+                      variant={viewMode === "table" ? "secondary" : "ghost"}
+                      size="sm"
+                      onClick={() => onViewModeChange?.("table")}
+                      className="flex-1 h-10 rounded-xl"
+                    >
+                      <Icon
+                        name="view_list"
+                        size={20}
+                        className="text-muted-foreground"
+                      />
+                    </Button>
                   </div>
+                </div>
 
                 <DropdownMenuSeparator className="my-1" />
 
@@ -204,7 +216,9 @@ export function ResourceHeader({
                   {sortKey === "title" && sortDirection && (
                     <Icon
                       name={
-                        sortDirection === "asc" ? "arrow_upward" : "arrow_downward"
+                        sortDirection === "asc"
+                          ? "arrow_upward"
+                          : "arrow_downward"
                       }
                       size={16}
                       className="ml-2 text-muted-foreground"
@@ -228,7 +242,9 @@ export function ResourceHeader({
                   {sortKey === "description" && sortDirection && (
                     <Icon
                       name={
-                        sortDirection === "asc" ? "arrow_upward" : "arrow_downward"
+                        sortDirection === "asc"
+                          ? "arrow_upward"
+                          : "arrow_downward"
                       }
                       size={16}
                       className="ml-2 text-muted-foreground"
@@ -252,7 +268,9 @@ export function ResourceHeader({
                   {sortKey === "updated_at" && sortDirection && (
                     <Icon
                       name={
-                        sortDirection === "asc" ? "arrow_upward" : "arrow_downward"
+                        sortDirection === "asc"
+                          ? "arrow_upward"
+                          : "arrow_downward"
                       }
                       size={16}
                       className="ml-2 text-muted-foreground"
@@ -276,7 +294,9 @@ export function ResourceHeader({
                   {sortKey === "updated_by" && sortDirection && (
                     <Icon
                       name={
-                        sortDirection === "asc" ? "arrow_upward" : "arrow_downward"
+                        sortDirection === "asc"
+                          ? "arrow_upward"
+                          : "arrow_downward"
                       }
                       size={16}
                       className="ml-2 text-muted-foreground"

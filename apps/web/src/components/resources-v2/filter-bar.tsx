@@ -12,9 +12,6 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuSeparator,
-  DropdownMenuSub,
-  DropdownMenuSubContent,
-  DropdownMenuSubTrigger,
   DropdownMenuTrigger,
 } from "@deco/ui/components/dropdown-menu.tsx";
 import { Icon } from "@deco/ui/components/icon.tsx";
@@ -44,7 +41,7 @@ export interface Filter {
   id: string;
   column: FilterColumn;
   operator: FilterOperator;
-  value: any;
+  value: string;
 }
 
 interface FilterBarProps {
@@ -90,7 +87,9 @@ function getOperatorsForColumn(column: FilterColumn): Record<string, string> {
   return { in_last: "in last" };
 }
 
-function getDefaultOperatorForAutoStep(column: FilterColumn): FilterOperator | null {
+function getDefaultOperatorForAutoStep(
+  column: FilterColumn,
+): FilterOperator | null {
   // Only set default operator for columns that skip the operator step
   if (column === "created_by" || column === "updated_by") {
     return "is";
@@ -102,7 +101,7 @@ function getDefaultOperatorForAutoStep(column: FilterColumn): FilterOperator | n
   return null;
 }
 
-function getDefaultValue(column: FilterColumn): any {
+function getDefaultValue(column: FilterColumn): string {
   if (column === "created_at" || column === "updated_at") {
     return "7d";
   }
@@ -120,17 +119,19 @@ export function FilterBar({
   );
   const [selectedOperator, setSelectedOperator] =
     useState<FilterOperator | null>(null);
-  const [filterValue, setFilterValue] = useState<any>("");
+  const [filterValue, setFilterValue] = useState<string>("");
   const [editingFilterId, setEditingFilterId] = useState<string | null>(null);
 
-  function addFilter(column: FilterColumn, operator: FilterOperator, value: any) {
+  function addFilter(
+    column: FilterColumn,
+    operator: FilterOperator,
+    value: string,
+  ) {
     if (editingFilterId) {
       // Update existing filter
       onFiltersChange(
         filters.map((f) =>
-          f.id === editingFilterId
-            ? { id: f.id, column, operator, value }
-            : f,
+          f.id === editingFilterId ? { id: f.id, column, operator, value } : f,
         ),
       );
     } else {
@@ -258,7 +259,10 @@ export function FilterBar({
             onClick={() => {
               // For text columns, go back to operator selection
               // For user/date columns, go back to column selection
-              if (selectedColumn === "name" || selectedColumn === "description") {
+              if (
+                selectedColumn === "name" ||
+                selectedColumn === "description"
+              ) {
                 setSelectedOperator(null);
               } else {
                 setSelectedColumn(null);
@@ -269,10 +273,9 @@ export function FilterBar({
             <Icon name="arrow_back" size={16} />
           </Button>
           <p className="text-xs text-muted-foreground uppercase font-mono">
-            {selectedColumn === "name" || selectedColumn === "description" 
+            {selectedColumn === "name" || selectedColumn === "description"
               ? `${COLUMN_LABELS[selectedColumn]} ${getOperatorsForColumn(selectedColumn)[selectedOperator]}`
-              : COLUMN_LABELS[selectedColumn]
-            }
+              : COLUMN_LABELS[selectedColumn]}
           </p>
         </div>
         <DropdownMenuSeparator />
@@ -322,7 +325,12 @@ export function FilterBar({
                       addFilter(selectedColumn, selectedOperator, user.id);
                     }}
                   >
-                    <UserInfo userId={user.id} showEmail={false} noTooltip size="sm" />
+                    <UserInfo
+                      userId={user.id}
+                      showEmail={false}
+                      noTooltip
+                      size="sm"
+                    />
                   </CommandItem>
                 ))}
               </CommandGroup>
@@ -371,31 +379,45 @@ export function FilterBar({
                 // Set up the filter for editing (don't remove it)
                 setEditingFilterId(filter.id);
                 setSelectedColumn(filter.column);
-                
+
                 // For text columns, show operator selection
-                if (filter.column === "name" || filter.column === "description") {
+                if (
+                  filter.column === "name" ||
+                  filter.column === "description"
+                ) {
                   setSelectedOperator(filter.operator);
                 } else {
                   // For user/date columns, set operator to skip that step
-                  setSelectedOperator(getDefaultOperatorForAutoStep(filter.column));
+                  setSelectedOperator(
+                    getDefaultOperatorForAutoStep(filter.column),
+                  );
                 }
-                
+
                 setFilterValue(filter.value);
                 setAddingFilter(true);
               }}
             >
-              {(filter.column === "created_by" || filter.column === "updated_by") &&
+              {(filter.column === "created_by" ||
+                filter.column === "updated_by") &&
               filter.value ? (
                 <div className="flex items-center gap-2">
                   <span className="text-muted-foreground">
                     {COLUMN_LABELS[filter.column]}:
                   </span>
-                  <UserInfo userId={filter.value} showEmail={false} noTooltip size="sm" />
+                  <UserInfo
+                    userId={filter.value}
+                    showEmail={false}
+                    noTooltip
+                    size="sm"
+                  />
                 </div>
               ) : (
-                <span className="text-foreground">{getFilterLabel(filter)}</span>
+                <span className="text-foreground">
+                  {getFilterLabel(filter)}
+                </span>
               )}
               <button
+                type="button"
                 onClick={(e) => {
                   e.stopPropagation();
                   removeFilter(filter.id);
@@ -415,8 +437,8 @@ export function FilterBar({
       ))}
 
       {/* Add Filter Dropdown */}
-      <DropdownMenu 
-        open={addingFilter && !editingFilterId} 
+      <DropdownMenu
+        open={addingFilter && !editingFilterId}
         onOpenChange={(open) => {
           if (!open) {
             resetAddFilter();
@@ -442,4 +464,3 @@ export function FilterBar({
     </div>
   );
 }
-

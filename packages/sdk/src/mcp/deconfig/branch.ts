@@ -166,6 +166,8 @@ export interface WatchOptions {
   fromCtime?: number;
   /** Optional path prefix filters - only watch files matching these prefixes (OR logic) */
   pathFilters?: string[] | string;
+  // support for legacy pathFilter
+  pathFilter?: string;
   /** Optional watcher ID for subscription management */
   watcherId?: string;
 }
@@ -406,7 +408,7 @@ export class BranchRpc extends RpcTarget {
   /**
    * Subscribe to path filters for an existing watcher.
    * Returns a subscription ID that can be used to unsubscribe later.
-   * 
+   *
    * @param options - Subscription options containing watcherId, pathFilters, and optional subscriptionId
    * @returns The subscription ID (existing or newly created)
    */
@@ -543,6 +545,7 @@ export class Branch extends DurableObject<DeconfigEnv> {
    * Watch for file changes in real-time.
    */
   watch(options: WatchOptions = {}): ReadableStream<Uint8Array> {
+    options.pathFilters = options.pathFilters ?? options.pathFilter;
     // Generate or use provided watcherId
     const watcherId = options.watcherId || crypto.randomUUID();
 
@@ -591,7 +594,7 @@ export class Branch extends DurableObject<DeconfigEnv> {
   /**
    * Subscribe to path filters for an existing watcher.
    * Returns a subscription ID that can be used to unsubscribe later.
-   * 
+   *
    * @param options - Subscription options containing watcherId, pathFilters, and optional subscriptionId
    * @returns The subscription ID (existing or newly created)
    */
@@ -604,12 +607,17 @@ export class Branch extends DurableObject<DeconfigEnv> {
     }
 
     // If pathFilters is empty/undefined, unsubscribe
-    if (!pathFilters || (Array.isArray(pathFilters) && pathFilters.length === 0)) {
+    if (
+      !pathFilters ||
+      (Array.isArray(pathFilters) && pathFilters.length === 0)
+    ) {
       if (subscriptionId) {
         this.unsubscribe(subscriptionId);
         return subscriptionId;
       }
-      throw new Error("Cannot subscribe with empty pathFilters and no subscriptionId");
+      throw new Error(
+        "Cannot subscribe with empty pathFilters and no subscriptionId",
+      );
     }
 
     // If subscriptionId provided, update existing subscription
@@ -622,7 +630,7 @@ export class Branch extends DurableObject<DeconfigEnv> {
 
       if (existingWatcherId !== watcherId) {
         throw new Error(
-          `Subscription ${subscriptionId} belongs to watcher ${existingWatcherId}, not ${watcherId}`
+          `Subscription ${subscriptionId} belongs to watcher ${existingWatcherId}, not ${watcherId}`,
         );
       }
 
@@ -686,7 +694,7 @@ export class Branch extends DurableObject<DeconfigEnv> {
       const filters = Array.isArray(pathFilters) ? pathFilters : [pathFilters];
 
       // Within a subscription, check if path matches ANY filter (OR logic within subscription)
-      if (filters.some(filter => path.startsWith(filter))) {
+      if (filters.some((filter) => path.startsWith(filter))) {
         return true;
       }
     }
@@ -833,7 +841,7 @@ export class Branch extends DurableObject<DeconfigEnv> {
     }
 
     // Send events to all watchers
-    for (const [watcherId, watcher] of this.watchers) {
+    for (const [_, watcher] of this.watchers) {
       for (const event of events) {
         // Check if path matches any subscription's pathFilters (OR logic)
         if (!this.pathMatchesSubscriptions(event.path, watcher.subscriptions)) {
@@ -1227,9 +1235,9 @@ export class Branch extends DurableObject<DeconfigEnv> {
             : preserveTimestamps
               ? write.metadata
               : {
-                ...write.metadata,
-                ctime: now,
-              };
+                  ...write.metadata,
+                  ctime: now,
+                };
         toApply[path] = finalMetadata;
 
         results[path] = {
@@ -1253,9 +1261,9 @@ export class Branch extends DurableObject<DeconfigEnv> {
             : preserveTimestamps
               ? write.metadata
               : {
-                ...write.metadata,
-                ctime: now,
-              };
+                  ...write.metadata,
+                  ctime: now,
+                };
         toApply[path] = finalMetadata;
 
         results[path] = {
@@ -1285,9 +1293,9 @@ export class Branch extends DurableObject<DeconfigEnv> {
             : preserveTimestamps
               ? write.metadata
               : {
-                ...write.metadata,
-                ctime: now,
-              };
+                  ...write.metadata,
+                  ctime: now,
+                };
         toApply[path] = finalMetadata;
 
         results[path] = {

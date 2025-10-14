@@ -298,14 +298,14 @@ export const createDeconfigResource = <
             updated_at: new Date(fileData.mtime).toISOString(),
             created_by:
               parsedData &&
-                "created_by" in parsedData &&
-                typeof parsedData.created_by === "string"
+              "created_by" in parsedData &&
+              typeof parsedData.created_by === "string"
                 ? parsedData.created_by
                 : undefined,
             updated_by:
               parsedData &&
-                "updated_by" in parsedData &&
-                typeof parsedData.updated_by === "string"
+              "updated_by" in parsedData &&
+              typeof parsedData.updated_by === "string"
                 ? parsedData.updated_by
                 : undefined,
           };
@@ -503,10 +503,16 @@ export const createDeconfigResource = <
           `DECO_RESOURCE_${resourceName.toUpperCase()}_SUBSCRIBE` as keyof typeof enhancements
         ]?.description ||
         `Subscribe to ${resourceName} resources in the DECONFIG directory ${directory}`,
-      handler: function ({ uri, subscriptionId, channel }) {
-        return {
-          subscriptionId: crypto.randomUUID(),
-        };
+      handler: async ({ uri, subscriptionId, channel }) => {
+        // Convert resource URI/directory to pathFilters
+        const pathFilters = normalizeDirectory(dirOf({ ...options, uri }));
+
+        // Call the DECONFIG.SUBSCRIBE method using channel as watcherId
+        return await deconfig.SUBSCRIBE({
+          watcherId: channel,
+          pathFilters,
+          subscriptionId,
+        });
       },
     },
     {
@@ -515,10 +521,15 @@ export const createDeconfigResource = <
           `DECO_RESOURCE_${resourceName.toUpperCase()}_UNSUBSCRIBE` as keyof typeof enhancements
         ]?.description ||
         `Unsubscribe from ${resourceName} resources in the DECONFIG directory ${directory}`,
-      handler: function ({ subscriptionId, channel }) {
-        return {
-          ok: true
-        };
+      handler: async ({ subscriptionId }) => {
+        if (!subscriptionId) {
+          throw new Error("subscriptionId is required for unsubscribe");
+        }
+
+        // Call the DECONFIG.UNSUBSCRIBE method
+        return await deconfig.UNSUBSCRIBE({
+          subscriptionId,
+        });
       },
     },
   ]);
@@ -532,21 +543,25 @@ const removeLeadingSlash = (url: string) => {
 
 const R_READ = 1;
 
-const watcher = <TDataSchema extends BaseResourceDataSchema>({
+export interface WatchOptions {
+  watcherId?: string;
+  pathFilter: string;
+  env: DefaultEnv & { DECONFIG: DeconfigClient };
+  readResource: (path: string) => Promise<{ data: unknown; uri: string }>;
+}
+const watcher = ({
   env,
+  pathFilter,
   ...options
-}: DeconfigResourceOptions<TDataSchema> & {
-  uri?: string;
-}): AsyncIterableIterator<{ uri: string; data: TDataSchema }> => {
-  const resources = createDeconfigResource({
-    env,
-    ...options,
-  });
+}: WatchOptions): AsyncIterableIterator<{ uri: string; data: unknown }> => {
   const url = new URL(
     `/${removeLeadingSlash(env.DECO_REQUEST_CONTEXT.workspace)}/deconfig/watch`,
     `${env.DECO_API_URL ?? "https://api.decocms.com"}`,
   );
-  url.searchParams.set("pathFilter", dirOf(options));
+  if (options.watcherId) {
+    url.searchParams.set("watcherId", options.watcherId);
+  }
+  url.searchParams.set("pathFilter", pathFilter);
   url.searchParams.set("branch", env.DECO_REQUEST_CONTEXT.branch ?? "main");
   url.searchParams.set("auth-token", env.DECO_REQUEST_CONTEXT.token);
   url.searchParams.set("fromCtime", "1");
@@ -559,24 +574,8 @@ const watcher = <TDataSchema extends BaseResourceDataSchema>({
   const iterator = async function* () {
     for await (const event of it) {
       const { path } = event;
-      const { resourceId } = ResourcePath.extract(path);
-      const uri = constructResourceUri(
-        env.DECO_REQUEST_CONTEXT.integrationId as string,
-        options.resourceName,
-        resourceId,
-      );
       try {
-        const { data } = await resources[R_READ].execute!({
-          runId: crypto.randomUUID(),
-          runtimeContext: createRuntimeContext(),
-          context: {
-            uri,
-          },
-        });
-        yield {
-          uri,
-          data,
-        };
+        yield await options.readResource(path);
       } catch {
         // ignore
       }
@@ -599,7 +598,30 @@ export const DeconfigResource = {
         _req: Request,
         env: DefaultEnv & { DECONFIG: DeconfigClient },
       ) => {
-        const watch = watcher({ env, ...options });
+        const resources = createDeconfigResource({
+          env,
+          ...options,
+        });
+        const watch = watcher({
+          env,
+          pathFilter: dirOf(options),
+          readResource: async (path) => {
+            const { resourceId } = ResourcePath.extract(path);
+            const uri = constructResourceUri(
+              env.DECO_REQUEST_CONTEXT.integrationId as string,
+              options.resourceName,
+              resourceId,
+            );
+            const { data } = await resources[R_READ].execute!({
+              runId: crypto.randomUUID(),
+              runtimeContext: createRuntimeContext(),
+              context: {
+                uri,
+              },
+            });
+            return { data, uri };
+          },
+        });
 
         // Create SSE-compatible ReadableStream
         const sseStream = new ReadableStream({

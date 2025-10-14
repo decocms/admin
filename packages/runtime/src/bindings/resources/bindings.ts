@@ -86,9 +86,14 @@ export function createResourceBindings<
     {
       name: `DECO_RESOURCE_${resourceName.toUpperCase()}_SUBSCRIBE` as const,
       inputSchema: z.object({
-        subscriptionId: z.string().optional().describe("Subscription ID if passed subscription will be updated"),
+        subscriptionId: z
+          .string()
+          .optional()
+          .describe("Subscription ID if passed subscription will be updated"),
         channel: z.string().describe("Channel to subscribe to"),
-        uri: ResourceUriSchema.describe("URI of the resource to subscribe to, use rsc://workspace/project/* to subscribe to all resources"),
+        uri: ResourceUriSchema.describe(
+          "URI of the resource to subscribe to, use rsc://workspace/project/* to subscribe to all resources",
+        ),
       }),
       outputSchema: z.object({
         subscriptionId: z.string().describe("Subscription ID"),
@@ -98,14 +103,15 @@ export function createResourceBindings<
     {
       name: `DECO_RESOURCE_${resourceName.toUpperCase()}_UNSUBSCRIBE` as const,
       inputSchema: z.object({
-        subscriptionId: z.string().optional().describe("Subscription ID if passed subscription will be updated"),
-        channel: z.string().describe("Channel to subscribe to")
+        subscriptionId: z
+          .string()
+          .describe("Subscription ID to unsubscribe from"),
       }),
       outputSchema: z.object({
         ok: z.boolean(),
       }),
       opt: true,
-    }
+    },
   ] as const satisfies readonly ToolBinder[];
 }
 

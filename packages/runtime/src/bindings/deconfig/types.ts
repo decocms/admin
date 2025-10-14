@@ -89,6 +89,28 @@ export const deconfigTools = [
       deleted: z.boolean(),
     }),
   },
+  {
+    name: "SUBSCRIBE" as const,
+    inputSchema: z.object({
+      branch: z.string().optional(),
+      watcherId: z.string(),
+      pathFilters: z.union([z.string(), z.array(z.string())]).optional(),
+      subscriptionId: z.string().optional(),
+    }),
+    outputSchema: z.object({
+      subscriptionId: z.string(),
+    }),
+  },
+  {
+    name: "UNSUBSCRIBE" as const,
+    inputSchema: z.object({
+      branch: z.string().optional(),
+      subscriptionId: z.string(),
+    }),
+    outputSchema: z.object({
+      ok: z.boolean(),
+    }),
+  },
 ] as const satisfies readonly ToolBinder[];
 
 // DeconfigClient is now a typed MCP client stub (same pattern as workspaceTools)

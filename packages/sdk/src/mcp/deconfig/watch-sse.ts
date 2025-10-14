@@ -19,7 +19,11 @@ export interface WatchOpts extends WatchOptions {
  */
 export const watchSSE = async (env: AppContext, options?: WatchOpts) => {
   assertHasWorkspace(env);
-  if (WELL_KNOWN_PUBLIC_PATHS.some((p) => options?.pathFilter?.startsWith(p))) {
+  let filters = options?.pathFilters ?? options?.pathFilter;
+  filters = typeof filters === "string" ? [filters] : filters;
+  if (
+    WELL_KNOWN_PUBLIC_PATHS.some((p) => filters?.some((f) => f.startsWith(p)))
+  ) {
     env.resourceAccess.grant();
   } else {
     await assertWorkspaceResourceAccess(env, "READ_FILE");

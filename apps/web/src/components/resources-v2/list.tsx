@@ -587,7 +587,12 @@ function ResourcesV2ListTab({
               description={`No ${resourceName} found for this integration.`}
             />
           ) : viewMode === "cards" ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            <div
+              className="grid gap-4"
+              style={{
+                gridTemplateColumns: "repeat(auto-fill, minmax(320px, 1fr))",
+              }}
+            >
               {sortedItems.map((it) => (
                 <Card
                   key={it.uri}
@@ -678,7 +683,7 @@ function ResourcesV2ListTab({
           ) : null}
           {viewMode === "table" && !loading && sortedItems.length > 0 && (
             <div className="overflow-x-auto -mx-16 px-16">
-              <div className="w-fit min-w-full max-w-[1500px] mx-auto">
+              <div className="w-full max-w-[1500px] mx-auto">
                 <Table
                   columns={columns}
                   data={sortedItems}

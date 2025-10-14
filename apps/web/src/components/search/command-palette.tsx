@@ -1,9 +1,4 @@
-import {
-  useAgents,
-  useIntegrations,
-  useIntegrationViews,
-  useDocuments,
-} from "@deco/sdk";
+import { useAgents, useDocuments, useIntegrations } from "@deco/sdk";
 import {
   CommandDialog,
   CommandEmpty,
@@ -13,12 +8,12 @@ import {
   CommandList,
 } from "@deco/ui/components/command.tsx";
 import { Icon } from "@deco/ui/components/icon.tsx";
-import { useDeferredValue, useMemo, useState, useEffect } from "react";
+import { useDeferredValue, useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router";
 import { trackEvent } from "../../hooks/analytics.ts";
 import { useNavigateWorkspace } from "../../hooks/use-navigate-workspace.ts";
-import { IntegrationAvatar } from "../common/avatar/integration.tsx";
 import { AgentAvatar } from "../common/avatar/agent.tsx";
+import { IntegrationAvatar } from "../common/avatar/integration.tsx";
 import { AppKeys, getConnectionAppKey } from "../integrations/apps.ts";
 
 interface SearchResult {
@@ -27,7 +22,7 @@ interface SearchResult {
   description?: string;
   icon?: string;
   avatar?: string;
-  type: "agent" | "app" | "view" | "document";
+  type: "agent" | "app" | "document";
   href: string;
   integration?: {
     id: string;
@@ -50,8 +45,6 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
   // Data fetching with proper error handling
   const { data: agents = [] } = useAgents();
   const { data: integrations = [] } = useIntegrations();
-  // views not working properly
-  const { data: views = [] } = useIntegrationViews({ enabled: true });
   const { data: documents = [] } = useDocuments();
 
   // Combine all data into search results
@@ -91,19 +84,6 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
       });
     }
 
-    // Add views
-    for (const view of views) {
-      results.push({
-        id: `view-${view.name}-${view.integration?.id}`,
-        title: view.title || view.name || "Untitled View",
-        description: view.url,
-        icon: view.icon || "visibility",
-        type: "view",
-        href: `/views/${view.integration?.id}/${view.name}`,
-        integration: view.integration,
-      });
-    }
-
     // Add documents/prompts
     for (const document of documents) {
       const documentName = document.data?.name || "Untitled Document";
@@ -120,7 +100,7 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
     }
 
     return results;
-  }, [agents, integrations, views, documents]);
+  }, [agents, integrations, documents]);
 
   // Filter results based on search
   const filteredResults = useMemo(() => {
@@ -140,7 +120,6 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
     const groups: Record<string, SearchResult[]> = {
       agent: [],
       app: [],
-      view: [],
       document: [],
     };
 
@@ -180,14 +159,12 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
   const typeLabels = {
     agent: "Agents",
     app: "Apps",
-    view: "Views",
     document: "Documents",
   };
 
   const typeIcons = {
     agent: "robot_2",
     app: "grid_view",
-    view: "visibility",
     document: "docs",
   };
 
@@ -246,7 +223,7 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
                       />
                     )}
 
-                    {(result.type === "document" || result.type === "view") && (
+                    {result.type === "document" && (
                       <Icon
                         name={result.icon || typeIcons[result.type]}
                         size={20}

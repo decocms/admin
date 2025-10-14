@@ -1,9 +1,9 @@
 import { type Integration, useIntegrations, callTool } from "@deco/sdk";
 import { cn } from "@deco/ui/lib/utils.ts";
-import { createUnifiedMentions } from "@deco/ui/components/rich-text-editor/extensions/unified-mentions.ts";
-import { MentionNode } from "@deco/ui/components/rich-text-editor/extensions/mention-node.tsx";
-import { MentionDropdown } from "@deco/ui/components/rich-text-editor/components/mention-dropdown.tsx";
-import type { MentionItem } from "@deco/ui/components/rich-text-editor/types.ts";
+import { createUnifiedMentions } from "../rich-text-editor/extensions/unified-mentions.ts";
+import { MentionNode } from "../rich-text-editor/extensions/mention-node.tsx";
+import { MentionDropdown } from "../rich-text-editor/components/mention-dropdown.tsx";
+import type { MentionItem } from "../rich-text-editor/types.ts";
 import Placeholder from "@tiptap/extension-placeholder";
 import { EditorContent, type Extensions, useEditor } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";

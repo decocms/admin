@@ -1,6 +1,6 @@
-import { ScrollArea, ScrollBar } from "../../scroll-area.tsx";
-import { Spinner } from "../../spinner.tsx";
-import { cn } from "../../../lib/utils.ts";
+import { ScrollArea, ScrollBar } from "@deco/ui/components/scroll-area.js";
+import { Spinner } from "@deco/ui/components/spinner.js";
+import { cn } from "@deco/ui/lib/utils.js";
 import type { SuggestionProps } from "@tiptap/suggestion";
 import {
   forwardRef,

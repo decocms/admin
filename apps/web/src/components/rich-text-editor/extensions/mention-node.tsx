@@ -1,6 +1,6 @@
-import { Badge } from "../../badge.tsx";
+import { Badge } from "@deco/ui/components/badge.js";
 import { NodeViewWrapper, type ReactNodeViewProps } from "@tiptap/react";
-import { cn } from "../../../lib/utils.ts";
+import { cn } from "@deco/ui/lib/utils.js";
 
 interface MentionNodeProps extends ReactNodeViewProps<HTMLSpanElement> {
   // deno-lint-ignore no-explicit-any

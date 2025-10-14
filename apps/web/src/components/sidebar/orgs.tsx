@@ -118,22 +118,18 @@ OrgViews.Skeleton = () => (
 export function OrgsSidebar() {
   return (
     <Sidebar variant="sidebar">
-      <SidebarContent className="flex flex-col h-full overflow-x-hidden">
-        <div className="flex flex-col flex-1 min-h-0">
-          <div className="flex-none">
-            <SidebarGroup className="font-medium">
-              <SidebarGroupContent>
-                <SidebarMenu className="gap-0.5">
-                  <Suspense fallback={<OrgViews.Skeleton />}>
-                    <OrgViews />
-                  </Suspense>
-                </SidebarMenu>
-              </SidebarGroupContent>
-            </SidebarGroup>
-          </div>
-        </div>
-        <SidebarFooter />
+      <SidebarContent className="flex-1 overflow-x-hidden">
+        <SidebarGroup className="font-medium">
+          <SidebarGroupContent>
+            <SidebarMenu className="gap-0.5">
+              <Suspense fallback={<OrgViews.Skeleton />}>
+                <OrgViews />
+              </Suspense>
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
       </SidebarContent>
+      <SidebarFooter className="bg-sidebar pt-4" />
     </Sidebar>
   );
 }

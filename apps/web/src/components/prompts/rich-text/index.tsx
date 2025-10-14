@@ -1,10 +1,13 @@
-import { usePrompts } from "@deco/sdk";
+import { type Integration, useIntegrations, callTool } from "@deco/sdk";
 import { Icon } from "@deco/ui/components/icon.tsx";
 import { cn } from "@deco/ui/lib/utils.ts";
+import { createUnifiedMentions } from "@deco/ui/components/rich-text-editor/extensions/unified-mentions.ts";
+import { MentionNode } from "@deco/ui/components/rich-text-editor/extensions/mention-node.tsx";
+import { MentionDropdown } from "@deco/ui/components/rich-text-editor/components/mention-dropdown.tsx";
 import Placeholder from "@tiptap/extension-placeholder";
 import { EditorContent, type Extensions, useEditor } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
-import { useEffect, useMemo, useRef } from "react";
+import { useEffect, useMemo, useRef, useCallback } from "react";
 import { Markdown } from "tiptap-markdown";
 import BubbleMenu from "./bubble-menu.tsx";
 import {
@@ -13,7 +16,7 @@ import {
   sanitizeMarkdown,
 } from "./common.ts";
 import { Comment } from "./extensions/comment.tsx";
-import { mentions } from "./extensions/mentions/mentions.ts";
+import { IntegrationAvatar } from "../../common/avatar/integration.tsx";
 
 interface Props {
   value: string;
@@ -35,6 +38,23 @@ interface Props {
   excludeIds?: string[];
 }
 
+// Extend Integration type to include tools
+type IntegrationWithTools = Integration & {
+  tools?: Array<{ name: string; description?: string }>;
+};
+
+// Tool interface for flattened tools
+export interface Tool {
+  id: string;
+  name: string;
+  description?: string;
+  integration: {
+    id: string;
+    name: string;
+    icon?: string;
+  };
+}
+
 export default function RichTextArea({
   value,
   onChange,
@@ -46,10 +66,85 @@ export default function RichTextArea({
   className,
   enableMentions = false,
   hideMentionsLabel = false,
-  excludeIds = [],
+  excludeIds: _excludeIds = [],
 }: Props) {
   const hadUserInteraction = useRef(false);
-  const { data: prompts } = usePrompts({ excludeIds });
+  const { data: integrations = [] } = useIntegrations();
+
+  // Flatten tools from all integrations
+  const tools: Tool[] = useMemo(() => {
+    return (integrations as IntegrationWithTools[])
+      .filter(
+        (integration) =>
+          integration.tools &&
+          Array.isArray(integration.tools) &&
+          integration.tools.length > 0,
+      )
+      .flatMap((integration) =>
+        integration.tools!.map(
+          (tool: { name: string; description?: string }) => ({
+            id: `${integration.id}-${tool.name}`,
+            name: tool.name,
+            description: tool.description,
+            integration: {
+              id: integration.id,
+              name: integration.name,
+              icon: integration.icon,
+            },
+          }),
+        ),
+      );
+  }, [integrations]);
+
+  const resourceSearchers = useMemo(() => {
+    // Match DECO_RESOURCE_<NAME>_SEARCH pattern
+    const SEARCH_TOOL_RE = /^DECO_RESOURCE_[A-Z_]+_SEARCH$/;
+    return (integrations as IntegrationWithTools[])
+      .filter((integration) => {
+        // Filter out workspace-management to avoid duplicate document results
+        if (integration.id === "i:workspace-management") return false;
+
+        const toolsList = integration.tools ?? [];
+        return toolsList.some((t) => SEARCH_TOOL_RE.test(t.name));
+      })
+      .map((integration) => {
+        const searchToolNames = (integration.tools ?? [])
+          .map((t) => t.name)
+          .filter((name) => SEARCH_TOOL_RE.test(name));
+        return {
+          integration: {
+            id: integration.id,
+            name: integration.name,
+            icon: integration.icon,
+          },
+          connection: (integration as Integration).connection,
+          searchToolNames,
+        };
+      })
+      .filter((s) => s.searchToolNames.length > 0);
+  }, [integrations]);
+
+  // Wrap MentionNode with integration avatar support
+  const MentionNodeWithAvatar = useCallback(
+    // deno-lint-ignore no-explicit-any
+    (props: any) => (
+      <MentionNode
+        {...props}
+        IntegrationAvatar={IntegrationAvatar}
+        ResourceIcon={() => <Icon name="description" />}
+      />
+    ),
+    [],
+  );
+
+  // Wrap MentionDropdown with integration avatar support
+  const MentionDropdownWithAvatar = useCallback(
+    // deno-lint-ignore no-explicit-any
+    (props: any) => (
+      <MentionDropdown {...props} IntegrationAvatar={IntegrationAvatar} />
+    ),
+    [],
+  );
 
   const extensions = useMemo(() => {
     const extensions: Extensions = [
@@ -66,11 +161,30 @@ export default function RichTextArea({
     ];
 
     if (enableMentions) {
-      extensions.push(mentions(prompts ?? []));
+      extensions.push(
+        createUnifiedMentions({
+          tools,
+          resourceSearchers,
+          callTool: (connection, args) =>
+            callTool(
+              connection as Parameters<typeof callTool>[0],
+              args as Parameters<typeof callTool>[1],
+            ),
+          MentionNode: MentionNodeWithAvatar,
+          MentionDropdown: MentionDropdownWithAvatar,
+        }),
+      );
     }
 
     return extensions;
-  }, [enableMentions, placeholder, prompts]);
+  }, [
+    enableMentions,
+    placeholder,
+    tools,
+    resourceSearchers,
+    MentionNodeWithAvatar,
+    MentionDropdownWithAvatar,
+  ]);
 
   const editor = useEditor(
     {
@@ -100,7 +214,7 @@ export default function RichTextArea({
         },
       },
     },
-    [prompts],
+    [extensions],
   );
 
   // Sync editor content with value prop changes
@@ -148,7 +262,9 @@ export default function RichTextArea({
       {enableMentions && !hideMentionsLabel && (
         <div className="rounded-full flex gap-1 bg-muted text-muted-foreground w-fit items-center px-1.5 py-0.5 mb-2.5 select-none">
           <Icon name="info" size={10} />
-          <p className="text-xs font-medium">Type / to add tools and more</p>
+          <p className="text-xs font-medium">
+            Type @ to mention tools and resources
+          </p>
         </div>
       )}
       <BubbleMenu editor={editor} />

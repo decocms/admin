@@ -1,14 +1,19 @@
-import { type Integration, useIntegrations } from "@deco/sdk";
-import { Binding, WellKnownBindings } from "@deco/sdk/mcp/bindings";
+import { type Integration, useIntegrations, callTool } from "@deco/sdk";
 import { cn } from "@deco/ui/lib/utils.ts";
+import { createUnifiedMentions } from "@deco/ui/components/rich-text-editor/extensions/unified-mentions.ts";
+import { MentionNode } from "@deco/ui/components/rich-text-editor/extensions/mention-node.tsx";
+import { MentionDropdown } from "@deco/ui/components/rich-text-editor/components/mention-dropdown.tsx";
+import type { MentionItem } from "@deco/ui/components/rich-text-editor/types.ts";
 import Placeholder from "@tiptap/extension-placeholder";
 import { EditorContent, type Extensions, useEditor } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import { useEffect, useMemo } from "react";
 import { Markdown } from "tiptap-markdown";
 import { NoNewLine } from "./extensions/no-new-line.ts";
-import { toolMentions } from "./extensions/tool-mention.ts";
 import { useAgent } from "../agent/provider.tsx";
+import { IntegrationAvatar } from "../common/avatar/integration.tsx";
+import { Icon } from "@deco/ui/components/icon.tsx";
+import { useAgentSettingsToolsSet } from "../../hooks/use-agent-settings-tools-set.ts";
 
 export interface Mention {
   id: string;
@@ -94,14 +99,15 @@ export function RichTextArea({
   }, [integrations]);
 
   const resourceSearchers = useMemo(() => {
-    const SEARCH_TOOL_RE = /^DECO_CHAT_RESOURCES_SEARCH$/;
+    // Match DECO_RESOURCE_<NAME>_SEARCH pattern
+    const SEARCH_TOOL_RE = /^DECO_RESOURCE_[A-Z_]+_SEARCH$/;
     return (integrations as IntegrationWithTools[])
       .filter((integration) => {
+        // Filter out workspace-management to avoid duplicate document results
+        if (integration.id === "i:workspace-management") return false;
+
         const toolsList = integration.tools ?? [];
-        // deno-lint-ignore no-explicit-any
-        return Binding(WellKnownBindings.Resources as any).isImplementedBy(
-          toolsList.map((t) => ({ name: t.name })) as Array<{ name: string }>,
-        );
+        return toolsList.some((t) => SEARCH_TOOL_RE.test(t.name));
       })
       .map((integration) => {
         const searchToolNames = (integration.tools ?? [])
@@ -120,6 +126,53 @@ export function RichTextArea({
       .filter((s) => s.searchToolNames.length > 0);
   }, [integrations]);
 
+  const { appendIntegrationTool } = useAgentSettingsToolsSet();
+
+  // Create wrapper for MentionNode - use a ref to ensure stable function reference
+  const MentionNodeWithAvatar = useMemo(() => {
+    // deno-lint-ignore no-explicit-any
+    return function MentionNodeWrapper(props: any) {
+      return (
+        <MentionNode
+          {...props}
+          IntegrationAvatar={IntegrationAvatar}
+          ResourceIcon={() => <Icon name="description" />}
+        />
+      );
+    };
+  }, []);
+
+  // Create wrapper for MentionDropdown - use a ref to ensure stable function reference
+  const MentionDropdownWithAvatar = useMemo(() => {
+    // deno-lint-ignore no-explicit-any
+    return function MentionDropdownWrapper(props: any) {
+      const wrappedCommand = (item: MentionItem) => {
+        // Handle tool selection - add to agent's toolset
+        if (item.type === "tool") {
+          appendIntegrationTool(item.tool.integration.id, item.tool.name);
+        }
+        // Handle resource selection - add READ tool to agent's toolset
+        // This allows the agent to read the resource content on demand
+        else if (item.type === "resource") {
+          // Add the READ tool for this resource type to the agent's toolset
+          const readToolName = `DECO_RESOURCE_${item.resourceType.toUpperCase()}_READ`;
+          appendIntegrationTool(item.integration.id, readToolName);
+        }
+
+        // Call the original command to insert the mention
+        props.command(item);
+      };
+
+      return (
+        <MentionDropdown
+          {...props}
+          command={wrappedCommand}
+          IntegrationAvatar={IntegrationAvatar}
+        />
+      );
+    };
+  }, []); // appendIntegrationTool should be stable, no need to list it
+
   const extensions: Extensions = useMemo(() => {
     const extensions: Extensions = [
       StarterKit,
@@ -135,33 +188,56 @@ export function RichTextArea({
     ];
 
     if (enableToolMentions) {
-      extensions.push(toolMentions({ tools, resourceSearchers }));
+      extensions.push(
+        createUnifiedMentions({
+          tools,
+          resourceSearchers,
+          callTool: (connection, args) =>
+            callTool(
+              connection as Parameters<typeof callTool>[0],
+              args as Parameters<typeof callTool>[1],
+            ),
+          MentionNode: MentionNodeWithAvatar,
+          MentionDropdown: MentionDropdownWithAvatar,
+        }),
+      );
     }
 
     return extensions;
-  }, [allowNewLine, placeholder, enableToolMentions, tools, resourceSearchers]);
+  }, [
+    allowNewLine,
+    placeholder,
+    enableToolMentions,
+    tools,
+    resourceSearchers,
+    MentionNodeWithAvatar,
+    MentionDropdownWithAvatar,
+  ]);
 
-  const editor = useEditor({
-    extensions,
-    content: value,
-    editable: !disabled,
-    onUpdate: ({ editor }) => {
-      const markdown = editor.storage.markdown.getMarkdown({
-        html: true,
-      });
+  const editor = useEditor(
+    {
+      extensions,
+      content: value,
+      editable: !disabled,
+      onUpdate: ({ editor }) => {
+        const markdown = editor.storage.markdown.getMarkdown({
+          html: true,
+        });
 
-      onChange(markdown);
-    },
-    editorProps: {
-      attributes: {
-        class: cn(
-          "w-full outline-none min-h-[48px] max-h-[164px] overflow-y-auto p-4  leading-[1.2] rounded-t-2xl",
-          disabled && "opacity-100 text-muted-foreground",
-          className,
-        ),
+        onChange(markdown);
+      },
+      editorProps: {
+        attributes: {
+          class: cn(
+            "w-full outline-none min-h-[48px] max-h-[164px] overflow-y-auto p-4  leading-[1.2] rounded-t-2xl",
+            disabled && "opacity-100 text-muted-foreground",
+            className,
+          ),
+        },
       },
     },
-  });
+    [extensions],
+  );
 
   useEffect(() => {
     if (editor && editor.storage.markdown.getMarkdown() !== value) {

@@ -98,6 +98,17 @@ function SidebarProvider({
         event.key === SIDEBAR_KEYBOARD_SHORTCUT &&
         (event.metaKey || event.ctrlKey)
       ) {
+        // Don't trigger if user is typing in an input, textarea, or contenteditable element
+        const target = event.target as HTMLElement;
+        const isTyping =
+          target.tagName === "INPUT" ||
+          target.tagName === "TEXTAREA" ||
+          target.isContentEditable;
+
+        if (isTyping) {
+          return;
+        }
+
         event.preventDefault();
         toggleSidebar();
       }

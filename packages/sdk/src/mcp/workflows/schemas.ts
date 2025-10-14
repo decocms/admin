@@ -13,23 +13,32 @@ export const WorkflowStepDefinitionSchema = z.object({
     .string()
     .min(1)
     .describe("A clear description of what this step does"),
+  prompt: z
+    .string()
+    .optional()
+    .describe("The prompt used to generate the step"),
   inputSchema: z
     .object({})
     .passthrough()
-    .describe(
-      "JSON Schema defining the input structure for this step",
-    ),
+    .describe("JSON Schema defining the input structure for this step"),
   outputSchema: z
     .object({})
     .passthrough()
-    .describe(
-      "JSON Schema defining the output structure for this step",
-    ),
+    .describe("JSON Schema defining the output structure for this step"),
   input: z
     .record(z.unknown())
     .describe(
       "Input object that complies with inputSchema. Values can reference previous steps using @<step_name>.output.property or workflow input using @input.property",
     ),
+  output: z
+    .record(z.unknown())
+    .describe(
+      "Current output of the step if it was executed",
+    ),
+  status: z
+    .enum(["pending", "active", "completed", "error"])
+    .default("pending")
+    .describe("Status of the step execution"),
   execute: z
     .string()
     .min(1)
@@ -53,24 +62,30 @@ export const WorkflowStepDefinitionSchema = z.object({
     ),
   options: z
     .object({
-      retries: z.object({
-        limit: z
-          .number()
-          .int()
-          .min(0)
-          .default(0)
-          .describe("Number of retry attempts for this step (default: 0)"),
-        delay: z
-          .number()
-          .int()
-          .min(0)
-          .default(0)
-          .describe("Delay in milliseconds between retry attempts (default: 0)"),
-        backoff: z
-          .enum(["constant", "linear", "exponential"])
-          .optional()
-          .describe("Backoff strategy for retry attempts (default: constant)"),
-      }).optional(),
+      retries: z
+        .object({
+          limit: z
+            .number()
+            .int()
+            .min(0)
+            .default(0)
+            .describe("Number of retry attempts for this step (default: 0)"),
+          delay: z
+            .number()
+            .int()
+            .min(0)
+            .default(0)
+            .describe(
+              "Delay in milliseconds between retry attempts (default: 0)",
+            ),
+          backoff: z
+            .enum(["constant", "linear", "exponential"])
+            .optional()
+            .describe(
+              "Backoff strategy for retry attempts (default: constant)",
+            ),
+        })
+        .optional(),
       timeout: z
         .number()
         .positive()
@@ -107,19 +122,16 @@ export const WorkflowDefinitionSchema = z.object({
     .describe(
       "Array of workflow steps that execute sequentially. Each step can reference previous step outputs using @<step_name>.output.property syntax.",
     ),
+  authorization: z.object({
+    token: z.string().min(1).describe("The authorization token for the workflow"),
+  }).optional(),
 });
 
 export type WorkflowDefinition = z.infer<typeof WorkflowDefinitionSchema>;
-export type WorkflowStepDefinition = z.infer<typeof WorkflowStepDefinitionSchema>;
+export type WorkflowStepDefinition = z.infer<
+  typeof WorkflowStepDefinitionSchema
+>;
 
 // Additional types for compatibility with hooks
 export type Workflow = WorkflowDefinition;
 export type WorkflowStep = WorkflowStepDefinition;
-
-// Step execution result
-export interface StepExecutionResult {
-  executedAt: string; // ISO date
-  value: unknown; // Result data
-  error?: string; // Error message if failed
-  duration?: number; // Execution time in ms
-}

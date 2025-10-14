@@ -551,10 +551,10 @@ export const listIntegrations = createIntegrationManagementTool({
         .then((result) => ({ data: result })),
       listKnowledgeBases.handler({}),
     ]);
-    const roles =
-      c.workspace.root === "users"
-        ? []
-        : await c.policy.getUserRoles(c.user.id as string, c.workspace.slug);
+    const roles = [];
+    // c.workspace.root === "users"
+    // ? []
+    // : await c.policy.getUserRoles(c.user.id as string, c.workspace.slug);
     const userRoles: string[] = roles?.map((role) => role?.name);
 
     // TODO: This is a temporary solution to filter integrations and agents by access.

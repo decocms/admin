@@ -5,19 +5,10 @@ import { Icon } from "@deco/ui/components/icon.tsx";
 
 interface MentionNodeProps extends ReactNodeViewProps<HTMLSpanElement> {}
 
-export default function MentionNode({ node }: MentionNodeProps) {
+export function MentionNode({ node }: MentionNodeProps) {
   const label = node.attrs.label;
   const type = node.attrs.type || "tool";
   const property = node.attrs.property;
-  const integration = node.attrs.integration;
-
-  console.log("🎨 [MentionNode] Rendering:", {
-    label,
-    type,
-    property,
-    integration,
-    attrs: node.attrs,
-  });
 
   // Build display label with @ prefix and property suffix if present
   const displayLabel = property ? `@${label}.${property}` : `@${label}`;

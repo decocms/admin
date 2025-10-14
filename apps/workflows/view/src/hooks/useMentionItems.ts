@@ -26,31 +26,12 @@ interface StepItem {
 export type MentionItem = ToolItem | StepItem;
 
 export function useMentionItems(workflow?: Workflow): MentionItem[] {
-  const { data: integrations = [], isLoading, error } = useIntegrations();
-
-  console.log("🎯 [useMentionItems] Hook called with:", {
-    integrationsCount: integrations.length,
-    workflowSteps: workflow?.steps.length || 0,
-    isLoading,
-    error,
-  });
+  const { data: integrations = [] } = useIntegrations();
 
   return useMemo(() => {
     const items: MentionItem[] = [];
-
-    console.log(
-      "🔨 [useMentionItems] Building items from integrations:",
-      integrations,
-    );
-
     // Add tools from integrations
     integrations.forEach((integration) => {
-      console.log(
-        "🔧 [useMentionItems] Processing integration:",
-        integration.name,
-        "Tools:",
-        integration.tools?.length,
-      );
       integration.tools?.forEach((tool) => {
         items.push({
           id: `@${tool.name}`,
@@ -69,12 +50,9 @@ export function useMentionItems(workflow?: Workflow): MentionItem[] {
 
     // Add previous steps (if workflow provided)
     if (workflow) {
-      console.log(
-        "📦 [useMentionItems] Adding workflow steps:",
-        workflow.steps.length,
-      );
-      workflow.steps.forEach((step, index) => {
-        if (index < workflow.steps.length) {
+      workflow.steps?.forEach((step, index) => {
+        if (!workflow.steps) return;
+        if (index < workflow.steps?.length) {
           // Add the step reference without property suffix - user can type it
           items.push({
             id: `@${step.id}`,
@@ -86,14 +64,6 @@ export function useMentionItems(workflow?: Workflow): MentionItem[] {
         }
       });
     }
-
-    console.log("✅ [useMentionItems] Final items:", {
-      totalItems: items.length,
-      tools: items.filter((i) => i.type === "tool").length,
-      steps: items.filter((i) => i.type === "step").length,
-      integrations: integrations.length,
-      itemsList: items.map((i) => ({ id: i.id, label: i.label, type: i.type })),
-    });
 
     return items;
   }, [integrations, workflow]);

@@ -13,38 +13,37 @@ import {
   DialogDescription,
 } from "@deco/ui/components/dialog.tsx";
 import { IframeViewRenderer } from "./IframeViewRenderer";
-import type { WorkflowStep } from "../types/workflow";
+import { useCurrentWorkflow } from "@/store/workflow";
 
 interface RenderInputViewModalProps {
-  workflow: { id: string; steps: WorkflowStep[] };
-  step: WorkflowStep;
   fieldName: string;
   viewName: string;
   viewCode: string;
+  step: any; // TODO: fix this
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onSubmit: (data: Record<string, unknown>) => void;
 }
 
 export function RenderInputViewModal({
-  workflow,
-  step,
   fieldName,
   viewName,
   viewCode,
+  step,
   open,
   onOpenChange,
   onSubmit,
 }: RenderInputViewModalProps) {
+  const workflow = useCurrentWorkflow();
   // Get previous step data for this step
-  const stepIndex = workflow.steps.findIndex((s) => s.id === step.id);
-  const previousSteps = workflow.steps.slice(0, stepIndex);
+  const stepIndex = workflow.steps?.findIndex((s) => s.name === step.name);
+  const previousSteps = workflow.steps?.slice(0, stepIndex);
   const previousStepResults: Record<string, unknown> = {};
-  for (const s of previousSteps) {
-    if (s.output) {
-      previousStepResults[s.id] = s.output;
-    }
-  }
+  // for (const s of previousSteps || []) {
+  //   if (s.output) {
+  //     previousStepResults[s.id] = s.output;
+  //   }
+  // }
 
   return createPortal(
     <Dialog open={open} onOpenChange={onOpenChange}>

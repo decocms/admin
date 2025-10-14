@@ -3,16 +3,26 @@
  * Uses runtime.ts for execution
  */
 
+import { client } from "@/lib/rpc";
 import { useMutation } from "@tanstack/react-query";
-import { generateStep } from "../lib/runtime";
-import type { GenerateStepInput, GenerateStepOutput } from "../types/workflow";
+
+type GenerateStepInput = Parameters<typeof client.GENERATE_STEP>[0];
+type GenerateStepOutput = ReturnType<typeof client.GENERATE_STEP>;
 
 export function useGenerateStep() {
   return useMutation({
-    mutationFn: async (
-      input: GenerateStepInput,
-    ): Promise<GenerateStepOutput> => {
-      return await generateStep(input);
+    mutationFn: async (input: GenerateStepInput): GenerateStepOutput => {
+      const result = await client.GENERATE_STEP({
+        objective: input.objective,
+        previousSteps:
+          input.previousSteps?.map((step) => ({
+            id: step.id,
+            name: step.name,
+            outputSchema: step.outputSchema,
+          })) ?? [],
+      });
+
+      return result;
     },
   });
 }

@@ -15,7 +15,7 @@
   },
   "dependencies": {
     "@deco/ui": "workspace:*",
-    "@deco/workers-runtime": "workspace:*",
+    "@deco/workers-runtime": "npm:@jsr/deco__workers-runtime@0.22.13",
     "@radix-ui/react-collapsible": "^1.1.12",
     "@radix-ui/react-popover": "^1.1.15",
     "@radix-ui/react-slot": "^1.2.3",
@@ -52,7 +52,7 @@
     "@types/react-dom": "^19.0.3",
     "@vitejs/plugin-react": "^4.3.4",
     "concurrently": "^9.2.0",
-    "deco-cli": "^0.21.5",
+    "deco-cli": "^0.22.3",
     "drizzle-kit": "^0.31.4",
     "typescript": "^5.7.2",
     "vite": "^7.1.8",

@@ -63,7 +63,7 @@ async function fixCloudflareBuild({
   } catch {
     return;
   }
-  
+
   const files = await fs.readdir(outputDirectory);
 
   const isCloudflareViteBuild = files.some((file) => file === "wrangler.json");

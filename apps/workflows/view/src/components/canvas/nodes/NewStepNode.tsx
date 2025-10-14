@@ -2,21 +2,14 @@ import { type NodeProps, Handle, Position } from "reactflow";
 import { Button } from "@deco/ui/components/button.tsx";
 import { Icon } from "@deco/ui/components/icon.tsx";
 import { RichTextEditor } from "../../RichTextEditor";
-import { useWorkflowStore } from "../../../store/workflowStore";
 import { useGenerateStep } from "../../../hooks/useGenerateStep";
-import { useMentionItems } from "../../../hooks/useMentionItems";
-import type { WorkflowStep } from "../../../types/workflow";
+import { useCurrentWorkflow } from "@/store/workflow";
+import { useStepEditorPrompt } from "@/store/step-editor";
 
 export function NewStepNode(_props: NodeProps) {
-  const workflow = useWorkflowStore((state) => state.getCurrentWorkflow());
-  const prompt = useWorkflowStore((state) => state.prompt);
-  const setPrompt = useWorkflowStore((state) => state.setPrompt);
-  const addStep = useWorkflowStore((state) => state.addStep);
-  const setCurrentStepIndex = useWorkflowStore(
-    (state) => state.setCurrentStepIndex,
-  );
+  const workflow = useCurrentWorkflow();
   const generateStepMutation = useGenerateStep();
-  const mentions = useMentionItems(workflow);
+  const prompt = useStepEditorPrompt();
 
   const handleGenerateStep = () => {
     if (!prompt.trim() || !workflow) {
@@ -26,45 +19,14 @@ export function NewStepNode(_props: NodeProps) {
 
     console.log("⚡ [NewStepNode] Generating step with prompt:", prompt);
 
-    const previousSteps = workflow.steps.map((step: WorkflowStep) => ({
+    const previousSteps = workflow.steps?.map((step: any) => ({
       id: step.id,
-      name: step.title,
+      name: step.name,
       outputSchema: step.outputSchema || {},
     }));
 
     generateStepMutation.mutate(
       { objective: prompt, previousSteps },
-      {
-        onSuccess: (generatedStep) => {
-          console.log("✅ Step generated successfully:", generatedStep);
-
-          const step = generatedStep.step;
-
-          console.log("💾 [NewStepNode] Adding generated step to store");
-
-          addStep(workflow.id, {
-            title: step.name,
-            description: step.description,
-            status: "pending",
-            toolCalls: step.primaryTool ? [step.primaryTool] : [],
-            icon: step.icon,
-            inputSchema: step.inputSchema,
-            outputSchema: step.outputSchema,
-            input: step.input,
-            inputDescription: step.inputDescription,
-            code: step.code,
-            inputView: step.inputView,
-            outputView: step.outputView,
-          });
-
-          // Navigate to the newly created step
-          setCurrentStepIndex(workflow.id, workflow.steps.length);
-          setPrompt("");
-        },
-        onError: (error) => {
-          console.error("❌ Failed to generate step:", error);
-        },
-      },
     );
   };
 
@@ -100,10 +62,7 @@ export function NewStepNode(_props: NodeProps) {
               </label>
             </div>
             <RichTextEditor
-              value={prompt}
-              onChange={(value) => setPrompt(value)}
               placeholder="Type @ to mention tools or steps"
-              mentions={mentions}
               minHeight="120px"
             />
           </div>

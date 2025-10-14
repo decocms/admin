@@ -42,6 +42,16 @@ name = "DECONFIG"
 type = "mcp"
 integration_name = "@deco/deconfig"
 
+[[deco.bindings]]
+name = "INTEGRATIONS"
+type = "mcp"
+integration_name = "@deco/integrations"
+
+[[deco.bindings]]
+name = "APIKEYS"
+type = "mcp"
+integration_name = "@deco/api-keys"
+
 [[migrations]]
 tag = "v1"
 new_classes = [ "Workflow" ]

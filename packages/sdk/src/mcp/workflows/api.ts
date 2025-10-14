@@ -18,7 +18,7 @@ import {
 import { validate } from "../tools/utils.ts";
 import {
   createViewImplementation,
-  createViewRenderer
+  createViewRenderer,
 } from "../views-v2/index.ts";
 import { DetailViewRenderInputSchema } from "../views-v2/schemas.ts";
 import {

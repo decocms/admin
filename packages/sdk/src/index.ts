@@ -63,7 +63,6 @@ export * from "./hooks/workflows.ts";
 export {
   WorkflowDefinitionSchema,
   WorkflowStepDefinitionSchema,
-  type StepExecutionResult,
   type WorkflowDefinition,
   type WorkflowStep,
 } from "./mcp/workflows/schemas.ts";

@@ -128,6 +128,67 @@ CRITICAL - input MUST have:
 `;
 
 /**
+ * Build context for selected tools with their schemas
+ */
+export function buildToolsContext(
+  selectedTools: Array<{
+    name: string; // Tool name (from extractMentionedTools)
+    integrationId: string;
+    integrationName: string;
+    description?: string;
+    inputSchema?: any;
+    outputSchema?: any;
+  }>,
+): string {
+  if (!selectedTools || selectedTools.length === 0) {
+    return "";
+  }
+
+  return `
+========================================
+🔧 SELECTED TOOLS CONTEXT (IMPORTANT!)
+========================================
+
+The user has explicitly mentioned these tools in their prompt with @ syntax.
+YOU MUST use these tools according to their exact signatures!
+
+${selectedTools
+  .map(
+    (tool, idx) => `
+${idx + 1}. ${tool.name} - ${tool.integrationName}
+   ${tool.description || "No description available"}
+   
+   Integration ID: ${tool.integrationId}
+   
+   Input Schema:
+   ${tool.inputSchema ? JSON.stringify(tool.inputSchema, null, 2) : "Not available"}
+   
+   Output Schema:
+   ${tool.outputSchema ? JSON.stringify(tool.outputSchema, null, 2) : "Not available"}
+   
+   HOW TO CALL:
+   const result = await ctx.env['${tool.integrationId}'].${tool.name}({
+     // Input based on inputSchema above
+   });
+   
+   CRITICAL: Use EXACT integration ID and tool name as shown!
+`,
+  )
+  .join("\n---\n")}
+
+RULES FOR SELECTED TOOLS:
+1. If user mentions @tool-name, YOU MUST use that exact tool
+2. Use the integration ID and tool name EXACTLY as shown above
+3. Match your input/output to the schemas provided
+4. ALWAYS wrap tool calls in try/catch
+5. Return object matching the outputSchema you define
+6. In catch block, return ALL required properties with default values
+
+========================================
+`;
+}
+
+/**
  * Working example
  */
 export const WORKING_EXAMPLE = `

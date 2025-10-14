@@ -3,8 +3,8 @@ import {
   useImperativeHandle,
   useMemo,
   useCallback,
-  useEffect,
   useRef,
+  useEffect,
 } from "react";
 import ReactFlow, {
   ReactFlowProvider,
@@ -13,8 +13,8 @@ import ReactFlow, {
   type Edge,
   Background,
 } from "reactflow";
-import { useWorkflowStore } from "../../store/workflowStore";
 import { StepNode, NewStepNode, PlusButtonNode } from "./nodes";
+import { useCurrentWorkflow, useWorkflowStoreActions, useCurrentStepIndex } from "@/store/workflow";
 
 export interface WorkflowCanvasRef {
   centerOnStep: (index: number) => void;
@@ -33,19 +33,71 @@ const nodeTypes = {
 
 const Inner = forwardRef<WorkflowCanvasRef>(function Inner(_, ref) {
   const rf = useReactFlow();
-  const workflow = useWorkflowStore((s) => s.getCurrentWorkflow());
-  const setIndex = useWorkflowStore((s) => s.setCurrentStepIndex);
-  const currentStepIndex = useWorkflowStore(
-    (s) => s.getCurrentWorkflow()?.currentStepIndex ?? 0,
-  );
+  const workflow = useCurrentWorkflow();
+  const currentStepIndex = useCurrentStepIndex();
+  const {setCurrentStepIndex} = useWorkflowStoreActions();
 
   const isCenteringRef = useRef<boolean>(false);
-  const lockedXRef = useRef<number | null>(null);
-  const hasInitializedRef = useRef<boolean>(false);
   const lastScrollTimeRef = useRef<number>(0);
 
+  // Center the viewport on the current step
+  const centerViewport = useCallback(() => {
+    if (!workflow) return;
+
+    isCenteringRef.current = true;
+
+    // Wait for next frame to ensure ReactFlow is fully rendered
+    requestAnimationFrame(() => {
+      const container = document.querySelector('.react-flow');
+      if (!container) {
+        isCenteringRef.current = false;
+        return;
+      }
+
+      const viewportWidth = container.clientWidth;
+      const viewportHeight = container.clientHeight;
+
+      // Calculate the X position for the current step
+      const stepX = currentStepIndex * (CARD_WIDTH + CARD_GAP);
+      
+      // Center the step horizontally
+      const centeredX = (viewportWidth / 2) - (stepX + CARD_WIDTH / 2);
+      
+      // Get the actual node to calculate its height for proper vertical centering
+      const nodeId = currentStepIndex === workflow.steps?.length 
+        ? "new" 
+        : workflow.steps?.[currentStepIndex]?.name;
+      const node = document.querySelector(`[data-id="${nodeId}"]`);
+      const nodeHeight = node?.clientHeight || 200; // fallback to 200px if node not found
+      
+      // Center vertically - account for node height
+      // We want the center of the node to be at the center of the viewport
+      const centeredY = (viewportHeight / 2) - (nodeHeight / 2);
+
+      rf.setViewport(
+        { x: centeredX, y: centeredY, zoom: 1 },
+        { duration: 300 }
+      );
+
+      // Allow movement after centering animation completes
+      setTimeout(() => {
+        isCenteringRef.current = false;
+      }, 350);
+    });
+  }, [workflow, currentStepIndex, rf]);
+
+  // Center viewport when current step changes
+  useEffect(() => {
+    // Small delay to ensure nodes are rendered
+    const timer = setTimeout(() => {
+      centerViewport();
+    }, 50);
+    
+    return () => clearTimeout(timer);
+  }, [centerViewport]);
+
   const stepIds = useMemo(
-    () => workflow?.steps.map((s) => s.id).join(",") || "",
+    () => workflow?.steps?.map((s) => s.name).join(",") || "",
     [workflow?.steps],
   );
 
@@ -56,7 +108,7 @@ const Inner = forwardRef<WorkflowCanvasRef>(function Inner(_, ref) {
     const Y_POSITION = 0; // All nodes at same Y level for proper centering
 
     // Case 1: No steps yet - show new step node
-    if (workflow.steps.length === 0) {
+    if (workflow.steps?.length === 0) {
       result.push({
         id: "new",
         type: "newStep",
@@ -68,22 +120,22 @@ const Inner = forwardRef<WorkflowCanvasRef>(function Inner(_, ref) {
     }
 
     // Case 2: Create step nodes horizontally aligned
-    workflow.steps.forEach((step, index) => {
+    workflow.steps?.forEach((step, index) => {
       const stepX = index * (CARD_WIDTH + CARD_GAP);
 
       result.push({
-        id: step.id,
+        id: step.name,
         type: "step",
         position: { x: stepX, y: Y_POSITION },
-        data: { stepId: step.id },
+        data: { stepId: step.name },
         draggable: false,
       });
     });
 
     // Case 3: Add appropriate node at the end
-    const nextX = workflow.steps.length * (CARD_WIDTH + CARD_GAP);
+    const nextX = workflow.steps?.length ? workflow.steps.length * (CARD_WIDTH + CARD_GAP) : 0;
 
-    if (currentStepIndex === workflow.steps.length) {
+    if (currentStepIndex === workflow.steps?.length) {
       // User is on the "new step" screen - show new step node
       result.push({
         id: "new",
@@ -93,21 +145,21 @@ const Inner = forwardRef<WorkflowCanvasRef>(function Inner(_, ref) {
         draggable: false,
       });
     } else {
-      // User is viewing a step - show plus button centered vertically
+      // User is viewing a step - show plus button
       result.push({
         id: "plus-end",
         type: "plusButton",
         position: {
           x:
-            (workflow.steps.length - 1) * (CARD_WIDTH + CARD_GAP) +
+            (workflow.steps?.length ? workflow.steps.length - 1 : 0) * (CARD_WIDTH + CARD_GAP) +
             CARD_WIDTH +
             80,
-          y: Y_POSITION - 24, // Center the 48px button (half of button height)
+          y: Y_POSITION, // Aligned with step nodes
         },
         data: {
           onClick: () => {
             if (workflow) {
-              setIndex(workflow.id, workflow.steps.length);
+              setCurrentStepIndex(workflow.steps?.length || 0);
             }
           },
         },
@@ -116,19 +168,19 @@ const Inner = forwardRef<WorkflowCanvasRef>(function Inner(_, ref) {
     }
 
     return result;
-  }, [stepIds, workflow, currentStepIndex, setIndex]);
+  }, [stepIds, workflow, currentStepIndex, setCurrentStepIndex]);
 
   const edges = useMemo<Edge[]>(() => {
-    if (!workflow) return [];
+    if (!workflow || !workflow.steps) return [];
 
     const result: Edge[] = [];
 
     // Connect all consecutive step nodes
-    for (let i = 0; i < workflow.steps.length - 1; i++) {
+    for (let i = 0; i < workflow.steps?.length - 1; i++) {
       result.push({
-        id: `${workflow.steps[i].id}-${workflow.steps[i + 1].id}`,
-        source: workflow.steps[i].id,
-        target: workflow.steps[i + 1].id,
+        id: `${workflow.steps[i].name}-${workflow.steps[i + 1].name}`,
+        source: workflow.steps[i].name,
+        target: workflow.steps[i + 1].name,
         animated: true,
       });
     }
@@ -139,8 +191,8 @@ const Inner = forwardRef<WorkflowCanvasRef>(function Inner(_, ref) {
       currentStepIndex === workflow.steps.length
     ) {
       result.push({
-        id: `${workflow.steps[workflow.steps.length - 1].id}-new`,
-        source: workflow.steps[workflow.steps.length - 1].id,
+        id: `${workflow.steps[workflow.steps.length - 1].name}-new`,
+        source: workflow.steps[workflow.steps.length - 1].name,
         target: "new",
         animated: true,
       });
@@ -154,87 +206,28 @@ const Inner = forwardRef<WorkflowCanvasRef>(function Inner(_, ref) {
       if (!workflow || node.type === "plusButton") return;
 
       if (node.id === "new") {
-        if (currentStepIndex !== workflow.steps.length) {
-          setIndex(workflow.id, workflow.steps.length);
+        if (currentStepIndex !== workflow.steps?.length) {
+          setCurrentStepIndex(workflow.steps?.length || 0);
         }
         return;
       }
 
-      const stepIndex = workflow.steps.findIndex((s) => s.id === node.id);
+      const stepIndex = workflow.steps?.findIndex((s) => s.name === node.id);
       if (stepIndex !== -1 && stepIndex !== currentStepIndex) {
-        setIndex(workflow.id, stepIndex);
+        setCurrentStepIndex(stepIndex || 0);
       }
     },
-    [workflow, currentStepIndex, setIndex],
+    [workflow, currentStepIndex, setCurrentStepIndex],
   );
 
-  // Center on active step when currentStepIndex changes
-  useEffect(() => {
-    if (!workflow || nodes.length === 0 || isCenteringRef.current) return;
+  // Lock canvas - prevent any panning
+  const handleMove = useCallback(() => {
+    if (isCenteringRef.current) return;
+    // Re-center to lock the canvas in place
+    centerViewport();
+  }, [centerViewport]);
 
-    let targetNode: Node | undefined;
-
-    if (currentStepIndex === workflow.steps.length) {
-      targetNode = nodes.find((n) => n.id === "new");
-    } else if (currentStepIndex < workflow.steps.length) {
-      const stepId = workflow.steps[currentStepIndex]?.id;
-      targetNode = nodes.find((n) => n.id === stepId);
-    }
-
-    if (targetNode) {
-      const centerX = targetNode.position.x + CARD_WIDTH / 2;
-
-      const timer = setTimeout(() => {
-        isCenteringRef.current = true;
-
-        // On first load, center both X and Y to align cards in viewport center
-        // Estimate card height ~300px, so center is at Y=150
-        // After that, only center X and preserve Y scroll position
-        const ESTIMATED_CARD_CENTER = 200;
-        const targetY = hasInitializedRef.current
-          ? rf.getViewport().y
-          : -ESTIMATED_CARD_CENTER + globalThis.innerHeight / 2;
-
-        rf.setViewport(
-          {
-            x: -centerX + globalThis.innerWidth / 2,
-            y: targetY,
-            zoom: 1,
-          },
-          { duration: hasInitializedRef.current ? 500 : 0 },
-        );
-
-        setTimeout(
-          () => {
-            lockedXRef.current = rf.getViewport().x;
-            isCenteringRef.current = false;
-            hasInitializedRef.current = true;
-          },
-          hasInitializedRef.current ? 550 : 50,
-        );
-      }, 100);
-
-      return () => clearTimeout(timer);
-    }
-  }, [currentStepIndex, workflow, nodes, rf]);
-
-  // Lock horizontal position, allow vertical scrolling
-  const handleMove = useCallback(
-    (_event: unknown, viewport: { x: number; y: number }) => {
-      if (isCenteringRef.current || lockedXRef.current === null) return;
-
-      // Restore X position only, preserve Y for scrolling
-      if (Math.abs(viewport.x - lockedXRef.current) > 5) {
-        rf.setViewport(
-          { x: lockedXRef.current, y: viewport.y, zoom: 1 },
-          { duration: 0 },
-        );
-      }
-    },
-    [rf],
-  );
-
-  // Handle horizontal scroll to navigate between steps, allow vertical scroll
+  // Handle horizontal scroll to navigate between steps
   const handleWheel = useCallback(
     (event: React.WheelEvent) => {
       if (!workflow || isCenteringRef.current) return;
@@ -244,7 +237,7 @@ const Inner = forwardRef<WorkflowCanvasRef>(function Inner(_, ref) {
         Math.abs(event.deltaX) > Math.abs(event.deltaY);
 
       if (isHorizontalScroll) {
-        // Prevent horizontal scroll to avoid shaking
+        // Prevent default scroll behavior
         event.preventDefault();
         event.stopPropagation();
 
@@ -264,62 +257,51 @@ const Inner = forwardRef<WorkflowCanvasRef>(function Inner(_, ref) {
             // Scroll right -> next step
             const nextIndex = Math.min(
               currentStepIndex + 1,
-              workflow.steps.length,
+              workflow.steps?.length || 0,
             );
             if (nextIndex !== currentStepIndex) {
-              setIndex(workflow.id, nextIndex);
+              setCurrentStepIndex(nextIndex);
             }
           } else {
             // Scroll left -> previous step
             const prevIndex = Math.max(currentStepIndex - 1, 0);
             if (prevIndex !== currentStepIndex) {
-              setIndex(workflow.id, prevIndex);
+              setCurrentStepIndex(prevIndex);
             }
           }
         }
-      } else {
-        // Allow vertical scroll by updating viewport Y position
-        const currentViewport = rf.getViewport();
-        rf.setViewport(
-          {
-            x: currentViewport.x,
-            y: currentViewport.y - event.deltaY,
-            zoom: 1,
-          },
-          { duration: 0 },
-        );
       }
     },
-    [workflow, currentStepIndex, setIndex, rf],
+    [workflow, currentStepIndex, setCurrentStepIndex],
   );
 
   useImperativeHandle(
     ref,
     () => ({
       centerOnStep: (index: number) => {
-        if (workflow) setIndex(workflow.id, index);
+        if (workflow) setCurrentStepIndex(index);
       },
       centerOnNext: () => {
         if (workflow) {
           const nextIndex = Math.min(
             currentStepIndex + 1,
-            workflow.steps.length,
+            workflow.steps?.length || 0,
           );
-          setIndex(workflow.id, nextIndex);
+          setCurrentStepIndex(nextIndex);
         }
       },
       centerOnPrev: () => {
         if (workflow) {
           const prevIndex = Math.max(currentStepIndex - 1, 0);
-          setIndex(workflow.id, prevIndex);
+          setCurrentStepIndex(prevIndex);
         }
       },
     }),
-    [workflow, currentStepIndex, setIndex],
+    [workflow, currentStepIndex, setCurrentStepIndex],
   );
 
   return (
-    <div onWheel={handleWheel} className="h-full w-full overflow-x-hidden">
+    <div onWheel={handleWheel} className="h-full w-full overflow-hidden">
       <ReactFlow
         nodes={nodes}
         edges={edges}
@@ -340,9 +322,9 @@ const Inner = forwardRef<WorkflowCanvasRef>(function Inner(_, ref) {
         minZoom={1}
         maxZoom={1}
         defaultViewport={{ x: 0, y: 0, zoom: 1 }}
-        className="bg-background [&_.react-flow__pane]:!cursor-default [&_.react-flow__renderer]:cursor-default"
+        className="h-full w-full bg-background [&_.react-flow__pane]:!cursor-default [&_.react-flow__renderer]:cursor-default"
         proOptions={{ hideAttribution: true }}
-        nodeOrigin={[0, 0.5]}
+        nodeOrigin={[0, 0]}
       >
         <Background color="hsl(var(--border))" gap={16} />
       </ReactFlow>
@@ -350,15 +332,12 @@ const Inner = forwardRef<WorkflowCanvasRef>(function Inner(_, ref) {
   );
 });
 
-export default function WorkflowCanvas(
-  _props: {},
-  ref: React.Ref<WorkflowCanvasRef>,
-) {
+const WorkflowCanvas = forwardRef<WorkflowCanvasRef>(function WorkflowCanvas(_props, ref) {
   return (
     <ReactFlowProvider>
       <Inner ref={ref} />
     </ReactFlowProvider>
   );
-}
+});
 
-export const WorkflowCanvasWithRef = forwardRef(WorkflowCanvas);
+export default WorkflowCanvas;

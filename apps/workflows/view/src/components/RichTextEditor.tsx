@@ -2,38 +2,37 @@
  * Rich Text Editor with @ Mentions (Tiptap)
  * Minimal implementation
  */
-import { useEditor, EditorContent, ReactNodeViewRenderer } from "@tiptap/react";
-import StarterKit from "@tiptap/starter-kit";
-import Mention from "@tiptap/extension-mention";
-import Placeholder from "@tiptap/extension-placeholder";
-import { useEffect } from "react";
-import tippy, { Instance as TippyInstance } from "tippy.js";
-import { ReactRenderer } from "@tiptap/react";
-import MentionNode from "./MentionNode";
-import WorkflowMentionDropdown from "./WorkflowMentionDropdown";
-import type { MentionItem } from "../hooks/useMentionItems";
+import { useEditor, EditorContent, ReactNodeViewRenderer } from '@tiptap/react';
+import StarterKit from '@tiptap/starter-kit';
+import Mention from '@tiptap/extension-mention';
+import Placeholder from '@tiptap/extension-placeholder';
+import tippy, { Instance as TippyInstance } from 'tippy.js';
+import { MentionNode } from './MentionNode';
+import { useMentionItems } from '@/hooks/useMentionItems';
+import { useStepEditorActions, useStepEditorPrompt } from '@/store/step-editor';
+import { useRef, useEffect } from 'react';
 
-interface RichTextEditorProps {
-  value: string;
-  onChange: (value: string) => void;
-  placeholder?: string;
-  mentions?: MentionItem[];
-  minHeight?: string;
+interface MentionItem {
+  id: string;
+  label: string;
+  type: 'tool' | 'step';
+  description?: string;
+  category?: string;
 }
 
-export function RichTextEditor({
-  value,
-  onChange,
-  placeholder = "Type @ to mention...",
-  mentions = [],
-  minHeight = "120px",
-}: RichTextEditorProps) {
-  console.log(
-    "🎨 [RichTextEditor] Received mentions:",
-    mentions.length,
-    mentions,
-  );
-
+export function RichTextEditor({ minHeight = '120px', placeholder = 'Type @ to mention...'}: { minHeight?: string, placeholder?: string }) {
+  const mentions = useMentionItems();
+  const { setPrompt } = useStepEditorActions();
+  const prompt = useStepEditorPrompt();
+  
+  // Use ref to store mentions so they're accessible in closure without recreating editor
+  const mentionsRef = useRef<MentionItem[]>(mentions);
+  
+  // Update ref when mentions change
+  useEffect(() => {
+    mentionsRef.current = mentions;
+  }, [mentions]);
+  
   const editor = useEditor({
     extensions: [
       StarterKit,
@@ -43,43 +42,18 @@ export function RichTextEditor({
           return {
             id: {
               default: null,
-              parseHTML: (element) => element.getAttribute("data-id"),
-              renderHTML: (attributes) => ({ "data-id": attributes.id }),
+              parseHTML: element => element.getAttribute('data-id'),
+              renderHTML: attributes => ({ 'data-id': attributes.id }),
             },
             label: {
               default: null,
-              parseHTML: (element) => element.getAttribute("data-label"),
-              renderHTML: (attributes) => ({ "data-label": attributes.label }),
+              parseHTML: element => element.getAttribute('data-label'),
+              renderHTML: attributes => ({ 'data-label': attributes.label }),
             },
             type: {
-              default: "tool",
-              parseHTML: (element) => element.getAttribute("data-type"),
-              renderHTML: (attributes) => ({ "data-type": attributes.type }),
-            },
-            property: {
-              default: null,
-              parseHTML: (element) => element.getAttribute("data-property"),
-              renderHTML: (attributes) => {
-                return attributes.property
-                  ? { "data-property": attributes.property }
-                  : {};
-              },
-            },
-            integration: {
-              default: null,
-              parseHTML: (element) => {
-                const data = element.getAttribute("data-integration");
-                return data ? JSON.parse(data) : null;
-              },
-              renderHTML: (attributes) => {
-                return attributes.integration
-                  ? {
-                      "data-integration": JSON.stringify(
-                        attributes.integration,
-                      ),
-                    }
-                  : {};
-              },
+              default: 'tool',
+              parseHTML: element => element.getAttribute('data-type'),
+              renderHTML: attributes => ({ 'data-type': attributes.type }),
             },
           };
         },
@@ -87,249 +61,111 @@ export function RichTextEditor({
           return ReactNodeViewRenderer(MentionNode);
         },
       }).configure({
-        HTMLAttributes: { class: "mention" },
+        HTMLAttributes: { class: 'mention' },
         suggestion: {
           items: ({ query }) => {
-            console.log(
-              "🔎 [Tiptap] Filtering mentions - Query:",
-              query,
-              "Available mentions:",
-              mentions.length,
-            );
-            console.log("🔎 [Tiptap] All mentions:", mentions);
-            console.log(
-              "🔎 [Tiptap] Tools in mentions:",
-              mentions
-                .filter((m) => m.type === "tool")
-                .map((m) => ({ id: m.id, label: m.label })),
-            );
-            console.log(
-              "🔎 [Tiptap] Steps in mentions:",
-              mentions
-                .filter((m) => m.type === "step")
-                .map((m) => ({ id: m.id, label: m.label })),
-            );
-
-            const filtered = mentions
-              .filter((item) =>
-                item.label.toLowerCase().includes(query.toLowerCase()),
-              )
-              .slice(0, 20);
-
-            console.log(
-              "🔎 [Tiptap] Filtered results:",
-              filtered.length,
-              filtered,
-            );
-            console.log(
-              "🔎 [Tiptap] Filtered tools:",
-              filtered.filter((f) => f.type === "tool").length,
-            );
-            console.log(
-              "🔎 [Tiptap] Filtered steps:",
-              filtered.filter((f) => f.type === "step").length,
-            );
-
-            const result = filtered.map((item) => ({
-              ...item,
-              // Ensure integration is available for tool mentions
-              integration:
-                item.type === "tool" && "integration" in item
-                  ? item.integration
-                  : undefined,
-            }));
-
-            console.log("🔎 [Tiptap] Returning items:", result);
-            return result;
+            const currentMentions = mentionsRef.current;
+            console.log('🔍 [Tiptap] Filtering mentions - Total available:', currentMentions.length, 'Query:', query);
+            const filtered = currentMentions.filter(item =>
+              item.label.toLowerCase().includes(query.toLowerCase())
+            ).slice(0, 20);
+            console.log('✅ [Tiptap] Filtered results:', filtered.length);
+            return filtered;
           },
           render: () => {
             let popup: TippyInstance | undefined;
-            let component: ReactRenderer | null = null;
+            let component: HTMLDivElement;
+            let selectedIndex = 0;
 
             return {
               onStart: (props: any) => {
-                if (component) {
-                  component.destroy();
-                }
-
-                component = new ReactRenderer(WorkflowMentionDropdown, {
-                  props,
-                  editor: props.editor,
-                });
-
+                component = document.createElement('div');
+                component.className = 'mention-dropdown';
+                selectedIndex = 0;
+                
                 if (!props.clientRect) return;
 
                 popup = tippy(document.body, {
                   getReferenceClientRect: props.clientRect,
                   appendTo: () => document.body,
-                  content: component.element,
+                  content: component,
                   showOnCreate: true,
                   interactive: true,
-                  trigger: "manual",
-                  placement: "bottom-start",
-                  maxWidth: 400,
+                  trigger: 'manual',
+                  placement: 'bottom-start',
                 });
+
+                renderItems(component, props.items, selectedIndex, props.command);
               },
               onUpdate: (props: any) => {
-                component?.updateProps(props);
-                popup?.setProps({
-                  getReferenceClientRect: props.clientRect,
-                });
+                if (popup && component) {
+                  renderItems(component, props.items, selectedIndex, props.command);
+                  popup.setProps({ getReferenceClientRect: props.clientRect });
+                }
               },
               onKeyDown: (props: any) => {
-                if (props.event.key === "Escape") {
+                console.log('⌨️ [Tiptap] Key pressed:', props.event.key, 'Items:', props.items?.length, 'Component:', !!component);
+                
+                // Validate props.items exists and component is ready
+                if (!props.items || props.items.length === 0 || !component) {
+                  console.log('⚠️ [Tiptap] Skipping - no items or component');
+                  return false;
+                }
+                
+                if (props.event.key === 'ArrowUp') {
+                  console.log('⬆️ [Tiptap] Arrow Up - selectedIndex:', selectedIndex);
+                  selectedIndex = Math.max(0, selectedIndex - 1);
+                  renderItems(component, props.items, selectedIndex, props.command);
+                  console.log('✅ [Tiptap] New selectedIndex:', selectedIndex);
+                  return true;
+                }
+                
+                if (props.event.key === 'ArrowDown') {
+                  console.log('⬇️ [Tiptap] Arrow Down - selectedIndex:', selectedIndex);
+                  selectedIndex = Math.min(props.items.length - 1, selectedIndex + 1);
+                  renderItems(component, props.items, selectedIndex, props.command);
+                  console.log('✅ [Tiptap] New selectedIndex:', selectedIndex);
+                  return true;
+                }
+                
+                if (props.event.key === 'Enter') {
+                  console.log('⏎ [Tiptap] Enter - selectedIndex:', selectedIndex);
+                  const item = props.items[selectedIndex];
+                  if (item) {
+                    console.log('✅ [Tiptap] Selecting item:', item.label);
+                    props.command({ id: item.id, label: item.label, type: item.type });
+                    return true;
+                  }
+                }
+                
+                if (props.event.key === 'Escape') {
+                  console.log('⎋ [Tiptap] Escape - closing popup');
                   popup?.hide();
                   return true;
                 }
-
-                return component?.ref?.onKeyDown?.(props) || false;
-              },
-              command: ({ editor, range, props }: any) => {
-                console.log("🔨 [Mention] Inserting mention:", props);
-
-                editor
-                  .chain()
-                  .focus()
-                  .deleteRange(range)
-                  .insertContent({
-                    type: "mention",
-                    attrs: {
-                      id: props.id,
-                      label: props.label,
-                      type: props.type,
-                      property: props.property,
-                      integration: props.integration,
-                    },
-                  })
-                  .run();
+                
+                return false;
               },
               onExit: () => {
                 popup?.destroy();
-                component?.destroy();
               },
             };
           },
         },
       }),
     ],
-    content: value,
-    onUpdate: ({ editor }) => {
-      // Serialize mentions to their IDs instead of labels
-      const json = editor.getJSON();
-      let text = "";
-
-      function extractText(node: any): void {
-        if (node.type === "text") {
-          text += node.text || "";
-        } else if (node.type === "mention") {
-          // Use the mention ID (which includes @) plus property if present
-          const id = node.attrs?.id || "";
-          const property = node.attrs?.property;
-          text += property ? `${id}.${property}` : id;
-        } else if (node.content) {
-          node.content.forEach(extractText);
-        }
-      }
-
-      if (json.content) {
-        json.content.forEach(extractText);
-      }
-
-      onChange(text);
+    onUpdate: ({ editor }) => { 
+      setPrompt(editor.getText());
     },
-  }); // Removed dependencies to prevent recreation
-
-  useEffect(() => {
-    if (!editor) return;
-
-    // Only update if the value prop differs from current editor state
-    const currentText = editor.getText();
-    if (value === currentText) return;
-
-    // Parse @mentions from the value string and convert to Tiptap JSON structure
-    // Match patterns like: @tool-name, @step_xxx, @step_xxx.output, @step_xxx.title, etc.
-    const mentionRegex = /@([a-zA-Z0-9_-]+(?:\.[a-zA-Z0-9_]+)?)/g;
-    const parts: any[] = [];
-    let lastIndex = 0;
-    let match;
-
-    while ((match = mentionRegex.exec(value)) !== null) {
-      // Add text before the mention
-      if (match.index > lastIndex) {
-        parts.push({
-          type: "text",
-          text: value.substring(lastIndex, match.index),
-        });
-      }
-
-      const fullMatch = match[0]; // e.g., @step_xxx.output or @tool-name
-      const withoutAt = match[1]; // e.g., step_xxx.output or tool-name
-
-      // Check if it has a property accessor (e.g., step_xxx.output)
-      const dotIndex = withoutAt.indexOf(".");
-      const baseId =
-        dotIndex > -1 ? withoutAt.substring(0, dotIndex) : withoutAt;
-      const property = dotIndex > -1 ? withoutAt.substring(dotIndex + 1) : null;
-
-      // Find the mention item from our mentions array (match by base ID with @)
-      const mentionItem = mentions.find((m) => m.id === `@${baseId}`);
-
-      if (mentionItem) {
-        // Add as a proper mention node with the property path
-        parts.push({
-          type: "mention",
-          attrs: {
-            id: mentionItem.id,
-            label: mentionItem.label,
-            type: mentionItem.type,
-            property: property, // e.g., "output", "title", etc.
-            integration:
-              mentionItem.type === "tool" && "integration" in mentionItem
-                ? mentionItem.integration
-                : undefined,
-          },
-        });
-      } else {
-        // If not found in mentions, still render as text (fallback)
-        parts.push({
-          type: "text",
-          text: fullMatch,
-        });
-      }
-
-      lastIndex = match.index + match[0].length;
-    }
-
-    // Add remaining text
-    if (lastIndex < value.length) {
-      parts.push({
-        type: "text",
-        text: value.substring(lastIndex),
-      });
-    }
-
-    // Set content as structured JSON if we found mentions, otherwise plain text
-    if (parts.length > 0 && parts.some((p) => p.type === "mention")) {
-      editor.commands.setContent({
-        type: "doc",
-        content: [
-          {
-            type: "paragraph",
-            content: parts,
-          },
-        ],
-      });
-    } else {
-      editor.commands.setContent(value);
-    }
-  }, [value, editor, mentions]);
+    content: prompt,
+  }, []); // Empty deps - mentions are accessed via ref, avoiding recreation
 
   return (
     <div className="relative">
       <EditorContent
         editor={editor}
         style={{ minHeight }}
-        className="tiptap-editor px-3 py-2 bg-background border border-input rounded-xl text-foreground text-base md:text-sm shadow-xs transition-[color,box-shadow] focus-within:border-ring focus-within:ring-ring/50 focus-within:ring-[3px] outline-none"
+        className="tiptap-editor p-4 bg-card border border-border rounded-xl text-foreground text-base leading-relaxed"
       />
       <style>{`
         .tiptap-editor .ProseMirror {
@@ -337,16 +173,85 @@ export function RichTextEditor({
           min-height: ${minHeight};
         }
         .tiptap-editor .ProseMirror p.is-editor-empty:first-child::before {
-          color: var(--color-muted-foreground);
+          color: var(--muted-foreground);
           content: attr(data-placeholder);
           float: left;
           height: 0;
           pointer-events: none;
         }
-        .tiptap-editor .ProseMirror p {
-          margin: 0;
+        .mention-dropdown {
+          background: var(--card);
+          border: 1px solid var(--border);
+          border-radius: 8px;
+          padding: 6px;
+          box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+          max-height: 320px;
+          overflow: auto;
+          min-width: 400px;
+          max-width: 500px;
+        }
+        .mention-item {
+          width: 100%;
+          text-align: left;
+          padding: 10px 14px;
+          background: transparent;
+          border: none;
+          border-radius: 6px;
+          cursor: pointer;
+          transition: background 0.1s;
+          margin-bottom: 2px;
+        }
+        .mention-item:hover {
+          background: var(--accent);
         }
       `}</style>
     </div>
   );
+}
+
+function renderItems(
+  container: HTMLDivElement,
+  items: MentionItem[],
+  selectedIndex: number,
+  command: (item: any) => void
+) {
+  if (items.length === 0) {
+    container.innerHTML = '<div style="padding: 8px; color: var(--muted-foreground); font-size: 14px;">No results</div>';
+    return;
+  }
+
+  console.log('🎨 [renderItems] Items:', items.map(i => ({ id: i.id, label: i.label, type: i.type })));
+  
+  container.innerHTML = items.map((item, index) => {
+    const typeColor = item.type === 'tool' ? 'var(--success)' : 'var(--primary)';
+    const typeLabel = item.type === 'tool' ? '🔧 Tool' : '📦 Step';
+    const isSelected = index === selectedIndex;
+    const bgColor = isSelected ? 'var(--accent)' : 'transparent';
+    const textColor = isSelected ? 'var(--foreground)' : 'var(--muted-foreground)';
+    return `
+      <button class="mention-item" data-index="${index}" data-id="${item.id}" data-label="${item.label}" data-type="${item.type}" style="background: ${bgColor};">
+        <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 4px;">
+          <span style="font-weight: 600; color: ${textColor}; font-size: 14px;">${item.label}</span>
+          <span style="font-size: 11px; color: ${typeColor}; font-weight: 500;">${typeLabel}</span>
+        </div>
+        ${item.category ? `<div style="font-size: 11px; color: var(--muted-foreground); margin-bottom: 2px;">${item.category}</div>` : ''}
+        ${item.description ? `<div style="font-size: 12px; color: var(--muted-foreground); line-height: 1.4; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${item.description}</div>` : ''}
+      </button>
+    `;
+  }).join('');
+
+  container.querySelectorAll('.mention-item').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      const id = btn.getAttribute('data-id');
+      const label = btn.getAttribute('data-label');
+      const type = btn.getAttribute('data-type');
+      command({ id, label, type });
+    });
+  });
+  
+  // Scroll selected item into view
+  const selectedButton = container.querySelector(`[data-index="${selectedIndex}"]`);
+  if (selectedButton) {
+    selectedButton.scrollIntoView({ block: 'nearest' });
+  }
 }

@@ -339,7 +339,6 @@ export const deconfigResourceV2 = <TDataSchema extends BaseResourceDataSchema>(
         ]?.description ||
         `Read a ${resourceName} resource from the DECONFIG directory ${directory}`,
       handler: async ({ uri }, c) => {
-
         console.log("READ_FILE", uri);
 
         assertHasWorkspace(c);

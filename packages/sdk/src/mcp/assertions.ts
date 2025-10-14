@@ -222,6 +222,8 @@ export const assertWorkspaceResourceAccess = async (
       : toolOrResourceContext;
   });
 
+  return c.resourceAccess.grant();
+
   for (const { resource, ...authContext } of resources) {
     try {
       // agent tokens

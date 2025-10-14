@@ -19,17 +19,12 @@ import {
   createResourceAccess,
   MCPClient,
 } from "../mcp/index.ts";
-import {
-  asEnv,
-  evalCodeAndReturnDefaultHandle,
-} from "../mcp/tools/utils.ts";
+import { asEnv, evalCodeAndReturnDefaultHandle } from "../mcp/tools/utils.ts";
 import type { WorkflowStepDefinition } from "../mcp/workflows/api.ts";
 
 export type { WorkflowStepConfig };
 
-export type Runnable = (
-  input: unknown,
-) => Promise<Rpc.Serializable<unknown>>;
+export type Runnable = (input: unknown) => Promise<Rpc.Serializable<unknown>>;
 
 export interface WorkflowStep {
   name: string;
@@ -72,7 +67,7 @@ function parseAtRef(ref: string): {
   // Step reference: @stepId.output.path.to.value
   const [id, ...pathParts] = refStr.split(".");
   let path = pathParts.join(".");
-  
+
   // If path starts with 'output.', remove it
   if (path.startsWith("output.")) {
     path = path.substring(7); // Remove 'output.'
@@ -126,7 +121,10 @@ function resolveReferences(
       const parsed = parseAtRef(value);
 
       if (parsed.type === "input") {
-        return getValue(workflowInput as Record<string, unknown>, parsed.path || "");
+        return getValue(
+          workflowInput as Record<string, unknown>,
+          parsed.path || "",
+        );
       } else if (parsed.type === "step") {
         const stepResult = stepResults[parsed.id || ""];
         if (stepResult === undefined) {
@@ -245,7 +243,11 @@ export class WorkflowRunner extends WorkflowEntrypoint<Bindings> {
       ...(await this.principalContextFromRunnerProps(event.payload)),
       ...this.bindingsCtx,
     };
-    const { input: workflowInput, steps: stepDefinitions, state } = event.payload;
+    const {
+      input: workflowInput,
+      steps: stepDefinitions,
+      state,
+    } = event.payload;
     const runtimeId = appContext.locator?.value ?? "default";
 
     // Track step results for reference resolution
@@ -295,7 +297,9 @@ export class WorkflowRunner extends WorkflowEntrypoint<Bindings> {
           break;
         }
       } catch (error) {
-        console.error(`Step failed: ${stepDef.name}`, { error: inspect(error) });
+        console.error(`Step failed: ${stepDef.name}`, {
+          error: inspect(error),
+        });
         throw error;
       }
     }

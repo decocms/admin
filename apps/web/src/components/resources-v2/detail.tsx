@@ -108,47 +108,25 @@ function ResourcesV2Detail() {
   const toolsQuery = useTools(integration!.connection, false);
   const tools = toolsQuery?.data?.tools ?? [];
 
-  // Filter for view render tools
-  const viewRenderTools = useMemo(() => {
-    return tools.filter((tool) => {
-      // Check if it's a view render tool
-      if (!/^DECO_VIEW_RENDER_/.test(tool.name)) return false;
-
-      // Check if it accepts a resource parameter
-      try {
-        const schema = tool.inputSchema || {};
-        const props = (schema?.properties ?? {}) as Record<string, unknown>;
-        const resourceProp =
-          "resource" in props
-            ? (props.resource as Record<string, unknown>)
-            : undefined;
-        return resourceProp?.type === "string";
-      } catch {
-        return false;
-      }
-    });
-  }, [tools]);
-
-  // Find the single view render tool for the query
+  // Find the single view render tool for the current resource
   const viewRenderTool = useMemo(() => {
-    return viewRenderTools.find((tool) => {
-      // Check if it's a view render tool
-      if (!/^DECO_VIEW_RENDER_/.test(tool.name)) return false;
-
-      // Check if it accepts a resource parameter
-      try {
-        const schema = tool.inputSchema || {};
-        const props = (schema?.properties ?? {}) as Record<string, unknown>;
-        const resourceProp =
-          "resource" in props
-            ? (props.resource as Record<string, unknown>)
-            : undefined;
-        return resourceProp?.type === "string";
-      } catch {
+    if (!resourceName) return undefined;
+    const expected = `DECO_VIEW_RENDER_${resourceName.toUpperCase()}`;
+    return tools.find((tool) => {
+      if (!tool.name.startsWith(expected)) {
         return false;
       }
+
+      const schema = tool.inputSchema || {};
+      const props = (schema?.properties ?? {}) as Record<string, unknown>;
+      const resourceProp =
+        "resource" in props
+          ? (props.resource as Record<string, unknown>)
+          : undefined;
+
+      return resourceProp?.type === "string";
     });
-  }, [viewRenderTools]);
+  }, [tools, resourceName]);
 
   // View render query - moved from ResourcesV2DetailTab
   const viewQuery = useQuery({

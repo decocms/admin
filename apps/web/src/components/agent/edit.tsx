@@ -1,10 +1,10 @@
 import {
   NotFoundError,
+  WELL_KNOWN_AGENTS,
   useAgentData,
   useFile,
-  WELL_KNOWN_AGENTS,
-  useSDK,
   useRecentResources,
+  useSDK,
 } from "@deco/sdk";
 import { Button } from "@deco/ui/components/button.tsx";
 import { Icon } from "@deco/ui/components/icon.tsx";
@@ -29,8 +29,8 @@ import {
 import { useIsMobile } from "@deco/ui/hooks/use-mobile.ts";
 import { cn } from "@deco/ui/lib/utils.ts";
 import {
-  createContext,
   Suspense,
+  createContext,
   useContext,
   useEffect,
   useMemo,
@@ -285,9 +285,10 @@ function ChatWithProvider() {
   const { chatMode } = usePreviewContext();
   const params = useParams();
   const agentId = params.id;
-
   // Separate stable threadIds for each mode to maintain state when switching
-  const [agentThreadId] = useState(() => crypto.randomUUID());
+  const [agentThreadId] = useState(
+    () => params.threadId || crypto.randomUUID(),
+  );
   const [decopilotThreadId] = useState(() => crypto.randomUUID());
 
   // Get the agent being edited for decopilot context

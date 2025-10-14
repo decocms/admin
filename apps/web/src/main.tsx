@@ -198,9 +198,13 @@ const DocumentEdit = lazy(() =>
 );
 
 const WorkflowsRunsPage = lazy(() =>
-  wrapWithUILoadingFallback(import("./components/workflows/runs-page.tsx")),
+  wrapWithUILoadingFallback(import("./components/workflows/runs-v2-page.tsx")),
 );
-
+const WorkflowsRunsLegacyPage = lazy(() =>
+  wrapWithUILoadingFallback(
+    import("./components/workflows/runs-legacy-page.tsx"),
+  ),
+);
 const WorkflowDetailPage = lazy(() =>
   wrapWithUILoadingFallback(import("./components/workflows/detail.tsx")),
 );
@@ -450,7 +454,7 @@ const router = createBrowserRouter([
           { path: "documents/:id", Component: DocumentEdit },
           {
             path: "workflow-runs",
-            Component: () => <Navigate to="../workflows/runs" replace />,
+            Component: () => <Navigate to="../workflows/runs-legacy" replace />,
           },
           {
             path: "workflow-runs/:workflowName/instances/:instanceId",
@@ -458,6 +462,7 @@ const router = createBrowserRouter([
           },
           { path: "workflows", Component: WorkflowsListPage },
           { path: "workflows/runs", Component: WorkflowsRunsPage },
+          { path: "workflows/runs-legacy", Component: WorkflowsRunsLegacyPage },
           {
             path: "workflows/runs/:workflowName/instances/:instanceId",
             Component: WorkflowDetailPage,

@@ -4,6 +4,7 @@ import { formatIntegrationId, WellKnownMcpGroups } from "../../crud/groups.ts";
 import { DeconfigResourceV2 } from "../deconfig-v2/index.ts";
 import {
   AppContext,
+  assertHasWorkspace,
   assertWorkspaceResourceAccess,
   createMCPToolsStub,
   createTool,
@@ -44,14 +45,15 @@ async function executeToolWithValidation(
   context: WithTool<AppContext>,
   authorization?: string,
 ) {
+  assertHasWorkspace(context);
   await assertWorkspaceResourceAccess(context);
 
   const runtimeId = context.locator?.value ?? "default";
   const client = MCPClient.forContext(context);
   // missing authorization from input
-  const envPromise = asEnv(client, {
-    authorization,
-    workspace: context.workspace?.value,
+  const env = asEnv(client, {
+    authorization: authorization,
+    workspace: context.workspace.value,
   });
 
   // Validate input against the tool's input schema
@@ -76,7 +78,7 @@ async function executeToolWithValidation(
       defaultHandle,
       undefined,
       input,
-      { env: await envPromise },
+      { env },
     );
 
     const callResult = ctx.dump(ctx.unwrapResult(callHandle));

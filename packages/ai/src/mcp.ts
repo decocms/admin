@@ -142,6 +142,7 @@ const getMCPServerTools = async (
 export const fetchMeta = async (baseUrl: string) => {
   const response = await fetch(new URL("/live/_meta", baseUrl));
   if (!response.ok) {
+    await response.body?.cancel().catch(() => {});
     return null;
   }
   const meta: { schema: any } = await response.json();

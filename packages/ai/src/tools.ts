@@ -206,6 +206,8 @@ export const POLL_FOR_CONTENT = createInnateTool({
                   contentLength || "unknown"
                 }, Content-Type: ${contentType || "unknown"})`;
               }
+            } else {
+              await headRes.body?.cancel().catch(() => {});
             }
           } catch (headError) {
             console.debug(

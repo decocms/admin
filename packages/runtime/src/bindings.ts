@@ -81,10 +81,20 @@ const mcpClientForAppName = (appName: string, decoChatApiUrl?: string) => {
 
 export const proxyConnectionForId = (
   integrationId: string,
-  ctx: WorkspaceClientContext,
+  ctx: Omit<WorkspaceClientContext, "token"> & {
+    token?: string;
+    cookie?: string;
+  },
   decoChatApiUrl?: string,
   appName?: string,
 ): MCPConnection => {
+  let headers: Record<string, string> | undefined = appName
+    ? { "x-caller-app": appName }
+    : undefined;
+  if (ctx.cookie) {
+    headers ??= {};
+    headers.cookie = ctx.cookie;
+  }
   return {
     type: "HTTP",
     url: createIntegrationsUrl({
@@ -94,7 +104,7 @@ export const proxyConnectionForId = (
       branch: ctx.branch,
     }),
     token: ctx.token,
-    headers: appName ? { "x-caller-app": appName } : undefined,
+    headers,
   };
 };
 const mcpClientForIntegrationId = (

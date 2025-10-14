@@ -1,41 +1,14 @@
+import { Tab, useActiveTab, useTabStoreActions } from "@/store/tab";
 import { Icon } from "@deco/ui/components/icon.tsx";
 import { cn } from "@deco/ui/lib/utils.ts";
-import { useState } from "react";
+import { tabs } from "@/store/tab";
 
-export interface Tab {
-  id: string;
-  label: string;
-  icon?: string;
-}
-
-export interface WorkflowTabsProps {
-  tabs: Tab[];
-  activeTab?: string;
-  onTabChange?: (tabId: string) => void;
-  className?: string;
-}
-
-export function WorkflowTabs({
-  tabs,
-  activeTab: controlledActiveTab,
-  onTabChange,
-  className,
-}: WorkflowTabsProps) {
-  const [uncontrolledActiveTab, setUncontrolledActiveTab] = useState(
-    tabs[0]?.id || "",
-  );
-
-  const activeTab = controlledActiveTab ?? uncontrolledActiveTab;
-
-  function handleTabClick(tabId: string) {
-    if (!controlledActiveTab) {
-      setUncontrolledActiveTab(tabId);
-    }
-    onTabChange?.(tabId);
-  }
+export function WorkflowTabs() {
+  const activeTab = useActiveTab();
+  const { setTab } = useTabStoreActions();
 
   return (
-    <div className={cn("flex items-center bg-secondary", className)}>
+    <div className={cn("flex items-center bg-secondary")}>
       {tabs.map((tab) => {
         const isActive = tab.id === activeTab;
 
@@ -43,7 +16,7 @@ export function WorkflowTabs({
           <button
             key={tab.id}
             type="button"
-            onClick={() => handleTabClick(tab.id)}
+            onClick={() => setTab(tab.id as Tab)}
             className={cn(
               "flex h-10 items-center justify-center gap-2.5 px-3 py-1.5",
               "bg-background border-r border-border",

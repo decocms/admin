@@ -785,8 +785,27 @@ function useWorkflowStore<T>(selector: (state: Store) => T): T {
 export const useWorkflowStoreActions = () =>
   useWorkflowStore((state) => state.actions);
 
+// OPTIMIZED: Granular selectors to prevent unnecessary re-renders
 export const useCurrentWorkflow = () => {
   return useWorkflowStore((state) => state.workflow.data);
+};
+
+export const useWorkflowSteps = () => {
+  return useWorkflowStore((state) => state.workflow.data.steps);
+};
+
+export const useWorkflowStepsLength = () => {
+  return useWorkflowStore((state) => state.workflow.data.steps?.length || 0);
+};
+
+export const useWorkflowStep = (index: number) => {
+  return useWorkflowStore((state) => state.workflow.data.steps?.[index]);
+};
+
+export const useWorkflowStepOutput = (index: number) => {
+  return useWorkflowStore(
+    (state) => state.workflow.data.steps?.[index]?.output,
+  );
 };
 
 export const useNewStepPrompt = () => {

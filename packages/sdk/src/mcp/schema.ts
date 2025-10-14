@@ -604,7 +604,6 @@ export const triggers = pgTable(
 
 export const customers = pgTable("deco_chat_customer", {
   customer_id: text("customer_id").notNull(),
-  workspace: text("workspace"),
   created_at: timestamp("created_at").defaultNow().notNull(),
   org_id: bigint("org_id", { mode: "number" }).references(
     () => organizations.id,

@@ -5,9 +5,9 @@ import type { Transaction } from "../client.ts";
 import { createCurrencyClient, MicroDollar } from "../index.ts";
 import { getPlan } from "../plans.ts";
 import { Markup, type PlanWithTeamMetadata } from "../../../plan.ts";
-import { customers, organizations, projects } from "../../schema.ts";
+import { customers, organizations } from "../../schema.ts";
 import { eq } from "drizzle-orm";
-import { Locator } from "packages/sdk/src/locator.ts";
+import { Locator } from "../../../locator.ts";
 
 export const verifyAndParseStripeEvent = (
   payload: string,
@@ -103,10 +103,7 @@ async function getWorkspaceByCustomerId({
 
   try {
     const [data] = await context.drizzle
-      .select({
-        workspace: customers.workspace,
-        orgId: customers.org_id,
-      })
+      .select({ orgId: customers.org_id })
       .from(customers)
       .where(eq(customers.customer_id, customerId))
       .limit(1);
@@ -115,31 +112,23 @@ async function getWorkspaceByCustomerId({
       throw new Error("Customer not found");
     }
 
-    if (data.workspace) {
-      return data.workspace;
-    }
-
     if (!data.orgId) {
       throw new Error("Organization ID not found");
     }
 
     const [result] = await context.drizzle
-      .select({
-        orgSlug: organizations.slug,
-        projectSlug: projects.slug,
-      })
+      .select({ orgSlug: organizations.slug })
       .from(organizations)
-      .leftJoin(projects, eq(organizations.id, projects.org_id))
       .where(eq(organizations.id, data.orgId))
       .limit(1);
 
-    if (!result || !result.orgSlug || !result.projectSlug) {
+    if (!result || !result.orgSlug) {
       throw new Error("Organization or project not found");
     }
 
     const locator = Locator.from({
       org: result.orgSlug,
-      project: result.projectSlug,
+      project: "default", // This does not matter here. wallet is org-level.
     });
 
     return Locator.adaptToRootSlug(locator);

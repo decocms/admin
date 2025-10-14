@@ -26,18 +26,16 @@ const getOrCreateWorkspaceStripeCustomer = async (
 ): Promise<Stripe.Customer> => {
   assertHasWorkspace(ctx);
 
-  const workspace = ctx.workspace.value;
-
   const orgId = await getOrgIdFromContext(ctx);
+
+  if (!orgId) {
+    throw new Error("Org ID is not set");
+  }
 
   const { data: maybeCustomer } = await ctx.db
     .from("deco_chat_customer")
     .select("customer_id")
-    .or(
-      orgId
-        ? `workspace.eq.${workspace},org_id.eq.${orgId}`
-        : `workspace.eq.${workspace}`,
-    )
+    .eq("org_id", orgId)
     .maybeSingle();
 
   if (maybeCustomer) {
@@ -53,13 +51,12 @@ const getOrCreateWorkspaceStripeCustomer = async (
   const customer = await stripe.customers.create({
     metadata: {
       product: "decocms",
-      workspace,
+      orgId,
     },
   });
 
   await ctx.db.from("deco_chat_customer").insert({
     customer_id: customer.id,
-    workspace,
     org_id: orgId,
   });
 

@@ -721,26 +721,23 @@ export type Database = {
         Row: {
           created_at: string;
           customer_id: string;
-          org_id: number | null;
-          workspace: string | null;
+          org_id: number;
         };
         Insert: {
           created_at?: string;
           customer_id: string;
-          org_id?: number | null;
-          workspace?: string | null;
+          org_id: number;
         };
         Update: {
           created_at?: string;
           customer_id?: string;
-          org_id?: number | null;
-          workspace?: string | null;
+          org_id?: number;
         };
         Relationships: [
           {
             foreignKeyName: "deco_chat_customer_org_id_fkey";
             columns: ["org_id"];
-            isOneToOne: false;
+            isOneToOne: true;
             referencedRelation: "teams";
             referencedColumns: ["id"];
           },

@@ -20,7 +20,7 @@ import {
 import { getProjectIdFromContext } from "../projects/util.ts";
 import { agents, organizations, projects, userActivity } from "../schema.ts";
 import { deleteTrigger, listTriggers } from "../triggers/api.ts";
-import { withOwnershipChecking } from "../ownership.ts";
+import { filterByWorkspaceOrLocator } from "../ownership.ts";
 
 const createTool = createToolGroup("Agent", {
   name: "Agent Management",
@@ -120,17 +120,18 @@ export const listAgents = createTool({
 
     await assertWorkspaceResourceAccess(c);
 
-    const query = c.drizzle
-      .select(AGENT_FIELDS_SELECT)
-      .from(agents)
-      .orderBy(desc(agents.created_at))
-      .$dynamic();
-
-    const data = await withOwnershipChecking({
-      query,
+    const filter = filterByWorkspaceOrLocator({
       table: agents,
       ctx: c,
     });
+
+    const data = await c.drizzle
+      .select(AGENT_FIELDS_SELECT)
+      .from(agents)
+      .innerJoin(projects, eq(agents.project_id, projects.id))
+      .innerJoin(organizations, eq(projects.org_id, organizations.id))
+      .where(filter)
+      .orderBy(desc(agents.created_at));
 
     const roles =
       c.workspace.root === "users"
@@ -230,6 +231,11 @@ export const getAgent = createTool({
     assertHasWorkspace(c);
     assertHasLocator(c);
 
+    const filter = filterByWorkspaceOrLocator({
+      table: agents,
+      ctx: c,
+    });
+
     const [canAccess, data] = await Promise.all([
       assertWorkspaceResourceAccess(c)
         .then(() => true)
@@ -238,16 +244,14 @@ export const getAgent = createTool({
         ? Promise.resolve(
             WELL_KNOWN_AGENTS[id as keyof typeof WELL_KNOWN_AGENTS],
           )
-        : withOwnershipChecking({
-            table: agents,
-            query: c.drizzle
-              .select(AGENT_FIELDS_SELECT)
-              .from(agents)
-              .where(eq(agents.id, id))
-              .limit(1)
-              .$dynamic(),
-            ctx: c,
-          }).then((r) => r[0]),
+        : c.drizzle
+            .select(AGENT_FIELDS_SELECT)
+            .from(agents)
+            .innerJoin(projects, eq(agents.project_id, projects.id))
+            .innerJoin(organizations, eq(projects.org_id, organizations.id))
+            .where(and(filter, eq(agents.id, id)))
+            .limit(1)
+            .then((r) => r[0]),
     ]);
 
     if (!data) {
@@ -312,20 +316,23 @@ export const updateAgent = createAgentSetupTool({
 
     await assertWorkspaceResourceAccess(c);
 
-    const existing = await withOwnershipChecking({
+    const filter = filterByWorkspaceOrLocator({
       table: agents,
-      query: c.drizzle
-        .select({
-          id: agents.id,
-          workspace: agents.workspace,
-          projectId: agents.project_id,
-        })
-        .from(agents)
-        .where(eq(agents.id, id))
-        .limit(1)
-        .$dynamic(),
       ctx: c,
-    }).then((r) => r[0]);
+    });
+
+    const existing = await c.drizzle
+      .select({
+        id: agents.id,
+        workspace: agents.workspace,
+        projectId: agents.project_id,
+      })
+      .from(agents)
+      .innerJoin(projects, eq(agents.project_id, projects.id))
+      .innerJoin(organizations, eq(projects.org_id, organizations.id))
+      .where(and(filter, eq(agents.id, id)))
+      .limit(1)
+      .then((r) => r[0]);
 
     const updateData = {
       ...agent,
@@ -362,16 +369,18 @@ export const deleteAgent = createTool({
   handler: async ({ id }, c) => {
     await assertWorkspaceResourceAccess(c);
 
-    const agentExists = await withOwnershipChecking({
+    const filter = filterByWorkspaceOrLocator({
       table: agents,
-      query: c.drizzle
-        .select({ id: agents.id })
-        .from(agents)
-        .where(eq(agents.id, id))
-        .limit(1)
-        .$dynamic(),
       ctx: c,
     });
+
+    const agentExists = await c.drizzle
+      .select({ id: agents.id })
+      .from(agents)
+      .innerJoin(projects, eq(agents.project_id, projects.id))
+      .innerJoin(organizations, eq(projects.org_id, organizations.id))
+      .where(and(filter, eq(agents.id, id)))
+      .limit(1);
 
     if (!agentExists.length) {
       throw new NotFoundError("Agent not found");

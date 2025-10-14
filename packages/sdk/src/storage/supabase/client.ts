@@ -4,9 +4,11 @@ import type {
 } from "@supabase/postgrest-js";
 import { createServerClient } from "@supabase/ssr";
 import type { Database } from "./schema.ts";
+import { KyselifyDatabase } from "kysely-supabase";
 
 export type Options = Parameters<typeof createServerClient>;
 export type Client = ReturnType<typeof createServerClient<Database, "public">>;
+export type KyselyDatabase = KyselifyDatabase<Database>;
 
 /**
  * Uses the tokens present on the request to create a client.

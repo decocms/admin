@@ -29,7 +29,7 @@ import {
 } from "../projects/util.ts";
 import { getRegistryApp } from "../registry/api.ts";
 import { apiKeys, organizations, projects } from "../schema.ts";
-import { withOwnershipChecking } from "../ownership.ts";
+import { filterByWorkspaceOrLocator } from "../ownership.ts";
 
 export const SELECT_API_KEY_QUERY = `
   id,
@@ -277,20 +277,27 @@ export const reissueApiKey = createTool({
     const projectId = await getProjectIdFromContext(c);
     const workspace = c.workspace.value;
 
+    const filters = [
+      filterByWorkspaceOrLocator({
+        table: apiKeys,
+        ctx: c,
+      }),
+      eq(apiKeys.id, id),
+      isNull(apiKeys.deleted_at),
+    ];
+
     // First, verify the API key exists and is accessible
-    const [apiKey] = await withOwnershipChecking({
-      table: apiKeys,
-      query: c.drizzle
-        .select({
-          ...getTableColumns(apiKeys),
-          project_id: apiKeys.project_id,
-          workspace: apiKeys.workspace,
-        })
-        .from(apiKeys)
-        .where(and(eq(apiKeys.id, id), isNull(apiKeys.deleted_at)))
-        .$dynamic(),
-      ctx: c,
-    });
+    const [apiKey] = await c.drizzle
+      .select({
+        ...getTableColumns(apiKeys),
+        project_id: apiKeys.project_id,
+        workspace: apiKeys.workspace,
+      })
+      .from(apiKeys)
+      .innerJoin(projects, eq(apiKeys.project_id, projects.id))
+      .innerJoin(organizations, eq(projects.org_id, organizations.id))
+      .where(and(...filters))
+      .limit(1);
 
     if (!apiKey) {
       throw new NotFoundError("API key not found");

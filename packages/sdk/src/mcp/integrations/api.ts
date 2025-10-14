@@ -74,7 +74,7 @@ import {
   registryTools,
 } from "../schema.ts";
 import { createServerClient } from "../utils.ts";
-import { withOwnershipChecking } from "../ownership.ts";
+import { filterByWorkspaceOrLocator } from "../ownership.ts";
 
 const SELECT_INTEGRATION_QUERY = `
           *,
@@ -520,17 +520,21 @@ export const listIntegrations = createIntegrationManagementTool({
           return Array.from(byIntegration.values());
         }),
       // Query agents
-      withOwnershipChecking({
-        table: agents,
-        query: c.drizzle
-          .select({
-            ...getTableColumns(agents),
-            org_id: organizations.id,
-          })
-          .from(agents)
-          .$dynamic(),
-        ctx: c,
-      }).then((result) => ({ data: result })),
+      c.drizzle
+        .select({
+          ...getTableColumns(agents),
+          org_id: organizations.id,
+        })
+        .from(agents)
+        .innerJoin(projects, eq(agents.project_id, projects.id))
+        .innerJoin(organizations, eq(projects.org_id, organizations.id))
+        .where(
+          filterByWorkspaceOrLocator({
+            table: agents,
+            ctx: c,
+          }),
+        )
+        .then((result) => ({ data: result })),
       listKnowledgeBases.handler({}),
     ]);
     const roles =
@@ -754,19 +758,25 @@ export const getIntegration = createIntegrationManagementTool({
                   : null,
               };
             })
-        : withOwnershipChecking({
-            table: agents,
-            query: c.drizzle
-              .select({
-                ...getTableColumns(agents),
-                org_id: organizations.id,
-              })
-              .from(agents)
-              .where(eq(agents.id, uuid))
-              .limit(1)
-              .$dynamic(),
-            ctx: c,
-          }).then((r) => r[0]);
+        : c.drizzle
+            .select({
+              ...getTableColumns(agents),
+              org_id: organizations.id,
+            })
+            .from(agents)
+            .innerJoin(projects, eq(agents.project_id, projects.id))
+            .innerJoin(organizations, eq(projects.org_id, organizations.id))
+            .where(
+              and(
+                filterByWorkspaceOrLocator({
+                  table: agents,
+                  ctx: c,
+                }),
+                eq(agents.id, uuid),
+              ),
+            )
+            .limit(1)
+            .then((r) => r[0]);
 
     const virtualIntegrations = virtualIntegrationsFor(
       c.locator.value,
@@ -865,18 +875,24 @@ export const createIntegration = createIntegrationManagementTool({
     };
 
     const existingIntegration = payload.id
-      ? await withOwnershipChecking({
-          table: integrations,
-          query: c.drizzle
-            .select({
-              id: integrations.id,
-            })
-            .from(integrations)
-            .where(eq(integrations.id, payload.id))
-            .limit(1)
-            .$dynamic(),
-          ctx: c,
-        }).then((r) => r[0])
+      ? await c.drizzle
+          .select({
+            id: integrations.id,
+          })
+          .from(integrations)
+          .innerJoin(projects, eq(integrations.project_id, projects.id))
+          .innerJoin(organizations, eq(projects.org_id, organizations.id))
+          .where(
+            and(
+              filterByWorkspaceOrLocator({
+                table: integrations,
+                ctx: c,
+              }),
+              eq(integrations.id, payload.id),
+            ),
+          )
+          .limit(1)
+          .then((r) => r[0])
       : null;
 
     if (existingIntegration) {

@@ -101,6 +101,7 @@ function UserPreferencesModal({
       smoothStream: preferences.smoothStream,
       sendReasoning: preferences.sendReasoning,
       pdfSummarization: preferences.pdfSummarization,
+      enableWorkflowRuns: preferences.enableWorkflowRuns,
     },
   });
   const {

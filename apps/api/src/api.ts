@@ -25,6 +25,7 @@ import {
   createViewViewsV2,
   createWorkflowBindingImpl,
   createWorkflowResourceV2Implementation,
+  createWorkflowRunsResourceV2Implementation,
   createWorkflowViewsV2,
   DECONFIG_TOOLS,
   documentViews as legacyDocumentViews,
@@ -578,6 +579,12 @@ const createContextBasedTools = (ctx: Context) => {
     WellKnownMcpGroups.Workflows,
   );
 
+  // Create Resources 2.0 workflow runs resource implementation
+  const workflowRunsResourceV2 = createWorkflowRunsResourceV2Implementation(
+    client,
+    WellKnownMcpGroups.Workflows,
+  );
+
   // Create Resources 2.0 document resource implementation
   const documentResourceV2 = createDocumentResourceV2Implementation(
     client,
@@ -594,6 +601,7 @@ const createContextBasedTools = (ctx: Context) => {
     tools: [
       ...toolResourceV2,
       ...workflowResourceV2,
+      ...workflowRunsResourceV2,
       ...documentResourceV2,
       ...viewResourceV2,
     ],
@@ -637,6 +645,7 @@ const createContextBasedTools = (ctx: Context) => {
 
   const workflowTools = [
     ...workflowResourceV2, // Add new Resources 2.0 implementation
+    ...workflowRunsResourceV2, // Add runs resource implementation
     ...workflowBinding, // Add workflow execution tools
     ...workflowViewsV2, // Add Views 2.0 implementation
     ...legacyWorkflowViews, // Add legacy workflow views

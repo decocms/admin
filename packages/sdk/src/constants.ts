@@ -334,7 +334,7 @@ When user asks for a prompt, you should use the PROMPTS_GET tool to get the actu
     max_tokens: 64000,
     memory: { last_messages: 8 },
     id: "decopilotAgent",
-    name: "Decopilot",
+    name: "Deco Chat",
     avatar: DECOPILOT_IMAGE,
     description: "Ask, search or create anything.",
     instructions: `You are a helpful assistant that helps users to accomplish tasks by using tools from your toolset.`,

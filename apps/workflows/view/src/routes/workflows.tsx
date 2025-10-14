@@ -1,6 +1,6 @@
 /**
  * WORKFLOWS - Main Workflow Builder Page
- * 
+ *
  * Layout: Golden layout with resizable panels
  * - Left: Tool catalog
  * - Center: Step editor with tabs

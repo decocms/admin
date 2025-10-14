@@ -30,7 +30,7 @@ function getData(data: Record<string, unknown>, path?: string): unknown {
   let current: unknown = data;
 
   for (const part of parts) {
-    if (typeof current !== 'object' || current === null) {
+    if (typeof current !== "object" || current === null) {
       return undefined;
     }
     current = (current as Record<string, unknown>)[part];

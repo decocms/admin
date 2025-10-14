@@ -8,8 +8,14 @@ import { z } from "zod";
 import type { Env } from "../main.ts";
 import type { WorkflowStep } from "../../shared/types/workflows.ts";
 import { resolveAtRefsInInput } from "../utils/resolve-refs.ts";
-import { buildGenerateStepPrompt, buildToolsContext } from "../prompts/workflow-generation.ts";
-import { extractToolsFromCode, validateUsedTools } from "../utils/extract-tools-from-code.ts";
+import {
+  buildGenerateStepPrompt,
+  buildToolsContext,
+} from "../prompts/workflow-generation.ts";
+import {
+  extractToolsFromCode,
+  validateUsedTools,
+} from "../utils/extract-tools-from-code.ts";
 
 /**
  * Execute a single workflow step
@@ -18,7 +24,8 @@ import { extractToolsFromCode, validateUsedTools } from "../utils/extract-tools-
 export const createRunWorkflowStepTool = (env: Env) =>
   createTool({
     id: "RUN_WORKFLOW_STEP",
-    description: "Execute a workflow step with @ref resolution and optional authorization",
+    description:
+      "Execute a workflow step with @ref resolution and optional authorization",
     inputSchema: z.object({
       step: z.object({
         id: z.string(),
@@ -39,15 +46,23 @@ export const createRunWorkflowStepTool = (env: Env) =>
       success: z.boolean(),
       output: z.unknown().optional(),
       error: z.unknown().optional(),
-      logs: z.array(z.object({
-        type: z.string(),
-        content: z.string(),
-      })).optional(),
+      logs: z
+        .array(
+          z.object({
+            type: z.string(),
+            content: z.string(),
+          }),
+        )
+        .optional(),
       resolvedInput: z.record(z.unknown()).optional(),
-      resolutionErrors: z.array(z.object({
-        ref: z.string(),
-        error: z.string(),
-      })).optional(),
+      resolutionErrors: z
+        .array(
+          z.object({
+            ref: z.string(),
+            error: z.string(),
+          }),
+        )
+        .optional(),
       duration: z.number().optional(),
     }),
     execute: async ({ context }) => {
@@ -75,9 +90,9 @@ export const createRunWorkflowStepTool = (env: Env) =>
         if (resolutionResult.errors && resolutionResult.errors.length > 0) {
           return {
             success: false,
-            error: `Failed to resolve @refs: ${
-              resolutionResult.errors.map((e) => e.error).join(", ")
-            }`,
+            error: `Failed to resolve @refs: ${resolutionResult.errors
+              .map((e) => e.error)
+              .join(", ")}`,
             resolutionErrors: resolutionResult.errors,
             duration: Date.now() - startTime,
           };
@@ -96,12 +111,12 @@ export const createRunWorkflowStepTool = (env: Env) =>
           // 🔐 Authorization token should be a string (JWT token)
           authorization: context.authToken,
         };
-        
+
         // 🔐 Log authorization if provided
         if (context.authToken) {
           console.log(`🔐 Running step with workflow authorization token`);
         }
-        
+
         const result = await env.TOOLS.DECO_TOOL_RUN_TOOL(toolRunParams);
 
         const duration = Date.now() - startTime;
@@ -144,27 +159,48 @@ export const createGenerateStepTool = (env: Env) =>
     description: "Generate a workflow step using AI based on objective",
     inputSchema: z.object({
       objective: z.string().describe("What this step should accomplish"),
-      previousSteps: z.array(z.object({
-        id: z.string(),
-        name: z.string(),
-        outputSchema: z.record(z.unknown()),
-      })).optional().describe("Previous steps for context and @ref resolution"),
-      availableIntegrations: z.array(z.object({
-        id: z.string(),
-        name: z.string(),
-        tools: z.array(z.object({
-          name: z.string(),
-          description: z.string(),
-        })),
-      })).optional().describe("Available integrations (if not provided, uses static catalog)"),
-      selectedTools: z.array(z.object({
-        name: z.string(),
-        integrationId: z.string(),
-        integrationName: z.string(),
-        description: z.string().optional(),
-        inputSchema: z.record(z.unknown()).optional(),
-        outputSchema: z.record(z.unknown()).optional(),
-      })).optional().describe("Tools explicitly mentioned in prompt with @tool-name syntax"),
+      previousSteps: z
+        .array(
+          z.object({
+            id: z.string(),
+            name: z.string(),
+            outputSchema: z.record(z.unknown()),
+          }),
+        )
+        .optional()
+        .describe("Previous steps for context and @ref resolution"),
+      availableIntegrations: z
+        .array(
+          z.object({
+            id: z.string(),
+            name: z.string(),
+            tools: z.array(
+              z.object({
+                name: z.string(),
+                description: z.string(),
+              }),
+            ),
+          }),
+        )
+        .optional()
+        .describe(
+          "Available integrations (if not provided, uses static catalog)",
+        ),
+      selectedTools: z
+        .array(
+          z.object({
+            name: z.string(),
+            integrationId: z.string(),
+            integrationName: z.string(),
+            description: z.string().optional(),
+            inputSchema: z.record(z.unknown()).optional(),
+            outputSchema: z.record(z.unknown()).optional(),
+          }),
+        )
+        .optional()
+        .describe(
+          "Tools explicitly mentioned in prompt with @tool-name syntax",
+        ),
     }),
     outputSchema: z.object({
       step: z.object({
@@ -183,7 +219,9 @@ export const createGenerateStepTool = (env: Env) =>
       }),
       reasoning: z.string().optional(),
     }),
-    execute: async ({ context }): Promise<{
+    execute: async ({
+      context,
+    }): Promise<{
       step: {
         id: string;
         name: string;
@@ -200,26 +238,31 @@ export const createGenerateStepTool = (env: Env) =>
       };
       reasoning?: string;
     }> => {
-      
       const { objective, previousSteps, selectedTools } = context;
-      
+
       // Build previous steps context with EXACT IDs
       const previousStepsContext = previousSteps?.length
-        ? `\n\nPrevious steps available (use @refs with EXACT IDs below):\n${previousSteps.map(s => 
-            `- ID: ${s.id}\n  Name: ${s.name}\n  Reference as: @${s.id}.output\n  Output schema: ${JSON.stringify(s.outputSchema)}`
-          ).join('\n\n')}`
-        : '';
-      
+        ? `\n\nPrevious steps available (use @refs with EXACT IDs below):\n${previousSteps
+            .map(
+              (s) =>
+                `- ID: ${s.id}\n  Name: ${s.name}\n  Reference as: @${s.id}.output\n  Output schema: ${JSON.stringify(s.outputSchema)}`,
+            )
+            .join("\n\n")}`
+        : "";
+
       // Build tools context if tools are selected (NEW!)
-      const toolsContextText = selectedTools?.length 
+      const toolsContextText = selectedTools?.length
         ? buildToolsContext(selectedTools)
-        : '';
-      
+        : "";
+
       // Build full prompt with tools context
-      const basePrompt = buildGenerateStepPrompt(objective, previousStepsContext);
-      const prompt = toolsContextText 
+      const basePrompt = buildGenerateStepPrompt(
+        objective,
+        previousStepsContext,
+      );
+      const prompt = toolsContextText
         ? `${basePrompt}\n\n${toolsContextText}\n\nREMEMBER: User mentioned specific tools with @. You MUST use them!`
-        : basePrompt;      
+        : basePrompt;
       try {
         const schema = {
           type: "object",
@@ -284,20 +327,42 @@ export const createGenerateStepTool = (env: Env) =>
                 },
                 // 🔐 Authorization: Extract ALL tools used in code
                 usedTools: {
-                  type: 'array',
-                  description: 'CRITICAL: Extract ALL tools called in your code. For EVERY ctx.env["integration-id"].TOOL_NAME() call, add {toolName, integrationId, integrationName}',
+                  type: "array",
+                  description:
+                    'CRITICAL: Extract ALL tools called in your code. For EVERY ctx.env["integration-id"].TOOL_NAME() call, add {toolName, integrationId, integrationName}',
                   items: {
-                    type: 'object',
+                    type: "object",
                     properties: {
-                      toolName: { type: 'string', description: 'Exact tool name (e.g., "AI_GENERATE_OBJECT")' },
-                      integrationId: { type: 'string', description: 'Integration ID from ctx.env["..."] (e.g., "i:workspace-management")' },
-                      integrationName: { type: 'string', description: 'Human-readable integration name (e.g., "Workspace Management")' }
+                      toolName: {
+                        type: "string",
+                        description:
+                          'Exact tool name (e.g., "AI_GENERATE_OBJECT")',
+                      },
+                      integrationId: {
+                        type: "string",
+                        description:
+                          'Integration ID from ctx.env["..."] (e.g., "i:workspace-management")',
+                      },
+                      integrationName: {
+                        type: "string",
+                        description:
+                          'Human-readable integration name (e.g., "Workspace Management")',
+                      },
                     },
-                    required: ['toolName', 'integrationId', 'integrationName']
-                  }
+                    required: ["toolName", "integrationId", "integrationName"],
+                  },
                 },
               },
-              required: ['id', 'name', 'description', 'code', 'inputSchema', 'outputSchema', 'input', 'usedTools'],
+              required: [
+                "id",
+                "name",
+                "description",
+                "code",
+                "inputSchema",
+                "outputSchema",
+                "input",
+                "usedTools",
+              ],
             },
           },
           required: ["step"],
@@ -318,35 +383,36 @@ export const createGenerateStepTool = (env: Env) =>
           maxTokens: 16000, // High limit for complex step generation
         });
 
-        const stepResult = result.object as {
-          step?: WorkflowStep;
-          reasoning?: string;
-        } | undefined;
+        const stepResult = result.object as
+          | {
+              step?: WorkflowStep;
+              reasoning?: string;
+            }
+          | undefined;
 
         if (!stepResult || !stepResult.step) {
-          console.error('❌ [GENERATE_STEP] No step in result:', result);
-          
+          console.error("❌ [GENERATE_STEP] No step in result:", result);
+
           return {
             step: {
               id: "step-error",
               name: "Error",
               description: "Failed to generate step",
-              code:
-                'export default async function (input, ctx) { return { error: "Generation failed" }; }',
+              code: 'export default async function (input, ctx) { return { error: "Generation failed" }; }',
               inputSchema: {},
               outputSchema: {},
               input: {},
             },
-            reasoning: 'AI generation failed - no valid object returned',
+            reasoning: "AI generation failed - no valid object returned",
           };
         }
-        
-        console.log('✅ [GENERATE_STEP] Step generated:', stepResult.step.name);
-        
+
+        console.log("✅ [GENERATE_STEP] Step generated:", stepResult.step.name);
+
         // 🔐 Validate and auto-fix usedTools using code parser
         const generatedStep = stepResult.step;
         const codeAnalysis = extractToolsFromCode(generatedStep.code);
-        
+
         if (generatedStep.usedTools && generatedStep.usedTools.length > 0) {
           interface UsedTool {
             toolName: string;
@@ -355,17 +421,17 @@ export const createGenerateStepTool = (env: Env) =>
           }
           const validation = validateUsedTools(
             generatedStep.code,
-            (generatedStep.usedTools as UsedTool[]).map(t => ({
+            (generatedStep.usedTools as UsedTool[]).map((t) => ({
               toolName: t.toolName,
               integrationId: t.integrationId,
-            }))
+            })),
           );
-          
+
           if (!validation.valid) {
-            console.warn('⚠️ AI missed some tools! Auto-fixing...');
-            console.warn('Missing:', validation.missing);
-            console.warn('Extra:', validation.extra);
-            
+            console.warn("⚠️ AI missed some tools! Auto-fixing...");
+            console.warn("Missing:", validation.missing);
+            console.warn("Extra:", validation.extra);
+
             // Auto-fix: merge AI declared tools with code analysis
             interface UsedToolEntry {
               toolName: string;
@@ -373,81 +439,89 @@ export const createGenerateStepTool = (env: Env) =>
               integrationName: string;
             }
             const allToolsMap = new Map<string, UsedToolEntry>();
-            
+
             // Add tools from AI
             interface UsedTool {
               toolName: string;
               integrationId: string;
               integrationName: string;
             }
-            (generatedStep.usedTools as UsedTool[]).forEach((tool: UsedTool) => {
-              const key = `${tool.integrationId}:${tool.toolName}`;
-              allToolsMap.set(key, {
-                toolName: tool.toolName,
-                integrationId: tool.integrationId,
-                integrationName: tool.integrationName,
-              });
-            });
-            
+            (generatedStep.usedTools as UsedTool[]).forEach(
+              (tool: UsedTool) => {
+                const key = `${tool.integrationId}:${tool.toolName}`;
+                allToolsMap.set(key, {
+                  toolName: tool.toolName,
+                  integrationId: tool.integrationId,
+                  integrationName: tool.integrationName,
+                });
+              },
+            );
+
             // Add missing tools from code analysis
-            validation.missing.forEach(tool => {
+            validation.missing.forEach((tool) => {
               const key = `${tool.integrationId}:${tool.toolName}`;
               if (!allToolsMap.has(key)) {
                 allToolsMap.set(key, {
                   toolName: tool.toolName,
                   integrationId: tool.integrationId,
-                  integrationName: 'Unknown', // Will be filled by frontend if needed
+                  integrationName: "Unknown", // Will be filled by frontend if needed
                 });
               }
             });
-            
+
             generatedStep.usedTools = Array.from(allToolsMap.values());
             console.log(`✅ Auto-fixed usedTools:`, generatedStep.usedTools);
           }
         } else {
           // AI didn't provide usedTools - extract from code
-          console.warn('⚠️ AI did not provide usedTools. Extracting from code...');
+          console.warn(
+            "⚠️ AI did not provide usedTools. Extracting from code...",
+          );
           interface UsedToolEntry {
             toolName: string;
             integrationId: string;
             integrationName: string;
           }
           const uniqueTools = new Map<string, UsedToolEntry>();
-          
-          codeAnalysis.forEach(tool => {
+
+          codeAnalysis.forEach((tool) => {
             const key = `${tool.integrationId}:${tool.toolName}`;
             uniqueTools.set(key, {
               toolName: tool.toolName,
               integrationId: tool.integrationId,
-              integrationName: 'Unknown',
+              integrationName: "Unknown",
             });
           });
-          
+
           generatedStep.usedTools = Array.from(uniqueTools.values());
-          console.log(`✅ Extracted ${generatedStep.usedTools.length} tools from code`);
+          console.log(
+            `✅ Extracted ${generatedStep.usedTools.length} tools from code`,
+          );
         }
-        
-        
+
         // Ensure we always return the correct type with required fields
         return {
           step: {
             ...generatedStep,
-            description: generatedStep.description || 'No description',
+            description: generatedStep.description || "No description",
           },
           reasoning: stepResult.reasoning,
         };
       } catch (_error) {
         return {
           step: {
-            id: 'step-error',
-            name: 'Error',
+            id: "step-error",
+            name: "Error",
             description: String(_error),
-            code: 'export default async function (input, ctx) { return { error: "' + String(_error) + '" }; }',
+            code:
+              'export default async function (input, ctx) { return { error: "' +
+              String(_error) +
+              '" }; }',
             inputSchema: {},
             outputSchema: {},
             input: {},
           },
-          reasoning: 'Exception during generation: ' + String(_error),
+          reasoning: "Exception during generation: " + String(_error),
         };
       }
     },
@@ -460,7 +534,8 @@ export const createGenerateStepTool = (env: Env) =>
 export const createImportToolAsStepTool = (_env: Env) =>
   createPrivateTool({
     id: "IMPORT_TOOL_AS_STEP",
-    description: "Generate a workflow step that directly calls a specific tool (without AI)",
+    description:
+      "Generate a workflow step that directly calls a specific tool (without AI)",
     inputSchema: z.object({
       toolName: z.string(),
       integrationId: z.string(),
@@ -497,12 +572,19 @@ export const createImportToolAsStepTool = (_env: Env) =>
       const stepId = `step_${Date.now()}_${Math.random().toString(36).slice(2, 11)}`;
 
       // Extract input fields from inputSchema
-      const inputProperties = (inputSchema && typeof inputSchema === 'object' && 'properties' in inputSchema 
-        ? inputSchema.properties 
-        : {}) as Record<string, unknown>;
-      const requiredFields = (inputSchema && typeof inputSchema === 'object' && 'required' in inputSchema
-        ? (inputSchema.required as string[])
-        : []) || [];
+      const inputProperties = (
+        inputSchema &&
+        typeof inputSchema === "object" &&
+        "properties" in inputSchema
+          ? inputSchema.properties
+          : {}
+      ) as Record<string, unknown>;
+      const requiredFields =
+        (inputSchema &&
+        typeof inputSchema === "object" &&
+        "required" in inputSchema
+          ? (inputSchema.required as string[])
+          : []) || [];
 
       // Generate default input values
       const defaultInput: Record<string, unknown> = {};
@@ -510,19 +592,19 @@ export const createImportToolAsStepTool = (_env: Env) =>
 
       for (const [fieldName, fieldSchema] of Object.entries(inputProperties)) {
         const schema = fieldSchema as Record<string, unknown>;
-        const fieldType = (schema.type as string) || 'string';
+        const fieldType = (schema.type as string) || "string";
         const description = (schema.description as string) || fieldName;
 
         // Set default value based on type
-        if (fieldType === 'string') {
-          defaultInput[fieldName] = '';
-        } else if (fieldType === 'number' || fieldType === 'integer') {
+        if (fieldType === "string") {
+          defaultInput[fieldName] = "";
+        } else if (fieldType === "number" || fieldType === "integer") {
           defaultInput[fieldName] = 0;
-        } else if (fieldType === 'boolean') {
+        } else if (fieldType === "boolean") {
           defaultInput[fieldName] = false;
-        } else if (fieldType === 'array') {
+        } else if (fieldType === "array") {
           defaultInput[fieldName] = [];
-        } else if (fieldType === 'object') {
+        } else if (fieldType === "object") {
           defaultInput[fieldName] = {};
         } else {
           defaultInput[fieldName] = null;
@@ -533,9 +615,9 @@ export const createImportToolAsStepTool = (_env: Env) =>
 
       // Generate code that calls the tool
       const inputFieldsList = Object.keys(inputProperties);
-      const inputAssignments = inputFieldsList.map(field => 
-        `      ${field}: input.${field},`
-      ).join('\n');
+      const inputAssignments = inputFieldsList
+        .map((field) => `      ${field}: input.${field},`)
+        .join("\n");
 
       const code = `export default async function(input, ctx) {
   try {
@@ -569,32 +651,36 @@ ${inputAssignments}
 
       // Generate output schema
       const generatedOutputSchema: Record<string, unknown> = {
-        type: 'object',
+        type: "object",
         properties: {
           success: {
-            type: 'boolean',
-            description: 'Whether the tool call succeeded',
+            type: "boolean",
+            description: "Whether the tool call succeeded",
           },
           result: {
-            type: (outputSchema && typeof outputSchema === 'object' && 'type' in outputSchema 
-              ? outputSchema.type 
-              : 'object') as string,
-            description: 'Result from the tool',
-            ...(outputSchema && typeof outputSchema === 'object' && 'properties' in outputSchema 
-              ? { properties: outputSchema.properties } 
+            type: (outputSchema &&
+            typeof outputSchema === "object" &&
+            "type" in outputSchema
+              ? outputSchema.type
+              : "object") as string,
+            description: "Result from the tool",
+            ...(outputSchema &&
+            typeof outputSchema === "object" &&
+            "properties" in outputSchema
+              ? { properties: outputSchema.properties }
               : {}),
           },
           error: {
-            type: 'string',
-            description: 'Error message if call failed',
+            type: "string",
+            description: "Error message if call failed",
           },
         },
-        required: ['success'],
+        required: ["success"],
       };
 
       // Generate input schema (ensure it has proper structure)
       const generatedInputSchema: Record<string, unknown> = {
-        type: 'object',
+        type: "object",
         properties: inputProperties,
         required: requiredFields,
       };
@@ -603,18 +689,23 @@ ${inputAssignments}
         step: {
           id: stepId,
           name: `Call ${toolName}`,
-          description: toolDescription || `Direct call to ${toolName} from ${integrationName}`,
+          description:
+            toolDescription ||
+            `Direct call to ${toolName} from ${integrationName}`,
           code,
           inputSchema: generatedInputSchema,
           outputSchema: generatedOutputSchema,
           input: defaultInput,
-          inputDescription: Object.keys(inputDescriptions).length > 0 ? inputDescriptions : undefined,
+          inputDescription:
+            Object.keys(inputDescriptions).length > 0
+              ? inputDescriptions
+              : undefined,
           primaryIntegration: integrationId,
           primaryTool: toolName,
         },
       };
     },
-  });  
+  });
 
 /**
  * 🔐 Authorize ALL tools used by a workflow
@@ -623,15 +714,18 @@ ${inputAssignments}
 export const createAuthorizeWorkflowTool = (env: Env) =>
   createPrivateTool({
     id: "AUTHORIZE_WORKFLOW",
-    description: "Create or update API key with authorization for all tools used in workflow",
+    description:
+      "Create or update API key with authorization for all tools used in workflow",
     inputSchema: z.object({
       workflowId: z.string(),
       workflowName: z.string(),
-      tools: z.array(z.object({
-        toolName: z.string(),
-        integrationId: z.string(),
-        integrationName: z.string(),
-      })),
+      tools: z.array(
+        z.object({
+          toolName: z.string(),
+          integrationId: z.string(),
+          integrationName: z.string(),
+        }),
+      ),
       existingApiKeyName: z.string().optional(), // If updating existing key
     }),
     outputSchema: z.object({
@@ -643,42 +737,50 @@ export const createAuthorizeWorkflowTool = (env: Env) =>
     }),
     execute: async ({ context }) => {
       try {
-        console.log(`🔑 Authorizing workflow: ${context.workflowName} (${context.tools.length} tools)`);
-        
+        console.log(
+          `🔑 Authorizing workflow: ${context.workflowName} (${context.tools.length} tools)`,
+        );
+
         // API key name format: workflow-{id}-{timestamp}
-        const apiKeyName = context.existingApiKeyName || 
+        const apiKeyName =
+          context.existingApiKeyName ||
           `workflow-${context.workflowId}-${Date.now()}`;
-        
+
         // Build policies for ALL tools
-        const policies = context.tools.map(tool => ({
+        const policies = context.tools.map((tool) => ({
           effect: "allow" as const,
           resource: tool.toolName,
           matchCondition: {
             resource: "is_integration" as const,
-            integrationId: tool.integrationId
-          }
+            integrationId: tool.integrationId,
+          },
         }));
-        
+
         console.log(`📋 Creating API key with ${policies.length} policies`);
         console.log(`🔑 API Key name: ${apiKeyName}`);
-        
+
         // Create or update API key
         const output = await env.APIKEYS.API_KEYS_CREATE({
           name: apiKeyName,
           policies: policies,
         });
-        
+
         // Extract JWT token
-        const jwtToken = typeof output === 'object' && output !== null && 'value' in output 
-          ? (output as { value: string }).value 
-          : undefined;
-        
-        const uniqueIntegrations = new Set(context.tools.map(t => t.integrationId)).size;
-        
+        const jwtToken =
+          typeof output === "object" && output !== null && "value" in output
+            ? (output as { value: string }).value
+            : undefined;
+
+        const uniqueIntegrations = new Set(
+          context.tools.map((t) => t.integrationId),
+        ).size;
+
         console.log(`✅ Workflow authorization created`);
         console.log(`🔑 Token length: ${jwtToken?.length || 0}`);
-        console.log(`📦 Covers ${context.tools.length} tools across ${uniqueIntegrations} integrations`);
-        
+        console.log(
+          `📦 Covers ${context.tools.length} tools across ${uniqueIntegrations} integrations`,
+        );
+
         return {
           success: true,
           authToken: jwtToken,
@@ -690,7 +792,8 @@ export const createAuthorizeWorkflowTool = (env: Env) =>
         return {
           success: false,
           toolCount: 0,
-          error: error instanceof Error ? error.message : "Authorization failed"
+          error:
+            error instanceof Error ? error.message : "Authorization failed",
         };
       }
     },

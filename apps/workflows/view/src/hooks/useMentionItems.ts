@@ -32,22 +32,40 @@ export function useMentionItems(workflow?: Workflow): MentionItem[] {
   return useMemo(() => {
     const items: MentionItem[] = [];
     // Add tools from integrations
-    integrations.forEach((integration: { id: string; name: string; tools?: Array<{ id: string; name: string; description?: string; integration: string }> }) => {
-      integration.tools?.forEach((tool: { id: string; name: string; description?: string; integration: string }) => {
-        items.push({
-          id: `@${tool.name}`,
-          type: "tool",
-          label: tool.name,
-          description: tool.description,
-          category: integration.name,
-          integration: {
-            id: integration.id,
-            name: integration.name,
-            icon: undefined,
+    integrations.forEach(
+      (integration: {
+        id: string;
+        name: string;
+        tools?: Array<{
+          id: string;
+          name: string;
+          description?: string;
+          integration: string;
+        }>;
+      }) => {
+        integration.tools?.forEach(
+          (tool: {
+            id: string;
+            name: string;
+            description?: string;
+            integration: string;
+          }) => {
+            items.push({
+              id: `@${tool.name}`,
+              type: "tool",
+              label: tool.name,
+              description: tool.description,
+              category: integration.name,
+              integration: {
+                id: integration.id,
+                name: integration.name,
+                icon: undefined,
+              },
+            });
           },
-        });
-      });
-    });
+        );
+      },
+    );
 
     // Add previous steps (if workflow provided)
     if (workflow) {

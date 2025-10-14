@@ -37,7 +37,9 @@ export function RenderInputViewModal({
 }: RenderInputViewModalProps) {
   const workflow = useCurrentWorkflow();
   // Get previous step data for this step
-  const stepIndex = workflow.steps?.findIndex((s: WorkflowStep) => s.name === step.name);
+  const stepIndex = workflow.steps?.findIndex(
+    (s: WorkflowStep) => s.name === step.name,
+  );
   const previousSteps = workflow.steps?.slice(0, stepIndex);
   const previousStepResults: Record<string, unknown> = {};
   // for (const s of previousSteps || []) {

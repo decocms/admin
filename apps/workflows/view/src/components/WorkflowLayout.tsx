@@ -141,9 +141,7 @@ export function WorkflowLayout() {
                     align="end"
                     className="w-fit bg-popover/95 backdrop-blur-sm"
                   >
-                    <ResponsiveDropdownItem
-                      onClick={() => void 0}
-                    >
+                    <ResponsiveDropdownItem onClick={() => void 0}>
                       <span
                         className="material-symbols-outlined mr-2"
                         style={{ fontSize: "16px" }}

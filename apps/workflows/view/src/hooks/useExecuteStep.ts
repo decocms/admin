@@ -11,8 +11,10 @@ type ExecuteStepResult = ReturnType<typeof client.RUN_WORKFLOW_STEP>;
 
 export function useExecuteStep() {
   return useMutation({
-    mutationFn: async (input: ExecuteStepParams): Promise<ExecuteStepResult> => {
-        return await client.RUN_WORKFLOW_STEP(input);
+    mutationFn: async (
+      input: ExecuteStepParams,
+    ): Promise<ExecuteStepResult> => {
+      return await client.RUN_WORKFLOW_STEP(input);
     },
   });
 }

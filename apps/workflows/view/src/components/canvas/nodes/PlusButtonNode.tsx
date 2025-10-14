@@ -2,7 +2,9 @@ import { type NodeProps, Handle, Position } from "reactflow";
 import { Icon } from "@deco/ui/components/icon.tsx";
 import { memo } from "react";
 
-export const PlusButtonNode = memo(function PlusButtonNode({ data }: NodeProps) {
+export const PlusButtonNode = memo(function PlusButtonNode({
+  data,
+}: NodeProps) {
   const { onClick } = data as { onClick: () => void };
 
   return (

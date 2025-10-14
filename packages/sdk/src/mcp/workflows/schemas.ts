@@ -32,9 +32,7 @@ export const WorkflowStepDefinitionSchema = z.object({
     ),
   output: z
     .record(z.unknown())
-    .describe(
-      "Current output of the step if it was executed",
-    ),
+    .describe("Current output of the step if it was executed"),
   status: z
     .enum(["pending", "active", "completed", "error"])
     .default("pending")
@@ -122,9 +120,14 @@ export const WorkflowDefinitionSchema = z.object({
     .describe(
       "Array of workflow steps that execute sequentially. Each step can reference previous step outputs using @<step_name>.output.property syntax.",
     ),
-  authorization: z.object({
-    token: z.string().min(1).describe("The authorization token for the workflow"),
-  }).optional(),
+  authorization: z
+    .object({
+      token: z
+        .string()
+        .min(1)
+        .describe("The authorization token for the workflow"),
+    })
+    .optional(),
 });
 
 export type WorkflowDefinition = z.infer<typeof WorkflowDefinitionSchema>;

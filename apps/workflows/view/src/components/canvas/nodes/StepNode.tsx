@@ -20,7 +20,9 @@ interface StepNodeData {
   stepId: string;
 }
 
-export const StepNode = memo(function StepNode({ data }: NodeProps<StepNodeData>) {
+export const StepNode = memo(function StepNode({
+  data,
+}: NodeProps<StepNodeData>) {
   const zoom = useStore((s) => s.transform[2]);
   const [showJsonView, setShowJsonView] = useState(false);
   const [_creatingInputViewFor, setCreatingInputViewFor] = useState<
@@ -31,9 +33,11 @@ export const StepNode = memo(function StepNode({ data }: NodeProps<StepNodeData>
     viewName: string;
     viewCode: string;
   } | null>(null);
-  
+
   const workflow = useCurrentWorkflow();
-  const step = workflow?.steps?.find((s: WorkflowStep) => s.name === data.stepId);
+  const step = workflow?.steps?.find(
+    (s: WorkflowStep) => s.name === data.stepId,
+  );
   const workflowActions = useWorkflowStoreActions();
 
   const executeStepMutation = useExecuteStep();
@@ -50,7 +54,7 @@ export const StepNode = memo(function StepNode({ data }: NodeProps<StepNodeData>
 
   // Memoize JSON view lines to prevent expensive string operations on every render
   const jsonViewData = useMemo(() => {
-    if (!step) return { jsonString: '', lines: [] };
+    if (!step) return { jsonString: "", lines: [] };
     const jsonString = JSON.stringify(step, null, 2);
     const lines = jsonString.split("\n");
     return { jsonString, lines };
@@ -68,7 +72,7 @@ export const StepNode = memo(function StepNode({ data }: NodeProps<StepNodeData>
     if (currentStepIndex !== undefined && currentStepIndex > 0) {
       // Get all steps before the current one
       const previousSteps = workflow.steps?.slice(0, currentStepIndex);
-      
+
       previousSteps?.forEach((prevStep: WorkflowStep) => {
         // Only include steps that have output data
         // The resolver expects: previousStepResults[stepName] = { output: actualOutput }
@@ -78,53 +82,65 @@ export const StepNode = memo(function StepNode({ data }: NodeProps<StepNodeData>
       });
     }
 
-    console.log('🔍 [StepNode] Executing step with previousStepResults:', previousStepResults);
-
-    executeStepMutation.mutate({
-      step: {
-        id: step.name,
-        name: step.name,
-        code: step.execute,
-        inputSchema: step.inputSchema,
-        outputSchema: step.outputSchema,
-        input: step.input,
-      },
+    console.log(
+      "🔍 [StepNode] Executing step with previousStepResults:",
       previousStepResults,
-      authToken: workflow.authorization?.token,
-    }, {
-      onSuccess: async (result) => {
-        // Await the result if it's a promise
-        const resolvedResult = await result;
-        console.log('✅ [StepNode] Step executed successfully:', resolvedResult);
-        
-        // Save the output to the workflow store so subsequent steps can reference it
-        if (resolvedResult.success && resolvedResult.output) {
-          workflowActions.updateStep(step.name, {
-            output: resolvedResult.output as Record<string, unknown>,
-          });
-          console.log('💾 [StepNode] Saved step output to store');
-        } else if (!resolvedResult.success) {
-          // Store error in output field since it's not part of WorkflowStep schema
+    );
+
+    executeStepMutation.mutate(
+      {
+        step: {
+          id: step.name,
+          name: step.name,
+          code: step.execute,
+          inputSchema: step.inputSchema,
+          outputSchema: step.outputSchema,
+          input: step.input,
+        },
+        previousStepResults,
+        authToken: workflow.authorization?.token,
+      },
+      {
+        onSuccess: async (result) => {
+          // Await the result if it's a promise
+          const resolvedResult = await result;
+          console.log(
+            "✅ [StepNode] Step executed successfully:",
+            resolvedResult,
+          );
+
+          // Save the output to the workflow store so subsequent steps can reference it
+          if (resolvedResult.success && resolvedResult.output) {
+            workflowActions.updateStep(step.name, {
+              output: resolvedResult.output as Record<string, unknown>,
+            });
+            console.log("💾 [StepNode] Saved step output to store");
+          } else if (!resolvedResult.success) {
+            // Store error in output field since it's not part of WorkflowStep schema
+            const errorData: Record<string, unknown> = {
+              error: resolvedResult.error,
+            };
+            workflowActions.updateStep(step.name, {
+              output: errorData,
+            });
+            console.error(
+              "❌ [StepNode] Step execution failed:",
+              resolvedResult.error,
+            );
+          }
+        },
+        onError: (error) => {
+          console.error("❌ [StepNode] Step execution error:", error);
+          // Store error in output field
           const errorData: Record<string, unknown> = {
-            error: resolvedResult.error
+            error: String(error),
           };
           workflowActions.updateStep(step.name, {
             output: errorData,
           });
-          console.error('❌ [StepNode] Step execution failed:', resolvedResult.error);
-        }
+        },
       },
-      onError: (error) => {
-        console.error('❌ [StepNode] Step execution error:', error);
-        // Store error in output field
-        const errorData: Record<string, unknown> = {
-          error: String(error)
-        };
-        workflowActions.updateStep(step.name, {
-          output: errorData,
-        });
-      },
-    });
+    );
   }, [workflow, step, executeStepMutation, workflowActions]);
 
   if (!step) return null;
@@ -139,13 +155,13 @@ export const StepNode = memo(function StepNode({ data }: NodeProps<StepNodeData>
           style={{ opacity: 0 }}
         />
         <div className="flex items-start gap-2">
-          {(
+          {
             <Icon
               name={"build"}
               size={18}
               className="text-muted-foreground flex-shrink-0 mt-0.5"
             />
-          )}
+          }
           <div className="flex-1 min-w-0">
             <div className="text-sm font-semibold text-foreground truncate">
               {step.name}
@@ -155,8 +171,7 @@ export const StepNode = memo(function StepNode({ data }: NodeProps<StepNodeData>
             </div>
           </div>
           <span
-            className={`w-2 h-2 rounded-full flex-shrink-0 mt-1.5 bg-muted-foreground`
-          }
+            className={`w-2 h-2 rounded-full flex-shrink-0 mt-1.5 bg-muted-foreground`}
           />
         </div>
       </div>
@@ -171,13 +186,13 @@ export const StepNode = memo(function StepNode({ data }: NodeProps<StepNodeData>
       {/* Header */}
       <div className="flex items-center justify-between h-10 px-4 py-2 rounded-t-xl overflow-clip">
         <div className="flex items-center gap-2 flex-1 min-w-0">
-          {(
+          {
             <Icon
               name={"build"}
               size={16}
               className="shrink-0 text-background"
             />
-          )}
+          }
           <span className="text-sm font-medium text-background leading-5 truncate">
             {step.name}
           </span>
@@ -315,55 +330,60 @@ export const StepNode = memo(function StepNode({ data }: NodeProps<StepNodeData>
                     INPUT PARAMETERS
                   </p>
                   <div className="flex flex-col gap-5">
-                    {inputSchemaEntries.map(([key, schema]: [string, unknown]) => {
-                      const schemaObj = schema as Record<string, unknown>;
-                      const description =
-                        typeof schemaObj.description === "string"
-                          ? schemaObj.description
-                          : "";
-                      const inputKey = `${step.name}_${key}`;
-                      
-                      // Get the current value from step.input
-                      const currentValue = step.input?.[key];
-                      const stringValue = typeof currentValue === 'string' 
-                        ? currentValue 
-                        : currentValue !== undefined 
-                        ? JSON.stringify(currentValue, null, 2) 
-                        : '';
+                    {inputSchemaEntries.map(
+                      ([key, schema]: [string, unknown]) => {
+                        const schemaObj = schema as Record<string, unknown>;
+                        const description =
+                          typeof schemaObj.description === "string"
+                            ? schemaObj.description
+                            : "";
+                        const inputKey = `${step.name}_${key}`;
 
-                      return (
-                        <div key={`${inputKey}_wrapper`}>
-                          <div className="flex items-center justify-between mb-2">
-                            <label className="text-sm font-medium text-foreground leading-none">
-                              {key}
-                            </label>
-                            <Button
-                              variant="secondary"
-                              size="sm"
-                              onClick={() => setCreatingInputViewFor(key)}
-                              className="text-xs h-6 px-2"
-                            >
-                              + Add View
-                            </Button>
+                        // Get the current value from step.input
+                        const currentValue = step.input?.[key];
+                        const stringValue =
+                          typeof currentValue === "string"
+                            ? currentValue
+                            : currentValue !== undefined
+                              ? JSON.stringify(currentValue, null, 2)
+                              : "";
+
+                        return (
+                          <div key={`${inputKey}_wrapper`}>
+                            <div className="flex items-center justify-between mb-2">
+                              <label className="text-sm font-medium text-foreground leading-none">
+                                {key}
+                              </label>
+                              <Button
+                                variant="secondary"
+                                size="sm"
+                                onClick={() => setCreatingInputViewFor(key)}
+                                className="text-xs h-6 px-2"
+                              >
+                                + Add View
+                              </Button>
+                            </div>
+
+                            <RichTextEditor
+                              key={inputKey}
+                              placeholder={description || `Enter ${key}...`}
+                              minHeight="40px"
+                              value={stringValue}
+                              onChange={(newValue) => {
+                                // Update the step input in the workflow store
+                                const updatedInput = {
+                                  ...step.input,
+                                  [key]: newValue,
+                                };
+                                workflowActions.updateStep(step.name, {
+                                  input: updatedInput,
+                                });
+                              }}
+                            />
                           </div>
-
-                          <RichTextEditor
-                            key={inputKey}
-                            placeholder={description || `Enter ${key}...`}
-                            minHeight="40px"
-                            value={stringValue}
-                            onChange={(newValue) => {
-                              // Update the step input in the workflow store
-                              const updatedInput = {
-                                ...step.input,
-                                [key]: newValue,
-                              };
-                              workflowActions.updateStep(step.name, { input: updatedInput });
-                            }}
-                          />
-                        </div>
-                      );
-                    })}
+                        );
+                      },
+                    )}
                   </div>
                 </div>
               </div>
@@ -380,21 +400,25 @@ export const StepNode = memo(function StepNode({ data }: NodeProps<StepNodeData>
             className="flex items-center gap-3"
           >
             {/* Execution Status Indicator */}
-            {step.output && Object.keys(step.output).length > 0 && !('error' in step.output) && (
-              <div className="flex items-center gap-2 text-sm text-green-500 font-medium">
-                <Icon name="check_circle" size={20} />
-                <span>Executed successfully</span>
-              </div>
-            )}
-            {step.output && 'error' in step.output && typeof step.output.error === 'string' && (
-              <div className="flex items-center gap-2 text-sm text-red-500 font-medium">
-                <Icon name="error" size={20} />
-                <span>Execution failed</span>
-              </div>
-            )}
-            
+            {step.output &&
+              Object.keys(step.output).length > 0 &&
+              !("error" in step.output) && (
+                <div className="flex items-center gap-2 text-sm text-green-500 font-medium">
+                  <Icon name="check_circle" size={20} />
+                  <span>Executed successfully</span>
+                </div>
+              )}
+            {step.output &&
+              "error" in step.output &&
+              typeof step.output.error === "string" && (
+                <div className="flex items-center gap-2 text-sm text-red-500 font-medium">
+                  <Icon name="error" size={20} />
+                  <span>Execution failed</span>
+                </div>
+              )}
+
             <div className="flex-1" />
-            
+
             {/* Execute Button */}
             <Button
               onClick={handleExecuteStep}
@@ -414,13 +438,17 @@ export const StepNode = memo(function StepNode({ data }: NodeProps<StepNodeData>
               )}
             </Button>
           </div>
-          
+
           {/* Error Details */}
-          {step.output && 'error' in step.output && typeof step.output.error === 'string' && (
-            <div className="mt-3 p-3 bg-red-950/30 border border-red-900/50 rounded-lg">
-              <p className="text-xs text-red-400 font-mono whitespace-pre-wrap">{step.output.error as string}</p>
-            </div>
-          )}
+          {step.output &&
+            "error" in step.output &&
+            typeof step.output.error === "string" && (
+              <div className="mt-3 p-3 bg-red-950/30 border border-red-900/50 rounded-lg">
+                <p className="text-xs text-red-400 font-mono whitespace-pre-wrap">
+                  {step.output.error as string}
+                </p>
+              </div>
+            )}
         </div>
       </div>
 
@@ -444,9 +472,12 @@ export const StepNode = memo(function StepNode({ data }: NodeProps<StepNodeData>
       )}
 
       {/* Render Output View Modal - only if output has a result property */}
-      {step.output && 'result' in step.output && typeof step.output.result === 'object' && step.output.result !== null && (
-        <StepOutput step={step.output.result as Record<string, unknown>} />
-      )}
+      {step.output &&
+        "result" in step.output &&
+        typeof step.output.result === "object" &&
+        step.output.result !== null && (
+          <StepOutput step={step.output.result as Record<string, unknown>} />
+        )}
     </div>
   );
 });

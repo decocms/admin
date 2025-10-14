@@ -7,10 +7,10 @@ export function StepOutput({ step }: { step: WorkflowStep["result"] }) {
   const [activeView, setActiveView] = useState<string>("json");
 
   const jsonString =
-  typeof step?.output === "object"
-    ? JSON.stringify(step.output, null, 2)
-    : String(step?.output);
-const lines = jsonString.split("\n");
+    typeof step?.output === "object"
+      ? JSON.stringify(step.output, null, 2)
+      : String(step?.output);
+  const lines = jsonString.split("\n");
   return (
     <div className="bg-background border-b border-border p-4 flex flex-col gap-3 relative">
       <div
@@ -28,11 +28,7 @@ const lines = jsonString.split("\n");
           <div className="flex items-center gap-2 px-1">
             {step?.duration && (
               <div className="flex items-center gap-1">
-                <Icon
-                  name="schedule"
-                  size={16}
-                  className="text-purple-light"
-                />
+                <Icon name="schedule" size={16} className="text-purple-light" />
                 <span className="font-mono text-sm text-muted-foreground">
                   {step.duration}ms
                 </span>
@@ -53,37 +49,36 @@ const lines = jsonString.split("\n");
           </Button>
         </div>
 
-              <div
-                className="border border-border rounded"
-                style={{
-                  height: "400px",
-                  overflowY: "auto",
-                  overflowX: "hidden",
-                  cursor: "text",
-                  pointerEvents: "auto",
-                }}
-                onWheel={(e) => {
-                  e.stopPropagation();
-                }}
-              >
-                <div className="flex gap-5 p-2">
-                  {/* Line numbers */}
-                  <div className="flex flex-col font-mono text-sm text-muted-foreground leading-[1.5] opacity-50 select-none">
-                    {lines.map((_, i) => (
-                      <span key={i + 1}>{i + 1}</span>
-                    ))}
-                  </div>
+        <div
+          className="border border-border rounded"
+          style={{
+            height: "400px",
+            overflowY: "auto",
+            overflowX: "hidden",
+            cursor: "text",
+            pointerEvents: "auto",
+          }}
+          onWheel={(e) => {
+            e.stopPropagation();
+          }}
+        >
+          <div className="flex gap-5 p-2">
+            {/* Line numbers */}
+            <div className="flex flex-col font-mono text-sm text-muted-foreground leading-[1.5] opacity-50 select-none">
+              {lines.map((_, i) => (
+                <span key={i + 1}>{i + 1}</span>
+              ))}
+            </div>
 
-                  {/* Code content */}
-                  <div className="flex-1">
-                    <pre className="font-mono text-sm text-foreground leading-[1.5] m-0 whitespace-pre-wrap break-words">
-                      {jsonString}
-                    </pre>
-                  </div>
-                </div>
-              </div>
-
+            {/* Code content */}
+            <div className="flex-1">
+              <pre className="font-mono text-sm text-foreground leading-[1.5] m-0 whitespace-pre-wrap break-words">
+                {jsonString}
+              </pre>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
-  )
+  );
 }

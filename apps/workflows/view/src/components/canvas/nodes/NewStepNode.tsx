@@ -26,15 +26,15 @@ export const NewStepNode = memo(function NewStepNode(_props: NodeProps) {
       name: string;
       outputSchema: Record<string, unknown>;
     }
-    const previousSteps: StepInfo[] | undefined = workflow.steps?.map((step: WorkflowStep): StepInfo => ({
-      id: step.name,
-      name: step.name,
-      outputSchema: (step.outputSchema as Record<string, unknown>) || {},
-    }));
-
-    generateStepMutation.mutate(
-      { objective: prompt, previousSteps },
+    const previousSteps: StepInfo[] | undefined = workflow.steps?.map(
+      (step: WorkflowStep): StepInfo => ({
+        id: step.name,
+        name: step.name,
+        outputSchema: (step.outputSchema as Record<string, unknown>) || {},
+      }),
     );
+
+    generateStepMutation.mutate({ objective: prompt, previousSteps });
   };
 
   return (

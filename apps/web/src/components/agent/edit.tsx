@@ -110,7 +110,6 @@ function UnifiedChat() {
   const { messages } = chat;
   const focusChat = useFocusChat();
   const { chatMode } = usePreviewContext();
-
   const isEmpty = messages.length === 0;
 
   // Decopilot mode doesn't show threads or new thread buttons
@@ -281,14 +280,16 @@ function AgentConfigs() {
 }
 
 // Wrapper component that provides the right agent based on chat mode
-function ChatWithProvider() {
+function ChatWithProvider({
+  agentId,
+  threadId,
+}: {
+  agentId: string;
+  threadId: string;
+}) {
   const { chatMode } = usePreviewContext();
-  const params = useParams();
-  const agentId = params.id;
-  // Separate stable threadIds for each mode to maintain state when switching
-  const [agentThreadId] = useState(
-    () => params.threadId || crypto.randomUUID(),
-  );
+  // Use the threadId prop directly for agent mode
+  // Separate stable threadId for decopilot mode using useState to maintain state when switching
   const [decopilotThreadId] = useState(() => crypto.randomUUID());
 
   // Get the agent being edited for decopilot context
@@ -349,8 +350,9 @@ function ChatWithProvider() {
       {/* Agent chat - hidden when in decopilot mode */}
       <div className={chatMode === "agent" ? "block h-full" : "hidden"}>
         <AgentProvider
-          agentId={agentId || ""}
-          threadId={agentThreadId}
+          key={`agent-${agentId}-${threadId}`}
+          agentId={agentId}
+          threadId={threadId}
           uiOptions={{
             showThreadTools: false,
             showEditAgent: false,
@@ -394,14 +396,24 @@ function ChatWithProvider() {
   );
 }
 
-function ResponsiveLayout() {
+function ResponsiveLayout({
+  agentId,
+  threadId,
+}: {
+  agentId: string;
+  threadId: string;
+}) {
   const { showPreview, isMobile } = usePreviewContext();
 
   if (isMobile) {
     // Mobile layout: stack or toggle between config and chat
     return (
       <div className="h-[calc(100vh-48px)] flex flex-col">
-        {!showPreview ? <AgentConfigs /> : <ChatWithProvider />}
+        {!showPreview ? (
+          <AgentConfigs />
+        ) : (
+          <ChatWithProvider agentId={agentId} threadId={threadId} />
+        )}
       </div>
     );
   }
@@ -414,7 +426,7 @@ function ResponsiveLayout() {
       </ResizablePanel>
       <ResizableHandle />
       <ResizablePanel className="h-[calc(100vh-48px)]" defaultSize={40}>
-        <ChatWithProvider />
+        <ChatWithProvider agentId={agentId} threadId={threadId} />
       </ResizablePanel>
     </ResizablePanelGroup>
   );
@@ -528,7 +540,7 @@ function FormProvider(props: Props & { agentId: string; threadId: string }) {
             showModelSelector: false,
           }}
         >
-          <ResponsiveLayout />
+          <ResponsiveLayout agentId={agentId} threadId={threadId} />
         </AgentProvider>
       </PreviewContext.Provider>
     </DecopilotLayout>

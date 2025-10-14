@@ -451,7 +451,7 @@ function Skeleton() {
 
 export function SidebarFooter({ className }: { className?: string }) {
   return (
-    <SidebarFooterInner className={className}>
+    <SidebarFooterInner className={cn("bg-sidebar pt-4", className)}>
       <SidebarMenu>
         <SidebarMenuItem>
           <Suspense fallback={<Skeleton />}>

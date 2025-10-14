@@ -1279,7 +1279,7 @@ export function ProjectSidebar() {
           </SidebarGroupContent>
         </SidebarGroup>
       </SidebarContent>
-      <SidebarFooter className="bg-sidebar pt-4" />
+      <SidebarFooter />
     </Sidebar>
   );
 }

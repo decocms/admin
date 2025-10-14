@@ -12,7 +12,7 @@
   "dependencies": {
     "@ai-sdk/provider": "^2.0.0",
     "@ai-sdk/react": "^2.0.59",
-    "@deco/actors": "npm:@jsr/deco__actors@0.34.2",
+    "@deco/actors": "npm:@jsr/deco__actors@0.35.1",
     "@deco/sdk": "^0.1.1",
     "@deco/ui": "^1.0.0",
     "@gsap/react": "^2.1.2",

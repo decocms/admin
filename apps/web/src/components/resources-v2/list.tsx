@@ -13,15 +13,15 @@ import {
   AlertDialogTitle,
 } from "@deco/ui/components/alert-dialog.tsx";
 import { Checkbox } from "@deco/ui/components/checkbox.tsx";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@deco/ui/components/dropdown-menu.tsx";
 import { Icon } from "@deco/ui/components/icon.tsx";
 import { Spinner } from "@deco/ui/components/spinner.tsx";
 import { toast } from "@deco/ui/components/sonner.tsx";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@deco/ui/components/tooltip.tsx";
 import { useViewMode } from "@deco/ui/hooks/use-view-mode.ts";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useDeferredValue, useMemo, useState, type ReactNode } from "react";
@@ -33,11 +33,7 @@ import { EmptyState } from "../common/empty-state.tsx";
 import { Table, type TableColumn } from "../common/table/index.tsx";
 import { TimeAgoCell, UserInfo } from "../common/table/table-cells.tsx";
 import type { TabItem } from "../common/tabs-underline.tsx";
-import { useDecopilotThread } from "../decopilot/thread-context.tsx";
-import {
-  DecopilotLayout,
-  useDecopilotOpen,
-} from "../layout/decopilot-layout.tsx";
+import { DecopilotLayout } from "../layout/decopilot-layout.tsx";
 import type { Filter } from "./filter-bar.tsx";
 import { ResourceHeader } from "./resource-header.tsx";
 import { ResourceRouteProvider } from "./route-context.tsx";
@@ -75,10 +71,8 @@ function ResourcesV2ListTab({
   const [deleteUri, setDeleteUri] = useState<string | null>(null);
   const [dontAskAgain, setDontAskAgain] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
-  const { setOpen: setDecopilotOpen } = useDecopilotOpen();
-  const { setThreadState } = useDecopilotThread();
-  const [sortKey, setSortKey] = useState<string | undefined>(undefined);
-  const [sortDirection, setSortDirection] = useState<"asc" | "desc" | null>(null);
+  const [sortKey, setSortKey] = useState<string | undefined>("updated_at");
+  const [sortDirection, setSortDirection] = useState<"asc" | "desc" | null>("desc");
   
   // Session storage key for skip confirmation preference
   const skipConfirmationKey = `skip-delete-confirmation-${integrationId}-${resourceName}`;
@@ -153,35 +147,53 @@ function ResourcesV2ListTab({
       {
         id: "actions",
         header: "",
-        render: (row) =>
-          capabilities.hasDelete ? (
-            <div className="flex items-center justify-end">
-              <TooltipProvider>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        onDeleteClick(row.uri);
-                      }}
-                      className="text-muted-foreground hover:text-destructive"
-                    >
-                      <Icon name="delete" className="w-4 h-4" />
-                    </Button>
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    <p>Delete</p>
-                  </TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
-            </div>
-          ) : null,
+        render: (row) => (
+          <div className="flex items-center justify-end">
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                  }}
+                  className="text-muted-foreground"
+                >
+                  <Icon name="more_horiz" className="w-4 h-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    navigateWorkspace(
+                      `rsc/${integrationId}/${resourceName}/${encodeURIComponent(row.uri)}`,
+                    );
+                  }}
+                >
+                  <Icon name="open_in_new" className="w-4 h-4 mr-2" />
+                  Open
+                </DropdownMenuItem>
+                {capabilities.hasDelete && (
+                  <DropdownMenuItem
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onDeleteClick(row.uri);
+                    }}
+                    className="text-destructive focus:text-destructive"
+                  >
+                    <Icon name="delete" className="w-4 h-4 mr-2" />
+                    Delete
+                  </DropdownMenuItem>
+                )}
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
+        ),
         cellClassName: "w-[5%]",
       },
     ],
-    [capabilities.hasDelete],
+    [capabilities.hasDelete, navigateWorkspace, integrationId, resourceName],
   );
 
   const listQuery = useQuery({
@@ -492,9 +504,6 @@ function ResourcesV2ListTab({
                         data.outputSchema = {};
                         data.execute =
                           "// Add your tool code here\nexport default function(input) {\n  return {};\n}";
-                      } else if (resourceName === "view") {
-                        data.code =
-                          "export const App = () => <div>Hello, World!</div>";
                       }
 
                       const result = await callTool(integration.connection, {
@@ -504,23 +513,13 @@ function ResourcesV2ListTab({
 
                       // Extract URI from response (can be at different levels)
                       const uri =
-                        // direct top-level uri
                         (result as { uri?: string })?.uri ||
-                        // common pattern: { data: { uri } }
                         (result as { data?: { uri?: string } })?.data?.uri ||
-                        // nested under structuredContent.uri
                         (
                           result as {
                             structuredContent?: { uri?: string };
                           }
                         )?.structuredContent?.uri ||
-                        // sometimes nested one level deeper: structuredContent.data.uri
-                        (
-                          result as {
-                            structuredContent?: { data?: { uri?: string } };
-                          }
-                        )?.structuredContent?.data?.uri ||
-                        // fallback: first content text chunk
                         (
                           result as {
                             content?: Array<{ text?: string }>;
@@ -596,7 +595,7 @@ function ResourcesV2ListTab({
               {sortedItems.map((it) => (
                 <Card 
                   key={it.uri} 
-                  className="cursor-pointer hover:shadow-sm transition-shadow overflow-hidden bg-card border-0"
+                  className="group cursor-pointer hover:shadow-sm transition-shadow overflow-hidden bg-card border-0 min-h-48"
                   onClick={() =>
                     navigateWorkspace(
                       `rsc/${integrationId}/${resourceName}/${encodeURIComponent(it.uri)}`,
@@ -605,8 +604,49 @@ function ResourcesV2ListTab({
                 >
                   <div className="flex flex-col h-full">
                     {/* Content Section */}
-                    <div className="p-5 flex flex-col gap-2 flex-1">
-                      <h3 className="text-base font-medium text-foreground truncate">
+                    <div className="p-5 flex flex-col gap-2 flex-1 relative">
+                      <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                              }}
+                              className="text-muted-foreground h-8 w-8"
+                            >
+                              <Icon name="more_horiz" className="w-4 h-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuItem
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                navigateWorkspace(
+                                  `rsc/${integrationId}/${resourceName}/${encodeURIComponent(it.uri)}`,
+                                );
+                              }}
+                            >
+                              <Icon name="open_in_new" className="w-4 h-4 mr-2" />
+                              Open
+                            </DropdownMenuItem>
+                            {capabilities.hasDelete && (
+                              <DropdownMenuItem
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  onDeleteClick(it.uri);
+                                }}
+                                className="text-destructive focus:text-destructive"
+                              >
+                                <Icon name="delete" className="w-4 h-4 mr-2" />
+                                Delete
+                              </DropdownMenuItem>
+                            )}
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </div>
+                      <h3 className="text-base font-medium text-foreground truncate pr-10">
                         {it.data?.name ?? ""}
                       </h3>
                         <p className="text-sm text-muted-foreground line-clamp-2 leading-normal">
@@ -615,7 +655,7 @@ function ResourcesV2ListTab({
                     </div>
 
                     {/* Footer Section */}
-                    <div className="h-12 border-t border-border px-5 flex items-center justify-between text-sm flex-shrink-0">
+                    <div className="border-t border-border px-5 py-3 flex items-center justify-between text-sm flex-shrink-0 flex-wrap gap-x-4 gap-y-1">
                       <div className="flex items-center gap-1">
                         <span className="text-muted-foreground">Updated</span>
                         <span className="text-foreground">

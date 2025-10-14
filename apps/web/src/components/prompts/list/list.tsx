@@ -29,27 +29,22 @@ import { useReducer, useState } from "react";
 import { useNavigateWorkspace } from "../../../hooks/use-navigate-workspace.ts";
 import { EmptyState } from "../../common/empty-state.tsx";
 import { Table, type TableColumn } from "../../common/table/index.tsx";
-import { Header } from "./common.tsx";
-import { useViewMode } from "@deco/ui/hooks/use-view-mode.ts";
 import { type DecopilotContextValue } from "../../decopilot/context.tsx";
 import { DecopilotLayout } from "../../layout/decopilot-layout.tsx";
 
 interface ListState {
-  filter: string;
   deleteDialogOpen: boolean;
   promptToDelete: string | null;
   deleting: boolean;
 }
 
 type ListAction =
-  | { type: "SET_FILTER"; payload: string }
   | { type: "CONFIRM_DELETE"; payload: string }
   | { type: "CANCEL_DELETE" }
   | { type: "DELETE_START" }
   | { type: "DELETE_END" };
 
 const initialState: ListState = {
-  filter: "",
   deleteDialogOpen: false,
   promptToDelete: null,
   deleting: false,
@@ -57,9 +52,6 @@ const initialState: ListState = {
 
 function listReducer(state: ListState, action: ListAction): ListState {
   switch (action.type) {
-    case "SET_FILTER": {
-      return { ...state, filter: action.payload };
-    }
     case "CONFIRM_DELETE": {
       return {
         ...state,
@@ -150,29 +142,6 @@ function PromptCard({
   );
 }
 
-function CardsView({
-  prompts,
-  onConfigure,
-  onDelete,
-}: {
-  prompts: Prompt[];
-  onConfigure: (prompt: Prompt) => void;
-  onDelete: (promptId: string) => void;
-}) {
-  return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 peer">
-      {prompts.map((prompt) => (
-        <PromptCard
-          key={prompt.id}
-          prompt={prompt}
-          onConfigure={onConfigure}
-          onDelete={onDelete}
-        />
-      ))}
-    </div>
-  );
-}
-
 function TableView({
   prompts,
   onConfigure,
@@ -243,20 +212,24 @@ function TableView({
   );
 }
 
-function ListPrompts() {
+interface ListPromptsProps {
+  searchTerm?: string;
+  viewMode?: "cards" | "table";
+}
+
+function ListPrompts({ searchTerm = "", viewMode = "cards" }: ListPromptsProps) {
   const [state, dispatch] = useReducer(listReducer, initialState);
-  const [viewMode, setViewMode] = useViewMode("prompts");
   const { data: prompts } = usePrompts();
   const create = useCreatePrompt();
   const deletePrompt = useDeletePrompt();
   const navigateWorkspace = useNavigateWorkspace();
 
-  const { filter, deleteDialogOpen, promptToDelete, deleting } = state;
+  const { deleteDialogOpen, promptToDelete, deleting } = state;
 
   const filteredPrompts =
     prompts?.filter(
       (prompt) =>
-        prompt.name.toLowerCase().includes(filter.toLowerCase()) &&
+        prompt.name.toLowerCase().includes(searchTerm.toLowerCase()) &&
         !isWellKnownPromptId(prompt.id),
     ) ?? [];
 
@@ -298,89 +271,72 @@ function ListPrompts() {
 
   return (
     <DecopilotLayout value={decopilotContextValue}>
-      <div className="flex flex-col gap-4 h-full py-4">
-        <div className="px-4 overflow-x-auto">
-          <Header
-            value={filter}
-            setValue={(value) =>
-              dispatch({ type: "SET_FILTER", payload: value })
-            }
-            viewMode={viewMode}
-            setViewMode={setViewMode}
-            actionsRight={
-              <Button variant="special" onClick={handleCreate}>
-                <Icon name="add" size={16} />
-                New document
-              </Button>
-            }
-          />
+      {!prompts ? (
+        <div className="flex items-center justify-center py-8">
+          <Spinner />
         </div>
-
-        <div className="flex-1 min-h-0 px-4 overflow-x-auto">
-          {!prompts ? (
-            <div className="flex h-48 items-center justify-center">
-              <Spinner size="lg" />
-            </div>
-          ) : filteredPrompts.length === 0 ? (
-            <EmptyState
-              icon="local_library"
-              title="No documents yet"
-              description="Create a document to get started."
-              buttonProps={{
-                children: "Create a document",
-                onClick: handleCreate,
-              }}
-            />
-          ) : viewMode === "cards" ? (
-            <CardsView
-              prompts={filteredPrompts}
+      ) : filteredPrompts.length === 0 ? (
+        <EmptyState
+          icon="local_library"
+          title="No documents yet"
+          description="Create a document to get started."
+        />
+      ) : viewMode === "cards" ? (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+          {filteredPrompts.map((prompt) => (
+            <PromptCard
+              key={prompt.id}
+              prompt={prompt}
               onConfigure={handleConfigure}
               onDelete={handleDeleteConfirm}
             />
-          ) : (
+          ))}
+        </div>
+      ) : (
+        <div className="overflow-x-auto -mx-16 px-16">
+          <div className="w-fit min-w-full max-w-[1500px] mx-auto">
             <TableView
               prompts={filteredPrompts}
               onConfigure={handleConfigure}
               onDelete={handleDeleteConfirm}
             />
-          )}
+          </div>
         </div>
-        <AlertDialog
-          open={deleteDialogOpen}
-          onOpenChange={handleDeleteDialogOpenChange}
-        >
-          <AlertDialogContent>
-            <AlertDialogHeader>
-              <AlertDialogTitle>Are you sure?</AlertDialogTitle>
-              <AlertDialogDescription>
-                This will permanently delete the document. This action cannot be
-                undone.
-              </AlertDialogDescription>
-            </AlertDialogHeader>
-            <AlertDialogFooter>
-              <AlertDialogCancel disabled={deleting}>Cancel</AlertDialogCancel>
-              <AlertDialogAction
-                onClick={handleDelete}
-                disabled={deleting}
-                className="bg-destructive text-destructive-foreground hover:bg-destructive/90 gap-2"
-              >
-                {deleting ? (
-                  <>
-                    <Spinner />
-                    Deleting...
-                  </>
-                ) : (
-                  "Delete"
-                )}
-              </AlertDialogAction>
-            </AlertDialogFooter>
-          </AlertDialogContent>
-        </AlertDialog>
-      </div>
+      )}
+
+      <AlertDialog
+        open={deleteDialogOpen}
+        onOpenChange={handleDeleteDialogOpenChange}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will permanently delete the document. This action cannot be
+              undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={deleting}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDelete}
+              disabled={deleting}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90 gap-2"
+            >
+              {deleting ? (
+                <>
+                  <Spinner />
+                  Deleting...
+                </>
+              ) : (
+                "Delete"
+              )}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </DecopilotLayout>
   );
 }
 
-export default function Page() {
-  return <ListPrompts />;
-}
+export default ListPrompts;

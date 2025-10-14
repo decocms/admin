@@ -95,24 +95,28 @@ export function ResourceHeader({
         <div className="flex items-center gap-2 py-2">
           <div className="flex items-center gap-1">
             {/* Refresh Button */}
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={onRefresh}
-              className="h-9 w-9 rounded-xl flex items-center text-muted-foreground justify-center"
-            >
-              <Icon name="refresh" size={20} />
-            </Button>
+            {onRefresh && (
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={onRefresh}
+                className="h-9 w-9 rounded-xl flex items-center text-muted-foreground justify-center"
+              >
+                <Icon name="refresh" size={20} />
+              </Button>
+            )}
 
             {/* Search Button / Input */}
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={onSearchToggle}
-              className="h-9 w-9 rounded-xl flex items-center text-muted-foreground justify-center"
-            >
-              <Icon name="search" size={20} />
-            </Button>
+            {onSearchToggle && (
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={onSearchToggle}
+                className="h-9 w-9 rounded-xl flex items-center text-muted-foreground justify-center"
+              >
+                <Icon name="search" size={20} />
+              </Button>
+            )}
             {searchOpen && (
               <Input
                 ref={searchInputRef}
@@ -126,18 +130,20 @@ export function ResourceHeader({
             )}
 
             {/* Filter Button */}
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={onFilterClick}
-              className="h-9 w-9 rounded-xl flex items-center justify-center"
-            >
-              <Icon 
-                name="filter_list" 
-                size={20} 
-                className={filters && filters.length > 0 ? "text-violet-500" : "text-muted-foreground"}
-              />
-            </Button>
+            {onFilterClick && (
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={onFilterClick}
+                className="h-9 w-9 rounded-xl flex items-center justify-center"
+              >
+                <Icon 
+                  name="filter_list" 
+                  size={20} 
+                  className={filters && filters.length > 0 ? "text-violet-500" : "text-muted-foreground"}
+                />
+              </Button>
+            )}
 
             {/* Menu Button */}
             <DropdownMenu>

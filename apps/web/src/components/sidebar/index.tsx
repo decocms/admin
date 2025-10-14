@@ -53,6 +53,10 @@ import { TogglePin } from "../views/list.tsx";
 import { SidebarFooter } from "./footer.tsx";
 import { useCurrentTeam } from "./team-selector.tsx";
 import { useFocusTeamAgent } from "../agents/list.tsx";
+import {
+  CommandPalette,
+  useCommandPalette,
+} from "../search/command-palette.tsx";
 
 const WithActive = ({
   children,
@@ -116,49 +120,53 @@ function AddViewsDialog({
         </DialogHeader>
 
         <div className="max-h-80 overflow-y-auto">
-          {isLoadingViews ? (
-            <div className="space-y-2">
-              {Array.from({ length: 3 }).map((_, index) => (
-                <Skeleton key={index} className="h-12 w-full" />
-              ))}
-            </div>
-          ) : viewsWithStatus.length === 0 ? (
-            <div className="text-sm text-muted-foreground text-center py-8">
-              {views.length === 0
-                ? "No views available from this integration"
-                : "All available views have already been added"}
-            </div>
-          ) : (
-            <div className="space-y-2">
-              {viewsWithStatus.map((view) => (
-                <div
-                  key={view.name ?? view.url ?? view.title}
-                  className="flex items-center justify-between p-3 border border-border rounded-lg bg-background hover:bg-accent/50 transition-colors"
-                >
-                  <div className="flex items-center gap-3 flex-1 min-w-0">
-                    {view.icon && (
-                      <Icon
-                        name={view.icon}
-                        size={20}
-                        className="flex-shrink-0 text-muted-foreground"
-                      />
-                    )}
-                    <div className="min-w-0 flex-1">
-                      <h4 className="text-sm font-medium truncate">
-                        {view.title}
-                      </h4>
-                      {view.url && (
-                        <p className="text-xs text-muted-foreground truncate">
-                          {view.url}
-                        </p>
+          {isLoadingViews
+            ? (
+              <div className="space-y-2">
+                {Array.from({ length: 3 }).map((_, index) => (
+                  <Skeleton key={index} className="h-12 w-full" />
+                ))}
+              </div>
+            )
+            : viewsWithStatus.length === 0
+            ? (
+              <div className="text-sm text-muted-foreground text-center py-8">
+                {views.length === 0
+                  ? "No views available from this integration"
+                  : "All available views have already been added"}
+              </div>
+            )
+            : (
+              <div className="space-y-2">
+                {viewsWithStatus.map((view) => (
+                  <div
+                    key={view.name ?? view.url ?? view.title}
+                    className="flex items-center justify-between p-3 border border-border rounded-lg bg-background hover:bg-accent/50 transition-colors"
+                  >
+                    <div className="flex items-center gap-3 flex-1 min-w-0">
+                      {view.icon && (
+                        <Icon
+                          name={view.icon}
+                          size={20}
+                          className="flex-shrink-0 text-muted-foreground"
+                        />
                       )}
+                      <div className="min-w-0 flex-1">
+                        <h4 className="text-sm font-medium truncate">
+                          {view.title}
+                        </h4>
+                        {view.url && (
+                          <p className="text-xs text-muted-foreground truncate">
+                            {view.url}
+                          </p>
+                        )}
+                      </div>
                     </div>
+                    <TogglePin view={view} />
                   </div>
-                  <TogglePin view={view} />
-                </div>
-              ))}
-            </div>
-          )}
+                ))}
+              </div>
+            )}
         </div>
 
         <DialogFooter>
@@ -188,10 +196,17 @@ function WorkspaceViews() {
   const [filesModalOpen, setFilesModalOpen] = useState(false);
   const [databaseModalOpen, setDatabaseModalOpen] = useState(false);
 
+  // Command palette
+  const commandPalette = useCommandPalette();
+
   // Hook for creating documents
   const upsertDocument = useUpsertDocument();
 
   const handleCreateAgent = useFocusTeamAgent();
+
+  const handleOpenSearch = () => {
+    commandPalette.setOpen(true);
+  };
 
   const handleRemoveView = async (view: View) => {
     const isUserInView = globalThis.location.pathname.includes(
@@ -341,15 +356,116 @@ function WorkspaceViews() {
     (item) => canonicalTitle(item.title) === "Views",
   );
   // Core abstractions (Documents, Workflows, Agents) - main menu items
-  const coreAbstractionTitles = ["Documents", "Workflows", "Agents"];
+  const coreAbstractionTitles = [
+    "Documents",
+    "Workflows",
+    "Agents",
+    "Views",
+    "Tools",
+  ];
   const coreItems = coreAbstractionTitles
     .map((title) =>
-      mcpItems.find((item) => canonicalTitle(item.title) === title),
+      mcpItems.find((item) => canonicalTitle(item.title) === title)
     )
     .filter((item): item is View => item !== undefined);
 
   return (
     <>
+      {/* Search button */}
+      <SidebarMenuItem>
+        <SidebarMenuButton
+          className="cursor-pointer justify-between"
+          onClick={() => handleOpenSearch()}
+        >
+          <div className="flex items-center gap-2">
+            <Icon
+              name="search"
+              size={20}
+              className="text-muted-foreground/75"
+            />
+            <span className="truncate">Search</span>
+          </div>
+          <kbd className="pointer-events-none inline-flex h-5 select-none items-center gap-1 rounded border border-border/50 bg-muted px-1.5 font-mono text-[10px] font-medium text-muted-foreground opacity-100">
+            <span className="text-xs">⌘</span>K
+          </kbd>
+        </SidebarMenuButton>
+      </SidebarMenuItem>
+
+      {/* Generate button */}
+      <SidebarMenuItem>
+        <SidebarMenuButton
+          className="cursor-pointer"
+          onClick={() => setGenerateModalOpen(true)}
+        >
+          <Icon name="add" size={20} className="text-muted-foreground/75" />
+          <span className="truncate">Generate</span>
+        </SidebarMenuButton>
+      </SidebarMenuItem>
+
+      {/* Apps with Store + button */}
+      <SidebarMenuItem>
+        <div className="group/item relative">
+          <SidebarMenuButton
+            className="cursor-pointer w-full pr-10"
+            onClick={() => {
+              navigateWorkspace("/apps");
+            }}
+          >
+            <Icon
+              name="grid_view"
+              size={20}
+              className="text-muted-foreground/75"
+            />
+            <span className="truncate">Apps</span>
+          </SidebarMenuButton>
+          <SidebarMenuAction
+            asChild
+            className="absolute right-1.5 inset-y-0 flex items-center"
+            showOnHover={false}
+          >
+          </SidebarMenuAction>
+        </div>
+      </SidebarMenuItem>
+
+      <SidebarSeparator className="my-2 -ml-1" />
+
+      {/* Core abstractions: Documents, Workflows, Agents */}
+      {coreItems.map((item) => {
+        const displayTitle = canonicalTitle(item.title);
+        const href = buildViewHrefFromView(item as View);
+        const view = item as View;
+
+        return (
+          <SidebarMenuItem key={item.title}>
+            <SidebarMenuButton asChild>
+              <Link
+                to={href}
+                onClick={() => {
+                  trackEvent("sidebar_navigation_click", {
+                    item: displayTitle,
+                  });
+                  isMobile && toggleSidebar();
+                }}
+              >
+                <Icon
+                  name={item.icon}
+                  size={20}
+                  className="text-muted-foreground/75"
+                />
+                <span className="truncate">{displayTitle}</span>
+                {view.badge && (
+                  <Badge variant="secondary" className="ml-auto text-xs">
+                    {view.badge}
+                  </Badge>
+                )}
+              </Link>
+            </SidebarMenuButton>
+          </SidebarMenuItem>
+        );
+      })}
+
+      <SidebarSeparator className="my-2 -ml-1" />
+
       {Object.entries(fromIntegration).map(([integrationId, views]) => {
         const integration = integrationMap.get(integrationId);
         const isSingleView = views.length === 1;
@@ -396,7 +512,9 @@ function WorkspaceViews() {
                                 integration,
                               });
                             }}
-                            aria-label={`Add view to ${integration?.name ?? "integration"}`}
+                            aria-label={`Add view to ${
+                              integration?.name ?? "integration"
+                            }`}
                             showOnHover
                           >
                             <span
@@ -474,7 +592,9 @@ function WorkspaceViews() {
                               integration,
                             });
                           }}
-                          aria-label={`Add view to ${integration?.name ?? "integration"}`}
+                          aria-label={`Add view to ${
+                            integration?.name ?? "integration"
+                          }`}
                           showOnHover
                         >
                           <span
@@ -559,184 +679,6 @@ function WorkspaceViews() {
           </SidebarMenuItem>
         );
       })}
-
-      {/* Generate button */}
-      <SidebarMenuItem>
-        <SidebarMenuButton
-          className="cursor-pointer"
-          onClick={() => setGenerateModalOpen(true)}
-        >
-          <Icon name="add" size={20} className="text-muted-foreground/75" />
-          <span className="truncate">Generate</span>
-        </SidebarMenuButton>
-      </SidebarMenuItem>
-
-      <SidebarSeparator className="my-2 -ml-1" />
-
-      {/* Apps with Store + button */}
-      <SidebarMenuItem>
-        <div className="group/item relative">
-          <SidebarMenuButton
-            className="cursor-pointer w-full pr-10"
-            onClick={() => {
-              navigateWorkspace("/apps");
-            }}
-          >
-            <Icon
-              name="grid_view"
-              size={20}
-              className="text-muted-foreground/75"
-            />
-            <span className="truncate">Apps</span>
-          </SidebarMenuButton>
-          <SidebarMenuAction
-            asChild
-            className="absolute right-1.5 inset-y-0 flex items-center"
-            showOnHover={false}
-          ></SidebarMenuAction>
-        </div>
-      </SidebarMenuItem>
-
-      {/* Core abstractions: Documents, Workflows, Agents */}
-      {coreItems.map((item) => {
-        const displayTitle = canonicalTitle(item.title);
-        const href = buildViewHrefFromView(item as View);
-        const view = item as View;
-
-        return (
-          <SidebarMenuItem key={item.title}>
-            <SidebarMenuButton asChild>
-              <Link
-                to={href}
-                onClick={() => {
-                  trackEvent("sidebar_navigation_click", {
-                    item: displayTitle,
-                  });
-                  isMobile && toggleSidebar();
-                }}
-              >
-                <Icon
-                  name={item.icon}
-                  size={20}
-                  className="text-muted-foreground/75"
-                />
-                <span className="truncate">{displayTitle}</span>
-                {view.badge && (
-                  <Badge variant="secondary" className="ml-auto text-xs">
-                    {view.badge}
-                  </Badge>
-                )}
-              </Link>
-            </SidebarMenuButton>
-          </SidebarMenuItem>
-        );
-      })}
-
-      <SidebarSeparator className="my-2 -ml-1" />
-
-      {/* Developer accordion */}
-      <SidebarMenuItem>
-        <Collapsible asChild defaultOpen className="group/collapsible">
-          <div>
-            <CollapsibleTrigger asChild>
-              <SidebarMenuButton className="w-full">
-                <Icon
-                  name="settings"
-                  size={20}
-                  className="text-muted-foreground/75"
-                />
-                <span className="truncate">Developer</span>
-                <Icon
-                  name="chevron_right"
-                  size={18}
-                  className="ml-auto transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90 text-muted-foreground/75"
-                />
-              </SidebarMenuButton>
-            </CollapsibleTrigger>
-            <CollapsibleContent>
-              <SidebarMenuSub>
-                {/* Tools */}
-                {toolsItem && (
-                  <SidebarMenuSubItem>
-                    <SidebarMenuSubButton asChild>
-                      <Link
-                        to={buildViewHrefFromView(toolsItem as View)}
-                        onClick={() => {
-                          trackEvent("sidebar_navigation_click", {
-                            item: "Tools",
-                          });
-                          isMobile && toggleSidebar();
-                        }}
-                      >
-                        <Icon
-                          name={toolsItem.icon}
-                          size={18}
-                          className="text-muted-foreground/75"
-                        />
-                        <span className="truncate">Tools</span>
-                        {(toolsItem as View).badge && (
-                          <Badge
-                            variant="secondary"
-                            className="ml-auto text-xs"
-                          >
-                            {(toolsItem as View).badge}
-                          </Badge>
-                        )}
-                      </Link>
-                    </SidebarMenuSubButton>
-                  </SidebarMenuSubItem>
-                )}
-
-                {/* Views */}
-                {viewsItem && (
-                  <SidebarMenuSubItem>
-                    <SidebarMenuSubButton asChild>
-                      <Link
-                        to={buildViewHrefFromView(viewsItem as View)}
-                        onClick={() => {
-                          trackEvent("sidebar_navigation_click", {
-                            item: "Views",
-                          });
-                          isMobile && toggleSidebar();
-                        }}
-                      >
-                        <Icon
-                          name={viewsItem.icon}
-                          size={18}
-                          className="text-muted-foreground/75"
-                        />
-                        <span className="truncate">Views</span>
-                        {(viewsItem as View).badge && (
-                          <Badge
-                            variant="secondary"
-                            className="ml-auto text-xs"
-                          >
-                            {(viewsItem as View).badge}
-                          </Badge>
-                        )}
-                      </Link>
-                    </SidebarMenuSubButton>
-                  </SidebarMenuSubItem>
-                )}
-
-                {/* Files */}
-                <ComingSoonMenuItem
-                  iconName="folder"
-                  label="Files"
-                  onClick={() => setFilesModalOpen(true)}
-                />
-
-                {/* Link */}
-                <ComingSoonMenuItem
-                  iconName="link"
-                  label="Link"
-                  onClick={() => setLinkModalOpen(true)}
-                />
-              </SidebarMenuSub>
-            </CollapsibleContent>
-          </div>
-        </Collapsible>
-      </SidebarMenuItem>
 
       {/* Resources section */}
       {Object.entries(fromIntegrationResources).map(
@@ -1104,10 +1046,14 @@ function WorkspaceViews() {
             setAddViewsDialogState({
               open,
               integration: open ? addViewsDialogState.integration : undefined,
-            })
-          }
+            })}
         />
       )}
+
+      <CommandPalette
+        open={commandPalette.open}
+        onOpenChange={commandPalette.onOpenChange}
+      />
     </>
   );
 }

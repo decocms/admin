@@ -49,6 +49,7 @@ export {
   useUpdateDocument,
   useUpsertDocument,
   useDeleteDocument,
+  useDocuments,
   buildDocumentUri,
 } from "./hooks/documents.ts";
 export {

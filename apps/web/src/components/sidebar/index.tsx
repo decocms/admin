@@ -120,53 +120,49 @@ function AddViewsDialog({
         </DialogHeader>
 
         <div className="max-h-80 overflow-y-auto">
-          {isLoadingViews
-            ? (
-              <div className="space-y-2">
-                {Array.from({ length: 3 }).map((_, index) => (
-                  <Skeleton key={index} className="h-12 w-full" />
-                ))}
-              </div>
-            )
-            : viewsWithStatus.length === 0
-            ? (
-              <div className="text-sm text-muted-foreground text-center py-8">
-                {views.length === 0
-                  ? "No views available from this integration"
-                  : "All available views have already been added"}
-              </div>
-            )
-            : (
-              <div className="space-y-2">
-                {viewsWithStatus.map((view) => (
-                  <div
-                    key={view.name ?? view.url ?? view.title}
-                    className="flex items-center justify-between p-3 border border-border rounded-lg bg-background hover:bg-accent/50 transition-colors"
-                  >
-                    <div className="flex items-center gap-3 flex-1 min-w-0">
-                      {view.icon && (
-                        <Icon
-                          name={view.icon}
-                          size={20}
-                          className="flex-shrink-0 text-muted-foreground"
-                        />
+          {isLoadingViews ? (
+            <div className="space-y-2">
+              {Array.from({ length: 3 }).map((_, index) => (
+                <Skeleton key={index} className="h-12 w-full" />
+              ))}
+            </div>
+          ) : viewsWithStatus.length === 0 ? (
+            <div className="text-sm text-muted-foreground text-center py-8">
+              {views.length === 0
+                ? "No views available from this integration"
+                : "All available views have already been added"}
+            </div>
+          ) : (
+            <div className="space-y-2">
+              {viewsWithStatus.map((view) => (
+                <div
+                  key={view.name ?? view.url ?? view.title}
+                  className="flex items-center justify-between p-3 border border-border rounded-lg bg-background hover:bg-accent/50 transition-colors"
+                >
+                  <div className="flex items-center gap-3 flex-1 min-w-0">
+                    {view.icon && (
+                      <Icon
+                        name={view.icon}
+                        size={20}
+                        className="flex-shrink-0 text-muted-foreground"
+                      />
+                    )}
+                    <div className="min-w-0 flex-1">
+                      <h4 className="text-sm font-medium truncate">
+                        {view.title}
+                      </h4>
+                      {view.url && (
+                        <p className="text-xs text-muted-foreground truncate">
+                          {view.url}
+                        </p>
                       )}
-                      <div className="min-w-0 flex-1">
-                        <h4 className="text-sm font-medium truncate">
-                          {view.title}
-                        </h4>
-                        {view.url && (
-                          <p className="text-xs text-muted-foreground truncate">
-                            {view.url}
-                          </p>
-                        )}
-                      </div>
                     </div>
-                    <TogglePin view={view} />
                   </div>
-                ))}
-              </div>
-            )}
+                  <TogglePin view={view} />
+                </div>
+              ))}
+            </div>
+          )}
         </div>
 
         <DialogFooter>
@@ -348,13 +344,6 @@ function WorkspaceViews() {
       );
     });
 
-  // Building blocks
-  const toolsItem = mcpItems.find(
-    (item) => canonicalTitle(item.title) === "Tools",
-  );
-  const viewsItem = mcpItems.find(
-    (item) => canonicalTitle(item.title) === "Views",
-  );
   // Core abstractions (Documents, Workflows, Agents) - main menu items
   const coreAbstractionTitles = [
     "Documents",
@@ -365,7 +354,7 @@ function WorkspaceViews() {
   ];
   const coreItems = coreAbstractionTitles
     .map((title) =>
-      mcpItems.find((item) => canonicalTitle(item.title) === title)
+      mcpItems.find((item) => canonicalTitle(item.title) === title),
     )
     .filter((item): item is View => item !== undefined);
 
@@ -422,8 +411,7 @@ function WorkspaceViews() {
             asChild
             className="absolute right-1.5 inset-y-0 flex items-center"
             showOnHover={false}
-          >
-          </SidebarMenuAction>
+          ></SidebarMenuAction>
         </div>
       </SidebarMenuItem>
 
@@ -1046,7 +1034,8 @@ function WorkspaceViews() {
             setAddViewsDialogState({
               open,
               integration: open ? addViewsDialogState.integration : undefined,
-            })}
+            })
+          }
         />
       )}
 
@@ -1067,31 +1056,6 @@ WorkspaceViews.Skeleton = () => (
     ))}
   </div>
 );
-
-// Reusable component for "Coming Soon" menu items
-interface ComingSoonMenuItemProps {
-  iconName: string;
-  label: string;
-  onClick: () => void;
-}
-
-function ComingSoonMenuItem({
-  iconName,
-  label,
-  onClick,
-}: ComingSoonMenuItemProps) {
-  return (
-    <SidebarMenuSubItem>
-      <SidebarMenuSubButton className="cursor-pointer" onClick={onClick}>
-        <Icon name={iconName} size={18} className="text-muted-foreground/75" />
-        <span className="truncate">{label}</span>
-        <Badge variant="secondary" className="ml-auto text-xs">
-          Soon
-        </Badge>
-      </SidebarMenuSubButton>
-    </SidebarMenuSubItem>
-  );
-}
 
 export function ProjectSidebar() {
   return (

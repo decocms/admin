@@ -73,7 +73,7 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
 
     // Add apps/integrations
     for (const integration of integrations) {
-      if(integration.id.startsWith("a:")) continue;
+      if (integration.id.startsWith("a:")) continue;
       const key = getConnectionAppKey(integration);
       const appKey = AppKeys.build(key);
       results.push({
@@ -124,15 +124,15 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
 
   // Filter results based on search
   const filteredResults = useMemo(() => {
-
     const query = deferredSearch.toLowerCase();
-    return searchResults
-      .filter((result) => {
-        const titleMatch = result.title.toLowerCase().includes(query);
-        const descriptionMatch = result.description?.toLowerCase().includes(query);
-        const typeMatch = result.type.toLowerCase().includes(query);
-        return titleMatch || descriptionMatch || typeMatch;
-      }); // Limit search results
+    return searchResults.filter((result) => {
+      const titleMatch = result.title.toLowerCase().includes(query);
+      const descriptionMatch = result.description
+        ?.toLowerCase()
+        .includes(query);
+      const typeMatch = result.type.toLowerCase().includes(query);
+      return titleMatch || descriptionMatch || typeMatch;
+    }); // Limit search results
   }, [searchResults, deferredSearch]);
 
   // Group results by type
@@ -145,7 +145,7 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
     };
 
     for (const result of filteredResults) {
-      if(groups[result.type].length < 3) {
+      if (groups[result.type].length < 3) {
         groups[result.type].push(result);
       }
     }
@@ -165,7 +165,7 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
     } else {
       navigate(result.href);
     }
-    
+
     onOpenChange(false);
     setSearch("");
   };
@@ -180,7 +180,7 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
   const typeLabels = {
     agent: "Agents",
     app: "Apps",
-    view: "Views", 
+    view: "Views",
     document: "Documents",
   };
 
@@ -199,7 +199,7 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
         onValueChange={setSearch}
         className="h-12"
       />
-      
+
       <CommandList className="max-h-[400px]">
         <CommandEmpty className="py-8 text-center text-sm text-muted-foreground">
           No results found for "{deferredSearch}"
@@ -209,11 +209,14 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
           if (results.length === 0) return null;
 
           return (
-            <CommandGroup 
+            <CommandGroup
               key={type + index}
               heading={
                 <div className="flex items-center gap-2 text-xs font-medium text-muted-foreground">
-                  <Icon name={typeIcons[type as keyof typeof typeIcons]} size={14} />
+                  <Icon
+                    name={typeIcons[type as keyof typeof typeIcons]}
+                    size={14}
+                  />
                   {typeLabels[type as keyof typeof typeLabels]}
                 </div>
               }
@@ -226,38 +229,31 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
                   className="flex items-center gap-3 cursor-pointer"
                 >
                   <div className="flex items-center gap-3 flex-1 min-w-0">
+                    {result.type === "agent" && (
+                      <AgentAvatar
+                        url={result.avatar}
+                        fallback={result.title}
+                        size="xs"
+                      />
+                    )}
 
-                    {
-                      result.type === "agent" && (
-                        <AgentAvatar 
-                          url={result.avatar}
-                          fallback={result.title}
-                          size="xs"
-                        />
-                      )
-                    }
+                    {result.integration && (
+                      <IntegrationAvatar
+                        size="xs"
+                        url={result.integration.icon}
+                        fallback={result.integration.name}
+                        className="!rounded-md flex-shrink-0"
+                      />
+                    )}
 
-                    {
-                      result.integration && (
-                        <IntegrationAvatar
-                          size="xs"
-                          url={result.integration.icon}
-                          fallback={result.integration.name}
-                          className="!rounded-md flex-shrink-0"
-                        />
-                      )
-                    }
-
-                    {
-                      (result.type === "document" || result.type === "view") && (
-                        <Icon
+                    {(result.type === "document" || result.type === "view") && (
+                      <Icon
                         name={result.icon || typeIcons[result.type]}
                         size={20}
                         className="text-muted-foreground flex-shrink-0"
                       />
-                      ) 
-                    }
-                    
+                    )}
+
                     <div className="flex-1 min-w-0">
                       <div className="font-medium text-sm truncate">
                         {result.title}

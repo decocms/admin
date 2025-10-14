@@ -197,21 +197,21 @@ export function useDocuments(input?: {
   if (!locator) {
     throw new InternalServerError("No locator available");
   }
-  
+
   return useQuery({
     queryKey: ["documents", locator, input?.term, input?.page, input?.pageSize],
     queryFn: async ({ signal }) => {
       try {
         // deno-lint-ignore no-explicit-any
         const client = workspaceResourceClient(locator) as any;
-        const result = await client[RESOURCE_DOCUMENT.SEARCH](
+        const result = (await client[RESOURCE_DOCUMENT.SEARCH](
           {
             term: input?.term || "",
             page: input?.page || 1,
             pageSize: input?.pageSize || 100,
           },
           { signal },
-        ) as {
+        )) as {
           items?: DocumentListItem[];
         };
 

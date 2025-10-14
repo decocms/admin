@@ -134,7 +134,7 @@ export const listAgents = createTool({
       .orderBy(desc(agents.created_at));
 
     const roles =
-      c.workspace.root === "users" || typeof c.user?.id !== "string"
+      c.workspace.root === "users"
         ? []
         : await c.policy.getUserRoles(c.user.id as string, c.workspace.slug);
     const userRoles: string[] = roles?.map((role) => role.name);

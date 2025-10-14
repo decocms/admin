@@ -81,7 +81,9 @@ export function ResourceHeader({
     <div className="flex flex-col gap-3 w-full">
       {/* Title */}
       <div className="flex items-center">
-        <h1 className="text-xl md:text-2xl font-medium text-foreground">{title}</h1>
+        <h1 className="text-xl md:text-2xl font-medium text-foreground">
+          {title}
+        </h1>
       </div>
 
       {/* Tabs and Actions Row */}
@@ -340,11 +342,7 @@ export function ResourceHeader({
       </div>
 
       {/* Mobile CTA Button */}
-      {ctaButton && (
-        <div className="md:hidden w-full">
-          {ctaButton}
-        </div>
-      )}
+      {ctaButton && <div className="md:hidden w-full">{ctaButton}</div>}
 
       {/* Filter Bar */}
       {filterBarVisible && onFiltersChange && (

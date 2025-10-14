@@ -397,8 +397,8 @@ function ResourcesV2ListTab({
   }, [tabs]);
 
   return (
-    <div className="h-screen p-0 overflow-y-auto overflow-x-hidden">
-      <div className="py-4 px-4 md:py-8 md:px-8 lg:py-16 lg:px-16 space-y-4 md:space-y-6 lg:space-y-8">
+    <div className="h-screen p-0 overflow-y-auto">
+      <div className="py-4 px-4 md:py-8 md:px-8 lg:py-16 lg:px-16 space-y-4 md:space-y-6 lg:space-y-8 h-full">
         <div className="max-w-[1500px] mx-auto w-full space-y-4 md:space-y-6 lg:space-y-8">
           {headerSlot}
           <ResourceHeader
@@ -682,8 +682,8 @@ function ResourcesV2ListTab({
             </div>
           ) : null}
           {viewMode === "table" && !loading && sortedItems.length > 0 && (
-            <div className="overflow-x-auto -mx-4 px-4 md:-mx-8 md:px-8 lg:-mx-16 lg:px-16">
-              <div className="w-full max-w-[1500px] mx-auto">
+            <div className="overflow-x-auto -mx-16 px-16">
+              <div className="w-fit min-w-full max-w-[1500px] mx-auto">
                 <Table
                   columns={columns}
                   data={sortedItems}

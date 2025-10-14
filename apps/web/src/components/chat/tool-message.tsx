@@ -7,7 +7,7 @@ import {
 import { Icon } from "@deco/ui/components/icon.tsx";
 import { Spinner } from "@deco/ui/components/spinner.tsx";
 import { cn } from "@deco/ui/lib/utils.ts";
-import { lazy, Suspense, useMemo, useRef, useState } from "react";
+import { lazy, memo, Suspense, useMemo, useRef, useState } from "react";
 import { ErrorBoundary } from "../../error-boundary.tsx";
 import { useAgent } from "../agent/provider.tsx";
 import { Picker } from "./chat-picker.tsx";
@@ -86,16 +86,14 @@ function isCustomUITool(toolName: string): toolName is CustomUITool {
 
 const MAX_TREE_DEPTH = 10;
 
-function TreeNode({
+const TreeNode = memo(function TreeNode({
   nodeKey,
   value,
   level = 0,
-  visited,
 }: {
   nodeKey?: string;
   value: unknown;
   level?: number;
-  visited?: WeakSet<object>;
 }) {
   const [isOpen, setIsOpen] = useState(level === 0);
   const indent = level * 16;
@@ -126,7 +124,7 @@ function TreeNode({
   const count = getCount(value);
   const canExpand = isExpandable(value);
 
-  // Check for max depth
+  // Check for max depth - prevents infinite recursion and excessive nesting
   if (level >= MAX_TREE_DEPTH && canExpand) {
     return (
       <div
@@ -137,29 +135,7 @@ function TreeNode({
         {nodeKey && (
           <span className="text-[#82AAFF] flex-shrink-0">{nodeKey}:</span>
         )}
-        <span className="text-[#546E7A] break-words">[Truncated]</span>
-      </div>
-    );
-  }
-
-  // Check for circular reference
-  if (
-    canExpand &&
-    visited &&
-    typeof value === "object" &&
-    value !== null &&
-    visited.has(value)
-  ) {
-    return (
-      <div
-        style={{ paddingLeft: `${indent}px` }}
-        className="flex items-start gap-2 py-1 text-sm leading-normal"
-      >
-        <div className="w-4 flex-shrink-0" />
-        {nodeKey && (
-          <span className="text-[#82AAFF] flex-shrink-0">{nodeKey}:</span>
-        )}
-        <span className="text-[#C792EA] break-words">[Circular]</span>
+        <span className="text-[#546E7A] break-words">[Max Depth Reached]</span>
       </div>
     );
   }
@@ -192,15 +168,13 @@ function TreeNode({
   }
 
   // Render expandable objects/arrays
-  const entries = Array.isArray(value)
-    ? value.map((item, index) => [index.toString(), item] as const)
-    : Object.entries(value as Record<string, unknown>);
-
-  // Add current object to visited set for child nodes
-  const nextVisited = visited || new WeakSet();
-  if (typeof value === "object" && value !== null && !nextVisited.has(value)) {
-    nextVisited.add(value);
-  }
+  const entries = useMemo(
+    () =>
+      Array.isArray(value)
+        ? value.map((item, index) => [index.toString(), item] as const)
+        : Object.entries(value as Record<string, unknown>),
+    [value],
+  );
 
   return (
     <div className="text-sm">
@@ -233,19 +207,13 @@ function TreeNode({
       {isOpen && (
         <div>
           {entries.map(([key, val]) => (
-            <TreeNode
-              key={key}
-              nodeKey={key}
-              value={val}
-              level={level + 1}
-              visited={nextVisited}
-            />
+            <TreeNode key={key} nodeKey={key} value={val} level={level + 1} />
           ))}
         </div>
       )}
     </div>
   );
-}
+});
 
 function JsonTreeView({ data }: { data: unknown }) {
   return (
@@ -258,7 +226,7 @@ function JsonTreeView({ data }: { data: unknown }) {
   );
 }
 
-function ToolStatus({
+const ToolStatus = memo(function ToolStatus({
   tool,
   isLast,
   isSingle,
@@ -293,7 +261,7 @@ function ToolStatus({
     }
   };
 
-  const getToolName = () => {
+  const toolName = useMemo(() => {
     if (!tool.toolName) {
       return "Unknown tool";
     }
@@ -301,21 +269,31 @@ function ToolStatus({
       return `Delegating to agent`;
     }
     return formatToolName(tool.toolName);
-  };
+  }, [tool.toolName]);
 
-  const getToolJson = () => {
-    return JSON.stringify(
-      {
-        toolName: tool.toolName,
-        state: tool.state,
-        input: tool.input,
-        output: tool.output,
-        errorText: tool.errorText,
-      },
-      null,
-      2,
-    ).replace(/"(\w+)":/g, '"$1":');
-  };
+  // Only compute expensive data when expanded to avoid lag during streaming
+  const toolData = useMemo(() => {
+    if (!isExpanded) return null;
+    return {
+      toolName: tool.toolName,
+      state: tool.state,
+      input: tool.input,
+      output: tool.output,
+      errorText: tool.errorText,
+    };
+  }, [
+    isExpanded,
+    tool.toolName,
+    tool.state,
+    tool.input,
+    tool.output,
+    tool.errorText,
+  ]);
+
+  const toolJson = useMemo(() => {
+    if (!isExpanded || !toolData) return "";
+    return JSON.stringify(toolData, null, 2).replace(/"(\w+)":/g, '"$1":');
+  }, [isExpanded, toolData]);
 
   const onClick = () => {
     setIsExpanded((prev) => {
@@ -335,17 +313,21 @@ function ToolStatus({
   };
 
   const handleCopy = () => {
-    navigator.clipboard.writeText(getToolJson());
-  };
-
-  const getToolData = () => {
-    return {
-      toolName: tool.toolName,
-      state: tool.state,
-      input: tool.input,
-      output: tool.output,
-      errorText: tool.errorText,
-    };
+    // Compute on-demand if not already computed
+    const jsonToCopy =
+      toolJson ||
+      JSON.stringify(
+        {
+          toolName: tool.toolName,
+          state: tool.state,
+          input: tool.input,
+          output: tool.output,
+          errorText: tool.errorText,
+        },
+        null,
+        2,
+      ).replace(/"(\w+)":/g, '"$1":');
+    navigator.clipboard.writeText(jsonToCopy);
   };
 
   return (
@@ -394,7 +376,7 @@ function ToolStatus({
                     "bg-gradient-to-r from-foreground via-foreground/50 to-foreground bg-[length:200%_100%] animate-shimmer bg-clip-text text-transparent",
                 )}
               >
-                {getToolName()}
+                {toolName}
               </div>
               <Icon
                 className={cn("text-sm ml-auto", isExpanded && "rotate-90")}
@@ -459,7 +441,7 @@ function ToolStatus({
                     style={{ background: "#263238", color: "#EEFFFF" }}
                   >
                     <code className="select-text cursor-auto">
-                      {getToolJson()}
+                      {toolJson || "Loading..."}
                     </code>
                   </pre>
                 }
@@ -471,23 +453,23 @@ function ToolStatus({
                       style={{ background: "#263238", color: "#EEFFFF" }}
                     >
                       <code className="select-text cursor-auto">
-                        {getToolJson()}
+                        {toolJson || "Loading..."}
                       </code>
                     </pre>
                   }
                 >
-                  <LazyHighlighter language="json" content={getToolJson()} />
+                  <LazyHighlighter language="json" content={toolJson || "{}"} />
                 </Suspense>
               </ErrorBoundary>
-            ) : (
-              <JsonTreeView data={getToolData()} />
-            )}
+            ) : toolData ? (
+              <JsonTreeView data={toolData} />
+            ) : null}
           </div>
         </div>
       )}
     </div>
   );
-}
+});
 
 function ImagePrompt({
   prompt,

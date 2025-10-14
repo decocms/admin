@@ -1,27 +1,21 @@
-import { lazy, Suspense } from "react";
-import { Spinner } from "@deco/ui/components/spinner.tsx";
-import { ViewsTabs } from "./tabs-nav.tsx";
+import { lazy } from "react";
+import { TabbedPageLayout } from "../common/tabbed-page-layout.tsx";
 
-// Import the legacy views list component
 const ViewsListLegacy = lazy(() => import("./list.tsx"));
 
 export default function ViewsLegacyPage() {
   return (
-    <div className="h-full flex flex-col">
-      <div className="p-4 pb-0">
-        <ViewsTabs active="legacy" />
-      </div>
-      <div className="flex-1 flex flex-col">
-        <Suspense
-          fallback={
-            <div className="flex flex-1 items-center justify-center">
-              <Spinner />
-            </div>
-          }
-        >
-          <ViewsListLegacy />
-        </Suspense>
-      </div>
-    </div>
+    <TabbedPageLayout
+      component={ViewsListLegacy}
+      title="Views"
+      tabs={[
+        { id: "all", label: "All", path: "/views" },
+        { id: "legacy", label: "Legacy", path: "/views/legacy" },
+      ]}
+      getActiveTab={(pathname) =>
+        pathname.includes("/views/legacy") ? "legacy" : "all"
+      }
+      viewModeKey="views-legacy"
+    />
   );
 }

@@ -1,13 +1,9 @@
 import type { TriggerOutput } from "@deco/sdk";
 import { useAgents, useIntegrations, useListTriggers } from "@deco/sdk";
-import { Button } from "@deco/ui/components/button.tsx";
-import { Icon } from "@deco/ui/components/icon.tsx";
 import { Skeleton } from "@deco/ui/components/skeleton.tsx";
-import { useViewMode } from "@deco/ui/hooks/use-view-mode.ts";
-import { Suspense, useCallback, useState, type ReactNode } from "react";
+import { Suspense, useCallback, useState } from "react";
 import { useNavigateWorkspace } from "../../hooks/use-navigate-workspace.ts";
 import { EmptyState } from "../common/empty-state.tsx";
-import { ListPageHeader } from "../common/list-page-header.tsx";
 import { Table, type TableColumn } from "../common/table/index.tsx";
 import {
   AgentInfo,
@@ -20,8 +16,6 @@ import { TriggerCard } from "./trigger-card.tsx";
 import { TriggerModal } from "./trigger-dialog.tsx";
 import { TriggerToggle } from "./trigger-toggle.tsx";
 import { TriggerType } from "./trigger-type.tsx";
-import { type DecopilotContextValue } from "../decopilot/context.tsx";
-import { DecopilotLayout } from "../layout/decopilot-layout.tsx";
 
 const SORTABLE_KEYS = ["title", "type", "target", "author"] as const;
 
@@ -59,30 +53,46 @@ function ListTriggersSkeleton() {
   );
 }
 
+interface ListTriggersProps {
+  searchTerm?: string;
+  viewMode?: "cards" | "table";
+}
+
 export default function ListTriggers({
-  headerSlot,
-}: {
-  headerSlot?: ReactNode;
-} = {}) {
+  searchTerm = "",
+  viewMode = "cards",
+}: ListTriggersProps) {
   return (
     <Suspense fallback={<ListTriggersSkeleton />}>
-      <ListTriggersSuspended headerSlot={headerSlot} />
+      <ListTriggersSuspended searchTerm={searchTerm} viewMode={viewMode} />
     </Suspense>
   );
 }
 
-function ListTriggersSuspended({ headerSlot }: { headerSlot?: ReactNode }) {
+function ListTriggersSuspended({
+  searchTerm = "",
+  viewMode = "cards",
+}: {
+  searchTerm?: string;
+  viewMode?: "cards" | "table";
+}) {
   const { data, isLoading } = useListTriggers();
-  const [search, setSearch] = useState("");
-  const [viewMode, setViewMode] = useViewMode("triggers");
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  const navigate = useNavigateWorkspace();
 
   const triggers = (data?.triggers || []) as TriggerOutput[];
 
+  const handleTriggerClick = useCallback(
+    (trigger: TriggerOutput) => {
+      navigate(`/trigger/${trigger.id}`);
+    },
+    [navigate],
+  );
+
   const filteredTriggers =
-    search.trim().length > 0
+    searchTerm.trim().length > 0
       ? triggers.filter((t) =>
-          t.data.title.toLowerCase().includes(search.toLowerCase()),
+          t.data.title.toLowerCase().includes(searchTerm.toLowerCase()),
         )
       : triggers;
 
@@ -90,80 +100,47 @@ function ListTriggersSuspended({ headerSlot }: { headerSlot?: ReactNode }) {
     return <ListTriggersSkeleton />;
   }
 
-  const decopilotContextValue: DecopilotContextValue = {
-    additionalTools: {},
-  };
-
   return (
-    <DecopilotLayout value={decopilotContextValue}>
-      <div className="p-4 flex flex-col gap-4 h-full">
-        {headerSlot}
-        {isCreateModalOpen && (
-          <TriggerModal
-            isOpen={isCreateModalOpen}
-            onOpenChange={setIsCreateModalOpen}
-          />
-        )}
-        <ListPageHeader
-          filter={{
-            items: [],
-            onClick: () => {},
-          }}
-          input={{
-            placeholder: "Search trigger",
-            value: search,
-            onChange: (e) => setSearch(e.target.value),
-          }}
-          view={{
-            viewMode,
-            onChange: setViewMode,
-          }}
-          controlsAlign="start"
-          actionsRight={
-            <Button
-              variant="special"
-              title="Add Trigger"
-              onClick={() => setIsCreateModalOpen(true)}
-            >
-              <Icon name="add" />
-              <span className="hidden md:inline">New Trigger</span>
-            </Button>
+    <>
+      {isCreateModalOpen && (
+        <TriggerModal
+          isOpen={isCreateModalOpen}
+          onOpenChange={setIsCreateModalOpen}
+        />
+      )}
+
+      {filteredTriggers.length === 0 ? (
+        <EmptyState
+          icon="cable"
+          title={
+            searchTerm.trim().length > 0
+              ? "No triggers found"
+              : "No triggers yet"
+          }
+          description={
+            searchTerm.trim().length > 0
+              ? "Try adjusting your search terms to find what you're looking for."
+              : "Create your first trigger to automate your agent workflows and respond to events automatically."
           }
         />
-
-        <div className="flex-1 min-h-0 overflow-x-auto">
-          {filteredTriggers.length === 0 ? (
-            <EmptyState
-              icon="cable"
-              title={
-                search.trim().length > 0
-                  ? "No triggers found"
-                  : "No triggers yet"
-              }
-              description={
-                search.trim().length > 0
-                  ? "Try adjusting your search terms to find what you're looking for."
-                  : "Create your first trigger to automate your agent workflows and respond to events automatically."
-              }
-              buttonProps={{
-                children: "Create Trigger",
-                onClick: () => {
-                  // This will trigger the modal to open
-                  const createButton = document.querySelector(
-                    '[title="Add Trigger"]',
-                  ) as HTMLButtonElement;
-                  createButton?.click();
-                },
-              }}
-            />
-          ) : viewMode === "table" ? (
+      ) : viewMode === "table" ? (
+        <div className="overflow-x-auto -mx-16 px-16">
+          <div className="w-fit min-w-full max-w-[1500px] mx-auto">
             <TableView triggers={filteredTriggers} />
-          ) : (
-            <CardsView triggers={filteredTriggers} />
-          )}
+          </div>
         </div>
-      </div>
-    </DecopilotLayout>
+      ) : (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          {filteredTriggers.map((trigger) => (
+            <TriggerCard
+              key={trigger.id}
+              trigger={trigger}
+              onClick={handleTriggerClick}
+            />
+          ))}
+        </div>
+      )}
+    </>
   );
 }
 
@@ -312,26 +289,5 @@ function TableView({ triggers }: { triggers: TriggerOutput[] }) {
       onSort={handleSort}
       onRowClick={handleTriggerClick}
     />
-  );
-}
-
-function CardsView({ triggers }: { triggers: TriggerOutput[] }) {
-  const navigate = useNavigateWorkspace();
-  const handleTriggerClick = useCallback(
-    (trigger: TriggerOutput) => {
-      navigate(`/trigger/${trigger.id}`);
-    },
-    [navigate],
-  );
-  return (
-    <div className="grid gap-4 grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
-      {triggers.map((trigger, index) => (
-        <TriggerCard
-          key={`trigger-card-${trigger.id}-${index}`}
-          trigger={trigger}
-          onClick={handleTriggerClick}
-        />
-      ))}
-    </div>
   );
 }

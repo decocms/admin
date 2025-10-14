@@ -1,27 +1,25 @@
-import { lazy, Suspense } from "react";
-import { Spinner } from "@deco/ui/components/spinner.tsx";
-import { DocumentsTabs } from "./tabs-nav.tsx";
+import { lazy } from "react";
+import { TabbedPageLayout } from "../common/tabbed-page-layout.tsx";
 
-// Import the legacy prompts list component
 const PromptsListLegacy = lazy(() => import("../prompts/list/list.tsx"));
 
 export default function PromptsLegacyPage() {
   return (
-    <div className="h-full flex flex-col">
-      <div className="p-4 pb-0">
-        <DocumentsTabs active="prompts" />
-      </div>
-      <div className="flex-1 flex flex-col">
-        <Suspense
-          fallback={
-            <div className="flex flex-1 items-center justify-center">
-              <Spinner />
-            </div>
-          }
-        >
-          <PromptsListLegacy />
-        </Suspense>
-      </div>
-    </div>
+    <TabbedPageLayout
+      component={PromptsListLegacy}
+      title="Documents"
+      tabs={[
+        { id: "all", label: "All", path: "/documents" },
+        {
+          id: "prompts",
+          label: "Prompts (Legacy)",
+          path: "/documents/prompts",
+        },
+      ]}
+      getActiveTab={(pathname) =>
+        pathname.includes("/documents/prompts") ? "prompts" : "all"
+      }
+      viewModeKey="prompts"
+    />
   );
 }

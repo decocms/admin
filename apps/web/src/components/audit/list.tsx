@@ -410,12 +410,128 @@ export function AuditListContent({
 
   return (
     <div
-      className="flex h-full flex-col"
+      className="flex h-full flex-col max-w-[1500px] mx-auto"
       onKeyDown={handleKeyboardNavigation}
       tabIndex={0}
     >
       <div className="flex flex-1 min-h-0">
-        <ResizablePanelGroup direction="horizontal" className="flex">
+        {/* Mobile: Show only active thread or list */}
+        <div className="md:hidden flex flex-col h-full w-full">
+          {activeThread ? (
+            <div className="flex h-full min-w-0 flex-col bg-background overflow-hidden">
+              <Suspense
+                fallback={
+                  <div className="flex h-full flex-col p-4 space-y-4">
+                    <div className="flex items-center justify-between">
+                      <Skeleton className="h-6 w-2/3" />
+                      <div className="flex gap-2">
+                        <Skeleton className="h-8 w-8 rounded" />
+                        <Skeleton className="h-8 w-8 rounded" />
+                      </div>
+                    </div>
+                    <Skeleton className="h-4 w-1/3" />
+                    <div className="flex-1 space-y-4">
+                      <Skeleton className="h-20 w-full rounded-lg" />
+                      <Skeleton className="h-24 w-3/4 rounded-lg ml-auto" />
+                      <Skeleton className="h-32 w-full rounded-lg" />
+                    </div>
+                  </div>
+                }
+              >
+                <ThreadConversation
+                  thread={activeThread}
+                  onNavigate={handleNavigateThread}
+                  canNavigatePrevious={activeThreadIndex > 0}
+                  canNavigateNext={
+                    activeThreadIndex >= 0 &&
+                    activeThreadIndex < threads.length - 1
+                  }
+                />
+              </Suspense>
+            </div>
+          ) : (
+            <div className="flex h-full min-w-0 flex-col bg-background">
+              <div className="flex flex-col gap-2 px-2 pt-2 pb-2">
+                {showFilters ? (
+                  <div className="flex min-w-0 flex-col gap-2">
+                    <AuditFilters
+                      agents={agents}
+                      members={members}
+                      selectedAgent={selectedAgent}
+                      selectedUser={selectedUser}
+                      onAgentChange={handleAgentChange}
+                      onUserChange={handleUserChange}
+                    />
+                  </div>
+                ) : null}
+                {rowsPerPageControl}
+              </div>
+              {!threads.length ? (
+                <div className="flex flex-1 items-center justify-center text-muted-foreground">
+                  <span className="text-lg font-medium">
+                    No audit events found
+                  </span>
+                </div>
+              ) : (
+                <>
+                  <div className="flex-1 overflow-auto px-2 pb-2 pt-2">
+                    <AuditTable
+                      threads={threads}
+                      sort={sort}
+                      columnsDenyList={columnsDenyList}
+                      onSortChange={handleSortChange}
+                      onRowClick={handleThreadSelect}
+                      activeThreadId={selectedThreadId}
+                      selectedAgent={selectedAgent}
+                      selectedUser={selectedUser}
+                    />
+                  </div>
+                  <div className="border-t border-border bg-sidebar/40 px-4 py-3">
+                    <Pagination>
+                      <PaginationContent>
+                        <PaginationItem>
+                          <PaginationPrevious
+                            href="#"
+                            onClick={(e) => {
+                              e.preventDefault();
+                              handlePrevPage();
+                            }}
+                            aria-disabled={!pagination?.hasPrev}
+                            tabIndex={!pagination?.hasPrev ? -1 : 0}
+                            className={
+                              !pagination?.hasPrev
+                                ? "opacity-50 pointer-events-none"
+                                : ""
+                            }
+                          />
+                        </PaginationItem>
+                        <PaginationItem>
+                          <PaginationNext
+                            href="#"
+                            onClick={(e) => {
+                              e.preventDefault();
+                              if (pagination?.hasMore) handleNextPage();
+                            }}
+                            aria-disabled={!pagination?.hasMore}
+                            tabIndex={!pagination?.hasMore ? -1 : 0}
+                            className={
+                              !pagination?.hasMore
+                                ? "opacity-50 pointer-events-none"
+                                : ""
+                            }
+                          />
+                        </PaginationItem>
+                      </PaginationContent>
+                    </Pagination>
+                  </div>
+                </>
+              )}
+            </div>
+          )}
+        </div>
+
+        {/* Desktop: Resizable panels */}
+        <ResizablePanelGroup direction="horizontal" className="hidden md:flex">
           <ResizablePanel
             defaultSize={55}
             minSize={20}
@@ -499,13 +615,13 @@ export function AuditListContent({
               )}
             </div>
           </ResizablePanel>
-          <ResizableHandle withHandle className="bg-transparent" />
+          <ResizableHandle withHandle />
           <ResizablePanel
             defaultSize={45}
             minSize={30}
             className="min-w-[360px]"
           >
-            <div className="flex h-full min-w-0 flex-col bg-background border border-border rounded-xl overflow-hidden">
+            <div className="flex h-full min-w-0 flex-col bg-background overflow-hidden">
               {activeThread ? (
                 <Suspense
                   fallback={

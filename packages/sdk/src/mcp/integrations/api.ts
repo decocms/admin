@@ -10,7 +10,7 @@ import {
   SELECT_API_KEY_QUERY,
 } from "../api-keys/api.ts";
 import { CallToolRequestSchema } from "@modelcontextprotocol/sdk/types.js";
-import { and, eq, or } from "drizzle-orm";
+import { and, eq, getTableColumns, or } from "drizzle-orm";
 import { z } from "zod";
 import { AppName } from "../../common/index.ts";
 import {
@@ -39,10 +39,7 @@ import type { Workspace } from "../../path.ts";
 import { Json } from "../../storage/index.ts";
 import type { QueryResult } from "../../storage/supabase/client.ts";
 import { KnowledgeBaseID } from "../../utils/index.ts";
-import {
-  IMPORTANT_ROLES,
-  matchByWorkspaceOrProjectLocatorForAgents,
-} from "../agents/api.ts";
+import { IMPORTANT_ROLES } from "../agents/api.ts";
 import {
   assertHasLocator,
   assertHasWorkspace,
@@ -77,6 +74,7 @@ import {
   registryTools,
 } from "../schema.ts";
 import { createServerClient } from "../utils.ts";
+import { filterByWorkspaceOrLocator } from "../ownership.ts";
 
 const SELECT_INTEGRATION_QUERY = `
           *,
@@ -524,30 +522,18 @@ export const listIntegrations = createIntegrationManagementTool({
       // Query agents
       c.drizzle
         .select({
-          id: agents.id,
-          name: agents.name,
-          avatar: agents.avatar,
-          instructions: agents.instructions,
-          description: agents.description,
-          tools_set: agents.tools_set,
-          max_steps: agents.max_steps,
-          max_tokens: agents.max_tokens,
-          model: agents.model,
-          memory: agents.memory,
-          views: agents.views,
-          created_at: agents.created_at,
-          workspace: agents.workspace,
-          temperature: agents.temperature,
-          visibility: agents.visibility,
-          access: agents.access,
-          access_id: agents.access_id,
-          project_id: projects.id,
+          ...getTableColumns(agents),
           org_id: organizations.id,
         })
         .from(agents)
         .leftJoin(projects, eq(agents.project_id, projects.id))
         .leftJoin(organizations, eq(projects.org_id, organizations.id))
-        .where(matchByWorkspaceOrProjectLocatorForAgents(workspace, c.locator))
+        .where(
+          filterByWorkspaceOrLocator({
+            table: agents,
+            ctx: c,
+          }),
+        )
         .then((result) => ({ data: result })),
       listKnowledgeBases.handler({}),
     ]);
@@ -774,15 +760,7 @@ export const getIntegration = createIntegrationManagementTool({
             })
         : c.drizzle
             .select({
-              id: agents.id,
-              name: agents.name,
-              description: agents.description,
-              avatar: agents.avatar,
-              created_at: agents.created_at,
-              workspace: agents.workspace,
-              access: agents.access,
-              access_id: agents.access_id,
-              project_id: projects.id,
+              ...getTableColumns(agents),
               org_id: organizations.id,
             })
             .from(agents)
@@ -790,11 +768,11 @@ export const getIntegration = createIntegrationManagementTool({
             .leftJoin(organizations, eq(projects.org_id, organizations.id))
             .where(
               and(
+                filterByWorkspaceOrLocator({
+                  table: agents,
+                  ctx: c,
+                }),
                 eq(agents.id, uuid),
-                matchByWorkspaceOrProjectLocatorForAgents(
-                  c.workspace.value,
-                  c.locator,
-                ),
               ),
             )
             .limit(1)
@@ -876,12 +854,14 @@ export const createIntegration = createIntegrationManagementTool({
   handler: async (_integration, c) => {
     assertHasWorkspace(c);
     await assertWorkspaceResourceAccess(c);
+    const projectId = await getProjectIdFromContext(c);
 
     const { appId, clientIdFromApp, ...integration } = _integration;
     const baseIntegration = {
       ...NEW_INTEGRATION_TEMPLATE,
       ...integration,
-      workspace: c.workspace.value,
+      workspace: projectId ? null : c.workspace?.value,
+      project_id: projectId,
       id: integration.id ? parseId(integration.id).uuid : undefined,
     };
 
@@ -889,12 +869,9 @@ export const createIntegration = createIntegrationManagementTool({
       ? await getRegistryApp.handler({ name: clientIdFromApp })
       : undefined;
 
-    const projectId = await getProjectIdFromContext(c);
-
     const payload = {
       ...baseIntegration,
       app_id: appId ?? fetchedApp?.id,
-      project_id: projectId,
     };
 
     const existingIntegration = payload.id
@@ -907,11 +884,11 @@ export const createIntegration = createIntegrationManagementTool({
           .leftJoin(organizations, eq(projects.org_id, organizations.id))
           .where(
             and(
+              filterByWorkspaceOrLocator({
+                table: integrations,
+                ctx: c,
+              }),
               eq(integrations.id, payload.id),
-              matchByWorkspaceOrProjectLocatorForIntegrations(
-                c.workspace.value,
-                c.locator,
-              ),
             ),
           )
           .limit(1)
@@ -973,9 +950,7 @@ export const updateIntegration = createIntegrationManagementTool({
 
     const { name, description, icon, connection, access, appId } = integration;
 
-    // For UPDATE queries with joins, we need to use a different approach
-    // First, let's get the project ID if we have a locator
-    const projectId = c.locator ? await getProjectIdFromContext(c) : null;
+    const projectId = await getProjectIdFromContext(c);
 
     const [data] = await c.drizzle
       .update(integrations)
@@ -1030,9 +1005,7 @@ export const deleteIntegration = createIntegrationManagementTool({
       throw new UserInputError("Cannot delete an agent integration");
     }
 
-    // For UPDATE queries with joins, we need to use a different approach
-    // First, let's get the project ID if we have a locator
-    const projectId = c.locator ? await getProjectIdFromContext(c) : null;
+    const projectId = await getProjectIdFromContext(c);
 
     await c.drizzle
       .delete(integrations)

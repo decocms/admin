@@ -64,13 +64,13 @@ ALTER TABLE public.deco_chat_api_keys
 
 -- 1. Workspace-scoped uniqueness (for legacy/workspace-level API keys)
 --    Allows (name, NULL) when transitioning to project-scoped
-CREATE UNIQUE INDEX unique_api_key_name_workspace 
+CREATE UNIQUE INDEX IF NOT EXISTS unique_api_key_name_workspace 
   ON public.deco_chat_api_keys (name, workspace) 
   WHERE workspace IS NOT NULL;
 
 -- 2. Project-scoped uniqueness (for new project-level API keys)
 --    Allows (name, NULL) when project_id is not yet populated
-CREATE UNIQUE INDEX unique_api_key_name_project 
+CREATE UNIQUE INDEX IF NOT EXISTS unique_api_key_name_project 
   ON public.deco_chat_api_keys (name, project_id) 
   WHERE project_id IS NOT NULL;
 
@@ -92,13 +92,13 @@ ALTER TABLE public.deco_chat_customer
 
 -- 1. Workspace-scoped uniqueness (for legacy billing)
 --    One Stripe customer per workspace when workspace is set
-CREATE UNIQUE INDEX deco_chat_customer_workspace_key 
+CREATE UNIQUE INDEX IF NOT EXISTS deco_chat_customer_workspace_key 
   ON public.deco_chat_customer (workspace) 
   WHERE workspace IS NOT NULL;
 
 -- 2. Org-scoped uniqueness (for new billing model)
 --    One Stripe customer per organization
-CREATE UNIQUE INDEX deco_chat_customer_org_id_key 
+CREATE UNIQUE INDEX IF NOT EXISTS deco_chat_customer_org_id_key 
   ON public.deco_chat_customer (org_id) 
   WHERE org_id IS NOT NULL;
 

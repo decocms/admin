@@ -629,7 +629,11 @@ function WorkspaceViews() {
 
         return (
           <SidebarMenuItem key={integrationId}>
-            <Collapsible asChild defaultOpen className="group/collapsible">
+            <Collapsible
+              asChild
+              defaultOpen={false}
+              className="group/collapsible"
+            >
               <div className="group/integration-header relative">
                 <CollapsibleTrigger asChild>
                   <SidebarMenuButton className="w-full pr-2!">
@@ -806,7 +810,11 @@ function WorkspaceViews() {
 
           return (
             <SidebarMenuItem key={`resource-${integrationId}`}>
-              <Collapsible asChild defaultOpen className="group/collapsible">
+              <Collapsible
+                asChild
+                defaultOpen={false}
+                className="group/collapsible"
+              >
                 <div className="group/integration-header relative">
                   <CollapsibleTrigger asChild>
                     <SidebarMenuButton className="w-full pr-8">
@@ -1260,22 +1268,18 @@ WorkspaceViews.Skeleton = () => (
 export function ProjectSidebar() {
   return (
     <Sidebar variant="sidebar">
-      <SidebarContent className="flex flex-col h-full overflow-x-hidden">
-        <div className="flex flex-col flex-1 min-h-0">
-          <div className="flex-none">
-            <SidebarGroup className="font-medium">
-              <SidebarGroupContent>
-                <SidebarMenu className="gap-0.5">
-                  <Suspense fallback={<WorkspaceViews.Skeleton />}>
-                    <WorkspaceViews />
-                  </Suspense>
-                </SidebarMenu>
-              </SidebarGroupContent>
-            </SidebarGroup>
-          </div>
-        </div>
-        <SidebarFooter />
+      <SidebarContent className="flex-1 overflow-x-hidden">
+        <SidebarGroup className="font-medium">
+          <SidebarGroupContent>
+            <SidebarMenu className="gap-0.5">
+              <Suspense fallback={<WorkspaceViews.Skeleton />}>
+                <WorkspaceViews />
+              </Suspense>
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
       </SidebarContent>
+      <SidebarFooter />
     </Sidebar>
   );
 }

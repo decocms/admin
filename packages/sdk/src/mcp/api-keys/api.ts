@@ -1,4 +1,4 @@
-import { and, eq, or } from "drizzle-orm";
+import { and, eq, isNull, or, getTableColumns } from "drizzle-orm";
 import { z } from "zod";
 import { userFromJWT } from "../../auth/user.ts";
 import {
@@ -29,6 +29,7 @@ import {
 } from "../projects/util.ts";
 import { getRegistryApp } from "../registry/api.ts";
 import { apiKeys, organizations, projects } from "../schema.ts";
+import { filterByWorkspaceOrLocator } from "../ownership.ts";
 
 export const SELECT_API_KEY_QUERY = `
   id,
@@ -94,7 +95,7 @@ const AppClaimsSchema = z.object({
 export const ApiKeySchema = z.object({
   id: z.string().describe("The unique identifier of the API key"),
   name: z.string().describe("The name of the API key"),
-  workspace: z.string().describe("The workspace ID"),
+  workspace: z.string().nullable().describe("The workspace ID"),
   enabled: z.boolean().describe("Whether the API key is enabled"),
   policies: z
     .array(StatementSchema)
@@ -188,7 +189,6 @@ export const createApiKey = createTool({
     assertHasWorkspace(c);
     assertHasLocator(c);
     await assertWorkspaceResourceAccess(c);
-    const workspace = c.workspace.value;
 
     // this code ensures that we always validate stat against the app owner before issuing an JWT.
     if (claims?.appName) {
@@ -233,7 +233,7 @@ export const createApiKey = createTool({
       .from("deco_chat_api_keys")
       .insert({
         name,
-        workspace,
+        workspace: projectId ? null : c.workspace?.value,
         project_id: projectId,
         enabled: true,
         policies: policies || [],
@@ -277,18 +277,27 @@ export const reissueApiKey = createTool({
     const projectId = await getProjectIdFromContext(c);
     const workspace = c.workspace.value;
 
-    // First, verify the API key exists and is accessible
-    const { data: apiKey, error } = await c.db
-      .from("deco_chat_api_keys")
-      .select(SELECT_API_KEY_QUERY)
-      .eq("id", id)
-      .or(buildWorkspaceOrProjectIdConditions(workspace, projectId))
-      .is("deleted_at", null)
-      .single();
+    const filters = [
+      filterByWorkspaceOrLocator({
+        table: apiKeys,
+        ctx: c,
+      }),
+      eq(apiKeys.id, id),
+      isNull(apiKeys.deleted_at),
+    ];
 
-    if (error) {
-      throw new InternalServerError(error.message);
-    }
+    // First, verify the API key exists and is accessible
+    const [apiKey] = await c.drizzle
+      .select({
+        ...getTableColumns(apiKeys),
+        project_id: apiKeys.project_id,
+        workspace: apiKeys.workspace,
+      })
+      .from(apiKeys)
+      .leftJoin(projects, eq(apiKeys.project_id, projects.id))
+      .leftJoin(organizations, eq(projects.org_id, organizations.id))
+      .where(and(...filters))
+      .limit(1);
 
     if (!apiKey) {
       throw new NotFoundError("API key not found");

@@ -36,10 +36,7 @@ export {
   useStartWorkflow,
   buildWorkflowUri,
 } from "./hooks/resources-workflow.ts";
-export {
-  useWorkflow as useWorkflowByUriV2,
-  useWorkflowStatus as useWorkflowStatusV2,
-} from "./hooks/resources-workflow.ts";
+export { useWorkflow as useWorkflowByUriV2 } from "./hooks/resources-workflow.ts";
 export {
   useTool as useToolByUriV2,
   useToolCallV2,

@@ -1,22 +1,21 @@
-import { type ReactNode, useEffect, useMemo } from "react";
-import { useLocation, useSearchParams } from "react-router";
-import { useNavigateWorkspace } from "../../hooks/use-navigate-workspace.ts";
+import { useEffect } from "react";
+import { useSearchParams } from "react-router";
 import { useDecopilotOpen } from "../layout/decopilot-layout.tsx";
 import { ResourcesV2List } from "../resources-v2/list.tsx";
+import { useWorkflowTabs } from "./use-workflow-tabs.ts";
 
 /**
  * Workflows resource list component that renders the ResourcesV2List
  * with the specific integration ID for workflows management
  */
 export function WorkflowsResourceList({
-  headerSlot,
+  resourceName = "workflow",
 }: {
-  headerSlot?: ReactNode;
+  resourceName?: "workflow" | "workflow_run";
 } = {}) {
   const [searchParams] = useSearchParams();
-  const location = useLocation();
-  const navigateWorkspace = useNavigateWorkspace();
   const { setOpen: setDecopilotOpen } = useDecopilotOpen();
+  const { tabs, activeTab } = useWorkflowTabs();
 
   // Automatically open Decopilot if openDecopilot query param is present
   useEffect(() => {
@@ -26,36 +25,11 @@ export function WorkflowsResourceList({
     }
   }, [searchParams, setDecopilotOpen]);
 
-  // Determine active tab based on current route
-  const activeTab = useMemo(() => {
-    const pathname = location.pathname;
-    if (pathname.includes("/workflows/runs")) return "runs";
-    if (pathname.includes("/workflows/triggers")) return "triggers";
-    return "all";
-  }, [location.pathname]);
-
   return (
     <ResourcesV2List
       integrationId="i:workflows-management"
-      resourceName="workflow"
-      headerSlot={headerSlot}
-      tabs={[
-        {
-          id: "all",
-          label: "All",
-          onClick: () => navigateWorkspace("/workflows"),
-        },
-        {
-          id: "runs",
-          label: "Runs",
-          onClick: () => navigateWorkspace("/workflows/runs"),
-        },
-        {
-          id: "triggers",
-          label: "Triggers",
-          onClick: () => navigateWorkspace("/workflows/triggers"),
-        },
-      ]}
+      resourceName={resourceName}
+      tabs={tabs}
       activeTab={activeTab}
     />
   );

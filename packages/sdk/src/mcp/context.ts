@@ -6,6 +6,7 @@ import type { ToolAnnotations } from "@modelcontextprotocol/sdk/types.d.ts";
 import * as api from "@opentelemetry/api";
 import { createServerClient } from "@supabase/ssr";
 import type { User as SupaUser } from "@supabase/supabase-js";
+import type { Client } from "@deco/sdk/storage";
 import { Cloudflare } from "cloudflare";
 import { AsyncLocalStorage } from "node:async_hooks";
 import { z } from "zod";

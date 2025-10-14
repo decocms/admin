@@ -299,7 +299,7 @@ export const createGenerateStepTool = (env: Env) =>
                 outputSchema: {
                   type: "object",
                   description:
-                    "Complete JSON Schema for return value with type, properties, and required array",
+                    'Complete JSON Schema for return value. CRITICAL: When calling MCP tools, wrap their output in { success: boolean, result: <tool output schema>, error?: string }. DO NOT invent custom properties - use the tool\'s actual output schema inside "result".',
                 },
                 input: {
                   type: "object",

@@ -179,10 +179,43 @@ ${idx + 1}. ${tool.name} - ${tool.integrationName}
 RULES FOR SELECTED TOOLS:
 1. If user mentions @tool-name, YOU MUST use that exact tool
 2. Use the integration ID and tool name EXACTLY as shown above
-3. Match your input/output to the schemas provided
-4. ALWAYS wrap tool calls in try/catch
-5. Return object matching the outputSchema you define
-6. In catch block, return ALL required properties with default values
+3. CRITICAL: When calling MCP tools, your outputSchema MUST wrap the tool's output in this structure:
+   {
+     "type": "object",
+     "properties": {
+       "success": { "type": "boolean" },
+       "result": { <PASTE THE TOOL'S OUTPUT SCHEMA HERE> },
+       "error": { "type": "string" }
+     },
+     "required": ["success"]
+   }
+4. Your code should return: { success: true, result: toolResult } or { success: false, error: "..." }
+5. NEVER invent a custom output schema that doesn't match the tool's actual output
+6. ALWAYS wrap tool calls in try/catch
+7. In catch block, return { success: false, error: String(error), result: null }
+
+EXAMPLE for calling an MCP tool:
+If THREADS_LIST has outputSchema: { threads: [], pagination: {} }
+Then YOUR outputSchema should be:
+{
+  "type": "object",
+  "properties": {
+    "success": { "type": "boolean" },
+    "result": {
+      "type": "object",
+      "properties": {
+        "threads": { "type": "array" },
+        "pagination": { "type": "object" }
+      }
+    },
+    "error": { "type": "string" }
+  },
+  "required": ["success"]
+}
+
+And your code:
+const result = await ctx.env['i:...'].THREADS_LIST(input);
+return { success: true, result: result };
 
 ========================================
 `;
@@ -237,11 +270,25 @@ CRITICAL - ALL FIELDS ARE REQUIRED:
 4. code - ES module with try/catch
 5. inputSchema - MUST include "type", "properties", "required"
 6. outputSchema - MUST include "type", "properties", "required"
+   ⚠️ CRITICAL: When calling MCP tools, ALWAYS use this structure:
+   {
+     "type": "object",
+     "properties": {
+       "success": { "type": "boolean" },
+       "result": { <COPY THE TOOL'S ACTUAL OUTPUT SCHEMA HERE> },
+       "error": { "type": "string" }
+     },
+     "required": ["success"]
+   }
 7. input - MUST have values for ALL inputSchema.properties
 8. primaryIntegration - Integration ID
 9. primaryTool - Tool name being called
 
 IF YOU SKIP inputSchema, outputSchema, or input, THE SYSTEM WILL FAIL!
+
+⚠️ COMMON MISTAKE: DO NOT invent custom output properties when calling MCP tools!
+   BAD:  { threads: [], count: 0, success: true }  ❌
+   GOOD: { success: true, result: { threads: [], pagination: {} } }  ✅
 `;
 
 /**

@@ -8,7 +8,7 @@ import {
   useNewStepPrompt,
   useWorkflowStoreActions,
 } from "@/store/workflow";
-import { memo } from "react";
+import { memo, useMemo, useCallback } from "react";
 import type { WorkflowStep } from "shared/types/workflows";
 import { extractMentionedTools } from "@/utils/extract-mentioned-tools";
 import { useIntegrations } from "@/hooks/useIntegrations";
@@ -20,9 +20,12 @@ export const NewStepNode = memo(function NewStepNode(_props: NodeProps) {
   const prompt = useNewStepPrompt();
   const { data: integrations } = useIntegrations();
 
-  const mentionedTools = extractMentionedTools(prompt, integrations || []);
+  const mentionedTools = useMemo(
+    () => extractMentionedTools(prompt, integrations || []),
+    [prompt, integrations],
+  );
 
-  const handleGenerateStep = () => {
+  const handleGenerateStep = useCallback(() => {
     if (!prompt.trim() || !workflow) {
       return;
     }
@@ -80,13 +83,23 @@ export const NewStepNode = memo(function NewStepNode(_props: NodeProps) {
         },
       },
     );
-  };
+  }, [
+    prompt,
+    workflow,
+    mentionedTools,
+    generateStepMutation,
+    addStep,
+    updateStep,
+  ]);
 
   const currentStep = workflow?.steps?.[workflow.steps.length - 1];
 
-  const handleUpdateStep = (_prompt: string, value: string) => {
-    updateStep(currentStep?.name || "", { prompt: value });
-  };
+  const handleUpdateStep = useCallback(
+    (value: string) => {
+      updateStep(currentStep?.name || "", { prompt: value });
+    },
+    [currentStep?.name, updateStep],
+  );
 
   return (
     <div className="bg-secondary border-2 border-dashed border-border rounded-xl p-[2px] w-[640px]">
@@ -123,7 +136,7 @@ export const NewStepNode = memo(function NewStepNode(_props: NodeProps) {
               placeholder="Type @ to mention tools or steps"
               minHeight="120px"
               value={prompt}
-              onChange={(value) => handleUpdateStep(prompt, value)}
+              onChange={handleUpdateStep}
             />
           </div>
         </div>

@@ -11,6 +11,7 @@ import { fetchFileContent } from "./base.js";
 import { walk } from "../../lib/fs.js";
 import { createHash } from "crypto";
 import { createIgnoreChecker } from "../../lib/ignore.js";
+import { writeDeconfigHead } from "../../lib/deconfig-head.js";
 
 interface PullOptions {
   branchName: string;
@@ -260,6 +261,15 @@ export async function pullCommand(options: PullOptions): Promise<void> {
         `\n🎉 Pull completed successfully! Applied ${successCount} changes from ${branchName}`,
       );
     }
+
+    // Write/update HEAD file with current configuration
+    await writeDeconfigHead({
+      workspace: workspace || "",
+      branch: branchName,
+      path: localPath,
+      pathFilter,
+      local,
+    });
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : String(error);
 

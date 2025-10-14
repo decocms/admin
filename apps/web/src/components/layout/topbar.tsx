@@ -1,13 +1,21 @@
 import { BreadcrumbSeparator } from "@deco/ui/components/breadcrumb.tsx";
 import { Button } from "@deco/ui/components/button.tsx";
 import { Icon } from "@deco/ui/components/icon.tsx";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@deco/ui/components/tooltip.tsx";
 import { useSidebar } from "@deco/ui/components/sidebar.tsx";
 import { Suspense } from "react";
 import { Link } from "react-router";
+import { useState } from "react";
 import { ErrorBoundary } from "../../error-boundary.tsx";
 import { ReportIssueButton } from "../common/report-issue-button.tsx";
 import { LoggedUser, LoggedUserAvatarTrigger } from "../sidebar/footer";
 import { DefaultBreadcrumb, TopbarControls } from "./project";
+import { LinkResourceModal } from "../modals/link-resource-modal.tsx";
 
 interface BreadcrumbItem {
   label: string | React.ReactNode;
@@ -36,6 +44,35 @@ function SidebarToggle() {
   );
 }
 
+function LinkButton() {
+  const [linkModalOpen, setLinkModalOpen] = useState(false);
+
+  return (
+    <>
+      <TooltipProvider>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button
+              onClick={() => setLinkModalOpen(true)}
+              size="icon"
+              variant="ghost"
+              className="w-8 h-8 rounded-md"
+            >
+              <Icon
+                name="terminal"
+                className="text-muted-foreground"
+                size={20}
+              />
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent>Link</TooltipContent>
+        </Tooltip>
+      </TooltipProvider>
+      <LinkResourceModal open={linkModalOpen} onOpenChange={setLinkModalOpen} />
+    </>
+  );
+}
+
 export function Topbar({ breadcrumb }: { breadcrumb: BreadcrumbItem[] }) {
   return (
     <div className="fixed top-0 left-0 right-0 z-20 bg-sidebar flex items-center justify-between w-full p-4 h-12 border-b border-border">
@@ -54,6 +91,7 @@ export function Topbar({ breadcrumb }: { breadcrumb: BreadcrumbItem[] }) {
         <DefaultBreadcrumb items={breadcrumb} useWorkspaceLink={false} />
       </div>
       <div className="flex items-center gap-3">
+        <LinkButton />
         <ReportIssueButton />
         <Suspense fallback={null}>
           <TopbarControls />

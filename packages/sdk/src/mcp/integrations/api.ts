@@ -216,7 +216,7 @@ export const callTool = createIntegrationManagementTool({
           name: toolCall.name,
           arguments: toolCall.arguments || {},
         },
-        // @ts-expect-error TODO: remove this once this is merged: https://github.com/modelcontextprotocol/typescript-sdk/pull/528
+        // @ts-expect-error - Zod version conflict between packages
         CallToolResultSchema,
         {
           timeout: 3000000,

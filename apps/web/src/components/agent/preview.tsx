@@ -35,7 +35,7 @@ type ReissueKeyDialogProps = {
   missingScopes: string[];
 };
 
-function IFrameMessageHandler({ id }: { id: string }) {
+export function IFrameMessageHandler({ id }: { id: string }) {
   const [reissueKeyDialogProps, setReissueKeyDialogProps] =
     useState<ReissueKeyDialogProps>({
       open: false,
@@ -98,8 +98,9 @@ function IFrameMessageHandler({ id }: { id: string }) {
   );
 }
 
-function PreviewIframe(props: Props) {
-  const id = `preview-iframe-${props.src}`;
+export function PreviewIframe(props: Props) {
+  // Generate a unique ID based on src or a random identifier for srcDoc
+  const id = `preview-iframe-${props.src || props.srcDoc?.substring(0, 20) || Math.random().toString(36)}`;
 
   return (
     <>

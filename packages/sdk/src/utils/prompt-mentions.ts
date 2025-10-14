@@ -9,9 +9,9 @@ export const MENTION_REGEX =
 export const COMMENT_REGEX =
   /<span\s+data-type="comment"\s*?[^>]*?>.*?<\/span>/gs;
 
-type Mentionables = "prompt";
+type Mentionables = "prompt" | "tool" | "resource";
 
-const mentionableTypes: Mentionables[] = ["prompt"];
+const mentionableTypes: Mentionables[] = ["prompt", "tool", "resource"];
 
 interface Mention {
   id: string;
@@ -46,7 +46,12 @@ const hasMentions = (content: string) => {
   return content.includes("<span") || content.includes("&lt;span");
 };
 
-// TODO: Resolve all types of mentions
+/**
+ * Resolve mentions in content
+ *
+ * Note: Currently only resolves prompt mentions. Tool and resource mentions
+ * are preserved as-is in the content and handled by the AI model or other systems.
+ */
 export async function resolveMentions(
   content: string,
   locator: ProjectLocator,
@@ -114,7 +119,9 @@ export async function resolveMentions(
         return `\n${prompt.content}\n`;
       }
 
-      return "";
+      // For tool and resource mentions, preserve the mention as-is
+      // They will be handled by the AI model or other systems
+      return _match;
     },
   );
 }

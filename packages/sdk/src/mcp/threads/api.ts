@@ -1,11 +1,17 @@
 import { D1Store } from "@mastra/cloudflare-d1";
 import { MessageList } from "@mastra/core/agent";
+import { UIMessage } from "ai";
 import { z } from "zod";
 import {
   assertHasWorkspace,
   assertWorkspaceResourceAccess,
 } from "../assertions.ts";
-import { type AppContext, createToolGroup, workspaceDB } from "../context.ts";
+import {
+  type AppContext,
+  createToolGroup,
+  type DatatabasesRunSqlInput,
+  workspaceDB,
+} from "../context.ts";
 import { InternalServerError, NotFoundError } from "../index.ts";
 
 const createTool = createToolGroup("Thread", {
@@ -25,7 +31,7 @@ async function getD1Store(c: AppContext): Promise<D1Store> {
   // Create D1Client adapter for IWorkspaceDB
   const d1Store = new D1Store({
     client: {
-      query: async (args) => {
+      query: async (args: DatatabasesRunSqlInput) => {
         const result = await db.exec(args);
         return { result: result.result || [] };
       },
@@ -218,7 +224,7 @@ export const getThreadMessages = createTool({
   name: "THREADS_GET_MESSAGES",
   description: "Get only the messages for a thread by thread id",
   inputSchema: z.lazy(() => z.object({ id: z.string() })),
-  handler: async ({ id }, c) => {
+  handler: async ({ id }, c): Promise<{ messages: UIMessage[] }> => {
     assertHasWorkspace(c);
     await assertWorkspaceResourceAccess(c);
 

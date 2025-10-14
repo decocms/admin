@@ -175,3 +175,53 @@ export function useDeleteDocument() {
       deleteDocumentV2(locator, uri, signal),
   });
 }
+
+// Document List Item type for Resources V2
+export interface DocumentListItem {
+  uri: string;
+  data?: {
+    name: string;
+    description?: string;
+    content?: string;
+    tags?: string[];
+  };
+}
+
+// Hook to list documents using Resources V2
+export function useDocuments(input?: {
+  term?: string;
+  page?: number;
+  pageSize?: number;
+}) {
+  const { locator } = useSDK();
+  if (!locator) {
+    throw new InternalServerError("No locator available");
+  }
+
+  return useQuery({
+    queryKey: ["documents", locator, input?.term, input?.page, input?.pageSize],
+    queryFn: async ({ signal }) => {
+      try {
+        // deno-lint-ignore no-explicit-any
+        const client = workspaceResourceClient(locator) as any;
+        const result = (await client[RESOURCE_DOCUMENT.SEARCH](
+          {
+            term: input?.term || "",
+            page: input?.page || 1,
+            pageSize: input?.pageSize || 100,
+          },
+          { signal },
+        )) as {
+          items?: DocumentListItem[];
+        };
+
+        return result?.items ?? [];
+      } catch (error) {
+        console.error("Failed to fetch documents:", error);
+        return [];
+      }
+    },
+    staleTime: 30000, // Cache for 30 seconds
+    retry: false,
+  });
+}

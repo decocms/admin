@@ -115,7 +115,7 @@ const getMCPServerTools = async (
                     name: tool.name,
                     arguments: input,
                   },
-                  // @ts-expect-error should be fixed after this is merged: https://github.com/modelcontextprotocol/typescript-sdk/pull/528
+                  // @ts-expect-error - Zod version conflict between packages
                   CallToolResultSchema,
                 );
 

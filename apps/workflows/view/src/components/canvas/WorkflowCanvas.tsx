@@ -63,7 +63,7 @@ const Inner = forwardRef<WorkflowCanvasRef>(function Inner(_, ref) {
     return { x: centeredX, y: 0, zoom: 1 };
   }, []); // Only calculate once on mount
 
-  // OPTIMIZED: Center the viewport without expensive DOM queries
+  // Center the viewport using actual node measurements from ReactFlow
   const centerViewport = useCallback(
     (stepIndex: number, animated = true) => {
       if (!steps) return;
@@ -74,14 +74,14 @@ const Inner = forwardRef<WorkflowCanvasRef>(function Inner(_, ref) {
       const stepX = stepIndex * (CARD_WIDTH + CARD_GAP);
       const targetX = stepX + CARD_WIDTH / 2;
 
-      // Use fixed estimated height instead of DOM measurement
-      // Most nodes are ~200-400px, center at 250px is a good compromise
-      const estimatedNodeHeight = 250;
-      const targetY = estimatedNodeHeight / 2;
-      const toolbarOffset = 80; // Account for toolbar at bottom
-      const adjustedY = Math.max(0, targetY - toolbarOffset / 2);
+      // Get actual node height from ReactFlow's measurements
+      const nodeId = stepIndex < steps.length ? steps[stepIndex].name : "new";
+      const node = rf.getNode(nodeId);
+      // ReactFlow stores measured dimensions internally after render
+      const nodeHeight = (node as any)?.measured?.height || node?.height || 250;
+      const targetY = nodeHeight / 2;
 
-      rf.setCenter(targetX, adjustedY, {
+      rf.setCenter(targetX, targetY, {
         zoom: 1,
         duration: animated ? 300 : 0,
       });

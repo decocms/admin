@@ -154,23 +154,35 @@ export class WorkflowRunner extends WorkflowEntrypoint<Bindings> {
     };
     let prev = input;
     for (const step of steps) {
+      const start = performance.now();
       prev =
         state?.[step.name] ??
-        (await cfStep.do(step.name, step.config ?? {}, () =>
-          contextStorage.run({ env: this.env, ctx: this.executionCtx }, () =>
-            State.run(
-              appContext,
-              () =>
-                step.fn(prev, {
-                  ...workflowState,
-                  sleepUntil: (name, date) =>
-                    cfStep.sleepUntil(`${step.name}-${name}`, date),
-                  sleep: (name, duration) =>
-                    cfStep.sleep(`${step.name}-${name}`, duration),
-                }) as Promise<Rpc.Serializable<unknown>>,
-            ),
-          ),
-        ));
+        (await cfStep.do(step.name, step.config ?? {}, () => {
+          const nStart = performance.now();
+          return contextStorage
+            .run({ env: this.env, ctx: this.executionCtx }, () =>
+              State.run(
+                appContext,
+                () =>
+                  step.fn(prev, {
+                    ...workflowState,
+                    sleepUntil: (name, date) =>
+                      cfStep.sleepUntil(`${step.name}-${name}`, date),
+                    sleep: (name, duration) =>
+                      cfStep.sleep(`${step.name}-${name}`, duration),
+                  }) as Promise<Rpc.Serializable<unknown>>,
+              ),
+            )
+            .finally(() => {
+              console.log(
+                `[workflow-runner]: STEP_DO_INSIDE ${step.name} took ${performance.now() - nStart}ms`,
+              );
+            });
+        }));
+
+      console.log(
+        `[workflow-runner]: STEP_DO ${step.name} took ${performance.now() - start}ms`,
+      );
       workflowState.steps[step.name] = prev;
       if (event.payload.stopAfter === step.name) {
         break;

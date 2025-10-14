@@ -1,60 +1,55 @@
-import { callTool } from "@deco/sdk";
+import { callTool, type WorkflowRunData } from "@deco/sdk";
 import { Badge } from "@deco/ui/components/badge.tsx";
 import { Button } from "@deco/ui/components/button.tsx";
 import { Card, CardContent, CardHeader } from "@deco/ui/components/card.tsx";
 import { Icon } from "@deco/ui/components/icon.tsx";
 import { ScrollArea } from "@deco/ui/components/scroll-area.tsx";
 import { Spinner } from "@deco/ui/components/spinner.tsx";
-import {
-  Tabs,
-  TabsContent,
-  TabsList,
-  TabsTrigger,
-} from "@deco/ui/components/tabs.tsx";
 import { useQuery } from "@tanstack/react-query";
 import { useMemo, useState } from "react";
 import { EmptyState } from "../common/empty-state.tsx";
 import { useResourceRoute } from "../resources-v2/route-context.tsx";
-import { WorkflowDisplayCanvas } from "../workflow-builder/workflow-display-canvas.tsx";
+import { getStatusBadgeVariant } from "./utils.ts";
 
 interface WorkflowRunDetailProps {
   resourceUri: string;
 }
 
-function getStatusBadgeVariant(
-  status: string,
-): "default" | "destructive" | "secondary" | "outline" | "success" {
-  if (status === "success" || status === "completed") return "success";
-  if (status === "failed" || status === "errored") return "destructive";
-  if (status === "running" || status === "in_progress") return "secondary";
-  return "outline";
-}
-
 function getStatusIcon(status: string) {
   if (status === "success" || status === "completed") {
-    return <Icon name="check_circle" size={18} className="text-success" />;
-  } else if (status === "failed" || status === "error") {
-    return <Icon name="error" size={18} className="text-destructive" />;
-  } else if (status === "running") {
-    return <Icon name="sync" size={18} className="text-primary" />;
-  } else {
-    return <Icon name="schedule" size={18} className="text-muted-foreground" />;
+    return <Icon name="check_circle" size={16} className="text-success" />;
   }
+  if (status === "failed" || status === "error" || status === "errored") {
+    return <Icon name="error" size={16} className="text-destructive" />;
+  }
+  if (status === "running") {
+    return <Icon name="sync" size={16} className="text-primary animate-spin" />;
+  }
+  return <Icon name="schedule" size={16} className="text-muted-foreground" />;
 }
 
-// JSON viewer component for displaying structured data
 function JsonViewer({ data, title }: { data: unknown; title: string }) {
   const [copied, setCopied] = useState(false);
 
-  function handleCopy() {
-    navigator.clipboard.writeText(JSON.stringify(data, null, 2));
-    setCopied(true);
-    setTimeout(() => setCopied(false), 1200);
+  async function handleCopy() {
+    if (typeof navigator === "undefined" || !navigator.clipboard?.writeText) {
+      globalThis.window.alert("Clipboard API unavailable");
+      return;
+    }
+
+    const payload = JSON.stringify(data, null, 2);
+    try {
+      await navigator.clipboard.writeText(payload);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1200);
+    } catch (error) {
+      console.error("Failed to copy workflow run data", error);
+    }
   }
 
   if (data === null || data === undefined) {
     return (
-      <div className="text-sm text-muted-foreground italic">
+      <div className="text-xs text-muted-foreground italic p-2">
         No {title.toLowerCase()}
       </div>
     );
@@ -63,26 +58,43 @@ function JsonViewer({ data, title }: { data: unknown; title: string }) {
   return (
     <div className="space-y-2">
       <div className="flex items-center justify-between">
-        <h3 className="text-sm font-semibold">{title}</h3>
+        <span className="text-xs font-medium text-muted-foreground">
+          {title}
+        </span>
         <Button
           size="sm"
-          variant="outline"
+          variant="ghost"
           onClick={handleCopy}
-          className="h-7 text-xs"
+          className="h-6 text-xs px-2"
         >
           <Icon
             name={copied ? "check" : "content_copy"}
-            size={14}
+            size={12}
             className="mr-1"
           />
           {copied ? "Copied" : "Copy"}
         </Button>
       </div>
-      <ScrollArea className="h-64 rounded-md border bg-muted/30">
-        <pre className="p-4 text-xs font-mono">
+      <ScrollArea className="max-h-48 rounded border bg-muted/30">
+        <pre className="p-3 text-xs font-mono">
           {JSON.stringify(data, null, 2)}
         </pre>
       </ScrollArea>
+    </div>
+  );
+}
+
+function StepError({ error }: { error: unknown }) {
+  if (!error) return null;
+
+  const errorObj = error as { name?: string; message?: string };
+
+  return (
+    <div className="text-xs bg-destructive/10 text-destructive rounded p-2">
+      <div className="font-semibold">{String(errorObj.name || "Error")}</div>
+      <div className="mt-1">
+        {String(errorObj.message || "An error occurred")}
+      </div>
     </div>
   );
 }
@@ -100,78 +112,7 @@ export function WorkflowRunDetail({ resourceUri }: WorkflowRunDetailProps) {
       });
       return result.structuredContent as {
         uri: string;
-        data: {
-          name: string;
-          description?: string;
-          status: string;
-          runId: string;
-          workflowURI?: string;
-          // Processed status fields from backend
-          currentStep?: string;
-          stepResults?: Record<string, unknown>;
-          finalResult?: unknown;
-          partialResult?: unknown;
-          error?: string;
-          logs?: Array<{
-            type: "log" | "warn" | "error";
-            content: string;
-          }>;
-          startTime?: number;
-          endTime?: number;
-          // Raw workflow status (kept for compatibility)
-          workflowStatus?: {
-            params?: {
-              input?: unknown;
-              steps?: unknown[];
-              name?: string;
-              context?: {
-                workspace?: unknown;
-                locator?: unknown;
-                workflowURI?: string;
-                startedBy?: {
-                  id: string;
-                  email?: string;
-                  name?: string;
-                };
-                startedAt?: string;
-              };
-            };
-            trigger?: { source: string };
-            versionId?: string;
-            queued?: string;
-            start?: string | null;
-            end?: string | null;
-            success?: boolean | null;
-            steps?: Array<{
-              name?: string;
-              type?: string;
-              start?: string | null;
-              end?: string | null;
-              success?: boolean | null;
-              output?: unknown;
-              error?: {
-                name?: string;
-                message?: string;
-              } | null;
-              attempts?: Array<{
-                start?: string;
-                end?: string;
-                success?: boolean;
-                error?: {
-                  name?: string;
-                  message?: string;
-                };
-              }>;
-              config?: unknown;
-            }>;
-            error?: {
-              name?: string;
-              message?: string;
-            } | null;
-            output?: unknown;
-            status?: string;
-          };
-        };
+        data: WorkflowRunData;
         created_at?: string;
         updated_at?: string;
       };
@@ -241,9 +182,6 @@ export function WorkflowRunDetail({ resourceUri }: WorkflowRunDetailProps) {
     [run?.data?.finalResult],
   );
   const error = run?.data?.error;
-  const stepResults = run?.data?.stepResults;
-  const logs = run?.data?.logs;
-  const currentStep = run?.data?.currentStep;
 
   // Early returns after all hooks
   if (isLoading) {
@@ -264,238 +202,249 @@ export function WorkflowRunDetail({ resourceUri }: WorkflowRunDetailProps) {
     );
   }
 
-  return (
-    <div className="h-full w-full flex flex-col p-6 gap-6">
-      {/* Status Header */}
-      <Card>
-        <CardHeader className="pb-4">
-          <div className="flex items-center justify-between gap-4 flex-wrap">
-            <div className="flex items-center gap-3 flex-wrap">
-              <span className="text-xl font-semibold">{headerTitle}</span>
-              {statusIcon}
-              <Badge variant={badgeVariant} className="capitalize">
-                {status}
-              </Badge>
-              {currentStep && (
-                <Badge variant="outline" className="text-xs">
-                  <Icon name="play_arrow" size={12} className="mr-1" />
-                  {currentStep}
-                </Badge>
-              )}
-            </div>
-            <div className="text-xs text-muted-foreground font-mono flex items-center gap-2">
-              <Icon name="key" size={14} />
-              {run.data.runId}
-            </div>
-          </div>
-        </CardHeader>
-        <CardContent className="pt-0">
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 text-sm">
-            <div className="flex items-center gap-2">
-              <Icon
-                name="calendar_today"
-                size={16}
-                className="text-muted-foreground"
-              />
-              <span className="font-medium">Started:</span>
-              <span className="font-mono bg-muted rounded px-2 py-1 text-xs">
-                {run.created_at
-                  ? new Date(run.created_at).toLocaleString()
-                  : "-"}
-              </span>
-            </div>
-            <div className="flex items-center gap-2">
-              <Icon
-                name="calendar_today"
-                size={16}
-                className="text-muted-foreground"
-              />
-              <span className="font-medium">Ended:</span>
-              <span className="font-mono bg-muted rounded px-2 py-1 text-xs">
-                {run.updated_at
-                  ? new Date(run.updated_at).toLocaleString()
-                  : "-"}
-              </span>
-            </div>
-            <div className="flex items-center gap-2">
-              <Icon name="timer" size={16} className="text-muted-foreground" />
-              <span className="font-medium">Duration:</span>
-              <span className="font-mono bg-muted rounded px-2 py-1 text-xs">
-                {duration || "-"}
-              </span>
-            </div>
-            {workflowUri && (
-              <div className="flex items-center gap-2">
-                <Icon
-                  name="schema"
-                  size={16}
-                  className="text-muted-foreground"
-                />
-                <span className="font-medium">Workflow:</span>
-                <span
-                  className="truncate text-xs"
-                  title={workflowQuery.data?.data?.name || workflowUri}
-                >
-                  {workflowQuery.data?.data?.name ||
-                    workflowUri.split("/").pop()}
-                </span>
-              </div>
-            )}
-          </div>
-        </CardContent>
-      </Card>
+  const startedBy = run.data.workflowStatus?.params?.context?.startedBy;
+  const steps = run.data.workflowStatus?.steps || [];
 
-      {/* Error Alert */}
-      {error && (
-        <Card className="border-destructive">
-          <CardHeader className="pb-4">
-            <div className="flex items-center gap-2 text-destructive">
-              <Icon name="error" size={18} />
-              <span className="font-semibold">Error</span>
-            </div>
-          </CardHeader>
-          <CardContent className="pt-0">
-            <ScrollArea className="max-h-40">
-              <div className="text-sm text-destructive whitespace-pre-wrap p-4 bg-destructive/5 rounded-md">
-                {error}
+  return (
+    <ScrollArea className="h-full w-full">
+      <div className="max-w-5xl mx-auto p-6 space-y-6">
+        {/* Header with status and metadata */}
+        <Card>
+          <CardContent className="pt-6">
+            <div className="space-y-4">
+              {/* Title and Status */}
+              <div className="flex items-center justify-between">
+                <h1 className="text-2xl font-semibold">{headerTitle}</h1>
+                <div className="flex items-center gap-2">
+                  {statusIcon}
+                  <Badge variant={badgeVariant} className="capitalize">
+                    {status}
+                  </Badge>
+                </div>
               </div>
-            </ScrollArea>
+
+              {/* Metadata Grid */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                <div>
+                  <div className="text-muted-foreground mb-1">Started</div>
+                  <div className="font-mono">
+                    {run.data.startTime
+                      ? new Date(run.data.startTime).toLocaleString()
+                      : "-"}
+                  </div>
+                </div>
+                <div>
+                  <div className="text-muted-foreground mb-1">Duration</div>
+                  <div className="font-mono">{duration || "-"}</div>
+                </div>
+                <div>
+                  <div className="text-muted-foreground mb-1">Created By</div>
+                  <div className="font-mono">
+                    {startedBy?.email ||
+                      startedBy?.name ||
+                      startedBy?.id ||
+                      "-"}
+                  </div>
+                </div>
+                <div>
+                  <div className="text-muted-foreground mb-1">Workflow</div>
+                  <div
+                    className="font-mono truncate"
+                    title={workflowQuery.data?.data?.name || workflowUri}
+                  >
+                    {workflowQuery.data?.data?.name ||
+                      workflowUri?.split("/").pop() ||
+                      "-"}
+                  </div>
+                </div>
+              </div>
+            </div>
           </CardContent>
         </Card>
-      )}
 
-      {/* Tabs for different data views */}
-      <Card className="flex-1 overflow-hidden">
-        <Tabs defaultValue="workflow" className="h-full flex flex-col">
-          <CardHeader className="pb-2">
-            <TabsList className="grid w-full grid-cols-5">
-              <TabsTrigger value="workflow" className="gap-1.5">
-                <Icon name="schema" size={14} />
-                <span className="hidden sm:inline">Workflow</span>
-              </TabsTrigger>
-              <TabsTrigger value="input" className="gap-1.5">
-                <Icon name="input" size={14} />
-                <span className="hidden sm:inline">Input</span>
-              </TabsTrigger>
-              <TabsTrigger value="output" className="gap-1.5">
-                <Icon name="output" size={14} />
-                <span className="hidden sm:inline">Output</span>
-              </TabsTrigger>
-              <TabsTrigger value="steps" className="gap-1.5">
-                <Icon name="list" size={14} />
-                <span className="hidden sm:inline">Steps</span>
-              </TabsTrigger>
-              <TabsTrigger value="logs" className="gap-1.5">
-                <Icon name="terminal" size={14} />
-                <span className="hidden sm:inline">Logs</span>
-                {logs && logs.length > 0 && (
-                  <Badge
-                    variant="secondary"
-                    className="ml-1 text-xs px-1.5 h-5"
-                  >
-                    {logs.length}
-                  </Badge>
-                )}
-              </TabsTrigger>
-            </TabsList>
-          </CardHeader>
-          <CardContent className="flex-1 overflow-hidden pt-6">
-            <TabsContent value="workflow" className="h-full mt-0">
-              {workflowUri ? (
-                <div className="h-full">
-                  <WorkflowDisplayCanvas resourceUri={workflowUri} />
-                </div>
-              ) : (
-                <EmptyState
-                  icon="schema"
-                  title="No workflow linked"
-                  description="This run doesn't have an associated workflow"
+        {/* Error Alert */}
+        {error && (
+          <Card className="border-destructive">
+            <CardContent className="pt-6">
+              <div className="flex items-start gap-3">
+                <Icon
+                  name="error"
+                  size={18}
+                  className="text-destructive mt-0.5"
                 />
-              )}
-            </TabsContent>
-            <TabsContent value="input" className="mt-0">
-              <JsonViewer data={input} title="Input" />
-            </TabsContent>
-            <TabsContent value="output" className="mt-0">
+                <div className="flex-1">
+                  <div className="font-semibold text-destructive mb-2">
+                    Error
+                  </div>
+                  <div className="text-sm text-destructive whitespace-pre-wrap bg-destructive/5 rounded p-3">
+                    {error}
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Input / Output */}
+        <Card>
+          <CardHeader>
+            <h2 className="text-lg font-semibold">Input & Output</h2>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <JsonViewer data={input} title="Input" />
+            {status === "completed" || status === "success" ? (
               <JsonViewer data={output} title="Output" />
-            </TabsContent>
-            <TabsContent value="steps" className="mt-0">
-              {stepResults && Object.keys(stepResults).length > 0 ? (
-                <ScrollArea className="h-[calc(100vh-28rem)] pr-4">
-                  <div className="space-y-4">
-                    {Object.entries(stepResults).map(([stepName, result]) => (
-                      <Card key={stepName}>
-                        <CardHeader className="pb-3">
-                          <div className="flex items-center gap-2">
-                            <Icon
-                              name="check_circle"
-                              size={16}
-                              className="text-success"
-                            />
-                            <span className="font-mono text-sm font-semibold">
-                              {stepName}
-                            </span>
-                          </div>
-                        </CardHeader>
-                        <CardContent className="pt-0">
-                          <ScrollArea className="h-40">
-                            <pre className="text-xs font-mono bg-muted/30 p-4 rounded-md">
-                              {JSON.stringify(result, null, 2)}
-                            </pre>
-                          </ScrollArea>
-                        </CardContent>
-                      </Card>
-                    ))}
-                  </div>
-                </ScrollArea>
-              ) : (
-                <div className="text-sm text-muted-foreground italic p-4">
-                  No step results available
+            ) : (
+              <div className="pt-2">
+                <span className="text-xs font-medium text-muted-foreground">
+                  Output
+                </span>
+                <div className="text-xs text-muted-foreground italic p-2 mt-2">
+                  Output will be available when the workflow completes
                 </div>
-              )}
-            </TabsContent>
-            <TabsContent value="logs" className="mt-0">
-              {logs && logs.length > 0 ? (
-                <ScrollArea className="h-[calc(100vh-28rem)] pr-4">
-                  <div className="space-y-2">
-                    {logs.map((log, idx) => (
-                      <div
-                        key={idx}
-                        className={`flex items-start gap-3 p-3 rounded-md text-xs font-mono ${
-                          log.type === "error"
-                            ? "bg-destructive/10 text-destructive"
-                            : log.type === "warn"
-                              ? "bg-yellow-500/10 text-yellow-700 dark:text-yellow-400"
-                              : "bg-muted/50"
-                        }`}
-                      >
-                        <Icon
-                          name={
-                            log.type === "error"
-                              ? "error"
-                              : log.type === "warn"
-                                ? "warning"
-                                : "info"
-                          }
-                          size={14}
-                          className="mt-0.5 flex-shrink-0"
-                        />
-                        <span className="flex-1 whitespace-pre-wrap break-words">
-                          {log.content}
-                        </span>
-                      </div>
-                    ))}
-                  </div>
-                </ScrollArea>
-              ) : (
-                <div className="text-sm text-muted-foreground italic p-4">
-                  No logs available
-                </div>
-              )}
-            </TabsContent>
+              </div>
+            )}
           </CardContent>
-        </Tabs>
-      </Card>
-    </div>
+        </Card>
+
+        {/* Steps */}
+        <Card>
+          <CardHeader>
+            <h2 className="text-lg font-semibold">Steps</h2>
+          </CardHeader>
+          <CardContent>
+            {steps.length > 0 ? (
+              <div className="space-y-3">
+                {steps.map((step, idx) => {
+                  const stepStatus =
+                    step.success === true
+                      ? "completed"
+                      : step.success === false
+                        ? "failed"
+                        : step.start && !step.end
+                          ? "running"
+                          : "pending";
+
+                  return (
+                    <Card
+                      key={idx}
+                      className="border-l-4"
+                      style={{
+                        borderLeftColor:
+                          stepStatus === "completed"
+                            ? "hsl(var(--success))"
+                            : stepStatus === "failed"
+                              ? "hsl(var(--destructive))"
+                              : stepStatus === "running"
+                                ? "hsl(var(--primary))"
+                                : "hsl(var(--muted))",
+                      }}
+                    >
+                      <CardContent className="pt-4 space-y-3">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-2">
+                            {getStatusIcon(stepStatus)}
+                            <span className="font-mono font-semibold">
+                              {String(step.name || `Step ${idx + 1}`)}
+                            </span>
+                            <Badge
+                              variant={getStatusBadgeVariant(stepStatus)}
+                              className="capitalize text-xs"
+                            >
+                              {stepStatus}
+                            </Badge>
+                          </div>
+                          {step.type && (
+                            <Badge variant="outline" className="text-xs">
+                              {String(step.type)}
+                            </Badge>
+                          )}
+                        </div>
+
+                        <StepError error={step.error} />
+
+                        {step.config !== undefined && step.config !== null && (
+                          <JsonViewer data={step.config} title="Config" />
+                        )}
+
+                        {step.output !== undefined && step.output !== null && (
+                          <JsonViewer data={step.output} title="Output" />
+                        )}
+
+                        {step.start || step.end ? (
+                          <div className="flex gap-4 text-xs text-muted-foreground pt-2">
+                            {step.start && (
+                              <div>
+                                <span className="font-medium">Started:</span>{" "}
+                                <span className="font-mono">
+                                  {new Date(step.start).toLocaleTimeString()}
+                                </span>
+                              </div>
+                            )}
+                            {step.end && (
+                              <div>
+                                <span className="font-medium">Ended:</span>{" "}
+                                <span className="font-mono">
+                                  {new Date(step.end).toLocaleTimeString()}
+                                </span>
+                              </div>
+                            )}
+                          </div>
+                        ) : null}
+
+                        {step.attempts && step.attempts.length > 1 && (
+                          <details className="text-xs">
+                            <summary className="cursor-pointer font-medium text-muted-foreground hover:text-foreground">
+                              {step.attempts.length} attempts
+                            </summary>
+                            <div className="mt-2 space-y-2 pl-4">
+                              {step.attempts.map((attempt, attemptIdx) => (
+                                <div
+                                  key={attemptIdx}
+                                  className="border-l-2 pl-2 py-1"
+                                >
+                                  <div className="flex items-center gap-2">
+                                    <span>Attempt {attemptIdx + 1}</span>
+                                    {attempt.success ? (
+                                      <Icon
+                                        name="check_circle"
+                                        size={12}
+                                        className="text-success"
+                                      />
+                                    ) : (
+                                      <Icon
+                                        name="error"
+                                        size={12}
+                                        className="text-destructive"
+                                      />
+                                    )}
+                                  </div>
+                                  {attempt.error && (
+                                    <div className="text-destructive mt-1">
+                                      {String(
+                                        (attempt.error as { message?: string })
+                                          .message || "Error",
+                                      )}
+                                    </div>
+                                  )}
+                                </div>
+                              ))}
+                            </div>
+                          </details>
+                        )}
+                      </CardContent>
+                    </Card>
+                  );
+                })}
+              </div>
+            ) : (
+              <div className="text-sm text-muted-foreground italic py-4">
+                No steps available
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      </div>
+    </ScrollArea>
   );
 }

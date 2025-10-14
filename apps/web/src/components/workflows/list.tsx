@@ -1,8 +1,4 @@
-import {
-  useRecentWorkflowRuns,
-  useWorkflowNames,
-  useWorkflowRuns,
-} from "@deco/sdk";
+import { useRecentWorkflowRuns, useWorkflowRuns } from "@deco/sdk";
 import { Badge } from "@deco/ui/components/badge.tsx";
 import { Card, CardContent } from "@deco/ui/components/card.tsx";
 import { Icon } from "@deco/ui/components/icon.tsx";
@@ -122,10 +118,6 @@ function WorkflowRuns({
   const [_searchParams, _setSearchParams] = useSearchParams();
   const [selectedWorkflow, _setSelectedWorkflow] = useState<string>("all");
   const navigateWorkspace = useNavigateWorkspace();
-
-  // Get all workflow names for the select dropdown
-  const { data: workflowNamesData } = useWorkflowNames();
-  const _workflowNames = workflowNamesData?.workflowNames || [];
 
   // Get workflow runs - either filtered by workflow name or all recent runs
   const {

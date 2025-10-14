@@ -7,7 +7,6 @@ import { getPlan } from "../plans.ts";
 import { Markup, type PlanWithTeamMetadata } from "../../../plan.ts";
 import { customers, organizations } from "../../schema.ts";
 import { eq } from "drizzle-orm";
-import { Locator } from "../../../locator.ts";
 
 export const verifyAndParseStripeEvent = (
   payload: string,
@@ -126,12 +125,7 @@ async function getWorkspaceByCustomerId({
       throw new Error("Organization or project not found");
     }
 
-    const locator = Locator.from({
-      org: result.orgSlug,
-      project: "default", // This does not matter here. wallet is org-level.
-    });
-
-    return Locator.adaptToRootSlug(locator);
+    return `/shared/${result.orgSlug}`;
   } catch (error) {
     console.error("[Stripe Webhook] Error", serializeError(error));
     throw new WebhookEventIgnoredError(

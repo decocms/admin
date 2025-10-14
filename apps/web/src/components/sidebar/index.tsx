@@ -545,7 +545,7 @@ function WorkspaceViews() {
                   >
                     <Link
                       to={href}
-                      className="group/item"
+                      className="group/item relative"
                       onClick={() => {
                         trackEvent("sidebar_navigation_click", {
                           item: view.title,
@@ -604,14 +604,20 @@ function WorkspaceViews() {
                           </SidebarMenuAction>
                         )}
                       </div>
-                      <span className="truncate">
+                      <span
+                        className={
+                          view.type === "custom"
+                            ? "truncate group-hover/item:pr-8"
+                            : "truncate"
+                        }
+                      >
                         {view.title ?? integration?.name ?? "Custom"}
                       </span>
                       {view.type === "custom" && (
                         <Icon
                           name="unpin"
                           size={18}
-                          className="text-muted-foreground opacity-0 group-hover/item:opacity-50 hover:opacity-100 transition-opacity cursor-pointer ml-auto"
+                          className="text-muted-foreground opacity-0 group-hover/item:opacity-50 hover:opacity-100 cursor-pointer absolute right-1 top-1/2 -translate-y-1/2"
                           onClick={(event) => {
                             event.preventDefault();
                             event.stopPropagation();

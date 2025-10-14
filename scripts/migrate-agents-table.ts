@@ -16,6 +16,8 @@ const agentsToMigrate = await db
   .from(agents)
   .where(isNull(agents.project_id));
 
+let done = 0;
+
 for (const agent of agentsToMigrate) {
   const workspace = agent.workspace;
   if (workspace?.startsWith("/shared")) {
@@ -34,21 +36,11 @@ for (const agent of agentsToMigrate) {
     console.log("orgAndProject", orgAndProject);
 
     if (orgAndProject.length !== 1) {
-      throw new Error("Org and project length is not 1");
+      console.error("Org and project length is not 1", orgSlug);
+      continue;
     }
 
     const { projectId, projectSlug, orgId } = orgAndProject[0];
-
-    console.log({
-        orgId,
-        projectId,
-        projectSlug,
-    })
-
-    if (orgId === 1) {
-        console.log("Org id is 1, skipping");
-        continue;
-    }
 
     if (projectSlug !== "default") {
       throw new Error("Project slug is not default");
@@ -58,6 +50,9 @@ for (const agent of agentsToMigrate) {
       .update(agents)
       .set({ project_id: projectId })
       .where(eq(agents.id, agent.id));
+
+    done++;
+    console.log(`Done ${done} / ${agentsToMigrate.length}`);
   }
 
   if (workspace?.startsWith("/users")) {

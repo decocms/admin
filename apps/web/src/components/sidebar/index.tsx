@@ -3,10 +3,12 @@ import {
   Integration,
   Resource,
   useConnectionViews,
-  useCreatePrompt,
   useIntegrations,
+  usePinnedResources,
+  useRecentResources,
   useRemoveResource,
   useRemoveView,
+  useUpsertDocument,
   View,
 } from "@deco/sdk";
 import { Badge } from "@deco/ui/components/badge.tsx";
@@ -42,16 +44,23 @@ import {
 } from "@deco/ui/components/sidebar.tsx";
 import { Skeleton } from "@deco/ui/components/skeleton.tsx";
 import { type ReactNode, Suspense, useMemo, useState } from "react";
-import { Link, useMatch } from "react-router";
+import { Link, useMatch, useNavigate, useParams } from "react-router";
 import { trackEvent } from "../../hooks/analytics.ts";
 import {
   useNavigateWorkspace,
   useWorkspaceLink,
 } from "../../hooks/use-navigate-workspace.ts";
 import { IntegrationAvatar } from "../common/avatar/integration.tsx";
+import { AgentAvatar } from "../common/avatar/agent.tsx";
 import { TogglePin } from "../views/list.tsx";
 import { SidebarFooter } from "./footer.tsx";
 import { useCurrentTeam } from "./team-selector.tsx";
+import { useFocusTeamAgent } from "../agents/list.tsx";
+import { SearchComingSoonModal } from "../modals/search-coming-soon-modal.tsx";
+import {
+  CommandPalette,
+  useCommandPalette,
+} from "../search/command-palette.tsx";
 
 const WithActive = ({
   children,
@@ -171,23 +180,47 @@ function AddViewsDialog({
 }
 
 function WorkspaceViews() {
+  const { org, project } = useParams();
   const workspaceLink = useWorkspaceLink();
   const { isMobile, toggleSidebar } = useSidebar();
   const { data: integrations } = useIntegrations();
   const team = useCurrentTeam();
   const removeViewMutation = useRemoveView();
   const navigateWorkspace = useNavigateWorkspace();
+  const navigate = useNavigate();
   const [addViewsDialogState, setAddViewsDialogState] = useState<{
     open: boolean;
     integration?: Integration;
   }>({ open: false });
   const [generateModalOpen, setGenerateModalOpen] = useState(false);
-  const [linkModalOpen, setLinkModalOpen] = useState(false);
   const [filesModalOpen, setFilesModalOpen] = useState(false);
   const [databaseModalOpen, setDatabaseModalOpen] = useState(false);
+  const [_searchModalOpen, _setSearchModalOpen] = useState(false);
+  const [_showAllRecents, _setShowAllRecents] = useState(false);
+
+  // Recent and pinned resources
+  // Use team locator if params aren't available - fallback to just undefined if no params
+  const projectKey = org && project ? `${org}/${project}` : undefined;
+
+  const { recents: _recents, removeRecent: _removeRecent } =
+    useRecentResources(projectKey);
+  const {
+    pinnedResources: _pinnedResources,
+    togglePin: _togglePin,
+    isPinned: _isPinned,
+  } = usePinnedResources(projectKey);
+
+  // Command palette
+  const commandPalette = useCommandPalette();
 
   // Hook for creating documents
-  const createPrompt = useCreatePrompt();
+  const upsertDocument = useUpsertDocument();
+
+  const handleCreateAgent = useFocusTeamAgent();
+
+  const handleOpenSearch = () => {
+    commandPalette.setOpen(true);
+  };
 
   const handleRemoveView = async (view: View) => {
     const isUserInView = globalThis.location.pathname.includes(
@@ -268,7 +301,6 @@ function WorkspaceViews() {
 
         result.firstLevelViews.push(view);
       }
-
       // Process resources (stored as views with type="resource")
       const resources = team?.resources ?? [];
       for (const resource of resources) {
@@ -329,23 +361,171 @@ function WorkspaceViews() {
       );
     });
 
-  // Building blocks
-  const toolsItem = mcpItems.find(
-    (item) => canonicalTitle(item.title) === "Tools",
-  );
-  const viewsItem = mcpItems.find(
-    (item) => canonicalTitle(item.title) === "Views",
-  );
-  // Core abstractions (Documents, Workflows, Agents) - main menu items
-  const coreAbstractionTitles = ["Documents", "Workflows", "Agents"];
-  const coreItems = coreAbstractionTitles
-    .map((title) =>
-      mcpItems.find((item) => canonicalTitle(item.title) === title),
-    )
-    .filter((item): item is View => item !== undefined);
+  // Building blocks are now handled by resourceItems below
+
+  // Resource type order for main resources section
+  const resourceTypeOrder = [
+    "Documents",
+    "Agents",
+    "Workflows",
+    "Tools",
+    "Views",
+    "Files",
+  ];
+  const resourceItems = resourceTypeOrder
+    .map((title) => {
+      if (title === "Files") {
+        return {
+          title: "Files",
+          icon: "folder",
+          onClick: () => setFilesModalOpen(true),
+          comingSoon: true,
+        };
+      }
+      const item = mcpItems.find(
+        (item) => canonicalTitle(item.title) === title,
+      );
+      return item ? { ...item, comingSoon: false } : null;
+    })
+    .filter(
+      (
+        item,
+      ): item is
+        | (View & { comingSoon: boolean })
+        | {
+            title: string;
+            icon: string;
+            onClick: () => void;
+            comingSoon: boolean;
+          } => item !== null,
+    );
+
+  // Filter out pinned items from recents and limit to 5 initially
+  const _filteredRecents = _recents.filter((recent) => !_isPinned(recent.id));
+  const _displayedRecents = _showAllRecents
+    ? _filteredRecents
+    : _filteredRecents.slice(0, 5);
+  const _hasMoreRecents = _filteredRecents.length > 5;
 
   return (
     <>
+      {/* SECTION 1: SEARCH + RESOURCE INSTANCES */}
+
+      {/* Search button */}
+      <SidebarMenuItem>
+        <SidebarMenuButton
+          className="cursor-pointer justify-between"
+          onClick={() => handleOpenSearch()}
+        >
+          <div className="flex items-center gap-2">
+            <Icon
+              name="search"
+              size={20}
+              className="text-muted-foreground/75"
+            />
+            <span className="truncate">Search</span>
+          </div>
+          <kbd className="pointer-events-none inline-flex h-5 select-none items-center gap-1 rounded border border-border/50 bg-muted px-1.5 font-mono text-[10px] font-medium text-muted-foreground opacity-100">
+            <span className="text-xs">⌘</span>K
+          </kbd>
+        </SidebarMenuButton>
+      </SidebarMenuItem>
+
+      {/* Generate button */}
+      <SidebarMenuItem>
+        <SidebarMenuButton
+          className="cursor-pointer"
+          onClick={() => setGenerateModalOpen(true)}
+        >
+          <Icon name="add" size={20} className="text-muted-foreground/75" />
+          <span className="truncate">Generate</span>
+        </SidebarMenuButton>
+      </SidebarMenuItem>
+
+      <SidebarSeparator className="my-2 -ml-1" />
+
+      {/* SECTION 2: RESOURCES (Main Resource Types) */}
+      {resourceItems.map((item) => {
+        if ("onClick" in item && item.comingSoon) {
+          // Files button (coming soon)
+          return (
+            <SidebarMenuItem key={item.title}>
+              <SidebarMenuButton
+                className="cursor-pointer"
+                onClick={item.onClick}
+              >
+                <Icon
+                  name={item.icon}
+                  size={20}
+                  className="text-muted-foreground/75"
+                />
+                <span className="truncate">{item.title}</span>
+                <Badge variant="secondary" className="ml-auto text-xs">
+                  Soon
+                </Badge>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+          );
+        }
+
+        // Regular resource type buttons
+        const view = item as View;
+        const href = buildViewHrefFromView(view);
+        const displayTitle = canonicalTitle(view.title);
+
+        return (
+          <SidebarMenuItem key={view.title}>
+            <SidebarMenuButton asChild>
+              <Link
+                to={href}
+                onClick={() => {
+                  trackEvent("sidebar_navigation_click", {
+                    item: displayTitle,
+                  });
+                  isMobile && toggleSidebar();
+                }}
+              >
+                <Icon
+                  name={view.icon}
+                  size={20}
+                  className="text-muted-foreground/75"
+                />
+                <span className="truncate">{displayTitle}</span>
+                {view.badge && (
+                  <Badge variant="secondary" className="ml-auto text-xs">
+                    {view.badge}
+                  </Badge>
+                )}
+              </Link>
+            </SidebarMenuButton>
+          </SidebarMenuItem>
+        );
+      })}
+
+      <SidebarSeparator className="my-2 -ml-1" />
+
+      {/* Manage Apps button */}
+      <SidebarMenuItem>
+        <SidebarMenuButton
+          className="cursor-pointer"
+          onClick={() => {
+            navigateWorkspace("/apps");
+            trackEvent("sidebar_navigation_click", {
+              item: "Manage Apps",
+            });
+            isMobile && toggleSidebar();
+          }}
+        >
+          <Icon
+            name="grid_view"
+            size={20}
+            className="text-muted-foreground/75"
+          />
+          <span className="truncate">Manage apps</span>
+        </SidebarMenuButton>
+      </SidebarMenuItem>
+
+      {/* SECTION 3: VIEWS PINNED FROM APPS */}
       {Object.entries(fromIntegration).map(([integrationId, views]) => {
         const integration = integrationMap.get(integrationId);
         const isSingleView = views.length === 1;
@@ -392,7 +572,9 @@ function WorkspaceViews() {
                                 integration,
                               });
                             }}
-                            aria-label={`Add view to ${integration?.name ?? "integration"}`}
+                            aria-label={`Add view to ${
+                              integration?.name ?? "integration"
+                            }`}
                             showOnHover
                           >
                             <span
@@ -447,7 +629,11 @@ function WorkspaceViews() {
 
         return (
           <SidebarMenuItem key={integrationId}>
-            <Collapsible asChild defaultOpen className="group/collapsible">
+            <Collapsible
+              asChild
+              defaultOpen={false}
+              className="group/collapsible"
+            >
               <div className="group/integration-header relative">
                 <CollapsibleTrigger asChild>
                   <SidebarMenuButton className="w-full pr-2!">
@@ -470,7 +656,9 @@ function WorkspaceViews() {
                               integration,
                             });
                           }}
-                          aria-label={`Add view to ${integration?.name ?? "integration"}`}
+                          aria-label={`Add view to ${
+                            integration?.name ?? "integration"
+                          }`}
                           showOnHover
                         >
                           <span
@@ -556,185 +744,7 @@ function WorkspaceViews() {
         );
       })}
 
-      {/* Generate button */}
-      <SidebarMenuItem>
-        <SidebarMenuButton
-          className="cursor-pointer"
-          onClick={() => setGenerateModalOpen(true)}
-        >
-          <Icon name="add" size={20} className="text-muted-foreground/75" />
-          <span className="truncate">Generate</span>
-        </SidebarMenuButton>
-      </SidebarMenuItem>
-
-      <SidebarSeparator className="my-2 -ml-1" />
-
-      {/* Apps with Store + button */}
-      <SidebarMenuItem>
-        <div className="group/item relative">
-          <SidebarMenuButton
-            className="cursor-pointer w-full pr-10"
-            onClick={() => {
-              navigateWorkspace("/apps");
-            }}
-          >
-            <Icon
-              name="grid_view"
-              size={20}
-              className="text-muted-foreground/75"
-            />
-            <span className="truncate">Apps</span>
-          </SidebarMenuButton>
-          <SidebarMenuAction
-            asChild
-            className="absolute right-1.5 inset-y-0 flex items-center"
-            showOnHover={false}
-          ></SidebarMenuAction>
-        </div>
-      </SidebarMenuItem>
-
-      {/* Core abstractions: Documents, Workflows, Agents */}
-      {coreItems.map((item) => {
-        const displayTitle = canonicalTitle(item.title);
-        const href = buildViewHrefFromView(item as View);
-        const view = item as View;
-
-        return (
-          <SidebarMenuItem key={item.title}>
-            <SidebarMenuButton asChild>
-              <Link
-                to={href}
-                onClick={() => {
-                  trackEvent("sidebar_navigation_click", {
-                    item: displayTitle,
-                  });
-                  isMobile && toggleSidebar();
-                }}
-              >
-                <Icon
-                  name={item.icon}
-                  size={20}
-                  className="text-muted-foreground/75"
-                />
-                <span className="truncate">{displayTitle}</span>
-                {view.badge && (
-                  <Badge variant="secondary" className="ml-auto text-xs">
-                    {view.badge}
-                  </Badge>
-                )}
-              </Link>
-            </SidebarMenuButton>
-          </SidebarMenuItem>
-        );
-      })}
-
-      <SidebarSeparator className="my-2 -ml-1" />
-
-      {/* Developer accordion */}
-      <SidebarMenuItem>
-        <Collapsible asChild defaultOpen className="group/collapsible">
-          <div>
-            <CollapsibleTrigger asChild>
-              <SidebarMenuButton className="w-full">
-                <Icon
-                  name="settings"
-                  size={20}
-                  className="text-muted-foreground/75"
-                />
-                <span className="truncate">Developer</span>
-                <Icon
-                  name="chevron_right"
-                  size={18}
-                  className="ml-auto transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90 text-muted-foreground/75"
-                />
-              </SidebarMenuButton>
-            </CollapsibleTrigger>
-            <CollapsibleContent>
-              <SidebarMenuSub>
-                {/* Tools */}
-                {toolsItem && (
-                  <SidebarMenuSubItem>
-                    <SidebarMenuSubButton asChild>
-                      <Link
-                        to={buildViewHrefFromView(toolsItem as View)}
-                        onClick={() => {
-                          trackEvent("sidebar_navigation_click", {
-                            item: "Tools",
-                          });
-                          isMobile && toggleSidebar();
-                        }}
-                      >
-                        <Icon
-                          name={toolsItem.icon}
-                          size={18}
-                          className="text-muted-foreground/75"
-                        />
-                        <span className="truncate">Tools</span>
-                        {(toolsItem as View).badge && (
-                          <Badge
-                            variant="secondary"
-                            className="ml-auto text-xs"
-                          >
-                            {(toolsItem as View).badge}
-                          </Badge>
-                        )}
-                      </Link>
-                    </SidebarMenuSubButton>
-                  </SidebarMenuSubItem>
-                )}
-
-                {/* Views */}
-                {viewsItem && (
-                  <SidebarMenuSubItem>
-                    <SidebarMenuSubButton asChild>
-                      <Link
-                        to={buildViewHrefFromView(viewsItem as View)}
-                        onClick={() => {
-                          trackEvent("sidebar_navigation_click", {
-                            item: "Views",
-                          });
-                          isMobile && toggleSidebar();
-                        }}
-                      >
-                        <Icon
-                          name={viewsItem.icon}
-                          size={18}
-                          className="text-muted-foreground/75"
-                        />
-                        <span className="truncate">Views</span>
-                        {(viewsItem as View).badge && (
-                          <Badge
-                            variant="secondary"
-                            className="ml-auto text-xs"
-                          >
-                            {(viewsItem as View).badge}
-                          </Badge>
-                        )}
-                      </Link>
-                    </SidebarMenuSubButton>
-                  </SidebarMenuSubItem>
-                )}
-
-                {/* Files */}
-                <ComingSoonMenuItem
-                  iconName="folder"
-                  label="Files"
-                  onClick={() => setFilesModalOpen(true)}
-                />
-
-                {/* Link */}
-                <ComingSoonMenuItem
-                  iconName="link"
-                  label="Link"
-                  onClick={() => setLinkModalOpen(true)}
-                />
-              </SidebarMenuSub>
-            </CollapsibleContent>
-          </div>
-        </Collapsible>
-      </SidebarMenuItem>
-
-      {/* Resources section */}
+      {/* Resources from integrations (existing logic) */}
       {Object.entries(fromIntegrationResources).map(
         ([integrationId, resources]) => {
           const integration = integrationMap.get(integrationId);
@@ -800,7 +810,11 @@ function WorkspaceViews() {
 
           return (
             <SidebarMenuItem key={`resource-${integrationId}`}>
-              <Collapsible asChild defaultOpen className="group/collapsible">
+              <Collapsible
+                asChild
+                defaultOpen={false}
+                className="group/collapsible"
+              >
                 <div className="group/integration-header relative">
                   <CollapsibleTrigger asChild>
                     <SidebarMenuButton className="w-full pr-8">
@@ -851,7 +865,7 @@ function WorkspaceViews() {
                                 <Button
                                   variant="outline"
                                   size="sm"
-                                  className="text-destructive hover:text-destructive ml-auto group-hover/item:block! hidden! p-0.5 h-6"
+                                  className="text-destructive hover:text-destructive ml-auto group-hover/item:flex! hidden! p-0.5 h-6 w-6 items-center justify-center"
                                   onClick={(e) => {
                                     e.preventDefault();
                                     e.stopPropagation();
@@ -862,8 +876,8 @@ function WorkspaceViews() {
                                 >
                                   <Icon
                                     name="remove"
-                                    size={18}
-                                    className="text-muted-foreground ml-auto group-hover/item:block! hidden!"
+                                    size={16}
+                                    className="text-muted-foreground"
                                   />
                                 </Button>
                               </Link>
@@ -879,33 +893,207 @@ function WorkspaceViews() {
           );
         },
       )}
+      {/* Pinned Resource Instances */}
+      {_pinnedResources.length > 0 && (
+        <>
+          {_pinnedResources.map((resource) => (
+            <SidebarMenuItem key={`pinned-${resource.id}`}>
+              <WithActive to={resource.path}>
+                {({ isActive }) => (
+                  <SidebarMenuButton
+                    asChild
+                    isActive={isActive}
+                    className="w-full pr-2"
+                  >
+                    <Link
+                      to={resource.path}
+                      className="group/item"
+                      onClick={() => {
+                        trackEvent("sidebar_navigation_click", {
+                          item: resource.name,
+                          type: "pinned-resource",
+                        });
+                        isMobile && toggleSidebar();
+                      }}
+                    >
+                      {resource.type === "agent" ? (
+                        <AgentAvatar
+                          size="xs"
+                          url={resource.icon}
+                          fallback={resource.name}
+                          className="!w-[20px] !h-[20px] shrink-0"
+                        />
+                      ) : resource.icon ? (
+                        <Icon
+                          name={resource.icon}
+                          size={20}
+                          className="text-muted-foreground/75 shrink-0"
+                        />
+                      ) : null}
+                      <span className="truncate flex-1 min-w-0">
+                        {resource.name}
+                      </span>
+                      <div className="ml-auto flex items-center shrink-0">
+                        <Icon
+                          name="unpin"
+                          size={18}
+                          className="text-primary opacity-0 group-hover/item:opacity-100 transition-opacity cursor-pointer"
+                          onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            _togglePin(resource);
+                          }}
+                        />
+                      </div>
+                    </Link>
+                  </SidebarMenuButton>
+                )}
+              </WithActive>
+            </SidebarMenuItem>
+          ))}
+        </>
+      )}
+
+      <SidebarSeparator className="my-2 -ml-1" />
+
+      <SidebarMenuItem>
+        <div className="px-2 py-1 text-xs font-medium text-muted-foreground">
+          Recents
+        </div>
+      </SidebarMenuItem>
+
+      {/* Recent Resource Instances */}
+      {_displayedRecents.length > 0 && (
+        <>
+          {_displayedRecents.map((resource) => (
+            <SidebarMenuItem key={`recent-${resource.id}`}>
+              <WithActive to={resource.path}>
+                {({ isActive }) => (
+                  <SidebarMenuButton
+                    asChild
+                    isActive={isActive}
+                    className="w-full pr-2"
+                  >
+                    <Link
+                      to={resource.path}
+                      className="group/item"
+                      onClick={() => {
+                        trackEvent("sidebar_navigation_click", {
+                          item: resource.name,
+                          type: "recent-resource",
+                        });
+                        isMobile && toggleSidebar();
+                      }}
+                    >
+                      {resource.type === "agent" ? (
+                        <AgentAvatar
+                          size="xs"
+                          url={resource.icon}
+                          fallback={resource.name}
+                          className="!w-[20px] !h-[20px] shrink-0"
+                        />
+                      ) : resource.icon ? (
+                        <Icon
+                          name={resource.icon}
+                          size={20}
+                          className="text-muted-foreground/75 shrink-0"
+                        />
+                      ) : null}
+                      <span className="truncate flex-1 min-w-0">
+                        {resource.name}
+                      </span>
+                      <div className="ml-auto flex items-center gap-1 opacity-0 group-hover/item:opacity-100 transition-opacity shrink-0">
+                        {_showAllRecents && (
+                          <Icon
+                            name="close"
+                            size={16}
+                            className="text-muted-foreground hover:text-foreground cursor-pointer"
+                            onClick={(e) => {
+                              e.preventDefault();
+                              e.stopPropagation();
+                              _removeRecent(resource.id);
+                            }}
+                          />
+                        )}
+                        <Icon
+                          name="push_pin"
+                          size={18}
+                          className="text-muted-foreground hover:text-primary cursor-pointer"
+                          onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            _togglePin({
+                              id: resource.id,
+                              name: resource.name,
+                              type: resource.type,
+                              integration_id: resource.integration_id,
+                              icon: resource.icon,
+                              path: resource.path,
+                            });
+                          }}
+                        />
+                      </div>
+                    </Link>
+                  </SidebarMenuButton>
+                )}
+              </WithActive>
+            </SidebarMenuItem>
+          ))}
+
+          {/* Show All / Show Recent toggle */}
+          {_hasMoreRecents && (
+            <SidebarMenuItem>
+              <SidebarMenuButton
+                className="cursor-pointer text-xs text-muted-foreground hover:text-foreground"
+                onClick={() => _setShowAllRecents(!_showAllRecents)}
+              >
+                <Icon
+                  name={_showAllRecents ? "expand_less" : "expand_more"}
+                  size={16}
+                  className="text-muted-foreground/75"
+                />
+                <span>{_showAllRecents ? "Show recent" : "Show all"}</span>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+          )}
+        </>
+      )}
 
       {/* Generate Modal */}
       <Dialog open={generateModalOpen} onOpenChange={setGenerateModalOpen}>
-        <DialogContent className="sm:max-w-md">
+        <DialogContent className="sm:max-w-lg">
           <DialogHeader>
-            <DialogTitle>Generate New</DialogTitle>
-            <DialogDescription>
-              Choose what you want to create
-            </DialogDescription>
+            <DialogTitle>Create via AI</DialogTitle>
+            <DialogDescription>Generate content with AI</DialogDescription>
           </DialogHeader>
-          <div className="flex flex-col gap-2 py-4">
+          <div className="space-y-4 py-4">
             <Button
               variant="outline"
               className="w-full justify-start h-auto py-4"
               onClick={async () => {
                 setGenerateModalOpen(false);
                 isMobile && toggleSidebar();
+                const timestamp = new Date()
+                  .toISOString()
+                  .replace(/[:.]/g, "-");
 
-                // Create a new empty prompt and navigate to it
-                const result = await createPrompt.mutateAsync({
-                  name: "",
-                  content: "",
+                const result = await upsertDocument.mutateAsync({
+                  params: {
+                    name: `Untitled-${timestamp}`,
+                    content: "",
+                    description: "",
+                  },
                 });
-                navigateWorkspace(`/documents/${result.id}`);
+
+                const documentResource = {
+                  integration_id: "i:documents-management",
+                  name: "document",
+                };
+                const href = buildResourceHrefFromResource(documentResource);
+                navigate(`${href}/${encodeURIComponent(result.uri)}`);
               }}
             >
-              <div className="flex items-start gap-3 text-left">
+              <div className="flex items-center gap-3 text-left">
                 <Icon
                   name="docs"
                   size={24}
@@ -924,18 +1112,9 @@ function WorkspaceViews() {
               className="w-full justify-start h-auto py-4"
               onClick={() => {
                 setGenerateModalOpen(false);
-                isMobile && toggleSidebar();
-
-                // Navigate to workflows with query params to trigger Decopilot
-                const message = encodeURIComponent(
-                  "Please help me create a new workflow",
-                );
-                navigateWorkspace(
-                  `/workflows?initialInput=${message}&autoSend=true&openDecopilot=true`,
-                );
               }}
             >
-              <div className="flex items-start gap-3 text-left">
+              <div className="flex items-center gap-3 text-left">
                 <Icon
                   name="flowchart"
                   size={24}
@@ -944,7 +1123,31 @@ function WorkspaceViews() {
                 <div className="flex-1">
                   <div className="font-semibold">Workflow</div>
                   <div className="text-sm text-muted-foreground">
-                    Build an automated workflow
+                    Create a new workflow
+                  </div>
+                </div>
+              </div>
+            </Button>
+            <Button
+              variant="outline"
+              className="w-full justify-start h-auto py-4"
+              onClick={() => {
+                setGenerateModalOpen(false);
+                isMobile && toggleSidebar();
+
+                handleCreateAgent();
+              }}
+            >
+              <div className="flex items-center gap-3 text-left">
+                <Icon
+                  name="robot_2"
+                  size={24}
+                  className="text-muted-foreground/75 mt-0.5"
+                />
+                <div className="flex-1">
+                  <div className="font-semibold">Agent</div>
+                  <div className="text-sm text-muted-foreground">
+                    Create an AI agent with specialized capabilities
                   </div>
                 </div>
               </div>
@@ -953,37 +1156,11 @@ function WorkspaceViews() {
         </DialogContent>
       </Dialog>
 
-      {/* Link Modal */}
-      <Dialog open={linkModalOpen} onOpenChange={setLinkModalOpen}>
-        <DialogContent className="sm:max-w-lg">
-          <DialogHeader>
-            <DialogTitle>Local Development</DialogTitle>
-            <DialogDescription>Coming soon to decocms.com</DialogDescription>
-          </DialogHeader>
-          <div className="py-6">
-            <div className="flex items-center justify-center mb-6">
-              <div className="w-16 h-16 rounded-xl bg-gradient-to-br from-primary/20 to-primary/10 flex items-center justify-center border border-primary/30">
-                <Icon name="terminal" size={32} className="text-primary" />
-              </div>
-            </div>
-            <div className="space-y-4 text-center">
-              <p className="text-sm text-muted-foreground">
-                Soon you'll be able to clone and work on your projects locally
-                using:
-              </p>
-              <div className="bg-muted/50 rounded-lg p-4 font-mono text-sm border">
-                <code className="text-foreground">
-                  git clone admin.decocms.com/my-team/my-project
-                </code>
-              </div>
-              <p className="text-xs text-muted-foreground">
-                Work locally with your favorite editor and sync changes
-                seamlessly
-              </p>
-            </div>
-          </div>
-        </DialogContent>
-      </Dialog>
+      {/* Search Modal */}
+      <SearchComingSoonModal
+        open={_searchModalOpen}
+        onOpenChange={_setSearchModalOpen}
+      />
 
       {/* Files Modal */}
       <Dialog open={filesModalOpen} onOpenChange={setFilesModalOpen}>
@@ -1036,9 +1213,8 @@ function WorkspaceViews() {
             </div>
             <div className="space-y-4 text-center">
               <p className="text-sm text-muted-foreground">
-                A powerful database management interface is coming soon. You'll
-                be able to manage your data, run queries, and view schemas
-                directly from the dashboard.
+                Database management tools are coming soon. Manage your data with
+                a powerful interface.
               </p>
               <div className="flex items-center justify-center gap-2 text-xs text-muted-foreground">
                 <Icon name="check_circle" size={16} className="text-primary" />
@@ -1069,6 +1245,10 @@ function WorkspaceViews() {
           }
         />
       )}
+      <CommandPalette
+        open={commandPalette.open}
+        onOpenChange={commandPalette.onOpenChange}
+      />
     </>
   );
 }
@@ -1083,50 +1263,23 @@ WorkspaceViews.Skeleton = () => (
   </div>
 );
 
-// Reusable component for "Coming Soon" menu items
-interface ComingSoonMenuItemProps {
-  iconName: string;
-  label: string;
-  onClick: () => void;
-}
-
-function ComingSoonMenuItem({
-  iconName,
-  label,
-  onClick,
-}: ComingSoonMenuItemProps) {
-  return (
-    <SidebarMenuSubItem>
-      <SidebarMenuSubButton className="cursor-pointer" onClick={onClick}>
-        <Icon name={iconName} size={18} className="text-muted-foreground/75" />
-        <span className="truncate">{label}</span>
-        <Badge variant="secondary" className="ml-auto text-xs">
-          Soon
-        </Badge>
-      </SidebarMenuSubButton>
-    </SidebarMenuSubItem>
-  );
-}
+// Coming Soon menu items are now inline in the new sidebar structure
 
 export function ProjectSidebar() {
   return (
     <Sidebar variant="sidebar">
-      <SidebarContent className="flex flex-col h-full overflow-x-hidden">
-        <div className="flex flex-col flex-1 min-h-0">
-          <div className="flex-none">
-            <SidebarGroup className="font-medium">
-              <SidebarGroupContent>
-                <SidebarMenu className="gap-0.5">
-                  <Suspense fallback={<WorkspaceViews.Skeleton />}>
-                    <WorkspaceViews />
-                  </Suspense>
-                </SidebarMenu>
-              </SidebarGroupContent>
-            </SidebarGroup>
-          </div>
-        </div>
-        <SidebarFooter />
+      <SidebarContent className="flex-1 overflow-x-hidden">
+        <SidebarGroup className="font-medium">
+          <SidebarGroupContent>
+            <SidebarMenu className="gap-0.5">
+              <Suspense fallback={<WorkspaceViews.Skeleton />}>
+                <WorkspaceViews />
+              </Suspense>
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
       </SidebarContent>
+      <SidebarFooter />
     </Sidebar>
   );
 }

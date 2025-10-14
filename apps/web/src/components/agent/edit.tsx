@@ -3,6 +3,8 @@ import {
   useAgentData,
   useFile,
   WELL_KNOWN_AGENTS,
+  useSDK,
+  useRecentResources,
 } from "@deco/sdk";
 import { Button } from "@deco/ui/components/button.tsx";
 import { Icon } from "@deco/ui/components/icon.tsx";
@@ -25,7 +27,7 @@ import {
   TabsTrigger,
 } from "@deco/ui/components/tabs.tsx";
 import { cn } from "@deco/ui/lib/utils.ts";
-import { Suspense, useMemo } from "react";
+import { Suspense, useMemo, useEffect, useRef } from "react";
 import { useParams } from "react-router";
 import { useDocumentMetadata } from "../../hooks/use-document-metadata.ts";
 import { isFilePath } from "../../utils/path.ts";
@@ -222,6 +224,47 @@ function FormProvider(props: Props & { agentId: string; threadId: string }) {
   const { data: resolvedAvatar } = useFile(
     agent?.avatar && isFilePath(agent.avatar) ? agent.avatar : "",
   );
+  const { locator } = useSDK();
+  const projectKey = typeof locator === "string" ? locator : undefined;
+  const { addRecent } = useRecentResources(projectKey);
+  const params = useParams<{ org: string; project: string }>();
+  const hasTrackedRecentRef = useRef(false);
+
+  // Track as recently opened when agent is loaded (only once)
+  useEffect(() => {
+    if (
+      agent &&
+      agentId &&
+      threadId &&
+      projectKey &&
+      params.org &&
+      params.project &&
+      !hasTrackedRecentRef.current
+    ) {
+      hasTrackedRecentRef.current = true;
+      // Use the resolved avatar URL if available, otherwise fall back to the agent's avatar or default icon
+      const avatarUrl =
+        resolvedAvatar ||
+        (agent.avatar && !isFilePath(agent.avatar) ? agent.avatar : undefined);
+
+      addRecent({
+        id: `${agentId}-${threadId}`,
+        name: agent.name,
+        type: "agent",
+        icon: avatarUrl || "robot_2",
+        path: `/${projectKey}/agent/${agentId}/${threadId}`,
+      });
+    }
+  }, [
+    agent,
+    agentId,
+    threadId,
+    projectKey,
+    params.org,
+    params.project,
+    addRecent,
+    resolvedAvatar,
+  ]);
 
   // Prepare decopilot context value for agent edit
   const decopilotContextValue = useMemo(() => {

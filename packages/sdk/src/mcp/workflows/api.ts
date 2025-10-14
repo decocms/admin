@@ -456,7 +456,7 @@ export function createWorkflowViewsV2() {
       "DECO_WORKFLOW_GET_STATUS",
     ],
     prompt:
-      "You are helping the user manage a workflow. You can read the workflow details, update its properties, start or stop the workflow, and view its logs. Always confirm actions before executing them.",
+      "You are a workflow editing specialist helping the user manage a workflow. You can read the workflow details, update its properties, start or stop the workflow, and view its logs. Always confirm actions before executing them. Use the workflow tools to edit the current workflow. A good strategy is to test each step, one at a time in isolation and check how they affect the overall workflow.",
     handler: (input, _c) => {
       const url = createDetailViewUrl(
         "workflow",
@@ -517,9 +517,8 @@ export const workflowViews = impl(
               tools: WellKnownBindings.Resources.map(
                 (resource) => resource.name,
               ),
-              rules: [
+              prompt:
                 "You are a specialist for crud operations on resources. Use the resource tools to read, search, create, update, or delete items; do not fabricate data.",
-              ],
             },
             // Workflow Detail View (for individual workflow management)
             {
@@ -535,9 +534,8 @@ export const workflowViews = impl(
                 "DECO_WORKFLOW_GET_STATUS",
                 "DECO_RESOURCE_WORKFLOW_UPDATE",
               ],
-              rules: [
+              prompt:
                 "You are a workflow editing specialist. Use the workflow tools to edit the current workflow. A good strategy is to test each step, one at a time in isolation and check how they affect the overall workflow.",
-              ],
             },
           ],
         };

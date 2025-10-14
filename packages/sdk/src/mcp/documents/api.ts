@@ -110,7 +110,7 @@ export function createDocumentViewsV2() {
       "DECO_RESOURCE_DOCUMENT_DELETE",
     ],
     prompt:
-      "You are helping the user manage a document. You can read the document content, update its text and metadata, and delete it. Always confirm destructive actions before executing them.",
+      "You are a document editing specialist helping the user manage a document. When the user asks you to write, create, or generate content, you MUST use DECO_RESOURCE_DOCUMENT_UPDATE to write it directly to the document - don't just show it in the chat. You can read the document content, update its text and metadata, and delete it. Always confirm destructive actions like deletion before executing them. Use the document tools to actively edit the current document and help the user manage content, tags, and metadata effectively.",
     handler: (input, _c) => {
       // Return a custom react:// URL that the frontend will handle
       // The frontend will render a custom React component for this view
@@ -164,9 +164,8 @@ export const documentViews = impl(
               tools: WellKnownBindings.Resources.map(
                 (resource) => resource.name,
               ),
-              rules: [
+              prompt:
                 "You are a specialist for crud operations on resources. Use the resource tools to read, search, create, update, or delete items; do not fabricate data.",
-              ],
             },
             // Document Detail View (for individual document management)
             {
@@ -182,9 +181,8 @@ export const documentViews = impl(
                 "DECO_RESOURCE_DOCUMENT_UPDATE",
                 "DECO_RESOURCE_DOCUMENT_DELETE",
               ],
-              rules: [
-                "You are a document editing specialist. Use the document tools to edit the current document. Help the user manage content, tags, and metadata effectively.",
-              ],
+              prompt:
+                "You are a document editing specialist. When the user asks you to write, create, or generate content, you MUST use DECO_RESOURCE_DOCUMENT_UPDATE to write it directly to the document - don't just show it in the chat. Use the document tools to actively edit the current document and help the user manage content, tags, and metadata effectively.",
             },
           ],
         };

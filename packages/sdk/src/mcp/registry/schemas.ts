@@ -5,7 +5,8 @@ export const RegistryScopeSchema = z.lazy(() =>
   z.object({
     id: z.string(),
     scopeName: z.string(),
-    workspace: z.string(),
+    workspace: z.string().nullable(),
+    projectId: z.string().nullable(),
     createdAt: z.string(),
     updatedAt: z.string(),
   }),
@@ -25,7 +26,7 @@ export const RegistryToolSchema = z.lazy(() =>
 export const RegistryAppSchema = z.lazy(() =>
   z.object({
     id: z.string(),
-    workspace: z.string(),
+    workspace: z.string().nullable(),
     scopeId: z.string(),
     scopeName: z.string(),
     appName: z.string(),

@@ -436,7 +436,10 @@ export class Branch extends DurableObject<DeconfigEnv> {
   };
 
   // Watch infrastructure
-  private watchers = new Set<ReadableStreamDefaultController<Uint8Array>>();
+  private watchers = new Map<
+    ReadableStreamDefaultController<Uint8Array>,
+    WatchOptions
+  >();
 
   constructor(state: DurableObjectState, env: DeconfigEnv) {
     super(state, env);
@@ -505,7 +508,7 @@ export class Branch extends DurableObject<DeconfigEnv> {
     const stream = new ReadableStream<Uint8Array>({
       start: (ctrl) => {
         controller = ctrl;
-        this.watchers.add(controller);
+        this.watchers.set(controller, options);
 
         if (options.fromCtime !== undefined) {
           this.sendHistoricalChanges(controller, options);
@@ -658,8 +661,13 @@ export class Branch extends DurableObject<DeconfigEnv> {
     }
 
     // Send events to all watchers
-    for (const controller of this.watchers) {
+    for (const [controller, options] of this.watchers) {
       for (const event of events) {
+        // Filter events based on watcher's pathFilter
+        if (options.pathFilter && !event.path.startsWith(options.pathFilter)) {
+          continue;
+        }
+
         this.sendSSE(controller, {
           type: "change",
           data: JSON.stringify(event),

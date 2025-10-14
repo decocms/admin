@@ -2,6 +2,7 @@ import { existsSync, mkdirSync, writeFileSync } from "fs";
 import { dirname, join } from "path";
 import process from "node:process";
 import { fetchFileContent } from "./base.js";
+import { writeDeconfigHead } from "../../lib/deconfig-head.js";
 
 interface CloneOptions {
   branchName: string;
@@ -99,6 +100,16 @@ export async function cloneCommand(options: CloneOptions): Promise<void> {
     console.log(
       `🎉 Clone completed! Downloaded ${result.count} files to ${localPath}`,
     );
+
+    // Write HEAD file with current configuration
+    await writeDeconfigHead({
+      workspace: workspace || "",
+      branch: branchName,
+      path: localPath,
+      pathFilter,
+      local,
+    });
+    console.log(`📝 Saved deconfig HEAD to .deconfig/head`);
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : String(error);
 

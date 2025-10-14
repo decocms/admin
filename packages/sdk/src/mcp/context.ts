@@ -1,12 +1,12 @@
 // deno-lint-ignore-file no-explicit-any
 import type { ActorConstructor, StubFactory } from "@deco/actors";
 import type { AIAgent, Trigger } from "@deco/ai/actors";
-import type { Client } from "@deco/sdk/storage";
 import { createClient } from "@libsql/client/web";
 import type { ToolAnnotations } from "@modelcontextprotocol/sdk/types.d.ts";
 import * as api from "@opentelemetry/api";
 import { createServerClient } from "@supabase/ssr";
 import type { User as SupaUser } from "@supabase/supabase-js";
+import type { Client } from "@deco/sdk/storage";
 import { Cloudflare } from "cloudflare";
 import { AsyncLocalStorage } from "node:async_hooks";
 import { z } from "zod";
@@ -33,6 +33,7 @@ import {
   type PostgresJsDatabase,
 } from "drizzle-orm/postgres-js";
 import postgres from "postgres";
+
 import { strProp } from "../utils/fns.ts";
 import { relations } from "./relations.ts";
 
@@ -171,6 +172,7 @@ export const workspaceDB = async (
 
 export type IWorkspaceDBExecResult = { result: QueryResult[] } & Disposable;
 export type IWorkspaceDBMeta = { size: number } & Disposable;
+export type { DatatabasesRunSqlInput };
 export interface IWorkspaceDB {
   meta?: () => Promise<IWorkspaceDBMeta> | IWorkspaceDBMeta;
   recovery?: (dt: Date) => Promise<Disposable>;

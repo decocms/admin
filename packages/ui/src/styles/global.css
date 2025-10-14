@@ -20,7 +20,7 @@
 :root {
   --background: oklch(1 0 0);
   --foreground: oklch(20.5% 0 0);
-  --card: oklch(98.5% 0 0);
+  --card: oklch(97.6% 0 0);
   --card-foreground: oklch(20.5% 0 0);
   --popover: oklch(1 0 0);
   --popover-foreground: oklch(20.5% 0 0);

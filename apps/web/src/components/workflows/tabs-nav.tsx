@@ -31,15 +31,20 @@ export function WorkflowsTabs({ active }: WorkflowsTabsProps) {
   }
 
   return (
-    <Tabs value={active} onValueChange={handleChange} className="w-full">
-      <TabsList className="h-9 gap-2 bg-muted/60 px-2 mb-2">
-        <TabsTrigger value="workflows" className="px-4">
+    <Tabs
+      value={active}
+      onValueChange={handleChange}
+      variant="underline"
+      className="w-full"
+    >
+      <TabsList variant="underline">
+        <TabsTrigger value="workflows" variant="underline">
           Workflows
         </TabsTrigger>
-        <TabsTrigger value="runs" className="px-4">
+        <TabsTrigger value="runs" variant="underline">
           Runs
         </TabsTrigger>
-        <TabsTrigger value="triggers" className="px-4">
+        <TabsTrigger value="triggers" variant="underline">
           Triggers
         </TabsTrigger>
       </TabsList>

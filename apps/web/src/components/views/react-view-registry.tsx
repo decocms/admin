@@ -3,6 +3,7 @@ import { useResourceRoute } from "../resources-v2/route-context.tsx";
 import { WorkflowDisplayCanvas } from "../workflow-builder/workflow-display-canvas.tsx";
 import { ToolDetail } from "../tools/tool-detail.tsx";
 import { DocumentDetail } from "../documents/document-detail.tsx";
+import { ViewDetail } from "./view-detail.tsx";
 
 interface ReactViewProps {
   url: string;
@@ -12,6 +13,7 @@ const WELL_KNOWN_VIEWS = {
   workflow_detail: WorkflowDisplayCanvas,
   tool_detail: ToolDetail,
   document_detail: DocumentDetail,
+  view_detail: ViewDetail,
 };
 
 /**
@@ -20,6 +22,7 @@ const WELL_KNOWN_VIEWS = {
  * - react://workflow_detail?uri=<rsc-uri>
  * - react://tool_detail?uri=<rsc-uri>
  * - react://document_detail?uri=<rsc-uri>
+ * - react://view_detail?uri=<rsc-uri>
  */
 export function ReactViewRenderer({ url }: ReactViewProps) {
   const { key } = useMemo(() => parseReactUrl(url), [url]);

@@ -1,4 +1,10 @@
-import { ToolDefinitionSchema, useToolByUriV2, useToolCallV2 } from "@deco/sdk";
+import {
+  ToolDefinitionSchema,
+  useToolByUriV2,
+  useToolCallV2,
+  useSDK,
+  useRecentResources,
+} from "@deco/sdk";
 import { Button } from "@deco/ui/components/button.tsx";
 import {
   Card,
@@ -9,7 +15,8 @@ import {
 import { Icon } from "@deco/ui/components/icon.tsx";
 import Form from "@rjsf/shadcn";
 import validator from "@rjsf/validator-ajv8";
-import { useCallback, useState } from "react";
+import { useCallback, useState, useEffect, useRef } from "react";
+import { useParams } from "react-router";
 import { z } from "zod";
 import { EmptyState } from "../common/empty-state.tsx";
 import { ToolCallResultV2 } from "@deco/sdk/hooks";
@@ -40,6 +47,47 @@ export function ToolDetail({ resourceUri }: ToolDisplayCanvasProps) {
     refetch,
   } = useToolByUriV2(resourceUri);
   const effectiveTool = resource?.data;
+  const { locator } = useSDK();
+  const projectKey = typeof locator === "string" ? locator : undefined;
+  const { addRecent } = useRecentResources(projectKey);
+  const params = useParams<{ org: string; project: string }>();
+  const hasTrackedRecentRef = useRef(false);
+
+  // Track as recently opened when tool is loaded (only once)
+  useEffect(() => {
+    if (
+      effectiveTool &&
+      resourceUri &&
+      projectKey &&
+      params.org &&
+      params.project &&
+      !hasTrackedRecentRef.current
+    ) {
+      hasTrackedRecentRef.current = true;
+      // Parse the resource URI to extract integration and resource name
+      // Format: rsc://integration-id/resource-name/resource-id
+      const uriWithoutPrefix = resourceUri.replace("rsc://", "");
+      const [integrationId, resourceName] = uriWithoutPrefix.split("/");
+
+      // Use setTimeout to ensure this runs after render
+      setTimeout(() => {
+        addRecent({
+          id: resourceUri,
+          name: effectiveTool.name,
+          type: "tool",
+          icon: "build",
+          path: `/${projectKey}/rsc/i:${integrationId}/${resourceName}/${encodeURIComponent(resourceUri)}`,
+        });
+      }, 0);
+    }
+  }, [
+    effectiveTool,
+    resourceUri,
+    projectKey,
+    params.org,
+    params.project,
+    addRecent,
+  ]);
 
   // Local loading state for refresh functionality
   const [isRefreshing, setIsRefreshing] = useState(false);

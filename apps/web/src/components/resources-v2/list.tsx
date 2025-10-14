@@ -397,8 +397,8 @@ function ResourcesV2ListTab({
   }, [tabs]);
 
   return (
-    <div className="h-screen p-0 overflow-y-auto">
-      <div className="py-4 px-4 md:py-8 md:px-8 lg:py-16 lg:px-16 space-y-4 md:space-y-6 lg:space-y-8 h-full">
+    <div className="h-full p-0 overflow-y-auto">
+      <div className="py-4 px-4 md:py-8 md:px-8 lg:py-16 lg:px-16 space-y-4 md:space-y-6 lg:space-y-8">
         <div className="max-w-[1500px] mx-auto w-full space-y-4 md:space-y-6 lg:space-y-8">
           {headerSlot}
           <ResourceHeader

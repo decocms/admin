@@ -5873,37 +5873,41 @@ export type String_614 = string;
  */
 export type Array_74 = [Object_171, ...Object_171[]];
 /**
- * The unique ID of the step within the workflow
+ * The type of step
  */
-export type String_615 = string;
+export type String_615 = "code" | "tool_call";
 /**
- * The unique name of the step within the workflow
+ * The unique ID of the step within the workflow
  */
 export type String_616 = string;
 /**
- * A clear description of what this step does
+ * The unique name of the step within the workflow
  */
 export type String_617 = string;
 /**
- * The prompt used to generate the step
+ * A clear description of what this step does
  */
 export type String_618 = string;
 /**
+ * The prompt used to generate the step
+ */
+export type String_619 = string;
+/**
  * Status of the step execution
  */
-export type String_619 = "pending" | "active" | "completed" | "error";
+export type String_620 = "pending" | "active" | "completed" | "error";
 /**
  * ES module code that exports a default async function: (input: typeof inputSchema, ctx: { env: Record<string, any> }) => Promise<typeof outputSchema>. The input parameter contains the resolved input with all @ references replaced with actual values.
  */
-export type String_620 = string;
+export type String_621 = string;
 /**
  * The integration ID (format: i:<uuid> or a:<uuid>) that this step depends on
  */
-export type String_621 = string;
+export type String_622 = string;
 /**
  * List of integrations this step calls via ctx.env['{INTEGRATION_ID}'].{TOOL_NAME}(). These integrations must be installed and available for the step to execute successfully.
  */
-export type Array_75 = Object_176[];
+export type Array_75 = Object_177[];
 /**
  * Number of retry attempts for this step (default: 0)
  */
@@ -5915,15 +5919,48 @@ export type Integer_22 = number;
 /**
  * Backoff strategy for retry attempts (default: constant)
  */
-export type String_622 = "constant" | "linear" | "exponential";
+export type String_623 = "constant" | "linear" | "exponential";
 /**
  * Maximum execution time in milliseconds (default: Infinity)
  */
 export type Number_75 = number;
 /**
+ * The unique name of the tool call step within the workflow
+ */
+export type String_624 = string;
+/**
+ * A clear description of what this tool call step does
+ */
+export type String_625 = string;
+/**
+ * Number of retry attempts for this step (default: 0)
+ */
+export type Integer_23 = number;
+/**
+ * Delay in milliseconds between retry attempts (default: 0)
+ */
+export type Integer_24 = number;
+/**
+ * Backoff strategy for retry attempts (default: constant)
+ */
+export type String_626 = "constant" | "linear" | "exponential";
+/**
+ * Maximum execution time in milliseconds (default: Infinity)
+ */
+export type Number_76 = number;
+export type Null_51 = null;
+/**
+ * The name of the tool to call
+ */
+export type String_627 = string;
+/**
+ * The name of the integration that provides this tool
+ */
+export type String_628 = string;
+/**
  * The authorization token for the workflow
  */
-export type String_623 = string;
+export type String_629 = string;
 
 export interface DECO_RESOURCE_WORKFLOW_CREATEInput {
   data: Object_168;
@@ -5937,7 +5974,7 @@ export interface Object_168 {
   inputSchema: Object_169;
   outputSchema: Object_170;
   steps: Array_74;
-  authorization?: Object_179;
+  authorization?: Object_183;
 }
 /**
  * JSON Schema defining the workflow's input parameters and data structure
@@ -5952,60 +5989,86 @@ export interface Object_170 {
   [k: string]: unknown;
 }
 export interface Object_171 {
-  id: String_615;
-  name: String_616;
-  description: String_617;
-  prompt?: String_618;
-  inputSchema: Object_172;
-  outputSchema: Object_173;
-  input: Object_174;
-  output: Object_175;
-  status?: String_619;
-  execute: String_620;
+  type: String_615;
+  /**
+   * The step definition based on the type
+   */
+  def: Object_172 | Object_180;
+}
+export interface Object_172 {
+  id: String_616;
+  name: String_617;
+  description: String_618;
+  prompt?: String_619;
+  inputSchema: Object_173;
+  outputSchema: Object_174;
+  input: Object_175;
+  output: Object_176;
+  status?: String_620;
+  execute: String_621;
   dependencies?: Array_75;
-  options?: Object_177;
+  options?: Object_178;
 }
 /**
  * JSON Schema defining the input structure for this step
- */
-export interface Object_172 {
-  [k: string]: unknown;
-}
-/**
- * JSON Schema defining the output structure for this step
  */
 export interface Object_173 {
   [k: string]: unknown;
 }
 /**
- * Input object that complies with inputSchema. Values can reference previous steps using @<step_name>.output.property or workflow input using @input.property
+ * JSON Schema defining the output structure for this step
  */
 export interface Object_174 {
   [k: string]: unknown;
 }
 /**
- * Current output of the step if it was executed
+ * Input object that complies with inputSchema. Values can reference previous steps using @<step_name>.output.property or workflow input using @input.property
  */
 export interface Object_175 {
   [k: string]: unknown;
 }
+/**
+ * Current output of the step if it was executed
+ */
 export interface Object_176 {
-  integrationId: String_621;
+  [k: string]: unknown;
+}
+export interface Object_177 {
+  integrationId: String_622;
 }
 /**
  * Step configuration options including retry and timeout settings
  */
-export interface Object_177 {
-  retries?: Object_178;
+export interface Object_178 {
+  retries?: Object_179;
   timeout?: Number_75;
 }
-export interface Object_178 {
+export interface Object_179 {
   limit?: Integer_21;
   delay?: Integer_22;
-  backoff?: String_622;
+  backoff?: String_623;
 }
-export interface Object_179 {
-  token: String_623;
+export interface Object_180 {
+  name: String_624;
+  description: String_625;
+  /**
+   * Step configuration options. Extend this object with custom properties for business user configuration
+   */
+  options?: Object_181 | Null_51;
+  tool_name: String_627;
+  integration: String_628;
+}
+export interface Object_181 {
+  retries?: Object_182;
+  timeout?: Number_76;
+}
+export interface Object_182 {
+  limit?: Integer_23;
+  delay?: Integer_24;
+  backoff?: String_626;
+}
+export interface Object_183 {
+  token: String_629;
 }
 
 /* eslint-disable */
@@ -6018,171 +6081,234 @@ export interface Object_179 {
 /**
  * URI of the created resource
  */
-export type String_624 = string;
+export type String_630 = string;
 /**
  * The unique name of the workflow
  */
-export type String_625 = string;
+export type String_631 = string;
 /**
  * A comprehensive description of what this workflow accomplishes
  */
-export type String_626 = string;
+export type String_632 = string;
 /**
  * Array of workflow steps that execute sequentially. Each step can reference previous step outputs using @<step_name>.output.property syntax.
  *
  * @minItems 1
  */
-export type Array_76 = [Object_183, ...Object_183[]];
+export type Array_76 = [Object_187, ...Object_187[]];
+/**
+ * The type of step
+ */
+export type String_633 = "code" | "tool_call";
 /**
  * The unique ID of the step within the workflow
  */
-export type String_627 = string;
+export type String_634 = string;
 /**
  * The unique name of the step within the workflow
  */
-export type String_628 = string;
+export type String_635 = string;
 /**
  * A clear description of what this step does
  */
-export type String_629 = string;
+export type String_636 = string;
 /**
  * The prompt used to generate the step
  */
-export type String_630 = string;
+export type String_637 = string;
 /**
  * Status of the step execution
  */
-export type String_631 = "pending" | "active" | "completed" | "error";
+export type String_638 = "pending" | "active" | "completed" | "error";
 /**
  * ES module code that exports a default async function: (input: typeof inputSchema, ctx: { env: Record<string, any> }) => Promise<typeof outputSchema>. The input parameter contains the resolved input with all @ references replaced with actual values.
  */
-export type String_632 = string;
+export type String_639 = string;
 /**
  * The integration ID (format: i:<uuid> or a:<uuid>) that this step depends on
  */
-export type String_633 = string;
+export type String_640 = string;
 /**
  * List of integrations this step calls via ctx.env['{INTEGRATION_ID}'].{TOOL_NAME}(). These integrations must be installed and available for the step to execute successfully.
  */
-export type Array_77 = Object_188[];
+export type Array_77 = Object_193[];
 /**
  * Number of retry attempts for this step (default: 0)
  */
-export type Integer_23 = number;
+export type Integer_25 = number;
 /**
  * Delay in milliseconds between retry attempts (default: 0)
  */
-export type Integer_24 = number;
+export type Integer_26 = number;
 /**
  * Backoff strategy for retry attempts (default: constant)
  */
-export type String_634 = "constant" | "linear" | "exponential";
+export type String_641 = "constant" | "linear" | "exponential";
 /**
  * Maximum execution time in milliseconds (default: Infinity)
  */
-export type Number_76 = number;
+export type Number_77 = number;
+/**
+ * The unique name of the tool call step within the workflow
+ */
+export type String_642 = string;
+/**
+ * A clear description of what this tool call step does
+ */
+export type String_643 = string;
+/**
+ * Number of retry attempts for this step (default: 0)
+ */
+export type Integer_27 = number;
+/**
+ * Delay in milliseconds between retry attempts (default: 0)
+ */
+export type Integer_28 = number;
+/**
+ * Backoff strategy for retry attempts (default: constant)
+ */
+export type String_644 = "constant" | "linear" | "exponential";
+/**
+ * Maximum execution time in milliseconds (default: Infinity)
+ */
+export type Number_78 = number;
+export type Null_52 = null;
+/**
+ * The name of the tool to call
+ */
+export type String_645 = string;
+/**
+ * The name of the integration that provides this tool
+ */
+export type String_646 = string;
 /**
  * The authorization token for the workflow
  */
-export type String_635 = string;
+export type String_647 = string;
 /**
  * Creation timestamp
  */
-export type String_636 = string;
+export type String_648 = string;
 /**
  * Last update timestamp
  */
-export type String_637 = string;
+export type String_649 = string;
 /**
  * User who created the resource
  */
-export type String_638 = string;
+export type String_650 = string;
 
 export interface DECO_RESOURCE_WORKFLOW_CREATEOutput {
-  uri: String_624;
-  data: Object_180;
-  created_at?: String_636;
-  updated_at?: String_637;
-  created_by?: String_638;
+  uri: String_630;
+  data: Object_184;
+  created_at?: String_648;
+  updated_at?: String_649;
+  created_by?: String_650;
 }
 /**
  * Created resource data
  */
-export interface Object_180 {
-  name: String_625;
-  description: String_626;
-  inputSchema: Object_181;
-  outputSchema: Object_182;
+export interface Object_184 {
+  name: String_631;
+  description: String_632;
+  inputSchema: Object_185;
+  outputSchema: Object_186;
   steps: Array_76;
-  authorization?: Object_191;
+  authorization?: Object_199;
 }
 /**
  * JSON Schema defining the workflow's input parameters and data structure
- */
-export interface Object_181 {
-  [k: string]: unknown;
-}
-/**
- * JSON Schema defining the workflow's final output after all steps complete
- */
-export interface Object_182 {
-  [k: string]: unknown;
-}
-export interface Object_183 {
-  id: String_627;
-  name: String_628;
-  description: String_629;
-  prompt?: String_630;
-  inputSchema: Object_184;
-  outputSchema: Object_185;
-  input: Object_186;
-  output: Object_187;
-  status?: String_631;
-  execute: String_632;
-  dependencies?: Array_77;
-  options?: Object_189;
-}
-/**
- * JSON Schema defining the input structure for this step
- */
-export interface Object_184 {
-  [k: string]: unknown;
-}
-/**
- * JSON Schema defining the output structure for this step
  */
 export interface Object_185 {
   [k: string]: unknown;
 }
 /**
- * Input object that complies with inputSchema. Values can reference previous steps using @<step_name>.output.property or workflow input using @input.property
+ * JSON Schema defining the workflow's final output after all steps complete
  */
 export interface Object_186 {
+  [k: string]: unknown;
+}
+export interface Object_187 {
+  type: String_633;
+  /**
+   * The step definition based on the type
+   */
+  def: Object_188 | Object_196;
+}
+export interface Object_188 {
+  id: String_634;
+  name: String_635;
+  description: String_636;
+  prompt?: String_637;
+  inputSchema: Object_189;
+  outputSchema: Object_190;
+  input: Object_191;
+  output: Object_192;
+  status?: String_638;
+  execute: String_639;
+  dependencies?: Array_77;
+  options?: Object_194;
+}
+/**
+ * JSON Schema defining the input structure for this step
+ */
+export interface Object_189 {
+  [k: string]: unknown;
+}
+/**
+ * JSON Schema defining the output structure for this step
+ */
+export interface Object_190 {
+  [k: string]: unknown;
+}
+/**
+ * Input object that complies with inputSchema. Values can reference previous steps using @<step_name>.output.property or workflow input using @input.property
+ */
+export interface Object_191 {
   [k: string]: unknown;
 }
 /**
  * Current output of the step if it was executed
  */
-export interface Object_187 {
+export interface Object_192 {
   [k: string]: unknown;
 }
-export interface Object_188 {
-  integrationId: String_633;
+export interface Object_193 {
+  integrationId: String_640;
 }
 /**
  * Step configuration options including retry and timeout settings
  */
-export interface Object_189 {
-  retries?: Object_190;
-  timeout?: Number_76;
+export interface Object_194 {
+  retries?: Object_195;
+  timeout?: Number_77;
 }
-export interface Object_190 {
-  limit?: Integer_23;
-  delay?: Integer_24;
-  backoff?: String_634;
+export interface Object_195 {
+  limit?: Integer_25;
+  delay?: Integer_26;
+  backoff?: String_641;
 }
-export interface Object_191 {
-  token: String_635;
+export interface Object_196 {
+  name: String_642;
+  description: String_643;
+  /**
+   * Step configuration options. Extend this object with custom properties for business user configuration
+   */
+  options?: Object_197 | Null_52;
+  tool_name: String_645;
+  integration: String_646;
+}
+export interface Object_197 {
+  retries?: Object_198;
+  timeout?: Number_78;
+}
+export interface Object_198 {
+  limit?: Integer_27;
+  delay?: Integer_28;
+  backoff?: String_644;
+}
+export interface Object_199 {
+  token: String_647;
 }
 
 /* eslint-disable */
@@ -6195,10 +6321,10 @@ export interface Object_191 {
 /**
  * URI of the resource to delete
  */
-export type String_639 = string;
+export type String_651 = string;
 
 export interface DECO_RESOURCE_WORKFLOW_DELETEInput {
-  uri: String_639;
+  uri: String_651;
 }
 
 /* eslint-disable */
@@ -6215,11 +6341,11 @@ export type Boolean_51 = boolean;
 /**
  * URI of the deleted resource
  */
-export type String_640 = string;
+export type String_652 = string;
 
 export interface DECO_RESOURCE_WORKFLOW_DELETEOutput {
   success: Boolean_51;
-  uri: String_640;
+  uri: String_652;
 }
 
 /* eslint-disable */
@@ -6232,10 +6358,10 @@ export interface DECO_RESOURCE_WORKFLOW_DELETEOutput {
 /**
  * URI of the resource to read
  */
-export type String_641 = string;
+export type String_653 = string;
 
 export interface DECO_RESOURCE_WORKFLOW_READInput {
-  uri: String_641;
+  uri: String_653;
 }
 
 /* eslint-disable */
@@ -6248,176 +6374,239 @@ export interface DECO_RESOURCE_WORKFLOW_READInput {
 /**
  * URI of the resource
  */
-export type String_642 = string;
+export type String_654 = string;
 /**
  * The unique name of the workflow
  */
-export type String_643 = string;
+export type String_655 = string;
 /**
  * A comprehensive description of what this workflow accomplishes
  */
-export type String_644 = string;
+export type String_656 = string;
 /**
  * Array of workflow steps that execute sequentially. Each step can reference previous step outputs using @<step_name>.output.property syntax.
  *
  * @minItems 1
  */
-export type Array_78 = [Object_195, ...Object_195[]];
+export type Array_78 = [Object_203, ...Object_203[]];
+/**
+ * The type of step
+ */
+export type String_657 = "code" | "tool_call";
 /**
  * The unique ID of the step within the workflow
  */
-export type String_645 = string;
+export type String_658 = string;
 /**
  * The unique name of the step within the workflow
  */
-export type String_646 = string;
+export type String_659 = string;
 /**
  * A clear description of what this step does
  */
-export type String_647 = string;
+export type String_660 = string;
 /**
  * The prompt used to generate the step
  */
-export type String_648 = string;
+export type String_661 = string;
 /**
  * Status of the step execution
  */
-export type String_649 = "pending" | "active" | "completed" | "error";
+export type String_662 = "pending" | "active" | "completed" | "error";
 /**
  * ES module code that exports a default async function: (input: typeof inputSchema, ctx: { env: Record<string, any> }) => Promise<typeof outputSchema>. The input parameter contains the resolved input with all @ references replaced with actual values.
  */
-export type String_650 = string;
+export type String_663 = string;
 /**
  * The integration ID (format: i:<uuid> or a:<uuid>) that this step depends on
  */
-export type String_651 = string;
+export type String_664 = string;
 /**
  * List of integrations this step calls via ctx.env['{INTEGRATION_ID}'].{TOOL_NAME}(). These integrations must be installed and available for the step to execute successfully.
  */
-export type Array_79 = Object_200[];
+export type Array_79 = Object_209[];
 /**
  * Number of retry attempts for this step (default: 0)
  */
-export type Integer_25 = number;
+export type Integer_29 = number;
 /**
  * Delay in milliseconds between retry attempts (default: 0)
  */
-export type Integer_26 = number;
+export type Integer_30 = number;
 /**
  * Backoff strategy for retry attempts (default: constant)
  */
-export type String_652 = "constant" | "linear" | "exponential";
+export type String_665 = "constant" | "linear" | "exponential";
 /**
  * Maximum execution time in milliseconds (default: Infinity)
  */
-export type Number_77 = number;
+export type Number_79 = number;
+/**
+ * The unique name of the tool call step within the workflow
+ */
+export type String_666 = string;
+/**
+ * A clear description of what this tool call step does
+ */
+export type String_667 = string;
+/**
+ * Number of retry attempts for this step (default: 0)
+ */
+export type Integer_31 = number;
+/**
+ * Delay in milliseconds between retry attempts (default: 0)
+ */
+export type Integer_32 = number;
+/**
+ * Backoff strategy for retry attempts (default: constant)
+ */
+export type String_668 = "constant" | "linear" | "exponential";
+/**
+ * Maximum execution time in milliseconds (default: Infinity)
+ */
+export type Number_80 = number;
+export type Null_53 = null;
+/**
+ * The name of the tool to call
+ */
+export type String_669 = string;
+/**
+ * The name of the integration that provides this tool
+ */
+export type String_670 = string;
 /**
  * The authorization token for the workflow
  */
-export type String_653 = string;
+export type String_671 = string;
 /**
  * Creation timestamp
  */
-export type String_654 = string;
+export type String_672 = string;
 /**
  * Last update timestamp
  */
-export type String_655 = string;
+export type String_673 = string;
 /**
  * User who created the resource
  */
-export type String_656 = string;
+export type String_674 = string;
 /**
  * User who last updated the resource
  */
-export type String_657 = string;
+export type String_675 = string;
 
 export interface DECO_RESOURCE_WORKFLOW_READOutput {
-  uri: String_642;
-  data: Object_192;
-  created_at?: String_654;
-  updated_at?: String_655;
-  created_by?: String_656;
-  updated_by?: String_657;
+  uri: String_654;
+  data: Object_200;
+  created_at?: String_672;
+  updated_at?: String_673;
+  created_by?: String_674;
+  updated_by?: String_675;
 }
 /**
  * Resource data
  */
-export interface Object_192 {
-  name: String_643;
-  description: String_644;
-  inputSchema: Object_193;
-  outputSchema: Object_194;
+export interface Object_200 {
+  name: String_655;
+  description: String_656;
+  inputSchema: Object_201;
+  outputSchema: Object_202;
   steps: Array_78;
-  authorization?: Object_203;
+  authorization?: Object_215;
 }
 /**
  * JSON Schema defining the workflow's input parameters and data structure
  */
-export interface Object_193 {
+export interface Object_201 {
   [k: string]: unknown;
 }
 /**
  * JSON Schema defining the workflow's final output after all steps complete
  */
-export interface Object_194 {
+export interface Object_202 {
   [k: string]: unknown;
 }
-export interface Object_195 {
-  id: String_645;
-  name: String_646;
-  description: String_647;
-  prompt?: String_648;
-  inputSchema: Object_196;
-  outputSchema: Object_197;
-  input: Object_198;
-  output: Object_199;
-  status?: String_649;
-  execute: String_650;
+export interface Object_203 {
+  type: String_657;
+  /**
+   * The step definition based on the type
+   */
+  def: Object_204 | Object_212;
+}
+export interface Object_204 {
+  id: String_658;
+  name: String_659;
+  description: String_660;
+  prompt?: String_661;
+  inputSchema: Object_205;
+  outputSchema: Object_206;
+  input: Object_207;
+  output: Object_208;
+  status?: String_662;
+  execute: String_663;
   dependencies?: Array_79;
-  options?: Object_201;
+  options?: Object_210;
 }
 /**
  * JSON Schema defining the input structure for this step
  */
-export interface Object_196 {
+export interface Object_205 {
   [k: string]: unknown;
 }
 /**
  * JSON Schema defining the output structure for this step
  */
-export interface Object_197 {
+export interface Object_206 {
   [k: string]: unknown;
 }
 /**
  * Input object that complies with inputSchema. Values can reference previous steps using @<step_name>.output.property or workflow input using @input.property
  */
-export interface Object_198 {
+export interface Object_207 {
   [k: string]: unknown;
 }
 /**
  * Current output of the step if it was executed
  */
-export interface Object_199 {
+export interface Object_208 {
   [k: string]: unknown;
 }
-export interface Object_200 {
-  integrationId: String_651;
+export interface Object_209 {
+  integrationId: String_664;
 }
 /**
  * Step configuration options including retry and timeout settings
  */
-export interface Object_201 {
-  retries?: Object_202;
-  timeout?: Number_77;
+export interface Object_210 {
+  retries?: Object_211;
+  timeout?: Number_79;
 }
-export interface Object_202 {
-  limit?: Integer_25;
-  delay?: Integer_26;
-  backoff?: String_652;
+export interface Object_211 {
+  limit?: Integer_29;
+  delay?: Integer_30;
+  backoff?: String_665;
 }
-export interface Object_203 {
-  token: String_653;
+export interface Object_212 {
+  name: String_666;
+  description: String_667;
+  /**
+   * Step configuration options. Extend this object with custom properties for business user configuration
+   */
+  options?: Object_213 | Null_53;
+  tool_name: String_669;
+  integration: String_670;
+}
+export interface Object_213 {
+  retries?: Object_214;
+  timeout?: Number_80;
+}
+export interface Object_214 {
+  limit?: Integer_31;
+  delay?: Integer_32;
+  backoff?: String_668;
+}
+export interface Object_215 {
+  token: String_671;
 }
 
 /* eslint-disable */
@@ -6430,10 +6619,10 @@ export interface Object_203 {
 /**
  * URI of the resource to read
  */
-export type String_658 = string;
+export type String_676 = string;
 
 export interface DECO_RESOURCE_WORKFLOW_RUN_READInput {
-  uri: String_658;
+  uri: String_676;
 }
 
 /* eslint-disable */
@@ -6446,124 +6635,124 @@ export interface DECO_RESOURCE_WORKFLOW_RUN_READInput {
 /**
  * URI of the resource
  */
-export type String_659 = string;
-export type String_660 = string;
-export type String_661 = string;
-export type String_662 = string;
-export type String_663 = string;
-export type String_664 = string;
-export type String_665 = string;
+export type String_677 = string;
+export type String_678 = string;
+export type String_679 = string;
+export type String_680 = string;
+export type String_681 = string;
+export type String_682 = string;
+export type String_683 = string;
 /**
  * The name of the step currently being executed (if running)
  */
-export type String_666 = string;
+export type String_684 = string;
 /**
  * Error message if the workflow failed
  */
-export type String_667 = string;
-export type String_668 = "log" | "warn" | "error";
-export type String_669 = string;
+export type String_685 = string;
+export type String_686 = "log" | "warn" | "error";
+export type String_687 = string;
 /**
  * Console logs from the execution
  */
-export type Array_80 = Object_206[];
+export type Array_80 = Object_218[];
 /**
  * When the workflow started (timestamp)
  */
-export type Number_78 = number;
+export type Number_81 = number;
 /**
  * When the workflow ended (timestamp, if completed/failed)
  */
-export type Number_79 = number;
+export type Number_82 = number;
 export type Array_81 = unknown[];
-export type String_670 = string;
-export type String_671 = string;
-export type String_672 = string;
-export type String_673 = string;
-export type String_674 = string;
-export type String_675 = string;
-export type Null_51 = null;
-export type String_676 = string;
-export type String_677 = string;
-export type String_678 = string;
-export type StringNull_26 = String_679 | Null_52;
-export type String_679 = string;
-export type Null_52 = null;
-export type StringNull_27 = String_680 | Null_53;
-export type String_680 = string;
-export type Null_53 = null;
-export type BooleanNull_1 = Boolean_52 | Null_54;
-export type Boolean_52 = boolean;
-export type Null_54 = null;
-export type String_681 = string;
-export type String_682 = string;
-export type StringNull_28 = String_683 | Null_55;
-export type String_683 = string;
-export type Null_55 = null;
-export type StringNull_29 = String_684 | Null_56;
-export type String_684 = string;
-export type Null_56 = null;
-export type BooleanNull_2 = Boolean_53 | Null_57;
-export type Boolean_53 = boolean;
-export type Null_57 = null;
-export type String_685 = string;
-export type String_686 = string;
-export type Null_58 = null;
-export type StringNull_30 = String_687 | Null_59;
-export type String_687 = string;
-export type Null_59 = null;
-export type StringNull_31 = String_688 | Null_60;
 export type String_688 = string;
-export type Null_60 = null;
-export type BooleanNull_3 = Boolean_54 | Null_61;
-export type Boolean_54 = boolean;
-export type Null_61 = null;
 export type String_689 = string;
 export type String_690 = string;
-export type Null_62 = null;
-export type Array_83 = Object_214[];
-export type Array_82 = Object_212[];
 export type String_691 = string;
 export type String_692 = string;
-export type Null_63 = null;
 export type String_693 = string;
+export type Null_54 = null;
+export type String_694 = string;
+export type String_695 = string;
+export type String_696 = string;
+export type StringNull_26 = String_697 | Null_55;
+export type String_697 = string;
+export type Null_55 = null;
+export type StringNull_27 = String_698 | Null_56;
+export type String_698 = string;
+export type Null_56 = null;
+export type BooleanNull_1 = Boolean_52 | Null_57;
+export type Boolean_52 = boolean;
+export type Null_57 = null;
+export type String_699 = string;
+export type String_700 = string;
+export type StringNull_28 = String_701 | Null_58;
+export type String_701 = string;
+export type Null_58 = null;
+export type StringNull_29 = String_702 | Null_59;
+export type String_702 = string;
+export type Null_59 = null;
+export type BooleanNull_2 = Boolean_53 | Null_60;
+export type Boolean_53 = boolean;
+export type Null_60 = null;
+export type String_703 = string;
+export type String_704 = string;
+export type Null_61 = null;
+export type StringNull_30 = String_705 | Null_62;
+export type String_705 = string;
+export type Null_62 = null;
+export type StringNull_31 = String_706 | Null_63;
+export type String_706 = string;
+export type Null_63 = null;
+export type BooleanNull_3 = Boolean_54 | Null_64;
+export type Boolean_54 = boolean;
+export type Null_64 = null;
+export type String_707 = string;
+export type String_708 = string;
+export type Null_65 = null;
+export type Array_83 = Object_226[];
+export type Array_82 = Object_224[];
+export type String_709 = string;
+export type String_710 = string;
+export type Null_66 = null;
+export type String_711 = string;
 /**
  * Creation timestamp
  */
-export type String_694 = string;
+export type String_712 = string;
 /**
  * Last update timestamp
  */
-export type String_695 = string;
+export type String_713 = string;
 /**
  * User who created the resource
  */
-export type String_696 = string;
+export type String_714 = string;
 /**
  * User who last updated the resource
  */
-export type String_697 = string;
+export type String_715 = string;
 
 export interface DECO_RESOURCE_WORKFLOW_RUN_READOutput {
-  uri: String_659;
-  data: Object_204;
-  created_at?: String_694;
-  updated_at?: String_695;
-  created_by?: String_696;
-  updated_by?: String_697;
+  uri: String_677;
+  data: Object_216;
+  created_at?: String_712;
+  updated_at?: String_713;
+  created_by?: String_714;
+  updated_by?: String_715;
 }
 /**
  * Resource data
  */
-export interface Object_204 {
-  name: String_660;
-  description?: String_661;
-  icon?: String_662;
-  status: String_663;
-  runId: String_664;
-  workflowURI?: String_665;
-  currentStep?: String_666;
-  stepResults?: Object_205;
+export interface Object_216 {
+  name: String_678;
+  description?: String_679;
+  icon?: String_680;
+  status: String_681;
+  runId: String_682;
+  workflowURI?: String_683;
+  currentStep?: String_684;
+  stepResults?: Object_217;
   /**
    * The final workflow result (if completed)
    */
@@ -6576,408 +6765,89 @@ export interface Object_204 {
   partialResult?: {
     [k: string]: unknown;
   };
-  error?: String_667;
+  error?: String_685;
   logs?: Array_80;
-  startTime?: Number_78;
-  endTime?: Number_79;
-  workflowStatus?: Object_207;
+  startTime?: Number_81;
+  endTime?: Number_82;
+  workflowStatus?: Object_219;
 }
 /**
  * Results from completed steps
- */
-export interface Object_205 {
-  [k: string]: unknown;
-}
-export interface Object_206 {
-  type: String_668;
-  content: String_669;
-}
-export interface Object_207 {
-  params?: Object_208 | Null_51;
-  trigger?: Object_211;
-  versionId?: String_677;
-  queued?: String_678;
-  start?: StringNull_26;
-  end?: StringNull_27;
-  success?: BooleanNull_1;
-  steps?: Array_82;
-  error?: Object_216 | Null_63;
-  output?: unknown;
-  status?: String_693;
-  [k: string]: unknown;
-}
-export interface Object_208 {
-  input?: unknown;
-  steps?: Array_81;
-  name?: String_670;
-  context?: Object_209;
-  [k: string]: unknown;
-}
-export interface Object_209 {
-  workspace?: unknown;
-  locator?: unknown;
-  workflowURI?: String_671;
-  startedBy?: Object_210;
-  startedAt?: String_675;
-  [k: string]: unknown;
-}
-export interface Object_210 {
-  id: String_672;
-  email?: String_673;
-  name?: String_674;
-}
-export interface Object_211 {
-  source: String_676;
-  [k: string]: unknown;
-}
-export interface Object_212 {
-  name?: String_681;
-  type?: String_682;
-  start?: StringNull_28;
-  end?: StringNull_29;
-  success?: BooleanNull_2;
-  output?: unknown;
-  error?: Object_213 | Null_58;
-  attempts?: Array_83;
-  config?: unknown;
-  [k: string]: unknown;
-}
-export interface Object_213 {
-  name?: String_685;
-  message?: String_686;
-}
-export interface Object_214 {
-  start?: StringNull_30;
-  end?: StringNull_31;
-  success?: BooleanNull_3;
-  error?: Object_215 | Null_62;
-}
-export interface Object_215 {
-  name?: String_689;
-  message?: String_690;
-}
-export interface Object_216 {
-  name?: String_691;
-  message?: String_692;
-}
-
-/* eslint-disable */
-/**
- * This file was automatically generated by json-schema-to-typescript.
- * DO NOT MODIFY IT BY HAND. Instead, modify the source JSONSchema file,
- * and run json-schema-to-typescript to regenerate this file.
- */
-
-/**
- * Search term to filter resources
- */
-export type String_698 = string;
-/**
- * Page number (1-based)
- */
-export type Integer_27 = number;
-/**
- * Number of items per page
- */
-export type Integer_28 = number;
-/**
- * Field to sort by
- */
-export type String_699 = string;
-/**
- * Sort order
- */
-export type String_700 = "asc" | "desc";
-
-export interface DECO_RESOURCE_WORKFLOW_RUN_SEARCHInput {
-  term?: String_698;
-  page?: Integer_27;
-  pageSize?: Integer_28;
-  filters?: Object_217;
-  sortBy?: String_699;
-  sortOrder?: String_700;
-}
-/**
- * Additional filters to apply
  */
 export interface Object_217 {
   [k: string]: unknown;
 }
-
-/* eslint-disable */
-/**
- * This file was automatically generated by json-schema-to-typescript.
- * DO NOT MODIFY IT BY HAND. Instead, modify the source JSONSchema file,
- * and run json-schema-to-typescript to regenerate this file.
- */
-
-/**
- * URI of the resource
- */
-export type String_701 = string;
-export type String_702 = string;
-/**
- * Description of the resource
- */
-export type String_703 = string;
-/**
- * URL to the resource icon
- */
-export type String_704 = string;
-export type String_705 = string;
-export type String_706 = string;
-export type String_707 = string;
-export type String_708 = string;
-export type String_709 = string;
-export type String_710 = string;
-/**
- * The name of the step currently being executed (if running)
- */
-export type String_711 = string;
-/**
- * Error message if the workflow failed
- */
-export type String_712 = string;
-export type String_713 = "log" | "warn" | "error";
-export type String_714 = string;
-/**
- * Console logs from the execution
- */
-export type Array_85 = Object_222[];
-/**
- * When the workflow started (timestamp)
- */
-export type Number_80 = number;
-/**
- * When the workflow ended (timestamp, if completed/failed)
- */
-export type Number_81 = number;
-export type Array_86 = unknown[];
-export type String_715 = string;
-export type String_716 = string;
-export type String_717 = string;
-export type String_718 = string;
-export type String_719 = string;
-export type String_720 = string;
-export type Null_64 = null;
-export type String_721 = string;
-export type String_722 = string;
-export type String_723 = string;
-export type StringNull_32 = String_724 | Null_65;
-export type String_724 = string;
-export type Null_65 = null;
-export type StringNull_33 = String_725 | Null_66;
-export type String_725 = string;
-export type Null_66 = null;
-export type BooleanNull_4 = Boolean_55 | Null_67;
-export type Boolean_55 = boolean;
-export type Null_67 = null;
-export type String_726 = string;
-export type String_727 = string;
-export type StringNull_34 = String_728 | Null_68;
-export type String_728 = string;
-export type Null_68 = null;
-export type StringNull_35 = String_729 | Null_69;
-export type String_729 = string;
-export type Null_69 = null;
-export type BooleanNull_5 = Boolean_56 | Null_70;
-export type Boolean_56 = boolean;
-export type Null_70 = null;
-export type String_730 = string;
-export type String_731 = string;
-export type Null_71 = null;
-export type StringNull_36 = String_732 | Null_72;
-export type String_732 = string;
-export type Null_72 = null;
-export type StringNull_37 = String_733 | Null_73;
-export type String_733 = string;
-export type Null_73 = null;
-export type BooleanNull_6 = Boolean_57 | Null_74;
-export type Boolean_57 = boolean;
-export type Null_74 = null;
-export type String_734 = string;
-export type String_735 = string;
-export type Null_75 = null;
-export type Array_88 = Object_230[];
-export type Array_87 = Object_228[];
-export type String_736 = string;
-export type String_737 = string;
-export type Null_76 = null;
-export type String_738 = string;
-/**
- * Creation timestamp
- */
-export type String_739 = string;
-/**
- * Last update timestamp
- */
-export type String_740 = string;
-/**
- * User who created the resource
- */
-export type String_741 = string;
-/**
- * User who last updated the resource
- */
-export type String_742 = string;
-/**
- * Array of matching resources
- */
-export type Array_84 = Object_218[];
-/**
- * Total number of matching resources
- */
-export type Integer_29 = number;
-/**
- * Current page number
- */
-export type Integer_30 = number;
-/**
- * Number of items per page
- */
-export type Integer_31 = number;
-/**
- * Total number of pages
- */
-export type Integer_32 = number;
-/**
- * Whether there are more pages available
- */
-export type Boolean_58 = boolean;
-/**
- * Whether there are previous pages available
- */
-export type Boolean_59 = boolean;
-
-export interface DECO_RESOURCE_WORKFLOW_RUN_SEARCHOutput {
-  items: Array_84;
-  totalCount: Integer_29;
-  page: Integer_30;
-  pageSize: Integer_31;
-  totalPages: Integer_32;
-  hasNextPage: Boolean_58;
-  hasPreviousPage: Boolean_59;
-}
 export interface Object_218 {
-  uri: String_701;
-  /**
-   * Resource data with required name
-   */
-  data: Object_219 & Object_220;
-  created_at?: String_739;
-  updated_at?: String_740;
-  created_by?: String_741;
-  updated_by?: String_742;
+  type: String_686;
+  content: String_687;
 }
 export interface Object_219 {
-  name: String_702;
-  description?: String_703;
-  icon?: String_704;
+  params?: Object_220 | Null_54;
+  trigger?: Object_223;
+  versionId?: String_695;
+  queued?: String_696;
+  start?: StringNull_26;
+  end?: StringNull_27;
+  success?: BooleanNull_1;
+  steps?: Array_82;
+  error?: Object_228 | Null_66;
+  output?: unknown;
+  status?: String_711;
+  [k: string]: unknown;
 }
 export interface Object_220 {
-  name: String_705;
-  description?: String_706;
-  icon?: String_707;
-  status: String_708;
-  runId: String_709;
-  workflowURI?: String_710;
-  currentStep?: String_711;
-  stepResults?: Object_221;
-  /**
-   * The final workflow result (if completed)
-   */
-  finalResult?: {
-    [k: string]: unknown;
-  };
-  /**
-   * Partial results from completed steps (if pending/running)
-   */
-  partialResult?: {
-    [k: string]: unknown;
-  };
-  error?: String_712;
-  logs?: Array_85;
-  startTime?: Number_80;
-  endTime?: Number_81;
-  workflowStatus?: Object_223;
+  input?: unknown;
+  steps?: Array_81;
+  name?: String_688;
+  context?: Object_221;
+  [k: string]: unknown;
 }
-/**
- * Results from completed steps
- */
 export interface Object_221 {
+  workspace?: unknown;
+  locator?: unknown;
+  workflowURI?: String_689;
+  startedBy?: Object_222;
+  startedAt?: String_693;
   [k: string]: unknown;
 }
 export interface Object_222 {
-  type: String_713;
-  content: String_714;
+  id: String_690;
+  email?: String_691;
+  name?: String_692;
 }
 export interface Object_223 {
-  params?: Object_224 | Null_64;
-  trigger?: Object_227;
-  versionId?: String_722;
-  queued?: String_723;
-  start?: StringNull_32;
-  end?: StringNull_33;
-  success?: BooleanNull_4;
-  steps?: Array_87;
-  error?: Object_232 | Null_76;
-  output?: unknown;
-  status?: String_738;
+  source: String_694;
   [k: string]: unknown;
 }
 export interface Object_224 {
-  input?: unknown;
-  steps?: Array_86;
-  name?: String_715;
-  context?: Object_225;
-  [k: string]: unknown;
-}
-export interface Object_225 {
-  workspace?: unknown;
-  locator?: unknown;
-  workflowURI?: String_716;
-  startedBy?: Object_226;
-  startedAt?: String_720;
-  [k: string]: unknown;
-}
-export interface Object_226 {
-  id: String_717;
-  email?: String_718;
-  name?: String_719;
-}
-export interface Object_227 {
-  source: String_721;
-  [k: string]: unknown;
-}
-export interface Object_228 {
-  name?: String_726;
-  type?: String_727;
-  start?: StringNull_34;
-  end?: StringNull_35;
-  success?: BooleanNull_5;
+  name?: String_699;
+  type?: String_700;
+  start?: StringNull_28;
+  end?: StringNull_29;
+  success?: BooleanNull_2;
   output?: unknown;
-  error?: Object_229 | Null_71;
-  attempts?: Array_88;
+  error?: Object_225 | Null_61;
+  attempts?: Array_83;
   config?: unknown;
   [k: string]: unknown;
 }
-export interface Object_229 {
-  name?: String_730;
-  message?: String_731;
+export interface Object_225 {
+  name?: String_703;
+  message?: String_704;
 }
-export interface Object_230 {
-  start?: StringNull_36;
-  end?: StringNull_37;
-  success?: BooleanNull_6;
-  error?: Object_231 | Null_75;
+export interface Object_226 {
+  start?: StringNull_30;
+  end?: StringNull_31;
+  success?: BooleanNull_3;
+  error?: Object_227 | Null_65;
 }
-export interface Object_231 {
-  name?: String_734;
-  message?: String_735;
+export interface Object_227 {
+  name?: String_707;
+  message?: String_708;
 }
-export interface Object_232 {
-  name?: String_736;
-  message?: String_737;
+export interface Object_228 {
+  name?: String_709;
+  message?: String_710;
 }
 
 /* eslint-disable */
@@ -6990,7 +6860,7 @@ export interface Object_232 {
 /**
  * Search term to filter resources
  */
-export type String_743 = string;
+export type String_716 = string;
 /**
  * Page number (1-based)
  */
@@ -7002,24 +6872,24 @@ export type Integer_34 = number;
 /**
  * Field to sort by
  */
-export type String_744 = string;
+export type String_717 = string;
 /**
  * Sort order
  */
-export type String_745 = "asc" | "desc";
+export type String_718 = "asc" | "desc";
 
-export interface DECO_RESOURCE_WORKFLOW_SEARCHInput {
-  term?: String_743;
+export interface DECO_RESOURCE_WORKFLOW_RUN_SEARCHInput {
+  term?: String_716;
   page?: Integer_33;
   pageSize?: Integer_34;
-  filters?: Object_233;
-  sortBy?: String_744;
-  sortOrder?: String_745;
+  filters?: Object_229;
+  sortBy?: String_717;
+  sortOrder?: String_718;
 }
 /**
  * Additional filters to apply
  */
-export interface Object_233 {
+export interface Object_229 {
   [k: string]: unknown;
 }
 
@@ -7033,44 +6903,116 @@ export interface Object_233 {
 /**
  * URI of the resource
  */
-export type String_746 = string;
-export type String_747 = string;
+export type String_719 = string;
+export type String_720 = string;
 /**
  * Description of the resource
  */
-export type String_748 = string;
+export type String_721 = string;
 /**
  * URL to the resource icon
  */
+export type String_722 = string;
+export type String_723 = string;
+export type String_724 = string;
+export type String_725 = string;
+export type String_726 = string;
+export type String_727 = string;
+export type String_728 = string;
+/**
+ * The name of the step currently being executed (if running)
+ */
+export type String_729 = string;
+/**
+ * Error message if the workflow failed
+ */
+export type String_730 = string;
+export type String_731 = "log" | "warn" | "error";
+export type String_732 = string;
+/**
+ * Console logs from the execution
+ */
+export type Array_85 = Object_234[];
+/**
+ * When the workflow started (timestamp)
+ */
+export type Number_83 = number;
+/**
+ * When the workflow ended (timestamp, if completed/failed)
+ */
+export type Number_84 = number;
+export type Array_86 = unknown[];
+export type String_733 = string;
+export type String_734 = string;
+export type String_735 = string;
+export type String_736 = string;
+export type String_737 = string;
+export type String_738 = string;
+export type Null_67 = null;
+export type String_739 = string;
+export type String_740 = string;
+export type String_741 = string;
+export type StringNull_32 = String_742 | Null_68;
+export type String_742 = string;
+export type Null_68 = null;
+export type StringNull_33 = String_743 | Null_69;
+export type String_743 = string;
+export type Null_69 = null;
+export type BooleanNull_4 = Boolean_55 | Null_70;
+export type Boolean_55 = boolean;
+export type Null_70 = null;
+export type String_744 = string;
+export type String_745 = string;
+export type StringNull_34 = String_746 | Null_71;
+export type String_746 = string;
+export type Null_71 = null;
+export type StringNull_35 = String_747 | Null_72;
+export type String_747 = string;
+export type Null_72 = null;
+export type BooleanNull_5 = Boolean_56 | Null_73;
+export type Boolean_56 = boolean;
+export type Null_73 = null;
+export type String_748 = string;
 export type String_749 = string;
-/**
- * The unique name of the workflow
- */
+export type Null_74 = null;
+export type StringNull_36 = String_750 | Null_75;
 export type String_750 = string;
-/**
- * A comprehensive description of what this workflow accomplishes
- */
+export type Null_75 = null;
+export type StringNull_37 = String_751 | Null_76;
 export type String_751 = string;
+export type Null_76 = null;
+export type BooleanNull_6 = Boolean_57 | Null_77;
+export type Boolean_57 = boolean;
+export type Null_77 = null;
+export type String_752 = string;
+export type String_753 = string;
+export type Null_78 = null;
+export type Array_88 = Object_242[];
+export type Array_87 = Object_240[];
+export type String_754 = string;
+export type String_755 = string;
+export type Null_79 = null;
+export type String_756 = string;
 /**
  * Creation timestamp
  */
-export type String_752 = string;
+export type String_757 = string;
 /**
  * Last update timestamp
  */
-export type String_753 = string;
+export type String_758 = string;
 /**
  * User who created the resource
  */
-export type String_754 = string;
+export type String_759 = string;
 /**
  * User who last updated the resource
  */
-export type String_755 = string;
+export type String_760 = string;
 /**
  * Array of matching resources
  */
-export type Array_89 = Object_234[];
+export type Array_84 = Object_230[];
 /**
  * Total number of matching resources
  */
@@ -7090,6 +7032,253 @@ export type Integer_38 = number;
 /**
  * Whether there are more pages available
  */
+export type Boolean_58 = boolean;
+/**
+ * Whether there are previous pages available
+ */
+export type Boolean_59 = boolean;
+
+export interface DECO_RESOURCE_WORKFLOW_RUN_SEARCHOutput {
+  items: Array_84;
+  totalCount: Integer_35;
+  page: Integer_36;
+  pageSize: Integer_37;
+  totalPages: Integer_38;
+  hasNextPage: Boolean_58;
+  hasPreviousPage: Boolean_59;
+}
+export interface Object_230 {
+  uri: String_719;
+  /**
+   * Resource data with required name
+   */
+  data: Object_231 & Object_232;
+  created_at?: String_757;
+  updated_at?: String_758;
+  created_by?: String_759;
+  updated_by?: String_760;
+}
+export interface Object_231 {
+  name: String_720;
+  description?: String_721;
+  icon?: String_722;
+}
+export interface Object_232 {
+  name: String_723;
+  description?: String_724;
+  icon?: String_725;
+  status: String_726;
+  runId: String_727;
+  workflowURI?: String_728;
+  currentStep?: String_729;
+  stepResults?: Object_233;
+  /**
+   * The final workflow result (if completed)
+   */
+  finalResult?: {
+    [k: string]: unknown;
+  };
+  /**
+   * Partial results from completed steps (if pending/running)
+   */
+  partialResult?: {
+    [k: string]: unknown;
+  };
+  error?: String_730;
+  logs?: Array_85;
+  startTime?: Number_83;
+  endTime?: Number_84;
+  workflowStatus?: Object_235;
+}
+/**
+ * Results from completed steps
+ */
+export interface Object_233 {
+  [k: string]: unknown;
+}
+export interface Object_234 {
+  type: String_731;
+  content: String_732;
+}
+export interface Object_235 {
+  params?: Object_236 | Null_67;
+  trigger?: Object_239;
+  versionId?: String_740;
+  queued?: String_741;
+  start?: StringNull_32;
+  end?: StringNull_33;
+  success?: BooleanNull_4;
+  steps?: Array_87;
+  error?: Object_244 | Null_79;
+  output?: unknown;
+  status?: String_756;
+  [k: string]: unknown;
+}
+export interface Object_236 {
+  input?: unknown;
+  steps?: Array_86;
+  name?: String_733;
+  context?: Object_237;
+  [k: string]: unknown;
+}
+export interface Object_237 {
+  workspace?: unknown;
+  locator?: unknown;
+  workflowURI?: String_734;
+  startedBy?: Object_238;
+  startedAt?: String_738;
+  [k: string]: unknown;
+}
+export interface Object_238 {
+  id: String_735;
+  email?: String_736;
+  name?: String_737;
+}
+export interface Object_239 {
+  source: String_739;
+  [k: string]: unknown;
+}
+export interface Object_240 {
+  name?: String_744;
+  type?: String_745;
+  start?: StringNull_34;
+  end?: StringNull_35;
+  success?: BooleanNull_5;
+  output?: unknown;
+  error?: Object_241 | Null_74;
+  attempts?: Array_88;
+  config?: unknown;
+  [k: string]: unknown;
+}
+export interface Object_241 {
+  name?: String_748;
+  message?: String_749;
+}
+export interface Object_242 {
+  start?: StringNull_36;
+  end?: StringNull_37;
+  success?: BooleanNull_6;
+  error?: Object_243 | Null_78;
+}
+export interface Object_243 {
+  name?: String_752;
+  message?: String_753;
+}
+export interface Object_244 {
+  name?: String_754;
+  message?: String_755;
+}
+
+/* eslint-disable */
+/**
+ * This file was automatically generated by json-schema-to-typescript.
+ * DO NOT MODIFY IT BY HAND. Instead, modify the source JSONSchema file,
+ * and run json-schema-to-typescript to regenerate this file.
+ */
+
+/**
+ * Search term to filter resources
+ */
+export type String_761 = string;
+/**
+ * Page number (1-based)
+ */
+export type Integer_39 = number;
+/**
+ * Number of items per page
+ */
+export type Integer_40 = number;
+/**
+ * Field to sort by
+ */
+export type String_762 = string;
+/**
+ * Sort order
+ */
+export type String_763 = "asc" | "desc";
+
+export interface DECO_RESOURCE_WORKFLOW_SEARCHInput {
+  term?: String_761;
+  page?: Integer_39;
+  pageSize?: Integer_40;
+  filters?: Object_245;
+  sortBy?: String_762;
+  sortOrder?: String_763;
+}
+/**
+ * Additional filters to apply
+ */
+export interface Object_245 {
+  [k: string]: unknown;
+}
+
+/* eslint-disable */
+/**
+ * This file was automatically generated by json-schema-to-typescript.
+ * DO NOT MODIFY IT BY HAND. Instead, modify the source JSONSchema file,
+ * and run json-schema-to-typescript to regenerate this file.
+ */
+
+/**
+ * URI of the resource
+ */
+export type String_764 = string;
+export type String_765 = string;
+/**
+ * Description of the resource
+ */
+export type String_766 = string;
+/**
+ * URL to the resource icon
+ */
+export type String_767 = string;
+/**
+ * The unique name of the workflow
+ */
+export type String_768 = string;
+/**
+ * A comprehensive description of what this workflow accomplishes
+ */
+export type String_769 = string;
+/**
+ * Creation timestamp
+ */
+export type String_770 = string;
+/**
+ * Last update timestamp
+ */
+export type String_771 = string;
+/**
+ * User who created the resource
+ */
+export type String_772 = string;
+/**
+ * User who last updated the resource
+ */
+export type String_773 = string;
+/**
+ * Array of matching resources
+ */
+export type Array_89 = Object_246[];
+/**
+ * Total number of matching resources
+ */
+export type Integer_41 = number;
+/**
+ * Current page number
+ */
+export type Integer_42 = number;
+/**
+ * Number of items per page
+ */
+export type Integer_43 = number;
+/**
+ * Total number of pages
+ */
+export type Integer_44 = number;
+/**
+ * Whether there are more pages available
+ */
 export type Boolean_60 = boolean;
 /**
  * Whether there are previous pages available
@@ -7098,32 +7287,32 @@ export type Boolean_61 = boolean;
 
 export interface DECO_RESOURCE_WORKFLOW_SEARCHOutput {
   items: Array_89;
-  totalCount: Integer_35;
-  page: Integer_36;
-  pageSize: Integer_37;
-  totalPages: Integer_38;
+  totalCount: Integer_41;
+  page: Integer_42;
+  pageSize: Integer_43;
+  totalPages: Integer_44;
   hasNextPage: Boolean_60;
   hasPreviousPage: Boolean_61;
 }
-export interface Object_234 {
-  uri: String_746;
+export interface Object_246 {
+  uri: String_764;
   /**
    * Resource data with required name
    */
-  data: Object_235 & Object_236;
-  created_at?: String_752;
-  updated_at?: String_753;
-  created_by?: String_754;
-  updated_by?: String_755;
+  data: Object_247 & Object_248;
+  created_at?: String_770;
+  updated_at?: String_771;
+  created_by?: String_772;
+  updated_by?: String_773;
 }
-export interface Object_235 {
-  name: String_747;
-  description?: String_748;
-  icon?: String_749;
+export interface Object_247 {
+  name: String_765;
+  description?: String_766;
+  icon?: String_767;
 }
-export interface Object_236 {
-  name: String_750;
-  description: String_751;
+export interface Object_248 {
+  name: String_768;
+  description: String_769;
 }
 
 /* eslint-disable */
@@ -7136,270 +7325,125 @@ export interface Object_236 {
 /**
  * URI of the resource to update
  */
-export type String_756 = string;
-/**
- * The unique name of the workflow
- */
-export type String_757 = string;
-/**
- * A comprehensive description of what this workflow accomplishes
- */
-export type String_758 = string;
-/**
- * Array of workflow steps that execute sequentially. Each step can reference previous step outputs using @<step_name>.output.property syntax.
- *
- * @minItems 1
- */
-export type Array_90 = [Object_240, ...Object_240[]];
-/**
- * The unique ID of the step within the workflow
- */
-export type String_759 = string;
-/**
- * The unique name of the step within the workflow
- */
-export type String_760 = string;
-/**
- * A clear description of what this step does
- */
-export type String_761 = string;
-/**
- * The prompt used to generate the step
- */
-export type String_762 = string;
-/**
- * Status of the step execution
- */
-export type String_763 = "pending" | "active" | "completed" | "error";
-/**
- * ES module code that exports a default async function: (input: typeof inputSchema, ctx: { env: Record<string, any> }) => Promise<typeof outputSchema>. The input parameter contains the resolved input with all @ references replaced with actual values.
- */
-export type String_764 = string;
-/**
- * The integration ID (format: i:<uuid> or a:<uuid>) that this step depends on
- */
-export type String_765 = string;
-/**
- * List of integrations this step calls via ctx.env['{INTEGRATION_ID}'].{TOOL_NAME}(). These integrations must be installed and available for the step to execute successfully.
- */
-export type Array_91 = Object_245[];
-/**
- * Number of retry attempts for this step (default: 0)
- */
-export type Integer_39 = number;
-/**
- * Delay in milliseconds between retry attempts (default: 0)
- */
-export type Integer_40 = number;
-/**
- * Backoff strategy for retry attempts (default: constant)
- */
-export type String_766 = "constant" | "linear" | "exponential";
-/**
- * Maximum execution time in milliseconds (default: Infinity)
- */
-export type Number_82 = number;
-/**
- * The authorization token for the workflow
- */
-export type String_767 = string;
-
-export interface DECO_RESOURCE_WORKFLOW_UPDATEInput {
-  uri: String_756;
-  data: Object_237;
-}
-/**
- * Updated resource data
- */
-export interface Object_237 {
-  name: String_757;
-  description: String_758;
-  inputSchema: Object_238;
-  outputSchema: Object_239;
-  steps: Array_90;
-  authorization?: Object_248;
-}
-/**
- * JSON Schema defining the workflow's input parameters and data structure
- */
-export interface Object_238 {
-  [k: string]: unknown;
-}
-/**
- * JSON Schema defining the workflow's final output after all steps complete
- */
-export interface Object_239 {
-  [k: string]: unknown;
-}
-export interface Object_240 {
-  id: String_759;
-  name: String_760;
-  description: String_761;
-  prompt?: String_762;
-  inputSchema: Object_241;
-  outputSchema: Object_242;
-  input: Object_243;
-  output: Object_244;
-  status?: String_763;
-  execute: String_764;
-  dependencies?: Array_91;
-  options?: Object_246;
-}
-/**
- * JSON Schema defining the input structure for this step
- */
-export interface Object_241 {
-  [k: string]: unknown;
-}
-/**
- * JSON Schema defining the output structure for this step
- */
-export interface Object_242 {
-  [k: string]: unknown;
-}
-/**
- * Input object that complies with inputSchema. Values can reference previous steps using @<step_name>.output.property or workflow input using @input.property
- */
-export interface Object_243 {
-  [k: string]: unknown;
-}
-/**
- * Current output of the step if it was executed
- */
-export interface Object_244 {
-  [k: string]: unknown;
-}
-export interface Object_245 {
-  integrationId: String_765;
-}
-/**
- * Step configuration options including retry and timeout settings
- */
-export interface Object_246 {
-  retries?: Object_247;
-  timeout?: Number_82;
-}
-export interface Object_247 {
-  limit?: Integer_39;
-  delay?: Integer_40;
-  backoff?: String_766;
-}
-export interface Object_248 {
-  token: String_767;
-}
-
-/* eslint-disable */
-/**
- * This file was automatically generated by json-schema-to-typescript.
- * DO NOT MODIFY IT BY HAND. Instead, modify the source JSONSchema file,
- * and run json-schema-to-typescript to regenerate this file.
- */
-
-/**
- * URI of the updated resource
- */
-export type String_768 = string;
-/**
- * The unique name of the workflow
- */
-export type String_769 = string;
-/**
- * A comprehensive description of what this workflow accomplishes
- */
-export type String_770 = string;
-/**
- * Array of workflow steps that execute sequentially. Each step can reference previous step outputs using @<step_name>.output.property syntax.
- *
- * @minItems 1
- */
-export type Array_92 = [Object_252, ...Object_252[]];
-/**
- * The unique ID of the step within the workflow
- */
-export type String_771 = string;
-/**
- * The unique name of the step within the workflow
- */
-export type String_772 = string;
-/**
- * A clear description of what this step does
- */
-export type String_773 = string;
-/**
- * The prompt used to generate the step
- */
 export type String_774 = string;
 /**
- * Status of the step execution
+ * The unique name of the workflow
  */
-export type String_775 = "pending" | "active" | "completed" | "error";
+export type String_775 = string;
 /**
- * ES module code that exports a default async function: (input: typeof inputSchema, ctx: { env: Record<string, any> }) => Promise<typeof outputSchema>. The input parameter contains the resolved input with all @ references replaced with actual values.
+ * A comprehensive description of what this workflow accomplishes
  */
 export type String_776 = string;
 /**
- * The integration ID (format: i:<uuid> or a:<uuid>) that this step depends on
+ * Array of workflow steps that execute sequentially. Each step can reference previous step outputs using @<step_name>.output.property syntax.
+ *
+ * @minItems 1
  */
-export type String_777 = string;
+export type Array_90 = [Object_252, ...Object_252[]];
 /**
- * List of integrations this step calls via ctx.env['{INTEGRATION_ID}'].{TOOL_NAME}(). These integrations must be installed and available for the step to execute successfully.
+ * The type of step
  */
-export type Array_93 = Object_257[];
+export type String_777 = "code" | "tool_call";
 /**
- * Number of retry attempts for this step (default: 0)
+ * The unique ID of the step within the workflow
  */
-export type Integer_41 = number;
+export type String_778 = string;
 /**
- * Delay in milliseconds between retry attempts (default: 0)
- */
-export type Integer_42 = number;
-/**
- * Backoff strategy for retry attempts (default: constant)
- */
-export type String_778 = "constant" | "linear" | "exponential";
-/**
- * Maximum execution time in milliseconds (default: Infinity)
- */
-export type Number_83 = number;
-/**
- * The authorization token for the workflow
+ * The unique name of the step within the workflow
  */
 export type String_779 = string;
 /**
- * Original creation timestamp
+ * A clear description of what this step does
  */
 export type String_780 = string;
 /**
- * Last update timestamp
+ * The prompt used to generate the step
  */
 export type String_781 = string;
 /**
- * User who originally created the resource
+ * Status of the step execution
  */
-export type String_782 = string;
+export type String_782 = "pending" | "active" | "completed" | "error";
 /**
- * User who last updated the resource
+ * ES module code that exports a default async function: (input: typeof inputSchema, ctx: { env: Record<string, any> }) => Promise<typeof outputSchema>. The input parameter contains the resolved input with all @ references replaced with actual values.
  */
 export type String_783 = string;
+/**
+ * The integration ID (format: i:<uuid> or a:<uuid>) that this step depends on
+ */
+export type String_784 = string;
+/**
+ * List of integrations this step calls via ctx.env['{INTEGRATION_ID}'].{TOOL_NAME}(). These integrations must be installed and available for the step to execute successfully.
+ */
+export type Array_91 = Object_258[];
+/**
+ * Number of retry attempts for this step (default: 0)
+ */
+export type Integer_45 = number;
+/**
+ * Delay in milliseconds between retry attempts (default: 0)
+ */
+export type Integer_46 = number;
+/**
+ * Backoff strategy for retry attempts (default: constant)
+ */
+export type String_785 = "constant" | "linear" | "exponential";
+/**
+ * Maximum execution time in milliseconds (default: Infinity)
+ */
+export type Number_85 = number;
+/**
+ * The unique name of the tool call step within the workflow
+ */
+export type String_786 = string;
+/**
+ * A clear description of what this tool call step does
+ */
+export type String_787 = string;
+/**
+ * Number of retry attempts for this step (default: 0)
+ */
+export type Integer_47 = number;
+/**
+ * Delay in milliseconds between retry attempts (default: 0)
+ */
+export type Integer_48 = number;
+/**
+ * Backoff strategy for retry attempts (default: constant)
+ */
+export type String_788 = "constant" | "linear" | "exponential";
+/**
+ * Maximum execution time in milliseconds (default: Infinity)
+ */
+export type Number_86 = number;
+export type Null_80 = null;
+/**
+ * The name of the tool to call
+ */
+export type String_789 = string;
+/**
+ * The name of the integration that provides this tool
+ */
+export type String_790 = string;
+/**
+ * The authorization token for the workflow
+ */
+export type String_791 = string;
 
-export interface DECO_RESOURCE_WORKFLOW_UPDATEOutput {
-  uri: String_768;
+export interface DECO_RESOURCE_WORKFLOW_UPDATEInput {
+  uri: String_774;
   data: Object_249;
-  created_at?: String_780;
-  updated_at?: String_781;
-  created_by?: String_782;
-  updated_by?: String_783;
 }
 /**
  * Updated resource data
  */
 export interface Object_249 {
-  name: String_769;
-  description: String_770;
+  name: String_775;
+  description: String_776;
   inputSchema: Object_250;
   outputSchema: Object_251;
-  steps: Array_92;
-  authorization?: Object_260;
+  steps: Array_90;
+  authorization?: Object_264;
 }
 /**
  * JSON Schema defining the workflow's input parameters and data structure
@@ -7414,60 +7458,331 @@ export interface Object_251 {
   [k: string]: unknown;
 }
 export interface Object_252 {
-  id: String_771;
-  name: String_772;
-  description: String_773;
-  prompt?: String_774;
-  inputSchema: Object_253;
-  outputSchema: Object_254;
-  input: Object_255;
-  output: Object_256;
-  status?: String_775;
-  execute: String_776;
-  dependencies?: Array_93;
-  options?: Object_258;
+  type: String_777;
+  /**
+   * The step definition based on the type
+   */
+  def: Object_253 | Object_261;
+}
+export interface Object_253 {
+  id: String_778;
+  name: String_779;
+  description: String_780;
+  prompt?: String_781;
+  inputSchema: Object_254;
+  outputSchema: Object_255;
+  input: Object_256;
+  output: Object_257;
+  status?: String_782;
+  execute: String_783;
+  dependencies?: Array_91;
+  options?: Object_259;
 }
 /**
  * JSON Schema defining the input structure for this step
- */
-export interface Object_253 {
-  [k: string]: unknown;
-}
-/**
- * JSON Schema defining the output structure for this step
  */
 export interface Object_254 {
   [k: string]: unknown;
 }
 /**
- * Input object that complies with inputSchema. Values can reference previous steps using @<step_name>.output.property or workflow input using @input.property
+ * JSON Schema defining the output structure for this step
  */
 export interface Object_255 {
   [k: string]: unknown;
 }
 /**
- * Current output of the step if it was executed
+ * Input object that complies with inputSchema. Values can reference previous steps using @<step_name>.output.property or workflow input using @input.property
  */
 export interface Object_256 {
   [k: string]: unknown;
 }
+/**
+ * Current output of the step if it was executed
+ */
 export interface Object_257 {
-  integrationId: String_777;
+  [k: string]: unknown;
+}
+export interface Object_258 {
+  integrationId: String_784;
 }
 /**
  * Step configuration options including retry and timeout settings
  */
-export interface Object_258 {
-  retries?: Object_259;
-  timeout?: Number_83;
-}
 export interface Object_259 {
-  limit?: Integer_41;
-  delay?: Integer_42;
-  backoff?: String_778;
+  retries?: Object_260;
+  timeout?: Number_85;
 }
 export interface Object_260 {
-  token: String_779;
+  limit?: Integer_45;
+  delay?: Integer_46;
+  backoff?: String_785;
+}
+export interface Object_261 {
+  name: String_786;
+  description: String_787;
+  /**
+   * Step configuration options. Extend this object with custom properties for business user configuration
+   */
+  options?: Object_262 | Null_80;
+  tool_name: String_789;
+  integration: String_790;
+}
+export interface Object_262 {
+  retries?: Object_263;
+  timeout?: Number_86;
+}
+export interface Object_263 {
+  limit?: Integer_47;
+  delay?: Integer_48;
+  backoff?: String_788;
+}
+export interface Object_264 {
+  token: String_791;
+}
+
+/* eslint-disable */
+/**
+ * This file was automatically generated by json-schema-to-typescript.
+ * DO NOT MODIFY IT BY HAND. Instead, modify the source JSONSchema file,
+ * and run json-schema-to-typescript to regenerate this file.
+ */
+
+/**
+ * URI of the updated resource
+ */
+export type String_792 = string;
+/**
+ * The unique name of the workflow
+ */
+export type String_793 = string;
+/**
+ * A comprehensive description of what this workflow accomplishes
+ */
+export type String_794 = string;
+/**
+ * Array of workflow steps that execute sequentially. Each step can reference previous step outputs using @<step_name>.output.property syntax.
+ *
+ * @minItems 1
+ */
+export type Array_92 = [Object_268, ...Object_268[]];
+/**
+ * The type of step
+ */
+export type String_795 = "code" | "tool_call";
+/**
+ * The unique ID of the step within the workflow
+ */
+export type String_796 = string;
+/**
+ * The unique name of the step within the workflow
+ */
+export type String_797 = string;
+/**
+ * A clear description of what this step does
+ */
+export type String_798 = string;
+/**
+ * The prompt used to generate the step
+ */
+export type String_799 = string;
+/**
+ * Status of the step execution
+ */
+export type String_800 = "pending" | "active" | "completed" | "error";
+/**
+ * ES module code that exports a default async function: (input: typeof inputSchema, ctx: { env: Record<string, any> }) => Promise<typeof outputSchema>. The input parameter contains the resolved input with all @ references replaced with actual values.
+ */
+export type String_801 = string;
+/**
+ * The integration ID (format: i:<uuid> or a:<uuid>) that this step depends on
+ */
+export type String_802 = string;
+/**
+ * List of integrations this step calls via ctx.env['{INTEGRATION_ID}'].{TOOL_NAME}(). These integrations must be installed and available for the step to execute successfully.
+ */
+export type Array_93 = Object_274[];
+/**
+ * Number of retry attempts for this step (default: 0)
+ */
+export type Integer_49 = number;
+/**
+ * Delay in milliseconds between retry attempts (default: 0)
+ */
+export type Integer_50 = number;
+/**
+ * Backoff strategy for retry attempts (default: constant)
+ */
+export type String_803 = "constant" | "linear" | "exponential";
+/**
+ * Maximum execution time in milliseconds (default: Infinity)
+ */
+export type Number_87 = number;
+/**
+ * The unique name of the tool call step within the workflow
+ */
+export type String_804 = string;
+/**
+ * A clear description of what this tool call step does
+ */
+export type String_805 = string;
+/**
+ * Number of retry attempts for this step (default: 0)
+ */
+export type Integer_51 = number;
+/**
+ * Delay in milliseconds between retry attempts (default: 0)
+ */
+export type Integer_52 = number;
+/**
+ * Backoff strategy for retry attempts (default: constant)
+ */
+export type String_806 = "constant" | "linear" | "exponential";
+/**
+ * Maximum execution time in milliseconds (default: Infinity)
+ */
+export type Number_88 = number;
+export type Null_81 = null;
+/**
+ * The name of the tool to call
+ */
+export type String_807 = string;
+/**
+ * The name of the integration that provides this tool
+ */
+export type String_808 = string;
+/**
+ * The authorization token for the workflow
+ */
+export type String_809 = string;
+/**
+ * Original creation timestamp
+ */
+export type String_810 = string;
+/**
+ * Last update timestamp
+ */
+export type String_811 = string;
+/**
+ * User who originally created the resource
+ */
+export type String_812 = string;
+/**
+ * User who last updated the resource
+ */
+export type String_813 = string;
+
+export interface DECO_RESOURCE_WORKFLOW_UPDATEOutput {
+  uri: String_792;
+  data: Object_265;
+  created_at?: String_810;
+  updated_at?: String_811;
+  created_by?: String_812;
+  updated_by?: String_813;
+}
+/**
+ * Updated resource data
+ */
+export interface Object_265 {
+  name: String_793;
+  description: String_794;
+  inputSchema: Object_266;
+  outputSchema: Object_267;
+  steps: Array_92;
+  authorization?: Object_280;
+}
+/**
+ * JSON Schema defining the workflow's input parameters and data structure
+ */
+export interface Object_266 {
+  [k: string]: unknown;
+}
+/**
+ * JSON Schema defining the workflow's final output after all steps complete
+ */
+export interface Object_267 {
+  [k: string]: unknown;
+}
+export interface Object_268 {
+  type: String_795;
+  /**
+   * The step definition based on the type
+   */
+  def: Object_269 | Object_277;
+}
+export interface Object_269 {
+  id: String_796;
+  name: String_797;
+  description: String_798;
+  prompt?: String_799;
+  inputSchema: Object_270;
+  outputSchema: Object_271;
+  input: Object_272;
+  output: Object_273;
+  status?: String_800;
+  execute: String_801;
+  dependencies?: Array_93;
+  options?: Object_275;
+}
+/**
+ * JSON Schema defining the input structure for this step
+ */
+export interface Object_270 {
+  [k: string]: unknown;
+}
+/**
+ * JSON Schema defining the output structure for this step
+ */
+export interface Object_271 {
+  [k: string]: unknown;
+}
+/**
+ * Input object that complies with inputSchema. Values can reference previous steps using @<step_name>.output.property or workflow input using @input.property
+ */
+export interface Object_272 {
+  [k: string]: unknown;
+}
+/**
+ * Current output of the step if it was executed
+ */
+export interface Object_273 {
+  [k: string]: unknown;
+}
+export interface Object_274 {
+  integrationId: String_802;
+}
+/**
+ * Step configuration options including retry and timeout settings
+ */
+export interface Object_275 {
+  retries?: Object_276;
+  timeout?: Number_87;
+}
+export interface Object_276 {
+  limit?: Integer_49;
+  delay?: Integer_50;
+  backoff?: String_803;
+}
+export interface Object_277 {
+  name: String_804;
+  description: String_805;
+  /**
+   * Step configuration options. Extend this object with custom properties for business user configuration
+   */
+  options?: Object_278 | Null_81;
+  tool_name: String_807;
+  integration: String_808;
+}
+export interface Object_278 {
+  retries?: Object_279;
+  timeout?: Number_88;
+}
+export interface Object_279 {
+  limit?: Integer_51;
+  delay?: Integer_52;
+  backoff?: String_806;
+}
+export interface Object_280 {
+  token: String_809;
 }
 
 /* eslint-disable */
@@ -7480,21 +7795,21 @@ export interface Object_260 {
 /**
  * The URI of the tool to run
  */
-export type String_784 = string;
+export type String_814 = string;
 /**
  * The token to use for the tool execution
  */
-export type String_785 = string;
+export type String_815 = string;
 
 export interface DECO_TOOL_CALL_TOOLInput {
-  uri: String_784;
-  input: Object_261;
-  authorization?: String_785;
+  uri: String_814;
+  input: Object_281;
+  authorization?: String_815;
 }
 /**
  * The input of the code
  */
-export interface Object_261 {
+export interface Object_281 {
   [k: string]: unknown;
 }
 
@@ -7505,12 +7820,12 @@ export interface Object_261 {
  * and run json-schema-to-typescript to regenerate this file.
  */
 
-export type String_786 = "log" | "warn" | "error";
-export type String_787 = string;
+export type String_816 = "log" | "warn" | "error";
+export type String_817 = string;
 /**
  * Console logs from the execution
  */
-export type Array_94 = Object_262[];
+export type Array_94 = Object_282[];
 
 export interface DECO_TOOL_CALL_TOOLOutput {
   /**
@@ -7527,9 +7842,9 @@ export interface DECO_TOOL_CALL_TOOLOutput {
   };
   logs?: Array_94;
 }
-export interface Object_262 {
-  type: String_786;
-  content: String_787;
+export interface Object_282 {
+  type: String_816;
+  content: String_817;
 }
 
 /* eslint-disable */
@@ -7542,60 +7857,60 @@ export interface Object_262 {
 /**
  * The name of the tool
  */
-export type String_788 = string;
+export type String_818 = string;
 /**
  * The description of the tool
  */
-export type String_789 = string;
+export type String_819 = string;
 /**
  * Inline ES module code with default export function. The code will be saved to /src/functions/{name}.ts
  */
-export type String_790 = string;
+export type String_820 = string;
 /**
  * The integration ID (format: i:<uuid>) that this tool depends on
  */
-export type String_791 = string;
+export type String_821 = string;
 /**
  * List of integrations this tool depends on. These integrations must be installed and available for the tool to execute successfully. Use INTEGRATIONS_LIST to find available integration IDs.
  */
-export type Array_95 = Object_266[];
+export type Array_95 = Object_286[];
 /**
  * The token to use for the tool execution
  */
-export type String_792 = string;
+export type String_822 = string;
 
 export interface DECO_TOOL_RUN_TOOLInput {
-  tool: Object_263;
-  input: Object_267;
-  authorization?: String_792;
+  tool: Object_283;
+  input: Object_287;
+  authorization?: String_822;
 }
-export interface Object_263 {
-  name: String_788;
-  description: String_789;
-  inputSchema: Object_264;
-  outputSchema: Object_265;
-  execute: String_790;
+export interface Object_283 {
+  name: String_818;
+  description: String_819;
+  inputSchema: Object_284;
+  outputSchema: Object_285;
+  execute: String_820;
   dependencies?: Array_95;
 }
 /**
  * The JSON schema of the input of the tool
  */
-export interface Object_264 {
+export interface Object_284 {
   [k: string]: unknown;
 }
 /**
  * The JSON schema of the output of the tool
  */
-export interface Object_265 {
+export interface Object_285 {
   [k: string]: unknown;
 }
-export interface Object_266 {
-  integrationId: String_791;
+export interface Object_286 {
+  integrationId: String_821;
 }
 /**
  * The input of the code
  */
-export interface Object_267 {
+export interface Object_287 {
   [k: string]: unknown;
 }
 
@@ -7606,12 +7921,12 @@ export interface Object_267 {
  * and run json-schema-to-typescript to regenerate this file.
  */
 
-export type String_793 = "log" | "warn" | "error";
-export type String_794 = string;
+export type String_823 = "log" | "warn" | "error";
+export type String_824 = string;
 /**
  * Console logs from the execution
  */
-export type Array_96 = Object_268[];
+export type Array_96 = Object_288[];
 
 export interface DECO_TOOL_RUN_TOOLOutput {
   /**
@@ -7628,9 +7943,9 @@ export interface DECO_TOOL_RUN_TOOLOutput {
   };
   logs?: Array_96;
 }
-export interface Object_268 {
-  type: String_793;
-  content: String_794;
+export interface Object_288 {
+  type: String_823;
+  content: String_824;
 }
 
 /* eslint-disable */
@@ -7643,10 +7958,10 @@ export interface Object_268 {
 /**
  * URI of the resource to render in the view
  */
-export type String_795 = string;
+export type String_825 = string;
 
 export interface DECO_VIEW_RENDER_DOCUMENT_DETAILInput {
-  resource: String_795;
+  resource: String_825;
 }
 
 /* eslint-disable */
@@ -7659,20 +7974,20 @@ export interface DECO_VIEW_RENDER_DOCUMENT_DETAILInput {
 /**
  * URL to render the view
  */
-export type String_796 = string;
+export type String_826 = string;
 /**
  * Optional LLM prompt for this view context
  */
-export type String_797 = string;
-export type String_798 = string;
+export type String_827 = string;
+export type String_828 = string;
 /**
  * Optional array of tool names for this view context
  */
-export type Array_97 = String_798[];
+export type Array_97 = String_828[];
 
 export interface DECO_VIEW_RENDER_DOCUMENT_DETAILOutput {
-  url: String_796;
-  prompt?: String_797;
+  url: String_826;
+  prompt?: String_827;
   tools?: Array_97;
 }
 
@@ -7686,10 +8001,10 @@ export interface DECO_VIEW_RENDER_DOCUMENT_DETAILOutput {
 /**
  * URI of the resource to render in the view
  */
-export type String_799 = string;
+export type String_829 = string;
 
 export interface DECO_VIEW_RENDER_TOOL_DETAILInput {
-  resource: String_799;
+  resource: String_829;
 }
 
 /* eslint-disable */
@@ -7702,20 +8017,20 @@ export interface DECO_VIEW_RENDER_TOOL_DETAILInput {
 /**
  * URL to render the view
  */
-export type String_800 = string;
+export type String_830 = string;
 /**
  * Optional LLM prompt for this view context
  */
-export type String_801 = string;
-export type String_802 = string;
+export type String_831 = string;
+export type String_832 = string;
 /**
  * Optional array of tool names for this view context
  */
-export type Array_98 = String_802[];
+export type Array_98 = String_832[];
 
 export interface DECO_VIEW_RENDER_TOOL_DETAILOutput {
-  url: String_800;
-  prompt?: String_801;
+  url: String_830;
+  prompt?: String_831;
   tools?: Array_98;
 }
 
@@ -7729,10 +8044,10 @@ export interface DECO_VIEW_RENDER_TOOL_DETAILOutput {
 /**
  * URI of the resource to render in the view
  */
-export type String_803 = string;
+export type String_833 = string;
 
 export interface DECO_VIEW_RENDER_VIEW_DETAILInput {
-  resource: String_803;
+  resource: String_833;
 }
 
 /* eslint-disable */
@@ -7745,20 +8060,20 @@ export interface DECO_VIEW_RENDER_VIEW_DETAILInput {
 /**
  * URL to render the view
  */
-export type String_804 = string;
+export type String_834 = string;
 /**
  * Optional LLM prompt for this view context
  */
-export type String_805 = string;
-export type String_806 = string;
+export type String_835 = string;
+export type String_836 = string;
 /**
  * Optional array of tool names for this view context
  */
-export type Array_99 = String_806[];
+export type Array_99 = String_836[];
 
 export interface DECO_VIEW_RENDER_VIEW_DETAILOutput {
-  url: String_804;
-  prompt?: String_805;
+  url: String_834;
+  prompt?: String_835;
   tools?: Array_99;
 }
 
@@ -7772,10 +8087,10 @@ export interface DECO_VIEW_RENDER_VIEW_DETAILOutput {
 /**
  * URI of the resource to render in the view
  */
-export type String_807 = string;
+export type String_837 = string;
 
 export interface DECO_VIEW_RENDER_WORKFLOW_DETAILInput {
-  resource: String_807;
+  resource: String_837;
 }
 
 /* eslint-disable */
@@ -7788,20 +8103,20 @@ export interface DECO_VIEW_RENDER_WORKFLOW_DETAILInput {
 /**
  * URL to render the view
  */
-export type String_808 = string;
+export type String_838 = string;
 /**
  * Optional LLM prompt for this view context
  */
-export type String_809 = string;
-export type String_810 = string;
+export type String_839 = string;
+export type String_840 = string;
 /**
  * Optional array of tool names for this view context
  */
-export type Array_100 = String_810[];
+export type Array_100 = String_840[];
 
 export interface DECO_VIEW_RENDER_WORKFLOW_DETAILOutput {
-  url: String_808;
-  prompt?: String_809;
+  url: String_838;
+  prompt?: String_839;
   tools?: Array_100;
 }
 
@@ -7815,10 +8130,10 @@ export interface DECO_VIEW_RENDER_WORKFLOW_DETAILOutput {
 /**
  * URI of the resource to render in the view
  */
-export type String_811 = string;
+export type String_841 = string;
 
 export interface DECO_VIEW_RENDER_WORKFLOW_RUNInput {
-  resource: String_811;
+  resource: String_841;
 }
 
 /* eslint-disable */
@@ -7831,20 +8146,20 @@ export interface DECO_VIEW_RENDER_WORKFLOW_RUNInput {
 /**
  * URL to render the view
  */
-export type String_812 = string;
+export type String_842 = string;
 /**
  * Optional LLM prompt for this view context
  */
-export type String_813 = string;
-export type String_814 = string;
+export type String_843 = string;
+export type String_844 = string;
 /**
  * Optional array of tool names for this view context
  */
-export type Array_101 = String_814[];
+export type Array_101 = String_844[];
 
 export interface DECO_VIEW_RENDER_WORKFLOW_RUNOutput {
-  url: String_812;
-  prompt?: String_813;
+  url: String_842;
+  prompt?: String_843;
   tools?: Array_101;
 }
 
@@ -7858,28 +8173,28 @@ export interface DECO_VIEW_RENDER_WORKFLOW_RUNOutput {
 /**
  * The Resources 2.0 URI of the workflow to execute
  */
-export type String_815 = string;
+export type String_845 = string;
 /**
  * Optional step name where execution should halt. The workflow will execute up to and including this step, then stop. Useful for partial execution, debugging, or step-by-step testing.
  */
-export type String_816 = string;
+export type String_846 = string;
 
 export interface DECO_WORKFLOW_STARTInput {
-  uri: String_815;
-  input: Object_269;
-  stopAfter?: String_816;
-  state?: Object_270;
+  uri: String_845;
+  input: Object_289;
+  stopAfter?: String_846;
+  state?: Object_290;
 }
 /**
  * The input data that will be validated against the workflow's input schema and passed to the first step
  */
-export interface Object_269 {
+export interface Object_289 {
   [k: string]: unknown;
 }
 /**
  * Optional pre-computed step results to inject into the workflow state. Format: { 'step-name': STEP_RESULT }. Allows skipping steps by providing their expected outputs, useful for resuming workflows or testing with known intermediate results.
  */
-export interface Object_270 {
+export interface Object_290 {
   [k: string]: unknown;
 }
 
@@ -7893,20 +8208,20 @@ export interface Object_270 {
 /**
  * The unique ID for tracking this workflow run
  */
-export type String_817 = string;
+export type String_847 = string;
 /**
  * The Resources 2.0 URI of the workflow run (rsc://i:workflows-management/workflow_run/{runId}). Use DECO_RESOURCE_WORKFLOW_RUN_READ to get status and results.
  */
-export type String_818 = string;
+export type String_848 = string;
 /**
  * Error message if workflow start failed
  */
-export type String_819 = string;
+export type String_849 = string;
 
 export interface DECO_WORKFLOW_STARTOutput {
-  runId?: String_817;
-  uri?: String_818;
-  error?: String_819;
+  runId?: String_847;
+  uri?: String_848;
+  error?: String_849;
 }
 
 /* eslint-disable */
@@ -7919,10 +8234,10 @@ export interface DECO_WORKFLOW_STARTOutput {
 /**
  * The name of the branch to delete
  */
-export type String_820 = string;
+export type String_850 = string;
 
 export interface DELETE_BRANCHInput {
-  branchName: String_820;
+  branchName: String_850;
 }
 
 /* eslint-disable */
@@ -7933,13 +8248,13 @@ export interface DELETE_BRANCHInput {
  */
 
 export type Boolean_62 = boolean;
-export type String_821 = string;
-export type Number_84 = number;
+export type String_851 = string;
+export type Number_89 = number;
 
 export interface DELETE_BRANCHOutput {
   deleted: Boolean_62;
-  branchName: String_821;
-  filesDeleted?: Number_84;
+  branchName: String_851;
+  filesDeleted?: Number_89;
 }
 
 /* eslint-disable */
@@ -7952,15 +8267,15 @@ export interface DELETE_BRANCHOutput {
 /**
  * The branch name
  */
-export type String_822 = string;
+export type String_852 = string;
 /**
  * The file path within the branch
  */
-export type String_823 = string;
+export type String_853 = string;
 
 export interface DELETE_FILEInput {
-  branch?: String_822;
-  path: String_823;
+  branch?: String_852;
+  path: String_853;
 }
 
 /* eslint-disable */
@@ -7986,15 +8301,15 @@ export interface DELETE_FILEOutput {
 /**
  * The base branch to compare from (defaults to 'main')
  */
-export type String_824 = string;
+export type String_854 = string;
 /**
  * The branch to compare against
  */
-export type String_825 = string;
+export type String_855 = string;
 
 export interface DIFF_BRANCHInput {
-  baseBranch?: String_824;
-  compareBranch: String_825;
+  baseBranch?: String_854;
+  compareBranch: String_855;
 }
 
 /* eslint-disable */
@@ -8004,20 +8319,20 @@ export interface DIFF_BRANCHInput {
  * and run json-schema-to-typescript to regenerate this file.
  */
 
-export type String_826 = string;
-export type String_827 = "added" | "modified" | "deleted";
-export type String_828 = string;
-export type String_829 = string;
-export type Array_102 = Object_271[];
+export type String_856 = string;
+export type String_857 = "added" | "modified" | "deleted";
+export type String_858 = string;
+export type String_859 = string;
+export type Array_102 = Object_291[];
 
 export interface DIFF_BRANCHOutput {
   differences: Array_102;
 }
-export interface Object_271 {
-  path: String_826;
-  type: String_827;
-  baseAddress?: String_828;
-  compareAddress?: String_829;
+export interface Object_291 {
+  path: String_856;
+  type: String_857;
+  baseAddress?: String_858;
+  compareAddress?: String_859;
 }
 
 /* eslint-disable */
@@ -8027,10 +8342,10 @@ export interface Object_271 {
  * and run json-schema-to-typescript to regenerate this file.
  */
 
-export type String_830 = string;
+export type String_860 = string;
 
 export interface FS_DELETEInput {
-  path: String_830;
+  path: String_860;
 }
 
 /* eslint-disable */
@@ -8052,10 +8367,10 @@ export interface FS_DELETEOutput {}
 /**
  * The root directory to list files from
  */
-export type String_831 = string;
+export type String_861 = string;
 
 export interface FS_LISTInput {
-  prefix: String_831;
+  prefix: String_861;
 }
 
 /* eslint-disable */
@@ -8078,15 +8393,15 @@ export interface FS_LISTOutput {
  * and run json-schema-to-typescript to regenerate this file.
  */
 
-export type String_832 = string;
+export type String_862 = string;
 /**
  * Seconds until URL expires (default: 60)
  */
-export type Number_85 = number;
+export type Number_90 = number;
 
 export interface FS_READInput {
-  path: String_832;
-  expiresIn?: Number_85;
+  path: String_862;
+  expiresIn?: Number_90;
 }
 
 /* eslint-disable */
@@ -8099,10 +8414,10 @@ export interface FS_READInput {
 /**
  * The URL to read the file from
  */
-export type String_833 = string;
+export type String_863 = string;
 
 export interface FS_READOutput {
-  url: String_833;
+  url: String_863;
 }
 
 /* eslint-disable */
@@ -8112,10 +8427,10 @@ export interface FS_READOutput {
  * and run json-schema-to-typescript to regenerate this file.
  */
 
-export type String_834 = string;
+export type String_864 = string;
 
 export interface FS_READ_METADATAInput {
-  path: String_834;
+  path: String_864;
 }
 
 /* eslint-disable */
@@ -8134,26 +8449,26 @@ export interface FS_READ_METADATAOutput {}
  * and run json-schema-to-typescript to regenerate this file.
  */
 
-export type String_835 = string;
+export type String_865 = string;
 /**
  * Seconds until URL expires (default: 60)
  */
-export type Number_86 = number;
+export type Number_91 = number;
 /**
  * Content-Type for the file. This is required.
  */
-export type String_836 = string;
+export type String_866 = string;
 
 export interface FS_WRITEInput {
-  path: String_835;
-  expiresIn?: Number_86;
-  contentType: String_836;
-  metadata?: Object_272;
+  path: String_865;
+  expiresIn?: Number_91;
+  contentType: String_866;
+  metadata?: Object_292;
 }
 /**
  * Metadata to be added to the file
  */
-export interface Object_272 {
+export interface Object_292 {
   [k: string]: unknown;
 }
 
@@ -8167,10 +8482,10 @@ export interface Object_272 {
 /**
  * The URL to upload the file to
  */
-export type String_837 = string;
+export type String_867 = string;
 
 export interface FS_WRITEOutput {
-  url: String_837;
+  url: String_867;
 }
 
 /* eslint-disable */
@@ -8180,10 +8495,10 @@ export interface FS_WRITEOutput {
  * and run json-schema-to-typescript to regenerate this file.
  */
 
-export type String_838 = "day" | "week" | "month";
+export type String_868 = "day" | "week" | "month";
 
 export interface GET_AGENTS_USAGEInput {
-  range: String_838;
+  range: String_868;
 }
 
 /* eslint-disable */
@@ -8193,38 +8508,38 @@ export interface GET_AGENTS_USAGEInput {
  * and run json-schema-to-typescript to regenerate this file.
  */
 
-export type String_839 = string;
-export type String_840 = string;
-export type StringNull_38 = String_841 | Null_77;
-export type String_841 = string;
-export type Null_77 = null;
-export type Number_87 = number;
-export type String_842 = string;
-export type String_843 = string;
-export type Number_88 = number;
-export type StringNull_39 = String_844 | Null_78;
-export type String_844 = string;
-export type Null_78 = null;
-export type StringNull_40 = String_845 | Null_79;
-export type String_845 = string;
-export type Null_79 = null;
-export type Array_105 = Object_274[];
-export type Array_104 = Object_273[];
+export type String_869 = string;
+export type String_870 = string;
+export type StringNull_38 = String_871 | Null_82;
+export type String_871 = string;
+export type Null_82 = null;
+export type Number_92 = number;
+export type String_872 = string;
+export type String_873 = string;
+export type Number_93 = number;
+export type StringNull_39 = String_874 | Null_83;
+export type String_874 = string;
+export type Null_83 = null;
+export type StringNull_40 = String_875 | Null_84;
+export type String_875 = string;
+export type Null_84 = null;
+export type Array_105 = Object_294[];
+export type Array_104 = Object_293[];
 
 export interface GET_AGENTS_USAGEOutput {
-  total: String_839;
+  total: String_869;
   items: Array_104;
 }
-export interface Object_273 {
-  id: String_840;
+export interface Object_293 {
+  id: String_870;
   label?: StringNull_38;
-  total: Number_87;
+  total: Number_92;
   transactions: Array_105;
 }
-export interface Object_274 {
-  id: String_842;
-  timestamp: String_843;
-  amount: Number_88;
+export interface Object_294 {
+  id: String_872;
+  timestamp: String_873;
+  amount: Number_93;
   agentId?: StringNull_39;
   generatedBy?: StringNull_40;
 }
@@ -8236,10 +8551,10 @@ export interface Object_274 {
  * and run json-schema-to-typescript to regenerate this file.
  */
 
-export type String_846 = "day" | "week" | "month" | "year";
+export type String_876 = "day" | "week" | "month" | "year";
 
 export interface GET_BILLING_HISTORYInput {
-  range: String_846;
+  range: String_876;
 }
 
 /* eslint-disable */
@@ -8249,26 +8564,26 @@ export interface GET_BILLING_HISTORYInput {
  * and run json-schema-to-typescript to regenerate this file.
  */
 
-export type String_847 = string;
-export type String_848 = string;
-export type String_849 = string;
-export type String_850 = string;
-export type StringNull_41 = String_851 | Null_80;
-export type String_851 = string;
-export type Null_80 = null;
-export type StringNull_42 = String_852 | Null_81;
-export type String_852 = string;
-export type Null_81 = null;
-export type Array_106 = Object_275[];
+export type String_877 = string;
+export type String_878 = string;
+export type String_879 = string;
+export type String_880 = string;
+export type StringNull_41 = String_881 | Null_85;
+export type String_881 = string;
+export type Null_85 = null;
+export type StringNull_42 = String_882 | Null_86;
+export type String_882 = string;
+export type Null_86 = null;
+export type Array_106 = Object_295[];
 
 export interface GET_BILLING_HISTORYOutput {
   items: Array_106;
 }
-export interface Object_275 {
-  id: String_847;
-  amount: String_848;
-  timestamp: String_849;
-  type: String_850;
+export interface Object_295 {
+  id: String_877;
+  amount: String_878;
+  timestamp: String_879;
+  type: String_880;
   contractId?: StringNull_41;
   callerApp?: StringNull_42;
 }
@@ -8280,10 +8595,10 @@ export interface Object_275 {
  * and run json-schema-to-typescript to regenerate this file.
  */
 
-export type String_853 = "day" | "week" | "month" | "year";
+export type String_883 = "day" | "week" | "month" | "year";
 
 export interface GET_CONTRACTS_COMMITSInput {
-  range: String_853;
+  range: String_883;
 }
 
 /* eslint-disable */
@@ -8293,34 +8608,34 @@ export interface GET_CONTRACTS_COMMITSInput {
  * and run json-schema-to-typescript to regenerate this file.
  */
 
-export type String_854 = string;
-export type Number_89 = number;
-export type String_855 = string;
-export type StringNull_43 = String_856 | Null_82;
-export type String_856 = string;
-export type Null_82 = null;
-export type String_857 = string;
-export type Number_90 = number;
-export type Array_108 = Object_277[];
-export type String_858 = string;
-export type String_859 = string;
-export type Array_107 = Object_276[];
+export type String_884 = string;
+export type Number_94 = number;
+export type String_885 = string;
+export type StringNull_43 = String_886 | Null_87;
+export type String_886 = string;
+export type Null_87 = null;
+export type String_887 = string;
+export type Number_95 = number;
+export type Array_108 = Object_297[];
+export type String_888 = string;
+export type String_889 = string;
+export type Array_107 = Object_296[];
 
 export interface GET_CONTRACTS_COMMITSOutput {
   items: Array_107;
 }
-export interface Object_276 {
-  id: String_854;
-  amount: Number_89;
-  contractId: String_855;
+export interface Object_296 {
+  id: String_884;
+  amount: Number_94;
+  contractId: String_885;
   callerApp?: StringNull_43;
   clauses: Array_108;
-  timestamp: String_858;
-  type: String_859;
+  timestamp: String_888;
+  type: String_889;
 }
-export interface Object_277 {
-  clauseId: String_857;
-  amount: Number_90;
+export interface Object_297 {
+  clauseId: String_887;
+  amount: Number_95;
 }
 
 /* eslint-disable */
@@ -8330,10 +8645,10 @@ export interface Object_277 {
  * and run json-schema-to-typescript to regenerate this file.
  */
 
-export type String_860 = "day" | "week" | "month";
+export type String_890 = "day" | "week" | "month";
 
 export interface GET_THREADS_USAGEInput {
-  range: String_860;
+  range: String_890;
 }
 
 /* eslint-disable */
@@ -8361,12 +8676,12 @@ export interface GET_WALLET_ACCOUNTInput {}
  * and run json-schema-to-typescript to regenerate this file.
  */
 
-export type String_861 = string;
-export type String_862 = string;
+export type String_891 = string;
+export type String_892 = string;
 
 export interface GET_WALLET_ACCOUNTOutput {
-  balance: String_861;
-  balanceExact: String_862;
+  balance: String_891;
+  balanceExact: String_892;
 }
 
 /* eslint-disable */
@@ -8394,10 +8709,10 @@ export interface GET_WORKSPACE_PLANOutput {}
  * and run json-schema-to-typescript to regenerate this file.
  */
 
-export type String_863 = string;
+export type String_893 = string;
 
 export interface HOSTING_APP_DELETEInput {
-  appSlug: String_863;
+  appSlug: String_893;
 }
 
 /* eslint-disable */
@@ -8427,15 +8742,15 @@ export type Boolean_65 = boolean;
 /**
  * The slug identifier for the app, if not provided, you should use the wrangler.toml file to determine the slug (using the name field).
  */
-export type String_864 = string;
-export type String_865 = string;
-export type String_866 = string;
+export type String_894 = string;
+export type String_895 = string;
+export type String_896 = string;
 export type Boolean_66 = boolean;
 /**
  * An array of files with their paths and contents. Must include main.ts as entrypoint and package.json for dependencies
  */
-export type Array_109 = Object_278[];
-export type String_867 = string;
+export type Array_109 = Object_298[];
+export type String_897 = string;
 /**
  * If false, skip the bundler step and upload the files as-is. Default: true (bundle files)
  */
@@ -8448,22 +8763,22 @@ export type Boolean_68 = boolean;
 export interface HOSTING_APP_DEPLOYInput {
   force?: Boolean_64;
   promote?: Boolean_65;
-  appSlug?: String_864;
+  appSlug?: String_894;
   files: Array_109;
-  envVars?: Object_279;
+  envVars?: Object_299;
   bundle?: Boolean_67;
   unlisted?: Boolean_68;
 }
-export interface Object_278 {
-  path: String_865;
-  content: String_866;
+export interface Object_298 {
+  path: String_895;
+  content: String_896;
   asset?: Boolean_66;
 }
 /**
  * An optional object of environment variables to be set on the worker
  */
-export interface Object_279 {
-  [k: string]: String_867;
+export interface Object_299 {
+  [k: string]: String_897;
 }
 
 /* eslint-disable */
@@ -8476,33 +8791,33 @@ export interface Object_279 {
 /**
  * The entrypoint of the app
  */
-export type String_868 = string;
-export type String_869 = string;
+export type String_898 = string;
+export type String_899 = string;
 /**
  * The hosts of the app
  */
-export type Array_110 = String_869[];
+export type Array_110 = String_899[];
 /**
  * The id of the app
  */
-export type String_870 = string;
+export type String_900 = string;
 /**
  * The workspace of the app
  */
-export type StringNull_44 = String_871 | Null_83;
-export type String_871 = string;
-export type Null_83 = null;
+export type StringNull_44 = String_901 | Null_88;
+export type String_901 = string;
+export type Null_88 = null;
 /**
  * The deployment id of the app
  */
-export type String_872 = string;
+export type String_902 = string;
 
 export interface HOSTING_APP_DEPLOYOutput {
-  entrypoint: String_868;
+  entrypoint: String_898;
   hosts: Array_110;
-  id: String_870;
+  id: String_900;
   workspace: StringNull_44;
-  deploymentId?: String_872;
+  deploymentId?: String_902;
 }
 
 /* eslint-disable */
@@ -8512,10 +8827,10 @@ export interface HOSTING_APP_DEPLOYOutput {
  * and run json-schema-to-typescript to regenerate this file.
  */
 
-export type String_873 = string;
+export type String_903 = string;
 
 export interface HOSTING_APP_DEPLOYMENTS_LISTInput {
-  appSlug: String_873;
+  appSlug: String_903;
 }
 
 /* eslint-disable */
@@ -8528,47 +8843,47 @@ export interface HOSTING_APP_DEPLOYMENTS_LISTInput {
 /**
  * The deployment ID
  */
-export type String_874 = string;
+export type String_904 = string;
 /**
  * The Cloudflare worker ID
  */
-export type StringNull_45 = String_875 | Null_84;
-export type String_875 = string;
-export type Null_84 = null;
+export type StringNull_45 = String_905 | Null_89;
+export type String_905 = string;
+export type Null_89 = null;
 /**
  * The deployment entrypoint URL
  */
-export type String_876 = string;
+export type String_906 = string;
 /**
  * When the deployment was created
  */
-export type String_877 = string;
+export type String_907 = string;
 /**
  * When the deployment was last updated
  */
-export type String_878 = string;
-export type Array_111 = Object_280[];
-export type String_879 = string;
-export type String_880 = string;
-export type String_881 = string;
-export type String_882 = string;
+export type String_908 = string;
+export type Array_111 = Object_300[];
+export type String_909 = string;
+export type String_910 = string;
+export type String_911 = string;
+export type String_912 = string;
 
 export interface HOSTING_APP_DEPLOYMENTS_LISTOutput {
   deployments: Array_111;
-  app: Object_281;
+  app: Object_301;
 }
-export interface Object_280 {
-  id: String_874;
+export interface Object_300 {
+  id: String_904;
   cloudflare_deployment_id: StringNull_45;
-  entrypoint: String_876;
-  created_at: String_877;
-  updated_at: String_878;
+  entrypoint: String_906;
+  created_at: String_907;
+  updated_at: String_908;
 }
-export interface Object_281 {
-  id: String_879;
-  slug: String_880;
-  workspace: String_881;
-  project_id: String_882;
+export interface Object_301 {
+  id: String_909;
+  slug: String_910;
+  workspace: String_911;
+  project_id: String_912;
 }
 
 /* eslint-disable */
@@ -8578,10 +8893,10 @@ export interface Object_281 {
  * and run json-schema-to-typescript to regenerate this file.
  */
 
-export type String_883 = string;
+export type String_913 = string;
 
 export interface HOSTING_APP_INFOInput {
-  appSlug: String_883;
+  appSlug: String_913;
 }
 
 /* eslint-disable */
@@ -8609,11 +8924,11 @@ export interface HOSTING_APP_WORKFLOWS_LIST_NAMESInput {}
  * and run json-schema-to-typescript to regenerate this file.
  */
 
-export type String_884 = string;
+export type String_914 = string;
 /**
  * List of unique workflow names
  */
-export type Array_112 = String_884[];
+export type Array_112 = String_914[];
 
 export interface HOSTING_APP_WORKFLOWS_LIST_NAMESOutput {
   workflowNames: Array_112;
@@ -8626,21 +8941,21 @@ export interface HOSTING_APP_WORKFLOWS_LIST_NAMESOutput {
  * and run json-schema-to-typescript to regenerate this file.
  */
 
-export type Number_91 = number;
-export type Number_92 = number;
+export type Number_96 = number;
+export type Number_97 = number;
 /**
  * Optional: The name of the workflow to list runs for. If not provided, shows recent runs from any workflow.
  */
-export type String_885 = string;
-export type String_886 = string;
-export type String_887 = string;
+export type String_915 = string;
+export type String_916 = string;
+export type String_917 = string;
 
 export interface HOSTING_APP_WORKFLOWS_LIST_RUNSInput {
-  page?: Number_91;
-  per_page?: Number_92;
-  workflowName?: String_885;
-  fromDate?: String_886;
-  toDate?: String_887;
+  page?: Number_96;
+  per_page?: Number_97;
+  workflowName?: String_915;
+  fromDate?: String_916;
+  toDate?: String_917;
 }
 
 /* eslint-disable */
@@ -8650,68 +8965,68 @@ export interface HOSTING_APP_WORKFLOWS_LIST_RUNSInput {
  * and run json-schema-to-typescript to regenerate this file.
  */
 
-export type String_888 = string;
-export type String_889 = string;
-export type Number_93 = number;
-export type NumberNull_7 = Number_94 | Null_85;
-export type Number_94 = number;
-export type Null_85 = null;
-export type String_890 = string;
+export type String_918 = string;
+export type String_919 = string;
+export type Number_98 = number;
+export type NumberNull_7 = Number_99 | Null_90;
+export type Number_99 = number;
+export type Null_90 = null;
+export type String_920 = string;
 /**
  * The workflow runs
  */
-export type Array_113 = Object_282[];
-export type Number_95 = number;
-export type Number_96 = number;
-export type Number_97 = number;
-export type Number_98 = number;
-export type Number_99 = number;
+export type Array_113 = Object_302[];
 export type Number_100 = number;
 export type Number_101 = number;
-export type String_891 = string;
-export type Null_86 = null;
 export type Number_102 = number;
-export type String_892 = string;
-export type Null_87 = null;
 export type Number_103 = number;
 export type Number_104 = number;
+export type Number_105 = number;
+export type Number_106 = number;
+export type String_921 = string;
+export type Null_91 = null;
+export type Number_107 = number;
+export type String_922 = string;
+export type Null_92 = null;
+export type Number_108 = number;
+export type Number_109 = number;
 
 export interface HOSTING_APP_WORKFLOWS_LIST_RUNSOutput {
   runs: Array_113;
-  stats: Object_283;
-  pagination: Object_286;
+  stats: Object_303;
+  pagination: Object_306;
 }
-export interface Object_282 {
-  workflowName: String_888;
-  runId: String_889;
-  createdAt: Number_93;
+export interface Object_302 {
+  workflowName: String_918;
+  runId: String_919;
+  createdAt: Number_98;
   updatedAt?: NumberNull_7;
-  status: String_890;
+  status: String_920;
 }
 /**
  * Workflow statistics
  */
-export interface Object_283 {
-  totalRuns: Number_95;
-  successCount: Number_96;
-  errorCount: Number_97;
-  runningCount: Number_98;
-  pendingCount: Number_99;
-  successRate: Number_100;
-  firstRun: Object_284 | Null_86;
-  lastRun: Object_285 | Null_87;
+export interface Object_303 {
+  totalRuns: Number_100;
+  successCount: Number_101;
+  errorCount: Number_102;
+  runningCount: Number_103;
+  pendingCount: Number_104;
+  successRate: Number_105;
+  firstRun: Object_304 | Null_91;
+  lastRun: Object_305 | Null_92;
 }
-export interface Object_284 {
-  date: Number_101;
-  status: String_891;
+export interface Object_304 {
+  date: Number_106;
+  status: String_921;
 }
-export interface Object_285 {
-  date: Number_102;
-  status: String_892;
+export interface Object_305 {
+  date: Number_107;
+  status: String_922;
 }
-export interface Object_286 {
-  page?: Number_103;
-  per_page?: Number_104;
+export interface Object_306 {
+  page?: Number_108;
+  per_page?: Number_109;
 }
 
 /* eslint-disable */
@@ -8724,12 +9039,12 @@ export interface Object_286 {
 /**
  * The instance ID of the workflow. To get this, use the HOSTING_APP_WORKFLOWS_INSTANCES_LIST or HOSTING_APP_WORKFLOWS_START tool.
  */
-export type String_893 = string;
-export type String_894 = string;
+export type String_923 = string;
+export type String_924 = string;
 
 export interface HOSTING_APP_WORKFLOWS_STATUSInput {
-  instanceId: String_893;
-  workflowName: String_894;
+  instanceId: String_923;
+  workflowName: String_924;
 }
 
 /* eslint-disable */
@@ -8757,16 +9072,16 @@ export interface HOSTING_APPS_LISTInput {}
  * and run json-schema-to-typescript to regenerate this file.
  */
 
-export type String_895 = string;
-export type String_896 = string;
-export type Array_114 = Object_287[];
+export type String_925 = string;
+export type String_926 = string;
+export type Array_114 = Object_307[];
 
 export interface HOSTING_APPS_LISTOutput {
   items: Array_114;
 }
-export interface Object_287 {
-  slug?: String_895;
-  entrypoint: String_896;
+export interface Object_307 {
+  slug?: String_925;
+  entrypoint: String_926;
 }
 
 /* eslint-disable */
@@ -8779,15 +9094,15 @@ export interface Object_287 {
 /**
  * The deployment ID to promote
  */
-export type String_897 = string;
+export type String_927 = string;
 /**
  * Route pattern to promote the deployment to (can be custom domain or .deco.page)
  */
-export type String_898 = string;
+export type String_928 = string;
 
 export interface HOSTING_APPS_PROMOTEInput {
-  deploymentId: String_897;
-  routePattern: String_898;
+  deploymentId: String_927;
+  routePattern: String_928;
 }
 
 /* eslint-disable */
@@ -8804,11 +9119,11 @@ export type Boolean_69 = boolean;
 /**
  * The route pattern that was promoted
  */
-export type String_899 = string;
+export type String_929 = string;
 
 export interface HOSTING_APPS_PROMOTEOutput {
   success: Boolean_69;
-  promotedRoute: String_899;
+  promotedRoute: String_929;
 }
 
 /* eslint-disable */
@@ -8818,72 +9133,72 @@ export interface HOSTING_APPS_PROMOTEOutput {
  * and run json-schema-to-typescript to regenerate this file.
  */
 
-export type String_900 = string;
-export type String_901 = "HTTP";
-export type String_902 = string;
-export type String_903 = string;
-export type String_904 = "SSE";
-export type String_905 = string;
-export type String_906 = string;
-export type String_907 = string;
-export type String_908 = "Websocket";
-export type String_909 = string;
-export type String_910 = string;
-export type String_911 = "Deco";
-export type String_912 = string;
-export type String_913 = string;
-export type String_914 = "INNATE";
-export type String_915 = string;
-export type String_916 = string;
-export type String_917 = string;
-export type Integer_43 = number;
-export type String_918 = string;
+export type String_930 = string;
+export type String_931 = "HTTP";
+export type String_932 = string;
+export type String_933 = string;
+export type String_934 = "SSE";
+export type String_935 = string;
+export type String_936 = string;
+export type String_937 = string;
+export type String_938 = "Websocket";
+export type String_939 = string;
+export type String_940 = string;
+export type String_941 = "Deco";
+export type String_942 = string;
+export type String_943 = string;
+export type String_944 = "INNATE";
+export type String_945 = string;
+export type String_946 = string;
+export type String_947 = string;
+export type Integer_53 = number;
+export type String_948 = string;
 
 export interface INTEGRATIONS_CALL_TOOLInput_1 {
-  id?: String_900;
-  connection?: Object_288 | Object_289 | Object_291 | Object_292 | Object_293;
-  params: Object_294;
+  id?: String_930;
+  connection?: Object_308 | Object_309 | Object_311 | Object_312 | Object_313;
+  params: Object_314;
 }
-export interface Object_288 {
-  type: String_901;
-  url: String_902;
-  token?: String_903;
+export interface Object_308 {
+  type: String_931;
+  url: String_932;
+  token?: String_933;
 }
-export interface Object_289 {
-  type: String_904;
-  url: String_905;
-  token?: String_906;
-  headers?: Object_290;
+export interface Object_309 {
+  type: String_934;
+  url: String_935;
+  token?: String_936;
+  headers?: Object_310;
 }
-export interface Object_290 {
-  [k: string]: String_907;
+export interface Object_310 {
+  [k: string]: String_937;
 }
-export interface Object_291 {
-  type: String_908;
-  url: String_909;
-  token?: String_910;
+export interface Object_311 {
+  type: String_938;
+  url: String_939;
+  token?: String_940;
 }
-export interface Object_292 {
-  type: String_911;
-  tenant: String_912;
-  token?: String_913;
+export interface Object_312 {
+  type: String_941;
+  tenant: String_942;
+  token?: String_943;
 }
-export interface Object_293 {
-  type: String_914;
-  name: String_915;
-  workspace?: String_916;
+export interface Object_313 {
+  type: String_944;
+  name: String_945;
+  workspace?: String_946;
 }
-export interface Object_294 {
-  _meta?: Object_295;
-  name: String_918;
-  arguments?: Object_296;
+export interface Object_314 {
+  _meta?: Object_315;
+  name: String_948;
+  arguments?: Object_316;
   [k: string]: unknown;
 }
-export interface Object_295 {
-  progressToken?: String_917 | Integer_43;
+export interface Object_315 {
+  progressToken?: String_947 | Integer_53;
   [k: string]: unknown;
 }
-export interface Object_296 {
+export interface Object_316 {
   [k: string]: unknown;
 }
 
@@ -8903,223 +9218,10 @@ export interface INTEGRATIONS_CALL_TOOLOutput_1 {}
  * and run json-schema-to-typescript to regenerate this file.
  */
 
-export type String_919 = string;
-export type String_920 = string;
-export type String_921 = string;
-export type String_922 = string;
-export type String_923 = string;
-export type Null_88 = null;
-export type String_924 = string;
-export type Null_89 = null;
-export type String_925 = "HTTP";
-export type String_926 = string;
-export type String_927 = string;
-export type String_928 = "SSE";
-export type String_929 = string;
-export type String_930 = string;
-export type String_931 = string;
-export type String_932 = "Websocket";
-export type String_933 = string;
-export type String_934 = string;
-export type String_935 = "Deco";
-export type String_936 = string;
-export type String_937 = string;
-export type String_938 = "INNATE";
-export type String_939 = string;
-export type String_940 = string;
-export type Null_90 = null;
-/**
- * The name of the tool
- */
-export type String_941 = string;
-/**
- * The description of the tool
- */
-export type String_942 = string;
-export type Array_115 = (Object_304 & Object_306)[];
-export type Null_91 = null;
-export type String_943 = string;
-
-export interface INTEGRATIONS_CREATEInput {
-  id?: String_919;
-  name?: String_920;
-  description?: String_921;
-  icon?: String_922;
-  access?:
-    | (
-        | {
-            [k: string]: unknown;
-          }
-        | String_923
-      )
-    | Null_88;
-  appId?:
-    | (
-        | {
-            [k: string]: unknown;
-          }
-        | String_924
-      )
-    | Null_89;
-  connection?: Object_297 | Object_298 | Object_300 | Object_301 | Object_302;
-  metadata?: Object_303 | Null_90;
-  tools?: Array_115 | Null_91;
-  clientIdFromApp?: String_943;
-}
-export interface Object_297 {
-  type: String_925;
-  url: String_926;
-  token?: String_927;
-}
-export interface Object_298 {
-  type: String_928;
-  url: String_929;
-  token?: String_930;
-  headers?: Object_299;
-}
-export interface Object_299 {
-  [k: string]: String_931;
-}
-export interface Object_300 {
-  type: String_932;
-  url: String_933;
-  token?: String_934;
-}
-export interface Object_301 {
-  type: String_935;
-  tenant: String_936;
-  token?: String_937;
-}
-export interface Object_302 {
-  type: String_938;
-  name: String_939;
-  workspace?: String_940;
-}
-export interface Object_303 {
-  [k: string]: unknown;
-}
-export interface Object_304 {
-  name: String_941;
-  inputSchema: Object_305;
-}
-/**
- * The JSON schema of the input of the tool
- */
-export interface Object_305 {
-  [k: string]: unknown;
-}
-export interface Object_306 {
-  description?: String_942;
-  outputSchema?: Object_307;
-}
-/**
- * The JSON schema of the output of the tool
- */
-export interface Object_307 {
-  [k: string]: unknown;
-}
-
-/* eslint-disable */
-/**
- * This file was automatically generated by json-schema-to-typescript.
- * DO NOT MODIFY IT BY HAND. Instead, modify the source JSONSchema file,
- * and run json-schema-to-typescript to regenerate this file.
- */
-
-export interface INTEGRATIONS_CREATEOutput {}
-
-/* eslint-disable */
-/**
- * This file was automatically generated by json-schema-to-typescript.
- * DO NOT MODIFY IT BY HAND. Instead, modify the source JSONSchema file,
- * and run json-schema-to-typescript to regenerate this file.
- */
-
-export type String_944 = string;
-
-export interface INTEGRATIONS_DELETEInput {
-  id: String_944;
-}
-
-/* eslint-disable */
-/**
- * This file was automatically generated by json-schema-to-typescript.
- * DO NOT MODIFY IT BY HAND. Instead, modify the source JSONSchema file,
- * and run json-schema-to-typescript to regenerate this file.
- */
-
-export interface INTEGRATIONS_DELETEOutput {}
-
-/* eslint-disable */
-/**
- * This file was automatically generated by json-schema-to-typescript.
- * DO NOT MODIFY IT BY HAND. Instead, modify the source JSONSchema file,
- * and run json-schema-to-typescript to regenerate this file.
- */
-
-export type String_945 = string;
-
-export interface INTEGRATIONS_GETInput {
-  id: String_945;
-}
-
-/* eslint-disable */
-/**
- * This file was automatically generated by json-schema-to-typescript.
- * DO NOT MODIFY IT BY HAND. Instead, modify the source JSONSchema file,
- * and run json-schema-to-typescript to regenerate this file.
- */
-
-export interface INTEGRATIONS_GETOutput {}
-
-/* eslint-disable */
-/**
- * This file was automatically generated by json-schema-to-typescript.
- * DO NOT MODIFY IT BY HAND. Instead, modify the source JSONSchema file,
- * and run json-schema-to-typescript to regenerate this file.
- */
-
-export type String_946 = string;
-
-export interface INTEGRATIONS_GET_API_KEYInput {
-  integrationId: String_946;
-}
-
-/* eslint-disable */
-/**
- * This file was automatically generated by json-schema-to-typescript.
- * DO NOT MODIFY IT BY HAND. Instead, modify the source JSONSchema file,
- * and run json-schema-to-typescript to regenerate this file.
- */
-
-export interface INTEGRATIONS_GET_API_KEYOutput {}
-
-/* eslint-disable */
-/**
- * This file was automatically generated by json-schema-to-typescript.
- * DO NOT MODIFY IT BY HAND. Instead, modify the source JSONSchema file,
- * and run json-schema-to-typescript to regenerate this file.
- */
-
-export type String_947 = "Channel" | "View";
-
-export interface INTEGRATIONS_LISTInput {
-  binder?: String_947;
-}
-
-/* eslint-disable */
-/**
- * This file was automatically generated by json-schema-to-typescript.
- * DO NOT MODIFY IT BY HAND. Instead, modify the source JSONSchema file,
- * and run json-schema-to-typescript to regenerate this file.
- */
-
-export type String_948 = string;
 export type String_949 = string;
 export type String_950 = string;
 export type String_951 = string;
 export type String_952 = string;
-export type Null_92 = null;
 export type String_953 = string;
 export type Null_93 = null;
 export type String_954 = string;
@@ -9149,27 +9251,16 @@ export type String_971 = string;
  * The description of the tool
  */
 export type String_972 = string;
-export type Array_117 = (Object_316 & Object_318)[];
+export type Array_115 = (Object_324 & Object_326)[];
 export type Null_96 = null;
-export type Array_116 = Object_308[];
+export type String_973 = string;
 
-export interface INTEGRATIONS_LISTOutput {
-  items: Array_116;
-}
-export interface Object_308 {
-  id: String_948;
-  name: String_949;
-  description?: String_950;
-  icon?: String_951;
+export interface INTEGRATIONS_CREATEInput {
+  id?: String_949;
+  name?: String_950;
+  description?: String_951;
+  icon?: String_952;
   access?:
-    | (
-        | {
-            [k: string]: unknown;
-          }
-        | String_952
-      )
-    | Null_92;
-  appName?:
     | (
         | {
             [k: string]: unknown;
@@ -9185,60 +9276,61 @@ export interface Object_308 {
         | String_954
       )
     | Null_94;
-  connection: Object_309 | Object_310 | Object_312 | Object_313 | Object_314;
-  metadata?: Object_315 | Null_95;
-  tools?: Array_117 | Null_96;
+  connection?: Object_317 | Object_318 | Object_320 | Object_321 | Object_322;
+  metadata?: Object_323 | Null_95;
+  tools?: Array_115 | Null_96;
+  clientIdFromApp?: String_973;
 }
-export interface Object_309 {
+export interface Object_317 {
   type: String_955;
   url: String_956;
   token?: String_957;
 }
-export interface Object_310 {
+export interface Object_318 {
   type: String_958;
   url: String_959;
   token?: String_960;
-  headers?: Object_311;
+  headers?: Object_319;
 }
-export interface Object_311 {
+export interface Object_319 {
   [k: string]: String_961;
 }
-export interface Object_312 {
+export interface Object_320 {
   type: String_962;
   url: String_963;
   token?: String_964;
 }
-export interface Object_313 {
+export interface Object_321 {
   type: String_965;
   tenant: String_966;
   token?: String_967;
 }
-export interface Object_314 {
+export interface Object_322 {
   type: String_968;
   name: String_969;
   workspace?: String_970;
 }
-export interface Object_315 {
+export interface Object_323 {
   [k: string]: unknown;
 }
-export interface Object_316 {
+export interface Object_324 {
   name: String_971;
-  inputSchema: Object_317;
+  inputSchema: Object_325;
 }
 /**
  * The JSON schema of the input of the tool
  */
-export interface Object_317 {
+export interface Object_325 {
   [k: string]: unknown;
 }
-export interface Object_318 {
+export interface Object_326 {
   description?: String_972;
-  outputSchema?: Object_319;
+  outputSchema?: Object_327;
 }
 /**
  * The JSON schema of the output of the tool
  */
-export interface Object_319 {
+export interface Object_327 {
   [k: string]: unknown;
 }
 
@@ -9249,60 +9341,147 @@ export interface Object_319 {
  * and run json-schema-to-typescript to regenerate this file.
  */
 
-export type String_973 = string;
+export interface INTEGRATIONS_CREATEOutput {}
+
+/* eslint-disable */
+/**
+ * This file was automatically generated by json-schema-to-typescript.
+ * DO NOT MODIFY IT BY HAND. Instead, modify the source JSONSchema file,
+ * and run json-schema-to-typescript to regenerate this file.
+ */
+
 export type String_974 = string;
+
+export interface INTEGRATIONS_DELETEInput {
+  id: String_974;
+}
+
+/* eslint-disable */
+/**
+ * This file was automatically generated by json-schema-to-typescript.
+ * DO NOT MODIFY IT BY HAND. Instead, modify the source JSONSchema file,
+ * and run json-schema-to-typescript to regenerate this file.
+ */
+
+export interface INTEGRATIONS_DELETEOutput {}
+
+/* eslint-disable */
+/**
+ * This file was automatically generated by json-schema-to-typescript.
+ * DO NOT MODIFY IT BY HAND. Instead, modify the source JSONSchema file,
+ * and run json-schema-to-typescript to regenerate this file.
+ */
+
 export type String_975 = string;
+
+export interface INTEGRATIONS_GETInput {
+  id: String_975;
+}
+
+/* eslint-disable */
+/**
+ * This file was automatically generated by json-schema-to-typescript.
+ * DO NOT MODIFY IT BY HAND. Instead, modify the source JSONSchema file,
+ * and run json-schema-to-typescript to regenerate this file.
+ */
+
+export interface INTEGRATIONS_GETOutput {}
+
+/* eslint-disable */
+/**
+ * This file was automatically generated by json-schema-to-typescript.
+ * DO NOT MODIFY IT BY HAND. Instead, modify the source JSONSchema file,
+ * and run json-schema-to-typescript to regenerate this file.
+ */
+
 export type String_976 = string;
-export type String_977 = string;
+
+export interface INTEGRATIONS_GET_API_KEYInput {
+  integrationId: String_976;
+}
+
+/* eslint-disable */
+/**
+ * This file was automatically generated by json-schema-to-typescript.
+ * DO NOT MODIFY IT BY HAND. Instead, modify the source JSONSchema file,
+ * and run json-schema-to-typescript to regenerate this file.
+ */
+
+export interface INTEGRATIONS_GET_API_KEYOutput {}
+
+/* eslint-disable */
+/**
+ * This file was automatically generated by json-schema-to-typescript.
+ * DO NOT MODIFY IT BY HAND. Instead, modify the source JSONSchema file,
+ * and run json-schema-to-typescript to regenerate this file.
+ */
+
+export type String_977 = "Channel" | "View";
+
+export interface INTEGRATIONS_LISTInput {
+  binder?: String_977;
+}
+
+/* eslint-disable */
+/**
+ * This file was automatically generated by json-schema-to-typescript.
+ * DO NOT MODIFY IT BY HAND. Instead, modify the source JSONSchema file,
+ * and run json-schema-to-typescript to regenerate this file.
+ */
+
 export type String_978 = string;
-export type Null_97 = null;
 export type String_979 = string;
-export type Null_98 = null;
 export type String_980 = string;
-export type Null_99 = null;
-export type String_981 = "HTTP";
+export type String_981 = string;
 export type String_982 = string;
+export type Null_97 = null;
 export type String_983 = string;
-export type String_984 = "SSE";
-export type String_985 = string;
+export type Null_98 = null;
+export type String_984 = string;
+export type Null_99 = null;
+export type String_985 = "HTTP";
 export type String_986 = string;
 export type String_987 = string;
-export type String_988 = "Websocket";
+export type String_988 = "SSE";
 export type String_989 = string;
 export type String_990 = string;
-export type String_991 = "Deco";
-export type String_992 = string;
+export type String_991 = string;
+export type String_992 = "Websocket";
 export type String_993 = string;
-export type String_994 = "INNATE";
-export type String_995 = string;
+export type String_994 = string;
+export type String_995 = "Deco";
 export type String_996 = string;
+export type String_997 = string;
+export type String_998 = "INNATE";
+export type String_999 = string;
+export type String_1000 = string;
 export type Null_100 = null;
 /**
  * The name of the tool
  */
-export type String_997 = string;
+export type String_1001 = string;
 /**
  * The description of the tool
  */
-export type String_998 = string;
-export type Array_118 = (Object_328 & Object_330)[];
+export type String_1002 = string;
+export type Array_117 = (Object_336 & Object_338)[];
 export type Null_101 = null;
+export type Array_116 = Object_328[];
 
-export interface INTEGRATIONS_UPDATEInput {
-  id: String_973;
-  integration: Object_320;
+export interface INTEGRATIONS_LISTOutput {
+  items: Array_116;
 }
-export interface Object_320 {
-  id: String_974;
-  name: String_975;
-  description?: String_976;
-  icon?: String_977;
+export interface Object_328 {
+  id: String_978;
+  name: String_979;
+  description?: String_980;
+  icon?: String_981;
   access?:
     | (
         | {
             [k: string]: unknown;
           }
-        | String_978
+        | String_982
       )
     | Null_97;
   appName?:
@@ -9310,7 +9489,7 @@ export interface Object_320 {
         | {
             [k: string]: unknown;
           }
-        | String_979
+        | String_983
       )
     | Null_98;
   appId?:
@@ -9318,63 +9497,199 @@ export interface Object_320 {
         | {
             [k: string]: unknown;
           }
-        | String_980
+        | String_984
       )
     | Null_99;
-  connection: Object_321 | Object_322 | Object_324 | Object_325 | Object_326;
-  metadata?: Object_327 | Null_100;
-  tools?: Array_118 | Null_101;
+  connection: Object_329 | Object_330 | Object_332 | Object_333 | Object_334;
+  metadata?: Object_335 | Null_100;
+  tools?: Array_117 | Null_101;
 }
-export interface Object_321 {
-  type: String_981;
-  url: String_982;
-  token?: String_983;
+export interface Object_329 {
+  type: String_985;
+  url: String_986;
+  token?: String_987;
 }
-export interface Object_322 {
-  type: String_984;
-  url: String_985;
-  token?: String_986;
-  headers?: Object_323;
-}
-export interface Object_323 {
-  [k: string]: String_987;
-}
-export interface Object_324 {
+export interface Object_330 {
   type: String_988;
   url: String_989;
   token?: String_990;
+  headers?: Object_331;
 }
-export interface Object_325 {
-  type: String_991;
-  tenant: String_992;
-  token?: String_993;
+export interface Object_331 {
+  [k: string]: String_991;
 }
-export interface Object_326 {
-  type: String_994;
-  name: String_995;
-  workspace?: String_996;
+export interface Object_332 {
+  type: String_992;
+  url: String_993;
+  token?: String_994;
 }
-export interface Object_327 {
+export interface Object_333 {
+  type: String_995;
+  tenant: String_996;
+  token?: String_997;
+}
+export interface Object_334 {
+  type: String_998;
+  name: String_999;
+  workspace?: String_1000;
+}
+export interface Object_335 {
   [k: string]: unknown;
 }
-export interface Object_328 {
-  name: String_997;
-  inputSchema: Object_329;
+export interface Object_336 {
+  name: String_1001;
+  inputSchema: Object_337;
 }
 /**
  * The JSON schema of the input of the tool
  */
-export interface Object_329 {
+export interface Object_337 {
   [k: string]: unknown;
 }
-export interface Object_330 {
-  description?: String_998;
-  outputSchema?: Object_331;
+export interface Object_338 {
+  description?: String_1002;
+  outputSchema?: Object_339;
 }
 /**
  * The JSON schema of the output of the tool
  */
-export interface Object_331 {
+export interface Object_339 {
+  [k: string]: unknown;
+}
+
+/* eslint-disable */
+/**
+ * This file was automatically generated by json-schema-to-typescript.
+ * DO NOT MODIFY IT BY HAND. Instead, modify the source JSONSchema file,
+ * and run json-schema-to-typescript to regenerate this file.
+ */
+
+export type String_1003 = string;
+export type String_1004 = string;
+export type String_1005 = string;
+export type String_1006 = string;
+export type String_1007 = string;
+export type String_1008 = string;
+export type Null_102 = null;
+export type String_1009 = string;
+export type Null_103 = null;
+export type String_1010 = string;
+export type Null_104 = null;
+export type String_1011 = "HTTP";
+export type String_1012 = string;
+export type String_1013 = string;
+export type String_1014 = "SSE";
+export type String_1015 = string;
+export type String_1016 = string;
+export type String_1017 = string;
+export type String_1018 = "Websocket";
+export type String_1019 = string;
+export type String_1020 = string;
+export type String_1021 = "Deco";
+export type String_1022 = string;
+export type String_1023 = string;
+export type String_1024 = "INNATE";
+export type String_1025 = string;
+export type String_1026 = string;
+export type Null_105 = null;
+/**
+ * The name of the tool
+ */
+export type String_1027 = string;
+/**
+ * The description of the tool
+ */
+export type String_1028 = string;
+export type Array_118 = (Object_348 & Object_350)[];
+export type Null_106 = null;
+
+export interface INTEGRATIONS_UPDATEInput {
+  id: String_1003;
+  integration: Object_340;
+}
+export interface Object_340 {
+  id: String_1004;
+  name: String_1005;
+  description?: String_1006;
+  icon?: String_1007;
+  access?:
+    | (
+        | {
+            [k: string]: unknown;
+          }
+        | String_1008
+      )
+    | Null_102;
+  appName?:
+    | (
+        | {
+            [k: string]: unknown;
+          }
+        | String_1009
+      )
+    | Null_103;
+  appId?:
+    | (
+        | {
+            [k: string]: unknown;
+          }
+        | String_1010
+      )
+    | Null_104;
+  connection: Object_341 | Object_342 | Object_344 | Object_345 | Object_346;
+  metadata?: Object_347 | Null_105;
+  tools?: Array_118 | Null_106;
+}
+export interface Object_341 {
+  type: String_1011;
+  url: String_1012;
+  token?: String_1013;
+}
+export interface Object_342 {
+  type: String_1014;
+  url: String_1015;
+  token?: String_1016;
+  headers?: Object_343;
+}
+export interface Object_343 {
+  [k: string]: String_1017;
+}
+export interface Object_344 {
+  type: String_1018;
+  url: String_1019;
+  token?: String_1020;
+}
+export interface Object_345 {
+  type: String_1021;
+  tenant: String_1022;
+  token?: String_1023;
+}
+export interface Object_346 {
+  type: String_1024;
+  name: String_1025;
+  workspace?: String_1026;
+}
+export interface Object_347 {
+  [k: string]: unknown;
+}
+export interface Object_348 {
+  name: String_1027;
+  inputSchema: Object_349;
+}
+/**
+ * The JSON schema of the input of the tool
+ */
+export interface Object_349 {
+  [k: string]: unknown;
+}
+export interface Object_350 {
+  description?: String_1028;
+  outputSchema?: Object_351;
+}
+/**
+ * The JSON schema of the output of the tool
+ */
+export interface Object_351 {
   [k: string]: unknown;
 }
 
@@ -9394,26 +9709,26 @@ export interface INTEGRATIONS_UPDATEOutput {}
  * and run json-schema-to-typescript to regenerate this file.
  */
 
-export type String_999 = string;
+export type String_1029 = string;
 /**
  * File path from file added using workspace fs_write tool
  */
-export type String_1000 = string;
+export type String_1030 = string;
 /**
  * The name of the file
  */
-export type String_1001 = string;
-export type StringBoolean = String_1002 | Boolean_70;
-export type String_1002 = string;
+export type String_1031 = string;
+export type StringBoolean = String_1032 | Boolean_70;
+export type String_1032 = string;
 export type Boolean_70 = boolean;
 
 export interface KNOWLEDGE_BASE_ADD_FILEInput {
-  fileUrl: String_999;
-  path?: String_1000;
-  filename?: String_1001;
-  metadata?: Object_332;
+  fileUrl: String_1029;
+  path?: String_1030;
+  filename?: String_1031;
+  metadata?: Object_352;
 }
-export interface Object_332 {
+export interface Object_352 {
   [k: string]: StringBoolean;
 }
 
@@ -9436,15 +9751,15 @@ export interface KNOWLEDGE_BASE_ADD_FILEOutput {}
 /**
  * The name of the knowledge base
  */
-export type String_1003 = string;
+export type String_1033 = string;
 /**
  * The dimension of the knowledge base
  */
-export type Number_105 = number;
+export type Number_110 = number;
 
 export interface KNOWLEDGE_BASE_CREATEInput {
-  name: String_1003;
-  dimension?: Number_105;
+  name: String_1033;
+  dimension?: Number_110;
 }
 
 /* eslint-disable */
@@ -9466,10 +9781,10 @@ export interface KNOWLEDGE_BASE_CREATEOutput {}
 /**
  * The name of the knowledge base
  */
-export type String_1004 = string;
+export type String_1034 = string;
 
 export interface KNOWLEDGE_BASE_DELETEInput {
-  name: String_1004;
+  name: String_1034;
 }
 
 /* eslint-disable */
@@ -9488,10 +9803,10 @@ export interface KNOWLEDGE_BASE_DELETEOutput {}
  * and run json-schema-to-typescript to regenerate this file.
  */
 
-export type String_1005 = string;
+export type String_1035 = string;
 
 export interface KNOWLEDGE_BASE_DELETE_FILEInput {
-  fileUrl: String_1005;
+  fileUrl: String_1035;
 }
 
 /* eslint-disable */
@@ -9510,11 +9825,11 @@ export interface KNOWLEDGE_BASE_DELETE_FILEOutput {}
  * and run json-schema-to-typescript to regenerate this file.
  */
 
-export type String_1006 = string;
+export type String_1036 = string;
 /**
  * The id of the content to forget
  */
-export type Array_119 = String_1006[];
+export type Array_119 = String_1036[];
 
 export interface KNOWLEDGE_BASE_FORGETInput {
   docIds: Array_119;
@@ -9579,23 +9894,23 @@ export interface KNOWLEDGE_BASE_LIST_FILESOutput {
 /**
  * The id of the content being remembered
  */
-export type String_1007 = string;
+export type String_1037 = string;
 /**
  * The content to remember
  */
-export type String_1008 = string;
-export type String_1009 = string;
+export type String_1038 = string;
+export type String_1039 = string;
 
 export interface KNOWLEDGE_BASE_REMEMBERInput {
-  docId?: String_1007;
-  content: String_1008;
-  metadata?: Object_333;
+  docId?: String_1037;
+  content: String_1038;
+  metadata?: Object_353;
 }
 /**
  * The metadata to remember
  */
-export interface Object_333 {
-  [k: string]: String_1009;
+export interface Object_353 {
+  [k: string]: String_1039;
 }
 
 /* eslint-disable */
@@ -9617,21 +9932,21 @@ export interface KNOWLEDGE_BASE_REMEMBEROutput {}
 /**
  * The query to search the knowledge base
  */
-export type String_1010 = string;
+export type String_1040 = string;
 /**
  * The number of results to return
  */
-export type Number_106 = number;
+export type Number_111 = number;
 /**
  * Whether to return the content
  */
 export type Boolean_71 = boolean;
 
 export interface KNOWLEDGE_BASE_SEARCHInput {
-  query: String_1010;
-  topK?: Number_106;
+  query: String_1040;
+  topK?: Number_111;
   content?: Boolean_71;
-  filter?: Object_334;
+  filter?: Object_354;
 }
 /**
  * Filters to match against document metadata and narrow search results. Supports MongoDB-style query operators:
@@ -9643,7 +9958,7 @@ export interface KNOWLEDGE_BASE_SEARCHInput {
  *         { "metadata": {{"status": {"$in": ["active", "pending"]}}},
  *         { "metadata": {{"$and": [{"type": "pdf"}, {"size": {"$lt": 1000}}]}}}
  */
-export interface Object_334 {
+export interface Object_354 {
   [k: string]: unknown;
 }
 
@@ -9666,10 +9981,10 @@ export interface KNOWLEDGE_BASE_SEARCHOutput {}
 /**
  * Optional prefix to filter branch names
  */
-export type String_1011 = string;
+export type String_1041 = string;
 
 export interface LIST_BRANCHESInput {
-  prefix?: String_1011;
+  prefix?: String_1041;
 }
 
 /* eslint-disable */
@@ -9679,25 +9994,25 @@ export interface LIST_BRANCHESInput {
  * and run json-schema-to-typescript to regenerate this file.
  */
 
-export type String_1012 = string;
-export type Number_107 = number;
-export type StringNull_46 = String_1013 | Null_102;
-export type String_1013 = string;
-export type Null_102 = null;
-export type Array_121 = Object_335[];
-export type Number_108 = number;
+export type String_1042 = string;
+export type Number_112 = number;
+export type StringNull_46 = String_1043 | Null_107;
+export type String_1043 = string;
+export type Null_107 = null;
+export type Array_121 = Object_355[];
+export type Number_113 = number;
 
 export interface LIST_BRANCHESOutput {
   branches: Array_121;
-  count: Number_108;
+  count: Number_113;
 }
-export interface Object_335 {
-  name: String_1012;
-  createdAt: Number_107;
-  metadata: Object_336;
+export interface Object_355 {
+  name: String_1042;
+  createdAt: Number_112;
+  metadata: Object_356;
   originBranch: StringNull_46;
 }
-export interface Object_336 {
+export interface Object_356 {
   [k: string]: unknown;
 }
 
@@ -9711,24 +10026,24 @@ export interface Object_336 {
 /**
  * The branch name
  */
-export type String_1014 = string;
+export type String_1044 = string;
 /**
  * Optional prefix to filter files (use select instead)
  */
-export type String_1015 = string;
-export type String_1016 = string;
+export type String_1045 = string;
+export type String_1046 = string;
 /**
  * Optional list of files to select
  */
-export type Array_122 = String_1016[];
+export type Array_122 = String_1046[];
 /**
  * Include file content as base64 in the response
  */
 export type Boolean_72 = boolean;
 
 export interface LIST_FILESInput {
-  branch?: String_1014;
-  prefix?: String_1015;
+  branch?: String_1044;
+  prefix?: String_1045;
   select?: Array_122;
   includeContent?: Boolean_72;
 }
@@ -9740,29 +10055,29 @@ export interface LIST_FILESInput {
  * and run json-schema-to-typescript to regenerate this file.
  */
 
-export type String_1017 = string;
-export type Number_109 = number;
-export type Number_110 = number;
-export type Number_111 = number;
-export type String_1018 = string;
-export type Number_112 = number;
+export type String_1047 = string;
+export type Number_114 = number;
+export type Number_115 = number;
+export type Number_116 = number;
+export type String_1048 = string;
+export type Number_117 = number;
 
 export interface LIST_FILESOutput {
-  files: Object_337;
-  count: Number_112;
+  files: Object_357;
+  count: Number_117;
 }
-export interface Object_337 {
-  [k: string]: Object_338;
+export interface Object_357 {
+  [k: string]: Object_358;
 }
-export interface Object_338 {
-  address: String_1017;
-  metadata: Object_339;
-  sizeInBytes: Number_109;
-  mtime: Number_110;
-  ctime: Number_111;
-  content?: String_1018;
+export interface Object_358 {
+  address: String_1047;
+  metadata: Object_359;
+  sizeInBytes: Number_114;
+  mtime: Number_115;
+  ctime: Number_116;
+  content?: String_1048;
 }
-export interface Object_339 {
+export interface Object_359 {
   [k: string]: unknown;
 }
 
@@ -9776,20 +10091,20 @@ export interface Object_339 {
 /**
  * The branch to merge into (defaults to 'main')
  */
-export type String_1019 = string;
+export type String_1049 = string;
 /**
  * The branch to merge from
  */
-export type String_1020 = string;
+export type String_1050 = string;
 /**
  * Merge strategy
  */
-export type String_1021 = "OVERRIDE" | "LAST_WRITE_WINS";
+export type String_1051 = "OVERRIDE" | "LAST_WRITE_WINS";
 
 export interface MERGE_BRANCHInput {
-  targetBranch?: String_1019;
-  sourceBranch: String_1020;
-  strategy: String_1021;
+  targetBranch?: String_1049;
+  sourceBranch: String_1050;
+  strategy: String_1051;
 }
 
 /* eslint-disable */
@@ -9799,31 +10114,31 @@ export interface MERGE_BRANCHInput {
  * and run json-schema-to-typescript to regenerate this file.
  */
 
-export type Number_113 = number;
-export type String_1022 = string;
-export type Array_123 = String_1022[];
-export type String_1023 = string;
-export type Array_124 = String_1023[];
-export type String_1024 = string;
-export type Array_125 = String_1024[];
-export type String_1025 = string;
-export type String_1026 = "local" | "remote";
-export type Number_114 = number;
-export type Number_115 = number;
-export type Array_126 = Object_340[];
+export type Number_118 = number;
+export type String_1052 = string;
+export type Array_123 = String_1052[];
+export type String_1053 = string;
+export type Array_124 = String_1053[];
+export type String_1054 = string;
+export type Array_125 = String_1054[];
+export type String_1055 = string;
+export type String_1056 = "local" | "remote";
+export type Number_119 = number;
+export type Number_120 = number;
+export type Array_126 = Object_360[];
 
 export interface MERGE_BRANCHOutput {
-  filesMerged: Number_113;
+  filesMerged: Number_118;
   added: Array_123;
   modified: Array_124;
   deleted: Array_125;
   conflicts?: Array_126;
 }
-export interface Object_340 {
-  path: String_1025;
-  resolved: String_1026;
-  localMtime: Number_114;
-  remoteMtime: Number_115;
+export interface Object_360 {
+  path: String_1055;
+  resolved: String_1056;
+  localMtime: Number_119;
+  remoteMtime: Number_120;
 }
 
 /* eslint-disable */
@@ -9833,18 +10148,18 @@ export interface Object_340 {
  * and run json-schema-to-typescript to regenerate this file.
  */
 
-export type String_1027 = string;
-export type String_1028 = string;
-export type String_1029 = string;
-export type String_1030 = string;
+export type String_1057 = string;
+export type String_1058 = string;
+export type String_1059 = string;
+export type String_1060 = string;
 export type Boolean_73 = boolean;
 export type Boolean_74 = boolean;
 
 export interface MODELS_CREATEInput {
-  name: String_1027;
-  model: String_1028;
-  apiKey?: String_1029;
-  description?: String_1030;
+  name: String_1057;
+  model: String_1058;
+  apiKey?: String_1059;
+  description?: String_1060;
   byDeco?: Boolean_73;
   isEnabled?: Boolean_74;
 }
@@ -9865,10 +10180,10 @@ export interface MODELS_CREATEOutput {}
  * and run json-schema-to-typescript to regenerate this file.
  */
 
-export type String_1031 = string;
+export type String_1061 = string;
 
 export interface MODELS_DELETEInput {
-  id: String_1031;
+  id: String_1061;
 }
 
 /* eslint-disable */
@@ -9887,10 +10202,10 @@ export interface MODELS_DELETEOutput {}
  * and run json-schema-to-typescript to regenerate this file.
  */
 
-export type String_1032 = string;
+export type String_1062 = string;
 
 export interface MODELS_GETInput {
-  id: String_1032;
+  id: String_1062;
 }
 
 /* eslint-disable */
@@ -9937,27 +10252,27 @@ export interface MODELS_LISTOutput {
  * and run json-schema-to-typescript to regenerate this file.
  */
 
-export type String_1033 = string;
-export type String_1034 = string;
-export type String_1035 = string;
-export type StringNull_47 = String_1036 | Null_103;
-export type String_1036 = string;
-export type Null_103 = null;
+export type String_1063 = string;
+export type String_1064 = string;
+export type String_1065 = string;
+export type StringNull_47 = String_1066 | Null_108;
+export type String_1066 = string;
+export type Null_108 = null;
 export type Boolean_77 = boolean;
 export type Boolean_78 = boolean;
-export type String_1037 = string;
+export type String_1067 = string;
 
 export interface MODELS_UPDATEInput {
-  id: String_1033;
-  data: Object_341;
+  id: String_1063;
+  data: Object_361;
 }
-export interface Object_341 {
-  name?: String_1034;
-  model?: String_1035;
+export interface Object_361 {
+  name?: String_1064;
+  model?: String_1065;
   apiKey?: StringNull_47;
   isEnabled?: Boolean_77;
   byDeco?: Boolean_78;
-  description?: String_1037;
+  description?: String_1067;
 }
 
 /* eslint-disable */
@@ -9979,10 +10294,10 @@ export interface MODELS_UPDATEOutput {}
 /**
  * The ID of the integration to create an OAuth code for
  */
-export type String_1038 = string;
+export type String_1068 = string;
 
 export interface OAUTH_CODE_CREATEInput {
-  integrationId: String_1038;
+  integrationId: String_1068;
 }
 
 /* eslint-disable */
@@ -9995,10 +10310,10 @@ export interface OAUTH_CODE_CREATEInput {
 /**
  * The OAuth code
  */
-export type String_1039 = string;
+export type String_1069 = string;
 
 export interface OAUTH_CODE_CREATEOutput {
-  code: String_1039;
+  code: String_1069;
 }
 
 /* eslint-disable */
@@ -10011,15 +10326,15 @@ export interface OAUTH_CODE_CREATEOutput {
 /**
  * The amount (in microdollars) of money to pre-authorize. Specified in USD dollars.
  */
-export type StringNumber_2 = String_1040 | Number_116;
-export type String_1040 = string;
-export type Number_116 = number;
+export type StringNumber_2 = String_1070 | Number_121;
+export type String_1070 = string;
+export type Number_121 = number;
 
 export interface PRE_AUTHORIZE_AMOUNTInput {
   amount: StringNumber_2;
-  metadata?: Object_342;
+  metadata?: Object_362;
 }
-export interface Object_342 {
+export interface Object_362 {
   [k: string]: unknown;
 }
 
@@ -10030,10 +10345,10 @@ export interface Object_342 {
  * and run json-schema-to-typescript to regenerate this file.
  */
 
-export type String_1041 = string;
+export type String_1071 = string;
 
 export interface PRE_AUTHORIZE_AMOUNTOutput {
-  id: String_1041;
+  id: String_1071;
 }
 
 /* eslint-disable */
@@ -10043,14 +10358,14 @@ export interface PRE_AUTHORIZE_AMOUNTOutput {
  * and run json-schema-to-typescript to regenerate this file.
  */
 
-export type String_1042 = string;
-export type String_1043 = string;
-export type String_1044 = string;
+export type String_1072 = string;
+export type String_1073 = string;
+export type String_1074 = string;
 
 export interface PROMPTS_CREATEInput {
-  name: String_1042;
-  description?: String_1043;
-  content: String_1044;
+  name: String_1072;
+  description?: String_1073;
+  content: String_1074;
 }
 
 /* eslint-disable */
@@ -10060,27 +10375,27 @@ export interface PROMPTS_CREATEInput {
  * and run json-schema-to-typescript to regenerate this file.
  */
 
-export type String_1045 = string;
-export type String_1046 = string;
-export type StringNull_48 = String_1047 | Null_104;
-export type String_1047 = string;
-export type Null_104 = null;
-export type String_1048 = string;
-export type BooleanNull_7 = Boolean_79 | Null_105;
+export type String_1075 = string;
+export type String_1076 = string;
+export type StringNull_48 = String_1077 | Null_109;
+export type String_1077 = string;
+export type Null_109 = null;
+export type String_1078 = string;
+export type BooleanNull_7 = Boolean_79 | Null_110;
 export type Boolean_79 = boolean;
-export type Null_105 = null;
-export type String_1049 = string;
-export type StringNull_49 = String_1050 | Null_106;
-export type String_1050 = string;
-export type Null_106 = null;
+export type Null_110 = null;
+export type String_1079 = string;
+export type StringNull_49 = String_1080 | Null_111;
+export type String_1080 = string;
+export type Null_111 = null;
 
 export interface PROMPTS_CREATEOutput {
-  id: String_1045;
-  name: String_1046;
+  id: String_1075;
+  name: String_1076;
   description: StringNull_48;
-  content: String_1048;
+  content: String_1078;
   readonly?: BooleanNull_7;
-  created_at: String_1049;
+  created_at: String_1079;
   updated_at?: StringNull_49;
 }
 
@@ -10091,10 +10406,10 @@ export interface PROMPTS_CREATEOutput {
  * and run json-schema-to-typescript to regenerate this file.
  */
 
-export type String_1051 = string;
+export type String_1081 = string;
 
 export interface PROMPTS_DELETEInput {
-  id: String_1051;
+  id: String_1081;
 }
 
 /* eslint-disable */
@@ -10120,10 +10435,10 @@ export interface PROMPTS_DELETEOutput {
  * and run json-schema-to-typescript to regenerate this file.
  */
 
-export type String_1052 = string;
+export type String_1082 = string;
 
 export interface PROMPTS_GETInput {
-  id: String_1052;
+  id: String_1082;
 }
 
 /* eslint-disable */
@@ -10142,14 +10457,14 @@ export interface PROMPTS_GETOutput {}
  * and run json-schema-to-typescript to regenerate this file.
  */
 
-export type String_1053 = string;
-export type Number_117 = number;
-export type Number_118 = number;
+export type String_1083 = string;
+export type Number_122 = number;
+export type Number_123 = number;
 
 export interface PROMPTS_GET_VERSIONSInput {
-  id: String_1053;
-  limit?: Number_117;
-  offset?: Number_118;
+  id: String_1083;
+  limit?: Number_122;
+  offset?: Number_123;
 }
 
 /* eslint-disable */
@@ -10159,33 +10474,33 @@ export interface PROMPTS_GET_VERSIONSInput {
  * and run json-schema-to-typescript to regenerate this file.
  */
 
-export type StringNull_50 = String_1054 | Null_107;
-export type String_1054 = string;
-export type Null_107 = null;
-export type String_1055 = string;
-export type StringNull_51 = String_1056 | Null_108;
-export type String_1056 = string;
-export type Null_108 = null;
-export type String_1057 = string;
-export type StringNull_52 = String_1058 | Null_109;
-export type String_1058 = string;
-export type Null_109 = null;
-export type String_1059 = string;
-export type StringNull_53 = String_1060 | Null_110;
-export type String_1060 = string;
-export type Null_110 = null;
-export type Array_128 = Object_343[];
+export type StringNull_50 = String_1084 | Null_112;
+export type String_1084 = string;
+export type Null_112 = null;
+export type String_1085 = string;
+export type StringNull_51 = String_1086 | Null_113;
+export type String_1086 = string;
+export type Null_113 = null;
+export type String_1087 = string;
+export type StringNull_52 = String_1088 | Null_114;
+export type String_1088 = string;
+export type Null_114 = null;
+export type String_1089 = string;
+export type StringNull_53 = String_1090 | Null_115;
+export type String_1090 = string;
+export type Null_115 = null;
+export type Array_128 = Object_363[];
 
 export interface PROMPTS_GET_VERSIONSOutput {
   items: Array_128;
 }
-export interface Object_343 {
+export interface Object_363 {
   content: StringNull_50;
-  created_at: String_1055;
+  created_at: String_1085;
   created_by: StringNull_51;
-  id: String_1057;
+  id: String_1087;
   name: StringNull_52;
-  prompt_id: String_1059;
+  prompt_id: String_1089;
   version_name: StringNull_53;
 }
 
@@ -10196,20 +10511,20 @@ export interface Object_343 {
  * and run json-schema-to-typescript to regenerate this file.
  */
 
-export type String_1061 = string;
+export type String_1091 = string;
 /**
  * Filter prompts by ids
  */
-export type Array_129 = String_1061[];
+export type Array_129 = String_1091[];
 /**
  * Resolve mentions in the prompts
  */
 export type Boolean_81 = boolean;
-export type String_1062 = string;
+export type String_1092 = string;
 /**
  * Exclude prompts by ids
  */
-export type Array_130 = String_1062[];
+export type Array_130 = String_1092[];
 
 export interface PROMPTS_LISTInput {
   ids?: Array_129;
@@ -10224,31 +10539,31 @@ export interface PROMPTS_LISTInput {
  * and run json-schema-to-typescript to regenerate this file.
  */
 
-export type String_1063 = string;
-export type String_1064 = string;
-export type StringNull_54 = String_1065 | Null_111;
-export type String_1065 = string;
-export type Null_111 = null;
-export type String_1066 = string;
-export type BooleanNull_8 = Boolean_82 | Null_112;
+export type String_1093 = string;
+export type String_1094 = string;
+export type StringNull_54 = String_1095 | Null_116;
+export type String_1095 = string;
+export type Null_116 = null;
+export type String_1096 = string;
+export type BooleanNull_8 = Boolean_82 | Null_117;
 export type Boolean_82 = boolean;
-export type Null_112 = null;
-export type String_1067 = string;
-export type StringNull_55 = String_1068 | Null_113;
-export type String_1068 = string;
-export type Null_113 = null;
-export type Array_131 = Object_344[];
+export type Null_117 = null;
+export type String_1097 = string;
+export type StringNull_55 = String_1098 | Null_118;
+export type String_1098 = string;
+export type Null_118 = null;
+export type Array_131 = Object_364[];
 
 export interface PROMPTS_LISTOutput {
   items: Array_131;
 }
-export interface Object_344 {
-  id: String_1063;
-  name: String_1064;
+export interface Object_364 {
+  id: String_1093;
+  name: String_1094;
   description: StringNull_54;
-  content: String_1066;
+  content: String_1096;
   readonly?: BooleanNull_8;
-  created_at: String_1067;
+  created_at: String_1097;
   updated_at?: StringNull_55;
 }
 
@@ -10259,12 +10574,12 @@ export interface Object_344 {
  * and run json-schema-to-typescript to regenerate this file.
  */
 
-export type String_1069 = string;
-export type String_1070 = string;
+export type String_1099 = string;
+export type String_1100 = string;
 
 export interface PROMPTS_RENAME_VERSIONInput {
-  id: String_1069;
-  versionName: String_1070;
+  id: String_1099;
+  versionName: String_1100;
 }
 
 /* eslint-disable */
@@ -10277,48 +10592,48 @@ export interface PROMPTS_RENAME_VERSIONInput {
 /**
  * The id of the version
  */
-export type String_1071 = string;
+export type String_1101 = string;
 /**
  * The id of the prompt
  */
-export type String_1072 = string;
+export type String_1102 = string;
 /**
  * The name of the version
  */
-export type StringNull_56 = String_1073 | Null_114;
-export type String_1073 = string;
-export type Null_114 = null;
+export type StringNull_56 = String_1103 | Null_119;
+export type String_1103 = string;
+export type Null_119 = null;
 /**
  * The content of the version
  */
-export type StringNull_57 = String_1074 | Null_115;
-export type String_1074 = string;
-export type Null_115 = null;
+export type StringNull_57 = String_1104 | Null_120;
+export type String_1104 = string;
+export type Null_120 = null;
 /**
  * The version name
  */
-export type StringNull_58 = String_1075 | Null_116;
-export type String_1075 = string;
-export type Null_116 = null;
+export type StringNull_58 = String_1105 | Null_121;
+export type String_1105 = string;
+export type Null_121 = null;
 /**
  * The user who created the version
  */
-export type StringNull_59 = String_1076 | Null_117;
-export type String_1076 = string;
-export type Null_117 = null;
+export type StringNull_59 = String_1106 | Null_122;
+export type String_1106 = string;
+export type Null_122 = null;
 /**
  * The date and time the version was created
  */
-export type String_1077 = string;
+export type String_1107 = string;
 
 export interface PROMPTS_RENAME_VERSIONOutput {
-  id: String_1071;
-  prompt_id: String_1072;
+  id: String_1101;
+  prompt_id: String_1102;
   name?: StringNull_56;
   content?: StringNull_57;
   version_name?: StringNull_58;
   created_by?: StringNull_59;
-  created_at: String_1077;
+  created_at: String_1107;
 }
 
 /* eslint-disable */
@@ -10328,29 +10643,29 @@ export interface PROMPTS_RENAME_VERSIONOutput {
  * and run json-schema-to-typescript to regenerate this file.
  */
 
-export type String_1078 = string;
-export type String_1079 = string;
-export type String_1080 = string;
-export type Null_118 = null;
-export type String_1081 = string;
-export type String_1082 = string;
+export type String_1108 = string;
+export type String_1109 = string;
+export type String_1110 = string;
+export type Null_123 = null;
+export type String_1111 = string;
+export type String_1112 = string;
 
 export interface PROMPTS_UPDATEInput {
-  id: String_1078;
-  data: Object_345;
-  versionName?: String_1082;
+  id: String_1108;
+  data: Object_365;
+  versionName?: String_1112;
 }
-export interface Object_345 {
-  name?: String_1079;
+export interface Object_365 {
+  name?: String_1109;
   description?:
     | (
         | {
             [k: string]: unknown;
           }
-        | String_1080
+        | String_1110
       )
-    | Null_118;
-  content?: String_1081;
+    | Null_123;
+  content?: String_1111;
 }
 
 /* eslint-disable */
@@ -10360,27 +10675,27 @@ export interface Object_345 {
  * and run json-schema-to-typescript to regenerate this file.
  */
 
-export type String_1083 = string;
-export type String_1084 = string;
-export type StringNull_60 = String_1085 | Null_119;
-export type String_1085 = string;
-export type Null_119 = null;
-export type String_1086 = string;
-export type BooleanNull_9 = Boolean_83 | Null_120;
+export type String_1113 = string;
+export type String_1114 = string;
+export type StringNull_60 = String_1115 | Null_124;
+export type String_1115 = string;
+export type Null_124 = null;
+export type String_1116 = string;
+export type BooleanNull_9 = Boolean_83 | Null_125;
 export type Boolean_83 = boolean;
-export type Null_120 = null;
-export type String_1087 = string;
-export type StringNull_61 = String_1088 | Null_121;
-export type String_1088 = string;
-export type Null_121 = null;
+export type Null_125 = null;
+export type String_1117 = string;
+export type StringNull_61 = String_1118 | Null_126;
+export type String_1118 = string;
+export type Null_126 = null;
 
 export interface PROMPTS_UPDATEOutput {
-  id: String_1083;
-  name: String_1084;
+  id: String_1113;
+  name: String_1114;
   description: StringNull_60;
-  content: String_1086;
+  content: String_1116;
   readonly?: BooleanNull_9;
-  created_at: String_1087;
+  created_at: String_1117;
   updated_at?: StringNull_61;
 }
 
@@ -10394,46 +10709,46 @@ export interface PROMPTS_UPDATEOutput {
 /**
  * The branch name
  */
-export type String_1089 = string;
+export type String_1119 = string;
 /**
  * The file path within the branch
  */
-export type String_1090 = string;
+export type String_1120 = string;
 /**
  * Plain text string content
  */
-export type String_1091 = string;
+export type String_1121 = string;
 /**
  * Base64 encoded content
  */
-export type String_1092 = string;
-export type Number_119 = number;
+export type String_1122 = string;
+export type Number_124 = number;
 /**
  * Array of bytes (0-255)
  */
-export type Array_132 = Number_119[];
+export type Array_132 = Number_124[];
 /**
  * Expected change time for conflict detection
  */
-export type Number_120 = number;
+export type Number_125 = number;
 
 export interface PUT_FILEInput {
-  branch?: String_1089;
-  path: String_1090;
+  branch?: String_1119;
+  path: String_1120;
   /**
    * The file content as plain string, base64 object, or array of bytes
    */
-  content: String_1091 | Object_346 | Array_132;
-  metadata?: Object_347;
-  expectedCtime?: Number_120;
+  content: String_1121 | Object_366 | Array_132;
+  metadata?: Object_367;
+  expectedCtime?: Number_125;
 }
-export interface Object_346 {
-  base64: String_1092;
+export interface Object_366 {
+  base64: String_1122;
 }
 /**
  * Additional metadata key-value pairs
  */
-export interface Object_347 {
+export interface Object_367 {
   [k: string]: unknown;
 }
 
@@ -10460,20 +10775,20 @@ export interface PUT_FILEOutput {
 /**
  * The branch name
  */
-export type String_1093 = string;
+export type String_1123 = string;
 /**
  * The file path within the branch
  */
-export type String_1094 = string;
+export type String_1124 = string;
 /**
  * Return format: 'base64' (default), 'byteArray', 'plainString', or 'json'
  */
-export type String_1095 = "base64" | "byteArray" | "plainString" | "json";
+export type String_1125 = "base64" | "byteArray" | "plainString" | "json";
 
 export interface READ_FILEInput {
-  branch?: String_1093;
-  path: String_1094;
-  format?: String_1095;
+  branch?: String_1123;
+  path: String_1124;
+  format?: String_1125;
 }
 
 /* eslint-disable */
@@ -10483,18 +10798,18 @@ export interface READ_FILEInput {
  * and run json-schema-to-typescript to regenerate this file.
  */
 
-export type String_1096 = string;
-export type Number_121 = number;
-export type Number_122 = number;
+export type String_1126 = string;
+export type Number_126 = number;
+export type Number_127 = number;
 
 export interface READ_FILEOutput {
   content?: unknown;
-  address: String_1096;
-  metadata: Object_348;
-  mtime: Number_121;
-  ctime: Number_122;
+  address: String_1126;
+  metadata: Object_368;
+  mtime: Number_126;
+  ctime: Number_127;
 }
-export interface Object_348 {
+export interface Object_368 {
   [k: string]: unknown;
 }
 
@@ -10505,10 +10820,10 @@ export interface Object_348 {
  * and run json-schema-to-typescript to regenerate this file.
  */
 
-export type String_1097 = string;
+export type String_1127 = string;
 
 export interface REDEEM_VOUCHERInput {
-  voucher: String_1097;
+  voucher: String_1127;
 }
 
 /* eslint-disable */
@@ -10518,10 +10833,10 @@ export interface REDEEM_VOUCHERInput {
  * and run json-schema-to-typescript to regenerate this file.
  */
 
-export type String_1098 = string;
+export type String_1128 = string;
 
 export interface REDEEM_VOUCHEROutput {
-  voucherId: String_1098;
+  voucherId: String_1128;
 }
 
 /* eslint-disable */
@@ -10534,15 +10849,15 @@ export interface REDEEM_VOUCHEROutput {
 /**
  * Search term to filter apps by name or description
  */
-export type String_1099 = string;
+export type String_1129 = string;
 /**
  * Filter apps by scope name
  */
-export type String_1100 = string;
+export type String_1130 = string;
 
 export interface REGISTRY_LIST_APPSInput {
-  search?: String_1099;
-  scopeName?: String_1100;
+  search?: String_1129;
+  scopeName?: String_1130;
 }
 
 /* eslint-disable */
@@ -10552,244 +10867,244 @@ export interface REGISTRY_LIST_APPSInput {
  * and run json-schema-to-typescript to regenerate this file.
  */
 
-export type String_1101 = string;
-export type StringNull_62 = String_1102 | Null_122;
-export type String_1102 = string;
-export type Null_122 = null;
-export type String_1103 = string;
-export type String_1104 = string;
-export type String_1105 = string;
-export type String_1106 = string;
-export type String_1107 = string;
-export type String_1108 = string;
-export type String_1109 = "HTTP";
-export type String_1110 = string;
-export type String_1111 = string;
-export type String_1112 = "SSE";
-export type String_1113 = string;
-export type String_1114 = string;
-export type String_1115 = string;
-export type String_1116 = "Websocket";
-export type String_1117 = string;
-export type String_1118 = string;
-export type String_1119 = "Deco";
-export type String_1120 = string;
-export type String_1121 = string;
-export type String_1122 = "INNATE";
-export type String_1123 = string;
-export type String_1124 = string;
-export type String_1125 = string;
-export type String_1126 = string;
-export type Boolean_85 = boolean;
-export type String_1127 = string;
-export type Boolean_86 = boolean;
-export type String_1128 = string;
-export type String_1129 = string;
-export type String_1130 = string;
-export type Array_134 = Object_356[];
-export type Null_123 = null;
-export type Array_133 = Object_349[];
-
-export interface REGISTRY_LIST_APPSOutput {
-  apps: Array_133;
-}
-export interface Object_349 {
-  id: String_1101;
-  workspace: StringNull_62;
-  scopeId: String_1103;
-  scopeName: String_1104;
-  appName: String_1105;
-  name: String_1106;
-  description?: String_1107;
-  icon?: String_1108;
-  connection: Object_350 | Object_351 | Object_353 | Object_354 | Object_355;
-  createdAt: String_1125;
-  updatedAt: String_1126;
-  unlisted: Boolean_85;
-  friendlyName?: String_1127;
-  verified?: Boolean_86;
-  tools?: Array_134;
-  metadata?: Object_360 | Null_123;
-}
-export interface Object_350 {
-  type: String_1109;
-  url: String_1110;
-  token?: String_1111;
-}
-export interface Object_351 {
-  type: String_1112;
-  url: String_1113;
-  token?: String_1114;
-  headers?: Object_352;
-}
-export interface Object_352 {
-  [k: string]: String_1115;
-}
-export interface Object_353 {
-  type: String_1116;
-  url: String_1117;
-  token?: String_1118;
-}
-export interface Object_354 {
-  type: String_1119;
-  tenant: String_1120;
-  token?: String_1121;
-}
-export interface Object_355 {
-  type: String_1122;
-  name: String_1123;
-  workspace?: String_1124;
-}
-export interface Object_356 {
-  id: String_1128;
-  name: String_1129;
-  description?: String_1130;
-  inputSchema: Object_357;
-  outputSchema?: Object_358;
-  metadata?: Object_359;
-}
-export interface Object_357 {
-  [k: string]: unknown;
-}
-export interface Object_358 {
-  [k: string]: unknown;
-}
-export interface Object_359 {
-  [k: string]: unknown;
-}
-export interface Object_360 {
-  [k: string]: unknown;
-}
-
-/* eslint-disable */
-/**
- * This file was automatically generated by json-schema-to-typescript.
- * DO NOT MODIFY IT BY HAND. Instead, modify the source JSONSchema file,
- * and run json-schema-to-typescript to regenerate this file.
- */
-
-/**
- * Search term to filter apps by name or description
- */
 export type String_1131 = string;
-
-export interface REGISTRY_LIST_PUBLISHED_APPSInput {
-  search?: String_1131;
-}
-
-/* eslint-disable */
-/**
- * This file was automatically generated by json-schema-to-typescript.
- * DO NOT MODIFY IT BY HAND. Instead, modify the source JSONSchema file,
- * and run json-schema-to-typescript to regenerate this file.
- */
-
+export type StringNull_62 = String_1132 | Null_127;
 export type String_1132 = string;
-export type StringNull_63 = String_1133 | Null_124;
+export type Null_127 = null;
 export type String_1133 = string;
-export type Null_124 = null;
 export type String_1134 = string;
 export type String_1135 = string;
 export type String_1136 = string;
 export type String_1137 = string;
 export type String_1138 = string;
-export type String_1139 = string;
-export type String_1140 = "HTTP";
+export type String_1139 = "HTTP";
+export type String_1140 = string;
 export type String_1141 = string;
-export type String_1142 = string;
-export type String_1143 = "SSE";
+export type String_1142 = "SSE";
+export type String_1143 = string;
 export type String_1144 = string;
 export type String_1145 = string;
-export type String_1146 = string;
-export type String_1147 = "Websocket";
+export type String_1146 = "Websocket";
+export type String_1147 = string;
 export type String_1148 = string;
-export type String_1149 = string;
-export type String_1150 = "Deco";
+export type String_1149 = "Deco";
+export type String_1150 = string;
 export type String_1151 = string;
-export type String_1152 = string;
-export type String_1153 = "INNATE";
+export type String_1152 = "INNATE";
+export type String_1153 = string;
 export type String_1154 = string;
 export type String_1155 = string;
 export type String_1156 = string;
+export type Boolean_85 = boolean;
 export type String_1157 = string;
-export type Boolean_87 = boolean;
+export type Boolean_86 = boolean;
 export type String_1158 = string;
-export type Boolean_88 = boolean;
 export type String_1159 = string;
 export type String_1160 = string;
+export type Array_134 = Object_376[];
+export type Null_128 = null;
+export type Array_133 = Object_369[];
+
+export interface REGISTRY_LIST_APPSOutput {
+  apps: Array_133;
+}
+export interface Object_369 {
+  id: String_1131;
+  workspace: StringNull_62;
+  scopeId: String_1133;
+  scopeName: String_1134;
+  appName: String_1135;
+  name: String_1136;
+  description?: String_1137;
+  icon?: String_1138;
+  connection: Object_370 | Object_371 | Object_373 | Object_374 | Object_375;
+  createdAt: String_1155;
+  updatedAt: String_1156;
+  unlisted: Boolean_85;
+  friendlyName?: String_1157;
+  verified?: Boolean_86;
+  tools?: Array_134;
+  metadata?: Object_380 | Null_128;
+}
+export interface Object_370 {
+  type: String_1139;
+  url: String_1140;
+  token?: String_1141;
+}
+export interface Object_371 {
+  type: String_1142;
+  url: String_1143;
+  token?: String_1144;
+  headers?: Object_372;
+}
+export interface Object_372 {
+  [k: string]: String_1145;
+}
+export interface Object_373 {
+  type: String_1146;
+  url: String_1147;
+  token?: String_1148;
+}
+export interface Object_374 {
+  type: String_1149;
+  tenant: String_1150;
+  token?: String_1151;
+}
+export interface Object_375 {
+  type: String_1152;
+  name: String_1153;
+  workspace?: String_1154;
+}
+export interface Object_376 {
+  id: String_1158;
+  name: String_1159;
+  description?: String_1160;
+  inputSchema: Object_377;
+  outputSchema?: Object_378;
+  metadata?: Object_379;
+}
+export interface Object_377 {
+  [k: string]: unknown;
+}
+export interface Object_378 {
+  [k: string]: unknown;
+}
+export interface Object_379 {
+  [k: string]: unknown;
+}
+export interface Object_380 {
+  [k: string]: unknown;
+}
+
+/* eslint-disable */
+/**
+ * This file was automatically generated by json-schema-to-typescript.
+ * DO NOT MODIFY IT BY HAND. Instead, modify the source JSONSchema file,
+ * and run json-schema-to-typescript to regenerate this file.
+ */
+
+/**
+ * Search term to filter apps by name or description
+ */
 export type String_1161 = string;
-export type Array_136 = Object_368[];
-export type Null_125 = null;
-export type Array_135 = Object_361[];
+
+export interface REGISTRY_LIST_PUBLISHED_APPSInput {
+  search?: String_1161;
+}
+
+/* eslint-disable */
+/**
+ * This file was automatically generated by json-schema-to-typescript.
+ * DO NOT MODIFY IT BY HAND. Instead, modify the source JSONSchema file,
+ * and run json-schema-to-typescript to regenerate this file.
+ */
+
+export type String_1162 = string;
+export type StringNull_63 = String_1163 | Null_129;
+export type String_1163 = string;
+export type Null_129 = null;
+export type String_1164 = string;
+export type String_1165 = string;
+export type String_1166 = string;
+export type String_1167 = string;
+export type String_1168 = string;
+export type String_1169 = string;
+export type String_1170 = "HTTP";
+export type String_1171 = string;
+export type String_1172 = string;
+export type String_1173 = "SSE";
+export type String_1174 = string;
+export type String_1175 = string;
+export type String_1176 = string;
+export type String_1177 = "Websocket";
+export type String_1178 = string;
+export type String_1179 = string;
+export type String_1180 = "Deco";
+export type String_1181 = string;
+export type String_1182 = string;
+export type String_1183 = "INNATE";
+export type String_1184 = string;
+export type String_1185 = string;
+export type String_1186 = string;
+export type String_1187 = string;
+export type Boolean_87 = boolean;
+export type String_1188 = string;
+export type Boolean_88 = boolean;
+export type String_1189 = string;
+export type String_1190 = string;
+export type String_1191 = string;
+export type Array_136 = Object_388[];
+export type Null_130 = null;
+export type Array_135 = Object_381[];
 
 export interface REGISTRY_LIST_PUBLISHED_APPSOutput {
   apps: Array_135;
 }
-export interface Object_361 {
-  id: String_1132;
+export interface Object_381 {
+  id: String_1162;
   workspace: StringNull_63;
-  scopeId: String_1134;
-  scopeName: String_1135;
-  appName: String_1136;
-  name: String_1137;
-  description?: String_1138;
-  icon?: String_1139;
-  connection: Object_362 | Object_363 | Object_365 | Object_366 | Object_367;
-  createdAt: String_1156;
-  updatedAt: String_1157;
+  scopeId: String_1164;
+  scopeName: String_1165;
+  appName: String_1166;
+  name: String_1167;
+  description?: String_1168;
+  icon?: String_1169;
+  connection: Object_382 | Object_383 | Object_385 | Object_386 | Object_387;
+  createdAt: String_1186;
+  updatedAt: String_1187;
   unlisted: Boolean_87;
-  friendlyName?: String_1158;
+  friendlyName?: String_1188;
   verified?: Boolean_88;
   tools?: Array_136;
-  metadata?: Object_372 | Null_125;
+  metadata?: Object_392 | Null_130;
 }
-export interface Object_362 {
-  type: String_1140;
-  url: String_1141;
-  token?: String_1142;
+export interface Object_382 {
+  type: String_1170;
+  url: String_1171;
+  token?: String_1172;
 }
-export interface Object_363 {
-  type: String_1143;
-  url: String_1144;
-  token?: String_1145;
-  headers?: Object_364;
+export interface Object_383 {
+  type: String_1173;
+  url: String_1174;
+  token?: String_1175;
+  headers?: Object_384;
 }
-export interface Object_364 {
-  [k: string]: String_1146;
+export interface Object_384 {
+  [k: string]: String_1176;
 }
-export interface Object_365 {
-  type: String_1147;
-  url: String_1148;
-  token?: String_1149;
+export interface Object_385 {
+  type: String_1177;
+  url: String_1178;
+  token?: String_1179;
 }
-export interface Object_366 {
-  type: String_1150;
-  tenant: String_1151;
-  token?: String_1152;
+export interface Object_386 {
+  type: String_1180;
+  tenant: String_1181;
+  token?: String_1182;
 }
-export interface Object_367 {
-  type: String_1153;
-  name: String_1154;
-  workspace?: String_1155;
+export interface Object_387 {
+  type: String_1183;
+  name: String_1184;
+  workspace?: String_1185;
 }
-export interface Object_368 {
-  id: String_1159;
-  name: String_1160;
-  description?: String_1161;
-  inputSchema: Object_369;
-  outputSchema?: Object_370;
-  metadata?: Object_371;
+export interface Object_388 {
+  id: String_1189;
+  name: String_1190;
+  description?: String_1191;
+  inputSchema: Object_389;
+  outputSchema?: Object_390;
+  metadata?: Object_391;
 }
-export interface Object_369 {
+export interface Object_389 {
   [k: string]: unknown;
 }
-export interface Object_370 {
+export interface Object_390 {
   [k: string]: unknown;
 }
-export interface Object_371 {
+export interface Object_391 {
   [k: string]: unknown;
 }
-export interface Object_372 {
+export interface Object_392 {
   [k: string]: unknown;
 }
 
@@ -10803,10 +11118,10 @@ export interface Object_372 {
 /**
  * Search term to filter scopes by name
  */
-export type String_1162 = string;
+export type String_1192 = string;
 
 export interface REGISTRY_LIST_SCOPESInput {
-  search?: String_1162;
+  search?: String_1192;
 }
 
 /* eslint-disable */
@@ -10816,28 +11131,28 @@ export interface REGISTRY_LIST_SCOPESInput {
  * and run json-schema-to-typescript to regenerate this file.
  */
 
-export type String_1163 = string;
-export type String_1164 = string;
-export type StringNull_64 = String_1165 | Null_126;
-export type String_1165 = string;
-export type Null_126 = null;
-export type StringNull_65 = String_1166 | Null_127;
-export type String_1166 = string;
-export type Null_127 = null;
-export type String_1167 = string;
-export type String_1168 = string;
-export type Array_137 = Object_373[];
+export type String_1193 = string;
+export type String_1194 = string;
+export type StringNull_64 = String_1195 | Null_131;
+export type String_1195 = string;
+export type Null_131 = null;
+export type StringNull_65 = String_1196 | Null_132;
+export type String_1196 = string;
+export type Null_132 = null;
+export type String_1197 = string;
+export type String_1198 = string;
+export type Array_137 = Object_393[];
 
 export interface REGISTRY_LIST_SCOPESOutput {
   scopes: Array_137;
 }
-export interface Object_373 {
-  id: String_1163;
-  scopeName: String_1164;
+export interface Object_393 {
+  id: String_1193;
+  scopeName: String_1194;
   workspace: StringNull_64;
   projectId: StringNull_65;
-  createdAt: String_1167;
-  updatedAt: String_1168;
+  createdAt: String_1197;
+  updatedAt: String_1198;
 }
 
 /* eslint-disable */
@@ -10850,90 +11165,90 @@ export interface Object_373 {
 /**
  * The scope to publish to (defaults to team slug, automatically claimed on first use)
  */
-export type String_1169 = string;
+export type String_1199 = string;
 /**
  * The name of the app
  */
-export type String_1170 = string;
+export type String_1200 = string;
 /**
  * A friendly name for the app
  */
-export type String_1171 = string;
+export type String_1201 = string;
 /**
  * A description of the app
  */
-export type String_1172 = string;
+export type String_1202 = string;
 /**
  * URL to an icon for the app
  */
-export type String_1173 = string;
-export type String_1174 = "HTTP";
-export type String_1175 = string;
-export type String_1176 = string;
-export type String_1177 = "SSE";
-export type String_1178 = string;
-export type String_1179 = string;
-export type String_1180 = string;
-export type String_1181 = "Websocket";
-export type String_1182 = string;
-export type String_1183 = string;
-export type String_1184 = "Deco";
-export type String_1185 = string;
-export type String_1186 = string;
-export type String_1187 = "INNATE";
-export type String_1188 = string;
-export type String_1189 = string;
+export type String_1203 = string;
+export type String_1204 = "HTTP";
+export type String_1205 = string;
+export type String_1206 = string;
+export type String_1207 = "SSE";
+export type String_1208 = string;
+export type String_1209 = string;
+export type String_1210 = string;
+export type String_1211 = "Websocket";
+export type String_1212 = string;
+export type String_1213 = string;
+export type String_1214 = "Deco";
+export type String_1215 = string;
+export type String_1216 = string;
+export type String_1217 = "INNATE";
+export type String_1218 = string;
+export type String_1219 = string;
 /**
  * Whether the app should be unlisted
  */
 export type Boolean_89 = boolean;
 
 export interface REGISTRY_PUBLISH_APPInput {
-  scopeName: String_1169;
-  name: String_1170;
-  friendlyName?: String_1171;
-  description?: String_1172;
-  icon?: String_1173;
+  scopeName: String_1199;
+  name: String_1200;
+  friendlyName?: String_1201;
+  description?: String_1202;
+  icon?: String_1203;
   /**
    * The MCP connection configuration for the app
    */
-  connection: Object_374 | Object_375 | Object_377 | Object_378 | Object_379;
-  metadata?: Object_380;
+  connection: Object_394 | Object_395 | Object_397 | Object_398 | Object_399;
+  metadata?: Object_400;
   unlisted?: Boolean_89;
 }
-export interface Object_374 {
-  type: String_1174;
-  url: String_1175;
-  token?: String_1176;
+export interface Object_394 {
+  type: String_1204;
+  url: String_1205;
+  token?: String_1206;
 }
-export interface Object_375 {
-  type: String_1177;
-  url: String_1178;
-  token?: String_1179;
-  headers?: Object_376;
+export interface Object_395 {
+  type: String_1207;
+  url: String_1208;
+  token?: String_1209;
+  headers?: Object_396;
 }
-export interface Object_376 {
-  [k: string]: String_1180;
+export interface Object_396 {
+  [k: string]: String_1210;
 }
-export interface Object_377 {
-  type: String_1181;
-  url: String_1182;
-  token?: String_1183;
+export interface Object_397 {
+  type: String_1211;
+  url: String_1212;
+  token?: String_1213;
 }
-export interface Object_378 {
-  type: String_1184;
-  tenant: String_1185;
-  token?: String_1186;
+export interface Object_398 {
+  type: String_1214;
+  tenant: String_1215;
+  token?: String_1216;
 }
-export interface Object_379 {
-  type: String_1187;
-  name: String_1188;
-  workspace?: String_1189;
+export interface Object_399 {
+  type: String_1217;
+  name: String_1218;
+  workspace?: String_1219;
 }
 /**
  * Metadata for the app
  */
-export interface Object_380 {
+export interface Object_400 {
   [k: string]: unknown;
 }
 
@@ -10953,24 +11268,24 @@ export interface REGISTRY_PUBLISH_APPOutput {}
  * and run json-schema-to-typescript to regenerate this file.
  */
 
-export type String_1190 = string;
-export type String_1191 = string;
-export type Number_123 = number;
-export type String_1192 = string;
-export type Array_139 = Object_382[];
-export type Array_138 = Object_381[];
+export type String_1220 = string;
+export type String_1221 = string;
+export type Number_128 = number;
+export type String_1222 = string;
+export type Array_139 = Object_402[];
+export type Array_138 = Object_401[];
 
 export interface TEAM_MEMBERS_INVITEInput_1 {
-  teamId: String_1190;
+  teamId: String_1220;
   invitees: Array_138;
 }
-export interface Object_381 {
-  email: String_1191;
+export interface Object_401 {
+  email: String_1221;
   roles: Array_139;
 }
-export interface Object_382 {
-  id: Number_123;
-  name: String_1192;
+export interface Object_402 {
+  id: Number_128;
+  name: String_1222;
 }
 
 /* eslint-disable */
@@ -10992,61 +11307,61 @@ export interface TEAM_MEMBERS_INVITEOutput_1 {}
 /**
  * Unique identifier for the view
  */
-export type String_1193 = string;
+export type String_1223 = string;
 /**
  * Display title for the view
  */
-export type String_1194 = string;
+export type String_1224 = string;
 /**
  * Icon identifier for the view
  */
-export type String_1195 = string;
+export type String_1225 = string;
 /**
  * Type of view (custom for views, resource for resources)
  */
-export type String_1196 = "custom" | "resource";
+export type String_1226 = "custom" | "resource";
 /**
  * Integration-specific view name
  */
-export type String_1197 = string;
-export type String_1198 = string;
+export type String_1227 = string;
+export type String_1228 = string;
 /**
  * Optional list of tool names to enable for this view
  */
-export type Array_140 = String_1198[];
-export type String_1199 = string;
+export type Array_140 = String_1228[];
+export type String_1229 = string;
 /**
  * Optional list of textual rules to persist in context
  */
-export type Array_141 = String_1199[];
+export type Array_141 = String_1229[];
 /**
  * Integration ID
  */
-export type String_1200 = string;
+export type String_1230 = string;
 /**
  * Type of resource (for resources only)
  */
-export type String_1201 = string;
+export type String_1231 = string;
 
 export interface TEAMS_ADD_VIEWInput {
-  view: Object_383;
+  view: Object_403;
 }
 /**
  * View or resource configuration to add
  */
-export interface Object_383 {
-  id: String_1193;
-  title: String_1194;
-  icon: String_1195;
-  type: String_1196;
-  name: String_1197;
+export interface Object_403 {
+  id: String_1223;
+  title: String_1224;
+  icon: String_1225;
+  type: String_1226;
+  name: String_1227;
   tools?: Array_140;
   rules?: Array_141;
-  integration: Object_384;
-  resourceType?: String_1201;
+  integration: Object_404;
+  resourceType?: String_1231;
 }
-export interface Object_384 {
-  id: String_1200;
+export interface Object_404 {
+  id: String_1230;
 }
 
 /* eslint-disable */
@@ -11068,10 +11383,10 @@ export interface TEAMS_ADD_VIEWOutput {}
 /**
  * The ID of the view or resource to remove
  */
-export type String_1202 = string;
+export type String_1232 = string;
 
 export interface TEAMS_REMOVE_VIEWInput {
-  viewId: String_1202;
+  viewId: String_1232;
 }
 
 /* eslint-disable */
@@ -11090,10 +11405,10 @@ export interface TEAMS_REMOVE_VIEWOutput {}
  * and run json-schema-to-typescript to regenerate this file.
  */
 
-export type String_1203 = string;
+export type String_1233 = string;
 
 export interface THREADS_GETInput {
-  id: String_1203;
+  id: String_1233;
 }
 
 /* eslint-disable */
@@ -11112,10 +11427,10 @@ export interface THREADS_GETOutput {}
  * and run json-schema-to-typescript to regenerate this file.
  */
 
-export type String_1204 = string;
+export type String_1234 = string;
 
 export interface THREADS_GET_MESSAGESInput {
-  id: String_1204;
+  id: String_1234;
 }
 
 /* eslint-disable */
@@ -11134,22 +11449,22 @@ export interface THREADS_GET_MESSAGESOutput {}
  * and run json-schema-to-typescript to regenerate this file.
  */
 
-export type Number_124 = number;
-export type String_1205 = string;
-export type String_1206 = string;
-export type String_1207 =
+export type Number_129 = number;
+export type String_1235 = string;
+export type String_1236 = string;
+export type String_1237 =
   | "createdAt_desc"
   | "createdAt_asc"
   | "updatedAt_desc"
   | "updatedAt_asc";
-export type String_1208 = string;
+export type String_1238 = string;
 
 export interface THREADS_LISTInput {
-  limit?: Number_124;
-  agentId?: String_1205;
-  resourceId?: String_1206;
-  orderBy?: String_1207;
-  cursor?: String_1208;
+  limit?: Number_129;
+  agentId?: String_1235;
+  resourceId?: String_1236;
+  orderBy?: String_1237;
+  cursor?: String_1238;
 }
 
 /* eslint-disable */
@@ -11168,13 +11483,13 @@ export interface THREADS_LISTOutput {}
  * and run json-schema-to-typescript to regenerate this file.
  */
 
-export type String_1209 = string;
+export type String_1239 = string;
 
 export interface THREADS_UPDATE_METADATAInput {
-  threadId: String_1209;
-  metadata: Object_385;
+  threadId: String_1239;
+  metadata: Object_405;
 }
-export interface Object_385 {
+export interface Object_405 {
   [k: string]: unknown;
 }
 
@@ -11194,12 +11509,12 @@ export interface THREADS_UPDATE_METADATAOutput {}
  * and run json-schema-to-typescript to regenerate this file.
  */
 
-export type String_1210 = string;
-export type String_1211 = string;
+export type String_1240 = string;
+export type String_1241 = string;
 
 export interface THREADS_UPDATE_TITLEInput {
-  threadId: String_1210;
-  title: String_1211;
+  threadId: String_1240;
+  title: String_1241;
 }
 
 /* eslint-disable */
@@ -11218,10 +11533,10 @@ export interface THREADS_UPDATE_TITLEOutput {}
  * and run json-schema-to-typescript to regenerate this file.
  */
 
-export type String_1212 = string;
+export type String_1242 = string;
 
 export interface TRIGGERS_ACTIVATEInput {
-  id: String_1212;
+  id: String_1242;
 }
 
 /* eslint-disable */
@@ -11243,112 +11558,112 @@ export interface TRIGGERS_ACTIVATEOutput {}
 /**
  * The title of the trigger
  */
-export type String_1213 = string;
+export type String_1243 = string;
 /**
  * The description of the trigger
  */
-export type String_1214 = string;
-export type String_1215 = string;
-export type String_1216 = "cron";
+export type String_1244 = string;
+export type String_1245 = string;
+export type String_1246 = "cron";
 /**
  * The agent ID to use for the trigger
  */
-export type String_1217 = string;
+export type String_1247 = string;
 /**
  * if not provided, the same conversation thread will be used, you can pass any string you want to use
  */
-export type String_1218 = string;
+export type String_1248 = string;
 /**
  * if not provided, the same resource will be used, you can pass any string you want to use
  */
-export type String_1219 = string;
-export type String_1220 = "user" | "assistant" | "system";
-export type String_1221 = string;
+export type String_1249 = string;
+export type String_1250 = "user" | "assistant" | "system";
+export type String_1251 = string;
 /**
  * The messages to send to the LLM
  */
-export type Array_142 = Object_388[];
+export type Array_142 = Object_408[];
 /**
  * The URL of the webhook
  */
-export type String_1222 = string;
+export type String_1252 = string;
 /**
  * The integration ID
  */
-export type String_1223 = string;
+export type String_1253 = string;
 /**
  * The tool name
  */
-export type String_1224 = string;
+export type String_1254 = string;
 /**
  * The title of the trigger
  */
-export type String_1225 = string;
+export type String_1255 = string;
 /**
  * The description of the trigger
  */
-export type String_1226 = string;
-export type String_1227 = "webhook";
+export type String_1256 = string;
+export type String_1257 = "webhook";
 /**
  * The URL of the webhook
  */
-export type String_1228 = string;
+export type String_1258 = string;
 /**
  * The passphrase for the webhook
  */
-export type String_1229 = string;
+export type String_1259 = string;
 /**
  * The agent ID to use for the trigger
  */
-export type String_1230 = string;
+export type String_1260 = string;
 
 export interface TRIGGERS_CREATEInput {
-  trigger: (Object_386 | Object_389) | (Object_392 | Object_394);
+  trigger: (Object_406 | Object_409) | (Object_412 | Object_414);
 }
-export interface Object_386 {
-  title: String_1213;
-  description?: String_1214;
-  cronExp: String_1215;
-  type: String_1216;
-  agentId: String_1217;
-  prompt: Object_387;
-  url?: String_1222;
+export interface Object_406 {
+  title: String_1243;
+  description?: String_1244;
+  cronExp: String_1245;
+  type: String_1246;
+  agentId: String_1247;
+  prompt: Object_407;
+  url?: String_1252;
 }
-export interface Object_387 {
-  threadId?: String_1218;
-  resourceId?: String_1219;
+export interface Object_407 {
+  threadId?: String_1248;
+  resourceId?: String_1249;
   messages: Array_142;
 }
-export interface Object_388 {
-  role: String_1220;
-  content: String_1221;
+export interface Object_408 {
+  role: String_1250;
+  content: String_1251;
 }
-export interface Object_389 {
-  title: String_1213;
-  description?: String_1214;
-  cronExp: String_1215;
-  type: String_1216;
-  callTool: Object_390;
+export interface Object_409 {
+  title: String_1243;
+  description?: String_1244;
+  cronExp: String_1245;
+  type: String_1246;
+  callTool: Object_410;
 }
-export interface Object_390 {
-  integrationId: String_1223;
-  toolName: String_1224;
-  arguments?: Object_391;
+export interface Object_410 {
+  integrationId: String_1253;
+  toolName: String_1254;
+  arguments?: Object_411;
 }
 /**
  * The arguments to pass to the tool
  */
-export interface Object_391 {
+export interface Object_411 {
   [k: string]: unknown;
 }
-export interface Object_392 {
-  title: String_1225;
-  description?: String_1226;
-  type: String_1227;
-  url?: String_1228;
-  passphrase?: String_1229;
-  agentId: String_1230;
-  schema?: Object_393;
+export interface Object_412 {
+  title: String_1255;
+  description?: String_1256;
+  type: String_1257;
+  url?: String_1258;
+  passphrase?: String_1259;
+  agentId: String_1260;
+  schema?: Object_413;
 }
 /**
  * The JSONSchema of the returning of the webhook.
@@ -11359,16 +11674,16 @@ export interface Object_392 {
  *
  *
  */
-export interface Object_393 {
+export interface Object_413 {
   [k: string]: unknown;
 }
-export interface Object_394 {
-  title: String_1225;
-  description?: String_1226;
-  type: String_1227;
-  url?: String_1228;
-  passphrase?: String_1229;
-  callTool: Object_390;
+export interface Object_414 {
+  title: String_1255;
+  description?: String_1256;
+  type: String_1257;
+  url?: String_1258;
+  passphrase?: String_1259;
+  callTool: Object_410;
 }
 
 /* eslint-disable */
@@ -11417,93 +11732,93 @@ export interface TRIGGERS_CREATE_WEBHOOKInput {}
 /**
  * The trigger ID
  */
-export type String_1231 = string;
-export type String_1232 = "cron" | "webhook";
+export type String_1261 = string;
+export type String_1262 = "cron" | "webhook";
 /**
  * The title of the trigger
  */
-export type String_1233 = string;
+export type String_1263 = string;
 /**
  * The description of the trigger
  */
-export type String_1234 = string;
-export type String_1235 = string;
-export type String_1236 = "cron";
+export type String_1264 = string;
+export type String_1265 = string;
+export type String_1266 = "cron";
 /**
  * The agent ID to use for the trigger
  */
-export type String_1237 = string;
+export type String_1267 = string;
 /**
  * if not provided, the same conversation thread will be used, you can pass any string you want to use
  */
-export type String_1238 = string;
+export type String_1268 = string;
 /**
  * if not provided, the same resource will be used, you can pass any string you want to use
  */
-export type String_1239 = string;
-export type String_1240 = "user" | "assistant" | "system";
-export type String_1241 = string;
+export type String_1269 = string;
+export type String_1270 = "user" | "assistant" | "system";
+export type String_1271 = string;
 /**
  * The messages to send to the LLM
  */
-export type Array_143 = Object_397[];
+export type Array_143 = Object_417[];
 /**
  * The URL of the webhook
  */
-export type String_1242 = string;
+export type String_1272 = string;
 /**
  * The integration ID
  */
-export type String_1243 = string;
+export type String_1273 = string;
 /**
  * The tool name
  */
-export type String_1244 = string;
+export type String_1274 = string;
 /**
  * The title of the trigger
  */
-export type String_1245 = string;
+export type String_1275 = string;
 /**
  * The description of the trigger
  */
-export type String_1246 = string;
-export type String_1247 = "webhook";
+export type String_1276 = string;
+export type String_1277 = "webhook";
 /**
  * The URL of the webhook
  */
-export type String_1248 = string;
+export type String_1278 = string;
 /**
  * The passphrase for the webhook
  */
-export type String_1249 = string;
+export type String_1279 = string;
 /**
  * The agent ID to use for the trigger
  */
-export type String_1250 = string;
+export type String_1280 = string;
 /**
  * The creation date
  */
-export type String_1251 = string;
+export type String_1281 = string;
 /**
  * The update date
  */
-export type String_1252 = string;
+export type String_1282 = string;
 /**
  * The user ID
  */
-export type String_1253 = string;
+export type String_1283 = string;
 /**
  * The user name
  */
-export type String_1254 = string;
+export type String_1284 = string;
 /**
  * The user email
  */
-export type String_1255 = string;
+export type String_1285 = string;
 /**
  * The user avatar
  */
-export type String_1256 = string;
+export type String_1286 = string;
 /**
  * The trigger status
  */
@@ -11511,64 +11826,64 @@ export type Boolean_90 = boolean;
 /**
  * The workspace ID
  */
-export type StringNull_66 = String_1257 | Null_128;
-export type String_1257 = string;
-export type Null_128 = null;
+export type StringNull_66 = String_1287 | Null_133;
+export type String_1287 = string;
+export type Null_133 = null;
 
 export interface TRIGGERS_CREATE_WEBHOOKOutput {
-  id: String_1231;
-  type: String_1232;
-  data: (Object_395 | Object_398) | (Object_401 | Object_403);
-  createdAt: String_1251;
-  updatedAt: String_1252;
-  user: Object_404;
+  id: String_1261;
+  type: String_1262;
+  data: (Object_415 | Object_418) | (Object_421 | Object_423);
+  createdAt: String_1281;
+  updatedAt: String_1282;
+  user: Object_424;
   active?: Boolean_90;
   workspace: StringNull_66;
 }
-export interface Object_395 {
-  title: String_1233;
-  description?: String_1234;
-  cronExp: String_1235;
-  type: String_1236;
-  agentId: String_1237;
-  prompt: Object_396;
-  url?: String_1242;
+export interface Object_415 {
+  title: String_1263;
+  description?: String_1264;
+  cronExp: String_1265;
+  type: String_1266;
+  agentId: String_1267;
+  prompt: Object_416;
+  url?: String_1272;
 }
-export interface Object_396 {
-  threadId?: String_1238;
-  resourceId?: String_1239;
+export interface Object_416 {
+  threadId?: String_1268;
+  resourceId?: String_1269;
   messages: Array_143;
 }
-export interface Object_397 {
-  role: String_1240;
-  content: String_1241;
+export interface Object_417 {
+  role: String_1270;
+  content: String_1271;
 }
-export interface Object_398 {
-  title: String_1233;
-  description?: String_1234;
-  cronExp: String_1235;
-  type: String_1236;
-  callTool: Object_399;
+export interface Object_418 {
+  title: String_1263;
+  description?: String_1264;
+  cronExp: String_1265;
+  type: String_1266;
+  callTool: Object_419;
 }
-export interface Object_399 {
-  integrationId: String_1243;
-  toolName: String_1244;
-  arguments?: Object_400;
+export interface Object_419 {
+  integrationId: String_1273;
+  toolName: String_1274;
+  arguments?: Object_420;
 }
 /**
  * The arguments to pass to the tool
  */
-export interface Object_400 {
+export interface Object_420 {
   [k: string]: unknown;
 }
-export interface Object_401 {
-  title: String_1245;
-  description?: String_1246;
-  type: String_1247;
-  url?: String_1248;
-  passphrase?: String_1249;
-  agentId: String_1250;
-  schema?: Object_402;
+export interface Object_421 {
+  title: String_1275;
+  description?: String_1276;
+  type: String_1277;
+  url?: String_1278;
+  passphrase?: String_1279;
+  agentId: String_1280;
+  schema?: Object_422;
 }
 /**
  * The JSONSchema of the returning of the webhook.
@@ -11579,25 +11894,25 @@ export interface Object_401 {
  *
  *
  */
-export interface Object_402 {
+export interface Object_422 {
   [k: string]: unknown;
 }
-export interface Object_403 {
-  title: String_1245;
-  description?: String_1246;
-  type: String_1247;
-  url?: String_1248;
-  passphrase?: String_1249;
-  callTool: Object_399;
+export interface Object_423 {
+  title: String_1275;
+  description?: String_1276;
+  type: String_1277;
+  url?: String_1278;
+  passphrase?: String_1279;
+  callTool: Object_419;
 }
-export interface Object_404 {
-  id: String_1253;
-  metadata: Object_405;
+export interface Object_424 {
+  id: String_1283;
+  metadata: Object_425;
 }
-export interface Object_405 {
-  full_name: String_1254;
-  email: String_1255;
-  avatar_url: String_1256;
+export interface Object_425 {
+  full_name: String_1284;
+  email: String_1285;
+  avatar_url: String_1286;
 }
 
 /* eslint-disable */
@@ -11607,10 +11922,10 @@ export interface Object_405 {
  * and run json-schema-to-typescript to regenerate this file.
  */
 
-export type String_1258 = string;
+export type String_1288 = string;
 
 export interface TRIGGERS_DEACTIVATEInput {
-  id: String_1258;
+  id: String_1288;
 }
 
 /* eslint-disable */
@@ -11629,10 +11944,10 @@ export interface TRIGGERS_DEACTIVATEOutput {}
  * and run json-schema-to-typescript to regenerate this file.
  */
 
-export type String_1259 = string;
+export type String_1289 = string;
 
 export interface TRIGGERS_DELETEInput {
-  id: String_1259;
+  id: String_1289;
 }
 
 /* eslint-disable */
@@ -11645,10 +11960,10 @@ export interface TRIGGERS_DELETEInput {
 /**
  * The trigger ID
  */
-export type String_1260 = string;
+export type String_1290 = string;
 
 export interface TRIGGERS_DELETEOutput {
-  id: String_1260;
+  id: String_1290;
 }
 
 /* eslint-disable */
@@ -11658,10 +11973,10 @@ export interface TRIGGERS_DELETEOutput {
  * and run json-schema-to-typescript to regenerate this file.
  */
 
-export type String_1261 = string;
+export type String_1291 = string;
 
 export interface TRIGGERS_GETInput {
-  id: String_1261;
+  id: String_1291;
 }
 
 /* eslint-disable */
@@ -11680,10 +11995,10 @@ export interface TRIGGERS_GETOutput {}
  * and run json-schema-to-typescript to regenerate this file.
  */
 
-export type String_1262 = string;
+export type String_1292 = string;
 
 export interface TRIGGERS_GET_WEBHOOK_URLInput {
-  id: String_1262;
+  id: String_1292;
 }
 
 /* eslint-disable */
@@ -11696,10 +12011,10 @@ export interface TRIGGERS_GET_WEBHOOK_URLInput {
 /**
  * The URL of the webhook trigger
  */
-export type String_1263 = string;
+export type String_1293 = string;
 
 export interface TRIGGERS_GET_WEBHOOK_URLOutput {
-  url?: String_1263;
+  url?: String_1293;
 }
 
 /* eslint-disable */
@@ -11709,10 +12024,10 @@ export interface TRIGGERS_GET_WEBHOOK_URLOutput {
  * and run json-schema-to-typescript to regenerate this file.
  */
 
-export type String_1264 = string;
+export type String_1294 = string;
 
 export interface TRIGGERS_LISTInput {
-  agentId?: String_1264;
+  agentId?: String_1294;
 }
 
 /* eslint-disable */
@@ -11725,93 +12040,93 @@ export interface TRIGGERS_LISTInput {
 /**
  * The trigger ID
  */
-export type String_1265 = string;
-export type String_1266 = "cron" | "webhook";
+export type String_1295 = string;
+export type String_1296 = "cron" | "webhook";
 /**
  * The title of the trigger
  */
-export type String_1267 = string;
+export type String_1297 = string;
 /**
  * The description of the trigger
  */
-export type String_1268 = string;
-export type String_1269 = string;
-export type String_1270 = "cron";
+export type String_1298 = string;
+export type String_1299 = string;
+export type String_1300 = "cron";
 /**
  * The agent ID to use for the trigger
  */
-export type String_1271 = string;
+export type String_1301 = string;
 /**
  * if not provided, the same conversation thread will be used, you can pass any string you want to use
  */
-export type String_1272 = string;
+export type String_1302 = string;
 /**
  * if not provided, the same resource will be used, you can pass any string you want to use
  */
-export type String_1273 = string;
-export type String_1274 = "user" | "assistant" | "system";
-export type String_1275 = string;
+export type String_1303 = string;
+export type String_1304 = "user" | "assistant" | "system";
+export type String_1305 = string;
 /**
  * The messages to send to the LLM
  */
-export type Array_145 = Object_409[];
+export type Array_145 = Object_429[];
 /**
  * The URL of the webhook
  */
-export type String_1276 = string;
+export type String_1306 = string;
 /**
  * The integration ID
  */
-export type String_1277 = string;
+export type String_1307 = string;
 /**
  * The tool name
  */
-export type String_1278 = string;
+export type String_1308 = string;
 /**
  * The title of the trigger
  */
-export type String_1279 = string;
+export type String_1309 = string;
 /**
  * The description of the trigger
  */
-export type String_1280 = string;
-export type String_1281 = "webhook";
+export type String_1310 = string;
+export type String_1311 = "webhook";
 /**
  * The URL of the webhook
  */
-export type String_1282 = string;
+export type String_1312 = string;
 /**
  * The passphrase for the webhook
  */
-export type String_1283 = string;
+export type String_1313 = string;
 /**
  * The agent ID to use for the trigger
  */
-export type String_1284 = string;
+export type String_1314 = string;
 /**
  * The creation date
  */
-export type String_1285 = string;
+export type String_1315 = string;
 /**
  * The update date
  */
-export type String_1286 = string;
+export type String_1316 = string;
 /**
  * The user ID
  */
-export type String_1287 = string;
+export type String_1317 = string;
 /**
  * The user name
  */
-export type String_1288 = string;
+export type String_1318 = string;
 /**
  * The user email
  */
-export type String_1289 = string;
+export type String_1319 = string;
 /**
  * The user avatar
  */
-export type String_1290 = string;
+export type String_1320 = string;
 /**
  * The trigger status
  */
@@ -11819,68 +12134,68 @@ export type Boolean_91 = boolean;
 /**
  * The workspace ID
  */
-export type StringNull_67 = String_1291 | Null_129;
-export type String_1291 = string;
-export type Null_129 = null;
-export type Array_144 = Object_406[];
+export type StringNull_67 = String_1321 | Null_134;
+export type String_1321 = string;
+export type Null_134 = null;
+export type Array_144 = Object_426[];
 
 export interface TRIGGERS_LISTOutput {
   triggers: Array_144;
 }
-export interface Object_406 {
-  id: String_1265;
-  type: String_1266;
-  data: (Object_407 | Object_410) | (Object_413 | Object_415);
-  createdAt: String_1285;
-  updatedAt: String_1286;
-  user: Object_416;
+export interface Object_426 {
+  id: String_1295;
+  type: String_1296;
+  data: (Object_427 | Object_430) | (Object_433 | Object_435);
+  createdAt: String_1315;
+  updatedAt: String_1316;
+  user: Object_436;
   active?: Boolean_91;
   workspace: StringNull_67;
 }
-export interface Object_407 {
-  title: String_1267;
-  description?: String_1268;
-  cronExp: String_1269;
-  type: String_1270;
-  agentId: String_1271;
-  prompt: Object_408;
-  url?: String_1276;
+export interface Object_427 {
+  title: String_1297;
+  description?: String_1298;
+  cronExp: String_1299;
+  type: String_1300;
+  agentId: String_1301;
+  prompt: Object_428;
+  url?: String_1306;
 }
-export interface Object_408 {
-  threadId?: String_1272;
-  resourceId?: String_1273;
+export interface Object_428 {
+  threadId?: String_1302;
+  resourceId?: String_1303;
   messages: Array_145;
 }
-export interface Object_409 {
-  role: String_1274;
-  content: String_1275;
+export interface Object_429 {
+  role: String_1304;
+  content: String_1305;
 }
-export interface Object_410 {
-  title: String_1267;
-  description?: String_1268;
-  cronExp: String_1269;
-  type: String_1270;
-  callTool: Object_411;
+export interface Object_430 {
+  title: String_1297;
+  description?: String_1298;
+  cronExp: String_1299;
+  type: String_1300;
+  callTool: Object_431;
 }
-export interface Object_411 {
-  integrationId: String_1277;
-  toolName: String_1278;
-  arguments?: Object_412;
+export interface Object_431 {
+  integrationId: String_1307;
+  toolName: String_1308;
+  arguments?: Object_432;
 }
 /**
  * The arguments to pass to the tool
  */
-export interface Object_412 {
+export interface Object_432 {
   [k: string]: unknown;
 }
-export interface Object_413 {
-  title: String_1279;
-  description?: String_1280;
-  type: String_1281;
-  url?: String_1282;
-  passphrase?: String_1283;
-  agentId: String_1284;
-  schema?: Object_414;
+export interface Object_433 {
+  title: String_1309;
+  description?: String_1310;
+  type: String_1311;
+  url?: String_1312;
+  passphrase?: String_1313;
+  agentId: String_1314;
+  schema?: Object_434;
 }
 /**
  * The JSONSchema of the returning of the webhook.
@@ -11891,25 +12206,25 @@ export interface Object_413 {
  *
  *
  */
-export interface Object_414 {
+export interface Object_434 {
   [k: string]: unknown;
 }
-export interface Object_415 {
-  title: String_1279;
-  description?: String_1280;
-  type: String_1281;
-  url?: String_1282;
-  passphrase?: String_1283;
-  callTool: Object_411;
+export interface Object_435 {
+  title: String_1309;
+  description?: String_1310;
+  type: String_1311;
+  url?: String_1312;
+  passphrase?: String_1313;
+  callTool: Object_431;
 }
-export interface Object_416 {
-  id: String_1287;
-  metadata: Object_417;
+export interface Object_436 {
+  id: String_1317;
+  metadata: Object_437;
 }
-export interface Object_417 {
-  full_name: String_1288;
-  email: String_1289;
-  avatar_url: String_1290;
+export interface Object_437 {
+  full_name: String_1318;
+  email: String_1319;
+  avatar_url: String_1320;
 }
 
 /* eslint-disable */
@@ -11919,117 +12234,117 @@ export interface Object_417 {
  * and run json-schema-to-typescript to regenerate this file.
  */
 
-export type String_1292 = string;
+export type String_1322 = string;
 /**
  * The title of the trigger
  */
-export type String_1293 = string;
+export type String_1323 = string;
 /**
  * The description of the trigger
  */
-export type String_1294 = string;
-export type String_1295 = string;
-export type String_1296 = "cron";
+export type String_1324 = string;
+export type String_1325 = string;
+export type String_1326 = "cron";
 /**
  * The agent ID to use for the trigger
  */
-export type String_1297 = string;
+export type String_1327 = string;
 /**
  * if not provided, the same conversation thread will be used, you can pass any string you want to use
  */
-export type String_1298 = string;
+export type String_1328 = string;
 /**
  * if not provided, the same resource will be used, you can pass any string you want to use
  */
-export type String_1299 = string;
-export type String_1300 = "user" | "assistant" | "system";
-export type String_1301 = string;
+export type String_1329 = string;
+export type String_1330 = "user" | "assistant" | "system";
+export type String_1331 = string;
 /**
  * The messages to send to the LLM
  */
-export type Array_146 = Object_420[];
+export type Array_146 = Object_440[];
 /**
  * The URL of the webhook
  */
-export type String_1302 = string;
+export type String_1332 = string;
 /**
  * The integration ID
  */
-export type String_1303 = string;
+export type String_1333 = string;
 /**
  * The tool name
  */
-export type String_1304 = string;
+export type String_1334 = string;
 /**
  * The title of the trigger
  */
-export type String_1305 = string;
+export type String_1335 = string;
 /**
  * The description of the trigger
  */
-export type String_1306 = string;
-export type String_1307 = "webhook";
+export type String_1336 = string;
+export type String_1337 = "webhook";
 /**
  * The URL of the webhook
  */
-export type String_1308 = string;
+export type String_1338 = string;
 /**
  * The passphrase for the webhook
  */
-export type String_1309 = string;
+export type String_1339 = string;
 /**
  * The agent ID to use for the trigger
  */
-export type String_1310 = string;
+export type String_1340 = string;
 
 export interface TRIGGERS_UPDATEInput {
-  id: String_1292;
-  data: (Object_418 | Object_421) | (Object_424 | Object_426);
+  id: String_1322;
+  data: (Object_438 | Object_441) | (Object_444 | Object_446);
 }
-export interface Object_418 {
-  title: String_1293;
-  description?: String_1294;
-  cronExp: String_1295;
-  type: String_1296;
-  agentId: String_1297;
-  prompt: Object_419;
-  url?: String_1302;
+export interface Object_438 {
+  title: String_1323;
+  description?: String_1324;
+  cronExp: String_1325;
+  type: String_1326;
+  agentId: String_1327;
+  prompt: Object_439;
+  url?: String_1332;
 }
-export interface Object_419 {
-  threadId?: String_1298;
-  resourceId?: String_1299;
+export interface Object_439 {
+  threadId?: String_1328;
+  resourceId?: String_1329;
   messages: Array_146;
 }
-export interface Object_420 {
-  role: String_1300;
-  content: String_1301;
+export interface Object_440 {
+  role: String_1330;
+  content: String_1331;
 }
-export interface Object_421 {
-  title: String_1293;
-  description?: String_1294;
-  cronExp: String_1295;
-  type: String_1296;
-  callTool: Object_422;
+export interface Object_441 {
+  title: String_1323;
+  description?: String_1324;
+  cronExp: String_1325;
+  type: String_1326;
+  callTool: Object_442;
 }
-export interface Object_422 {
-  integrationId: String_1303;
-  toolName: String_1304;
-  arguments?: Object_423;
+export interface Object_442 {
+  integrationId: String_1333;
+  toolName: String_1334;
+  arguments?: Object_443;
 }
 /**
  * The arguments to pass to the tool
  */
-export interface Object_423 {
+export interface Object_443 {
   [k: string]: unknown;
 }
-export interface Object_424 {
-  title: String_1305;
-  description?: String_1306;
-  type: String_1307;
-  url?: String_1308;
-  passphrase?: String_1309;
-  agentId: String_1310;
-  schema?: Object_425;
+export interface Object_444 {
+  title: String_1335;
+  description?: String_1336;
+  type: String_1337;
+  url?: String_1338;
+  passphrase?: String_1339;
+  agentId: String_1340;
+  schema?: Object_445;
 }
 /**
  * The JSONSchema of the returning of the webhook.
@@ -12040,16 +12355,16 @@ export interface Object_424 {
  *
  *
  */
-export interface Object_425 {
+export interface Object_445 {
   [k: string]: unknown;
 }
-export interface Object_426 {
-  title: String_1305;
-  description?: String_1306;
-  type: String_1307;
-  url?: String_1308;
-  passphrase?: String_1309;
-  callTool: Object_422;
+export interface Object_446 {
+  title: String_1335;
+  description?: String_1336;
+  type: String_1337;
+  url?: String_1338;
+  passphrase?: String_1339;
+  callTool: Object_442;
 }
 
 /* eslint-disable */
@@ -12069,793 +12384,23 @@ export interface TRIGGERS_UPDATEOutput {}
  */
 
 /**
- * The name of the tool
- */
-export type String_1311 = string;
-/**
- * The description of the tool
- */
-export type String_1312 = string;
-/**
- * Inline ES module code with default export function. The code will be saved to /src/functions/{name}.ts
- */
-export type String_1313 = string;
-/**
- * The integration ID (format: i:<uuid>) that this tool depends on
- */
-export type String_1314 = string;
-/**
- * List of integrations this tool depends on. These integrations must be installed and available for the tool to execute successfully. Use INTEGRATIONS_LIST to find available integration IDs.
- */
-export type Array_147 = Object_430[];
-
-export interface DECO_RESOURCE_TOOL_CREATEInput_1 {
-  data: Object_427;
-}
-/**
- * Resource data to create
- */
-export interface Object_427 {
-  name: String_1311;
-  description: String_1312;
-  inputSchema: Object_428;
-  outputSchema: Object_429;
-  execute: String_1313;
-  dependencies?: Array_147;
-}
-/**
- * The JSON schema of the input of the tool
- */
-export interface Object_428 {
-  [k: string]: unknown;
-}
-/**
- * The JSON schema of the output of the tool
- */
-export interface Object_429 {
-  [k: string]: unknown;
-}
-export interface Object_430 {
-  integrationId: String_1314;
-}
-
-/* eslint-disable */
-/**
- * This file was automatically generated by json-schema-to-typescript.
- * DO NOT MODIFY IT BY HAND. Instead, modify the source JSONSchema file,
- * and run json-schema-to-typescript to regenerate this file.
- */
-
-/**
- * URI of the created resource
- */
-export type String_1315 = string;
-/**
- * The name of the tool
- */
-export type String_1316 = string;
-/**
- * The description of the tool
- */
-export type String_1317 = string;
-/**
- * Inline ES module code with default export function. The code will be saved to /src/functions/{name}.ts
- */
-export type String_1318 = string;
-/**
- * The integration ID (format: i:<uuid>) that this tool depends on
- */
-export type String_1319 = string;
-/**
- * List of integrations this tool depends on. These integrations must be installed and available for the tool to execute successfully. Use INTEGRATIONS_LIST to find available integration IDs.
- */
-export type Array_148 = Object_434[];
-/**
- * Creation timestamp
- */
-export type String_1320 = string;
-/**
- * Last update timestamp
- */
-export type String_1321 = string;
-/**
- * User who created the resource
- */
-export type String_1322 = string;
-
-export interface DECO_RESOURCE_TOOL_CREATEOutput_1 {
-  uri: String_1315;
-  data: Object_431;
-  created_at?: String_1320;
-  updated_at?: String_1321;
-  created_by?: String_1322;
-}
-/**
- * Created resource data
- */
-export interface Object_431 {
-  name: String_1316;
-  description: String_1317;
-  inputSchema: Object_432;
-  outputSchema: Object_433;
-  execute: String_1318;
-  dependencies?: Array_148;
-}
-/**
- * The JSON schema of the input of the tool
- */
-export interface Object_432 {
-  [k: string]: unknown;
-}
-/**
- * The JSON schema of the output of the tool
- */
-export interface Object_433 {
-  [k: string]: unknown;
-}
-export interface Object_434 {
-  integrationId: String_1319;
-}
-
-/* eslint-disable */
-/**
- * This file was automatically generated by json-schema-to-typescript.
- * DO NOT MODIFY IT BY HAND. Instead, modify the source JSONSchema file,
- * and run json-schema-to-typescript to regenerate this file.
- */
-
-/**
- * URI of the resource to delete
- */
-export type String_1323 = string;
-
-export interface DECO_RESOURCE_TOOL_DELETEInput_1 {
-  uri: String_1323;
-}
-
-/* eslint-disable */
-/**
- * This file was automatically generated by json-schema-to-typescript.
- * DO NOT MODIFY IT BY HAND. Instead, modify the source JSONSchema file,
- * and run json-schema-to-typescript to regenerate this file.
- */
-
-/**
- * Whether the deletion was successful
- */
-export type Boolean_92 = boolean;
-/**
- * URI of the deleted resource
- */
-export type String_1324 = string;
-
-export interface DECO_RESOURCE_TOOL_DELETEOutput_1 {
-  success: Boolean_92;
-  uri: String_1324;
-}
-
-/* eslint-disable */
-/**
- * This file was automatically generated by json-schema-to-typescript.
- * DO NOT MODIFY IT BY HAND. Instead, modify the source JSONSchema file,
- * and run json-schema-to-typescript to regenerate this file.
- */
-
-/**
- * URI of the resource to read
- */
-export type String_1325 = string;
-
-export interface DECO_RESOURCE_TOOL_READInput_1 {
-  uri: String_1325;
-}
-
-/* eslint-disable */
-/**
- * This file was automatically generated by json-schema-to-typescript.
- * DO NOT MODIFY IT BY HAND. Instead, modify the source JSONSchema file,
- * and run json-schema-to-typescript to regenerate this file.
- */
-
-/**
- * URI of the resource
- */
-export type String_1326 = string;
-/**
- * The name of the tool
- */
-export type String_1327 = string;
-/**
- * The description of the tool
- */
-export type String_1328 = string;
-/**
- * Inline ES module code with default export function. The code will be saved to /src/functions/{name}.ts
- */
-export type String_1329 = string;
-/**
- * The integration ID (format: i:<uuid>) that this tool depends on
- */
-export type String_1330 = string;
-/**
- * List of integrations this tool depends on. These integrations must be installed and available for the tool to execute successfully. Use INTEGRATIONS_LIST to find available integration IDs.
- */
-export type Array_149 = Object_438[];
-/**
- * Creation timestamp
- */
-export type String_1331 = string;
-/**
- * Last update timestamp
- */
-export type String_1332 = string;
-/**
- * User who created the resource
- */
-export type String_1333 = string;
-/**
- * User who last updated the resource
- */
-export type String_1334 = string;
-
-export interface DECO_RESOURCE_TOOL_READOutput_1 {
-  uri: String_1326;
-  data: Object_435;
-  created_at?: String_1331;
-  updated_at?: String_1332;
-  created_by?: String_1333;
-  updated_by?: String_1334;
-}
-/**
- * Resource data
- */
-export interface Object_435 {
-  name: String_1327;
-  description: String_1328;
-  inputSchema: Object_436;
-  outputSchema: Object_437;
-  execute: String_1329;
-  dependencies?: Array_149;
-}
-/**
- * The JSON schema of the input of the tool
- */
-export interface Object_436 {
-  [k: string]: unknown;
-}
-/**
- * The JSON schema of the output of the tool
- */
-export interface Object_437 {
-  [k: string]: unknown;
-}
-export interface Object_438 {
-  integrationId: String_1330;
-}
-
-/* eslint-disable */
-/**
- * This file was automatically generated by json-schema-to-typescript.
- * DO NOT MODIFY IT BY HAND. Instead, modify the source JSONSchema file,
- * and run json-schema-to-typescript to regenerate this file.
- */
-
-/**
- * Search term to filter resources
- */
-export type String_1335 = string;
-/**
- * Page number (1-based)
- */
-export type Integer_44 = number;
-/**
- * Number of items per page
- */
-export type Integer_45 = number;
-/**
- * Field to sort by
- */
-export type String_1336 = string;
-/**
- * Sort order
- */
-export type String_1337 = "asc" | "desc";
-
-export interface DECO_RESOURCE_TOOL_SEARCHInput_1 {
-  term?: String_1335;
-  page?: Integer_44;
-  pageSize?: Integer_45;
-  filters?: Object_439;
-  sortBy?: String_1336;
-  sortOrder?: String_1337;
-}
-/**
- * Additional filters to apply
- */
-export interface Object_439 {
-  [k: string]: unknown;
-}
-
-/* eslint-disable */
-/**
- * This file was automatically generated by json-schema-to-typescript.
- * DO NOT MODIFY IT BY HAND. Instead, modify the source JSONSchema file,
- * and run json-schema-to-typescript to regenerate this file.
- */
-
-/**
- * URI of the resource
- */
-export type String_1338 = string;
-export type String_1339 = string;
-/**
- * Description of the resource
- */
-export type String_1340 = string;
-/**
- * URL to the resource icon
+ * The name of the branch to create
  */
 export type String_1341 = string;
 /**
- * The name of the tool
- */
-export type String_1342 = string;
-/**
- * The description of the tool
- */
-export type String_1343 = string;
-/**
- * Creation timestamp
- */
-export type String_1344 = string;
-/**
- * Last update timestamp
- */
-export type String_1345 = string;
-/**
- * User who created the resource
- */
-export type String_1346 = string;
-/**
- * User who last updated the resource
- */
-export type String_1347 = string;
-/**
- * Array of matching resources
- */
-export type Array_150 = Object_440[];
-/**
- * Total number of matching resources
- */
-export type Integer_46 = number;
-/**
- * Current page number
- */
-export type Integer_47 = number;
-/**
- * Number of items per page
- */
-export type Integer_48 = number;
-/**
- * Total number of pages
- */
-export type Integer_49 = number;
-/**
- * Whether there are more pages available
- */
-export type Boolean_93 = boolean;
-/**
- * Whether there are previous pages available
- */
-export type Boolean_94 = boolean;
-
-export interface DECO_RESOURCE_TOOL_SEARCHOutput_1 {
-  items: Array_150;
-  totalCount: Integer_46;
-  page: Integer_47;
-  pageSize: Integer_48;
-  totalPages: Integer_49;
-  hasNextPage: Boolean_93;
-  hasPreviousPage: Boolean_94;
-}
-export interface Object_440 {
-  uri: String_1338;
-  /**
-   * Resource data with required name
-   */
-  data: Object_441 & Object_442;
-  created_at?: String_1344;
-  updated_at?: String_1345;
-  created_by?: String_1346;
-  updated_by?: String_1347;
-}
-export interface Object_441 {
-  name: String_1339;
-  description?: String_1340;
-  icon?: String_1341;
-}
-export interface Object_442 {
-  name: String_1342;
-  description: String_1343;
-}
-
-/* eslint-disable */
-/**
- * This file was automatically generated by json-schema-to-typescript.
- * DO NOT MODIFY IT BY HAND. Instead, modify the source JSONSchema file,
- * and run json-schema-to-typescript to regenerate this file.
- */
-
-/**
- * URI of the resource to update
- */
-export type String_1348 = string;
-/**
- * The name of the tool
- */
-export type String_1349 = string;
-/**
- * The description of the tool
- */
-export type String_1350 = string;
-/**
- * Inline ES module code with default export function. The code will be saved to /src/functions/{name}.ts
- */
-export type String_1351 = string;
-/**
- * The integration ID (format: i:<uuid>) that this tool depends on
- */
-export type String_1352 = string;
-/**
- * List of integrations this tool depends on. These integrations must be installed and available for the tool to execute successfully. Use INTEGRATIONS_LIST to find available integration IDs.
- */
-export type Array_151 = Object_446[];
-
-export interface DECO_RESOURCE_TOOL_UPDATEInput_1 {
-  uri: String_1348;
-  data: Object_443;
-}
-/**
- * Updated resource data
- */
-export interface Object_443 {
-  name: String_1349;
-  description: String_1350;
-  inputSchema: Object_444;
-  outputSchema: Object_445;
-  execute: String_1351;
-  dependencies?: Array_151;
-}
-/**
- * The JSON schema of the input of the tool
- */
-export interface Object_444 {
-  [k: string]: unknown;
-}
-/**
- * The JSON schema of the output of the tool
- */
-export interface Object_445 {
-  [k: string]: unknown;
-}
-export interface Object_446 {
-  integrationId: String_1352;
-}
-
-/* eslint-disable */
-/**
- * This file was automatically generated by json-schema-to-typescript.
- * DO NOT MODIFY IT BY HAND. Instead, modify the source JSONSchema file,
- * and run json-schema-to-typescript to regenerate this file.
- */
-
-/**
- * URI of the updated resource
- */
-export type String_1353 = string;
-/**
- * The name of the tool
- */
-export type String_1354 = string;
-/**
- * The description of the tool
- */
-export type String_1355 = string;
-/**
- * Inline ES module code with default export function. The code will be saved to /src/functions/{name}.ts
- */
-export type String_1356 = string;
-/**
- * The integration ID (format: i:<uuid>) that this tool depends on
- */
-export type String_1357 = string;
-/**
- * List of integrations this tool depends on. These integrations must be installed and available for the tool to execute successfully. Use INTEGRATIONS_LIST to find available integration IDs.
- */
-export type Array_152 = Object_450[];
-/**
- * Original creation timestamp
- */
-export type String_1358 = string;
-/**
- * Last update timestamp
- */
-export type String_1359 = string;
-/**
- * User who originally created the resource
- */
-export type String_1360 = string;
-/**
- * User who last updated the resource
- */
-export type String_1361 = string;
-
-export interface DECO_RESOURCE_TOOL_UPDATEOutput_1 {
-  uri: String_1353;
-  data: Object_447;
-  created_at?: String_1358;
-  updated_at?: String_1359;
-  created_by?: String_1360;
-  updated_by?: String_1361;
-}
-/**
- * Updated resource data
- */
-export interface Object_447 {
-  name: String_1354;
-  description: String_1355;
-  inputSchema: Object_448;
-  outputSchema: Object_449;
-  execute: String_1356;
-  dependencies?: Array_152;
-}
-/**
- * The JSON schema of the input of the tool
- */
-export interface Object_448 {
-  [k: string]: unknown;
-}
-/**
- * The JSON schema of the output of the tool
- */
-export interface Object_449 {
-  [k: string]: unknown;
-}
-export interface Object_450 {
-  integrationId: String_1357;
-}
-
-/* eslint-disable */
-/**
- * This file was automatically generated by json-schema-to-typescript.
- * DO NOT MODIFY IT BY HAND. Instead, modify the source JSONSchema file,
- * and run json-schema-to-typescript to regenerate this file.
- */
-
-/**
- * The URI of the tool to run
- */
-export type String_1362 = string;
-/**
- * The token to use for the tool execution
- */
-export type String_1363 = string;
-
-export interface DECO_TOOL_CALL_TOOLInput_1 {
-  uri: String_1362;
-  input: Object_451;
-  authorization?: String_1363;
-}
-/**
- * The input of the code
- */
-export interface Object_451 {
-  [k: string]: unknown;
-}
-
-/* eslint-disable */
-/**
- * This file was automatically generated by json-schema-to-typescript.
- * DO NOT MODIFY IT BY HAND. Instead, modify the source JSONSchema file,
- * and run json-schema-to-typescript to regenerate this file.
- */
-
-export type String_1364 = "log" | "warn" | "error";
-export type String_1365 = string;
-/**
- * Console logs from the execution
- */
-export type Array_153 = Object_452[];
-
-export interface DECO_TOOL_CALL_TOOLOutput_1 {
-  /**
-   * The result of the tool execution
-   */
-  result?: {
-    [k: string]: unknown;
-  };
-  /**
-   * Error if any
-   */
-  error?: {
-    [k: string]: unknown;
-  };
-  logs?: Array_153;
-}
-export interface Object_452 {
-  type: String_1364;
-  content: String_1365;
-}
-
-/* eslint-disable */
-/**
- * This file was automatically generated by json-schema-to-typescript.
- * DO NOT MODIFY IT BY HAND. Instead, modify the source JSONSchema file,
- * and run json-schema-to-typescript to regenerate this file.
- */
-
-/**
- * The name of the tool
- */
-export type String_1366 = string;
-/**
- * The description of the tool
- */
-export type String_1367 = string;
-/**
- * Inline ES module code with default export function. The code will be saved to /src/functions/{name}.ts
- */
-export type String_1368 = string;
-/**
- * The integration ID (format: i:<uuid>) that this tool depends on
- */
-export type String_1369 = string;
-/**
- * List of integrations this tool depends on. These integrations must be installed and available for the tool to execute successfully. Use INTEGRATIONS_LIST to find available integration IDs.
- */
-export type Array_154 = Object_456[];
-/**
- * The token to use for the tool execution
- */
-export type String_1370 = string;
-
-export interface DECO_TOOL_RUN_TOOLInput_1 {
-  tool: Object_453;
-  input: Object_457;
-  authorization?: String_1370;
-}
-export interface Object_453 {
-  name: String_1366;
-  description: String_1367;
-  inputSchema: Object_454;
-  outputSchema: Object_455;
-  execute: String_1368;
-  dependencies?: Array_154;
-}
-/**
- * The JSON schema of the input of the tool
- */
-export interface Object_454 {
-  [k: string]: unknown;
-}
-/**
- * The JSON schema of the output of the tool
- */
-export interface Object_455 {
-  [k: string]: unknown;
-}
-export interface Object_456 {
-  integrationId: String_1369;
-}
-/**
- * The input of the code
- */
-export interface Object_457 {
-  [k: string]: unknown;
-}
-
-/* eslint-disable */
-/**
- * This file was automatically generated by json-schema-to-typescript.
- * DO NOT MODIFY IT BY HAND. Instead, modify the source JSONSchema file,
- * and run json-schema-to-typescript to regenerate this file.
- */
-
-export type String_1371 = "log" | "warn" | "error";
-export type String_1372 = string;
-/**
- * Console logs from the execution
- */
-export type Array_155 = Object_458[];
-
-export interface DECO_TOOL_RUN_TOOLOutput_1 {
-  /**
-   * The result of the tool execution
-   */
-  result?: {
-    [k: string]: unknown;
-  };
-  /**
-   * Error if any
-   */
-  error?: {
-    [k: string]: unknown;
-  };
-  logs?: Array_155;
-}
-export interface Object_458 {
-  type: String_1371;
-  content: String_1372;
-}
-
-/* eslint-disable */
-/**
- * This file was automatically generated by json-schema-to-typescript.
- * DO NOT MODIFY IT BY HAND. Instead, modify the source JSONSchema file,
- * and run json-schema-to-typescript to regenerate this file.
- */
-
-/**
- * URI of the resource to render in the view
- */
-export type String_1373 = string;
-
-export interface DECO_VIEW_RENDER_TOOL_DETAILInput_1 {
-  resource: String_1373;
-}
-
-/* eslint-disable */
-/**
- * This file was automatically generated by json-schema-to-typescript.
- * DO NOT MODIFY IT BY HAND. Instead, modify the source JSONSchema file,
- * and run json-schema-to-typescript to regenerate this file.
- */
-
-/**
- * URL to render the view
- */
-export type String_1374 = string;
-/**
- * Optional LLM prompt for this view context
- */
-export type String_1375 = string;
-export type String_1376 = string;
-/**
- * Optional array of tool names for this view context
- */
-export type Array_156 = String_1376[];
-
-export interface DECO_VIEW_RENDER_TOOL_DETAILOutput_1 {
-  url: String_1374;
-  prompt?: String_1375;
-  tools?: Array_156;
-}
-
-/* eslint-disable */
-/**
- * This file was automatically generated by json-schema-to-typescript.
- * DO NOT MODIFY IT BY HAND. Instead, modify the source JSONSchema file,
- * and run json-schema-to-typescript to regenerate this file.
- */
-
-/**
- * The name of the branch to create
- */
-export type String_1377 = string;
-/**
  * The source branch to branch from (optional - creates empty branch if not provided)
  */
-export type String_1378 = string;
+export type String_1342 = string;
 
 export interface CREATE_BRANCHInput_1 {
-  branchName: String_1377;
-  sourceBranch?: String_1378;
-  metadata?: Object_459;
+  branchName: String_1341;
+  sourceBranch?: String_1342;
+  metadata?: Object_447;
 }
 /**
  * Optional metadata for the branch
  */
-export interface Object_459 {
+export interface Object_447 {
   [k: string]: unknown;
 }
 
@@ -12866,14 +12411,14 @@ export interface Object_459 {
  * and run json-schema-to-typescript to regenerate this file.
  */
 
-export type String_1379 = string;
-export type String_1380 = string;
-export type Number_125 = number;
+export type String_1343 = string;
+export type String_1344 = string;
+export type Number_130 = number;
 
 export interface CREATE_BRANCHOutput_1 {
-  branchName: String_1379;
-  sourceBranch?: String_1380;
-  createdAt: Number_125;
+  branchName: String_1343;
+  sourceBranch?: String_1344;
+  createdAt: Number_130;
 }
 
 /* eslint-disable */
@@ -12886,10 +12431,10 @@ export interface CREATE_BRANCHOutput_1 {
 /**
  * The name of the branch to delete
  */
-export type String_1381 = string;
+export type String_1345 = string;
 
 export interface DELETE_BRANCHInput_1 {
-  branchName: String_1381;
+  branchName: String_1345;
 }
 
 /* eslint-disable */
@@ -12899,14 +12444,14 @@ export interface DELETE_BRANCHInput_1 {
  * and run json-schema-to-typescript to regenerate this file.
  */
 
-export type Boolean_95 = boolean;
-export type String_1382 = string;
-export type Number_126 = number;
+export type Boolean_92 = boolean;
+export type String_1346 = string;
+export type Number_131 = number;
 
 export interface DELETE_BRANCHOutput_1 {
-  deleted: Boolean_95;
-  branchName: String_1382;
-  filesDeleted?: Number_126;
+  deleted: Boolean_92;
+  branchName: String_1346;
+  filesDeleted?: Number_131;
 }
 
 /* eslint-disable */
@@ -12919,15 +12464,15 @@ export interface DELETE_BRANCHOutput_1 {
 /**
  * The branch name
  */
-export type String_1383 = string;
+export type String_1347 = string;
 /**
  * The file path within the branch
  */
-export type String_1384 = string;
+export type String_1348 = string;
 
 export interface DELETE_FILEInput_1 {
-  branch?: String_1383;
-  path: String_1384;
+  branch?: String_1347;
+  path: String_1348;
 }
 
 /* eslint-disable */
@@ -12937,10 +12482,10 @@ export interface DELETE_FILEInput_1 {
  * and run json-schema-to-typescript to regenerate this file.
  */
 
-export type Boolean_96 = boolean;
+export type Boolean_93 = boolean;
 
 export interface DELETE_FILEOutput_1 {
-  deleted: Boolean_96;
+  deleted: Boolean_93;
 }
 
 /* eslint-disable */
@@ -12953,15 +12498,15 @@ export interface DELETE_FILEOutput_1 {
 /**
  * The base branch to compare from (defaults to 'main')
  */
-export type String_1385 = string;
+export type String_1349 = string;
 /**
  * The branch to compare against
  */
-export type String_1386 = string;
+export type String_1350 = string;
 
 export interface DIFF_BRANCHInput_1 {
-  baseBranch?: String_1385;
-  compareBranch: String_1386;
+  baseBranch?: String_1349;
+  compareBranch: String_1350;
 }
 
 /* eslint-disable */
@@ -12971,20 +12516,20 @@ export interface DIFF_BRANCHInput_1 {
  * and run json-schema-to-typescript to regenerate this file.
  */
 
-export type String_1387 = string;
-export type String_1388 = "added" | "modified" | "deleted";
-export type String_1389 = string;
-export type String_1390 = string;
-export type Array_157 = Object_460[];
+export type String_1351 = string;
+export type String_1352 = "added" | "modified" | "deleted";
+export type String_1353 = string;
+export type String_1354 = string;
+export type Array_147 = Object_448[];
 
 export interface DIFF_BRANCHOutput_1 {
-  differences: Array_157;
+  differences: Array_147;
 }
-export interface Object_460 {
-  path: String_1387;
-  type: String_1388;
-  baseAddress?: String_1389;
-  compareAddress?: String_1390;
+export interface Object_448 {
+  path: String_1351;
+  type: String_1352;
+  baseAddress?: String_1353;
+  compareAddress?: String_1354;
 }
 
 /* eslint-disable */
@@ -12997,10 +12542,10 @@ export interface Object_460 {
 /**
  * Optional prefix to filter branch names
  */
-export type String_1391 = string;
+export type String_1355 = string;
 
 export interface LIST_BRANCHESInput_1 {
-  prefix?: String_1391;
+  prefix?: String_1355;
 }
 
 /* eslint-disable */
@@ -13010,25 +12555,25 @@ export interface LIST_BRANCHESInput_1 {
  * and run json-schema-to-typescript to regenerate this file.
  */
 
-export type String_1392 = string;
-export type Number_127 = number;
-export type StringNull_68 = String_1393 | Null_130;
-export type String_1393 = string;
-export type Null_130 = null;
-export type Array_158 = Object_461[];
-export type Number_128 = number;
+export type String_1356 = string;
+export type Number_132 = number;
+export type StringNull_68 = String_1357 | Null_135;
+export type String_1357 = string;
+export type Null_135 = null;
+export type Array_148 = Object_449[];
+export type Number_133 = number;
 
 export interface LIST_BRANCHESOutput_1 {
-  branches: Array_158;
-  count: Number_128;
+  branches: Array_148;
+  count: Number_133;
 }
-export interface Object_461 {
-  name: String_1392;
-  createdAt: Number_127;
-  metadata: Object_462;
+export interface Object_449 {
+  name: String_1356;
+  createdAt: Number_132;
+  metadata: Object_450;
   originBranch: StringNull_68;
 }
-export interface Object_462 {
+export interface Object_450 {
   [k: string]: unknown;
 }
 
@@ -13042,26 +12587,26 @@ export interface Object_462 {
 /**
  * The branch name
  */
-export type String_1394 = string;
+export type String_1358 = string;
 /**
  * Optional prefix to filter files (use select instead)
  */
-export type String_1395 = string;
-export type String_1396 = string;
+export type String_1359 = string;
+export type String_1360 = string;
 /**
  * Optional list of files to select
  */
-export type Array_159 = String_1396[];
+export type Array_149 = String_1360[];
 /**
  * Include file content as base64 in the response
  */
-export type Boolean_97 = boolean;
+export type Boolean_94 = boolean;
 
 export interface LIST_FILESInput_1 {
-  branch?: String_1394;
-  prefix?: String_1395;
-  select?: Array_159;
-  includeContent?: Boolean_97;
+  branch?: String_1358;
+  prefix?: String_1359;
+  select?: Array_149;
+  includeContent?: Boolean_94;
 }
 
 /* eslint-disable */
@@ -13071,29 +12616,29 @@ export interface LIST_FILESInput_1 {
  * and run json-schema-to-typescript to regenerate this file.
  */
 
-export type String_1397 = string;
-export type Number_129 = number;
-export type Number_130 = number;
-export type Number_131 = number;
-export type String_1398 = string;
-export type Number_132 = number;
+export type String_1361 = string;
+export type Number_134 = number;
+export type Number_135 = number;
+export type Number_136 = number;
+export type String_1362 = string;
+export type Number_137 = number;
 
 export interface LIST_FILESOutput_1 {
-  files: Object_463;
-  count: Number_132;
+  files: Object_451;
+  count: Number_137;
 }
-export interface Object_463 {
-  [k: string]: Object_464;
+export interface Object_451 {
+  [k: string]: Object_452;
 }
-export interface Object_464 {
-  address: String_1397;
-  metadata: Object_465;
-  sizeInBytes: Number_129;
-  mtime: Number_130;
-  ctime: Number_131;
-  content?: String_1398;
+export interface Object_452 {
+  address: String_1361;
+  metadata: Object_453;
+  sizeInBytes: Number_134;
+  mtime: Number_135;
+  ctime: Number_136;
+  content?: String_1362;
 }
-export interface Object_465 {
+export interface Object_453 {
   [k: string]: unknown;
 }
 
@@ -13107,20 +12652,20 @@ export interface Object_465 {
 /**
  * The branch to merge into (defaults to 'main')
  */
-export type String_1399 = string;
+export type String_1363 = string;
 /**
  * The branch to merge from
  */
-export type String_1400 = string;
+export type String_1364 = string;
 /**
  * Merge strategy
  */
-export type String_1401 = "OVERRIDE" | "LAST_WRITE_WINS";
+export type String_1365 = "OVERRIDE" | "LAST_WRITE_WINS";
 
 export interface MERGE_BRANCHInput_1 {
-  targetBranch?: String_1399;
-  sourceBranch: String_1400;
-  strategy: String_1401;
+  targetBranch?: String_1363;
+  sourceBranch: String_1364;
+  strategy: String_1365;
 }
 
 /* eslint-disable */
@@ -13130,31 +12675,31 @@ export interface MERGE_BRANCHInput_1 {
  * and run json-schema-to-typescript to regenerate this file.
  */
 
-export type Number_133 = number;
-export type String_1402 = string;
-export type Array_160 = String_1402[];
-export type String_1403 = string;
-export type Array_161 = String_1403[];
-export type String_1404 = string;
-export type Array_162 = String_1404[];
-export type String_1405 = string;
-export type String_1406 = "local" | "remote";
-export type Number_134 = number;
-export type Number_135 = number;
-export type Array_163 = Object_466[];
+export type Number_138 = number;
+export type String_1366 = string;
+export type Array_150 = String_1366[];
+export type String_1367 = string;
+export type Array_151 = String_1367[];
+export type String_1368 = string;
+export type Array_152 = String_1368[];
+export type String_1369 = string;
+export type String_1370 = "local" | "remote";
+export type Number_139 = number;
+export type Number_140 = number;
+export type Array_153 = Object_454[];
 
 export interface MERGE_BRANCHOutput_1 {
-  filesMerged: Number_133;
-  added: Array_160;
-  modified: Array_161;
-  deleted: Array_162;
-  conflicts?: Array_163;
+  filesMerged: Number_138;
+  added: Array_150;
+  modified: Array_151;
+  deleted: Array_152;
+  conflicts?: Array_153;
 }
-export interface Object_466 {
-  path: String_1405;
-  resolved: String_1406;
-  localMtime: Number_134;
-  remoteMtime: Number_135;
+export interface Object_454 {
+  path: String_1369;
+  resolved: String_1370;
+  localMtime: Number_139;
+  remoteMtime: Number_140;
 }
 
 /* eslint-disable */
@@ -13167,46 +12712,46 @@ export interface Object_466 {
 /**
  * The branch name
  */
-export type String_1407 = string;
+export type String_1371 = string;
 /**
  * The file path within the branch
  */
-export type String_1408 = string;
+export type String_1372 = string;
 /**
  * Plain text string content
  */
-export type String_1409 = string;
+export type String_1373 = string;
 /**
  * Base64 encoded content
  */
-export type String_1410 = string;
-export type Number_136 = number;
+export type String_1374 = string;
+export type Number_141 = number;
 /**
  * Array of bytes (0-255)
  */
-export type Array_164 = Number_136[];
+export type Array_154 = Number_141[];
 /**
  * Expected change time for conflict detection
  */
-export type Number_137 = number;
+export type Number_142 = number;
 
 export interface PUT_FILEInput_1 {
-  branch?: String_1407;
-  path: String_1408;
+  branch?: String_1371;
+  path: String_1372;
   /**
    * The file content as plain string, base64 object, or array of bytes
    */
-  content: String_1409 | Object_467 | Array_164;
-  metadata?: Object_468;
-  expectedCtime?: Number_137;
+  content: String_1373 | Object_455 | Array_154;
+  metadata?: Object_456;
+  expectedCtime?: Number_142;
 }
-export interface Object_467 {
-  base64: String_1410;
+export interface Object_455 {
+  base64: String_1374;
 }
 /**
  * Additional metadata key-value pairs
  */
-export interface Object_468 {
+export interface Object_456 {
   [k: string]: unknown;
 }
 
@@ -13217,10 +12762,10 @@ export interface Object_468 {
  * and run json-schema-to-typescript to regenerate this file.
  */
 
-export type Boolean_98 = boolean;
+export type Boolean_95 = boolean;
 
 export interface PUT_FILEOutput_1 {
-  conflict?: Boolean_98;
+  conflict?: Boolean_95;
 }
 
 /* eslint-disable */
@@ -13233,20 +12778,20 @@ export interface PUT_FILEOutput_1 {
 /**
  * The branch name
  */
-export type String_1411 = string;
+export type String_1375 = string;
 /**
  * The file path within the branch
  */
-export type String_1412 = string;
+export type String_1376 = string;
 /**
  * Return format: 'base64' (default), 'byteArray', 'plainString', or 'json'
  */
-export type String_1413 = "base64" | "byteArray" | "plainString" | "json";
+export type String_1377 = "base64" | "byteArray" | "plainString" | "json";
 
 export interface READ_FILEInput_1 {
-  branch?: String_1411;
-  path: String_1412;
-  format?: String_1413;
+  branch?: String_1375;
+  path: String_1376;
+  format?: String_1377;
 }
 
 /* eslint-disable */
@@ -13256,18 +12801,18 @@ export interface READ_FILEInput_1 {
  * and run json-schema-to-typescript to regenerate this file.
  */
 
-export type String_1414 = string;
-export type Number_138 = number;
-export type Number_139 = number;
+export type String_1378 = string;
+export type Number_143 = number;
+export type Number_144 = number;
 
 export interface READ_FILEOutput_1 {
   content?: unknown;
-  address: String_1414;
-  metadata: Object_469;
-  mtime: Number_138;
-  ctime: Number_139;
+  address: String_1378;
+  metadata: Object_457;
+  mtime: Number_143;
+  ctime: Number_144;
 }
-export interface Object_469 {
+export interface Object_457 {
   [k: string]: unknown;
 }
 
@@ -13278,74 +12823,74 @@ export interface Object_469 {
  * and run json-schema-to-typescript to regenerate this file.
  */
 
-export type String_1415 = string;
-export type String_1416 = "user" | "assistant" | "system";
-export type String_1417 = string;
-export type String_1418 = string;
+export type String_1379 = string;
+export type String_1380 = "user" | "assistant" | "system";
+export type String_1381 = string;
+export type String_1382 = string;
 /**
  * The name of the attachment, usually the file name
  */
-export type String_1419 = string;
+export type String_1383 = string;
 /**
  * Media type of the attachment
  */
-export type String_1420 = string;
+export type String_1384 = string;
 /**
  * URL of the attachment (hosted file or Data URL)
  */
-export type String_1421 = string;
+export type String_1385 = string;
 /**
  * Additional attachments to be sent along with the message
  */
-export type Array_166 = Object_471[];
+export type Array_156 = Object_459[];
 /**
  * Array of messages for the conversation
  */
-export type Array_165 = Object_470[];
+export type Array_155 = Object_458[];
 /**
  * Skip transaction creation
  */
-export type Boolean_99 = boolean;
+export type Boolean_96 = boolean;
 /**
  * Model ID to use for generation (defaults to workspace default)
  */
-export type String_1422 = string;
+export type String_1386 = string;
 /**
  * Maximum number of tokens to generate
  */
-export type Number_140 = number;
+export type Number_145 = number;
 /**
  * Temperature for the generation
  */
-export type Number_141 = number;
-export type String_1423 = string;
-export type Array_167 = String_1423[];
+export type Number_146 = number;
+export type String_1387 = string;
+export type Array_157 = String_1387[];
 
 export interface AI_GENERATEInput_1 {
-  messages: Array_165;
-  skipTransaction?: Boolean_99;
-  model?: String_1422;
-  maxTokens?: Number_140;
-  temperature?: Number_141;
-  tools?: Object_472;
+  messages: Array_155;
+  skipTransaction?: Boolean_96;
+  model?: String_1386;
+  maxTokens?: Number_145;
+  temperature?: Number_146;
+  tools?: Object_460;
 }
-export interface Object_470 {
-  id?: String_1415;
-  role: String_1416;
-  content: String_1417;
-  createdAt?: String_1418;
-  experimental_attachments?: Array_166;
+export interface Object_458 {
+  id?: String_1379;
+  role: String_1380;
+  content: String_1381;
+  createdAt?: String_1382;
+  experimental_attachments?: Array_156;
 }
-export interface Object_471 {
-  name?: String_1419;
-  contentType?: String_1420;
-  url: String_1421;
+export interface Object_459 {
+  name?: String_1383;
+  contentType?: String_1384;
+  url: String_1385;
 }
 /**
  * Tools available for the generation
  */
-export interface Object_472 {
-  [k: string]: Array_167;
+export interface Object_460 {
+  [k: string]: Array_157;
 }
 
 /* eslint-disable */
@@ -13358,134 +12903,7 @@ export interface Object_472 {
 /**
  * The generated text response
  */
-export type String_1424 = string;
-/**
- * Number of tokens in the prompt
- */
-export type Number_142 = number;
-/**
- * Number of tokens in the completion
- */
-export type Number_143 = number;
-/**
- * Total number of tokens used
- */
-export type Number_144 = number;
-/**
- * Transaction ID
- */
-export type String_1425 = string;
-/**
- * Reason why generation finished
- */
-export type String_1426 = string;
-
-export interface AI_GENERATEOutput_1 {
-  text: String_1424;
-  usage: Object_473;
-  finishReason?: String_1426;
-}
-/**
- * Token usage information
- */
-export interface Object_473 {
-  promptTokens: Number_142;
-  completionTokens: Number_143;
-  totalTokens: Number_144;
-  transactionId?: String_1425;
-}
-
-/* eslint-disable */
-/**
- * This file was automatically generated by json-schema-to-typescript.
- * DO NOT MODIFY IT BY HAND. Instead, modify the source JSONSchema file,
- * and run json-schema-to-typescript to regenerate this file.
- */
-
-export type String_1427 = string;
-export type String_1428 = "user" | "assistant" | "system";
-export type String_1429 = string;
-export type String_1430 = string;
-/**
- * The name of the attachment, usually the file name
- */
-export type String_1431 = string;
-/**
- * Media type of the attachment
- */
-export type String_1432 = string;
-/**
- * URL of the attachment (hosted file or Data URL)
- */
-export type String_1433 = string;
-/**
- * Additional attachments to be sent along with the message
- */
-export type Array_169 = Object_475[];
-/**
- * Array of messages for the conversation
- */
-export type Array_168 = Object_474[];
-/**
- * Skip transaction creation
- */
-export type Boolean_100 = boolean;
-/**
- * Model ID to use for generation (defaults to workspace default)
- */
-export type String_1434 = string;
-/**
- * Maximum number of tokens to generate
- */
-export type Number_145 = number;
-/**
- * Temperature for the generation
- */
-export type Number_146 = number;
-export type String_1435 = string;
-export type Array_170 = String_1435[];
-
-export interface AI_GENERATE_OBJECTInput_1 {
-  messages: Array_168;
-  schema: Object_476;
-  skipTransaction?: Boolean_100;
-  model?: String_1434;
-  maxTokens?: Number_145;
-  temperature?: Number_146;
-  tools?: Object_477;
-}
-export interface Object_474 {
-  id?: String_1427;
-  role: String_1428;
-  content: String_1429;
-  createdAt?: String_1430;
-  experimental_attachments?: Array_169;
-}
-export interface Object_475 {
-  name?: String_1431;
-  contentType?: String_1432;
-  url: String_1433;
-}
-/**
- * JSON Schema that defines the structure of the object to generate
- */
-export interface Object_476 {
-  [k: string]: unknown;
-}
-/**
- * Tools available for the generation
- */
-export interface Object_477 {
-  [k: string]: Array_170;
-}
-
-/* eslint-disable */
-/**
- * This file was automatically generated by json-schema-to-typescript.
- * DO NOT MODIFY IT BY HAND. Instead, modify the source JSONSchema file,
- * and run json-schema-to-typescript to regenerate this file.
- */
-
+export type String_1388 = string;
 /**
  * Number of tokens in the prompt
  */
@@ -13501,11 +12919,138 @@ export type Number_149 = number;
 /**
  * Transaction ID
  */
-export type String_1436 = string;
+export type String_1389 = string;
 /**
  * Reason why generation finished
  */
-export type String_1437 = string;
+export type String_1390 = string;
+
+export interface AI_GENERATEOutput_1 {
+  text: String_1388;
+  usage: Object_461;
+  finishReason?: String_1390;
+}
+/**
+ * Token usage information
+ */
+export interface Object_461 {
+  promptTokens: Number_147;
+  completionTokens: Number_148;
+  totalTokens: Number_149;
+  transactionId?: String_1389;
+}
+
+/* eslint-disable */
+/**
+ * This file was automatically generated by json-schema-to-typescript.
+ * DO NOT MODIFY IT BY HAND. Instead, modify the source JSONSchema file,
+ * and run json-schema-to-typescript to regenerate this file.
+ */
+
+export type String_1391 = string;
+export type String_1392 = "user" | "assistant" | "system";
+export type String_1393 = string;
+export type String_1394 = string;
+/**
+ * The name of the attachment, usually the file name
+ */
+export type String_1395 = string;
+/**
+ * Media type of the attachment
+ */
+export type String_1396 = string;
+/**
+ * URL of the attachment (hosted file or Data URL)
+ */
+export type String_1397 = string;
+/**
+ * Additional attachments to be sent along with the message
+ */
+export type Array_159 = Object_463[];
+/**
+ * Array of messages for the conversation
+ */
+export type Array_158 = Object_462[];
+/**
+ * Skip transaction creation
+ */
+export type Boolean_97 = boolean;
+/**
+ * Model ID to use for generation (defaults to workspace default)
+ */
+export type String_1398 = string;
+/**
+ * Maximum number of tokens to generate
+ */
+export type Number_150 = number;
+/**
+ * Temperature for the generation
+ */
+export type Number_151 = number;
+export type String_1399 = string;
+export type Array_160 = String_1399[];
+
+export interface AI_GENERATE_OBJECTInput_1 {
+  messages: Array_158;
+  schema: Object_464;
+  skipTransaction?: Boolean_97;
+  model?: String_1398;
+  maxTokens?: Number_150;
+  temperature?: Number_151;
+  tools?: Object_465;
+}
+export interface Object_462 {
+  id?: String_1391;
+  role: String_1392;
+  content: String_1393;
+  createdAt?: String_1394;
+  experimental_attachments?: Array_159;
+}
+export interface Object_463 {
+  name?: String_1395;
+  contentType?: String_1396;
+  url: String_1397;
+}
+/**
+ * JSON Schema that defines the structure of the object to generate
+ */
+export interface Object_464 {
+  [k: string]: unknown;
+}
+/**
+ * Tools available for the generation
+ */
+export interface Object_465 {
+  [k: string]: Array_160;
+}
+
+/* eslint-disable */
+/**
+ * This file was automatically generated by json-schema-to-typescript.
+ * DO NOT MODIFY IT BY HAND. Instead, modify the source JSONSchema file,
+ * and run json-schema-to-typescript to regenerate this file.
+ */
+
+/**
+ * Number of tokens in the prompt
+ */
+export type Number_152 = number;
+/**
+ * Number of tokens in the completion
+ */
+export type Number_153 = number;
+/**
+ * Total number of tokens used
+ */
+export type Number_154 = number;
+/**
+ * Transaction ID
+ */
+export type String_1400 = string;
+/**
+ * Reason why generation finished
+ */
+export type String_1401 = string;
 
 export interface AI_GENERATE_OBJECTOutput_1 {
   /**
@@ -13514,17 +13059,17 @@ export interface AI_GENERATE_OBJECTOutput_1 {
   object?: {
     [k: string]: unknown;
   };
-  usage: Object_478;
-  finishReason?: String_1437;
+  usage: Object_466;
+  finishReason?: String_1401;
 }
 /**
  * Token usage information
  */
-export interface Object_478 {
-  promptTokens: Number_147;
-  completionTokens: Number_148;
-  totalTokens: Number_149;
-  transactionId?: String_1436;
+export interface Object_466 {
+  promptTokens: Number_152;
+  completionTokens: Number_153;
+  totalTokens: Number_154;
+  transactionId?: String_1400;
 }
 
 /* eslint-disable */
@@ -13537,16 +13082,16 @@ export interface Object_478 {
 /**
  * The API key to check access for, if not provided, the current key from context will be used
  */
-export type String_1438 = string;
-export type String_1439 = string;
+export type String_1402 = string;
+export type String_1403 = string;
 /**
  * All tools that wants to check access
  */
-export type Array_171 = String_1439[];
+export type Array_161 = String_1403[];
 
 export interface API_KEYS_CHECK_ACCESSInput_1 {
-  key?: String_1438;
-  tools: Array_171;
+  key?: String_1402;
+  tools: Array_161;
 }
 
 /* eslint-disable */
@@ -13556,13 +13101,13 @@ export interface API_KEYS_CHECK_ACCESSInput_1 {
  * and run json-schema-to-typescript to regenerate this file.
  */
 
-export type Boolean_101 = boolean;
+export type Boolean_98 = boolean;
 
 export interface API_KEYS_CHECK_ACCESSOutput_1 {
-  access: Object_479;
+  access: Object_467;
 }
-export interface Object_479 {
-  [k: string]: Boolean_101;
+export interface Object_467 {
+  [k: string]: Boolean_98;
 }
 
 /* eslint-disable */
@@ -13575,39 +13120,333 @@ export interface Object_479 {
 /**
  * The name of the API key
  */
-export type String_1440 = string;
-export type String_1441 = "allow" | "deny";
-export type String_1442 = string;
-export type String_1443 = "is_integration";
-export type String_1444 = string;
+export type String_1404 = string;
+export type String_1405 = "allow" | "deny";
+export type String_1406 = string;
+export type String_1407 = "is_integration";
+export type String_1408 = string;
 /**
  * Policies for the API key
  */
-export type Array_172 = Object_480[];
-export type String_1445 = string;
-export type String_1446 = string;
+export type Array_162 = Object_468[];
+export type String_1409 = string;
+export type String_1410 = string;
 
 export interface API_KEYS_CREATEInput_1 {
-  name: String_1440;
-  policies?: Array_172;
-  claims?: Object_482;
+  name: String_1404;
+  policies?: Array_162;
+  claims?: Object_470;
 }
-export interface Object_480 {
-  effect: String_1441;
-  resource: String_1442;
-  matchCondition?: Object_481;
+export interface Object_468 {
+  effect: String_1405;
+  resource: String_1406;
+  matchCondition?: Object_469;
 }
-export interface Object_481 {
-  resource: String_1443;
-  integrationId: String_1444;
+export interface Object_469 {
+  resource: String_1407;
+  integrationId: String_1408;
 }
 /**
  * App Claims to be added to the API key
  */
-export interface Object_482 {
-  appName: String_1445;
-  integrationId: String_1446;
+export interface Object_470 {
+  appName: String_1409;
+  integrationId: String_1410;
   state?: unknown;
+}
+
+/* eslint-disable */
+/**
+ * This file was automatically generated by json-schema-to-typescript.
+ * DO NOT MODIFY IT BY HAND. Instead, modify the source JSONSchema file,
+ * and run json-schema-to-typescript to regenerate this file.
+ */
+
+/**
+ * The unique identifier of the API key
+ */
+export type String_1411 = string;
+/**
+ * The name of the API key
+ */
+export type String_1412 = string;
+/**
+ * The workspace ID
+ */
+export type StringNull_69 = String_1413 | Null_136;
+export type String_1413 = string;
+export type Null_136 = null;
+/**
+ * Whether the API key is enabled
+ */
+export type Boolean_99 = boolean;
+export type String_1414 = "allow" | "deny";
+export type String_1415 = string;
+export type String_1416 = "is_integration";
+export type String_1417 = string;
+/**
+ * Access policies for the API key
+ */
+export type Array_163 = Object_471[];
+/**
+ * Creation timestamp
+ */
+export type String_1418 = string;
+/**
+ * Last update timestamp
+ */
+export type String_1419 = string;
+/**
+ * Deletion timestamp (null if not deleted)
+ */
+export type StringNull_70 = String_1420 | Null_137;
+export type String_1420 = string;
+export type Null_137 = null;
+/**
+ * The actual API key value (JWT token) - only returned on creation/reissue
+ */
+export type String_1421 = string;
+
+export interface API_KEYS_CREATEOutput_1 {
+  id: String_1411;
+  name: String_1412;
+  workspace: StringNull_69;
+  enabled: Boolean_99;
+  policies: Array_163;
+  createdAt: String_1418;
+  updatedAt: String_1419;
+  deletedAt: StringNull_70;
+  value: String_1421;
+}
+export interface Object_471 {
+  effect: String_1414;
+  resource: String_1415;
+  matchCondition?: Object_472;
+}
+export interface Object_472 {
+  resource: String_1416;
+  integrationId: String_1417;
+}
+
+/* eslint-disable */
+/**
+ * This file was automatically generated by json-schema-to-typescript.
+ * DO NOT MODIFY IT BY HAND. Instead, modify the source JSONSchema file,
+ * and run json-schema-to-typescript to regenerate this file.
+ */
+
+/**
+ * The ID of the API key to delete
+ */
+export type String_1422 = string;
+
+export interface API_KEYS_DELETEInput_1 {
+  id: String_1422;
+}
+
+/* eslint-disable */
+/**
+ * This file was automatically generated by json-schema-to-typescript.
+ * DO NOT MODIFY IT BY HAND. Instead, modify the source JSONSchema file,
+ * and run json-schema-to-typescript to regenerate this file.
+ */
+
+/**
+ * The ID of the deleted API key
+ */
+export type String_1423 = string;
+/**
+ * Confirmation that the key was deleted
+ */
+export type Boolean_100 = boolean;
+
+export interface API_KEYS_DELETEOutput_1 {
+  id: String_1423;
+  deleted: Boolean_100;
+}
+
+/* eslint-disable */
+/**
+ * This file was automatically generated by json-schema-to-typescript.
+ * DO NOT MODIFY IT BY HAND. Instead, modify the source JSONSchema file,
+ * and run json-schema-to-typescript to regenerate this file.
+ */
+
+/**
+ * The ID of the API key to disable
+ */
+export type String_1424 = string;
+
+export interface API_KEYS_DISABLEInput_1 {
+  id: String_1424;
+}
+
+/* eslint-disable */
+/**
+ * This file was automatically generated by json-schema-to-typescript.
+ * DO NOT MODIFY IT BY HAND. Instead, modify the source JSONSchema file,
+ * and run json-schema-to-typescript to regenerate this file.
+ */
+
+/**
+ * The unique identifier of the API key
+ */
+export type String_1425 = string;
+/**
+ * The name of the API key
+ */
+export type String_1426 = string;
+/**
+ * The workspace ID
+ */
+export type StringNull_71 = String_1427 | Null_138;
+export type String_1427 = string;
+export type Null_138 = null;
+/**
+ * Whether the API key is enabled
+ */
+export type Boolean_101 = boolean;
+export type String_1428 = "allow" | "deny";
+export type String_1429 = string;
+export type String_1430 = "is_integration";
+export type String_1431 = string;
+/**
+ * Access policies for the API key
+ */
+export type Array_164 = Object_473[];
+/**
+ * Creation timestamp
+ */
+export type String_1432 = string;
+/**
+ * Last update timestamp
+ */
+export type String_1433 = string;
+/**
+ * Deletion timestamp (null if not deleted)
+ */
+export type StringNull_72 = String_1434 | Null_139;
+export type String_1434 = string;
+export type Null_139 = null;
+
+export interface API_KEYS_DISABLEOutput_1 {
+  id: String_1425;
+  name: String_1426;
+  workspace: StringNull_71;
+  enabled: Boolean_101;
+  policies: Array_164;
+  createdAt: String_1432;
+  updatedAt: String_1433;
+  deletedAt: StringNull_72;
+}
+export interface Object_473 {
+  effect: String_1428;
+  resource: String_1429;
+  matchCondition?: Object_474;
+}
+export interface Object_474 {
+  resource: String_1430;
+  integrationId: String_1431;
+}
+
+/* eslint-disable */
+/**
+ * This file was automatically generated by json-schema-to-typescript.
+ * DO NOT MODIFY IT BY HAND. Instead, modify the source JSONSchema file,
+ * and run json-schema-to-typescript to regenerate this file.
+ */
+
+/**
+ * The ID of the API key to enable
+ */
+export type String_1435 = string;
+
+export interface API_KEYS_ENABLEInput_1 {
+  id: String_1435;
+}
+
+/* eslint-disable */
+/**
+ * This file was automatically generated by json-schema-to-typescript.
+ * DO NOT MODIFY IT BY HAND. Instead, modify the source JSONSchema file,
+ * and run json-schema-to-typescript to regenerate this file.
+ */
+
+/**
+ * The unique identifier of the API key
+ */
+export type String_1436 = string;
+/**
+ * The name of the API key
+ */
+export type String_1437 = string;
+/**
+ * The workspace ID
+ */
+export type StringNull_73 = String_1438 | Null_140;
+export type String_1438 = string;
+export type Null_140 = null;
+/**
+ * Whether the API key is enabled
+ */
+export type Boolean_102 = boolean;
+export type String_1439 = "allow" | "deny";
+export type String_1440 = string;
+export type String_1441 = "is_integration";
+export type String_1442 = string;
+/**
+ * Access policies for the API key
+ */
+export type Array_165 = Object_475[];
+/**
+ * Creation timestamp
+ */
+export type String_1443 = string;
+/**
+ * Last update timestamp
+ */
+export type String_1444 = string;
+/**
+ * Deletion timestamp (null if not deleted)
+ */
+export type StringNull_74 = String_1445 | Null_141;
+export type String_1445 = string;
+export type Null_141 = null;
+
+export interface API_KEYS_ENABLEOutput_1 {
+  id: String_1436;
+  name: String_1437;
+  workspace: StringNull_73;
+  enabled: Boolean_102;
+  policies: Array_165;
+  createdAt: String_1443;
+  updatedAt: String_1444;
+  deletedAt: StringNull_74;
+}
+export interface Object_475 {
+  effect: String_1439;
+  resource: String_1440;
+  matchCondition?: Object_476;
+}
+export interface Object_476 {
+  resource: String_1441;
+  integrationId: String_1442;
+}
+
+/* eslint-disable */
+/**
+ * This file was automatically generated by json-schema-to-typescript.
+ * DO NOT MODIFY IT BY HAND. Instead, modify the source JSONSchema file,
+ * and run json-schema-to-typescript to regenerate this file.
+ */
+
+/**
+ * The ID of the API key
+ */
+export type String_1446 = string;
+
+export interface API_KEYS_GETInput_1 {
+  id: String_1446;
 }
 
 /* eslint-disable */
@@ -13628,13 +13467,13 @@ export type String_1448 = string;
 /**
  * The workspace ID
  */
-export type StringNull_69 = String_1449 | Null_131;
+export type StringNull_75 = String_1449 | Null_142;
 export type String_1449 = string;
-export type Null_131 = null;
+export type Null_142 = null;
 /**
  * Whether the API key is enabled
  */
-export type Boolean_102 = boolean;
+export type Boolean_103 = boolean;
 export type String_1450 = "allow" | "deny";
 export type String_1451 = string;
 export type String_1452 = "is_integration";
@@ -13642,7 +13481,7 @@ export type String_1453 = string;
 /**
  * Access policies for the API key
  */
-export type Array_173 = Object_483[];
+export type Array_166 = Object_477[];
 /**
  * Creation timestamp
  */
@@ -13654,322 +13493,28 @@ export type String_1455 = string;
 /**
  * Deletion timestamp (null if not deleted)
  */
-export type StringNull_70 = String_1456 | Null_132;
+export type StringNull_76 = String_1456 | Null_143;
 export type String_1456 = string;
-export type Null_132 = null;
-/**
- * The actual API key value (JWT token) - only returned on creation/reissue
- */
-export type String_1457 = string;
-
-export interface API_KEYS_CREATEOutput_1 {
-  id: String_1447;
-  name: String_1448;
-  workspace: StringNull_69;
-  enabled: Boolean_102;
-  policies: Array_173;
-  createdAt: String_1454;
-  updatedAt: String_1455;
-  deletedAt: StringNull_70;
-  value: String_1457;
-}
-export interface Object_483 {
-  effect: String_1450;
-  resource: String_1451;
-  matchCondition?: Object_484;
-}
-export interface Object_484 {
-  resource: String_1452;
-  integrationId: String_1453;
-}
-
-/* eslint-disable */
-/**
- * This file was automatically generated by json-schema-to-typescript.
- * DO NOT MODIFY IT BY HAND. Instead, modify the source JSONSchema file,
- * and run json-schema-to-typescript to regenerate this file.
- */
-
-/**
- * The ID of the API key to delete
- */
-export type String_1458 = string;
-
-export interface API_KEYS_DELETEInput_1 {
-  id: String_1458;
-}
-
-/* eslint-disable */
-/**
- * This file was automatically generated by json-schema-to-typescript.
- * DO NOT MODIFY IT BY HAND. Instead, modify the source JSONSchema file,
- * and run json-schema-to-typescript to regenerate this file.
- */
-
-/**
- * The ID of the deleted API key
- */
-export type String_1459 = string;
-/**
- * Confirmation that the key was deleted
- */
-export type Boolean_103 = boolean;
-
-export interface API_KEYS_DELETEOutput_1 {
-  id: String_1459;
-  deleted: Boolean_103;
-}
-
-/* eslint-disable */
-/**
- * This file was automatically generated by json-schema-to-typescript.
- * DO NOT MODIFY IT BY HAND. Instead, modify the source JSONSchema file,
- * and run json-schema-to-typescript to regenerate this file.
- */
-
-/**
- * The ID of the API key to disable
- */
-export type String_1460 = string;
-
-export interface API_KEYS_DISABLEInput_1 {
-  id: String_1460;
-}
-
-/* eslint-disable */
-/**
- * This file was automatically generated by json-schema-to-typescript.
- * DO NOT MODIFY IT BY HAND. Instead, modify the source JSONSchema file,
- * and run json-schema-to-typescript to regenerate this file.
- */
-
-/**
- * The unique identifier of the API key
- */
-export type String_1461 = string;
-/**
- * The name of the API key
- */
-export type String_1462 = string;
-/**
- * The workspace ID
- */
-export type StringNull_71 = String_1463 | Null_133;
-export type String_1463 = string;
-export type Null_133 = null;
-/**
- * Whether the API key is enabled
- */
-export type Boolean_104 = boolean;
-export type String_1464 = "allow" | "deny";
-export type String_1465 = string;
-export type String_1466 = "is_integration";
-export type String_1467 = string;
-/**
- * Access policies for the API key
- */
-export type Array_174 = Object_485[];
-/**
- * Creation timestamp
- */
-export type String_1468 = string;
-/**
- * Last update timestamp
- */
-export type String_1469 = string;
-/**
- * Deletion timestamp (null if not deleted)
- */
-export type StringNull_72 = String_1470 | Null_134;
-export type String_1470 = string;
-export type Null_134 = null;
-
-export interface API_KEYS_DISABLEOutput_1 {
-  id: String_1461;
-  name: String_1462;
-  workspace: StringNull_71;
-  enabled: Boolean_104;
-  policies: Array_174;
-  createdAt: String_1468;
-  updatedAt: String_1469;
-  deletedAt: StringNull_72;
-}
-export interface Object_485 {
-  effect: String_1464;
-  resource: String_1465;
-  matchCondition?: Object_486;
-}
-export interface Object_486 {
-  resource: String_1466;
-  integrationId: String_1467;
-}
-
-/* eslint-disable */
-/**
- * This file was automatically generated by json-schema-to-typescript.
- * DO NOT MODIFY IT BY HAND. Instead, modify the source JSONSchema file,
- * and run json-schema-to-typescript to regenerate this file.
- */
-
-/**
- * The ID of the API key to enable
- */
-export type String_1471 = string;
-
-export interface API_KEYS_ENABLEInput_1 {
-  id: String_1471;
-}
-
-/* eslint-disable */
-/**
- * This file was automatically generated by json-schema-to-typescript.
- * DO NOT MODIFY IT BY HAND. Instead, modify the source JSONSchema file,
- * and run json-schema-to-typescript to regenerate this file.
- */
-
-/**
- * The unique identifier of the API key
- */
-export type String_1472 = string;
-/**
- * The name of the API key
- */
-export type String_1473 = string;
-/**
- * The workspace ID
- */
-export type StringNull_73 = String_1474 | Null_135;
-export type String_1474 = string;
-export type Null_135 = null;
-/**
- * Whether the API key is enabled
- */
-export type Boolean_105 = boolean;
-export type String_1475 = "allow" | "deny";
-export type String_1476 = string;
-export type String_1477 = "is_integration";
-export type String_1478 = string;
-/**
- * Access policies for the API key
- */
-export type Array_175 = Object_487[];
-/**
- * Creation timestamp
- */
-export type String_1479 = string;
-/**
- * Last update timestamp
- */
-export type String_1480 = string;
-/**
- * Deletion timestamp (null if not deleted)
- */
-export type StringNull_74 = String_1481 | Null_136;
-export type String_1481 = string;
-export type Null_136 = null;
-
-export interface API_KEYS_ENABLEOutput_1 {
-  id: String_1472;
-  name: String_1473;
-  workspace: StringNull_73;
-  enabled: Boolean_105;
-  policies: Array_175;
-  createdAt: String_1479;
-  updatedAt: String_1480;
-  deletedAt: StringNull_74;
-}
-export interface Object_487 {
-  effect: String_1475;
-  resource: String_1476;
-  matchCondition?: Object_488;
-}
-export interface Object_488 {
-  resource: String_1477;
-  integrationId: String_1478;
-}
-
-/* eslint-disable */
-/**
- * This file was automatically generated by json-schema-to-typescript.
- * DO NOT MODIFY IT BY HAND. Instead, modify the source JSONSchema file,
- * and run json-schema-to-typescript to regenerate this file.
- */
-
-/**
- * The ID of the API key
- */
-export type String_1482 = string;
-
-export interface API_KEYS_GETInput_1 {
-  id: String_1482;
-}
-
-/* eslint-disable */
-/**
- * This file was automatically generated by json-schema-to-typescript.
- * DO NOT MODIFY IT BY HAND. Instead, modify the source JSONSchema file,
- * and run json-schema-to-typescript to regenerate this file.
- */
-
-/**
- * The unique identifier of the API key
- */
-export type String_1483 = string;
-/**
- * The name of the API key
- */
-export type String_1484 = string;
-/**
- * The workspace ID
- */
-export type StringNull_75 = String_1485 | Null_137;
-export type String_1485 = string;
-export type Null_137 = null;
-/**
- * Whether the API key is enabled
- */
-export type Boolean_106 = boolean;
-export type String_1486 = "allow" | "deny";
-export type String_1487 = string;
-export type String_1488 = "is_integration";
-export type String_1489 = string;
-/**
- * Access policies for the API key
- */
-export type Array_176 = Object_489[];
-/**
- * Creation timestamp
- */
-export type String_1490 = string;
-/**
- * Last update timestamp
- */
-export type String_1491 = string;
-/**
- * Deletion timestamp (null if not deleted)
- */
-export type StringNull_76 = String_1492 | Null_138;
-export type String_1492 = string;
-export type Null_138 = null;
+export type Null_143 = null;
 
 export interface API_KEYS_GETOutput_1 {
-  id: String_1483;
-  name: String_1484;
+  id: String_1447;
+  name: String_1448;
   workspace: StringNull_75;
-  enabled: Boolean_106;
-  policies: Array_176;
-  createdAt: String_1490;
-  updatedAt: String_1491;
+  enabled: Boolean_103;
+  policies: Array_166;
+  createdAt: String_1454;
+  updatedAt: String_1455;
   deletedAt: StringNull_76;
 }
-export interface Object_489 {
-  effect: String_1486;
-  resource: String_1487;
-  matchCondition?: Object_490;
+export interface Object_477 {
+  effect: String_1450;
+  resource: String_1451;
+  matchCondition?: Object_478;
 }
-export interface Object_490 {
-  resource: String_1488;
-  integrationId: String_1489;
+export interface Object_478 {
+  resource: String_1452;
+  integrationId: String_1453;
 }
 
 /* eslint-disable */
@@ -13991,69 +13536,69 @@ export interface API_KEYS_LISTInput_1 {}
 /**
  * The unique identifier of the API key
  */
-export type String_1493 = string;
+export type String_1457 = string;
 /**
  * The name of the API key
  */
-export type String_1494 = string;
+export type String_1458 = string;
 /**
  * The workspace ID
  */
-export type StringNull_77 = String_1495 | Null_139;
-export type String_1495 = string;
-export type Null_139 = null;
+export type StringNull_77 = String_1459 | Null_144;
+export type String_1459 = string;
+export type Null_144 = null;
 /**
  * Whether the API key is enabled
  */
-export type Boolean_107 = boolean;
-export type String_1496 = "allow" | "deny";
-export type String_1497 = string;
-export type String_1498 = "is_integration";
-export type String_1499 = string;
+export type Boolean_104 = boolean;
+export type String_1460 = "allow" | "deny";
+export type String_1461 = string;
+export type String_1462 = "is_integration";
+export type String_1463 = string;
 /**
  * Access policies for the API key
  */
-export type Array_178 = Object_492[];
+export type Array_168 = Object_480[];
 /**
  * Creation timestamp
  */
-export type String_1500 = string;
+export type String_1464 = string;
 /**
  * Last update timestamp
  */
-export type String_1501 = string;
+export type String_1465 = string;
 /**
  * Deletion timestamp (null if not deleted)
  */
-export type StringNull_78 = String_1502 | Null_140;
-export type String_1502 = string;
-export type Null_140 = null;
+export type StringNull_78 = String_1466 | Null_145;
+export type String_1466 = string;
+export type Null_145 = null;
 /**
  * List of API keys
  */
-export type Array_177 = Object_491[];
+export type Array_167 = Object_479[];
 
 export interface API_KEYS_LISTOutput_1 {
-  apiKeys: Array_177;
+  apiKeys: Array_167;
 }
-export interface Object_491 {
-  id: String_1493;
-  name: String_1494;
+export interface Object_479 {
+  id: String_1457;
+  name: String_1458;
   workspace: StringNull_77;
-  enabled: Boolean_107;
-  policies: Array_178;
-  createdAt: String_1500;
-  updatedAt: String_1501;
+  enabled: Boolean_104;
+  policies: Array_168;
+  createdAt: String_1464;
+  updatedAt: String_1465;
   deletedAt: StringNull_78;
 }
-export interface Object_492 {
-  effect: String_1496;
-  resource: String_1497;
-  matchCondition?: Object_493;
+export interface Object_480 {
+  effect: String_1460;
+  resource: String_1461;
+  matchCondition?: Object_481;
 }
-export interface Object_493 {
-  resource: String_1498;
-  integrationId: String_1499;
+export interface Object_481 {
+  resource: String_1462;
+  integrationId: String_1463;
 }
 
 /* eslint-disable */
@@ -14066,34 +13611,34 @@ export interface Object_493 {
 /**
  * The ID of the API key to reissue
  */
-export type String_1503 = string;
-export type String_1504 = "allow" | "deny";
-export type String_1505 = string;
-export type String_1506 = "is_integration";
-export type String_1507 = string;
+export type String_1467 = string;
+export type String_1468 = "allow" | "deny";
+export type String_1469 = string;
+export type String_1470 = "is_integration";
+export type String_1471 = string;
 /**
  * Policies of the API key
  */
-export type Array_179 = Object_494[];
+export type Array_169 = Object_482[];
 
 export interface API_KEYS_REISSUEInput_1 {
-  id: String_1503;
+  id: String_1467;
   /**
    * New claims to be added to the API key
    */
   claims?: {
     [k: string]: unknown;
   };
-  policies?: Array_179;
+  policies?: Array_169;
 }
-export interface Object_494 {
-  effect: String_1504;
-  resource: String_1505;
-  matchCondition?: Object_495;
+export interface Object_482 {
+  effect: String_1468;
+  resource: String_1469;
+  matchCondition?: Object_483;
 }
-export interface Object_495 {
-  resource: String_1506;
-  integrationId: String_1507;
+export interface Object_483 {
+  resource: String_1470;
+  integrationId: String_1471;
 }
 
 /* eslint-disable */
@@ -14106,67 +13651,67 @@ export interface Object_495 {
 /**
  * The unique identifier of the API key
  */
-export type String_1508 = string;
+export type String_1472 = string;
 /**
  * The name of the API key
  */
-export type String_1509 = string;
+export type String_1473 = string;
 /**
  * The workspace ID
  */
-export type StringNull_79 = String_1510 | Null_141;
-export type String_1510 = string;
-export type Null_141 = null;
+export type StringNull_79 = String_1474 | Null_146;
+export type String_1474 = string;
+export type Null_146 = null;
 /**
  * Whether the API key is enabled
  */
-export type Boolean_108 = boolean;
-export type String_1511 = "allow" | "deny";
-export type String_1512 = string;
-export type String_1513 = "is_integration";
-export type String_1514 = string;
+export type Boolean_105 = boolean;
+export type String_1475 = "allow" | "deny";
+export type String_1476 = string;
+export type String_1477 = "is_integration";
+export type String_1478 = string;
 /**
  * Access policies for the API key
  */
-export type Array_180 = Object_496[];
+export type Array_170 = Object_484[];
 /**
  * Creation timestamp
  */
-export type String_1515 = string;
+export type String_1479 = string;
 /**
  * Last update timestamp
  */
-export type String_1516 = string;
+export type String_1480 = string;
 /**
  * Deletion timestamp (null if not deleted)
  */
-export type StringNull_80 = String_1517 | Null_142;
-export type String_1517 = string;
-export type Null_142 = null;
+export type StringNull_80 = String_1481 | Null_147;
+export type String_1481 = string;
+export type Null_147 = null;
 /**
  * The actual API key value (JWT token) - only returned on creation/reissue
  */
-export type String_1518 = string;
+export type String_1482 = string;
 
 export interface API_KEYS_REISSUEOutput_1 {
-  id: String_1508;
-  name: String_1509;
+  id: String_1472;
+  name: String_1473;
   workspace: StringNull_79;
-  enabled: Boolean_108;
-  policies: Array_180;
-  createdAt: String_1515;
-  updatedAt: String_1516;
+  enabled: Boolean_105;
+  policies: Array_170;
+  createdAt: String_1479;
+  updatedAt: String_1480;
   deletedAt: StringNull_80;
-  value: String_1518;
+  value: String_1482;
 }
-export interface Object_496 {
-  effect: String_1511;
-  resource: String_1512;
-  matchCondition?: Object_497;
+export interface Object_484 {
+  effect: String_1475;
+  resource: String_1476;
+  matchCondition?: Object_485;
 }
-export interface Object_497 {
-  resource: String_1513;
-  integrationId: String_1514;
+export interface Object_485 {
+  resource: String_1477;
+  integrationId: String_1478;
 }
 
 /* eslint-disable */
@@ -14179,38 +13724,38 @@ export interface Object_497 {
 /**
  * The ID of the API key
  */
-export type String_1519 = string;
+export type String_1483 = string;
 /**
  * New name for the API key
  */
-export type String_1520 = string;
+export type String_1484 = string;
 /**
  * Whether the API key is enabled
  */
-export type Boolean_109 = boolean;
-export type String_1521 = "allow" | "deny";
-export type String_1522 = string;
-export type String_1523 = "is_integration";
-export type String_1524 = string;
+export type Boolean_106 = boolean;
+export type String_1485 = "allow" | "deny";
+export type String_1486 = string;
+export type String_1487 = "is_integration";
+export type String_1488 = string;
 /**
  * Policies for the API key
  */
-export type Array_181 = Object_498[];
+export type Array_171 = Object_486[];
 
 export interface API_KEYS_UPDATEInput_1 {
-  id: String_1519;
-  name?: String_1520;
-  enabled?: Boolean_109;
-  policies?: Array_181;
+  id: String_1483;
+  name?: String_1484;
+  enabled?: Boolean_106;
+  policies?: Array_171;
 }
-export interface Object_498 {
-  effect: String_1521;
-  resource: String_1522;
-  matchCondition?: Object_499;
+export interface Object_486 {
+  effect: String_1485;
+  resource: String_1486;
+  matchCondition?: Object_487;
 }
-export interface Object_499 {
-  resource: String_1523;
-  integrationId: String_1524;
+export interface Object_487 {
+  resource: String_1487;
+  integrationId: String_1488;
 }
 
 /* eslint-disable */
@@ -14223,62 +13768,62 @@ export interface Object_499 {
 /**
  * The unique identifier of the API key
  */
-export type String_1525 = string;
+export type String_1489 = string;
 /**
  * The name of the API key
  */
-export type String_1526 = string;
+export type String_1490 = string;
 /**
  * The workspace ID
  */
-export type StringNull_81 = String_1527 | Null_143;
-export type String_1527 = string;
-export type Null_143 = null;
+export type StringNull_81 = String_1491 | Null_148;
+export type String_1491 = string;
+export type Null_148 = null;
 /**
  * Whether the API key is enabled
  */
-export type Boolean_110 = boolean;
-export type String_1528 = "allow" | "deny";
-export type String_1529 = string;
-export type String_1530 = "is_integration";
-export type String_1531 = string;
+export type Boolean_107 = boolean;
+export type String_1492 = "allow" | "deny";
+export type String_1493 = string;
+export type String_1494 = "is_integration";
+export type String_1495 = string;
 /**
  * Access policies for the API key
  */
-export type Array_182 = Object_500[];
+export type Array_172 = Object_488[];
 /**
  * Creation timestamp
  */
-export type String_1532 = string;
+export type String_1496 = string;
 /**
  * Last update timestamp
  */
-export type String_1533 = string;
+export type String_1497 = string;
 /**
  * Deletion timestamp (null if not deleted)
  */
-export type StringNull_82 = String_1534 | Null_144;
-export type String_1534 = string;
-export type Null_144 = null;
+export type StringNull_82 = String_1498 | Null_149;
+export type String_1498 = string;
+export type Null_149 = null;
 
 export interface API_KEYS_UPDATEOutput_1 {
-  id: String_1525;
-  name: String_1526;
+  id: String_1489;
+  name: String_1490;
   workspace: StringNull_81;
-  enabled: Boolean_110;
-  policies: Array_182;
-  createdAt: String_1532;
-  updatedAt: String_1533;
+  enabled: Boolean_107;
+  policies: Array_172;
+  createdAt: String_1496;
+  updatedAt: String_1497;
   deletedAt: StringNull_82;
 }
-export interface Object_500 {
-  effect: String_1528;
-  resource: String_1529;
-  matchCondition?: Object_501;
+export interface Object_488 {
+  effect: String_1492;
+  resource: String_1493;
+  matchCondition?: Object_489;
 }
-export interface Object_501 {
-  resource: String_1530;
-  integrationId: String_1531;
+export interface Object_489 {
+  resource: String_1494;
+  integrationId: String_1495;
 }
 
 /* eslint-disable */
@@ -14291,10 +13836,10 @@ export interface Object_501 {
 /**
  * The ID of the API key to validate
  */
-export type String_1535 = string;
+export type String_1499 = string;
 
 export interface API_KEYS_VALIDATEInput_1 {
-  id: String_1535;
+  id: String_1499;
 }
 
 /* eslint-disable */
@@ -14307,29 +13852,412 @@ export interface API_KEYS_VALIDATEInput_1 {
 /**
  * The unique identifier of the API key
  */
-export type String_1536 = string;
+export type String_1500 = string;
 /**
  * The name of the API key
  */
-export type String_1537 = string;
+export type String_1501 = string;
 /**
  * The workspace ID
  */
-export type StringNull_83 = String_1538 | Null_145;
-export type String_1538 = string;
-export type Null_145 = null;
+export type StringNull_83 = String_1502 | Null_150;
+export type String_1502 = string;
+export type Null_150 = null;
 /**
  * Whether the API key is enabled
  */
-export type Boolean_111 = boolean;
-export type String_1539 = "allow" | "deny";
-export type String_1540 = string;
-export type String_1541 = "is_integration";
-export type String_1542 = string;
+export type Boolean_108 = boolean;
+export type String_1503 = "allow" | "deny";
+export type String_1504 = string;
+export type String_1505 = "is_integration";
+export type String_1506 = string;
 /**
  * Access policies for the API key
  */
-export type Array_183 = Object_502[];
+export type Array_173 = Object_490[];
+/**
+ * Creation timestamp
+ */
+export type String_1507 = string;
+/**
+ * Last update timestamp
+ */
+export type String_1508 = string;
+/**
+ * Deletion timestamp (null if not deleted)
+ */
+export type StringNull_84 = String_1509 | Null_151;
+export type String_1509 = string;
+export type Null_151 = null;
+/**
+ * Whether the API key is valid
+ */
+export type Boolean_109 = boolean;
+
+export interface API_KEYS_VALIDATEOutput_1 {
+  id: String_1500;
+  name: String_1501;
+  workspace: StringNull_83;
+  enabled: Boolean_108;
+  policies: Array_173;
+  createdAt: String_1507;
+  updatedAt: String_1508;
+  deletedAt: StringNull_84;
+  valid: Boolean_109;
+}
+export interface Object_490 {
+  effect: String_1503;
+  resource: String_1504;
+  matchCondition?: Object_491;
+}
+export interface Object_491 {
+  resource: String_1505;
+  integrationId: String_1506;
+}
+
+/* eslint-disable */
+/**
+ * This file was automatically generated by json-schema-to-typescript.
+ * DO NOT MODIFY IT BY HAND. Instead, modify the source JSONSchema file,
+ * and run json-schema-to-typescript to regenerate this file.
+ */
+
+/**
+ * The name of the tool
+ */
+export type String_1510 = string;
+/**
+ * The description of the tool
+ */
+export type String_1511 = string;
+/**
+ * Inline ES module code with default export function. The code will be saved to /src/functions/{name}.ts
+ */
+export type String_1512 = string;
+/**
+ * The integration ID (format: i:<uuid>) that this tool depends on
+ */
+export type String_1513 = string;
+/**
+ * List of integrations this tool depends on. These integrations must be installed and available for the tool to execute successfully. Use INTEGRATIONS_LIST to find available integration IDs.
+ */
+export type Array_174 = Object_495[];
+
+export interface DECO_RESOURCE_TOOL_CREATEInput_1 {
+  data: Object_492;
+}
+/**
+ * Resource data to create
+ */
+export interface Object_492 {
+  name: String_1510;
+  description: String_1511;
+  inputSchema: Object_493;
+  outputSchema: Object_494;
+  execute: String_1512;
+  dependencies?: Array_174;
+}
+/**
+ * The JSON schema of the input of the tool
+ */
+export interface Object_493 {
+  [k: string]: unknown;
+}
+/**
+ * The JSON schema of the output of the tool
+ */
+export interface Object_494 {
+  [k: string]: unknown;
+}
+export interface Object_495 {
+  integrationId: String_1513;
+}
+
+/* eslint-disable */
+/**
+ * This file was automatically generated by json-schema-to-typescript.
+ * DO NOT MODIFY IT BY HAND. Instead, modify the source JSONSchema file,
+ * and run json-schema-to-typescript to regenerate this file.
+ */
+
+/**
+ * URI of the created resource
+ */
+export type String_1514 = string;
+/**
+ * The name of the tool
+ */
+export type String_1515 = string;
+/**
+ * The description of the tool
+ */
+export type String_1516 = string;
+/**
+ * Inline ES module code with default export function. The code will be saved to /src/functions/{name}.ts
+ */
+export type String_1517 = string;
+/**
+ * The integration ID (format: i:<uuid>) that this tool depends on
+ */
+export type String_1518 = string;
+/**
+ * List of integrations this tool depends on. These integrations must be installed and available for the tool to execute successfully. Use INTEGRATIONS_LIST to find available integration IDs.
+ */
+export type Array_175 = Object_499[];
+/**
+ * Creation timestamp
+ */
+export type String_1519 = string;
+/**
+ * Last update timestamp
+ */
+export type String_1520 = string;
+/**
+ * User who created the resource
+ */
+export type String_1521 = string;
+
+export interface DECO_RESOURCE_TOOL_CREATEOutput_1 {
+  uri: String_1514;
+  data: Object_496;
+  created_at?: String_1519;
+  updated_at?: String_1520;
+  created_by?: String_1521;
+}
+/**
+ * Created resource data
+ */
+export interface Object_496 {
+  name: String_1515;
+  description: String_1516;
+  inputSchema: Object_497;
+  outputSchema: Object_498;
+  execute: String_1517;
+  dependencies?: Array_175;
+}
+/**
+ * The JSON schema of the input of the tool
+ */
+export interface Object_497 {
+  [k: string]: unknown;
+}
+/**
+ * The JSON schema of the output of the tool
+ */
+export interface Object_498 {
+  [k: string]: unknown;
+}
+export interface Object_499 {
+  integrationId: String_1518;
+}
+
+/* eslint-disable */
+/**
+ * This file was automatically generated by json-schema-to-typescript.
+ * DO NOT MODIFY IT BY HAND. Instead, modify the source JSONSchema file,
+ * and run json-schema-to-typescript to regenerate this file.
+ */
+
+/**
+ * URI of the resource to delete
+ */
+export type String_1522 = string;
+
+export interface DECO_RESOURCE_TOOL_DELETEInput_1 {
+  uri: String_1522;
+}
+
+/* eslint-disable */
+/**
+ * This file was automatically generated by json-schema-to-typescript.
+ * DO NOT MODIFY IT BY HAND. Instead, modify the source JSONSchema file,
+ * and run json-schema-to-typescript to regenerate this file.
+ */
+
+/**
+ * Whether the deletion was successful
+ */
+export type Boolean_110 = boolean;
+/**
+ * URI of the deleted resource
+ */
+export type String_1523 = string;
+
+export interface DECO_RESOURCE_TOOL_DELETEOutput_1 {
+  success: Boolean_110;
+  uri: String_1523;
+}
+
+/* eslint-disable */
+/**
+ * This file was automatically generated by json-schema-to-typescript.
+ * DO NOT MODIFY IT BY HAND. Instead, modify the source JSONSchema file,
+ * and run json-schema-to-typescript to regenerate this file.
+ */
+
+/**
+ * URI of the resource to read
+ */
+export type String_1524 = string;
+
+export interface DECO_RESOURCE_TOOL_READInput_1 {
+  uri: String_1524;
+}
+
+/* eslint-disable */
+/**
+ * This file was automatically generated by json-schema-to-typescript.
+ * DO NOT MODIFY IT BY HAND. Instead, modify the source JSONSchema file,
+ * and run json-schema-to-typescript to regenerate this file.
+ */
+
+/**
+ * URI of the resource
+ */
+export type String_1525 = string;
+/**
+ * The name of the tool
+ */
+export type String_1526 = string;
+/**
+ * The description of the tool
+ */
+export type String_1527 = string;
+/**
+ * Inline ES module code with default export function. The code will be saved to /src/functions/{name}.ts
+ */
+export type String_1528 = string;
+/**
+ * The integration ID (format: i:<uuid>) that this tool depends on
+ */
+export type String_1529 = string;
+/**
+ * List of integrations this tool depends on. These integrations must be installed and available for the tool to execute successfully. Use INTEGRATIONS_LIST to find available integration IDs.
+ */
+export type Array_176 = Object_503[];
+/**
+ * Creation timestamp
+ */
+export type String_1530 = string;
+/**
+ * Last update timestamp
+ */
+export type String_1531 = string;
+/**
+ * User who created the resource
+ */
+export type String_1532 = string;
+/**
+ * User who last updated the resource
+ */
+export type String_1533 = string;
+
+export interface DECO_RESOURCE_TOOL_READOutput_1 {
+  uri: String_1525;
+  data: Object_500;
+  created_at?: String_1530;
+  updated_at?: String_1531;
+  created_by?: String_1532;
+  updated_by?: String_1533;
+}
+/**
+ * Resource data
+ */
+export interface Object_500 {
+  name: String_1526;
+  description: String_1527;
+  inputSchema: Object_501;
+  outputSchema: Object_502;
+  execute: String_1528;
+  dependencies?: Array_176;
+}
+/**
+ * The JSON schema of the input of the tool
+ */
+export interface Object_501 {
+  [k: string]: unknown;
+}
+/**
+ * The JSON schema of the output of the tool
+ */
+export interface Object_502 {
+  [k: string]: unknown;
+}
+export interface Object_503 {
+  integrationId: String_1529;
+}
+
+/* eslint-disable */
+/**
+ * This file was automatically generated by json-schema-to-typescript.
+ * DO NOT MODIFY IT BY HAND. Instead, modify the source JSONSchema file,
+ * and run json-schema-to-typescript to regenerate this file.
+ */
+
+/**
+ * Search term to filter resources
+ */
+export type String_1534 = string;
+/**
+ * Page number (1-based)
+ */
+export type Integer_54 = number;
+/**
+ * Number of items per page
+ */
+export type Integer_55 = number;
+/**
+ * Field to sort by
+ */
+export type String_1535 = string;
+/**
+ * Sort order
+ */
+export type String_1536 = "asc" | "desc";
+
+export interface DECO_RESOURCE_TOOL_SEARCHInput_1 {
+  term?: String_1534;
+  page?: Integer_54;
+  pageSize?: Integer_55;
+  filters?: Object_504;
+  sortBy?: String_1535;
+  sortOrder?: String_1536;
+}
+/**
+ * Additional filters to apply
+ */
+export interface Object_504 {
+  [k: string]: unknown;
+}
+
+/* eslint-disable */
+/**
+ * This file was automatically generated by json-schema-to-typescript.
+ * DO NOT MODIFY IT BY HAND. Instead, modify the source JSONSchema file,
+ * and run json-schema-to-typescript to regenerate this file.
+ */
+
+/**
+ * URI of the resource
+ */
+export type String_1537 = string;
+export type String_1538 = string;
+/**
+ * Description of the resource
+ */
+export type String_1539 = string;
+/**
+ * URL to the resource icon
+ */
+export type String_1540 = string;
+/**
+ * The name of the tool
+ */
+export type String_1541 = string;
+/**
+ * The description of the tool
+ */
+export type String_1542 = string;
 /**
  * Creation timestamp
  */
@@ -14339,35 +14267,70 @@ export type String_1543 = string;
  */
 export type String_1544 = string;
 /**
- * Deletion timestamp (null if not deleted)
+ * User who created the resource
  */
-export type StringNull_84 = String_1545 | Null_146;
 export type String_1545 = string;
-export type Null_146 = null;
 /**
- * Whether the API key is valid
+ * User who last updated the resource
+ */
+export type String_1546 = string;
+/**
+ * Array of matching resources
+ */
+export type Array_177 = Object_505[];
+/**
+ * Total number of matching resources
+ */
+export type Integer_56 = number;
+/**
+ * Current page number
+ */
+export type Integer_57 = number;
+/**
+ * Number of items per page
+ */
+export type Integer_58 = number;
+/**
+ * Total number of pages
+ */
+export type Integer_59 = number;
+/**
+ * Whether there are more pages available
+ */
+export type Boolean_111 = boolean;
+/**
+ * Whether there are previous pages available
  */
 export type Boolean_112 = boolean;
 
-export interface API_KEYS_VALIDATEOutput_1 {
-  id: String_1536;
-  name: String_1537;
-  workspace: StringNull_83;
-  enabled: Boolean_111;
-  policies: Array_183;
-  createdAt: String_1543;
-  updatedAt: String_1544;
-  deletedAt: StringNull_84;
-  valid: Boolean_112;
+export interface DECO_RESOURCE_TOOL_SEARCHOutput_1 {
+  items: Array_177;
+  totalCount: Integer_56;
+  page: Integer_57;
+  pageSize: Integer_58;
+  totalPages: Integer_59;
+  hasNextPage: Boolean_111;
+  hasPreviousPage: Boolean_112;
 }
-export interface Object_502 {
-  effect: String_1539;
-  resource: String_1540;
-  matchCondition?: Object_503;
+export interface Object_505 {
+  uri: String_1537;
+  /**
+   * Resource data with required name
+   */
+  data: Object_506 & Object_507;
+  created_at?: String_1543;
+  updated_at?: String_1544;
+  created_by?: String_1545;
+  updated_by?: String_1546;
 }
-export interface Object_503 {
-  resource: String_1541;
-  integrationId: String_1542;
+export interface Object_506 {
+  name: String_1538;
+  description?: String_1539;
+  icon?: String_1540;
+}
+export interface Object_507 {
+  name: String_1541;
+  description: String_1542;
 }
 
 /* eslint-disable */
@@ -14377,10 +14340,362 @@ export interface Object_503 {
  * and run json-schema-to-typescript to regenerate this file.
  */
 
-export type String_1546 = string;
+/**
+ * URI of the resource to update
+ */
+export type String_1547 = string;
+/**
+ * The name of the tool
+ */
+export type String_1548 = string;
+/**
+ * The description of the tool
+ */
+export type String_1549 = string;
+/**
+ * Inline ES module code with default export function. The code will be saved to /src/functions/{name}.ts
+ */
+export type String_1550 = string;
+/**
+ * The integration ID (format: i:<uuid>) that this tool depends on
+ */
+export type String_1551 = string;
+/**
+ * List of integrations this tool depends on. These integrations must be installed and available for the tool to execute successfully. Use INTEGRATIONS_LIST to find available integration IDs.
+ */
+export type Array_178 = Object_511[];
+
+export interface DECO_RESOURCE_TOOL_UPDATEInput_1 {
+  uri: String_1547;
+  data: Object_508;
+}
+/**
+ * Updated resource data
+ */
+export interface Object_508 {
+  name: String_1548;
+  description: String_1549;
+  inputSchema: Object_509;
+  outputSchema: Object_510;
+  execute: String_1550;
+  dependencies?: Array_178;
+}
+/**
+ * The JSON schema of the input of the tool
+ */
+export interface Object_509 {
+  [k: string]: unknown;
+}
+/**
+ * The JSON schema of the output of the tool
+ */
+export interface Object_510 {
+  [k: string]: unknown;
+}
+export interface Object_511 {
+  integrationId: String_1551;
+}
+
+/* eslint-disable */
+/**
+ * This file was automatically generated by json-schema-to-typescript.
+ * DO NOT MODIFY IT BY HAND. Instead, modify the source JSONSchema file,
+ * and run json-schema-to-typescript to regenerate this file.
+ */
+
+/**
+ * URI of the updated resource
+ */
+export type String_1552 = string;
+/**
+ * The name of the tool
+ */
+export type String_1553 = string;
+/**
+ * The description of the tool
+ */
+export type String_1554 = string;
+/**
+ * Inline ES module code with default export function. The code will be saved to /src/functions/{name}.ts
+ */
+export type String_1555 = string;
+/**
+ * The integration ID (format: i:<uuid>) that this tool depends on
+ */
+export type String_1556 = string;
+/**
+ * List of integrations this tool depends on. These integrations must be installed and available for the tool to execute successfully. Use INTEGRATIONS_LIST to find available integration IDs.
+ */
+export type Array_179 = Object_515[];
+/**
+ * Original creation timestamp
+ */
+export type String_1557 = string;
+/**
+ * Last update timestamp
+ */
+export type String_1558 = string;
+/**
+ * User who originally created the resource
+ */
+export type String_1559 = string;
+/**
+ * User who last updated the resource
+ */
+export type String_1560 = string;
+
+export interface DECO_RESOURCE_TOOL_UPDATEOutput_1 {
+  uri: String_1552;
+  data: Object_512;
+  created_at?: String_1557;
+  updated_at?: String_1558;
+  created_by?: String_1559;
+  updated_by?: String_1560;
+}
+/**
+ * Updated resource data
+ */
+export interface Object_512 {
+  name: String_1553;
+  description: String_1554;
+  inputSchema: Object_513;
+  outputSchema: Object_514;
+  execute: String_1555;
+  dependencies?: Array_179;
+}
+/**
+ * The JSON schema of the input of the tool
+ */
+export interface Object_513 {
+  [k: string]: unknown;
+}
+/**
+ * The JSON schema of the output of the tool
+ */
+export interface Object_514 {
+  [k: string]: unknown;
+}
+export interface Object_515 {
+  integrationId: String_1556;
+}
+
+/* eslint-disable */
+/**
+ * This file was automatically generated by json-schema-to-typescript.
+ * DO NOT MODIFY IT BY HAND. Instead, modify the source JSONSchema file,
+ * and run json-schema-to-typescript to regenerate this file.
+ */
+
+/**
+ * The URI of the tool to run
+ */
+export type String_1561 = string;
+/**
+ * The token to use for the tool execution
+ */
+export type String_1562 = string;
+
+export interface DECO_TOOL_CALL_TOOLInput_1 {
+  uri: String_1561;
+  input: Object_516;
+  authorization?: String_1562;
+}
+/**
+ * The input of the code
+ */
+export interface Object_516 {
+  [k: string]: unknown;
+}
+
+/* eslint-disable */
+/**
+ * This file was automatically generated by json-schema-to-typescript.
+ * DO NOT MODIFY IT BY HAND. Instead, modify the source JSONSchema file,
+ * and run json-schema-to-typescript to regenerate this file.
+ */
+
+export type String_1563 = "log" | "warn" | "error";
+export type String_1564 = string;
+/**
+ * Console logs from the execution
+ */
+export type Array_180 = Object_517[];
+
+export interface DECO_TOOL_CALL_TOOLOutput_1 {
+  /**
+   * The result of the tool execution
+   */
+  result?: {
+    [k: string]: unknown;
+  };
+  /**
+   * Error if any
+   */
+  error?: {
+    [k: string]: unknown;
+  };
+  logs?: Array_180;
+}
+export interface Object_517 {
+  type: String_1563;
+  content: String_1564;
+}
+
+/* eslint-disable */
+/**
+ * This file was automatically generated by json-schema-to-typescript.
+ * DO NOT MODIFY IT BY HAND. Instead, modify the source JSONSchema file,
+ * and run json-schema-to-typescript to regenerate this file.
+ */
+
+/**
+ * The name of the tool
+ */
+export type String_1565 = string;
+/**
+ * The description of the tool
+ */
+export type String_1566 = string;
+/**
+ * Inline ES module code with default export function. The code will be saved to /src/functions/{name}.ts
+ */
+export type String_1567 = string;
+/**
+ * The integration ID (format: i:<uuid>) that this tool depends on
+ */
+export type String_1568 = string;
+/**
+ * List of integrations this tool depends on. These integrations must be installed and available for the tool to execute successfully. Use INTEGRATIONS_LIST to find available integration IDs.
+ */
+export type Array_181 = Object_521[];
+/**
+ * The token to use for the tool execution
+ */
+export type String_1569 = string;
+
+export interface DECO_TOOL_RUN_TOOLInput_1 {
+  tool: Object_518;
+  input: Object_522;
+  authorization?: String_1569;
+}
+export interface Object_518 {
+  name: String_1565;
+  description: String_1566;
+  inputSchema: Object_519;
+  outputSchema: Object_520;
+  execute: String_1567;
+  dependencies?: Array_181;
+}
+/**
+ * The JSON schema of the input of the tool
+ */
+export interface Object_519 {
+  [k: string]: unknown;
+}
+/**
+ * The JSON schema of the output of the tool
+ */
+export interface Object_520 {
+  [k: string]: unknown;
+}
+export interface Object_521 {
+  integrationId: String_1568;
+}
+/**
+ * The input of the code
+ */
+export interface Object_522 {
+  [k: string]: unknown;
+}
+
+/* eslint-disable */
+/**
+ * This file was automatically generated by json-schema-to-typescript.
+ * DO NOT MODIFY IT BY HAND. Instead, modify the source JSONSchema file,
+ * and run json-schema-to-typescript to regenerate this file.
+ */
+
+export type String_1570 = "log" | "warn" | "error";
+export type String_1571 = string;
+/**
+ * Console logs from the execution
+ */
+export type Array_182 = Object_523[];
+
+export interface DECO_TOOL_RUN_TOOLOutput_1 {
+  /**
+   * The result of the tool execution
+   */
+  result?: {
+    [k: string]: unknown;
+  };
+  /**
+   * Error if any
+   */
+  error?: {
+    [k: string]: unknown;
+  };
+  logs?: Array_182;
+}
+export interface Object_523 {
+  type: String_1570;
+  content: String_1571;
+}
+
+/* eslint-disable */
+/**
+ * This file was automatically generated by json-schema-to-typescript.
+ * DO NOT MODIFY IT BY HAND. Instead, modify the source JSONSchema file,
+ * and run json-schema-to-typescript to regenerate this file.
+ */
+
+/**
+ * URI of the resource to render in the view
+ */
+export type String_1572 = string;
+
+export interface DECO_VIEW_RENDER_TOOL_DETAILInput_1 {
+  resource: String_1572;
+}
+
+/* eslint-disable */
+/**
+ * This file was automatically generated by json-schema-to-typescript.
+ * DO NOT MODIFY IT BY HAND. Instead, modify the source JSONSchema file,
+ * and run json-schema-to-typescript to regenerate this file.
+ */
+
+/**
+ * URL to render the view
+ */
+export type String_1573 = string;
+/**
+ * Optional LLM prompt for this view context
+ */
+export type String_1574 = string;
+export type String_1575 = string;
+/**
+ * Optional array of tool names for this view context
+ */
+export type Array_183 = String_1575[];
+
+export interface DECO_VIEW_RENDER_TOOL_DETAILOutput_1 {
+  url: String_1573;
+  prompt?: String_1574;
+  tools?: Array_183;
+}
+
+/* eslint-disable */
+/**
+ * This file was automatically generated by json-schema-to-typescript.
+ * DO NOT MODIFY IT BY HAND. Instead, modify the source JSONSchema file,
+ * and run json-schema-to-typescript to regenerate this file.
+ */
+
+export type String_1576 = string;
 
 export interface DECO_GET_APP_SCHEMAInput_1 {
-  appName: String_1546;
+  appName: String_1576;
 }
 
 /* eslint-disable */
@@ -14390,8 +14705,8 @@ export interface DECO_GET_APP_SCHEMAInput_1 {
  * and run json-schema-to-typescript to regenerate this file.
  */
 
-export type String_1547 = string;
-export type Array_184 = String_1547[];
+export type String_1577 = string;
+export type Array_184 = String_1577[];
 
 export interface DECO_GET_APP_SCHEMAOutput_1 {
   schema?: unknown;
@@ -14408,20 +14723,20 @@ export interface DECO_GET_APP_SCHEMAOutput_1 {
 /**
  * The id of the integration to install. To know the available ids, use the DECO_INTEGRATIONS_SEARCH tool
  */
-export type String_1548 = string;
+export type String_1578 = string;
 /**
  * The provider of the integration to install. To know the available providers, use the DECO_INTEGRATIONS_SEARCH tool
  */
-export type String_1549 = string;
+export type String_1579 = string;
 /**
  * The id of the app to install the integration for. To know the available app ids, use the DECO_INTEGRATIONS_SEARCH tool
  */
-export type String_1550 = string;
+export type String_1580 = string;
 
 export interface DECO_INTEGRATION_INSTALLInput_1 {
-  id: String_1548;
-  provider?: String_1549;
-  appId?: String_1550;
+  id: String_1578;
+  provider?: String_1579;
+  appId?: String_1580;
 }
 
 /* eslint-disable */
@@ -14434,10 +14749,10 @@ export interface DECO_INTEGRATION_INSTALLInput_1 {
 /**
  * The id of the installation. Use this id to enable the integration using the DECO_INTEGRATIONS_SEARCH tool
  */
-export type String_1551 = string;
+export type String_1581 = string;
 
 export interface DECO_INTEGRATION_INSTALLOutput_1 {
-  installationId: String_1551;
+  installationId: String_1581;
 }
 
 /* eslint-disable */
@@ -14450,25 +14765,25 @@ export interface DECO_INTEGRATION_INSTALLOutput_1 {
 /**
  * The id of the integration to start the OAuth flow for
  */
-export type String_1552 = string;
+export type String_1582 = string;
 /**
  * The return URL for the OAuth flow. Will come with a query param including the mcp URL.
  */
-export type String_1553 = string;
+export type String_1583 = string;
 /**
  * The install id of the integration to start the OAuth flow for
  */
-export type String_1554 = string;
+export type String_1584 = string;
 /**
  * The provider of the integration to start the OAuth flow for
  */
-export type String_1555 = string;
+export type String_1585 = string;
 
 export interface DECO_INTEGRATION_OAUTH_STARTInput_1 {
-  appName: String_1552;
-  returnUrl: String_1553;
-  installId: String_1554;
-  provider?: String_1555;
+  appName: String_1582;
+  returnUrl: String_1583;
+  installId: String_1584;
+  provider?: String_1585;
 }
 
 /* eslint-disable */
@@ -14490,14 +14805,14 @@ export interface DECO_INTEGRATION_OAUTH_STARTOutput_1 {}
 /**
  * The query to search for
  */
-export type String_1556 = string;
+export type String_1586 = string;
 /**
  * Whether to show contracts
  */
 export type Boolean_113 = boolean;
 
 export interface DECO_INTEGRATIONS_SEARCHInput_1 {
-  query?: String_1556;
+  query?: String_1586;
   showContracts?: Boolean_113;
 }
 
@@ -14508,141 +14823,141 @@ export interface DECO_INTEGRATIONS_SEARCHInput_1 {
  * and run json-schema-to-typescript to regenerate this file.
  */
 
-export type String_1557 = string;
-export type String_1558 = string;
-export type String_1559 = string;
-export type String_1560 = string;
-export type String_1561 = string;
-export type Null_147 = null;
-export type String_1562 = string;
-export type Null_148 = null;
-export type String_1563 = string;
-export type Null_149 = null;
-export type String_1564 = "HTTP";
-export type String_1565 = string;
-export type String_1566 = string;
-export type String_1567 = "SSE";
-export type String_1568 = string;
-export type String_1569 = string;
-export type String_1570 = string;
-export type String_1571 = "Websocket";
-export type String_1572 = string;
-export type String_1573 = string;
-export type String_1574 = "Deco";
-export type String_1575 = string;
-export type String_1576 = string;
-export type String_1577 = "INNATE";
-export type String_1578 = string;
-export type String_1579 = string;
-export type Null_150 = null;
+export type String_1587 = string;
+export type String_1588 = string;
+export type String_1589 = string;
+export type String_1590 = string;
+export type String_1591 = string;
+export type Null_152 = null;
+export type String_1592 = string;
+export type Null_153 = null;
+export type String_1593 = string;
+export type Null_154 = null;
+export type String_1594 = "HTTP";
+export type String_1595 = string;
+export type String_1596 = string;
+export type String_1597 = "SSE";
+export type String_1598 = string;
+export type String_1599 = string;
+export type String_1600 = string;
+export type String_1601 = "Websocket";
+export type String_1602 = string;
+export type String_1603 = string;
+export type String_1604 = "Deco";
+export type String_1605 = string;
+export type String_1606 = string;
+export type String_1607 = "INNATE";
+export type String_1608 = string;
+export type String_1609 = string;
+export type Null_155 = null;
 /**
  * The name of the tool
  */
-export type String_1580 = string;
+export type String_1610 = string;
 /**
  * The description of the tool
  */
-export type String_1581 = string;
-export type Array_186 = (Object_512 & Object_514)[];
-export type Null_151 = null;
-export type String_1582 = string;
-export type String_1583 = string;
+export type String_1611 = string;
+export type Array_186 = (Object_532 & Object_534)[];
+export type Null_156 = null;
+export type String_1612 = string;
+export type String_1613 = string;
 /**
  * The Integrations that match the query
  */
-export type Array_185 = (Object_504 & Object_516)[];
+export type Array_185 = (Object_524 & Object_536)[];
 
 export interface DECO_INTEGRATIONS_SEARCHOutput_1 {
   integrations: Array_185;
 }
-export interface Object_504 {
-  id: String_1557;
-  name: String_1558;
-  description?: String_1559;
-  icon?: String_1560;
+export interface Object_524 {
+  id: String_1587;
+  name: String_1588;
+  description?: String_1589;
+  icon?: String_1590;
   access?:
     | (
         | {
             [k: string]: unknown;
           }
-        | String_1561
+        | String_1591
       )
-    | Null_147;
+    | Null_152;
   appName?:
     | (
         | {
             [k: string]: unknown;
           }
-        | String_1562
+        | String_1592
       )
-    | Null_148;
+    | Null_153;
   appId?:
     | (
         | {
             [k: string]: unknown;
           }
-        | String_1563
+        | String_1593
       )
-    | Null_149;
-  connection: Object_505 | Object_506 | Object_508 | Object_509 | Object_510;
-  metadata?: Object_511 | Null_150;
-  tools?: Array_186 | Null_151;
+    | Null_154;
+  connection: Object_525 | Object_526 | Object_528 | Object_529 | Object_530;
+  metadata?: Object_531 | Null_155;
+  tools?: Array_186 | Null_156;
 }
-export interface Object_505 {
-  type: String_1564;
-  url: String_1565;
-  token?: String_1566;
+export interface Object_525 {
+  type: String_1594;
+  url: String_1595;
+  token?: String_1596;
 }
-export interface Object_506 {
-  type: String_1567;
-  url: String_1568;
-  token?: String_1569;
-  headers?: Object_507;
+export interface Object_526 {
+  type: String_1597;
+  url: String_1598;
+  token?: String_1599;
+  headers?: Object_527;
 }
-export interface Object_507 {
-  [k: string]: String_1570;
+export interface Object_527 {
+  [k: string]: String_1600;
 }
-export interface Object_508 {
-  type: String_1571;
-  url: String_1572;
-  token?: String_1573;
+export interface Object_528 {
+  type: String_1601;
+  url: String_1602;
+  token?: String_1603;
 }
-export interface Object_509 {
-  type: String_1574;
-  tenant: String_1575;
-  token?: String_1576;
+export interface Object_529 {
+  type: String_1604;
+  tenant: String_1605;
+  token?: String_1606;
 }
-export interface Object_510 {
-  type: String_1577;
-  name: String_1578;
-  workspace?: String_1579;
+export interface Object_530 {
+  type: String_1607;
+  name: String_1608;
+  workspace?: String_1609;
 }
-export interface Object_511 {
+export interface Object_531 {
   [k: string]: unknown;
 }
-export interface Object_512 {
-  name: String_1580;
-  inputSchema: Object_513;
+export interface Object_532 {
+  name: String_1610;
+  inputSchema: Object_533;
 }
 /**
  * The JSON schema of the input of the tool
  */
-export interface Object_513 {
+export interface Object_533 {
   [k: string]: unknown;
 }
-export interface Object_514 {
-  description?: String_1581;
-  outputSchema?: Object_515;
+export interface Object_534 {
+  description?: String_1611;
+  outputSchema?: Object_535;
 }
 /**
  * The JSON schema of the output of the tool
  */
-export interface Object_515 {
+export interface Object_535 {
   [k: string]: unknown;
 }
-export interface Object_516 {
-  provider: String_1582;
-  friendlyName?: String_1583;
+export interface Object_536 {
+  provider: String_1612;
+  friendlyName?: String_1613;
 }
 
 /* eslint-disable */
@@ -14652,72 +14967,72 @@ export interface Object_516 {
  * and run json-schema-to-typescript to regenerate this file.
  */
 
-export type String_1584 = string;
-export type String_1585 = "HTTP";
-export type String_1586 = string;
-export type String_1587 = string;
-export type String_1588 = "SSE";
-export type String_1589 = string;
-export type String_1590 = string;
-export type String_1591 = string;
-export type String_1592 = "Websocket";
-export type String_1593 = string;
-export type String_1594 = string;
-export type String_1595 = "Deco";
-export type String_1596 = string;
-export type String_1597 = string;
-export type String_1598 = "INNATE";
-export type String_1599 = string;
-export type String_1600 = string;
-export type String_1601 = string;
-export type Integer_50 = number;
-export type String_1602 = string;
+export type String_1614 = string;
+export type String_1615 = "HTTP";
+export type String_1616 = string;
+export type String_1617 = string;
+export type String_1618 = "SSE";
+export type String_1619 = string;
+export type String_1620 = string;
+export type String_1621 = string;
+export type String_1622 = "Websocket";
+export type String_1623 = string;
+export type String_1624 = string;
+export type String_1625 = "Deco";
+export type String_1626 = string;
+export type String_1627 = string;
+export type String_1628 = "INNATE";
+export type String_1629 = string;
+export type String_1630 = string;
+export type String_1631 = string;
+export type Integer_60 = number;
+export type String_1632 = string;
 
 export interface INTEGRATIONS_CALL_TOOLInput_2 {
-  id?: String_1584;
-  connection?: Object_517 | Object_518 | Object_520 | Object_521 | Object_522;
-  params: Object_523;
+  id?: String_1614;
+  connection?: Object_537 | Object_538 | Object_540 | Object_541 | Object_542;
+  params: Object_543;
 }
-export interface Object_517 {
-  type: String_1585;
-  url: String_1586;
-  token?: String_1587;
+export interface Object_537 {
+  type: String_1615;
+  url: String_1616;
+  token?: String_1617;
 }
-export interface Object_518 {
-  type: String_1588;
-  url: String_1589;
-  token?: String_1590;
-  headers?: Object_519;
+export interface Object_538 {
+  type: String_1618;
+  url: String_1619;
+  token?: String_1620;
+  headers?: Object_539;
 }
-export interface Object_519 {
-  [k: string]: String_1591;
+export interface Object_539 {
+  [k: string]: String_1621;
 }
-export interface Object_520 {
-  type: String_1592;
-  url: String_1593;
-  token?: String_1594;
+export interface Object_540 {
+  type: String_1622;
+  url: String_1623;
+  token?: String_1624;
 }
-export interface Object_521 {
-  type: String_1595;
-  tenant: String_1596;
-  token?: String_1597;
+export interface Object_541 {
+  type: String_1625;
+  tenant: String_1626;
+  token?: String_1627;
 }
-export interface Object_522 {
-  type: String_1598;
-  name: String_1599;
-  workspace?: String_1600;
+export interface Object_542 {
+  type: String_1628;
+  name: String_1629;
+  workspace?: String_1630;
 }
-export interface Object_523 {
-  _meta?: Object_524;
-  name: String_1602;
-  arguments?: Object_525;
+export interface Object_543 {
+  _meta?: Object_544;
+  name: String_1632;
+  arguments?: Object_545;
   [k: string]: unknown;
 }
-export interface Object_524 {
-  progressToken?: String_1601 | Integer_50;
+export interface Object_544 {
+  progressToken?: String_1631 | Integer_60;
   [k: string]: unknown;
 }
-export interface Object_525 {
+export interface Object_545 {
   [k: string]: unknown;
 }
 
@@ -14737,223 +15052,10 @@ export interface INTEGRATIONS_CALL_TOOLOutput_2 {}
  * and run json-schema-to-typescript to regenerate this file.
  */
 
-export type String_1603 = string;
-export type String_1604 = string;
-export type String_1605 = string;
-export type String_1606 = string;
-export type String_1607 = string;
-export type Null_152 = null;
-export type String_1608 = string;
-export type Null_153 = null;
-export type String_1609 = "HTTP";
-export type String_1610 = string;
-export type String_1611 = string;
-export type String_1612 = "SSE";
-export type String_1613 = string;
-export type String_1614 = string;
-export type String_1615 = string;
-export type String_1616 = "Websocket";
-export type String_1617 = string;
-export type String_1618 = string;
-export type String_1619 = "Deco";
-export type String_1620 = string;
-export type String_1621 = string;
-export type String_1622 = "INNATE";
-export type String_1623 = string;
-export type String_1624 = string;
-export type Null_154 = null;
-/**
- * The name of the tool
- */
-export type String_1625 = string;
-/**
- * The description of the tool
- */
-export type String_1626 = string;
-export type Array_187 = (Object_533 & Object_535)[];
-export type Null_155 = null;
-export type String_1627 = string;
-
-export interface INTEGRATIONS_CREATEInput_1 {
-  id?: String_1603;
-  name?: String_1604;
-  description?: String_1605;
-  icon?: String_1606;
-  access?:
-    | (
-        | {
-            [k: string]: unknown;
-          }
-        | String_1607
-      )
-    | Null_152;
-  appId?:
-    | (
-        | {
-            [k: string]: unknown;
-          }
-        | String_1608
-      )
-    | Null_153;
-  connection?: Object_526 | Object_527 | Object_529 | Object_530 | Object_531;
-  metadata?: Object_532 | Null_154;
-  tools?: Array_187 | Null_155;
-  clientIdFromApp?: String_1627;
-}
-export interface Object_526 {
-  type: String_1609;
-  url: String_1610;
-  token?: String_1611;
-}
-export interface Object_527 {
-  type: String_1612;
-  url: String_1613;
-  token?: String_1614;
-  headers?: Object_528;
-}
-export interface Object_528 {
-  [k: string]: String_1615;
-}
-export interface Object_529 {
-  type: String_1616;
-  url: String_1617;
-  token?: String_1618;
-}
-export interface Object_530 {
-  type: String_1619;
-  tenant: String_1620;
-  token?: String_1621;
-}
-export interface Object_531 {
-  type: String_1622;
-  name: String_1623;
-  workspace?: String_1624;
-}
-export interface Object_532 {
-  [k: string]: unknown;
-}
-export interface Object_533 {
-  name: String_1625;
-  inputSchema: Object_534;
-}
-/**
- * The JSON schema of the input of the tool
- */
-export interface Object_534 {
-  [k: string]: unknown;
-}
-export interface Object_535 {
-  description?: String_1626;
-  outputSchema?: Object_536;
-}
-/**
- * The JSON schema of the output of the tool
- */
-export interface Object_536 {
-  [k: string]: unknown;
-}
-
-/* eslint-disable */
-/**
- * This file was automatically generated by json-schema-to-typescript.
- * DO NOT MODIFY IT BY HAND. Instead, modify the source JSONSchema file,
- * and run json-schema-to-typescript to regenerate this file.
- */
-
-export interface INTEGRATIONS_CREATEOutput_1 {}
-
-/* eslint-disable */
-/**
- * This file was automatically generated by json-schema-to-typescript.
- * DO NOT MODIFY IT BY HAND. Instead, modify the source JSONSchema file,
- * and run json-schema-to-typescript to regenerate this file.
- */
-
-export type String_1628 = string;
-
-export interface INTEGRATIONS_DELETEInput_1 {
-  id: String_1628;
-}
-
-/* eslint-disable */
-/**
- * This file was automatically generated by json-schema-to-typescript.
- * DO NOT MODIFY IT BY HAND. Instead, modify the source JSONSchema file,
- * and run json-schema-to-typescript to regenerate this file.
- */
-
-export interface INTEGRATIONS_DELETEOutput_1 {}
-
-/* eslint-disable */
-/**
- * This file was automatically generated by json-schema-to-typescript.
- * DO NOT MODIFY IT BY HAND. Instead, modify the source JSONSchema file,
- * and run json-schema-to-typescript to regenerate this file.
- */
-
-export type String_1629 = string;
-
-export interface INTEGRATIONS_GETInput_1 {
-  id: String_1629;
-}
-
-/* eslint-disable */
-/**
- * This file was automatically generated by json-schema-to-typescript.
- * DO NOT MODIFY IT BY HAND. Instead, modify the source JSONSchema file,
- * and run json-schema-to-typescript to regenerate this file.
- */
-
-export interface INTEGRATIONS_GETOutput_1 {}
-
-/* eslint-disable */
-/**
- * This file was automatically generated by json-schema-to-typescript.
- * DO NOT MODIFY IT BY HAND. Instead, modify the source JSONSchema file,
- * and run json-schema-to-typescript to regenerate this file.
- */
-
-export type String_1630 = string;
-
-export interface INTEGRATIONS_GET_API_KEYInput_1 {
-  integrationId: String_1630;
-}
-
-/* eslint-disable */
-/**
- * This file was automatically generated by json-schema-to-typescript.
- * DO NOT MODIFY IT BY HAND. Instead, modify the source JSONSchema file,
- * and run json-schema-to-typescript to regenerate this file.
- */
-
-export interface INTEGRATIONS_GET_API_KEYOutput_1 {}
-
-/* eslint-disable */
-/**
- * This file was automatically generated by json-schema-to-typescript.
- * DO NOT MODIFY IT BY HAND. Instead, modify the source JSONSchema file,
- * and run json-schema-to-typescript to regenerate this file.
- */
-
-export type String_1631 = "Channel" | "View";
-
-export interface INTEGRATIONS_LISTInput_1 {
-  binder?: String_1631;
-}
-
-/* eslint-disable */
-/**
- * This file was automatically generated by json-schema-to-typescript.
- * DO NOT MODIFY IT BY HAND. Instead, modify the source JSONSchema file,
- * and run json-schema-to-typescript to regenerate this file.
- */
-
-export type String_1632 = string;
 export type String_1633 = string;
 export type String_1634 = string;
 export type String_1635 = string;
 export type String_1636 = string;
-export type Null_156 = null;
 export type String_1637 = string;
 export type Null_157 = null;
 export type String_1638 = string;
@@ -14983,27 +15085,16 @@ export type String_1655 = string;
  * The description of the tool
  */
 export type String_1656 = string;
-export type Array_189 = (Object_545 & Object_547)[];
+export type Array_187 = (Object_553 & Object_555)[];
 export type Null_160 = null;
-export type Array_188 = Object_537[];
+export type String_1657 = string;
 
-export interface INTEGRATIONS_LISTOutput_1 {
-  items: Array_188;
-}
-export interface Object_537 {
-  id: String_1632;
-  name: String_1633;
-  description?: String_1634;
-  icon?: String_1635;
+export interface INTEGRATIONS_CREATEInput_1 {
+  id?: String_1633;
+  name?: String_1634;
+  description?: String_1635;
+  icon?: String_1636;
   access?:
-    | (
-        | {
-            [k: string]: unknown;
-          }
-        | String_1636
-      )
-    | Null_156;
-  appName?:
     | (
         | {
             [k: string]: unknown;
@@ -15019,60 +15110,61 @@ export interface Object_537 {
         | String_1638
       )
     | Null_158;
-  connection: Object_538 | Object_539 | Object_541 | Object_542 | Object_543;
-  metadata?: Object_544 | Null_159;
-  tools?: Array_189 | Null_160;
+  connection?: Object_546 | Object_547 | Object_549 | Object_550 | Object_551;
+  metadata?: Object_552 | Null_159;
+  tools?: Array_187 | Null_160;
+  clientIdFromApp?: String_1657;
 }
-export interface Object_538 {
+export interface Object_546 {
   type: String_1639;
   url: String_1640;
   token?: String_1641;
 }
-export interface Object_539 {
+export interface Object_547 {
   type: String_1642;
   url: String_1643;
   token?: String_1644;
-  headers?: Object_540;
+  headers?: Object_548;
 }
-export interface Object_540 {
+export interface Object_548 {
   [k: string]: String_1645;
 }
-export interface Object_541 {
+export interface Object_549 {
   type: String_1646;
   url: String_1647;
   token?: String_1648;
 }
-export interface Object_542 {
+export interface Object_550 {
   type: String_1649;
   tenant: String_1650;
   token?: String_1651;
 }
-export interface Object_543 {
+export interface Object_551 {
   type: String_1652;
   name: String_1653;
   workspace?: String_1654;
 }
-export interface Object_544 {
+export interface Object_552 {
   [k: string]: unknown;
 }
-export interface Object_545 {
+export interface Object_553 {
   name: String_1655;
-  inputSchema: Object_546;
+  inputSchema: Object_554;
 }
 /**
  * The JSON schema of the input of the tool
  */
-export interface Object_546 {
+export interface Object_554 {
   [k: string]: unknown;
 }
-export interface Object_547 {
+export interface Object_555 {
   description?: String_1656;
-  outputSchema?: Object_548;
+  outputSchema?: Object_556;
 }
 /**
  * The JSON schema of the output of the tool
  */
-export interface Object_548 {
+export interface Object_556 {
   [k: string]: unknown;
 }
 
@@ -15083,60 +15175,147 @@ export interface Object_548 {
  * and run json-schema-to-typescript to regenerate this file.
  */
 
-export type String_1657 = string;
+export interface INTEGRATIONS_CREATEOutput_1 {}
+
+/* eslint-disable */
+/**
+ * This file was automatically generated by json-schema-to-typescript.
+ * DO NOT MODIFY IT BY HAND. Instead, modify the source JSONSchema file,
+ * and run json-schema-to-typescript to regenerate this file.
+ */
+
 export type String_1658 = string;
+
+export interface INTEGRATIONS_DELETEInput_1 {
+  id: String_1658;
+}
+
+/* eslint-disable */
+/**
+ * This file was automatically generated by json-schema-to-typescript.
+ * DO NOT MODIFY IT BY HAND. Instead, modify the source JSONSchema file,
+ * and run json-schema-to-typescript to regenerate this file.
+ */
+
+export interface INTEGRATIONS_DELETEOutput_1 {}
+
+/* eslint-disable */
+/**
+ * This file was automatically generated by json-schema-to-typescript.
+ * DO NOT MODIFY IT BY HAND. Instead, modify the source JSONSchema file,
+ * and run json-schema-to-typescript to regenerate this file.
+ */
+
 export type String_1659 = string;
+
+export interface INTEGRATIONS_GETInput_1 {
+  id: String_1659;
+}
+
+/* eslint-disable */
+/**
+ * This file was automatically generated by json-schema-to-typescript.
+ * DO NOT MODIFY IT BY HAND. Instead, modify the source JSONSchema file,
+ * and run json-schema-to-typescript to regenerate this file.
+ */
+
+export interface INTEGRATIONS_GETOutput_1 {}
+
+/* eslint-disable */
+/**
+ * This file was automatically generated by json-schema-to-typescript.
+ * DO NOT MODIFY IT BY HAND. Instead, modify the source JSONSchema file,
+ * and run json-schema-to-typescript to regenerate this file.
+ */
+
 export type String_1660 = string;
-export type String_1661 = string;
+
+export interface INTEGRATIONS_GET_API_KEYInput_1 {
+  integrationId: String_1660;
+}
+
+/* eslint-disable */
+/**
+ * This file was automatically generated by json-schema-to-typescript.
+ * DO NOT MODIFY IT BY HAND. Instead, modify the source JSONSchema file,
+ * and run json-schema-to-typescript to regenerate this file.
+ */
+
+export interface INTEGRATIONS_GET_API_KEYOutput_1 {}
+
+/* eslint-disable */
+/**
+ * This file was automatically generated by json-schema-to-typescript.
+ * DO NOT MODIFY IT BY HAND. Instead, modify the source JSONSchema file,
+ * and run json-schema-to-typescript to regenerate this file.
+ */
+
+export type String_1661 = "Channel" | "View";
+
+export interface INTEGRATIONS_LISTInput_1 {
+  binder?: String_1661;
+}
+
+/* eslint-disable */
+/**
+ * This file was automatically generated by json-schema-to-typescript.
+ * DO NOT MODIFY IT BY HAND. Instead, modify the source JSONSchema file,
+ * and run json-schema-to-typescript to regenerate this file.
+ */
+
 export type String_1662 = string;
-export type Null_161 = null;
 export type String_1663 = string;
-export type Null_162 = null;
 export type String_1664 = string;
-export type Null_163 = null;
-export type String_1665 = "HTTP";
+export type String_1665 = string;
 export type String_1666 = string;
+export type Null_161 = null;
 export type String_1667 = string;
-export type String_1668 = "SSE";
-export type String_1669 = string;
+export type Null_162 = null;
+export type String_1668 = string;
+export type Null_163 = null;
+export type String_1669 = "HTTP";
 export type String_1670 = string;
 export type String_1671 = string;
-export type String_1672 = "Websocket";
+export type String_1672 = "SSE";
 export type String_1673 = string;
 export type String_1674 = string;
-export type String_1675 = "Deco";
-export type String_1676 = string;
+export type String_1675 = string;
+export type String_1676 = "Websocket";
 export type String_1677 = string;
-export type String_1678 = "INNATE";
-export type String_1679 = string;
+export type String_1678 = string;
+export type String_1679 = "Deco";
 export type String_1680 = string;
+export type String_1681 = string;
+export type String_1682 = "INNATE";
+export type String_1683 = string;
+export type String_1684 = string;
 export type Null_164 = null;
 /**
  * The name of the tool
  */
-export type String_1681 = string;
+export type String_1685 = string;
 /**
  * The description of the tool
  */
-export type String_1682 = string;
-export type Array_190 = (Object_557 & Object_559)[];
+export type String_1686 = string;
+export type Array_189 = (Object_565 & Object_567)[];
 export type Null_165 = null;
+export type Array_188 = Object_557[];
 
-export interface INTEGRATIONS_UPDATEInput_1 {
-  id: String_1657;
-  integration: Object_549;
+export interface INTEGRATIONS_LISTOutput_1 {
+  items: Array_188;
 }
-export interface Object_549 {
-  id: String_1658;
-  name: String_1659;
-  description?: String_1660;
-  icon?: String_1661;
+export interface Object_557 {
+  id: String_1662;
+  name: String_1663;
+  description?: String_1664;
+  icon?: String_1665;
   access?:
     | (
         | {
             [k: string]: unknown;
           }
-        | String_1662
+        | String_1666
       )
     | Null_161;
   appName?:
@@ -15144,7 +15323,7 @@ export interface Object_549 {
         | {
             [k: string]: unknown;
           }
-        | String_1663
+        | String_1667
       )
     | Null_162;
   appId?:
@@ -15152,63 +15331,199 @@ export interface Object_549 {
         | {
             [k: string]: unknown;
           }
-        | String_1664
+        | String_1668
       )
     | Null_163;
-  connection: Object_550 | Object_551 | Object_553 | Object_554 | Object_555;
-  metadata?: Object_556 | Null_164;
-  tools?: Array_190 | Null_165;
+  connection: Object_558 | Object_559 | Object_561 | Object_562 | Object_563;
+  metadata?: Object_564 | Null_164;
+  tools?: Array_189 | Null_165;
 }
-export interface Object_550 {
-  type: String_1665;
-  url: String_1666;
-  token?: String_1667;
+export interface Object_558 {
+  type: String_1669;
+  url: String_1670;
+  token?: String_1671;
 }
-export interface Object_551 {
-  type: String_1668;
-  url: String_1669;
-  token?: String_1670;
-  headers?: Object_552;
-}
-export interface Object_552 {
-  [k: string]: String_1671;
-}
-export interface Object_553 {
+export interface Object_559 {
   type: String_1672;
   url: String_1673;
   token?: String_1674;
+  headers?: Object_560;
 }
-export interface Object_554 {
-  type: String_1675;
-  tenant: String_1676;
-  token?: String_1677;
+export interface Object_560 {
+  [k: string]: String_1675;
 }
-export interface Object_555 {
-  type: String_1678;
-  name: String_1679;
-  workspace?: String_1680;
+export interface Object_561 {
+  type: String_1676;
+  url: String_1677;
+  token?: String_1678;
 }
-export interface Object_556 {
+export interface Object_562 {
+  type: String_1679;
+  tenant: String_1680;
+  token?: String_1681;
+}
+export interface Object_563 {
+  type: String_1682;
+  name: String_1683;
+  workspace?: String_1684;
+}
+export interface Object_564 {
   [k: string]: unknown;
 }
-export interface Object_557 {
-  name: String_1681;
-  inputSchema: Object_558;
+export interface Object_565 {
+  name: String_1685;
+  inputSchema: Object_566;
 }
 /**
  * The JSON schema of the input of the tool
  */
-export interface Object_558 {
+export interface Object_566 {
   [k: string]: unknown;
 }
-export interface Object_559 {
-  description?: String_1682;
-  outputSchema?: Object_560;
+export interface Object_567 {
+  description?: String_1686;
+  outputSchema?: Object_568;
 }
 /**
  * The JSON schema of the output of the tool
  */
-export interface Object_560 {
+export interface Object_568 {
+  [k: string]: unknown;
+}
+
+/* eslint-disable */
+/**
+ * This file was automatically generated by json-schema-to-typescript.
+ * DO NOT MODIFY IT BY HAND. Instead, modify the source JSONSchema file,
+ * and run json-schema-to-typescript to regenerate this file.
+ */
+
+export type String_1687 = string;
+export type String_1688 = string;
+export type String_1689 = string;
+export type String_1690 = string;
+export type String_1691 = string;
+export type String_1692 = string;
+export type Null_166 = null;
+export type String_1693 = string;
+export type Null_167 = null;
+export type String_1694 = string;
+export type Null_168 = null;
+export type String_1695 = "HTTP";
+export type String_1696 = string;
+export type String_1697 = string;
+export type String_1698 = "SSE";
+export type String_1699 = string;
+export type String_1700 = string;
+export type String_1701 = string;
+export type String_1702 = "Websocket";
+export type String_1703 = string;
+export type String_1704 = string;
+export type String_1705 = "Deco";
+export type String_1706 = string;
+export type String_1707 = string;
+export type String_1708 = "INNATE";
+export type String_1709 = string;
+export type String_1710 = string;
+export type Null_169 = null;
+/**
+ * The name of the tool
+ */
+export type String_1711 = string;
+/**
+ * The description of the tool
+ */
+export type String_1712 = string;
+export type Array_190 = (Object_577 & Object_579)[];
+export type Null_170 = null;
+
+export interface INTEGRATIONS_UPDATEInput_1 {
+  id: String_1687;
+  integration: Object_569;
+}
+export interface Object_569 {
+  id: String_1688;
+  name: String_1689;
+  description?: String_1690;
+  icon?: String_1691;
+  access?:
+    | (
+        | {
+            [k: string]: unknown;
+          }
+        | String_1692
+      )
+    | Null_166;
+  appName?:
+    | (
+        | {
+            [k: string]: unknown;
+          }
+        | String_1693
+      )
+    | Null_167;
+  appId?:
+    | (
+        | {
+            [k: string]: unknown;
+          }
+        | String_1694
+      )
+    | Null_168;
+  connection: Object_570 | Object_571 | Object_573 | Object_574 | Object_575;
+  metadata?: Object_576 | Null_169;
+  tools?: Array_190 | Null_170;
+}
+export interface Object_570 {
+  type: String_1695;
+  url: String_1696;
+  token?: String_1697;
+}
+export interface Object_571 {
+  type: String_1698;
+  url: String_1699;
+  token?: String_1700;
+  headers?: Object_572;
+}
+export interface Object_572 {
+  [k: string]: String_1701;
+}
+export interface Object_573 {
+  type: String_1702;
+  url: String_1703;
+  token?: String_1704;
+}
+export interface Object_574 {
+  type: String_1705;
+  tenant: String_1706;
+  token?: String_1707;
+}
+export interface Object_575 {
+  type: String_1708;
+  name: String_1709;
+  workspace?: String_1710;
+}
+export interface Object_576 {
+  [k: string]: unknown;
+}
+export interface Object_577 {
+  name: String_1711;
+  inputSchema: Object_578;
+}
+/**
+ * The JSON schema of the input of the tool
+ */
+export interface Object_578 {
+  [k: string]: unknown;
+}
+export interface Object_579 {
+  description?: String_1712;
+  outputSchema?: Object_580;
+}
+/**
+ * The JSON schema of the output of the tool
+ */
+export interface Object_580 {
   [k: string]: unknown;
 }
 
@@ -15237,35 +15552,35 @@ export interface DECO_CHAT_VIEWS_LISTInput_1 {}
  * and run json-schema-to-typescript to regenerate this file.
  */
 
-export type String_1683 = string;
-export type String_1684 = string;
-export type String_1685 = string;
-export type String_1686 = string;
-export type String_1687 = string;
-export type String_1688 = string;
-export type String_1689 = string;
-export type String_1690 = string;
-export type String_1691 = string;
-export type Array_192 = String_1691[];
-export type String_1692 = string;
-export type String_1693 = "none" | "open" | "autoPin";
-export type Array_191 = Object_561[];
+export type String_1713 = string;
+export type String_1714 = string;
+export type String_1715 = string;
+export type String_1716 = string;
+export type String_1717 = string;
+export type String_1718 = string;
+export type String_1719 = string;
+export type String_1720 = string;
+export type String_1721 = string;
+export type Array_192 = String_1721[];
+export type String_1722 = string;
+export type String_1723 = "none" | "open" | "autoPin";
+export type Array_191 = Object_581[];
 
 export interface DECO_CHAT_VIEWS_LISTOutput_1 {
   views: Array_191;
 }
-export interface Object_561 {
-  id?: String_1683;
-  name?: String_1684;
-  title: String_1685;
-  description?: String_1686;
-  icon: String_1687;
-  url?: String_1688;
-  mimeTypePattern?: String_1689;
-  resourceName?: String_1690;
+export interface Object_581 {
+  id?: String_1713;
+  name?: String_1714;
+  title: String_1715;
+  description?: String_1716;
+  icon: String_1717;
+  url?: String_1718;
+  mimeTypePattern?: String_1719;
+  resourceName?: String_1720;
   tools?: Array_192;
-  prompt?: String_1692;
-  installBehavior?: String_1693;
+  prompt?: String_1722;
+  installBehavior?: String_1723;
 }
 
 /* eslint-disable */
@@ -15278,151 +15593,214 @@ export interface Object_561 {
 /**
  * The unique name of the workflow
  */
-export type String_1694 = string;
+export type String_1724 = string;
 /**
  * A comprehensive description of what this workflow accomplishes
  */
-export type String_1695 = string;
+export type String_1725 = string;
 /**
  * Array of workflow steps that execute sequentially. Each step can reference previous step outputs using @<step_name>.output.property syntax.
  *
  * @minItems 1
  */
-export type Array_193 = [Object_565, ...Object_565[]];
+export type Array_193 = [Object_585, ...Object_585[]];
+/**
+ * The type of step
+ */
+export type String_1726 = "code" | "tool_call";
 /**
  * The unique ID of the step within the workflow
  */
-export type String_1696 = string;
+export type String_1727 = string;
 /**
  * The unique name of the step within the workflow
  */
-export type String_1697 = string;
+export type String_1728 = string;
 /**
  * A clear description of what this step does
  */
-export type String_1698 = string;
+export type String_1729 = string;
 /**
  * The prompt used to generate the step
  */
-export type String_1699 = string;
+export type String_1730 = string;
 /**
  * Status of the step execution
  */
-export type String_1700 = "pending" | "active" | "completed" | "error";
+export type String_1731 = "pending" | "active" | "completed" | "error";
 /**
  * ES module code that exports a default async function: (input: typeof inputSchema, ctx: { env: Record<string, any> }) => Promise<typeof outputSchema>. The input parameter contains the resolved input with all @ references replaced with actual values.
  */
-export type String_1701 = string;
+export type String_1732 = string;
 /**
  * The integration ID (format: i:<uuid> or a:<uuid>) that this step depends on
  */
-export type String_1702 = string;
+export type String_1733 = string;
 /**
  * List of integrations this step calls via ctx.env['{INTEGRATION_ID}'].{TOOL_NAME}(). These integrations must be installed and available for the step to execute successfully.
  */
-export type Array_194 = Object_570[];
+export type Array_194 = Object_591[];
 /**
  * Number of retry attempts for this step (default: 0)
  */
-export type Integer_51 = number;
+export type Integer_61 = number;
 /**
  * Delay in milliseconds between retry attempts (default: 0)
  */
-export type Integer_52 = number;
+export type Integer_62 = number;
 /**
  * Backoff strategy for retry attempts (default: constant)
  */
-export type String_1703 = "constant" | "linear" | "exponential";
+export type String_1734 = "constant" | "linear" | "exponential";
 /**
  * Maximum execution time in milliseconds (default: Infinity)
  */
-export type Number_150 = number;
+export type Number_155 = number;
+/**
+ * The unique name of the tool call step within the workflow
+ */
+export type String_1735 = string;
+/**
+ * A clear description of what this tool call step does
+ */
+export type String_1736 = string;
+/**
+ * Number of retry attempts for this step (default: 0)
+ */
+export type Integer_63 = number;
+/**
+ * Delay in milliseconds between retry attempts (default: 0)
+ */
+export type Integer_64 = number;
+/**
+ * Backoff strategy for retry attempts (default: constant)
+ */
+export type String_1737 = "constant" | "linear" | "exponential";
+/**
+ * Maximum execution time in milliseconds (default: Infinity)
+ */
+export type Number_156 = number;
+export type Null_171 = null;
+/**
+ * The name of the tool to call
+ */
+export type String_1738 = string;
+/**
+ * The name of the integration that provides this tool
+ */
+export type String_1739 = string;
 /**
  * The authorization token for the workflow
  */
-export type String_1704 = string;
+export type String_1740 = string;
 
 export interface DECO_RESOURCE_WORKFLOW_CREATEInput_1 {
-  data: Object_562;
+  data: Object_582;
 }
 /**
  * Resource data to create
  */
-export interface Object_562 {
-  name: String_1694;
-  description: String_1695;
-  inputSchema: Object_563;
-  outputSchema: Object_564;
+export interface Object_582 {
+  name: String_1724;
+  description: String_1725;
+  inputSchema: Object_583;
+  outputSchema: Object_584;
   steps: Array_193;
-  authorization?: Object_573;
+  authorization?: Object_597;
 }
 /**
  * JSON Schema defining the workflow's input parameters and data structure
  */
-export interface Object_563 {
+export interface Object_583 {
   [k: string]: unknown;
 }
 /**
  * JSON Schema defining the workflow's final output after all steps complete
  */
-export interface Object_564 {
+export interface Object_584 {
   [k: string]: unknown;
 }
-export interface Object_565 {
-  id: String_1696;
-  name: String_1697;
-  description: String_1698;
-  prompt?: String_1699;
-  inputSchema: Object_566;
-  outputSchema: Object_567;
-  input: Object_568;
-  output: Object_569;
-  status?: String_1700;
-  execute: String_1701;
+export interface Object_585 {
+  type: String_1726;
+  /**
+   * The step definition based on the type
+   */
+  def: Object_586 | Object_594;
+}
+export interface Object_586 {
+  id: String_1727;
+  name: String_1728;
+  description: String_1729;
+  prompt?: String_1730;
+  inputSchema: Object_587;
+  outputSchema: Object_588;
+  input: Object_589;
+  output: Object_590;
+  status?: String_1731;
+  execute: String_1732;
   dependencies?: Array_194;
-  options?: Object_571;
+  options?: Object_592;
 }
 /**
  * JSON Schema defining the input structure for this step
  */
-export interface Object_566 {
+export interface Object_587 {
   [k: string]: unknown;
 }
 /**
  * JSON Schema defining the output structure for this step
  */
-export interface Object_567 {
+export interface Object_588 {
   [k: string]: unknown;
 }
 /**
  * Input object that complies with inputSchema. Values can reference previous steps using @<step_name>.output.property or workflow input using @input.property
  */
-export interface Object_568 {
+export interface Object_589 {
   [k: string]: unknown;
 }
 /**
  * Current output of the step if it was executed
  */
-export interface Object_569 {
+export interface Object_590 {
   [k: string]: unknown;
 }
-export interface Object_570 {
-  integrationId: String_1702;
+export interface Object_591 {
+  integrationId: String_1733;
 }
 /**
  * Step configuration options including retry and timeout settings
  */
-export interface Object_571 {
-  retries?: Object_572;
-  timeout?: Number_150;
+export interface Object_592 {
+  retries?: Object_593;
+  timeout?: Number_155;
 }
-export interface Object_572 {
-  limit?: Integer_51;
-  delay?: Integer_52;
-  backoff?: String_1703;
+export interface Object_593 {
+  limit?: Integer_61;
+  delay?: Integer_62;
+  backoff?: String_1734;
 }
-export interface Object_573 {
-  token: String_1704;
+export interface Object_594 {
+  name: String_1735;
+  description: String_1736;
+  /**
+   * Step configuration options. Extend this object with custom properties for business user configuration
+   */
+  options?: Object_595 | Null_171;
+  tool_name: String_1738;
+  integration: String_1739;
+}
+export interface Object_595 {
+  retries?: Object_596;
+  timeout?: Number_156;
+}
+export interface Object_596 {
+  limit?: Integer_63;
+  delay?: Integer_64;
+  backoff?: String_1737;
+}
+export interface Object_597 {
+  token: String_1740;
 }
 
 /* eslint-disable */
@@ -15435,171 +15813,234 @@ export interface Object_573 {
 /**
  * URI of the created resource
  */
-export type String_1705 = string;
+export type String_1741 = string;
 /**
  * The unique name of the workflow
  */
-export type String_1706 = string;
+export type String_1742 = string;
 /**
  * A comprehensive description of what this workflow accomplishes
  */
-export type String_1707 = string;
+export type String_1743 = string;
 /**
  * Array of workflow steps that execute sequentially. Each step can reference previous step outputs using @<step_name>.output.property syntax.
  *
  * @minItems 1
  */
-export type Array_195 = [Object_577, ...Object_577[]];
+export type Array_195 = [Object_601, ...Object_601[]];
+/**
+ * The type of step
+ */
+export type String_1744 = "code" | "tool_call";
 /**
  * The unique ID of the step within the workflow
  */
-export type String_1708 = string;
+export type String_1745 = string;
 /**
  * The unique name of the step within the workflow
  */
-export type String_1709 = string;
+export type String_1746 = string;
 /**
  * A clear description of what this step does
  */
-export type String_1710 = string;
+export type String_1747 = string;
 /**
  * The prompt used to generate the step
  */
-export type String_1711 = string;
+export type String_1748 = string;
 /**
  * Status of the step execution
  */
-export type String_1712 = "pending" | "active" | "completed" | "error";
+export type String_1749 = "pending" | "active" | "completed" | "error";
 /**
  * ES module code that exports a default async function: (input: typeof inputSchema, ctx: { env: Record<string, any> }) => Promise<typeof outputSchema>. The input parameter contains the resolved input with all @ references replaced with actual values.
  */
-export type String_1713 = string;
+export type String_1750 = string;
 /**
  * The integration ID (format: i:<uuid> or a:<uuid>) that this step depends on
  */
-export type String_1714 = string;
+export type String_1751 = string;
 /**
  * List of integrations this step calls via ctx.env['{INTEGRATION_ID}'].{TOOL_NAME}(). These integrations must be installed and available for the step to execute successfully.
  */
-export type Array_196 = Object_582[];
+export type Array_196 = Object_607[];
 /**
  * Number of retry attempts for this step (default: 0)
  */
-export type Integer_53 = number;
+export type Integer_65 = number;
 /**
  * Delay in milliseconds between retry attempts (default: 0)
  */
-export type Integer_54 = number;
+export type Integer_66 = number;
 /**
  * Backoff strategy for retry attempts (default: constant)
  */
-export type String_1715 = "constant" | "linear" | "exponential";
+export type String_1752 = "constant" | "linear" | "exponential";
 /**
  * Maximum execution time in milliseconds (default: Infinity)
  */
-export type Number_151 = number;
+export type Number_157 = number;
+/**
+ * The unique name of the tool call step within the workflow
+ */
+export type String_1753 = string;
+/**
+ * A clear description of what this tool call step does
+ */
+export type String_1754 = string;
+/**
+ * Number of retry attempts for this step (default: 0)
+ */
+export type Integer_67 = number;
+/**
+ * Delay in milliseconds between retry attempts (default: 0)
+ */
+export type Integer_68 = number;
+/**
+ * Backoff strategy for retry attempts (default: constant)
+ */
+export type String_1755 = "constant" | "linear" | "exponential";
+/**
+ * Maximum execution time in milliseconds (default: Infinity)
+ */
+export type Number_158 = number;
+export type Null_172 = null;
+/**
+ * The name of the tool to call
+ */
+export type String_1756 = string;
+/**
+ * The name of the integration that provides this tool
+ */
+export type String_1757 = string;
 /**
  * The authorization token for the workflow
  */
-export type String_1716 = string;
+export type String_1758 = string;
 /**
  * Creation timestamp
  */
-export type String_1717 = string;
+export type String_1759 = string;
 /**
  * Last update timestamp
  */
-export type String_1718 = string;
+export type String_1760 = string;
 /**
  * User who created the resource
  */
-export type String_1719 = string;
+export type String_1761 = string;
 
 export interface DECO_RESOURCE_WORKFLOW_CREATEOutput_1 {
-  uri: String_1705;
-  data: Object_574;
-  created_at?: String_1717;
-  updated_at?: String_1718;
-  created_by?: String_1719;
+  uri: String_1741;
+  data: Object_598;
+  created_at?: String_1759;
+  updated_at?: String_1760;
+  created_by?: String_1761;
 }
 /**
  * Created resource data
  */
-export interface Object_574 {
-  name: String_1706;
-  description: String_1707;
-  inputSchema: Object_575;
-  outputSchema: Object_576;
+export interface Object_598 {
+  name: String_1742;
+  description: String_1743;
+  inputSchema: Object_599;
+  outputSchema: Object_600;
   steps: Array_195;
-  authorization?: Object_585;
+  authorization?: Object_613;
 }
 /**
  * JSON Schema defining the workflow's input parameters and data structure
  */
-export interface Object_575 {
+export interface Object_599 {
   [k: string]: unknown;
 }
 /**
  * JSON Schema defining the workflow's final output after all steps complete
  */
-export interface Object_576 {
+export interface Object_600 {
   [k: string]: unknown;
 }
-export interface Object_577 {
-  id: String_1708;
-  name: String_1709;
-  description: String_1710;
-  prompt?: String_1711;
-  inputSchema: Object_578;
-  outputSchema: Object_579;
-  input: Object_580;
-  output: Object_581;
-  status?: String_1712;
-  execute: String_1713;
+export interface Object_601 {
+  type: String_1744;
+  /**
+   * The step definition based on the type
+   */
+  def: Object_602 | Object_610;
+}
+export interface Object_602 {
+  id: String_1745;
+  name: String_1746;
+  description: String_1747;
+  prompt?: String_1748;
+  inputSchema: Object_603;
+  outputSchema: Object_604;
+  input: Object_605;
+  output: Object_606;
+  status?: String_1749;
+  execute: String_1750;
   dependencies?: Array_196;
-  options?: Object_583;
+  options?: Object_608;
 }
 /**
  * JSON Schema defining the input structure for this step
  */
-export interface Object_578 {
+export interface Object_603 {
   [k: string]: unknown;
 }
 /**
  * JSON Schema defining the output structure for this step
  */
-export interface Object_579 {
+export interface Object_604 {
   [k: string]: unknown;
 }
 /**
  * Input object that complies with inputSchema. Values can reference previous steps using @<step_name>.output.property or workflow input using @input.property
  */
-export interface Object_580 {
+export interface Object_605 {
   [k: string]: unknown;
 }
 /**
  * Current output of the step if it was executed
  */
-export interface Object_581 {
+export interface Object_606 {
   [k: string]: unknown;
 }
-export interface Object_582 {
-  integrationId: String_1714;
+export interface Object_607 {
+  integrationId: String_1751;
 }
 /**
  * Step configuration options including retry and timeout settings
  */
-export interface Object_583 {
-  retries?: Object_584;
-  timeout?: Number_151;
+export interface Object_608 {
+  retries?: Object_609;
+  timeout?: Number_157;
 }
-export interface Object_584 {
-  limit?: Integer_53;
-  delay?: Integer_54;
-  backoff?: String_1715;
+export interface Object_609 {
+  limit?: Integer_65;
+  delay?: Integer_66;
+  backoff?: String_1752;
 }
-export interface Object_585 {
-  token: String_1716;
+export interface Object_610 {
+  name: String_1753;
+  description: String_1754;
+  /**
+   * Step configuration options. Extend this object with custom properties for business user configuration
+   */
+  options?: Object_611 | Null_172;
+  tool_name: String_1756;
+  integration: String_1757;
+}
+export interface Object_611 {
+  retries?: Object_612;
+  timeout?: Number_158;
+}
+export interface Object_612 {
+  limit?: Integer_67;
+  delay?: Integer_68;
+  backoff?: String_1755;
+}
+export interface Object_613 {
+  token: String_1758;
 }
 
 /* eslint-disable */
@@ -15612,10 +16053,10 @@ export interface Object_585 {
 /**
  * URI of the resource to delete
  */
-export type String_1720 = string;
+export type String_1762 = string;
 
 export interface DECO_RESOURCE_WORKFLOW_DELETEInput_1 {
-  uri: String_1720;
+  uri: String_1762;
 }
 
 /* eslint-disable */
@@ -15632,11 +16073,11 @@ export type Boolean_114 = boolean;
 /**
  * URI of the deleted resource
  */
-export type String_1721 = string;
+export type String_1763 = string;
 
 export interface DECO_RESOURCE_WORKFLOW_DELETEOutput_1 {
   success: Boolean_114;
-  uri: String_1721;
+  uri: String_1763;
 }
 
 /* eslint-disable */
@@ -15649,10 +16090,10 @@ export interface DECO_RESOURCE_WORKFLOW_DELETEOutput_1 {
 /**
  * URI of the resource to read
  */
-export type String_1722 = string;
+export type String_1764 = string;
 
 export interface DECO_RESOURCE_WORKFLOW_READInput_1 {
-  uri: String_1722;
+  uri: String_1764;
 }
 
 /* eslint-disable */
@@ -15665,176 +16106,239 @@ export interface DECO_RESOURCE_WORKFLOW_READInput_1 {
 /**
  * URI of the resource
  */
-export type String_1723 = string;
+export type String_1765 = string;
 /**
  * The unique name of the workflow
  */
-export type String_1724 = string;
+export type String_1766 = string;
 /**
  * A comprehensive description of what this workflow accomplishes
  */
-export type String_1725 = string;
+export type String_1767 = string;
 /**
  * Array of workflow steps that execute sequentially. Each step can reference previous step outputs using @<step_name>.output.property syntax.
  *
  * @minItems 1
  */
-export type Array_197 = [Object_589, ...Object_589[]];
+export type Array_197 = [Object_617, ...Object_617[]];
+/**
+ * The type of step
+ */
+export type String_1768 = "code" | "tool_call";
 /**
  * The unique ID of the step within the workflow
  */
-export type String_1726 = string;
+export type String_1769 = string;
 /**
  * The unique name of the step within the workflow
  */
-export type String_1727 = string;
+export type String_1770 = string;
 /**
  * A clear description of what this step does
  */
-export type String_1728 = string;
+export type String_1771 = string;
 /**
  * The prompt used to generate the step
  */
-export type String_1729 = string;
+export type String_1772 = string;
 /**
  * Status of the step execution
  */
-export type String_1730 = "pending" | "active" | "completed" | "error";
+export type String_1773 = "pending" | "active" | "completed" | "error";
 /**
  * ES module code that exports a default async function: (input: typeof inputSchema, ctx: { env: Record<string, any> }) => Promise<typeof outputSchema>. The input parameter contains the resolved input with all @ references replaced with actual values.
  */
-export type String_1731 = string;
+export type String_1774 = string;
 /**
  * The integration ID (format: i:<uuid> or a:<uuid>) that this step depends on
  */
-export type String_1732 = string;
+export type String_1775 = string;
 /**
  * List of integrations this step calls via ctx.env['{INTEGRATION_ID}'].{TOOL_NAME}(). These integrations must be installed and available for the step to execute successfully.
  */
-export type Array_198 = Object_594[];
+export type Array_198 = Object_623[];
 /**
  * Number of retry attempts for this step (default: 0)
  */
-export type Integer_55 = number;
+export type Integer_69 = number;
 /**
  * Delay in milliseconds between retry attempts (default: 0)
  */
-export type Integer_56 = number;
+export type Integer_70 = number;
 /**
  * Backoff strategy for retry attempts (default: constant)
  */
-export type String_1733 = "constant" | "linear" | "exponential";
+export type String_1776 = "constant" | "linear" | "exponential";
 /**
  * Maximum execution time in milliseconds (default: Infinity)
  */
-export type Number_152 = number;
+export type Number_159 = number;
+/**
+ * The unique name of the tool call step within the workflow
+ */
+export type String_1777 = string;
+/**
+ * A clear description of what this tool call step does
+ */
+export type String_1778 = string;
+/**
+ * Number of retry attempts for this step (default: 0)
+ */
+export type Integer_71 = number;
+/**
+ * Delay in milliseconds between retry attempts (default: 0)
+ */
+export type Integer_72 = number;
+/**
+ * Backoff strategy for retry attempts (default: constant)
+ */
+export type String_1779 = "constant" | "linear" | "exponential";
+/**
+ * Maximum execution time in milliseconds (default: Infinity)
+ */
+export type Number_160 = number;
+export type Null_173 = null;
+/**
+ * The name of the tool to call
+ */
+export type String_1780 = string;
+/**
+ * The name of the integration that provides this tool
+ */
+export type String_1781 = string;
 /**
  * The authorization token for the workflow
  */
-export type String_1734 = string;
+export type String_1782 = string;
 /**
  * Creation timestamp
  */
-export type String_1735 = string;
+export type String_1783 = string;
 /**
  * Last update timestamp
  */
-export type String_1736 = string;
+export type String_1784 = string;
 /**
  * User who created the resource
  */
-export type String_1737 = string;
+export type String_1785 = string;
 /**
  * User who last updated the resource
  */
-export type String_1738 = string;
+export type String_1786 = string;
 
 export interface DECO_RESOURCE_WORKFLOW_READOutput_1 {
-  uri: String_1723;
-  data: Object_586;
-  created_at?: String_1735;
-  updated_at?: String_1736;
-  created_by?: String_1737;
-  updated_by?: String_1738;
+  uri: String_1765;
+  data: Object_614;
+  created_at?: String_1783;
+  updated_at?: String_1784;
+  created_by?: String_1785;
+  updated_by?: String_1786;
 }
 /**
  * Resource data
  */
-export interface Object_586 {
-  name: String_1724;
-  description: String_1725;
-  inputSchema: Object_587;
-  outputSchema: Object_588;
+export interface Object_614 {
+  name: String_1766;
+  description: String_1767;
+  inputSchema: Object_615;
+  outputSchema: Object_616;
   steps: Array_197;
-  authorization?: Object_597;
+  authorization?: Object_629;
 }
 /**
  * JSON Schema defining the workflow's input parameters and data structure
  */
-export interface Object_587 {
+export interface Object_615 {
   [k: string]: unknown;
 }
 /**
  * JSON Schema defining the workflow's final output after all steps complete
  */
-export interface Object_588 {
+export interface Object_616 {
   [k: string]: unknown;
 }
-export interface Object_589 {
-  id: String_1726;
-  name: String_1727;
-  description: String_1728;
-  prompt?: String_1729;
-  inputSchema: Object_590;
-  outputSchema: Object_591;
-  input: Object_592;
-  output: Object_593;
-  status?: String_1730;
-  execute: String_1731;
+export interface Object_617 {
+  type: String_1768;
+  /**
+   * The step definition based on the type
+   */
+  def: Object_618 | Object_626;
+}
+export interface Object_618 {
+  id: String_1769;
+  name: String_1770;
+  description: String_1771;
+  prompt?: String_1772;
+  inputSchema: Object_619;
+  outputSchema: Object_620;
+  input: Object_621;
+  output: Object_622;
+  status?: String_1773;
+  execute: String_1774;
   dependencies?: Array_198;
-  options?: Object_595;
+  options?: Object_624;
 }
 /**
  * JSON Schema defining the input structure for this step
  */
-export interface Object_590 {
+export interface Object_619 {
   [k: string]: unknown;
 }
 /**
  * JSON Schema defining the output structure for this step
  */
-export interface Object_591 {
+export interface Object_620 {
   [k: string]: unknown;
 }
 /**
  * Input object that complies with inputSchema. Values can reference previous steps using @<step_name>.output.property or workflow input using @input.property
  */
-export interface Object_592 {
+export interface Object_621 {
   [k: string]: unknown;
 }
 /**
  * Current output of the step if it was executed
  */
-export interface Object_593 {
+export interface Object_622 {
   [k: string]: unknown;
 }
-export interface Object_594 {
-  integrationId: String_1732;
+export interface Object_623 {
+  integrationId: String_1775;
 }
 /**
  * Step configuration options including retry and timeout settings
  */
-export interface Object_595 {
-  retries?: Object_596;
-  timeout?: Number_152;
+export interface Object_624 {
+  retries?: Object_625;
+  timeout?: Number_159;
 }
-export interface Object_596 {
-  limit?: Integer_55;
-  delay?: Integer_56;
-  backoff?: String_1733;
+export interface Object_625 {
+  limit?: Integer_69;
+  delay?: Integer_70;
+  backoff?: String_1776;
 }
-export interface Object_597 {
-  token: String_1734;
+export interface Object_626 {
+  name: String_1777;
+  description: String_1778;
+  /**
+   * Step configuration options. Extend this object with custom properties for business user configuration
+   */
+  options?: Object_627 | Null_173;
+  tool_name: String_1780;
+  integration: String_1781;
+}
+export interface Object_627 {
+  retries?: Object_628;
+  timeout?: Number_160;
+}
+export interface Object_628 {
+  limit?: Integer_71;
+  delay?: Integer_72;
+  backoff?: String_1779;
+}
+export interface Object_629 {
+  token: String_1782;
 }
 
 /* eslint-disable */
@@ -15847,10 +16351,10 @@ export interface Object_597 {
 /**
  * URI of the resource to read
  */
-export type String_1739 = string;
+export type String_1787 = string;
 
 export interface DECO_RESOURCE_WORKFLOW_RUN_READInput_1 {
-  uri: String_1739;
+  uri: String_1787;
 }
 
 /* eslint-disable */
@@ -15863,124 +16367,124 @@ export interface DECO_RESOURCE_WORKFLOW_RUN_READInput_1 {
 /**
  * URI of the resource
  */
-export type String_1740 = string;
-export type String_1741 = string;
-export type String_1742 = string;
-export type String_1743 = string;
-export type String_1744 = string;
-export type String_1745 = string;
-export type String_1746 = string;
+export type String_1788 = string;
+export type String_1789 = string;
+export type String_1790 = string;
+export type String_1791 = string;
+export type String_1792 = string;
+export type String_1793 = string;
+export type String_1794 = string;
 /**
  * The name of the step currently being executed (if running)
  */
-export type String_1747 = string;
+export type String_1795 = string;
 /**
  * Error message if the workflow failed
  */
-export type String_1748 = string;
-export type String_1749 = "log" | "warn" | "error";
-export type String_1750 = string;
+export type String_1796 = string;
+export type String_1797 = "log" | "warn" | "error";
+export type String_1798 = string;
 /**
  * Console logs from the execution
  */
-export type Array_199 = Object_600[];
+export type Array_199 = Object_632[];
 /**
  * When the workflow started (timestamp)
  */
-export type Number_153 = number;
+export type Number_161 = number;
 /**
  * When the workflow ended (timestamp, if completed/failed)
  */
-export type Number_154 = number;
+export type Number_162 = number;
 export type Array_200 = unknown[];
-export type String_1751 = string;
-export type String_1752 = string;
-export type String_1753 = string;
-export type String_1754 = string;
-export type String_1755 = string;
-export type String_1756 = string;
-export type Null_166 = null;
-export type String_1757 = string;
-export type String_1758 = string;
-export type String_1759 = string;
-export type StringNull_85 = String_1760 | Null_167;
-export type String_1760 = string;
-export type Null_167 = null;
-export type StringNull_86 = String_1761 | Null_168;
-export type String_1761 = string;
-export type Null_168 = null;
-export type BooleanNull_10 = Boolean_115 | Null_169;
-export type Boolean_115 = boolean;
-export type Null_169 = null;
-export type String_1762 = string;
-export type String_1763 = string;
-export type StringNull_87 = String_1764 | Null_170;
-export type String_1764 = string;
-export type Null_170 = null;
-export type StringNull_88 = String_1765 | Null_171;
-export type String_1765 = string;
-export type Null_171 = null;
-export type BooleanNull_11 = Boolean_116 | Null_172;
-export type Boolean_116 = boolean;
-export type Null_172 = null;
-export type String_1766 = string;
-export type String_1767 = string;
-export type Null_173 = null;
-export type StringNull_89 = String_1768 | Null_174;
-export type String_1768 = string;
+export type String_1799 = string;
+export type String_1800 = string;
+export type String_1801 = string;
+export type String_1802 = string;
+export type String_1803 = string;
+export type String_1804 = string;
 export type Null_174 = null;
-export type StringNull_90 = String_1769 | Null_175;
-export type String_1769 = string;
+export type String_1805 = string;
+export type String_1806 = string;
+export type String_1807 = string;
+export type StringNull_85 = String_1808 | Null_175;
+export type String_1808 = string;
 export type Null_175 = null;
-export type BooleanNull_12 = Boolean_117 | Null_176;
-export type Boolean_117 = boolean;
+export type StringNull_86 = String_1809 | Null_176;
+export type String_1809 = string;
 export type Null_176 = null;
-export type String_1770 = string;
-export type String_1771 = string;
+export type BooleanNull_10 = Boolean_115 | Null_177;
+export type Boolean_115 = boolean;
 export type Null_177 = null;
-export type Array_202 = Object_608[];
-export type Array_201 = Object_606[];
-export type String_1772 = string;
-export type String_1773 = string;
+export type String_1810 = string;
+export type String_1811 = string;
+export type StringNull_87 = String_1812 | Null_178;
+export type String_1812 = string;
 export type Null_178 = null;
-export type String_1774 = string;
+export type StringNull_88 = String_1813 | Null_179;
+export type String_1813 = string;
+export type Null_179 = null;
+export type BooleanNull_11 = Boolean_116 | Null_180;
+export type Boolean_116 = boolean;
+export type Null_180 = null;
+export type String_1814 = string;
+export type String_1815 = string;
+export type Null_181 = null;
+export type StringNull_89 = String_1816 | Null_182;
+export type String_1816 = string;
+export type Null_182 = null;
+export type StringNull_90 = String_1817 | Null_183;
+export type String_1817 = string;
+export type Null_183 = null;
+export type BooleanNull_12 = Boolean_117 | Null_184;
+export type Boolean_117 = boolean;
+export type Null_184 = null;
+export type String_1818 = string;
+export type String_1819 = string;
+export type Null_185 = null;
+export type Array_202 = Object_640[];
+export type Array_201 = Object_638[];
+export type String_1820 = string;
+export type String_1821 = string;
+export type Null_186 = null;
+export type String_1822 = string;
 /**
  * Creation timestamp
  */
-export type String_1775 = string;
+export type String_1823 = string;
 /**
  * Last update timestamp
  */
-export type String_1776 = string;
+export type String_1824 = string;
 /**
  * User who created the resource
  */
-export type String_1777 = string;
+export type String_1825 = string;
 /**
  * User who last updated the resource
  */
-export type String_1778 = string;
+export type String_1826 = string;
 
 export interface DECO_RESOURCE_WORKFLOW_RUN_READOutput_1 {
-  uri: String_1740;
-  data: Object_598;
-  created_at?: String_1775;
-  updated_at?: String_1776;
-  created_by?: String_1777;
-  updated_by?: String_1778;
+  uri: String_1788;
+  data: Object_630;
+  created_at?: String_1823;
+  updated_at?: String_1824;
+  created_by?: String_1825;
+  updated_by?: String_1826;
 }
 /**
  * Resource data
  */
-export interface Object_598 {
-  name: String_1741;
-  description?: String_1742;
-  icon?: String_1743;
-  status: String_1744;
-  runId: String_1745;
-  workflowURI?: String_1746;
-  currentStep?: String_1747;
-  stepResults?: Object_599;
+export interface Object_630 {
+  name: String_1789;
+  description?: String_1790;
+  icon?: String_1791;
+  status: String_1792;
+  runId: String_1793;
+  workflowURI?: String_1794;
+  currentStep?: String_1795;
+  stepResults?: Object_631;
   /**
    * The final workflow result (if completed)
    */
@@ -15993,89 +16497,89 @@ export interface Object_598 {
   partialResult?: {
     [k: string]: unknown;
   };
-  error?: String_1748;
+  error?: String_1796;
   logs?: Array_199;
-  startTime?: Number_153;
-  endTime?: Number_154;
-  workflowStatus?: Object_601;
+  startTime?: Number_161;
+  endTime?: Number_162;
+  workflowStatus?: Object_633;
 }
 /**
  * Results from completed steps
  */
-export interface Object_599 {
+export interface Object_631 {
   [k: string]: unknown;
 }
-export interface Object_600 {
-  type: String_1749;
-  content: String_1750;
+export interface Object_632 {
+  type: String_1797;
+  content: String_1798;
 }
-export interface Object_601 {
-  params?: Object_602 | Null_166;
-  trigger?: Object_605;
-  versionId?: String_1758;
-  queued?: String_1759;
+export interface Object_633 {
+  params?: Object_634 | Null_174;
+  trigger?: Object_637;
+  versionId?: String_1806;
+  queued?: String_1807;
   start?: StringNull_85;
   end?: StringNull_86;
   success?: BooleanNull_10;
   steps?: Array_201;
-  error?: Object_610 | Null_178;
+  error?: Object_642 | Null_186;
   output?: unknown;
-  status?: String_1774;
+  status?: String_1822;
   [k: string]: unknown;
 }
-export interface Object_602 {
+export interface Object_634 {
   input?: unknown;
   steps?: Array_200;
-  name?: String_1751;
-  context?: Object_603;
+  name?: String_1799;
+  context?: Object_635;
   [k: string]: unknown;
 }
-export interface Object_603 {
+export interface Object_635 {
   workspace?: unknown;
   locator?: unknown;
-  workflowURI?: String_1752;
-  startedBy?: Object_604;
-  startedAt?: String_1756;
+  workflowURI?: String_1800;
+  startedBy?: Object_636;
+  startedAt?: String_1804;
   [k: string]: unknown;
 }
-export interface Object_604 {
-  id: String_1753;
-  email?: String_1754;
-  name?: String_1755;
+export interface Object_636 {
+  id: String_1801;
+  email?: String_1802;
+  name?: String_1803;
 }
-export interface Object_605 {
-  source: String_1757;
+export interface Object_637 {
+  source: String_1805;
   [k: string]: unknown;
 }
-export interface Object_606 {
-  name?: String_1762;
-  type?: String_1763;
+export interface Object_638 {
+  name?: String_1810;
+  type?: String_1811;
   start?: StringNull_87;
   end?: StringNull_88;
   success?: BooleanNull_11;
   output?: unknown;
-  error?: Object_607 | Null_173;
+  error?: Object_639 | Null_181;
   attempts?: Array_202;
   config?: unknown;
   [k: string]: unknown;
 }
-export interface Object_607 {
-  name?: String_1766;
-  message?: String_1767;
+export interface Object_639 {
+  name?: String_1814;
+  message?: String_1815;
 }
-export interface Object_608 {
+export interface Object_640 {
   start?: StringNull_89;
   end?: StringNull_90;
   success?: BooleanNull_12;
-  error?: Object_609 | Null_177;
+  error?: Object_641 | Null_185;
 }
-export interface Object_609 {
-  name?: String_1770;
-  message?: String_1771;
+export interface Object_641 {
+  name?: String_1818;
+  message?: String_1819;
 }
-export interface Object_610 {
-  name?: String_1772;
-  message?: String_1773;
+export interface Object_642 {
+  name?: String_1820;
+  message?: String_1821;
 }
 
 /* eslint-disable */
@@ -16088,36 +16592,36 @@ export interface Object_610 {
 /**
  * Search term to filter resources
  */
-export type String_1779 = string;
+export type String_1827 = string;
 /**
  * Page number (1-based)
  */
-export type Integer_57 = number;
+export type Integer_73 = number;
 /**
  * Number of items per page
  */
-export type Integer_58 = number;
+export type Integer_74 = number;
 /**
  * Field to sort by
  */
-export type String_1780 = string;
+export type String_1828 = string;
 /**
  * Sort order
  */
-export type String_1781 = "asc" | "desc";
+export type String_1829 = "asc" | "desc";
 
 export interface DECO_RESOURCE_WORKFLOW_RUN_SEARCHInput_1 {
-  term?: String_1779;
-  page?: Integer_57;
-  pageSize?: Integer_58;
-  filters?: Object_611;
-  sortBy?: String_1780;
-  sortOrder?: String_1781;
+  term?: String_1827;
+  page?: Integer_73;
+  pageSize?: Integer_74;
+  filters?: Object_643;
+  sortBy?: String_1828;
+  sortOrder?: String_1829;
 }
 /**
  * Additional filters to apply
  */
-export interface Object_611 {
+export interface Object_643 {
   [k: string]: unknown;
 }
 
@@ -16131,132 +16635,132 @@ export interface Object_611 {
 /**
  * URI of the resource
  */
-export type String_1782 = string;
-export type String_1783 = string;
+export type String_1830 = string;
+export type String_1831 = string;
 /**
  * Description of the resource
  */
-export type String_1784 = string;
+export type String_1832 = string;
 /**
  * URL to the resource icon
  */
-export type String_1785 = string;
-export type String_1786 = string;
-export type String_1787 = string;
-export type String_1788 = string;
-export type String_1789 = string;
-export type String_1790 = string;
-export type String_1791 = string;
+export type String_1833 = string;
+export type String_1834 = string;
+export type String_1835 = string;
+export type String_1836 = string;
+export type String_1837 = string;
+export type String_1838 = string;
+export type String_1839 = string;
 /**
  * The name of the step currently being executed (if running)
  */
-export type String_1792 = string;
+export type String_1840 = string;
 /**
  * Error message if the workflow failed
  */
-export type String_1793 = string;
-export type String_1794 = "log" | "warn" | "error";
-export type String_1795 = string;
+export type String_1841 = string;
+export type String_1842 = "log" | "warn" | "error";
+export type String_1843 = string;
 /**
  * Console logs from the execution
  */
-export type Array_204 = Object_616[];
+export type Array_204 = Object_648[];
 /**
  * When the workflow started (timestamp)
  */
-export type Number_155 = number;
+export type Number_163 = number;
 /**
  * When the workflow ended (timestamp, if completed/failed)
  */
-export type Number_156 = number;
+export type Number_164 = number;
 export type Array_205 = unknown[];
-export type String_1796 = string;
-export type String_1797 = string;
-export type String_1798 = string;
-export type String_1799 = string;
-export type String_1800 = string;
-export type String_1801 = string;
-export type Null_179 = null;
-export type String_1802 = string;
-export type String_1803 = string;
-export type String_1804 = string;
-export type StringNull_91 = String_1805 | Null_180;
-export type String_1805 = string;
-export type Null_180 = null;
-export type StringNull_92 = String_1806 | Null_181;
-export type String_1806 = string;
-export type Null_181 = null;
-export type BooleanNull_13 = Boolean_118 | Null_182;
-export type Boolean_118 = boolean;
-export type Null_182 = null;
-export type String_1807 = string;
-export type String_1808 = string;
-export type StringNull_93 = String_1809 | Null_183;
-export type String_1809 = string;
-export type Null_183 = null;
-export type StringNull_94 = String_1810 | Null_184;
-export type String_1810 = string;
-export type Null_184 = null;
-export type BooleanNull_14 = Boolean_119 | Null_185;
-export type Boolean_119 = boolean;
-export type Null_185 = null;
-export type String_1811 = string;
-export type String_1812 = string;
-export type Null_186 = null;
-export type StringNull_95 = String_1813 | Null_187;
-export type String_1813 = string;
+export type String_1844 = string;
+export type String_1845 = string;
+export type String_1846 = string;
+export type String_1847 = string;
+export type String_1848 = string;
+export type String_1849 = string;
 export type Null_187 = null;
-export type StringNull_96 = String_1814 | Null_188;
-export type String_1814 = string;
+export type String_1850 = string;
+export type String_1851 = string;
+export type String_1852 = string;
+export type StringNull_91 = String_1853 | Null_188;
+export type String_1853 = string;
 export type Null_188 = null;
-export type BooleanNull_15 = Boolean_120 | Null_189;
-export type Boolean_120 = boolean;
+export type StringNull_92 = String_1854 | Null_189;
+export type String_1854 = string;
 export type Null_189 = null;
-export type String_1815 = string;
-export type String_1816 = string;
+export type BooleanNull_13 = Boolean_118 | Null_190;
+export type Boolean_118 = boolean;
 export type Null_190 = null;
-export type Array_207 = Object_624[];
-export type Array_206 = Object_622[];
-export type String_1817 = string;
-export type String_1818 = string;
+export type String_1855 = string;
+export type String_1856 = string;
+export type StringNull_93 = String_1857 | Null_191;
+export type String_1857 = string;
 export type Null_191 = null;
-export type String_1819 = string;
+export type StringNull_94 = String_1858 | Null_192;
+export type String_1858 = string;
+export type Null_192 = null;
+export type BooleanNull_14 = Boolean_119 | Null_193;
+export type Boolean_119 = boolean;
+export type Null_193 = null;
+export type String_1859 = string;
+export type String_1860 = string;
+export type Null_194 = null;
+export type StringNull_95 = String_1861 | Null_195;
+export type String_1861 = string;
+export type Null_195 = null;
+export type StringNull_96 = String_1862 | Null_196;
+export type String_1862 = string;
+export type Null_196 = null;
+export type BooleanNull_15 = Boolean_120 | Null_197;
+export type Boolean_120 = boolean;
+export type Null_197 = null;
+export type String_1863 = string;
+export type String_1864 = string;
+export type Null_198 = null;
+export type Array_207 = Object_656[];
+export type Array_206 = Object_654[];
+export type String_1865 = string;
+export type String_1866 = string;
+export type Null_199 = null;
+export type String_1867 = string;
 /**
  * Creation timestamp
  */
-export type String_1820 = string;
+export type String_1868 = string;
 /**
  * Last update timestamp
  */
-export type String_1821 = string;
+export type String_1869 = string;
 /**
  * User who created the resource
  */
-export type String_1822 = string;
+export type String_1870 = string;
 /**
  * User who last updated the resource
  */
-export type String_1823 = string;
+export type String_1871 = string;
 /**
  * Array of matching resources
  */
-export type Array_203 = Object_612[];
+export type Array_203 = Object_644[];
 /**
  * Total number of matching resources
  */
-export type Integer_59 = number;
+export type Integer_75 = number;
 /**
  * Current page number
  */
-export type Integer_60 = number;
+export type Integer_76 = number;
 /**
  * Number of items per page
  */
-export type Integer_61 = number;
+export type Integer_77 = number;
 /**
  * Total number of pages
  */
-export type Integer_62 = number;
+export type Integer_78 = number;
 /**
  * Whether there are more pages available
  */
@@ -16268,38 +16772,38 @@ export type Boolean_122 = boolean;
 
 export interface DECO_RESOURCE_WORKFLOW_RUN_SEARCHOutput_1 {
   items: Array_203;
-  totalCount: Integer_59;
-  page: Integer_60;
-  pageSize: Integer_61;
-  totalPages: Integer_62;
+  totalCount: Integer_75;
+  page: Integer_76;
+  pageSize: Integer_77;
+  totalPages: Integer_78;
   hasNextPage: Boolean_121;
   hasPreviousPage: Boolean_122;
 }
-export interface Object_612 {
-  uri: String_1782;
+export interface Object_644 {
+  uri: String_1830;
   /**
    * Resource data with required name
    */
-  data: Object_613 & Object_614;
-  created_at?: String_1820;
-  updated_at?: String_1821;
-  created_by?: String_1822;
-  updated_by?: String_1823;
+  data: Object_645 & Object_646;
+  created_at?: String_1868;
+  updated_at?: String_1869;
+  created_by?: String_1870;
+  updated_by?: String_1871;
 }
-export interface Object_613 {
-  name: String_1783;
-  description?: String_1784;
-  icon?: String_1785;
+export interface Object_645 {
+  name: String_1831;
+  description?: String_1832;
+  icon?: String_1833;
 }
-export interface Object_614 {
-  name: String_1786;
-  description?: String_1787;
-  icon?: String_1788;
-  status: String_1789;
-  runId: String_1790;
-  workflowURI?: String_1791;
-  currentStep?: String_1792;
-  stepResults?: Object_615;
+export interface Object_646 {
+  name: String_1834;
+  description?: String_1835;
+  icon?: String_1836;
+  status: String_1837;
+  runId: String_1838;
+  workflowURI?: String_1839;
+  currentStep?: String_1840;
+  stepResults?: Object_647;
   /**
    * The final workflow result (if completed)
    */
@@ -16312,89 +16816,89 @@ export interface Object_614 {
   partialResult?: {
     [k: string]: unknown;
   };
-  error?: String_1793;
+  error?: String_1841;
   logs?: Array_204;
-  startTime?: Number_155;
-  endTime?: Number_156;
-  workflowStatus?: Object_617;
+  startTime?: Number_163;
+  endTime?: Number_164;
+  workflowStatus?: Object_649;
 }
 /**
  * Results from completed steps
  */
-export interface Object_615 {
+export interface Object_647 {
   [k: string]: unknown;
 }
-export interface Object_616 {
-  type: String_1794;
-  content: String_1795;
+export interface Object_648 {
+  type: String_1842;
+  content: String_1843;
 }
-export interface Object_617 {
-  params?: Object_618 | Null_179;
-  trigger?: Object_621;
-  versionId?: String_1803;
-  queued?: String_1804;
+export interface Object_649 {
+  params?: Object_650 | Null_187;
+  trigger?: Object_653;
+  versionId?: String_1851;
+  queued?: String_1852;
   start?: StringNull_91;
   end?: StringNull_92;
   success?: BooleanNull_13;
   steps?: Array_206;
-  error?: Object_626 | Null_191;
+  error?: Object_658 | Null_199;
   output?: unknown;
-  status?: String_1819;
+  status?: String_1867;
   [k: string]: unknown;
 }
-export interface Object_618 {
+export interface Object_650 {
   input?: unknown;
   steps?: Array_205;
-  name?: String_1796;
-  context?: Object_619;
+  name?: String_1844;
+  context?: Object_651;
   [k: string]: unknown;
 }
-export interface Object_619 {
+export interface Object_651 {
   workspace?: unknown;
   locator?: unknown;
-  workflowURI?: String_1797;
-  startedBy?: Object_620;
-  startedAt?: String_1801;
+  workflowURI?: String_1845;
+  startedBy?: Object_652;
+  startedAt?: String_1849;
   [k: string]: unknown;
 }
-export interface Object_620 {
-  id: String_1798;
-  email?: String_1799;
-  name?: String_1800;
+export interface Object_652 {
+  id: String_1846;
+  email?: String_1847;
+  name?: String_1848;
 }
-export interface Object_621 {
-  source: String_1802;
+export interface Object_653 {
+  source: String_1850;
   [k: string]: unknown;
 }
-export interface Object_622 {
-  name?: String_1807;
-  type?: String_1808;
+export interface Object_654 {
+  name?: String_1855;
+  type?: String_1856;
   start?: StringNull_93;
   end?: StringNull_94;
   success?: BooleanNull_14;
   output?: unknown;
-  error?: Object_623 | Null_186;
+  error?: Object_655 | Null_194;
   attempts?: Array_207;
   config?: unknown;
   [k: string]: unknown;
 }
-export interface Object_623 {
-  name?: String_1811;
-  message?: String_1812;
+export interface Object_655 {
+  name?: String_1859;
+  message?: String_1860;
 }
-export interface Object_624 {
+export interface Object_656 {
   start?: StringNull_95;
   end?: StringNull_96;
   success?: BooleanNull_15;
-  error?: Object_625 | Null_190;
+  error?: Object_657 | Null_198;
 }
-export interface Object_625 {
-  name?: String_1815;
-  message?: String_1816;
+export interface Object_657 {
+  name?: String_1863;
+  message?: String_1864;
 }
-export interface Object_626 {
-  name?: String_1817;
-  message?: String_1818;
+export interface Object_658 {
+  name?: String_1865;
+  message?: String_1866;
 }
 
 /* eslint-disable */
@@ -16407,36 +16911,36 @@ export interface Object_626 {
 /**
  * Search term to filter resources
  */
-export type String_1824 = string;
+export type String_1872 = string;
 /**
  * Page number (1-based)
  */
-export type Integer_63 = number;
+export type Integer_79 = number;
 /**
  * Number of items per page
  */
-export type Integer_64 = number;
+export type Integer_80 = number;
 /**
  * Field to sort by
  */
-export type String_1825 = string;
+export type String_1873 = string;
 /**
  * Sort order
  */
-export type String_1826 = "asc" | "desc";
+export type String_1874 = "asc" | "desc";
 
 export interface DECO_RESOURCE_WORKFLOW_SEARCHInput_1 {
-  term?: String_1824;
-  page?: Integer_63;
-  pageSize?: Integer_64;
-  filters?: Object_627;
-  sortBy?: String_1825;
-  sortOrder?: String_1826;
+  term?: String_1872;
+  page?: Integer_79;
+  pageSize?: Integer_80;
+  filters?: Object_659;
+  sortBy?: String_1873;
+  sortOrder?: String_1874;
 }
 /**
  * Additional filters to apply
  */
-export interface Object_627 {
+export interface Object_659 {
   [k: string]: unknown;
 }
 
@@ -16450,60 +16954,60 @@ export interface Object_627 {
 /**
  * URI of the resource
  */
-export type String_1827 = string;
-export type String_1828 = string;
+export type String_1875 = string;
+export type String_1876 = string;
 /**
  * Description of the resource
  */
-export type String_1829 = string;
+export type String_1877 = string;
 /**
  * URL to the resource icon
  */
-export type String_1830 = string;
+export type String_1878 = string;
 /**
  * The unique name of the workflow
  */
-export type String_1831 = string;
+export type String_1879 = string;
 /**
  * A comprehensive description of what this workflow accomplishes
  */
-export type String_1832 = string;
+export type String_1880 = string;
 /**
  * Creation timestamp
  */
-export type String_1833 = string;
+export type String_1881 = string;
 /**
  * Last update timestamp
  */
-export type String_1834 = string;
+export type String_1882 = string;
 /**
  * User who created the resource
  */
-export type String_1835 = string;
+export type String_1883 = string;
 /**
  * User who last updated the resource
  */
-export type String_1836 = string;
+export type String_1884 = string;
 /**
  * Array of matching resources
  */
-export type Array_208 = Object_628[];
+export type Array_208 = Object_660[];
 /**
  * Total number of matching resources
  */
-export type Integer_65 = number;
+export type Integer_81 = number;
 /**
  * Current page number
  */
-export type Integer_66 = number;
+export type Integer_82 = number;
 /**
  * Number of items per page
  */
-export type Integer_67 = number;
+export type Integer_83 = number;
 /**
  * Total number of pages
  */
-export type Integer_68 = number;
+export type Integer_84 = number;
 /**
  * Whether there are more pages available
  */
@@ -16515,32 +17019,32 @@ export type Boolean_124 = boolean;
 
 export interface DECO_RESOURCE_WORKFLOW_SEARCHOutput_1 {
   items: Array_208;
-  totalCount: Integer_65;
-  page: Integer_66;
-  pageSize: Integer_67;
-  totalPages: Integer_68;
+  totalCount: Integer_81;
+  page: Integer_82;
+  pageSize: Integer_83;
+  totalPages: Integer_84;
   hasNextPage: Boolean_123;
   hasPreviousPage: Boolean_124;
 }
-export interface Object_628 {
-  uri: String_1827;
+export interface Object_660 {
+  uri: String_1875;
   /**
    * Resource data with required name
    */
-  data: Object_629 & Object_630;
-  created_at?: String_1833;
-  updated_at?: String_1834;
-  created_by?: String_1835;
-  updated_by?: String_1836;
+  data: Object_661 & Object_662;
+  created_at?: String_1881;
+  updated_at?: String_1882;
+  created_by?: String_1883;
+  updated_by?: String_1884;
 }
-export interface Object_629 {
-  name: String_1828;
-  description?: String_1829;
-  icon?: String_1830;
+export interface Object_661 {
+  name: String_1876;
+  description?: String_1877;
+  icon?: String_1878;
 }
-export interface Object_630 {
-  name: String_1831;
-  description: String_1832;
+export interface Object_662 {
+  name: String_1879;
+  description: String_1880;
 }
 
 /* eslint-disable */
@@ -16553,156 +17057,219 @@ export interface Object_630 {
 /**
  * URI of the resource to update
  */
-export type String_1837 = string;
+export type String_1885 = string;
 /**
  * The unique name of the workflow
  */
-export type String_1838 = string;
+export type String_1886 = string;
 /**
  * A comprehensive description of what this workflow accomplishes
  */
-export type String_1839 = string;
+export type String_1887 = string;
 /**
  * Array of workflow steps that execute sequentially. Each step can reference previous step outputs using @<step_name>.output.property syntax.
  *
  * @minItems 1
  */
-export type Array_209 = [Object_634, ...Object_634[]];
+export type Array_209 = [Object_666, ...Object_666[]];
+/**
+ * The type of step
+ */
+export type String_1888 = "code" | "tool_call";
 /**
  * The unique ID of the step within the workflow
  */
-export type String_1840 = string;
+export type String_1889 = string;
 /**
  * The unique name of the step within the workflow
  */
-export type String_1841 = string;
+export type String_1890 = string;
 /**
  * A clear description of what this step does
  */
-export type String_1842 = string;
+export type String_1891 = string;
 /**
  * The prompt used to generate the step
  */
-export type String_1843 = string;
+export type String_1892 = string;
 /**
  * Status of the step execution
  */
-export type String_1844 = "pending" | "active" | "completed" | "error";
+export type String_1893 = "pending" | "active" | "completed" | "error";
 /**
  * ES module code that exports a default async function: (input: typeof inputSchema, ctx: { env: Record<string, any> }) => Promise<typeof outputSchema>. The input parameter contains the resolved input with all @ references replaced with actual values.
  */
-export type String_1845 = string;
+export type String_1894 = string;
 /**
  * The integration ID (format: i:<uuid> or a:<uuid>) that this step depends on
  */
-export type String_1846 = string;
+export type String_1895 = string;
 /**
  * List of integrations this step calls via ctx.env['{INTEGRATION_ID}'].{TOOL_NAME}(). These integrations must be installed and available for the step to execute successfully.
  */
-export type Array_210 = Object_639[];
+export type Array_210 = Object_672[];
 /**
  * Number of retry attempts for this step (default: 0)
  */
-export type Integer_69 = number;
+export type Integer_85 = number;
 /**
  * Delay in milliseconds between retry attempts (default: 0)
  */
-export type Integer_70 = number;
+export type Integer_86 = number;
 /**
  * Backoff strategy for retry attempts (default: constant)
  */
-export type String_1847 = "constant" | "linear" | "exponential";
+export type String_1896 = "constant" | "linear" | "exponential";
 /**
  * Maximum execution time in milliseconds (default: Infinity)
  */
-export type Number_157 = number;
+export type Number_165 = number;
+/**
+ * The unique name of the tool call step within the workflow
+ */
+export type String_1897 = string;
+/**
+ * A clear description of what this tool call step does
+ */
+export type String_1898 = string;
+/**
+ * Number of retry attempts for this step (default: 0)
+ */
+export type Integer_87 = number;
+/**
+ * Delay in milliseconds between retry attempts (default: 0)
+ */
+export type Integer_88 = number;
+/**
+ * Backoff strategy for retry attempts (default: constant)
+ */
+export type String_1899 = "constant" | "linear" | "exponential";
+/**
+ * Maximum execution time in milliseconds (default: Infinity)
+ */
+export type Number_166 = number;
+export type Null_200 = null;
+/**
+ * The name of the tool to call
+ */
+export type String_1900 = string;
+/**
+ * The name of the integration that provides this tool
+ */
+export type String_1901 = string;
 /**
  * The authorization token for the workflow
  */
-export type String_1848 = string;
+export type String_1902 = string;
 
 export interface DECO_RESOURCE_WORKFLOW_UPDATEInput_1 {
-  uri: String_1837;
-  data: Object_631;
+  uri: String_1885;
+  data: Object_663;
 }
 /**
  * Updated resource data
  */
-export interface Object_631 {
-  name: String_1838;
-  description: String_1839;
-  inputSchema: Object_632;
-  outputSchema: Object_633;
+export interface Object_663 {
+  name: String_1886;
+  description: String_1887;
+  inputSchema: Object_664;
+  outputSchema: Object_665;
   steps: Array_209;
-  authorization?: Object_642;
+  authorization?: Object_678;
 }
 /**
  * JSON Schema defining the workflow's input parameters and data structure
  */
-export interface Object_632 {
+export interface Object_664 {
   [k: string]: unknown;
 }
 /**
  * JSON Schema defining the workflow's final output after all steps complete
  */
-export interface Object_633 {
+export interface Object_665 {
   [k: string]: unknown;
 }
-export interface Object_634 {
-  id: String_1840;
-  name: String_1841;
-  description: String_1842;
-  prompt?: String_1843;
-  inputSchema: Object_635;
-  outputSchema: Object_636;
-  input: Object_637;
-  output: Object_638;
-  status?: String_1844;
-  execute: String_1845;
+export interface Object_666 {
+  type: String_1888;
+  /**
+   * The step definition based on the type
+   */
+  def: Object_667 | Object_675;
+}
+export interface Object_667 {
+  id: String_1889;
+  name: String_1890;
+  description: String_1891;
+  prompt?: String_1892;
+  inputSchema: Object_668;
+  outputSchema: Object_669;
+  input: Object_670;
+  output: Object_671;
+  status?: String_1893;
+  execute: String_1894;
   dependencies?: Array_210;
-  options?: Object_640;
+  options?: Object_673;
 }
 /**
  * JSON Schema defining the input structure for this step
  */
-export interface Object_635 {
+export interface Object_668 {
   [k: string]: unknown;
 }
 /**
  * JSON Schema defining the output structure for this step
  */
-export interface Object_636 {
+export interface Object_669 {
   [k: string]: unknown;
 }
 /**
  * Input object that complies with inputSchema. Values can reference previous steps using @<step_name>.output.property or workflow input using @input.property
  */
-export interface Object_637 {
+export interface Object_670 {
   [k: string]: unknown;
 }
 /**
  * Current output of the step if it was executed
  */
-export interface Object_638 {
+export interface Object_671 {
   [k: string]: unknown;
 }
-export interface Object_639 {
-  integrationId: String_1846;
+export interface Object_672 {
+  integrationId: String_1895;
 }
 /**
  * Step configuration options including retry and timeout settings
  */
-export interface Object_640 {
-  retries?: Object_641;
-  timeout?: Number_157;
+export interface Object_673 {
+  retries?: Object_674;
+  timeout?: Number_165;
 }
-export interface Object_641 {
-  limit?: Integer_69;
-  delay?: Integer_70;
-  backoff?: String_1847;
+export interface Object_674 {
+  limit?: Integer_85;
+  delay?: Integer_86;
+  backoff?: String_1896;
 }
-export interface Object_642 {
-  token: String_1848;
+export interface Object_675 {
+  name: String_1897;
+  description: String_1898;
+  /**
+   * Step configuration options. Extend this object with custom properties for business user configuration
+   */
+  options?: Object_676 | Null_200;
+  tool_name: String_1900;
+  integration: String_1901;
+}
+export interface Object_676 {
+  retries?: Object_677;
+  timeout?: Number_166;
+}
+export interface Object_677 {
+  limit?: Integer_87;
+  delay?: Integer_88;
+  backoff?: String_1899;
+}
+export interface Object_678 {
+  token: String_1902;
 }
 
 /* eslint-disable */
@@ -16715,176 +17282,239 @@ export interface Object_642 {
 /**
  * URI of the updated resource
  */
-export type String_1849 = string;
+export type String_1903 = string;
 /**
  * The unique name of the workflow
  */
-export type String_1850 = string;
+export type String_1904 = string;
 /**
  * A comprehensive description of what this workflow accomplishes
  */
-export type String_1851 = string;
+export type String_1905 = string;
 /**
  * Array of workflow steps that execute sequentially. Each step can reference previous step outputs using @<step_name>.output.property syntax.
  *
  * @minItems 1
  */
-export type Array_211 = [Object_646, ...Object_646[]];
+export type Array_211 = [Object_682, ...Object_682[]];
+/**
+ * The type of step
+ */
+export type String_1906 = "code" | "tool_call";
 /**
  * The unique ID of the step within the workflow
  */
-export type String_1852 = string;
+export type String_1907 = string;
 /**
  * The unique name of the step within the workflow
  */
-export type String_1853 = string;
+export type String_1908 = string;
 /**
  * A clear description of what this step does
  */
-export type String_1854 = string;
+export type String_1909 = string;
 /**
  * The prompt used to generate the step
  */
-export type String_1855 = string;
+export type String_1910 = string;
 /**
  * Status of the step execution
  */
-export type String_1856 = "pending" | "active" | "completed" | "error";
+export type String_1911 = "pending" | "active" | "completed" | "error";
 /**
  * ES module code that exports a default async function: (input: typeof inputSchema, ctx: { env: Record<string, any> }) => Promise<typeof outputSchema>. The input parameter contains the resolved input with all @ references replaced with actual values.
  */
-export type String_1857 = string;
+export type String_1912 = string;
 /**
  * The integration ID (format: i:<uuid> or a:<uuid>) that this step depends on
  */
-export type String_1858 = string;
+export type String_1913 = string;
 /**
  * List of integrations this step calls via ctx.env['{INTEGRATION_ID}'].{TOOL_NAME}(). These integrations must be installed and available for the step to execute successfully.
  */
-export type Array_212 = Object_651[];
+export type Array_212 = Object_688[];
 /**
  * Number of retry attempts for this step (default: 0)
  */
-export type Integer_71 = number;
+export type Integer_89 = number;
 /**
  * Delay in milliseconds between retry attempts (default: 0)
  */
-export type Integer_72 = number;
+export type Integer_90 = number;
 /**
  * Backoff strategy for retry attempts (default: constant)
  */
-export type String_1859 = "constant" | "linear" | "exponential";
+export type String_1914 = "constant" | "linear" | "exponential";
 /**
  * Maximum execution time in milliseconds (default: Infinity)
  */
-export type Number_158 = number;
+export type Number_167 = number;
+/**
+ * The unique name of the tool call step within the workflow
+ */
+export type String_1915 = string;
+/**
+ * A clear description of what this tool call step does
+ */
+export type String_1916 = string;
+/**
+ * Number of retry attempts for this step (default: 0)
+ */
+export type Integer_91 = number;
+/**
+ * Delay in milliseconds between retry attempts (default: 0)
+ */
+export type Integer_92 = number;
+/**
+ * Backoff strategy for retry attempts (default: constant)
+ */
+export type String_1917 = "constant" | "linear" | "exponential";
+/**
+ * Maximum execution time in milliseconds (default: Infinity)
+ */
+export type Number_168 = number;
+export type Null_201 = null;
+/**
+ * The name of the tool to call
+ */
+export type String_1918 = string;
+/**
+ * The name of the integration that provides this tool
+ */
+export type String_1919 = string;
 /**
  * The authorization token for the workflow
  */
-export type String_1860 = string;
+export type String_1920 = string;
 /**
  * Original creation timestamp
  */
-export type String_1861 = string;
+export type String_1921 = string;
 /**
  * Last update timestamp
  */
-export type String_1862 = string;
+export type String_1922 = string;
 /**
  * User who originally created the resource
  */
-export type String_1863 = string;
+export type String_1923 = string;
 /**
  * User who last updated the resource
  */
-export type String_1864 = string;
+export type String_1924 = string;
 
 export interface DECO_RESOURCE_WORKFLOW_UPDATEOutput_1 {
-  uri: String_1849;
-  data: Object_643;
-  created_at?: String_1861;
-  updated_at?: String_1862;
-  created_by?: String_1863;
-  updated_by?: String_1864;
+  uri: String_1903;
+  data: Object_679;
+  created_at?: String_1921;
+  updated_at?: String_1922;
+  created_by?: String_1923;
+  updated_by?: String_1924;
 }
 /**
  * Updated resource data
  */
-export interface Object_643 {
-  name: String_1850;
-  description: String_1851;
-  inputSchema: Object_644;
-  outputSchema: Object_645;
+export interface Object_679 {
+  name: String_1904;
+  description: String_1905;
+  inputSchema: Object_680;
+  outputSchema: Object_681;
   steps: Array_211;
-  authorization?: Object_654;
+  authorization?: Object_694;
 }
 /**
  * JSON Schema defining the workflow's input parameters and data structure
  */
-export interface Object_644 {
+export interface Object_680 {
   [k: string]: unknown;
 }
 /**
  * JSON Schema defining the workflow's final output after all steps complete
  */
-export interface Object_645 {
+export interface Object_681 {
   [k: string]: unknown;
 }
-export interface Object_646 {
-  id: String_1852;
-  name: String_1853;
-  description: String_1854;
-  prompt?: String_1855;
-  inputSchema: Object_647;
-  outputSchema: Object_648;
-  input: Object_649;
-  output: Object_650;
-  status?: String_1856;
-  execute: String_1857;
+export interface Object_682 {
+  type: String_1906;
+  /**
+   * The step definition based on the type
+   */
+  def: Object_683 | Object_691;
+}
+export interface Object_683 {
+  id: String_1907;
+  name: String_1908;
+  description: String_1909;
+  prompt?: String_1910;
+  inputSchema: Object_684;
+  outputSchema: Object_685;
+  input: Object_686;
+  output: Object_687;
+  status?: String_1911;
+  execute: String_1912;
   dependencies?: Array_212;
-  options?: Object_652;
+  options?: Object_689;
 }
 /**
  * JSON Schema defining the input structure for this step
  */
-export interface Object_647 {
+export interface Object_684 {
   [k: string]: unknown;
 }
 /**
  * JSON Schema defining the output structure for this step
  */
-export interface Object_648 {
+export interface Object_685 {
   [k: string]: unknown;
 }
 /**
  * Input object that complies with inputSchema. Values can reference previous steps using @<step_name>.output.property or workflow input using @input.property
  */
-export interface Object_649 {
+export interface Object_686 {
   [k: string]: unknown;
 }
 /**
  * Current output of the step if it was executed
  */
-export interface Object_650 {
+export interface Object_687 {
   [k: string]: unknown;
 }
-export interface Object_651 {
-  integrationId: String_1858;
+export interface Object_688 {
+  integrationId: String_1913;
 }
 /**
  * Step configuration options including retry and timeout settings
  */
-export interface Object_652 {
-  retries?: Object_653;
-  timeout?: Number_158;
+export interface Object_689 {
+  retries?: Object_690;
+  timeout?: Number_167;
 }
-export interface Object_653 {
-  limit?: Integer_71;
-  delay?: Integer_72;
-  backoff?: String_1859;
+export interface Object_690 {
+  limit?: Integer_89;
+  delay?: Integer_90;
+  backoff?: String_1914;
 }
-export interface Object_654 {
-  token: String_1860;
+export interface Object_691 {
+  name: String_1915;
+  description: String_1916;
+  /**
+   * Step configuration options. Extend this object with custom properties for business user configuration
+   */
+  options?: Object_692 | Null_201;
+  tool_name: String_1918;
+  integration: String_1919;
+}
+export interface Object_692 {
+  retries?: Object_693;
+  timeout?: Number_168;
+}
+export interface Object_693 {
+  limit?: Integer_91;
+  delay?: Integer_92;
+  backoff?: String_1917;
+}
+export interface Object_694 {
+  token: String_1920;
 }
 
 /* eslint-disable */
@@ -16897,10 +17527,10 @@ export interface Object_654 {
 /**
  * URI of the resource to render in the view
  */
-export type String_1865 = string;
+export type String_1925 = string;
 
 export interface DECO_VIEW_RENDER_WORKFLOW_DETAILInput_1 {
-  resource: String_1865;
+  resource: String_1925;
 }
 
 /* eslint-disable */
@@ -16913,20 +17543,20 @@ export interface DECO_VIEW_RENDER_WORKFLOW_DETAILInput_1 {
 /**
  * URL to render the view
  */
-export type String_1866 = string;
+export type String_1926 = string;
 /**
  * Optional LLM prompt for this view context
  */
-export type String_1867 = string;
-export type String_1868 = string;
+export type String_1927 = string;
+export type String_1928 = string;
 /**
  * Optional array of tool names for this view context
  */
-export type Array_213 = String_1868[];
+export type Array_213 = String_1928[];
 
 export interface DECO_VIEW_RENDER_WORKFLOW_DETAILOutput_1 {
-  url: String_1866;
-  prompt?: String_1867;
+  url: String_1926;
+  prompt?: String_1927;
   tools?: Array_213;
 }
 
@@ -16940,10 +17570,10 @@ export interface DECO_VIEW_RENDER_WORKFLOW_DETAILOutput_1 {
 /**
  * URI of the resource to render in the view
  */
-export type String_1869 = string;
+export type String_1929 = string;
 
 export interface DECO_VIEW_RENDER_WORKFLOW_RUNInput_1 {
-  resource: String_1869;
+  resource: String_1929;
 }
 
 /* eslint-disable */
@@ -16956,20 +17586,20 @@ export interface DECO_VIEW_RENDER_WORKFLOW_RUNInput_1 {
 /**
  * URL to render the view
  */
-export type String_1870 = string;
+export type String_1930 = string;
 /**
  * Optional LLM prompt for this view context
  */
-export type String_1871 = string;
-export type String_1872 = string;
+export type String_1931 = string;
+export type String_1932 = string;
 /**
  * Optional array of tool names for this view context
  */
-export type Array_214 = String_1872[];
+export type Array_214 = String_1932[];
 
 export interface DECO_VIEW_RENDER_WORKFLOW_RUNOutput_1 {
-  url: String_1870;
-  prompt?: String_1871;
+  url: String_1930;
+  prompt?: String_1931;
   tools?: Array_214;
 }
 
@@ -16983,28 +17613,28 @@ export interface DECO_VIEW_RENDER_WORKFLOW_RUNOutput_1 {
 /**
  * The Resources 2.0 URI of the workflow to execute
  */
-export type String_1873 = string;
+export type String_1933 = string;
 /**
  * Optional step name where execution should halt. The workflow will execute up to and including this step, then stop. Useful for partial execution, debugging, or step-by-step testing.
  */
-export type String_1874 = string;
+export type String_1934 = string;
 
 export interface DECO_WORKFLOW_STARTInput_1 {
-  uri: String_1873;
-  input: Object_655;
-  stopAfter?: String_1874;
-  state?: Object_656;
+  uri: String_1933;
+  input: Object_695;
+  stopAfter?: String_1934;
+  state?: Object_696;
 }
 /**
  * The input data that will be validated against the workflow's input schema and passed to the first step
  */
-export interface Object_655 {
+export interface Object_695 {
   [k: string]: unknown;
 }
 /**
  * Optional pre-computed step results to inject into the workflow state. Format: { 'step-name': STEP_RESULT }. Allows skipping steps by providing their expected outputs, useful for resuming workflows or testing with known intermediate results.
  */
-export interface Object_656 {
+export interface Object_696 {
   [k: string]: unknown;
 }
 
@@ -17018,20 +17648,20 @@ export interface Object_656 {
 /**
  * The unique ID for tracking this workflow run
  */
-export type String_1875 = string;
+export type String_1935 = string;
 /**
  * The Resources 2.0 URI of the workflow run (rsc://i:workflows-management/workflow_run/{runId}). Use DECO_RESOURCE_WORKFLOW_RUN_READ to get status and results.
  */
-export type String_1876 = string;
+export type String_1936 = string;
 /**
  * Error message if workflow start failed
  */
-export type String_1877 = string;
+export type String_1937 = string;
 
 export interface DECO_WORKFLOW_STARTOutput_1 {
-  runId?: String_1875;
-  uri?: String_1876;
-  error?: String_1877;
+  runId?: String_1935;
+  uri?: String_1936;
+  error?: String_1937;
 }
 
 /* eslint-disable */
@@ -17041,10 +17671,10 @@ export interface DECO_WORKFLOW_STARTOutput_1 {
  * and run json-schema-to-typescript to regenerate this file.
  */
 
-export type String_1878 = string;
+export type String_1938 = string;
 
 export interface AI_TOOL_EXECUTORInput {
-  query: String_1878;
+  query: String_1938;
 }
 
 /* eslint-disable */
@@ -17054,16 +17684,16 @@ export interface AI_TOOL_EXECUTORInput {
  * and run json-schema-to-typescript to regenerate this file.
  */
 
-export type String_1879 = string;
-export type String_1880 = string;
-export type String_1881 = string;
+export type String_1939 = string;
+export type String_1940 = string;
+export type String_1941 = string;
 
 export interface AI_TOOL_EXECUTOROutput {
-  reasoning: String_1879;
-  toolUri: String_1880;
+  reasoning: String_1939;
+  toolUri: String_1940;
   generatedInput?: unknown;
   result?: unknown;
-  error?: String_1881;
+  error?: String_1941;
 }
 
 /* eslint-disable */
@@ -17073,24 +17703,24 @@ export interface AI_TOOL_EXECUTOROutput {
  * and run json-schema-to-typescript to regenerate this file.
  */
 
-export type String_1882 = string;
-export type String_1883 = string;
-export type String_1884 = string;
-export type String_1885 = string;
-export type String_1886 = string;
-export type Array_215 = Object_657[];
-export type String_1887 = string;
+export type String_1942 = string;
+export type String_1943 = string;
+export type String_1944 = string;
+export type String_1945 = string;
+export type String_1946 = string;
+export type Array_215 = Object_697[];
+export type String_1947 = string;
 
 export interface AUTHORIZE_WORKFLOWInput {
-  workflowId: String_1882;
-  workflowName: String_1883;
+  workflowId: String_1942;
+  workflowName: String_1943;
   tools: Array_215;
-  existingApiKeyName?: String_1887;
+  existingApiKeyName?: String_1947;
 }
-export interface Object_657 {
-  toolName: String_1884;
-  integrationId: String_1885;
-  integrationName: String_1886;
+export interface Object_697 {
+  toolName: String_1944;
+  integrationId: String_1945;
+  integrationName: String_1946;
 }
 
 /* eslint-disable */
@@ -17101,17 +17731,17 @@ export interface Object_657 {
  */
 
 export type Boolean_125 = boolean;
-export type String_1888 = string;
-export type String_1889 = string;
-export type Number_159 = number;
-export type String_1890 = string;
+export type String_1948 = string;
+export type String_1949 = string;
+export type Number_169 = number;
+export type String_1950 = string;
 
 export interface AUTHORIZE_WORKFLOWOutput {
   success: Boolean_125;
-  authToken?: String_1888;
-  apiKeyName?: String_1889;
-  toolCount: Number_159;
-  error?: String_1890;
+  authToken?: String_1948;
+  apiKeyName?: String_1949;
+  toolCount: Number_169;
+  error?: String_1950;
 }
 
 /* eslint-disable */
@@ -17121,13 +17751,13 @@ export interface AUTHORIZE_WORKFLOWOutput {
  * and run json-schema-to-typescript to regenerate this file.
  */
 
-export type String_1891 = string;
+export type String_1951 = string;
 
 export interface CALL_INTEGRATION_TOOLInput {
-  id?: String_1891;
-  params: Object_658;
+  id?: String_1951;
+  params: Object_698;
 }
-export interface Object_658 {
+export interface Object_698 {
   [k: string]: unknown;
 }
 
@@ -17139,12 +17769,12 @@ export interface Object_658 {
  */
 
 export type Boolean_126 = boolean;
-export type String_1892 = string;
+export type String_1952 = string;
 
 export interface CALL_INTEGRATION_TOOLOutput {
   result?: unknown;
   success: Boolean_126;
-  error?: String_1892;
+  error?: String_1952;
 }
 
 /* eslint-disable */
@@ -17154,10 +17784,10 @@ export interface CALL_INTEGRATION_TOOLOutput {
  * and run json-schema-to-typescript to regenerate this file.
  */
 
-export type String_1893 = string;
+export type String_1953 = string;
 
 export interface DECO_CHAT_OAUTH_STARTInput {
-  returnUrl: String_1893;
+  returnUrl: String_1953;
 }
 
 /* eslint-disable */
@@ -17167,8 +17797,8 @@ export interface DECO_CHAT_OAUTH_STARTInput {
  * and run json-schema-to-typescript to regenerate this file.
  */
 
-export type String_1894 = string;
-export type Array_216 = String_1894[];
+export type String_1954 = string;
+export type Array_216 = String_1954[];
 
 export interface DECO_CHAT_OAUTH_STARTOutput {
   stateSchema?: unknown;
@@ -17215,35 +17845,35 @@ export interface DECO_CHAT_VIEWS_LISTInput_2 {}
  * and run json-schema-to-typescript to regenerate this file.
  */
 
-export type String_1895 = string;
-export type String_1896 = string;
-export type String_1897 = string;
-export type String_1898 = string;
-export type String_1899 = string;
-export type String_1900 = string;
-export type String_1901 = string;
-export type String_1902 = string;
-export type String_1903 = string;
-export type Array_218 = String_1903[];
-export type String_1904 = string;
-export type String_1905 = "none" | "open" | "autoPin";
-export type Array_217 = Object_659[];
+export type String_1955 = string;
+export type String_1956 = string;
+export type String_1957 = string;
+export type String_1958 = string;
+export type String_1959 = string;
+export type String_1960 = string;
+export type String_1961 = string;
+export type String_1962 = string;
+export type String_1963 = string;
+export type Array_218 = String_1963[];
+export type String_1964 = string;
+export type String_1965 = "none" | "open" | "autoPin";
+export type Array_217 = Object_699[];
 
 export interface DECO_CHAT_VIEWS_LISTOutput_2 {
   views: Array_217;
 }
-export interface Object_659 {
-  id?: String_1895;
-  name?: String_1896;
-  title: String_1897;
-  description?: String_1898;
-  icon: String_1899;
-  url?: String_1900;
-  mimeTypePattern?: String_1901;
-  resourceName?: String_1902;
+export interface Object_699 {
+  id?: String_1955;
+  name?: String_1956;
+  title: String_1957;
+  description?: String_1958;
+  icon: String_1959;
+  url?: String_1960;
+  mimeTypePattern?: String_1961;
+  resourceName?: String_1962;
   tools?: Array_218;
-  prompt?: String_1904;
-  installBehavior?: String_1905;
+  prompt?: String_1964;
+  installBehavior?: String_1965;
 }
 
 /* eslint-disable */
@@ -17266,36 +17896,36 @@ export interface DISCOVER_WORKSPACE_TOOLSInput {
  * and run json-schema-to-typescript to regenerate this file.
  */
 
-export type String_1906 = string;
-export type String_1907 = string;
-export type String_1908 = string;
-export type String_1909 = string;
-export type Number_160 = number;
-export type String_1910 = string;
-export type String_1911 = string;
-export type String_1912 = string;
-export type Array_220 = Object_661[];
-export type Array_219 = Object_660[];
-export type Number_161 = number;
-export type String_1913 = string;
+export type String_1966 = string;
+export type String_1967 = string;
+export type String_1968 = string;
+export type String_1969 = string;
+export type Number_170 = number;
+export type String_1970 = string;
+export type String_1971 = string;
+export type String_1972 = string;
+export type Array_220 = Object_701[];
+export type Array_219 = Object_700[];
+export type Number_171 = number;
+export type String_1973 = string;
 
 export interface DISCOVER_WORKSPACE_TOOLSOutput {
   integrations: Array_219;
-  totalTools: Number_161;
-  summary: String_1913;
+  totalTools: Number_171;
+  summary: String_1973;
 }
-export interface Object_660 {
-  id: String_1906;
-  name: String_1907;
-  description: String_1908;
-  icon?: String_1909;
-  toolCount: Number_160;
+export interface Object_700 {
+  id: String_1966;
+  name: String_1967;
+  description: String_1968;
+  icon?: String_1969;
+  toolCount: Number_170;
   tools: Array_220;
 }
-export interface Object_661 {
-  name: String_1910;
-  description: String_1911;
-  category: String_1912;
+export interface Object_701 {
+  name: String_1970;
+  description: String_1971;
+  category: String_1972;
 }
 
 /* eslint-disable */
@@ -17305,28 +17935,28 @@ export interface Object_661 {
  * and run json-schema-to-typescript to regenerate this file.
  */
 
-export type String_1914 = string;
-export type String_1915 = string;
-export type String_1916 = string;
+export type String_1974 = string;
+export type String_1975 = string;
+export type String_1976 = string;
 
 export interface EXECUTE_TOOL_SPECInput {
-  toolSpec: Object_662;
-  input: Object_665;
+  toolSpec: Object_702;
+  input: Object_705;
 }
-export interface Object_662 {
-  name: String_1914;
-  description: String_1915;
-  inputSchema: Object_663;
-  outputSchema: Object_664;
-  executeCode: String_1916;
+export interface Object_702 {
+  name: String_1974;
+  description: String_1975;
+  inputSchema: Object_703;
+  outputSchema: Object_704;
+  executeCode: String_1976;
 }
-export interface Object_663 {
+export interface Object_703 {
   [k: string]: unknown;
 }
-export interface Object_664 {
+export interface Object_704 {
   [k: string]: unknown;
 }
-export interface Object_665 {
+export interface Object_705 {
   [k: string]: unknown;
 }
 
@@ -17337,12 +17967,12 @@ export interface Object_665 {
  * and run json-schema-to-typescript to regenerate this file.
  */
 
-export type String_1917 = string;
+export type String_1977 = string;
 export type Boolean_129 = boolean;
 
 export interface EXECUTE_TOOL_SPECOutput {
   result?: unknown;
-  error?: String_1917;
+  error?: String_1977;
   success: Boolean_129;
 }
 
@@ -17356,66 +17986,66 @@ export interface EXECUTE_TOOL_SPECOutput {
 /**
  * What this step should accomplish
  */
-export type String_1918 = string;
-export type String_1919 = string;
-export type String_1920 = string;
+export type String_1978 = string;
+export type String_1979 = string;
+export type String_1980 = string;
 /**
  * Previous steps for context and @ref resolution
  */
-export type Array_221 = Object_666[];
-export type String_1921 = string;
-export type String_1922 = string;
-export type String_1923 = string;
-export type String_1924 = string;
-export type Array_223 = Object_669[];
+export type Array_221 = Object_706[];
+export type String_1981 = string;
+export type String_1982 = string;
+export type String_1983 = string;
+export type String_1984 = string;
+export type Array_223 = Object_709[];
 /**
  * Available integrations (if not provided, uses static catalog)
  */
-export type Array_222 = Object_668[];
-export type String_1925 = string;
-export type String_1926 = string;
-export type String_1927 = string;
-export type String_1928 = string;
+export type Array_222 = Object_708[];
+export type String_1985 = string;
+export type String_1986 = string;
+export type String_1987 = string;
+export type String_1988 = string;
 /**
  * Tools explicitly mentioned in prompt with @tool-name syntax
  */
-export type Array_224 = Object_670[];
+export type Array_224 = Object_710[];
 
 export interface GENERATE_STEPInput {
-  objective: String_1918;
+  objective: String_1978;
   previousSteps?: Array_221;
   availableIntegrations?: Array_222;
   selectedTools?: Array_224;
 }
-export interface Object_666 {
-  id: String_1919;
-  name: String_1920;
-  outputSchema: Object_667;
+export interface Object_706 {
+  id: String_1979;
+  name: String_1980;
+  outputSchema: Object_707;
 }
-export interface Object_667 {
+export interface Object_707 {
   [k: string]: unknown;
 }
-export interface Object_668 {
-  id: String_1921;
-  name: String_1922;
+export interface Object_708 {
+  id: String_1981;
+  name: String_1982;
   tools: Array_223;
 }
-export interface Object_669 {
-  name: String_1923;
-  description: String_1924;
+export interface Object_709 {
+  name: String_1983;
+  description: String_1984;
 }
-export interface Object_670 {
-  name: String_1925;
-  integrationId: String_1926;
-  integrationName: String_1927;
-  description?: String_1928;
-  inputSchema?: Object_671;
-  outputSchema?: Object_672;
+export interface Object_710 {
+  name: String_1985;
+  integrationId: String_1986;
+  integrationName: String_1987;
+  description?: String_1988;
+  inputSchema?: Object_711;
+  outputSchema?: Object_712;
 }
-export interface Object_671 {
+export interface Object_711 {
   [k: string]: unknown;
 }
-export interface Object_672 {
+export interface Object_712 {
   [k: string]: unknown;
 }
 
@@ -17426,49 +18056,49 @@ export interface Object_672 {
  * and run json-schema-to-typescript to regenerate this file.
  */
 
-export type String_1929 = string;
-export type String_1930 = string;
-export type String_1931 = string;
-export type String_1932 = string;
-export type String_1933 = string;
-export type String_1934 = string;
-export type String_1935 = string;
-export type String_1936 = string;
+export type String_1989 = string;
+export type String_1990 = string;
+export type String_1991 = string;
+export type String_1992 = string;
+export type String_1993 = string;
+export type String_1994 = string;
+export type String_1995 = string;
+export type String_1996 = string;
 
 export interface GENERATE_STEPOutput {
-  step: Object_673;
-  reasoning?: String_1936;
+  step: Object_713;
+  reasoning?: String_1996;
 }
-export interface Object_673 {
-  id: String_1929;
-  name: String_1930;
-  description: String_1931;
-  code: String_1932;
-  inputSchema: Object_674;
-  outputSchema: Object_675;
-  input: Object_676;
-  inputDescription?: Object_677;
-  primaryIntegration?: String_1934;
-  primaryTool?: String_1935;
-  inputView?: Object_678;
-  outputView?: Object_679;
+export interface Object_713 {
+  id: String_1989;
+  name: String_1990;
+  description: String_1991;
+  code: String_1992;
+  inputSchema: Object_714;
+  outputSchema: Object_715;
+  input: Object_716;
+  inputDescription?: Object_717;
+  primaryIntegration?: String_1994;
+  primaryTool?: String_1995;
+  inputView?: Object_718;
+  outputView?: Object_719;
 }
-export interface Object_674 {
+export interface Object_714 {
   [k: string]: unknown;
 }
-export interface Object_675 {
+export interface Object_715 {
   [k: string]: unknown;
 }
-export interface Object_676 {
+export interface Object_716 {
   [k: string]: unknown;
 }
-export interface Object_677 {
-  [k: string]: String_1933;
+export interface Object_717 {
+  [k: string]: String_1993;
 }
-export interface Object_678 {
+export interface Object_718 {
   [k: string]: unknown;
 }
-export interface Object_679 {
+export interface Object_719 {
   [k: string]: unknown;
 }
 
@@ -17482,41 +18112,41 @@ export interface Object_679 {
 /**
  * Step ID
  */
-export type String_1937 = string;
+export type String_1997 = string;
 /**
  * Field name from input schema
  */
-export type String_1938 = string;
+export type String_1998 = string;
 /**
  * Optional previous step ID to use its output data
  */
-export type String_1939 = string;
+export type String_1999 = string;
 /**
  * First 200 chars of previous step output (for context)
  */
-export type String_1940 = string;
+export type String_2000 = string;
 /**
  * View name (view1, view2, etc)
  */
-export type String_1941 = string;
+export type String_2001 = string;
 /**
  * What this input view should do (e.g., 'dropdown with search', 'multi-select')
  */
-export type String_1942 = string;
+export type String_2002 = string;
 
 export interface GENERATE_STEP_INPUT_VIEWInput {
-  stepId: String_1937;
-  fieldName: String_1938;
-  fieldSchema: Object_680;
-  previousStepId?: String_1939;
-  previousStepOutput?: String_1940;
-  viewName: String_1941;
-  purpose: String_1942;
+  stepId: String_1997;
+  fieldName: String_1998;
+  fieldSchema: Object_720;
+  previousStepId?: String_1999;
+  previousStepOutput?: String_2000;
+  viewName: String_2001;
+  purpose: String_2002;
 }
 /**
  * Field JSON Schema
  */
-export interface Object_680 {
+export interface Object_720 {
   [k: string]: unknown;
 }
 
@@ -17530,15 +18160,15 @@ export interface Object_680 {
 /**
  * Complete HTML with inline CSS and JS
  */
-export type String_1943 = string;
+export type String_2003 = string;
 /**
  * Explanation of design choices
  */
-export type String_1944 = string;
+export type String_2004 = string;
 
 export interface GENERATE_STEP_INPUT_VIEWOutput {
-  viewCode: String_1943;
-  reasoning: String_1944;
+  viewCode: String_2003;
+  reasoning: String_2004;
 }
 
 /* eslint-disable */
@@ -17551,36 +18181,36 @@ export interface GENERATE_STEP_INPUT_VIEWOutput {
 /**
  * Step ID
  */
-export type String_1945 = string;
+export type String_2005 = string;
 /**
  * Step name for context
  */
-export type String_1946 = string;
+export type String_2006 = string;
 /**
  * First 100 chars of actual output data
  */
-export type String_1947 = string;
+export type String_2007 = string;
 /**
  * View name (view1, view2, etc)
  */
-export type String_1948 = string;
+export type String_2008 = string;
 /**
  * What this view should emphasize or how it should display data
  */
-export type String_1949 = string;
+export type String_2009 = string;
 
 export interface GENERATE_STEP_OUTPUT_VIEWInput {
-  stepId: String_1945;
-  stepName: String_1946;
-  outputSchema: Object_681;
-  outputSample: String_1947;
-  viewName: String_1948;
-  purpose: String_1949;
+  stepId: String_2005;
+  stepName: String_2006;
+  outputSchema: Object_721;
+  outputSample: String_2007;
+  viewName: String_2008;
+  purpose: String_2009;
 }
 /**
  * Output JSON Schema
  */
-export interface Object_681 {
+export interface Object_721 {
   [k: string]: unknown;
 }
 
@@ -17594,15 +18224,15 @@ export interface Object_681 {
 /**
  * Complete HTML with inline CSS and JS
  */
-export type String_1950 = string;
+export type String_2010 = string;
 /**
  * Explanation of design choices
  */
-export type String_1951 = string;
+export type String_2011 = string;
 
 export interface GENERATE_STEP_OUTPUT_VIEWOutput {
-  viewCode: String_1950;
-  reasoning: String_1951;
+  viewCode: String_2010;
+  reasoning: String_2011;
 }
 
 /* eslint-disable */
@@ -17615,10 +18245,10 @@ export interface GENERATE_STEP_OUTPUT_VIEWOutput {
 /**
  * Natural language description of what the tool should do
  */
-export type String_1952 = string;
+export type String_2012 = string;
 
 export interface GENERATE_TOOL_SPECInput {
-  description: String_1952;
+  description: String_2012;
 }
 
 /* eslint-disable */
@@ -17628,32 +18258,32 @@ export interface GENERATE_TOOL_SPECInput {
  * and run json-schema-to-typescript to regenerate this file.
  */
 
-export type String_1953 = string;
-export type String_1954 = string;
-export type String_1955 = string;
-export type String_1956 = string;
-export type String_1957 = string;
+export type String_2013 = string;
+export type String_2014 = string;
+export type String_2015 = string;
+export type String_2016 = string;
+export type String_2017 = string;
 
 export interface GENERATE_TOOL_SPECOutput {
-  toolSpec: Object_682;
-  reasoning: String_1957;
-  suggestedInput?: Object_685;
+  toolSpec: Object_722;
+  reasoning: String_2017;
+  suggestedInput?: Object_725;
 }
-export interface Object_682 {
-  id: String_1953;
-  name: String_1954;
-  description: String_1955;
-  inputSchema: Object_683;
-  outputSchema: Object_684;
-  executeCode: String_1956;
+export interface Object_722 {
+  id: String_2013;
+  name: String_2014;
+  description: String_2015;
+  inputSchema: Object_723;
+  outputSchema: Object_724;
+  executeCode: String_2016;
 }
-export interface Object_683 {
+export interface Object_723 {
   [k: string]: unknown;
 }
-export interface Object_684 {
+export interface Object_724 {
   [k: string]: unknown;
 }
-export interface Object_685 {
+export interface Object_725 {
   [k: string]: unknown;
 }
 
@@ -17667,26 +18297,26 @@ export interface Object_685 {
 /**
  * What is this view for? (e.g., 'Display payment information', 'Input form for user data')
  */
-export type String_1958 = string;
+export type String_2018 = string;
 /**
  * Type of view to generate
  */
-export type String_1959 = "input" | "output";
+export type String_2019 = "input" | "output";
 /**
  * Any specific design preferences or requirements
  */
-export type String_1960 = string;
+export type String_2020 = string;
 
 export interface GENERATE_VIEWInput {
-  purpose: String_1958;
-  viewType: String_1959;
-  dataSchema: Object_686;
-  designPreference?: String_1960;
+  purpose: String_2018;
+  viewType: String_2019;
+  dataSchema: Object_726;
+  designPreference?: String_2020;
 }
 /**
  * JSON Schema of the data this view will handle
  */
-export interface Object_686 {
+export interface Object_726 {
   [k: string]: unknown;
 }
 
@@ -17697,7 +18327,7 @@ export interface Object_686 {
  * and run json-schema-to-typescript to regenerate this file.
  */
 
-export type String_1961 =
+export type String_2021 =
   | "container"
   | "text"
   | "heading"
@@ -17711,49 +18341,49 @@ export type String_1961 =
   | "file-upload"
   | "code"
   | "divider";
-export type String_1962 = string;
-export type Array_225 = (Object_687 | String_1962)[];
-export type String_1963 = string;
-export type String_1964 =
+export type String_2022 = string;
+export type Array_225 = (Object_727 | String_2022)[];
+export type String_2023 = string;
+export type String_2024 =
   | "primary"
   | "secondary"
   | "success"
   | "warning"
   | "error"
   | "info";
-export type String_1965 = "sm" | "md" | "lg";
-export type String_1966 = "vertical" | "horizontal" | "grid";
-export type Number_162 = number;
-export type Number_163 = number;
+export type String_2025 = "sm" | "md" | "lg";
+export type String_2026 = "vertical" | "horizontal" | "grid";
+export type Number_172 = number;
+export type Number_173 = number;
 export type Boolean_130 = boolean;
 export type Boolean_131 = boolean;
-export type String_1967 = string;
+export type String_2027 = string;
 
 export interface GENERATE_VIEWOutput {
-  view: Object_687;
-  reasoning: String_1967;
-  exampleData?: Object_690;
+  view: Object_727;
+  reasoning: String_2027;
+  exampleData?: Object_730;
 }
-export interface Object_687 {
-  type: String_1961;
-  props?: Object_688;
+export interface Object_727 {
+  type: String_2021;
+  props?: Object_728;
   children?: Array_225;
-  data?: String_1963;
-  style?: Object_689;
+  data?: String_2023;
+  style?: Object_729;
 }
-export interface Object_688 {
+export interface Object_728 {
   [k: string]: unknown;
 }
-export interface Object_689 {
-  variant?: String_1964;
-  size?: String_1965;
-  layout?: String_1966;
-  gap?: Number_162;
-  padding?: Number_163;
+export interface Object_729 {
+  variant?: String_2024;
+  size?: String_2025;
+  layout?: String_2026;
+  gap?: Number_172;
+  padding?: Number_173;
   border?: Boolean_130;
   rounded?: Boolean_131;
 }
-export interface Object_690 {
+export interface Object_730 {
   [k: string]: unknown;
 }
 
@@ -17764,10 +18394,10 @@ export interface Object_690 {
  * and run json-schema-to-typescript to regenerate this file.
  */
 
-export type String_1968 = string;
+export type String_2028 = string;
 
 export interface GET_INTEGRATION_DETAILSInput {
-  integrationId: String_1968;
+  integrationId: String_2028;
 }
 
 /* eslint-disable */
@@ -17778,12 +18408,12 @@ export interface GET_INTEGRATION_DETAILSInput {
  */
 
 export type Boolean_132 = boolean;
-export type String_1969 = string;
+export type String_2029 = string;
 
 export interface GET_INTEGRATION_DETAILSOutput {
   integration?: unknown;
   success: Boolean_132;
-  error?: String_1969;
+  error?: String_2029;
 }
 
 /* eslint-disable */
@@ -17802,20 +18432,20 @@ export interface GET_USERInput {}
  * and run json-schema-to-typescript to regenerate this file.
  */
 
-export type String_1970 = string;
-export type StringNull_97 = String_1971 | Null_192;
-export type String_1971 = string;
-export type Null_192 = null;
-export type StringNull_98 = String_1972 | Null_193;
-export type String_1972 = string;
-export type Null_193 = null;
-export type String_1973 = string;
+export type String_2030 = string;
+export type StringNull_97 = String_2031 | Null_202;
+export type String_2031 = string;
+export type Null_202 = null;
+export type StringNull_98 = String_2032 | Null_203;
+export type String_2032 = string;
+export type Null_203 = null;
+export type String_2033 = string;
 
 export interface GET_USEROutput {
-  id: String_1970;
+  id: String_2030;
   name: StringNull_97;
   avatar: StringNull_98;
-  email: String_1973;
+  email: String_2033;
 }
 
 /* eslint-disable */
@@ -17825,10 +18455,10 @@ export interface GET_USEROutput {
  * and run json-schema-to-typescript to regenerate this file.
  */
 
-export type String_1974 = "input" | "output" | "both";
+export type String_2034 = "input" | "output" | "both";
 
 export interface GET_VIEW_EXAMPLESInput {
-  viewType?: String_1974;
+  viewType?: String_2034;
 }
 
 /* eslint-disable */
@@ -17838,10 +18468,10 @@ export interface GET_VIEW_EXAMPLESInput {
  * and run json-schema-to-typescript to regenerate this file.
  */
 
-export type String_1975 = string;
-export type String_1976 = string;
-export type String_1977 = "input" | "output";
-export type String_1978 =
+export type String_2035 = string;
+export type String_2036 = string;
+export type String_2037 = "input" | "output";
+export type String_2038 =
   | "container"
   | "text"
   | "heading"
@@ -17855,54 +18485,54 @@ export type String_1978 =
   | "file-upload"
   | "code"
   | "divider";
-export type String_1979 = string;
-export type Array_227 = (Object_692 | String_1979)[];
-export type String_1980 = string;
-export type String_1981 =
+export type String_2039 = string;
+export type Array_227 = (Object_732 | String_2039)[];
+export type String_2040 = string;
+export type String_2041 =
   | "primary"
   | "secondary"
   | "success"
   | "warning"
   | "error"
   | "info";
-export type String_1982 = "sm" | "md" | "lg";
-export type String_1983 = "vertical" | "horizontal" | "grid";
-export type Number_164 = number;
-export type Number_165 = number;
+export type String_2042 = "sm" | "md" | "lg";
+export type String_2043 = "vertical" | "horizontal" | "grid";
+export type Number_174 = number;
+export type Number_175 = number;
 export type Boolean_133 = boolean;
 export type Boolean_134 = boolean;
-export type Array_226 = Object_691[];
+export type Array_226 = Object_731[];
 
 export interface GET_VIEW_EXAMPLESOutput {
   examples: Array_226;
 }
-export interface Object_691 {
-  name: String_1975;
-  description: String_1976;
-  viewType: String_1977;
-  view: Object_692;
-  exampleData?: Object_695;
+export interface Object_731 {
+  name: String_2035;
+  description: String_2036;
+  viewType: String_2037;
+  view: Object_732;
+  exampleData?: Object_735;
 }
-export interface Object_692 {
-  type: String_1978;
-  props?: Object_693;
+export interface Object_732 {
+  type: String_2038;
+  props?: Object_733;
   children?: Array_227;
-  data?: String_1980;
-  style?: Object_694;
+  data?: String_2040;
+  style?: Object_734;
 }
-export interface Object_693 {
+export interface Object_733 {
   [k: string]: unknown;
 }
-export interface Object_694 {
-  variant?: String_1981;
-  size?: String_1982;
-  layout?: String_1983;
-  gap?: Number_164;
-  padding?: Number_165;
+export interface Object_734 {
+  variant?: String_2041;
+  size?: String_2042;
+  layout?: String_2043;
+  gap?: Number_174;
+  padding?: Number_175;
   border?: Boolean_133;
   rounded?: Boolean_134;
 }
-export interface Object_695 {
+export interface Object_735 {
   [k: string]: unknown;
 }
 
@@ -17913,23 +18543,23 @@ export interface Object_695 {
  * and run json-schema-to-typescript to regenerate this file.
  */
 
-export type String_1984 = string;
-export type String_1985 = string;
-export type String_1986 = string;
-export type String_1987 = string;
+export type String_2044 = string;
+export type String_2045 = string;
+export type String_2046 = string;
+export type String_2047 = string;
 
 export interface IMPORT_TOOL_AS_STEPInput {
-  toolName: String_1984;
-  integrationId: String_1985;
-  integrationName: String_1986;
-  toolDescription?: String_1987;
-  inputSchema?: Object_696;
-  outputSchema?: Object_697;
+  toolName: String_2044;
+  integrationId: String_2045;
+  integrationName: String_2046;
+  toolDescription?: String_2047;
+  inputSchema?: Object_736;
+  outputSchema?: Object_737;
 }
-export interface Object_696 {
+export interface Object_736 {
   [k: string]: unknown;
 }
-export interface Object_697 {
+export interface Object_737 {
   [k: string]: unknown;
 }
 
@@ -17940,40 +18570,40 @@ export interface Object_697 {
  * and run json-schema-to-typescript to regenerate this file.
  */
 
-export type String_1988 = string;
-export type String_1989 = string;
-export type String_1990 = string;
-export type String_1991 = string;
-export type String_1992 = string;
-export type String_1993 = string;
-export type String_1994 = string;
+export type String_2048 = string;
+export type String_2049 = string;
+export type String_2050 = string;
+export type String_2051 = string;
+export type String_2052 = string;
+export type String_2053 = string;
+export type String_2054 = string;
 
 export interface IMPORT_TOOL_AS_STEPOutput {
-  step: Object_698;
+  step: Object_738;
 }
-export interface Object_698 {
-  id: String_1988;
-  name: String_1989;
-  description: String_1990;
-  code: String_1991;
-  inputSchema: Object_699;
-  outputSchema: Object_700;
-  input: Object_701;
-  inputDescription?: Object_702;
-  primaryIntegration: String_1993;
-  primaryTool: String_1994;
+export interface Object_738 {
+  id: String_2048;
+  name: String_2049;
+  description: String_2050;
+  code: String_2051;
+  inputSchema: Object_739;
+  outputSchema: Object_740;
+  input: Object_741;
+  inputDescription?: Object_742;
+  primaryIntegration: String_2053;
+  primaryTool: String_2054;
 }
-export interface Object_699 {
+export interface Object_739 {
   [k: string]: unknown;
 }
-export interface Object_700 {
+export interface Object_740 {
   [k: string]: unknown;
 }
-export interface Object_701 {
+export interface Object_741 {
   [k: string]: unknown;
 }
-export interface Object_702 {
-  [k: string]: String_1992;
+export interface Object_742 {
+  [k: string]: String_2052;
 }
 
 /* eslint-disable */
@@ -17992,34 +18622,34 @@ export interface LIST_AVAILABLE_TOOLSInput {}
  * and run json-schema-to-typescript to regenerate this file.
  */
 
-export type String_1995 = string;
-export type String_1996 = string;
-export type String_1997 = string;
-export type String_1998 = string;
-export type Number_166 = number;
-export type String_1999 = string;
-export type String_2000 = string;
-export type Array_229 = Object_704[];
-export type Array_228 = Object_703[];
-export type Number_167 = number;
-export type String_2001 = string;
+export type String_2055 = string;
+export type String_2056 = string;
+export type String_2057 = string;
+export type String_2058 = string;
+export type Number_176 = number;
+export type String_2059 = string;
+export type String_2060 = string;
+export type Array_229 = Object_744[];
+export type Array_228 = Object_743[];
+export type Number_177 = number;
+export type String_2061 = string;
 
 export interface LIST_AVAILABLE_TOOLSOutput {
   integrations: Array_228;
-  totalTools: Number_167;
-  summary: String_2001;
+  totalTools: Number_177;
+  summary: String_2061;
 }
-export interface Object_703 {
-  id: String_1995;
-  name: String_1996;
-  description?: String_1997;
-  url?: String_1998;
-  toolCount: Number_166;
+export interface Object_743 {
+  id: String_2055;
+  name: String_2056;
+  description?: String_2057;
+  url?: String_2058;
+  toolCount: Number_176;
   tools: Array_229;
 }
-export interface Object_704 {
-  name: String_1999;
-  description?: String_2000;
+export interface Object_744 {
+  name: String_2059;
+  description?: String_2060;
 }
 
 /* eslint-disable */
@@ -18038,22 +18668,22 @@ export interface LIST_INSTALLED_INTEGRATIONSInput {}
  * and run json-schema-to-typescript to regenerate this file.
  */
 
-export type String_2002 = string;
-export type String_2003 = string;
-export type String_2004 = string;
-export type String_2005 = string;
-export type Array_230 = Object_705[];
+export type String_2062 = string;
+export type String_2063 = string;
+export type String_2064 = string;
+export type String_2065 = string;
+export type Array_230 = Object_745[];
 export type Boolean_135 = boolean;
 
 export interface LIST_INSTALLED_INTEGRATIONSOutput {
   integrations: Array_230;
   success: Boolean_135;
 }
-export interface Object_705 {
-  id: String_2002;
-  name: String_2003;
-  description?: String_2004;
-  icon?: String_2005;
+export interface Object_745 {
+  id: String_2062;
+  name: String_2063;
+  description?: String_2064;
+  icon?: String_2065;
   access?: unknown;
 }
 
@@ -18064,10 +18694,10 @@ export interface Object_705 {
  * and run json-schema-to-typescript to regenerate this file.
  */
 
-export type String_2006 = string;
+export type String_2066 = string;
 
 export interface LIST_REGISTRY_APPSInput {
-  search?: String_2006;
+  search?: String_2066;
 }
 
 /* eslint-disable */
@@ -18077,32 +18707,32 @@ export interface LIST_REGISTRY_APPSInput {
  * and run json-schema-to-typescript to regenerate this file.
  */
 
-export type String_2007 = string;
-export type String_2008 = string;
-export type String_2009 = string;
-export type String_2010 = string;
-export type String_2011 = string;
-export type String_2012 = string;
-export type String_2013 = string;
-export type String_2014 = string;
-export type String_2015 = string;
-export type Array_231 = Object_706[];
+export type String_2067 = string;
+export type String_2068 = string;
+export type String_2069 = string;
+export type String_2070 = string;
+export type String_2071 = string;
+export type String_2072 = string;
+export type String_2073 = string;
+export type String_2074 = string;
+export type String_2075 = string;
+export type Array_231 = Object_746[];
 export type Boolean_136 = boolean;
 
 export interface LIST_REGISTRY_APPSOutput {
   apps: Array_231;
   success: Boolean_136;
 }
-export interface Object_706 {
-  id: String_2007;
-  workspace: String_2008;
-  scopeId: String_2009;
-  scopeName: String_2010;
-  appName: String_2011;
-  name: String_2012;
-  description?: String_2013;
-  icon?: String_2014;
-  createdAt: String_2015;
+export interface Object_746 {
+  id: String_2067;
+  workspace: String_2068;
+  scopeId: String_2069;
+  scopeName: String_2070;
+  appName: String_2071;
+  name: String_2072;
+  description?: String_2073;
+  icon?: String_2074;
+  createdAt: String_2075;
 }
 
 /* eslint-disable */
@@ -18121,24 +18751,254 @@ export interface LIST_REGISTRY_SCOPESInput {}
  * and run json-schema-to-typescript to regenerate this file.
  */
 
-export type String_2016 = string;
-export type String_2017 = string;
-export type String_2018 = string;
-export type String_2019 = string;
-export type String_2020 = string;
-export type Array_232 = Object_707[];
+export type String_2076 = string;
+export type String_2077 = string;
+export type String_2078 = string;
+export type String_2079 = string;
+export type String_2080 = string;
+export type Array_232 = Object_747[];
 export type Boolean_137 = boolean;
 
 export interface LIST_REGISTRY_SCOPESOutput {
   scopes: Array_232;
   success: Boolean_137;
 }
-export interface Object_707 {
-  id: String_2016;
-  scopeName: String_2017;
-  workspace: String_2018;
-  createdAt: String_2019;
-  updatedAt: String_2020;
+export interface Object_747 {
+  id: String_2076;
+  scopeName: String_2077;
+  workspace: String_2078;
+  createdAt: String_2079;
+  updatedAt: String_2080;
+}
+
+/* eslint-disable */
+/**
+ * This file was automatically generated by json-schema-to-typescript.
+ * DO NOT MODIFY IT BY HAND. Instead, modify the source JSONSchema file,
+ * and run json-schema-to-typescript to regenerate this file.
+ */
+
+export type String_2081 = string;
+
+export interface READ_WORKFLOWInput {
+  uri: String_2081;
+}
+
+/* eslint-disable */
+/**
+ * This file was automatically generated by json-schema-to-typescript.
+ * DO NOT MODIFY IT BY HAND. Instead, modify the source JSONSchema file,
+ * and run json-schema-to-typescript to regenerate this file.
+ */
+
+/**
+ * The unique name of the workflow
+ */
+export type String_2082 = string;
+/**
+ * A comprehensive description of what this workflow accomplishes
+ */
+export type String_2083 = string;
+/**
+ * Array of workflow steps that execute sequentially. Each step can reference previous step outputs using @<step_name>.output.property syntax.
+ *
+ * @minItems 1
+ */
+export type Array_233 = [Object_751, ...Object_751[]];
+/**
+ * The type of step
+ */
+export type String_2084 = "code" | "tool_call";
+/**
+ * The unique ID of the step within the workflow
+ */
+export type String_2085 = string;
+/**
+ * The unique name of the step within the workflow
+ */
+export type String_2086 = string;
+/**
+ * A clear description of what this step does
+ */
+export type String_2087 = string;
+/**
+ * The prompt used to generate the step
+ */
+export type String_2088 = string;
+/**
+ * Status of the step execution
+ */
+export type String_2089 = "pending" | "active" | "completed" | "error";
+/**
+ * ES module code that exports a default async function: (input: typeof inputSchema, ctx: { env: Record<string, any> }) => Promise<typeof outputSchema>. The input parameter contains the resolved input with all @ references replaced with actual values.
+ */
+export type String_2090 = string;
+/**
+ * The integration ID (format: i:<uuid> or a:<uuid>) that this step depends on
+ */
+export type String_2091 = string;
+/**
+ * List of integrations this step calls via ctx.env['{INTEGRATION_ID}'].{TOOL_NAME}(). These integrations must be installed and available for the step to execute successfully.
+ */
+export type Array_234 = Object_757[];
+/**
+ * Number of retry attempts for this step (default: 0)
+ */
+export type Integer_93 = number;
+/**
+ * Delay in milliseconds between retry attempts (default: 0)
+ */
+export type Integer_94 = number;
+/**
+ * Backoff strategy for retry attempts (default: constant)
+ */
+export type String_2092 = "constant" | "linear" | "exponential";
+/**
+ * Maximum execution time in milliseconds (default: Infinity)
+ */
+export type Number_178 = number;
+/**
+ * The unique name of the tool call step within the workflow
+ */
+export type String_2093 = string;
+/**
+ * A clear description of what this tool call step does
+ */
+export type String_2094 = string;
+/**
+ * Number of retry attempts for this step (default: 0)
+ */
+export type Integer_95 = number;
+/**
+ * Delay in milliseconds between retry attempts (default: 0)
+ */
+export type Integer_96 = number;
+/**
+ * Backoff strategy for retry attempts (default: constant)
+ */
+export type String_2095 = "constant" | "linear" | "exponential";
+/**
+ * Maximum execution time in milliseconds (default: Infinity)
+ */
+export type Number_179 = number;
+export type Null_204 = null;
+/**
+ * The name of the tool to call
+ */
+export type String_2096 = string;
+/**
+ * The name of the integration that provides this tool
+ */
+export type String_2097 = string;
+/**
+ * The authorization token for the workflow
+ */
+export type String_2098 = string;
+
+export interface READ_WORKFLOWOutput {
+  workflow: Object_748;
+}
+export interface Object_748 {
+  name: String_2082;
+  description: String_2083;
+  inputSchema: Object_749;
+  outputSchema: Object_750;
+  steps: Array_233;
+  authorization?: Object_763;
+}
+/**
+ * JSON Schema defining the workflow's input parameters and data structure
+ */
+export interface Object_749 {
+  [k: string]: unknown;
+}
+/**
+ * JSON Schema defining the workflow's final output after all steps complete
+ */
+export interface Object_750 {
+  [k: string]: unknown;
+}
+export interface Object_751 {
+  type: String_2084;
+  /**
+   * The step definition based on the type
+   */
+  def: Object_752 | Object_760;
+}
+export interface Object_752 {
+  id: String_2085;
+  name: String_2086;
+  description: String_2087;
+  prompt?: String_2088;
+  inputSchema: Object_753;
+  outputSchema: Object_754;
+  input: Object_755;
+  output: Object_756;
+  status?: String_2089;
+  execute: String_2090;
+  dependencies?: Array_234;
+  options?: Object_758;
+}
+/**
+ * JSON Schema defining the input structure for this step
+ */
+export interface Object_753 {
+  [k: string]: unknown;
+}
+/**
+ * JSON Schema defining the output structure for this step
+ */
+export interface Object_754 {
+  [k: string]: unknown;
+}
+/**
+ * Input object that complies with inputSchema. Values can reference previous steps using @<step_name>.output.property or workflow input using @input.property
+ */
+export interface Object_755 {
+  [k: string]: unknown;
+}
+/**
+ * Current output of the step if it was executed
+ */
+export interface Object_756 {
+  [k: string]: unknown;
+}
+export interface Object_757 {
+  integrationId: String_2091;
+}
+/**
+ * Step configuration options including retry and timeout settings
+ */
+export interface Object_758 {
+  retries?: Object_759;
+  timeout?: Number_178;
+}
+export interface Object_759 {
+  limit?: Integer_93;
+  delay?: Integer_94;
+  backoff?: String_2092;
+}
+export interface Object_760 {
+  name: String_2093;
+  description: String_2094;
+  /**
+   * Step configuration options. Extend this object with custom properties for business user configuration
+   */
+  options?: Object_761 | Null_204;
+  tool_name: String_2096;
+  integration: String_2097;
+}
+export interface Object_761 {
+  retries?: Object_762;
+  timeout?: Number_179;
+}
+export interface Object_762 {
+  limit?: Integer_95;
+  delay?: Integer_96;
+  backoff?: String_2095;
+}
+export interface Object_763 {
+  token: String_2098;
 }
 
 /* eslint-disable */
@@ -18151,43 +19011,43 @@ export interface Object_707 {
 /**
  * Human-readable tool name
  */
-export type String_2021 = string;
+export type String_2099 = string;
 /**
  * What the tool does
  */
-export type String_2022 = string;
+export type String_2100 = string;
 /**
  * Complete ES module code string starting with 'export default async function (input, ctx) {'
  */
-export type String_2023 = string;
+export type String_2101 = string;
 
 export interface RUN_GENERATED_TOOLInput {
-  toolSpec: Object_708;
-  input: Object_711;
+  toolSpec: Object_764;
+  input: Object_767;
 }
-export interface Object_708 {
-  name: String_2021;
-  description: String_2022;
-  inputSchema: Object_709;
-  outputSchema: Object_710;
-  executeCode: String_2023;
+export interface Object_764 {
+  name: String_2099;
+  description: String_2100;
+  inputSchema: Object_765;
+  outputSchema: Object_766;
+  executeCode: String_2101;
 }
 /**
  * JSON Schema for input
  */
-export interface Object_709 {
+export interface Object_765 {
   [k: string]: unknown;
 }
 /**
  * JSON Schema for output
  */
-export interface Object_710 {
+export interface Object_766 {
   [k: string]: unknown;
 }
 /**
  * Input parameters to pass to the tool
  */
-export interface Object_711 {
+export interface Object_767 {
   [k: string]: unknown;
 }
 
@@ -18198,12 +19058,12 @@ export interface Object_711 {
  * and run json-schema-to-typescript to regenerate this file.
  */
 
-export type String_2024 = string;
+export type String_2102 = string;
 export type Boolean_138 = boolean;
 
 export interface RUN_GENERATED_TOOLOutput {
   result?: unknown;
-  error?: String_2024;
+  error?: String_2102;
   success: Boolean_138;
 }
 
@@ -18214,38 +19074,38 @@ export interface RUN_GENERATED_TOOLOutput {
  * and run json-schema-to-typescript to regenerate this file.
  */
 
-export type String_2025 = string;
-export type String_2026 = string;
-export type String_2027 = string;
-export type String_2028 = string;
+export type String_2103 = string;
+export type String_2104 = string;
+export type String_2105 = string;
+export type String_2106 = string;
 
 export interface RUN_WORKFLOW_STEPInput {
-  step: Object_712;
-  previousStepResults?: Object_716;
-  globalInput?: Object_717;
-  authToken?: String_2028;
+  step: Object_768;
+  previousStepResults?: Object_772;
+  globalInput?: Object_773;
+  authToken?: String_2106;
 }
-export interface Object_712 {
-  id: String_2025;
-  name: String_2026;
-  code: String_2027;
-  inputSchema: Object_713;
-  outputSchema: Object_714;
-  input: Object_715;
+export interface Object_768 {
+  id: String_2103;
+  name: String_2104;
+  code: String_2105;
+  inputSchema: Object_769;
+  outputSchema: Object_770;
+  input: Object_771;
 }
-export interface Object_713 {
+export interface Object_769 {
   [k: string]: unknown;
 }
-export interface Object_714 {
+export interface Object_770 {
   [k: string]: unknown;
 }
-export interface Object_715 {
+export interface Object_771 {
   [k: string]: unknown;
 }
-export interface Object_716 {
+export interface Object_772 {
   [k: string]: unknown;
 }
-export interface Object_717 {
+export interface Object_773 {
   [k: string]: unknown;
 }
 
@@ -18257,33 +19117,33 @@ export interface Object_717 {
  */
 
 export type Boolean_139 = boolean;
-export type String_2029 = string;
-export type String_2030 = string;
-export type Array_233 = Object_718[];
-export type String_2031 = string;
-export type String_2032 = string;
-export type Array_234 = Object_720[];
-export type Number_168 = number;
+export type String_2107 = string;
+export type String_2108 = string;
+export type Array_235 = Object_774[];
+export type String_2109 = string;
+export type String_2110 = string;
+export type Array_236 = Object_776[];
+export type Number_180 = number;
 
 export interface RUN_WORKFLOW_STEPOutput {
   success: Boolean_139;
   output?: unknown;
   error?: unknown;
-  logs?: Array_233;
-  resolvedInput?: Object_719;
-  resolutionErrors?: Array_234;
-  duration?: Number_168;
+  logs?: Array_235;
+  resolvedInput?: Object_775;
+  resolutionErrors?: Array_236;
+  duration?: Number_180;
 }
-export interface Object_718 {
-  type: String_2029;
-  content: String_2030;
+export interface Object_774 {
+  type: String_2107;
+  content: String_2108;
 }
-export interface Object_719 {
+export interface Object_775 {
   [k: string]: unknown;
 }
-export interface Object_720 {
-  ref: String_2031;
-  error: String_2032;
+export interface Object_776 {
+  ref: String_2109;
+  error: String_2110;
 }
 
 /* eslint-disable */
@@ -18294,12 +19154,12 @@ export interface Object_720 {
  */
 
 export interface VALIDATE_VIEWInput {
-  view: Object_721;
+  view: Object_777;
 }
 /**
  * View definition to validate
  */
-export interface Object_721 {
+export interface Object_777 {
   [k: string]: unknown;
 }
 
@@ -18311,15 +19171,15 @@ export interface Object_721 {
  */
 
 export type Boolean_140 = boolean;
-export type String_2033 = string;
-export type Array_235 = String_2033[];
-export type String_2034 = string;
-export type Array_236 = String_2034[];
+export type String_2111 = string;
+export type Array_237 = String_2111[];
+export type String_2112 = string;
+export type Array_238 = String_2112[];
 
 export interface VALIDATE_VIEWOutput {
   valid: Boolean_140;
-  errors?: Array_235;
-  warnings?: Array_236;
+  errors?: Array_237;
+  warnings?: Array_238;
 }
 
 import { z } from "zod";
@@ -20886,6 +21746,10 @@ export interface Env {
       input: LIST_REGISTRY_SCOPESInput,
     ) => Promise<LIST_REGISTRY_SCOPESOutput>;
     /**
+     * Read a workflow
+     */
+    READ_WORKFLOW: (input: READ_WORKFLOWInput) => Promise<READ_WORKFLOWOutput>;
+    /**
      * Execute a dynamically generated tool with provided specification and input
      */
     RUN_GENERATED_TOOL: (
@@ -20905,16 +21769,6 @@ export interface Env {
 }
 
 export const Scopes = {
-  TOOLS: {
-    DECO_RESOURCE_TOOL_CREATE: "TOOLS::DECO_RESOURCE_TOOL_CREATE",
-    DECO_RESOURCE_TOOL_DELETE: "TOOLS::DECO_RESOURCE_TOOL_DELETE",
-    DECO_RESOURCE_TOOL_READ: "TOOLS::DECO_RESOURCE_TOOL_READ",
-    DECO_RESOURCE_TOOL_SEARCH: "TOOLS::DECO_RESOURCE_TOOL_SEARCH",
-    DECO_RESOURCE_TOOL_UPDATE: "TOOLS::DECO_RESOURCE_TOOL_UPDATE",
-    DECO_TOOL_CALL_TOOL: "TOOLS::DECO_TOOL_CALL_TOOL",
-    DECO_TOOL_RUN_TOOL: "TOOLS::DECO_TOOL_RUN_TOOL",
-    DECO_VIEW_RENDER_TOOL_DETAIL: "TOOLS::DECO_VIEW_RENDER_TOOL_DETAIL",
-  },
   DECONFIG: {
     CREATE_BRANCH: "DECONFIG::CREATE_BRANCH",
     DELETE_BRANCH: "DECONFIG::DELETE_BRANCH",
@@ -20941,6 +21795,16 @@ export const Scopes = {
     API_KEYS_REISSUE: "APIKEYS::API_KEYS_REISSUE",
     API_KEYS_UPDATE: "APIKEYS::API_KEYS_UPDATE",
     API_KEYS_VALIDATE: "APIKEYS::API_KEYS_VALIDATE",
+  },
+  TOOLS: {
+    DECO_RESOURCE_TOOL_CREATE: "TOOLS::DECO_RESOURCE_TOOL_CREATE",
+    DECO_RESOURCE_TOOL_DELETE: "TOOLS::DECO_RESOURCE_TOOL_DELETE",
+    DECO_RESOURCE_TOOL_READ: "TOOLS::DECO_RESOURCE_TOOL_READ",
+    DECO_RESOURCE_TOOL_SEARCH: "TOOLS::DECO_RESOURCE_TOOL_SEARCH",
+    DECO_RESOURCE_TOOL_UPDATE: "TOOLS::DECO_RESOURCE_TOOL_UPDATE",
+    DECO_TOOL_CALL_TOOL: "TOOLS::DECO_TOOL_CALL_TOOL",
+    DECO_TOOL_RUN_TOOL: "TOOLS::DECO_TOOL_RUN_TOOL",
+    DECO_VIEW_RENDER_TOOL_DETAIL: "TOOLS::DECO_VIEW_RENDER_TOOL_DETAIL",
   },
   INTEGRATIONS: {
     DECO_GET_APP_SCHEMA: "INTEGRATIONS::DECO_GET_APP_SCHEMA",

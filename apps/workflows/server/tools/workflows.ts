@@ -17,6 +17,192 @@ import {
   validateUsedTools,
 } from "../utils/extract-tools-from-code.ts";
 
+export const CodeStepDefinitionSchema = z.object({
+  id: z
+    .string()
+    .min(1)
+    .describe("The unique ID of the step within the workflow"),
+  name: z
+    .string()
+    .min(1)
+    .describe("The unique name of the step within the workflow"),
+  description: z
+    .string()
+    .min(1)
+    .describe("A clear description of what this step does"),
+  prompt: z
+    .string()
+    .optional()
+    .describe("The prompt used to generate the step"),
+  inputSchema: z
+    .object({})
+    .passthrough()
+    .describe("JSON Schema defining the input structure for this step"),
+  outputSchema: z
+    .object({})
+    .passthrough()
+    .describe("JSON Schema defining the output structure for this step"),
+  input: z
+    .record(z.unknown())
+    .describe(
+      "Input object that complies with inputSchema. Values can reference previous steps using @<step_name>.output.property or workflow input using @input.property",
+    ),
+  output: z
+    .record(z.unknown())
+    .describe("Current output of the step if it was executed"),
+  status: z
+    .enum(["pending", "active", "completed", "error"])
+    .default("pending")
+    .describe("Status of the step execution"),
+  execute: z
+    .string()
+    .min(1)
+    .describe(
+      "ES module code that exports a default async function: (input: typeof inputSchema, ctx: { env: Record<string, any> }) => Promise<typeof outputSchema>. The input parameter contains the resolved input with all @ references replaced with actual values.",
+    ),
+  dependencies: z
+    .array(
+      z.object({
+        integrationId: z
+          .string()
+          .min(1)
+          .describe(
+            "The integration ID (format: i:<uuid> or a:<uuid>) that this step depends on",
+          ),
+      }),
+    )
+    .optional()
+    .describe(
+      "List of integrations this step calls via ctx.env['{INTEGRATION_ID}'].{TOOL_NAME}(). These integrations must be installed and available for the step to execute successfully.",
+    ),
+  options: z
+    .object({
+      retries: z
+        .object({
+          limit: z
+            .number()
+            .int()
+            .min(0)
+            .default(0)
+            .describe("Number of retry attempts for this step (default: 0)"),
+          delay: z
+            .number()
+            .int()
+            .min(0)
+            .default(0)
+            .describe(
+              "Delay in milliseconds between retry attempts (default: 0)",
+            ),
+          backoff: z
+            .enum(["constant", "linear", "exponential"])
+            .optional()
+            .describe(
+              "Backoff strategy for retry attempts (default: constant)",
+            ),
+        })
+        .optional(),
+      timeout: z
+        .number()
+        .positive()
+        .default(Infinity)
+        .optional()
+        .describe("Maximum execution time in milliseconds (default: Infinity)"),
+    })
+    .optional()
+    .describe(
+      "Step configuration options including retry and timeout settings",
+    ),
+});
+
+export const RetriesSchema = z.object({
+  limit: z
+    .number()
+    .int()
+    .min(0)
+    .default(0)
+    .describe("Number of retry attempts for this step (default: 0)"),
+  delay: z
+    .number()
+    .int()
+    .min(0)
+    .default(0)
+    .describe("Delay in milliseconds between retry attempts (default: 0)"),
+  backoff: z
+    .enum(["constant", "linear", "exponential"])
+    .optional()
+    .describe("Backoff strategy for retry attempts (default: constant)"),
+});
+
+export const ToolCallStepDefinitionSchema = z.object({
+  name: z
+    .string()
+    .min(1)
+    .describe("The unique name of the tool call step within the workflow"),
+  description: z
+    .string()
+    .min(1)
+    .describe("A clear description of what this tool call step does"),
+  options: z
+    .object({
+      retries: RetriesSchema.optional(),
+      timeout: z
+        .number()
+        .positive()
+        .default(Infinity)
+        .optional()
+        .describe("Maximum execution time in milliseconds (default: Infinity)"),
+    })
+    .nullish()
+    .describe(
+      "Step configuration options. Extend this object with custom properties for business user configuration",
+    ),
+  tool_name: z.string().min(1).describe("The name of the tool to call"),
+  integration: z
+    .string()
+    .min(1)
+    .describe("The name of the integration that provides this tool"),
+});
+
+export const WorkflowStepDefinitionSchema = z.object({
+  type: z.enum(["code", "tool_call"]).describe("The type of step"),
+  def: z
+    .union([CodeStepDefinitionSchema, ToolCallStepDefinitionSchema])
+    .describe("The step definition based on the type"),
+});
+
+const WorkflowDefinitionSchema = z.object({
+  name: z.string().min(1).describe("The unique name of the workflow"),
+  description: z
+    .string()
+    .describe("A comprehensive description of what this workflow accomplishes"),
+  inputSchema: z
+    .object({})
+    .passthrough()
+    .describe(
+      "JSON Schema defining the workflow's input parameters and data structure",
+    ),
+  outputSchema: z
+    .object({})
+    .passthrough()
+    .describe(
+      "JSON Schema defining the workflow's final output after all steps complete",
+    ),
+  steps: z
+    .array(WorkflowStepDefinitionSchema)
+    .min(1)
+    .describe(
+      "Array of workflow steps that execute sequentially. Each step can reference previous step outputs using @<step_name>.output.property syntax.",
+    ),
+  authorization: z
+    .object({
+      token: z
+        .string()
+        .min(1)
+        .describe("The authorization token for the workflow"),
+    })
+    .optional(),
+});
+
 /**
  * Execute a single workflow step
  * Resolves @refs and runs code via DECO_TOOL_RUN_TOOL
@@ -803,9 +989,26 @@ export const createAuthorizeWorkflowTool = (env: Env) =>
     },
   });
 
+export const createReadWorkflowTool = (env: Env) =>
+  createTool({
+    id: "READ_WORKFLOW",
+    description: "Read a workflow",
+    inputSchema: z.object({ uri: z.string() }),
+    outputSchema: z.object({ workflow: WorkflowDefinitionSchema }),
+    execute: async ({ context }) => {
+      const { uri } = context;
+      const result = await env.WORKFLOWS_MANAGEMENT.DECO_RESOURCE_WORKFLOW_READ(
+        { uri },
+      );
+      const workflow = WorkflowDefinitionSchema.parse(result.data);
+      return { workflow };
+    },
+  });
+
 export const workflowTools = [
   createRunWorkflowStepTool,
   createGenerateStepTool,
   createImportToolAsStepTool,
   createAuthorizeWorkflowTool,
+  createReadWorkflowTool,
 ];

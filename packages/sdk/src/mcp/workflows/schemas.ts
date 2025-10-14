@@ -4,7 +4,7 @@ import z from "zod";
 export type JSONSchema = Record<string, unknown>;
 
 // Workflow step definition - each step can reference previous steps using @ references
-export const WorkflowStepDefinitionSchema = z.object({
+export const CodeStepDefinitionSchema = z.object({
   id: z
     .string()
     .min(1)
@@ -99,6 +99,62 @@ export const WorkflowStepDefinitionSchema = z.object({
     .describe(
       "Step configuration options including retry and timeout settings",
     ),
+});
+
+export const RetriesSchema = z.object({
+  limit: z
+    .number()
+    .int()
+    .min(0)
+    .default(0)
+    .describe("Number of retry attempts for this step (default: 0)"),
+  delay: z
+    .number()
+    .int()
+    .min(0)
+    .default(0)
+    .describe("Delay in milliseconds between retry attempts (default: 0)"),
+  backoff: z
+    .enum(["constant", "linear", "exponential"])
+    .optional()
+    .describe("Backoff strategy for retry attempts (default: constant)"),
+});
+
+export const ToolCallStepDefinitionSchema = z.object({
+  name: z
+    .string()
+    .min(1)
+    .describe("The unique name of the tool call step within the workflow"),
+  description: z
+    .string()
+    .min(1)
+    .describe("A clear description of what this tool call step does"),
+  options: z
+    .object({
+      retries: RetriesSchema.optional(),
+      timeout: z
+        .number()
+        .positive()
+        .default(Infinity)
+        .optional()
+        .describe("Maximum execution time in milliseconds (default: Infinity)"),
+    })
+    .nullish()
+    .describe(
+      "Step configuration options. Extend this object with custom properties for business user configuration",
+    ),
+  tool_name: z.string().min(1).describe("The name of the tool to call"),
+  integration: z
+    .string()
+    .min(1)
+    .describe("The name of the integration that provides this tool"),
+});
+
+export const WorkflowStepDefinitionSchema = z.object({
+  type: z.enum(["code", "tool_call"]).describe("The type of step"),
+  def: z
+    .union([CodeStepDefinitionSchema, ToolCallStepDefinitionSchema])
+    .describe("The step definition based on the type"),
 });
 
 export const WorkflowDefinitionSchema = z.object({

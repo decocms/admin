@@ -8,11 +8,9 @@ import { WORKFLOW } from "./mock";
 const STORAGE_KEY = "workflowz-storage";
 
 type Workflow = NonNullable<
-  Awaited<ReturnType<typeof client.DECO_RESOURCE_WORKFLOW_READ>>
->;
-type WorkflowStep = NonNullable<
-  Awaited<ReturnType<typeof client.DECO_RESOURCE_WORKFLOW_READ>>
->["data"]["steps"][number];
+  Awaited<ReturnType<typeof client.READ_WORKFLOW>>
+>["workflow"];
+type WorkflowStep = NonNullable<Workflow>["steps"][number];
 
 interface State {
   workflow: Workflow;
@@ -64,13 +62,9 @@ export const WorkflowStoreProvider = ({
               set({
                 workflow: {
                   ...currentWorkflow,
-                  data: {
-                    ...currentWorkflow.data,
-                    steps: currentWorkflow.data.steps.map(
-                      (step: WorkflowStep) =>
-                        step.name === stepId ? { ...step, ...updates } : step,
-                    ),
-                  },
+                  steps: currentWorkflow.steps.map((step: WorkflowStep) =>
+                    step.def.name === stepId ? { ...step, ...updates } : step,
+                  ),
                 } as Workflow,
               });
             },
@@ -78,12 +72,9 @@ export const WorkflowStoreProvider = ({
               set(() => ({
                 workflow: {
                   ...get().workflow,
-                  data: {
-                    ...get().workflow.data,
-                    steps: [...get().workflow.data.steps, step],
-                  },
+                  steps: [...get().workflow.steps, step],
                 },
-                currentStepIndex: get().workflow.data.steps.length,
+                currentStepIndex: get().workflow.steps.length,
               }));
             },
             removeStep: (stepId: string) => {
@@ -91,28 +82,27 @@ export const WorkflowStoreProvider = ({
               set({
                 workflow: {
                   ...currentWorkflow,
-                  data: {
-                    ...currentWorkflow.data,
-                    steps: currentWorkflow.data.steps.filter(
-                      (step: WorkflowStep) => step.name !== stepId,
-                    ),
-                  },
+                  steps: currentWorkflow.steps.filter(
+                    (step: WorkflowStep) => step.def.name !== stepId,
+                  ),
                 } as Workflow,
-                currentStepIndex: currentWorkflow.data.steps.length,
+                currentStepIndex: currentWorkflow.steps.length,
               });
             },
             updateDependencyToolCalls: () => {
-              type DependencyEntry = NonNullable<
-                WorkflowStep["dependencies"]
-              >[number];
+              type DependencyEntry = { integrationId: string };
               const allToolsMap = new Map<string, DependencyEntry>();
-              get().workflow.data.steps.forEach((step: WorkflowStep) => {
-                step.dependencies?.forEach((dependency: DependencyEntry) => {
-                  const key = `${dependency.integrationId}`;
-                  if (!allToolsMap.has(key)) {
-                    allToolsMap.set(key, dependency);
-                  }
-                });
+              get().workflow.steps.forEach((step: WorkflowStep) => {
+                if (step.type === "code" && "dependencies" in step.def) {
+                  step.def.dependencies?.forEach(
+                    (dependency: DependencyEntry) => {
+                      const key = `${dependency.integrationId}`;
+                      if (!allToolsMap.has(key)) {
+                        allToolsMap.set(key, dependency);
+                      }
+                    },
+                  );
+                }
               });
 
               const dependencyToolCalls = Array.from(allToolsMap.values());
@@ -136,10 +126,7 @@ export const WorkflowStoreProvider = ({
               set({
                 workflow: {
                   ...currentWorkflow,
-                  data: {
-                    ...currentWorkflow.data,
-                    steps: [] as any,
-                  },
+                  steps: [] as any,
                 } as Workflow,
                 currentStepIndex: 0,
               });
@@ -172,17 +159,17 @@ export const WorkflowProvider = ({
   const searchParams = useSearch({ from: "/workflow" });
   const resourceURI = (searchParams as { resourceURI?: string })?.resourceURI;
   // Fetch workflow from API if resourceURI is provided
-  //   const {
-  //     data: workflowData,
-  //     isLoading: isLoadingWorkflow,
-  //   } = useQuery({
-  //     queryKey: ["workflow", resourceURI],
-  //     queryFn: async () => {
-  //       if (!resourceURI) return null;
-  //       return await client.DECO_RESOURCE_WORKFLOW_READ({ uri: resourceURI });
-  //     },
-  //     enabled: !!resourceURI,
-  //   });
+  // const {
+  //   data: workflowData,
+  //   isLoading: isLoadingWorkflow,
+  // } = useQuery({
+  //   queryKey: ["workflow", resourceURI],
+  //   queryFn: async () => {
+  //     if (!resourceURI) return null;
+  //     return await client.READ_WORKFLOW({ uri: resourceURI });
+  //   },
+  //   enabled: !!resourceURI,
+  // });
 
   //   if (!workflowData || isLoadingWorkflow || !resourceURI) {
   //     return (
@@ -200,30 +187,44 @@ export const WorkflowProvider = ({
   const transformedSteps = useMemo(
     () =>
       WORKFLOW.steps.map((step: MockedStep) => ({
-        ...step,
-        name: step.name, // Use id as name since that's the unique identifier
-        execute:
-          step.code ||
-          "export default async function(input, ctx) { return input; }", // Use code as execute
+        type: "code" as const,
+        def: {
+          name: step.id, // Use id as the unique identifier
+          description: step.description || "",
+          execute:
+            step.code ||
+            "export default async function(input, ctx) { return input; }",
+          inputSchema: step.inputSchema,
+          outputSchema: step.outputSchema,
+          prompt: step.name, // Store the display name in prompt
+        },
+        // Keep input and output at step level, not under def
+        input: step.input,
+        output: step.output,
       })),
     [],
   );
 
-  type MockedWorkflow = typeof WORKFLOW;
   const defaultWorkflow = useMemo(
     () => ({
-      ...WORKFLOW,
+      id: WORKFLOW.id,
+      name: WORKFLOW.name,
+      description: WORKFLOW.description,
+      inputSchema: WORKFLOW.inputSchema,
+      outputSchema: WORKFLOW.outputSchema,
       steps: transformedSteps,
+      createdAt: WORKFLOW.createdAt,
+      updatedAt: WORKFLOW.updatedAt,
     }),
     [transformedSteps],
-  ) as MockedWorkflow & { steps: typeof transformedSteps };
+  );
 
   return (
     <WorkflowStoreProvider
       workflow={
         {
+          ...defaultWorkflow,
           uri: resourceURI || "",
-          data: defaultWorkflow,
         } as unknown as Workflow
       }
     >
@@ -252,12 +253,12 @@ export const useWorkflowStoreActions = () =>
 
 // Returns the full workflow data object (use sparingly!)
 export const useCurrentWorkflow = () => {
-  return useWorkflowStore((state) => state.workflow.data);
+  return useWorkflowStore((state) => state.workflow);
 };
 
 // Returns ONLY the length (primitive) - no re-renders on step content changes
 export const useWorkflowStepsLength = () => {
-  return useWorkflowStore((state) => state.workflow.data.steps?.length || 0);
+  return useWorkflowStore((state) => state.workflow.steps?.length || 0);
 };
 
 // Returns ONLY the current step index (primitive)
@@ -267,15 +268,19 @@ export const useCurrentStepIndex = () => {
 
 // Returns ONLY the auth token (primitive)
 export const useWorkflowAuthToken = (): string | undefined => {
-  return useWorkflowStore((state) => state.workflow.data.authorization?.token);
+  return useWorkflowStore((state) => state.workflow.authorization?.token);
 };
 
 // Returns new step prompt (primitive string)
 export const useNewStepPrompt = () => {
   return useWorkflowStore((state) => {
+    console.log({ workflow: state.workflow });
     const stepIndex = state.currentStepIndex - 1;
-    if (stepIndex >= 0 && stepIndex < state.workflow.data.steps.length) {
-      return state.workflow.data.steps[stepIndex]?.prompt || "";
+    if (stepIndex >= 0 && stepIndex < state.workflow.steps.length) {
+      const step = state.workflow.steps[stepIndex];
+      if (step?.type === "code" && "prompt" in step.def) {
+        return step.def.prompt || "";
+      }
     }
     return "";
   });
@@ -290,7 +295,7 @@ export const useNewStepPrompt = () => {
 export const useWorkflowStepIds = (): string => {
   return useWorkflowStore(
     (state) =>
-      state.workflow.data.steps?.map((s: WorkflowStep) => s.name).join(",") ||
+      state.workflow.steps?.map((s: WorkflowStep) => s.def.name).join(",") ||
       "",
   );
 };
@@ -299,8 +304,8 @@ export const useWorkflowStepIds = (): string => {
 export const useWorkflowStepIndex = (stepName: string): number => {
   return useWorkflowStore(
     (state) =>
-      state.workflow.data.steps?.findIndex(
-        (s: WorkflowStep) => s.name === stepName,
+      state.workflow.steps?.findIndex(
+        (s: WorkflowStep) => s.def.name === stepName,
       ) ?? -1,
   );
 };
@@ -315,7 +320,7 @@ export const useWorkflowStepIndex = (stepName: string): number => {
 // Returns array - AVOID using this, prefer useWorkflowStepIds or useWorkflowStepByName
 // Only use when you absolutely need the full array of steps
 export const useWorkflowStepsArray = (): WorkflowStep[] => {
-  return useWorkflowStore((state: Store) => state.workflow.data.steps || []);
+  return useWorkflowStore((state: Store) => state.workflow.steps || []);
 };
 
 // Helper function for deep equality check of objects
@@ -340,12 +345,13 @@ function deepEqual(a: unknown, b: unknown): boolean {
 
 // OPTIMIZED: Selector that only subscribes to a specific step by name
 // Custom equality: only re-render if the step's key properties actually changed
+// Returns the full step object, not just def, so components can access output, input, etc.
 export const useWorkflowStepByName = (
   stepName: string,
 ): WorkflowStep | undefined => {
   return (useWorkflowStore as any)(
     (state: Store) =>
-      state.workflow.data.steps?.find((s: WorkflowStep) => s.name === stepName),
+      state.workflow.steps?.find((s: WorkflowStep) => s.def.name === stepName),
     (prev: WorkflowStep | undefined, next: WorkflowStep | undefined) => {
       // If both are undefined/null, they're equal
       if (!prev && !next) return true;
@@ -355,17 +361,68 @@ export const useWorkflowStepByName = (
       // Quick reference check first (most common case when step didn't change at all)
       if (prev === next) return true;
 
-      // Deep equality check on properties that affect rendering
-      return (
-        prev.name === next.name &&
-        prev.description === next.description &&
-        prev.execute === next.execute &&
-        prev.inputSchema === next.inputSchema &&
-        prev.outputSchema === next.outputSchema &&
-        deepEqual(prev.input, next.input) &&
-        deepEqual(prev.output, next.output) &&
-        deepEqual(prev.dependencies, next.dependencies)
-      );
+      // Check if def changed
+      if (prev.def !== next.def) {
+        // Deep check def properties
+        if (
+          prev.def.name !== next.def.name ||
+          prev.def.description !== next.def.description
+        ) {
+          return false;
+        }
+
+        // Code step properties
+        if ("execute" in prev.def && "execute" in next.def) {
+          if (
+            prev.def.execute !== next.def.execute ||
+            !deepEqual(
+              "inputSchema" in prev.def ? prev.def.inputSchema : null,
+              "inputSchema" in next.def ? next.def.inputSchema : null,
+            ) ||
+            !deepEqual(
+              "outputSchema" in prev.def ? prev.def.outputSchema : null,
+              "outputSchema" in next.def ? next.def.outputSchema : null,
+            ) ||
+            !deepEqual(
+              "input" in prev.def ? prev.def.input : null,
+              "input" in next.def ? next.def.input : null,
+            ) ||
+            !deepEqual(
+              "dependencies" in prev.def ? prev.def.dependencies : null,
+              "dependencies" in next.def ? next.def.dependencies : null,
+            )
+          ) {
+            return false;
+          }
+        }
+
+        // tool_call type
+        if (
+          "tool_name" in prev.def &&
+          "tool_name" in next.def &&
+          "integration" in prev.def &&
+          "integration" in next.def
+        ) {
+          if (
+            prev.def.tool_name !== next.def.tool_name ||
+            prev.def.integration !== next.def.integration
+          ) {
+            return false;
+          }
+        }
+      }
+
+      // Check if output changed (important for execution results)
+      if (!deepEqual((prev as any).output, (next as any).output)) {
+        return false;
+      }
+
+      // Check if input changed
+      if (!deepEqual((prev as any).input, (next as any).input)) {
+        return false;
+      }
+
+      return true;
     },
   );
 };

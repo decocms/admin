@@ -4,7 +4,6 @@ import {
   WorkflowEvent,
   WorkflowStepConfig,
 } from "cloudflare:workers";
-import { callFunction, inspect } from "@deco/cf-sandbox";
 import { contextStorage } from "../fetch.ts";
 import {
   AppContext,
@@ -19,12 +18,25 @@ import {
   createResourceAccess,
   MCPClient,
 } from "../mcp/index.ts";
-import { asEnv, evalCodeAndReturnDefaultHandle } from "../mcp/tools/utils.ts";
-import type { WorkflowStepDefinition } from "../mcp/workflows/api.ts";
+import { runCode, runTool } from "../mcp/tools/utils.ts";
+import type {
+  CodeStepDefinition,
+  ToolCallStepDefinition,
+  WorkflowStepDefinition,
+} from "../mcp/workflows/api.ts";
 
 export type { WorkflowStepConfig };
 
-export type Runnable = (input: unknown) => Promise<Rpc.Serializable<unknown>>;
+export type Runnable = (
+  input: unknown,
+  state: WorkflowState,
+) => Promise<Rpc.Serializable<unknown>>;
+export interface WorkflowState<T = unknown> {
+  input: T;
+  steps: Record<string, unknown>;
+  sleep: (name: string, duration: number) => Promise<void>;
+  sleepUntil: (name: string, date: Date | number) => Promise<void>;
+}
 
 export interface WorkflowStep {
   name: string;
@@ -35,7 +47,7 @@ export interface WorkflowStep {
 export interface WorkflowRunnerProps<T = unknown> {
   input: T;
   name: string;
-  steps: WorkflowStepDefinition[];
+  steps: WorkflowStepDefinition[]; // Changed from WorkflowStep[] to WorkflowStepDefinition[]
   stopAfter?: string;
   state?: Record<string, unknown>;
   context: Pick<PrincipalExecutionContext, "workspace" | "locator"> & {
@@ -80,49 +92,44 @@ export class WorkflowRunner extends WorkflowEntrypoint<Bindings> {
   }
 
   /**
-   * Execute a step with resolved input
+   * Convert WorkflowStepDefinition to WorkflowStep with actual runnable functions
    */
-  private async executeStep(
+  private convertStepDefinitionToStep(
+    workflowInput: unknown,
     stepDef: WorkflowStepDefinition,
-    resolvedInput: Record<string, unknown>,
     appContext: AppContext,
     runtimeId: string,
-  ): Promise<Rpc.Serializable<unknown>> {
+  ): WorkflowStep {
     const client = MCPClient.forContext(appContext);
 
-    // Load and execute the code step function
-    using stepEvaluation = await evalCodeAndReturnDefaultHandle(
-      stepDef.execute,
-      runtimeId,
-    );
-    const {
-      ctx: stepCtx,
-      defaultHandle: stepDefaultHandle,
-      guestConsole: stepConsole,
-    } = stepEvaluation;
-
-    // Create step context with env for integration tool calls
-    const stepContext = {
-      env: await asEnv(client),
-    };
-
-    // Call the function with resolved input and context
-    const stepCallHandle = await callFunction(
-      stepCtx,
-      stepDefaultHandle,
-      undefined,
-      resolvedInput,
-      stepContext,
-    );
-
-    const result = stepCtx.dump(stepCtx.unwrapResult(stepCallHandle));
-
-    // Log any console output from the step execution
-    if (stepConsole.logs.length > 0) {
-      console.log(`Step '${stepDef.name}' logs:`, stepConsole.logs);
+    let runnable: Runnable;
+    if (stepDef.type === "code") {
+      runnable = (_input, state) =>
+        runCode(
+          workflowInput,
+          state,
+          stepDef.def as CodeStepDefinition,
+          client,
+          runtimeId,
+        );
+    } else if (stepDef.type === "tool_call") {
+      runnable = (input) =>
+        runTool(input, stepDef.def as ToolCallStepDefinition, client);
+    } else {
+      throw new Error(
+        `Invalid step type: ${(stepDef as unknown as { type: string }).type}`,
+      );
     }
+    const config =
+      stepDef.type === "tool_call" && "options" in stepDef.def
+        ? (stepDef.def.options ?? {})
+        : {};
 
-    return result as Rpc.Serializable<unknown>;
+    return {
+      name: stepDef.def.name,
+      config,
+      fn: runnable,
+    };
   }
 
   override async run(
@@ -133,11 +140,7 @@ export class WorkflowRunner extends WorkflowEntrypoint<Bindings> {
       ...(await this.principalContextFromRunnerProps(event.payload)),
       ...this.bindingsCtx,
     };
-    const {
-      input: workflowInput,
-      steps: stepDefinitions,
-      state,
-    } = event.payload;
+    const { input, steps: stepDefinitions, state } = event.payload;
     const runtimeId = appContext.locator?.value ?? "default";
 
     // Convert step definitions to actual runnable steps
@@ -185,9 +188,6 @@ export class WorkflowRunner extends WorkflowEntrypoint<Bindings> {
         break;
       }
     }
-
-    // Return the last executed step's result
-    const lastStepName = stepDefinitions[stepDefinitions.length - 1]?.name;
-    return stepResults[lastStepName] as Rpc.Serializable<unknown>;
+    return prev;
   }
 }

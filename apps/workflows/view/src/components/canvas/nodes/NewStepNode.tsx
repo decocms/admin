@@ -74,7 +74,14 @@ export const NewStepNode = memo(function NewStepNode(_props: NodeProps) {
 
             // Clear the prompt from the step that had it (the last step before adding)
             if (lastStepBeforeAdd) {
-              updateStep(lastStepBeforeAdd.name, { prompt: "" });
+              const lastStepBeforeAddDef = lastStepBeforeAdd.def;
+              updateStep(lastStepBeforeAdd.def.name, {
+                ...lastStepBeforeAddDef,
+                def: {
+                  ...lastStepBeforeAddDef,
+                  prompt,
+                },
+              });
             }
           }
         },
@@ -96,9 +103,14 @@ export const NewStepNode = memo(function NewStepNode(_props: NodeProps) {
 
   const handleUpdateStep = useCallback(
     (value: string) => {
-      updateStep(currentStep?.name || "", { prompt: value });
+      updateStep(currentStep?.def.name || "", {
+        def: {
+          ...currentStep?.def,
+          prompt: value,
+        },
+      });
     },
-    [currentStep?.name, updateStep],
+    [currentStep?.def.name, updateStep],
   );
 
   return (

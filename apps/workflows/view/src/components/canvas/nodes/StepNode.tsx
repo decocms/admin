@@ -162,24 +162,28 @@ const StepFormView = memo(
         // Update only the specific field - Zustand will merge with current state
         workflowActions.updateStep(stepName, {
           input: {
-            ...step.input,
+            ...(step as any).input,
             [fieldKey]: newValue,
           },
-        });
+        } as any);
       },
-      [workflowActions, stepName, step.input],
+      [workflowActions, stepName, (step as any).input],
     );
+
+    // Dependencies might be under def or at step level
+    const dependencies =
+      "dependencies" in step.def ? (step.def as any).dependencies : undefined;
 
     return (
       <>
         {/* Tools Used Section */}
-        {step.dependencies && step.dependencies.length > 0 && (
+        {dependencies && dependencies.length > 0 && (
           <div className="bg-background border-b border-border p-4">
             <p className="font-mono text-sm text-muted-foreground uppercase mb-4">
               TOOLS USED
             </p>
             <div className="flex gap-3 flex-wrap">
-              {step.dependencies.map((tool: WorkflowDependency) => (
+              {dependencies.map((tool: WorkflowDependency) => (
                 <Badge
                   key={tool.integrationId}
                   variant="secondary"
@@ -196,7 +200,7 @@ const StepFormView = memo(
         )}
 
         {/* Input Parameters Section */}
-        {step.inputSchema && (
+        {step.def.inputSchema && (
           <div className="bg-background border-b border-border p-4">
             <div
               className="nodrag"
@@ -302,11 +306,12 @@ export const StepNode = memo(function StepNode({
 
   // OPTIMIZED: Only compute when actually needed (when showJsonView is true)
   const inputSchemaEntries = useMemo((): Array<[string, unknown]> => {
-    if (!step?.inputSchema) return [];
+    if (!step || !(step.def as any)?.inputSchema) return [];
     return Object.entries(
-      (step.inputSchema as Record<string, unknown>).properties || {},
+      ((step.def as any).inputSchema as Record<string, unknown>).properties ||
+        {},
     );
-  }, [step?.inputSchema]);
+  }, [step, (step?.def as any)?.inputSchema]);
 
   // OPTIMIZED: Only compute JSON when viewing JSON (expensive operation)
   const jsonViewData = useMemo((): { jsonString: string; lines: string[] } => {
@@ -317,11 +322,11 @@ export const StepNode = memo(function StepNode({
   }, [step, showJsonView]);
 
   // OPTIMIZED: Extract stable values to reduce callback recreation
-  const stepName = step?.name;
-  const stepExecute = step?.execute;
-  const stepInputSchema = step?.inputSchema;
-  const stepOutputSchema = step?.outputSchema;
-  const stepInput = step?.input;
+  const stepName = step?.def.name;
+  const stepExecute = (step?.def as any)?.execute;
+  const stepInputSchema = (step?.def as any)?.inputSchema;
+  const stepOutputSchema = (step?.def as any)?.outputSchema;
+  const stepInput = (step as any)?.input;
 
   // OPTIMIZED: Get step index and all steps, then compute previous results locally
   const stepIndex = useWorkflowStepIndex(stepName || "");
@@ -374,7 +379,7 @@ export const StepNode = memo(function StepNode({
           // This allows the UI to show execution details
           workflowActions.updateStep(stepName, {
             output: resolvedResult as unknown as Record<string, unknown>,
-          });
+          } as any);
         },
         onError: (error) => {
           const errorData: Record<string, unknown> = {
@@ -382,7 +387,7 @@ export const StepNode = memo(function StepNode({
           };
           workflowActions.updateStep(stepName, {
             output: errorData,
-          });
+          } as any);
         },
       },
     );
@@ -418,10 +423,10 @@ export const StepNode = memo(function StepNode({
           />
           <div className="flex-1 min-w-0">
             <div className="text-sm font-semibold text-foreground truncate">
-              {step.name}
+              {step.def.name}
             </div>
             <div className="text-xs text-muted-foreground line-clamp-2 mt-1">
-              {step.description}
+              {step.def.description}
             </div>
           </div>
           <span
@@ -442,7 +447,7 @@ export const StepNode = memo(function StepNode({
         <div className="flex items-center gap-2 flex-1 min-w-0">
           <Icon name={"build"} size={16} className="shrink-0 text-background" />
           <span className="text-sm font-medium text-background leading-5 truncate">
-            {step.name}
+            {step.def.name}
           </span>
         </div>
 
@@ -482,7 +487,7 @@ export const StepNode = memo(function StepNode({
               </DropdownMenuItem>
               <DropdownMenuItem
                 onClick={() => {
-                  const newTitle = prompt("Enter new name:", step?.name);
+                  const newTitle = prompt("Enter new name:", step?.def.name);
                   if (newTitle) {
                     // TODO: Implement rename functionality
                     void 0;
@@ -494,7 +499,7 @@ export const StepNode = memo(function StepNode({
               </DropdownMenuItem>
               <DropdownMenuItem
                 onClick={() => {
-                  if (step && confirm(`Delete step "${step.name}"?`)) {
+                  if (step && confirm(`Delete step "${step.def.name}"?`)) {
                     // TODO: Implement delete functionality
                     void 0;
                   }
@@ -536,8 +541,8 @@ export const StepNode = memo(function StepNode({
             className="flex items-center gap-3"
           >
             {/* Execution Status Indicator */}
-            {hasSuccessOutput(step.output) && <StepSuccessIndicator />}
-            {hasErrorOutput(step.output) && <StepErrorIndicator />}
+            {hasSuccessOutput((step as any).output) && <StepSuccessIndicator />}
+            {hasErrorOutput((step as any).output) && <StepErrorIndicator />}
 
             <div className="flex-1" />
 
@@ -562,8 +567,8 @@ export const StepNode = memo(function StepNode({
           </div>
 
           {/* Error Details */}
-          {hasErrorOutput(step.output) && (
-            <StepError error={step.output.error} />
+          {hasErrorOutput((step as any).output) && (
+            <StepError error={(step as any).output.error} />
           )}
         </div>
       </div>
@@ -571,7 +576,7 @@ export const StepNode = memo(function StepNode({
       {/* Render Input View Modal */}
       {renderingInputView && step && (
         <RenderInputViewModal
-          step={step}
+          step={{ name: step.def.name, output: (step as any).output }}
           fieldName={renderingInputView.fieldName}
           viewName={renderingInputView.viewName}
           viewCode={renderingInputView.viewCode}
@@ -586,7 +591,9 @@ export const StepNode = memo(function StepNode({
       )}
 
       {/* Render Output View - only if output exists and has success property */}
-      {hasExecutionResult(step.output) && <StepOutput step={step.output} />}
+      {hasExecutionResult((step as any).output) && (
+        <StepOutput step={(step as any).output} />
+      )}
     </div>
   );
 });

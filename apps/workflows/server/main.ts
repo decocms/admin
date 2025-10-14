@@ -63,8 +63,6 @@ const runtime = withRuntime<Env, typeof StateSchema>({
     ...tools,
     // Workflows Management tools - COMMENTED OUT TO AVOID CIRCULAR DEPENDENCY
     // These tools are already exposed by the @deco/workflows MCP server
-    // (env) => env.WORKFLOWS_MANAGEMENT.DECO_CHAT_VIEWS_LIST.asTool(),
-    // (env) => env.WORKFLOWS_MANAGEMENT.DECO_RESOURCE_WORKFLOW_CREATE.asTool(),
     // (env) => env.WORKFLOWS_MANAGEMENT.DECO_RESOURCE_WORKFLOW_DELETE.asTool(),
     // (env) => env.WORKFLOWS_MANAGEMENT.DECO_RESOURCE_WORKFLOW_READ.asTool(),
     // (env) => env.WORKFLOWS_MANAGEMENT.DECO_RESOURCE_WORKFLOW_SEARCH.asTool(),

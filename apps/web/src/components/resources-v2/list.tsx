@@ -29,6 +29,7 @@ import { useParams, useSearchParams } from "react-router";
 import { z } from "zod";
 import { useNavigateWorkspace } from "../../hooks/use-navigate-workspace.ts";
 import { usePersistedFilters } from "../../hooks/use-persisted-filters.ts";
+import { useSortable } from "../../hooks/use-sortable.ts";
 import { EmptyState } from "../common/empty-state.tsx";
 import { Table, type TableColumn } from "../common/table/index.tsx";
 import { TimeAgoCell, UserInfo } from "../common/table/table-cells.tsx";
@@ -70,10 +71,7 @@ function ResourcesV2ListTab({
   const [deleteUri, setDeleteUri] = useState<string | null>(null);
   const [dontAskAgain, setDontAskAgain] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
-  const [sortKey, setSortKey] = useState<string | undefined>("updated_at");
-  const [sortDirection, setSortDirection] = useState<"asc" | "desc" | null>(
-    "desc",
-  );
+  const { sortKey, sortDirection, handleSort } = useSortable("updated_at");
 
   // Session storage key for skip confirmation preference
   const skipConfirmationKey = `skip-delete-confirmation-${integrationId}-${resourceName}`;
@@ -264,22 +262,6 @@ function ResourcesV2ListTab({
     });
     return Array.from(userIds).map((id) => ({ id, name: id }));
   }, [items]);
-
-  // Handle sort: cycles through asc -> desc -> null
-  const handleSort = (columnId: string) => {
-    if (sortKey !== columnId) {
-      // Clicking a new column: start with asc
-      setSortKey(columnId);
-      setSortDirection("asc");
-    } else if (sortDirection === "asc") {
-      // Second click: switch to desc
-      setSortDirection("desc");
-    } else if (sortDirection === "desc") {
-      // Third click: reset to no sorting
-      setSortKey(undefined);
-      setSortDirection(null);
-    }
-  };
 
   // Apply filters to items
   const filteredItems = useMemo(() => {

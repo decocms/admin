@@ -11,9 +11,9 @@ import {
   DeleteInputSchema,
   DeleteOutputSchema,
   ReadInputSchema,
+  ResourceUriSchema,
   SearchInputSchema,
 } from "./schemas.ts";
-
 export type BaseResourceDataSchema = z.ZodObject<{
   name: z.ZodString;
   description: z.ZodString;
@@ -51,6 +51,7 @@ export type BaseResourceDataSchema = z.ZodObject<{
 export function createResourceBindings<
   TDataSchema extends BaseResourceDataSchema,
 >(resourceName: string, dataSchema: TDataSchema) {
+  const readOutputSchema = createReadOutputSchema(dataSchema);
   return [
     {
       name: `DECO_RESOURCE_${resourceName.toUpperCase()}_SEARCH` as const,
@@ -62,7 +63,7 @@ export function createResourceBindings<
     {
       name: `DECO_RESOURCE_${resourceName.toUpperCase()}_READ` as const,
       inputSchema: ReadInputSchema,
-      outputSchema: createReadOutputSchema(dataSchema),
+      outputSchema: readOutputSchema,
     },
     {
       name: `DECO_RESOURCE_${resourceName.toUpperCase()}_CREATE` as const,
@@ -82,6 +83,29 @@ export function createResourceBindings<
       outputSchema: DeleteOutputSchema,
       opt: true,
     },
+    {
+      name: `DECO_RESOURCE_${resourceName.toUpperCase()}_SUBSCRIBE` as const,
+      inputSchema: z.object({
+        subscriptionId: z.string().optional().describe("Subscription ID if passed subscription will be updated"),
+        channel: z.string().describe("Channel to subscribe to"),
+        uri: ResourceUriSchema.describe("URI of the resource to subscribe to, use rsc://workspace/project/* to subscribe to all resources"),
+      }),
+      outputSchema: z.object({
+        subscriptionId: z.string().describe("Subscription ID"),
+      }),
+      opt: true,
+    },
+    {
+      name: `DECO_RESOURCE_${resourceName.toUpperCase()}_UNSUBSCRIBE` as const,
+      inputSchema: z.object({
+        subscriptionId: z.string().optional().describe("Subscription ID if passed subscription will be updated"),
+        channel: z.string().describe("Channel to subscribe to")
+      }),
+      outputSchema: z.object({
+        ok: z.boolean(),
+      }),
+      opt: true,
+    }
   ] as const satisfies readonly ToolBinder[];
 }
 

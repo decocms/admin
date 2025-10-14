@@ -55,11 +55,19 @@ const dirOf = (
   options: Pick<
     DeconfigResourceOptions<BaseResourceDataSchema>,
     "directory" | "resourceName"
-  >,
+  > & { uri?: string },
 ) => {
-  return options.directory
+  let directory = options.directory
     ? options.directory
     : `/resources/${options.resourceName}`;
+  if (options.uri) {
+    const resourceId = extractResourceId(options.uri);
+    directory =
+      resourceId === "*"
+        ? directory
+        : ResourcePath.build(directory, resourceId);
+  }
+  return directory;
 };
 export const createDeconfigResource = <
   TDataSchema extends BaseResourceDataSchema,
@@ -290,14 +298,14 @@ export const createDeconfigResource = <
             updated_at: new Date(fileData.mtime).toISOString(),
             created_by:
               parsedData &&
-              "created_by" in parsedData &&
-              typeof parsedData.created_by === "string"
+                "created_by" in parsedData &&
+                typeof parsedData.created_by === "string"
                 ? parsedData.created_by
                 : undefined,
             updated_by:
               parsedData &&
-              "updated_by" in parsedData &&
-              typeof parsedData.updated_by === "string"
+                "updated_by" in parsedData &&
+                typeof parsedData.updated_by === "string"
                 ? parsedData.updated_by
                 : undefined,
           };
@@ -458,7 +466,6 @@ export const createDeconfigResource = <
         };
       },
     },
-
     // deco_resource_delete (optional)
     {
       description:
@@ -490,6 +497,30 @@ export const createDeconfigResource = <
         }
       },
     },
+    {
+      description:
+        enhancements?.[
+          `DECO_RESOURCE_${resourceName.toUpperCase()}_SUBSCRIBE` as keyof typeof enhancements
+        ]?.description ||
+        `Subscribe to ${resourceName} resources in the DECONFIG directory ${directory}`,
+      handler: function ({ uri, subscriptionId, channel }) {
+        return {
+          subscriptionId: crypto.randomUUID(),
+        };
+      },
+    },
+    {
+      description:
+        enhancements?.[
+          `DECO_RESOURCE_${resourceName.toUpperCase()}_UNSUBSCRIBE` as keyof typeof enhancements
+        ]?.description ||
+        `Unsubscribe from ${resourceName} resources in the DECONFIG directory ${directory}`,
+      handler: function ({ subscriptionId, channel }) {
+        return {
+          ok: true
+        };
+      },
+    },
   ]);
 
   return tools;
@@ -500,68 +531,75 @@ const removeLeadingSlash = (url: string) => {
 };
 
 const R_READ = 1;
+
+const watcher = <TDataSchema extends BaseResourceDataSchema>({
+  env,
+  ...options
+}: DeconfigResourceOptions<TDataSchema> & {
+  uri?: string;
+}): AsyncIterableIterator<{ uri: string; data: TDataSchema }> => {
+  const resources = createDeconfigResource({
+    env,
+    ...options,
+  });
+  const url = new URL(
+    `/${removeLeadingSlash(env.DECO_REQUEST_CONTEXT.workspace)}/deconfig/watch`,
+    `${env.DECO_API_URL ?? "https://api.decocms.com"}`,
+  );
+  url.searchParams.set("pathFilter", dirOf(options));
+  url.searchParams.set("branch", env.DECO_REQUEST_CONTEXT.branch ?? "main");
+  url.searchParams.set("auth-token", env.DECO_REQUEST_CONTEXT.token);
+  url.searchParams.set("fromCtime", "1");
+
+  const eventSource = new EventSource(url);
+  const it = toAsyncIterator<{
+    path: string;
+    metadata: { address: string };
+  }>(eventSource);
+  const iterator = async function* () {
+    for await (const event of it) {
+      const { path } = event;
+      const { resourceId } = ResourcePath.extract(path);
+      const uri = constructResourceUri(
+        env.DECO_REQUEST_CONTEXT.integrationId as string,
+        options.resourceName,
+        resourceId,
+      );
+      try {
+        const { data } = await resources[R_READ].execute!({
+          runId: crypto.randomUUID(),
+          runtimeContext: createRuntimeContext(),
+          context: {
+            uri,
+          },
+        });
+        yield {
+          uri,
+          data,
+        };
+      } catch {
+        // ignore
+      }
+    }
+  };
+  const mIterator = iterator();
+  const retn = mIterator.return;
+  mIterator.return = function (val) {
+    eventSource.close();
+    return retn?.call(mIterator, val) ?? val;
+  };
+  return mIterator;
+};
 export const DeconfigResource = {
   define: <TDataSchema extends BaseResourceDataSchema>(
     options: Omit<DeconfigResourceOptions<TDataSchema>, "env">,
   ) => {
-    const watcher = (env: DefaultEnv & { DECONFIG: DeconfigClient }) => {
-      const resources = createDeconfigResource({
-        env,
-        ...options,
-      });
-      const url = new URL(
-        `/${removeLeadingSlash(env.DECO_REQUEST_CONTEXT.workspace)}/deconfig/watch`,
-        `${env.DECO_API_URL ?? "https://api.decocms.com"}`,
-      );
-      url.searchParams.set("pathFilter", dirOf(options));
-      url.searchParams.set("branch", env.DECO_REQUEST_CONTEXT.branch ?? "main");
-      url.searchParams.set("auth-token", env.DECO_REQUEST_CONTEXT.token);
-      url.searchParams.set("fromCtime", "1");
-
-      const eventSource = new EventSource(url);
-      const it = toAsyncIterator<{
-        path: string;
-        metadata: { address: string };
-      }>(eventSource);
-      const iterator = async function* () {
-        for await (const event of it) {
-          const { path } = event;
-          const { resourceId } = ResourcePath.extract(path);
-          const uri = constructResourceUri(
-            env.DECO_REQUEST_CONTEXT.integrationId as string,
-            options.resourceName,
-            resourceId,
-          );
-          try {
-            const { data } = await resources[R_READ].execute!({
-              runId: crypto.randomUUID(),
-              runtimeContext: createRuntimeContext(),
-              context: {
-                uri,
-              },
-            });
-            yield {
-              uri,
-              data,
-            };
-          } catch {
-            // ignore
-          }
-        }
-      };
-      return {
-        it: iterator(),
-        [Symbol.dispose]: () => {
-          eventSource.close();
-        },
-      };
-    };
     return {
       watchAPI: (
         _req: Request,
         env: DefaultEnv & { DECONFIG: DeconfigClient },
       ) => {
-        const watch = watcher(env);
+        const watch = watcher({ env, ...options });
 
         // Create SSE-compatible ReadableStream
         const sseStream = new ReadableStream({
@@ -569,7 +607,7 @@ export const DeconfigResource = {
             const encoder = new TextEncoder();
 
             try {
-              for await (const event of watch.it) {
+              for await (const event of watch) {
                 // Format as SSE: data: {json}\n\n
                 const sseData = `data: ${JSON.stringify(event)}\n\n`;
                 controller.enqueue(encoder.encode(sseData));
@@ -580,7 +618,7 @@ export const DeconfigResource = {
             }
           },
           cancel() {
-            watch[Symbol.dispose]();
+            watch.return?.();
             // Clean up the async iterator if needed
           },
         });

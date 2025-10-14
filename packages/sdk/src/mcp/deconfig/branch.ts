@@ -164,8 +164,22 @@ export interface TransactionalWriteResult {
 export interface WatchOptions {
   /** Optional ctime to start watching from. If provided, will return latest change if newer, or nothing if equal/older */
   fromCtime?: number;
-  /** Optional path prefix filter - only watch files matching this prefix */
-  pathFilter?: string;
+  /** Optional path prefix filters - only watch files matching these prefixes (OR logic) */
+  pathFilters?: string[] | string;
+  /** Optional watcher ID for subscription management */
+  watcherId?: string;
+}
+
+/**
+ * Options for subscribing to a watcher.
+ */
+export interface SubscriptionOptions {
+  /** The watcher ID to subscribe to */
+  watcherId: string;
+  /** Path filters to watch (undefined/empty will unsubscribe if subscriptionId provided) */
+  pathFilters?: string[] | string;
+  /** Optional subscription ID - if provided, updates existing subscription instead of creating new one */
+  subscriptionId?: string;
 }
 
 /** q
@@ -390,6 +404,25 @@ export class BranchRpc extends RpcTarget {
   }
 
   /**
+   * Subscribe to path filters for an existing watcher.
+   * Returns a subscription ID that can be used to unsubscribe later.
+   * 
+   * @param options - Subscription options containing watcherId, pathFilters, and optional subscriptionId
+   * @returns The subscription ID (existing or newly created)
+   */
+  subscribe(options: SubscriptionOptions): string {
+    return this.branchDO.subscribe(options);
+  }
+
+  /**
+   * Unsubscribe from a subscription using its subscription ID.
+   * Does not close the watcher.
+   */
+  unsubscribe(subscriptionId: string): void {
+    return this.branchDO.unsubscribe(subscriptionId);
+  }
+
+  /**
    * Compute diff of this branch (B) against another (A).
    */
   async diff(otherBranchId: string): Promise<DiffEntry[]> {
@@ -435,11 +468,18 @@ export class Branch extends DurableObject<DeconfigEnv> {
     name: null,
   };
 
-  // Watch infrastructure
+  // Watch infrastructure - keyed by watcherId
   private watchers = new Map<
-    ReadableStreamDefaultController<Uint8Array>,
-    WatchOptions
+    string,
+    {
+      controller: ReadableStreamDefaultController<Uint8Array>;
+      options: WatchOptions;
+      subscriptions: Map<string, string[] | string>; // subscriptionId -> pathFilters
+    }
   >();
+
+  // Reverse lookup for subscriptionId -> watcherId
+  private subscriptionToWatcher = new Map<string, string>();
 
   constructor(state: DurableObjectState, env: DeconfigEnv) {
     super(state, env);
@@ -503,21 +543,44 @@ export class Branch extends DurableObject<DeconfigEnv> {
    * Watch for file changes in real-time.
    */
   watch(options: WatchOptions = {}): ReadableStream<Uint8Array> {
+    // Generate or use provided watcherId
+    const watcherId = options.watcherId || crypto.randomUUID();
+
+    // Check if watcherId already exists
+    if (this.watchers.has(watcherId)) {
+      throw new Error(`Watcher ID already exists: ${watcherId}`);
+    }
+
     let controller: ReadableStreamDefaultController<Uint8Array>;
 
     const stream = new ReadableStream<Uint8Array>({
       start: (ctrl) => {
         controller = ctrl;
-        this.watchers.set(controller, options);
+        const subscriptions = new Map<string, string[] | string>();
+
+        // If initial pathFilters provided, create initial subscription
+        if (options.pathFilters) {
+          const initialSubscriptionId = crypto.randomUUID();
+          subscriptions.set(initialSubscriptionId, options.pathFilters);
+        }
+
+        this.watchers.set(watcherId, { controller, options, subscriptions });
 
         if (options.fromCtime !== undefined) {
-          this.sendHistoricalChanges(controller, options);
+          this.sendHistoricalChanges(watcherId);
         }
       },
 
       cancel: () => {
         if (controller) {
-          this.watchers.delete(controller);
+          const watcher = this.watchers.get(watcherId);
+          if (watcher) {
+            // Clean up all subscription mappings
+            for (const subscriptionId of watcher.subscriptions.keys()) {
+              this.subscriptionToWatcher.delete(subscriptionId);
+            }
+          }
+          this.watchers.delete(watcherId);
         }
       },
     });
@@ -526,13 +589,120 @@ export class Branch extends DurableObject<DeconfigEnv> {
   }
 
   /**
+   * Subscribe to path filters for an existing watcher.
+   * Returns a subscription ID that can be used to unsubscribe later.
+   * 
+   * @param options - Subscription options containing watcherId, pathFilters, and optional subscriptionId
+   * @returns The subscription ID (existing or newly created)
+   */
+  subscribe(options: SubscriptionOptions): string {
+    const { watcherId, pathFilters, subscriptionId } = options;
+
+    const watcher = this.watchers.get(watcherId);
+    if (!watcher) {
+      throw new Error(`Watcher not found: ${watcherId}`);
+    }
+
+    // If pathFilters is empty/undefined, unsubscribe
+    if (!pathFilters || (Array.isArray(pathFilters) && pathFilters.length === 0)) {
+      if (subscriptionId) {
+        this.unsubscribe(subscriptionId);
+        return subscriptionId;
+      }
+      throw new Error("Cannot subscribe with empty pathFilters and no subscriptionId");
+    }
+
+    // If subscriptionId provided, update existing subscription
+    if (subscriptionId) {
+      const existingWatcherId = this.subscriptionToWatcher.get(subscriptionId);
+
+      if (!existingWatcherId) {
+        throw new Error(`Subscription not found: ${subscriptionId}`);
+      }
+
+      if (existingWatcherId !== watcherId) {
+        throw new Error(
+          `Subscription ${subscriptionId} belongs to watcher ${existingWatcherId}, not ${watcherId}`
+        );
+      }
+
+      // Update the existing subscription
+      watcher.subscriptions.set(subscriptionId, pathFilters);
+      return subscriptionId;
+    }
+
+    // Create new subscription
+    const newSubscriptionId = crypto.randomUUID();
+
+    // Add the subscription with its pathFilters
+    watcher.subscriptions.set(newSubscriptionId, pathFilters);
+
+    // Track the reverse mapping
+    this.subscriptionToWatcher.set(newSubscriptionId, watcherId);
+
+    return newSubscriptionId;
+  }
+
+  /**
+   * Unsubscribe from a subscription using its subscription ID.
+   * Does not close the watcher.
+   */
+  unsubscribe(subscriptionId: string): void {
+    // Find the watcherId for this subscription
+    const watcherId = this.subscriptionToWatcher.get(subscriptionId);
+    if (!watcherId) {
+      throw new Error(`Subscription not found: ${subscriptionId}`);
+    }
+
+    const watcher = this.watchers.get(watcherId);
+    if (!watcher) {
+      // Cleanup orphaned subscription mapping
+      this.subscriptionToWatcher.delete(subscriptionId);
+      throw new Error(`Watcher not found for subscription: ${subscriptionId}`);
+    }
+
+    // Remove the subscription
+    watcher.subscriptions.delete(subscriptionId);
+
+    // Remove the reverse mapping
+    this.subscriptionToWatcher.delete(subscriptionId);
+  }
+
+  /**
+   * Check if a path matches any subscription's pathFilters.
+   * @private
+   */
+  private pathMatchesSubscriptions(
+    path: string,
+    subscriptions: Map<string, string[] | string>,
+  ): boolean {
+    // If no subscriptions, match all paths
+    if (subscriptions.size === 0) {
+      return true;
+    }
+
+    // Check if path matches ANY subscription's filters (OR logic across subscriptions)
+    for (const pathFilters of subscriptions.values()) {
+      const filters = Array.isArray(pathFilters) ? pathFilters : [pathFilters];
+
+      // Within a subscription, check if path matches ANY filter (OR logic within subscription)
+      if (filters.some(filter => path.startsWith(filter))) {
+        return true;
+      }
+    }
+
+    return false;
+  }
+
+  /**
    * Send historical changes since fromCtime.
    * @private
    */
-  private sendHistoricalChanges(
-    controller: ReadableStreamDefaultController<Uint8Array>,
-    options: WatchOptions,
-  ) {
+  private sendHistoricalChanges(watcherId: string) {
+    const watcher = this.watchers.get(watcherId);
+    if (!watcher) return;
+
+    const options = watcher.options;
     if (typeof options.fromCtime !== "number") return;
 
     const result = this.sql.exec(
@@ -554,7 +724,8 @@ export class Branch extends DurableObject<DeconfigEnv> {
 
       // Process added/modified files
       for (const [path, metadata] of Object.entries(added)) {
-        if (options.pathFilter && !path.startsWith(options.pathFilter)) {
+        // Check if path matches any subscription's pathFilters (OR logic)
+        if (!this.pathMatchesSubscriptions(path, watcher.subscriptions)) {
           continue;
         }
 
@@ -577,7 +748,7 @@ export class Branch extends DurableObject<DeconfigEnv> {
           patchId,
         };
 
-        this.sendSSE(controller, {
+        this.sendSSE(watcher.controller, {
           type: "change",
           data: JSON.stringify(event),
         });
@@ -585,7 +756,8 @@ export class Branch extends DurableObject<DeconfigEnv> {
 
       // Process deleted files
       for (const path of deleted) {
-        if (options.pathFilter && !path.startsWith(options.pathFilter)) {
+        // Check if path matches any subscription's pathFilters (OR logic)
+        if (!this.pathMatchesSubscriptions(path, watcher.subscriptions)) {
           continue;
         }
 
@@ -604,7 +776,7 @@ export class Branch extends DurableObject<DeconfigEnv> {
           patchId,
         };
 
-        this.sendSSE(controller, {
+        this.sendSSE(watcher.controller, {
           type: "change",
           data: JSON.stringify(event),
         });
@@ -626,7 +798,7 @@ export class Branch extends DurableObject<DeconfigEnv> {
     try {
       controller.enqueue(bytes);
     } catch {
-      this.watchers.delete(controller);
+      // Controller closed - cleanup handled by cancel callback
     }
   }
 
@@ -661,14 +833,14 @@ export class Branch extends DurableObject<DeconfigEnv> {
     }
 
     // Send events to all watchers
-    for (const [controller, options] of this.watchers) {
+    for (const [watcherId, watcher] of this.watchers) {
       for (const event of events) {
-        // Filter events based on watcher's pathFilter
-        if (options.pathFilter && !event.path.startsWith(options.pathFilter)) {
+        // Check if path matches any subscription's pathFilters (OR logic)
+        if (!this.pathMatchesSubscriptions(event.path, watcher.subscriptions)) {
           continue;
         }
 
-        this.sendSSE(controller, {
+        this.sendSSE(watcher.controller, {
           type: "change",
           data: JSON.stringify(event),
         });
@@ -1055,9 +1227,9 @@ export class Branch extends DurableObject<DeconfigEnv> {
             : preserveTimestamps
               ? write.metadata
               : {
-                  ...write.metadata,
-                  ctime: now,
-                };
+                ...write.metadata,
+                ctime: now,
+              };
         toApply[path] = finalMetadata;
 
         results[path] = {
@@ -1081,9 +1253,9 @@ export class Branch extends DurableObject<DeconfigEnv> {
             : preserveTimestamps
               ? write.metadata
               : {
-                  ...write.metadata,
-                  ctime: now,
-                };
+                ...write.metadata,
+                ctime: now,
+              };
         toApply[path] = finalMetadata;
 
         results[path] = {
@@ -1113,9 +1285,9 @@ export class Branch extends DurableObject<DeconfigEnv> {
             : preserveTimestamps
               ? write.metadata
               : {
-                  ...write.metadata,
-                  ctime: now,
-                };
+                ...write.metadata,
+                ctime: now,
+              };
         toApply[path] = finalMetadata;
 
         results[path] = {

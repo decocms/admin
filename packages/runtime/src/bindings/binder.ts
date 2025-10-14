@@ -1,5 +1,5 @@
 // deno-lint-ignore-file no-explicit-any
-import type { z } from "zod";
+import { z } from "zod";
 import type { MCPConnection } from "../connection.ts";
 import { createPrivateTool } from "../mastra.ts";
 import {

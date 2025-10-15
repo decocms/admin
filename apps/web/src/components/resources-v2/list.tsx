@@ -1,4 +1,9 @@
-import { callTool, useIntegration, useTools } from "@deco/sdk";
+import {
+  callTool,
+  useIntegration,
+  useTools,
+  AI_APP_PRD_TEMPLATE,
+} from "@deco/sdk";
 import type { ResourceItem } from "@deco/sdk/mcp";
 import { Button } from "@deco/ui/components/button.tsx";
 import { Card, CardContent } from "@deco/ui/components/card.tsx";
@@ -17,6 +22,7 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@deco/ui/components/dropdown-menu.tsx";
 import { Icon } from "@deco/ui/components/icon.tsx";
@@ -457,114 +463,370 @@ function ResourcesV2ListTab({
             availableUsers={availableUsers}
             ctaButton={
               capabilities.hasCreate ? (
-                <Button
-                  onClick={async () => {
-                    if (!integration) return;
-                    try {
-                      setMutating(true);
+                resourceName === "document" ? (
+                  // Split button for documents with dropdown options
+                  <div className="w-full md:w-auto flex items-stretch rounded-xl overflow-hidden">
+                    <Button
+                      onClick={async () => {
+                        if (!integration) return;
+                        try {
+                          setMutating(true);
 
-                      // Generate unique name with timestamp
-                      const timestamp = new Date()
-                        .toISOString()
-                        .replace(/[:.]/g, "-");
-                      const uniqueName = `Untitled-${timestamp}`;
+                          const timestamp = new Date()
+                            .toISOString()
+                            .replace(/[:.]/g, "-");
+                          const data = {
+                            name: `Untitled-${timestamp}`,
+                            description: "",
+                            content: "",
+                          };
 
-                      // Build data payload based on resource type
-                      const data: Record<string, unknown> = {
-                        name: uniqueName,
-                        description: "",
-                      };
-
-                      // Add resource-specific required fields
-                      if (resourceName === "document") {
-                        data.content = "";
-                      } else if (resourceName === "workflow") {
-                        data.inputSchema = {};
-                        data.outputSchema = {};
-                        data.steps = [
-                          {
-                            id: "step-1",
-                            type: "code",
-                            name: "Start",
-                            def: {
-                              name: "Start",
-                              description: "Initial step",
-                              execute: "// Add your code here\nreturn {};",
+                          const result = await callTool(
+                            integration.connection,
+                            {
+                              name: "DECO_RESOURCE_DOCUMENT_CREATE",
+                              arguments: { data },
                             },
-                          },
-                        ];
-                        data.triggers = [];
-                      } else if (resourceName === "tool") {
-                        data.inputSchema = {};
-                        data.outputSchema = {};
-                        data.execute =
-                          "// Add your tool code here\nexport default function(input) {\n  return {};\n}";
-                      }
+                          );
 
-                      const result = await callTool(integration.connection, {
-                        name: `DECO_RESOURCE_${(resourceName ?? "").toUpperCase()}_CREATE`,
-                        arguments: { data },
-                      });
+                          const uri =
+                            (result as { uri?: string })?.uri ||
+                            (result as { data?: { uri?: string } })?.data
+                              ?.uri ||
+                            (
+                              result as {
+                                structuredContent?: { uri?: string };
+                              }
+                            )?.structuredContent?.uri ||
+                            (
+                              result as {
+                                content?: Array<{ text?: string }>;
+                              }
+                            )?.content?.[0]?.text;
 
-                      // Extract URI from response (can be at different levels)
-                      const uri =
-                        (result as { uri?: string })?.uri ||
-                        (result as { data?: { uri?: string } })?.data?.uri ||
-                        (
-                          result as {
-                            structuredContent?: { uri?: string };
+                          if (!uri) {
+                            console.error("Create result:", result);
+                            throw new Error(
+                              "No URI returned from create operation",
+                            );
                           }
-                        )?.structuredContent?.uri ||
-                        (
-                          result as {
-                            content?: Array<{ text?: string }>;
-                          }
-                        )?.content?.[0]?.text;
 
-                      if (!uri) {
-                        console.error("Create result:", result);
-                        throw new Error(
-                          "No URI returned from create operation",
+                          queryClient.invalidateQueries({
+                            queryKey: [
+                              "resources-v2-list",
+                              integrationId,
+                              resourceName,
+                            ],
+                          });
+
+                          navigateWorkspace(
+                            `rsc/${integrationId}/${resourceName}/${encodeURIComponent(uri)}`,
+                          );
+                        } catch (error) {
+                          console.error("Failed to create document:", error);
+                          toast.error(
+                            "Failed to create document. Please try again.",
+                          );
+                          setMutating(false);
+                        }
+                      }}
+                      variant="special"
+                      className="flex-1 h-9 rounded-none rounded-l-xl"
+                      disabled={mutating}
+                    >
+                      {mutating ? (
+                        <div className="w-4 h-4">
+                          <Spinner />
+                        </div>
+                      ) : (
+                        <Icon name="add" />
+                      )}
+                      New document
+                    </Button>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button
+                          variant="special"
+                          size="icon"
+                          className="h-9 w-10 rounded-none rounded-r-xl border-l border-white/20"
+                          disabled={mutating}
+                        >
+                          <Icon name="expand_more" size={20} />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end" className="w-64">
+                        <DropdownMenuItem
+                          className="cursor-pointer"
+                          onSelect={async () => {
+                            if (!integration) return;
+                            try {
+                              setMutating(true);
+
+                              const timestamp = new Date()
+                                .toISOString()
+                                .replace(/[:.]/g, "-");
+                              const data = {
+                                name: `Untitled-${timestamp}`,
+                                description: "",
+                                content: "",
+                              };
+
+                              const result = await callTool(
+                                integration.connection,
+                                {
+                                  name: "DECO_RESOURCE_DOCUMENT_CREATE",
+                                  arguments: { data },
+                                },
+                              );
+
+                              const uri =
+                                (result as { uri?: string })?.uri ||
+                                (result as { data?: { uri?: string } })?.data
+                                  ?.uri ||
+                                (
+                                  result as {
+                                    structuredContent?: { uri?: string };
+                                  }
+                                )?.structuredContent?.uri ||
+                                (
+                                  result as {
+                                    content?: Array<{ text?: string }>;
+                                  }
+                                )?.content?.[0]?.text;
+
+                              if (!uri) {
+                                console.error("Create result:", result);
+                                throw new Error(
+                                  "No URI returned from create operation",
+                                );
+                              }
+
+                              queryClient.invalidateQueries({
+                                queryKey: [
+                                  "resources-v2-list",
+                                  integrationId,
+                                  resourceName,
+                                ],
+                              });
+
+                              navigateWorkspace(
+                                `rsc/${integrationId}/${resourceName}/${encodeURIComponent(uri)}`,
+                              );
+                            } catch (error) {
+                              console.error(
+                                "Failed to create document:",
+                                error,
+                              );
+                              toast.error(
+                                "Failed to create document. Please try again.",
+                              );
+                              setMutating(false);
+                            }
+                          }}
+                        >
+                          <Icon name="docs" size={18} className="mr-2" />
+                          <div className="flex-1">
+                            <div className="font-medium">Blank Document</div>
+                            <div className="text-xs text-muted-foreground">
+                              Start from scratch
+                            </div>
+                          </div>
+                        </DropdownMenuItem>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem
+                          className="cursor-pointer"
+                          onSelect={async () => {
+                            if (!integration) return;
+                            try {
+                              setMutating(true);
+
+                              const timestamp = new Date()
+                                .toISOString()
+                                .replace(/[:.]/g, "-");
+                              const data = {
+                                name: `AI App PRD - ${timestamp}`,
+                                description:
+                                  "Product Requirements Document for an AI-native application on decocms.com platform. This document helps plan tools, agents, workflows, views, and databases.",
+                                content: AI_APP_PRD_TEMPLATE,
+                              };
+
+                              const result = await callTool(
+                                integration.connection,
+                                {
+                                  name: "DECO_RESOURCE_DOCUMENT_CREATE",
+                                  arguments: { data },
+                                },
+                              );
+
+                              const uri =
+                                (result as { uri?: string })?.uri ||
+                                (result as { data?: { uri?: string } })?.data
+                                  ?.uri ||
+                                (
+                                  result as {
+                                    structuredContent?: { uri?: string };
+                                  }
+                                )?.structuredContent?.uri ||
+                                (
+                                  result as {
+                                    content?: Array<{ text?: string }>;
+                                  }
+                                )?.content?.[0]?.text;
+
+                              if (!uri) {
+                                console.error("Create result:", result);
+                                throw new Error(
+                                  "No URI returned from create operation",
+                                );
+                              }
+
+                              queryClient.invalidateQueries({
+                                queryKey: [
+                                  "resources-v2-list",
+                                  integrationId,
+                                  resourceName,
+                                ],
+                              });
+
+                              navigateWorkspace(
+                                `rsc/${integrationId}/${resourceName}/${encodeURIComponent(uri)}`,
+                              );
+                            } catch (error) {
+                              console.error(
+                                "Failed to create PRD document:",
+                                error,
+                              );
+                              toast.error(
+                                "Failed to create PRD document. Please try again.",
+                              );
+                              setMutating(false);
+                            }
+                          }}
+                        >
+                          <Icon
+                            name="rocket_launch"
+                            size={18}
+                            className="mr-2"
+                          />
+                          <div className="flex-1">
+                            <div className="font-medium">AI App PRD</div>
+                            <div className="text-xs text-muted-foreground">
+                              Plan tools, agents & workflows
+                            </div>
+                          </div>
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </div>
+                ) : (
+                  // Regular button for other resources
+                  <Button
+                    onClick={async () => {
+                      if (!integration) return;
+                      try {
+                        setMutating(true);
+
+                        // Generate unique name with timestamp
+                        const timestamp = new Date()
+                          .toISOString()
+                          .replace(/[:.]/g, "-");
+                        const uniqueName = `Untitled-${timestamp}`;
+
+                        // Build data payload based on resource type
+                        const data: Record<string, unknown> = {
+                          name: uniqueName,
+                          description: "",
+                        };
+
+                        // Add resource-specific required fields
+                        if (resourceName === "workflow") {
+                          data.inputSchema = {};
+                          data.outputSchema = {};
+                          data.steps = [
+                            {
+                              id: "step-1",
+                              type: "code",
+                              name: "Start",
+                              def: {
+                                name: "Start",
+                                description: "Initial step",
+                                execute: "// Add your code here\nreturn {};",
+                              },
+                            },
+                          ];
+                          data.triggers = [];
+                        } else if (resourceName === "tool") {
+                          data.inputSchema = {};
+                          data.outputSchema = {};
+                          data.execute =
+                            "// Add your tool code here\nexport default function(input) {\n  return {};\n}";
+                        }
+
+                        const result = await callTool(integration.connection, {
+                          name: `DECO_RESOURCE_${(resourceName ?? "").toUpperCase()}_CREATE`,
+                          arguments: { data },
+                        });
+
+                        // Extract URI from response (can be at different levels)
+                        const uri =
+                          (result as { uri?: string })?.uri ||
+                          (result as { data?: { uri?: string } })?.data?.uri ||
+                          (
+                            result as {
+                              structuredContent?: { uri?: string };
+                            }
+                          )?.structuredContent?.uri ||
+                          (
+                            result as {
+                              content?: Array<{ text?: string }>;
+                            }
+                          )?.content?.[0]?.text;
+
+                        if (!uri) {
+                          console.error("Create result:", result);
+                          throw new Error(
+                            "No URI returned from create operation",
+                          );
+                        }
+
+                        // Invalidate list query so it refreshes when user navigates back
+                        queryClient.invalidateQueries({
+                          queryKey: [
+                            "resources-v2-list",
+                            integrationId,
+                            resourceName,
+                          ],
+                        });
+
+                        // Navigate immediately - the route change will unmount this component
+                        navigateWorkspace(
+                          `rsc/${integrationId}/${resourceName}/${encodeURIComponent(uri)}`,
                         );
+                      } catch (error) {
+                        console.error(
+                          `Failed to create ${resourceName || "resource"}:`,
+                          error,
+                        );
+                        toast.error(
+                          `Failed to create ${resourceName || "resource"}. Please try again.`,
+                        );
+                        setMutating(false);
                       }
-
-                      // Invalidate list query so it refreshes when user navigates back
-                      queryClient.invalidateQueries({
-                        queryKey: [
-                          "resources-v2-list",
-                          integrationId,
-                          resourceName,
-                        ],
-                      });
-
-                      // Navigate immediately - the route change will unmount this component
-                      navigateWorkspace(
-                        `rsc/${integrationId}/${resourceName}/${encodeURIComponent(uri)}`,
-                      );
-                    } catch (error) {
-                      console.error(
-                        `Failed to create ${resourceName || "resource"}:`,
-                        error,
-                      );
-                      toast.error(
-                        `Failed to create ${resourceName || "resource"}. Please try again.`,
-                      );
-                      setMutating(false);
-                    }
-                  }}
-                  variant="special"
-                  className="h-9 rounded-xl w-full md:w-auto"
-                  disabled={mutating}
-                >
-                  {mutating ? (
-                    <div className="w-4 h-4">
-                      <Spinner />
-                    </div>
-                  ) : (
-                    <Icon name="add" />
-                  )}
-                  New {resourceName}
-                </Button>
+                    }}
+                    variant="special"
+                    className="h-9 rounded-xl w-full md:w-auto"
+                    disabled={mutating}
+                  >
+                    {mutating ? (
+                      <div className="w-4 h-4">
+                        <Spinner />
+                      </div>
+                    ) : (
+                      <Icon name="add" />
+                    )}
+                    New {resourceName}
+                  </Button>
+                )
               ) : undefined
             }
           />

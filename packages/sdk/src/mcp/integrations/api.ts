@@ -4,11 +4,6 @@ import {
   patchApiDecoChatTokenHTTPConnection,
   isApiDecoChatMCPConnection as shouldPatchDecoChatMCPConnection,
 } from "@deco/ai/mcp";
-import {
-  ApiKeySchema,
-  mapApiKey,
-  SELECT_API_KEY_QUERY,
-} from "../api-keys/api.ts";
 import { CallToolRequestSchema } from "@modelcontextprotocol/sdk/types.js";
 import { and, eq, getTableColumns, or } from "drizzle-orm";
 import { z } from "zod";
@@ -41,6 +36,11 @@ import type { QueryResult } from "../../storage/supabase/client.ts";
 import { KnowledgeBaseID } from "../../utils/index.ts";
 import { IMPORTANT_ROLES } from "../agents/api.ts";
 import {
+  ApiKeySchema,
+  mapApiKey,
+  SELECT_API_KEY_QUERY,
+} from "../api-keys/api.ts";
+import {
   assertHasLocator,
   assertHasWorkspace,
   assertWorkspaceResourceAccess,
@@ -54,6 +54,7 @@ import {
   NotFoundError,
   WellKnownBindings,
 } from "../index.ts";
+import { filterByWorkspaceOrLocator } from "../ownership.ts";
 import {
   buildWorkspaceOrProjectIdConditions,
   getProjectIdFromContext,
@@ -74,7 +75,6 @@ import {
   registryTools,
 } from "../schema.ts";
 import { createServerClient } from "../utils.ts";
-import { filterByWorkspaceOrLocator } from "../ownership.ts";
 
 const SELECT_INTEGRATION_QUERY = `
           *,
@@ -249,20 +249,24 @@ async function listToolsAndSortByName(
   },
   c: AppContext,
 ) {
+  let result;
   if (appName) {
     const app = await getRegistryApp.handler({
       name: appName,
     });
-    return app?.tools?.map((tool) =>
-      registryToolToMcpTool({
-        description: tool.description ?? null,
-        input_schema: tool.inputSchema,
-        output_schema: tool.outputSchema,
-        name: tool.name,
-      }),
-    );
+    result = {
+      tools: app?.tools?.map((tool) =>
+        registryToolToMcpTool({
+          description: tool.description ?? null,
+          input_schema: tool.inputSchema,
+          output_schema: tool.outputSchema,
+          name: tool.name,
+        }),
+      ),
+    };
+  } else {
+    result = await listToolsByConnectionType(connection, c, ignoreCache);
   }
-  const result = await listToolsByConnectionType(connection, c, ignoreCache);
 
   // Sort tools by name for consistent UI
   if (Array.isArray(result?.tools)) {
@@ -386,7 +390,7 @@ const virtualIntegrationsFor = (
         name,
         icon,
         description,
-        appName: app ? AppName.build("deco", app) : undefined,
+        appName: app ? AppName.build(DECO_PROVIDER, app) : undefined,
         connection: {
           type: "HTTP",
           url: url.href,

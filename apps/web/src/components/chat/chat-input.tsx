@@ -15,15 +15,11 @@ import {
   useState,
   type FormEvent,
   type KeyboardEvent,
-  type ReactNode,
 } from "react";
 
 import { UIMessage } from "@ai-sdk/react";
 import type { Integration } from "@deco/sdk";
-import {
-  useUserPreferences,
-  type UserPreferences,
-} from "../../hooks/use-user-preferences.ts";
+import { useUserPreferences } from "../../hooks/use-user-preferences.ts";
 import { useAgentSettingsToolsSet } from "../../hooks/use-agent-settings-tools-set.ts";
 import { useFileUpload } from "../../hooks/use-file-upload.ts";
 import { useAgent } from "../agent/provider.tsx";
@@ -33,15 +29,6 @@ import { ContextResources } from "./context-resources.tsx";
 import { ModelSelector } from "./model-selector.tsx";
 import { RichTextArea, type RichTextAreaHandle } from "./rich-text.tsx";
 
-export function ChatInput({
-  disabled,
-  rightNode,
-}: {
-  disabled?: boolean;
-  rightNode?: ReactNode;
-} = {}) {
-  const { chat, uiOptions, input, setInput, isLoading, setIsLoading } =
-    useAgent();
 export function ChatInput({ disabled }: { disabled?: boolean } = {}) {
   const {
     chat,
@@ -211,7 +198,6 @@ export function ChatInput({ disabled }: { disabled?: boolean } = {}) {
                   handleFileChange={handleFileChange}
                   removeFile={removeFile}
                   enableFileUpload={enableFileUpload}
-                  rightNode={rightNode}
                 />
               )}
 

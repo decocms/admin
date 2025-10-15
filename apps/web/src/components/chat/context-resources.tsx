@@ -38,7 +38,6 @@ interface ContextResourcesProps {
   handleFileChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
   removeFile: (index: number) => void;
   enableFileUpload: boolean;
-  rightNode?: React.ReactNode;
 }
 
 export function ContextResources({
@@ -48,7 +47,6 @@ export function ContextResources({
   handleFileChange,
   removeFile,
   enableFileUpload,
-  rightNode,
 }: ContextResourcesProps) {
   const { agent, rules, setRules } = useAgent();
   const { data: integrations = [] } = useIntegrations();

@@ -30,12 +30,14 @@ export function slugifyForOrg(input: string, salt: string): string {
 
 const db = drizzle(process.env.DATABASE_URL!, { relations });
 
+type TxType = Parameters<Parameters<typeof db["transaction"]>[0]>[0];
+
 async function addUserToOrg({
   tx,
   user,
   orgId,
 }: {
-  tx: typeof db;
+  tx: TxType;
   user: typeof profiles.$inferSelect;
   orgId: number;
 }) {
@@ -68,7 +70,7 @@ async function createNewOrgAndProject({
   tx,
   user,
 }: {
-  tx: typeof db;
+  tx: TxType;
   user: typeof profiles.$inferSelect;
 }) {
   const salt = crypto.randomUUID().slice(0, 4);

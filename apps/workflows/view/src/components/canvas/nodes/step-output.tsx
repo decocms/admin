@@ -215,14 +215,6 @@ export function StepOutput({ step, stepName, outputSchema }: StepOutputProps) {
               sandbox="allow-scripts allow-same-origin"
               title="Custom Output View"
             />
-
-            {/* Hover overlay with expand hint */}
-            <div className="absolute inset-0 bg-background/80 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center pointer-events-none">
-              <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                <Icon name="open_in_full" size={16} />
-                <span>Click expand button to see full view</span>
-              </div>
-            </div>
           </div>
         ) : (
           /* Raw JSON View */

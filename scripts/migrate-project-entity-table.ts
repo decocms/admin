@@ -43,7 +43,7 @@ async function addProjectIdToEntity<
     schema: undefined;
     // deno-lint-ignore no-explicit-any
     columns: any;
-  }>,
+  }>;
   items: T[];
 }) {
   console.log(
@@ -352,12 +352,10 @@ const agentsToMigrate = await db
   .from(agents)
   .where(isNull(agents.project_id));
 
-await addProjectIdToEntity(
-  {
-    table: agents,
-    items: agentsToMigrate as { id: string; workspace: string }[],
-  },
-);
+await addProjectIdToEntity({
+  table: agents,
+  items: agentsToMigrate as { id: string; workspace: string }[],
+});
 
 // const orgsWithProblem = {};
 

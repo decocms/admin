@@ -139,3 +139,44 @@ pre,
     cursor: default !important;
   }
 }
+
+/* Tiptap Rich Text Editor Styles */
+.tiptap-editor .ProseMirror {
+  outline: none;
+}
+
+.tiptap-editor .ProseMirror p.is-editor-empty:first-child::before {
+  color: var(--muted-foreground);
+  content: attr(data-placeholder);
+  float: left;
+  height: 0;
+  pointer-events: none;
+}
+
+.mention-dropdown {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 6px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+  max-height: 320px;
+  overflow: auto;
+  min-width: 400px;
+  max-width: 500px;
+}
+
+.mention-item {
+  width: 100%;
+  text-align: left;
+  padding: 10px 14px;
+  background: transparent;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background 0.1s;
+  margin-bottom: 2px;
+}
+
+.mention-item:hover {
+  background: var(--accent);
+}

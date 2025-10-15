@@ -2,31 +2,39 @@ import { NodeViewWrapper, type ReactNodeViewProps } from "@tiptap/react";
 import { Badge } from "@deco/ui/components/badge.tsx";
 import { cn } from "@deco/ui/lib/utils.ts";
 import { Icon } from "@deco/ui/components/icon.tsx";
+import { memo, useMemo } from "react";
 
 interface MentionNodeProps extends ReactNodeViewProps<HTMLSpanElement> {}
 
-export function MentionNode({ node }: MentionNodeProps) {
+// PERFORMANCE: Memoize the entire component to prevent unnecessary re-renders
+export const MentionNode = memo(function MentionNode({
+  node,
+}: MentionNodeProps) {
   const label = node.attrs.label;
   const type = node.attrs.type || "tool";
   const property = node.attrs.property;
 
-  // Build display label with @ prefix and property suffix if present
-  const displayLabel = property ? `@${label}.${property}` : `@${label}`;
+  // PERFORMANCE: Memoize display label calculation
+  const displayLabel = useMemo(
+    () => (property ? `@${label}.${property}` : `@${label}`),
+    [label, property],
+  );
 
-  // Icon for steps vs tools
-  const StepIcon =
-    type === "step" ? (
-      <div className="w-3 h-3 rounded-full bg-purple-500 flex items-center justify-center">
-        <Icon name="deployed_code" size={10} className="text-white" />
-      </div>
-    ) : null;
-
-  const ToolIcon =
-    type === "tool" ? (
+  // PERFORMANCE: Memoize icon rendering
+  const icon = useMemo(() => {
+    if (type === "step") {
+      return (
+        <div className="w-3 h-3 rounded-full bg-purple-500 flex items-center justify-center">
+          <Icon name="deployed_code" size={10} className="text-white" />
+        </div>
+      );
+    }
+    return (
       <div className="w-3 h-3 rounded-full bg-primary flex items-center justify-center">
         <Icon name="build" size={10} className="text-primary-foreground" />
       </div>
-    ) : null;
+    );
+  }, [type]);
 
   return (
     <NodeViewWrapper as="span" data-id={node.attrs.id} data-type="mention">
@@ -37,9 +45,9 @@ export function MentionNode({ node }: MentionNodeProps) {
           "bg-accent text-accent-foreground border-border hover:bg-accent/80",
         )}
       >
-        {type === "step" ? StepIcon : ToolIcon}
+        {icon}
         <span className="leading-none">{displayLabel}</span>
       </Badge>
     </NodeViewWrapper>
   );
-}
+});

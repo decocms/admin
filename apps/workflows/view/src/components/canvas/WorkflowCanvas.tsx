@@ -132,6 +132,20 @@ const Inner = forwardRef<WorkflowCanvasRef>(function Inner(_, ref) {
     [handlePlusClick],
   );
 
+  // CRITICAL: Memoize node data objects to prevent React Flow re-renders
+  // React Flow compares data objects by reference - new objects = full re-render!
+  const nodeDataMap = useMemo(() => {
+    const map = new Map<string, { stepId: string }>();
+    const stepNames = stepIds.split(",").filter(Boolean);
+    stepNames.forEach((stepName) => {
+      map.set(stepName, { stepId: stepName });
+    });
+    return map;
+  }, [stepIds]);
+
+  // Memoize empty data object for new step node
+  const newStepData = useMemo(() => ({}), []);
+
   const nodes = useMemo(() => {
     const result: Node[] = [];
     const Y_POSITION = 0; // All nodes at same Y level for proper centering
@@ -142,7 +156,7 @@ const Inner = forwardRef<WorkflowCanvasRef>(function Inner(_, ref) {
         id: "new",
         type: "newStep",
         position: { x: 0, y: Y_POSITION },
-        data: {},
+        data: newStepData,
         draggable: false,
       });
       return result;
@@ -158,7 +172,7 @@ const Inner = forwardRef<WorkflowCanvasRef>(function Inner(_, ref) {
         id: stepName,
         type: "step",
         position: { x: stepX, y: Y_POSITION },
-        data: { stepId: stepName },
+        data: nodeDataMap.get(stepName)!, // Use stable reference from map
         draggable: false,
       });
     });
@@ -172,7 +186,7 @@ const Inner = forwardRef<WorkflowCanvasRef>(function Inner(_, ref) {
         id: "new",
         type: "newStep",
         position: { x: nextX, y: Y_POSITION },
-        data: {},
+        data: newStepData,
         draggable: false,
       });
     } else {
@@ -190,7 +204,7 @@ const Inner = forwardRef<WorkflowCanvasRef>(function Inner(_, ref) {
     }
 
     return result;
-  }, [stepIds, stepsLength, currentStepIndex, plusButtonData]);
+  }, [nodeDataMap, newStepData, stepsLength, currentStepIndex, plusButtonData]);
 
   // OPTIMIZED: Simplified dependencies - only depend on stepIds, not full steps array
   const edges = useMemo<Edge[]>(() => {

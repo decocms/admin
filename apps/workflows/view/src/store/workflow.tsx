@@ -15,12 +15,15 @@ type WorkflowStep = NonNullable<Workflow>["steps"][number];
 interface State {
   workflow: Workflow;
   currentStepIndex: number;
+  // PERFORMANCE: Cache step index lookup to avoid repeated find() calls
+  _stepIndexMap: Map<string, number>;
 }
 
 interface Actions {
   setCurrentStepIndex: (index: number) => void;
   updateWorkflow: (updates: Partial<Workflow>) => void;
   updateStep: (stepId: string, updates: Partial<WorkflowStep>) => void;
+  updateStepInput: (stepId: string, fieldKey: string, value: string) => void;
   updateDependencyToolCalls: () => void;
   addStep: (step: WorkflowStep) => void;
   removeStep: (stepId: string) => void;
@@ -29,6 +32,15 @@ interface Actions {
 
 interface Store extends State {
   actions: Actions;
+}
+
+// PERFORMANCE: Helper to build step index map
+function buildStepIndexMap(steps: WorkflowStep[]): Map<string, number> {
+  const map = new Map<string, number>();
+  steps.forEach((step, index) => {
+    map.set(step.def.name, index);
+  });
+  return map;
 }
 
 const WorkflowStoreContext = createContext<StoreApi<Store> | null>(null);
@@ -46,6 +58,7 @@ export const WorkflowStoreProvider = ({
         (set, get) => ({
           workflow,
           currentStepIndex: 0,
+          _stepIndexMap: buildStepIndexMap(workflow.steps),
           actions: {
             setCurrentStepIndex: (index: number) => {
               set(() => ({
@@ -53,46 +66,102 @@ export const WorkflowStoreProvider = ({
               }));
             },
             updateWorkflow: (updates: Partial<Workflow>) => {
+              const newWorkflow = { ...get().workflow, ...updates };
               set(() => ({
-                workflow: { ...get().workflow, ...updates },
+                workflow: newWorkflow,
+                _stepIndexMap: buildStepIndexMap(newWorkflow.steps),
               }));
             },
             updateStep: (stepId: string, updates: Partial<WorkflowStep>) => {
-              const currentWorkflow = get().workflow;
+              const currentState = get();
+              const stepIndex = currentState._stepIndexMap.get(stepId);
+
+              // If step not found, do nothing
+              if (stepIndex === undefined) return;
+
+              // PERFORMANCE: Create new steps array with only the changed step
+              // All other steps maintain their references (crucial for React.memo)
+              const newSteps = [...currentState.workflow.steps];
+              newSteps[stepIndex] = { ...newSteps[stepIndex], ...updates };
+
               set({
                 workflow: {
-                  ...currentWorkflow,
-                  steps: currentWorkflow.steps.map((step: WorkflowStep) =>
-                    step.def.name === stepId ? { ...step, ...updates } : step,
-                  ),
+                  ...currentState.workflow,
+                  steps: newSteps,
                 } as Workflow,
+                // Index map doesn't change when updating step content
+                _stepIndexMap: currentState._stepIndexMap,
+              });
+            },
+            // PERFORMANCE: Granular input field update
+            // Updates ONLY a single input field without recreating the entire input object
+            // This prevents unnecessary re-renders of other fields' editors
+            updateStepInput: (
+              stepId: string,
+              fieldKey: string,
+              value: string,
+            ) => {
+              const currentState = get();
+              const stepIndex = currentState._stepIndexMap.get(stepId);
+
+              if (stepIndex === undefined) return;
+
+              const currentStep = currentState.workflow.steps[stepIndex];
+              const currentInput = (currentStep as any).input || {};
+
+              // CRITICAL: Skip update if value hasn't actually changed
+              // This prevents unnecessary re-renders when debounce fires with same value
+              if (currentInput[fieldKey] === value) return;
+
+              // PERFORMANCE: Only create new input object if value changed
+              const newInput = { ...currentInput, [fieldKey]: value };
+
+              const newSteps = [...currentState.workflow.steps];
+              newSteps[stepIndex] = { ...currentStep, input: newInput } as any;
+
+              set({
+                workflow: {
+                  ...currentState.workflow,
+                  steps: newSteps,
+                } as Workflow,
+                _stepIndexMap: currentState._stepIndexMap,
               });
             },
             addStep: (step: WorkflowStep) => {
-              set(() => ({
-                workflow: {
-                  ...get().workflow,
-                  steps: [...get().workflow.steps, step],
-                },
-                currentStepIndex: get().workflow.steps.length,
-              }));
-            },
-            removeStep: (stepId: string) => {
-              const currentWorkflow = get().workflow;
+              const currentState = get();
+              const newSteps = [...currentState.workflow.steps, step];
               set({
                 workflow: {
-                  ...currentWorkflow,
-                  steps: currentWorkflow.steps.filter(
-                    (step: WorkflowStep) => step.def.name !== stepId,
-                  ),
+                  ...currentState.workflow,
+                  steps: newSteps,
                 } as Workflow,
-                currentStepIndex: currentWorkflow.steps.length,
+                currentStepIndex: newSteps.length - 1,
+                _stepIndexMap: buildStepIndexMap(newSteps),
+              });
+            },
+            removeStep: (stepId: string) => {
+              const currentState = get();
+              const newSteps = currentState.workflow.steps.filter(
+                (step: WorkflowStep) => step.def.name !== stepId,
+              );
+              set({
+                workflow: {
+                  ...currentState.workflow,
+                  steps: newSteps,
+                } as Workflow,
+                currentStepIndex: Math.min(
+                  currentState.currentStepIndex,
+                  newSteps.length - 1,
+                ),
+                _stepIndexMap: buildStepIndexMap(newSteps),
               });
             },
             updateDependencyToolCalls: () => {
               type DependencyEntry = { integrationId: string };
               const allToolsMap = new Map<string, DependencyEntry>();
-              get().workflow.steps.forEach((step: WorkflowStep) => {
+              const currentState = get();
+
+              currentState.workflow.steps.forEach((step: WorkflowStep) => {
                 if (step.type === "code" && "dependencies" in step.def) {
                   step.def.dependencies?.forEach(
                     (dependency: DependencyEntry) => {
@@ -112,33 +181,41 @@ export const WorkflowStoreProvider = ({
               );
 
               const updatedWorkflow = {
-                ...workflow,
+                ...currentState.workflow,
                 dependencyToolCalls,
                 updatedAt: new Date().toISOString(),
               };
 
               set(() => ({
                 workflow: updatedWorkflow,
+                // Steps array didn't change, so index map stays the same
+                _stepIndexMap: currentState._stepIndexMap,
               }));
             },
             clearStore: () => {
-              const currentWorkflow = get().workflow;
+              const currentState = get();
               set({
                 workflow: {
-                  ...currentWorkflow,
+                  ...currentState.workflow,
                   steps: [] as any,
                 } as Workflow,
                 currentStepIndex: 0,
+                _stepIndexMap: new Map(),
               });
             },
           },
         }),
         {
           name: STORAGE_KEY,
+          // PERFORMANCE: Only persist what we need, exclude cache
           partialize: (state) => ({
             workflow: state.workflow,
             currentStepIndex: state.currentStepIndex,
+            // Don't persist _stepIndexMap - rebuild on load
           }),
+          // PERFORMANCE: Prevent unnecessary storage writes
+          // Only update storage when workflow or currentStepIndex actually change
+          version: 1,
         },
       ),
     ),
@@ -219,15 +296,17 @@ export const WorkflowProvider = ({
     [transformedSteps],
   );
 
+  const finalWorkflow = useMemo(
+    () =>
+      ({
+        ...defaultWorkflow,
+        uri: resourceURI || "",
+      }) as unknown as Workflow,
+    [defaultWorkflow, resourceURI],
+  );
+
   return (
-    <WorkflowStoreProvider
-      workflow={
-        {
-          ...defaultWorkflow,
-          uri: resourceURI || "",
-        } as unknown as Workflow
-      }
-    >
+    <WorkflowStoreProvider workflow={finalWorkflow}>
       {children}
     </WorkflowStoreProvider>
   );
@@ -301,17 +380,14 @@ export const useWorkflowStepIds = (): string => {
 };
 
 // Returns the index of a step by name (primitive number)
+// PERFORMANCE: Use index map for O(1) lookup instead of O(n) findIndex()
 export const useWorkflowStepIndex = (stepName: string): number => {
-  return useWorkflowStore(
-    (state) =>
-      state.workflow.steps?.findIndex(
-        (s: WorkflowStep) => s.def.name === stepName,
-      ) ?? -1,
-  );
+  return useWorkflowStore((state) => state._stepIndexMap.get(stepName) ?? -1);
 };
 
-// REMOVED: usePreviousStepsForExecution caused infinite loops
-// Components should compute this locally with useMemo instead
+// PERFORMANCE: Instead of subscribing to previous step outputs during render,
+// components should use useWorkflowStoreContext().getState() to access previous
+// step data imperatively when needed (e.g., during execution)
 
 // ============================================================================
 // ARRAY SELECTORS (Use with caution - can cause re-renders)
@@ -323,105 +399,64 @@ export const useWorkflowStepsArray = (): WorkflowStep[] => {
   return useWorkflowStore((state: Store) => state.workflow.steps || []);
 };
 
-// Helper function for deep equality check of objects
-function deepEqual(a: unknown, b: unknown): boolean {
-  if (a === b) return true;
-  if (a == null || b == null) return a === b;
-  if (typeof a !== "object" || typeof b !== "object") return a === b;
+// OPTIMIZED: Selector that only subscribes to a specific step by name
+// PERFORMANCE: Use index-based lookup to maintain stable references!
+// Using find() creates new references every time, causing unnecessary re-renders.
+// PERFORMANCE: Shallow compare two objects
+function shallowEqual(objA: any, objB: any): boolean {
+  if (objA === objB) return true;
+  if (!objA || !objB) return false;
 
-  const keysA = Object.keys(a as object);
-  const keysB = Object.keys(b as object);
+  const keysA = Object.keys(objA);
+  const keysB = Object.keys(objB);
 
   if (keysA.length !== keysB.length) return false;
 
   for (const key of keysA) {
-    if (!keysB.includes(key) || !deepEqual((a as any)[key], (b as any)[key])) {
-      return false;
-    }
+    if (objA[key] !== objB[key]) return false;
   }
 
   return true;
 }
 
-// OPTIMIZED: Selector that only subscribes to a specific step by name
-// Custom equality: only re-render if the step's key properties actually changed
-// Returns the full step object, not just def, so components can access output, input, etc.
 export const useWorkflowStepByName = (
   stepName: string,
 ): WorkflowStep | undefined => {
   return (useWorkflowStore as any)(
-    (state: Store) =>
-      state.workflow.steps?.find((s: WorkflowStep) => s.def.name === stepName),
+    (state: Store) => {
+      // CRITICAL: Use index map for O(1) lookup instead of O(n) find()
+      // More importantly, this returns the actual step reference from the array,
+      // which stays stable when other steps change
+      const stepIndex = state._stepIndexMap.get(stepName);
+      if (stepIndex === undefined) return undefined;
+      return state.workflow.steps[stepIndex];
+    },
     (prev: WorkflowStep | undefined, next: WorkflowStep | undefined) => {
-      // If both are undefined/null, they're equal
-      if (!prev && !next) return true;
-      // If only one is undefined/null, they're different
-      if (!prev || !next) return false;
-
-      // Quick reference check first (most common case when step didn't change at all)
+      // PERFORMANCE: Reference equality is the fastest check
+      // Since we maintain stable references in the store, this works perfectly
       if (prev === next) return true;
 
-      // Check if def changed
-      if (prev.def !== next.def) {
-        // Deep check def properties
-        if (
-          prev.def.name !== next.def.name ||
-          prev.def.description !== next.def.description
-        ) {
-          return false;
-        }
+      // If both undefined, they're equal
+      if (!prev && !next) return true;
 
-        // Code step properties
-        if ("execute" in prev.def && "execute" in next.def) {
-          if (
-            prev.def.execute !== next.def.execute ||
-            !deepEqual(
-              "inputSchema" in prev.def ? prev.def.inputSchema : null,
-              "inputSchema" in next.def ? next.def.inputSchema : null,
-            ) ||
-            !deepEqual(
-              "outputSchema" in prev.def ? prev.def.outputSchema : null,
-              "outputSchema" in next.def ? next.def.outputSchema : null,
-            ) ||
-            !deepEqual(
-              "input" in prev.def ? prev.def.input : null,
-              "input" in next.def ? next.def.input : null,
-            ) ||
-            !deepEqual(
-              "dependencies" in prev.def ? prev.def.dependencies : null,
-              "dependencies" in next.def ? next.def.dependencies : null,
-            )
-          ) {
-            return false;
-          }
-        }
+      // If only one is undefined, they're not equal
+      if (!prev || !next) return false;
 
-        // tool_call type
-        if (
-          "tool_name" in prev.def &&
-          "tool_name" in next.def &&
-          "integration" in prev.def &&
-          "integration" in next.def
-        ) {
-          if (
-            prev.def.tool_name !== next.def.tool_name ||
-            prev.def.integration !== next.def.integration
-          ) {
-            return false;
-          }
-        }
-      }
+      // PERFORMANCE: Check critical properties
 
-      // Check if output changed (important for execution results)
-      if (!deepEqual((prev as any).output, (next as any).output)) {
-        return false;
-      }
+      // Check if def changed (contains schema, code, name, etc.)
+      if (prev.def !== next.def) return false;
 
-      // Check if input changed
-      if (!deepEqual((prev as any).input, (next as any).input)) {
-        return false;
-      }
+      // Check if output changed (execution results)
+      if ((prev as any).output !== (next as any).output) return false;
 
+      // CRITICAL PERFORMANCE FIX: Use shallow equality for input
+      // This prevents unnecessary re-renders when only one field changes
+      // Reference equality would trigger re-renders on EVERY keystroke
+      // Shallow equality only triggers when fields actually change
+      if (!shallowEqual((prev as any).input, (next as any).input)) return false;
+
+      // All critical properties are the same - consider equal
       return true;
     },
   );

@@ -155,24 +155,30 @@ const StepFormView = memo(
     onCreateInputView,
     stepName,
   }: StepFormViewProps) {
-    // PERFORMANCE: Memoize onChange handlers to prevent recreation
-    // Create one handler per field that's stable across renders
+    // PERFORMANCE: Use granular updateStepInput for field changes
+    // This prevents creating new input objects and triggering re-renders
     const handleFieldChange = useCallback(
       (fieldKey: string, newValue: string) => {
-        // Update only the specific field - Zustand will merge with current state
-        workflowActions.updateStep(stepName, {
-          input: {
-            ...(step as any).input,
-            [fieldKey]: newValue,
-          },
-        } as any);
+        // CRITICAL: Use updateStepInput instead of updateStep
+        // This only updates the specific field without recreating input object
+        workflowActions.updateStepInput(stepName, fieldKey, newValue);
       },
-      [workflowActions, stepName, (step as any).input],
+      [workflowActions, stepName],
     );
 
     // Dependencies might be under def or at step level
     const dependencies =
       "dependencies" in step.def ? (step.def as any).dependencies : undefined;
+
+    // PERFORMANCE: Create per-field onChange handlers that are stable
+    // This prevents creating new functions on every render
+    const fieldHandlers = useMemo(() => {
+      const handlers: Record<string, (newValue: string) => void> = {};
+      inputSchemaEntries.forEach(([key]) => {
+        handlers[key] = (newValue: string) => handleFieldChange(key, newValue);
+      });
+      return handlers;
+    }, [inputSchemaEntries, handleFieldChange]);
 
     return (
       <>
@@ -248,9 +254,7 @@ const StepFormView = memo(
                         placeholder={description || `Enter ${key}...`}
                         minHeight="40px"
                         value={stringValue}
-                        onChange={(newValue) =>
-                          handleFieldChange(key, newValue)
-                        }
+                        onChange={fieldHandlers[key]}
                       />
                     </div>
                   );
@@ -275,325 +279,352 @@ const StepFormView = memo(
   },
 );
 
-export const StepNode = memo(function StepNode({
-  data,
-}: NodeProps<StepNodeData>) {
-  // OPTIMIZED: Only subscribe to zoom, and add equality check to prevent re-renders
-  const zoom = useStore(
-    (s) => s.transform[2],
-    (a, b) => Math.abs(a - b) < 0.01,
-  );
-  const [showJsonView, setShowJsonView] = useState(false);
-  const [_creatingInputViewFor, setCreatingInputViewFor] = useState<
-    string | null
-  >(null);
-  const [renderingInputView, setRenderingInputView] = useState<{
-    fieldName: string;
-    viewName: string;
-    viewCode: string;
-  } | null>(null);
-
-  // OPTIMIZED: Only subscribe to the specific step we need, not entire workflow
-  const step = useWorkflowStepByName(data.stepId);
-  const workflowActions = useWorkflowStoreActions();
-
-  // OPTIMIZED: Atomic selectors - only subscribe to what we actually need
-  const authToken = useWorkflowAuthToken();
-
-  const executeStepMutation = useExecuteStep();
-
-  const compact = zoom < 0.7;
-
-  // OPTIMIZED: Only compute when actually needed (when showJsonView is true)
-  const inputSchemaEntries = useMemo((): Array<[string, unknown]> => {
-    if (!step || !(step.def as any)?.inputSchema) return [];
-    return Object.entries(
-      ((step.def as any).inputSchema as Record<string, unknown>).properties ||
-        {},
+export const StepNode = memo(
+  function StepNode({ data }: NodeProps<StepNodeData>) {
+    // OPTIMIZED: Only subscribe to zoom, and add equality check to prevent re-renders
+    const zoom = useStore(
+      (s) => s.transform[2],
+      (a, b) => Math.abs(a - b) < 0.01,
     );
-  }, [step, (step?.def as any)?.inputSchema]);
+    const [showJsonView, setShowJsonView] = useState(false);
+    const [_creatingInputViewFor, setCreatingInputViewFor] = useState<
+      string | null
+    >(null);
+    const [renderingInputView, setRenderingInputView] = useState<{
+      fieldName: string;
+      viewName: string;
+      viewCode: string;
+    } | null>(null);
 
-  // OPTIMIZED: Only compute JSON when viewing JSON (expensive operation)
-  const jsonViewData = useMemo((): { jsonString: string; lines: string[] } => {
-    if (!step || !showJsonView) return { jsonString: "", lines: [] };
-    const jsonString = JSON.stringify(step, null, 2);
-    const lines = jsonString.split("\n");
-    return { jsonString, lines };
-  }, [step, showJsonView]);
+    // OPTIMIZED: Only subscribe to the specific step we need, not entire workflow
+    const step = useWorkflowStepByName(data.stepId);
+    const workflowActions = useWorkflowStoreActions();
 
-  // OPTIMIZED: Extract stable values to reduce callback recreation
-  const stepName = step?.def.name;
-  const stepExecute = (step?.def as any)?.execute;
-  const stepInputSchema = (step?.def as any)?.inputSchema;
-  const stepOutputSchema = (step?.def as any)?.outputSchema;
-  const stepInput = (step as any)?.input;
+    // OPTIMIZED: Atomic selectors - only subscribe to what we actually need
+    const authToken = useWorkflowAuthToken();
 
-  // OPTIMIZED: Get step index and all steps, then compute previous results locally
-  const stepIndex = useWorkflowStepIndex(stepName || "");
-  const allSteps = useWorkflowStepsArray();
+    const executeStepMutation = useExecuteStep();
 
-  // Memoize previous step results - only recompute when steps before this one change
-  const previousStepResults = useMemo(() => {
-    if (stepIndex <= 0) return {};
+    const compact = zoom < 0.7;
 
-    const results: Record<string, unknown> = {};
-    const previousSteps = allSteps.slice(0, stepIndex);
+    // OPTIMIZED: Only compute when actually needed (when showJsonView is true)
+    const inputSchemaEntries = useMemo((): Array<[string, unknown]> => {
+      if (!step || !(step.def as any)?.inputSchema) return [];
+      return Object.entries(
+        ((step.def as any).inputSchema as Record<string, unknown>).properties ||
+          {},
+      );
+    }, [step, (step?.def as any)?.inputSchema]);
 
-    previousSteps.forEach((prevStep: WorkflowStep) => {
-      if (
-        prevStep.output &&
-        typeof prevStep.output === "object" &&
-        "success" in prevStep.output &&
-        prevStep.output.success &&
-        "output" in prevStep.output
-      ) {
-        const stepId = prevStep.def.name;
-        results[stepId] = (prevStep.output as { output: unknown }).output;
-      }
-    });
+    // OPTIMIZED: Only compute JSON when viewing JSON (expensive operation)
+    const jsonViewData = useMemo((): {
+      jsonString: string;
+      lines: string[];
+    } => {
+      if (!step || !showJsonView) return { jsonString: "", lines: [] };
+      const jsonString = JSON.stringify(step, null, 2);
+      const lines = jsonString.split("\n");
+      return { jsonString, lines };
+    }, [step, showJsonView]);
 
-    return results;
-  }, [stepIndex, allSteps]);
+    // OPTIMIZED: Extract stable values to reduce callback recreation
+    const stepName = step?.def.name;
+    const stepExecute = (step?.def as any)?.execute;
+    const stepInputSchema = (step?.def as any)?.inputSchema;
+    const stepOutputSchema = (step?.def as any)?.outputSchema;
+    const stepInput = (step as any)?.input;
 
-  // Memoize the execute step handler with stable dependencies
-  const handleExecuteStep = useCallback(() => {
-    if (!step || !stepName) return;
+    // OPTIMIZED: Get step index and all steps, then compute previous results locally
+    const stepIndex = useWorkflowStepIndex(stepName || "");
+    const allSteps = useWorkflowStepsArray();
 
-    executeStepMutation.mutate(
-      {
-        step: {
-          id: stepName,
-          name: stepName,
-          code: (stepExecute || "") as string,
-          inputSchema: (stepInputSchema || {}) as any,
-          outputSchema: (stepOutputSchema || {}) as any,
-          input: (stepInput || {}) as any,
+    // Memoize previous step results - only recompute when steps before this one change
+    const previousStepResults = useMemo(() => {
+      if (stepIndex <= 0) return {};
+
+      const results: Record<string, unknown> = {};
+      const previousSteps = allSteps.slice(0, stepIndex);
+
+      previousSteps.forEach((prevStep: WorkflowStep) => {
+        if (
+          prevStep.output &&
+          typeof prevStep.output === "object" &&
+          "success" in prevStep.output &&
+          prevStep.output.success &&
+          "output" in prevStep.output
+        ) {
+          const stepId = prevStep.def.name;
+          results[stepId] = (prevStep.output as { output: unknown }).output;
+        }
+      });
+
+      return results;
+    }, [stepIndex, allSteps]);
+
+    // PERFORMANCE: Memoize the execute step handler with stable dependencies
+    const handleExecuteStep = useCallback(() => {
+      if (!step || !stepName) return;
+
+      executeStepMutation.mutate(
+        {
+          step: {
+            id: stepName,
+            name: stepName,
+            code: (stepExecute || "") as string,
+            inputSchema: (stepInputSchema || {}) as any,
+            outputSchema: (stepOutputSchema || {}) as any,
+            input: (stepInput || {}) as any,
+          },
+          previousStepResults,
+          authToken,
         },
-        previousStepResults,
-        authToken,
-      },
-      {
-        onSuccess: async (result) => {
-          const resolvedResult = await result;
-          // Store the entire execution result (includes success, output, logs, duration)
-          // This allows the UI to show execution details
-          workflowActions.updateStep(stepName, {
-            output: resolvedResult as unknown as Record<string, unknown>,
-          } as any);
+        {
+          onSuccess: async (result) => {
+            const resolvedResult = await result;
+            // Store the entire execution result (includes success, output, logs, duration)
+            // This allows the UI to show execution details
+            workflowActions.updateStep(stepName, {
+              output: resolvedResult as unknown as Record<string, unknown>,
+            } as any);
+          },
+          onError: (error) => {
+            const errorData: Record<string, unknown> = {
+              error: String(error),
+            };
+            workflowActions.updateStep(stepName, {
+              output: errorData,
+            } as any);
+          },
         },
-        onError: (error) => {
-          const errorData: Record<string, unknown> = {
-            error: String(error),
-          };
-          workflowActions.updateStep(stepName, {
-            output: errorData,
-          } as any);
-        },
-      },
-    );
-  }, [
-    step,
-    stepName,
-    stepExecute,
-    stepInputSchema,
-    stepOutputSchema,
-    stepInput,
-    previousStepResults,
-    authToken,
-    executeStepMutation,
-    workflowActions,
-  ]);
+      );
+    }, [
+      step,
+      stepName,
+      stepExecute,
+      stepInputSchema,
+      stepOutputSchema,
+      stepInput,
+      previousStepResults,
+      authToken,
+      executeStepMutation.mutate, // IMPORTANT: Only depend on .mutate function, not entire mutation object
+      workflowActions,
+    ]);
 
-  if (!step) return null;
+    // PERFORMANCE: Memoize the handler for creating input views
+    const handleCreateInputView = useCallback((key: string) => {
+      setCreatingInputViewFor(key);
+    }, []);
 
-  if (compact) {
+    if (!step) return null;
+
+    if (compact) {
+      return (
+        <div className="rounded-xl border bg-card p-3 w-[320px] shadow-sm hover:shadow-md transition-shadow cursor-pointer">
+          <Handle
+            type="target"
+            position={Position.Left}
+            style={{ opacity: 0 }}
+          />
+          <Handle
+            type="source"
+            position={Position.Right}
+            style={{ opacity: 0 }}
+          />
+          <div className="flex items-start gap-2">
+            <Icon
+              name={"build"}
+              size={18}
+              className="text-muted-foreground flex-shrink-0 mt-0.5"
+            />
+            <div className="flex-1 min-w-0">
+              <div className="text-sm font-semibold text-foreground truncate">
+                {step.def.name}
+              </div>
+              <div className="text-xs text-muted-foreground line-clamp-2 mt-1">
+                {step.def.description}
+              </div>
+            </div>
+            <span
+              className={`w-2 h-2 rounded-full flex-shrink-0 mt-1.5 bg-muted-foreground`}
+            />
+          </div>
+        </div>
+      );
+    }
+
     return (
-      <div className="rounded-xl border bg-card p-3 w-[320px] shadow-sm hover:shadow-md transition-shadow cursor-pointer">
+      <div className="bg-foreground border border-border rounded-xl p-[2px] w-[640px]">
         <Handle type="target" position={Position.Left} style={{ opacity: 0 }} />
         <Handle
           type="source"
           position={Position.Right}
           style={{ opacity: 0 }}
         />
-        <div className="flex items-start gap-2">
-          <Icon
-            name={"build"}
-            size={18}
-            className="text-muted-foreground flex-shrink-0 mt-0.5"
-          />
-          <div className="flex-1 min-w-0">
-            <div className="text-sm font-semibold text-foreground truncate">
+
+        {/* Header */}
+        <div className="flex items-center justify-between h-10 px-4 py-2 rounded-t-xl overflow-clip">
+          <div className="flex items-center gap-2 flex-1 min-w-0">
+            <Icon
+              name={"build"}
+              size={16}
+              className="shrink-0 text-background"
+            />
+            <span className="text-sm font-medium text-background leading-5 truncate">
               {step.def.name}
-            </div>
-            <div className="text-xs text-muted-foreground line-clamp-2 mt-1">
-              {step.def.description}
-            </div>
+            </span>
           </div>
-          <span
-            className={`w-2 h-2 rounded-full flex-shrink-0 mt-1.5 bg-muted-foreground`}
-          />
+
+          {/* Header Actions */}
+          <div className="flex items-center gap-2 shrink-0">
+            <button
+              type="button"
+              onClick={() => setShowJsonView(!showJsonView)}
+              className="size-5 flex items-center justify-center hover:opacity-70 transition-opacity nodrag"
+              title={showJsonView ? "Show form view" : "Show JSON view"}
+            >
+              <Icon name="code" size={20} className="text-muted-foreground" />
+            </button>
+
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <button
+                  type="button"
+                  className="size-5 flex items-center justify-center hover:opacity-70 transition-opacity nodrag"
+                >
+                  <Icon
+                    name="more_horiz"
+                    size={20}
+                    className="text-muted-foreground"
+                  />
+                </button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem
+                  onClick={() => {
+                    // TODO: Implement duplicate functionality
+                    void 0;
+                  }}
+                >
+                  <Icon name="content_copy" size={16} className="mr-2" />
+                  Duplicate
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  onClick={() => {
+                    const newTitle = prompt("Enter new name:", step?.def.name);
+                    if (newTitle) {
+                      // TODO: Implement rename functionality
+                      void 0;
+                    }
+                  }}
+                >
+                  <Icon name="edit" size={16} className="mr-2" />
+                  Rename
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  onClick={() => {
+                    if (step && confirm(`Delete step "${step.def.name}"?`)) {
+                      // TODO: Implement delete functionality
+                      void 0;
+                    }
+                  }}
+                  className="text-destructive"
+                >
+                  <Icon name="delete" size={16} className="mr-2" />
+                  Delete
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
         </div>
+
+        {/* Body */}
+        <div className="flex flex-col rounded-xl overflow-hidden">
+          {showJsonView && (
+            <JsonView
+              jsonString={jsonViewData.jsonString}
+              lines={jsonViewData.lines}
+            />
+          )}
+          {!showJsonView && stepName && (
+            <StepFormView
+              step={step}
+              stepName={stepName}
+              inputSchemaEntries={inputSchemaEntries}
+              workflowActions={workflowActions}
+              onCreateInputView={handleCreateInputView}
+            />
+          )}
+
+          {/* Execute Button Section */}
+          <div className="bg-background border-b border-border p-4">
+            <div
+              onMouseDown={(e) => e.stopPropagation()}
+              onPointerDown={(e) => e.stopPropagation()}
+              onClick={(e) => e.stopPropagation()}
+              className="flex items-center gap-3"
+            >
+              {/* Execution Status Indicator */}
+              {hasSuccessOutput((step as any).output) && (
+                <StepSuccessIndicator />
+              )}
+              {hasErrorOutput((step as any).output) && <StepErrorIndicator />}
+
+              <div className="flex-1" />
+
+              {/* Execute Button */}
+              <Button
+                onClick={handleExecuteStep}
+                disabled={executeStepMutation.isPending}
+                className="bg-primary-light text-primary-dark hover:bg-[#c5e015] h-8 px-3 py-2 rounded-xl text-sm font-medium leading-5 nodrag disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {executeStepMutation.isPending ? (
+                  <span className="flex items-center justify-center gap-2">
+                    <span className="w-4 h-4 border-2 border-primary-dark/20 border-t-primary-dark rounded-full animate-spin" />
+                    Executing...
+                  </span>
+                ) : (
+                  <span className="flex items-center gap-2">
+                    <Icon name="play_arrow" size={16} />
+                    Execute step
+                  </span>
+                )}
+              </Button>
+            </div>
+
+            {/* Error Details */}
+            {hasErrorOutput((step as any).output) && (
+              <StepError error={(step as any).output.error} />
+            )}
+          </div>
+        </div>
+
+        {/* Render Input View Modal */}
+        {renderingInputView && step && (
+          <RenderInputViewModal
+            step={{ name: step.def.name, output: (step as any).output }}
+            fieldName={renderingInputView.fieldName}
+            viewName={renderingInputView.viewName}
+            viewCode={renderingInputView.viewCode}
+            open={!!renderingInputView}
+            onOpenChange={(open) => {
+              if (!open) setRenderingInputView(null);
+            }}
+            onSubmit={(_data) => {
+              // Update the field value
+            }}
+          />
+        )}
+
+        {/* Render Output View - only if output exists and has success property */}
+        {hasExecutionResult((step as any).output) && (
+          <StepOutput step={(step as any).output} />
+        )}
       </div>
     );
-  }
-
-  return (
-    <div className="bg-foreground border border-border rounded-xl p-[2px] w-[640px]">
-      <Handle type="target" position={Position.Left} style={{ opacity: 0 }} />
-      <Handle type="source" position={Position.Right} style={{ opacity: 0 }} />
-
-      {/* Header */}
-      <div className="flex items-center justify-between h-10 px-4 py-2 rounded-t-xl overflow-clip">
-        <div className="flex items-center gap-2 flex-1 min-w-0">
-          <Icon name={"build"} size={16} className="shrink-0 text-background" />
-          <span className="text-sm font-medium text-background leading-5 truncate">
-            {step.def.name}
-          </span>
-        </div>
-
-        {/* Header Actions */}
-        <div className="flex items-center gap-2 shrink-0">
-          <button
-            type="button"
-            onClick={() => setShowJsonView(!showJsonView)}
-            className="size-5 flex items-center justify-center hover:opacity-70 transition-opacity nodrag"
-            title={showJsonView ? "Show form view" : "Show JSON view"}
-          >
-            <Icon name="code" size={20} className="text-muted-foreground" />
-          </button>
-
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <button
-                type="button"
-                className="size-5 flex items-center justify-center hover:opacity-70 transition-opacity nodrag"
-              >
-                <Icon
-                  name="more_horiz"
-                  size={20}
-                  className="text-muted-foreground"
-                />
-              </button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuItem
-                onClick={() => {
-                  // TODO: Implement duplicate functionality
-                  void 0;
-                }}
-              >
-                <Icon name="content_copy" size={16} className="mr-2" />
-                Duplicate
-              </DropdownMenuItem>
-              <DropdownMenuItem
-                onClick={() => {
-                  const newTitle = prompt("Enter new name:", step?.def.name);
-                  if (newTitle) {
-                    // TODO: Implement rename functionality
-                    void 0;
-                  }
-                }}
-              >
-                <Icon name="edit" size={16} className="mr-2" />
-                Rename
-              </DropdownMenuItem>
-              <DropdownMenuItem
-                onClick={() => {
-                  if (step && confirm(`Delete step "${step.def.name}"?`)) {
-                    // TODO: Implement delete functionality
-                    void 0;
-                  }
-                }}
-                className="text-destructive"
-              >
-                <Icon name="delete" size={16} className="mr-2" />
-                Delete
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-        </div>
-      </div>
-
-      {/* Body */}
-      <div className="flex flex-col rounded-xl overflow-hidden">
-        {showJsonView && (
-          <JsonView
-            jsonString={jsonViewData.jsonString}
-            lines={jsonViewData.lines}
-          />
-        )}
-        {!showJsonView && stepName && (
-          <StepFormView
-            step={step}
-            stepName={stepName}
-            inputSchemaEntries={inputSchemaEntries}
-            workflowActions={workflowActions}
-            onCreateInputView={setCreatingInputViewFor}
-          />
-        )}
-
-        {/* Execute Button Section */}
-        <div className="bg-background border-b border-border p-4">
-          <div
-            onMouseDown={(e) => e.stopPropagation()}
-            onPointerDown={(e) => e.stopPropagation()}
-            onClick={(e) => e.stopPropagation()}
-            className="flex items-center gap-3"
-          >
-            {/* Execution Status Indicator */}
-            {hasSuccessOutput((step as any).output) && <StepSuccessIndicator />}
-            {hasErrorOutput((step as any).output) && <StepErrorIndicator />}
-
-            <div className="flex-1" />
-
-            {/* Execute Button */}
-            <Button
-              onClick={handleExecuteStep}
-              disabled={executeStepMutation.isPending}
-              className="bg-primary-light text-primary-dark hover:bg-[#c5e015] h-8 px-3 py-2 rounded-xl text-sm font-medium leading-5 nodrag disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {executeStepMutation.isPending ? (
-                <span className="flex items-center justify-center gap-2">
-                  <span className="w-4 h-4 border-2 border-primary-dark/20 border-t-primary-dark rounded-full animate-spin" />
-                  Executing...
-                </span>
-              ) : (
-                <span className="flex items-center gap-2">
-                  <Icon name="play_arrow" size={16} />
-                  Execute step
-                </span>
-              )}
-            </Button>
-          </div>
-
-          {/* Error Details */}
-          {hasErrorOutput((step as any).output) && (
-            <StepError error={(step as any).output.error} />
-          )}
-        </div>
-      </div>
-
-      {/* Render Input View Modal */}
-      {renderingInputView && step && (
-        <RenderInputViewModal
-          step={{ name: step.def.name, output: (step as any).output }}
-          fieldName={renderingInputView.fieldName}
-          viewName={renderingInputView.viewName}
-          viewCode={renderingInputView.viewCode}
-          open={!!renderingInputView}
-          onOpenChange={(open) => {
-            if (!open) setRenderingInputView(null);
-          }}
-          onSubmit={(_data) => {
-            // Update the field value
-          }}
-        />
-      )}
-
-      {/* Render Output View - only if output exists and has success property */}
-      {hasExecutionResult((step as any).output) && (
-        <StepOutput step={(step as any).output} />
-      )}
-    </div>
-  );
-});
+  },
+  (prevProps, nextProps) => {
+    // PERFORMANCE: Custom comparison to prevent re-renders
+    // Only re-render if stepId actually changes (string comparison)
+    return prevProps.data.stepId === nextProps.data.stepId;
+  },
+);

@@ -83,7 +83,7 @@ export const AudioButton: React.FC<AudioButtonProps> = ({ onMessage }) => {
     <button
       type="button"
       onClick={toggleListening}
-      className="flex size-8 items-center justify-center rounded-full p-1 hover:bg-accent transition-colors"
+      className="flex size-8 items-center justify-center rounded-full p-1 hover:bg-accent transition-colors text-muted-foreground"
       title={isListening ? "Stop recording" : "Start voice input"}
     >
       <Icon name={isListening ? "stop" : "mic"} size={20} />

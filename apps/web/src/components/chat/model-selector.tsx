@@ -110,7 +110,7 @@ function SelectedModelDisplay({
   model: (typeof WELL_KNOWN_MODELS)[0];
 }) {
   return (
-    <div className="flex items-center gap-1.5">
+    <div className="flex items-center gap-2">
       {model.logo && <img src={model.logo} className="w-4 h-4" />}
       <span className="text-sm text-foreground">{model.name}</span>
     </div>
@@ -148,7 +148,7 @@ export function ModelSelector({
     >
       <ResponsiveSelectTrigger
         className={cn(
-          "h-8 text-sm hover:bg-muted py-0 px-2 shadow-none cursor-pointer border-0",
+          "!h-8 text-sm hover:bg-accent rounded-xl py-1 px-2 gap-1 shadow-none cursor-pointer border-0",
           variant === "borderless" && "md:border-none",
         )}
       >

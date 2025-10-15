@@ -55,6 +55,7 @@ import {
   WellKnownBindings,
 } from "../index.ts";
 import {
+  buildWorkspaceOrProjectIdConditions,
   getProjectIdFromContext,
   workspaceOrProjectIdConditions,
 } from "../projects/util.ts";
@@ -437,111 +438,19 @@ export const listIntegrations = createIntegrationManagementTool({
     const workspace = c.workspace.value;
 
     await assertWorkspaceResourceAccess(c);
+    const projectId = await getProjectIdFromContext(c);
 
     const [integrationsData, agentsData] = await Promise.all([
       // Query integrations with all necessary joins
-      c.drizzle
-        .select({
-          id: integrations.id,
-          name: integrations.name,
-          description: integrations.description,
-          icon: integrations.icon,
-          connection: integrations.connection,
-          created_at: integrations.created_at,
-          workspace: integrations.workspace,
-          access: integrations.access,
-          access_id: integrations.access_id,
-          app_id: integrations.app_id,
-          project_id: integrations.project_id,
-          // Registry app fields
-          registry_app_name: registryApps.name,
-          registry_scope_name: registryScopes.scope_name,
-          // Tool fields
-          tool_id: registryTools.id,
-          tool_name: registryTools.name,
-          tool_description: registryTools.description,
-          tool_input_schema: registryTools.input_schema,
-          tool_output_schema: registryTools.output_schema,
-        })
-        .from(integrations)
-        .leftJoin(projects, eq(integrations.project_id, projects.id))
-        .leftJoin(organizations, eq(projects.org_id, organizations.id))
-        .leftJoin(registryApps, eq(integrations.app_id, registryApps.id))
-        .leftJoin(registryScopes, eq(registryApps.scope_id, registryScopes.id))
-        .leftJoin(registryTools, eq(registryApps.id, registryTools.app_id))
-        .where(
-          matchByWorkspaceOrProjectLocatorForIntegrations(workspace, c.locator),
-        )
-        .then((rows) => {
-          const byIntegration = new Map<
-            string,
-            QueryResult<
-              "deco_chat_integrations",
-              typeof SELECT_INTEGRATION_QUERY
-            >
-          >();
-          for (const row of rows) {
-            const tool = row.tool_id
-              ? {
-                  name: row.tool_name!,
-                  description: row.tool_description,
-                  input_schema: row.tool_input_schema,
-                  output_schema: row.tool_output_schema,
-                }
-              : null;
-            const existing = byIntegration.get(row.id);
-            if (!existing) {
-              byIntegration.set(row.id, {
-                ...row,
-                created_at:
-                  row.created_at?.toISOString() || new Date().toISOString(),
-                deco_chat_apps_registry: row.registry_app_name
-                  ? {
-                      name: row.registry_app_name,
-                      deco_chat_registry_scopes: row.registry_scope_name
-                        ? { scope_name: row.registry_scope_name }
-                        : null,
-                      deco_chat_apps_registry_tools: tool ? [tool] : [],
-                    }
-                  : null,
-                connection: row.connection as Json,
-              } as unknown as QueryResult<
-                "deco_chat_integrations",
-                typeof SELECT_INTEGRATION_QUERY
-              >);
-            } else if (tool && existing.deco_chat_apps_registry) {
-              (
-                existing.deco_chat_apps_registry
-                  .deco_chat_apps_registry_tools as unknown[]
-              ).push(tool);
-            }
-          }
-          return Array.from(byIntegration.values());
-        })
-        .catch((err) => {
-          console.error("list_integrations_error", err);
-          throw err;
-        }),
+      c.db
+        .from("deco_chat_integrations")
+        .select(SELECT_INTEGRATION_QUERY)
+        .or(buildWorkspaceOrProjectIdConditions(workspace, projectId)),
       // Query agents
-      c.drizzle
-        .select({
-          ...getTableColumns(agents),
-          org_id: organizations.id,
-        })
-        .from(agents)
-        .leftJoin(projects, eq(agents.project_id, projects.id))
-        .leftJoin(organizations, eq(projects.org_id, organizations.id))
-        .where(
-          filterByWorkspaceOrLocator({
-            table: agents,
-            ctx: c,
-          }),
-        )
-        .then((result) => ({ data: result }))
-        .catch((err) => {
-          console.error("list_agents_error", err);
-          throw err;
-        }),
+      c.db
+        .from("deco_chat_agents")
+        .select("*")
+        .or(buildWorkspaceOrProjectIdConditions(workspace, projectId)),
     ]);
     const roles =
       c.workspace.root === "users"
@@ -549,15 +458,26 @@ export const listIntegrations = createIntegrationManagementTool({
         : await c.policy.getUserRoles(c.user.id as string, c.workspace.slug);
     const userRoles: string[] = roles?.map((role) => role?.name);
 
+    const integrations = integrationsData.data ?? [];
+    const agents = agentsData.data ?? [];
+
+    if (integrationsData.error) {
+      console.error(integrationsData.error);
+    }
+
+    if (agentsData.error) {
+      console.error(agentsData.error);
+    }
+
     // TODO: This is a temporary solution to filter integrations and agents by access.
-    const filteredIntegrations = integrationsData.filter(
+    const filteredIntegrations = integrations.filter(
       (integration) =>
         !integration.access ||
         userRoles?.includes(integration.access) ||
         userRoles?.some((role) => IMPORTANT_ROLES.includes(role)),
     );
 
-    const filteredAgents = agentsData.data.filter(
+    const filteredAgents = agents.filter(
       (agent) =>
         !agent.access ||
         userRoles?.includes(agent.access) ||

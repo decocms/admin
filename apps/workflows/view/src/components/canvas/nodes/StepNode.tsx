@@ -353,7 +353,7 @@ export const StepNode = memo(
           prevStep.output.success &&
           "output" in prevStep.output
         ) {
-          const stepId = prevStep.def.name;
+          const stepId = prevStep.def.id;
           results[stepId] = (prevStep.output as { output: unknown }).output;
         }
       });

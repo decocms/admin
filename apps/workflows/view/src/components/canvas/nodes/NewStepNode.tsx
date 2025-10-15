@@ -59,7 +59,6 @@ export const NewStepNode = memo(function NewStepNode(_props: NodeProps) {
                 description: result.step.description,
                 inputSchema: result.step.inputSchema,
                 outputSchema: result.step.outputSchema,
-                input: result.step.input,
                 output: {},
                 status: "pending",
                 execute:
@@ -69,6 +68,7 @@ export const NewStepNode = memo(function NewStepNode(_props: NodeProps) {
                   ? [{ integrationId: result.step.primaryIntegration }]
                   : undefined,
               },
+              input: result.step.input,
             };
 
             // Add the new step (this will automatically clear newStepPrompt)

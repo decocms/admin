@@ -127,7 +127,7 @@ export const useThreads = (partialOptions: ThreadFilterOptions = {}) => {
   return useSuspenseQuery({
     queryKey: key,
     queryFn: ({ signal }) =>
-      options.enabled
+      options.enabled || options.enabled === undefined
         ? listThreads(locator, options, { signal })
         : {
             threads: [],

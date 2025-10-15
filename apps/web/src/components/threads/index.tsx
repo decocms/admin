@@ -165,7 +165,7 @@ function ThreadsList({ agentId }: { agentId: string }) {
   return (
     <div
       className={cn(
-        "p-4 text-foreground w-full max-w-3xl mx-auto space-y-6 inline-block",
+        "text-foreground w-full max-w-3xl mx-auto space-y-6 inline-block",
       )}
     >
       {nothing ? (

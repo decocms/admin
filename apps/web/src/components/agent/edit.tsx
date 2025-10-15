@@ -54,6 +54,7 @@ import ToolsAndKnowledgeTab from "../settings/integrations.tsx";
 import { AgentTriggers } from "../triggers/agent-triggers.tsx";
 import { AgentProvider, useAgent } from "./provider.tsx";
 import Threads from "./threads.tsx";
+import { useQueryClient } from "@tanstack/react-query";
 
 interface Props {
   agentId?: string;
@@ -107,6 +108,8 @@ function ThreadsButton() {
 // Unified chat interface that works for both agent and decopilot modes
 function UnifiedChat() {
   const { agentId, chat, agent, hasUnsavedChanges: hasChanges } = useAgent();
+  const client = useQueryClient();
+  const { locator } = useSDK();
   const { messages } = chat;
   const focusChat = useFocusChat();
   const { chatMode } = usePreviewContext();
@@ -136,11 +139,14 @@ function UnifiedChat() {
                 variant="outline"
                 size="sm"
                 className="text-xs"
-                onClick={() =>
+                onClick={() => {
+                  client.invalidateQueries({
+                    queryKey: ["threads", locator, agentId],
+                  });
                   focusChat(agentId, crypto.randomUUID(), {
                     history: false,
-                  })
-                }
+                  });
+                }}
               >
                 New Thread
               </Button>

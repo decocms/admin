@@ -5,21 +5,32 @@ import {
   useSDK,
   useRecentResources,
 } from "@deco/sdk";
-import { Button } from "@deco/ui/components/button.tsx";
 import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from "@deco/ui/components/card.tsx";
+  Alert,
+  AlertDescription,
+  AlertTitle,
+} from "@deco/ui/components/alert.tsx";
+import { Button } from "@deco/ui/components/button.tsx";
 import { Icon } from "@deco/ui/components/icon.tsx";
+import { ScrollArea } from "@deco/ui/components/scroll-area.tsx";
+import { Spinner } from "@deco/ui/components/spinner.tsx";
 import Form from "@rjsf/shadcn";
 import validator from "@rjsf/validator-ajv8";
-import { useCallback, useState, useEffect, useRef } from "react";
+import {
+  Suspense,
+  lazy,
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+} from "react";
 import { useParams } from "react-router";
 import { z } from "zod";
 import { EmptyState } from "../common/empty-state.tsx";
+import { useDecopilotOpen } from "../layout/decopilot-layout.tsx";
 import { ToolCallResultV2 } from "@deco/sdk/hooks";
+
+const LazyHighlighter = lazy(() => import("../chat/lazy-highlighter.tsx"));
 
 // Tool type inferred from the Zod schema
 export type ToolDefinition = z.infer<typeof ToolDefinitionSchema>;
@@ -36,22 +47,89 @@ interface ToolDisplayCanvasProps {
   resourceUri: string;
 }
 
+interface JsonViewerProps {
+  data: unknown;
+  title: string;
+}
+
+function JsonViewer({ data, title }: JsonViewerProps) {
+  const [copied, setCopied] = useState(false);
+
+  async function handleCopy() {
+    if (typeof navigator === "undefined" || !navigator.clipboard?.writeText) {
+      globalThis.window.alert("Clipboard API unavailable");
+      return;
+    }
+
+    const payload = JSON.stringify(data, null, 2);
+    try {
+      await navigator.clipboard.writeText(payload);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1200);
+    } catch (error) {
+      console.error("Failed to copy data", error);
+    }
+  }
+
+  if (data === null || data === undefined) {
+    return (
+      <div className="space-y-2">
+        <p className="font-mono text-sm text-muted-foreground uppercase">
+          {title}
+        </p>
+        <div className="text-xs text-muted-foreground italic p-2">
+          No {title.toLowerCase()}
+        </div>
+      </div>
+    );
+  }
+
+  const jsonString = JSON.stringify(data, null, 2);
+
+  return (
+    <div className="space-y-2 min-w-0 w-full">
+      <p className="font-mono text-sm text-muted-foreground uppercase">
+        {title}
+      </p>
+      <div className="relative bg-muted rounded-xl max-h-[400px] overflow-auto w-full">
+        <div className="absolute right-2 top-2 z-10 flex items-center gap-1 bg-background rounded-xl shadow-sm">
+          <Button
+            size="icon"
+            variant="ghost"
+            onClick={handleCopy}
+            className="h-8 w-8"
+          >
+            <Icon name={copied ? "check" : "content_copy"} size={16} />
+          </Button>
+        </div>
+        <div className="overflow-x-auto w-full">
+          <Suspense
+            fallback={
+              <pre className="p-3 text-xs font-mono whitespace-pre-wrap break-all">
+                {jsonString}
+              </pre>
+            }
+          >
+            <LazyHighlighter language="json" content={jsonString} />
+          </Suspense>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 /**
- * Read-only tool display canvas that shows tool details
- * No interactions - just visual representation
+ * Interactive tool display that shows tool details with execution capability
  */
 export function ToolDetail({ resourceUri }: ToolDisplayCanvasProps) {
-  const {
-    data: resource,
-    isLoading: isLoading,
-    refetch,
-  } = useToolByUriV2(resourceUri);
+  const { data: resource, isLoading: isLoading } = useToolByUriV2(resourceUri);
   const effectiveTool = resource?.data;
   const { locator } = useSDK();
   const projectKey = typeof locator === "string" ? locator : undefined;
   const { addRecent } = useRecentResources(projectKey);
   const params = useParams<{ org: string; project: string }>();
   const hasTrackedRecentRef = useRef(false);
+  const { toggle: toggleChat } = useDecopilotOpen();
 
   // Track as recently opened when tool is loaded (only once)
   useEffect(() => {
@@ -89,9 +167,6 @@ export function ToolDetail({ resourceUri }: ToolDisplayCanvasProps) {
     addRecent,
   ]);
 
-  // Local loading state for refresh functionality
-  const [isRefreshing, setIsRefreshing] = useState(false);
-
   // Tool execution state
   const [executionResult, setExecutionResult] =
     useState<ToolCallResultV2 | null>(null);
@@ -127,16 +202,6 @@ export function ToolDetail({ resourceUri }: ToolDisplayCanvasProps) {
 
     return estimatedTokens;
   }, []);
-
-  const handleRefresh = useCallback(async () => {
-    if (isRefreshing) return;
-    try {
-      setIsRefreshing(true);
-      await refetch();
-    } finally {
-      setIsRefreshing(false);
-    }
-  }, [isRefreshing, refetch]);
 
   const handleFormSubmit = useCallback(
     async (formData: Record<string, unknown>) => {
@@ -181,195 +246,220 @@ export function ToolDetail({ resourceUri }: ToolDisplayCanvasProps) {
         setIsExecuting(false);
       }
     },
-    [effectiveTool, resourceUri, toolCallMutation],
+    [effectiveTool, resourceUri, toolCallMutation, estimateTokens],
   );
 
   if (isLoading) {
     return (
-      <div className="h-full w-full flex items-center justify-center">
-        <div className="text-center">
-          <Icon
-            name="refresh"
-            size={24}
-            className="animate-spin mx-auto mb-2"
-          />
-          <p className="text-muted-foreground">Loading tool...</p>
-        </div>
+      <div className="h-[calc(100vh-12rem)] flex items-center justify-center">
+        <Spinner />
       </div>
     );
   }
 
   if (!effectiveTool) {
     return (
-      <div className="h-full w-full flex items-center justify-center">
-        <EmptyState
-          icon="error"
-          title="Tool not found"
-          description="The requested tool could not be found or is not available."
-        />
-      </div>
+      <EmptyState
+        icon="error"
+        title="Tool not found"
+        description="The requested tool could not be found or is not available."
+      />
     );
   }
 
   return (
-    <div className="h-full w-full flex flex-col">
-      {/* Header with refresh button */}
-      <div className="flex items-center justify-between p-4 border-b bg-white">
-        <div>
-          <h1 className="text-xl font-semibold">
-            {effectiveTool?.name || resourceUri || "Tool"}
-          </h1>
-          <p className="text-sm text-muted-foreground">
-            {effectiveTool?.description}
-          </p>
-        </div>
-        <Button
-          onClick={handleRefresh}
-          disabled={isRefreshing || isLoading}
-          variant="outline"
-          size="sm"
-          className="min-w-[100px]"
-        >
-          <Icon
-            name="refresh"
-            size={16}
-            className={`mr-2 ${isRefreshing ? "animate-spin" : ""}`}
-          />
-          {isRefreshing ? "Refreshing..." : "Refresh"}
-        </Button>
-      </div>
+    <ScrollArea className="h-full w-full">
+      <div className="flex flex-col">
+        {/* Header */}
+        <div className="border-b border-border py-4 px-4 md:py-8 md:px-8 lg:py-16 lg:px-16">
+          <div className="max-w-[1500px] mx-auto space-y-4">
+            <div className="flex items-center justify-between gap-2 flex-wrap">
+              <div>
+                <h1 className="text-2xl font-medium">{effectiveTool.name}</h1>
+                {effectiveTool.description && (
+                  <p className="text-sm text-muted-foreground mt-1">
+                    {effectiveTool.description}
+                  </p>
+                )}
+              </div>
+            </div>
 
-      {/* Main content */}
-      <div className="flex-1 p-6 space-y-6 overflow-auto">
-        {/* Execute Tool Form */}
-        {effectiveTool.inputSchema && (
-          <Card className="p-4">
-            <CardHeader className="px-0">
-              <CardTitle className="flex items-center gap-2">
-                <Icon name="play_arrow" size={20} />
-                Execute Tool
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <Form
-                schema={effectiveTool.inputSchema}
-                validator={validator}
-                formData={formData}
-                onChange={({ formData }) => setFormData(formData)}
-                onSubmit={({ formData }) => handleFormSubmit(formData)}
-                showErrorList={false}
-                noHtml5Validate
-                liveValidate={false}
-              >
-                <div className="flex justify-end gap-2 mt-4">
+            {/* Execution stats (show after execution) */}
+            {executionResult !== null &&
+            typeof executionStats.latency === "number" ? (
+              <div className="flex items-center gap-4 flex-wrap text-sm">
+                <div className="flex items-center gap-2">
+                  <Icon
+                    name="schedule"
+                    size={16}
+                    className="text-muted-foreground"
+                  />
+                  <span className="font-mono text-sm">
+                    {executionStats.latency}ms
+                  </span>
+                </div>
+
+                {executionStats.byteSize ? (
+                  <>
+                    <div className="h-3 w-px bg-border" />
+                    <div className="flex items-center gap-2">
+                      <Icon
+                        name="storage"
+                        size={16}
+                        className="text-muted-foreground"
+                      />
+                      <span className="font-mono text-sm">
+                        {executionStats.byteSize} bytes
+                      </span>
+                    </div>
+                  </>
+                ) : null}
+
+                {executionStats.estimatedTokens ? (
+                  <>
+                    <div className="h-3 w-px bg-border" />
+                    <div className="flex items-center gap-2">
+                      <Icon
+                        name="token"
+                        size={16}
+                        className="text-muted-foreground"
+                      />
+                      <span className="font-mono text-sm">
+                        ~{executionStats.estimatedTokens} tokens
+                      </span>
+                    </div>
+                  </>
+                ) : null}
+              </div>
+            ) : null}
+
+            {/* Error Alert */}
+            {executionResult?.error ? (
+              <Alert className="bg-destructive/5 border-none">
+                <Icon name="error" className="h-4 w-4 text-destructive" />
+                <AlertTitle className="text-destructive">Error</AlertTitle>
+                <AlertDescription className="text-destructive">
+                  {typeof executionResult.error === "string"
+                    ? executionResult.error
+                    : JSON.stringify(executionResult.error)}
+                </AlertDescription>
+              </Alert>
+            ) : null}
+          </div>
+        </div>
+
+        {/* Input Form */}
+        <div className="border-b border-border py-4 px-4 md:py-8 md:px-8 lg:py-8 lg:px-16">
+          <div className="max-w-[1500px] mx-auto space-y-4">
+            <h2 className="text-lg font-medium">Input</h2>
+
+            <div className="bg-muted/30 rounded-xl p-6">
+              {effectiveTool.inputSchema &&
+              typeof effectiveTool.inputSchema === "object" &&
+              "properties" in effectiveTool.inputSchema &&
+              effectiveTool.inputSchema.properties &&
+              Object.keys(effectiveTool.inputSchema.properties).length > 0 ? (
+                <Form
+                  schema={effectiveTool.inputSchema}
+                  validator={validator}
+                  formData={formData}
+                  onChange={({ formData }) => setFormData(formData)}
+                  onSubmit={({ formData }) => handleFormSubmit(formData)}
+                  showErrorList={false}
+                  noHtml5Validate
+                  liveValidate={false}
+                >
+                  <div className="flex justify-end gap-2 mt-4">
+                    <Button
+                      type="submit"
+                      disabled={isExecuting}
+                      size="lg"
+                      className="min-w-[200px] flex items-center gap-2"
+                    >
+                      {isExecuting ? (
+                        <>
+                          <Spinner size="xs" />
+                          Executing...
+                        </>
+                      ) : (
+                        <>
+                          <Icon name="play_arrow" size={18} />
+                          Execute Tool
+                        </>
+                      )}
+                    </Button>
+                  </div>
+                </Form>
+              ) : (
+                <div className="flex flex-col items-center justify-center py-12 text-center">
+                  <div className="bg-background rounded-full p-4 mb-4">
+                    <Icon
+                      name="chat"
+                      size={32}
+                      className="text-muted-foreground"
+                    />
+                  </div>
+                  <h3 className="text-lg font-medium mb-2">No Input Form</h3>
+                  <p className="text-sm text-muted-foreground max-w-md">
+                    Create and configure tools in chat.
+                  </p>
                   <Button
-                    type="submit"
-                    disabled={isExecuting}
-                    className="min-w-[100px]"
+                    variant="outline"
+                    size="sm"
+                    className="mt-4"
+                    onClick={toggleChat}
                   >
-                    {isExecuting ? (
-                      <>
-                        <Icon
-                          name="refresh"
-                          size={16}
-                          className="animate-spin mr-2"
-                        />
-                        Executing...
-                      </>
-                    ) : (
-                      <>
-                        <Icon name="play_arrow" size={16} className="mr-2" />
-                        Execute
-                      </>
-                    )}
+                    <Icon name="chat" size={16} className="mr-2" />
+                    Open Chat
                   </Button>
                 </div>
-              </Form>
-            </CardContent>
-          </Card>
-        )}
+              )}
+            </div>
+          </div>
+        </div>
 
-        {/* Execution Result */}
+        {/* Result Section - only show if we have a result */}
         {executionResult && (
-          <Card className="p-4">
-            <CardHeader className="px-0">
-              <CardTitle className="flex items-center gap-2">
-                <Icon name="check_circle" size={20} />
-                Execution Result
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              {/* Stats */}
-              {executionStats.latency && (
-                <div className="mb-4 flex gap-4 text-sm text-muted-foreground">
-                  <div className="flex items-center gap-1">
-                    <Icon name="schedule" size={14} />
-                    <span>{executionStats.latency}ms</span>
-                  </div>
-                  {executionStats.byteSize && (
-                    <div className="flex items-center gap-1">
-                      <Icon name="storage" size={14} />
-                      <span>{executionStats.byteSize} bytes</span>
-                    </div>
-                  )}
-                  {executionStats.estimatedTokens && (
-                    <div className="flex items-center gap-1">
-                      <Icon name="token" size={14} />
-                      <span>~{executionStats.estimatedTokens} tokens</span>
-                    </div>
-                  )}
-                </div>
-              )}
+          <div className="border-b border-border py-4 px-4 md:py-8 md:px-8 lg:py-8 lg:px-16">
+            <div className="max-w-[1500px] mx-auto space-y-4">
+              <h2 className="text-lg font-medium">Result</h2>
 
-              {/* Error Display */}
-              {executionResult.error ? (
-                <div className="p-4 bg-destructive/10 border border-destructive/20 rounded-md">
-                  <p className="text-destructive text-sm font-medium">Error:</p>
-                  <p className="text-destructive text-sm">
-                    {JSON.stringify(executionResult.error)}
+              {/* Logs Section */}
+              {executionResult.logs && executionResult.logs.length > 0 && (
+                <div className="space-y-2">
+                  <p className="font-mono text-sm text-muted-foreground uppercase">
+                    Console Logs
                   </p>
-                </div>
-              ) : (
-                <>
-                  {/* Logs */}
-                  {executionResult.logs && executionResult.logs.length > 0 && (
-                    <div className="mb-4">
-                      <h4 className="text-sm font-medium mb-2">
-                        Console Logs:
-                      </h4>
-                      <div className="bg-muted p-3 rounded-md max-h-32 overflow-auto">
-                        {executionResult.logs.map((log, index) => (
-                          <div
-                            key={index}
-                            className={`text-xs font-mono ${
-                              log.type === "error"
-                                ? "text-destructive"
-                                : log.type === "warn"
-                                  ? "text-yellow-600"
-                                  : "text-muted-foreground"
-                            }`}
-                          >
-                            [{log.type.toUpperCase()}] {log.content}
-                          </div>
-                        ))}
+                  <div className="bg-muted rounded-xl p-3 max-h-[200px] overflow-auto">
+                    {executionResult.logs.map((log, index) => (
+                      <div
+                        key={index}
+                        className={`text-xs font-mono ${
+                          log.type === "error"
+                            ? "text-destructive"
+                            : log.type === "warn"
+                              ? "text-yellow-600"
+                              : "text-muted-foreground"
+                        }`}
+                      >
+                        [{log.type.toUpperCase()}] {log.content}
                       </div>
-                    </div>
-                  )}
-
-                  {/* Result */}
-                  <pre className="text-xs bg-muted p-4 rounded-md overflow-auto max-h-96">
-                    {JSON.stringify(
-                      executionResult.result || executionResult,
-                      null,
-                      2,
-                    )}
-                  </pre>
-                </>
+                    ))}
+                  </div>
+                </div>
               )}
-            </CardContent>
-          </Card>
+
+              {/* Output */}
+              {!executionResult.error && (
+                <JsonViewer
+                  data={executionResult.result || executionResult}
+                  title="Output"
+                />
+              )}
+            </div>
+          </div>
         )}
       </div>
-    </div>
+    </ScrollArea>
   );
 }

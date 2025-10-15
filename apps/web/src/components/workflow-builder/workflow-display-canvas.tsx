@@ -1,273 +1,632 @@
-import type { WorkflowDefinition } from "@deco/sdk";
-import { useSDK, useRecentResources, useWorkflowByUriV2 } from "@deco/sdk";
+import {
+  callTool,
+  useRecentResources,
+  useSDK,
+  useWorkflowByUriV2,
+  type WorkflowRunData,
+} from "@deco/sdk";
+import {
+  Alert,
+  AlertDescription,
+  AlertTitle,
+} from "@deco/ui/components/alert.tsx";
+import { Badge } from "@deco/ui/components/badge.tsx";
 import { Button } from "@deco/ui/components/button.tsx";
 import { Icon } from "@deco/ui/components/icon.tsx";
-import {
-  Background,
-  type Edge,
-  type Node,
-  ReactFlow,
-  useEdgesState,
-  useNodesState,
-} from "@xyflow/react";
-import "@xyflow/react/dist/style.css";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { WorkflowSinkNode } from "./nodes/workflow-sink-node.tsx";
-import { WorkflowSourceNode } from "./nodes/workflow-source-node.tsx";
-import { WorkflowStepDisplayNode } from "./nodes/workflow-step-display-node.tsx";
+import { ScrollArea } from "@deco/ui/components/scroll-area.tsx";
+import { Spinner } from "@deco/ui/components/spinner.tsx";
+import Form from "@rjsf/shadcn";
+import validator from "@rjsf/validator-ajv8";
+import { useQuery } from "@tanstack/react-query";
+import { Suspense, lazy, useEffect, useMemo, useRef, useState } from "react";
+import { EmptyState } from "../common/empty-state.tsx";
+import { UserInfo } from "../common/table/table-cells.tsx";
+import { useDecopilotOpen } from "../layout/decopilot-layout.tsx";
+import { useResourceRoute } from "../resources-v2/route-context.tsx";
+import { getStatusBadgeVariant } from "../workflows/utils.ts";
 
-// Extended workflow type for display (includes optional metadata)
-export interface DisplayWorkflow
-  extends Omit<
-    WorkflowDefinition,
-    "id" | "createdAt" | "updatedAt" | "executionState"
-  > {
-  id?: string;
-  title?: string;
-  created_at?: string;
-  updated_at?: string;
-  createdAt?: string;
-  updatedAt?: string;
-  executionState?: Record<string, unknown>;
-}
-
-// Node types for the display canvas
-const nodeTypes = {
-  "workflow-source": WorkflowSourceNode,
-  "workflow-sink": WorkflowSinkNode,
-  "workflow-step": WorkflowStepDisplayNode,
-};
+const LazyHighlighter = lazy(() => import("../chat/lazy-highlighter.tsx"));
 
 interface WorkflowDisplayCanvasProps {
   resourceUri: string;
   onRefresh?: () => Promise<void>;
 }
 
-/**
- * Read-only workflow display canvas that shows workflows as a horizontal flow
- * No interactions - just visual representation
- */
-export function WorkflowDisplayCanvas({
-  resourceUri,
-  onRefresh,
-}: WorkflowDisplayCanvasProps) {
-  const {
-    data: resource,
-    isLoading: isLoading,
-    refetch,
-  } = useWorkflowByUriV2(resourceUri);
-  const effectiveWorkflow = resource?.data;
+interface JsonViewerProps {
+  data: unknown;
+  title: string;
+  matchHeight?: boolean;
+}
 
-  // Track recent workflows (Resources v2 workflow detail)
-  const { locator } = useSDK();
-  const projectKey = typeof locator === "string" ? locator : undefined;
-  const { addRecent } = useRecentResources(projectKey);
-  const hasTrackedRecentRef = useRef(false);
+function JsonViewer({ data, title, matchHeight = false }: JsonViewerProps) {
+  const [copied, setCopied] = useState(false);
 
-  useEffect(() => {
-    if (
-      effectiveWorkflow &&
-      resourceUri &&
-      projectKey &&
-      !hasTrackedRecentRef.current
-    ) {
-      hasTrackedRecentRef.current = true;
-      // Defer to next tick to avoid setState during render warnings
-      setTimeout(() => {
-        addRecent({
-          id: resourceUri,
-          name: effectiveWorkflow.name || resourceUri,
-          type: "workflow",
-          icon: "flowchart",
-          path: `/${projectKey}/rsc/i:workflows-management/workflow/${encodeURIComponent(resourceUri)}`,
-        });
-      }, 0);
-    }
-  }, [effectiveWorkflow, resourceUri, projectKey, addRecent]);
-
-  // Local loading state for refresh functionality
-  const [isRefreshing, setIsRefreshing] = useState(false);
-
-  // Convert workflow to React Flow format for display
-  const { nodes: initialNodes, edges: initialEdges } = useMemo(
-    () =>
-      convertWorkflowToDisplayFlow(
-        effectiveWorkflow || {
-          name: resourceUri,
-          description: "",
-          inputSchema: {},
-          outputSchema: {},
-          steps: [],
-        },
-      ),
-    [effectiveWorkflow, resourceUri],
-  );
-
-  // React Flow state
-  const [nodes, setNodes] = useNodesState<Node>(initialNodes);
-  const [edges, setEdges] = useEdgesState<Edge>(initialEdges);
-
-  // Update nodes when workflow changes
-  useEffect(() => {
-    if (!effectiveWorkflow) return;
-    const { nodes: newNodes, edges: newEdges } =
-      convertWorkflowToDisplayFlow(effectiveWorkflow);
-    setNodes(newNodes);
-    setEdges(newEdges);
-  }, [effectiveWorkflow, setNodes, setEdges]);
-
-  const handleRefresh = useCallback(async () => {
-    if (isRefreshing) return;
-    if (onRefresh) {
-      try {
-        setIsRefreshing(true);
-        await onRefresh();
-      } finally {
-        setIsRefreshing(false);
-      }
+  async function handleCopy() {
+    if (typeof navigator === "undefined" || !navigator.clipboard?.writeText) {
+      globalThis.window.alert("Clipboard API unavailable");
       return;
     }
+
+    const payload = JSON.stringify(data, null, 2);
     try {
-      setIsRefreshing(true);
-      await refetch();
-    } finally {
-      setIsRefreshing(false);
+      await navigator.clipboard.writeText(payload);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1200);
+    } catch (error) {
+      console.error("Failed to copy data", error);
     }
-  }, [onRefresh, isRefreshing, resourceUri, refetch]);
+  }
+
+  if (data === null || data === undefined) {
+    return (
+      <div className="space-y-2">
+        <p className="font-mono text-sm text-muted-foreground uppercase">
+          {title}
+        </p>
+        <div className="text-xs text-muted-foreground italic p-2">
+          No {title.toLowerCase()}
+        </div>
+      </div>
+    );
+  }
+
+  const jsonString = JSON.stringify(data, null, 2);
 
   return (
-    <div className="h-full w-full flex flex-col">
-      {/* Header with refresh button */}
-      <div className="flex items-center justify-between p-4 border-b bg-white">
-        <div>
-          <h1 className="text-xl font-semibold">
-            {effectiveWorkflow?.name || resourceUri || "Workflow"}
-          </h1>
-          <p className="text-sm text-muted-foreground">
-            {effectiveWorkflow?.description}
-          </p>
+    <div
+      className={`space-y-2 min-w-0 w-full ${matchHeight ? "h-full flex flex-col" : ""}`}
+    >
+      <p className="font-mono text-sm text-muted-foreground uppercase">
+        {title}
+      </p>
+      <div
+        className={`relative bg-muted rounded-xl ${matchHeight ? "min-h-[200px]" : ""} max-h-[300px] overflow-auto w-full ${matchHeight ? "flex-1" : ""}`}
+      >
+        <div className="absolute right-2 top-2 z-10 flex items-center gap-1 bg-background rounded-xl shadow-sm">
+          <Button
+            size="icon"
+            variant="ghost"
+            onClick={handleCopy}
+            className="h-8 w-8"
+          >
+            <Icon name={copied ? "check" : "content_copy"} size={16} />
+          </Button>
         </div>
-        <Button
-          onClick={handleRefresh}
-          disabled={isRefreshing || isLoading}
-          variant="outline"
-          size="sm"
-          className="min-w-[100px]"
+        <div
+          className={`overflow-x-auto w-full ${matchHeight ? "h-full" : ""}`}
         >
-          <Icon
-            name="refresh"
-            size={16}
-            className={`mr-2 ${isRefreshing ? "animate-spin" : ""}`}
-          />
-          {isRefreshing ? "Refreshing..." : "Refresh"}
-        </Button>
+          <Suspense
+            fallback={
+              <pre className="p-3 text-xs font-mono whitespace-pre-wrap break-all">
+                {jsonString}
+              </pre>
+            }
+          >
+            <LazyHighlighter
+              language="json"
+              content={jsonString}
+              fillHeight={matchHeight}
+            />
+          </Suspense>
+        </div>
       </div>
+    </div>
+  );
+}
 
-      {/* Main canvas */}
-      <div className="flex-1 relative">
-        <ReactFlow
-          nodes={nodes}
-          edges={edges}
-          nodeTypes={nodeTypes}
-          fitView
-          fitViewOptions={{
-            padding: 0.1,
-            minZoom: 0.3,
-            maxZoom: 1.2,
-          }}
-          nodesDraggable={false}
-          nodesConnectable={false}
-          elementsSelectable={false}
-          panOnDrag
-          zoomOnScroll
-          zoomOnPinch
-          preventScrolling={false}
-        >
-          <Background />
-        </ReactFlow>
+function StepError({ error }: { error: unknown }) {
+  if (!error) return null;
+
+  const errorObj = error as { name?: string; message?: string };
+
+  return (
+    <div className="text-xs bg-destructive/10 text-destructive rounded p-2">
+      <div className="font-semibold">{String(errorObj.name || "Error")}</div>
+      <div className="mt-1">
+        {String(errorObj.message || "An error occurred")}
       </div>
     </div>
   );
 }
 
 /**
- * Convert workflow definition to React Flow nodes and edges for display
+ * Interactive workflow canvas that shows a form for workflow input
+ * and displays the run results below
  */
-function convertWorkflowToDisplayFlow(workflow: DisplayWorkflow) {
-  const nodes: Node[] = [];
-  const edges: Edge[] = [];
+export function WorkflowDisplayCanvas({
+  resourceUri,
+  onRefresh: _onRefresh,
+}: WorkflowDisplayCanvasProps) {
+  const { connection } = useResourceRoute();
+  const {
+    data: resource,
+    isLoading: isLoadingWorkflow,
+  } = useWorkflowByUriV2(resourceUri);
+  const workflow = resource?.data;
 
-  // Create source node (workflow input)
-  const sourceNode: Node = {
-    id: "source",
-    type: "workflow-source",
-    position: { x: 50, y: 100 },
-    data: {
-      title: "Workflow Input",
-      description: "Input parameters for the workflow",
-      schema: workflow.inputSchema,
+  // Track recent workflows (Resources v2 workflow detail)
+  const { locator } = useSDK();
+  const projectKey = typeof locator === "string" ? locator : undefined;
+  const { addRecent } = useRecentResources(projectKey);
+  const hasTrackedRecentRef = useRef(false);
+  const { toggle: toggleChat } = useDecopilotOpen();
+
+  useEffect(() => {
+    if (workflow && resourceUri && projectKey && !hasTrackedRecentRef.current) {
+      hasTrackedRecentRef.current = true;
+      setTimeout(() => {
+        addRecent({
+          id: resourceUri,
+          name: workflow.name || resourceUri,
+          type: "workflow",
+          icon: "flowchart",
+          path: `/${projectKey}/rsc/i:workflows-management/workflow/${encodeURIComponent(resourceUri)}`,
+        });
+      }, 0);
+    }
+  }, [workflow, resourceUri, projectKey, addRecent]);
+
+  // Form state for workflow input
+  const [formData, setFormData] = useState<Record<string, unknown>>({});
+  const [currentRunUri, setCurrentRunUri] = useState<string | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Fetch run data if we have a run URI
+  const runQuery = useQuery({
+    queryKey: ["workflow-run-read", currentRunUri],
+    enabled: Boolean(connection && currentRunUri),
+    queryFn: async () => {
+      const result = await callTool(connection!, {
+        name: "DECO_RESOURCE_WORKFLOW_RUN_READ",
+        arguments: { uri: currentRunUri! },
+      });
+      return result.structuredContent as {
+        uri: string;
+        data: WorkflowRunData;
+        created_at?: string;
+        updated_at?: string;
+      };
     },
-  };
-  nodes.push(sourceNode);
-
-  // Create step nodes
-  workflow.steps.forEach((step, index) => {
-    const stepNode: Node = {
-      id: `step-${index}`,
-      type: "workflow-step",
-      position: { x: 300 + index * 250, y: 100 },
-      data: {
-        step,
-        index,
-        integrationId:
-          (step as { type?: string; def?: { integration?: string } }).type ===
-          "tool_call"
-            ? (step as { type?: string; def?: { integration?: string } }).def
-                ?.integration
-            : undefined,
-      },
-    };
-    nodes.push(stepNode);
-
-    // Create edges between nodes
-    const sourceId = index === 0 ? "source" : `step-${index - 1}`;
-    const targetId = `step-${index}`;
-
-    const edge: Edge = {
-      id: `edge-${sourceId}-${targetId}`,
-      source: sourceId,
-      target: targetId,
-      type: "smoothstep",
-      animated: false,
-    };
-    edges.push(edge);
+    staleTime: 10_000,
+    refetchInterval: (q) => {
+      const status = q.state.data?.data?.status;
+      if (status === "completed" || status === "failed") return false;
+      return 2000;
+    },
   });
 
-  // Create sink node (workflow output)
-  const sinkNode: Node = {
-    id: "sink",
-    type: "workflow-sink",
-    position: { x: 300 + workflow.steps.length * 250, y: 100 },
-    data: {
-      title: "Workflow Output",
-      description: "Final output of the workflow",
-      schema: workflow.outputSchema,
-    },
-  };
-  nodes.push(sinkNode);
+  const run = runQuery.data;
 
-  // Connect last step to sink
-  if (workflow.steps.length > 0) {
-    const lastStepId = `step-${workflow.steps.length - 1}`;
-    const sinkEdge: Edge = {
-      id: `edge-${lastStepId}-sink`,
-      source: lastStepId,
-      target: "sink",
-      type: "smoothstep",
-      animated: false,
-    };
-    edges.push(sinkEdge);
+  // Handle form submission - start workflow
+  async function handleFormSubmit(data: Record<string, unknown>) {
+    if (!connection || !resourceUri) return;
+
+    try {
+      setIsSubmitting(true);
+      const result = await callTool(connection, {
+        name: "DECO_WORKFLOW_START",
+        arguments: {
+          uri: resourceUri,
+          input: data,
+        },
+      });
+
+      const response = result.structuredContent as {
+        runId?: string;
+        uri?: string;
+        error?: string;
+      };
+
+      if (response.error) {
+        throw new Error(response.error);
+      }
+
+      if (response.uri) {
+        setCurrentRunUri(response.uri);
+      }
+    } catch (error) {
+      console.error("Failed to start workflow", error);
+      globalThis.window.alert(
+        `Failed to start workflow: ${error instanceof Error ? error.message : String(error)}`,
+      );
+    } finally {
+      setIsSubmitting(false);
+    }
   }
 
-  return { nodes, edges };
+  // Calculate duration
+  const duration = useMemo(() => {
+    const startTime = run?.data?.startTime;
+    const endTime = run?.data?.endTime;
+    if (!startTime) return null;
+    const ms = (endTime || Date.now()) - startTime;
+    if (ms < 0) return null;
+    const s = Math.floor(ms / 1000);
+    if (s < 60) return `${s}s`;
+    const m = Math.floor(s / 60);
+    if (m < 60) return `${m}m ${s % 60}s`;
+    const h = Math.floor(m / 60);
+    return `${h}h ${m % 60}m ${s % 60}s`;
+  }, [run?.data?.startTime, run?.data?.endTime]);
+
+  const input = useMemo(
+    () => run?.data?.workflowStatus?.params?.input,
+    [run?.data?.workflowStatus],
+  );
+  const output = useMemo(
+    () => run?.data?.finalResult,
+    [run?.data?.finalResult],
+  );
+  const error = run?.data?.error;
+  const status = run?.data?.status || "unknown";
+  const badgeVariant = getStatusBadgeVariant(status);
+  const startedBy = run?.data.workflowStatus?.params?.context?.startedBy;
+  const steps = run?.data.workflowStatus?.steps || [];
+
+  if (isLoadingWorkflow) {
+    return (
+      <div className="h-[calc(100vh-12rem)] flex items-center justify-center">
+        <Spinner />
+      </div>
+    );
+  }
+
+  if (!workflow) {
+    return (
+      <EmptyState
+        icon="error"
+        title="Workflow not found"
+        description="Could not load workflow"
+      />
+    );
+  }
+
+  return (
+    <ScrollArea className="h-full w-full">
+      <div className="flex flex-col">
+        {/* Header */}
+        <div className="border-b border-border py-4 px-4 md:py-8 md:px-8 lg:py-16 lg:px-16">
+          <div className="max-w-[1500px] mx-auto space-y-4">
+            <div className="flex items-center justify-between gap-2 flex-wrap">
+        <div>
+                <h1 className="text-2xl font-medium">{workflow.name}</h1>
+                {workflow.description && (
+                  <p className="text-sm text-muted-foreground mt-1">
+                    {workflow.description}
+                  </p>
+                )}
+              </div>
+              {run && (
+                <Badge variant={badgeVariant} className="capitalize">
+                  {status}
+                </Badge>
+              )}
+            </div>
+
+            {/* Run metadata */}
+            {run && (
+              <div className="flex items-center gap-4 flex-wrap text-sm">
+                <div className="flex items-center gap-2">
+                  <Icon
+                    name="calendar_month"
+                    size={16}
+                    className="text-muted-foreground"
+                  />
+                  <span className="font-mono text-sm uppercase">
+                    {run.data.startTime
+                      ? new Date(run.data.startTime).toLocaleString([], {
+                          month: "short",
+                          day: "numeric",
+                          year: "numeric",
+                          hour: "2-digit",
+                          minute: "2-digit",
+                        })
+                      : "-"}
+                  </span>
+                </div>
+
+                <div className="h-3 w-px bg-border" />
+
+                <div className="flex items-center gap-2">
+                  <Icon
+                    name="schedule"
+                    size={16}
+                    className="text-muted-foreground"
+                  />
+                  <span className="font-mono text-sm">{duration || "-"}</span>
+                </div>
+
+                <div className="h-3 w-px bg-border" />
+
+                {startedBy?.id && (
+                  <UserInfo
+                    userId={startedBy.id}
+                    size="sm"
+                    noTooltip
+                    showEmail={false}
+                  />
+                )}
+              </div>
+            )}
+
+            {/* Error Alert */}
+            {error && (
+              <Alert className="bg-destructive/5 border-none">
+                <Icon name="error" className="h-4 w-4 text-destructive" />
+                <AlertTitle className="text-destructive">Error</AlertTitle>
+                <AlertDescription className="text-destructive">
+                  {error}
+                </AlertDescription>
+              </Alert>
+            )}
+          </div>
+        </div>
+
+        {/* Input Form */}
+        <div className="border-b border-border py-4 px-4 md:py-8 md:px-8 lg:py-8 lg:px-16">
+          <div className="max-w-[1500px] mx-auto space-y-4">
+            <h2 className="text-lg font-medium">Input</h2>
+
+            <div className="bg-muted/30 rounded-xl p-6">
+              {workflow.inputSchema &&
+              typeof workflow.inputSchema === "object" &&
+              "properties" in workflow.inputSchema &&
+              workflow.inputSchema.properties &&
+              Object.keys(workflow.inputSchema.properties).length > 0 ? (
+                <Form
+                  schema={workflow.inputSchema}
+                  validator={validator}
+                  formData={formData}
+                  onChange={({ formData }) => setFormData(formData)}
+                  onSubmit={({ formData }) => handleFormSubmit(formData)}
+                  showErrorList={false}
+                  noHtml5Validate
+                  liveValidate={false}
+                >
+                  <div className="flex justify-end gap-2 mt-4">
+                    <Button
+                      type="submit"
+                      disabled={isSubmitting}
+                      size="lg"
+                      className="min-w-[200px] flex items-center gap-2"
+                    >
+                      {isSubmitting ? (
+                        <>
+                          <Spinner size="xs" />
+                          Running...
+                        </>
+                      ) : (
+                        <>
+                          <Icon name="play_arrow" size={18} />
+                          Run Workflow
+                        </>
+                      )}
+                    </Button>
+                  </div>
+                </Form>
+              ) : (
+                <div className="flex flex-col items-center justify-center py-12 text-center">
+                  <div className="bg-background rounded-full p-4 mb-4">
+                    <Icon
+                      name="chat"
+                      size={32}
+                      className="text-muted-foreground"
+                    />
+                  </div>
+                  <h3 className="text-lg font-medium mb-2">No Input Form</h3>
+                  <p className="text-sm text-muted-foreground max-w-md">
+                    Create and configure workflows in chat.
+                  </p>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="mt-4"
+                    onClick={toggleChat}
+                  >
+                    <Icon name="chat" size={16} className="mr-2" />
+                    Open Chat
+                  </Button>
+      </div>
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* Output Section - only show if we have a run */}
+        {run && (
+          <>
+            <div className="border-b border-border py-4 px-4 md:py-8 md:px-8 lg:py-8 lg:px-16">
+              <div className="max-w-[1500px] mx-auto space-y-4">
+                <h2 className="text-lg font-medium">Input & Output</h2>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-stretch">
+                  <div className="min-w-0 flex">
+                    <JsonViewer data={input} title="Input" matchHeight />
+                  </div>
+
+                  <div className="min-w-0 flex">
+                    {status === "completed" || status === "success" ? (
+                      <JsonViewer data={output} title="Output" matchHeight />
+                    ) : (
+                      <div className="space-y-2 w-full">
+                        <p className="font-mono text-sm text-muted-foreground uppercase">
+                          Output
+                        </p>
+                        <div className="bg-muted rounded-xl min-h-[200px] max-h-[300px] flex items-center justify-center p-4">
+                          <div className="text-xs text-muted-foreground italic text-center">
+                            Output will be available when the workflow completes
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Steps Section */}
+            <div className="border-b border-border py-4 px-4 md:py-8 md:px-8 lg:py-8 lg:px-16">
+              <div className="max-w-[1500px] mx-auto space-y-4">
+                <h2 className="text-lg font-medium">Steps</h2>
+
+                {steps.length > 0 ? (
+                  <div className="flex flex-col items-center">
+                    <div className="w-full max-w-[700px] space-y-0">
+                      {steps.map((step, idx) => {
+                        const stepStatus =
+                          step.success === true
+                            ? "completed"
+                            : step.success === false
+                              ? "failed"
+                              : step.start && !step.end
+                                ? "running"
+                                : "pending";
+
+                        return (
+                          <div key={idx}>
+                            {idx > 0 && (
+                              <div className="h-10 w-full flex justify-center">
+                                <div className="w-px bg-border" />
+                              </div>
+                            )}
+
+                            <div
+                              className={`rounded-xl p-0.5 ${stepStatus === "failed" ? "bg-destructive/10" : "bg-muted"}`}
+                            >
+                              {/* Step Header */}
+                              <div
+                                className={`p-4 space-y-2 ${stepStatus === "failed" ? "text-destructive" : ""}`}
+                              >
+                                <div className="flex items-center justify-between gap-2">
+                                  <div className="flex items-center gap-2 flex-1 min-w-0">
+                                    <span className="font-medium text-base truncate">
+                                      {String(step.name || `Step ${idx + 1}`)}
+                                    </span>
+                                  </div>
+                                  <Badge
+                                    variant={getStatusBadgeVariant(stepStatus)}
+                                    className="capitalize text-xs shrink-0"
+                                  >
+                                    {stepStatus}
+                                  </Badge>
+                                </div>
+
+                                <div className="flex items-center gap-6 text-sm">
+                                  {step.start && (
+                                    <div className="flex items-center gap-2">
+                                      <Icon name="play_arrow" size={16} />
+                                      <span className="font-mono text-sm uppercase">
+                                        {new Date(
+                                          step.start,
+                                        ).toLocaleTimeString([], {
+                                          hour: "2-digit",
+                                          minute: "2-digit",
+                                        })}
+                                      </span>
+                                    </div>
+                                  )}
+
+                                  {step.end && (
+                                    <div className="flex items-center gap-2">
+                                      <Icon name="check" size={16} />
+                                      <span className="font-mono text-sm uppercase">
+                                        {new Date(step.end).toLocaleTimeString(
+                                          [],
+                                          {
+                                            hour: "2-digit",
+                                            minute: "2-digit",
+                                          },
+                                        )}
+                                      </span>
+                                    </div>
+                                  )}
+                                </div>
+                              </div>
+
+                              {/* Step Content */}
+                              <div className="bg-background rounded-xl p-3 space-y-3">
+                                <StepError error={step.error} />
+
+                                {step.config !== undefined &&
+                                  step.config !== null && (
+                                    <JsonViewer
+                                      data={step.config}
+                                      title="Config"
+                                    />
+                                  )}
+
+                                {step.output !== undefined &&
+                                  step.output !== null && (
+                                    <JsonViewer
+                                      data={step.output}
+                                      title="Output"
+                                    />
+                                  )}
+
+                                {step.attempts && step.attempts.length > 1 && (
+                                  <details className="text-xs">
+                                    <summary className="cursor-pointer font-medium text-muted-foreground hover:text-foreground">
+                                      {step.attempts.length} attempts
+                                    </summary>
+                                    <div className="mt-2 space-y-2 pl-4">
+                                      {step.attempts.map(
+                                        (attempt, attemptIdx) => (
+                                          <div
+                                            key={attemptIdx}
+                                            className="border-l-2 pl-2 py-1"
+                                          >
+                                            <div className="flex items-center gap-2">
+                                              <span>
+                                                Attempt {attemptIdx + 1}
+                                              </span>
+                                              {attempt.success ? (
+                                                <Icon
+                                                  name="check_circle"
+                                                  size={12}
+                                                  className="text-success"
+                                                />
+                                              ) : (
+                                                <Icon
+                                                  name="error"
+                                                  size={12}
+                                                  className="text-destructive"
+                                                />
+                                              )}
+                                            </div>
+                                            {attempt.error && (
+                                              <div className="text-destructive mt-1">
+                                                {String(
+                                                  (
+                                                    attempt.error as {
+                                                      message?: string;
+                                                    }
+                                                  ).message || "Error",
+                                                )}
+                                              </div>
+                                            )}
+                                          </div>
+                                        ),
+                                      )}
+                                    </div>
+                                  </details>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                ) : (
+                  <div className="text-sm text-muted-foreground italic py-4">
+                    No steps available yet
+                  </div>
+                )}
+              </div>
+            </div>
+          </>
+        )}
+      </div>
+    </ScrollArea>
+  );
 }

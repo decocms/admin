@@ -225,8 +225,8 @@ const StepFormView = memo(
                       ? schemaObj.description
                       : "";
 
-                  // Get the current value from step.input
-                  const currentValue = step.input?.[key];
+                  // Get the current value from step.def.input
+                  const currentValue = (step.def as any).input?.[key];
                   const stringValue =
                     typeof currentValue === "string"
                       ? currentValue
@@ -332,7 +332,7 @@ export const StepNode = memo(
     const stepExecute = (step?.def as any)?.execute;
     const stepInputSchema = (step?.def as any)?.inputSchema;
     const stepOutputSchema = (step?.def as any)?.outputSchema;
-    const stepInput = (step as any)?.input;
+    const stepInput = (step?.def as any)?.input;
 
     // OPTIMIZED: Get step index and all steps, then compute previous results locally
     const stepIndex = useWorkflowStepIndex(stepName || "");

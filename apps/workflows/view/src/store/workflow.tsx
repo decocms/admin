@@ -132,7 +132,7 @@ export const WorkflowStoreProvider = ({
               if (stepIndex === undefined) return;
 
               const currentStep = currentState.workflow.steps[stepIndex];
-              const currentInput = (currentStep as any).input || {};
+              const currentInput = (currentStep.def as any).input || {};
 
               // CRITICAL: Skip update if value hasn't actually changed
               // This prevents unnecessary re-renders when debounce fires with same value
@@ -142,7 +142,10 @@ export const WorkflowStoreProvider = ({
               const newInput = { ...currentInput, [fieldKey]: value };
 
               const newSteps = [...currentState.workflow.steps];
-              newSteps[stepIndex] = { ...currentStep, input: newInput } as any;
+              newSteps[stepIndex] = {
+                ...currentStep,
+                def: { ...(currentStep.def as any), input: newInput },
+              } as any;
 
               set({
                 workflow: {
@@ -461,13 +464,14 @@ export const useWorkflowStepByName = (
       if (prev.def !== next.def) return false;
 
       // Check if output changed (execution results)
-      if ((prev as any).output !== (next as any).output) return false;
+      if ((prev.def as any).output !== (next.def as any).output) return false;
 
       // CRITICAL PERFORMANCE FIX: Use shallow equality for input
       // This prevents unnecessary re-renders when only one field changes
       // Reference equality would trigger re-renders on EVERY keystroke
       // Shallow equality only triggers when fields actually change
-      if (!shallowEqual((prev as any).input, (next as any).input)) return false;
+      if (!shallowEqual((prev.def as any).input, (next.def as any).input))
+        return false;
 
       // All critical properties are the same - consider equal
       return true;

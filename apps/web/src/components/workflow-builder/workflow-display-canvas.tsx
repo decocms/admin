@@ -3,7 +3,9 @@ import {
   useRecentResources,
   useSDK,
   useWorkflowByUriV2,
+  type WorkflowDefinition,
   type WorkflowRunData,
+  type WorkflowStep,
 } from "@deco/sdk";
 import {
   Alert,
@@ -24,6 +26,7 @@ import { UserInfo } from "../common/table/table-cells.tsx";
 import { useDecopilotOpen } from "../layout/decopilot-layout.tsx";
 import { useResourceRoute } from "../resources-v2/route-context.tsx";
 import { getStatusBadgeVariant } from "../workflows/utils.ts";
+import { WorkflowStepCard } from "../workflows/workflow-step-card.tsx";
 
 const LazyHighlighter = lazy(() => import("../chat/lazy-highlighter.tsx"));
 
@@ -37,6 +40,30 @@ interface JsonViewerProps {
   title: string;
   matchHeight?: boolean;
 }
+
+// Runtime step from workflowStatus.steps (Cloudflare workflow instance)
+interface RuntimeStep {
+  name?: string;
+  type?: string;
+  start?: string | null;
+  end?: string | null;
+  success?: boolean | null;
+  output?: unknown;
+  error?: { name?: string; message?: string } | null;
+  attempts?: Array<{
+    start?: string | null;
+    end?: string | null;
+    success?: boolean | null;
+    error?: { name?: string; message?: string } | null;
+  }>;
+  config?: unknown;
+}
+
+// Merged step combines definition with runtime data
+type MergedStep = Partial<WorkflowStep> &
+  RuntimeStep & {
+    def?: WorkflowStep["def"];
+  };
 
 function JsonViewer({ data, title, matchHeight = false }: JsonViewerProps) {
   const [copied, setCopied] = useState(false);
@@ -109,21 +136,6 @@ function JsonViewer({ data, title, matchHeight = false }: JsonViewerProps) {
             />
           </Suspense>
         </div>
-      </div>
-    </div>
-  );
-}
-
-function StepError({ error }: { error: unknown }) {
-  if (!error) return null;
-
-  const errorObj = error as { name?: string; message?: string };
-
-  return (
-    <div className="text-xs bg-destructive/10 text-destructive rounded p-2">
-      <div className="font-semibold">{String(errorObj.name || "Error")}</div>
-      <div className="mt-1">
-        {String(errorObj.message || "An error occurred")}
       </div>
     </div>
   );
@@ -259,7 +271,40 @@ export function WorkflowDisplayCanvas({
   const status = run?.data?.status || "unknown";
   const badgeVariant = getStatusBadgeVariant(status);
   const startedBy = run?.data.workflowStatus?.params?.context?.startedBy;
-  const steps = run?.data.workflowStatus?.steps || [];
+
+  // Merge workflow definition steps with runtime steps
+  const steps = useMemo<MergedStep[]>(() => {
+    const runSteps = run?.data.workflowStatus?.steps;
+    const definitionSteps = (workflow as WorkflowDefinition)?.steps;
+
+    // If no definition steps, return empty or just runtime steps
+    if (!definitionSteps || !Array.isArray(definitionSteps)) {
+      return (runSteps || []) as MergedStep[];
+    }
+
+    // If no run yet, show all definition steps
+    if (!runSteps || runSteps.length === 0) {
+      return definitionSteps as MergedStep[];
+    }
+
+    // Merge: for each definition step, use runtime data if available
+    return definitionSteps.map((defStep: WorkflowStep, idx: number) => {
+      const runtimeStep = runSteps[idx];
+
+      // If we have runtime data for this step, merge it with definition
+      if (runtimeStep) {
+        return {
+          ...defStep,
+          ...runtimeStep,
+          // Keep definition data in 'def' for reference
+          def: defStep.def || defStep,
+        } as MergedStep;
+      }
+
+      // Otherwise, return the definition step (pending)
+      return defStep as MergedStep;
+    });
+  }, [run?.data.workflowStatus?.steps, workflow]);
 
   if (isLoadingWorkflow) {
     return (
@@ -432,198 +477,63 @@ export function WorkflowDisplayCanvas({
 
         {/* Output Section - only show if we have a run */}
         {run && (
-          <>
-            <div className="border-b border-border py-4 px-4 md:py-8 md:px-8 lg:py-8 lg:px-16">
-              <div className="max-w-[1500px] mx-auto space-y-4">
-                <h2 className="text-lg font-medium">Input & Output</h2>
+          <div className="border-b border-border py-4 px-4 md:py-8 md:px-8 lg:py-8 lg:px-16">
+            <div className="max-w-[1500px] mx-auto space-y-4">
+              <h2 className="text-lg font-medium">Input & Output</h2>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-stretch">
-                  <div className="min-w-0 flex">
-                    <JsonViewer data={input} title="Input" matchHeight />
-                  </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-stretch">
+                <div className="min-w-0 flex">
+                  <JsonViewer data={input} title="Input" matchHeight />
+                </div>
 
-                  <div className="min-w-0 flex">
-                    {status === "completed" || status === "success" ? (
-                      <JsonViewer data={output} title="Output" matchHeight />
-                    ) : (
-                      <div className="space-y-2 w-full">
-                        <p className="font-mono text-sm text-muted-foreground uppercase">
-                          Output
-                        </p>
-                        <div className="bg-muted rounded-xl min-h-[200px] max-h-[300px] flex items-center justify-center p-4">
-                          <div className="text-xs text-muted-foreground italic text-center">
-                            Output will be available when the workflow completes
-                          </div>
+                <div className="min-w-0 flex">
+                  {status === "completed" || status === "success" ? (
+                    <JsonViewer data={output} title="Output" matchHeight />
+                  ) : (
+                    <div className="space-y-2 w-full">
+                      <p className="font-mono text-sm text-muted-foreground uppercase">
+                        Output
+                      </p>
+                      <div className="bg-muted rounded-xl min-h-[200px] max-h-[300px] flex items-center justify-center p-4">
+                        <div className="text-xs text-muted-foreground italic text-center">
+                          Output will be available when the workflow completes
                         </div>
                       </div>
-                    )}
-                  </div>
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
-
-            {/* Steps Section */}
-            <div className="border-b border-border py-4 px-4 md:py-8 md:px-8 lg:py-8 lg:px-16">
-              <div className="max-w-[1500px] mx-auto space-y-4">
-                <h2 className="text-lg font-medium">Steps</h2>
-
-                {steps.length > 0 ? (
-                  <div className="flex flex-col items-center">
-                    <div className="w-full max-w-[700px] space-y-0">
-                      {steps.map((step, idx) => {
-                        const stepStatus =
-                          step.success === true
-                            ? "completed"
-                            : step.success === false
-                              ? "failed"
-                              : step.start && !step.end
-                                ? "running"
-                                : "pending";
-
-                        return (
-                          <div key={idx}>
-                            {idx > 0 && (
-                              <div className="h-10 w-full flex justify-center">
-                                <div className="w-px bg-border" />
-                              </div>
-                            )}
-
-                            <div
-                              className={`rounded-xl p-0.5 ${stepStatus === "failed" ? "bg-destructive/10" : "bg-muted"}`}
-                            >
-                              {/* Step Header */}
-                              <div
-                                className={`p-4 space-y-2 ${stepStatus === "failed" ? "text-destructive" : ""}`}
-                              >
-                                <div className="flex items-center justify-between gap-2">
-                                  <div className="flex items-center gap-2 flex-1 min-w-0">
-                                    <span className="font-medium text-base truncate">
-                                      {String(step.name || `Step ${idx + 1}`)}
-                                    </span>
-                                  </div>
-                                  <Badge
-                                    variant={getStatusBadgeVariant(stepStatus)}
-                                    className="capitalize text-xs shrink-0"
-                                  >
-                                    {stepStatus}
-                                  </Badge>
-                                </div>
-
-                                <div className="flex items-center gap-6 text-sm">
-                                  {step.start && (
-                                    <div className="flex items-center gap-2">
-                                      <Icon name="play_arrow" size={16} />
-                                      <span className="font-mono text-sm uppercase">
-                                        {new Date(
-                                          step.start,
-                                        ).toLocaleTimeString([], {
-                                          hour: "2-digit",
-                                          minute: "2-digit",
-                                        })}
-                                      </span>
-                                    </div>
-                                  )}
-
-                                  {step.end && (
-                                    <div className="flex items-center gap-2">
-                                      <Icon name="check" size={16} />
-                                      <span className="font-mono text-sm uppercase">
-                                        {new Date(step.end).toLocaleTimeString(
-                                          [],
-                                          {
-                                            hour: "2-digit",
-                                            minute: "2-digit",
-                                          },
-                                        )}
-                                      </span>
-                                    </div>
-                                  )}
-                                </div>
-                              </div>
-
-                              {/* Step Content */}
-                              <div className="bg-background rounded-xl p-3 space-y-3">
-                                <StepError error={step.error} />
-
-                                {step.config !== undefined &&
-                                  step.config !== null && (
-                                    <JsonViewer
-                                      data={step.config}
-                                      title="Config"
-                                    />
-                                  )}
-
-                                {step.output !== undefined &&
-                                  step.output !== null && (
-                                    <JsonViewer
-                                      data={step.output}
-                                      title="Output"
-                                    />
-                                  )}
-
-                                {step.attempts && step.attempts.length > 1 && (
-                                  <details className="text-xs">
-                                    <summary className="cursor-pointer font-medium text-muted-foreground hover:text-foreground">
-                                      {step.attempts.length} attempts
-                                    </summary>
-                                    <div className="mt-2 space-y-2 pl-4">
-                                      {step.attempts.map(
-                                        (attempt, attemptIdx) => (
-                                          <div
-                                            key={attemptIdx}
-                                            className="border-l-2 pl-2 py-1"
-                                          >
-                                            <div className="flex items-center gap-2">
-                                              <span>
-                                                Attempt {attemptIdx + 1}
-                                              </span>
-                                              {attempt.success ? (
-                                                <Icon
-                                                  name="check_circle"
-                                                  size={12}
-                                                  className="text-success"
-                                                />
-                                              ) : (
-                                                <Icon
-                                                  name="error"
-                                                  size={12}
-                                                  className="text-destructive"
-                                                />
-                                              )}
-                                            </div>
-                                            {attempt.error && (
-                                              <div className="text-destructive mt-1">
-                                                {String(
-                                                  (
-                                                    attempt.error as {
-                                                      message?: string;
-                                                    }
-                                                  ).message || "Error",
-                                                )}
-                                              </div>
-                                            )}
-                                          </div>
-                                        ),
-                                      )}
-                                    </div>
-                                  </details>
-                                )}
-                              </div>
-                            </div>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </div>
-                ) : (
-                  <div className="text-sm text-muted-foreground italic py-4">
-                    No steps available yet
-                  </div>
-                )}
-              </div>
-            </div>
-          </>
+          </div>
         )}
+
+        {/* Steps Section - show definition steps before run, runtime steps after */}
+        <div className="border-b border-border py-4 px-4 md:py-8 md:px-8 lg:py-8 lg:px-16">
+          <div className="max-w-[1500px] mx-auto space-y-4">
+            <h2 className="text-lg font-medium">Steps</h2>
+
+            {steps.length > 0 ? (
+              <div className="flex flex-col items-center">
+                <div className="w-full max-w-[700px] space-y-0">
+                  {steps.map((step, idx) => (
+                    <div key={idx}>
+                      {idx > 0 && (
+                        <div className="h-10 w-full flex justify-center">
+                          <div className="w-px bg-border" />
+                        </div>
+                      )}
+                      <WorkflowStepCard step={step} index={idx} />
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ) : (
+              <div className="text-sm text-muted-foreground italic py-4">
+                No steps available yet
+              </div>
+            )}
+          </div>
+        </div>
       </div>
     </ScrollArea>
   );

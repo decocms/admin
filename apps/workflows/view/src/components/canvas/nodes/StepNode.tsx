@@ -537,8 +537,7 @@ export const StepNode = memo(
                 <DropdownMenuItem
                   onClick={() => {
                     if (step && confirm(`Delete step "${step.def?.name}"?`)) {
-                      // TODO: Implement delete functionality
-                      void 0;
+                      workflowActions.removeStep(step.def?.name as string);
                     }
                   }}
                   className="text-destructive"

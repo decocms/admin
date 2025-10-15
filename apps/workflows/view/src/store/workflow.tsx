@@ -5,18 +5,26 @@ import { persist } from "zustand/middleware";
 import { useSearch } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 
-const STORAGE_KEY = "workflowz-storage";
-
 type Workflow = NonNullable<
   Awaited<ReturnType<typeof client.READ_WORKFLOW>>
 >["workflow"];
 type WorkflowStep = NonNullable<Workflow>["steps"][number];
+
+// Helper to generate storage key from workflow URI
+function getStorageKey(workflowUri: string): string {
+  // Hash the URI to create a stable, short key
+  // For simple cases, just encode it
+  const encoded = btoa(workflowUri).replace(/[^a-zA-Z0-9]/g, "");
+  return `workflowz-${encoded}`;
+}
 
 interface State {
   workflow: Workflow;
   currentStepIndex: number;
   // PERFORMANCE: Cache step index lookup to avoid repeated find() calls
   _stepIndexMap: Map<string, number>;
+  // Temporary prompt for the "New Step" node (separate from existing steps)
+  newStepPrompt: string;
 }
 
 interface Actions {
@@ -28,6 +36,7 @@ interface Actions {
   addStep: (step: WorkflowStep) => void;
   removeStep: (stepId: string) => void;
   clearStore: () => void;
+  setNewStepPrompt: (prompt: string) => void;
 }
 
 interface Store extends State {
@@ -35,8 +44,11 @@ interface Store extends State {
 }
 
 // PERFORMANCE: Helper to build step index map
-function buildStepIndexMap(steps: WorkflowStep[]): Map<string, number> {
+function buildStepIndexMap(
+  steps: WorkflowStep[] | undefined,
+): Map<string, number> {
   const map = new Map<string, number>();
+  if (!steps) return map;
   steps.forEach((step, index) => {
     map.set(step.def.name, index);
   });
@@ -52,6 +64,13 @@ export const WorkflowStoreProvider = ({
   children: React.ReactNode;
   workflow: Workflow;
 }) => {
+  // Generate unique storage key per workflow URI
+  const storageKey = useMemo(() => {
+    const wf = workflow as any;
+    const uri = wf.uri || wf.id || "default";
+    return getStorageKey(uri);
+  }, [(workflow as any).uri, (workflow as any).id]);
+
   const [store] = useState(() =>
     createStore<Store>()(
       persist(
@@ -59,10 +78,16 @@ export const WorkflowStoreProvider = ({
           workflow,
           currentStepIndex: 0,
           _stepIndexMap: buildStepIndexMap(workflow.steps),
+          newStepPrompt: "",
           actions: {
             setCurrentStepIndex: (index: number) => {
+              // Validate that index is within bounds
+              const state = get();
+              const maxIndex = state.workflow.steps?.length || 0;
+              const validIndex = Math.max(0, Math.min(index, maxIndex));
+
               set(() => ({
-                currentStepIndex: index,
+                currentStepIndex: validIndex,
               }));
             },
             updateWorkflow: (updates: Partial<Workflow>) => {
@@ -137,6 +162,7 @@ export const WorkflowStoreProvider = ({
                 } as Workflow,
                 currentStepIndex: newSteps.length - 1,
                 _stepIndexMap: buildStepIndexMap(newSteps),
+                newStepPrompt: "", // Clear the prompt when a step is added
               });
             },
             removeStep: (stepId: string) => {
@@ -201,21 +227,41 @@ export const WorkflowStoreProvider = ({
                 } as Workflow,
                 currentStepIndex: 0,
                 _stepIndexMap: new Map(),
+                newStepPrompt: "",
               });
+            },
+            setNewStepPrompt: (prompt: string) => {
+              set({ newStepPrompt: prompt });
             },
           },
         }),
         {
-          name: STORAGE_KEY,
+          name: storageKey,
           // PERFORMANCE: Only persist what we need, exclude cache
           partialize: (state) => ({
             workflow: state.workflow,
             currentStepIndex: state.currentStepIndex,
+            newStepPrompt: state.newStepPrompt,
             // Don't persist _stepIndexMap - rebuild on load
           }),
           // PERFORMANCE: Prevent unnecessary storage writes
           // Only update storage when workflow or currentStepIndex actually change
           version: 1,
+          // Validate and fix currentStepIndex after rehydration
+          onRehydrateStorage: () => (state) => {
+            if (state) {
+              const maxIndex = state.workflow.steps?.length || 0;
+              // If currentStepIndex is out of bounds, clamp it to valid range
+              if (state.currentStepIndex > maxIndex) {
+                console.log(
+                  `🔧 Fixed out-of-bounds currentStepIndex: ${state.currentStepIndex} -> ${maxIndex - 1}`,
+                );
+                state.currentStepIndex = Math.max(0, maxIndex - 1);
+              }
+              // Rebuild the step index map after rehydration
+              state._stepIndexMap = buildStepIndexMap(state.workflow.steps);
+            }
+          },
         },
       ),
     ),
@@ -253,7 +299,7 @@ export const WorkflowProvider = ({
       description: workflowData?.workflow?.description || "",
       inputSchema: workflowData?.workflow?.inputSchema,
       outputSchema: workflowData?.workflow?.outputSchema,
-      steps: workflowData?.workflow?.steps,
+      steps: workflowData?.workflow?.steps || [],
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
     }),
@@ -327,18 +373,9 @@ export const useWorkflowAuthToken = (): string | undefined => {
 };
 
 // Returns new step prompt (primitive string)
+// This is stored separately from steps to work even when there are no steps yet
 export const useNewStepPrompt = () => {
-  return useWorkflowStore((state) => {
-    console.log({ workflow: state.workflow });
-    const stepIndex = state.currentStepIndex - 1;
-    if (stepIndex >= 0 && stepIndex < state.workflow.steps.length) {
-      const step = state.workflow.steps[stepIndex];
-      if (step?.type === "code" && "prompt" in step.def) {
-        return step.def.prompt || "";
-      }
-    }
-    return "";
-  });
+  return useWorkflowStore((state) => state.newStepPrompt);
 };
 
 // ============================================================================

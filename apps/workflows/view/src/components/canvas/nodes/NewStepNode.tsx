@@ -15,7 +15,7 @@ import { useIntegrations } from "@/hooks/useIntegrations";
 
 export const NewStepNode = memo(function NewStepNode(_props: NodeProps) {
   const workflow = useCurrentWorkflow();
-  const { updateStep, addStep } = useWorkflowStoreActions();
+  const { setNewStepPrompt, addStep } = useWorkflowStoreActions();
   const generateStepMutation = useGenerateStep();
   const prompt = useNewStepPrompt();
   const { data: integrations } = useIntegrations();
@@ -51,10 +51,6 @@ export const NewStepNode = memo(function NewStepNode(_props: NodeProps) {
 
           // Add the new step to the workflow
           if (result?.step) {
-            // Store the current last step name before adding the new step
-            const lastStepBeforeAdd =
-              workflow?.steps?.[workflow.steps.length - 1];
-
             const newStep: WorkflowStep = {
               type: "code",
               def: {
@@ -75,18 +71,8 @@ export const NewStepNode = memo(function NewStepNode(_props: NodeProps) {
               },
             };
 
-            // Add the new step
+            // Add the new step (this will automatically clear newStepPrompt)
             addStep(newStep);
-
-            // Clear the prompt from the step that had it (the last step before adding)
-            if (lastStepBeforeAdd) {
-              updateStep(lastStepBeforeAdd.def.name, {
-                def: {
-                  ...lastStepBeforeAdd.def,
-                  prompt: "",
-                },
-              });
-            }
           }
         },
         onError: (error) => {
@@ -94,29 +80,13 @@ export const NewStepNode = memo(function NewStepNode(_props: NodeProps) {
         },
       },
     );
-  }, [
-    prompt,
-    workflow,
-    mentionedTools,
-    generateStepMutation,
-    addStep,
-    updateStep,
-  ]);
-
-  const currentStep = workflow?.steps?.[workflow.steps.length - 1];
+  }, [prompt, workflow, mentionedTools, generateStepMutation, addStep]);
 
   const handleUpdateStep = useCallback(
     (value: string) => {
-      if (currentStep?.def.name) {
-        updateStep(currentStep.def.name, {
-          def: {
-            ...currentStep.def,
-            prompt: value,
-          },
-        });
-      }
+      setNewStepPrompt(value);
     },
-    [currentStep, updateStep],
+    [setNewStepPrompt],
   );
 
   return (

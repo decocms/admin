@@ -481,23 +481,7 @@ function ResourcesV2ListTab({
                       } else if (resourceName === "workflow") {
                         data.inputSchema = {};
                         data.outputSchema = {};
-                        data.steps = [
-                          {
-                            type: "code",
-                            def: {
-                              id: "step-1",
-                              name: "Start",
-                              description: "Initial step",
-                              inputSchema: {},
-                              outputSchema: {},
-                              input: {},
-                              output: {},
-                              status: "pending",
-                              execute:
-                                "export default async function(ctx) {\n  // Add your code here\n  return {};\n}",
-                            },
-                          },
-                        ];
+                        data.steps = [];
                         data.triggers = [];
                       } else if (resourceName === "tool") {
                         data.inputSchema = {};

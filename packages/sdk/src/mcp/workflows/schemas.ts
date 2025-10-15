@@ -176,7 +176,6 @@ export const WorkflowDefinitionSchema = z.object({
     ),
   steps: z
     .array(WorkflowStepDefinitionSchema)
-    .min(1)
     .describe(
       "Array of workflow steps that execute sequentially. Each step can reference previous step outputs using @<step_name>.output.property syntax.",
     ),

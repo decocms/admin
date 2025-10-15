@@ -483,13 +483,18 @@ function ResourcesV2ListTab({
                         data.outputSchema = {};
                         data.steps = [
                           {
-                            id: "step-1",
                             type: "code",
-                            name: "Start",
                             def: {
+                              id: "step-1",
                               name: "Start",
                               description: "Initial step",
-                              execute: "// Add your code here\nreturn {};",
+                              inputSchema: {},
+                              outputSchema: {},
+                              input: {},
+                              output: {},
+                              status: "pending",
+                              execute:
+                                "export default async function(ctx) {\n  // Add your code here\n  return {};\n}",
                             },
                           },
                         ];

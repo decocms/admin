@@ -38,6 +38,14 @@ export default defineConfig({
     // '__dirname': '""',
   },
 
+  optimizeDeps: {
+    include: [
+      "@tiptap/react",
+      "@tiptap/starter-kit",
+      "@tiptap/extension-mention",
+    ],
+  },
+
   // Clear cache more aggressively
   cacheDir: "node_modules/.vite",
 });

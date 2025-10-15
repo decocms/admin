@@ -27,6 +27,13 @@ export default defineConfig({
   ],
   server: { host: "0.0.0.0", port: 3000, allowedHosts: [".deco.host"] },
   optimizeDeps: {
+    include: [
+      "@tiptap/react",
+      "@tiptap/starter-kit",
+      "@tiptap/extension-mention",
+      "@tiptap/extension-bubble-menu",
+      "@tiptap/extension-placeholder",
+    ],
     esbuildOptions: {
       target: "es2022",
     },

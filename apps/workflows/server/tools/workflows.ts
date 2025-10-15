@@ -990,7 +990,7 @@ export const createAuthorizeWorkflowTool = (env: Env) =>
   });
 
 export const createReadWorkflowTool = (env: Env) =>
-  createTool({
+  createPrivateTool({
     id: "READ_WORKFLOW",
     description: "Read a workflow",
     inputSchema: z.object({ uri: z.string() }),

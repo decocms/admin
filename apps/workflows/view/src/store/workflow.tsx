@@ -3,7 +3,7 @@ import { createContext, useContext, useState, useMemo } from "react";
 import { client } from "@/lib/rpc";
 import { persist } from "zustand/middleware";
 import { useSearch } from "@tanstack/react-router";
-import { WORKFLOW } from "./mock";
+import { useQuery } from "@tanstack/react-query";
 
 const STORAGE_KEY = "workflowz-storage";
 
@@ -235,65 +235,29 @@ export const WorkflowProvider = ({
 }) => {
   const searchParams = useSearch({ from: "/workflow" });
   const resourceURI = (searchParams as { resourceURI?: string })?.resourceURI;
-  // Fetch workflow from API if resourceURI is provided
-  // const {
-  //   data: workflowData,
-  //   isLoading: isLoadingWorkflow,
-  // } = useQuery({
-  //   queryKey: ["workflow", resourceURI],
-  //   queryFn: async () => {
-  //     if (!resourceURI) return null;
-  //     return await client.READ_WORKFLOW({ uri: resourceURI });
-  //   },
-  //   enabled: !!resourceURI,
-  // });
 
-  //   if (!workflowData || isLoadingWorkflow || !resourceURI) {
-  //     return (
-  //       <div className="flex items-center justify-center h-screen text-muted-foreground">
-  //         <div className="flex flex-col items-center gap-4">
-  //           <div className="w-8 h-8 border-4 border-muted border-t-primary rounded-full animate-spin" />
-  //           <p>Loading workflow...</p>
-  //         </div>
-  //       </div>
-  //     );
-  //   }
-  // Transform steps to match expected schema (id -> name, code -> execute)
-  // Memoize this to prevent recreating on every render
-  type MockedStep = (typeof WORKFLOW.steps)[number];
-  const transformedSteps = useMemo(
-    () =>
-      WORKFLOW.steps.map((step: MockedStep) => ({
-        type: "code" as const,
-        def: {
-          name: step.id, // Use id as the unique identifier
-          description: step.description || "",
-          execute:
-            step.code ||
-            "export default async function(input, ctx) { return input; }",
-          inputSchema: step.inputSchema,
-          outputSchema: step.outputSchema,
-          prompt: step.name, // Store the display name in prompt
-        },
-        // Keep input and output at step level, not under def
-        input: step.input,
-        output: step.output,
-      })),
-    [],
-  );
+  // Fetch workflow from API if resourceURI is provided
+  const { data: workflowData, isLoading: isLoadingWorkflow } = useQuery({
+    queryKey: ["workflow", resourceURI],
+    queryFn: async () => {
+      if (!resourceURI) return null;
+      return await client.READ_WORKFLOW({ uri: resourceURI });
+    },
+    enabled: !!resourceURI,
+  });
 
   const defaultWorkflow = useMemo(
     () => ({
-      id: WORKFLOW.id,
-      name: WORKFLOW.name,
-      description: WORKFLOW.description,
-      inputSchema: WORKFLOW.inputSchema,
-      outputSchema: WORKFLOW.outputSchema,
-      steps: transformedSteps,
-      createdAt: WORKFLOW.createdAt,
-      updatedAt: WORKFLOW.updatedAt,
+      id: crypto.randomUUID(),
+      name: workflowData?.workflow?.name || "Untitled Workflow",
+      description: workflowData?.workflow?.description || "",
+      inputSchema: workflowData?.workflow?.inputSchema,
+      outputSchema: workflowData?.workflow?.outputSchema,
+      steps: workflowData?.workflow?.steps,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
     }),
-    [transformedSteps],
+    [workflowData?.workflow],
   );
 
   const finalWorkflow = useMemo(
@@ -304,6 +268,18 @@ export const WorkflowProvider = ({
       }) as unknown as Workflow,
     [defaultWorkflow, resourceURI],
   );
+
+  // Now it's safe to conditionally render based on loading state
+  if (!workflowData || isLoadingWorkflow || !resourceURI) {
+    return (
+      <div className="flex items-center justify-center h-screen text-muted-foreground">
+        <div className="flex flex-col items-center gap-4">
+          <div className="w-8 h-8 border-4 border-muted border-t-primary rounded-full animate-spin" />
+          <p>Loading workflow...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <WorkflowStoreProvider workflow={finalWorkflow}>

@@ -334,8 +334,14 @@ export function AgentProvider({
       // Read finish reason from metadata attached by the backend
       const finishReason = metadata?.finishReason;
 
+      const isCancelled =
+        result.isAbort || result.isDisconnect || result.isError;
+
       // Only set finish reason if it's one we care about displaying
-      if (finishReason === "length" || finishReason === "tool-calls") {
+      if (
+        !isCancelled &&
+        (finishReason === "length" || finishReason === "tool-calls")
+      ) {
         setFinishReason(finishReason);
       } else {
         setFinishReason(null);

@@ -23,7 +23,6 @@ import { useQuery } from "@tanstack/react-query";
 import { Suspense, lazy, useEffect, useMemo, useRef, useState } from "react";
 import { EmptyState } from "../common/empty-state.tsx";
 import { UserInfo } from "../common/table/table-cells.tsx";
-import { useDecopilotOpen } from "../layout/decopilot-layout.tsx";
 import { useResourceRoute } from "../resources-v2/route-context.tsx";
 import { getStatusBadgeVariant } from "../workflows/utils.ts";
 import { WorkflowStepCard } from "../workflows/workflow-step-card.tsx";
@@ -159,7 +158,6 @@ export function WorkflowDisplayCanvas({
   const projectKey = typeof locator === "string" ? locator : undefined;
   const { addRecent } = useRecentResources(projectKey);
   const hasTrackedRecentRef = useRef(false);
-  const { toggle: toggleChat } = useDecopilotOpen();
 
   useEffect(() => {
     if (workflow && resourceUri && projectKey && !hasTrackedRecentRef.current) {
@@ -282,7 +280,7 @@ export function WorkflowDisplayCanvas({
       return (runSteps || []) as MergedStep[];
     }
 
-    // If no run yet, show all definition steps
+    // If no run yet, return definition steps without runtime data
     if (!runSteps || runSteps.length === 0) {
       return definitionSteps as MergedStep[];
     }
@@ -305,6 +303,9 @@ export function WorkflowDisplayCanvas({
       return defStep as MergedStep;
     });
   }, [run?.data.workflowStatus?.steps, workflow]);
+
+  // Flag to know if we have an active or completed run
+  const hasRun = Boolean(run);
 
   if (isLoadingWorkflow) {
     return (
@@ -448,26 +449,27 @@ export function WorkflowDisplayCanvas({
                   </div>
                 </Form>
               ) : (
-                <div className="flex flex-col items-center justify-center py-12 text-center">
-                  <div className="bg-background rounded-full p-4 mb-4">
-                    <Icon
-                      name="chat"
-                      size={32}
-                      className="text-muted-foreground"
-                    />
-                  </div>
-                  <h3 className="text-lg font-medium mb-2">No Input Form</h3>
-                  <p className="text-sm text-muted-foreground max-w-md">
-                    Create and configure workflows in chat.
+                <div className="flex flex-col items-center justify-center py-8 text-center gap-4">
+                  <p className="text-sm text-muted-foreground">
+                    This workflow does not require any input parameters.
                   </p>
                   <Button
-                    variant="outline"
-                    size="sm"
-                    className="mt-4"
-                    onClick={toggleChat}
+                    disabled={isSubmitting}
+                    size="lg"
+                    onClick={() => handleFormSubmit({})}
+                    className="min-w-[200px] flex items-center gap-2"
                   >
-                    <Icon name="chat" size={16} className="mr-2" />
-                    Open Chat
+                    {isSubmitting ? (
+                      <>
+                        <Spinner size="xs" />
+                        Running...
+                      </>
+                    ) : (
+                      <>
+                        <Icon name="play_arrow" size={18} />
+                        Run Workflow
+                      </>
+                    )}
                   </Button>
                 </div>
               )}
@@ -528,7 +530,11 @@ export function WorkflowDisplayCanvas({
                           </div>
                         )}
                         <Suspense fallback={<Spinner />}>
-                          <WorkflowStepCard step={step} index={idx} />
+                          <WorkflowStepCard
+                            step={step}
+                            index={idx}
+                            showStatus={hasRun}
+                          />
                         </Suspense>
                       </div>
                     );

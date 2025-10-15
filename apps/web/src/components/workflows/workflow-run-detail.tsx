@@ -329,7 +329,7 @@ export function WorkflowRunDetail({ resourceUri }: WorkflowRunDetailProps) {
                         </div>
                       )}
                       <Suspense fallback={<Spinner />}>
-                        <WorkflowStepCard step={step} index={idx} />
+                        <WorkflowStepCard step={step} index={idx} showStatus />
                       </Suspense>
                     </div>
                   ))}

@@ -31,6 +31,7 @@ interface WorkflowStepCardProps {
     };
   };
   index: number;
+  showStatus?: boolean;
 }
 
 function JsonViewer({
@@ -131,7 +132,11 @@ function StepError({ error }: { error: unknown }) {
   );
 }
 
-export function WorkflowStepCard({ step, index }: WorkflowStepCardProps) {
+export function WorkflowStepCard({
+  step,
+  index,
+  showStatus = true,
+}: WorkflowStepCardProps) {
   const { data: integrations } = useIntegrations();
 
   const stepStatus =
@@ -230,12 +235,14 @@ export function WorkflowStepCard({ step, index }: WorkflowStepCardProps) {
               )}
             </div>
           </div>
-          <Badge
-            variant={getStatusBadgeVariant(stepStatus)}
-            className="capitalize text-xs shrink-0"
-          >
-            {stepStatus}
-          </Badge>
+          {showStatus && (
+            <Badge
+              variant={getStatusBadgeVariant(stepStatus)}
+              className="capitalize text-xs shrink-0"
+            >
+              {stepStatus}
+            </Badge>
+          )}
         </div>
       </div>
 

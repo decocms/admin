@@ -112,7 +112,9 @@ function SelectedModelDisplay({
   return (
     <div className="flex items-center gap-2">
       {model.logo && <img src={model.logo} className="w-4 h-4" />}
-      <span className="text-sm text-foreground">{model.name}</span>
+      <span className="text-sm text-muted-foreground group-hover:text-foreground transition-colors">
+        {model.name}
+      </span>
     </div>
   );
 }
@@ -121,12 +123,14 @@ interface ModelSelectorProps {
   model?: string;
   onModelChange?: (model: string) => void;
   variant?: "borderless" | "bordered";
+  className?: string;
 }
 
 export function ModelSelector({
   model = DEFAULT_MODEL.id,
   onModelChange,
   variant = "borderless",
+  className,
 }: ModelSelectorProps) {
   const [open, setOpen] = useState(false);
   const { data: models } = useModels({ excludeDisabled: true });
@@ -148,8 +152,9 @@ export function ModelSelector({
     >
       <ResponsiveSelectTrigger
         className={cn(
-          "!h-8 text-sm hover:bg-accent rounded-xl py-1 px-2 gap-1 shadow-none cursor-pointer border-0",
+          "!h-8 text-sm hover:bg-accent rounded-xl py-1 px-2 gap-1 shadow-none cursor-pointer border-0 group",
           variant === "borderless" && "md:border-none",
+          className,
         )}
       >
         <ResponsiveSelectValue placeholder="Select model">

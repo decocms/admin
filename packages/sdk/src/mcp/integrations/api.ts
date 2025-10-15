@@ -241,9 +241,27 @@ async function listToolsAndSortByName(
   {
     connection,
     ignoreCache,
-  }: { connection: MCPConnection; ignoreCache?: boolean },
+    appName,
+  }: {
+    connection: MCPConnection;
+    appName?: string | null;
+    ignoreCache?: boolean;
+  },
   c: AppContext,
 ) {
+  if (appName) {
+    const app = await getRegistryApp.handler({
+      name: appName,
+    });
+    return app?.tools?.map((tool) =>
+      registryToolToMcpTool({
+        description: tool.description ?? null,
+        input_schema: tool.inputSchema,
+        output_schema: tool.outputSchema,
+        name: tool.name,
+      }),
+    );
+  }
   const result = await listToolsByConnectionType(connection, c, ignoreCache);
 
   // Sort tools by name for consistent UI
@@ -394,8 +412,8 @@ const virtualIntegrationsFor = (
 const registryToolToMcpTool = (tool: {
   name: string;
   description: string | null;
-  input_schema: Json;
-  output_schema: Json;
+  input_schema: Json | Record<string, unknown>;
+  output_schema: Json | Record<string, unknown> | undefined;
 }): MCPTool => ({
   name: tool.name,
   description: tool.description || undefined,
@@ -505,14 +523,17 @@ export const listIntegrations = createIntegrationManagementTool({
           (dbIntegration) => formatId("i", dbIntegration.id) === integration.id,
         );
 
-        const { connection } = integration;
+        const { connection, appName } = integration;
 
         const isVirtual =
           connection.type === "HTTP" &&
           connection.url.startsWith(DECO_CMS_API_URL);
 
         const tools = isVirtual
-          ? await listToolsAndSortByName({ connection, ignoreCache: false }, c)
+          ? await listToolsAndSortByName(
+              { connection, appName, ignoreCache: false },
+              c,
+            )
               .then((r) => r?.tools ?? null)
               .catch(() => {
                 console.error(

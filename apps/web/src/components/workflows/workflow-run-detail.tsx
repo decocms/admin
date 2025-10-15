@@ -1,34 +1,36 @@
 import { callTool, type WorkflowRunData } from "@deco/sdk";
 import { Badge } from "@deco/ui/components/badge.tsx";
 import { Button } from "@deco/ui/components/button.tsx";
-import { Card, CardContent, CardHeader } from "@deco/ui/components/card.tsx";
 import { Icon } from "@deco/ui/components/icon.tsx";
 import { ScrollArea } from "@deco/ui/components/scroll-area.tsx";
 import { Spinner } from "@deco/ui/components/spinner.tsx";
+import {
+  Alert,
+  AlertDescription,
+  AlertTitle,
+} from "@deco/ui/components/alert.tsx";
 import { useQuery } from "@tanstack/react-query";
-import { useMemo, useState } from "react";
+import { Suspense, lazy, useMemo, useState } from "react";
 import { EmptyState } from "../common/empty-state.tsx";
+import { UserInfo } from "../common/table/table-cells.tsx";
 import { useResourceRoute } from "../resources-v2/route-context.tsx";
 import { getStatusBadgeVariant } from "./utils.ts";
+
+const LazyHighlighter = lazy(() => import("../chat/lazy-highlighter.tsx"));
 
 interface WorkflowRunDetailProps {
   resourceUri: string;
 }
 
-function getStatusIcon(status: string) {
-  if (status === "success" || status === "completed") {
-    return <Icon name="check_circle" size={16} className="text-success" />;
-  }
-  if (status === "failed" || status === "error" || status === "errored") {
-    return <Icon name="error" size={16} className="text-destructive" />;
-  }
-  if (status === "running") {
-    return <Icon name="sync" size={16} className="text-primary animate-spin" />;
-  }
-  return <Icon name="schedule" size={16} className="text-muted-foreground" />;
-}
-
-function JsonViewer({ data, title }: { data: unknown; title: string }) {
+function JsonViewer({
+  data,
+  title,
+  matchHeight = false,
+}: {
+  data: unknown;
+  title: string;
+  matchHeight?: boolean;
+}) {
   const [copied, setCopied] = useState(false);
 
   async function handleCopy() {
@@ -49,37 +51,57 @@ function JsonViewer({ data, title }: { data: unknown; title: string }) {
 
   if (data === null || data === undefined) {
     return (
-      <div className="text-xs text-muted-foreground italic p-2">
-        No {title.toLowerCase()}
+      <div className="space-y-2">
+        <p className="font-mono text-sm text-muted-foreground uppercase">
+          {title}
+        </p>
+        <div className="text-xs text-muted-foreground italic p-2">
+          No {title.toLowerCase()}
+        </div>
       </div>
     );
   }
 
+  const jsonString = JSON.stringify(data, null, 2);
+
   return (
-    <div className="space-y-2">
-      <div className="flex items-center justify-between">
-        <span className="text-xs font-medium text-muted-foreground">
-          {title}
-        </span>
-        <Button
-          size="sm"
-          variant="ghost"
-          onClick={handleCopy}
-          className="h-6 text-xs px-2"
+    <div
+      className={`space-y-2 min-w-0 w-full ${matchHeight ? "h-full flex flex-col" : ""}`}
+    >
+      <p className="font-mono text-sm text-muted-foreground uppercase">
+        {title}
+      </p>
+      <div
+        className={`relative bg-muted rounded-xl ${matchHeight ? "min-h-[200px]" : ""} max-h-[300px] overflow-auto w-full ${matchHeight ? "flex-1" : ""}`}
+      >
+        <div className="absolute right-2 top-2 z-10 flex items-center gap-1 bg-background rounded-xl shadow-sm">
+          <Button
+            size="icon"
+            variant="ghost"
+            onClick={handleCopy}
+            className="h-8 w-8"
+          >
+            <Icon name={copied ? "check" : "content_copy"} size={16} />
+          </Button>
+        </div>
+        <div
+          className={`overflow-x-auto w-full ${matchHeight ? "h-full" : ""}`}
         >
-          <Icon
-            name={copied ? "check" : "content_copy"}
-            size={12}
-            className="mr-1"
-          />
-          {copied ? "Copied" : "Copy"}
-        </Button>
+          <Suspense
+            fallback={
+              <pre className="p-3 text-xs font-mono whitespace-pre-wrap break-all">
+                {jsonString}
+              </pre>
+            }
+          >
+            <LazyHighlighter
+              language="json"
+              content={jsonString}
+              fillHeight={matchHeight}
+            />
+          </Suspense>
+        </div>
       </div>
-      <ScrollArea className="max-h-48 rounded border bg-muted/30">
-        <pre className="p-3 text-xs font-mono">
-          {JSON.stringify(data, null, 2)}
-        </pre>
-      </ScrollArea>
     </div>
   );
 }
@@ -155,7 +177,6 @@ export function WorkflowRunDetail({ resourceUri }: WorkflowRunDetailProps) {
 
   const status = run?.data?.status || "unknown";
   const badgeVariant = getStatusBadgeVariant(status);
-  const statusIcon = getStatusIcon(status);
 
   // Calculate duration using timestamps from backend
   const duration = useMemo(() => {
@@ -207,243 +228,253 @@ export function WorkflowRunDetail({ resourceUri }: WorkflowRunDetailProps) {
 
   return (
     <ScrollArea className="h-full w-full">
-      <div className="max-w-5xl mx-auto p-6 space-y-6">
+      <div className="flex flex-col">
         {/* Header with status and metadata */}
-        <Card>
-          <CardContent className="pt-6">
-            <div className="space-y-4">
-              {/* Title and Status */}
-              <div className="flex items-center justify-between">
-                <h1 className="text-2xl font-semibold">{headerTitle}</h1>
-                <div className="flex items-center gap-2">
-                  {statusIcon}
-                  <Badge variant={badgeVariant} className="capitalize">
-                    {status}
-                  </Badge>
-                </div>
-              </div>
-
-              {/* Metadata Grid */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
-                <div>
-                  <div className="text-muted-foreground mb-1">Started</div>
-                  <div className="font-mono">
-                    {run.data.startTime
-                      ? new Date(run.data.startTime).toLocaleString()
-                      : "-"}
-                  </div>
-                </div>
-                <div>
-                  <div className="text-muted-foreground mb-1">Duration</div>
-                  <div className="font-mono">{duration || "-"}</div>
-                </div>
-                <div>
-                  <div className="text-muted-foreground mb-1">Created By</div>
-                  <div className="font-mono">
-                    {startedBy?.email ||
-                      startedBy?.name ||
-                      startedBy?.id ||
-                      "-"}
-                  </div>
-                </div>
-                <div>
-                  <div className="text-muted-foreground mb-1">Workflow</div>
-                  <div
-                    className="font-mono truncate"
-                    title={workflowQuery.data?.data?.name || workflowUri}
-                  >
-                    {workflowQuery.data?.data?.name ||
-                      workflowUri?.split("/").pop() ||
-                      "-"}
-                  </div>
-                </div>
-              </div>
+        <div className="border-b border-border py-4 px-4 md:py-8 md:px-8 lg:py-16 lg:px-16">
+          <div className="max-w-[1500px] mx-auto space-y-4">
+            {/* Title and Status */}
+            <div className="flex items-center justify-between gap-2 flex-wrap">
+              <h1 className="text-2xl font-medium">{headerTitle}</h1>
+              <Badge variant={badgeVariant} className="capitalize">
+                {status}
+              </Badge>
             </div>
-          </CardContent>
-        </Card>
 
-        {/* Error Alert */}
-        {error && (
-          <Card className="border-destructive">
-            <CardContent className="pt-6">
-              <div className="flex items-start gap-3">
+            {/* Metadata Row */}
+            <div className="flex items-center gap-4 flex-wrap text-sm">
+              <div className="flex items-center gap-2">
                 <Icon
-                  name="error"
-                  size={18}
-                  className="text-destructive mt-0.5"
+                  name="calendar_month"
+                  size={16}
+                  className="text-muted-foreground"
                 />
-                <div className="flex-1">
-                  <div className="font-semibold text-destructive mb-2">
-                    Error
-                  </div>
-                  <div className="text-sm text-destructive whitespace-pre-wrap bg-destructive/5 rounded p-3">
-                    {error}
-                  </div>
-                </div>
+                <span className="font-mono text-sm uppercase">
+                  {run.data.startTime
+                    ? new Date(run.data.startTime).toLocaleString([], {
+                        month: "short",
+                        day: "numeric",
+                        year: "numeric",
+                        hour: "2-digit",
+                        minute: "2-digit",
+                      })
+                    : "-"}
+                </span>
               </div>
-            </CardContent>
-          </Card>
-        )}
+
+              <div className="h-3 w-px bg-border" />
+
+              <div className="flex items-center gap-2">
+                <Icon
+                  name="schedule"
+                  size={16}
+                  className="text-muted-foreground"
+                />
+                <span className="font-mono text-sm">{duration || "-"}</span>
+              </div>
+
+              <div className="h-3 w-px bg-border" />
+
+              {startedBy?.id && (
+                <UserInfo
+                  userId={startedBy.id}
+                  size="sm"
+                  noTooltip
+                  showEmail={false}
+                />
+              )}
+            </div>
+
+            {/* Error Alert */}
+            {error && (
+              <Alert className="bg-destructive/5 border-none">
+                <Icon name="error" className="h-4 w-4 text-destructive" />
+                <AlertTitle className="text-destructive">Error</AlertTitle>
+                <AlertDescription className="text-destructive">
+                  {error}
+                </AlertDescription>
+              </Alert>
+            )}
+          </div>
+        </div>
 
         {/* Input / Output */}
-        <Card>
-          <CardHeader>
-            <h2 className="text-lg font-semibold">Input & Output</h2>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <JsonViewer data={input} title="Input" />
-            {status === "completed" || status === "success" ? (
-              <JsonViewer data={output} title="Output" />
-            ) : (
-              <div className="pt-2">
-                <span className="text-xs font-medium text-muted-foreground">
-                  Output
-                </span>
-                <div className="text-xs text-muted-foreground italic p-2 mt-2">
-                  Output will be available when the workflow completes
-                </div>
+        <div className="border-b border-border py-4 px-4 md:py-8 md:px-8 lg:py-8 lg:px-16">
+          <div className="max-w-[1500px] mx-auto space-y-4">
+            <h2 className="text-lg font-medium">Input & Output</h2>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-stretch">
+              <div className="min-w-0 flex">
+                <JsonViewer data={input} title="Input" matchHeight />
               </div>
-            )}
-          </CardContent>
-        </Card>
+
+              <div className="min-w-0 flex">
+                {status === "completed" || status === "success" ? (
+                  <JsonViewer data={output} title="Output" matchHeight />
+                ) : (
+                  <div className="space-y-2 w-full">
+                    <p className="font-mono text-sm text-muted-foreground uppercase">
+                      Output
+                    </p>
+                    <div className="bg-muted rounded-xl min-h-[200px] max-h-[300px] flex items-center justify-center p-4">
+                      <div className="text-xs text-muted-foreground italic text-center">
+                        Output will be available when the workflow completes
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
 
         {/* Steps */}
-        <Card>
-          <CardHeader>
-            <h2 className="text-lg font-semibold">Steps</h2>
-          </CardHeader>
-          <CardContent>
+        <div className="border-b border-border py-4 px-4 md:py-8 md:px-8 lg:py-8 lg:px-16">
+          <div className="max-w-[1500px] mx-auto space-y-4">
+            <h2 className="text-lg font-medium">Steps</h2>
+
             {steps.length > 0 ? (
-              <div className="space-y-3">
-                {steps.map((step, idx) => {
-                  const stepStatus =
-                    step.success === true
-                      ? "completed"
-                      : step.success === false
-                        ? "failed"
-                        : step.start && !step.end
-                          ? "running"
-                          : "pending";
+              <div className="flex flex-col items-center">
+                <div className="w-full max-w-[700px] space-y-0">
+                  {steps.map((step, idx) => {
+                    const stepStatus =
+                      step.success === true
+                        ? "completed"
+                        : step.success === false
+                          ? "failed"
+                          : step.start && !step.end
+                            ? "running"
+                            : "pending";
 
-                  return (
-                    <Card
-                      key={idx}
-                      className="border-l-4"
-                      style={{
-                        borderLeftColor:
-                          stepStatus === "completed"
-                            ? "hsl(var(--success))"
-                            : stepStatus === "failed"
-                              ? "hsl(var(--destructive))"
-                              : stepStatus === "running"
-                                ? "hsl(var(--primary))"
-                                : "hsl(var(--muted))",
-                      }}
-                    >
-                      <CardContent className="pt-4 space-y-3">
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center gap-2">
-                            {getStatusIcon(stepStatus)}
-                            <span className="font-mono font-semibold">
-                              {String(step.name || `Step ${idx + 1}`)}
-                            </span>
-                            <Badge
-                              variant={getStatusBadgeVariant(stepStatus)}
-                              className="capitalize text-xs"
-                            >
-                              {stepStatus}
-                            </Badge>
+                    return (
+                      <div key={idx}>
+                        {idx > 0 && (
+                          <div className="h-10 w-full flex justify-center">
+                            <div className="w-px bg-border" />
                           </div>
-                          {step.type && (
-                            <Badge variant="outline" className="text-xs">
-                              {String(step.type)}
-                            </Badge>
-                          )}
-                        </div>
-
-                        <StepError error={step.error} />
-
-                        {step.config !== undefined && step.config !== null && (
-                          <JsonViewer data={step.config} title="Config" />
                         )}
 
-                        {step.output !== undefined && step.output !== null && (
-                          <JsonViewer data={step.output} title="Output" />
-                        )}
-
-                        {step.start || step.end ? (
-                          <div className="flex gap-4 text-xs text-muted-foreground pt-2">
-                            {step.start && (
-                              <div>
-                                <span className="font-medium">Started:</span>{" "}
-                                <span className="font-mono">
-                                  {new Date(step.start).toLocaleTimeString()}
+                        <div
+                          className={`rounded-xl p-0.5 ${stepStatus === "failed" ? "bg-destructive/10" : "bg-muted"}`}
+                        >
+                          {/* Step Header */}
+                          <div
+                            className={`p-4 space-y-2 ${stepStatus === "failed" ? "text-destructive" : ""}`}
+                          >
+                            <div className="flex items-center justify-between gap-2">
+                              <div className="flex items-center gap-2 flex-1 min-w-0">
+                                <span className="font-medium text-base truncate">
+                                  {String(step.name || `Step ${idx + 1}`)}
                                 </span>
                               </div>
-                            )}
-                            {step.end && (
-                              <div>
-                                <span className="font-medium">Ended:</span>{" "}
-                                <span className="font-mono">
-                                  {new Date(step.end).toLocaleTimeString()}
-                                </span>
-                              </div>
-                            )}
-                          </div>
-                        ) : null}
+                              <Badge
+                                variant={getStatusBadgeVariant(stepStatus)}
+                                className="capitalize text-xs shrink-0"
+                              >
+                                {stepStatus}
+                              </Badge>
+                            </div>
 
-                        {step.attempts && step.attempts.length > 1 && (
-                          <details className="text-xs">
-                            <summary className="cursor-pointer font-medium text-muted-foreground hover:text-foreground">
-                              {step.attempts.length} attempts
-                            </summary>
-                            <div className="mt-2 space-y-2 pl-4">
-                              {step.attempts.map((attempt, attemptIdx) => (
-                                <div
-                                  key={attemptIdx}
-                                  className="border-l-2 pl-2 py-1"
-                                >
-                                  <div className="flex items-center gap-2">
-                                    <span>Attempt {attemptIdx + 1}</span>
-                                    {attempt.success ? (
-                                      <Icon
-                                        name="check_circle"
-                                        size={12}
-                                        className="text-success"
-                                      />
-                                    ) : (
-                                      <Icon
-                                        name="error"
-                                        size={12}
-                                        className="text-destructive"
-                                      />
+                            <div className="flex items-center gap-6 text-sm">
+                              {step.start && (
+                                <div className="flex items-center gap-2">
+                                  <Icon name="play_arrow" size={16} />
+                                  <span className="font-mono text-sm uppercase">
+                                    {new Date(step.start).toLocaleTimeString(
+                                      [],
+                                      {
+                                        hour: "2-digit",
+                                        minute: "2-digit",
+                                      },
                                     )}
-                                  </div>
-                                  {attempt.error && (
-                                    <div className="text-destructive mt-1">
-                                      {String(
-                                        (attempt.error as { message?: string })
-                                          .message || "Error",
+                                  </span>
+                                </div>
+                              )}
+
+                              {step.end && (
+                                <div className="flex items-center gap-2">
+                                  <Icon name="check" size={16} />
+                                  <span className="font-mono text-sm uppercase">
+                                    {new Date(step.end).toLocaleTimeString([], {
+                                      hour: "2-digit",
+                                      minute: "2-digit",
+                                    })}
+                                  </span>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+
+                          {/* Step Content */}
+                          <div className="bg-background rounded-xl p-3 space-y-3">
+                            <StepError error={step.error} />
+
+                            {step.config !== undefined &&
+                              step.config !== null && (
+                                <JsonViewer data={step.config} title="Config" />
+                              )}
+
+                            {step.output !== undefined &&
+                              step.output !== null && (
+                                <JsonViewer data={step.output} title="Output" />
+                              )}
+
+                            {step.attempts && step.attempts.length > 1 && (
+                              <details className="text-xs">
+                                <summary className="cursor-pointer font-medium text-muted-foreground hover:text-foreground">
+                                  {step.attempts.length} attempts
+                                </summary>
+                                <div className="mt-2 space-y-2 pl-4">
+                                  {step.attempts.map((attempt, attemptIdx) => (
+                                    <div
+                                      key={attemptIdx}
+                                      className="border-l-2 pl-2 py-1"
+                                    >
+                                      <div className="flex items-center gap-2">
+                                        <span>Attempt {attemptIdx + 1}</span>
+                                        {attempt.success ? (
+                                          <Icon
+                                            name="check_circle"
+                                            size={12}
+                                            className="text-success"
+                                          />
+                                        ) : (
+                                          <Icon
+                                            name="error"
+                                            size={12}
+                                            className="text-destructive"
+                                          />
+                                        )}
+                                      </div>
+                                      {attempt.error && (
+                                        <div className="text-destructive mt-1">
+                                          {String(
+                                            (
+                                              attempt.error as {
+                                                message?: string;
+                                              }
+                                            ).message || "Error",
+                                          )}
+                                        </div>
                                       )}
                                     </div>
-                                  )}
+                                  ))}
                                 </div>
-                              ))}
-                            </div>
-                          </details>
-                        )}
-                      </CardContent>
-                    </Card>
-                  );
-                })}
+                              </details>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
               </div>
             ) : (
               <div className="text-sm text-muted-foreground italic py-4">
                 No steps available
               </div>
             )}
-          </CardContent>
-        </Card>
+          </div>
+        </div>
       </div>
     </ScrollArea>
   );

@@ -1,4 +1,4 @@
-import type { WorkflowDefinition } from "@deco/sdk";
+import type { WorkflowDefinition, WorkflowStep } from "@deco/sdk";
 import { useSDK, useRecentResources, useWorkflowByUriV2 } from "@deco/sdk";
 import { Button } from "@deco/ui/components/button.tsx";
 import { Icon } from "@deco/ui/components/icon.tsx";
@@ -211,7 +211,7 @@ function convertWorkflowToDisplayFlow(workflow: DisplayWorkflow) {
   nodes.push(sourceNode);
 
   // Create step nodes
-  workflow.steps.forEach((step, index) => {
+  (workflow.steps as WorkflowStep[]).forEach((step, index) => {
     const stepNode: Node = {
       id: `step-${index}`,
       type: "workflow-step",
@@ -247,7 +247,10 @@ function convertWorkflowToDisplayFlow(workflow: DisplayWorkflow) {
   const sinkNode: Node = {
     id: "sink",
     type: "workflow-sink",
-    position: { x: 300 + workflow.steps.length * 250, y: 100 },
+    position: {
+      x: 300 + (workflow.steps as WorkflowStep[]).length * 250,
+      y: 100,
+    },
     data: {
       title: "Workflow Output",
       description: "Final output of the workflow",
@@ -257,8 +260,8 @@ function convertWorkflowToDisplayFlow(workflow: DisplayWorkflow) {
   nodes.push(sinkNode);
 
   // Connect last step to sink
-  if (workflow.steps.length > 0) {
-    const lastStepId = `step-${workflow.steps.length - 1}`;
+  if ((workflow.steps as WorkflowStep[]).length > 0) {
+    const lastStepId = `step-${(workflow.steps as WorkflowStep[]).length - 1}`;
     const sinkEdge: Edge = {
       id: `edge-${lastStepId}-sink`,
       source: lastStepId,

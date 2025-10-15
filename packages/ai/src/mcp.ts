@@ -16,7 +16,6 @@ import {
   createTransport,
 } from "@deco/workers-runtime/mcp-client";
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
-import { StreamableHTTPClientTransport } from "@modelcontextprotocol/sdk/client/streamableHttp.js";
 import type { Tool } from "ai";
 import { jsonSchema } from "ai";
 import type { AIAgent, Env } from "./agent.ts";
@@ -104,10 +103,9 @@ const getMCPServerTools = async (
               },
             ),
             execute: async (input) => {
-              const innerClient = await createServerClient({
-                ...mcpServer,
-                Transport: StreamableHTTPClientTransport,
-              }).catch(console.error);
+              const innerClient = await createServerClient(mcpServer).catch(
+                console.error,
+              );
               if (!innerClient) {
                 throw new Error("Failed to create inner client");
               }

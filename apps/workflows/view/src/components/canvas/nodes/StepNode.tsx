@@ -24,6 +24,7 @@ import {
   useWorkflowAuthToken,
   useWorkflowStepsArray,
   useWorkflowStepIndex,
+  useWorkflowInput,
 } from "@/store/workflow";
 import { StepOutput } from "./step-output";
 import type { WorkflowStep, WorkflowDependency } from "shared/types/workflows";
@@ -386,6 +387,7 @@ export const StepNode = memo(
     // OPTIMIZED: Get step index and all steps, then compute previous results locally
     const stepIndex = useWorkflowStepIndex(stepName || "");
     const allSteps = useWorkflowStepsArray();
+    const workflowInput = useWorkflowInput();
 
     // Memoize previous step results - only recompute when steps before this one change
     const previousStepResults = useMemo(() => {
@@ -402,8 +404,9 @@ export const StepNode = memo(
           prevStep.output.success &&
           "output" in prevStep.output
         ) {
-          const stepId = prevStep.def?.id || "";
-          results[stepId as string] = (
+          // Use step name as the key (steps reference each other by name, not ID)
+          const stepName = prevStep.def?.name || "";
+          results[stepName as string] = (
             prevStep.output as { output: unknown }
           ).output;
         }
@@ -435,6 +438,7 @@ export const StepNode = memo(
             input: (stepInput || {}) as any,
           },
           previousStepResults,
+          globalInput: workflowInput,
           workflowSteps,
           authToken,
         },
@@ -465,6 +469,7 @@ export const StepNode = memo(
       stepOutputSchema,
       stepInput,
       previousStepResults,
+      workflowInput,
       workflowSteps,
       authToken,
       executeStepMutation.mutate, // IMPORTANT: Only depend on .mutate function, not entire mutation object

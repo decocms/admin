@@ -7,5 +7,11 @@
     "lib": ["ES2023"],
     "allowJs": true
   },
-  "include": ["./server", "./shared", "./drizzle", "./drizzle.config.ts"]
+  "include": [
+    "./server",
+    "./shared",
+    "./drizzle",
+    "./drizzle.config.ts",
+    "../../packages/sdk/src/**/*.ts"
+  ]
 }

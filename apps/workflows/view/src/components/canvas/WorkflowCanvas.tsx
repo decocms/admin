@@ -14,12 +14,19 @@ import ReactFlow, {
   Background,
   type NodeChange,
 } from "reactflow";
-import { StepNode, NewStepNode, PlusButtonNode } from "./nodes";
+import {
+  StepNode,
+  NewStepNode,
+  PlusButtonNode,
+  WorkflowInputNode,
+} from "./nodes";
 import {
   useWorkflowStoreActions,
   useCurrentStepIndex,
   useWorkflowStepIds,
   useWorkflowStepsLength,
+  useWorkflowStepsArray,
+  useCurrentWorkflow,
 } from "@/store/workflow";
 
 export interface WorkflowCanvasRef {
@@ -36,6 +43,7 @@ const nodeTypes = {
   step: StepNode,
   newStep: NewStepNode,
   plusButton: PlusButtonNode,
+  workflowInput: WorkflowInputNode,
 };
 
 const Inner = forwardRef<WorkflowCanvasRef>(function Inner(_, ref) {
@@ -43,6 +51,8 @@ const Inner = forwardRef<WorkflowCanvasRef>(function Inner(_, ref) {
   const stepsLength = useWorkflowStepsLength();
   const currentStepIndex = useCurrentStepIndex();
   const { setCurrentStepIndex } = useWorkflowStoreActions();
+  const steps = useWorkflowStepsArray();
+  const workflow = useCurrentWorkflow();
 
   const isCenteringRef = useRef<boolean>(false);
   const lastScrollTimeRef = useRef<number>(0);
@@ -55,11 +65,52 @@ const Inner = forwardRef<WorkflowCanvasRef>(function Inner(_, ref) {
   // This prevents re-renders when step content changes, only when IDs change
   const stepIds = useWorkflowStepIds();
 
+  // Check if first step has inputSchema to decide whether to show workflow input node
+  // Must be defined early so centerViewport can use it
+  const showWorkflowInputNode = useMemo(() => {
+    // First, check if workflow has an inputSchema
+    const workflowInputSchema = workflow?.inputSchema;
+    const workflowHasInputSchema =
+      workflowInputSchema &&
+      typeof workflowInputSchema === "object" &&
+      Object.keys(workflowInputSchema).length > 0;
+
+    if (!workflowHasInputSchema) {
+      return false; // Don't show if workflow doesn't have inputSchema
+    }
+
+    const firstStep = steps[0];
+
+    // Only show if first step doesn't have its own inputSchema
+    if (firstStep) {
+      const firstStepHasInputSchema =
+        firstStep.def &&
+        "inputSchema" in firstStep.def &&
+        firstStep.def.inputSchema &&
+        typeof firstStep.def.inputSchema === "object" &&
+        Object.keys(firstStep.def.inputSchema).length > 0;
+
+      return !firstStepHasInputSchema;
+    }
+
+    // If no steps yet and workflow has inputSchema, show it
+    return true;
+  }, [steps, workflow?.inputSchema]);
+
   // Calculate a rough initial viewport to prevent initial jump
   const initialViewport = useMemo(() => {
-    // Start with a basic X offset to roughly center the current step
-    const stepX = currentStepIndex * (CARD_WIDTH + CARD_GAP);
     const estimatedViewportWidth = window.innerWidth;
+
+    // If workflow input node is visible and we're on step 0, position for input node
+    if (showWorkflowInputNode && currentStepIndex === 0) {
+      const inputNodeOffset = -(CARD_WIDTH + CARD_GAP);
+      const centeredX =
+        estimatedViewportWidth / 2 - (inputNodeOffset + CARD_WIDTH / 2);
+      return { x: centeredX, y: 0, zoom: 1 };
+    }
+
+    // Otherwise, center on the current step (steps start at x=0)
+    const stepX = currentStepIndex * (CARD_WIDTH + CARD_GAP);
     const centeredX = estimatedViewportWidth / 2 - (stepX + CARD_WIDTH / 2);
 
     // Y will be adjusted by the centering effect shortly after mount
@@ -73,24 +124,44 @@ const Inner = forwardRef<WorkflowCanvasRef>(function Inner(_, ref) {
 
       isCenteringRef.current = true;
 
-      // Calculate the X position for the current step
-      const stepX = stepIndex * (CARD_WIDTH + CARD_GAP);
-      const targetX = stepX + CARD_WIDTH / 2;
+      // For step 0 with workflow input node visible, fit both nodes
+      if ((stepIndex === 0 || stepsLength === 0) && showWorkflowInputNode) {
+        // Fit both input node and first step (or new step node) in view
+        const inputNodeId = "workflow-input";
+        const stepNames = stepIds.split(",").filter(Boolean);
+        const targetNodeId = stepsLength > 0 ? stepNames[0] : "new";
 
-      // Get actual node height from ReactFlow's measurements
-      // Get node ID from stepIds string
-      const stepNames = stepIds.split(",").filter(Boolean);
-      const nodeId =
-        stepIndex < stepNames.length ? stepNames[stepIndex] : "new";
-      const node = rf.getNode(nodeId);
-      // ReactFlow stores measured dimensions internally after render
-      const nodeHeight = (node as any)?.measured?.height || node?.height || 250;
-      const targetY = nodeHeight / 2;
+        const nodesToFit = [inputNodeId, targetNodeId].filter(Boolean);
 
-      rf.setCenter(targetX, targetY, {
-        zoom: 1,
-        duration: animated ? 300 : 0,
-      });
+        rf.fitView({
+          padding: 0.1,
+          nodes: nodesToFit.map((id) => ({ id })),
+          duration: animated ? 300 : 0,
+          maxZoom: 1,
+          minZoom: 0.7,
+        });
+      } else {
+        // Calculate the X position for the current step
+        // When workflow input is not visible, steps start at x=0
+        const stepX = stepIndex * (CARD_WIDTH + CARD_GAP);
+        const targetX = stepX + CARD_WIDTH / 2;
+
+        // Get actual node height from ReactFlow's measurements
+        // Get node ID from stepIds string
+        const stepNames = stepIds.split(",").filter(Boolean);
+        const nodeId =
+          stepIndex < stepNames.length ? stepNames[stepIndex] : "new";
+        const node = rf.getNode(nodeId);
+        // ReactFlow stores measured dimensions internally after render
+        const nodeHeight =
+          (node as any)?.measured?.height || node?.height || 250;
+        const targetY = nodeHeight / 2;
+
+        rf.setCenter(targetX, targetY, {
+          zoom: 1,
+          duration: animated ? 300 : 0,
+        });
+      }
 
       // Allow movement after centering animation completes
       const delay = animated ? 350 : 50;
@@ -98,7 +169,7 @@ const Inner = forwardRef<WorkflowCanvasRef>(function Inner(_, ref) {
         isCenteringRef.current = false;
       }, delay);
     },
-    [stepsLength, stepIds, rf],
+    [stepsLength, stepIds, rf, showWorkflowInputNode],
   );
 
   // Center viewport when current step changes - only if step actually changed
@@ -150,6 +221,17 @@ const Inner = forwardRef<WorkflowCanvasRef>(function Inner(_, ref) {
   const nodes = useMemo(() => {
     const result: Node[] = [];
     const Y_POSITION = 0; // All nodes at same Y level for proper centering
+
+    // Add workflow input node at the beginning only if needed
+    if (showWorkflowInputNode) {
+      result.push({
+        id: "workflow-input",
+        type: "workflowInput",
+        position: { x: -(CARD_WIDTH + CARD_GAP), y: Y_POSITION },
+        data: newStepData, // Reuse empty data object
+        draggable: false,
+      });
+    }
 
     // Case 1: No steps yet - show new step node
     if (stepsLength === 0) {
@@ -205,14 +287,51 @@ const Inner = forwardRef<WorkflowCanvasRef>(function Inner(_, ref) {
     }
 
     return result;
-  }, [nodeDataMap, newStepData, stepsLength, currentStepIndex, plusButtonData]);
+  }, [
+    nodeDataMap,
+    newStepData,
+    stepsLength,
+    currentStepIndex,
+    plusButtonData,
+    showWorkflowInputNode,
+  ]);
 
   // OPTIMIZED: Simplified dependencies - only depend on stepIds, not full steps array
   const edges = useMemo<Edge[]>(() => {
-    if (stepsLength === 0) return [];
-
     const result: Edge[] = [];
     const stepNames = stepIds.split(",").filter(Boolean);
+
+    // Connect workflow input to first step with distinctive styling (only if shown)
+    if (showWorkflowInputNode) {
+      if (stepNames.length > 0) {
+        result.push({
+          id: "workflow-input-to-first",
+          source: "workflow-input",
+          target: stepNames[0],
+          animated: true,
+          style: {
+            stroke: "hsl(var(--foreground))",
+            strokeWidth: 2,
+            strokeDasharray: "5,5",
+          },
+        });
+      } else {
+        // Connect workflow input to new step node if no steps exist
+        result.push({
+          id: "workflow-input-to-new",
+          source: "workflow-input",
+          target: "new",
+          animated: true,
+          style: {
+            stroke: "hsl(var(--foreground))",
+            strokeWidth: 2,
+            strokeDasharray: "5,5",
+          },
+        });
+      }
+    }
+
+    if (stepsLength === 0) return result;
 
     // Connect all consecutive step nodes
     for (let i = 0; i < stepNames.length - 1; i++) {
@@ -221,6 +340,10 @@ const Inner = forwardRef<WorkflowCanvasRef>(function Inner(_, ref) {
         source: stepNames[i],
         target: stepNames[i + 1],
         animated: true,
+        style: {
+          stroke: "hsl(var(--foreground))",
+          strokeWidth: 2,
+        },
       });
     }
 
@@ -231,11 +354,16 @@ const Inner = forwardRef<WorkflowCanvasRef>(function Inner(_, ref) {
         source: stepNames[stepNames.length - 1],
         target: "new",
         animated: true,
+        style: {
+          stroke: "hsl(var(--foreground))",
+          strokeWidth: 2,
+          strokeDasharray: "5,5",
+        },
       });
     }
 
     return result;
-  }, [stepIds, stepsLength, currentStepIndex]);
+  }, [stepIds, stepsLength, currentStepIndex, showWorkflowInputNode]);
 
   const onNodeClick = useCallback(
     (_event: React.MouseEvent, node: Node) => {
@@ -372,7 +500,7 @@ const Inner = forwardRef<WorkflowCanvasRef>(function Inner(_, ref) {
         onMove={handleMove}
         nodeTypes={nodeTypes}
         fitView={false}
-        fitViewOptions={{ maxZoom: 1, minZoom: 1 }}
+        fitViewOptions={{ maxZoom: 1, minZoom: 0.7 }}
         nodesDraggable={false}
         nodesConnectable={false}
         elementsSelectable
@@ -382,7 +510,7 @@ const Inner = forwardRef<WorkflowCanvasRef>(function Inner(_, ref) {
         zoomOnPinch={false}
         zoomOnDoubleClick={false}
         preventScrolling={false}
-        minZoom={1}
+        minZoom={0.7}
         maxZoom={1}
         defaultViewport={initialViewport}
         className="h-full w-full bg-background [&_.react-flow__pane]:!cursor-default [&_.react-flow__renderer]:cursor-default"

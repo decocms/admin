@@ -8,7 +8,7 @@ import { useQuery } from "@tanstack/react-query";
 export type Workflow = NonNullable<
   Awaited<ReturnType<typeof client.READ_WORKFLOW>>
 >["workflow"];
-type WorkflowStep = NonNullable<Workflow>["steps"][number];
+type WorkflowStep = NonNullable<Workflow | any>["steps"][number];
 
 // Helper to generate storage key from workflow URI
 function getStorageKey(workflowUri: string): string {
@@ -25,6 +25,8 @@ interface State {
   _stepIndexMap: Map<string, number>;
   // Temporary prompt for the "New Step" node (separate from existing steps)
   newStepPrompt: string;
+  // Runtime input values for the workflow (actual data passed when executing)
+  workflowInput: Record<string, unknown>;
 }
 
 interface Actions {
@@ -39,6 +41,7 @@ interface Actions {
   clearStore: () => void;
   syncFromServer: (workflow: Workflow) => void;
   setNewStepPrompt: (prompt: string) => void;
+  setWorkflowInput: (input: Record<string, unknown>) => void;
 }
 
 interface Store extends State {
@@ -79,8 +82,9 @@ export const WorkflowStoreProvider = ({
         (set, get) => ({
           workflow,
           currentStepIndex: 0,
-          _stepIndexMap: buildStepIndexMap(workflow.steps),
+          _stepIndexMap: buildStepIndexMap((workflow as any).steps),
           newStepPrompt: "",
+          workflowInput: {},
           actions: {
             setCurrentStepIndex: (index: number) => {
               // Validate that index is within bounds
@@ -247,7 +251,7 @@ export const WorkflowStoreProvider = ({
                 ...currentState.workflow,
                 dependencyToolCalls,
                 updatedAt: new Date().toISOString(),
-              };
+              } as Workflow;
 
               set(() => ({
                 workflow: updatedWorkflow,
@@ -260,23 +264,29 @@ export const WorkflowStoreProvider = ({
               set({
                 workflow: {
                   ...currentState.workflow,
+                  inputSchema: {},
+                  outputSchema: {},
                   steps: [] as any,
                 } as Workflow,
                 currentStepIndex: 0,
                 _stepIndexMap: new Map(),
                 newStepPrompt: "",
+                workflowInput: {},
               });
             },
             syncFromServer: (workflow: Workflow) => {
               set({
                 workflow,
                 currentStepIndex: 0,
-                _stepIndexMap: buildStepIndexMap(workflow.steps),
+                _stepIndexMap: buildStepIndexMap((workflow as any).steps),
                 newStepPrompt: "",
               });
             },
             setNewStepPrompt: (prompt: string) => {
               set({ newStepPrompt: prompt });
+            },
+            setWorkflowInput: (input: Record<string, unknown>) => {
+              set({ workflowInput: input });
             },
           },
         }),
@@ -287,6 +297,7 @@ export const WorkflowStoreProvider = ({
             workflow: state.workflow,
             currentStepIndex: state.currentStepIndex,
             newStepPrompt: state.newStepPrompt,
+            workflowInput: state.workflowInput,
             // Don't persist _stepIndexMap - rebuild on load
           }),
           // PERFORMANCE: Prevent unnecessary storage writes
@@ -302,6 +313,10 @@ export const WorkflowStoreProvider = ({
               }
               // Rebuild the step index map after rehydration
               state._stepIndexMap = buildStepIndexMap(state.workflow.steps);
+              // Ensure workflowInput exists
+              if (!state.workflowInput) {
+                state.workflowInput = {};
+              }
             }
           },
         },
@@ -334,19 +349,19 @@ export const WorkflowProvider = ({
     enabled: !!resourceURI,
   });
 
-  const defaultWorkflow = useMemo(
-    () => ({
+  const defaultWorkflow = useMemo(() => {
+    const wf = workflowData?.workflow as any;
+    return {
       id: crypto.randomUUID(),
-      name: workflowData?.workflow?.name || "Untitled Workflow",
-      description: workflowData?.workflow?.description || "",
-      inputSchema: workflowData?.workflow?.inputSchema,
-      outputSchema: workflowData?.workflow?.outputSchema,
-      steps: workflowData?.workflow?.steps || [],
+      name: wf?.name || "Untitled Workflow",
+      description: wf?.description || "",
+      inputSchema: wf?.inputSchema,
+      outputSchema: wf?.outputSchema,
+      steps: wf?.steps || [],
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
-    }),
-    [workflowData?.workflow],
-  );
+    };
+  }, [workflowData?.workflow]);
 
   const finalWorkflow = useMemo(
     () =>
@@ -418,6 +433,11 @@ export const useWorkflowAuthToken = (): string | undefined => {
 // This is stored separately from steps to work even when there are no steps yet
 export const useNewStepPrompt = () => {
   return useWorkflowStore((state) => state.newStepPrompt);
+};
+
+// Returns workflow runtime input (the actual data passed to the workflow)
+export const useWorkflowInput = (): Record<string, unknown> => {
+  return useWorkflowStore((state) => state.workflowInput);
 };
 
 // ============================================================================

@@ -37,13 +37,13 @@ export const CodeStepDefinitionSchema = z
       .describe("JSON Schema defining the output structure for this step"),
     input: z
       .record(z.unknown())
-      .default({})
+      .optional()
       .describe(
         "Input object that complies with inputSchema. Values can reference previous steps using @<step_name>.output.property or workflow input using @input.property",
       ),
     output: z
       .record(z.unknown())
-      .default({})
+      .optional()
       .describe("Current output of the step if it was executed"),
     status: z
       .enum(["pending", "active", "completed", "error"])
@@ -180,40 +180,56 @@ export const WorkflowStepDefinitionSchema = z
       .union([CodeStepDefinitionSchema, ToolCallStepDefinitionSchema])
       .optional()
       .describe("The step definition based on the type"),
+    output: z
+      .record(z.unknown())
+      .optional()
+      .describe("Execution output of the step (if it has been run)"),
+    customOutputView: z
+      .string()
+      .optional()
+      .describe(
+        "Custom HTML/JavaScript code for rendering the step output in a custom view",
+      ),
   })
   .passthrough();
 
-export const WorkflowDefinitionSchema = z.object({
-  name: z.string().min(1).describe("The unique name of the workflow"),
-  description: z
-    .string()
-    .describe("A comprehensive description of what this workflow accomplishes"),
-  inputSchema: z
-    .object({})
-    .passthrough()
-    .describe(
-      "JSON Schema defining the workflow's input parameters and data structure",
-    ),
-  outputSchema: z
-    .object({})
-    .passthrough()
-    .describe(
-      "JSON Schema defining the workflow's final output after all steps complete",
-    ),
-  steps: z
-    .array(WorkflowStepDefinitionSchema)
-    .describe(
-      "Array of workflow steps that execute sequentially. Each step can reference previous step outputs using @<step_name>.output.property syntax.",
-    ),
-  authorization: z
-    .object({
-      token: z
-        .string()
-        .min(1)
-        .describe("The authorization token for the workflow"),
-    })
-    .optional(),
-});
+export const WorkflowDefinitionSchema = z
+  .object({
+    name: z.string().min(1).describe("The unique name of the workflow"),
+    description: z
+      .string()
+      .describe(
+        "A comprehensive description of what this workflow accomplishes",
+      ),
+    inputSchema: z
+      .object({})
+      .passthrough()
+      .optional()
+      .describe(
+        "JSON Schema defining the workflow's input parameters and data structure",
+      ),
+    outputSchema: z
+      .object({})
+      .passthrough()
+      .optional()
+      .describe(
+        "JSON Schema defining the workflow's final output after all steps complete",
+      ),
+    steps: z
+      .array(WorkflowStepDefinitionSchema)
+      .describe(
+        "Array of workflow steps that execute sequentially. Each step can reference previous step outputs using @<step_name>.output.property syntax.",
+      ),
+    authorization: z
+      .object({
+        token: z
+          .string()
+          .min(1)
+          .describe("The authorization token for the workflow"),
+      })
+      .optional(),
+  })
+  .passthrough();
 
 export type WorkflowDefinition = z.infer<typeof WorkflowDefinitionSchema>;
 export type WorkflowStepDefinition = z.infer<

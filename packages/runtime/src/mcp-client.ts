@@ -6,6 +6,7 @@ import {
   SSEClientTransport,
   SSEClientTransportOptions,
 } from "@modelcontextprotocol/sdk/client/sse.js";
+import { StreamableHTTPClientTransport } from "@modelcontextprotocol/sdk/client/streamableHttp.js";
 import { WebSocketClientTransport } from "@modelcontextprotocol/sdk/client/websocket.js";
 import { RequestOptions } from "@modelcontextprotocol/sdk/shared/protocol.js";
 import {
@@ -43,11 +44,20 @@ class Client extends BaseClient {
 }
 
 export const createServerClient = async (
-  mcpServer: { connection: MCPConnection; name?: string },
+  mcpServer: {
+    connection: MCPConnection;
+    name?: string;
+    Transport?: Constructor<StreamableHTTPClientTransport>;
+  },
   signal?: AbortSignal,
   extraHeaders?: Record<string, string>,
 ): Promise<Client> => {
-  const transport = createTransport(mcpServer.connection, signal, extraHeaders);
+  const transport = createTransport(
+    mcpServer.connection,
+    signal,
+    extraHeaders,
+    mcpServer.Transport,
+  );
 
   if (!transport) {
     throw new Error("Unknown MCP connection type");
@@ -64,10 +74,13 @@ export const createServerClient = async (
   return client;
 };
 
+// deno-lint-ignore no-explicit-any
+type Constructor<T> = new (...args: any[]) => T;
 export const createTransport = (
   connection: MCPConnection,
   signal?: AbortSignal,
   extraHeaders?: Record<string, string>,
+  StreamableTransport: Constructor<StreamableHTTPClientTransport> = HTTPClientTransport,
 ) => {
   if (connection.type === "Websocket") {
     return new WebSocketClientTransport(new URL(connection.url));
@@ -109,7 +122,7 @@ export const createTransport = (
 
     return new SSEClientTransport(new URL(connection.url), config);
   }
-  return new HTTPClientTransport(new URL(connection.url), {
+  return new StreamableTransport(new URL(connection.url), {
     requestInit: {
       headers,
       signal,

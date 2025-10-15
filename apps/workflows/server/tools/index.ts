@@ -8,6 +8,12 @@
 import { viewTools } from "./views.ts";
 import { workflowTools } from "./workflows.ts";
 import { integrationTools } from "./integrations.ts";
+import { userTools } from "./user.ts";
 
 // Export all tools from all domains
-export const tools = [...workflowTools, ...viewTools, ...integrationTools];
+export const tools = [
+  ...workflowTools,
+  ...viewTools,
+  ...integrationTools,
+  ...userTools,
+];

@@ -37,6 +37,7 @@ interface Actions {
   addStep: (step: WorkflowStep) => void;
   removeStep: (stepId: string) => void;
   clearStore: () => void;
+  syncFromServer: (workflow: Workflow) => void;
   setNewStepPrompt: (prompt: string) => void;
 }
 
@@ -267,6 +268,15 @@ export const WorkflowStoreProvider = ({
                 } as Workflow,
                 currentStepIndex: 0,
                 _stepIndexMap: new Map(),
+                newStepPrompt: "",
+              });
+            },
+            syncFromServer: (workflow: Workflow) => {
+              console.log("🔄 Syncing workflow from server...");
+              set({
+                workflow,
+                currentStepIndex: 0,
+                _stepIndexMap: buildStepIndexMap(workflow.steps),
                 newStepPrompt: "",
               });
             },

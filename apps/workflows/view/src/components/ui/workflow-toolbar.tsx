@@ -32,6 +32,9 @@ import { useImportToolAsStep } from "@/hooks/useImportToolAsStep";
 import { type MentionItem } from "@/hooks/useMentionItems";
 import { useSearch } from "@tanstack/react-router";
 import { useUpdateWorkflow } from "@/hooks/useUpdateWorkflow";
+import { useQueryClient } from "@tanstack/react-query";
+import { client } from "@/lib/rpc";
+import { toast } from "sonner";
 
 export interface ToolbarButton {
   id: string;
@@ -138,6 +141,7 @@ function ToolbarButton({
           variant === "primary"
             ? "text-[var(--primary-dark)]"
             : "text-muted-foreground",
+          icon === "progress_activity" && "animate-spin",
         )}
         filled={variant === "primary"}
       />
@@ -235,12 +239,62 @@ export function WorkflowToolbar({
   canvasRef: React.RefObject<WorkflowCanvasRef>;
 }) {
   const activeTab = useActiveTab();
-  const { clearStore } = useWorkflowStoreActions();
+  const { clearStore, syncFromServer } = useWorkflowStoreActions();
   const searchParams = useSearch({ from: "/workflow" });
   const resourceURI = (searchParams as { resourceURI?: string })?.resourceURI;
   const workflow = useCurrentWorkflow();
+  const queryClient = useQueryClient();
 
   const updateWorkflowMutation = useUpdateWorkflow();
+
+  // Handle save workflow
+  const handleSaveWorkflow = useCallback(() => {
+    if (!resourceURI || !workflow) return;
+
+    updateWorkflowMutation.mutate(
+      {
+        uri: resourceURI,
+        workflow: workflow,
+      },
+      {
+        onSuccess: () => {
+          toast.success("Workflow saved successfully");
+          queryClient.invalidateQueries({
+            queryKey: ["workflow", resourceURI],
+          });
+        },
+        onError: (error) => {
+          toast.error(
+            `Failed to save workflow: ${error instanceof Error ? error.message : String(error)}`,
+          );
+        },
+      },
+    );
+  }, [resourceURI, workflow, updateWorkflowMutation, queryClient]);
+
+  // Handle sync from server
+  const handleSyncFromServer = useCallback(async () => {
+    if (!resourceURI) return;
+
+    try {
+      console.log("🔄 Fetching workflow from server...");
+      const result = await client.READ_WORKFLOW({ uri: resourceURI });
+
+      if (result?.workflow) {
+        syncFromServer(result.workflow as Workflow);
+        // Also invalidate the query cache to keep it in sync
+        await queryClient.invalidateQueries({
+          queryKey: ["workflow", resourceURI],
+        });
+        console.log("✅ Workflow synced successfully");
+      }
+    } catch (error) {
+      console.error("❌ Failed to sync workflow:", error);
+      alert(
+        `Failed to sync workflow: ${error instanceof Error ? error.message : String(error)}`,
+      );
+    }
+  }, [resourceURI, syncFromServer, queryClient]);
 
   // Memoize the tools dropdown to prevent recreating it on every render
   const toolsDropdown = useMemo(() => <ToolsDropdownWithWorkflowActions />, []);
@@ -277,9 +331,24 @@ export function WorkflowToolbar({
               align="end"
               className="w-fit bg-popover/95 backdrop-blur-sm"
             >
+              <ResponsiveDropdownItem onClick={handleSyncFromServer}>
+                <span
+                  className="material-symbols-outlined mr-2"
+                  style={{ fontSize: "16px" }}
+                >
+                  sync
+                </span>
+                Sync from Server
+              </ResponsiveDropdownItem>
               <ResponsiveDropdownItem
                 onClick={() => {
-                  clearStore();
+                  if (
+                    confirm(
+                      "Are you sure you want to reset the workflow? This will clear all steps.",
+                    )
+                  ) {
+                    clearStore();
+                  }
                 }}
                 className="text-destructive focus:text-destructive"
               >
@@ -287,9 +356,9 @@ export function WorkflowToolbar({
                   className="material-symbols-outlined mr-2"
                   style={{ fontSize: "16px" }}
                 >
-                  refresh
+                  delete_sweep
                 </span>
-                Reset
+                Reset Workflow
               </ResponsiveDropdownItem>
             </ResponsiveDropdownContent>
           </ResponsiveDropdown>
@@ -297,23 +366,19 @@ export function WorkflowToolbar({
       },
       {
         id: "save",
-        icon: "save",
-        label: "Save Workflow",
-        onClick: () => {
-          updateWorkflowMutation.mutate({
-            uri: resourceURI as string,
-            workflow: workflow as Workflow,
-          });
-        },
+        icon: updateWorkflowMutation.isPending ? "progress_activity" : "save",
+        label: updateWorkflowMutation.isPending ? "Saving..." : "Save Workflow",
+        onClick: handleSaveWorkflow,
+        disabled: updateWorkflowMutation.isPending,
       },
     ],
     [
       activeTab,
       clearStore,
+      handleSyncFromServer,
+      handleSaveWorkflow,
       toolsDropdown,
-      updateWorkflowMutation,
-      resourceURI,
-      workflow,
+      updateWorkflowMutation.isPending,
     ],
   );
 

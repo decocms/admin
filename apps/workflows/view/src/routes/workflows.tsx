@@ -11,13 +11,16 @@ import { createRoute } from "@tanstack/react-router";
 import { rootRoute } from "../main";
 import { WorkflowLayout } from "@/components/WorkflowLayout";
 import { WorkflowProvider } from "@/store/workflow";
+import LoggedProvider from "@/components/ui/logged-provider";
 
 export default createRoute({
   path: "/workflow",
   component: () => (
-    <WorkflowProvider>
-      <WorkflowLayout />
-    </WorkflowProvider>
+    <LoggedProvider>
+      <WorkflowProvider>
+        <WorkflowLayout />
+      </WorkflowProvider>
+    </LoggedProvider>
   ),
   getParentRoute: () => rootRoute,
 });

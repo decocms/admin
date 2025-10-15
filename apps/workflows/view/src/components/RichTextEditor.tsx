@@ -200,7 +200,11 @@ export function RichTextEditor({
                   return true;
                 }
 
-                return component?.ref?.onKeyDown?.(props) || false;
+                return (
+                  (
+                    component?.ref as { onKeyDown?: (props: any) => boolean }
+                  )?.onKeyDown?.(props) || false
+                );
               },
               command: ({ editor, range, props }: any) => {
                 console.log("🔨 [Mention] Inserting mention:", props);

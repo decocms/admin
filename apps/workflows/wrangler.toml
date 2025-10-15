@@ -21,6 +21,7 @@ description = "Workflowz é seu assistente de automação com IA. Crie workflows
 friendlyName = "Workflowz - Workflow Builder com IA"
 icon = "https://assets.decocache.com/mcp/workflowz/icon.png"
 source = "https://github.com/deco-cx/workflowz"
+public = true
 
 [[deco.bindings]]
 name = "TOOLS"

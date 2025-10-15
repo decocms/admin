@@ -170,22 +170,55 @@ export const WorkflowResourceV2 = DeconfigResourceV2.define({
     for (const codeDef of codeSteps) {
       if (codeDef.dependencies && codeDef.dependencies.length > 0) {
         for (const dependency of codeDef.dependencies) {
+          // Check if integration exists
           const integration = integrations.find(
-            (item: { id: string; name: string }) =>
+            (item: { id: string; name: string; description?: string }) =>
               item.id === dependency.integrationId,
           );
 
           if (!integration) {
             const availableIntegrations = integrations.map(
-              (item: { id: string; name: string }) => ({
+              (item: { id: string; name: string; description?: string }) => ({
                 id: item.id,
                 name: item.name,
+                description: item.description || "No description available",
               }),
             );
 
             throw new Error(
               `Code step '${codeDef.name}': Dependency validation failed. Integration '${dependency.integrationId}' not found.\n\nAvailable integrations:\n${JSON.stringify(availableIntegrations, null, 2)}`,
             );
+          }
+
+          // Check if all specified tools exist in the integration
+          const integrationTools = Array.isArray(integration.tools)
+            ? integration.tools
+            : [];
+
+          for (const toolName of dependency.toolNames) {
+            const tool = integrationTools.find(
+              (t: { name: string }) => t.name === toolName,
+            );
+
+            if (!tool) {
+              const availableTools = integrationTools.map(
+                (t: {
+                  name: string;
+                  description?: string;
+                  inputSchema?: Record<string, unknown>;
+                  outputSchema?: Record<string, unknown>;
+                }) => ({
+                  name: t.name,
+                  description: t.description || "No description available",
+                  inputSchema: t.inputSchema || {},
+                  outputSchema: t.outputSchema || {},
+                }),
+              );
+
+              throw new Error(
+                `Code step '${codeDef.name}': Dependency validation failed. Tool '${toolName}' not found in integration '${integration.name}' (${dependency.integrationId}).\n\nAvailable tools in this integration:\n${JSON.stringify(availableTools, null, 2)}`,
+              );
+            }
           }
         }
       }

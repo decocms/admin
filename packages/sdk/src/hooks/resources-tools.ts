@@ -78,6 +78,10 @@ export interface ToolUpsertParamsV2 {
   inputSchema: Record<string, unknown>;
   outputSchema: Record<string, unknown>;
   execute: string;
+  dependencies?: Array<{
+    integrationId: string;
+    toolNames: string[];
+  }>;
 }
 
 export function upsertToolV2(

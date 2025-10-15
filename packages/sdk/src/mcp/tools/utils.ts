@@ -77,21 +77,26 @@ export const evalCodeAndReturnDefaultHandle = async (
   };
 };
 
-// Symbol to mark lazy env proxies
-export const LAZY_ENV_PROXY = Symbol.for("LAZY_ENV_PROXY");
-
 // Transform current workspace as callable integration environment
 export const asEnv = (
   client: MCPClientStub<ProjectTools>,
   {
     authorization,
     workspace,
-  }: { authorization?: string; workspace?: string } = {},
+    dependencies = [],
+  }: {
+    authorization?: string;
+    workspace?: string;
+    dependencies?: Array<{
+      integrationId: string;
+      toolNames: string[];
+    }>;
+  } = {},
 ) => {
   const cache = new Map<string, MCPConnection>();
-  // Create a function that can be called to access integrations and tools
-  // This function will be properly serialized to QuickJS
-  const envAccessor = (integrationId: string, toolName: string) => {
+
+  // Helper function to create a tool caller
+  const createToolCaller = (integrationId: string, toolName: string) => {
     return async (args: unknown) => {
       let connection;
       if (authorization && workspace) {
@@ -128,32 +133,27 @@ export const asEnv = (
     };
   };
 
-  // Create a target object that will hold the accessor function
-  const target: Record<string | symbol, unknown> = {
-    [LAZY_ENV_PROXY]: envAccessor,
-  };
+  // Build the env object based on dependencies
+  const env: Record<
+    string,
+    Record<string, (args: unknown) => Promise<unknown>>
+  > = {};
 
-  // Create the nested proxy structure
-  const envProxy = new Proxy(target, {
-    get(targetObj, prop) {
-      // Return the symbol property directly from the target
-      if (prop === LAZY_ENV_PROXY) {
-        return targetObj[LAZY_ENV_PROXY];
-      }
+  for (const dependency of dependencies) {
+    const { integrationId, toolNames } = dependency;
 
-      // For integration IDs, return a nested proxy for tool access
-      return new Proxy(
-        {},
-        {
-          get(_, toolName) {
-            return envAccessor(prop as string, toolName as string);
-          },
-        },
-      );
-    },
-  });
+    // Create an integration namespace if it doesn't exist
+    if (!env[integrationId]) {
+      env[integrationId] = {};
+    }
 
-  return envProxy;
+    // Add each tool to the integration namespace
+    for (const toolName of toolNames) {
+      env[integrationId][toolName] = createToolCaller(integrationId, toolName);
+    }
+  }
+
+  return env;
 };
 
 // Helper function to process execute code (inline only)
@@ -244,7 +244,7 @@ export async function runCode(
       }
       return state.steps[stepName];
     },
-    env: asEnv(client),
+    env: asEnv(client, { dependencies: step.dependencies }),
   };
 
   // Call the function

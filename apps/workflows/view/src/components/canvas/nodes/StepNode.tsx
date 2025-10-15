@@ -168,7 +168,9 @@ const StepFormView = memo(
 
     // Dependencies might be under def or at step level
     const dependencies =
-      "dependencies" in step.def ? (step.def as any).dependencies : undefined;
+      step.def && "dependencies" in step.def
+        ? (step.def as any).dependencies
+        : undefined;
 
     // PERFORMANCE: Create per-field onChange handlers that are stable
     // This prevents creating new functions on every render
@@ -206,7 +208,7 @@ const StepFormView = memo(
         )}
 
         {/* Input Parameters Section */}
-        {step.def.inputSchema && (
+        {step.def?.inputSchema && (
           <div className="bg-background border-b border-border p-4">
             <div
               className="nodrag"
@@ -353,8 +355,10 @@ export const StepNode = memo(
           prevStep.output.success &&
           "output" in prevStep.output
         ) {
-          const stepId = prevStep.def.id;
-          results[stepId] = (prevStep.output as { output: unknown }).output;
+          const stepId = prevStep.def?.id || "";
+          results[stepId as string] = (
+            prevStep.output as { output: unknown }
+          ).output;
         }
       });
 
@@ -364,8 +368,8 @@ export const StepNode = memo(
     // Memoize workflow steps for @ref resolution (name-to-id mapping)
     const workflowSteps = useMemo(() => {
       return allSteps.map((s: WorkflowStep) => ({
-        id: s.def.id,
-        name: s.def.name,
+        id: (s.def?.id as string) || "",
+        name: s.def?.name || "",
       }));
     }, [allSteps]);
 

@@ -37,9 +37,9 @@ export const NewStepNode = memo(function NewStepNode(_props: NodeProps) {
     }
     const previousSteps: StepInfo[] | undefined = workflow.steps?.map(
       (step: WorkflowStep): StepInfo => ({
-        id: step.def.id,
-        name: step.def.name,
-        outputSchema: (step.def.outputSchema as Record<string, unknown>) || {},
+        id: (step.def?.id as string) || "",
+        name: step.def?.name || "",
+        outputSchema: (step.def?.outputSchema as Record<string, unknown>) || {},
       }),
     );
 

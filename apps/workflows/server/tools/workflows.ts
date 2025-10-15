@@ -995,98 +995,6 @@ ${inputAssignments}
     },
   });
 
-/**
- * 🔐 Authorize ALL tools used by a workflow
- * Creates or updates a single API key with policies for all tools
- */
-export const createAuthorizeWorkflowTool = (env: Env) =>
-  createPrivateTool({
-    id: "AUTHORIZE_WORKFLOW",
-    description:
-      "Create or update API key with authorization for all tools used in workflow",
-    inputSchema: z.object({
-      workflowId: z.string(),
-      workflowName: z.string(),
-      tools: z.array(
-        z.object({
-          toolName: z.string(),
-          integrationId: z.string(),
-          integrationName: z.string(),
-        }),
-      ),
-      existingApiKeyName: z.string().optional(), // If updating existing key
-    }),
-    outputSchema: z.object({
-      success: z.boolean(),
-      authToken: z.string().optional(),
-      apiKeyName: z.string().optional(),
-      toolCount: z.number(),
-      error: z.string().optional(),
-    }),
-    execute: async ({ context }) => {
-      try {
-        console.log(
-          `🔑 Authorizing workflow: ${context.workflowName} (${context.tools.length} tools)`,
-        );
-
-        // API key name format: workflow-{id}-{timestamp}
-        const apiKeyName =
-          context.existingApiKeyName ||
-          `workflow-${context.workflowId}-${Date.now()}`;
-
-        // Build policies for ALL tools
-        const policies = context.tools.map((tool) => ({
-          effect: "allow" as const,
-          resource: tool.toolName,
-          matchCondition: {
-            resource: "is_integration" as const,
-            integrationId: tool.integrationId,
-          },
-        }));
-
-        console.log(`📋 Creating API key with ${policies.length} policies`);
-        console.log(`🔑 API Key name: ${apiKeyName}`);
-
-        // Create or update API key
-        const output = await env.APIKEYS.API_KEYS_CREATE({
-          name: apiKeyName,
-          policies: policies,
-        });
-
-        // Extract JWT token
-        const jwtToken =
-          typeof output === "object" && output !== null && "value" in output
-            ? (output as { value: string }).value
-            : undefined;
-
-        const uniqueIntegrations = new Set(
-          context.tools.map((t) => t.integrationId),
-        ).size;
-
-        console.log(`✅ Workflow authorization created`);
-        console.log(`🔑 Token length: ${jwtToken?.length || 0}`);
-        console.log(
-          `📦 Covers ${context.tools.length} tools across ${uniqueIntegrations} integrations`,
-        );
-
-        return {
-          success: true,
-          authToken: jwtToken,
-          apiKeyName: apiKeyName,
-          toolCount: context.tools.length,
-        };
-      } catch (error) {
-        console.error(`❌ Failed to authorize workflow:`, error);
-        return {
-          success: false,
-          toolCount: 0,
-          error:
-            error instanceof Error ? error.message : "Authorization failed",
-        };
-      }
-    },
-  });
-
 export const createReadWorkflowTool = (env: Env) =>
   createPrivateTool({
     id: "READ_WORKFLOW",
@@ -1121,6 +1029,5 @@ export const workflowTools = [
   createRunWorkflowStepTool,
   createGenerateStepTool,
   createImportToolAsStepTool,
-  createAuthorizeWorkflowTool,
   createReadWorkflowTool,
 ];

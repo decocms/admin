@@ -1,4 +1,9 @@
-import { Locator, SDKProvider } from "@deco/sdk";
+import {
+  Locator,
+  SDKProvider,
+  useAgentData,
+  WELL_KNOWN_AGENTS,
+} from "@deco/sdk";
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -8,6 +13,7 @@ import {
   BreadcrumbSeparator,
 } from "@deco/ui/components/breadcrumb.tsx";
 import { Button } from "@deco/ui/components/button.tsx";
+import { ButtonGroup } from "@deco/ui/components/button-group.tsx";
 import {
   SidebarInset,
   SidebarLayout,
@@ -17,10 +23,17 @@ import { Toaster } from "@deco/ui/components/sonner.tsx";
 import { Spinner } from "@deco/ui/components/spinner.tsx";
 import { useIsMobile } from "@deco/ui/hooks/use-mobile.ts";
 import { Fragment, Suspense, useState, type ReactNode } from "react";
-import { Link, Outlet, useParams } from "react-router";
+import {
+  Link,
+  Outlet,
+  useLocation,
+  useNavigate,
+  useParams,
+} from "react-router";
 import { useLocalStorage } from "../../hooks/use-local-storage.ts";
 import { useWorkspaceLink } from "../../hooks/use-navigate-workspace.ts";
 import { useUser } from "../../hooks/use-user.ts";
+import { AgentAvatar } from "../common/avatar/agent.tsx";
 import RegisterActivity from "../common/register-activity.tsx";
 import { DecopilotThreadProvider } from "../decopilot/thread-context.tsx";
 import { ProfileModalProvider, useProfileModal } from "../profile-modal.tsx";
@@ -144,6 +157,68 @@ const useIsProjectContext = () => {
   return !!org && !!project;
 };
 
+function AgentChatModeSwitch() {
+  const location = useLocation();
+  const navigate = useNavigate();
+  const params = useParams();
+  const searchParams = new URLSearchParams(location.search);
+
+  // Get agent ID from URL params
+  const agentId = params.id;
+
+  // Early return if no agent ID
+  if (!agentId) return null;
+
+  const { data: agent } = useAgentData(agentId);
+
+  // Get current chat mode from URL (default to 'agent')
+  const currentMode =
+    (searchParams.get("chat") as "agent" | "decopilot") || "agent";
+
+  const handleModeChange = (mode: "agent" | "decopilot") => {
+    const newParams = new URLSearchParams(location.search);
+    newParams.set("chat", mode);
+    navigate(`${location.pathname}?${newParams.toString()}`, { replace: true });
+  };
+
+  return (
+    <ButtonGroup>
+      <Button
+        size="sm"
+        variant={currentMode === "agent" ? "special" : "outline"}
+        onClick={() => handleModeChange("agent")}
+        className="flex items-center gap-1.5"
+      >
+        {agent && (
+          <AgentAvatar
+            className="rounded-sm border-none"
+            url={agent.avatar}
+            fallback={agent.name}
+            size="2xs"
+          />
+        )}
+        Agent
+      </Button>
+      <Button
+        size="sm"
+        variant={currentMode === "decopilot" ? "special" : "outline"}
+        onClick={() => handleModeChange("decopilot")}
+        className="flex items-center gap-1.5"
+      >
+        <AgentAvatar
+          className="rounded-sm border-none"
+          url={WELL_KNOWN_AGENTS.decopilotAgent.avatar}
+          fallback={
+            <img src="/img/logo-tiny.svg" alt="Deco" className="w-4 h-4" />
+          }
+          size="2xs"
+        />
+        Chat
+      </Button>
+    </ButtonGroup>
+  );
+}
+
 export const ToggleDecopilotButton = () => {
   const isProjectContext = useIsProjectContext();
   const { toggle } = useDecopilotOpen();
@@ -154,10 +229,35 @@ export const ToggleDecopilotButton = () => {
 
   return (
     <Button size="sm" variant="special" onClick={toggle}>
-      <img src="/img/logo-tiny.svg" alt="Deco logo" className="w-4 h-4" />
+      <AgentAvatar
+        className="rounded-sm border-none"
+        url={WELL_KNOWN_AGENTS.decopilotAgent.avatar}
+        fallback={
+          <img src="/img/logo-tiny.svg" alt="Deco" className="w-4 h-4" />
+        }
+        size="2xs"
+      />
       Chat
     </Button>
   );
+};
+
+export const TopbarControls = () => {
+  const location = useLocation();
+  const isProjectContext = useIsProjectContext();
+  const isAgentDetailPage = location.pathname.match(/\/agent\/[^\/]+\/[^\/]+$/);
+
+  if (!isProjectContext) {
+    return null;
+  }
+
+  if (isAgentDetailPage) {
+    // Show chat mode switch on agent detail pages
+    return <AgentChatModeSwitch />;
+  }
+
+  // Show regular chat button on other pages
+  return <ToggleDecopilotButton />;
 };
 
 interface BreadcrumbItem {

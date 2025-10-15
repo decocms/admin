@@ -35,11 +35,18 @@ export const MentionDropdown = forwardRef<
   const [selectedIndex, setSelectedIndex] = useState(0);
   const itemRefs = useRef<(HTMLButtonElement | null)[]>([]);
   const scrollAreaRef = useRef<HTMLDivElement>(null);
+  // Map from renderIndex to original items array index
+  const renderToOriginalIndex = useRef<Map<number, number>>(new Map());
+  // Track double space timing
+  const lastSpaceTimeRef = useRef(0);
 
-  const selectItem = (index: number) => {
-    const item = items[index];
-    if (item) {
-      command(item);
+  const selectItem = (renderIndex: number) => {
+    const originalIndex = renderToOriginalIndex.current.get(renderIndex);
+    if (originalIndex !== undefined) {
+      const item = items[originalIndex];
+      if (item) {
+        command(item);
+      }
     }
   };
 
@@ -72,8 +79,11 @@ export const MentionDropdown = forwardRef<
 
   useEffect(() => {
     setSelectedIndex(0);
-    // Reset refs array when items change
+    // Reset refs array and index mapping when items change
     itemRefs.current = itemRefs.current.slice(0, items.length);
+    renderToOriginalIndex.current.clear();
+    // Reset double space tracking when items change
+    lastSpaceTimeRef.current = 0;
   }, [items]);
 
   useImperativeHandle(ref, () => ({
@@ -99,21 +109,40 @@ export const MentionDropdown = forwardRef<
         return true;
       }
 
+      // Handle double space to close mention box
+      if (event?.key === " ") {
+        const now = Date.now();
+        const timeSinceLastSpace = now - lastSpaceTimeRef.current;
+
+        if (timeSinceLastSpace < 500) {
+          // Double space within 500ms
+          // Close the mention box by returning false and letting the space through
+          lastSpaceTimeRef.current = 0;
+          return false;
+        }
+
+        lastSpaceTimeRef.current = now;
+        // Allow space in search - return false to let it be added to query
+        return false;
+      }
+
       return false;
     },
   }));
 
   if (items.length === 0) {
     return (
-      <div className="bg-background border border-border rounded-lg shadow-lg p-4 min-w-[300px] overflow-hidden">
-        {isLoading ? (
-          <div className="flex items-center gap-2 text-sm text-muted-foreground">
-            <Spinner size="xs" />
-            Searching...
-          </div>
-        ) : (
-          <div className="text-sm text-muted-foreground">No results</div>
-        )}
+      <div className="bg-background border border-border rounded-lg shadow-lg min-w-[300px] max-w-[400px] overflow-hidden">
+        <div className="h-[400px] w-full flex items-center justify-center p-4">
+          {isLoading ? (
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+              <Spinner size="xs" />
+              Searching...
+            </div>
+          ) : (
+            <div className="text-sm text-muted-foreground">No results</div>
+          )}
+        </div>
       </div>
     );
   }
@@ -121,17 +150,10 @@ export const MentionDropdown = forwardRef<
   return (
     <div className="bg-background border border-border rounded-lg shadow-lg min-w-[300px] max-w-[400px] overflow-hidden">
       <ScrollArea
-        className="h-[300px] w-full max-w-[400px]"
+        className="h-[400px] w-full max-w-[400px]"
         ref={scrollAreaRef}
       >
         <div className="p-1 max-w-[400px]">
-          {isLoading && (
-            <div className="flex items-center gap-2 px-2 py-1 text-xs text-muted-foreground">
-              <Spinner size="xs" />
-              Searching...
-            </div>
-          )}
-
           {(() => {
             // Group by integration for display only, preserving keyboard indices
             type AnyItem = ToolMentionItem | ResourceMentionItem;
@@ -248,19 +270,26 @@ export const MentionDropdown = forwardRef<
                       {section.list.map((originalIdx) => {
                         const item = items[originalIdx] as AnyItem;
                         renderIndex += 1;
+                        const currentRenderIndex = renderIndex;
+                        // Store mapping from renderIndex to original items array index
+                        renderToOriginalIndex.current.set(
+                          currentRenderIndex,
+                          originalIdx,
+                        );
                         return (
                           <button
                             type="button"
                             key={item.id}
                             ref={(el) => {
-                              itemRefs.current[renderIndex] = el;
+                              itemRefs.current[currentRenderIndex] = el;
                             }}
                             className={cn(
                               "flex items-center gap-3 w-full px-3 py-2.5 rounded-md text-left transition-colors",
                               "hover:bg-muted/50",
-                              selectedIndex === renderIndex && "bg-muted",
+                              selectedIndex === currentRenderIndex &&
+                                "bg-muted",
                             )}
-                            onClick={() => selectItem(renderIndex)}
+                            onClick={() => selectItem(currentRenderIndex)}
                           >
                             <div className="flex min-w-0 flex-1 max-w-[320px]">
                               <div className="flex items-center text-sm truncate">

@@ -203,22 +203,19 @@ function InvitesListContent() {
     try {
       const result = await acceptInviteMutation.mutateAsync(inviteId);
 
-      if (!result.teamId) {
-        toast.error("Failed to get team information");
-        navigate("/");
-        return;
-      }
-
       const org = result.teamSlug;
-
-      if (org) {
-        navigate(`/${org}/default/agents`);
-      } else {
-        navigate("/");
+      if (!result.ok || !org) {
+        throw new Error("Failed to accept invitation. Please try again.");
       }
+
+      navigate(`/${org}/default`);
     } catch (error) {
       console.error("Accept invitation error:", error);
-      toast.error("Failed to accept invitation");
+      toast.error(
+        error instanceof Error
+          ? error.message
+          : "Failed to accept invitation. Please try again.",
+      );
     } finally {
       setLoadingStates((prev) => ({ ...prev, [inviteId]: null }));
     }

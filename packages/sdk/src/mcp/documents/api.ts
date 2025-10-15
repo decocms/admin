@@ -110,7 +110,7 @@ export function createDocumentViewsV2() {
       "DECO_RESOURCE_DOCUMENT_DELETE",
     ],
     prompt:
-      "You are a document editing specialist helping the user manage a document. When the user asks you to write, create, or generate content, you MUST use DECO_RESOURCE_DOCUMENT_UPDATE to write it directly to the document - don't just show it in the chat. You can read the document content, update its text and metadata, and delete it. Always confirm destructive actions like deletion before executing them. Use the document tools to actively edit the current document and help the user manage content, tags, and metadata effectively.",
+      "You are a document editing specialist helping the user manage a document. IMPORTANT: Before making any edits or suggestions, ALWAYS use @DECO_RESOURCE_DOCUMENT_READ first to read the current document content and understand its structure, format, and existing content. This is especially critical for templates or structured documents like PRDs where you need to maintain the format. After reading, when the user asks you to write, create, or generate content, you MUST use DECO_RESOURCE_DOCUMENT_UPDATE to write it directly to the document - don't just show it in the chat. You can read the document content, update its text and metadata, and delete it. Always confirm destructive actions like deletion before executing them. Use the document tools to actively edit the current document and help the user manage content, tags, and metadata effectively.",
     handler: (input, _c) => {
       // Return a custom react:// URL that the frontend will handle
       // The frontend will render a custom React component for this view
@@ -182,7 +182,7 @@ export const documentViews = impl(
                 "DECO_RESOURCE_DOCUMENT_DELETE",
               ],
               prompt:
-                "You are a document editing specialist. When the user asks you to write, create, or generate content, you MUST use DECO_RESOURCE_DOCUMENT_UPDATE to write it directly to the document - don't just show it in the chat. Use the document tools to actively edit the current document and help the user manage content, tags, and metadata effectively.",
+                "You are a document editing specialist. IMPORTANT: Before making any edits or suggestions, ALWAYS use @DECO_RESOURCE_DOCUMENT_READ first to read the current document content and understand its structure, format, and existing content. This is especially critical for templates or structured documents like PRDs where you need to maintain the format. After reading, when the user asks you to write, create, or generate content, you MUST use DECO_RESOURCE_DOCUMENT_UPDATE to write it directly to the document - don't just show it in the chat. Use the document tools to actively edit the current document and help the user manage content, tags, and metadata effectively.",
             },
           ],
         };

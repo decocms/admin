@@ -5,9 +5,14 @@ import { tomorrow } from "react-syntax-highlighter/dist/esm/styles/prism/index.j
 interface LazyHighlighterProps {
   language: string;
   content: string;
+  fillHeight?: boolean;
 }
 
-function LazyHighlighter({ language, content }: LazyHighlighterProps) {
+function LazyHighlighter({
+  language,
+  content,
+  fillHeight = false,
+}: LazyHighlighterProps) {
   return (
     <SyntaxHighlighter
       language={language || "text"}
@@ -20,6 +25,7 @@ function LazyHighlighter({ language, content }: LazyHighlighterProps) {
         background: "#2d2d2d",
         position: "relative",
         overflow: "auto",
+        ...(fillHeight ? { height: "100%", minHeight: "100%" } : {}),
       }}
       codeTagProps={{
         className: "font-mono",

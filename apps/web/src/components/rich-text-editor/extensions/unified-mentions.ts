@@ -29,6 +29,7 @@ export function createUnifiedMentions(options: UnifiedMentionsOptions) {
 
   const suggestion: Partial<SuggestionOptions<MentionItem>> = {
     char: "@",
+    allowSpaces: true,
     items: (props) => {
       const { query } = props;
       const ql = query?.toLowerCase() ?? "";
@@ -72,6 +73,7 @@ export function createUnifiedMentions(options: UnifiedMentionsOptions) {
         attrs.mentionType = "resource";
         attrs.resourceName = item.resource.name;
         attrs.resourceUri = item.resource.uri;
+        attrs.resourceType = item.resourceType || "";
         attrs.integrationId = item.integration.id;
         attrs.integrationName = item.integration.name;
         attrs.integrationIcon = item.integration.icon || "";
@@ -119,33 +121,15 @@ export function createUnifiedMentions(options: UnifiedMentionsOptions) {
           return;
         }
 
-        // Seed with base items immediately
+        // Show base items immediately with loading indicator
         component?.updateProps({
           ...baseProps,
           items: baseItems,
           isLoading: true,
+          pendingCategories: [],
         });
 
         const accum: MentionItem[] = [];
-        const pendingCount = new Map<string, number>();
-
-        // Prime pending counts for resource searches
-        resourceSearchers.forEach((searcher) => {
-          searcher.searchToolNames.forEach((toolName) => {
-            const resourceName = toolName
-              .replace(/^DECO_RESOURCE_/, "")
-              .replace(/_SEARCH$/, "");
-            const pendingKey = `${searcher.integration.id}:${resourceName}`;
-            pendingCount.set(pendingKey, 1);
-          });
-        });
-
-        component?.updateProps({
-          ...baseProps,
-          items: baseItems,
-          isLoading: true,
-          pendingCategories: Array.from(pendingCount.keys()),
-        });
 
         const searches = resourceSearchers.flatMap((searcher) =>
           searcher.searchToolNames.map((toolName) => {
@@ -153,7 +137,6 @@ export function createUnifiedMentions(options: UnifiedMentionsOptions) {
             const resourceName = toolName
               .replace(/^DECO_RESOURCE_/, "")
               .replace(/_SEARCH$/, "");
-            const pendingKey = `${searcher.integration.id}:${resourceName}`;
 
             return callTool(searcher.connection, {
               name: toolName,
@@ -211,34 +194,15 @@ export function createUnifiedMentions(options: UnifiedMentionsOptions) {
                     };
                   });
                 accum.push(...mapped);
-                if (mySerial !== activeSerial) return; // cancelled
-                const combined = [...accum, ...baseItems].slice(0, 12);
-                component?.updateProps({
-                  ...baseProps,
-                  items: combined,
-                  isLoading: true,
-                  pendingCategories: Array.from(pendingCount.keys()),
-                });
               })
               .catch(() => {
                 // ignore
-              })
-              .finally(() => {
-                if (mySerial !== activeSerial) return;
-                const remaining = (pendingCount.get(pendingKey) ?? 1) - 1;
-                if (remaining <= 0) pendingCount.delete(pendingKey);
-                else pendingCount.set(pendingKey, remaining);
-                component?.updateProps({
-                  ...baseProps,
-                  items: [...accum, ...baseItems].slice(0, 12),
-                  isLoading: pendingCount.size > 0,
-                  pendingCategories: Array.from(pendingCount.keys()),
-                });
               });
           }),
         );
 
-        // Finalize loading state once all searches have settled
+        // Wait for ALL searches to complete before updating the list
+        // This prevents items from shifting while the user is interacting
         Promise.allSettled(searches).then(() => {
           if (mySerial !== activeSerial) return; // cancelled
           const combined = [...accum, ...baseItems].slice(0, 12);
@@ -246,7 +210,7 @@ export function createUnifiedMentions(options: UnifiedMentionsOptions) {
             ...baseProps,
             items: combined,
             isLoading: false,
-            pendingCategories: Array.from(pendingCount.keys()),
+            pendingCategories: [],
           });
         });
       };
@@ -372,6 +336,7 @@ export function createUnifiedMentions(options: UnifiedMentionsOptions) {
         // Resource attributes
         resourceName: { default: "" },
         resourceUri: { default: "" },
+        resourceType: { default: "" },
         // Common attributes
         integrationId: { default: "" },
         integrationName: { default: "" },
@@ -406,6 +371,7 @@ export function createUnifiedMentions(options: UnifiedMentionsOptions) {
                 mentionType: "resource",
                 resourceName: node.getAttribute("data-resource-name"),
                 resourceUri: node.getAttribute("data-resource-uri"),
+                resourceType: node.getAttribute("data-resource-type"),
                 integrationId: node.getAttribute("data-integration-id"),
                 label: node.textContent?.replace("@", ""),
               };
@@ -430,6 +396,7 @@ export function createUnifiedMentions(options: UnifiedMentionsOptions) {
         attrs["data-integration-id"] = node.attrs.integrationId;
         attrs["data-resource-name"] = node.attrs.resourceName;
         attrs["data-resource-uri"] = node.attrs.resourceUri;
+        attrs["data-resource-type"] = node.attrs.resourceType;
       }
 
       return ["span", attrs, `@${node.attrs.label}`];

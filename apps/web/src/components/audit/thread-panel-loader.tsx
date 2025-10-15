@@ -53,7 +53,7 @@ export function ThreadConversation({
 function ThreadMessages({ threadId }: { threadId: string }) {
   const { data: threadDetail } = useThread(threadId);
   const title = useMemo(() => threadDetail?.title ?? "", [threadDetail?.title]);
-  const { data: messages } = useThreadMessages(threadId);
+  const { data: messages } = useThreadMessages(threadId, { enabled: true });
   const updateThreadTitle = useUpdateThreadTitle();
   const hasTriggeredRef = useRef(false);
 

@@ -1,7 +1,7 @@
 import { useMemo } from "react";
 import { useLocation } from "react-router";
 import { useNavigateWorkspace } from "../../hooks/use-navigate-workspace.ts";
-import { useUserPreferences } from "../../hooks/use-user-preferences.ts";
+import { useHideLegacyFeatures } from "../../hooks/use-hide-legacy-features.ts";
 import type { TabItem } from "../resources-v2/resource-header.tsx";
 
 export type WorkflowTab = "workflows" | "runs" | "runs-legacy" | "triggers";
@@ -9,7 +9,7 @@ export type WorkflowTab = "workflows" | "runs" | "runs-legacy" | "triggers";
 export function useWorkflowTabs() {
   const location = useLocation();
   const navigateWorkspace = useNavigateWorkspace();
-  const { preferences } = useUserPreferences();
+  const { showLegacyFeature } = useHideLegacyFeatures();
 
   // Determine active tab based on current route
   const activeTab = useMemo((): WorkflowTab => {
@@ -21,7 +21,7 @@ export function useWorkflowTabs() {
     return "workflows";
   }, [location.pathname]);
 
-  // Build tabs array conditionally based on user preferences
+  // Build tabs array - Workflow Runs is now always enabled
   const tabs = useMemo((): TabItem[] => {
     const allTabs: TabItem[] = [
       {
@@ -29,20 +29,20 @@ export function useWorkflowTabs() {
         label: "Workflows",
         onClick: () => navigateWorkspace("/workflows"),
       },
-      ...(preferences.enableWorkflowRuns
+      {
+        id: "runs",
+        label: "Runs",
+        onClick: () => navigateWorkspace("/workflows/runs"),
+      },
+      ...(showLegacyFeature("hideLegacyWorkflowRuns")
         ? [
             {
-              id: "runs",
-              label: "Runs",
-              onClick: () => navigateWorkspace("/workflows/runs"),
+              id: "runs-legacy",
+              label: "Runs (legacy)",
+              onClick: () => navigateWorkspace("/workflows/runs-legacy"),
             },
           ]
         : []),
-      {
-        id: "runs-legacy",
-        label: "Runs (legacy)",
-        onClick: () => navigateWorkspace("/workflows/runs-legacy"),
-      },
       {
         id: "triggers",
         label: "Triggers",
@@ -50,7 +50,7 @@ export function useWorkflowTabs() {
       },
     ];
     return allTabs;
-  }, [navigateWorkspace, preferences.enableWorkflowRuns]);
+  }, [navigateWorkspace, showLegacyFeature]);
 
   return {
     tabs,

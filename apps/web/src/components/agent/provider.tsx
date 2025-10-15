@@ -1,22 +1,23 @@
 import type { LanguageModelV2FinishReason } from "@ai-sdk/provider";
+import type { UIMessage } from "@ai-sdk/react";
 import { useChat } from "@ai-sdk/react";
 import {
-  type Agent,
   AgentSchema,
   DECO_CMS_API_URL,
   DEFAULT_MODEL,
+  Toolset,
+  WELL_KNOWN_AGENTS,
   dispatchMessages,
   getTraceDebugId,
-  type Integration,
-  type MessageMetadata,
-  Toolset,
   useAgentData,
   useAgentRoot,
   useIntegrations,
   useThreadMessages,
   useThreads,
   useUpdateAgent,
-  WELL_KNOWN_AGENTS,
+  type Agent,
+  type Integration,
+  type MessageMetadata,
 } from "@deco/sdk";
 import {
   AlertDialog,
@@ -30,17 +31,16 @@ import {
 } from "@deco/ui/components/alert-dialog.tsx";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { DefaultChatTransport } from "ai";
-import type { UIMessage } from "@ai-sdk/react";
 import {
   createContext,
-  type PropsWithChildren,
-  type RefObject,
   useCallback,
   useContext,
   useEffect,
   useMemo,
   useRef,
   useState,
+  type PropsWithChildren,
+  type RefObject,
 } from "react";
 import { useForm, type UseFormReturn } from "react-hook-form";
 import { useBlocker } from "react-router";
@@ -186,9 +186,9 @@ export function AgentProvider({
     enabled: mergedUiOptions.showThreadMessages,
   });
   const { data: { messages: threadMessages } = { messages: [] } } =
-    !mergedUiOptions.showThreadMessages
-      ? { data: { messages: [] } }
-      : useThreadMessages(threadId);
+    useThreadMessages(threadId, {
+      enabled: mergedUiOptions.showThreadMessages,
+    });
 
   const isWellKnownAgent = Boolean(
     WELL_KNOWN_AGENTS[agentId as keyof typeof WELL_KNOWN_AGENTS],

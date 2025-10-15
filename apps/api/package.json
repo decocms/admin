@@ -8,6 +8,7 @@
     "stripe:test": "stripe fixtures testing/stripe/fixtures/workspace-wallet-deposit.json"
   },
   "dependencies": {
+    "postgres": "3.4.7",
     "@ai-sdk/ui-utils": "^1.2.11",
     "@deco/actors": "npm:@jsr/deco__actors@0.35.1",
     "@deco/ai": "^1.0.0",

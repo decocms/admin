@@ -620,6 +620,14 @@ export const acceptInvite = createTool({
       id: z.string(),
     }),
   ),
+  outputSchema: z.lazy(() =>
+    z.object({
+      ok: z.boolean(),
+      teamId: z.number(),
+      teamName: z.string(),
+      teamSlug: z.string(),
+    }),
+  ),
   handler: async (props, c) => {
     c.resourceAccess.grant();
 

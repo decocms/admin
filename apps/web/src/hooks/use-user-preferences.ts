@@ -8,7 +8,6 @@ export interface UserPreferences {
   defaultModel: string;
   showDecopilot: boolean;
   pdfSummarization: boolean;
-  enableWorkflowRuns: boolean;
 }
 
 export const userPreferencesLabels = {
@@ -23,10 +22,6 @@ export const userPreferencesLabels = {
   sendReasoning: {
     label: "Send Reasoning",
     description: "Send reasoning to the AI model.",
-  },
-  enableWorkflowRuns: {
-    label: "Enable Workflow Runs (Beta)",
-    description: "Show the new workflow runs tab in workflows section.",
   },
 };
 
@@ -43,7 +38,6 @@ export function useUserPreferences() {
         sendReasoning: true,
         showDecopilot: false,
         pdfSummarization: true,
-        enableWorkflowRuns: false,
       },
     });
 

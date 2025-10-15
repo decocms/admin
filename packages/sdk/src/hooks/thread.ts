@@ -33,11 +33,17 @@ export const useThread = (threadId: string) => {
 };
 
 /** Hook for fetching messages from a thread */
-export const useThreadMessages = (threadId: string) => {
+export const useThreadMessages = (
+  threadId: string,
+  { enabled }: { enabled?: boolean },
+) => {
   const { locator } = useSDK();
   return useSuspenseQuery({
     queryKey: KEYS.THREAD_MESSAGES(locator, threadId),
-    queryFn: ({ signal }) => getThreadMessages(locator, threadId, { signal }),
+    queryFn: ({ signal }) =>
+      enabled
+        ? getThreadMessages(locator, threadId, { signal })
+        : { messages: [] },
     staleTime: 0,
     gcTime: 0,
   });
@@ -127,7 +133,7 @@ export const useThreads = (partialOptions: ThreadFilterOptions = {}) => {
   return useSuspenseQuery({
     queryKey: key,
     queryFn: ({ signal }) =>
-      options.enabled
+      options.enabled || options.enabled === undefined
         ? listThreads(locator, options, { signal })
         : {
             threads: [],

@@ -8,12 +8,13 @@ import {
   TooltipTrigger,
 } from "@deco/ui/components/tooltip.tsx";
 import { useSidebar } from "@deco/ui/components/sidebar.tsx";
+import { Suspense } from "react";
 import { Link } from "react-router";
 import { useState } from "react";
 import { ErrorBoundary } from "../../error-boundary.tsx";
 import { ReportIssueButton } from "../common/report-issue-button.tsx";
 import { LoggedUser, LoggedUserAvatarTrigger } from "../sidebar/footer";
-import { DefaultBreadcrumb, ToggleDecopilotButton } from "./project";
+import { DefaultBreadcrumb, TopbarControls } from "./project";
 import { LinkResourceModal } from "../modals/link-resource-modal.tsx";
 
 interface BreadcrumbItem {
@@ -92,7 +93,9 @@ export function Topbar({ breadcrumb }: { breadcrumb: BreadcrumbItem[] }) {
       <div className="flex items-center gap-3">
         <LinkButton />
         <ReportIssueButton />
-        <ToggleDecopilotButton />
+        <Suspense fallback={null}>
+          <TopbarControls />
+        </Suspense>
         <LoggedUser
           trigger={(user) => <LoggedUserAvatarTrigger user={user} />}
           align="end"

@@ -4,6 +4,7 @@ import {
   ResizablePanelGroup,
 } from "@deco/ui/components/resizable.tsx";
 import { PropsWithChildren } from "react";
+import { useLocation } from "react-router";
 import { useLocalStorage } from "../../hooks/use-local-storage";
 import {
   DecopilotContextValue,
@@ -33,12 +34,15 @@ export function DecopilotLayout({
   value,
 }: PropsWithChildren<{ value: DecopilotContextValue }>) {
   const { open: decopilotOpen } = useDecopilotOpen();
+  const location = useLocation();
+  const isAgentDetailPage = location.pathname.match(/\/agent\/[^\/]+\/[^\/]+$/);
 
   return (
     <DecopilotProvider value={value}>
       <ResizablePanelGroup direction="horizontal">
         <ResizablePanel>{children}</ResizablePanel>
-        {decopilotOpen && (
+        {/* Don't show DecopilotChat panel on agent detail pages (handled internally) */}
+        {decopilotOpen && !isAgentDetailPage && (
           <>
             <ResizableHandle withHandle />
             <ResizablePanel defaultSize={30}>

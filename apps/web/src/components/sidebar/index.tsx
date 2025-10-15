@@ -10,6 +10,7 @@ import {
   useRemoveView,
   useUpsertDocument,
   View,
+  AI_APP_PRD_TEMPLATE,
 } from "@deco/sdk";
 import { Badge } from "@deco/ui/components/badge.tsx";
 import { Button } from "@deco/ui/components/button.tsx";
@@ -26,6 +27,13 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@deco/ui/components/dialog.tsx";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@deco/ui/components/dropdown-menu.tsx";
 import { Icon } from "@deco/ui/components/icon.tsx";
 import {
   Sidebar,
@@ -1065,46 +1073,132 @@ function WorkspaceViews() {
             <DialogDescription>Generate content with AI</DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-4">
-            <Button
-              variant="outline"
-              className="w-full justify-start h-auto py-4"
-              onClick={async () => {
-                setGenerateModalOpen(false);
-                isMobile && toggleSidebar();
-                const timestamp = new Date()
-                  .toISOString()
-                  .replace(/[:.]/g, "-");
+            {/* Document Creation - Split Button with Dropdown */}
+            <div className="w-full flex items-stretch h-auto border border-border rounded-lg overflow-hidden hover:bg-accent/50 transition-colors">
+              <Button
+                variant="ghost"
+                className="flex-1 justify-start h-auto py-4 rounded-none border-0 hover:bg-transparent"
+                onClick={async () => {
+                  setGenerateModalOpen(false);
+                  isMobile && toggleSidebar();
+                  const timestamp = new Date()
+                    .toISOString()
+                    .replace(/[:.]/g, "-");
 
-                const result = await upsertDocument.mutateAsync({
-                  params: {
-                    name: `Untitled-${timestamp}`,
-                    content: "",
-                    description: "",
-                  },
-                });
+                  const result = await upsertDocument.mutateAsync({
+                    params: {
+                      name: `Untitled-${timestamp}`,
+                      content: "",
+                      description: "",
+                    },
+                  });
 
-                const documentResource = {
-                  integration_id: "i:documents-management",
-                  name: "document",
-                };
-                const href = buildResourceHrefFromResource(documentResource);
-                navigate(`${href}/${encodeURIComponent(result.uri)}`);
-              }}
-            >
-              <div className="flex items-center gap-3 text-left">
-                <Icon
-                  name="docs"
-                  size={24}
-                  className="text-muted-foreground/75 mt-0.5"
-                />
-                <div className="flex-1">
-                  <div className="font-semibold">Document</div>
-                  <div className="text-sm text-muted-foreground">
-                    Create a new document with AI assistance
+                  const documentResource = {
+                    integration_id: "i:documents-management",
+                    name: "document",
+                  };
+                  const href = buildResourceHrefFromResource(documentResource);
+                  navigate(`${href}/${encodeURIComponent(result.uri)}`);
+                }}
+              >
+                <div className="flex items-center gap-3 text-left">
+                  <Icon
+                    name="docs"
+                    size={24}
+                    className="text-muted-foreground/75 mt-0.5"
+                  />
+                  <div className="flex-1">
+                    <div className="font-semibold">Document</div>
+                    <div className="text-sm text-muted-foreground">
+                      Create a new document with AI assistance
+                    </div>
                   </div>
                 </div>
-              </div>
-            </Button>
+              </Button>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-auto rounded-none border-l border-border hover:bg-transparent w-12 flex-shrink-0"
+                  >
+                    <Icon name="expand_more" size={20} />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-64">
+                  <DropdownMenuItem
+                    className="cursor-pointer"
+                    onSelect={async () => {
+                      setGenerateModalOpen(false);
+                      isMobile && toggleSidebar();
+                      const timestamp = new Date()
+                        .toISOString()
+                        .replace(/[:.]/g, "-");
+
+                      const result = await upsertDocument.mutateAsync({
+                        params: {
+                          name: `Untitled-${timestamp}`,
+                          content: "",
+                          description: "",
+                        },
+                      });
+
+                      const documentResource = {
+                        integration_id: "i:documents-management",
+                        name: "document",
+                      };
+                      const href =
+                        buildResourceHrefFromResource(documentResource);
+                      navigate(`${href}/${encodeURIComponent(result.uri)}`);
+                    }}
+                  >
+                    <Icon name="docs" size={18} className="mr-2" />
+                    <div className="flex-1">
+                      <div className="font-medium">Blank Document</div>
+                      <div className="text-xs text-muted-foreground">
+                        Start from scratch
+                      </div>
+                    </div>
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem
+                    className="cursor-pointer"
+                    onSelect={async () => {
+                      setGenerateModalOpen(false);
+                      isMobile && toggleSidebar();
+                      const timestamp = new Date()
+                        .toISOString()
+                        .replace(/[:.]/g, "-");
+
+                      const result = await upsertDocument.mutateAsync({
+                        params: {
+                          name: `AI App PRD - ${timestamp}`,
+                          content: AI_APP_PRD_TEMPLATE,
+                          description:
+                            "Product Requirements Document for an AI-native application on decocms.com platform. This document helps plan tools, agents, workflows, views, and databases.",
+                        },
+                      });
+
+                      const documentResource = {
+                        integration_id: "i:documents-management",
+                        name: "document",
+                      };
+                      const href =
+                        buildResourceHrefFromResource(documentResource);
+                      navigate(`${href}/${encodeURIComponent(result.uri)}`);
+                    }}
+                  >
+                    <Icon name="rocket_launch" size={18} className="mr-2" />
+                    <div className="flex-1">
+                      <div className="font-medium">AI App PRD</div>
+                      <div className="text-xs text-muted-foreground">
+                        Plan tools, agents & workflows
+                      </div>
+                    </div>
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
             <Button
               variant="outline"
               className="w-full justify-start h-auto py-4"

@@ -112,6 +112,7 @@ export const asEnv = (
         }
         connection = cache.get(integrationId);
       }
+
       const response = await client.INTEGRATIONS_CALL_TOOL({
         connection,
         params: {

@@ -4,6 +4,7 @@ import {
   WorkflowEvent,
   WorkflowStepConfig,
 } from "cloudflare:workers";
+import postgres from "postgres";
 import { contextStorage } from "../fetch.ts";
 import {
   AppContext,
@@ -61,13 +62,26 @@ export interface WorkflowRunnerProps<T = unknown> {
   };
 }
 
+const DEFAULT_CONFIG: WorkflowStepConfig = {
+  retries: {
+    limit: 2,
+    delay: 2000,
+    backoff: "exponential",
+  },
+  timeout: "5 minutes",
+};
+
 export class WorkflowRunner extends WorkflowEntrypoint<Bindings> {
   protected bindingsCtx: BindingsContext;
   protected executionCtx: ExecutionContext;
+  private sql: postgres.Sql;
 
   constructor(ctx: ExecutionContext, env: Bindings) {
     super(ctx, env);
-    this.bindingsCtx = toBindingsContext(env);
+    this.sql = postgres(env.DATABASE_URL, {
+      max: 2,
+    });
+    this.bindingsCtx = toBindingsContext(env, this.sql);
     this.executionCtx = ctx;
   }
 
@@ -123,7 +137,7 @@ export class WorkflowRunner extends WorkflowEntrypoint<Bindings> {
     const config =
       stepDef.type === "tool_call" && stepDef.def && "options" in stepDef.def
         ? (stepDef.def.options ?? {})
-        : {};
+        : DEFAULT_CONFIG;
 
     return {
       name: stepDef.def?.name ?? "",
@@ -154,13 +168,12 @@ export class WorkflowRunner extends WorkflowEntrypoint<Bindings> {
     };
     let prev = input;
     for (const step of steps) {
-      const start = performance.now();
       prev =
         state?.[step.name] ??
         (await cfStep.do(step.name, step.config ?? {}, () => {
-          const nStart = performance.now();
-          return contextStorage
-            .run({ env: this.env, ctx: this.executionCtx }, () =>
+          return contextStorage.run(
+            { env: this.env, ctx: this.executionCtx, sql: this.sql },
+            () =>
               State.run(
                 appContext,
                 () =>
@@ -172,17 +185,9 @@ export class WorkflowRunner extends WorkflowEntrypoint<Bindings> {
                       cfStep.sleep(`${step.name}-${name}`, duration),
                   }) as Promise<Rpc.Serializable<unknown>>,
               ),
-            )
-            .finally(() => {
-              console.log(
-                `[workflow-runner]: STEP_DO_INSIDE ${step.name} took ${performance.now() - nStart}ms`,
-              );
-            });
+          );
         }));
 
-      console.log(
-        `[workflow-runner]: STEP_DO ${step.name} took ${performance.now() - start}ms`,
-      );
       workflowState.steps[step.name] = prev;
       if (event.payload.stopAfter === step.name) {
         break;

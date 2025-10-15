@@ -1,14 +1,19 @@
 // deno-lint-ignore-file no-explicit-any
 import type { ActorConstructor, StubFactory } from "@deco/actors";
 import type { AIAgent, Trigger } from "@deco/ai/actors";
+import type { Client } from "@deco/sdk/storage";
 import { createClient } from "@libsql/client/web";
 import type { ToolAnnotations } from "@modelcontextprotocol/sdk/types.d.ts";
 import * as api from "@opentelemetry/api";
 import { createServerClient } from "@supabase/ssr";
 import type { User as SupaUser } from "@supabase/supabase-js";
-import type { Client } from "@deco/sdk/storage";
 import { Cloudflare } from "cloudflare";
+import {
+  drizzle as drizzlePostgres,
+  type PostgresJsDatabase,
+} from "drizzle-orm/postgres-js";
 import { AsyncLocalStorage } from "node:async_hooks";
+import postgres from "postgres";
 import { z } from "zod";
 import { stubFor } from "../actors/index.ts";
 import { JwtIssuer, JWTPayload } from "../auth/jwt.ts";
@@ -28,12 +33,8 @@ import { Blobs } from "./deconfig/blobs.ts";
 import { Branch } from "./deconfig/branch.ts";
 import { addGroup, type GroupIntegration } from "./groups.ts";
 import { generateUUIDv5, toAlphanumericId } from "./slugify.ts";
-import {
-  drizzle as drizzlePostgres,
-  type PostgresJsDatabase,
-} from "drizzle-orm/postgres-js";
-import postgres from "postgres";
 
+import { contextStorage } from "../fetch.ts";
 import { strProp } from "../utils/fns.ts";
 import { relations } from "./relations.ts";
 
@@ -463,15 +464,23 @@ export type Bindings = EnvVars & {
 };
 export type BindingsContext = Omit<AppContext, keyof PrincipalExecutionContext>;
 
-export const toBindingsContext = (bindings: Bindings): BindingsContext => {
+const createPostgres = (bindings: Bindings) => {
+  console.log("[creating postgres client]");
+  return postgres(bindings.DATABASE_URL, {
+    max: 2,
+  });
+};
+export const toBindingsContext = (
+  bindings: Bindings,
+  _sql?: postgres.Sql,
+): BindingsContext => {
   const db = createServerClient(SUPABASE_URL, bindings.SUPABASE_SERVER_TOKEN, {
     cookies: { getAll: () => [] },
   });
   const policy = PolicyClient.getInstance(db);
   const authorization = new AuthorizationClient(policy);
-  const sql = postgres(bindings.DATABASE_URL, {
-    max: 5,
-  });
+  const sql =
+    _sql ?? contextStorage.getStore()?.sql ?? createPostgres(bindings);
   const drizzle = drizzlePostgres(sql, { relations });
 
   return {

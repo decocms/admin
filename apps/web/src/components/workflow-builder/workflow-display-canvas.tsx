@@ -138,10 +138,8 @@ export function WorkflowDisplayCanvas({
   onRefresh: _onRefresh,
 }: WorkflowDisplayCanvasProps) {
   const { connection } = useResourceRoute();
-  const {
-    data: resource,
-    isLoading: isLoadingWorkflow,
-  } = useWorkflowByUriV2(resourceUri);
+  const { data: resource, isLoading: isLoadingWorkflow } =
+    useWorkflowByUriV2(resourceUri);
   const workflow = resource?.data;
 
   // Track recent workflows (Resources v2 workflow detail)
@@ -288,7 +286,7 @@ export function WorkflowDisplayCanvas({
         <div className="border-b border-border py-4 px-4 md:py-8 md:px-8 lg:py-16 lg:px-16">
           <div className="max-w-[1500px] mx-auto space-y-4">
             <div className="flex items-center justify-between gap-2 flex-wrap">
-        <div>
+              <div>
                 <h1 className="text-2xl font-medium">{workflow.name}</h1>
                 {workflow.description && (
                   <p className="text-sm text-muted-foreground mt-1">
@@ -426,7 +424,7 @@ export function WorkflowDisplayCanvas({
                     <Icon name="chat" size={16} className="mr-2" />
                     Open Chat
                   </Button>
-      </div>
+                </div>
               )}
             </div>
           </div>

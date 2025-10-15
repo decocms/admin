@@ -1,5 +1,5 @@
 // deno-lint-ignore-file
-import { eq, isNull } from "drizzle-orm";
+import { and, eq, ilike, isNull } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/postgres-js";
 import process from "node:process";
 import { relations } from "../packages/sdk/src/mcp/relations.ts";

@@ -16,7 +16,7 @@ import { Tabs, TabsList, TabsTrigger } from "@deco/ui/components/tabs.tsx";
 import { Textarea } from "@deco/ui/components/textarea.tsx";
 import { cn } from "@deco/ui/lib/utils.ts";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useForm } from "react-hook-form";
 import { useSearchParams } from "react-router";
 import { z } from "zod";
@@ -136,7 +136,15 @@ export function DocumentDetail({ resourceUri }: DocumentDetailProps) {
         name: effectiveDocument.name,
       });
     }
-  }, [effectiveDocument, resourceUri, locator, addRecent, projectKey, updatePinnedResource, form]);
+  }, [
+    effectiveDocument,
+    resourceUri,
+    locator,
+    addRecent,
+    projectKey,
+    updatePinnedResource,
+    form,
+  ]);
 
   // Save editor mode preference to localStorage
   useEffect(() => {

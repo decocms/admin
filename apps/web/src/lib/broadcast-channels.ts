@@ -3,7 +3,10 @@
  * New code should import directly from @deco/sdk instead.
  */
 export {
-  addIntegrationUpdateListener, addResourceUpdateListener, notifyIntegrationUpdate, notifyResourceUpdate, type IntegrationMessage,
-  type ResourceMessage
+  addIntegrationUpdateListener,
+  addResourceUpdateListener,
+  notifyIntegrationUpdate,
+  notifyResourceUpdate,
+  type IntegrationMessage,
+  type ResourceMessage,
 } from "@deco/sdk";
-

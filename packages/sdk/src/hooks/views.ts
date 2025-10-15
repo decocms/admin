@@ -139,7 +139,7 @@ export function useUpdateView() {
       params: Partial<ViewUpsertParamsV2>;
       signal?: AbortSignal;
     }) => updateViewV2(locator, uri, params, signal),
-    onSuccess: (data, variables) => {
+    onSuccess: (_data, variables) => {
       // Notify about the resource update
       notifyResourceUpdate(variables.uri);
     },

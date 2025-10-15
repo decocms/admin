@@ -111,7 +111,6 @@ function UnifiedChat() {
   const focusChat = useFocusChat();
   const { chatMode } = usePreviewContext();
   const isEmpty = messages.length === 0;
-
   // Decopilot mode doesn't show threads or new thread buttons
   const isDecopilotMode = chatMode === "decopilot";
   const showNewThread = !isDecopilotMode && !isEmpty && !hasChanges;
@@ -357,7 +356,7 @@ function ChatWithProvider({
             showThreadTools: false,
             showEditAgent: false,
             showModelSelector: false,
-            showThreadMessages: false,
+            showThreadMessages: true,
             showAgentVisibility: false,
           }}
         >

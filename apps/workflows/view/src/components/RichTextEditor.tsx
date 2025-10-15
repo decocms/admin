@@ -151,6 +151,12 @@ export function RichTextEditor({
               .filter((item) =>
                 item.label.toLowerCase().includes(query.toLowerCase()),
               )
+              // Sort to keep steps first, then tools
+              .sort((a, b) => {
+                if (a.type === "step" && b.type !== "step") return -1;
+                if (a.type !== "step" && b.type === "step") return 1;
+                return 0;
+              })
               .slice(0, 20);
             return filtered;
           },

@@ -48,7 +48,20 @@ export function useMentionItems(): MentionItem[] {
   return useMemo(() => {
     const items: MentionItem[] = [];
 
-    // Add tools from integrations
+    // Add previous steps FIRST (if workflow provided) - they get priority in the dropdown
+    if (workflowSteps?.length) {
+      workflowSteps.forEach((step: WorkflowStep) => {
+        items.push({
+          id: `@${step.def.name}`,
+          type: "step",
+          label: `${step.def.name}`,
+          description: `Reference output: @${step.def.name}.output`,
+          category: "Previous Steps",
+        });
+      });
+    }
+
+    // Add tools from integrations after steps
     integrations.forEach((integration) => {
       integration.tools?.forEach((tool) => {
         items.push({
@@ -65,19 +78,6 @@ export function useMentionItems(): MentionItem[] {
         });
       });
     });
-
-    // Add previous steps (if workflow provided)
-    if (workflowSteps?.length) {
-      workflowSteps.forEach((step: WorkflowStep) => {
-        items.push({
-          id: `@${step.def.name}`,
-          type: "step",
-          label: `${step.def.name}`,
-          description: `Reference output: @${step.def.name}.output`,
-          category: "Previous Steps",
-        });
-      });
-    }
 
     return items;
   }, [integrationsKey, stepsKey, integrations, workflowSteps]);

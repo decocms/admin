@@ -4,8 +4,8 @@ export type Tab = "editor" | "code" | "input";
 
 export const tabs = [
   { id: "editor", label: "Editor", icon: "edit" },
-  { id: "code", label: "Code", icon: "code" },
-  { id: "input", label: "Input", icon: "keyboard" },
+  // { id: "code", label: "Code", icon: "code" },
+  // { id: "input", label: "Input", icon: "keyboard" },
 ];
 
 interface State {

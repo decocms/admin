@@ -4,6 +4,11 @@ import {
   patchApiDecoChatTokenHTTPConnection,
   isApiDecoChatMCPConnection as shouldPatchDecoChatMCPConnection,
 } from "@deco/ai/mcp";
+import {
+  ApiKeySchema,
+  mapApiKey,
+  SELECT_API_KEY_QUERY,
+} from "../api-keys/api.ts";
 import { CallToolRequestSchema } from "@modelcontextprotocol/sdk/types.js";
 import { and, eq, getTableColumns, or } from "drizzle-orm";
 import { z } from "zod";
@@ -36,11 +41,6 @@ import type { QueryResult } from "../../storage/supabase/client.ts";
 import { KnowledgeBaseID } from "../../utils/index.ts";
 import { IMPORTANT_ROLES } from "../agents/api.ts";
 import {
-  ApiKeySchema,
-  mapApiKey,
-  SELECT_API_KEY_QUERY,
-} from "../api-keys/api.ts";
-import {
   assertHasLocator,
   assertHasWorkspace,
   assertWorkspaceResourceAccess,
@@ -54,7 +54,6 @@ import {
   NotFoundError,
   WellKnownBindings,
 } from "../index.ts";
-import { filterByWorkspaceOrLocator } from "../ownership.ts";
 import {
   buildWorkspaceOrProjectIdConditions,
   getProjectIdFromContext,
@@ -75,6 +74,7 @@ import {
   registryTools,
 } from "../schema.ts";
 import { createServerClient } from "../utils.ts";
+import { filterByWorkspaceOrLocator } from "../ownership.ts";
 
 const SELECT_INTEGRATION_QUERY = `
           *,
@@ -241,32 +241,10 @@ async function listToolsAndSortByName(
   {
     connection,
     ignoreCache,
-    appName,
-  }: {
-    connection: MCPConnection;
-    appName?: string | null;
-    ignoreCache?: boolean;
-  },
+  }: { connection: MCPConnection; ignoreCache?: boolean },
   c: AppContext,
 ) {
-  let result;
-  if (appName) {
-    const app = await getRegistryApp.handler({
-      name: appName,
-    });
-    result = {
-      tools: app?.tools?.map((tool) =>
-        registryToolToMcpTool({
-          description: tool.description ?? null,
-          input_schema: tool.inputSchema,
-          output_schema: tool.outputSchema,
-          name: tool.name,
-        }),
-      ),
-    };
-  } else {
-    result = await listToolsByConnectionType(connection, c, ignoreCache);
-  }
+  const result = await listToolsByConnectionType(connection, c, ignoreCache);
 
   // Sort tools by name for consistent UI
   if (Array.isArray(result?.tools)) {
@@ -390,7 +368,7 @@ const virtualIntegrationsFor = (
         name,
         icon,
         description,
-        appName: app ? AppName.build(DECO_PROVIDER, app) : undefined,
+        appName: app ? AppName.build("deco", app) : undefined,
         connection: {
           type: "HTTP",
           url: url.href,
@@ -416,8 +394,8 @@ const virtualIntegrationsFor = (
 const registryToolToMcpTool = (tool: {
   name: string;
   description: string | null;
-  input_schema: Json | Record<string, unknown>;
-  output_schema: Json | Record<string, unknown> | undefined;
+  input_schema: Json;
+  output_schema: Json;
 }): MCPTool => ({
   name: tool.name,
   description: tool.description || undefined,
@@ -527,17 +505,14 @@ export const listIntegrations = createIntegrationManagementTool({
           (dbIntegration) => formatId("i", dbIntegration.id) === integration.id,
         );
 
-        const { connection, appName } = integration;
+        const { connection } = integration;
 
         const isVirtual =
           connection.type === "HTTP" &&
           connection.url.startsWith(DECO_CMS_API_URL);
 
         const tools = isVirtual
-          ? await listToolsAndSortByName(
-              { connection, appName, ignoreCache: false },
-              c,
-            )
+          ? await listToolsAndSortByName({ connection, ignoreCache: false }, c)
               .then((r) => r?.tools ?? null)
               .catch(() => {
                 console.error(

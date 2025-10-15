@@ -8,7 +8,6 @@ import {
 import { StrictMode } from "react";
 import ReactDOM from "react-dom/client";
 import { Toaster } from "sonner";
-import CustomViewsPage from "./routes/custom-views.tsx";
 import WorkflowsPage from "./routes/workflows.tsx";
 import "./styles.css";
 
@@ -16,7 +15,7 @@ export const rootRoute = createRootRoute({
   component: () => <Outlet />,
 });
 
-const routeTree = rootRoute.addChildren([WorkflowsPage, CustomViewsPage]);
+const routeTree = rootRoute.addChildren([WorkflowsPage]);
 
 const queryClient = new QueryClient();
 

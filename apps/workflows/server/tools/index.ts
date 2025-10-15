@@ -5,7 +5,6 @@
  * export, making it easy to import all tools in main.ts while keeping
  * the domain separation.
  */
-import { aiExecutorTools } from "./ai-executor.ts";
 import { userTools } from "./user.ts";
 import { viewTools } from "./views.ts";
 import { workflowTools } from "./workflows.ts";
@@ -14,7 +13,6 @@ import { integrationTools } from "./integrations.ts";
 // Export all tools from all domains
 export const tools = [
   ...userTools,
-  ...aiExecutorTools,
   ...workflowTools,
   ...viewTools,
   ...integrationTools,

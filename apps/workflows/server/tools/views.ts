@@ -7,7 +7,7 @@
 import { createPrivateTool } from "@deco/workers-runtime/mastra";
 import { z } from "zod";
 // @ts-ignore - Generated file
-import type { Env } from "../deco.gen.ts";
+import type { Env } from "../shared/deco.gen.ts";
 import {
   ViewDefinitionSchema,
   type ViewDefinition,

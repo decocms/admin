@@ -7,7 +7,7 @@
 
 import type { ReactNode } from "react";
 
-interface ViewNode {
+export interface ViewNode {
   type: "container" | "text" | "heading" | "card" | "badge" | "list";
   data?: string;
   text?: string;

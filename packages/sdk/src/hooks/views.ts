@@ -1,4 +1,9 @@
-import { useMutation, useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useEffect } from "react";
+import {
+  addResourceUpdateListener,
+  notifyResourceUpdate,
+} from "../broadcast.ts";
 import { WellKnownMcpGroups, formatIntegrationId } from "../crud/groups.ts";
 import { InternalServerError } from "../errors.ts";
 import { MCPClient } from "../fetcher.ts";
@@ -81,15 +86,41 @@ export function deleteViewV2(
 // React Hooks
 export function useViewByUriV2(uri: string) {
   const { locator } = useSDK();
+  const queryClient = useQueryClient();
+
   if (!locator) {
     throw new InternalServerError("No locator available");
   }
 
-  return useQuery({
+  const query = useQuery({
     queryKey: ["view", locator, uri],
     queryFn: ({ signal }) => getViewByUri(locator, uri, signal),
     retry: false,
   });
+
+  // Listen for resource updates and auto-invalidate
+  useEffect(() => {
+    const cleanup = addResourceUpdateListener((message) => {
+      if (message.type === "RESOURCE_UPDATED" && message.resourceUri === uri) {
+        // Invalidate this specific view query
+        queryClient.invalidateQueries({
+          queryKey: ["view", locator, uri],
+          refetchType: "all",
+        });
+
+        // Also invalidate the view list
+        const integrationId = uri.split("/")[2];
+        queryClient.invalidateQueries({
+          queryKey: ["resources-v2-list", integrationId, "view"],
+          refetchType: "all",
+        });
+      }
+    });
+
+    return cleanup;
+  }, [uri, locator, queryClient]);
+
+  return query;
 }
 
 export function useUpdateView() {
@@ -108,6 +139,10 @@ export function useUpdateView() {
       params: Partial<ViewUpsertParamsV2>;
       signal?: AbortSignal;
     }) => updateViewV2(locator, uri, params, signal),
+    onSuccess: (data, variables) => {
+      // Notify about the resource update
+      notifyResourceUpdate(variables.uri);
+    },
   });
 }
 
@@ -120,5 +155,9 @@ export function useDeleteView() {
   return useMutation({
     mutationFn: ({ uri, signal }: { uri: string; signal?: AbortSignal }) =>
       deleteViewV2(locator, uri, signal),
+    onSuccess: (_data, variables) => {
+      // Notify about the resource deletion
+      notifyResourceUpdate(variables.uri);
+    },
   });
 }

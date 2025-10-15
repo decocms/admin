@@ -1,27 +1,27 @@
 import {
   DocumentDefinitionSchema,
   useDocumentByUriV2,
-  useUpdateDocument,
-  useSDK,
-  useRecentResources,
   usePinnedResources,
+  useRecentResources,
+  useSDK,
+  useUpdateDocument,
 } from "@deco/sdk";
+import { Badge } from "@deco/ui/components/badge.tsx";
 import { Button } from "@deco/ui/components/button.tsx";
 import { Icon } from "@deco/ui/components/icon.tsx";
-import { Badge } from "@deco/ui/components/badge.tsx";
 import { ScrollArea } from "@deco/ui/components/scroll-area.tsx";
+import { toast } from "@deco/ui/components/sonner.tsx";
 import { Spinner } from "@deco/ui/components/spinner.tsx";
-import { Textarea } from "@deco/ui/components/textarea.tsx";
 import { Tabs, TabsList, TabsTrigger } from "@deco/ui/components/tabs.tsx";
+import { Textarea } from "@deco/ui/components/textarea.tsx";
 import { cn } from "@deco/ui/lib/utils.ts";
-import { useCallback, useState, useEffect, useRef, useMemo } from "react";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useForm } from "react-hook-form";
+import { useSearchParams } from "react-router";
 import { z } from "zod";
 import { EmptyState } from "../common/empty-state.tsx";
 import { DocumentEditor } from "./document-editor.tsx";
-import { toast } from "@deco/ui/components/sonner.tsx";
-import { addResourceUpdateListener } from "../../lib/broadcast-channels.ts";
-import { useSearchParams } from "react-router";
-import { useQueryClient } from "@tanstack/react-query";
 
 // Document type inferred from the Zod schema
 export type DocumentDefinition = z.infer<typeof DocumentDefinitionSchema>;
@@ -44,10 +44,10 @@ interface DocumentDetailProps {
 export function DocumentDetail({ resourceUri }: DocumentDetailProps) {
   const { locator } = useSDK();
   const [searchParams, setSearchParams] = useSearchParams();
-  const queryClient = useQueryClient();
   const {
     data: resource,
-    isLoading: isLoading,
+    isLoading,
+    isFetching,
     refetch,
   } = useDocumentByUriV2(resourceUri);
   const effectiveDocument = resource?.data;
@@ -58,51 +58,54 @@ export function DocumentDetail({ resourceUri }: DocumentDetailProps) {
   const { addRecent } = useRecentResources(projectKey);
   const { updatePinnedResource } = usePinnedResources(projectKey);
 
-  // Local state for inline editing
-  const [title, setTitle] = useState("");
-  const [description, setDescription] = useState("");
-  const [content, setContent] = useState("");
-  const [tags, setTags] = useState<string[]>([]);
+  // Update mutation
+  const updateMutation = useUpdateDocument();
+
+  // Form setup with react-hook-form and zod
+  const form = useForm<DocumentDefinition>({
+    resolver: zodResolver(DocumentDefinitionSchema),
+    defaultValues: {
+      name: "",
+      description: "",
+      content: "",
+      tags: [],
+    },
+    mode: "onChange",
+  });
+
+  // UI state (not form state)
   const [newTagInput, setNewTagInput] = useState("");
   const [isAddingTag, setIsAddingTag] = useState(false);
-  const [isRefreshing, setIsRefreshing] = useState(false);
-  const [isSaving, setIsSaving] = useState(false);
   const [editorMode, setEditorMode] = useState<"pretty" | "raw">(() => {
     // Load from localStorage, default to "pretty"
     const saved = localStorage.getItem("document-editor-mode");
     return saved === "raw" ? "raw" : "pretty";
   });
+
+  // Refs
   const tagInputRef = useRef<HTMLInputElement>(null);
   const titleRef = useRef<HTMLDivElement>(null);
   const descriptionRef = useRef<HTMLDivElement>(null);
-  const shouldSyncRef = useRef(true); // Control when to sync from server
   const hasTrackedRecentRef = useRef(false); // Track if we've already added to recents
 
-  // Update mutation
-  const updateMutation = useUpdateDocument();
+  // Watch form values
+  const formValues = form.watch();
 
   // Track if there are unsaved changes
-  const hasChanges = useMemo(() => {
-    if (!effectiveDocument) return false;
-    const docTags = effectiveDocument.tags || [];
-    const tagsChanged =
-      tags.length !== docTags.length ||
-      tags.some((tag, idx) => tag !== docTags[idx]);
-    return (
-      title !== effectiveDocument.name ||
-      description !== (effectiveDocument.description || "") ||
-      content !== effectiveDocument.content ||
-      tagsChanged
-    );
-  }, [title, description, content, tags, effectiveDocument]);
+  const hasChanges = form.formState.isDirty;
 
-  // Sync local state with fetched document (controlled by shouldSyncRef)
+  // Sync resource?.data → form (one-way)
   useEffect(() => {
-    if (effectiveDocument && shouldSyncRef.current) {
-      setTitle(effectiveDocument.name);
-      setDescription(effectiveDocument.description || "");
-      setContent(effectiveDocument.content);
-      setTags(effectiveDocument.tags || []);
+    if (effectiveDocument) {
+      form.reset(
+        {
+          name: effectiveDocument.name,
+          description: effectiveDocument.description || "",
+          content: effectiveDocument.content,
+          tags: effectiveDocument.tags || [],
+        },
+        { keepDefaultValues: false },
+      );
 
       // Sync contentEditable divs
       if (titleRef.current) {
@@ -132,60 +135,13 @@ export function DocumentDetail({ resourceUri }: DocumentDetailProps) {
       updatePinnedResource(resourceUri, {
         name: effectiveDocument.name,
       });
-
-      // After syncing, don't sync again until explicitly requested
-      shouldSyncRef.current = false;
     }
-  }, [
-    effectiveDocument,
-    resourceUri,
-    locator,
-    addRecent,
-    projectKey,
-    updatePinnedResource,
-  ]);
-
-  // Reset sync flag when navigating to a different document
-  useEffect(() => {
-    shouldSyncRef.current = true;
-  }, [resourceUri]);
+  }, [effectiveDocument, resourceUri, locator, addRecent, projectKey, updatePinnedResource, form]);
 
   // Save editor mode preference to localStorage
   useEffect(() => {
     localStorage.setItem("document-editor-mode", editorMode);
   }, [editorMode]);
-
-  // Listen for resource updates (e.g., when agent updates the document)
-  useEffect(() => {
-    const cleanup = addResourceUpdateListener((message) => {
-      if (
-        message.type === "RESOURCE_UPDATED" &&
-        message.resourceUri === resourceUri
-      ) {
-        // Auto-refresh when this resource is updated
-        shouldSyncRef.current = true;
-        refetch();
-
-        // Invalidate queries so the list and other views show updated data
-        // Extract integration ID from resource URI (format: rsc://integration-id/resource-type/resource-name)
-        const integrationId = resourceUri.split("/")[2];
-
-        // Invalidate the specific document detail query
-        queryClient.invalidateQueries({
-          queryKey: ["document"],
-          refetchType: "all",
-        });
-
-        // Invalidate the document list query
-        queryClient.invalidateQueries({
-          queryKey: ["resources-v2-list", integrationId, "document"],
-          refetchType: "all",
-        });
-      }
-    });
-
-    return cleanup;
-  }, [resourceUri, refetch, queryClient]);
 
   // Update URL when resource URI changes (e.g., after agent renames the document)
   useEffect(() => {
@@ -198,21 +154,23 @@ export function DocumentDetail({ resourceUri }: DocumentDetailProps) {
   }, [resource?.uri, resourceUri, searchParams, setSearchParams]);
 
   const handleTitleChange = (newTitle: string) => {
-    setTitle(newTitle);
+    form.setValue("name", newTitle, { shouldDirty: true });
   };
 
   const handleDescriptionChange = (newDescription: string) => {
-    setDescription(newDescription);
+    form.setValue("description", newDescription, { shouldDirty: true });
   };
 
   const handleContentChange = (newContent: string) => {
-    setContent(newContent);
+    form.setValue("content", newContent, { shouldDirty: true });
   };
 
   const handleAddTag = () => {
-    if (newTagInput.trim() && !tags.includes(newTagInput.trim())) {
-      const newTags = [...tags, newTagInput.trim()];
-      setTags(newTags);
+    const currentTags = formValues.tags || [];
+    if (newTagInput.trim() && !currentTags.includes(newTagInput.trim())) {
+      form.setValue("tags", [...currentTags, newTagInput.trim()], {
+        shouldDirty: true,
+      });
       setNewTagInput("");
       setIsAddingTag(false);
     }
@@ -224,8 +182,12 @@ export function DocumentDetail({ resourceUri }: DocumentDetailProps) {
   };
 
   const handleRemoveTag = (tagToRemove: string) => {
-    const newTags = tags.filter((tag) => tag !== tagToRemove);
-    setTags(newTags);
+    const currentTags = formValues.tags || [];
+    form.setValue(
+      "tags",
+      currentTags.filter((tag) => tag !== tagToRemove),
+      { shouldDirty: true },
+    );
   };
 
   // Auto-focus input when starting to add a tag
@@ -236,46 +198,38 @@ export function DocumentDetail({ resourceUri }: DocumentDetailProps) {
   }, [isAddingTag]);
 
   const handleSave = useCallback(async () => {
-    if (!resourceUri || isSaving) return;
+    if (!resourceUri || updateMutation.isPending) return;
 
-    setIsSaving(true);
+    const values = form.getValues();
     try {
       await updateMutation.mutateAsync({
         uri: resourceUri,
         params: {
-          name: title,
-          description: description,
-          content: content,
-          tags: tags,
+          name: values.name,
+          description: values.description,
+          content: values.content,
+          tags: values.tags,
         },
       });
       toast.success("Document saved successfully");
-      // Allow sync after save to get the updated document from server
-      shouldSyncRef.current = true;
       await refetch();
     } catch (error) {
       console.error("Failed to save document:", error);
       toast.error("Failed to save document");
-    } finally {
-      setIsSaving(false);
     }
-  }, [
-    resourceUri,
-    title,
-    description,
-    content,
-    tags,
-    isSaving,
-    updateMutation,
-    refetch,
-  ]);
+  }, [resourceUri, updateMutation, refetch, form]);
 
   const handleDiscard = useCallback(() => {
     if (effectiveDocument) {
-      setTitle(effectiveDocument.name);
-      setDescription(effectiveDocument.description || "");
-      setContent(effectiveDocument.content);
-      setTags(effectiveDocument.tags || []);
+      form.reset(
+        {
+          name: effectiveDocument.name,
+          description: effectiveDocument.description || "",
+          content: effectiveDocument.content,
+          tags: effectiveDocument.tags || [],
+        },
+        { keepDefaultValues: false },
+      );
 
       // Sync contentEditable divs
       if (titleRef.current) {
@@ -287,17 +241,12 @@ export function DocumentDetail({ resourceUri }: DocumentDetailProps) {
       }
       toast.success("Changes discarded");
     }
-  }, [effectiveDocument]);
+  }, [effectiveDocument, form]);
 
   const handleRefresh = useCallback(() => {
-    if (isRefreshing) return;
-    setIsRefreshing(true);
-    // Allow sync to update local state with fresh data from server
-    shouldSyncRef.current = true;
-    refetch().finally(() => {
-      setIsRefreshing(false);
-    });
-  }, [isRefreshing, refetch]);
+    if (isFetching) return;
+    refetch();
+  }, [isFetching, refetch]);
 
   if (isLoading) {
     return (
@@ -392,13 +341,13 @@ export function DocumentDetail({ resourceUri }: DocumentDetailProps) {
                   size="sm"
                   variant="secondary"
                   onClick={handleRefresh}
-                  disabled={isRefreshing}
+                  disabled={isFetching}
                   className="h-8 w-8 p-0 rounded-xl"
                 >
                   <Icon
                     name="refresh"
                     size={16}
-                    className={cn(isRefreshing && "animate-spin")}
+                    className={cn(isFetching && "animate-spin")}
                   />
                 </Button>
 
@@ -409,7 +358,7 @@ export function DocumentDetail({ resourceUri }: DocumentDetailProps) {
                     size="sm"
                     variant="secondary"
                     onClick={handleDiscard}
-                    disabled={isSaving}
+                    disabled={updateMutation.isPending}
                     className="h-8 px-3 rounded-xl"
                   >
                     Discard
@@ -423,10 +372,10 @@ export function DocumentDetail({ resourceUri }: DocumentDetailProps) {
                     size="sm"
                     variant="special"
                     onClick={handleSave}
-                    disabled={isSaving}
+                    disabled={updateMutation.isPending}
                     className="h-8 px-3 rounded-xl"
                   >
-                    {isSaving ? "Saving..." : "Save"}
+                    {updateMutation.isPending ? "Saving..." : "Save"}
                   </Button>
                 )}
               </div>
@@ -435,7 +384,7 @@ export function DocumentDetail({ resourceUri }: DocumentDetailProps) {
             {/* Tags section */}
             <div className="py-6">
               <div className="flex gap-2.5 flex-wrap items-center">
-                {tags.map((tag) => (
+                {(formValues.tags || []).map((tag) => (
                   <Badge
                     key={tag}
                     variant="secondary"
@@ -530,13 +479,13 @@ export function DocumentDetail({ resourceUri }: DocumentDetailProps) {
           <div className="px-4 sm:px-6 md:px-8 pt-4 pb-20">
             {editorMode === "pretty" ? (
               <DocumentEditor
-                value={content}
+                value={formValues.content}
                 onChange={handleContentChange}
                 locator={locator}
               />
             ) : (
               <Textarea
-                value={content}
+                value={formValues.content}
                 onChange={(e) => handleContentChange(e.target.value)}
                 placeholder="Write your markdown here..."
                 className="min-h-[500px] font-mono text-sm resize-y"

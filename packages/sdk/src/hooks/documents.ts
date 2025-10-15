@@ -1,10 +1,20 @@
-import { useMutation, useQuery, useSuspenseQuery } from "@tanstack/react-query";
+import {
+  useMutation,
+  useQuery,
+  useQueryClient,
+  useSuspenseQuery,
+} from "@tanstack/react-query";
+import { useEffect } from "react";
+import {
+  addResourceUpdateListener,
+  notifyResourceUpdate,
+} from "../broadcast.ts";
 import { WellKnownMcpGroups, formatIntegrationId } from "../crud/groups.ts";
 import { InternalServerError } from "../errors.ts";
 import { MCPClient } from "../fetcher.ts";
 import type { ProjectLocator } from "../locator.ts";
-import type { ReadOutput } from "../mcp/resources-v2/schemas.ts";
 import { DocumentDefinitionSchema } from "../mcp/documents/schemas.ts";
+import type { ReadOutput } from "../mcp/resources-v2/schemas.ts";
 import { useSDK } from "./store.tsx";
 
 // Resources V2 document names for documents
@@ -104,28 +114,80 @@ export function deleteDocumentV2(
 // React Hooks
 export function useDocumentByUriV2(uri: string) {
   const { locator } = useSDK();
+  const queryClient = useQueryClient();
+
   if (!locator) {
     throw new InternalServerError("No locator available");
   }
 
-  return useQuery({
+  const query = useQuery({
     queryKey: ["document", uri],
     queryFn: ({ signal }) => getDocumentByUri(locator, uri, signal),
     retry: false,
   });
+
+  // Listen for resource updates and auto-invalidate
+  useEffect(() => {
+    const cleanup = addResourceUpdateListener((message) => {
+      if (message.type === "RESOURCE_UPDATED" && message.resourceUri === uri) {
+        // Invalidate this specific document query
+        queryClient.invalidateQueries({
+          queryKey: ["document", uri],
+          refetchType: "all",
+        });
+
+        // Also invalidate the document list
+        const integrationId = uri.split("/")[2];
+        queryClient.invalidateQueries({
+          queryKey: ["resources-v2-list", integrationId, "document"],
+          refetchType: "all",
+        });
+      }
+    });
+
+    return cleanup;
+  }, [uri, queryClient]);
+
+  return query;
 }
 
 export function useDocumentSuspense(uri: string) {
   const { locator } = useSDK();
+  const queryClient = useQueryClient();
+
   if (!locator) {
     throw new InternalServerError("No locator available");
   }
 
-  return useSuspenseQuery({
+  const query = useSuspenseQuery({
     queryKey: ["document", uri],
     queryFn: ({ signal }) => getDocumentByUri(locator, uri, signal),
     retry: false,
   });
+
+  // Listen for resource updates and auto-invalidate
+  useEffect(() => {
+    const cleanup = addResourceUpdateListener((message) => {
+      if (message.type === "RESOURCE_UPDATED" && message.resourceUri === uri) {
+        // Invalidate this specific document query
+        queryClient.invalidateQueries({
+          queryKey: ["document", uri],
+          refetchType: "all",
+        });
+
+        // Also invalidate the document list
+        const integrationId = uri.split("/")[2];
+        queryClient.invalidateQueries({
+          queryKey: ["resources-v2-list", integrationId, "document"],
+          refetchType: "all",
+        });
+      }
+    });
+
+    return cleanup;
+  }, [uri, queryClient]);
+
+  return query;
 }
 
 export function useUpsertDocument() {
@@ -142,6 +204,12 @@ export function useUpsertDocument() {
       params: DocumentUpsertParamsV2;
       signal?: AbortSignal;
     }) => upsertDocumentV2(locator, params, signal),
+    onSuccess: (data) => {
+      // Notify about the resource update
+      if (data.uri) {
+        notifyResourceUpdate(data.uri);
+      }
+    },
   });
 }
 
@@ -161,6 +229,10 @@ export function useUpdateDocument() {
       params: Partial<DocumentUpsertParamsV2>;
       signal?: AbortSignal;
     }) => updateDocumentV2(locator, uri, params, signal),
+    onSuccess: (_data, variables) => {
+      // Notify about the resource update
+      notifyResourceUpdate(variables.uri);
+    },
   });
 }
 
@@ -173,6 +245,10 @@ export function useDeleteDocument() {
   return useMutation({
     mutationFn: ({ uri, signal }: { uri: string; signal?: AbortSignal }) =>
       deleteDocumentV2(locator, uri, signal),
+    onSuccess: (_data, variables) => {
+      // Notify about the resource deletion
+      notifyResourceUpdate(variables.uri);
+    },
   });
 }
 

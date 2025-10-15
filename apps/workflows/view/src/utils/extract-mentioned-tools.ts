@@ -33,11 +33,6 @@ export function extractMentionedTools(
   const mentionRegex = /@([a-zA-Z0-9_-]+)/g;
   const matches = [...prompt.matchAll(mentionRegex)];
 
-  console.log(
-    "🔍 [extractMentionedTools] Found mentions:",
-    matches.map((m) => m[1]),
-  );
-
   for (const match of matches) {
     const toolName = match[1];
 
@@ -61,12 +56,6 @@ export function extractMentionedTools(
         });
 
         seenTools.add(toolName);
-        console.log(
-          "✅ [extractMentionedTools] Found tool:",
-          toolName,
-          "in",
-          integration.name,
-        );
         break; // Found tool, move to next mention
       }
     }
@@ -76,12 +65,6 @@ export function extractMentionedTools(
       console.warn("⚠️ [extractMentionedTools] Tool not found:", toolName);
     }
   }
-
-  console.log(
-    "📋 [extractMentionedTools] Extracted tools:",
-    mentionedTools.length,
-    mentionedTools,
-  );
 
   return mentionedTools;
 }

@@ -88,7 +88,6 @@ export function StepOutput({ step, stepName, outputSchema }: StepOutputProps) {
       },
       {
         onSuccess: (result) => {
-          console.log("✅ Generated view:", result.reasoning);
           workflowActions.updateStepCustomView(stepName, result.viewCode);
           setShowGenerateModal(false);
           setViewMode("custom");

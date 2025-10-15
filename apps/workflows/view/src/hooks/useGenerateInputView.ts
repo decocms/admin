@@ -19,11 +19,6 @@ interface GenerateInputViewInput {
 export function useGenerateInputView() {
   return useMutation({
     mutationFn: async (input: GenerateInputViewInput) => {
-      console.log(
-        "📝 [Hook] Generating input view for field:",
-        input.fieldName,
-      );
-
       // Direct fetch call (works without generated types)
       const response = await fetch("/mcp/call-tool/GENERATE_STEP_INPUT_VIEW", {
         method: "POST",
@@ -38,9 +33,6 @@ export function useGenerateInputView() {
       }
 
       const result = await response.json();
-
-      console.log("✅ [Hook] Input view generated");
-
       return result as { viewCode: string; reasoning: string };
     },
   });

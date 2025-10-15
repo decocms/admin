@@ -17,7 +17,6 @@ export function ToolsDropdown({ onToolClick }: ToolsDropdownProps) {
 
   const handleToolClick = useCallback(
     (item: MentionItem) => {
-      console.log("Tool clicked:", item);
       onToolClick?.(item);
     },
     [onToolClick],

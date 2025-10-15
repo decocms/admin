@@ -37,14 +37,6 @@ export const createGenerateStepOutputViewTool = (env: Env) =>
       reasoning: z.string().describe("Explanation of design choices"),
     }),
     execute: async ({ context }) => {
-      console.log("🎨 [GENERATE_STEP_OUTPUT_VIEW] Generating view...");
-      console.log("🎨 [GENERATE_STEP_OUTPUT_VIEW] Step:", context.stepName);
-      console.log("🎨 [GENERATE_STEP_OUTPUT_VIEW] Purpose:", context.purpose);
-      console.log(
-        "🎨 [GENERATE_STEP_OUTPUT_VIEW] Output sample:",
-        context.outputSample,
-      );
-
       // Import schema and template
       const { OUTPUT_VIEW_GENERATION_SCHEMA, OUTPUT_VIEW_PROMPT_TEMPLATE } =
         await import("../schemas/output-view-generation.ts");
@@ -54,11 +46,6 @@ export const createGenerateStepOutputViewTool = (env: Env) =>
         context.outputSchema,
         context.outputSample,
         context.purpose,
-      );
-
-      console.log(
-        "🎨 [GENERATE_STEP_OUTPUT_VIEW] Prompt length:",
-        prompt.length,
       );
 
       const result = await env.AI_GATEWAY.AI_GENERATE_OBJECT({
@@ -73,8 +60,6 @@ export const createGenerateStepOutputViewTool = (env: Env) =>
         temperature: 0.4,
       });
 
-      console.log("🎨 [GENERATE_STEP_OUTPUT_VIEW] AI response received");
-
       if (!result.object) {
         console.error("❌ [GENERATE_STEP_OUTPUT_VIEW] No object in result");
         throw new Error("Failed to generate output view");
@@ -82,12 +67,6 @@ export const createGenerateStepOutputViewTool = (env: Env) =>
 
       const viewCode = result.object.viewCode as string;
       const reasoning = result.object.reasoning as string;
-
-      console.log(
-        "✅ [GENERATE_STEP_OUTPUT_VIEW] View generated, length:",
-        viewCode.length,
-      );
-      console.log("✅ [GENERATE_STEP_OUTPUT_VIEW] Reasoning:", reasoning);
 
       return { viewCode, reasoning };
     },
@@ -126,14 +105,6 @@ export const createGenerateStepInputViewTool = (env: Env) =>
       reasoning: z.string().describe("Explanation of design choices"),
     }),
     execute: async ({ context }) => {
-      console.log("📝 [GENERATE_STEP_INPUT_VIEW] Generating input view...");
-      console.log("📝 [GENERATE_STEP_INPUT_VIEW] Field:", context.fieldName);
-      console.log("📝 [GENERATE_STEP_INPUT_VIEW] Purpose:", context.purpose);
-      console.log(
-        "📝 [GENERATE_STEP_INPUT_VIEW] Previous step:",
-        context.previousStepId || "None",
-      );
-
       // Import schema and template
       const { INPUT_VIEW_GENERATION_SCHEMA, INPUT_VIEW_PROMPT_TEMPLATE } =
         await import("../schemas/input-view-generation.ts");
@@ -143,11 +114,6 @@ export const createGenerateStepInputViewTool = (env: Env) =>
         context.fieldSchema,
         context.previousStepOutput,
         context.purpose,
-      );
-
-      console.log(
-        "📝 [GENERATE_STEP_INPUT_VIEW] Prompt length:",
-        prompt.length,
       );
 
       const result = await env.AI_GATEWAY.AI_GENERATE_OBJECT({
@@ -162,8 +128,6 @@ export const createGenerateStepInputViewTool = (env: Env) =>
         temperature: 0.4,
       });
 
-      console.log("📝 [GENERATE_STEP_INPUT_VIEW] AI response received");
-
       if (!result.object) {
         console.error("❌ [GENERATE_STEP_INPUT_VIEW] No object in result");
         throw new Error("Failed to generate input view");
@@ -171,12 +135,6 @@ export const createGenerateStepInputViewTool = (env: Env) =>
 
       const viewCode = result.object.viewCode as string;
       const reasoning = result.object.reasoning as string;
-
-      console.log(
-        "✅ [GENERATE_STEP_INPUT_VIEW] View generated, length:",
-        viewCode.length,
-      );
-      console.log("✅ [GENERATE_STEP_INPUT_VIEW] Reasoning:", reasoning);
 
       return { viewCode, reasoning };
     },

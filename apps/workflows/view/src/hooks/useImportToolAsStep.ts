@@ -19,8 +19,6 @@ export interface ImportToolParams {
 export const useImportToolAsStep = () => {
   return useMutation({
     mutationFn: async (params: ImportToolParams) => {
-      console.log("⚡ [useImportToolAsStep] Importing tool:", params.toolName);
-
       // @ts-ignore - IMPORT_TOOL_AS_STEP will be available after npm run gen:self
       const result = await client.IMPORT_TOOL_AS_STEP({
         toolName: params.toolName,
@@ -30,11 +28,6 @@ export const useImportToolAsStep = () => {
         inputSchema: params.inputSchema,
         outputSchema: params.outputSchema,
       });
-
-      console.log(
-        "✅ [useImportToolAsStep] Tool imported successfully:",
-        result.step,
-      );
 
       return result.step as any;
     },

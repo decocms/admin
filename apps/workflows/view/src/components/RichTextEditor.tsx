@@ -207,8 +207,6 @@ export function RichTextEditor({
                 );
               },
               command: ({ editor, range, props }: any) => {
-                console.log("🔨 [Mention] Inserting mention:", props);
-
                 editor
                   .chain()
                   .focus()

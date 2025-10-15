@@ -68,8 +68,6 @@ function ToolbarButton({
   useEffect(() => {
     if (!hoverDropdown || !buttonRef.current) return;
 
-    console.log("🎨 Setting up tippy for button:", label);
-
     // Create container for React content once
     containerRef.current = document.createElement("div");
 
@@ -87,10 +85,8 @@ function ToolbarButton({
       delay: [200, 0],
       appendTo: document.body,
     });
-    console.log("✅ Tippy instance created:", label, tippyInstanceRef.current);
 
     return () => {
-      console.log("🧹 Cleaning up tippy for button:", label);
       if (tippyInstanceRef.current) {
         tippyInstanceRef.current.destroy();
         tippyInstanceRef.current = null;
@@ -108,7 +104,6 @@ function ToolbarButton({
   useEffect(() => {
     if (!hoverDropdown || !rootRef.current) return;
 
-    console.log("🔄 Updating tippy content for button:", label);
     rootRef.current.render(
       <QueryClientProvider client={queryClient}>
         <WorkflowStoreContext.Provider value={workflowStore}>
@@ -172,8 +167,6 @@ function ToolsDropdownWithWorkflowActions() {
 
   const handleToolClick = useCallback(
     (toolItem: MentionItem) => {
-      console.log("⚡ [WorkflowToolbar] Import tool as step:", toolItem.label);
-
       // Only handle tool items (not step items)
       if (toolItem.type !== "tool") {
         console.log("⚠️ Skipping non-tool item:", toolItem.type);
@@ -196,18 +189,10 @@ function ToolsDropdownWithWorkflowActions() {
         },
         {
           onSuccess: (generatedStep) => {
-            console.log(
-              "✅ Tool imported as step successfully:",
-              generatedStep,
-            );
-
             // Add step with correct WorkflowStep schema (type + def)
             addStep(generatedStep as any);
 
             // Update workflow dependencyToolCalls
-            console.log(
-              "📦 [WorkflowToolbar] Updating workflow dependencies after import...",
-            );
             updateDependencyToolCalls();
 
             // Navigate to new step
@@ -277,7 +262,6 @@ export function WorkflowToolbar({
     if (!resourceURI) return;
 
     try {
-      console.log("🔄 Fetching workflow from server...");
       const result = await client.READ_WORKFLOW({ uri: resourceURI });
 
       if (result?.workflow) {
@@ -286,7 +270,6 @@ export function WorkflowToolbar({
         await queryClient.invalidateQueries({
           queryKey: ["workflow", resourceURI],
         });
-        console.log("✅ Workflow synced successfully");
       }
     } catch (error) {
       console.error("❌ Failed to sync workflow:", error);

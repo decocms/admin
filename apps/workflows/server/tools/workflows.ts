@@ -395,11 +395,6 @@ export default async function(input, ctx) {
           authorization: context.authToken,
         };
 
-        // 🔐 Log authorization if provided
-        if (context.authToken) {
-          console.log(`🔐 Running step with workflow authorization token`);
-        }
-
         // Execute via DECO_TOOL_RUN_TOOL
         const result = await env.TOOLS.DECO_TOOL_RUN_TOOL(toolRunParams);
 
@@ -695,8 +690,6 @@ export const createGenerateStepTool = (env: Env) =>
           };
         }
 
-        console.log("✅ [GENERATE_STEP] Step generated:", stepResult.step.name);
-
         // 🔐 Validate and auto-fix usedTools using code parser
         const generatedStep = stepResult.step;
         const codeAnalysis = extractToolsFromCode(generatedStep.execute);
@@ -758,13 +751,8 @@ export const createGenerateStepTool = (env: Env) =>
             });
 
             generatedStep.usedTools = Array.from(allToolsMap.values());
-            console.log(`✅ Auto-fixed usedTools:`, generatedStep.usedTools);
           }
         } else {
-          // AI didn't provide usedTools - extract from code
-          console.warn(
-            "⚠️ AI did not provide usedTools. Extracting from code...",
-          );
           interface UsedToolEntry {
             toolName: string;
             integrationId: string;
@@ -782,9 +770,6 @@ export const createGenerateStepTool = (env: Env) =>
           });
 
           generatedStep.usedTools = Array.from(uniqueTools.values());
-          console.log(
-            `✅ Extracted ${generatedStep.usedTools.length} tools from code`,
-          );
         }
 
         // Ensure we always return the correct type with required fields
@@ -845,17 +830,6 @@ export const createImportToolAsStepTool = (_env: Env) =>
         outputSchema,
       } = context;
 
-      // Debug logging
-      console.log("🔍 [IMPORT_TOOL_AS_STEP] Received schemas:", {
-        toolName,
-        hasInputSchema: !!inputSchema,
-        inputSchemaType: typeof inputSchema,
-        inputSchemaKeys: inputSchema ? Object.keys(inputSchema) : [],
-        hasOutputSchema: !!outputSchema,
-        outputSchemaType: typeof outputSchema,
-        outputSchemaKeys: outputSchema ? Object.keys(outputSchema) : [],
-      });
-
       // Generate step ID
       const stepId = `step_${Date.now()}_${Math.random().toString(36).slice(2, 11)}`;
 
@@ -873,11 +847,6 @@ export const createImportToolAsStepTool = (_env: Env) =>
         "required" in inputSchema
           ? (inputSchema.required as string[])
           : []) || [];
-
-      console.log("🔍 [IMPORT_TOOL_AS_STEP] Extracted properties:", {
-        inputPropertiesKeys: Object.keys(inputProperties),
-        requiredFields,
-      });
 
       // Generate default input values
       const defaultInput: Record<string, unknown> = {};
@@ -1020,7 +989,6 @@ export const createReadWorkflowTool = (env: Env) =>
       const result = await env.WORKFLOWS_MANAGEMENT.DECO_RESOURCE_WORKFLOW_READ(
         { uri },
       );
-      console.log("READ_WORKFLOW raw result:", JSON.stringify(result, null, 2));
 
       const parsed = WorkflowDefinitionSchema.safeParse(result.data);
 

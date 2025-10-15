@@ -19,8 +19,6 @@ interface GenerateOutputViewInput {
 export function useGenerateOutputView() {
   return useMutation({
     mutationFn: async (input: GenerateOutputViewInput) => {
-      console.log("🎨 [Hook] Generating output view:", input.viewName);
-
       // Direct fetch call (works without generated types)
       const response = await fetch("/mcp/call-tool/GENERATE_STEP_OUTPUT_VIEW", {
         method: "POST",
@@ -33,9 +31,6 @@ export function useGenerateOutputView() {
       }
 
       const result = await response.json();
-
-      console.log("✅ [Hook] Output view generated");
-
       return result as { viewCode: string; reasoning: string };
     },
   });

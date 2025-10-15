@@ -53,7 +53,6 @@ export default forwardRef<
   const selectItem = (index: number) => {
     const item = items[index];
     if (item) {
-      console.log("✅ [WorkflowMentionDropdown] Selecting item:", item);
       command({
         id: item.id,
         label: item.label,

@@ -431,15 +431,7 @@ export function createWorkflowViewsV2() {
     prompt:
       "You are a workflow editing specialist helping the user manage a workflow. You can read the workflow details, update its properties, start workflows, and monitor their execution. When you start a workflow using DECO_WORKFLOW_START, it returns a workflow_run URI. Use DECO_RESOURCE_WORKFLOW_RUN_READ with that URI to monitor execution status, view step results, and retrieve logs. Always confirm actions before executing them. A good strategy is to test each step one at a time in isolation and check how they affect the overall workflow.",
     handler: (input, _c) => {
-      // TODO: Do not ship it to main
-
-      // const url = createDetailViewUrl(
-      //   "workflow",
-      //   integrationId,
-      //   input.resource,
-      // );
-
-      const url = new URL("/workflow", "http://localhost:8787");
+      const url = new URL("/workflow", "https://default-workflows.deco.page");
       url.searchParams.set("resourceURI", input.resource);
 
       return Promise.resolve({ url: url.href });

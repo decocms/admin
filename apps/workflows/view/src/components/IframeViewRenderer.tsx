@@ -23,13 +23,7 @@ export function IframeViewRenderer({
 }: IframeViewRendererProps) {
   const iframeRef = useRef<HTMLIFrameElement>(null);
 
-  console.log("🖼️ [IframeView] Rendering iframe view");
-  console.log("🖼️ [IframeView] HTML length:", html.length);
-  console.log("🖼️ [IframeView] Data:", data);
-
   useEffect(() => {
-    console.log("🔄 [IframeView] useEffect triggered");
-
     if (!iframeRef.current) {
       console.warn("⚠️ [IframeView] No iframe ref");
       return;
@@ -39,15 +33,12 @@ export function IframeViewRenderer({
 
     // Wait for iframe to load
     const handleLoad = () => {
-      console.log("📥 [IframeView] Iframe loaded");
-
       if (!iframe.contentWindow) {
         console.warn("⚠️ [IframeView] No contentWindow");
         return;
       }
 
       // Inject data into iframe
-      console.log("💉 [IframeView] Injecting data via postMessage");
       iframe.contentWindow.postMessage({ type: "viewData", data }, "*");
 
       // Also set as global (for simpler access in scripts)
@@ -59,7 +50,6 @@ export function IframeViewRenderer({
             }
           ).viewData = data;
         }
-        console.log("✅ [IframeView] window.viewData set successfully");
       } catch (e) {
         console.warn(
           "⚠️ [IframeView] Could not set window.viewData (cross-origin?)",
@@ -73,17 +63,11 @@ export function IframeViewRenderer({
     const handleMessage = (event: MessageEvent) => {
       if (event.source !== iframe.contentWindow) return;
 
-      console.log("📨 [IframeView] Message from iframe:", event.data);
-
       if (
         (event.data.type === "submit" ||
           event.data.type === "inputViewSubmit") &&
         onSubmit
       ) {
-        console.log(
-          "📨 [IframeView] Form submitted from iframe:",
-          event.data.data,
-        );
         onSubmit(event.data.data);
       }
     };
@@ -91,7 +75,6 @@ export function IframeViewRenderer({
     globalThis.addEventListener("message", handleMessage);
 
     return () => {
-      console.log("🧹 [IframeView] Cleaning up listeners");
       iframe.removeEventListener("load", handleLoad);
       globalThis.removeEventListener("message", handleMessage);
     };

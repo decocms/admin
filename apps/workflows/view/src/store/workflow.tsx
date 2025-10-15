@@ -243,10 +243,6 @@ export const WorkflowStoreProvider = ({
 
               const dependencyToolCalls = Array.from(allToolsMap.values());
 
-              console.log(
-                `📦 Updated dependencyToolCalls: ${dependencyToolCalls.length} unique tools`,
-              );
-
               const updatedWorkflow = {
                 ...currentState.workflow,
                 dependencyToolCalls,
@@ -272,7 +268,6 @@ export const WorkflowStoreProvider = ({
               });
             },
             syncFromServer: (workflow: Workflow) => {
-              console.log("🔄 Syncing workflow from server...");
               set({
                 workflow,
                 currentStepIndex: 0,
@@ -303,9 +298,6 @@ export const WorkflowStoreProvider = ({
               const maxIndex = state.workflow.steps?.length || 0;
               // If currentStepIndex is out of bounds, clamp it to valid range
               if (state.currentStepIndex > maxIndex) {
-                console.log(
-                  `🔧 Fixed out-of-bounds currentStepIndex: ${state.currentStepIndex} -> ${maxIndex - 1}`,
-                );
                 state.currentStepIndex = Math.max(0, maxIndex - 1);
               }
               // Rebuild the step index map after rehydration

@@ -17,7 +17,6 @@ const useWorkflowPlayerStore = create<Store>((set) => ({
   actions: {
     setIsPlaying: (isPlaying) => {
       set({ isPlaying });
-      console.log("🎵 [Store] Player state:", isPlaying ? "Playing" : "Paused");
     },
   },
 }));

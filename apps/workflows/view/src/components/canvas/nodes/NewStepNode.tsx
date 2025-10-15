@@ -47,8 +47,6 @@ export const NewStepNode = memo(function NewStepNode(_props: NodeProps) {
       { objective: prompt, previousSteps, selectedTools: mentionedTools },
       {
         onSuccess: (result) => {
-          console.log("✅ Step generated successfully:", result);
-
           // Add the new step to the workflow
           if (result?.step) {
             const newStep: WorkflowStep = {

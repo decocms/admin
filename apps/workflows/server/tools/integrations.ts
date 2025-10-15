@@ -33,7 +33,6 @@ export const createListInstalledToolsTool = (env: Env) =>
     }),
     execute: async () => {
       try {
-        console.log("Listing installed tools");
         const result = await env.INTEGRATIONS.INTEGRATIONS_LIST({});
 
         return {

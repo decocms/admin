@@ -4,7 +4,6 @@ import {
   type ReactElement,
   useRef,
   useEffect,
-  useState,
   useMemo,
   useCallback,
   useContext,
@@ -235,7 +234,6 @@ export function WorkflowToolbar({
 }: {
   canvasRef: React.RefObject<WorkflowCanvasRef>;
 }) {
-  const [executionPanelOpen, setExecutionPanelOpen] = useState(false);
   const activeTab = useActiveTab();
   const { clearStore } = useWorkflowStoreActions();
   const searchParams = useSearch({ from: "/workflow" });
@@ -254,18 +252,6 @@ export function WorkflowToolbar({
         icon: "build",
         label: "Tools",
         hoverDropdown: toolsDropdown,
-      },
-      {
-        id: "flash",
-        icon: "flash_on",
-        label: "Execution Monitor",
-        onClick: () => {
-          console.log(
-            "🔥 Flash button clicked, toggling panel:",
-            !executionPanelOpen,
-          );
-          setExecutionPanelOpen(!executionPanelOpen);
-        },
       },
       {
         id: "settings",
@@ -323,7 +309,6 @@ export function WorkflowToolbar({
     ],
     [
       activeTab,
-      executionPanelOpen,
       clearStore,
       toolsDropdown,
       updateWorkflowMutation,

@@ -109,13 +109,21 @@ export const WorkflowStoreProvider = ({
               const newSteps = [...currentState.workflow.steps];
               newSteps[stepIndex] = { ...newSteps[stepIndex], ...updates };
 
+              // Check if step name changed - if so, rebuild index map
+              const oldStepName =
+                currentState.workflow.steps[stepIndex].def?.name;
+              const newStepName = (updates.def as any)?.name;
+              const nameChanged = newStepName && newStepName !== oldStepName;
+
               set({
                 workflow: {
                   ...currentState.workflow,
                   steps: newSteps,
                 } as Workflow,
-                // Index map doesn't change when updating step content
-                _stepIndexMap: currentState._stepIndexMap,
+                // Rebuild index map if name changed, otherwise keep existing for performance
+                _stepIndexMap: nameChanged
+                  ? buildStepIndexMap(newSteps)
+                  : currentState._stepIndexMap,
               });
             },
             // PERFORMANCE: Granular input field update

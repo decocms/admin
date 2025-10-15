@@ -579,7 +579,13 @@ export const StepNode = memo(
                 <DropdownMenuItem
                   onClick={() => {
                     // TODO: Implement duplicate functionality
-                    void 0;
+                    workflowActions.addStep({
+                      ...step,
+                      def: {
+                        ...step.def,
+                        name: `${step.def?.name}-${Math.random().toString(36).substring(2, 15)}`,
+                      },
+                    });
                   }}
                 >
                   <Icon name="content_copy" size={16} className="mr-2" />
@@ -590,7 +596,13 @@ export const StepNode = memo(
                     const newTitle = prompt("Enter new name:", step?.def?.name);
                     if (newTitle) {
                       // TODO: Implement rename functionality
-                      void 0;
+                      workflowActions.updateStep(step.def?.name as string, {
+                        ...step,
+                        def: {
+                          ...step.def,
+                          name: newTitle,
+                        },
+                      });
                     }
                   }}
                 >

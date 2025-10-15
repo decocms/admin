@@ -37,9 +37,9 @@ export const NewStepNode = memo(function NewStepNode(_props: NodeProps) {
     }
     const previousSteps: StepInfo[] | undefined = workflow.steps?.map(
       (step: WorkflowStep): StepInfo => ({
-        id: step.name,
-        name: step.name,
-        outputSchema: (step.outputSchema as Record<string, unknown>) || {},
+        id: step.def.id,
+        name: step.def.name,
+        outputSchema: (step.def.outputSchema as Record<string, unknown>) || {},
       }),
     );
 
@@ -55,31 +55,35 @@ export const NewStepNode = memo(function NewStepNode(_props: NodeProps) {
             const lastStepBeforeAdd =
               workflow?.steps?.[workflow.steps.length - 1];
 
-            const newStep = {
-              ...result.step,
-              name: result.step.id, // Use id as name for the step identifier
-              execute:
-                result.step.code ||
-                "export default async function(input, ctx) { return input; }",
-              status: "pending" as const,
-              output: {},
-              logs: [],
-              duration: 0,
-              createdAt: new Date().toISOString(),
-              updatedAt: new Date().toISOString(),
+            const newStep: WorkflowStep = {
+              type: "code",
+              def: {
+                id: result.step.id,
+                name: result.step.name,
+                description: result.step.description,
+                inputSchema: result.step.inputSchema,
+                outputSchema: result.step.outputSchema,
+                input: result.step.input,
+                output: {},
+                status: "pending",
+                execute:
+                  result.step.code ||
+                  "export default async function(input, ctx) { return input; }",
+                dependencies: result.step.primaryIntegration
+                  ? [{ integrationId: result.step.primaryIntegration }]
+                  : undefined,
+              },
             };
 
             // Add the new step
-            addStep(newStep as WorkflowStep);
+            addStep(newStep);
 
             // Clear the prompt from the step that had it (the last step before adding)
             if (lastStepBeforeAdd) {
-              const lastStepBeforeAddDef = lastStepBeforeAdd.def;
               updateStep(lastStepBeforeAdd.def.name, {
-                ...lastStepBeforeAddDef,
                 def: {
-                  ...lastStepBeforeAddDef,
-                  prompt,
+                  ...lastStepBeforeAdd.def,
+                  prompt: "",
                 },
               });
             }
@@ -103,14 +107,16 @@ export const NewStepNode = memo(function NewStepNode(_props: NodeProps) {
 
   const handleUpdateStep = useCallback(
     (value: string) => {
-      updateStep(currentStep?.def.name || "", {
-        def: {
-          ...currentStep?.def,
-          prompt: value,
-        },
-      });
+      if (currentStep?.def.name) {
+        updateStep(currentStep.def.name, {
+          def: {
+            ...currentStep.def,
+            prompt: value,
+          },
+        });
+      }
     },
-    [currentStep?.def.name, updateStep],
+    [currentStep, updateStep],
   );
 
   return (

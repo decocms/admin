@@ -111,7 +111,7 @@ export function StepOutput({ step, stepName, outputSchema }: StepOutputProps) {
   const showCustomView = customViewCode && viewMode === "custom";
 
   return (
-    <div className="bg-background p-4 flex flex-col gap-3 relative rounded-b-xl max-h-[400px] overflow-hidden">
+    <div className="bg-background p-4 flex flex-col gap-3 relative rounded-b-xl max-h-[300px] overflow-hidden">
       <div
         className="nodrag flex flex-col gap-3 overflow-hidden"
         style={{ cursor: "default" }}
@@ -190,8 +190,8 @@ export function StepOutput({ step, stepName, outputSchema }: StepOutputProps) {
             data-scrollable="true"
             className="border border-border rounded bg-muted/30 flex-1 min-h-0 relative group"
             style={{
-              maxHeight: "300px",
-              minHeight: "180px",
+              maxHeight: "200px",
+              minHeight: "120px",
               overflowY: "auto",
               overflowX: "hidden",
               pointerEvents: "auto",
@@ -207,7 +207,7 @@ export function StepOutput({ step, stepName, outputSchema }: StepOutputProps) {
               srcDoc={viewCodeWithData}
               style={{
                 width: "100%",
-                minHeight: "180px",
+                minHeight: "120px",
                 border: "none",
                 background: "transparent",
               }}
@@ -221,8 +221,8 @@ export function StepOutput({ step, stepName, outputSchema }: StepOutputProps) {
             data-scrollable="true"
             className="border border-border rounded bg-muted/30 flex-1 min-h-0"
             style={{
-              maxHeight: "300px",
-              minHeight: "120px",
+              maxHeight: "200px",
+              minHeight: "100px",
               overflowY: "auto",
               overflowX: "hidden",
               cursor: "text",

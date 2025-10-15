@@ -93,8 +93,8 @@ function StepErrorOutput({ error }: StepErrorProps) {
           data-scrollable="true"
           className="border border-red-900/50 rounded bg-red-950/30 flex-1 min-h-0"
           style={{
-            maxHeight: "300px",
-            minHeight: "120px",
+            maxHeight: "200px",
+            minHeight: "100px",
             overflowY: "auto",
             overflowX: "hidden",
             cursor: "text",
@@ -147,7 +147,7 @@ function JsonView({ jsonString, lines }: JsonViewProps) {
         data-scrollable="true"
         className="border border-border rounded bg-muted/30"
         style={{
-          maxHeight: "500px",
+          maxHeight: "300px",
           minHeight: "120px",
           overflowY: "auto",
           overflowX: "hidden",
@@ -258,7 +258,19 @@ const StepFormView = memo(
               <p className="font-mono text-sm text-muted-foreground uppercase mb-4">
                 INPUT PARAMETERS
               </p>
-              <div className="flex flex-col gap-5">
+              <div
+                data-scrollable="true"
+                className="flex flex-col gap-5 overflow-y-auto"
+                style={{
+                  maxHeight: "250px",
+                  overflowX: "hidden",
+                  cursor: "default",
+                  pointerEvents: "auto",
+                }}
+                onWheel={(e) => {
+                  e.stopPropagation();
+                }}
+              >
                 {inputSchemaEntries.map(([key, schema]: [string, unknown]) => {
                   const schemaObj = schema as Record<string, unknown>;
                   const description =

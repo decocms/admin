@@ -250,6 +250,15 @@ export const createRunWorkflowStepTool = (env: Env) =>
       previousStepResults: z.record(z.unknown()).optional(),
       // Global workflow input for @input refs
       globalInput: z.record(z.unknown()).optional(),
+      // Workflow steps for name-to-id resolution
+      workflowSteps: z
+        .array(
+          z.object({
+            id: z.string(),
+            name: z.string(),
+          }),
+        )
+        .optional(),
       // 🔐 Authorization token from workflow (NEW)
       authToken: z.string().optional(),
     }),
@@ -278,20 +287,24 @@ export const createRunWorkflowStepTool = (env: Env) =>
     }),
     execute: async ({ context }) => {
       const startTime = Date.now();
-      const { step, previousStepResults, globalInput } = context;
+      const { step, previousStepResults, globalInput, workflowSteps } = context;
 
       try {
         // 1. Resolve @refs in input and coerce types based on schema
         const stepResultsMap = new Map(
           Object.entries(previousStepResults || {}),
         );
+
+        // Build workflow steps array for name-to-id resolution
+        const steps = workflowSteps || [];
+
         const resolutionResult = resolveAtRefsInInput(
           step.input,
           {
             workflow: {
               id: "",
               name: "",
-              steps: [],
+              steps: steps,
               createdAt: "",
               updatedAt: "",
             },

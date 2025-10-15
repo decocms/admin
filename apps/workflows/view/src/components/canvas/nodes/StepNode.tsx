@@ -361,6 +361,14 @@ export const StepNode = memo(
       return results;
     }, [stepIndex, allSteps]);
 
+    // Memoize workflow steps for @ref resolution (name-to-id mapping)
+    const workflowSteps = useMemo(() => {
+      return allSteps.map((s: WorkflowStep) => ({
+        id: s.def.id,
+        name: s.def.name,
+      }));
+    }, [allSteps]);
+
     // PERFORMANCE: Memoize the execute step handler with stable dependencies
     const handleExecuteStep = useCallback(() => {
       if (!step || !stepName) return;
@@ -376,6 +384,7 @@ export const StepNode = memo(
             input: (stepInput || {}) as any,
           },
           previousStepResults,
+          workflowSteps,
           authToken,
         },
         {
@@ -405,6 +414,7 @@ export const StepNode = memo(
       stepOutputSchema,
       stepInput,
       previousStepResults,
+      workflowSteps,
       authToken,
       executeStepMutation.mutate, // IMPORTANT: Only depend on .mutate function, not entire mutation object
       workflowActions,

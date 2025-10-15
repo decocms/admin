@@ -108,11 +108,29 @@ export function resolveAtRef(
       }
 
       case "step": {
-        const stepResult = context.stepResults.get(parsed.id || "");
+        const identifier = parsed.id || "";
+
+        // Try to find step result by ID first
+        let stepResult = context.stepResults.get(identifier);
+
+        // If not found by ID, try to find by name
+        // Look through workflow steps to find a step with matching name
+        if (stepResult === undefined && context.workflow?.steps) {
+          const matchingStep = context.workflow.steps.find(
+            (step: { id: string; name: string }) =>
+              step.name === identifier || step.id === identifier,
+          );
+
+          if (matchingStep) {
+            // Found a step with matching name, try to get result by its ID
+            stepResult = context.stepResults.get(matchingStep.id);
+          }
+        }
+
         if (stepResult === undefined) {
           return {
             value: null,
-            error: `Step not found or not executed: ${parsed.id}`,
+            error: `Step not found or not executed: ${identifier}`,
           };
         }
         const value = getValue(stepResult, parsed.path || "");

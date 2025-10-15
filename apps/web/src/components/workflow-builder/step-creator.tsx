@@ -92,10 +92,15 @@ export function StepCreator({
 
     try {
       // Get previous steps for context
-      const previousSteps = workflow.steps.map((s: WorkflowStep) => ({
-        id: s.def?.name ?? "",
-        title: s.def?.name ?? "",
-      }));
+      const previousSteps = workflow.steps.map(
+        (s: WorkflowStep, idx: number) => {
+          const name = (s as { name?: string }).name ?? s.def?.name;
+          return {
+            id: name || `step-${idx + 1}`,
+            title: name || `Step ${idx + 1}`,
+          };
+        },
+      );
 
       // Generate step using AI
       const generated = await generateStep.mutateAsync({

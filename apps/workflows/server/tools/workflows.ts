@@ -817,7 +817,9 @@ export const createReadWorkflowTool = (env: Env) =>
 
       // Return original data to preserve all fields (including optional ones)
       return {
-        workflow: result.data as z.infer<typeof WorkflowDefinitionSchema>,
+        workflow: result.data as unknown as z.infer<
+          typeof WorkflowDefinitionSchema
+        >,
       };
     },
   });
@@ -847,7 +849,7 @@ export const createUpdateWorkflowTool = (env: Env) =>
       // Send to backend resource management
       await env.WORKFLOWS_MANAGEMENT.DECO_RESOURCE_WORKFLOW_UPDATE({
         uri,
-        data: workflow, // Send original data
+        data: workflow as any, // lmao
       });
 
       // CRITICAL FIX: Return the INPUT workflow to preserve all fields

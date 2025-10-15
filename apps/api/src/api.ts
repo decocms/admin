@@ -2,6 +2,7 @@ import { createServerClient } from "@deco/ai/mcp";
 import { HttpServerTransport } from "@deco/mcp/http";
 import {
   DECO_CMS_WEB_URL,
+  formatIntegrationId,
   Locator,
   MCPConnection,
   ProjectLocator,
@@ -429,25 +430,45 @@ const createMcpServerProxyForIntegration = async (
 
   const mcpServerProxy = proxy(integration.connection, {
     tokenEmitter: async (options) => {
+      // Base policy for the requested tool
+      const statements = [
+        {
+          effect: "allow" as const,
+          resource: options.tool,
+          matchCondition: {
+            resource: "is_integration" as const,
+            integrationId: integration.id,
+          },
+        },
+      ];
+
+      // Add DECONFIG file operation permissions for the same integration
+      // These are needed when resource tools (like DECO_RESOURCE_*) internally call file operations
+      const deconfigTools = [
+        "READ_FILE",
+        "LIST_FILES",
+        "PUT_FILE",
+        "DELETE_FILE",
+        "LIST_BRANCHES",
+        "DIFF_BRANCH",
+      ];
+      for (const tool of deconfigTools) {
+        statements.push({
+          effect: "allow" as const,
+          resource: tool,
+          matchCondition: {
+            resource: "is_integration" as const,
+            integrationId: integration.id,
+          },
+        });
+      }
+
       return await issuer.issue({
         sub: `proxy:${callerApp ?? crypto.randomUUID()}`,
         aud: ctx.locator?.value,
         iat: new Date().getTime(),
         exp: new Date(Date.now() + 1000 * 60).getTime(), //1 minute
-        policies: [
-          {
-            statements: [
-              {
-                effect: "allow",
-                resource: options.tool,
-                matchCondition: {
-                  resource: "is_integration",
-                  integrationId: integration.id,
-                },
-              },
-            ],
-          },
-        ],
+        policies: [{ statements }],
       });
     },
     headers: {
@@ -570,31 +591,31 @@ const createContextBasedTools = (ctx: Context) => {
   // Create Resources 2.0 tool resource implementation
   const toolResourceV2 = createToolResourceV2Implementation(
     client,
-    WellKnownMcpGroups.Tools,
+    formatIntegrationId(WellKnownMcpGroups.Tools),
   );
 
   // Create Resources 2.0 workflow resource implementation
   const workflowResourceV2 = createWorkflowResourceV2Implementation(
     client,
-    WellKnownMcpGroups.Workflows,
+    formatIntegrationId(WellKnownMcpGroups.Workflows),
   );
 
   // Create Resources 2.0 workflow runs resource implementation
   const workflowRunsResourceV2 = createWorkflowRunsResourceV2Implementation(
     client,
-    WellKnownMcpGroups.Workflows,
+    formatIntegrationId(WellKnownMcpGroups.Workflows),
   );
 
   // Create Resources 2.0 document resource implementation
   const documentResourceV2 = createDocumentResourceV2Implementation(
     client,
-    WellKnownMcpGroups.Documents,
+    formatIntegrationId(WellKnownMcpGroups.Documents),
   );
 
   // Create Resources 2.0 view resource implementation
   const viewResourceV2 = createViewResourceV2Implementation(
     client,
-    WellKnownMcpGroups.Views,
+    formatIntegrationId(WellKnownMcpGroups.Views),
   );
 
   const resourcesClient = createMCPToolsStub({

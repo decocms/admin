@@ -14,7 +14,7 @@ run_worker_first = true
 [deco]
 workspace = "deco-team"
 enable_workflows = true
-local = true
+local = false
 
 [deco.integration]
 description = "Workflowz é seu assistente de automação com IA. Crie workflows complexos apenas descrevendo o que você quer, execute steps individuais ou em sequência, e visualize resultados com interfaces customizadas. Ideal para automação, processamento de dados, e orquestração de APIs."

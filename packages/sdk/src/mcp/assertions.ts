@@ -221,98 +221,96 @@ export const assertWorkspaceResourceAccess = async (
       ? { resource: toolOrResourceContext }
       : toolOrResourceContext;
   });
+  for (const { resource, ...authContext } of resources) {
+    try {
+      // agent tokens
+      if (
+        "aud" in user &&
+        (user.aud === c.workspace.value || user.aud === c.locator?.value)
+      ) {
+        // API keys
+        const [sub] = user.sub?.split(":") ?? [];
+        let policies: Statement[] | undefined = undefined;
+        if (sub === "api-key") {
+          if (apiKeyError) {
+            errors.push(`API key error for ${resource}: ${apiKeyError}`);
+            continue;
+          }
+          if (!apiKeyData) {
+            errors.push(
+              `API key not found for ${resource} in workspace ${c.workspace.value}`,
+            );
+            continue;
+          }
 
-  return c.resourceAccess.grant(); // ta tudo liberado
+          policies = assertPoliciesIsStatementArray(apiKeyData.policies)
+            ? apiKeyData.policies
+            : [];
+        } else if (sub === "proxy") {
+          policies =
+            user.policies?.map((policy) => policy.statements).flat() ?? [];
+        }
+        if (
+          policies &&
+          !(await c.authorization.canAccess(
+            policies,
+            slug,
+            resource,
+            authContext,
+          ))
+        ) {
+          errors.push(
+            `Cannot access ${resource} in workspace ${c.workspace.value}`,
+          );
+          continue;
+        }
 
-  // for (const { resource, ...authContext } of resources) {
-  //   try {
-  //     // agent tokens
-  //     if (
-  //       "aud" in user &&
-  //       (user.aud === c.workspace.value || user.aud === c.locator?.value)
-  //     ) {
-  //       // API keys
-  //       const [sub] = user.sub?.split(":") ?? [];
-  //       let policies: Statement[] | undefined = undefined;
-  //       if (sub === "api-key") {
-  //         if (apiKeyError) {
-  //           errors.push(`API key error for ${resource}: ${apiKeyError}`);
-  //           continue;
-  //         }
-  //         if (!apiKeyData) {
-  //           errors.push(
-  //             `API key not found for ${resource} in workspace ${c.workspace.value}`,
-  //           );
-  //           continue;
-  //         }
+        // If we reach here for this resource, access is granted
+        return c.resourceAccess.grant();
+      }
 
-  //         policies = assertPoliciesIsStatementArray(apiKeyData.policies)
-  //           ? apiKeyData.policies
-  //           : [];
-  //       } else if (sub === "proxy") {
-  //         policies =
-  //           user.policies?.map((policy) => policy.statements).flat() ?? [];
-  //       }
-  //       if (
-  //         policies &&
-  //         !(await c.authorization.canAccess(
-  //           policies,
-  //           slug,
-  //           resource,
-  //           authContext,
-  //         ))
-  //       ) {
-  //         errors.push(
-  //           `Cannot access ${resource} in workspace ${c.workspace.value}`,
-  //         );
-  //         continue;
-  //       }
+      if (root === "users" && user.id === slug) {
+        // If we reach here for this resource, access is granted
+        return c.resourceAccess.grant();
+      }
 
-  //       // If we reach here for this resource, access is granted
-  //       return c.resourceAccess.grant();
-  //     }
+      if (root === "shared") {
+        const canAccess = await c.authorization.canAccess(
+          user.id as string,
+          slug,
+          resource,
+          authContext,
+        );
 
-  //     if (root === "users" && user.id === slug) {
-  //       // If we reach here for this resource, access is granted
-  //       return c.resourceAccess.grant();
-  //     }
+        if (canAccess) {
+          // If we reach here for this resource, access is granted
+          return c.resourceAccess.grant();
+        } else {
+          errors.push(
+            `Cannot access ${resource} in shared workspace ${c.workspace.value}`,
+          );
+        }
+      } else {
+        errors.push(
+          `Cannot access ${resource} in workspace ${c.workspace.value}`,
+        );
+      }
+    } catch (error) {
+      errors.push(
+        `Error checking access for resource: ${
+          error instanceof Error ? error.message : String(error)
+        }`,
+      );
+    }
+  }
 
-  //     if (root === "shared") {
-  //       const canAccess = await c.authorization.canAccess(
-  //         user.id as string,
-  //         slug,
-  //         resource,
-  //       );
-
-  //       if (canAccess) {
-  //         // If we reach here for this resource, access is granted
-  //         return c.resourceAccess.grant();
-  //       } else {
-  //         errors.push(
-  //           `Cannot access ${resource} in shared workspace ${c.workspace.value}`,
-  //         );
-  //       }
-  //     } else {
-  //       errors.push(
-  //         `Cannot access ${resource} in workspace ${c.workspace.value}`,
-  //       );
-  //     }
-  //   } catch (error) {
-  //     errors.push(
-  //       `Error checking access for resource: ${
-  //         error instanceof Error ? error.message : String(error)
-  //       }`,
-  //     );
-  //   }
-  // }
-
-  // // If we reach here, none of the resources granted access
-  // throw new ForbiddenError(
-  //   `Cannot access any of the requested resources in workspace ${c.workspace.value} ${resources.map((r) => r.resource).join(", ")}. Errors: ${errors.join(
-  //     "; ",
-  //   )}`,
-  //   { resources },
-  // );
+  // If we reach here, none of the resources granted access
+  throw new ForbiddenError(
+    `Cannot access any of the requested resources in workspace ${c.workspace.value} ${resources.map((r) => r.resource).join(", ")}. Errors: ${errors.join(
+      "; ",
+    )}`,
+    { resources },
+  );
 };
 
 export const assertTeamResourceAccess = async (

@@ -1,165 +1,343 @@
+// deno-lint-ignore-file
+import { eq, isNull } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/postgres-js";
+import process from "node:process";
 import { relations } from "../packages/sdk/src/mcp/relations.ts";
 import {
   agents,
+  memberRoles,
+  members,
   organizations,
   profiles,
   projects,
 } from "../packages/sdk/src/mcp/schema.ts";
-import { isNull, eq, ne, and } from "drizzle-orm";
-import process from "node:process";
+import { WELL_KNOWN_PLANS } from "../packages/sdk/src/plan.ts";
+
+export function slugifyForOrg(input: string, salt: string): string {
+  // Lowercase and replace all non-alphanumeric with underscores
+  return (
+    input
+      .toLowerCase()
+      .replace(/[^a-z0-9]/g, "_")
+      // Collapse multiple underscores
+      .replace(/_+/g, "_")
+      .replace(/^_+|_+$/g, "") +
+    "-" +
+    salt
+  );
+}
 
 const db = drizzle(process.env.DATABASE_URL!, { relations });
+
+async function addProjectIdToEntity<
+  T extends { id: string; workspace: string },
+>(agentsToMigrate: T[]) {
+  console.log(
+    "[Adding project id] there are",
+    agentsToMigrate.length,
+    "agents to migrate",
+  );
+  let done = 0;
+
+  const orgsWithProblem = new Map<string, any>();
+
+  for (const agent of agentsToMigrate) {
+    const workspace = agent.workspace;
+    if (workspace?.startsWith("/shared")) {
+      const orgSlug = workspace.slice(1).split("/")[1];
+
+      const orgAndProject = await db
+        .select({
+          orgId: organizations.id,
+          projectId: projects.id,
+          projectSlug: projects.slug,
+        })
+        .from(organizations)
+        .leftJoin(projects, eq(organizations.id, projects.org_id))
+        .where(eq(organizations.slug, orgSlug));
+
+      const defaultProject = orgAndProject.find(
+        (p) => p.projectSlug === "default",
+      );
+
+      if (!defaultProject) {
+        console.error("Default project not found", orgSlug);
+        orgsWithProblem.set(orgSlug, "Default project not found");
+        continue;
+      }
+
+      const { projectId } = defaultProject;
+
+      await db
+        .update(agents)
+        .set({ project_id: projectId })
+        .where(eq(agents.id, agent.id));
+
+      done++;
+      console.log(`Done ${done} / ${agentsToMigrate.length}`);
+    }
+
+    if (workspace?.startsWith("/users")) {
+      const userId = workspace.slice(1).split("/")[1];
+
+      const user = await db
+        .select()
+        .from(profiles)
+        .where(eq(profiles.user_id, userId))
+        .limit(1)
+        .then((r) => r[0]);
+
+      if (!user) {
+        console.warn(
+          "User not found for userId:",
+          userId,
+          "workspace:",
+          workspace,
+        );
+        continue;
+      }
+
+      // find org with a personal project
+      // and a single member that is the user
+      const userOrgs = await db.query.organizations.findMany({
+        where: {
+          members: {
+            user_id: userId,
+            deleted_at: {
+              isNull: true,
+            },
+          },
+        },
+        with: {
+          members: true,
+        },
+      });
+
+      const userOrgsWithOnlyOneMember = userOrgs.filter(
+        (org) => org.members.length === 1,
+      );
+
+      // console.log(
+      //   "user has",
+      //   userOrgsWithOnlyOneMember.length,
+      //   "orgs with only one member",
+      // );
+
+      const orgsPersonalProjectAndOneMember: {
+        org: (typeof userOrgsWithOnlyOneMember)[number];
+        project: typeof projects.$inferSelect;
+      }[] = [];
+
+      for (const org of userOrgsWithOnlyOneMember) {
+        const orgProjects = await db
+          .select()
+          .from(projects)
+          .where(eq(projects.org_id, org.id));
+
+        const personalOrDefaultProject = orgProjects.find(
+          (p) => p.slug === "personal" || p.slug === "default",
+        );
+
+        if (!personalOrDefaultProject) {
+          console.error(
+            "Org",
+            org.slug,
+            "have no personal project. it have",
+            orgProjects.map((p) => p.slug),
+          );
+          continue;
+        }
+
+        orgsPersonalProjectAndOneMember.push({
+          org,
+          project: personalOrDefaultProject,
+        });
+      }
+
+      async function createNewOrgAndProject() {
+        const salt = crypto.randomUUID().slice(0, 4);
+        const newOrg = await db
+          .insert(organizations)
+          .values({
+            name: `${user.name}'s org`,
+            slug: slugifyForOrg(user.email.split("@")[0], salt),
+            plan_id: WELL_KNOWN_PLANS.FREE,
+          })
+          .returning()
+          .then((r) => r[0]);
+
+        const newOrgProject = await db
+          .insert(projects)
+          .values({
+            org_id: newOrg.id,
+            slug: "default",
+            title: `${newOrg.name} Default project`,
+          })
+          .returning()
+          .then((r) => r[0]);
+
+        const member = await db
+          .insert(members)
+          .values({
+            team_id: newOrg.id,
+            user_id: userId,
+          })
+          .returning()
+          .then((r) => r[0]);
+
+        await Promise.all(
+          [1, 4].map(async (roleId) => {
+            const role = await db
+              .insert(memberRoles)
+              .values({
+                member_id: member.id,
+                role_id: roleId,
+              })
+              .returning()
+              .then((r) => r[0]);
+          }),
+        );
+
+        return newOrgProject.id;
+      }
+
+      if (userOrgs.length === 0) {
+        const newOrgProjectId = await createNewOrgAndProject();
+
+        const agentUpdated = await db
+          .update(agents)
+          .set({ project_id: newOrgProjectId })
+          .where(eq(agents.id, agent.id))
+          .returning()
+          .then((r) => r[0]);
+
+        console.log("New org and default project created", {
+          newOrgProjectId,
+          agentUpdated,
+        });
+        continue;
+      }
+
+      if (orgsPersonalProjectAndOneMember.length === 0) {
+        const newOrgProjectId = await createNewOrgAndProject();
+
+        const agentUpdated = await db
+          .update(agents)
+          .set({ project_id: newOrgProjectId })
+          .where(eq(agents.id, agent.id))
+          .returning()
+          .then((r) => r[0]);
+
+        console.log("case is", {
+          userId,
+          email: user.email,
+          orgsPersonalProjectAndOneMember: orgsPersonalProjectAndOneMember.map(
+            (o) => o.org.slug,
+          ),
+          userOrgsWithOnlyOneMember: userOrgsWithOnlyOneMember.map(
+            (o) => o.slug,
+          ),
+          userOrgs: userOrgs.map((o) => o.slug),
+        });
+
+        console.log(
+          "New org and default project created",
+          newOrgProjectId,
+          agentUpdated.id,
+        );
+        continue;
+      }
+
+      if (orgsPersonalProjectAndOneMember.length > 1) {
+        console.error(
+          "User has multiple orgs with only one member and a personal project, skipping",
+          userId,
+          {
+            slugs: orgsPersonalProjectAndOneMember.map((o) => o.org.slug),
+          },
+        );
+
+        orgsWithProblem.set(userId, {
+          slugs: orgsPersonalProjectAndOneMember.map((o) => o.org.slug),
+        });
+        continue;
+      }
+
+      const { project } = orgsPersonalProjectAndOneMember[0];
+
+      await db
+        .update(agents)
+        .set({ project_id: project.id })
+        .where(eq(agents.id, agent.id));
+
+      console.log("Done ok for user id", userId, agent.id);
+      continue;
+    }
+
+    console.log("workspace is some weird thing", workspace);
+  }
+
+  console.log("orgsWithProblem", orgsWithProblem);
+}
+
+async function fixOrgs(orgSlugs: string[]) {
+  for (const orgSlug of orgSlugs) {
+    const org = await db
+      .select()
+      .from(organizations)
+      .where(eq(organizations.slug, orgSlug))
+      .limit(1)
+      .then((r) => r[0]);
+
+    if (!org) {
+      console.error("Org not found", orgSlug);
+      continue;
+    }
+
+    const orgProjects = await db
+      .select()
+      .from(projects)
+      .where(eq(projects.org_id, org.id));
+
+    const hasDefaultProject = orgProjects.some((p) => p.slug === "default");
+    if (hasDefaultProject) {
+      console.log(
+        "[ORG already fixed] Default project already exists",
+        orgSlug,
+      );
+      continue;
+    }
+
+    const defaultProject = await db
+      .insert(projects)
+      .values({
+        org_id: org.id,
+        slug: "default",
+        title: `${org.name} Default project`,
+      })
+      .returning()
+      .then((r) => r[0]);
+
+    console.log(
+      "[ORG FIXED] Default project created with id",
+      defaultProject.id,
+      orgSlug,
+    );
+    continue;
+  }
+}
 
 const agentsToMigrate = await db
   .select()
   .from(agents)
   .where(isNull(agents.project_id));
 
-let done = 0;
+await addProjectIdToEntity(
+  agentsToMigrate as { id: string; workspace: string }[],
+);
 
-for (const agent of agentsToMigrate) {
-  const workspace = agent.workspace;
-  if (workspace?.startsWith("/shared")) {
-    const orgSlug = workspace.slice(1).split("/")[1];
+// const orgsWithProblem = {};
 
-    const orgAndProject = await db
-      .select({
-        orgId: organizations.id,
-        projectId: projects.id,
-        projectSlug: projects.slug,
-      })
-      .from(organizations)
-      .leftJoin(projects, eq(organizations.id, projects.org_id))
-      .where(eq(organizations.slug, orgSlug));
-    
-    console.log("orgAndProject", orgAndProject);
+// await fixOrgs(Object.keys(orgsWithProblem));
 
-    if (orgAndProject.length !== 1) {
-      console.error("Org and project length is not 1", orgSlug);
-      continue;
-    }
-
-    const { projectId, projectSlug, orgId } = orgAndProject[0];
-
-    if (projectSlug !== "default") {
-      throw new Error("Project slug is not default");
-    }
-
-    await db
-      .update(agents)
-      .set({ project_id: projectId })
-      .where(eq(agents.id, agent.id));
-
-    done++;
-    console.log(`Done ${done} / ${agentsToMigrate.length}`);
-  }
-
-  if (workspace?.startsWith("/users")) {
-    // const userId = workspace.slice(1).split("/")[1];
-    // const user = await db
-    //   .select()
-    //   .from(profiles)
-    //   .where(eq(profiles.user_id, userId))
-    //   .limit(1)
-    //   .then((r) => r[0]);
-    // if (!user) {
-    //   console.warn(
-    //     "User not found for userId:",
-    //     userId,
-    //     "workspace:",
-    //     workspace,
-    //   );
-    //   continue;
-    // }
-    // // find org with a personal project
-    // // and a single member that is the user
-    // const userOrgs = await db.query.organizations.findMany({
-    //   where: {
-    //     members: {
-    //       user_id: userId,
-    //       deleted_at: {
-    //         isNull: true,
-    //       },
-    //     },
-    //   },
-    //   with: {
-    //     members: true,
-    //   },
-    // });
-    // console.log("user has", userOrgs.length, "orgs");
-    // const userOrgsWithOnlyOneMember = userOrgs.filter(
-    //   (org) => org.members.length === 1,
-    // );
-    // console.log(
-    //   "user has",
-    //   userOrgsWithOnlyOneMember.length,
-    //   "orgs with only one member",
-    // );
-    // const orgsWithOnlyPersonalProject: typeof userOrgs = [];
-    // for (const org of userOrgsWithOnlyOneMember) {
-    //   console.log("Processing org", org);
-    //   const orgProjects = await db
-    //     .select()
-    //     .from(projects)
-    //     .where(eq(projects.org_id, org.id));
-    //   if (orgProjects.length !== 1) {
-    //     if (orgProjects.length === 0) {
-    //       console.error("Org has no personal project, skipping");
-    //       continue;
-    //     } else {
-    //       throw new Error(
-    //         `Org has multiple projects, user email is ${user.email}`,
-    //       );
-    //     }
-    //   }
-    //   const orgProject = orgProjects[0];
-    //   if (orgProject.slug !== "personal") {
-    //     console.error("Org project's slug is not `personal`, skipping");
-    //     continue;
-    //   }
-    //   orgsWithOnlyPersonalProject.push(org);
-    // }
-    // if (orgsWithOnlyPersonalProject.length !== 1) {
-    //   console.log("user email is", user.email);
-    //   console.log("orgsWithOnlyPersonalProject", orgsWithOnlyPersonalProject);
-    //   if (orgsWithOnlyPersonalProject.length === 0) {
-    //     const newOrg = await db
-    //       .insert(organizations)
-    //       .values({
-    //         name: `${user.name}'s org`,
-    //         slug: `${user.name}'s org`,
-    //         plan_id: WELL_KNOWN_PLANS.FREE,
-    //       })
-    //       .returning()
-    //       .then((r) => r[0]);
-    //     const newOrgProject = await db
-    //       .insert(projects)
-    //       .values({
-    //         org_id: newOrg.id,
-    //         slug: "personal",
-    //         title: `${newOrg.name} Personal project`,
-    //       })
-    //       .returning()
-    //       .then((r) => r[0]);
-    //     console.log("New org project created", newOrgProject);
-    //     await db
-    //       .update(customers)
-    //       .set({ org_id: newOrgProject.org_id })
-    //       .where(eq(customers.customer_id, customer.customer_id));
-    //     console.log("Done ok for user id", userId);
-    //     continue;
-    //   } else {
-    //     throw new Error(
-    //       "User has multiple orgs with only one member and a personal project",
-    //     );
-    //   }
-    // }
-    // const org = orgsWithOnlyPersonalProject[0];
-    // await db
-    //   .update(customers)
-    //   .set({ org_id: org.id })
-    //   .where(eq(customers.customer_id, customer.customer_id));
-    // console.log("Done ok for user id", userId);
-  }
-}
+process.exit(0);

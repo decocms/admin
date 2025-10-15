@@ -14,6 +14,7 @@ import {
 } from "@deco/ui/components/responsive-dropdown.tsx";
 import { useActiveTab } from "@/store/tab";
 import { WorkflowCanvasRef } from "../canvas/WorkflowCanvas";
+import { useWorkflowStoreActions } from "@/store/workflow";
 
 export interface ToolbarButton {
   id: string;
@@ -136,6 +137,7 @@ export function WorkflowToolbar({
 }) {
   const [executionPanelOpen, setExecutionPanelOpen] = useState(false);
   const activeTab = useActiveTab();
+  const { clearStore } = useWorkflowStoreActions();
   const leftButtons = useMemo(
     () => [
       {
@@ -181,7 +183,9 @@ export function WorkflowToolbar({
               className="w-fit bg-popover/95 backdrop-blur-sm"
             >
               <ResponsiveDropdownItem
-                onClick={() => void 0}
+                onClick={() => {
+                  clearStore();
+                }}
                 className="text-destructive focus:text-destructive"
               >
                 <span

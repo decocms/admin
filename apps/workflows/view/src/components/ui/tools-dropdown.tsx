@@ -54,10 +54,10 @@ export function ToolsDropdown() {
                 </span>
               </div>
 
-              {categoryItems.map(({ item }) => (
+              {categoryItems.map(({ item, index }) => (
                 <button
                   type="button"
-                  key={item.id}
+                  key={`${category}-${index}`}
                   className={cn(
                     "flex items-start gap-3 w-full px-3 py-2.5 rounded-md text-left transition-colors",
                     "hover:bg-muted/50",

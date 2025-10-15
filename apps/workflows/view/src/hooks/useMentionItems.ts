@@ -47,7 +47,7 @@ export function useToolItems(): ToolItem[] {
     integrations.forEach((integration) => {
       integration.tools?.forEach((tool) => {
         items.push({
-          id: `@${tool.name}`,
+          id: `@${integration.id}:${tool.name}`,
           type: "tool",
           label: tool.name,
           description: tool.description,

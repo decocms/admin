@@ -154,7 +154,7 @@ export function ToolDetail({ resourceUri }: ToolDisplayCanvasProps) {
           name: effectiveTool.name,
           type: "tool",
           icon: "build",
-          path: `/${projectKey}/rsc/i:${integrationId}/${resourceName}/${encodeURIComponent(resourceUri)}`,
+          path: `/${projectKey}/rsc/${integrationId.startsWith("i:") ? integrationId : `i:${integrationId}`}/${resourceName}/${encodeURIComponent(resourceUri)}`,
         });
       }, 0);
     }

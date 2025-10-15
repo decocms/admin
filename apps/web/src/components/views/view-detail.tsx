@@ -56,7 +56,7 @@ export function ViewDetail({ resourceUri }: ViewDetailProps) {
           name: effectiveView.name,
           type: "view",
           icon: "dashboard",
-          path: `/${projectKey}/rsc/i:${integrationId}/${resourceName}/${encodeURIComponent(resourceUri)}`,
+          path: `/${projectKey}/rsc/${integrationId.startsWith("i:") ? integrationId : `i:${integrationId}`}/${resourceName}/${encodeURIComponent(resourceUri)}`,
         });
       }, 0);
     }

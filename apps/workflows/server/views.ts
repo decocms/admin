@@ -11,10 +11,4 @@ import { Env } from "./main.ts";
 import type { CreateMCPServerOptions } from "@deco/workers-runtime/mastra";
 
 export const views: CreateMCPServerOptions<Env, typeof StateSchema>["views"] =
-  () => [
-    {
-      title: "Workflows",
-      icon: "account_tree", // Workflow/tree icon
-      url: "https://workflows-default.deco.page/",
-    },
-  ];
+  () => [];

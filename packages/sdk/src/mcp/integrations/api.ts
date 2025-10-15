@@ -1,5 +1,6 @@
 import {
   createServerClient as createMcpServerClient,
+  listToolsByConnectionType,
   patchApiDecoChatTokenHTTPConnection,
   isApiDecoChatMCPConnection as shouldPatchDecoChatMCPConnection,
 } from "@deco/ai/mcp";
@@ -238,15 +239,15 @@ export const callTool = createIntegrationManagementTool({
 
 async function listToolsAndSortByName(
   {
-    connection: _,
-    ignoreCache: __,
+    connection,
+    ignoreCache,
     appName,
   }: {
     connection: MCPConnection;
     appName?: string | null;
     ignoreCache?: boolean;
   },
-  _c: AppContext,
+  c: AppContext,
 ) {
   let result;
   if (appName) {
@@ -264,9 +265,7 @@ async function listToolsAndSortByName(
       ),
     };
   } else {
-    // FIXME: @mcandeia removing this since we are considering as an issue
-    // result = await listToolsByConnectionType(connection, c, ignoreCache);
-    result = { tools: [] };
+    result = await listToolsByConnectionType(connection, c, ignoreCache);
   }
 
   // Sort tools by name for consistent UI

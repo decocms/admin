@@ -71,6 +71,7 @@ export async function trackServerEvent(
       },
     });
 
+    response.body?.cancel().catch(() => {});
     if (!response.ok) {
       throw new Error(
         `Failed to track event: ${response.statusText} ${response.status}`,

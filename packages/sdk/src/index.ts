@@ -68,9 +68,10 @@ export * from "./hooks/use-pinned-resources.ts";
 export {
   WorkflowDefinitionSchema,
   WorkflowStepDefinitionSchema,
-  type StepExecutionResult,
+  WorkflowRunDataSchema,
   type WorkflowDefinition,
   type WorkflowStep,
+  type WorkflowRunData,
 } from "./mcp/workflows/schemas.ts";
 
 export {

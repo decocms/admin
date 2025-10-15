@@ -445,6 +445,7 @@ export * from "./stub.ts";
 
 export type Bindings = EnvVars & {
   WALLET: Service;
+  SELF: Service;
   DECO_CHAT_APP_ORIGIN?: string;
   WORKSPACE_DB: DurableObjectNamespace<IWorkspaceDB & Rpc.DurableObjectBranded>;
   // DECONFIG DurableObjects

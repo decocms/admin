@@ -1,7 +1,7 @@
 import { useSDK, useWriteFile } from "@deco/sdk";
 import { Hosts } from "@deco/sdk/hosts";
 import type { DragEvent } from "react";
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { formatFilename } from "../utils/format.ts";
 import {
   onResourceError,
@@ -30,98 +30,116 @@ export function useFileUpload(options: UseFileUploadOptions = {}) {
   const [uploadedFiles, setUploadedFiles] = useState<UploadedFile[]>([]);
   const [isDragging, setIsDragging] = useState(false);
 
-  async function uploadFile(file: File) {
-    try {
-      const path = `uploads/${formatFilename(file.name)}-${Date.now()}`;
-      const buffer = await file.arrayBuffer();
-      await writeFileMutation.mutateAsync({
-        path,
-        contentType: file.type,
-        content: new Uint8Array(buffer),
-      });
+  const uploadFile = useCallback(
+    async (file: File) => {
+      try {
+        const path = `uploads/${formatFilename(file.name)}-${Date.now()}`;
+        const buffer = await file.arrayBuffer();
+        await writeFileMutation.mutateAsync({
+          path,
+          contentType: file.type,
+          content: new Uint8Array(buffer),
+        });
 
-      const url = `https://${Hosts.API_LEGACY}/files/${locator}/${path}`; // does not work when running locally
+        const url = `https://${Hosts.API_LEGACY}/files/${locator}/${path}`; // does not work when running locally
 
-      setUploadedFiles((prev) =>
-        prev.map((uf) =>
-          uf.file === file
-            ? { ...uf, url: url || undefined, status: "done" }
-            : uf,
-        ),
-      );
-    } catch (error) {
-      setUploadedFiles((prev) =>
-        prev.map((uf) =>
-          uf.file === file
-            ? {
-                ...uf,
-                status: "error",
-                error: error instanceof Error ? error.message : "Upload failed",
-              }
-            : uf,
-        ),
-      );
-    }
-  }
-
-  async function uploadFileList(fileList: FileList) {
-    const newFiles = Array.from(fileList);
-
-    // Prevent duplicates and limit to max files
-    const allFiles = [...uploadedFiles.map((uf) => uf.file), ...newFiles].slice(
-      0,
-      maxFiles,
-    );
-
-    const uniqueFiles = Array.from(
-      new Map(allFiles.map((f) => [f.name + f.size, f])).values(),
-    );
-
-    const filesToUpload = uniqueFiles
-      .filter(
-        (file) =>
-          !uploadedFiles.some(
-            (uf) => uf.file.name === file.name && uf.file.size === file.size,
+        setUploadedFiles((prev) =>
+          prev.map((uf) =>
+            uf.file === file
+              ? { ...uf, url: url || undefined, status: "done" }
+              : uf,
           ),
-      )
-      .map((file): UploadedFile => ({ file, status: "uploading" }));
+        );
+      } catch (error) {
+        setUploadedFiles((prev) =>
+          prev.map((uf) =>
+            uf.file === file
+              ? {
+                  ...uf,
+                  status: "error",
+                  error:
+                    error instanceof Error ? error.message : "Upload failed",
+                }
+              : uf,
+          ),
+        );
+      }
+    },
+    [writeFileMutation, locator],
+  );
 
-    setUploadedFiles((prev) => [...prev, ...filesToUpload]);
-    await Promise.all(filesToUpload.map(({ file }) => uploadFile(file)));
-  }
+  const uploadFileList = useCallback(
+    (fileList: FileList) => {
+      const newFiles = Array.from(fileList);
 
-  function handleFileDrop(e: DragEvent) {
-    e.preventDefault();
+      setUploadedFiles((prev) => {
+        // Prevent duplicates and limit to max files - use prev state
+        const allFiles = [...prev.map((uf) => uf.file), ...newFiles].slice(
+          0,
+          maxFiles,
+        );
 
-    const fileList = e.dataTransfer?.files;
-    if (fileList?.length) {
-      uploadFileList(fileList);
-    }
-  }
+        const uniqueFiles = Array.from(
+          new Map(allFiles.map((f) => [f.name + f.size, f])).values(),
+        );
 
-  function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
-    const fileList = e.target.files;
+        const filesToUpload = uniqueFiles
+          .filter(
+            (file) =>
+              !prev.some(
+                (uf) =>
+                  uf.file.name === file.name && uf.file.size === file.size,
+              ),
+          )
+          .map((file): UploadedFile => ({ file, status: "uploading" }));
 
-    if (fileList?.length) {
-      uploadFileList(fileList);
-    }
+        // Upload files asynchronously without blocking setState
+        Promise.all(filesToUpload.map(({ file }) => uploadFile(file)));
 
-    if (fileInputRef.current) {
-      fileInputRef.current.value = "";
-    }
-  }
+        return [...prev, ...filesToUpload];
+      });
+    },
+    [maxFiles, uploadFile],
+  );
 
-  function removeFile(index: number) {
+  const handleFileDrop = useCallback(
+    (e: DragEvent) => {
+      e.preventDefault();
+
+      const fileList = e.dataTransfer?.files;
+      if (fileList?.length) {
+        uploadFileList(fileList);
+      }
+    },
+    [uploadFileList],
+  );
+
+  const handleFileChange = useCallback(
+    (e: React.ChangeEvent<HTMLInputElement>) => {
+      const fileList = e.target.files;
+
+      if (fileList?.length) {
+        uploadFileList(fileList);
+      }
+
+      if (fileInputRef.current) {
+        fileInputRef.current.value = "";
+      }
+    },
+    [uploadFileList],
+  );
+
+  const removeFile = useCallback((index: number) => {
     setUploadedFiles((prev) => prev.filter((_, i) => i !== index));
-  }
+  }, []);
 
-  function openFileDialog() {
+  const openFileDialog = useCallback(() => {
     fileInputRef.current?.click();
-  }
+  }, []);
 
-  function clearFiles() {
+  const clearFiles = useCallback(() => {
     setUploadedFiles([]);
-  }
+  }, []);
 
   // Global file drop handler
   useEffect(() => {

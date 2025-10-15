@@ -1,6 +1,79 @@
 import type { QuickJSContext, QuickJSHandle } from "quickjs-emscripten-core";
 import { inspect } from "./error-handling.ts";
 
+// Symbol to identify lazy env proxies (must match the one in utils.ts)
+const LAZY_ENV_PROXY = Symbol.for("LAZY_ENV_PROXY");
+
+/**
+ * Check if a value is marked as a lazy env proxy
+ */
+function isLazyEnvProxy(value: unknown): boolean {
+  if (typeof value !== "object" || value === null) {
+    return false;
+  }
+  return LAZY_ENV_PROXY in value;
+}
+
+/**
+ * Create a lazy env proxy object in QuickJS that properly handles nested property access
+ * like: ctx.env['i:agent-management'].AGENTS_LIST({})
+ *
+ * This creates a Proxy in the guest context that delegates property access to the host.
+ */
+function createLazyEnvProxyObject(
+  ctx: QuickJSContext,
+  hostProxy: unknown,
+): QuickJSHandle {
+  // Get the accessor function attached to the proxy
+  // deno-lint-ignore ban-types
+  const envAccessor = (hostProxy as Record<symbol, Function>)[LAZY_ENV_PROXY];
+
+  if (typeof envAccessor !== "function") {
+    throw new Error("Lazy env proxy is missing accessor function");
+  }
+
+  // Convert the envAccessor to a QuickJS function
+  const envAccessorQJS = toQuickJS(ctx, envAccessor);
+
+  // Create a Proxy in the guest context that intercepts property access
+  // This is the code we'll evaluate in the guest context
+  const proxyCode = `
+    (function(envAccessor) {
+      return new Proxy({}, {
+        get(_, integrationId) {
+          return new Proxy({}, {
+            get(_, toolName) {
+              return envAccessor(integrationId, toolName);
+            }
+          });
+        }
+      });
+    })
+  `;
+
+  // Evaluate the proxy creation code
+  const proxyFactoryResult = ctx.evalCode(proxyCode, "env-proxy.js", {
+    strict: true,
+    strip: true,
+  });
+
+  const proxyFactory = ctx.unwrapResult(proxyFactoryResult);
+
+  // Call the factory with the envAccessor
+  const envProxyResult = ctx.callFunction(
+    proxyFactory,
+    ctx.undefined,
+    envAccessorQJS,
+  );
+  const envProxy = ctx.unwrapResult(envProxyResult);
+
+  // Clean up
+  proxyFactory.dispose();
+  envAccessorQJS.dispose();
+
+  return envProxy;
+}
+
 export function toQuickJS(ctx: QuickJSContext, value: unknown): QuickJSHandle {
   switch (typeof value) {
     case "string": {
@@ -25,6 +98,12 @@ export function toQuickJS(ctx: QuickJSContext, value: unknown): QuickJSHandle {
         });
         return arr;
       }
+
+      // Check if it's a marked lazy env proxy
+      if (isLazyEnvProxy(value)) {
+        return createLazyEnvProxyObject(ctx, value);
+      }
+
       // plain object
       const obj = ctx.newObject();
       for (const [k, v] of Object.entries(value as Record<string, unknown>)) {

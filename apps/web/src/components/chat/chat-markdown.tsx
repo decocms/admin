@@ -140,69 +140,86 @@ function Table(props: React.HTMLAttributes<HTMLTableElement>) {
   );
 }
 
+// Memoize the plugins arrays to prevent re-creating them on every render
+const remarkPluginsMemo = [remarkGfm];
+const rehypePluginsMemo = [rehypeRaw];
+
+// Memoize the components object to prevent re-creating it on every render
+const markdownComponents = {
+  p: (props: React.HTMLAttributes<HTMLParagraphElement>) => (
+    <p {...props} className="leading-relaxed" />
+  ),
+  strong: (props: React.HTMLAttributes<HTMLElement>) => (
+    <strong {...props} className="font-bold" />
+  ),
+  em: (props: React.HTMLAttributes<HTMLElement>) => (
+    <em {...props} className="italic" />
+  ),
+  a: (props: React.AnchorHTMLAttributes<HTMLAnchorElement>) => (
+    <a
+      {...props}
+      target="_blank"
+      rel="noopener noreferrer"
+      className="text-primary hover:underline break-all"
+    />
+  ),
+  ul: (props: React.HTMLAttributes<HTMLUListElement>) => (
+    <ul {...props} className="list-disc ml-6 my-4 space-y-2" />
+  ),
+  ol: (props: React.HTMLAttributes<HTMLOListElement>) => (
+    <ol {...props} className="list-decimal ml-6 my-4 space-y-2" />
+  ),
+  li: (props: React.HTMLAttributes<HTMLLIElement>) => (
+    <li {...props} className="leading-relaxed" />
+  ),
+  code: (props: React.HTMLAttributes<HTMLElement>) => (
+    <code
+      {...props}
+      className="px-1 py-0.5 bg-muted rounded text-sm font-mono break-all"
+    />
+  ),
+  pre: (props: React.HTMLAttributes<HTMLPreElement>) => (
+    <pre
+      {...props}
+      className="flex max-w-[calc(640px-64px)] my-4 bg-muted rounded"
+    >
+      <code className="flex-1 min-w-0 p-4 text-sm font-mono whitespace-pre overflow-x-auto">
+        {props.children}
+      </code>
+    </pre>
+  ),
+  table: (props: React.HTMLAttributes<HTMLTableElement>) => (
+    <Table {...props} />
+  ),
+  thead: (props: React.HTMLAttributes<HTMLTableSectionElement>) => (
+    <thead {...props} className="bg-muted">
+      {props.children}
+    </thead>
+  ),
+  tr: (props: React.HTMLAttributes<HTMLTableRowElement>) => (
+    <tr
+      {...props}
+      className="even:bg-muted/50 border-b border-border last:border-0"
+    />
+  ),
+  th: (props: React.HTMLAttributes<HTMLTableCellElement>) => (
+    <th
+      {...props}
+      className="px-4 py-2 text-left font-semibold text-muted-foreground border-b border-border"
+    />
+  ),
+  td: (props: React.HTMLAttributes<HTMLTableCellElement>) => (
+    <td {...props} className="px-4 py-2 border-b border-border" />
+  ),
+};
+
 const MemoizedMarkdownBlock = memo(
   ({ content }: { content: string }) => {
     return (
       <ReactMarkdown
-        remarkPlugins={[remarkGfm]}
-        rehypePlugins={[rehypeRaw]}
-        components={{
-          p: (props) => <p {...props} className="leading-relaxed" />,
-          strong: (props) => <strong {...props} className="font-bold" />,
-          em: (props) => <em {...props} className="italic" />,
-          a: (props) => (
-            <a
-              {...props}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-primary hover:underline break-all"
-            />
-          ),
-          ul: (props) => (
-            <ul {...props} className="list-disc ml-6 my-4 space-y-2" />
-          ),
-          ol: (props) => (
-            <ol {...props} className="list-decimal ml-6 my-4 space-y-2" />
-          ),
-          li: (props) => <li {...props} className="leading-relaxed" />,
-          code: (props) => (
-            <code
-              {...props}
-              className="px-1 py-0.5 bg-muted rounded text-sm font-mono break-all"
-            />
-          ),
-          pre: (props) => (
-            <pre
-              {...props}
-              className="flex max-w-[calc(640px-64px)] my-4 bg-muted rounded"
-            >
-              <code className="flex-1 min-w-0 p-4 text-sm font-mono whitespace-pre overflow-x-auto">
-                {props.children}
-              </code>
-            </pre>
-          ),
-          table: (props) => <Table {...props} />,
-          thead: (props) => (
-            <thead {...props} className="bg-muted">
-              {props.children}
-            </thead>
-          ),
-          tr: (props) => (
-            <tr
-              {...props}
-              className="even:bg-muted/50 border-b border-border last:border-0"
-            />
-          ),
-          th: (props) => (
-            <th
-              {...props}
-              className="px-4 py-2 text-left font-semibold text-muted-foreground border-b border-border"
-            />
-          ),
-          td: (props) => (
-            <td {...props} className="px-4 py-2 border-b border-border" />
-          ),
-        }}
+        remarkPlugins={remarkPluginsMemo}
+        rehypePlugins={rehypePluginsMemo}
+        components={markdownComponents}
       >
         {content}
       </ReactMarkdown>

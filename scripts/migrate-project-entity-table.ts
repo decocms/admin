@@ -56,245 +56,246 @@ async function addProjectIdToEntity<
   const orgsWithProblem = new Map<string, any>();
 
   for (const item of items) {
-    const workspace = item.workspace;
-    if (workspace?.startsWith("/shared")) {
-      const orgSlug = workspace.slice(1).split("/")[1];
+    await db.transaction(async (tx) => {
+      const workspace = item.workspace;
+      if (workspace?.startsWith("/shared")) {
+        const orgSlug = workspace.slice(1).split("/")[1];
 
-      const orgAndProject = await db
-        .select({
-          orgId: organizations.id,
-          projectId: projects.id,
-          projectSlug: projects.slug,
-        })
-        .from(organizations)
-        .leftJoin(projects, eq(organizations.id, projects.org_id))
-        .where(eq(organizations.slug, orgSlug));
+        const orgAndProject = await tx
+          .select({
+            orgId: organizations.id,
+            projectId: projects.id,
+            projectSlug: projects.slug,
+          })
+          .from(organizations)
+          .leftJoin(projects, eq(organizations.id, projects.org_id))
+          .where(eq(organizations.slug, orgSlug));
 
-      const defaultProject = orgAndProject.find(
-        (p) => p.projectSlug === "default",
-      );
-
-      if (!defaultProject) {
-        console.error("Default project not found", orgSlug);
-        orgsWithProblem.set(orgSlug, "Default project not found");
-        continue;
-      }
-
-      const { projectId } = defaultProject;
-
-      await db
-        .update(table)
-        .set({ project_id: projectId })
-        .where(eq(table.id, item.id));
-
-      done++;
-      console.log(`Done ${done} / ${items.length}`);
-    }
-
-    if (workspace?.startsWith("/users")) {
-      const userId = workspace.slice(1).split("/")[1];
-
-      const user = await db
-        .select()
-        .from(profiles)
-        .where(eq(profiles.user_id, userId))
-        .limit(1)
-        .then((r) => r[0]);
-
-      if (!user) {
-        console.warn(
-          "User not found for userId:",
-          userId,
-          "workspace:",
-          workspace,
-        );
-        continue;
-      }
-
-      // find org with a personal project
-      // and a single member that is the user
-      const userOrgs = await db.query.organizations.findMany({
-        where: {
-          members: {
-            user_id: userId,
-            deleted_at: {
-              isNull: true,
-            },
-          },
-        },
-        with: {
-          members: true,
-        },
-      });
-
-      const userOrgsWithOnlyOneMember = userOrgs.filter(
-        (org) => org.members.length === 1,
-      );
-
-      // console.log(
-      //   "user has",
-      //   userOrgsWithOnlyOneMember.length,
-      //   "orgs with only one member",
-      // );
-
-      const orgsPersonalProjectAndOneMember: {
-        org: (typeof userOrgsWithOnlyOneMember)[number];
-        project: typeof projects.$inferSelect;
-      }[] = [];
-
-      for (const org of userOrgsWithOnlyOneMember) {
-        const orgProjects = await db
-          .select()
-          .from(projects)
-          .where(eq(projects.org_id, org.id));
-
-        const personalOrDefaultProject = orgProjects.find(
-          (p) => p.slug === "personal" || p.slug === "default",
+        const defaultProject = orgAndProject.find(
+          (p) => p.projectSlug === "default",
         );
 
-        if (!personalOrDefaultProject) {
-          console.error(
-            "Org",
-            org.slug,
-            "have no personal project. it have",
-            orgProjects.map((p) => p.slug),
-          );
-          continue;
+        if (!defaultProject) {
+          console.error("Default project not found", orgSlug);
+          orgsWithProblem.set(orgSlug, "Default project not found");
+          return;
         }
 
-        orgsPersonalProjectAndOneMember.push({
-          org,
-          project: personalOrDefaultProject,
-        });
-      }
+        const { projectId } = defaultProject;
 
-      async function createNewOrgAndProject() {
-        const salt = crypto.randomUUID().slice(0, 4);
-        const newOrg = await db
-          .insert(organizations)
-          .values({
-            name: `${user.name}'s org`,
-            slug: slugifyForOrg(user.email.split("@")[0], salt),
-            plan_id: WELL_KNOWN_PLANS.FREE,
-          })
-          .returning()
-          .then((r) => r[0]);
-
-        const newOrgProject = await db
-          .insert(projects)
-          .values({
-            org_id: newOrg.id,
-            slug: "default",
-            title: `${newOrg.name} Default project`,
-          })
-          .returning()
-          .then((r) => r[0]);
-
-        const member = await db
-          .insert(members)
-          .values({
-            team_id: newOrg.id,
-            user_id: userId,
-          })
-          .returning()
-          .then((r) => r[0]);
-
-        await Promise.all(
-          [1, 4].map(async (roleId) => {
-            const role = await db
-              .insert(memberRoles)
-              .values({
-                member_id: member.id,
-                role_id: roleId,
-              })
-              .returning()
-              .then((r) => r[0]);
-          }),
-        );
-
-        return newOrgProject.id;
-      }
-
-      if (userOrgs.length === 0) {
-        const newOrgProjectId = await createNewOrgAndProject();
-
-        const itemUpdated = await db
+        await tx
           .update(table)
-          .set({ project_id: newOrgProjectId })
-          .where(eq(table.id, item.id))
-          .returning()
-          .then((r) => r[0]);
+          .set({ project_id: projectId })
+          .where(eq(table.id, item.id));
 
-        console.log("New org and default project created", {
-          newOrgProjectId,
-          itemUpdated,
-        });
         done++;
         console.log(`Done ${done} / ${items.length}`);
-        continue;
       }
 
-      if (orgsPersonalProjectAndOneMember.length === 0) {
-        const newOrgProjectId = await createNewOrgAndProject();
+      if (workspace?.startsWith("/users")) {
+        const userId = workspace.slice(1).split("/")[1];
 
-        const itemUpdated = await db
-          .update(table)
-          .set({ project_id: newOrgProjectId })
-          .where(eq(table.id, item.id))
-          .returning()
+        const user = await tx
+          .select()
+          .from(profiles)
+          .where(eq(profiles.user_id, userId))
+          .limit(1)
           .then((r) => r[0]);
 
-        console.log("case is", {
-          userId,
-          email: user.email,
-          orgsPersonalProjectAndOneMember: orgsPersonalProjectAndOneMember.map(
-            (o) => o.org.slug,
-          ),
-          userOrgsWithOnlyOneMember: userOrgsWithOnlyOneMember.map(
-            (o) => o.slug,
-          ),
-          userOrgs: userOrgs.map((o) => o.slug),
-        });
+        if (!user) {
+          console.warn(
+            "User not found for userId:",
+            userId,
+            "workspace:",
+            workspace,
+          );
+          return;
+        }
 
-        console.log(
-          "New org and default project created",
-          newOrgProjectId,
-          itemUpdated.id,
-        );
-        done++;
-        console.log(`Done ${done} / ${items.length}`);
-        continue;
-      }
-
-      if (orgsPersonalProjectAndOneMember.length > 1) {
-        console.error(
-          "User has multiple orgs with only one member and a personal project, skipping",
-          userId,
-          {
-            slugs: orgsPersonalProjectAndOneMember.map((o) => o.org.slug),
+        // find org with a personal project
+        // and a single member that is the user
+        const userOrgs = await tx.query.organizations.findMany({
+          where: {
+            members: {
+              user_id: userId,
+              deleted_at: {
+                isNull: true,
+              },
+            },
           },
+          with: {
+            members: true,
+          },
+        });
+
+        const userOrgsWithOnlyOneMember = userOrgs.filter(
+          (org) => org.members.length === 1,
         );
 
-        orgsWithProblem.set(userId, {
-          slugs: orgsPersonalProjectAndOneMember.map((o) => o.org.slug),
-        });
-        continue;
+        // console.log(
+        //   "user has",
+        //   userOrgsWithOnlyOneMember.length,
+        //   "orgs with only one member",
+        // );
+
+        const orgsPersonalProjectAndOneMember: {
+          org: (typeof userOrgsWithOnlyOneMember)[number];
+          project: typeof projects.$inferSelect;
+        }[] = [];
+
+        for (const org of userOrgsWithOnlyOneMember) {
+          const orgProjects = await tx
+            .select()
+            .from(projects)
+            .where(eq(projects.org_id, org.id));
+
+          const personalOrDefaultProject = orgProjects.find(
+            (p) => p.slug === "personal" || p.slug === "default",
+          );
+
+          if (!personalOrDefaultProject) {
+            console.error(
+              "Org",
+              org.slug,
+              "have no personal project. it have",
+              orgProjects.map((p) => p.slug),
+            );
+            return;
+          }
+
+          orgsPersonalProjectAndOneMember.push({
+            org,
+            project: personalOrDefaultProject,
+          });
+        }
+
+        async function createNewOrgAndProject() {
+          const salt = crypto.randomUUID().slice(0, 4);
+          const newOrg = await tx
+            .insert(organizations)
+            .values({
+              name: `${user.name}'s org`,
+              slug: slugifyForOrg(user.email.split("@")[0], salt),
+              plan_id: WELL_KNOWN_PLANS.FREE,
+            })
+            .returning()
+            .then((r) => r[0]);
+
+          const newOrgProject = await tx
+            .insert(projects)
+            .values({
+              org_id: newOrg.id,
+              slug: "default",
+              title: `${newOrg.name} Default project`,
+            })
+            .returning()
+            .then((r) => r[0]);
+
+          const member = await tx
+            .insert(members)
+            .values({
+              team_id: newOrg.id,
+              user_id: userId,
+            })
+            .returning()
+            .then((r) => r[0]);
+
+          await Promise.all(
+            [1, 4].map(async (roleId) => {
+              const role = await tx
+                .insert(memberRoles)
+                .values({
+                  member_id: member.id,
+                  role_id: roleId,
+                })
+                .returning()
+                .then((r) => r[0]);
+            }),
+          );
+
+          return newOrgProject.id;
+        }
+
+        if (userOrgs.length === 0) {
+          const newOrgProjectId = await createNewOrgAndProject();
+
+          const itemUpdated = await tx
+            .update(table)
+            .set({ project_id: newOrgProjectId })
+            .where(eq(table.id, item.id))
+            .returning()
+            .then((r) => r[0]);
+
+          console.log("New org and default project created", {
+            newOrgProjectId,
+            itemUpdated,
+          });
+          done++;
+          console.log(`Done ${done} / ${items.length}`);
+          return;
+        }
+
+        if (orgsPersonalProjectAndOneMember.length === 0) {
+          const newOrgProjectId = await createNewOrgAndProject();
+
+          const itemUpdated = await tx
+            .update(table)
+            .set({ project_id: newOrgProjectId })
+            .where(eq(table.id, item.id))
+            .returning()
+            .then((r) => r[0]);
+
+          console.log("case is", {
+            userId,
+            email: user.email,
+            orgsPersonalProjectAndOneMember:
+              orgsPersonalProjectAndOneMember.map((o) => o.org.slug),
+            userOrgsWithOnlyOneMember: userOrgsWithOnlyOneMember.map(
+              (o) => o.slug,
+            ),
+            userOrgs: userOrgs.map((o) => o.slug),
+          });
+
+          console.log(
+            "New org and default project created",
+            newOrgProjectId,
+            itemUpdated.id,
+          );
+          done++;
+          console.log(`Done ${done} / ${items.length}`);
+          return;
+        }
+
+        if (orgsPersonalProjectAndOneMember.length > 1) {
+          console.error(
+            "User has multiple orgs with only one member and a personal project, skipping",
+            userId,
+            {
+              slugs: orgsPersonalProjectAndOneMember.map((o) => o.org.slug),
+            },
+          );
+
+          orgsWithProblem.set(userId, {
+            slugs: orgsPersonalProjectAndOneMember.map((o) => o.org.slug),
+          });
+          return;
+        }
+
+        const { project } = orgsPersonalProjectAndOneMember[0];
+
+        await tx
+          .update(table)
+          .set({ project_id: project.id })
+          .where(eq(table.id, item.id));
+
+        console.log("Done ok for user id", userId, item.id);
+        done++;
+        console.log(`Done ${done} / ${items.length}`);
+        return;
       }
 
-      const { project } = orgsPersonalProjectAndOneMember[0];
-
-      await db
-        .update(table)
-        .set({ project_id: project.id })
-        .where(eq(table.id, item.id));
-
-      console.log("Done ok for user id", userId, item.id);
-      done++;
-      console.log(`Done ${done} / ${items.length}`);
-      continue;
-    }
-
-    console.log("workspace is some weird thing", workspace);
+      console.log("workspace is some weird thing", workspace);
+    });
   }
 
   console.log("orgsWithProblem", orgsWithProblem);

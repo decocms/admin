@@ -124,6 +124,8 @@ const Inner = forwardRef<WorkflowCanvasRef>(function Inner(_, ref) {
 
       isCenteringRef.current = true;
 
+      const animationDuration = animated ? 600 : 0;
+
       // For step 0 with workflow input node visible, fit both nodes
       if ((stepIndex === 0 || stepsLength === 0) && showWorkflowInputNode) {
         // Fit both input node and first step (or new step node) in view
@@ -136,7 +138,7 @@ const Inner = forwardRef<WorkflowCanvasRef>(function Inner(_, ref) {
         rf.fitView({
           padding: 0.1,
           nodes: nodesToFit.map((id) => ({ id })),
-          duration: animated ? 300 : 0,
+          duration: animationDuration,
           maxZoom: 1,
           minZoom: 0.7,
         });
@@ -159,15 +161,16 @@ const Inner = forwardRef<WorkflowCanvasRef>(function Inner(_, ref) {
 
         rf.setCenter(targetX, targetY, {
           zoom: 1,
-          duration: animated ? 300 : 0,
+          duration: animationDuration,
         });
       }
 
       // Allow movement after centering animation completes
-      const delay = animated ? 350 : 50;
+      // Add extra buffer time to ensure animation fully completes
+      const bufferTime = animated ? 100 : 50;
       setTimeout(() => {
         isCenteringRef.current = false;
-      }, delay);
+      }, animationDuration + bufferTime);
     },
     [stepsLength, stepIds, rf, showWorkflowInputNode],
   );
@@ -184,8 +187,14 @@ const Inner = forwardRef<WorkflowCanvasRef>(function Inner(_, ref) {
     lastCenteredStepRef.current = currentStepIndex;
     isInitialMountRef.current = false;
 
-    // Small delay to ensure nodes are rendered
-    const delay = isInitial ? 100 : 50;
+    // Clear any pending dimension change timers to prevent interference
+    if (dimensionChangeTimerRef.current) {
+      clearTimeout(dimensionChangeTimerRef.current);
+      dimensionChangeTimerRef.current = null;
+    }
+
+    // Minimal delay to ensure nodes are rendered, then animate smoothly
+    const delay = isInitial ? 150 : 0;
     const timer = setTimeout(() => {
       centerViewport(currentStepIndex, !isInitial);
     }, delay);
@@ -390,6 +399,15 @@ const Inner = forwardRef<WorkflowCanvasRef>(function Inner(_, ref) {
   // Debounce timer ref for dimension changes
   const dimensionChangeTimerRef = useRef<NodeJS.Timeout | null>(null);
 
+  // Cleanup dimension timer on unmount
+  useEffect(() => {
+    return () => {
+      if (dimensionChangeTimerRef.current) {
+        clearTimeout(dimensionChangeTimerRef.current);
+      }
+    };
+  }, []);
+
   // Handle node dimension changes - re-center when current node dimensions change
   const onNodesChange = useCallback(
     (changes: NodeChange[]) => {
@@ -410,10 +428,14 @@ const Inner = forwardRef<WorkflowCanvasRef>(function Inner(_, ref) {
           clearTimeout(dimensionChangeTimerRef.current);
         }
 
+        // Wait longer than animation duration before re-centering
         dimensionChangeTimerRef.current = setTimeout(() => {
-          centerViewport(currentStepIndex, false); // No animation to prevent jarring
+          // Check again if we're still animating when timer fires
+          if (!isCenteringRef.current) {
+            centerViewport(currentStepIndex, false); // No animation to prevent jarring
+          }
           dimensionChangeTimerRef.current = null;
-        }, 200);
+        }, 800); // Longer than animation (600ms) + buffer (100ms) + safety margin
       }
     },
     [stepIds, currentStepIndex, centerViewport],
@@ -451,8 +473,9 @@ const Inner = forwardRef<WorkflowCanvasRef>(function Inner(_, ref) {
         const now = Date.now();
         const timeSinceLastScroll = now - lastScrollTimeRef.current;
 
-        // Debounce: only trigger navigation if 600ms have passed
-        if (timeSinceLastScroll < 600) return;
+        // Debounce: only trigger navigation if enough time has passed
+        // Account for animation duration (600ms) + buffer (100ms) + safety margin
+        if (timeSinceLastScroll < 750) return;
 
         const scrollAmount = event.deltaX;
         const maxSteps = stepsLength;

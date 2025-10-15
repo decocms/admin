@@ -12,6 +12,7 @@ import {
   projects,
 } from "../packages/sdk/src/mcp/schema.ts";
 import { WELL_KNOWN_PLANS } from "../packages/sdk/src/plan.ts";
+import { PgTableWithColumns } from "drizzle-orm/pg-core";
 
 export function slugifyForOrg(input: string, salt: string): string {
   // Lowercase and replace all non-alphanumeric with underscores
@@ -31,18 +32,31 @@ const db = drizzle(process.env.DATABASE_URL!, { relations });
 
 async function addProjectIdToEntity<
   T extends { id: string; workspace: string },
->(agentsToMigrate: T[]) {
+  TableName extends string,
+>({
+  items,
+  table,
+}: {
+  table: PgTableWithColumns<{
+    name: TableName;
+    dialect: "pg";
+    schema: undefined;
+    // deno-lint-ignore no-explicit-any
+    columns: any;
+  }>,
+  items: T[];
+}) {
   console.log(
     "[Adding project id] there are",
-    agentsToMigrate.length,
-    "agents to migrate",
+    items.length,
+    "items to migrate",
   );
   let done = 0;
 
   const orgsWithProblem = new Map<string, any>();
 
-  for (const agent of agentsToMigrate) {
-    const workspace = agent.workspace;
+  for (const item of items) {
+    const workspace = item.workspace;
     if (workspace?.startsWith("/shared")) {
       const orgSlug = workspace.slice(1).split("/")[1];
 
@@ -69,12 +83,12 @@ async function addProjectIdToEntity<
       const { projectId } = defaultProject;
 
       await db
-        .update(agents)
+        .update(table)
         .set({ project_id: projectId })
-        .where(eq(agents.id, agent.id));
+        .where(eq(table.id, item.id));
 
       done++;
-      console.log(`Done ${done} / ${agentsToMigrate.length}`);
+      console.log(`Done ${done} / ${items.length}`);
     }
 
     if (workspace?.startsWith("/users")) {
@@ -204,27 +218,29 @@ async function addProjectIdToEntity<
       if (userOrgs.length === 0) {
         const newOrgProjectId = await createNewOrgAndProject();
 
-        const agentUpdated = await db
-          .update(agents)
+        const itemUpdated = await db
+          .update(table)
           .set({ project_id: newOrgProjectId })
-          .where(eq(agents.id, agent.id))
+          .where(eq(table.id, item.id))
           .returning()
           .then((r) => r[0]);
 
         console.log("New org and default project created", {
           newOrgProjectId,
-          agentUpdated,
+          itemUpdated,
         });
+        done++;
+        console.log(`Done ${done} / ${items.length}`);
         continue;
       }
 
       if (orgsPersonalProjectAndOneMember.length === 0) {
         const newOrgProjectId = await createNewOrgAndProject();
 
-        const agentUpdated = await db
-          .update(agents)
+        const itemUpdated = await db
+          .update(table)
           .set({ project_id: newOrgProjectId })
-          .where(eq(agents.id, agent.id))
+          .where(eq(table.id, item.id))
           .returning()
           .then((r) => r[0]);
 
@@ -243,8 +259,10 @@ async function addProjectIdToEntity<
         console.log(
           "New org and default project created",
           newOrgProjectId,
-          agentUpdated.id,
+          itemUpdated.id,
         );
+        done++;
+        console.log(`Done ${done} / ${items.length}`);
         continue;
       }
 
@@ -266,11 +284,13 @@ async function addProjectIdToEntity<
       const { project } = orgsPersonalProjectAndOneMember[0];
 
       await db
-        .update(agents)
+        .update(table)
         .set({ project_id: project.id })
-        .where(eq(agents.id, agent.id));
+        .where(eq(table.id, item.id));
 
-      console.log("Done ok for user id", userId, agent.id);
+      console.log("Done ok for user id", userId, item.id);
+      done++;
+      console.log(`Done ${done} / ${items.length}`);
       continue;
     }
 
@@ -333,7 +353,10 @@ const agentsToMigrate = await db
   .where(isNull(agents.project_id));
 
 await addProjectIdToEntity(
-  agentsToMigrate as { id: string; workspace: string }[],
+  {
+    table: agents,
+    items: agentsToMigrate as { id: string; workspace: string }[],
+  },
 );
 
 // const orgsWithProblem = {};

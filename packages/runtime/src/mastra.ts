@@ -850,5 +850,8 @@ export const createMCPServer = <
     });
   };
 
-  return { fetch, callTool };
+  return {
+    fetch,
+    callTool,
+  };
 };

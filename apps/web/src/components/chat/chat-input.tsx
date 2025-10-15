@@ -4,6 +4,7 @@ import { cn } from "@deco/ui/lib/utils.ts";
 import {
   useCallback,
   useEffect,
+  useRef,
   type FormEvent,
   type KeyboardEvent,
   type ReactNode,
@@ -12,8 +13,7 @@ import {
 import { UIMessage } from "@ai-sdk/react";
 import { useFileUpload } from "../../hooks/use-file-upload.ts";
 import {
-  useUserPreferences,
-  type UserPreferences,
+  useUserPreferences
 } from "../../hooks/use-user-preferences.ts";
 import { useAgent } from "../agent/provider.tsx";
 import { AudioButton } from "./audio-button.tsx";
@@ -34,6 +34,10 @@ export function ChatInput({
   const { showModelSelector, showContextResources } = uiOptions;
   const { preferences, setPreferences } = useUserPreferences();
   const model = preferences.defaultModel;
+
+  // Use ref to avoid recreating callback on every preferences change
+  const preferencesRef = useRef(preferences);
+  preferencesRef.current = preferences;
 
   const {
     uploadedFiles,
@@ -59,10 +63,10 @@ export function ChatInput({
 
   const handleModelChange = useCallback(
     (modelToSelect: string) => {
-      setPreferences((prev: UserPreferences) => ({
-        ...prev,
+      setPreferences({
+        ...preferencesRef.current,
         defaultModel: modelToSelect,
-      }));
+      });
     },
     [setPreferences],
   );

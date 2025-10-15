@@ -368,7 +368,7 @@ export type Database = {
           memory: Json | null;
           model: string;
           name: string;
-          project_id: string | null;
+          project_id: string;
           temperature: number | null;
           tools_set: Json;
           views: Json;
@@ -388,7 +388,7 @@ export type Database = {
           memory?: Json | null;
           model: string;
           name: string;
-          project_id?: string | null;
+          project_id: string;
           temperature?: number | null;
           tools_set: Json;
           views: Json;
@@ -408,7 +408,7 @@ export type Database = {
           memory?: Json | null;
           model?: string;
           name?: string;
-          project_id?: string | null;
+          project_id?: string;
           temperature?: number | null;
           tools_set?: Json;
           views?: Json;

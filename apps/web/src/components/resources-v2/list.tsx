@@ -481,7 +481,18 @@ function ResourcesV2ListTab({
                       } else if (resourceName === "workflow") {
                         data.inputSchema = {};
                         data.outputSchema = {};
-                        data.steps = [];
+                        data.steps = [
+                          {
+                            id: "step-1",
+                            type: "code",
+                            name: "Start",
+                            def: {
+                              name: "Start",
+                              description: "Initial step",
+                              execute: "// Add your code here\nreturn {};",
+                            },
+                          },
+                        ];
                         data.triggers = [];
                       } else if (resourceName === "tool") {
                         data.inputSchema = {};

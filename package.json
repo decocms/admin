@@ -44,7 +44,6 @@
     ".github/",
     "**/.wrangler",
     "apps/web/public/**",
-    "apps/workflows/**",
     "packages/runtime/src/cf-imports.ts",
     "packages/create-deco/index.js",
     "docs/server/**",
@@ -66,9 +65,7 @@
   },
   "overrides": {
     "ai": "^5.0.61",
-    "zod": "^3.25.76",
-    "@tiptap/core": "^2.11.7",
-    "@tiptap/pm": "^2.11.7"
+    "zod": "^3.25.76"
   },
   "engines": {
     "node": ">=24.0.0"

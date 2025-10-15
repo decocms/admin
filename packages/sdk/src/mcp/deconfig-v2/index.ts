@@ -415,7 +415,7 @@ export const deconfigResourceV2 = <TDataSchema extends BaseResourceDataSchema>(
 
         // Extract resource ID from name or generate one
         const resourceId =
-          (validatedData.name as string)?.replace(/[^a-zA-Z0-9-_]/g, "-") ||
+          validatedData.name?.replace(/[^a-zA-Z0-9-_]/g, "-") ||
           crypto.randomUUID();
         const uri = constructResourceUri(
           options.integrationId!, // integrationId

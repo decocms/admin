@@ -3,7 +3,7 @@
  * Based on plans/01-tool-calls.md
  */
 
-import { createPrivateTool, createTool } from "@deco/workers-runtime/mastra";
+import { createPrivateTool } from "@deco/workers-runtime/mastra";
 import { z } from "zod";
 import type { Env } from "../main.ts";
 import type { WorkflowStep } from "../../shared/types/workflows.ts";
@@ -208,7 +208,7 @@ const WorkflowDefinitionSchema = z.object({
  * Resolves @refs and runs code via DECO_TOOL_RUN_TOOL
  */
 export const createRunWorkflowStepTool = (env: Env) =>
-  createTool({
+  createPrivateTool({
     id: "RUN_WORKFLOW_STEP",
     description:
       "Execute a workflow step with @ref resolution and optional authorization",

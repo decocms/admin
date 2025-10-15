@@ -4,7 +4,7 @@
  * This file contains tools for using AI to dynamically execute other tools
  * based on natural language queries.
  */
-import { createPrivateTool, createTool } from "@deco/workers-runtime/mastra";
+import { createPrivateTool } from "@deco/workers-runtime/mastra";
 import { z } from "zod";
 import type { Env } from "../main.ts";
 
@@ -13,7 +13,7 @@ import type { Env } from "../main.ts";
  * This is used to show users what tools they can call in their generated code
  */
 export const createListAvailableToolsTool = (_env: Env) =>
-  createTool({
+  createPrivateTool({
     id: "LIST_AVAILABLE_TOOLS",
     description:
       "List all available tools from all integrations in the workspace for use in generated code",
@@ -687,7 +687,7 @@ export const createExecuteToolSpecTool = (env: Env) =>
  * Public tool to run generated tools - can be called directly from MCP
  */
 export const createRunGeneratedToolTool = (env: Env) =>
-  createTool({
+  createPrivateTool({
     id: "RUN_GENERATED_TOOL",
     description:
       "Execute a dynamically generated tool with provided specification and input",

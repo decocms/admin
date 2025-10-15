@@ -52,6 +52,11 @@ name = "APIKEYS"
 type = "mcp"
 integration_name = "@deco/api-keys"
 
+[[deco.bindings]]
+name = "REGISTRY"
+type = "mcp"
+integration_name = "@deco/registry"
+
 [[migrations]]
 tag = "v1"
 new_classes = [ "Workflow" ]

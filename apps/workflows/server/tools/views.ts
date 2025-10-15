@@ -4,7 +4,7 @@
  * Tools for generating and testing custom views (input and output)
  */
 
-import { createTool } from "@deco/workers-runtime/mastra";
+import { createPrivateTool } from "@deco/workers-runtime/mastra";
 import { z } from "zod";
 // @ts-ignore - Generated file
 import type { Env } from "../deco.gen.ts";
@@ -17,7 +17,7 @@ import {
  * Generate a custom view definition using AI
  */
 export const createGenerateViewTool = (env: Env) =>
-  createTool({
+  createPrivateTool({
     id: "GENERATE_VIEW",
     description:
       "Generate a custom input or output view definition using AI. Returns a JSON structure that can be rendered as UI components.",
@@ -219,7 +219,7 @@ Also generate exampleData that matches the dataSchema to demonstrate the view.`;
  * Validate a view definition
  */
 export const createValidateViewTool = (_env: Env) =>
-  createTool({
+  createPrivateTool({
     id: "VALIDATE_VIEW",
     description: "Validate a view definition structure and provide feedback",
     inputSchema: z.object({
@@ -269,7 +269,7 @@ export const createValidateViewTool = (_env: Env) =>
  * Get example view definitions
  */
 export const createGetViewExamplesTool = (_env: Env) =>
-  createTool({
+  createPrivateTool({
     id: "GET_VIEW_EXAMPLES",
     description: "Get example view definitions for different use cases",
     inputSchema: z.object({
@@ -535,7 +535,7 @@ export const createGetViewExamplesTool = (_env: Env) =>
  * Uses actual output data to create contextual view
  */
 export const createGenerateStepOutputViewTool = (env: Env) =>
-  createTool({
+  createPrivateTool({
     id: "GENERATE_STEP_OUTPUT_VIEW",
     description:
       "Generate a custom output view for a specific workflow step using AI",
@@ -619,7 +619,7 @@ export const createGenerateStepOutputViewTool = (env: Env) =>
  * Uses previous step data to populate options dynamically
  */
 export const createGenerateStepInputViewTool = (env: Env) =>
-  createTool({
+  createPrivateTool({
     id: "GENERATE_STEP_INPUT_VIEW",
     description:
       "Generate a custom input view for a specific workflow step field using AI",

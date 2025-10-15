@@ -7,7 +7,6 @@
  * - Manage API keys and authorizations
  */
 import { createPrivateTool } from "@deco/workers-runtime/mastra";
-import { proxyConnectionForId } from "@deco/workers-runtime";
 import { z } from "zod";
 import type { Env } from "../main.ts";
 
@@ -34,6 +33,7 @@ export const createListInstalledToolsTool = (env: Env) =>
     }),
     execute: async () => {
       try {
+        console.log("Listing installed tools");
         const result = await env.INTEGRATIONS.INTEGRATIONS_LIST({});
 
         return {
@@ -45,54 +45,6 @@ export const createListInstalledToolsTool = (env: Env) =>
         // Return empty list on error instead of throwing
         return {
           integrations: [],
-          success: false,
-        };
-      }
-    },
-  });
-
-/**
- * List all available apps/tools in the registry for installation
- */
-export const createListAvailableToolsTool = (env: Env) =>
-  createPrivateTool({
-    id: "LIST_REGISTRY_APPS",
-    description:
-      "List all available tools and integrations that can be installed from the registry",
-    inputSchema: z.object({
-      search: z.string().optional(),
-    }),
-    outputSchema: z.object({
-      apps: z.array(
-        z.object({
-          id: z.string(),
-          workspace: z.string(),
-          scopeId: z.string(),
-          scopeName: z.string(),
-          appName: z.string(),
-          name: z.string(),
-          description: z.string().optional(),
-          icon: z.string().optional(),
-          createdAt: z.string(),
-        }),
-      ),
-      success: z.boolean(),
-    }),
-    execute: async ({ context }) => {
-      try {
-        const result = await env.REGISTRY.REGISTRY_LIST_PUBLISHED_APPS({
-          search: context.search,
-        });
-
-        return {
-          apps: result.apps || [],
-          success: true,
-        };
-      } catch (error) {
-        console.error("Error listing available tools:", error);
-        // Return empty list on error instead of throwing
-        return {
-          apps: [],
           success: false,
         };
       }
@@ -131,44 +83,6 @@ export const createGetIntegrationDetailsTool = (env: Env) =>
           integration: undefined,
           success: false,
           error: error instanceof Error ? error.message : "Unknown error",
-        };
-      }
-    },
-  });
-
-/**
- * Get available scopes from the registry
- */
-export const createListRegistryScopesTool = (env: Env) =>
-  createPrivateTool({
-    id: "LIST_REGISTRY_SCOPES",
-    description: "List all available scopes in the registry",
-    inputSchema: z.object({}),
-    outputSchema: z.object({
-      scopes: z.array(
-        z.object({
-          id: z.string(),
-          scopeName: z.string(),
-          workspace: z.string(),
-          createdAt: z.string(),
-          updatedAt: z.string(),
-        }),
-      ),
-      success: z.boolean(),
-    }),
-    execute: async () => {
-      try {
-        const result = await env.REGISTRY.REGISTRY_LIST_SCOPES({});
-
-        return {
-          scopes: result.scopes || [],
-          success: true,
-        };
-      } catch (error) {
-        console.error("Error listing registry scopes:", error);
-        return {
-          scopes: [],
-          success: false,
         };
       }
     },
@@ -218,8 +132,6 @@ export const createCallIntegrationToolTool = (env: Env) =>
 // Export all integration tools
 export const integrationTools = [
   createListInstalledToolsTool,
-  createListAvailableToolsTool,
   createGetIntegrationDetailsTool,
-  createListRegistryScopesTool,
   createCallIntegrationToolTool,
 ];

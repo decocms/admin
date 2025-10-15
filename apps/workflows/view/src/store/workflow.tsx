@@ -32,6 +32,7 @@ interface Actions {
   updateWorkflow: (updates: Partial<Workflow>) => void;
   updateStep: (stepId: string, updates: Partial<WorkflowStep>) => void;
   updateStepInput: (stepId: string, fieldKey: string, value: string) => void;
+  updateStepCustomView: (stepId: string, viewCode: string) => void;
   updateDependencyToolCalls: () => void;
   addStep: (step: WorkflowStep) => void;
   removeStep: (stepId: string) => void;
@@ -153,6 +154,29 @@ export const WorkflowStoreProvider = ({
               newSteps[stepIndex] = {
                 ...currentStep,
                 def: { ...(currentStep.def as any), input: newInput },
+              } as any;
+
+              set({
+                workflow: {
+                  ...currentState.workflow,
+                  steps: newSteps,
+                } as Workflow,
+                _stepIndexMap: currentState._stepIndexMap,
+              });
+            },
+            // Update custom view code for a step
+            updateStepCustomView: (stepId: string, viewCode: string) => {
+              const currentState = get();
+              const stepIndex = currentState._stepIndexMap.get(stepId);
+
+              if (stepIndex === undefined) return;
+
+              const currentStep = currentState.workflow.steps[stepIndex];
+
+              const newSteps = [...currentState.workflow.steps];
+              newSteps[stepIndex] = {
+                ...currentStep,
+                customOutputView: viewCode,
               } as any;
 
               set({

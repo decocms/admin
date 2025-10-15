@@ -663,7 +663,11 @@ export const StepNode = memo(
 
           {/* Render Output View - only if output exists and has success property */}
           {hasExecutionResult((step as any).output) && (
-            <StepOutput step={(step as any).output} />
+            <StepOutput
+              step={(step as any).output}
+              stepName={stepName}
+              outputSchema={stepOutputSchema}
+            />
           )}
 
           {/* Render Error Output - only if output has error */}

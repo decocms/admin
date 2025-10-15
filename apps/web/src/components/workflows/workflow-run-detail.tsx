@@ -328,7 +328,9 @@ export function WorkflowRunDetail({ resourceUri }: WorkflowRunDetailProps) {
                           <div className="w-px bg-border" />
                         </div>
                       )}
-                      <WorkflowStepCard step={step} index={idx} />
+                      <Suspense fallback={<Spinner />}>
+                        <WorkflowStepCard step={step} index={idx} />
+                      </Suspense>
                     </div>
                   ))}
                 </div>

@@ -515,16 +515,24 @@ export function WorkflowDisplayCanvas({
             {steps.length > 0 ? (
               <div className="flex flex-col items-center">
                 <div className="w-full max-w-[700px] space-y-0">
-                  {steps.map((step, idx) => (
-                    <div key={idx}>
-                      {idx > 0 && (
-                        <div className="h-10 w-full flex justify-center">
-                          <div className="w-px bg-border" />
-                        </div>
-                      )}
-                      <WorkflowStepCard step={step} index={idx} />
-                    </div>
-                  ))}
+                  {steps.map((step, idx) => {
+                    const stableKey =
+                      (step as { id?: string }).id ||
+                      step.name ||
+                      `step-${idx}`;
+                    return (
+                      <div key={stableKey}>
+                        {idx > 0 && (
+                          <div className="h-10 w-full flex justify-center">
+                            <div className="w-px bg-border" />
+                          </div>
+                        )}
+                        <Suspense fallback={<Spinner />}>
+                          <WorkflowStepCard step={step} index={idx} />
+                        </Suspense>
+                      </div>
+                    );
+                  })}
                 </div>
               </div>
             ) : (

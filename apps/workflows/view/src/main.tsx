@@ -17,7 +17,7 @@ export const rootRoute = createRootRoute({
 
 const routeTree = rootRoute.addChildren([WorkflowsPage]);
 
-const queryClient = new QueryClient();
+export const queryClient = new QueryClient();
 
 const router = createRouter({
   routeTree,

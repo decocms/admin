@@ -1,36 +1,18 @@
 import { ScrollArea, ScrollBar } from "@deco/ui/components/scroll-area.tsx";
 import { Icon } from "@deco/ui/components/icon.tsx";
 import { cn } from "@deco/ui/lib/utils.ts";
-import { Spinner } from "@deco/ui/components/spinner.tsx";
-import type { MentionItem } from "../../hooks/useMentionItems";
+import { useToolItems, type MentionItem } from "../../hooks/useMentionItems";
 
-interface ToolsDropdownProps {
-  items: MentionItem[];
-  isLoading?: boolean;
-  onItemClick?: (item: MentionItem) => void;
-}
+export function ToolsDropdown() {
+  // Use useToolItems which doesn't require workflow context
+  const toolItems = useToolItems();
 
-export function ToolsDropdown({
-  items,
-  isLoading,
-  onItemClick,
-}: ToolsDropdownProps) {
-  // Filter only tool items
-  const toolItems = items.filter((item) => item.type === "tool");
+  console.log(toolItems);
 
   if (toolItems.length === 0) {
     return (
       <div className="bg-background border border-border rounded-lg shadow-lg p-4 min-w-[300px] overflow-hidden">
-        {isLoading ? (
-          <div className="flex items-center gap-2 text-sm text-muted-foreground">
-            <Spinner size="xs" />
-            Loading tools...
-          </div>
-        ) : (
-          <div className="text-sm text-muted-foreground">
-            No tools available
-          </div>
-        )}
+        <div className="text-sm text-muted-foreground">No tools available</div>
       </div>
     );
   }
@@ -58,13 +40,6 @@ export function ToolsDropdown({
 
       <ScrollArea className="h-[400px] w-full max-w-[400px]">
         <div className="p-1 max-w-[400px]">
-          {isLoading && (
-            <div className="flex items-center gap-2 px-2 py-1 text-xs text-muted-foreground">
-              <Spinner size="xs" />
-              Loading tools...
-            </div>
-          )}
-
           {Object.entries(groupedItems).map(([category, categoryItems]) => (
             <div key={category} className="mb-2">
               <div className="px-2 py-1 flex items-center justify-between bg-muted/40 rounded-md mb-1">
@@ -87,7 +62,7 @@ export function ToolsDropdown({
                     "flex items-start gap-3 w-full px-3 py-2.5 rounded-md text-left transition-colors",
                     "hover:bg-muted/50",
                   )}
-                  onClick={() => onItemClick?.(item)}
+                  onClick={() => {}}
                 >
                   <div className="flex min-w-0 flex-1 flex-col max-w-[320px]">
                     <div className="flex items-center text-sm truncate">

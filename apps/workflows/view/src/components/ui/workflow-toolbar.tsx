@@ -3,17 +3,17 @@ import { cn } from "@deco/ui/lib/utils.ts";
 import { type ReactElement, useRef, useEffect, useState, useMemo } from "react";
 import tippy, { type Instance as TippyInstance } from "tippy.js";
 import { createRoot, type Root } from "react-dom/client";
+import { QueryClientProvider } from "@tanstack/react-query";
+import { queryClient } from "../../main";
 import { ToolsDropdown } from "./tools-dropdown";
 import {
   ResponsiveDropdown,
   ResponsiveDropdownContent,
   ResponsiveDropdownItem,
-  ResponsiveDropdownSeparator,
   ResponsiveDropdownTrigger,
 } from "@deco/ui/components/responsive-dropdown.tsx";
 import { useActiveTab } from "@/store/tab";
 import { WorkflowCanvasRef } from "../canvas/WorkflowCanvas";
-import { WorkflowStepsPreview } from "./workflow-steps-preview";
 
 export interface ToolbarButton {
   id: string;
@@ -53,9 +53,13 @@ function ToolbarButton({
       rootRef.current = createRoot(containerRef.current);
     }
 
-    // Render the dropdown content
+    // Render the dropdown content wrapped with QueryClientProvider
     if (rootRef.current) {
-      rootRef.current.render(hoverDropdown);
+      rootRef.current.render(
+        <QueryClientProvider client={queryClient}>
+          {hoverDropdown}
+        </QueryClientProvider>,
+      );
     }
 
     // Create tippy instance
@@ -138,16 +142,7 @@ export function WorkflowToolbar({
         id: "tools",
         icon: "build",
         label: "Tools",
-        hoverDropdown: (
-          <ToolsDropdown
-            items={[]}
-            isLoading={false}
-            onItemClick={(item) => {
-              console.log("🔧 Tool clicked:", item);
-              // Could add functionality to insert tool in current step
-            }}
-          />
-        ),
+        hoverDropdown: <ToolsDropdown />,
       },
       {
         id: "flash",
@@ -185,25 +180,6 @@ export function WorkflowToolbar({
               align="end"
               className="w-fit bg-popover/95 backdrop-blur-sm"
             >
-              <ResponsiveDropdownItem onClick={() => void 0}>
-                <span
-                  className="material-symbols-outlined mr-2"
-                  style={{ fontSize: "16px" }}
-                >
-                  download
-                </span>
-                Export
-              </ResponsiveDropdownItem>
-              <ResponsiveDropdownItem onClick={() => void 0}>
-                <span
-                  className="material-symbols-outlined mr-2"
-                  style={{ fontSize: "16px" }}
-                >
-                  upload
-                </span>
-                Import
-              </ResponsiveDropdownItem>
-              <ResponsiveDropdownSeparator />
               <ResponsiveDropdownItem
                 onClick={() => void 0}
                 className="text-destructive focus:text-destructive"
@@ -222,27 +198,6 @@ export function WorkflowToolbar({
       },
     ],
     [activeTab],
-  );
-
-  const rightContent = useMemo(
-    () => (
-      <WorkflowStepsPreview
-        steps={[]}
-        activeStepId={undefined}
-        onStepClick={(_stepId) => {
-          const index = 0;
-          if (index !== undefined) {
-            if (activeTab === "editor") {
-              canvasRef.current?.centerOnStep(index);
-            } else {
-              void 0;
-            }
-          }
-        }}
-        onAddStep={() => void 0}
-      />
-    ),
-    [activeTab, canvasRef],
   );
 
   const centerButtons = useMemo(
@@ -310,12 +265,8 @@ export function WorkflowToolbar({
             {centerButtons.map((button) => (
               <ToolbarButton key={button.id} {...button} />
             ))}
-            {rightContent && <ToolbarSeparator />}
           </>
         )}
-
-        {/* Right section - custom content (e.g., step previews) */}
-        {rightContent}
       </div>
     </div>
   );

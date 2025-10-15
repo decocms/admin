@@ -19,12 +19,17 @@ import {
 
 import { UIMessage } from "@ai-sdk/react";
 import type { Integration } from "@deco/sdk";
+import {
+  useUserPreferences,
+  type UserPreferences,
+} from "../../hooks/use-user-preferences.ts";
 import { useAgentSettingsToolsSet } from "../../hooks/use-agent-settings-tools-set.ts";
 import { useFileUpload } from "../../hooks/use-file-upload.ts";
 import { useAgent } from "../agent/provider.tsx";
 import { SelectConnectionDialog } from "../integrations/select-connection-dialog.tsx";
 import { AudioButton } from "./audio-button.tsx";
 import { ContextResources } from "./context-resources.tsx";
+import { ModelSelector } from "./model-selector.tsx";
 import { RichTextArea, type RichTextAreaHandle } from "./rich-text.tsx";
 
 export function ChatInput({
@@ -37,8 +42,10 @@ export function ChatInput({
   const { chat, uiOptions, input, setInput, isLoading, setIsLoading } =
     useAgent();
   const { stop, sendMessage } = chat;
-  const { showContextResources } = uiOptions;
+  const { showModelSelector, showContextResources } = uiOptions;
+  const { preferences, setPreferences } = useUserPreferences();
   const { enableAllTools } = useAgentSettingsToolsSet();
+  const model = preferences.defaultModel;
   const richTextRef = useRef<RichTextAreaHandle>(null);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
 
@@ -245,6 +252,12 @@ export function ChatInput({
                   </DropdownMenu>
                 </div>
                 <div className="flex items-center gap-1">
+                  {showModelSelector && (
+                    <ModelSelector
+                      model={model}
+                      onModelChange={handleModelChange}
+                    />
+                  )}
                   <AudioButton onMessage={handleRichTextChange} />
                   <Button
                     type={isLoading ? "button" : "submit"}

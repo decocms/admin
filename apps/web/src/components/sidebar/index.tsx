@@ -450,7 +450,7 @@ function WorkspaceViews() {
         </SidebarMenuButton>
       </SidebarMenuItem>
 
-      <SidebarSeparator className="my-2 mx-0" />
+      <SidebarSeparator className="my-2 -ml-1" />
 
       {/* SECTION 2: RESOURCES (Main Resource Types) */}
       {resourceItems.map((item) => {
@@ -510,7 +510,7 @@ function WorkspaceViews() {
         );
       })}
 
-      <SidebarSeparator className="my-2" />
+      <SidebarSeparator className="my-2 -ml-1" />
 
       {/* Manage Apps button */}
       <SidebarMenuItem>
@@ -962,7 +962,7 @@ function WorkspaceViews() {
         </>
       )}
 
-      <SidebarSeparator className="my-2" />
+      <SidebarSeparator className="my-2 -ml-1" />
 
       <SidebarMenuItem>
         <div className="px-2 py-1 text-xs font-medium text-muted-foreground">

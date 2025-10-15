@@ -1,6 +1,5 @@
 import type React from "react";
 import { useCallback, useEffect, useState } from "react";
-import { Button } from "@deco/ui/components/button.tsx";
 import type {
   SpeechRecognition,
   SpeechRecognitionError,
@@ -81,18 +80,13 @@ export const AudioButton: React.FC<AudioButtonProps> = ({ onMessage }) => {
   }, [recognition, isListening]);
 
   return (
-    <div className="flex flex-col items-center gap-4">
-      <div className="flex gap-4">
-        <Button
-          type="button"
-          variant={isListening ? "default" : "outline"}
-          size="icon"
-          onClick={toggleListening}
-          className="h-8 w-8"
-        >
-          <Icon filled name={isListening ? "stop" : "mic"} />
-        </Button>
-      </div>
-    </div>
+    <button
+      type="button"
+      onClick={toggleListening}
+      className="flex size-8 items-center justify-center rounded-full p-1 hover:bg-accent transition-colors"
+      title={isListening ? "Stop recording" : "Start voice input"}
+    >
+      <Icon name={isListening ? "stop" : "mic"} size={20} />
+    </button>
   );
 };

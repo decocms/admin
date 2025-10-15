@@ -160,13 +160,14 @@ export function ChatInput({
       <form
         onSubmit={onSubmit}
         className={cn(
-          "relative flex items-center gap-2 pt-0",
+          "relative",
           disabled && "pointer-events-none opacity-50 cursor-not-allowed",
         )}
       >
         <div className="w-full">
-          <div className="relative rounded-md w-full mx-auto">
-            <div className="relative flex flex-col">
+          <div className="relative rounded-xl border border-border bg-background w-full mx-auto">
+            <div className="relative flex flex-col gap-4 p-2.5">
+              {/* Input Area */}
               <div
                 className="overflow-y-auto relative"
                 style={{ maxHeight: "164px" }}
@@ -175,19 +176,27 @@ export function ChatInput({
                   value={input}
                   onChange={handleRichTextChange}
                   onKeyDown={handleKeyDown}
-                  placeholder="Type a message..."
-                  className="border border-b-0 placeholder:text-muted-foreground resize-none focus-visible:ring-0"
+                  placeholder="Ask anything or @ for context"
+                  className="placeholder:text-muted-foreground resize-none focus-visible:ring-0 border-0 p-2 text-sm min-h-[20px] rounded-none"
                   disabled={isLoading || disabled}
                   allowNewLine={isMobile}
                   enableToolMentions
                 />
               </div>
 
-              <div className="flex items-center justify-between h-12 border border-t-0 rounded-b-2xl px-2">
-                <div className="flex items-center gap-2">
-                  {/* File upload is now handled by ContextResources */}
+              {/* Bottom Actions Row */}
+              <div className="flex items-center justify-between">
+                <div className="flex items-center">
+                  <button
+                    type="button"
+                    onClick={openFileDialog}
+                    className="flex size-8 items-center justify-center rounded-full p-1 hover:bg-accent transition-colors"
+                    title="Add context"
+                  >
+                    <Icon name="add" size={20} />
+                  </button>
                 </div>
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-1">
                   {showModelSelector && (
                     <ModelSelector
                       model={model}
@@ -195,9 +204,8 @@ export function ChatInput({
                     />
                   )}
                   <AudioButton onMessage={handleRichTextChange} />
-                  <Button
+                  <button
                     type={isLoading ? "button" : "submit"}
-                    size="icon"
                     disabled={isLoading ? false : !canSubmit}
                     onClick={
                       isLoading
@@ -207,13 +215,19 @@ export function ChatInput({
                           }
                         : undefined
                     }
-                    className="h-8 w-8 transition-all hover:opacity-70"
+                    className={cn(
+                      "flex size-8 items-center justify-center rounded-full p-1 transition-all hover:opacity-70",
+                      !isLoading && !canSubmit && "bg-muted",
+                    )}
                     title={
                       isLoading ? "Stop generating" : "Send message (Enter)"
                     }
                   >
-                    <Icon filled name={isLoading ? "stop" : "send"} />
-                  </Button>
+                    <Icon
+                      name={isLoading ? "stop" : "arrow_upward"}
+                      size={20}
+                    />
+                  </button>
                 </div>
               </div>
             </div>

@@ -182,8 +182,6 @@ function JsonView({ jsonString, lines }: JsonViewProps) {
 interface StepFormViewProps {
   step: WorkflowStep;
   inputSchemaEntries: Array<[string, unknown]>;
-  workflowActions: ReturnType<typeof useWorkflowStoreActions>;
-  onCreateInputView: (key: string) => void;
   stepName: string;
 }
 
@@ -192,10 +190,9 @@ const StepFormView = memo(
   function StepFormView({
     step,
     inputSchemaEntries,
-    workflowActions,
-    onCreateInputView,
     stepName,
   }: StepFormViewProps) {
+    const workflowActions = useWorkflowStoreActions();
     // PERFORMANCE: Use granular updateStepInput for field changes
     // This prevents creating new input objects and triggering re-renders
     const handleFieldChange = useCallback(
@@ -283,14 +280,6 @@ const StepFormView = memo(
                         <label className="text-sm font-medium text-foreground leading-none">
                           {key}
                         </label>
-                        <Button
-                          variant="secondary"
-                          size="sm"
-                          onClick={() => onCreateInputView(key)}
-                          className="text-xs h-6 px-2"
-                        >
-                          + Add View
-                        </Button>
                       </div>
 
                       <RichTextEditor
@@ -315,9 +304,7 @@ const StepFormView = memo(
       prevProps.step === nextProps.step &&
       prevProps.stepName === nextProps.stepName &&
       prevProps.inputSchemaEntries.length ===
-        nextProps.inputSchemaEntries.length &&
-      prevProps.workflowActions === nextProps.workflowActions &&
-      prevProps.onCreateInputView === nextProps.onCreateInputView
+        nextProps.inputSchemaEntries.length
     );
   },
 );
@@ -330,9 +317,6 @@ export const StepNode = memo(
       (a, b) => Math.abs(a - b) < 0.01,
     );
     const [showJsonView, setShowJsonView] = useState(false);
-    const [_creatingInputViewFor, setCreatingInputViewFor] = useState<
-      string | null
-    >(null);
     const [renderingInputView, setRenderingInputView] = useState<{
       fieldName: string;
       viewName: string;
@@ -487,11 +471,6 @@ export const StepNode = memo(
       workflowActions,
     ]);
 
-    // PERFORMANCE: Memoize the handler for creating input views
-    const handleCreateInputView = useCallback((key: string) => {
-      setCreatingInputViewFor(key);
-    }, []);
-
     if (!step) return null;
 
     if (compact) {
@@ -640,8 +619,6 @@ export const StepNode = memo(
               step={step}
               stepName={stepName}
               inputSchemaEntries={inputSchemaEntries}
-              workflowActions={workflowActions}
-              onCreateInputView={handleCreateInputView}
             />
           )}
 

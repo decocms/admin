@@ -1,16 +1,15 @@
 import { Button } from "@deco/ui/components/button.tsx";
 import { Icon } from "@deco/ui/components/icon.tsx";
-import { useEffect } from "react";
-import { Link } from "react-router";
-import { trackEvent } from "../../hooks/analytics.ts";
-import { useAgent } from "../agent/provider.tsx";
 import {
   Tooltip,
   TooltipContent,
   TooltipTrigger,
 } from "@deco/ui/components/tooltip.tsx";
-import { useState } from "react";
-import { useWorkspaceLink } from "../../hooks/use-navigate-workspace.ts";
+import { useEffect, useState } from "react";
+import { Link } from "react-router";
+import { trackEvent } from "../../hooks/analytics.ts";
+import { useOrgLink } from "../../hooks/use-navigate-workspace.ts";
+import { useAgent } from "../agent/provider.tsx";
 import { ExpandableDescription } from "../toolsets/description.tsx";
 
 function getErrorMessage(error: Error) {
@@ -26,7 +25,7 @@ const WELL_KNOWN_ERROR_MESSAGES = {
 };
 
 export function ChatError() {
-  const workspaceLink = useWorkspaceLink();
+  const orgLink = useOrgLink();
   const { chat, retry, correlationIdRef } = useAgent();
   const { error } = chat;
   const insufficientFunds = error?.message.includes(
@@ -68,7 +67,7 @@ export function ChatError() {
               className="bg-background hover:bg-background/80 shadow-none border border-input py-3 px-4 h-10"
               asChild
             >
-              <Link to={workspaceLink("/monitor/billing?add_credits")}>
+              <Link to={orgLink("/monitor/billing?add_credits")}>
                 <Icon name="wallet" className="mr-2" />
                 Add credits
               </Link>

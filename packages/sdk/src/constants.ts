@@ -21,7 +21,7 @@ if (isLocalhost && import.meta.env?.VITE_USE_LOCAL_BACKEND === undefined) {
   console.warn(
     "VITE_USE_LOCAL_BACKEND environment variable is not set. " +
       "To use local backend services, create a .env file in apps/web/ " +
-      "and add VITE_USE_LOCAL_BACKEND=true"
+      "and add VITE_USE_LOCAL_BACKEND=true",
   );
 }
 
@@ -210,7 +210,7 @@ export const DEFAULT_MODEL = WELL_KNOWN_MODELS[0];
 
 export function isWellKnownModel(modelId: string): boolean {
   return WELL_KNOWN_MODELS.some(
-    (m) => m.id === modelId || m.legacyId === modelId
+    (m) => m.id === modelId || m.legacyId === modelId,
   );
 }
 
@@ -275,7 +275,7 @@ export const NEW_AGENT_TEMPLATE: Omit<Agent, "id"> = {
 };
 
 export const DECOPILOT_IMAGE = withImageOptimizeUrl(
-  "https://assets.decocache.com/decocms/fd07a578-6b1c-40f1-bc05-88a3b981695d/f7fc4ffa81aec04e37ae670c3cd4936643a7b269.png"
+  "https://assets.decocache.com/decocms/fd07a578-6b1c-40f1-bc05-88a3b981695d/f7fc4ffa81aec04e37ae670c3cd4936643a7b269.png",
 );
 
 /**

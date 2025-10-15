@@ -339,7 +339,7 @@ const IntegrationResourceItem = memo(function IntegrationResourceItem({
       <Popover>
         <PopoverTrigger asChild>
           <div className="flex items-center gap-2.5 cursor-pointer rounded flex-1">
-            <div className="flex items-center justify-center size-8 rounded overflow-hidden flex-shrink-0">
+            <div className="flex items-center justify-center size-8 rounded overflow-hidden bg-background border border-border flex-shrink-0">
               <IntegrationIcon
                 icon={integration.icon}
                 name={integration.name}
@@ -461,7 +461,7 @@ function FilePreviewItem({ uploadedFile, removeFile }: FilePreviewItemProps) {
 
   return (
     <div className="relative group flex items-center gap-2 p-1 pr-2.5 bg-muted rounded-lg h-10">
-      <div className="flex items-center justify-center size-8 rounded overflow-hidden flex-shrink-0">
+      <div className="flex items-center justify-center size-8 rounded overflow-hidden bg-background border border-border flex-shrink-0">
         {status === "uploading" ? (
           <Spinner size="xs" />
         ) : status === "error" ? (

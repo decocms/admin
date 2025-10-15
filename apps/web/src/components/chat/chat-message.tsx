@@ -5,7 +5,7 @@ import { toast } from "@deco/ui/components/sonner.tsx";
 import { cn } from "@deco/ui/lib/utils.ts";
 import type { UIMessage } from "@ai-sdk/react";
 import type { FileUIPart } from "ai";
-import { useEffect, useMemo, useState } from "react";
+import { memo, useCallback, useEffect, useMemo, useState } from "react";
 import { MemoizedMarkdown } from "./chat-markdown.tsx";
 import { ReasoningPart } from "./reasoning-part.tsx";
 import { ToolMessage } from "./tool-message.tsx";
@@ -45,7 +45,7 @@ interface ReasoningPart {
   state?: "streaming" | "done";
 }
 
-export function ChatMessage({
+export const ChatMessage = memo(function ChatMessage({
   message,
   isLastMessage = false,
 }: ChatMessageProps) {
@@ -53,20 +53,28 @@ export function ChatMessage({
   const createdAt =
     (message.metadata as { createdAt?: string })?.createdAt ?? Date.now();
 
-  const timestamp = new Date(createdAt).toLocaleTimeString([], {
-    hour: "2-digit",
-    minute: "2-digit",
-  });
+  const timestamp = useMemo(
+    () =>
+      new Date(createdAt).toLocaleTimeString([], {
+        hour: "2-digit",
+        minute: "2-digit",
+      }),
+    [createdAt],
+  );
 
-  const attachments = message.parts
-    ?.filter((part) => part.type === "file")
-    .map((part) => ({
-      contentType: part.mediaType,
-      url: part.url,
-      name: part.filename,
-    })) as MessageAttachment[] | undefined;
+  const attachments = useMemo(
+    () =>
+      message.parts
+        ?.filter((part) => part.type === "file")
+        .map((part) => ({
+          contentType: part.mediaType,
+          url: part.url,
+          name: part.filename,
+        })) as MessageAttachment[] | undefined,
+    [message.parts],
+  );
 
-  const handleCopy = async () => {
+  const handleCopy = useCallback(async () => {
     const content = message.parts
       ? message.parts
           .filter((part) => part.type === "text" && "text" in part)
@@ -79,14 +87,14 @@ export function ChatMessage({
         : "";
     await navigator.clipboard.writeText(content);
     toast("Copied to clipboard");
-  };
+  }, [message.parts, message]);
 
   const hasTextContent = useMemo(() => {
     return (
       message.parts?.some((part) => part.type === "text") ||
       ("content" in message && typeof message.content === "string")
     );
-  }, [message.parts]);
+  }, [message.parts, message]);
 
   return (
     <div
@@ -202,7 +210,7 @@ export function ChatMessage({
       </div>
     </div>
   );
-}
+});
 
 function ImagePart({ part }: { part: FileUIPart }) {
   const { data: fileUrl } = useFile(part.url);

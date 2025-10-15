@@ -74,6 +74,7 @@ interface WorkflowInstanceMetadata {
  * Structure of params passed to Cloudflare Workflows instances
  */
 interface WorkflowInstanceParams {
+  name?: string;
   context?: WorkflowInstanceMetadata & {
     workspace?: unknown;
     locator?: unknown;
@@ -611,14 +612,12 @@ export function createWorkflowRunsResourceV2Implementation(
         .map((inst) => {
           const runId = String(inst.id);
           const detail = detailsById.get(runId);
-
-          // Enrich with metadata from instance params (if present in detailed status)
-          const ctx = (detail as unknown as { params?: WorkflowInstanceParams })
-            ?.params?.context;
+          const params = detail?.params as WorkflowInstanceParams | undefined;
 
           // Filter: only include runs from the current workspace
-          const runWorkspaceValue = (ctx?.workspace as { value?: string })
-            ?.value;
+          const runWorkspaceValue = (
+            params?.context?.workspace as { value?: string }
+          )?.value;
           if (
             currentWorkspaceValue &&
             runWorkspaceValue !== currentWorkspaceValue
@@ -626,10 +625,8 @@ export function createWorkflowRunsResourceV2Implementation(
             return null;
           }
 
-          const workflowURI = ctx?.workflowURI;
-          const displayName = workflowURI
-            ? decodeURIComponent(workflowURI.split("/").pop() ?? "")
-            : String(inst.id ?? "");
+          const workflowURI = params?.context?.workflowURI;
+          const displayName = params?.name ?? "Untitled";
 
           // Normalize status using our helper
           const status = detail
@@ -650,8 +647,8 @@ export function createWorkflowRunsResourceV2Implementation(
 
           const uri = `rsc://i:workflows-management/workflow_run/${encodeURIComponent(runId)}`;
 
-          const createdBy = ctx?.startedBy?.id
-            ? String(ctx.startedBy.id)
+          const createdBy = params?.context?.startedBy?.id
+            ? String(params.context.startedBy.id)
             : undefined;
 
           return {
@@ -700,13 +697,13 @@ export function createWorkflowRunsResourceV2Implementation(
       );
 
       // Enrich with metadata from instance params (if present in detailed status)
-      const ctx = (
-        workflowStatus as unknown as { params?: WorkflowInstanceParams }
-      )?.params?.context;
+      const params = workflowStatus?.params as WorkflowInstanceParams | undefined;
 
       // Filter: verify the run belongs to the current workspace
       const currentWorkspaceValue = c.workspace?.value;
-      const runWorkspaceValue = (ctx?.workspace as { value?: string })?.value;
+      const runWorkspaceValue = (
+        params?.context?.workspace as { value?: string }
+      )?.value;
 
       if (
         currentWorkspaceValue &&
@@ -723,12 +720,10 @@ export function createWorkflowRunsResourceV2Implementation(
         ? mapWorkflowStatus(workflowStatus.status)
         : "pending";
 
-      const workflowURI = ctx?.workflowURI;
-      const displayName = workflowURI
-        ? decodeURIComponent(workflowURI.split("/").pop() ?? "")
-        : runId;
-      const createdBy = ctx?.startedBy?.id
-        ? String(ctx.startedBy.id)
+      const workflowURI = params?.context?.workflowURI;
+      const displayName = params?.name ?? "Untitled";
+      const createdBy = params?.context?.startedBy?.id
+        ? String(params.context.startedBy.id)
         : undefined;
 
       // Timestamps from the status payload

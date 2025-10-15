@@ -10,6 +10,11 @@ import { MCPClient } from "../fetcher.ts";
 import type { ProjectLocator } from "../locator.ts";
 import type { ReadOutput } from "../mcp/resources-v2/schemas.ts";
 import { ViewDefinitionSchema } from "../mcp/views/schemas.ts";
+import {
+  parseIntegrationId,
+  resourceKeys,
+  resourceListKeys,
+} from "./query-keys.ts";
 import { useSDK } from "./store.tsx";
 
 // Resources V2 view names for views
@@ -93,7 +98,7 @@ export function useViewByUriV2(uri: string) {
   }
 
   const query = useQuery({
-    queryKey: ["view", locator, uri],
+    queryKey: resourceKeys.view(locator, uri),
     queryFn: ({ signal }) => getViewByUri(locator, uri, signal),
     retry: false,
   });
@@ -104,14 +109,14 @@ export function useViewByUriV2(uri: string) {
       if (message.type === "RESOURCE_UPDATED" && message.resourceUri === uri) {
         // Invalidate this specific view query
         queryClient.invalidateQueries({
-          queryKey: ["view", locator, uri],
+          queryKey: resourceKeys.view(locator, uri),
           refetchType: "all",
         });
 
         // Also invalidate the view list
-        const integrationId = uri.split("/")[2];
+        const integrationId = parseIntegrationId(uri);
         queryClient.invalidateQueries({
-          queryKey: ["resources-v2-list", integrationId, "view"],
+          queryKey: resourceListKeys.views(locator, integrationId),
           refetchType: "all",
         });
       }

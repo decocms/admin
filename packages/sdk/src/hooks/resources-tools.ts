@@ -15,6 +15,11 @@ import { MCPClient } from "../fetcher.ts";
 import type { ProjectLocator } from "../locator.ts";
 import type { ReadOutput } from "../mcp/resources-v2/schemas.ts";
 import { ToolDefinitionSchema } from "../mcp/tools/schemas.ts";
+import {
+  parseIntegrationId,
+  resourceKeys,
+  resourceListKeys,
+} from "./query-keys.ts";
 import { useSDK } from "./store.tsx";
 
 // Resources V2 tool names for tools
@@ -126,8 +131,8 @@ export function useTool(uri: string) {
     throw new InternalServerError("No locator available");
   }
 
-  const query = useQuery({
-    queryKey: ["tool", uri],
+  const toolQuery = useQuery({
+    queryKey: resourceKeys.tool(locator, uri),
     queryFn: ({ signal }) => getToolByUri(locator, uri, signal),
     retry: false,
   });
@@ -138,23 +143,23 @@ export function useTool(uri: string) {
       if (message.type === "RESOURCE_UPDATED" && message.resourceUri === uri) {
         // Invalidate this specific tool query
         queryClient.invalidateQueries({
-          queryKey: ["tool", uri],
+          queryKey: resourceKeys.tool(locator, uri),
           refetchType: "all",
         });
 
         // Also invalidate the tool list
-        const integrationId = uri.split("/")[2];
+        const integrationId = parseIntegrationId(uri);
         queryClient.invalidateQueries({
-          queryKey: ["resources-v2-list", integrationId, "tool"],
+          queryKey: resourceListKeys.tools(locator, integrationId),
           refetchType: "all",
         });
       }
     });
 
     return cleanup;
-  }, [uri, queryClient]);
+  }, [uri, locator, queryClient]);
 
-  return query;
+  return toolQuery;
 }
 
 export function useToolSuspense(uri: string) {
@@ -165,8 +170,8 @@ export function useToolSuspense(uri: string) {
     throw new InternalServerError("No locator available");
   }
 
-  const query = useSuspenseQuery({
-    queryKey: ["tool", uri],
+  const suspenseToolQuery = useSuspenseQuery({
+    queryKey: resourceKeys.tool(locator, uri),
     queryFn: ({ signal }) => getToolByUri(locator, uri, signal),
     retry: false,
   });
@@ -177,23 +182,23 @@ export function useToolSuspense(uri: string) {
       if (message.type === "RESOURCE_UPDATED" && message.resourceUri === uri) {
         // Invalidate this specific tool query
         queryClient.invalidateQueries({
-          queryKey: ["tool", uri],
+          queryKey: resourceKeys.tool(locator, uri),
           refetchType: "all",
         });
 
         // Also invalidate the tool list
-        const integrationId = uri.split("/")[2];
+        const integrationId = parseIntegrationId(uri);
         queryClient.invalidateQueries({
-          queryKey: ["resources-v2-list", integrationId, "tool"],
+          queryKey: resourceListKeys.tools(locator, integrationId),
           refetchType: "all",
         });
       }
     });
 
     return cleanup;
-  }, [uri, queryClient]);
+  }, [uri, locator, queryClient]);
 
-  return query;
+  return suspenseToolQuery;
 }
 
 export function useUpsertTool() {

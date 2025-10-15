@@ -15,6 +15,12 @@ import { MCPClient } from "../fetcher.ts";
 import type { ProjectLocator } from "../locator.ts";
 import { DocumentDefinitionSchema } from "../mcp/documents/schemas.ts";
 import type { ReadOutput } from "../mcp/resources-v2/schemas.ts";
+import {
+  documentSearchKeys,
+  parseIntegrationId,
+  resourceKeys,
+  resourceListKeys,
+} from "./query-keys.ts";
 import { useSDK } from "./store.tsx";
 
 // Resources V2 document names for documents
@@ -121,7 +127,7 @@ export function useDocumentByUriV2(uri: string) {
   }
 
   const query = useQuery({
-    queryKey: ["document", uri],
+    queryKey: resourceKeys.document(locator, uri),
     queryFn: ({ signal }) => getDocumentByUri(locator, uri, signal),
     retry: false,
   });
@@ -132,21 +138,21 @@ export function useDocumentByUriV2(uri: string) {
       if (message.type === "RESOURCE_UPDATED" && message.resourceUri === uri) {
         // Invalidate this specific document query
         queryClient.invalidateQueries({
-          queryKey: ["document", uri],
+          queryKey: resourceKeys.document(locator, uri),
           refetchType: "all",
         });
 
         // Also invalidate the document list
-        const integrationId = uri.split("/")[2];
+        const integrationId = parseIntegrationId(uri);
         queryClient.invalidateQueries({
-          queryKey: ["resources-v2-list", integrationId, "document"],
+          queryKey: resourceListKeys.documents(locator, integrationId),
           refetchType: "all",
         });
       }
     });
 
     return cleanup;
-  }, [uri, queryClient]);
+  }, [locator, uri, queryClient]);
 
   return query;
 }
@@ -160,7 +166,7 @@ export function useDocumentSuspense(uri: string) {
   }
 
   const query = useSuspenseQuery({
-    queryKey: ["document", uri],
+    queryKey: resourceKeys.document(locator, uri),
     queryFn: ({ signal }) => getDocumentByUri(locator, uri, signal),
     retry: false,
   });
@@ -171,21 +177,21 @@ export function useDocumentSuspense(uri: string) {
       if (message.type === "RESOURCE_UPDATED" && message.resourceUri === uri) {
         // Invalidate this specific document query
         queryClient.invalidateQueries({
-          queryKey: ["document", uri],
+          queryKey: resourceKeys.document(locator, uri),
           refetchType: "all",
         });
 
         // Also invalidate the document list
-        const integrationId = uri.split("/")[2];
+        const integrationId = parseIntegrationId(uri);
         queryClient.invalidateQueries({
-          queryKey: ["resources-v2-list", integrationId, "document"],
+          queryKey: resourceListKeys.documents(locator, integrationId),
           refetchType: "all",
         });
       }
     });
 
     return cleanup;
-  }, [uri, queryClient]);
+  }, [locator, uri, queryClient]);
 
   return query;
 }
@@ -275,7 +281,12 @@ export function useDocuments(input?: {
   }
 
   return useQuery({
-    queryKey: ["documents", locator, input?.term, input?.page, input?.pageSize],
+    queryKey: documentSearchKeys.search(
+      locator,
+      input?.term,
+      input?.page,
+      input?.pageSize,
+    ),
     queryFn: async ({ signal }) => {
       try {
         // deno-lint-ignore no-explicit-any

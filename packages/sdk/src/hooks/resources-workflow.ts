@@ -10,6 +10,11 @@ import { MCPClient } from "../fetcher.ts";
 import type { ProjectLocator } from "../locator.ts";
 import type { ReadOutput } from "../mcp/resources-v2/schemas.ts";
 import { WorkflowDefinitionSchema } from "../mcp/workflows/schemas.ts";
+import {
+  parseIntegrationId,
+  resourceKeys,
+  resourceListKeys,
+} from "./query-keys.ts";
 import { useSDK } from "./store.tsx";
 
 // Resources V2 tool names for workflow
@@ -152,7 +157,7 @@ export const useWorkflow = (workflowUri: string) => {
   const queryClient = useQueryClient();
 
   const query = useQuery({
-    queryKey: ["workflow-by-uri-v2", locator, workflowUri],
+    queryKey: resourceKeys.workflow(locator, workflowUri),
     queryFn: ({ signal }) => getWorkflowByUri(locator, workflowUri, signal),
     retry: (failureCount, error) =>
       error instanceof InternalServerError && failureCount < 2,
@@ -168,14 +173,14 @@ export const useWorkflow = (workflowUri: string) => {
       ) {
         // Invalidate this specific workflow query
         queryClient.invalidateQueries({
-          queryKey: ["workflow-by-uri-v2", locator, workflowUri],
+          queryKey: resourceKeys.workflow(locator, workflowUri),
           refetchType: "all",
         });
 
         // Also invalidate the workflow list
-        const integrationId = workflowUri.split("/")[2];
+        const integrationId = parseIntegrationId(workflowUri);
         queryClient.invalidateQueries({
-          queryKey: ["resources-v2-list", integrationId, "workflow"],
+          queryKey: resourceListKeys.workflows(locator, integrationId),
           refetchType: "all",
         });
       }

@@ -35,7 +35,7 @@ export function useMentionItems(): MentionItem[] {
   // Extract stable primitive values instead of using entire workflow object
   const workflowSteps = workflow?.steps;
   const stepsKey = useMemo(
-    () => workflowSteps?.map((s) => s.name).join(",") || "",
+    () => workflowSteps?.map((s) => s.def.name).join(",") || "",
     [workflowSteps],
   );
 
@@ -70,10 +70,10 @@ export function useMentionItems(): MentionItem[] {
     if (workflowSteps?.length) {
       workflowSteps.forEach((step: WorkflowStep) => {
         items.push({
-          id: `@${step.name}`,
+          id: `@${step.def.name}`,
           type: "step",
-          label: `${step.name}`,
-          description: `Reference output: @${step.name}.output`,
+          label: `${step.def.name}`,
+          description: `Reference output: @${step.def.name}.output`,
           category: "Previous Steps",
         });
       });

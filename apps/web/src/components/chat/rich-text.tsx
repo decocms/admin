@@ -299,7 +299,7 @@ export const RichTextArea = forwardRef<RichTextAreaHandle, RichTextAreaProps>(
           float: left;
           height: 0;
           pointer-events: none;
-          opacity: 1 !important;
+          opacity: 0.75 !important;
         }
       `}</style>
         <EditorContent

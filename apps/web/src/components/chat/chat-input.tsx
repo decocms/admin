@@ -10,6 +10,7 @@ import { cn } from "@deco/ui/lib/utils.ts";
 import {
   useCallback,
   useEffect,
+  useMemo,
   useRef,
   useState,
   type FormEvent,
@@ -41,6 +42,17 @@ export function ChatInput({
 } = {}) {
   const { chat, uiOptions, input, setInput, isLoading, setIsLoading } =
     useAgent();
+export function ChatInput({ disabled }: { disabled?: boolean } = {}) {
+  const {
+    chat,
+    uiOptions,
+    input,
+    setInput,
+    isLoading,
+    setIsLoading,
+    agent,
+    rules,
+  } = useAgent();
   const { stop, sendMessage } = chat;
   const { showModelSelector, showContextResources } = uiOptions;
   const { preferences, setPreferences } = useUserPreferences();
@@ -64,6 +76,15 @@ export function ChatInput({
 
   // TODO(@viktormarinho): Bring this back
   const enableFileUpload = false;
+
+  // Check if there are any context resources to display
+  const hasContextResources = useMemo(() => {
+    const hasFiles = uploadedFiles.length > 0;
+    const hasRules = rules && rules.length > 0;
+    const hasTools =
+      agent?.tools_set && Object.keys(agent.tools_set).length > 0;
+    return hasFiles || hasRules || hasTools;
+  }, [uploadedFiles, rules, agent?.tools_set]);
 
   const canSubmit =
     !isLoading &&
@@ -182,7 +203,7 @@ export function ChatInput({
           <div className="relative rounded-xl border border-border bg-background w-full mx-auto">
             <div className="relative flex flex-col gap-2 p-2.5">
               {/* Context Resources */}
-              {showContextResources && (
+              {showContextResources && hasContextResources && (
                 <ContextResources
                   uploadedFiles={uploadedFiles}
                   isDragging={isDragging}
@@ -223,10 +244,14 @@ export function ChatInput({
                     <DropdownMenuTrigger asChild>
                       <button
                         type="button"
-                        className="flex size-8 items-center justify-center rounded-full p-1 hover:bg-accent transition-colors"
+                        className="flex size-8 items-center justify-center rounded-full p-1 hover:bg-transparent transition-colors group cursor-pointer"
                         title="Add context"
                       >
-                        <Icon name="add" size={20} />
+                        <Icon
+                          name="add"
+                          size={20}
+                          className="text-muted-foreground group-hover:text-foreground transition-colors"
+                        />
                       </button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="start" side="top">
@@ -256,39 +281,38 @@ export function ChatInput({
                     <ModelSelector
                       model={model}
                       onModelChange={handleModelChange}
+                      className="!p-0 hover:bg-transparent"
                     />
                   )}
-                  <AudioButton onMessage={handleRichTextChange} />
-                  <Button
-                    type={isLoading ? "button" : "submit"}
-                    onClick={
-                      isLoading
-                        ? () => {
-                            stop();
-                            setIsLoading(false);
-                          }
-                        : !canSubmit
-                          ? (e) => e.preventDefault()
+                  <AudioButton
+                    onMessage={handleRichTextChange}
+                    className="hover:bg-transparent hover:text-foreground"
+                  />
+                  {(canSubmit || isLoading) && (
+                    <Button
+                      type={isLoading ? "button" : "submit"}
+                      onClick={
+                        isLoading
+                          ? () => {
+                              stop();
+                              setIsLoading(false);
+                            }
                           : undefined
-                    }
-                    variant={canSubmit || isLoading ? "special" : "ghost"}
-                    size="icon"
-                    className={cn(
-                      "size-8 rounded-full transition-all",
-                      !canSubmit &&
-                        !isLoading &&
-                        "text-muted-foreground bg-muted pointer-events-auto cursor-default",
-                    )}
-                    title={
-                      isLoading ? "Stop generating" : "Send message (Enter)"
-                    }
-                  >
-                    <Icon
-                      name={isLoading ? "stop" : "arrow_upward"}
-                      size={20}
-                      filled={isLoading}
-                    />
-                  </Button>
+                      }
+                      variant="special"
+                      size="icon"
+                      className="size-8 rounded-full transition-all"
+                      title={
+                        isLoading ? "Stop generating" : "Send message (Enter)"
+                      }
+                    >
+                      <Icon
+                        name={isLoading ? "stop" : "arrow_upward"}
+                        size={20}
+                        filled={isLoading}
+                      />
+                    </Button>
+                  )}
                 </div>
               </div>
             </div>

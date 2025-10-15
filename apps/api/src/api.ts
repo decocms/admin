@@ -414,6 +414,15 @@ const proxy = (
   };
 };
 
+const WELL_KNOWN_DECONFIG_TOOLS = [
+  "READ_FILE",
+  "LIST_FILES",
+  "PUT_FILE",
+  "DELETE_FILE",
+  "LIST_BRANCHES",
+  "DIFF_BRANCH",
+]; // TODO: remove this once we have a better way to handle this; quick fix for now
+
 const createMcpServerProxyForIntegration = async (
   c: Context,
   fetchIntegration: () => Promise<
@@ -444,15 +453,7 @@ const createMcpServerProxyForIntegration = async (
 
       // Add DECONFIG file operation permissions for the same integration
       // These are needed when resource tools (like DECO_RESOURCE_*) internally call file operations
-      const deconfigTools = [
-        "READ_FILE",
-        "LIST_FILES",
-        "PUT_FILE",
-        "DELETE_FILE",
-        "LIST_BRANCHES",
-        "DIFF_BRANCH",
-      ];
-      for (const tool of deconfigTools) {
+      for (const tool of WELL_KNOWN_DECONFIG_TOOLS) {
         statements.push({
           effect: "allow" as const,
           resource: tool,

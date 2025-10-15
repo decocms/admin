@@ -12,6 +12,7 @@ import ReactFlow, {
   type Node,
   type Edge,
   Background,
+  type NodeChange,
 } from "reactflow";
 import { StepNode, NewStepNode, PlusButtonNode } from "./nodes";
 import {
@@ -258,6 +259,30 @@ const Inner = forwardRef<WorkflowCanvasRef>(function Inner(_, ref) {
     [stepIds, stepsLength, currentStepIndex, setCurrentStepIndex],
   );
 
+  // Handle node dimension changes - re-center when current node dimensions change
+  const onNodesChange = useCallback(
+    (changes: NodeChange[]) => {
+      // Check if any dimension change affects the current step
+      const hasDimensionChange = changes.some((change) => {
+        if (change.type === "dimensions" && change.dimensions) {
+          // Get the node ID and check if it's the current step
+          const stepNames = stepIds.split(",").filter(Boolean);
+          const currentNodeId = stepNames[currentStepIndex] || "new";
+          return change.id === currentNodeId;
+        }
+        return false;
+      });
+
+      if (hasDimensionChange) {
+        // Re-center with smooth animation after a small delay to ensure measurements are updated
+        setTimeout(() => {
+          centerViewport(currentStepIndex, true);
+        }, 50);
+      }
+    },
+    [stepIds, currentStepIndex, centerViewport],
+  );
+
   // Lock canvas - prevent any panning
   const handleMove = useCallback(() => {
     // Don't prevent centering animation from completing
@@ -343,6 +368,7 @@ const Inner = forwardRef<WorkflowCanvasRef>(function Inner(_, ref) {
         nodes={nodes}
         edges={edges}
         onNodeClick={onNodeClick}
+        onNodesChange={onNodesChange}
         onMove={handleMove}
         nodeTypes={nodeTypes}
         fitView={false}

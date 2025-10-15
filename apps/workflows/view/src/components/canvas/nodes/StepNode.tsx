@@ -1,4 +1,10 @@
-import { type NodeProps, useStore, Handle, Position } from "reactflow";
+import {
+  type NodeProps,
+  useStore,
+  Handle,
+  Position,
+  useUpdateNodeInternals,
+} from "reactflow";
 import { Button } from "@deco/ui/components/button.tsx";
 import { Icon } from "@deco/ui/components/icon.tsx";
 import { Badge } from "@deco/ui/components/badge.tsx";
@@ -9,7 +15,7 @@ import {
   DropdownMenuTrigger,
 } from "@deco/ui/components/dropdown-menu.tsx";
 import { useExecuteStep } from "../../../hooks/useExecuteStep";
-import { useState, memo, useMemo, useCallback } from "react";
+import { useState, memo, useMemo, useCallback, useEffect } from "react";
 import { RichTextEditor } from "../../RichTextEditor";
 import { RenderInputViewModal } from "../../RenderInputViewModal";
 import {
@@ -65,12 +71,47 @@ interface StepErrorProps {
   error: string;
 }
 
-function StepError({ error }: StepErrorProps) {
+function StepErrorOutput({ error }: StepErrorProps) {
   return (
-    <div className="mt-3 p-3 bg-red-950/30 border border-red-900/50 rounded-lg">
-      <p className="text-xs text-red-400 font-mono whitespace-pre-wrap">
-        {error}
-      </p>
+    <div className="bg-background p-4 flex flex-col gap-3 relative rounded-b-xl max-h-[400px] overflow-hidden">
+      <div
+        className="nodrag flex flex-col gap-3 overflow-hidden"
+        style={{ cursor: "default" }}
+        onMouseDown={(e) => e.stopPropagation()}
+        onPointerDown={(e) => e.stopPropagation()}
+        onClick={(e) => e.stopPropagation()}
+      >
+        {/* Header */}
+        <div className="flex items-center justify-between shrink-0">
+          <p className="font-mono text-sm text-muted-foreground uppercase">
+            EXECUTION ERROR
+          </p>
+        </div>
+
+        <div
+          data-scrollable="true"
+          className="border border-red-900/50 rounded bg-red-950/30 flex-1 min-h-0"
+          style={{
+            maxHeight: "300px",
+            minHeight: "120px",
+            overflowY: "auto",
+            overflowX: "hidden",
+            cursor: "text",
+            pointerEvents: "auto",
+          }}
+          onWheel={(e) => {
+            e.stopPropagation();
+          }}
+          onMouseDown={(e) => e.stopPropagation()}
+          onPointerDown={(e) => e.stopPropagation()}
+        >
+          <div className="p-4">
+            <pre className="font-mono text-xs text-red-400 leading-[1.5] m-0 whitespace-pre-wrap break-words">
+              {error}
+            </pre>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }
@@ -282,7 +323,7 @@ const StepFormView = memo(
 );
 
 export const StepNode = memo(
-  function StepNode({ data }: NodeProps<StepNodeData>) {
+  function StepNode({ data, id }: NodeProps<StepNodeData>) {
     // OPTIMIZED: Only subscribe to zoom, and add equality check to prevent re-renders
     const zoom = useStore(
       (s) => s.transform[2],
@@ -306,8 +347,30 @@ export const StepNode = memo(
     const authToken = useWorkflowAuthToken();
 
     const executeStepMutation = useExecuteStep();
+    const updateNodeInternals = useUpdateNodeInternals();
 
     const compact = zoom < 0.7;
+
+    // Track if step has execution result output or error
+    const hasOutput = hasExecutionResult((step as any)?.output);
+    const hasError = hasErrorOutput((step as any)?.output);
+    const hasAnyOutput = hasOutput || hasError;
+
+    // Update node internals when output appears (to recalculate dimensions)
+    useEffect(() => {
+      if (hasAnyOutput) {
+        // Use requestAnimationFrame to ensure DOM has rendered, then update internals
+        requestAnimationFrame(() => {
+          setTimeout(() => {
+            updateNodeInternals(id);
+            // Trigger another update after a bit more time to ensure the node fully measured
+            setTimeout(() => {
+              updateNodeInternals(id);
+            }, 200);
+          }, 100);
+        });
+      }
+    }, [hasAnyOutput, id, updateNodeInternals]);
 
     // OPTIMIZED: Only compute when actually needed (when showJsonView is true)
     const inputSchemaEntries = useMemo((): Array<[string, unknown]> => {
@@ -467,7 +530,7 @@ export const StepNode = memo(
     }
 
     return (
-      <div className="bg-foreground border border-border rounded-xl p-[2px] w-[640px]">
+      <div className="bg-foreground border border-border rounded-xl p-[2px] w-[640px] shadow-lg relative">
         <Handle type="target" position={Position.Left} style={{ opacity: 0 }} />
         <Handle
           type="source"
@@ -476,7 +539,7 @@ export const StepNode = memo(
         />
 
         {/* Header */}
-        <div className="flex items-center justify-between h-10 px-4 py-2 rounded-t-xl overflow-clip">
+        <div className="flex items-center justify-between h-10 px-4 py-2 rounded-t-xl overflow-clip bg-foreground">
           <div className="flex items-center gap-2 flex-1 min-w-0">
             <Icon
               name={"build"}
@@ -551,7 +614,9 @@ export const StepNode = memo(
         </div>
 
         {/* Body */}
-        <div className="flex flex-col rounded-xl overflow-hidden">
+        <div
+          className={`flex flex-col overflow-hidden ${!hasExecutionResult((step as any).output) && !hasErrorOutput((step as any).output) ? "rounded-b-xl" : ""}`}
+        >
           {showJsonView && (
             <JsonView
               jsonString={jsonViewData.jsonString}
@@ -569,7 +634,9 @@ export const StepNode = memo(
           )}
 
           {/* Execute Button Section */}
-          <div className="bg-background border-b border-border p-4">
+          <div
+            className={`bg-background p-4 ${hasExecutionResult((step as any).output) || hasErrorOutput((step as any).output) ? "border-b border-border" : ""}`}
+          >
             <div
               onMouseDown={(e) => e.stopPropagation()}
               onPointerDown={(e) => e.stopPropagation()}
@@ -603,12 +670,17 @@ export const StepNode = memo(
                 )}
               </Button>
             </div>
-
-            {/* Error Details */}
-            {hasErrorOutput((step as any).output) && (
-              <StepError error={(step as any).output.error} />
-            )}
           </div>
+
+          {/* Render Output View - only if output exists and has success property */}
+          {hasExecutionResult((step as any).output) && (
+            <StepOutput step={(step as any).output} />
+          )}
+
+          {/* Render Error Output - only if output has error */}
+          {hasErrorOutput((step as any).output) && (
+            <StepErrorOutput error={(step as any).output.error} />
+          )}
         </div>
 
         {/* Render Input View Modal */}
@@ -626,11 +698,6 @@ export const StepNode = memo(
               // Update the field value
             }}
           />
-        )}
-
-        {/* Render Output View - only if output exists and has success property */}
-        {hasExecutionResult((step as any).output) && (
-          <StepOutput step={(step as any).output} />
         )}
       </div>
     );

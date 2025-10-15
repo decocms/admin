@@ -1,6 +1,4 @@
-import { Button } from "@deco/ui/components/button.js";
 import { Icon } from "@deco/ui/components/icon.js";
-import { useState } from "react";
 
 interface StepExecutionResult {
   success: boolean;
@@ -13,24 +11,22 @@ interface StepExecutionResult {
 }
 
 export function StepOutput({ step }: { step: StepExecutionResult }) {
-  const [activeView, setActiveView] = useState<string>("json");
-
   const jsonString =
     typeof step.output === "object"
       ? JSON.stringify(step.output, null, 2)
       : String(step.output ?? "");
   const lines = jsonString.split("\n");
   return (
-    <div className="bg-background border-b border-border p-4 flex flex-col gap-3 relative">
+    <div className="bg-background p-4 flex flex-col gap-3 relative rounded-b-xl max-h-[400px] overflow-hidden">
       <div
-        className="nodrag"
+        className="nodrag flex flex-col gap-3 overflow-hidden"
         style={{ cursor: "default" }}
         onMouseDown={(e) => e.stopPropagation()}
         onPointerDown={(e) => e.stopPropagation()}
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header with metrics */}
-        <div className="flex items-center justify-between mb-2">
+        <div className="flex items-center justify-between shrink-0">
           <p className="font-mono text-sm text-muted-foreground uppercase">
             EXECUTION RESULT
           </p>
@@ -46,23 +42,11 @@ export function StepOutput({ step }: { step: StepExecutionResult }) {
           </div>
         </div>
 
-        {/* View toggles */}
-        <div className="flex items-center gap-2 py-2 flex-wrap">
-          <Button
-            variant={activeView === "json" ? "default" : "secondary"}
-            size="sm"
-            onClick={() => setActiveView("json")}
-            className="h-8 px-3"
-          >
-            JSON
-          </Button>
-        </div>
-
         <div
           data-scrollable="true"
-          className="border border-border rounded bg-muted/30"
+          className="border border-border rounded bg-muted/30 flex-1 min-h-0"
           style={{
-            maxHeight: "500px",
+            maxHeight: "300px",
             minHeight: "120px",
             overflowY: "auto",
             overflowX: "hidden",

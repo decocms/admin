@@ -519,7 +519,7 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
       const d1Store = new D1Store({
         client: {
           query: async (args) => {
-            const result = await db.exec(args);
+            using result = await db.exec(args);
             return { result: result.result || [] };
           },
         },
@@ -1516,9 +1516,6 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
             model: options.model ?? this._configuration?.model,
           });
         },
-        onStepFinish: ({ response }) => {
-          messageList.add(response.messages, "response");
-        },
         onFinish: (result) => {
           assertConfiguration(this._configuration);
           const onFinishId = crypto.randomUUID();
@@ -1532,6 +1529,8 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
 
           threadQueue.then(() => {
             console.log("saving messages");
+            messageList.add(result.response.messages, "response");
+
             return store
               .saveMessages({
                 messages: messageList.get.response.v2(),

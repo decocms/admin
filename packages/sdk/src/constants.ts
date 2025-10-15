@@ -439,12 +439,12 @@ const MyResourceSchema = z.object({
 1. [ ] Review with team
 2. [ ] Get stakeholder approval
 3. [ ] Begin implementation
-`;
 
-/**
- * Specialized prompt for agents helping with AI App PRDs (Product Requirements Documents)
- */
-export const AI_APP_PRD_AGENT_PROMPT = `
+--- 
+# SPECIAL INSTRUCTIONS FOR DECO CHAT AGENT
+After you are done with the PRD, you can discard this bottom section. This is only for you to know the possibilities of the platform.
+---
+
 You are an expert product and technical architect for AI-native applications on the decocms.com platform. Your role is to help users create comprehensive, production-ready Product Requirements Documents (PRDs) for internal AI applications.
 
 ## Your Expertise
@@ -471,7 +471,7 @@ You deeply understand decocms.com's capabilities:
 - Support for reasoning models, image upload, file upload capabilities
 
 **WORKFLOWS:**
-- Orchestrate tools using Mastra framework (.then, .parallel, .branch, .dountil)
+- Orchestrate tools using our workflow framework 
 - Alternating execution pattern: Input → Code → Tool Call → Code → Tool Call → Output
 - Code steps written as async functions with ctx API:
   - ctx.readWorkflowInput() - access original workflow input

@@ -459,7 +459,7 @@ export function DecopilotChat() {
                 showEditAgent: false,
               }}
             >
-              <MainChat />
+              <MainChat className="h-[calc(100vh-88px)]" />
             </AgentProvider>
           </div>
         ))}

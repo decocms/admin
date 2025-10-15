@@ -4,7 +4,7 @@ import { drizzle } from "drizzle-orm/postgres-js";
 import process from "node:process";
 import { relations } from "../packages/sdk/src/mcp/relations.ts";
 import {
-  agents,
+  integrations,
   memberRoles,
   members,
   organizations,
@@ -29,6 +29,77 @@ export function slugifyForOrg(input: string, salt: string): string {
 }
 
 const db = drizzle(process.env.DATABASE_URL!, { relations });
+
+async function addUserToOrg({
+  tx,
+  user,
+  orgId,
+}: {
+  tx: typeof db;
+  user: typeof profiles.$inferSelect;
+  orgId: number;
+}) {
+  const member = await tx
+    .insert(members)
+    .values({
+      team_id: orgId,
+      user_id: user.user_id,
+    })
+    .returning()
+    .then((r) => r[0]);
+
+  await Promise.all(
+    [1, 4].map(async (roleId) => {
+      const role = await tx
+        .insert(memberRoles)
+        .values({
+          member_id: member.id,
+          role_id: roleId,
+        })
+        .returning()
+        .then((r) => r[0]);
+    }),
+  );
+
+  return member;
+}
+
+async function createNewOrgAndProject({
+  tx,
+  user,
+}: {
+  tx: typeof db;
+  user: typeof profiles.$inferSelect;
+}) {
+  const salt = crypto.randomUUID().slice(0, 4);
+  const newOrg = await tx
+    .insert(organizations)
+    .values({
+      name: `${user.name}'s org`,
+      slug: slugifyForOrg(user.email.split("@")[0], salt),
+      plan_id: WELL_KNOWN_PLANS.FREE,
+    })
+    .returning()
+    .then((r) => r[0]);
+
+  const newOrgProject = await tx
+    .insert(projects)
+    .values({
+      org_id: newOrg.id,
+      slug: "default",
+      title: `${newOrg.name} Default project`,
+    })
+    .returning()
+    .then((r) => r[0]);
+
+  await addUserToOrg({
+    tx,
+    user,
+    orgId: newOrg.id,
+  });
+
+  return newOrgProject.id;
+}
 
 async function addProjectIdToEntity<
   T extends { id: string; workspace: string },
@@ -71,18 +142,79 @@ async function addProjectIdToEntity<
           .leftJoin(projects, eq(organizations.id, projects.org_id))
           .where(eq(organizations.slug, orgSlug));
 
-        const defaultProject = orgAndProject.find(
-          (p) => p.projectSlug === "default",
-        );
-
-        if (!defaultProject) {
-          console.error("Default project not found", orgSlug);
-          orgsWithProblem.set(orgSlug, "Default project not found");
+        // Case 1: Organization doesn't exist (empty array) -> Delete the entity
+        if (orgAndProject.length === 0) {
+          console.log(
+            `[DELETE] Organization "${orgSlug}" doesn't exist, deleting entity ${item.id}`,
+          );
+          await tx.delete(table).where(eq(table.id, item.id));
+          done++;
+          console.log(`Done ${done} / ${items.length}`);
           return;
         }
 
-        const { projectId } = defaultProject;
+        // Look for "default" project across all results
+        const defaultProject = orgAndProject.find(
+          (p) => p.projectSlug === "default",
+        );
+        let projectId: string;
 
+        // Case 2: Default project exists -> Use it
+        if (defaultProject) {
+          if (!defaultProject.projectId) {
+            throw new Error(
+              `Default project found but projectId is null for org "${orgSlug}"`,
+            );
+          }
+          projectId = defaultProject.projectId;
+          console.log(
+            `[UPDATE] Using existing project "default" (id: ${projectId}) for entity ${item.id}`,
+          );
+        }
+        // Case 3: No default project
+        else {
+          const firstResult = orgAndProject[0];
+
+          // Case 3a: Org has no projects (projectSlug is null) -> Create default
+          if (firstResult.projectSlug === null) {
+            console.log(
+              `[CREATE] Creating default project for org "${orgSlug}"`,
+            );
+            const newProject = await tx
+              .insert(projects)
+              .values({
+                org_id: firstResult.orgId,
+                slug: "default",
+                title: `Default project`,
+              })
+              .returning()
+              .then((r) => r[0]);
+
+            projectId = newProject.id;
+            console.log(
+              `[CREATE] Created default project with id ${projectId} for org "${orgSlug}"`,
+            );
+          }
+          // Case 3b: Org has projects but no "default" -> Create default
+          else {
+            console.log(
+              `[CREATE] Org "${orgSlug}" has projects [${orgAndProject.map((p) => p.projectSlug).join(", ")}] but no "default", will fallback to the first project`,
+            );
+
+            if (!firstResult.projectId) {
+              throw new Error(
+                `First project found but projectId is null for org "${orgSlug}"`,
+              );
+            }
+            
+            projectId = firstResult.projectId;
+            console.log(
+              `[UPDATE] Using existing project "${firstResult.projectSlug}" (id: ${projectId}) for entity ${item.id}`,
+            );
+          }
+        }
+
+        // Update entity with project_id
         await tx
           .update(table)
           .set({ project_id: projectId })
@@ -91,6 +223,8 @@ async function addProjectIdToEntity<
         done++;
         console.log(`Done ${done} / ${items.length}`);
       }
+
+      return;
 
       if (workspace?.startsWith("/users")) {
         const userId = workspace.slice(1).split("/")[1];
@@ -169,55 +303,11 @@ async function addProjectIdToEntity<
           });
         }
 
-        async function createNewOrgAndProject() {
-          const salt = crypto.randomUUID().slice(0, 4);
-          const newOrg = await tx
-            .insert(organizations)
-            .values({
-              name: `${user.name}'s org`,
-              slug: slugifyForOrg(user.email.split("@")[0], salt),
-              plan_id: WELL_KNOWN_PLANS.FREE,
-            })
-            .returning()
-            .then((r) => r[0]);
-
-          const newOrgProject = await tx
-            .insert(projects)
-            .values({
-              org_id: newOrg.id,
-              slug: "default",
-              title: `${newOrg.name} Default project`,
-            })
-            .returning()
-            .then((r) => r[0]);
-
-          const member = await tx
-            .insert(members)
-            .values({
-              team_id: newOrg.id,
-              user_id: userId,
-            })
-            .returning()
-            .then((r) => r[0]);
-
-          await Promise.all(
-            [1, 4].map(async (roleId) => {
-              const role = await tx
-                .insert(memberRoles)
-                .values({
-                  member_id: member.id,
-                  role_id: roleId,
-                })
-                .returning()
-                .then((r) => r[0]);
-            }),
-          );
-
-          return newOrgProject.id;
-        }
-
         if (userOrgs.length === 0) {
-          const newOrgProjectId = await createNewOrgAndProject();
+          const newOrgProjectId = await createNewOrgAndProject({
+            tx,
+            user,
+          });
 
           const itemUpdated = await tx
             .update(table)
@@ -236,7 +326,10 @@ async function addProjectIdToEntity<
         }
 
         if (orgsPersonalProjectAndOneMember.length === 0) {
-          const newOrgProjectId = await createNewOrgAndProject();
+          const newOrgProjectId = await createNewOrgAndProject({
+            tx,
+            user,
+          });
 
           const itemUpdated = await tx
             .update(table)
@@ -348,14 +441,14 @@ async function fixOrgs(orgSlugs: string[]) {
   }
 }
 
-const agentsToMigrate = await db
+const integrationsToMigrate = await db
   .select()
-  .from(agents)
-  .where(isNull(agents.project_id));
+  .from(integrations)
+  .where(isNull(integrations.project_id));
 
 await addProjectIdToEntity({
-  table: agents,
-  items: agentsToMigrate as { id: string; workspace: string }[],
+  table: integrations,
+  items: integrationsToMigrate as { id: string; workspace: string }[],
 });
 
 // const orgsWithProblem = {};

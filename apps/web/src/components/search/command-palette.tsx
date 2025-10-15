@@ -243,7 +243,7 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
                   </div>
 
                   <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                    <kbd className="pointer-events-none inline-flex h-5 select-none items-center gap-1 rounded border bg-muted px-1.5 font-mono text-[10px] font-medium opacity-100">
+                    <kbd className="pointer-events-none inline-flex select-none items-center gap-1 rounded size-5 bg-muted px-1.5 font-mono text-[10px] font-medium opacity-100">
                       ↵
                     </kbd>
                   </div>

@@ -50,7 +50,7 @@ export function BreadcrumbOrgSwitcher() {
     <>
       <Popover>
         <PopoverTrigger asChild>
-          <div className="flex items-center gap-2 cursor-pointer hover:bg-muted-foreground/10 px-2 py-1 rounded-md">
+          <div className="flex items-center gap-2 cursor-pointer hover:bg-accent p-1 rounded-md">
             <Avatar
               url={currentOrg?.avatar_url}
               fallback={currentOrg?.name ?? org}

@@ -12,9 +12,7 @@ import {
 
 import { UIMessage } from "@ai-sdk/react";
 import { useFileUpload } from "../../hooks/use-file-upload.ts";
-import {
-  useUserPreferences
-} from "../../hooks/use-user-preferences.ts";
+import { useUserPreferences } from "../../hooks/use-user-preferences.ts";
 import { useAgent } from "../agent/provider.tsx";
 import { AudioButton } from "./audio-button.tsx";
 import { ContextResources } from "./context-resources.tsx";

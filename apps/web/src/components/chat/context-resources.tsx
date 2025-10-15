@@ -22,7 +22,7 @@ import {
   TooltipTrigger,
 } from "@deco/ui/components/tooltip.tsx";
 import { cn } from "@deco/ui/lib/utils.ts";
-import { useMemo, useState } from "react";
+import { memo, useCallback, useMemo, useState } from "react";
 import { useAgentSettingsToolsSet } from "../../hooks/use-agent-settings-tools-set.ts";
 import { useUserPreferences } from "../../hooks/use-user-preferences.ts";
 import type { UploadedFile } from "../../hooks/use-file-upload.ts";
@@ -113,60 +113,74 @@ export function ContextResources({
     });
   }, [integrationsWithTools]);
 
-  const handleRemoveIntegration = (integrationId: string) => {
-    if (!agent) return;
+  const handleRemoveIntegration = useCallback(
+    (integrationId: string) => {
+      if (!agent) return;
 
-    try {
-      // Use the disableAllTools function from useAgentSettingsToolsSet
-      disableAllTools(integrationId);
-    } catch (error) {
-      console.error("Failed to remove integration:", error);
-      // You could add a toast notification here if needed
-    }
-  };
-
-  const handleToggleTool = (
-    integrationId: string,
-    toolName: string,
-    isEnabled: boolean,
-  ) => {
-    if (!agent) return;
-
-    try {
-      const currentTools = agent.tools_set?.[integrationId] || [];
-      let newTools: string[];
-
-      if (isEnabled) {
-        // Remove tool
-        newTools = currentTools.filter((tool) => tool !== toolName);
-      } else {
-        // Add tool
-        newTools = [...currentTools, toolName];
+      try {
+        // Use the disableAllTools function from useAgentSettingsToolsSet
+        disableAllTools(integrationId);
+      } catch (error) {
+        console.error("Failed to remove integration:", error);
+        // You could add a toast notification here if needed
       }
+    },
+    [agent, disableAllTools],
+  );
 
-      // Use setIntegrationTools to update the tools for this integration
-      setIntegrationTools(integrationId, newTools);
-    } catch (error) {
-      console.error("Failed to toggle tool:", error);
-    }
-  };
+  const handleToggleTool = useCallback(
+    (integrationId: string, toolName: string, isEnabled: boolean) => {
+      if (!agent) return;
 
-  const handleAddIntegration = (integration: Integration) => {
-    // Use the enableAllTools function from useAgentSettingsToolsSet
-    enableAllTools(integration.id);
-  };
+      try {
+        const currentTools = agent.tools_set?.[integrationId] || [];
+        let newTools: string[];
+
+        if (isEnabled) {
+          // Remove tool
+          newTools = currentTools.filter((tool) => tool !== toolName);
+        } else {
+          // Add tool
+          newTools = [...currentTools, toolName];
+        }
+
+        // Use setIntegrationTools to update the tools for this integration
+        setIntegrationTools(integrationId, newTools);
+      } catch (error) {
+        console.error("Failed to toggle tool:", error);
+      }
+    },
+    [agent, setIntegrationTools],
+  );
+
+  const handleAddIntegration = useCallback(
+    (integration: Integration) => {
+      // Use the enableAllTools function from useAgentSettingsToolsSet
+      enableAllTools(integration.id);
+    },
+    [enableAllTools],
+  );
 
   // Convert rules to persistedRules format for display
-  const persistedRules = rules.map((text: string, idx: number) => ({
-    id: `agent-rule-${idx}`,
-    text,
-  }));
+  const persistedRules = useMemo(
+    () =>
+      rules.map((text: string, idx: number) => ({
+        id: `agent-rule-${idx}`,
+        text,
+      })),
+    [rules],
+  );
 
-  const removeRule = (id: string) => {
-    const ruleIndex = parseInt(id.replace("agent-rule-", ""));
-    const newRules = rules.filter((_, idx) => idx !== ruleIndex);
-    setRules(newRules);
-  };
+  const removeRule = useCallback(
+    (id: string) => {
+      const ruleIndex = parseInt(id.replace("agent-rule-", ""));
+      const newRules = rules.filter(
+        (_: string, idx: number) => idx !== ruleIndex,
+      );
+      setRules(newRules);
+    },
+    [rules, setRules],
+  );
 
   return (
     <div className="w-full mx-auto">
@@ -247,15 +261,14 @@ export function ContextResources({
         {/* Integration Items */}
         {integrationsWithTotalTools.map(
           ({ integration, enabledTools, integrationId, totalTools }) => (
-            <IntegrationResourceItem
+            <IntegrationResourceItemWrapper
               key={integrationId}
               integration={integration}
               enabledTools={enabledTools}
               totalTools={totalTools}
-              onRemove={() => handleRemoveIntegration(integrationId)}
-              onToggleTool={(toolName, isEnabled) =>
-                handleToggleTool(integrationId, toolName, isEnabled)
-              }
+              integrationId={integrationId}
+              onRemove={handleRemoveIntegration}
+              onToggleTool={handleToggleTool}
             />
           ),
         )}
@@ -273,6 +286,48 @@ export function ContextResources({
   );
 }
 
+interface IntegrationResourceItemWrapperProps {
+  integration: Integration;
+  enabledTools: string[];
+  totalTools: number;
+  integrationId: string;
+  onRemove: (integrationId: string) => void;
+  onToggleTool: (
+    integrationId: string,
+    toolName: string,
+    isEnabled: boolean,
+  ) => void;
+}
+
+function IntegrationResourceItemWrapper({
+  integration,
+  enabledTools,
+  totalTools,
+  integrationId,
+  onRemove,
+  onToggleTool,
+}: IntegrationResourceItemWrapperProps) {
+  const handleRemove = useCallback(
+    () => onRemove(integrationId),
+    [onRemove, integrationId],
+  );
+  const handleToggleTool = useCallback(
+    (toolName: string, isEnabled: boolean) =>
+      onToggleTool(integrationId, toolName, isEnabled),
+    [onToggleTool, integrationId],
+  );
+
+  return (
+    <IntegrationResourceItem
+      integration={integration}
+      enabledTools={enabledTools}
+      totalTools={totalTools}
+      onRemove={handleRemove}
+      onToggleTool={handleToggleTool}
+    />
+  );
+}
+
 interface IntegrationResourceItemProps {
   integration: Integration;
   enabledTools: string[];
@@ -281,7 +336,7 @@ interface IntegrationResourceItemProps {
   onToggleTool: (toolName: string, isEnabled: boolean) => void;
 }
 
-function IntegrationResourceItem({
+const IntegrationResourceItem = memo(function IntegrationResourceItem({
   integration,
   enabledTools,
   totalTools,
@@ -378,7 +433,7 @@ function IntegrationResourceItem({
       </Button>
     </div>
   );
-}
+});
 
 function FileDropOverlay({ display }: { display: boolean }) {
   if (!display) {

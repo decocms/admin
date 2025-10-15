@@ -4,11 +4,6 @@ import {
   patchApiDecoChatTokenHTTPConnection,
   isApiDecoChatMCPConnection as shouldPatchDecoChatMCPConnection,
 } from "@deco/ai/mcp";
-import {
-  ApiKeySchema,
-  mapApiKey,
-  SELECT_API_KEY_QUERY,
-} from "../api-keys/api.ts";
 import { CallToolRequestSchema } from "@modelcontextprotocol/sdk/types.js";
 import { and, eq, getTableColumns, or } from "drizzle-orm";
 import { z } from "zod";
@@ -41,6 +36,11 @@ import type { QueryResult } from "../../storage/supabase/client.ts";
 import { KnowledgeBaseID } from "../../utils/index.ts";
 import { IMPORTANT_ROLES } from "../agents/api.ts";
 import {
+  ApiKeySchema,
+  mapApiKey,
+  SELECT_API_KEY_QUERY,
+} from "../api-keys/api.ts";
+import {
   assertHasLocator,
   assertHasWorkspace,
   assertWorkspaceResourceAccess,
@@ -54,8 +54,9 @@ import {
   NotFoundError,
   WellKnownBindings,
 } from "../index.ts";
-import { listKnowledgeBases } from "../knowledge/api.ts";
+import { filterByWorkspaceOrLocator } from "../ownership.ts";
 import {
+  buildWorkspaceOrProjectIdConditions,
   getProjectIdFromContext,
   workspaceOrProjectIdConditions,
 } from "../projects/util.ts";
@@ -74,7 +75,6 @@ import {
   registryTools,
 } from "../schema.ts";
 import { createServerClient } from "../utils.ts";
-import { filterByWorkspaceOrLocator } from "../ownership.ts";
 
 const SELECT_INTEGRATION_QUERY = `
           *,
@@ -241,10 +241,32 @@ async function listToolsAndSortByName(
   {
     connection,
     ignoreCache,
-  }: { connection: MCPConnection; ignoreCache?: boolean },
+    appName,
+  }: {
+    connection: MCPConnection;
+    appName?: string | null;
+    ignoreCache?: boolean;
+  },
   c: AppContext,
 ) {
-  const result = await listToolsByConnectionType(connection, c, ignoreCache);
+  let result;
+  if (appName) {
+    const app = await getRegistryApp.handler({
+      name: appName,
+    });
+    result = {
+      tools: app?.tools?.map((tool) =>
+        registryToolToMcpTool({
+          description: tool.description ?? null,
+          input_schema: tool.inputSchema,
+          output_schema: tool.outputSchema,
+          name: tool.name,
+        }),
+      ),
+    };
+  } else {
+    result = await listToolsByConnectionType(connection, c, ignoreCache);
+  }
 
   // Sort tools by name for consistent UI
   if (Array.isArray(result?.tools)) {
@@ -368,7 +390,7 @@ const virtualIntegrationsFor = (
         name,
         icon,
         description,
-        appName: app ? AppName.build("deco", app) : undefined,
+        appName: app ? AppName.build(DECO_PROVIDER, app) : undefined,
         connection: {
           type: "HTTP",
           url: url.href,
@@ -394,8 +416,8 @@ const virtualIntegrationsFor = (
 const registryToolToMcpTool = (tool: {
   name: string;
   description: string | null;
-  input_schema: Json;
-  output_schema: Json;
+  input_schema: Json | Record<string, unknown>;
+  output_schema: Json | Record<string, unknown> | undefined;
 }): MCPTool => ({
   name: tool.name,
   description: tool.description || undefined,
@@ -425,6 +447,7 @@ export const listIntegrations = createIntegrationManagementTool({
   inputSchema: z.lazy(() =>
     z.object({
       binder: BindingsSchema.optional(),
+      hideVirtual: z.boolean().optional(),
     }),
   ),
   outputSchema: z.lazy(() =>
@@ -432,110 +455,25 @@ export const listIntegrations = createIntegrationManagementTool({
       items: z.array(IntegrationSchema),
     }),
   ),
-  handler: async ({ binder }, c) => {
+  handler: async ({ binder, hideVirtual }, c) => {
     assertHasWorkspace(c);
     assertHasLocator(c);
     const workspace = c.workspace.value;
 
     await assertWorkspaceResourceAccess(c);
+    const projectId = await getProjectIdFromContext(c);
 
-    const [integrationsData, agentsData, knowledgeBases] = await Promise.all([
+    const [integrationsData, agentsData] = await Promise.all([
       // Query integrations with all necessary joins
-      c.drizzle
-        .select({
-          id: integrations.id,
-          name: integrations.name,
-          description: integrations.description,
-          icon: integrations.icon,
-          connection: integrations.connection,
-          created_at: integrations.created_at,
-          workspace: integrations.workspace,
-          access: integrations.access,
-          access_id: integrations.access_id,
-          app_id: integrations.app_id,
-          project_id: integrations.project_id,
-          // Registry app fields
-          registry_app_name: registryApps.name,
-          registry_scope_name: registryScopes.scope_name,
-          // Tool fields
-          tool_id: registryTools.id,
-          tool_name: registryTools.name,
-          tool_description: registryTools.description,
-          tool_input_schema: registryTools.input_schema,
-          tool_output_schema: registryTools.output_schema,
-        })
-        .from(integrations)
-        .leftJoin(projects, eq(integrations.project_id, projects.id))
-        .leftJoin(organizations, eq(projects.org_id, organizations.id))
-        .leftJoin(registryApps, eq(integrations.app_id, registryApps.id))
-        .leftJoin(registryScopes, eq(registryApps.scope_id, registryScopes.id))
-        .leftJoin(registryTools, eq(registryApps.id, registryTools.app_id))
-        .where(
-          matchByWorkspaceOrProjectLocatorForIntegrations(workspace, c.locator),
-        )
-        .then((rows) => {
-          const byIntegration = new Map<
-            string,
-            QueryResult<
-              "deco_chat_integrations",
-              typeof SELECT_INTEGRATION_QUERY
-            >
-          >();
-          for (const row of rows) {
-            const tool = row.tool_id
-              ? {
-                  name: row.tool_name!,
-                  description: row.tool_description,
-                  input_schema: row.tool_input_schema,
-                  output_schema: row.tool_output_schema,
-                }
-              : null;
-            const existing = byIntegration.get(row.id);
-            if (!existing) {
-              byIntegration.set(row.id, {
-                ...row,
-                created_at:
-                  row.created_at?.toISOString() || new Date().toISOString(),
-                deco_chat_apps_registry: row.registry_app_name
-                  ? {
-                      name: row.registry_app_name,
-                      deco_chat_registry_scopes: row.registry_scope_name
-                        ? { scope_name: row.registry_scope_name }
-                        : null,
-                      deco_chat_apps_registry_tools: tool ? [tool] : [],
-                    }
-                  : null,
-                connection: row.connection as Json,
-              } as unknown as QueryResult<
-                "deco_chat_integrations",
-                typeof SELECT_INTEGRATION_QUERY
-              >);
-            } else if (tool && existing.deco_chat_apps_registry) {
-              (
-                existing.deco_chat_apps_registry
-                  .deco_chat_apps_registry_tools as unknown[]
-              ).push(tool);
-            }
-          }
-          return Array.from(byIntegration.values());
-        }),
+      c.db
+        .from("deco_chat_integrations")
+        .select(SELECT_INTEGRATION_QUERY)
+        .or(buildWorkspaceOrProjectIdConditions(workspace, projectId)),
       // Query agents
-      c.drizzle
-        .select({
-          ...getTableColumns(agents),
-          org_id: organizations.id,
-        })
-        .from(agents)
-        .leftJoin(projects, eq(agents.project_id, projects.id))
-        .leftJoin(organizations, eq(projects.org_id, organizations.id))
-        .where(
-          filterByWorkspaceOrLocator({
-            table: agents,
-            ctx: c,
-          }),
-        )
-        .then((result) => ({ data: result })),
-      listKnowledgeBases.handler({}),
+      c.db
+        .from("deco_chat_agents")
+        .select("*")
+        .or(buildWorkspaceOrProjectIdConditions(workspace, projectId)),
     ]);
     const roles =
       c.workspace.root === "users"
@@ -543,15 +481,26 @@ export const listIntegrations = createIntegrationManagementTool({
         : await c.policy.getUserRoles(c.user.id as string, c.workspace.slug);
     const userRoles: string[] = roles?.map((role) => role?.name);
 
+    const integrations = integrationsData.data ?? [];
+    const agents = agentsData.data ?? [];
+
+    if (integrationsData.error) {
+      console.error(integrationsData.error);
+    }
+
+    if (agentsData.error) {
+      console.error(agentsData.error);
+    }
+
     // TODO: This is a temporary solution to filter integrations and agents by access.
-    const filteredIntegrations = integrationsData.filter(
+    const filteredIntegrations = integrations.filter(
       (integration) =>
         !integration.access ||
         userRoles?.includes(integration.access) ||
         userRoles?.some((role) => IMPORTANT_ROLES.includes(role)),
     );
 
-    const filteredAgents = agentsData.data.filter(
+    const filteredAgents = agents.filter(
       (agent) =>
         !agent.access ||
         userRoles?.includes(agent.access) ||
@@ -560,11 +509,9 @@ export const listIntegrations = createIntegrationManagementTool({
 
     // Build the result with all integrations
     const baseResult = [
-      ...virtualIntegrationsFor(
-        c.locator.value,
-        knowledgeBases.names ?? [],
-        c.token,
-      ),
+      ...(hideVirtual
+        ? []
+        : virtualIntegrationsFor(c.locator.value, [], c.token)),
       ...filteredIntegrations.map(mapIntegration),
       ...filteredAgents
         .map((item) => AgentSchema.safeParse(item)?.data)
@@ -583,14 +530,17 @@ export const listIntegrations = createIntegrationManagementTool({
           (dbIntegration) => formatId("i", dbIntegration.id) === integration.id,
         );
 
-        const { connection } = integration;
+        const { connection, appName } = integration;
 
         const isVirtual =
           connection.type === "HTTP" &&
           connection.url.startsWith(DECO_CMS_API_URL);
 
         const tools = isVirtual
-          ? await listToolsAndSortByName({ connection, ignoreCache: false }, c)
+          ? await listToolsAndSortByName(
+              { connection, appName, ignoreCache: false },
+              c,
+            )
               .then((r) => r?.tools ?? null)
               .catch(() => {
                 console.error(

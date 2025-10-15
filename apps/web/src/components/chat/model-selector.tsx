@@ -18,7 +18,7 @@ import {
   useModels,
   WELL_KNOWN_MODELS,
 } from "@deco/sdk";
-import { useState } from "react";
+import { memo, useMemo, useState } from "react";
 
 const mapLegacyModelId = (modelId: string): string => {
   const model = WELL_KNOWN_MODELS.find((m) => m.legacyId === modelId);
@@ -52,17 +52,21 @@ const CAPABILITY_CONFIGS = {
   },
 } as const;
 
-function CapabilityBadge({
+const CapabilityBadge = memo(function CapabilityBadge({
   capability,
 }: {
   capability: keyof typeof CAPABILITY_CONFIGS;
 }) {
-  const config = CAPABILITY_CONFIGS[capability] || {
-    icon: "check",
-    bg: "bg-slate-200",
-    text: "text-slate-700",
-    label: capability,
-  };
+  const config = useMemo(() => {
+    return (
+      CAPABILITY_CONFIGS[capability] || {
+        icon: "check" as const,
+        bg: "bg-slate-200" as const,
+        text: "text-slate-700" as const,
+        label: capability,
+      }
+    );
+  }, [capability]);
 
   return (
     <Tooltip>
@@ -78,9 +82,13 @@ function CapabilityBadge({
       </TooltipContent>
     </Tooltip>
   );
-}
+});
 
-function ModelItemContent({ model }: { model: Model }) {
+const ModelItemContent = memo(function ModelItemContent({
+  model,
+}: {
+  model: Model;
+}) {
   return (
     <div className="p-2 md:w-[400px] flex items-center justify-between gap-4">
       <div className="flex items-center gap-2">
@@ -94,7 +102,7 @@ function ModelItemContent({ model }: { model: Model }) {
       </div>
     </div>
   );
-}
+});
 
 function SelectedModelDisplay({
   model,

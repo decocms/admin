@@ -1,10 +1,18 @@
 import { Button } from "@deco/ui/components/button.tsx";
 import { Icon } from "@deco/ui/components/icon.tsx";
 import { cn } from "@deco/ui/lib/utils.ts";
-import { type FormEvent, type KeyboardEvent, useEffect } from "react";
+import {
+  type FormEvent,
+  type KeyboardEvent,
+  useCallback,
+  useEffect,
+} from "react";
 
 import { UIMessage } from "@ai-sdk/react";
-import { useUserPreferences } from "../../hooks/use-user-preferences.ts";
+import {
+  useUserPreferences,
+  type UserPreferences,
+} from "../../hooks/use-user-preferences.ts";
 import { useFileUpload } from "../../hooks/use-file-upload.ts";
 import { useAgent } from "../agent/provider.tsx";
 import { AudioButton } from "./audio-button.tsx";
@@ -41,6 +49,16 @@ export function ChatInput({ disabled }: { disabled?: boolean } = {}) {
   const handleRichTextChange = (markdown: string) => {
     setInput(markdown);
   };
+
+  const handleModelChange = useCallback(
+    (modelToSelect: string) => {
+      setPreferences((prev: UserPreferences) => ({
+        ...prev,
+        defaultModel: modelToSelect,
+      }));
+    },
+    [setPreferences],
+  );
 
   // Auto-focus when loading state changes from true to false
   useEffect(() => {
@@ -163,12 +181,7 @@ export function ChatInput({ disabled }: { disabled?: boolean } = {}) {
                   {showModelSelector && (
                     <ModelSelector
                       model={model}
-                      onModelChange={(modelToSelect) =>
-                        setPreferences({
-                          ...preferences,
-                          defaultModel: modelToSelect,
-                        })
-                      }
+                      onModelChange={handleModelChange}
                     />
                   )}
                   <AudioButton onMessage={handleRichTextChange} />

@@ -36,7 +36,7 @@ type Groups = typeof WellKnownMcpGroups;
 export type WellKnownMcpGroupRecord = Record<Groups[keyof Groups], string>;
 
 // used to publish on the registry
-export const WellKnownAppNames: Partial<WellKnownMcpGroupRecord> = {
+export const WellKnownAppNames = {
   "ai-generation": "ai-gateway",
   "agent-management": "agents",
   "agent-setup": "agent-crud",
@@ -65,7 +65,7 @@ export const WellKnownAppNames: Partial<WellKnownMcpGroupRecord> = {
   "tools-management": "tools",
   http: "http",
   "workflows-management": "workflows",
-};
+} satisfies Partial<WellKnownMcpGroupRecord>;
 
 export type WellKnownMcpGroup = keyof typeof WellKnownMcpGroups;
 

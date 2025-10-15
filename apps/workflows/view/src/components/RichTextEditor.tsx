@@ -2,7 +2,12 @@
  * Rich Text Editor with @ Mentions (Tiptap)
  * Minimal implementation
  */
-import { useEditor, EditorContent, ReactNodeViewRenderer } from "@tiptap/react";
+import {
+  useEditor,
+  EditorContent,
+  ReactNodeViewRenderer,
+  ReactRenderer,
+} from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import Mention from "@tiptap/extension-mention";
 import Placeholder from "@tiptap/extension-placeholder";
@@ -11,16 +16,7 @@ import { MentionNode } from "./MentionNode";
 import { useMentionItems, type MentionItem } from "@/hooks/useMentionItems";
 import { useStepEditorActions, useStepEditorPrompt } from "@/store/step-editor";
 import { useRef, useEffect, useCallback, useMemo } from "react";
-
-interface TiptapSuggestionProps {
-  items: MentionItem[];
-  clientRect?: (() => DOMRect | null) | null;
-  command: (item: { id: string; label: string; type: "tool" | "step" }) => void;
-}
-
-interface TiptapKeyDownProps {
-  event: KeyboardEvent;
-}
+import WorkflowMentionDropdown from "./WorkflowMentionDropdown";
 
 interface RichTextEditorProps {
   minHeight?: string;
@@ -109,14 +105,37 @@ export function RichTextEditor({
             label: {
               default: null,
               parseHTML: (element) => element.getAttribute("data-label"),
-              renderHTML: (attributes) => ({
-                "data-label": attributes.label,
-              }),
+              renderHTML: (attributes) => ({ "data-label": attributes.label }),
             },
             type: {
               default: "tool",
               parseHTML: (element) => element.getAttribute("data-type"),
               renderHTML: (attributes) => ({ "data-type": attributes.type }),
+            },
+            property: {
+              default: null,
+              parseHTML: (element) => element.getAttribute("data-property"),
+              renderHTML: (attributes) => {
+                return attributes.property
+                  ? { "data-property": attributes.property }
+                  : {};
+              },
+            },
+            integration: {
+              default: null,
+              parseHTML: (element) => {
+                const data = element.getAttribute("data-integration");
+                return data ? JSON.parse(data) : null;
+              },
+              renderHTML: (attributes) => {
+                return attributes.integration
+                  ? {
+                      "data-integration": JSON.stringify(
+                        attributes.integration,
+                      ),
+                    }
+                  : {};
+              },
             },
           };
         },
@@ -137,122 +156,68 @@ export function RichTextEditor({
           },
           render: () => {
             let popup: TippyInstance | undefined;
-            let component: HTMLDivElement;
-            let selectedIndex = 0;
+            let component: ReactRenderer | null = null;
 
             return {
-              onStart: (props: TiptapSuggestionProps) => {
-                component = document.createElement("div");
-                component.className = "mention-dropdown";
-                selectedIndex = 0;
+              onStart: (props: any) => {
+                if (component) {
+                  component.destroy();
+                }
+
+                component = new ReactRenderer(WorkflowMentionDropdown, {
+                  props,
+                  editor: props.editor,
+                });
 
                 if (!props.clientRect) return;
 
-                const getRect = (): DOMRect | ClientRect => {
-                  const rect = props.clientRect?.();
-                  return rect ?? new DOMRect();
-                };
-
                 popup = tippy(document.body, {
-                  getReferenceClientRect: getRect,
+                  getReferenceClientRect: props.clientRect,
                   appendTo: () => document.body,
-                  content: component,
+                  content: component.element,
                   showOnCreate: true,
                   interactive: true,
                   trigger: "manual",
                   placement: "bottom-start",
+                  maxWidth: 400,
                 });
-
-                renderItems(
-                  component,
-                  props.items,
-                  selectedIndex,
-                  props.command,
-                );
               },
-              onUpdate: (props: TiptapSuggestionProps) => {
-                if (popup && component) {
-                  renderItems(
-                    component,
-                    props.items,
-                    selectedIndex,
-                    props.command,
-                  );
-                  if (props.clientRect) {
-                    const getRect = (): DOMRect | ClientRect => {
-                      const rect = props.clientRect?.();
-                      return rect ?? new DOMRect();
-                    };
-                    popup.setProps({ getReferenceClientRect: getRect });
-                  }
-                }
+              onUpdate: (props: any) => {
+                component?.updateProps(props);
+                popup?.setProps({
+                  getReferenceClientRect: props.clientRect,
+                });
               },
-              onKeyDown: (
-                props: TiptapKeyDownProps & {
-                  items?: MentionItem[];
-                  command?: (item: {
-                    id: string;
-                    label: string;
-                    type: "tool" | "step";
-                  }) => void;
-                },
-              ) => {
-                // Validate props.items exists and component is ready
-                if (
-                  !props.items ||
-                  props.items.length === 0 ||
-                  !component ||
-                  !props.command
-                ) {
-                  return false;
-                }
-
-                if (props.event.key === "ArrowUp") {
-                  selectedIndex = Math.max(0, selectedIndex - 1);
-                  renderItems(
-                    component,
-                    props.items,
-                    selectedIndex,
-                    props.command,
-                  );
-                  return true;
-                }
-
-                if (props.event.key === "ArrowDown") {
-                  selectedIndex = Math.min(
-                    props.items.length - 1,
-                    selectedIndex + 1,
-                  );
-                  renderItems(
-                    component,
-                    props.items,
-                    selectedIndex,
-                    props.command,
-                  );
-                  return true;
-                }
-
-                if (props.event.key === "Enter") {
-                  const item = props.items[selectedIndex];
-                  if (item) {
-                    props.command({
-                      id: item.id,
-                      label: item.label,
-                      type: item.type,
-                    });
-                    return true;
-                  }
-                }
-
+              onKeyDown: (props: any) => {
                 if (props.event.key === "Escape") {
                   popup?.hide();
                   return true;
                 }
 
-                return false;
+                return component?.ref?.onKeyDown?.(props) || false;
+              },
+              command: ({ editor, range, props }: any) => {
+                console.log("🔨 [Mention] Inserting mention:", props);
+
+                editor
+                  .chain()
+                  .focus()
+                  .deleteRange(range)
+                  .insertContent({
+                    type: "mention",
+                    attrs: {
+                      id: props.id,
+                      label: props.label,
+                      type: props.type,
+                      property: props.property,
+                      integration: props.integration,
+                    },
+                  })
+                  .run();
               },
               onExit: () => {
                 popup?.destroy();
+                component?.destroy();
               },
             };
           },
@@ -313,59 +278,4 @@ export function RichTextEditor({
       />
     </div>
   );
-}
-
-function renderItems(
-  container: HTMLDivElement,
-  items: MentionItem[],
-  selectedIndex: number,
-  command: (item: { id: string; label: string; type: "tool" | "step" }) => void,
-) {
-  if (items.length === 0) {
-    container.innerHTML =
-      '<div style="padding: 8px; color: var(--muted-foreground); font-size: 14px;">No results</div>';
-    return;
-  }
-
-  container.innerHTML = items
-    .map((item, index) => {
-      const typeColor =
-        item.type === "tool" ? "var(--success)" : "var(--primary)";
-      const typeLabel = item.type === "tool" ? "🔧 Tool" : "📦 Step";
-      const isSelected = index === selectedIndex;
-      const bgColor = isSelected ? "var(--accent)" : "transparent";
-      const textColor = isSelected
-        ? "var(--foreground)"
-        : "var(--muted-foreground)";
-      return `
-      <button class="mention-item" data-index="${index}" data-id="${item.id}" data-label="${item.label}" data-type="${item.type}" style="background: ${bgColor};">
-        <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 4px;">
-          <span style="font-weight: 600; color: ${textColor}; font-size: 14px;">${item.label}</span>
-          <span style="font-size: 11px; color: ${typeColor}; font-weight: 500;">${typeLabel}</span>
-        </div>
-        ${item.category ? `<div style="font-size: 11px; color: var(--muted-foreground); margin-bottom: 2px;">${item.category}</div>` : ""}
-        ${item.description ? `<div style="font-size: 12px; color: var(--muted-foreground); line-height: 1.4; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${item.description}</div>` : ""}
-      </button>
-    `;
-    })
-    .join("");
-
-  container.querySelectorAll(".mention-item").forEach((btn) => {
-    btn.addEventListener("click", () => {
-      const id = btn.getAttribute("data-id");
-      const label = btn.getAttribute("data-label");
-      const type = btn.getAttribute("data-type");
-      if (id && label && (type === "tool" || type === "step")) {
-        command({ id, label, type });
-      }
-    });
-  });
-
-  // Scroll selected item into view
-  const selectedButton = container.querySelector(
-    `[data-index="${selectedIndex}"]`,
-  );
-  if (selectedButton) {
-    selectedButton.scrollIntoView({ block: "nearest" });
-  }
 }

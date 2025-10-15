@@ -241,7 +241,7 @@ export const createRunWorkflowStepTool = (env: Env) =>
       step: z.object({
         id: z.string(),
         name: z.string(),
-        code: z.string(),
+        execute: z.string(),
         inputSchema: z.record(z.unknown()),
         outputSchema: z.record(z.unknown()),
         input: z.record(z.unknown()),
@@ -313,14 +313,69 @@ export const createRunWorkflowStepTool = (env: Env) =>
           };
         }
 
-        // 2. Execute code via DECO_TOOL_RUN_TOOL
+        // 2. Execute code by wrapping workflow step to match tool signature
+        // Detect whether the code uses workflow signature or tool signature
+        // - Workflow signature: export default async function(ctx) { ... }
+        // - Tool signature: export default async function(input, ctx) { ... }
+
+        // Check if the function has two parameters (tool signature) or one (workflow signature)
+        const functionMatch = step.execute.match(
+          /async\s+function\s*\(([^)]*)\)/,
+        );
+        const params = functionMatch
+          ? functionMatch[1]
+              .split(",")
+              .map((p) => p.trim())
+              .filter(Boolean)
+          : [];
+        const isToolSignature = params.length >= 2;
+
+        const wrappedCode = `
+// Embedded workflow data (injected at runtime)
+const __WORKFLOW_INPUT__ = ${JSON.stringify(globalInput || {})};
+const __PREVIOUS_STEP_RESULTS__ = ${JSON.stringify(previousStepResults || {})};
+
+// Original code
+const originalFn = ${step.execute.replace(/^export default /, "")};
+
+// Wrapper to match tool signature and handle both workflow and tool signatures
+export default async function(input, ctx) {
+  ${
+    isToolSignature
+      ? `
+  // Original code uses tool signature (input, ctx)
+  // Just call it directly with the resolved input
+  return await originalFn(input, ctx);
+  `
+      : `
+  // Original code uses workflow signature (ctx)
+  // Create workflow context with workflow-specific methods
+  const workflowCtx = {
+    readWorkflowInput() {
+      return __WORKFLOW_INPUT__;
+    },
+    readStepResult(stepName) {
+      if (!__PREVIOUS_STEP_RESULTS__[stepName]) {
+        throw new Error(\`Step '\${stepName}' has not been executed yet\`);
+      }
+      return __PREVIOUS_STEP_RESULTS__[stepName];
+    },
+  };
+  
+  // Call with workflow context
+  return await originalFn(workflowCtx);
+  `
+  }
+}`;
+
+        // Prepare the tool execution parameters
         const toolRunParams = {
           tool: {
             name: step.name,
             description: `Workflow step: ${step.name}`,
             inputSchema: step.inputSchema,
             outputSchema: step.outputSchema,
-            execute: step.code,
+            execute: wrappedCode,
           },
           input: resolutionResult.resolved,
           // 🔐 Authorization token should be a string (JWT token)
@@ -332,6 +387,7 @@ export const createRunWorkflowStepTool = (env: Env) =>
           console.log(`🔐 Running step with workflow authorization token`);
         }
 
+        // Execute via DECO_TOOL_RUN_TOOL
         const result = await env.TOOLS.DECO_TOOL_RUN_TOOL(toolRunParams);
 
         const duration = Date.now() - startTime;
@@ -355,10 +411,12 @@ export const createRunWorkflowStepTool = (env: Env) =>
           duration,
         };
       } catch (error) {
+        const duration = Date.now() - startTime;
+        console.error(`Error executing workflow step '${step.name}':`, error);
         return {
           success: false,
           error: String(error),
-          duration: Date.now() - startTime,
+          duration,
         };
       }
     },
@@ -422,7 +480,7 @@ export const createGenerateStepTool = (env: Env) =>
         id: z.string(),
         name: z.string(),
         description: z.string(),
-        code: z.string(),
+        execute: z.string(),
         inputSchema: z.record(z.unknown()),
         outputSchema: z.record(z.unknown()),
         input: z.record(z.unknown()),
@@ -441,7 +499,7 @@ export const createGenerateStepTool = (env: Env) =>
         id: string;
         name: string;
         description: string;
-        code: string;
+        execute: string;
         inputSchema: Record<string, unknown>;
         outputSchema: Record<string, unknown>;
         input: Record<string, unknown>;
@@ -498,7 +556,7 @@ export const createGenerateStepTool = (env: Env) =>
                   type: "string",
                   description: "What this step does",
                 },
-                code: {
+                execute: {
                   type: "string",
                   description:
                     'ES module code. Format: export default async function (input, ctx) { ... }. Use BRACKET NOTATION ONLY: ctx.env["i:workspace-management"].TOOL_NAME(). For AI: ctx.env["i:workspace-management"].AI_GENERATE_OBJECT({ model: "anthropic:claude-sonnet-4-5", messages: [{role:"user",content:"..."}], schema: {...}, temperature: 0.7 }). For DB: ctx.env["i:workspace-management"].DATABASES_RUN_SQL({ sql: "..." }). ALWAYS wrap in try/catch. Return object matching outputSchema exactly.',
@@ -614,7 +672,8 @@ export const createGenerateStepTool = (env: Env) =>
               id: "step-error",
               name: "Error",
               description: "Failed to generate step",
-              code: 'export default async function (input, ctx) { return { error: "Generation failed" }; }',
+              execute:
+                'export default async function (input, ctx) { return { error: "Generation failed" }; }',
               inputSchema: {},
               outputSchema: {},
               input: {},
@@ -627,7 +686,7 @@ export const createGenerateStepTool = (env: Env) =>
 
         // 🔐 Validate and auto-fix usedTools using code parser
         const generatedStep = stepResult.step;
-        const codeAnalysis = extractToolsFromCode(generatedStep.code);
+        const codeAnalysis = extractToolsFromCode(generatedStep.execute);
 
         if (generatedStep.usedTools && generatedStep.usedTools.length > 0) {
           interface UsedTool {
@@ -636,7 +695,7 @@ export const createGenerateStepTool = (env: Env) =>
             integrationName: string;
           }
           const validation = validateUsedTools(
-            generatedStep.code,
+            generatedStep.execute,
             (generatedStep.usedTools as UsedTool[]).map((t) => ({
               toolName: t.toolName,
               integrationId: t.integrationId,
@@ -729,7 +788,7 @@ export const createGenerateStepTool = (env: Env) =>
             id: "step-error",
             name: "Error",
             description: String(_error),
-            code:
+            execute:
               'export default async function (input, ctx) { return { error: "' +
               String(_error) +
               '" }; }',
@@ -765,7 +824,7 @@ export const createImportToolAsStepTool = (_env: Env) =>
         id: z.string(),
         name: z.string(),
         description: z.string(),
-        code: z.string(),
+        execute: z.string(),
         inputSchema: z.record(z.unknown()),
         outputSchema: z.record(z.unknown()),
         input: z.record(z.unknown()),
@@ -908,7 +967,7 @@ ${inputAssignments}
           description:
             toolDescription ||
             `Direct call to ${toolName} from ${integrationName}`,
-          code,
+          execute: code,
           inputSchema: generatedInputSchema,
           outputSchema: generatedOutputSchema,
           input: defaultInput,

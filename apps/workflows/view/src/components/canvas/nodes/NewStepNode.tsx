@@ -63,7 +63,7 @@ export const NewStepNode = memo(function NewStepNode(_props: NodeProps) {
                 output: {},
                 status: "pending",
                 execute:
-                  result.step.code ||
+                  result.step.execute ||
                   "export default async function(input, ctx) { return input; }",
                 dependencies: result.step.primaryIntegration
                   ? [{ integrationId: result.step.primaryIntegration }]

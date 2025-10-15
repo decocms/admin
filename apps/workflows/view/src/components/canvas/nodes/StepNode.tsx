@@ -328,7 +328,7 @@ export const StepNode = memo(
     }, [step, showJsonView]);
 
     // OPTIMIZED: Extract stable values to reduce callback recreation
-    const stepName = step?.def.name;
+    const stepName = step?.def?.name;
     const stepExecute = (step?.def as any)?.execute;
     const stepInputSchema = (step?.def as any)?.inputSchema;
     const stepOutputSchema = (step?.def as any)?.outputSchema;
@@ -370,7 +370,7 @@ export const StepNode = memo(
           step: {
             id: stepName,
             name: stepName,
-            code: (stepExecute || "") as string,
+            execute: (stepExecute || "") as string,
             inputSchema: (stepInputSchema || {}) as any,
             outputSchema: (stepOutputSchema || {}) as any,
             input: (stepInput || {}) as any,
@@ -438,10 +438,10 @@ export const StepNode = memo(
             />
             <div className="flex-1 min-w-0">
               <div className="text-sm font-semibold text-foreground truncate">
-                {step.def.name}
+                {step.def?.name}
               </div>
               <div className="text-xs text-muted-foreground line-clamp-2 mt-1">
-                {step.def.description}
+                {step.def?.description}
               </div>
             </div>
             <span
@@ -470,7 +470,7 @@ export const StepNode = memo(
               className="shrink-0 text-background"
             />
             <span className="text-sm font-medium text-background leading-5 truncate">
-              {step.def.name}
+              {step.def?.name}
             </span>
           </div>
 
@@ -510,7 +510,7 @@ export const StepNode = memo(
                 </DropdownMenuItem>
                 <DropdownMenuItem
                   onClick={() => {
-                    const newTitle = prompt("Enter new name:", step?.def.name);
+                    const newTitle = prompt("Enter new name:", step?.def?.name);
                     if (newTitle) {
                       // TODO: Implement rename functionality
                       void 0;
@@ -522,7 +522,7 @@ export const StepNode = memo(
                 </DropdownMenuItem>
                 <DropdownMenuItem
                   onClick={() => {
-                    if (step && confirm(`Delete step "${step.def.name}"?`)) {
+                    if (step && confirm(`Delete step "${step.def?.name}"?`)) {
                       // TODO: Implement delete functionality
                       void 0;
                     }
@@ -601,7 +601,7 @@ export const StepNode = memo(
         {/* Render Input View Modal */}
         {renderingInputView && step && (
           <RenderInputViewModal
-            step={{ name: step.def.name, output: (step as any).output }}
+            step={{ name: step.def?.name || "", output: (step as any).output }}
             fieldName={renderingInputView.fieldName}
             viewName={renderingInputView.viewName}
             viewCode={renderingInputView.viewCode}

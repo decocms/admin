@@ -50,7 +50,7 @@ function buildStepIndexMap(
   const map = new Map<string, number>();
   if (!steps) return map;
   steps.forEach((step, index) => {
-    map.set(step.def.name, index);
+    map.set(step.def?.name || "", index);
   });
   return map;
 }
@@ -171,7 +171,7 @@ export const WorkflowStoreProvider = ({
             removeStep: (stepId: string) => {
               const currentState = get();
               const newSteps = currentState.workflow.steps.filter(
-                (step: WorkflowStep) => step.def.name !== stepId,
+                (step: WorkflowStep) => step.def?.name !== stepId,
               );
               set({
                 workflow: {
@@ -191,7 +191,11 @@ export const WorkflowStoreProvider = ({
               const currentState = get();
 
               currentState.workflow.steps.forEach((step: WorkflowStep) => {
-                if (step.type === "code" && "dependencies" in step.def) {
+                if (
+                  step.type === "code" &&
+                  step.def &&
+                  "dependencies" in step.def
+                ) {
                   step.def.dependencies?.forEach(
                     (dependency: DependencyEntry) => {
                       const key = `${dependency.integrationId}`;
@@ -390,7 +394,7 @@ export const useNewStepPrompt = () => {
 export const useWorkflowStepIds = (): string => {
   return useWorkflowStore(
     (state) =>
-      state.workflow.steps?.map((s: WorkflowStep) => s.def.name).join(",") ||
+      state.workflow.steps?.map((s: WorkflowStep) => s.def?.name).join(",") ||
       "",
   );
 };

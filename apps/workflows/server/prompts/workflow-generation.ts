@@ -68,7 +68,7 @@ YOU MUST GENERATE ALL FIELDS:
 1. id: unique step ID (step-1, step-2, etc)
 2. name: clear, human-readable name
 3. description: what this step does
-4. code: ES module with export default async function (input, ctx) { ... }
+4. execute: ES module with export default async function (input, ctx) { ... }
 5. inputSchema: COMPLETE JSON Schema with properties, types, descriptions, required fields
 6. outputSchema: COMPLETE JSON Schema for the return value
 7. input: COMPLETE input object with DEFAULT VALUES for all inputSchema fields
@@ -103,7 +103,7 @@ Then your input MUST use the EXACT ID:
   "inputDescription": { 
     "city": "City name from previous step output" 
   },
-  "code": "const city = input.city; // Will be resolved to actual value by runtime"
+  "execute": "const city = input.city; // Will be resolved to actual value by runtime"
 }
 
 WRONG examples (these will FAIL):
@@ -230,7 +230,7 @@ MANDATORY EXAMPLE - THIS IS VERIFIED TO WORK:
   "id": "step-1",
   "name": "Generate City Poem",
   "description": "Generate a poem about a city using AI",
-  "code": "export default async function (input, ctx) {\\n  try {\\n    const schema = { type: 'object', properties: { poem: { type: 'string' } } };\\n    const ai = await ctx.env['i:workspace-management'].AI_GENERATE_OBJECT({\\n      model: 'anthropic:claude-sonnet-4-5',\\n      messages: [{ role: 'user', content: \`Write a beautiful poem about \${input.cityName}\` }],\\n      schema,\\n      temperature: 0.7\\n    });\\n    return { poem: ai.object.poem };\\n  } catch (error) {\\n    return { error: String(error) };\\n  }\\n}",
+  "execute": "export default async function (input, ctx) {\\n  try {\\n    const schema = { type: 'object', properties: { poem: { type: 'string' } } };\\n    const ai = await ctx.env['i:workspace-management'].AI_GENERATE_OBJECT({\\n      model: 'anthropic:claude-sonnet-4-5',\\n      messages: [{ role: 'user', content: \`Write a beautiful poem about \${input.cityName}\` }],\\n      schema,\\n      temperature: 0.7\\n    });\\n    return { poem: ai.object.poem };\\n  } catch (error) {\\n    return { error: String(error) };\\n  }\\n}",
   "inputSchema": {
     "type": "object",
     "properties": {

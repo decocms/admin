@@ -16,6 +16,8 @@ interface ToolItem {
   description?: string;
   category?: string;
   integration?: { id: string; name: string; icon?: string };
+  inputSchema?: any;
+  outputSchema?: any;
 }
 
 interface StepItem {
@@ -57,6 +59,8 @@ export function useToolItems(): ToolItem[] {
             name: integration.name,
             icon: integration.icon,
           },
+          inputSchema: tool.inputSchema,
+          outputSchema: tool.outputSchema,
         });
       });
     });

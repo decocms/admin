@@ -55,7 +55,7 @@ function buildStepIndexMap(
   return map;
 }
 
-const WorkflowStoreContext = createContext<StoreApi<Store> | null>(null);
+export const WorkflowStoreContext = createContext<StoreApi<Store> | null>(null);
 
 export const WorkflowStoreProvider = ({
   children,
@@ -194,9 +194,10 @@ export const WorkflowStoreProvider = ({
                 if (
                   step.type === "code" &&
                   step.def &&
-                  "dependencies" in step.def
+                  "dependencies" in step.def &&
+                  Array.isArray(step.def.dependencies)
                 ) {
-                  step.def.dependencies?.forEach(
+                  step.def.dependencies.forEach(
                     (dependency: DependencyEntry) => {
                       const key = `${dependency.integrationId}`;
                       if (!allToolsMap.has(key)) {

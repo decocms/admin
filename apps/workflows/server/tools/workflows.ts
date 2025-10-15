@@ -833,18 +833,7 @@ export const createImportToolAsStepTool = (_env: Env) =>
       outputSchema: z.record(z.unknown()).optional(),
     }),
     outputSchema: z.object({
-      step: z.object({
-        id: z.string(),
-        name: z.string(),
-        description: z.string(),
-        execute: z.string(),
-        inputSchema: z.record(z.unknown()),
-        outputSchema: z.record(z.unknown()),
-        input: z.record(z.unknown()),
-        inputDescription: z.record(z.string()).optional(),
-        primaryIntegration: z.string(),
-        primaryTool: z.string(),
-      }),
+      step: WorkflowStepDefinitionSchema,
     }),
     execute: async ({ context }) => {
       const {
@@ -855,6 +844,17 @@ export const createImportToolAsStepTool = (_env: Env) =>
         inputSchema,
         outputSchema,
       } = context;
+
+      // Debug logging
+      console.log("🔍 [IMPORT_TOOL_AS_STEP] Received schemas:", {
+        toolName,
+        hasInputSchema: !!inputSchema,
+        inputSchemaType: typeof inputSchema,
+        inputSchemaKeys: inputSchema ? Object.keys(inputSchema) : [],
+        hasOutputSchema: !!outputSchema,
+        outputSchemaType: typeof outputSchema,
+        outputSchemaKeys: outputSchema ? Object.keys(outputSchema) : [],
+      });
 
       // Generate step ID
       const stepId = `step_${Date.now()}_${Math.random().toString(36).slice(2, 11)}`;
@@ -873,6 +873,11 @@ export const createImportToolAsStepTool = (_env: Env) =>
         "required" in inputSchema
           ? (inputSchema.required as string[])
           : []) || [];
+
+      console.log("🔍 [IMPORT_TOOL_AS_STEP] Extracted properties:", {
+        inputPropertiesKeys: Object.keys(inputProperties),
+        requiredFields,
+      });
 
       // Generate default input values
       const defaultInput: Record<string, unknown> = {};
@@ -926,6 +931,7 @@ ${inputAssignments}
     return {
       success: true,
       result: result,
+      error: null,
     };
   } catch (error) {
     console.error('Error calling ${toolName}:', error);
@@ -946,12 +952,15 @@ ${inputAssignments}
             description: "Whether the tool call succeeded",
           },
           result: {
-            type: (outputSchema &&
-            typeof outputSchema === "object" &&
-            "type" in outputSchema
-              ? outputSchema.type
-              : "object") as string,
-            description: "Result from the tool",
+            type: [
+              (outputSchema &&
+              typeof outputSchema === "object" &&
+              "type" in outputSchema
+                ? outputSchema.type
+                : "object") as string,
+              "null",
+            ],
+            description: "Result from the tool (null if error occurred)",
             ...(outputSchema &&
             typeof outputSchema === "object" &&
             "properties" in outputSchema
@@ -959,8 +968,8 @@ ${inputAssignments}
               : {}),
           },
           error: {
-            type: "string",
-            description: "Error message if call failed",
+            type: ["string", "null"],
+            description: "Error message if call failed (null if successful)",
           },
         },
         required: ["success"],
@@ -975,21 +984,26 @@ ${inputAssignments}
 
       return {
         step: {
-          id: stepId,
-          name: `Call ${toolName}`,
-          description:
-            toolDescription ||
-            `Direct call to ${toolName} from ${integrationName}`,
-          execute: code,
-          inputSchema: generatedInputSchema,
-          outputSchema: generatedOutputSchema,
-          input: defaultInput,
-          inputDescription:
-            Object.keys(inputDescriptions).length > 0
-              ? inputDescriptions
-              : undefined,
-          primaryIntegration: integrationId,
-          primaryTool: toolName,
+          type: "code" as const,
+          def: {
+            name: stepId,
+            description:
+              toolDescription ||
+              `Direct call to ${toolName} from ${integrationName}`,
+            execute: code,
+            inputSchema: generatedInputSchema,
+            outputSchema: generatedOutputSchema,
+            input: defaultInput,
+            output: {},
+            status: "pending" as const,
+            dependencies: [{ integrationId }],
+            options: {
+              retries: {
+                limit: 0,
+                delay: 0,
+              },
+            },
+          },
         },
       };
     },

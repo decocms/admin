@@ -16975,40 +16975,176 @@ export interface Object_689 {
  * and run json-schema-to-typescript to regenerate this file.
  */
 
-export type String_1863 = string;
+/**
+ * The type of step
+ */
+export type String_1863 = "code" | "tool_call";
+/**
+ * The unique ID of the step within the workflow
+ */
 export type String_1864 = string;
+/**
+ * The unique name of the step within the workflow
+ */
 export type String_1865 = string;
+/**
+ * A clear description of what this step does
+ */
 export type String_1866 = string;
+/**
+ * The prompt used to generate the step
+ */
 export type String_1867 = string;
-export type String_1868 = string;
+/**
+ * Status of the step execution
+ */
+export type String_1868 = "pending" | "active" | "completed" | "error";
+/**
+ * ES module code that exports a default async function: (input: typeof inputSchema, ctx: { env: Record<string, any> }) => Promise<typeof outputSchema>. The input parameter contains the resolved input with all @ references replaced with actual values.
+ */
 export type String_1869 = string;
+/**
+ * The integration ID (format: i:<uuid> or a:<uuid>) that this step depends on
+ */
+export type String_1870 = string;
+/**
+ * List of integrations this step calls via ctx.env['{INTEGRATION_ID}'].{TOOL_NAME}(). These integrations must be installed and available for the step to execute successfully.
+ */
+export type Array_204 = Object_696[];
+/**
+ * Number of retry attempts for this step (default: 0)
+ */
+export type Integer_93 = number;
+/**
+ * Delay in milliseconds between retry attempts (default: 0)
+ */
+export type Integer_94 = number;
+/**
+ * Backoff strategy for retry attempts (default: constant)
+ */
+export type String_1871 = "constant" | "linear" | "exponential";
+/**
+ * Maximum execution time in milliseconds (default: Infinity)
+ */
+export type Number_158 = number;
+/**
+ * The unique name of the tool call step within the workflow
+ */
+export type String_1872 = string;
+/**
+ * A clear description of what this tool call step does
+ */
+export type String_1873 = string;
+/**
+ * Number of retry attempts for this step (default: 0)
+ */
+export type Integer_95 = number;
+/**
+ * Delay in milliseconds between retry attempts (default: 0)
+ */
+export type Integer_96 = number;
+/**
+ * Backoff strategy for retry attempts (default: constant)
+ */
+export type String_1874 = "constant" | "linear" | "exponential";
+/**
+ * Maximum execution time in milliseconds (default: Infinity)
+ */
+export type Number_159 = number;
+export type Null_185 = null;
+/**
+ * The name of the tool to call
+ */
+export type String_1875 = string;
+/**
+ * The name of the integration that provides this tool
+ */
+export type String_1876 = string;
 
 export interface IMPORT_TOOL_AS_STEPOutput {
   step: Object_690;
 }
 export interface Object_690 {
-  id: String_1863;
-  name: String_1864;
-  description: String_1865;
-  execute: String_1866;
-  inputSchema: Object_691;
-  outputSchema: Object_692;
-  input: Object_693;
-  inputDescription?: Object_694;
-  primaryIntegration: String_1868;
-  primaryTool: String_1869;
-}
-export interface Object_691 {
+  type?: String_1863;
+  /**
+   * The step definition based on the type
+   */
+  def?: Object_691 | Object_699;
   [k: string]: unknown;
 }
+export interface Object_691 {
+  id?: String_1864;
+  name?: String_1865;
+  description?: String_1866;
+  prompt?: String_1867;
+  inputSchema?: Object_692;
+  outputSchema?: Object_693;
+  input?: Object_694;
+  output?: Object_695;
+  status?: String_1868;
+  execute?: String_1869;
+  dependencies?: Array_204;
+  options?: Object_697;
+  [k: string]: unknown;
+}
+/**
+ * JSON Schema defining the input structure for this step
+ */
 export interface Object_692 {
   [k: string]: unknown;
 }
+/**
+ * JSON Schema defining the output structure for this step
+ */
 export interface Object_693 {
   [k: string]: unknown;
 }
+/**
+ * Input object that complies with inputSchema. Values can reference previous steps using @<step_name>.output.property or workflow input using @input.property
+ */
 export interface Object_694 {
-  [k: string]: String_1867;
+  [k: string]: unknown;
+}
+/**
+ * Current output of the step if it was executed
+ */
+export interface Object_695 {
+  [k: string]: unknown;
+}
+export interface Object_696 {
+  integrationId: String_1870;
+}
+/**
+ * Step configuration options including retry and timeout settings
+ */
+export interface Object_697 {
+  retries?: Object_698;
+  timeout?: Number_158;
+}
+export interface Object_698 {
+  limit?: Integer_93;
+  delay?: Integer_94;
+  backoff?: String_1871;
+}
+export interface Object_699 {
+  name?: String_1872;
+  description?: String_1873;
+  /**
+   * Step configuration options. Extend this object with custom properties for business user configuration
+   */
+  options?: Object_700 | Null_185;
+  tool_name?: String_1875;
+  integration?: String_1876;
+  [k: string]: unknown;
+}
+export interface Object_700 {
+  retries?: Object_701;
+  timeout?: Number_159;
+}
+export interface Object_701 {
+  limit?: Integer_95;
+  delay?: Integer_96;
+  backoff?: String_1874;
 }
 
 /* eslint-disable */
@@ -17027,22 +17163,22 @@ export interface LIST_INSTALLED_INTEGRATIONSInput {}
  * and run json-schema-to-typescript to regenerate this file.
  */
 
-export type String_1870 = string;
-export type String_1871 = string;
-export type String_1872 = string;
-export type String_1873 = string;
-export type Array_204 = Object_695[];
+export type String_1877 = string;
+export type String_1878 = string;
+export type String_1879 = string;
+export type String_1880 = string;
+export type Array_205 = Object_702[];
 export type Boolean_116 = boolean;
 
 export interface LIST_INSTALLED_INTEGRATIONSOutput {
-  integrations: Array_204;
+  integrations: Array_205;
   success: Boolean_116;
 }
-export interface Object_695 {
-  id: String_1870;
-  name: String_1871;
-  description?: String_1872;
-  icon?: String_1873;
+export interface Object_702 {
+  id: String_1877;
+  name: String_1878;
+  description?: String_1879;
+  icon?: String_1880;
   access?: unknown;
 }
 
@@ -17053,10 +17189,10 @@ export interface Object_695 {
  * and run json-schema-to-typescript to regenerate this file.
  */
 
-export type String_1874 = string;
+export type String_1881 = string;
 
 export interface READ_WORKFLOWInput {
-  uri: String_1874;
+  uri: String_1881;
 }
 
 /* eslint-disable */
@@ -17069,212 +17205,212 @@ export interface READ_WORKFLOWInput {
 /**
  * The unique name of the workflow
  */
-export type String_1875 = string;
+export type String_1882 = string;
 /**
  * A comprehensive description of what this workflow accomplishes
  */
-export type String_1876 = string;
+export type String_1883 = string;
 /**
  * The type of step
  */
-export type String_1877 = "code" | "tool_call";
+export type String_1884 = "code" | "tool_call";
 /**
  * The unique ID of the step within the workflow
  */
-export type String_1878 = string;
+export type String_1885 = string;
 /**
  * The unique name of the step within the workflow
  */
-export type String_1879 = string;
+export type String_1886 = string;
 /**
  * A clear description of what this step does
  */
-export type String_1880 = string;
+export type String_1887 = string;
 /**
  * The prompt used to generate the step
  */
-export type String_1881 = string;
+export type String_1888 = string;
 /**
  * Status of the step execution
  */
-export type String_1882 = "pending" | "active" | "completed" | "error";
+export type String_1889 = "pending" | "active" | "completed" | "error";
 /**
  * ES module code that exports a default async function: (input: typeof inputSchema, ctx: { env: Record<string, any> }) => Promise<typeof outputSchema>. The input parameter contains the resolved input with all @ references replaced with actual values.
  */
-export type String_1883 = string;
+export type String_1890 = string;
 /**
  * The integration ID (format: i:<uuid> or a:<uuid>) that this step depends on
  */
-export type String_1884 = string;
+export type String_1891 = string;
 /**
  * List of integrations this step calls via ctx.env['{INTEGRATION_ID}'].{TOOL_NAME}(). These integrations must be installed and available for the step to execute successfully.
  */
-export type Array_206 = Object_705[];
+export type Array_207 = Object_712[];
 /**
  * Number of retry attempts for this step (default: 0)
  */
-export type Integer_93 = number;
+export type Integer_97 = number;
 /**
  * Delay in milliseconds between retry attempts (default: 0)
  */
-export type Integer_94 = number;
+export type Integer_98 = number;
 /**
  * Backoff strategy for retry attempts (default: constant)
  */
-export type String_1885 = "constant" | "linear" | "exponential";
+export type String_1892 = "constant" | "linear" | "exponential";
 /**
  * Maximum execution time in milliseconds (default: Infinity)
  */
-export type Number_158 = number;
+export type Number_160 = number;
 /**
  * The unique name of the tool call step within the workflow
  */
-export type String_1886 = string;
+export type String_1893 = string;
 /**
  * A clear description of what this tool call step does
  */
-export type String_1887 = string;
+export type String_1894 = string;
 /**
  * Number of retry attempts for this step (default: 0)
  */
-export type Integer_95 = number;
+export type Integer_99 = number;
 /**
  * Delay in milliseconds between retry attempts (default: 0)
  */
-export type Integer_96 = number;
+export type Integer_100 = number;
 /**
  * Backoff strategy for retry attempts (default: constant)
  */
-export type String_1888 = "constant" | "linear" | "exponential";
+export type String_1895 = "constant" | "linear" | "exponential";
 /**
  * Maximum execution time in milliseconds (default: Infinity)
  */
-export type Number_159 = number;
-export type Null_185 = null;
+export type Number_161 = number;
+export type Null_186 = null;
 /**
  * The name of the tool to call
  */
-export type String_1889 = string;
+export type String_1896 = string;
 /**
  * The name of the integration that provides this tool
  */
-export type String_1890 = string;
+export type String_1897 = string;
 /**
  * Array of workflow steps that execute sequentially. Each step can reference previous step outputs using @<step_name>.output.property syntax.
  */
-export type Array_205 = Object_699[];
+export type Array_206 = Object_706[];
 /**
  * The authorization token for the workflow
  */
-export type String_1891 = string;
+export type String_1898 = string;
 
 export interface READ_WORKFLOWOutput {
-  workflow: Object_696;
+  workflow: Object_703;
 }
-export interface Object_696 {
-  name: String_1875;
-  description: String_1876;
-  inputSchema: Object_697;
-  outputSchema: Object_698;
-  steps: Array_205;
-  authorization?: Object_711;
+export interface Object_703 {
+  name: String_1882;
+  description: String_1883;
+  inputSchema: Object_704;
+  outputSchema: Object_705;
+  steps: Array_206;
+  authorization?: Object_718;
 }
 /**
  * JSON Schema defining the workflow's input parameters and data structure
  */
-export interface Object_697 {
+export interface Object_704 {
   [k: string]: unknown;
 }
 /**
  * JSON Schema defining the workflow's final output after all steps complete
  */
-export interface Object_698 {
+export interface Object_705 {
   [k: string]: unknown;
 }
-export interface Object_699 {
-  type?: String_1877;
+export interface Object_706 {
+  type?: String_1884;
   /**
    * The step definition based on the type
    */
-  def?: Object_700 | Object_708;
+  def?: Object_707 | Object_715;
   [k: string]: unknown;
 }
-export interface Object_700 {
-  id?: String_1878;
-  name?: String_1879;
-  description?: String_1880;
-  prompt?: String_1881;
-  inputSchema?: Object_701;
-  outputSchema?: Object_702;
-  input?: Object_703;
-  output?: Object_704;
-  status?: String_1882;
-  execute?: String_1883;
-  dependencies?: Array_206;
-  options?: Object_706;
+export interface Object_707 {
+  id?: String_1885;
+  name?: String_1886;
+  description?: String_1887;
+  prompt?: String_1888;
+  inputSchema?: Object_708;
+  outputSchema?: Object_709;
+  input?: Object_710;
+  output?: Object_711;
+  status?: String_1889;
+  execute?: String_1890;
+  dependencies?: Array_207;
+  options?: Object_713;
   [k: string]: unknown;
 }
 /**
  * JSON Schema defining the input structure for this step
  */
-export interface Object_701 {
+export interface Object_708 {
   [k: string]: unknown;
 }
 /**
  * JSON Schema defining the output structure for this step
  */
-export interface Object_702 {
+export interface Object_709 {
   [k: string]: unknown;
 }
 /**
  * Input object that complies with inputSchema. Values can reference previous steps using @<step_name>.output.property or workflow input using @input.property
  */
-export interface Object_703 {
+export interface Object_710 {
   [k: string]: unknown;
 }
 /**
  * Current output of the step if it was executed
  */
-export interface Object_704 {
+export interface Object_711 {
   [k: string]: unknown;
 }
-export interface Object_705 {
-  integrationId: String_1884;
+export interface Object_712 {
+  integrationId: String_1891;
 }
 /**
  * Step configuration options including retry and timeout settings
  */
-export interface Object_706 {
-  retries?: Object_707;
-  timeout?: Number_158;
+export interface Object_713 {
+  retries?: Object_714;
+  timeout?: Number_160;
 }
-export interface Object_707 {
-  limit?: Integer_93;
-  delay?: Integer_94;
-  backoff?: String_1885;
+export interface Object_714 {
+  limit?: Integer_97;
+  delay?: Integer_98;
+  backoff?: String_1892;
 }
-export interface Object_708 {
-  name?: String_1886;
-  description?: String_1887;
+export interface Object_715 {
+  name?: String_1893;
+  description?: String_1894;
   /**
    * Step configuration options. Extend this object with custom properties for business user configuration
    */
-  options?: Object_709 | Null_185;
-  tool_name?: String_1889;
-  integration?: String_1890;
+  options?: Object_716 | Null_186;
+  tool_name?: String_1896;
+  integration?: String_1897;
   [k: string]: unknown;
 }
-export interface Object_709 {
-  retries?: Object_710;
-  timeout?: Number_159;
+export interface Object_716 {
+  retries?: Object_717;
+  timeout?: Number_161;
 }
-export interface Object_710 {
-  limit?: Integer_95;
-  delay?: Integer_96;
-  backoff?: String_1888;
+export interface Object_717 {
+  limit?: Integer_99;
+  delay?: Integer_100;
+  backoff?: String_1895;
 }
-export interface Object_711 {
-  token: String_1891;
+export interface Object_718 {
+  token: String_1898;
 }
 
 /* eslint-disable */
@@ -17284,47 +17420,47 @@ export interface Object_711 {
  * and run json-schema-to-typescript to regenerate this file.
  */
 
-export type String_1892 = string;
-export type String_1893 = string;
-export type String_1894 = string;
-export type String_1895 = string;
-export type String_1896 = string;
-export type Array_207 = Object_718[];
-export type String_1897 = string;
+export type String_1899 = string;
+export type String_1900 = string;
+export type String_1901 = string;
+export type String_1902 = string;
+export type String_1903 = string;
+export type Array_208 = Object_725[];
+export type String_1904 = string;
 
 export interface RUN_WORKFLOW_STEPInput {
-  step: Object_712;
-  previousStepResults?: Object_716;
-  globalInput?: Object_717;
-  workflowSteps?: Array_207;
-  authToken?: String_1897;
+  step: Object_719;
+  previousStepResults?: Object_723;
+  globalInput?: Object_724;
+  workflowSteps?: Array_208;
+  authToken?: String_1904;
 }
-export interface Object_712 {
-  id: String_1892;
-  name: String_1893;
-  execute: String_1894;
-  inputSchema: Object_713;
-  outputSchema: Object_714;
-  input: Object_715;
+export interface Object_719 {
+  id: String_1899;
+  name: String_1900;
+  execute: String_1901;
+  inputSchema: Object_720;
+  outputSchema: Object_721;
+  input: Object_722;
 }
-export interface Object_713 {
+export interface Object_720 {
   [k: string]: unknown;
 }
-export interface Object_714 {
+export interface Object_721 {
   [k: string]: unknown;
 }
-export interface Object_715 {
+export interface Object_722 {
   [k: string]: unknown;
 }
-export interface Object_716 {
+export interface Object_723 {
   [k: string]: unknown;
 }
-export interface Object_717 {
+export interface Object_724 {
   [k: string]: unknown;
 }
-export interface Object_718 {
-  id: String_1895;
-  name: String_1896;
+export interface Object_725 {
+  id: String_1902;
+  name: String_1903;
 }
 
 /* eslint-disable */
@@ -17335,33 +17471,33 @@ export interface Object_718 {
  */
 
 export type Boolean_117 = boolean;
-export type String_1898 = string;
-export type String_1899 = string;
-export type Array_208 = Object_719[];
-export type String_1900 = string;
-export type String_1901 = string;
-export type Array_209 = Object_721[];
-export type Number_160 = number;
+export type String_1905 = string;
+export type String_1906 = string;
+export type Array_209 = Object_726[];
+export type String_1907 = string;
+export type String_1908 = string;
+export type Array_210 = Object_728[];
+export type Number_162 = number;
 
 export interface RUN_WORKFLOW_STEPOutput {
   success: Boolean_117;
   output?: unknown;
   error?: unknown;
-  logs?: Array_208;
-  resolvedInput?: Object_720;
-  resolutionErrors?: Array_209;
-  duration?: Number_160;
+  logs?: Array_209;
+  resolvedInput?: Object_727;
+  resolutionErrors?: Array_210;
+  duration?: Number_162;
 }
-export interface Object_719 {
-  type: String_1898;
-  content: String_1899;
+export interface Object_726 {
+  type: String_1905;
+  content: String_1906;
 }
-export interface Object_720 {
+export interface Object_727 {
   [k: string]: unknown;
 }
-export interface Object_721 {
-  ref: String_1900;
-  error: String_1901;
+export interface Object_728 {
+  ref: String_1907;
+  error: String_1908;
 }
 
 /* eslint-disable */
@@ -17372,12 +17508,12 @@ export interface Object_721 {
  */
 
 export interface VALIDATE_VIEWInput {
-  view: Object_722;
+  view: Object_729;
 }
 /**
  * View definition to validate
  */
-export interface Object_722 {
+export interface Object_729 {
   [k: string]: unknown;
 }
 
@@ -17389,15 +17525,15 @@ export interface Object_722 {
  */
 
 export type Boolean_118 = boolean;
-export type String_1902 = string;
-export type Array_210 = String_1902[];
-export type String_1903 = string;
-export type Array_211 = String_1903[];
+export type String_1909 = string;
+export type Array_211 = String_1909[];
+export type String_1910 = string;
+export type Array_212 = String_1910[];
 
 export interface VALIDATE_VIEWOutput {
   valid: Boolean_118;
-  errors?: Array_210;
-  warnings?: Array_211;
+  errors?: Array_211;
+  warnings?: Array_212;
 }
 
 import { z } from "zod";

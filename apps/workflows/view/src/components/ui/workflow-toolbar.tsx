@@ -1,6 +1,14 @@
 import { Icon } from "@deco/ui/components/icon.tsx";
 import { cn } from "@deco/ui/lib/utils.ts";
-import { type ReactElement, useRef, useEffect, useState, useMemo } from "react";
+import {
+  type ReactElement,
+  useRef,
+  useEffect,
+  useState,
+  useMemo,
+  useCallback,
+  useContext,
+} from "react";
 import tippy, { type Instance as TippyInstance } from "tippy.js";
 import { createRoot, type Root } from "react-dom/client";
 import { QueryClientProvider } from "@tanstack/react-query";
@@ -14,7 +22,13 @@ import {
 } from "@deco/ui/components/responsive-dropdown.tsx";
 import { useActiveTab } from "@/store/tab";
 import { WorkflowCanvasRef } from "../canvas/WorkflowCanvas";
-import { useWorkflowStoreActions } from "@/store/workflow";
+import {
+  useWorkflowStoreActions,
+  useWorkflowStepsLength,
+  WorkflowStoreContext,
+} from "@/store/workflow";
+import { useImportToolAsStep } from "@/hooks/useImportToolAsStep";
+import { type MentionItem } from "@/hooks/useMentionItems";
 
 export interface ToolbarButton {
   id: string;
@@ -41,29 +55,22 @@ function ToolbarButton({
   const rootRef = useRef<Root | null>(null);
   const containerRef = useRef<HTMLDivElement | null>(null);
 
+  // Capture workflow store from context (if available)
+  const workflowStore = useContext(WorkflowStoreContext);
+
+  // Create tippy instance only once on mount if hoverDropdown is provided
   useEffect(() => {
     if (!hoverDropdown || !buttonRef.current) return;
 
-    // Create container for React content
-    if (!containerRef.current) {
-      containerRef.current = document.createElement("div");
-    }
+    console.log("🎨 Setting up tippy for button:", label);
 
-    // Create React root if needed
-    if (!rootRef.current && containerRef.current) {
-      rootRef.current = createRoot(containerRef.current);
-    }
+    // Create container for React content once
+    containerRef.current = document.createElement("div");
 
-    // Render the dropdown content wrapped with QueryClientProvider
-    if (rootRef.current) {
-      rootRef.current.render(
-        <QueryClientProvider client={queryClient}>
-          {hoverDropdown}
-        </QueryClientProvider>,
-      );
-    }
+    // Create React root once
+    rootRef.current = createRoot(containerRef.current);
 
-    // Create tippy instance
+    // Create tippy instance once
     tippyInstanceRef.current = tippy(buttonRef.current, {
       content: containerRef.current,
       trigger: "mouseenter focus",
@@ -71,10 +78,13 @@ function ToolbarButton({
       placement: "bottom-start",
       maxWidth: 400,
       hideOnClick: false,
-      delay: [200, 0], // Show after 200ms hover
+      delay: [200, 0],
+      appendTo: document.body,
     });
+    console.log("✅ Tippy instance created:", label, tippyInstanceRef.current);
 
     return () => {
+      console.log("🧹 Cleaning up tippy for button:", label);
       if (tippyInstanceRef.current) {
         tippyInstanceRef.current.destroy();
         tippyInstanceRef.current = null;
@@ -83,8 +93,24 @@ function ToolbarButton({
         rootRef.current.unmount();
         rootRef.current = null;
       }
+      containerRef.current = null;
     };
-  }, [hoverDropdown]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [label]); // Only re-run if label changes, not if hoverDropdown changes
+
+  // Update React content when hoverDropdown or workflowStore changes
+  useEffect(() => {
+    if (!hoverDropdown || !rootRef.current) return;
+
+    console.log("🔄 Updating tippy content for button:", label);
+    rootRef.current.render(
+      <QueryClientProvider client={queryClient}>
+        <WorkflowStoreContext.Provider value={workflowStore}>
+          {hoverDropdown}
+        </WorkflowStoreContext.Provider>
+      </QueryClientProvider>,
+    );
+  }, [hoverDropdown, workflowStore, label]);
 
   const buttonElement = (
     <button
@@ -130,6 +156,76 @@ function ToolbarSeparator() {
   );
 }
 
+// Wrapper component that connects ToolsDropdown to workflow actions
+function ToolsDropdownWithWorkflowActions() {
+  const workflowLength = useWorkflowStepsLength();
+  const importToolMutation = useImportToolAsStep();
+  const { addStep, updateDependencyToolCalls, setCurrentStepIndex } =
+    useWorkflowStoreActions();
+
+  const handleToolClick = useCallback(
+    (toolItem: MentionItem) => {
+      console.log("⚡ [WorkflowToolbar] Import tool as step:", toolItem.label);
+
+      // Only handle tool items (not step items)
+      if (toolItem.type !== "tool") {
+        console.log("⚠️ Skipping non-tool item:", toolItem.type);
+        return;
+      }
+
+      if (!toolItem.integration) {
+        console.error("❌ Tool item missing integration data");
+        return;
+      }
+
+      importToolMutation.mutate(
+        {
+          toolName: toolItem.label,
+          integrationId: toolItem.integration.id,
+          integrationName: toolItem.integration.name,
+          toolDescription: toolItem.description,
+          inputSchema: toolItem.inputSchema,
+          outputSchema: toolItem.outputSchema,
+        },
+        {
+          onSuccess: (generatedStep) => {
+            console.log(
+              "✅ Tool imported as step successfully:",
+              generatedStep,
+            );
+
+            // Add step with correct WorkflowStep schema (type + def)
+            addStep(generatedStep as any);
+
+            // Update workflow dependencyToolCalls
+            console.log(
+              "📦 [WorkflowToolbar] Updating workflow dependencies after import...",
+            );
+            updateDependencyToolCalls();
+
+            // Navigate to new step
+            const currentSteps = workflowLength;
+            setCurrentStepIndex(currentSteps);
+          },
+          onError: (error) => {
+            console.error("❌ Failed to import tool:", error);
+            alert(`Failed to import tool: ${error.message || String(error)}`);
+          },
+        },
+      );
+    },
+    [
+      importToolMutation,
+      addStep,
+      updateDependencyToolCalls,
+      setCurrentStepIndex,
+      workflowLength,
+    ],
+  );
+
+  return <ToolsDropdown onToolClick={handleToolClick} />;
+}
+
 export function WorkflowToolbar({
   canvasRef,
 }: {
@@ -138,13 +234,17 @@ export function WorkflowToolbar({
   const [executionPanelOpen, setExecutionPanelOpen] = useState(false);
   const activeTab = useActiveTab();
   const { clearStore } = useWorkflowStoreActions();
+
+  // Memoize the tools dropdown to prevent recreating it on every render
+  const toolsDropdown = useMemo(() => <ToolsDropdownWithWorkflowActions />, []);
+
   const leftButtons = useMemo(
     () => [
       {
         id: "tools",
         icon: "build",
         label: "Tools",
-        hoverDropdown: <ToolsDropdown />,
+        hoverDropdown: toolsDropdown,
       },
       {
         id: "flash",
@@ -201,7 +301,7 @@ export function WorkflowToolbar({
         ),
       },
     ],
-    [activeTab],
+    [activeTab, executionPanelOpen, clearStore, toolsDropdown],
   );
 
   const centerButtons = useMemo(

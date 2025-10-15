@@ -114,9 +114,9 @@ export function useViewByUriV2(uri: string) {
         });
 
         // Also invalidate the view list
-        const integrationId = parseIntegrationId(uri);
+        const parsedIntegrationId = parseIntegrationId(uri);
         queryClient.invalidateQueries({
-          queryKey: resourceListKeys.views(locator, integrationId),
+          queryKey: resourceListKeys.views(locator, parsedIntegrationId),
           refetchType: "all",
         });
       }

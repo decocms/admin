@@ -178,9 +178,9 @@ export const useWorkflow = (workflowUri: string) => {
         });
 
         // Also invalidate the workflow list
-        const integrationId = parseIntegrationId(workflowUri);
+        const parsedIntegrationId = parseIntegrationId(workflowUri);
         queryClient.invalidateQueries({
-          queryKey: resourceListKeys.workflows(locator, integrationId),
+          queryKey: resourceListKeys.workflows(locator, parsedIntegrationId),
           refetchType: "all",
         });
       }

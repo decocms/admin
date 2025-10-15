@@ -697,7 +697,9 @@ export function createWorkflowRunsResourceV2Implementation(
       );
 
       // Enrich with metadata from instance params (if present in detailed status)
-      const params = workflowStatus?.params as WorkflowInstanceParams | undefined;
+      const params = workflowStatus?.params as
+        | WorkflowInstanceParams
+        | undefined;
 
       // Filter: verify the run belongs to the current workspace
       const currentWorkspaceValue = c.workspace?.value;

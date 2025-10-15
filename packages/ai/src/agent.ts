@@ -1568,10 +1568,13 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
       streamTiming.end();
 
       return stream.toUIMessageStreamResponse({
-        messageMetadata: ({ part }) => ({
-          finishReason: (part as unknown as { finishReason?: string })
-            .finishReason,
-        }),
+        messageMetadata: ({ part }) => {
+          if (part && typeof part === "object" && "finishReason" in part) {
+            return {
+              finishReason: part.finishReason,
+            };
+          }
+        },
       });
     } catch (err) {
       console.error("Error on stream", err);

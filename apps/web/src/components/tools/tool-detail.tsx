@@ -13,6 +13,7 @@ import { useCallback, useState } from "react";
 import { z } from "zod";
 import { EmptyState } from "../common/empty-state.tsx";
 import { ToolCallResultV2 } from "@deco/sdk/hooks";
+import { JsonViewer } from "../chat/json-viewer.tsx";
 
 // Tool type inferred from the Zod schema
 export type ToolDefinition = z.infer<typeof ToolDefinitionSchema>;
@@ -309,13 +310,10 @@ export function ToolDetail({ resourceUri }: ToolDisplayCanvasProps) {
                   )}
 
                   {/* Result */}
-                  <pre className="text-xs bg-muted p-4 rounded-md overflow-auto max-h-96">
-                    {JSON.stringify(
-                      executionResult.result || executionResult,
-                      null,
-                      2,
-                    )}
-                  </pre>
+                  <JsonViewer
+                    data={executionResult.result || executionResult}
+                    maxHeight="24rem"
+                  />
                 </>
               )}
             </CardContent>

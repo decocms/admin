@@ -3,13 +3,21 @@ import { Icon } from "@deco/ui/components/icon.tsx";
 import { Input } from "@deco/ui/components/input.tsx";
 import { ScrollArea } from "@deco/ui/components/scroll-area.tsx";
 import { cn } from "@deco/ui/lib/utils.ts";
-import { forwardRef, useEffect, useMemo, useRef, useState } from "react";
+import {
+  forwardRef,
+  Suspense,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import { useUser } from "../../hooks/use-user.ts";
-import { MainChat } from "../agent/chat.tsx";
+import { MainChat, MainChatSkeleton } from "../agent/chat.tsx";
 import { AgentProvider } from "../agent/provider.tsx";
 import { useDecopilotContext } from "./context.tsx";
 import { useDecopilotThread } from "./thread-context.tsx";
 import { useAppAdditionalTools } from "./use-app-additional-tools.ts";
+import { useDecopilotOpen } from "../layout/decopilot-layout.tsx";
 
 export const NO_DROP_TARGET = "no-drop-target";
 
@@ -164,6 +172,7 @@ ThreadTab.displayName = "ThreadTab";
 
 export function DecopilotChat() {
   const { threadState, clearThreadState } = useDecopilotThread();
+  const { setOpen } = useDecopilotOpen();
   const { locator } = useSDK();
   const user = useUser();
   const threads = useThreads({
@@ -355,6 +364,7 @@ export function DecopilotChat() {
       const newThreadId = crypto.randomUUID();
       setOpenTabs([{ threadId: newThreadId, title: undefined }]);
       setActiveTabIndex(0);
+      setOpen(false);
       return;
     }
 
@@ -387,7 +397,7 @@ export function DecopilotChat() {
           <img
             src={WELL_KNOWN_AGENTS.decopilotAgent.avatar}
             alt={WELL_KNOWN_AGENTS.decopilotAgent.name}
-            className="size-5 rounded-md border border-border"
+            className="min-w-5 size-5 rounded-md border border-border"
           />
         </div>
         {/* Tabs bar */}
@@ -437,30 +447,32 @@ export function DecopilotChat() {
               index === activeTabIndex ? "block" : "hidden",
             )}
           >
-            <AgentProvider
-              key={tab.threadId}
-              agentId={WELL_KNOWN_AGENTS.decopilotAgent.id}
-              threadId={tab.threadId}
-              initialInput={
-                index === activeTabIndex && threadState.initialMessage
-                  ? threadState.initialMessage
-                  : undefined
-              }
-              autoSend={index === activeTabIndex && threadState.autoSend}
-              onAutoSendComplete={clearThreadState}
-              additionalTools={allAdditionalTools}
-              initialRules={rules}
-              onToolCall={onToolCall}
-              uiOptions={{
-                showThreadTools: true,
-                showModelSelector: true,
-                showThreadMessages: true,
-                showAgentVisibility: false,
-                showEditAgent: false,
-              }}
-            >
-              <MainChat className="h-[calc(100vh-88px)]" />
-            </AgentProvider>
+            <Suspense fallback={<MainChatSkeleton />}>
+              <AgentProvider
+                key={tab.threadId}
+                agentId={WELL_KNOWN_AGENTS.decopilotAgent.id}
+                threadId={tab.threadId}
+                initialInput={
+                  index === activeTabIndex && threadState.initialMessage
+                    ? threadState.initialMessage
+                    : undefined
+                }
+                autoSend={index === activeTabIndex && threadState.autoSend}
+                onAutoSendComplete={clearThreadState}
+                additionalTools={allAdditionalTools}
+                initialRules={rules}
+                onToolCall={onToolCall}
+                uiOptions={{
+                  showThreadTools: true,
+                  showModelSelector: true,
+                  showThreadMessages: true,
+                  showAgentVisibility: false,
+                  showEditAgent: false,
+                }}
+              >
+                <MainChat className="h-[calc(100vh-88px)]" />
+              </AgentProvider>
+            </Suspense>
           </div>
         ))}
       </div>

@@ -1,4 +1,5 @@
 import { Badge } from "@deco/ui/components/badge.js";
+import { Icon } from "@deco/ui/components/icon.js";
 import { NodeViewWrapper, type ReactNodeViewProps } from "@tiptap/react";
 import { cn } from "@deco/ui/lib/utils.js";
 
@@ -9,6 +10,16 @@ interface MentionNodeProps extends ReactNodeViewProps<HTMLSpanElement> {
   ResourceIcon?: React.ComponentType<any>;
 }
 
+// Map resource types to their corresponding icons
+const RESOURCE_TYPE_ICONS: Record<string, string> = {
+  view: "dashboard",
+  VIEW: "dashboard",
+  document: "description",
+  DOCUMENT: "description",
+  workflow: "flowchart",
+  WORKFLOW: "flowchart",
+};
+
 export function MentionNode({
   node,
   IntegrationAvatar,
@@ -18,6 +29,12 @@ export function MentionNode({
   const label = node.attrs.label;
   const integrationIcon = node.attrs.integrationIcon;
   const integrationName = node.attrs.integrationName;
+  const resourceType = node.attrs.resourceType;
+
+  // Determine which icon to use for resources
+  const resourceIconName = resourceType
+    ? RESOURCE_TYPE_ICONS[resourceType] || "description"
+    : "description";
 
   return (
     <NodeViewWrapper
@@ -29,6 +46,7 @@ export function MentionNode({
       data-integration-id={node.attrs.integrationId}
       data-resource-name={node.attrs.resourceName}
       data-resource-uri={node.attrs.resourceUri}
+      data-resource-type={node.attrs.resourceType}
     >
       <Badge
         variant="secondary"
@@ -45,8 +63,8 @@ export function MentionNode({
             className="w-3 h-3"
           />
         )}
-        {mentionType === "resource" && ResourceIcon && (
-          <ResourceIcon className="w-3 h-3" />
+        {mentionType === "resource" && (
+          <Icon name={resourceIconName} className="w-3 h-3" />
         )}
         <span className="leading-none">@{label}</span>
       </Badge>

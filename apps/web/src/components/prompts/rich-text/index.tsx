@@ -76,6 +76,8 @@ export default function RichTextArea({
     return (integrations as IntegrationWithTools[])
       .filter(
         (integration) =>
+          // Filter out workspace-management to avoid duplicate tools
+          integration.id !== "i:workspace-management" &&
           integration.tools &&
           Array.isArray(integration.tools) &&
           integration.tools.length > 0,

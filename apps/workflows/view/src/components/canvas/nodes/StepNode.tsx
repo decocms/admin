@@ -27,7 +27,7 @@ import {
   useWorkflowInput,
 } from "@/store/workflow";
 import { StepOutput } from "./step-output";
-import type { WorkflowStep, WorkflowDependency } from "shared/types/workflows";
+import type { WorkflowStep } from "shared/types/workflows";
 
 interface StepNodeData {
   stepId: string;
@@ -186,6 +186,35 @@ interface StepFormViewProps {
   stepName: string;
 }
 
+// Helper function to extract tool calls from execute code
+function extractToolsFromCode(code: string): Array<{
+  integrationId: string;
+  toolName: string;
+}> {
+  const tools: Array<{ integrationId: string; toolName: string }> = [];
+
+  // Regex: ctx.env['integration-id'].TOOL_NAME( or ctx.env["integration-id"].TOOL_NAME(
+  // Matches both single and double quotes
+  const pattern = /ctx\.env\[['"]([^'"]+)['"]\]\.([A-Z_][A-Z0-9_]*)\(/g;
+
+  let match;
+  while ((match = pattern.exec(code)) !== null) {
+    const integrationId = match[1];
+    const toolName = match[2];
+
+    // Avoid duplicates
+    if (
+      !tools.some(
+        (t) => t.integrationId === integrationId && t.toolName === toolName,
+      )
+    ) {
+      tools.push({ integrationId, toolName });
+    }
+  }
+
+  return tools;
+}
+
 // OPTIMIZED: Memoize to prevent re-renders when parent updates
 const StepFormView = memo(
   function StepFormView({
@@ -205,11 +234,18 @@ const StepFormView = memo(
       [workflowActions, stepName],
     );
 
-    // Dependencies might be under def or at step level
-    const dependencies =
-      step.def && "dependencies" in step.def
-        ? (step.def as any).dependencies
-        : undefined;
+    // Extract tool names from execute code
+    const extractedTools = useMemo(() => {
+      if (
+        step.type === "code" &&
+        step.def &&
+        "execute" in step.def &&
+        typeof step.def.execute === "string"
+      ) {
+        return extractToolsFromCode(step.def.execute);
+      }
+      return [];
+    }, [step.type, step.def]);
 
     // PERFORMANCE: Create per-field onChange handlers that are stable
     // This prevents creating new functions on every render
@@ -224,22 +260,22 @@ const StepFormView = memo(
     return (
       <>
         {/* Tools Used Section */}
-        {dependencies && dependencies.length > 0 && (
+        {extractedTools.length > 0 && (
           <div className="bg-background border-b border-border p-4">
             <p className="font-mono text-sm text-muted-foreground uppercase mb-4">
               TOOLS USED
             </p>
             <div className="flex gap-3 flex-wrap">
-              {dependencies.map((tool: WorkflowDependency) => (
+              {extractedTools.map((tool, index) => (
                 <Badge
-                  key={tool.integrationId}
+                  key={`${tool.integrationId}-${tool.toolName}-${index}`}
                   variant="secondary"
                   className="bg-muted border border-border px-1 py-0.5 text-foreground text-sm font-normal gap-1"
                 >
                   <div className="size-4 bg-background border border-border/20 rounded-md flex items-center justify-center">
                     <Icon name="build" size={12} />
                   </div>
-                  {tool.integrationId}
+                  {tool.toolName}
                 </Badge>
               ))}
             </div>
@@ -262,7 +298,7 @@ const StepFormView = memo(
                 data-scrollable="true"
                 className="flex flex-col gap-5 overflow-y-auto"
                 style={{
-                  maxHeight: "250px",
+                  maxHeight: "350px",
                   overflowX: "hidden",
                   cursor: "default",
                   pointerEvents: "auto",
@@ -356,16 +392,11 @@ export const StepNode = memo(
     // Update node internals when output appears (to recalculate dimensions)
     useEffect(() => {
       if (hasAnyOutput) {
-        // Use requestAnimationFrame to ensure DOM has rendered, then update internals
-        requestAnimationFrame(() => {
-          setTimeout(() => {
-            updateNodeInternals(id);
-            // Trigger another update after a bit more time to ensure the node fully measured
-            setTimeout(() => {
-              updateNodeInternals(id);
-            }, 200);
-          }, 100);
-        });
+        // Single update after a reasonable delay to ensure DOM has fully rendered
+        const timeoutId = setTimeout(() => {
+          updateNodeInternals(id);
+        }, 150);
+        return () => clearTimeout(timeoutId);
       }
     }, [hasAnyOutput, id, updateNodeInternals]);
 

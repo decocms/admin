@@ -387,6 +387,9 @@ const Inner = forwardRef<WorkflowCanvasRef>(function Inner(_, ref) {
     [stepIds, stepsLength, currentStepIndex, setCurrentStepIndex],
   );
 
+  // Debounce timer ref for dimension changes
+  const dimensionChangeTimerRef = useRef<NodeJS.Timeout | null>(null);
+
   // Handle node dimension changes - re-center when current node dimensions change
   const onNodesChange = useCallback(
     (changes: NodeChange[]) => {
@@ -396,16 +399,21 @@ const Inner = forwardRef<WorkflowCanvasRef>(function Inner(_, ref) {
           // Get the node ID and check if it's the current step
           const stepNames = stepIds.split(",").filter(Boolean);
           const currentNodeId = stepNames[currentStepIndex] || "new";
-          return change.id === currentNodeId;
+          return change.id === currentNodeId || change.id === "workflow-input";
         }
         return false;
       });
 
       if (hasDimensionChange) {
-        // Re-center with smooth animation after a small delay to ensure measurements are updated
-        setTimeout(() => {
-          centerViewport(currentStepIndex, true);
-        }, 50);
+        // Debounce re-centering to avoid multiple calls during rapid dimension changes
+        if (dimensionChangeTimerRef.current) {
+          clearTimeout(dimensionChangeTimerRef.current);
+        }
+
+        dimensionChangeTimerRef.current = setTimeout(() => {
+          centerViewport(currentStepIndex, false); // No animation to prevent jarring
+          dimensionChangeTimerRef.current = null;
+        }, 200);
       }
     },
     [stepIds, currentStepIndex, centerViewport],

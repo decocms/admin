@@ -26,9 +26,13 @@ import {
   useWorkflowStoreActions,
   useWorkflowStepsLength,
   WorkflowStoreContext,
+  Workflow,
+  useCurrentWorkflow,
 } from "@/store/workflow";
 import { useImportToolAsStep } from "@/hooks/useImportToolAsStep";
 import { type MentionItem } from "@/hooks/useMentionItems";
+import { useSearch } from "@tanstack/react-router";
+import { useUpdateWorkflow } from "@/hooks/useUpdateWorkflow";
 
 export interface ToolbarButton {
   id: string;
@@ -234,6 +238,11 @@ export function WorkflowToolbar({
   const [executionPanelOpen, setExecutionPanelOpen] = useState(false);
   const activeTab = useActiveTab();
   const { clearStore } = useWorkflowStoreActions();
+  const searchParams = useSearch({ from: "/workflow" });
+  const resourceURI = (searchParams as { resourceURI?: string })?.resourceURI;
+  const workflow = useCurrentWorkflow();
+
+  const updateWorkflowMutation = useUpdateWorkflow();
 
   // Memoize the tools dropdown to prevent recreating it on every render
   const toolsDropdown = useMemo(() => <ToolsDropdownWithWorkflowActions />, []);
@@ -300,8 +309,27 @@ export function WorkflowToolbar({
           </ResponsiveDropdown>
         ),
       },
+      {
+        id: "save",
+        icon: "save",
+        label: "Save Workflow",
+        onClick: () => {
+          updateWorkflowMutation.mutate({
+            uri: resourceURI as string,
+            workflow: workflow as Workflow,
+          });
+        },
+      },
     ],
-    [activeTab, executionPanelOpen, clearStore, toolsDropdown],
+    [
+      activeTab,
+      executionPanelOpen,
+      clearStore,
+      toolsDropdown,
+      updateWorkflowMutation,
+      resourceURI,
+      workflow,
+    ],
   );
 
   const centerButtons = useMemo(

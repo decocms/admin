@@ -5,7 +5,7 @@ import { persist } from "zustand/middleware";
 import { useSearch } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 
-type Workflow = NonNullable<
+export type Workflow = NonNullable<
   Awaited<ReturnType<typeof client.READ_WORKFLOW>>
 >["workflow"];
 type WorkflowStep = NonNullable<Workflow>["steps"][number];

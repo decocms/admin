@@ -1039,9 +1039,30 @@ export const createReadWorkflowTool = (env: Env) =>
     },
   });
 
+export const createUpdateWorkflowTool = (env: Env) =>
+  createPrivateTool({
+    id: "UPDATE_WORKFLOW",
+    description: "Update a workflow",
+    inputSchema: z.object({
+      uri: z.string(),
+      workflow: WorkflowDefinitionSchema,
+    }),
+    outputSchema: z.object({ workflow: WorkflowDefinitionSchema }),
+    execute: async ({ context }) => {
+      const { uri, workflow } = context;
+      const result =
+        await env.WORKFLOWS_MANAGEMENT.DECO_RESOURCE_WORKFLOW_UPDATE({
+          uri,
+          data: workflow,
+        });
+      return { workflow: WorkflowDefinitionSchema.parse(result.data) };
+    },
+  });
+
 export const workflowTools = [
   createRunWorkflowStepTool,
   createGenerateStepTool,
   createImportToolAsStepTool,
   createReadWorkflowTool,
+  createUpdateWorkflowTool,
 ];

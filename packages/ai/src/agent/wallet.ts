@@ -126,10 +126,12 @@ export class AgentWallet {
     });
 
     if (response.status === 404) {
+      response.body?.cancel().catch(() => {});
       return false;
     }
 
     if (!response.ok) {
+      response.body?.cancel().catch(() => {});
       console.error("Failed to check balance", response);
       return true;
     }
@@ -169,6 +171,7 @@ export class AgentWallet {
       },
     );
 
+    response?.body?.cancel().catch(() => {});
     if (!response.ok) {
       // TODO(@mcandeia): add error tracking with posthog
     }
@@ -206,6 +209,7 @@ export class AgentWallet {
               { body: operation },
             );
 
+            response?.body?.cancel().catch(() => {});
             if (response.ok || response.status === 304) {
               break;
             }

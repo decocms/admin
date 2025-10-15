@@ -7,7 +7,7 @@ import {
 import { Icon } from "@deco/ui/components/icon.tsx";
 import { Spinner } from "@deco/ui/components/spinner.tsx";
 import { cn } from "@deco/ui/lib/utils.ts";
-import { useMemo, useRef, useState } from "react";
+import { memo, useCallback, useMemo, useRef, useState } from "react";
 import { useAgent } from "../agent/provider.tsx";
 import { Picker } from "./chat-picker.tsx";
 import { AgentCard } from "./tools/agent-card.tsx";
@@ -81,7 +81,7 @@ function isCustomUITool(toolName: string): toolName is CustomUITool {
   return CUSTOM_UI_TOOLS.includes(toolName as CustomUITool);
 }
 
-function ToolStatus({
+const ToolStatus = memo(function ToolStatus({
   tool,
   isLast,
   isSingle,
@@ -94,7 +94,7 @@ function ToolStatus({
   const [showCopyButton, setShowCopyButton] = useState(false);
   const contentRef = useRef<HTMLDivElement>(null);
 
-  const getIcon = (state: string) => {
+  const getIcon = useCallback((state: string) => {
     switch (state) {
       case "input-streaming":
       case "input-available":
@@ -106,9 +106,9 @@ function ToolStatus({
       default:
         return "•";
     }
-  };
+  }, []);
 
-  const getToolName = () => {
+  const toolName = useMemo(() => {
     if (!tool.toolName) {
       return "Unknown tool";
     }
@@ -116,9 +116,9 @@ function ToolStatus({
       return `Delegating to agent`;
     }
     return formatToolName(tool.toolName);
-  };
+  }, [tool.toolName]);
 
-  const getToolJson = () => {
+  const toolJson = useMemo(() => {
     return JSON.stringify(
       {
         toolName: tool.toolName,
@@ -130,9 +130,9 @@ function ToolStatus({
       null,
       2,
     ).replace(/"(\w+)":/g, '"$1":');
-  };
+  }, [tool.toolName, tool.state, tool.input, tool.output, tool.errorText]);
 
-  const onClick = () => {
+  const onClick = useCallback(() => {
     setIsExpanded((prev) => {
       const newState = !prev;
 
@@ -147,11 +147,11 @@ function ToolStatus({
 
       return newState;
     });
-  };
+  }, []);
 
-  const handleCopy = () => {
-    navigator.clipboard.writeText(getToolJson());
-  };
+  const handleCopy = useCallback(() => {
+    navigator.clipboard.writeText(toolJson);
+  }, [toolJson]);
 
   return (
     <div
@@ -187,7 +187,7 @@ function ToolStatus({
           <div className="flex-1">
             <div className="flex items-center gap-2">
               <div className="font-medium truncate max-w-[60vw] md:max-w-full">
-                {getToolName()}
+                {toolName}
               </div>
               <Icon
                 className={cn("text-sm ml-auto", isExpanded && "rotate-90")}
@@ -223,7 +223,7 @@ function ToolStatus({
                   onClick={(e) => e.stopPropagation()}
                 >
                   <code className="text-primary-foreground select-text cursor-auto">
-                    {getToolJson()}
+                    {toolJson}
                   </code>
                 </pre>
               </div>
@@ -233,7 +233,7 @@ function ToolStatus({
       </div>
     </div>
   );
-}
+});
 
 function ImagePrompt({
   prompt,
@@ -468,23 +468,35 @@ function CustomToolUI({
   }
 }
 
-export function ToolMessage({ part, isLastMessage }: ToolMessageProps) {
-  // Extract tool name from part type
-  const toolName = part.type.startsWith("tool-")
-    ? part.type.substring(5)
-    : "UNKNOWN_TOOL";
+export const ToolMessage = memo(function ToolMessage({
+  part,
+  isLastMessage,
+}: ToolMessageProps) {
+  // Extract tool name from part type and memoize tool invocations
+  const toolInvocations: ToolInvocation[] = useMemo(() => {
+    const toolName = part.type.startsWith("tool-")
+      ? part.type.substring(5)
+      : "UNKNOWN_TOOL";
 
-  // Create tool invocation from part
-  const toolInvocations: ToolInvocation[] = [
-    {
-      toolCallId: part.toolCallId,
-      toolName: toolName,
-      state: (part.state as ToolInvocation["state"]) || "input-available",
-      input: part.input,
-      output: part.output,
-      errorText: part.errorText,
-    },
-  ];
+    return [
+      {
+        toolCallId: part.toolCallId,
+        toolName: toolName,
+        state: (part.state as ToolInvocation["state"]) || "input-available",
+        input: part.input,
+        output: part.output,
+        errorText: part.errorText,
+      },
+    ];
+  }, [
+    part.type,
+    part.toolCallId,
+    part.state,
+    part.input,
+    part.output,
+    part.errorText,
+  ]);
+
   // Separate tools into timeline tools and custom UI tools using memoization
   const { timelineTools, customUITools } = useMemo(() => {
     const timeline: ToolInvocation[] = [];
@@ -534,4 +546,4 @@ export function ToolMessage({ part, isLastMessage }: ToolMessageProps) {
       ))}
     </div>
   );
-}
+});

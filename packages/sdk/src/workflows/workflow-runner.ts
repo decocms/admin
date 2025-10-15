@@ -121,12 +121,12 @@ export class WorkflowRunner extends WorkflowEntrypoint<Bindings> {
       );
     }
     const config =
-      stepDef.type === "tool_call" && "options" in stepDef.def
+      stepDef.type === "tool_call" && stepDef.def && "options" in stepDef.def
         ? (stepDef.def.options ?? {})
         : {};
 
     return {
-      name: stepDef.def.name,
+      name: stepDef.def?.name ?? "",
       config,
       fn: runnable,
     };

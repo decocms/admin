@@ -28,6 +28,7 @@ import {
 import { withProject } from "../index.ts";
 import type { BranchRpc, ConflictEntry, DiffEntry } from "./branch.ts";
 import { type BranchRecord, newBranchesCRUD } from "./branches-db.ts";
+import { trace } from "../../observability/index.ts";
 
 interface DeconfigState {
   pathPrefix?: string;
@@ -515,81 +516,91 @@ export const readFile = createDeconfigTool({
       ctime: z.number(),
     }),
   ),
-  handler: async ({ branch, path, format }, c) => {
-    path = withPathPrefix(c, path);
-    assertHasWorkspace(c);
-    if (WELL_KNOWN_PUBLIC_PATHS.some((p) => path.startsWith(p))) {
-      c.resourceAccess.grant();
-    } else {
-      await assertWorkspaceResourceAccess(c);
-    }
-
-    const normalizedPath = normalizePath(path);
-
-    using branchRpc = await branchRpcFor(c, branch);
-    using fileData = await branchRpc.getFile(normalizedPath);
-
-    if (!fileData) {
-      throw new Error(`File not found: ${normalizedPath}`);
-    }
-
-    // Convert ReadableStream to bytes
-    const reader = fileData.stream.getReader();
-    const chunks: Uint8Array[] = [];
-    let done = false;
-
-    while (!done) {
-      const { value, done: readerDone } = await reader.read();
-      done = readerDone;
-      if (value) {
-        chunks.push(value);
-      }
-    }
-
-    const totalLength = chunks.reduce((acc, chunk) => acc + chunk.length, 0);
-    const combined = new Uint8Array(totalLength);
-    let offset = 0;
-    for (const chunk of chunks) {
-      combined.set(chunk, offset);
-      offset += chunk.length;
-    }
-
-    // Process content based on requested format
-    let content: string | number[] | unknown;
-
-    switch (format) {
-      case "base64":
-        content = btoa(String.fromCharCode(...combined));
-        break;
-      case "byteArray":
-        content = Array.from(combined);
-        break;
-      case "plainString":
-        content = new TextDecoder().decode(combined);
-        break;
-      case "json":
-        try {
-          const text = new TextDecoder().decode(combined);
-          content = JSON.parse(text);
-        } catch (error) {
-          throw new Error(
-            `Invalid JSON content: ${
-              error instanceof Error ? error.message : String(error)
-            }`,
-          );
+  handler: ({ branch, path, format }, c) => {
+    const tracer = trace.getTracer("db-sql-tracer");
+    return tracer.startActiveSpan("read-file", async (span) => {
+      try {
+        path = withPathPrefix(c, path);
+        assertHasWorkspace(c);
+        if (WELL_KNOWN_PUBLIC_PATHS.some((p) => path.startsWith(p))) {
+          c.resourceAccess.grant();
+        } else {
+          await assertWorkspaceResourceAccess(c);
         }
-        break;
-      default:
-        content = btoa(String.fromCharCode(...combined)); // fallback to base64
-    }
-    return {
-      content,
-      address: fileData.metadata.address,
-      // @ts-ignore - TODO: fix this
-      metadata: fileData.metadata.metadata,
-      mtime: fileData.metadata.mtime,
-      ctime: fileData.metadata.ctime,
-    };
+
+        const normalizedPath = normalizePath(path);
+
+        using branchRpc = await branchRpcFor(c, branch);
+        using fileData = await branchRpc.getFile(normalizedPath);
+
+        if (!fileData) {
+          throw new Error(`File not found: ${normalizedPath}`);
+        }
+
+        // Convert ReadableStream to bytes
+        const reader = fileData.stream.getReader();
+        const chunks: Uint8Array[] = [];
+        let done = false;
+
+        while (!done) {
+          const { value, done: readerDone } = await reader.read();
+          done = readerDone;
+          if (value) {
+            chunks.push(value);
+          }
+        }
+
+        const totalLength = chunks.reduce(
+          (acc, chunk) => acc + chunk.length,
+          0,
+        );
+        const combined = new Uint8Array(totalLength);
+        let offset = 0;
+        for (const chunk of chunks) {
+          combined.set(chunk, offset);
+          offset += chunk.length;
+        }
+
+        // Process content based on requested format
+        let content: string | number[] | unknown;
+
+        switch (format) {
+          case "base64":
+            content = btoa(String.fromCharCode(...combined));
+            break;
+          case "byteArray":
+            content = Array.from(combined);
+            break;
+          case "plainString":
+            content = new TextDecoder().decode(combined);
+            break;
+          case "json":
+            try {
+              const text = new TextDecoder().decode(combined);
+              content = JSON.parse(text);
+            } catch (error) {
+              throw new Error(
+                `Invalid JSON content: ${
+                  error instanceof Error ? error.message : String(error)
+                }`,
+              );
+            }
+            break;
+          default:
+            content = btoa(String.fromCharCode(...combined)); // fallback to base64
+        }
+        return {
+          content,
+          address: fileData.metadata.address,
+          // @ts-ignore - TODO: fix this
+          metadata: fileData.metadata.metadata,
+          mtime: fileData.metadata.mtime,
+          ctime: fileData.metadata.ctime,
+        };
+      } finally {
+        span.end();
+      }
+    });
   },
 });
 

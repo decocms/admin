@@ -63,9 +63,6 @@ globalThis.fetch = async function patchedFetch(
     if (!context) {
       throw new Error("Missing context for internal self-invocation");
     }
-    if ((env as { SELF: Service }).SELF) {
-      return await (env as { SELF: Service }).SELF.fetch(req);
-    }
     // Delegate to internal handler
     return await instrumentedApp.fetch!(
       req as Request<unknown, IncomingRequestCfProperties<unknown>>,

@@ -3,6 +3,7 @@ import { useLocation, useSearchParams } from "react-router";
 import { useNavigateWorkspace } from "../../hooks/use-navigate-workspace.ts";
 import { useDecopilotOpen } from "../layout/decopilot-layout.tsx";
 import { ResourcesV2List } from "../resources-v2/list.tsx";
+import { useHideLegacyFeatures } from "../../hooks/use-hide-legacy-features.ts";
 
 /**
  * Documents resource list component that renders the ResourcesV2List
@@ -17,6 +18,7 @@ export function DocumentsResourceList({
   const location = useLocation();
   const navigateWorkspace = useNavigateWorkspace();
   const { setOpen: setDecopilotOpen } = useDecopilotOpen();
+  const { showLegacyFeature } = useHideLegacyFeatures();
 
   // Automatically open Decopilot if openDecopilot query param is present
   useEffect(() => {
@@ -44,11 +46,15 @@ export function DocumentsResourceList({
           label: "All",
           onClick: () => navigateWorkspace("/documents"),
         },
-        {
-          id: "prompts",
-          label: "Prompts (Legacy)",
-          onClick: () => navigateWorkspace("/documents/prompts"),
-        },
+        ...(showLegacyFeature("hideLegacyPrompts")
+          ? [
+              {
+                id: "prompts",
+                label: "Prompts (Legacy)",
+                onClick: () => navigateWorkspace("/documents/prompts"),
+              },
+            ]
+          : []),
       ]}
       activeTab={activeTab}
     />

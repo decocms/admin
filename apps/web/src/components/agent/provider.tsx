@@ -186,9 +186,10 @@ export function AgentProvider({
     enabled: mergedUiOptions.showThreadMessages,
   });
   const { data: { messages: threadMessages } = { messages: [] } } =
-    !mergedUiOptions.showThreadMessages
-      ? { data: { messages: [] } }
-      : useThreadMessages(threadId);
+    useThreadMessages(threadId, {
+      enabled: mergedUiOptions.showThreadMessages,
+    });
+
   const isWellKnownAgent = Boolean(
     WELL_KNOWN_AGENTS[agentId as keyof typeof WELL_KNOWN_AGENTS],
   );

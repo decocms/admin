@@ -1013,7 +1013,7 @@ export function StepCreator({ workflow, onStepCreated, onCancel }: Props) {
               size="sm"
               onClick={() => setShowToolSelector(true)}
             >
-              <Icon name="plus" className="mr-2 h-4 w-4" />
+              <Icon name="add" className="mr-2 h-4 w-4" />
               Browse Tools
             </Button>
           </div>

@@ -354,3 +354,11 @@ export const WorkflowRunDataSchema = z.object({
 });
 
 export type WorkflowRunData = z.infer<typeof WorkflowRunDataSchema>;
+
+export interface ToolReference {
+  integrationId: string; // Clean ID without prefix
+  toolName: string;
+  inputSchema?: Record<string, unknown>;
+  outputSchema?: Record<string, unknown>;
+  description?: string;
+}

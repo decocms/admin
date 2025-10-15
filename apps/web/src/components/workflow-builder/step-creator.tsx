@@ -93,8 +93,8 @@ export function StepCreator({
     try {
       // Get previous steps for context
       const previousSteps = workflow.steps.map((s: WorkflowStep) => ({
-        id: s.def.name,
-        title: s.def.name,
+        id: s.def?.name ?? "",
+        title: s.def?.name ?? "",
       }));
 
       // Generate step using AI
@@ -107,7 +107,7 @@ export function StepCreator({
       const newStep: WorkflowStep = {
         type: "code",
         def: {
-          name: editingStep?.def.name || `step-${Date.now()}`,
+          name: editingStep?.def?.name || `step-${Date.now()}`,
           description: `Executes: ${prompt.slice(0, 100)}${prompt.length > 100 ? "..." : ""}`,
           execute: generated.code,
         },
@@ -145,10 +145,10 @@ export function StepCreator({
               <span className="text-sm font-medium">Step Generated!</span>
             </div>
             <h1 className="text-4xl font-bold text-foreground">
-              {generatedStep.def.name}
+              {generatedStep.def?.name}
             </h1>
             <p className="text-xl text-muted-foreground">
-              {generatedStep.def.description}
+              {generatedStep.def?.description}
             </p>
           </div>
 

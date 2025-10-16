@@ -10,6 +10,7 @@ import z from "zod";
 import { SpanStatusCode, trace } from "../observability/index.ts";
 import { assertWorkspaceResourceAccess } from "./assertions.ts";
 import { type AppContext, serializeError, State } from "./context.ts";
+import { ProjectLocator } from "../locator.ts";
 
 export interface RequestMiddlewareContext<T = any> {
   next?(): Promise<T>;
@@ -59,7 +60,7 @@ export const wrapToolFn = <
 >(
   f: (props: TInput) => Promise<TReturn>,
   toolName: string,
-  workspace?: string,
+  locator?: ProjectLocator,
 ) => {
   return async (props: TInput) => {
     const tracer = trace.getTracer("tools");
@@ -68,7 +69,7 @@ export const wrapToolFn = <
       {
         attributes: {
           "mcp.tool.name": toolName,
-          workspace,
+          locator,
         },
       },
       api.context.active(),
@@ -81,8 +82,8 @@ export const wrapToolFn = <
           throw error;
         } finally {
           const ctx = safeGetContext();
-          const workspace = ctx?.workspace?.value;
-          workspace && span.setAttribute("workspace", workspace);
+          const locator = ctx?.locator?.value;
+          locator && span.setAttribute("locator", locator);
           err && span.recordException(err as Error);
           span.setStatus({
             code: err ? SpanStatusCode.ERROR : SpanStatusCode.OK,
@@ -133,7 +134,7 @@ export const withMCPAuthorization =
       );
     } catch (error) {
       console.error(
-        `withMCPAuthorization error: user id ${ctx.user?.id} failed to access ${integrationId} resource ${req.params.name} at workspace ${ctx.workspace?.value}`,
+        `withMCPAuthorization error: user id ${ctx.user?.id} failed to access ${integrationId} resource ${req.params.name} at workspace ${ctx.locator?.value}`,
       );
       return {
         isError: true,

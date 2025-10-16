@@ -132,7 +132,7 @@ const contextToPrincipalExecutionContext = (
   return {
     ...c.var,
     params: { ...c.req.query(), ...c.req.param() },
-    workspace: ctxWorkspace,
+    // workspace: ctxWorkspace,
     locator: ctxLocator,
     cookie: c.req.header("Cookie"),
     // token issued by the MCP Proxy server to identify the caller as deco api
@@ -304,7 +304,7 @@ const createToolCallHandlerFor = <
         args: z.ZodType<TDefinition[number]["inputSchema"]>,
       ) => Promise<z.ZodType<TDefinition[number]["outputSchema"]>>,
       tool,
-      ctx?.workspace?.value,
+      ctx?.locator?.value,
     );
 
     const result = await State.run(ctx, (args) => toolFn(args), data).catch(

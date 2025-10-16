@@ -34,7 +34,7 @@ import { RoleUpdateAction } from "../../auth/policy.ts";
 import { Statement } from "../../models/index.ts";
 import { isRequired } from "../../utils/fns.ts";
 import { parseId } from "../integrations/api.ts";
-import { eq, inArray, isNotNull, and, isNull } from "drizzle-orm";
+import { eq, inArray, and, isNull } from "drizzle-orm";
 import {
   members as membersTable,
   memberRoles as memberRolesTable,
@@ -767,9 +767,14 @@ export const deleteTeam = createTool({
       console.error("Error deleting team", error);
 
       let message = error instanceof Error ? error.message : "Unknown error";
-      if (error instanceof Error && error.cause instanceof Error && "constraint_name" in error.cause) {
+      if (
+        error instanceof Error &&
+        error.cause instanceof Error &&
+        "constraint_name" in error.cause
+      ) {
         if (error.cause.constraint_name === "deco_chat_projects_org_id_fkey") {
-          message = "Cannot delete team with existing projects. Please delete the projects first.";
+          message =
+            "Cannot delete team with existing projects. Please delete the projects first.";
         }
       }
 
@@ -1712,7 +1717,7 @@ export const deleteProject = createTool({
 
     try {
       await c.drizzle.transaction(async (tx) => {
-        // TODO: Delete project related entities. 
+        // TODO: Delete project related entities.
         // This will probably fail for most people rn
         await tx.delete(projects).where(eq(projects.id, projectId));
       });

@@ -33,7 +33,6 @@ import { Avatar } from "../common/avatar/index.tsx";
 import { useCurrentTeam } from "../sidebar/team-selector.tsx";
 import { Icon } from "@deco/ui/components/icon.tsx";
 import { DEFAULT_THEME, THEME_VARIABLES, type ThemeVariable } from "@deco/sdk";
-import { useWorkspaceLink } from "../../hooks/use-navigate-workspace.ts";
 import {
   Tooltip,
   TooltipContent,
@@ -607,11 +606,12 @@ export function GeneralSettings() {
                           setDeleteError(null);
                           if (!currentTeamId) return;
                           try {
-                            const { success, error } = await deleteTeam.mutateAsync(
-                              typeof currentTeamId === "number"
-                                ? currentTeamId
-                                : Number(currentTeamId) || 0,
-                            );
+                            const { success, error } =
+                              await deleteTeam.mutateAsync(
+                                typeof currentTeamId === "number"
+                                  ? currentTeamId
+                                  : Number(currentTeamId) || 0,
+                              );
                             if (!success) {
                               throw new Error(error);
                             }

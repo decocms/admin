@@ -132,7 +132,7 @@ const contextToPrincipalExecutionContext = (
   return {
     ...c.var,
     params: { ...c.req.query(), ...c.req.param() },
-    // workspace: ctxWorkspace,
+    workspace: ctxWorkspace,
     locator: ctxLocator,
     cookie: c.req.header("Cookie"),
     // token issued by the MCP Proxy server to identify the caller as deco api

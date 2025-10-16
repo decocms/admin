@@ -10,8 +10,9 @@ import {
   createUpdateOutputSchema,
   DeleteInputSchema,
   DeleteOutputSchema,
+  DescribeInputSchema,
+  DescribeOutputSchema,
   ReadInputSchema,
-  ResourceUriSchema,
   SearchInputSchema,
 } from "./schemas.ts";
 export type BaseResourceDataSchema = z.ZodObject<{
@@ -84,32 +85,9 @@ export function createResourceBindings<
       opt: true,
     },
     {
-      name: `DECO_RESOURCE_${resourceName.toUpperCase()}_SUBSCRIBE` as const,
-      inputSchema: z.object({
-        subscriptionId: z
-          .string()
-          .optional()
-          .describe("Subscription ID if passed subscription will be updated"),
-        channel: z.string().describe("Channel to subscribe to"),
-        uri: ResourceUriSchema.describe(
-          "URI of the resource to subscribe to, use rsc://workspace/project/* to subscribe to all resources",
-        ),
-      }),
-      outputSchema: z.object({
-        subscriptionId: z.string().describe("Subscription ID"),
-      }),
-      opt: true,
-    },
-    {
-      name: `DECO_RESOURCE_${resourceName.toUpperCase()}_UNSUBSCRIBE` as const,
-      inputSchema: z.object({
-        subscriptionId: z
-          .string()
-          .describe("Subscription ID to unsubscribe from"),
-      }),
-      outputSchema: z.object({
-        ok: z.boolean(),
-      }),
+      name: `DECO_RESOURCE_${resourceName.toUpperCase()}_DESCRIBE` as const,
+      inputSchema: DescribeInputSchema,
+      outputSchema: DescribeOutputSchema,
       opt: true,
     },
   ] as const satisfies readonly ToolBinder[];

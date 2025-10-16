@@ -36,8 +36,7 @@ export * from "./resources/schemas.ts";
 // Export deconfig helpers and types
 export {
   ResourcePath,
-  constructResourceUri as deconfigConstructResourceUri,
-  extractResourceId as deconfigExtractResourceId,
+  ResourceUri,
   getMetadataString as deconfigGetMetadataString,
   getMetadataValue as deconfigGetMetadataValue,
   normalizeDirectory as deconfigNormalizeDirectory,

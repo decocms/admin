@@ -551,9 +551,9 @@ app.get(`/:org/:project/deconfig/watch`, async (ctx) => {
   const appCtx = honoCtxToAppCtx(ctx);
   return await watchSSE(appCtx, {
     branchName: ctx.req.query("branch"),
-    pathFilters: ctx.req.query("pathFilter") ?? ctx.req.query("pathFilters"),
-    fromCtime: +(ctx.req.query("fromCtime") ?? "1"),
-    watcherId: ctx.req.query("watcherId"),
+    pathFilters: ctx.req.query("path-filter") ?? ctx.req.query("path-filters"),
+    fromCtime: +(ctx.req.query("from-ctime") ?? "1"),
+    watcherId: ctx.req.query("watcher-id"),
   });
 });
 

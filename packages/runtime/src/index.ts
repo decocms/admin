@@ -13,6 +13,7 @@ import {
   createIntegrationBinding,
   workspaceClient,
 } from "./bindings.ts";
+import { DeconfigResource } from "./bindings/deconfig/index.ts";
 import { DECO_MCP_CLIENT_HEADER } from "./client.ts";
 import { DeprecatedEnv } from "./deprecated.ts";
 import {
@@ -341,6 +342,10 @@ export const withRuntime = <TEnv, TSchema extends z.ZodTypeAny = never>(
           "Content-Type": "application/json",
         },
       });
+    }
+
+    if (url.pathname.startsWith(DeconfigResource.WatchPathNameBase)) {
+      return DeconfigResource.watchAPI(req, env);
     }
     return (
       userFns.fetch?.(req, env, ctx) ||

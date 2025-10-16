@@ -20,21 +20,17 @@ export const ResourcePath = {
   },
 };
 
-export const extractResourceId = (uri: string) => {
-  // Extract ID from Resources 2.0 URI format: rsc://integrationId/resourceName/resource-id
-  const match = uri.match(/^rsc:\/\/[^\/]+\/[^\/]+\/(.+)$/);
-  if (!match) {
-    throw new Error("Invalid Resources 2.0 URI format");
-  }
-  return match[1];
-};
-
-export const constructResourceUri = (
-  integrationId: string,
-  resourceName: string,
-  resourceId: string,
-) => {
-  return `rsc://${integrationId}/${resourceName}/${resourceId}`;
+export const ResourceUri = {
+  build: (integrationId: string, resourceName: string, resourceId: string) => {
+    return `rsc://${integrationId}/${resourceName}/${resourceId}`;
+  },
+  unwind: (uri: string) => {
+    const match = uri.match(/^rsc:\/\/[^\/]+\/([^\/]+)\/(.+)$/);
+    if (!match) {
+      throw new Error("Invalid Resources 2.0 URI format");
+    }
+    return { resourceName: match[1], resourceId: match[2] };
+  },
 };
 
 export function getMetadataValue(metadata: unknown, key: string): unknown {

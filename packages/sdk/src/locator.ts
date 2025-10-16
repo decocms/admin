@@ -22,12 +22,15 @@ const adaptFromRootSlug = (locator: ProjectLocator): ProjectLocator => {
     return locator;
   }
   return locator;
-}
+};
 
 export const Locator = {
   asFirstTwoSegmentsOf(path: string): ProjectLocator {
     const normalized = path.startsWith("/") ? path.slice(1) : path;
-    const locator = normalized.split("/").slice(0, 2).join("/") as ProjectLocator;
+    const locator = normalized
+      .split("/")
+      .slice(0, 2)
+      .join("/") as ProjectLocator;
     return adaptFromRootSlug(locator);
   },
   from({ org, project }: LocatorStructured): ProjectLocator {

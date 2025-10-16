@@ -199,7 +199,7 @@ export const genEnv = async ({
 
   try {
     const types = new Map<string, number>();
-    types.set("Env", 1); // set the default env type
+    types.set("env", 1); // set the default env type
     let tsTypes = "";
     const mapBindingTools: Record<string, string[]> = {};
     const props = await Promise.all(

@@ -184,9 +184,13 @@ const generateAgentLink = (
   workspace: { root: string; value: string; slug: string },
   agentId: string,
 ) => {
-  return `https://${Hosts.WEB_APP}${
-    workspace.root === "users" ? "/" : `${workspace.slug}/`
-  }agent/${agentId}/${crypto.randomUUID()}`;
+  // Ensure there's always a slash after the host
+  // If workspace.root === 'users' we want the root path: https://host/agent/...
+  // Otherwise we want https://host/<slug|default>/agent/...
+  const slugPart = workspace.root === "users"
+    ? ""
+    : `${workspace.slug && workspace.slug.length > 0 ? workspace.slug : "default"}/`;
+  return `https://${Hosts.WEB_APP}/${slugPart}agent/${agentId}/${crypto.randomUUID()}`;
 };
 
 const getAgentName = (

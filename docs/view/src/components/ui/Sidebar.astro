@@ -66,9 +66,17 @@ function buildTree(docs: any[]): TreeNode[] {
         if (a.name.includes("getting-started")) return -1;
         if (b.name.includes("getting-started")) return 1;
 
+        // Then project-structure
+        if (a.name.includes("project-structure")) return -1;
+        if (b.name.includes("project-structure")) return 1;
+
         // Then cli-reference
         if (a.name.includes("cli-reference")) return -1;
         if (b.name.includes("cli-reference")) return 1;
+
+        // Then bounties (last)
+        if (a.name.includes("bounties")) return -1;
+        if (b.name.includes("bounties")) return 1;
       }
 
       // Default alphabetical

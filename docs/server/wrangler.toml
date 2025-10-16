@@ -4,9 +4,10 @@ main = "main.ts"
 compatibility_date = "2025-06-17"
 compatibility_flags = [ "nodejs_compat" ]
 scope = "deco.cx"
-routes = [
-  { pattern = "docs.decocms.com", custom_domain = true },
-]
+
+[[routes]]
+pattern = "docs.decocms.com"
+custom_domain = true
 
 [assets]
 directory = "./view-build"

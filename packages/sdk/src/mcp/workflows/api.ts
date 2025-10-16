@@ -286,6 +286,9 @@ export function createWorkflowBindingImpl({
         }
 
         // Validate input against the workflow's input schema
+        if (!Array.isArray(workflow.steps) || workflow.steps.length === 0) {
+          return { error: "Workflow has no steps to execute" };
+        }
         const inputSchema: Record<string, unknown> = workflow.steps[0].def
           .inputSchema ?? {
           type: "object",

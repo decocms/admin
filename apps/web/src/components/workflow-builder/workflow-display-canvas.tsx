@@ -305,7 +305,7 @@ export function WorkflowDisplayCanvas({
   }, [run?.data.workflowStatus?.steps, workflow]);
 
   const firstStepInputSchema = useMemo(() => {
-    return workflow?.steps[0].def.inputSchema;
+    return workflow?.steps?.[0]?.def?.inputSchema;
   }, [workflow?.steps]);
 
   // Flag to know if we have an active or completed run

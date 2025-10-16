@@ -15,15 +15,6 @@ import { z } from "zod";
  * - Full TypeScript support with Zod validation
  */
 
-export const DescribeInputSchema = z.object({});
-export const DescribeOutputSchema = z.object({
-  features: z.object({
-    watch: z.object({
-      pathname: z.string().describe("Pathname to watch"),
-    }),
-  }),
-});
-
 // Common URI format validation for Resources 2.0
 export const ResourceUriSchema = z
   .string()
@@ -31,6 +22,16 @@ export const ResourceUriSchema = z
     /^rsc:\/\/[^\/]+\/[^\/]+\/.+$/,
     "Invalid resource URI format. Expected format: rsc://workspace/project/resource-id",
   );
+
+export const DescribeInputSchema = z.object({});
+export const DescribeOutputSchema = z.object({
+  uriTemplate: ResourceUriSchema.describe("URI template for the resource"),
+  features: z.object({
+    watch: z.object({
+      pathname: z.string().describe("Pathname to watch"),
+    }),
+  }),
+});
 
 /**
  * Search input schema for resource queries

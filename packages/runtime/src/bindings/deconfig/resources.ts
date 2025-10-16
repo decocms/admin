@@ -495,9 +495,14 @@ export const createDeconfigResource = <
         `Describe the ${resourceName} resource in the DECONFIG directory ${directory}`,
       handler: () => {
         return {
+          uriTemplate: ResourceUri.build(
+            env.DECO_REQUEST_CONTEXT.integrationId as string,
+            resourceName,
+            "*",
+          ),
           features: {
             watch: {
-              pathname: `${RESOURCE_WATCH_BASE_PATHNAME}/${directory}`,
+              pathname: `${RESOURCE_WATCH_BASE_PATHNAME}${directory}`,
             },
           },
         };
@@ -591,7 +596,7 @@ export const DeconfigResource = {
       return new Response("URI is required", { status: 400 });
     }
     const pathname = url.pathname;
-    let pathFilter = pathname.slice(RESOURCE_WATCH_BASE_PATHNAME.length + 1); // removes `${RESOURCE_WATCH_BASE_PATHNAME}/`
+    let pathFilter = pathname.slice(RESOURCE_WATCH_BASE_PATHNAME.length); // removes `${RESOURCE_WATCH_BASE_PATHNAME}`
     const { resourceName, resourceId } = ResourceUri.unwind(uri);
     pathFilter =
       resourceId === "*"

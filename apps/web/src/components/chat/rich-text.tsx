@@ -182,7 +182,7 @@ export const RichTextArea = forwardRef<RichTextAreaHandle, RichTextAreaProps>(
           />
         );
       };
-    }, []); // appendIntegrationTool should be stable, no need to list it
+    }, [appendIntegrationTool]);
 
     const extensions: Extensions = useMemo(() => {
       const extensions: Extensions = [

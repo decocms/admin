@@ -192,9 +192,13 @@ export function ContextResources({
           <div className="relative group">
             <Tooltip>
               <TooltipTrigger asChild>
-                <div className="flex items-center justify-center size-10 rounded-lg bg-muted cursor-pointer">
+                <button
+                  type="button"
+                  aria-label="Show prompts"
+                  className="flex items-center justify-center size-10 rounded-lg bg-muted"
+                >
                   <Icon name="rule" size={20} className="text-foreground" />
-                </div>
+                </button>
               </TooltipTrigger>
               <TooltipContent className="max-w-md p-0" align="start">
                 <div className="max-h-[300px] overflow-y-auto">

@@ -15,6 +15,7 @@ import {
   useState,
   type FormEvent,
   type KeyboardEvent,
+  type ReactNode,
 } from "react";
 
 import { UIMessage } from "@ai-sdk/react";
@@ -29,7 +30,13 @@ import { ContextResources } from "./context-resources.tsx";
 import { ModelSelector } from "./model-selector.tsx";
 import { RichTextArea, type RichTextAreaHandle } from "./rich-text.tsx";
 
-export function ChatInput({ disabled }: { disabled?: boolean } = {}) {
+export function ChatInput({
+  disabled,
+  rightNode,
+}: {
+  disabled?: boolean;
+  rightNode?: ReactNode;
+} = {}) {
   const {
     chat,
     uiOptions,
@@ -135,7 +142,9 @@ export function ChatInput({ disabled }: { disabled?: boolean } = {}) {
 
     if (!input.trim() || isLoading) return;
 
-    const doneFiles = uploadedFiles.filter((uf) => uf.status === "done");
+    const doneFiles = uploadedFiles.filter(
+      (uf) => uf.status === "done" && !!uf.url,
+    );
 
     // Prepare message with attachments if any
     const message: UIMessage = {
@@ -157,7 +166,7 @@ export function ChatInput({ disabled }: { disabled?: boolean } = {}) {
         contentType: uf.file.type,
         mediaType: uf.file.type,
         size: uf.file.size,
-        url: uf.url || URL.createObjectURL(uf.file),
+        url: uf.url!, // ensured by filter above
       }));
 
       message.parts.push(...fileParts);
@@ -263,6 +272,7 @@ export function ChatInput({ disabled }: { disabled?: boolean } = {}) {
                   </DropdownMenu>
                 </div>
                 <div className="flex items-center gap-1">
+                  {rightNode}
                   {showModelSelector && (
                     <ModelSelector
                       model={model}

@@ -317,7 +317,13 @@ export function DecopilotChat() {
         );
       }
     }
-  }, [sortedThreads, activeTab, activeTabIndex, user?.id]);
+  }, [
+    sortedThreads,
+    activeTab?.threadId,
+    activeTab?.title,
+    activeTabIndex,
+    user?.id,
+  ]);
 
   function handleThreadSelect(selectedThreadId: string) {
     // Remove user prefix if present for consistency
@@ -470,7 +476,7 @@ export function DecopilotChat() {
                   showEditAgent: false,
                 }}
               >
-                <MainChat className="flex-1 min-h-0" />
+                <MainChat className="h-full" />
               </AgentProvider>
             </Suspense>
           </div>

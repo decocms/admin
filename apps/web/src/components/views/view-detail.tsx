@@ -4,11 +4,11 @@ import {
   useSDK,
   useRecentResources,
 } from "@deco/sdk";
-import { Button } from "@deco/ui/components/button.tsx";
 import { Icon } from "@deco/ui/components/icon.tsx";
 import { Spinner } from "@deco/ui/components/spinner.tsx";
-import { useCallback, useMemo, useState, useEffect, useRef } from "react";
+import { useMemo, useEffect, useRef } from "react";
 import { useParams } from "react-router";
+import { EmptyState } from "../common/empty-state.tsx";
 import { PreviewIframe } from "../agent/preview.tsx";
 import { generateViewHTML } from "../../utils/view-template.ts";
 
@@ -22,11 +22,7 @@ interface ViewDetailProps {
  */
 export function ViewDetail({ resourceUri }: ViewDetailProps) {
   const { org, project } = useParams<{ org: string; project: string }>();
-  const {
-    data: resource,
-    isLoading: isLoading,
-    refetch,
-  } = useViewByUriV2(resourceUri);
+  const { data: resource, isLoading } = useViewByUriV2(resourceUri);
   const effectiveView = resource?.data;
   const { locator } = useSDK();
   const projectKey = typeof locator === "string" ? locator : undefined;
@@ -56,24 +52,11 @@ export function ViewDetail({ resourceUri }: ViewDetailProps) {
           name: effectiveView.name,
           type: "view",
           icon: "dashboard",
-          path: `/${projectKey}/rsc/i:${integrationId}/${resourceName}/${encodeURIComponent(resourceUri)}`,
+          path: `/${projectKey}/rsc/${integrationId.startsWith("i:") ? integrationId : `i:${integrationId}`}/${resourceName}/${encodeURIComponent(resourceUri)}`,
         });
       }, 0);
     }
   }, [effectiveView, resourceUri, projectKey, org, project, addRecent]);
-
-  // Local loading state for refresh functionality
-  const [isRefreshing, setIsRefreshing] = useState(false);
-
-  const handleRefresh = useCallback(async () => {
-    if (isRefreshing) return;
-    try {
-      setIsRefreshing(true);
-      await refetch();
-    } finally {
-      setIsRefreshing(false);
-    }
-  }, [isRefreshing, refetch]);
 
   // Generate HTML from React code on the client side
   const htmlValue = useMemo(() => {
@@ -95,7 +78,7 @@ export function ViewDetail({ resourceUri }: ViewDetailProps) {
 
   if (isLoading) {
     return (
-      <div className="flex-1 flex items-center justify-center">
+      <div className="h-[calc(100vh-12rem)] flex items-center justify-center">
         <Spinner />
       </div>
     );
@@ -103,52 +86,31 @@ export function ViewDetail({ resourceUri }: ViewDetailProps) {
 
   if (!effectiveView) {
     return (
-      <div className="flex-1 flex items-center justify-center">
-        <div className="text-center">
-          <Icon
-            name="error"
-            className="w-12 h-12 mx-auto mb-4 text-muted-foreground"
-          />
-          <p className="text-lg font-medium">View not found</p>
-          <p className="text-sm text-muted-foreground mt-2">
-            The view could not be loaded. It may have been deleted.
-          </p>
-        </div>
-      </div>
+      <EmptyState
+        icon="error"
+        title="View not found"
+        description="The requested view could not be found or is not available."
+      />
     );
   }
 
   return (
-    <div className="h-full flex flex-col">
+    <div className="h-full w-full flex flex-col">
       {/* Header */}
-      <div className="border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 px-4 py-3">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <Icon name="visibility" className="w-6 h-6 text-primary" />
-            <div>
-              <h1 className="text-lg font-semibold">{effectiveView.name}</h1>
-              {effectiveView.description && (
-                <p className="text-sm text-muted-foreground">
-                  {effectiveView.description}
-                </p>
-              )}
-            </div>
-          </div>
-          <div className="flex items-center gap-2">
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={handleRefresh}
-              disabled={isRefreshing}
-            >
-              <Icon name="refresh" className="w-4 h-4 mr-2" />
-              Refresh
-            </Button>
+      <div className="border-b border-border py-4 px-4 md:py-8 md:px-8 lg:py-16 lg:px-16 shrink-0">
+        <div className="max-w-[1500px] mx-auto">
+          <div>
+            <h1 className="text-2xl font-medium">{effectiveView.name}</h1>
+            {effectiveView.description && (
+              <p className="text-sm text-muted-foreground mt-1">
+                {effectiveView.description}
+              </p>
+            )}
           </div>
         </div>
       </div>
 
-      {/* Content */}
+      {/* Preview Section - Full Container */}
       <div className="flex-1 overflow-hidden">
         {htmlValue ? (
           <PreviewIframe
@@ -161,7 +123,8 @@ export function ViewDetail({ resourceUri }: ViewDetailProps) {
             <div className="text-center">
               <Icon
                 name="visibility_off"
-                className="w-12 h-12 mx-auto mb-4 text-muted-foreground"
+                size={48}
+                className="mx-auto mb-4 text-muted-foreground"
               />
               <p className="text-sm text-muted-foreground">
                 No React code to preview

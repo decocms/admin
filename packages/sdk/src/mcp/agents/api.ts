@@ -288,7 +288,7 @@ export const createAgent = createTool({
         workspace: projectId ? null : c.workspace?.value,
         project_id: projectId,
       })
-      .returning(AGENT_FIELDS_SELECT);
+      .returning();
 
     return AgentSchema.parse(data);
   },

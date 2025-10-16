@@ -10,12 +10,10 @@ import {
 import { useSidebar } from "@deco/ui/components/sidebar.tsx";
 import { Suspense } from "react";
 import { Link } from "react-router";
-import { useState } from "react";
 import { ErrorBoundary } from "../../error-boundary.tsx";
 import { ReportIssueButton } from "../common/report-issue-button.tsx";
 import { LoggedUser, LoggedUserAvatarTrigger } from "../sidebar/footer";
 import { DefaultBreadcrumb, TopbarControls } from "./project";
-import { LinkResourceModal } from "../modals/link-resource-modal.tsx";
 
 interface BreadcrumbItem {
   label: string | React.ReactNode;
@@ -45,31 +43,28 @@ function SidebarToggle() {
 }
 
 function LinkButton() {
-  const [linkModalOpen, setLinkModalOpen] = useState(false);
-
   return (
-    <>
-      <TooltipProvider>
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <Button
-              onClick={() => setLinkModalOpen(true)}
-              size="icon"
-              variant="ghost"
-              className="w-8 h-8 rounded-md"
-            >
+    <TooltipProvider>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <span className="inline-flex">
+            <Button size="icon" variant="ghost" className="w-8 h-8" disabled>
               <Icon
                 name="terminal"
                 className="text-muted-foreground"
                 size={20}
               />
             </Button>
-          </TooltipTrigger>
-          <TooltipContent>Link</TooltipContent>
-        </Tooltip>
-      </TooltipProvider>
-      <LinkResourceModal open={linkModalOpen} onOpenChange={setLinkModalOpen} />
-    </>
+          </span>
+        </TooltipTrigger>
+        <TooltipContent>
+          <div className="flex flex-col items-center">
+            <span>Link</span>
+            <span className="text-xs">Coming soon</span>
+          </div>
+        </TooltipContent>
+      </Tooltip>
+    </TooltipProvider>
   );
 }
 
@@ -81,16 +76,18 @@ export function Topbar({ breadcrumb }: { breadcrumb: BreadcrumbItem[] }) {
           <SidebarToggle />
         </ErrorBoundary>
         <Link to="/" className="ml-2">
-          <img
-            src="/img/logo-tiny.svg"
-            className="size-5 text-xs"
-            alt="Deco Logo"
-          />
+          <div className="size-8 flex items-center justify-center">
+            <img
+              src="/img/logo-tiny.svg"
+              className="size-4.5"
+              alt="Deco Logo"
+            />
+          </div>
         </Link>
         <BreadcrumbSeparator className="text-muted-foreground" />
         <DefaultBreadcrumb items={breadcrumb} useWorkspaceLink={false} />
       </div>
-      <div className="flex items-center gap-3">
+      <div className="flex items-center gap-2">
         <LinkButton />
         <ReportIssueButton />
         <Suspense fallback={null}>

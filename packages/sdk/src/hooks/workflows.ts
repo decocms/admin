@@ -6,8 +6,6 @@ import {
 } from "../crud/workflows.ts";
 import { InternalServerError } from "../errors.ts";
 import { useSDK } from "./store.tsx";
-import { useWorkflow as useWorkflowV2 } from "./resources-workflow.ts";
-import type { WorkflowDefinition } from "../mcp/workflows/schemas.ts";
 
 /**
  * Hook to get all unique workflow names in the workspace
@@ -116,46 +114,3 @@ export const useWorkflowStatus = (workflowName: string, instanceId: string) => {
     },
   });
 };
-
-/**
- * Hook to get a workflow definition with fallback to empty workflow
- * Returns the new Workflow format
- */
-export function useWorkflow(workflowUri: string) {
-  const { data, isLoading, error } = useWorkflowV2(workflowUri);
-
-  // If workflow doesn't exist, create a new one
-  const workflow = data?.data || createEmptyWorkflow(workflowUri);
-
-  return {
-    workflow,
-    isLoading,
-    error: error?.message || null,
-  };
-}
-
-/**
- * Hook to get a workflow definition by URI with fallback to empty workflow
- */
-export function useWorkflowByUri(workflowUri: string) {
-  const { data, isLoading, error } = useWorkflowV2(workflowUri);
-
-  // If workflow doesn't exist, create a new one
-  const workflow = data?.data || createEmptyWorkflow(workflowUri);
-
-  return {
-    workflow,
-    isLoading,
-    error: error?.message || null,
-  };
-}
-
-function createEmptyWorkflow(name: string): WorkflowDefinition {
-  return {
-    name,
-    description: `Workflow: ${name}`,
-    inputSchema: {},
-    outputSchema: {},
-    steps: [],
-  };
-}

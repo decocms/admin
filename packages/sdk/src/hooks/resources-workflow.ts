@@ -1,10 +1,20 @@
-import { useMutation, useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useEffect } from "react";
+import {
+  addResourceUpdateListener,
+  notifyResourceUpdate,
+} from "../broadcast.ts";
 import { WellKnownMcpGroups, formatIntegrationId } from "../crud/groups.ts";
 import { InternalServerError } from "../errors.ts";
 import { MCPClient } from "../fetcher.ts";
 import type { ProjectLocator } from "../locator.ts";
 import type { ReadOutput } from "../mcp/resources-v2/schemas.ts";
 import { WorkflowDefinitionSchema } from "../mcp/workflows/schemas.ts";
+import {
+  parseIntegrationId,
+  resourceKeys,
+  resourceListKeys,
+} from "./query-keys.ts";
 import { useSDK } from "./store.tsx";
 
 // Resources V2 tool names for workflow
@@ -144,14 +154,42 @@ export function startWorkflow(
 
 export const useWorkflow = (workflowUri: string) => {
   const { locator } = useSDK();
+  const queryClient = useQueryClient();
 
-  return useQuery({
-    queryKey: ["workflow-by-uri-v2", locator, workflowUri],
+  const query = useQuery({
+    queryKey: resourceKeys.workflow(locator, workflowUri),
     queryFn: ({ signal }) => getWorkflowByUri(locator, workflowUri, signal),
     retry: (failureCount, error) =>
       error instanceof InternalServerError && failureCount < 2,
     staleTime: 5 * 60 * 1000,
   });
+
+  // Listen for resource updates and auto-invalidate
+  useEffect(() => {
+    const cleanup = addResourceUpdateListener((message) => {
+      if (
+        message.type === "RESOURCE_UPDATED" &&
+        message.resourceUri === workflowUri
+      ) {
+        // Invalidate this specific workflow query
+        queryClient.invalidateQueries({
+          queryKey: resourceKeys.workflow(locator, workflowUri),
+          refetchType: "all",
+        });
+
+        // Also invalidate the workflow list
+        const parsedIntegrationId = parseIntegrationId(workflowUri);
+        queryClient.invalidateQueries({
+          queryKey: resourceListKeys.workflows(locator, parsedIntegrationId),
+          refetchType: "all",
+        });
+      }
+    });
+
+    return cleanup;
+  }, [workflowUri, locator, queryClient]);
+
+  return query;
 };
 
 export const useUpsertWorkflow = () => {
@@ -160,6 +198,12 @@ export const useUpsertWorkflow = () => {
     mutationFn: async (params: WorkflowUpsertParamsV2) => {
       const result = await upsertWorkflow(locator, params);
       return result;
+    },
+    onSuccess: (data) => {
+      // Notify about the resource update
+      if (data.uri) {
+        notifyResourceUpdate(data.uri);
+      }
     },
   });
 };
@@ -177,6 +221,12 @@ export const useStartWorkflow = () => {
         throw new Error(result.error);
       }
       return result;
+    },
+    onSuccess: (data) => {
+      // Notify about the workflow start (updates the workflow resource)
+      if (data.uri) {
+        notifyResourceUpdate(data.uri);
+      }
     },
   });
 };

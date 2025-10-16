@@ -27,7 +27,6 @@ import {
 import { useParams } from "react-router";
 import { z } from "zod";
 import { EmptyState } from "../common/empty-state.tsx";
-import { useDecopilotOpen } from "../layout/decopilot-layout.tsx";
 import { ToolCallResultV2 } from "@deco/sdk/hooks";
 
 const LazyHighlighter = lazy(() => import("../chat/lazy-highlighter.tsx"));
@@ -129,7 +128,6 @@ export function ToolDetail({ resourceUri }: ToolDisplayCanvasProps) {
   const { addRecent } = useRecentResources(projectKey);
   const params = useParams<{ org: string; project: string }>();
   const hasTrackedRecentRef = useRef(false);
-  const { toggle: toggleChat } = useDecopilotOpen();
 
   // Track as recently opened when tool is loaded (only once)
   useEffect(() => {
@@ -154,7 +152,7 @@ export function ToolDetail({ resourceUri }: ToolDisplayCanvasProps) {
           name: effectiveTool.name,
           type: "tool",
           icon: "build",
-          path: `/${projectKey}/rsc/i:${integrationId}/${resourceName}/${encodeURIComponent(resourceUri)}`,
+          path: `/${projectKey}/rsc/${integrationId.startsWith("i:") ? integrationId : `i:${integrationId}`}/${resourceName}/${encodeURIComponent(resourceUri)}`,
         });
       }, 0);
     }
@@ -391,26 +389,27 @@ export function ToolDetail({ resourceUri }: ToolDisplayCanvasProps) {
                   </div>
                 </Form>
               ) : (
-                <div className="flex flex-col items-center justify-center py-12 text-center">
-                  <div className="bg-background rounded-full p-4 mb-4">
-                    <Icon
-                      name="chat"
-                      size={32}
-                      className="text-muted-foreground"
-                    />
-                  </div>
-                  <h3 className="text-lg font-medium mb-2">No Input Form</h3>
-                  <p className="text-sm text-muted-foreground max-w-md">
-                    Create and configure tools in chat.
+                <div className="flex flex-col items-center justify-center py-8 text-center gap-4">
+                  <p className="text-sm text-muted-foreground">
+                    This tool does not require any input parameters.
                   </p>
                   <Button
-                    variant="outline"
-                    size="sm"
-                    className="mt-4"
-                    onClick={toggleChat}
+                    disabled={isExecuting}
+                    size="lg"
+                    onClick={() => handleFormSubmit({})}
+                    className="min-w-[200px] flex items-center gap-2"
                   >
-                    <Icon name="chat" size={16} className="mr-2" />
-                    Open Chat
+                    {isExecuting ? (
+                      <>
+                        <Spinner size="xs" />
+                        Executing...
+                      </>
+                    ) : (
+                      <>
+                        <Icon name="play_arrow" size={18} />
+                        Execute Tool
+                      </>
+                    )}
                   </Button>
                 </div>
               )}

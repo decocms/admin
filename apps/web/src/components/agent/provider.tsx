@@ -48,6 +48,7 @@ import { toast } from "sonner";
 import { trackEvent } from "../../hooks/analytics.ts";
 import { useCreateAgent } from "../../hooks/use-create-agent.ts";
 import { useUserPreferences } from "../../hooks/use-user-preferences.ts";
+import { notifyResourceUpdate } from "../../lib/broadcast-channels.ts";
 import { dispatchRulesUpdated, onRulesUpdated } from "../../utils/events.ts";
 import { IMAGE_REGEXP, openPreviewPanel } from "../chat/utils/preview.ts";
 
@@ -400,23 +401,13 @@ export function AgentProvider({
 
       // Broadcast resource updates for auto-refresh
       if (
-        toolCall.toolName?.includes("_UPDATE") &&
-        toolCall.toolName?.startsWith("DECO_RESOURCE_") &&
+        /^DECO_RESOURCE_.*_(UPDATE|CREATE)$/.test(toolCall.toolName ?? "") &&
         toolCall.input &&
-        typeof toolCall.input === "object"
+        typeof toolCall.input === "object" &&
+        "uri" in toolCall.input &&
+        typeof toolCall.input.uri === "string"
       ) {
-        // Extract resource URI from input
-        const input = toolCall.input as Record<string, unknown>;
-        const resourceUri = input.uri || input.resource;
-
-        if (typeof resourceUri === "string") {
-          // Import and call notifyResourceUpdate
-          import("../../lib/broadcast-channels.ts").then(
-            ({ notifyResourceUpdate }) => {
-              notifyResourceUpdate(resourceUri);
-            },
-          );
-        }
+        notifyResourceUpdate(toolCall.input.uri);
       }
     },
     ...chatOptions, // Allow passing any additional useChat options

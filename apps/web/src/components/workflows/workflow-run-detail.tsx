@@ -15,6 +15,7 @@ import { EmptyState } from "../common/empty-state.tsx";
 import { UserInfo } from "../common/table/table-cells.tsx";
 import { useResourceRoute } from "../resources-v2/route-context.tsx";
 import { getStatusBadgeVariant } from "./utils.ts";
+import { WorkflowStepCard } from "./workflow-step-card.tsx";
 
 const LazyHighlighter = lazy(() => import("../chat/lazy-highlighter.tsx"));
 
@@ -101,21 +102,6 @@ function JsonViewer({
             />
           </Suspense>
         </div>
-      </div>
-    </div>
-  );
-}
-
-function StepError({ error }: { error: unknown }) {
-  if (!error) return null;
-
-  const errorObj = error as { name?: string; message?: string };
-
-  return (
-    <div className="text-xs bg-destructive/10 text-destructive rounded p-2">
-      <div className="font-semibold">{String(errorObj.name || "Error")}</div>
-      <div className="mt-1">
-        {String(errorObj.message || "An error occurred")}
       </div>
     </div>
   );
@@ -335,137 +321,18 @@ export function WorkflowRunDetail({ resourceUri }: WorkflowRunDetailProps) {
             {steps.length > 0 ? (
               <div className="flex flex-col items-center">
                 <div className="w-full max-w-[700px] space-y-0">
-                  {steps.map((step, idx) => {
-                    const stepStatus =
-                      step.success === true
-                        ? "completed"
-                        : step.success === false
-                          ? "failed"
-                          : step.start && !step.end
-                            ? "running"
-                            : "pending";
-
-                    return (
-                      <div key={idx}>
-                        {idx > 0 && (
-                          <div className="h-10 w-full flex justify-center">
-                            <div className="w-px bg-border" />
-                          </div>
-                        )}
-
-                        <div
-                          className={`rounded-xl p-0.5 ${stepStatus === "failed" ? "bg-destructive/10" : "bg-muted"}`}
-                        >
-                          {/* Step Header */}
-                          <div
-                            className={`p-4 space-y-2 ${stepStatus === "failed" ? "text-destructive" : ""}`}
-                          >
-                            <div className="flex items-center justify-between gap-2">
-                              <div className="flex items-center gap-2 flex-1 min-w-0">
-                                <span className="font-medium text-base truncate">
-                                  {String(step.name || `Step ${idx + 1}`)}
-                                </span>
-                              </div>
-                              <Badge
-                                variant={getStatusBadgeVariant(stepStatus)}
-                                className="capitalize text-xs shrink-0"
-                              >
-                                {stepStatus}
-                              </Badge>
-                            </div>
-
-                            <div className="flex items-center gap-6 text-sm">
-                              {step.start && (
-                                <div className="flex items-center gap-2">
-                                  <Icon name="play_arrow" size={16} />
-                                  <span className="font-mono text-sm uppercase">
-                                    {new Date(step.start).toLocaleTimeString(
-                                      [],
-                                      {
-                                        hour: "2-digit",
-                                        minute: "2-digit",
-                                      },
-                                    )}
-                                  </span>
-                                </div>
-                              )}
-
-                              {step.end && (
-                                <div className="flex items-center gap-2">
-                                  <Icon name="check" size={16} />
-                                  <span className="font-mono text-sm uppercase">
-                                    {new Date(step.end).toLocaleTimeString([], {
-                                      hour: "2-digit",
-                                      minute: "2-digit",
-                                    })}
-                                  </span>
-                                </div>
-                              )}
-                            </div>
-                          </div>
-
-                          {/* Step Content */}
-                          <div className="bg-background rounded-xl p-3 space-y-3">
-                            <StepError error={step.error} />
-
-                            {step.config !== undefined &&
-                              step.config !== null && (
-                                <JsonViewer data={step.config} title="Config" />
-                              )}
-
-                            {step.output !== undefined &&
-                              step.output !== null && (
-                                <JsonViewer data={step.output} title="Output" />
-                              )}
-
-                            {step.attempts && step.attempts.length > 1 && (
-                              <details className="text-xs">
-                                <summary className="cursor-pointer font-medium text-muted-foreground hover:text-foreground">
-                                  {step.attempts.length} attempts
-                                </summary>
-                                <div className="mt-2 space-y-2 pl-4">
-                                  {step.attempts.map((attempt, attemptIdx) => (
-                                    <div
-                                      key={attemptIdx}
-                                      className="border-l-2 pl-2 py-1"
-                                    >
-                                      <div className="flex items-center gap-2">
-                                        <span>Attempt {attemptIdx + 1}</span>
-                                        {attempt.success ? (
-                                          <Icon
-                                            name="check_circle"
-                                            size={12}
-                                            className="text-success"
-                                          />
-                                        ) : (
-                                          <Icon
-                                            name="error"
-                                            size={12}
-                                            className="text-destructive"
-                                          />
-                                        )}
-                                      </div>
-                                      {attempt.error && (
-                                        <div className="text-destructive mt-1">
-                                          {String(
-                                            (
-                                              attempt.error as {
-                                                message?: string;
-                                              }
-                                            ).message || "Error",
-                                          )}
-                                        </div>
-                                      )}
-                                    </div>
-                                  ))}
-                                </div>
-                              </details>
-                            )}
-                          </div>
+                  {steps.map((step, idx) => (
+                    <div key={idx}>
+                      {idx > 0 && (
+                        <div className="h-10 w-full flex justify-center">
+                          <div className="w-px bg-border" />
                         </div>
-                      </div>
-                    );
-                  })}
+                      )}
+                      <Suspense fallback={<Spinner />}>
+                        <WorkflowStepCard step={step} index={idx} showStatus />
+                      </Suspense>
+                    </div>
+                  ))}
                 </div>
               </div>
             ) : (

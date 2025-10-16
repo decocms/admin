@@ -1,7 +1,7 @@
-import { eq } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 import { assertHasWorkspace } from "../assertions";
 import { AppContext } from "../context";
-import { organizations } from "../schema";
+import { organizations, projects } from "../schema";
 
 export async function getProjectIdFromContext(
   c: AppContext,
@@ -9,15 +9,21 @@ export async function getProjectIdFromContext(
   if (!c.locator?.project) {
     return null;
   }
-
-  const { data } = await c.db
-    .from("deco_chat_projects")
-    .select("id, teams(id)")
-    .eq("slug", c.locator.project)
-    .eq("teams.slug", c.locator.org)
-    .maybeSingle();
-
-  return data?.id ?? null;
+  const project = await c.drizzle
+    .select({
+      id: projects.id,
+    })
+    .from(projects)
+    .leftJoin(organizations, eq(projects.org_id, organizations.id))
+    .where(
+      and(
+        eq(projects.slug, c.locator.project),
+        eq(organizations.slug, c.locator.org),
+      ),
+    )
+    .limit(1)
+    .then((r) => r[0]);
+  return project?.id ?? null;
 }
 
 export async function getOrgIdFromContext(

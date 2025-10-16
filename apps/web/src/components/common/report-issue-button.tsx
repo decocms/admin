@@ -6,6 +6,12 @@ import {
   PopoverTrigger,
 } from "@deco/ui/components/popover.tsx";
 import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@deco/ui/components/tooltip.tsx";
+import {
   Select,
   SelectContent,
   SelectItem,
@@ -61,11 +67,22 @@ export function ReportIssueButton() {
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
-      <PopoverTrigger asChild>
-        <Button size="icon" variant="ghost" title="Report Issue">
-          <Icon name="lightbulb_2" className="text-muted-foreground" />
-        </Button>
-      </PopoverTrigger>
+      <TooltipProvider>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <PopoverTrigger asChild>
+              <Button size="icon" variant="ghost" className="w-8 h-8">
+                <Icon
+                  name="lightbulb_2"
+                  className="text-muted-foreground"
+                  size={20}
+                />
+              </Button>
+            </PopoverTrigger>
+          </TooltipTrigger>
+          <TooltipContent>Feedback</TooltipContent>
+        </Tooltip>
+      </TooltipProvider>
       <PopoverContent className="w-80 p-1 rounded-xl" align="end" side="bottom">
         {isSuccess ? (
           <div className="flex flex-col items-center justify-center py-6 space-y-3">

@@ -11,20 +11,20 @@
  */
 import {
   type Integration,
+  maybeRegistryApp,
   MCPConnection,
   useIntegrations,
   useMarketplaceIntegrations,
-  maybeRegistryApp,
   WELL_KNOWN_KNOWLEDGE_BASE_CONNECTION_ID_STARTSWITH,
   WellKnownMcpGroupIds,
 } from "@deco/sdk";
+import { AppName } from "@deco/sdk/common";
 import { useEffect, useMemo } from "react";
+import { LEGACY_INTEGRATIONS } from "../../constants.ts";
 import {
-  INTEGRATION_CHANNEL,
+  addIntegrationUpdateListener,
   type IntegrationMessage,
 } from "../../lib/broadcast-channels.ts";
-import { LEGACY_INTEGRATIONS } from "../../constants.ts";
-import { AppName } from "@deco/sdk/common";
 import { MarketplaceIntegration } from "./marketplace.tsx";
 
 export interface GroupedApp {
@@ -168,16 +168,14 @@ export function useRefetchIntegrationsOnNotification() {
   const { refetch: refetchIntegrations } = useIntegrations();
 
   useEffect(() => {
-    const handleMessage = (event: MessageEvent<IntegrationMessage>) => {
-      if (event.data.type === "INTEGRATION_UPDATED") {
+    const handleMessage = (message: IntegrationMessage) => {
+      if (message.type === "INTEGRATION_UPDATED") {
         refetchIntegrations();
       }
     };
 
-    INTEGRATION_CHANNEL.addEventListener("message", handleMessage);
-    return () => {
-      INTEGRATION_CHANNEL.removeEventListener("message", handleMessage);
-    };
+    const cleanup = addIntegrationUpdateListener(handleMessage);
+    return cleanup;
   }, [refetchIntegrations]);
 }
 

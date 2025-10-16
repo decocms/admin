@@ -1,10 +1,20 @@
-import { useMutation, useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useEffect } from "react";
+import {
+  addResourceUpdateListener,
+  notifyResourceUpdate,
+} from "../broadcast.ts";
 import { WellKnownMcpGroups, formatIntegrationId } from "../crud/groups.ts";
 import { InternalServerError } from "../errors.ts";
 import { MCPClient } from "../fetcher.ts";
 import type { ProjectLocator } from "../locator.ts";
 import type { ReadOutput } from "../mcp/resources-v2/schemas.ts";
 import { ViewDefinitionSchema } from "../mcp/views/schemas.ts";
+import {
+  parseIntegrationId,
+  resourceKeys,
+  resourceListKeys,
+} from "./query-keys.ts";
 import { useSDK } from "./store.tsx";
 
 // Resources V2 view names for views
@@ -81,15 +91,41 @@ export function deleteViewV2(
 // React Hooks
 export function useViewByUriV2(uri: string) {
   const { locator } = useSDK();
+  const queryClient = useQueryClient();
+
   if (!locator) {
     throw new InternalServerError("No locator available");
   }
 
-  return useQuery({
-    queryKey: ["view", locator, uri],
+  const query = useQuery({
+    queryKey: resourceKeys.view(locator, uri),
     queryFn: ({ signal }) => getViewByUri(locator, uri, signal),
     retry: false,
   });
+
+  // Listen for resource updates and auto-invalidate
+  useEffect(() => {
+    const cleanup = addResourceUpdateListener((message) => {
+      if (message.type === "RESOURCE_UPDATED" && message.resourceUri === uri) {
+        // Invalidate this specific view query
+        queryClient.invalidateQueries({
+          queryKey: resourceKeys.view(locator, uri),
+          refetchType: "all",
+        });
+
+        // Also invalidate the view list
+        const parsedIntegrationId = parseIntegrationId(uri);
+        queryClient.invalidateQueries({
+          queryKey: resourceListKeys.views(locator, parsedIntegrationId),
+          refetchType: "all",
+        });
+      }
+    });
+
+    return cleanup;
+  }, [uri, locator, queryClient]);
+
+  return query;
 }
 
 export function useUpdateView() {
@@ -108,6 +144,10 @@ export function useUpdateView() {
       params: Partial<ViewUpsertParamsV2>;
       signal?: AbortSignal;
     }) => updateViewV2(locator, uri, params, signal),
+    onSuccess: (_data, variables) => {
+      // Notify about the resource update
+      notifyResourceUpdate(variables.uri);
+    },
   });
 }
 
@@ -120,5 +160,9 @@ export function useDeleteView() {
   return useMutation({
     mutationFn: ({ uri, signal }: { uri: string; signal?: AbortSignal }) =>
       deleteViewV2(locator, uri, signal),
+    onSuccess: (_data, variables) => {
+      // Notify about the resource deletion
+      notifyResourceUpdate(variables.uri);
+    },
   });
 }

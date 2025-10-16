@@ -698,7 +698,7 @@ const subscribeTool = createDeconfigTool({
   }),
   handler: async ({ branch, watcherId, pathFilters, subscriptionId }, c) => {
     // Check LIST_FILES access as authorization
-    await assertWorkspaceResourceAccess(c);
+    await assertWorkspaceResourceAccess(c, "LIST_FILES");
 
     using branchRpc = await branchRpcFor(c, branch);
 
@@ -726,7 +726,7 @@ const unsubscribeTool = createDeconfigTool({
   }),
   handler: async ({ branch, subscriptionId }, c) => {
     // Check LIST_FILES access as authorization
-    await assertWorkspaceResourceAccess(c);
+    await assertWorkspaceResourceAccess(c, "LIST_FILES");
 
     using branchRpc = await branchRpcFor(c, branch);
 

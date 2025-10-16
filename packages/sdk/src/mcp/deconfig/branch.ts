@@ -565,6 +565,7 @@ export class Branch extends DurableObject<DeconfigEnv> {
         if (options.pathFilters) {
           const initialSubscriptionId = crypto.randomUUID();
           subscriptions.set(initialSubscriptionId, options.pathFilters);
+          this.subscriptionToWatcher.set(initialSubscriptionId, watcherId);
         }
 
         this.watchers.set(watcherId, { controller, options, subscriptions });

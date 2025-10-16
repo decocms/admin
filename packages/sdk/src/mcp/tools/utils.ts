@@ -12,10 +12,7 @@ import { WorkflowState } from "../../workflows/workflow-runner.ts";
 import { MCPClientStub } from "../context.ts";
 import { slugify } from "../deconfig/api.ts";
 import { ProjectTools } from "../index.ts";
-import {
-  CodeStepDefinition,
-  ToolCallStepDefinition,
-} from "../workflows/api.ts";
+import { CodeStepDefinition } from "../workflows/api.ts";
 
 // Utility functions for consistent naming
 export const toolNameSlugify = (txt: string) => slugify(txt).toUpperCase();
@@ -267,66 +264,4 @@ export async function runCode(
   }
 
   return result as Rpc.Serializable<unknown>;
-}
-
-/**
- * Run a tool call step in a workflow
- */
-export async function runTool(
-  input: unknown,
-  step: ToolCallStepDefinition,
-  client: MCPClientStub<ProjectTools>,
-): Promise<Rpc.Serializable<unknown>> {
-  // Find the integration by name or id
-  const { items } = await client.INTEGRATIONS_LIST({});
-
-  const integration = items.find(
-    (item) => item.name === step.integration || item.id === step.integration,
-  );
-
-  if (!integration) {
-    const availableIntegrations = items.map((item) => ({
-      id: item.id,
-      name: item.name,
-    }));
-
-    throw new Error(
-      `Integration '${step.integration}' not found.\n\nAvailable integrations:\n${JSON.stringify(availableIntegrations, null, 2)}`,
-    );
-  }
-
-  // Check if the tool exists in the integration
-  const tools =
-    "tools" in integration && Array.isArray(integration.tools)
-      ? integration.tools
-      : [];
-
-  const tool = tools.find((t) => t.name === step.tool_name);
-
-  if (!tool) {
-    const availableTools = tools.map((t) => ({
-      name: t.name,
-      inputSchema: t.inputSchema,
-      outputSchema: t.outputSchema,
-    }));
-
-    throw new Error(
-      `Tool '${step.tool_name}' not found in integration '${integration.name}' (${integration.id}).\n\nAvailable tools:\n${JSON.stringify(availableTools, null, 2)}`,
-    );
-  }
-
-  const response = await client.INTEGRATIONS_CALL_TOOL({
-    connection: integration.connection,
-    params: {
-      name: step.tool_name,
-      arguments: input as Record<string, unknown>,
-    },
-  });
-
-  if (response.isError) {
-    throw new Error(`Tool call failed: ${inspect(response)}`);
-  }
-
-  return (response.structuredContent ||
-    response.content) as Rpc.Serializable<unknown>;
 }

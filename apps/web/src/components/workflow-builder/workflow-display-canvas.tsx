@@ -304,6 +304,10 @@ export function WorkflowDisplayCanvas({
     });
   }, [run?.data.workflowStatus?.steps, workflow]);
 
+  const firstStepInputSchema = useMemo(() => {
+    return workflow?.steps[0].def.inputSchema;
+  }, [workflow?.steps]);
+
   // Flag to know if we have an active or completed run
   const hasRun = Boolean(run);
 
@@ -412,13 +416,13 @@ export function WorkflowDisplayCanvas({
             <h2 className="text-lg font-medium">Input</h2>
 
             <div className="bg-muted/30 rounded-xl p-6">
-              {workflow.inputSchema &&
-              typeof workflow.inputSchema === "object" &&
-              "properties" in workflow.inputSchema &&
-              workflow.inputSchema.properties &&
-              Object.keys(workflow.inputSchema.properties).length > 0 ? (
+              {firstStepInputSchema &&
+              typeof firstStepInputSchema === "object" &&
+              "properties" in firstStepInputSchema &&
+              firstStepInputSchema.properties &&
+              Object.keys(firstStepInputSchema.properties).length > 0 ? (
                 <Form
-                  schema={workflow.inputSchema}
+                  schema={firstStepInputSchema}
                   validator={validator}
                   formData={formData}
                   onChange={({ formData }) => setFormData(formData)}

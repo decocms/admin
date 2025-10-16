@@ -9,7 +9,7 @@ import { InternalServerError } from "../errors.ts";
 import { MCPClient } from "../fetcher.ts";
 import type { ProjectLocator } from "../locator.ts";
 import type { ReadOutput } from "../mcp/resources-v2/schemas.ts";
-import { WorkflowDefinitionSchema } from "../mcp/workflows/schemas.ts";
+import { WorkflowDefinition, WorkflowDefinitionSchema } from "../mcp/workflows/schemas.ts";
 import {
   parseIntegrationId,
   resourceKeys,
@@ -67,20 +67,9 @@ export function getWorkflowByUri(
   ) as Promise<WorkflowReadResult>;
 }
 
-export interface WorkflowUpsertParamsV2 {
-  name: string;
-  description: string;
-  inputSchema: Record<string, unknown>;
-  outputSchema: Record<string, unknown>;
-  steps: Array<{
-    type: "tool_call" | "code";
-    def: Record<string, unknown>;
-  }>;
-}
-
 export function upsertWorkflow(
   locator: ProjectLocator,
-  params: WorkflowUpsertParamsV2,
+  params: WorkflowDefinition,
   signal?: AbortSignal,
 ) {
   const client = workspaceResourceClient(locator);
@@ -94,8 +83,6 @@ export function upsertWorkflow(
         data: {
           name: params.name,
           description: params.description,
-          inputSchema: params.inputSchema,
-          outputSchema: params.outputSchema,
           steps: params.steps,
         },
       },
@@ -108,8 +95,6 @@ export function upsertWorkflow(
           data: {
             name: params.name,
             description: params.description,
-            inputSchema: params.inputSchema,
-            outputSchema: params.outputSchema,
             steps: params.steps,
           },
         },
@@ -195,7 +180,7 @@ export const useWorkflow = (workflowUri: string) => {
 export const useUpsertWorkflow = () => {
   const { locator } = useSDK();
   return useMutation({
-    mutationFn: async (params: WorkflowUpsertParamsV2) => {
+    mutationFn: async (params: WorkflowDefinition) => {
       const result = await upsertWorkflow(locator, params);
       return result;
     },

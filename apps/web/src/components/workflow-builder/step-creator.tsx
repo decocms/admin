@@ -105,7 +105,6 @@ export function StepCreator({
       });
 
       const newStep: WorkflowStep = {
-        type: "code",
         def: {
           name: editingStep?.def.name || `step-${Date.now()}`,
           description: `Executes: ${prompt.slice(0, 100)}${prompt.length > 100 ? "..." : ""}`,

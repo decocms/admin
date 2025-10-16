@@ -97,11 +97,11 @@ export function useWorkflowBuilder(workflow: Workflow) {
         await upsertWorkflow.mutateAsync({
           name: workflowToSave.name,
           description: workflowToSave.description,
-          inputSchema:
-            (workflowToSave.inputSchema as Record<string, unknown>) || {},
-          outputSchema:
-            (workflowToSave.outputSchema as Record<string, unknown>) || {},
-          steps: workflowToSave.steps,
+          steps: workflowToSave.steps.map((step) => ({
+            def: step.def,
+            input: step.input,
+            output: step.output,
+          })),
         });
         console.log("Workflow saved successfully:", workflowToSave.name);
         return true;

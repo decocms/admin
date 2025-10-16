@@ -744,17 +744,16 @@ function ResourcesV2ListTab({
                           data.outputSchema = {};
                           data.steps = [
                             {
-                              id: "step-1",
-                              type: "code",
-                              name: "Start",
                               def: {
                                 name: "Start",
                                 description: "Initial step",
-                                execute: "// Add your code here\nreturn {};",
+                                execute:
+                                  "export default async function(input, ctx) { return {}; }",
+                                inputSchema: {},
+                                outputSchema: {},
                               },
                             },
                           ];
-                          data.triggers = [];
                         } else if (resourceName === "tool") {
                           data.inputSchema = {};
                           data.outputSchema = {};

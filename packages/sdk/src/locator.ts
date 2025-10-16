@@ -11,10 +11,24 @@ export type LocatorStructured = {
 
 export type ProjectLocator = `${string}/${string}`;
 
+const adaptFromRootSlug = (locator: ProjectLocator): ProjectLocator => {
+  const [org, project] = locator.split("/");
+  if (org === "shared") {
+    return Locator.from({ org: project, project: "default" });
+  }
+  // Known issue: Old workspace /users/$userId format to Locator conversion is not supported.
+  // this function only adapts it for /shared teams which are most cases.
+  if (org === "users") {
+    return locator;
+  }
+  return locator;
+}
+
 export const Locator = {
   asFirstTwoSegmentsOf(path: string): ProjectLocator {
     const normalized = path.startsWith("/") ? path.slice(1) : path;
-    return normalized.split("/").slice(0, 2).join("/") as ProjectLocator;
+    const locator = normalized.split("/").slice(0, 2).join("/") as ProjectLocator;
+    return adaptFromRootSlug(locator);
   },
   from({ org, project }: LocatorStructured): ProjectLocator {
     if (org.includes("/") || project.includes("/")) {

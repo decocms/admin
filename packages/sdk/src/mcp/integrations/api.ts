@@ -22,7 +22,6 @@ import {
   type Integration,
   IntegrationSchema,
   Locator,
-  LocatorStructured,
   type MCPConnection,
   NEW_INTEGRATION_TEMPLATE,
   ProjectLocator,
@@ -89,26 +88,6 @@ const SELECT_INTEGRATION_QUERY = `
             )
           )
         ` as const;
-
-/**
- * Returns a Drizzle OR condition that filters Integrations by workspace or project locator.
- * This version works with queries that don't include the agents table.
- */
-
-export const matchByWorkspaceOrProjectLocatorForIntegrations = (
-  workspace: string,
-  locator?: LocatorStructured,
-) => {
-  return or(
-    eq(integrations.workspace, workspace),
-    locator
-      ? and(
-          eq(projects.slug, locator.project),
-          eq(organizations.slug, locator.org),
-        )
-      : undefined,
-  );
-};
 
 // Tool factories for each group
 const mapIntegration = (
@@ -672,10 +651,10 @@ export const getIntegration = createIntegrationManagementTool({
             .where(
               and(
                 eq(integrations.id, uuid),
-                matchByWorkspaceOrProjectLocatorForIntegrations(
-                  c.workspace.value,
-                  c.locator,
-                ),
+                filterByWorkspaceOrLocator({
+                  table: integrations,
+                  ctx: c,
+                }),
               ),
             )
             .then((rows) => {

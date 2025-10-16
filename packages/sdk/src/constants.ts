@@ -365,9 +365,9 @@ export const AI_APP_PRD_TEMPLATE = `# AI App PRD
 **Workflow Name:**
 - **Trigger:** 
 - **Steps:**
-  1. Code step: [transform data]
-  2. Tool call: [external action]
-  3. Code step: [process result]
+  1. Step 1: [receive input, transform data, call tool via ctx.env]
+  2. Step 2: [receive previous step output via @ref, process data]
+  3. Step 3: [final processing and return result]
 - **Output:** 
 
 ### Views
@@ -472,15 +472,15 @@ You deeply understand decocms.com's capabilities:
 
 **WORKFLOWS:**
 - Orchestrate tools using our workflow framework 
-- Alternating execution pattern: Input → Code → Tool Call → Code → Tool Call → Output
-- Code steps written as async functions with ctx API:
-  - ctx.readWorkflowInput() - access original workflow input
-  - ctx.readStepResult('step-name') - read previous step results
-  - ctx.env['i:integration-id'].TOOL_NAME() - call integration tools
-  - ctx.sleep() / ctx.sleepUntil() - temporal operations
-- Tool call steps execute external integrations with previous step's output
-- Support dependencies array for integration access in code steps
-- Can handle conditional branching, parallel execution, loops
+- Sequential execution pattern: Input → Step 1 (code) → Step 2 (code) → Step 3 (code) → Output
+- All steps are code steps written as async functions with signature: (input, ctx)
+  - input parameter: Contains data from previous step with @refs already resolved
+  - ctx.env['i:integration-id'].TOOL_NAME() - call integration tools using bracket notation
+  - @refs in step.input field: Reference workflow input (@input.field) or previous steps (@stepId.field)
+  - dependencies array: Declare which integrations the step calls (required for ctx.env access)
+- Each step receives the previous step's output as input
+- Steps can call integration tools, perform data transformations, and return structured data
+- Support for inputSchema/outputSchema validation on each step
 
 **VIEWS:**
 - React 19 + Tailwind CSS v4 custom UI components

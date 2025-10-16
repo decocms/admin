@@ -182,10 +182,7 @@ export const createChannel = createTool({
   },
 });
 
-const generateAgentLink = (
-  locator: { value: string },
-  agentId: string,
-) => {
+const generateAgentLink = (locator: { value: string }, agentId: string) => {
   return `https://${Hosts.WEB_APP}/${locator.value}/agent/${agentId}/${crypto.randomUUID()}`;
 };
 

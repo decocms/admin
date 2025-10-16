@@ -9,7 +9,10 @@ import { InternalServerError } from "../errors.ts";
 import { MCPClient } from "../fetcher.ts";
 import type { ProjectLocator } from "../locator.ts";
 import type { ReadOutput } from "../mcp/resources-v2/schemas.ts";
-import { WorkflowDefinition, WorkflowDefinitionSchema } from "../mcp/workflows/schemas.ts";
+import {
+  WorkflowDefinition,
+  WorkflowDefinitionSchema,
+} from "../mcp/workflows/schemas.ts";
 import {
   parseIntegrationId,
   resourceKeys,

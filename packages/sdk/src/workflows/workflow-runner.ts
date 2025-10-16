@@ -323,12 +323,7 @@ export class WorkflowRunner extends WorkflowEntrypoint<Bindings> {
         }
       }
 
-      return await this.runStepCode(
-        stepInput,
-        stepDef.def,
-        client,
-        runtimeId,
-      );
+      return await this.runStepCode(stepInput, stepDef.def, client, runtimeId);
     };
 
     return {

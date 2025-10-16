@@ -7,6 +7,7 @@ import { InternalServerError, NotFoundError } from "../../errors.ts";
 import type { QueryResult } from "../../storage/index.ts";
 import {
   assertHasWorkspace,
+  assertHasLocator,
   assertWorkspaceResourceAccess,
 } from "../assertions.ts";
 import { ChannelBinding } from "../bindings/binder.ts";
@@ -100,6 +101,7 @@ export const createChannel = createTool({
   inputSchema: CreateChannelInputSchema,
   handler: async ({ discriminator, integrationId, agentId, name }, c) => {
     assertHasWorkspace(c);
+    assertHasLocator(c);
     await assertWorkspaceResourceAccess(c);
     const projectId = await getProjectIdFromContext(c);
     const workspace = c.workspace.value;
@@ -155,7 +157,7 @@ export const createChannel = createTool({
         throw new NotFoundError(`agent ${agentId} not found`);
       }
       await binding.DECO_CHAT_CHANNELS_JOIN({
-        agentLink: generateAgentLink(c.workspace, agentId),
+        agentLink: generateAgentLink(c.locator, agentId),
         discriminator,
         workspace,
         agentName: data.name,
@@ -181,16 +183,10 @@ export const createChannel = createTool({
 });
 
 const generateAgentLink = (
-  workspace: { root: string; value: string; slug: string },
+  locator: { value: string },
   agentId: string,
 ) => {
-  // Ensure there's always a slash after the host
-  // If workspace.root === 'users' we want the root path: https://host/agent/...
-  // Otherwise we want https://host/<slug|default>/agent/...
-  const slugPart = workspace.root === "users"
-    ? ""
-    : `${workspace.slug && workspace.slug.length > 0 ? workspace.slug : "default"}/`;
-  return `https://${Hosts.WEB_APP}/${slugPart}agent/${agentId}/${crypto.randomUUID()}`;
+  return `https://${Hosts.WEB_APP}/${locator.value}/agent/${agentId}/${crypto.randomUUID()}`;
 };
 
 const getAgentName = (
@@ -216,6 +212,7 @@ export const channelJoin = createTool({
   inputSchema: ChannelJoinInputSchema,
   handler: async ({ id, agentId }, c) => {
     assertHasWorkspace(c);
+    assertHasLocator(c);
     await assertWorkspaceResourceAccess(c);
 
     const db = c.db;
@@ -242,7 +239,7 @@ export const channelJoin = createTool({
       const agentName = getAgentName(channel, agentId);
       await binding.DECO_CHAT_CHANNELS_JOIN({
         agentName,
-        agentLink: generateAgentLink(c.workspace, agentId),
+        agentLink: generateAgentLink(c.locator, agentId),
         discriminator: channel.discriminator,
         workspace,
         agentId,

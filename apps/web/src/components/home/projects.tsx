@@ -2,6 +2,7 @@ import {
   useProjects,
   useUpdateProject,
   useCreateProject,
+  useDeleteProject,
   type Project,
 } from "@deco/sdk";
 import { Button } from "@deco/ui/components/button.tsx";
@@ -12,16 +13,28 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@deco/ui/components/dialog.tsx";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@deco/ui/components/alert-dialog.tsx";
 import { Icon } from "@deco/ui/components/icon.tsx";
 import { Input } from "@deco/ui/components/input.tsx";
 import { Label } from "@deco/ui/components/label.tsx";
 import { Textarea } from "@deco/ui/components/textarea.tsx";
+import { Spinner } from "@deco/ui/components/spinner.tsx";
 import { Suspense, useState, useDeferredValue } from "react";
 import { Link, useParams } from "react-router";
 import { ErrorBoundary } from "../../error-boundary";
 import { Avatar } from "../common/avatar";
 import { CommunityCallBanner } from "../common/event/community-call-banner";
 import { OrgAvatars, OrgMemberCount } from "./members";
+import { Separator } from "@deco/ui/components/separator.tsx";
 
 function ProjectCard({
   project,
@@ -38,14 +51,17 @@ function ProjectCard({
   additionalInfo?: string;
   hideSlug?: boolean;
 }) {
-  const [isRenameDialogOpen, setIsRenameDialogOpen] = useState(false);
+  const [isSettingsDialogOpen, setIsSettingsDialogOpen] = useState(false);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [newName, setNewName] = useState(project.title);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
   const updateProjectMutation = useUpdateProject();
+  const deleteProjectMutation = useDeleteProject();
 
   const handleRename = async (e: React.FormEvent) => {
     e.preventDefault();
     if (newName.trim() === project.title || !newName.trim()) {
-      setIsRenameDialogOpen(false);
+      setIsSettingsDialogOpen(false);
       return;
     }
 
@@ -55,10 +71,28 @@ function ProjectCard({
         project: project.slug,
         data: { title: newName.trim() },
       });
-      setIsRenameDialogOpen(false);
+      setIsSettingsDialogOpen(false);
     } catch (error) {
       console.error("Failed to rename project:", error);
       // Error state is handled by the mutation hook
+    }
+  };
+
+  const handleDelete = async () => {
+    setDeleteError(null);
+    try {
+      const result = await deleteProjectMutation.mutateAsync({
+        projectId: project.id,
+      });
+      if (!result.success) {
+        throw new Error(result.error || "Failed to delete project");
+      }
+      setIsDeleteDialogOpen(false);
+      setIsSettingsDialogOpen(false);
+    } catch (error) {
+      setDeleteError(
+        error instanceof Error ? error.message : "Failed to delete project.",
+      );
     }
   };
 
@@ -105,7 +139,10 @@ function ProjectCard({
       </Link>
 
       {/* Config Icon */}
-      <Dialog open={isRenameDialogOpen} onOpenChange={setIsRenameDialogOpen}>
+      <Dialog
+        open={isSettingsDialogOpen}
+        onOpenChange={setIsSettingsDialogOpen}
+      >
         <DialogTrigger asChild>
           <Button
             variant="ghost"
@@ -121,7 +158,7 @@ function ProjectCard({
         </DialogTrigger>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle>Rename Project</DialogTitle>
+            <DialogTitle>Project Settings</DialogTitle>
           </DialogHeader>
           <form onSubmit={handleRename} className="space-y-4">
             <div className="space-y-2">
@@ -143,7 +180,7 @@ function ProjectCard({
               <Button
                 type="button"
                 variant="outline"
-                onClick={() => setIsRenameDialogOpen(false)}
+                onClick={() => setIsSettingsDialogOpen(false)}
                 disabled={updateProjectMutation.isPending}
               >
                 Cancel
@@ -152,12 +189,76 @@ function ProjectCard({
                 type="submit"
                 disabled={updateProjectMutation.isPending || !newName.trim()}
               >
-                {updateProjectMutation.isPending ? "Renaming..." : "Rename"}
+                {updateProjectMutation.isPending ? "Saving..." : "Save"}
               </Button>
             </div>
           </form>
+
+          <Separator className="my-4" />
+
+          <div className="space-y-2">
+            <h3 className="font-semibold text-sm">Delete Project</h3>
+            <p className="text-xs text-muted-foreground">
+              Permanently remove this project and all its data
+            </p>
+            <Button
+              type="button"
+              variant="destructive"
+              size="sm"
+              className="w-fit"
+              onClick={(e) => {
+                e.preventDefault();
+                setIsDeleteDialogOpen(true);
+              }}
+              disabled={deleteProjectMutation.isPending}
+            >
+              Delete Project
+            </Button>
+          </div>
         </DialogContent>
       </Dialog>
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog
+        open={isDeleteDialogOpen}
+        onOpenChange={setIsDeleteDialogOpen}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Project?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This action cannot be undone. This will permanently delete the
+              project "{project.title}" and all its data.
+            </AlertDialogDescription>
+            {deleteError && (
+              <div className="text-destructive text-sm mt-2">{deleteError}</div>
+            )}
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={deleteProjectMutation.isPending}>
+              Cancel
+            </AlertDialogCancel>
+            <AlertDialogAction
+              type="button"
+              disabled={deleteProjectMutation.isPending}
+              onClick={async (e) => {
+                e.stopPropagation();
+                e.preventDefault();
+                await handleDelete();
+              }}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90 focus-visible:ring-destructive/20 dark:focus-visible:ring-destructive/40"
+            >
+              {deleteProjectMutation.isPending ? (
+                <span className="flex items-center gap-2">
+                  <Spinner size="xs" variant="destructive" /> Deleting...
+                </span>
+              ) : (
+                "Delete"
+              )}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

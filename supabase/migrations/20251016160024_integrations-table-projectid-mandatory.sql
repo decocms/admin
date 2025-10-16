@@ -1,0 +1,1 @@
+alter table deco_chat_integrations alter column project_id set not null;

@@ -28,6 +28,8 @@ import {
   type CreateProjectInput,
   updateProject,
   type UpdateProjectInput,
+  deleteProject,
+  type DeleteProjectInput,
 } from "../crud/projects.ts";
 import { KEYS } from "./api.ts";
 import { InternalServerError } from "../errors.ts";
@@ -139,6 +141,19 @@ export function useUpdateProject() {
             : project,
         );
       });
+    },
+  });
+}
+
+export function useDeleteProject() {
+  const client = useQueryClient();
+  return useMutation({
+    mutationFn: (input: DeleteProjectInput) => deleteProject(input),
+    onSuccess: () => {
+      // Invalidate all projects queries to refresh
+      client.invalidateQueries({ queryKey: ["projects"] });
+      // Invalidate recent projects to refresh
+      client.invalidateQueries({ queryKey: KEYS.RECENT_PROJECTS() });
     },
   });
 }

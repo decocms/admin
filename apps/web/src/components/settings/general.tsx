@@ -286,7 +286,6 @@ export function GeneralSettings() {
   const isPersonalTeam = !currentTeamSlug;
 
   const { locator } = useSDK();
-  const workspaceLink = useWorkspaceLink();
   const updateTeam = useUpdateTeam();
   const deleteTeam = useDeleteTeam();
   const writeFile = useWriteFile();
@@ -608,13 +607,16 @@ export function GeneralSettings() {
                           setDeleteError(null);
                           if (!currentTeamId) return;
                           try {
-                            await deleteTeam.mutateAsync(
+                            const { success, error } = await deleteTeam.mutateAsync(
                               typeof currentTeamId === "number"
                                 ? currentTeamId
                                 : Number(currentTeamId) || 0,
                             );
+                            if (!success) {
+                              throw new Error(error);
+                            }
                             // Do not close the dialog automatically
-                            globalThis.location.href = workspaceLink("/");
+                            globalThis.location.href = "/";
                           } catch (err) {
                             setDeleteError(
                               err instanceof Error

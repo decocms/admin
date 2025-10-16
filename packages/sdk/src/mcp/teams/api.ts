@@ -1,5 +1,6 @@
 import { z } from "zod";
 import {
+  ForbiddenError,
   InternalServerError,
   NotFoundError,
   UserInputError,
@@ -33,6 +34,13 @@ import { RoleUpdateAction } from "../../auth/policy.ts";
 import { Statement } from "../../models/index.ts";
 import { isRequired } from "../../utils/fns.ts";
 import { parseId } from "../integrations/api.ts";
+import { eq, inArray, isNotNull, and, isNull } from "drizzle-orm";
+import {
+  members as membersTable,
+  memberRoles as memberRolesTable,
+  organizations,
+  projects,
+} from "../schema.ts";
 
 const OWNER_ROLE_ID = 1;
 
@@ -725,33 +733,52 @@ export const deleteTeam = createTool({
       teamId: z.number(),
     }),
   ),
+  outputSchema: z.lazy(() =>
+    z.object({
+      success: z.boolean(),
+      error: z.string().optional(),
+    }),
+  ),
   handler: async (props, c) => {
     const { teamId } = props;
 
     await assertTeamResourceAccess(c.tool.name, teamId, c);
 
-    const members = await c.db
-      .from("members")
-      .select("id")
-      .eq("team_id", teamId);
+    try {
+      await c.drizzle.transaction(async (tx) => {
+        const memberIds = await tx
+          .select({ id: membersTable.id })
+          .from(membersTable)
+          .where(eq(membersTable.team_id, teamId))
+          .then((r) => r.map((m) => m.id));
 
-    const memberIds = members.data?.map((member) => Number(member.id));
+        if (!memberIds) {
+          throw new InternalServerError("No members found");
+        }
 
-    if (!memberIds) {
-      return { data: null, error: "No members found" };
+        await tx
+          .delete(memberRolesTable)
+          .where(inArray(memberRolesTable.member_id, memberIds));
+        await tx.delete(membersTable).where(eq(membersTable.team_id, teamId));
+
+        await tx.delete(organizations).where(eq(organizations.id, teamId));
+      });
+    } catch (error) {
+      console.error("Error deleting team", error);
+
+      let message = error instanceof Error ? error.message : "Unknown error";
+      if (error instanceof Error && error.cause instanceof Error && "constraint_name" in error.cause) {
+        if (error.cause.constraint_name === "deco_chat_projects_org_id_fkey") {
+          message = "Cannot delete team with existing projects. Please delete the projects first.";
+        }
+      }
+
+      return {
+        success: false,
+        error: message,
+      };
     }
 
-    // TODO: delete roles, policies and role_policy
-    await c.db.from("member_roles").delete().in("member_id", memberIds);
-    await c.db.from("members").delete().eq("team_id", teamId);
-
-    const { error } = await c.db
-      .from("teams")
-      .delete()
-      .eq("id", teamId)
-      .select("id");
-
-    if (error) throw error;
     return { success: true };
   },
 });
@@ -1631,5 +1658,75 @@ export const updateProject = createTool({
         avatar_url: ((updatedProject.teams.theme as Theme) || null)?.picture,
       },
     };
+  },
+});
+
+export const deleteProject = createTool({
+  name: "PROJECTS_DELETE",
+  description: "Delete a project by id",
+  inputSchema: z.lazy(() =>
+    z.object({
+      projectId: z.string(),
+    }),
+  ),
+  outputSchema: z.lazy(() =>
+    z.object({
+      success: z.boolean(),
+      error: z.string().optional(),
+    }),
+  ),
+  handler: async (props, c) => {
+    if (typeof c.user.id !== "string") {
+      throw new NotFoundError("User not found");
+    }
+
+    const { projectId } = props;
+
+    const [project] = await c.drizzle
+      .select()
+      .from(projects)
+      .where(eq(projects.id, projectId))
+      .limit(1);
+
+    if (!project) {
+      throw new NotFoundError("Project not found");
+    }
+
+    const orgId = project.org_id;
+
+    const [existingMember] = await c.drizzle
+      .select()
+      .from(membersTable)
+      .where(
+        and(
+          eq(membersTable.team_id, orgId),
+          eq(membersTable.user_id, c.user.id),
+          isNull(membersTable.deleted_at),
+        ),
+      )
+      .limit(1);
+
+    if (!existingMember) {
+      throw new ForbiddenError("You are not allowed to delete this project");
+    }
+
+    try {
+      await c.drizzle.transaction(async (tx) => {
+        // TODO: Delete project related entities. 
+        // This will probably fail for most people rn
+        await tx.delete(projects).where(eq(projects.id, projectId));
+      });
+    } catch (error) {
+      console.error("Error deleting project", error);
+
+      const message = error instanceof Error ? error.message : "Unknown error";
+
+      return {
+        success: false,
+        error: message,
+      };
+    }
+
+    return { success: true };
   },
 });

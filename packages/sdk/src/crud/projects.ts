@@ -45,3 +45,16 @@ export const updateProject = (
   init?: RequestInit,
 ): Promise<Project> =>
   MCPClient.PROJECTS_UPDATE(input, init) as Promise<Project>;
+
+export interface DeleteProjectInput {
+  projectId: string;
+}
+
+export const deleteProject = (
+  input: DeleteProjectInput,
+  init?: RequestInit,
+): Promise<{ success: boolean; error?: string }> =>
+  MCPClient.PROJECTS_DELETE(input, init) as Promise<{
+    success: boolean;
+    error?: string;
+  }>;

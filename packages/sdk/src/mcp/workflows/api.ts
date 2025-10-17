@@ -15,6 +15,7 @@ import {
   createToolGroup,
   DeconfigClient,
   PROJECT_TOOLS,
+  runTool,
 } from "../index.ts";
 import { validate } from "../tools/utils.ts";
 import {
@@ -55,6 +56,7 @@ import type {
   InstanceGetResponse as CFInstanceGetResponse,
   InstanceListResponse as CFInstanceListResponse,
 } from "cloudflare/resources/workflows/instances/instances";
+import { ToolDefinitionSchema } from "../tools/schemas.ts";
 
 /**
  * Metadata stored in workflow instance params.context
@@ -382,7 +384,37 @@ export function createWorkflowBindingImpl({
     },
   });
 
-  return [decoWorkflowStart];
+  const decoWorkflowRunStep = createTool({
+    name: "DECO_WORKFLOW_RUN_STEP",
+    description: "Run a step in a workflow",
+    inputSchema: z.lazy(() =>
+      z.object({
+        tool: ToolDefinitionSchema,
+        input: z
+          .object({})
+          .passthrough()
+          .describe("The input data for the step"),
+      }),
+    ),
+    outputSchema: z.lazy(() =>
+      z.object({
+        result: z.unknown().describe("The result of the step"),
+      }),
+    ),
+    handler: async ({ tool, input }, c) => {
+      const result = await runTool.handler({
+        tool,
+        input,
+        authorization: c.cookie,
+      });
+      console.log({
+        result,
+      });
+      return { result: result, resolvedInput: input, tool };
+    },
+  });
+
+  return [decoWorkflowStart, decoWorkflowRunStep];
 }
 
 /**
@@ -409,6 +441,7 @@ export function createWorkflowViewsV2() {
       "DECO_RESOURCE_WORKFLOW_UPDATE",
       "DECO_RESOURCE_WORKFLOW_DELETE",
       "DECO_WORKFLOW_START",
+      "DECO_WORKFLOW_RUN_STEP",
       "DECO_RESOURCE_WORKFLOW_RUN_READ",
     ],
     prompt:
@@ -509,6 +542,7 @@ export const workflowViews = impl(
               resourceName: "workflow",
               tools: [
                 "DECO_WORKFLOW_START",
+                "DECO_WORKFLOW_RUN_STEP",
                 "DECO_RESOURCE_WORKFLOW_RUN_READ",
                 "DECO_RESOURCE_WORKFLOW_UPDATE",
               ],

@@ -152,7 +152,9 @@ const processTransaction = async (
     plan,
     hasCustomKey,
     userId:
-      typeof c.user.id === "string" ? c.user.id : `apikey-${c.workspace.value}`,
+      typeof c.user?.id === "string"
+        ? c.user?.id
+        : `apikey-${c.workspace.value}`,
     workspace: c.workspace.value,
   });
 

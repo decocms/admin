@@ -2,14 +2,17 @@ import { Badge } from "@deco/ui/components/badge.tsx";
 import { Icon } from "@deco/ui/components/icon.tsx";
 import { Suspense, lazy, useState } from "react";
 import { getStatusBadgeVariant } from "./utils.ts";
-import { MergedStep } from "../workflow-builder/workflow-display-canvas.tsx";
+import {
+  MergedStep,
+  StepInput,
+} from "../workflow-builder/workflow-display-canvas.tsx";
+import { useWorkflowRunQuery } from "../workflow-builder/workflow-display-canvas.tsx";
+import { useMergedStep, useStepOutput } from "../../stores/workflows/hooks.ts";
 
 const LazyHighlighter = lazy(() => import("../chat/lazy-highlighter.tsx"));
 
 interface WorkflowStepCardProps {
-  step: MergedStep;
-  index: number;
-  showStatus?: boolean;
+  stepName: string;
 }
 
 function JsonViewer({
@@ -111,21 +114,23 @@ function StepError({ error }: { error: unknown }) {
 }
 
 function getStepStatus(step: MergedStep) {
+  const runQuery = useWorkflowRunQuery();
+  const run = runQuery.data;
+  if (run?.data.status === "completed") return "completed";
+  if (step.start && !step.end) return "running";
   if (step.success === true) return "completed";
   if (step.success === false) return "failed";
-  if (step.start && !step.end) return "running";
+  if (run?.data.status === "failed") return "failed";
+
   return "pending";
 }
 
-export function WorkflowStepCard({
-  step,
-  index,
-  showStatus = true,
-}: WorkflowStepCardProps) {
+export function WorkflowStepCard({ stepName }: WorkflowStepCardProps) {
+  const step = useMergedStep(stepName);
   const stepStatus = getStepStatus(step);
+  const stepOutput = useStepOutput(stepName);
 
   // Get name and description - handle both runtime steps and definition steps
-  const stepName = step.name || step.def?.name || `Step ${index + 1}`;
   const stepDescription = step.def?.description;
 
   // Check if there's any content to show in the step body
@@ -133,7 +138,10 @@ export function WorkflowStepCard({
     step.error ||
     (step.config !== undefined && step.config !== null) ||
     (step.output !== undefined && step.output !== null) ||
-    (step.attempts && step.attempts.length > 1);
+    (step.attempts && step.attempts.length > 1) ||
+    (stepOutput !== undefined && stepOutput !== null);
+
+  const mergedStepOutput = step.output || stepOutput;
 
   return (
     <div
@@ -191,16 +199,16 @@ export function WorkflowStepCard({
               )}
             </div>
           </div>
-          {showStatus && (
-            <Badge
-              variant={getStatusBadgeVariant(stepStatus)}
-              className="capitalize text-xs shrink-0"
-            >
-              {stepStatus}
-            </Badge>
-          )}
+          <Badge
+            variant={getStatusBadgeVariant(stepStatus)}
+            className="capitalize text-xs shrink-0"
+          >
+            {stepStatus}
+          </Badge>
         </div>
       </div>
+
+      <StepInput step={step} />
 
       {/* Step Content - only show if there's data */}
       {hasContent && (
@@ -211,8 +219,8 @@ export function WorkflowStepCard({
             <JsonViewer data={step.config} title="Config" />
           )}
 
-          {step.output !== undefined && step.output !== null && (
-            <JsonViewer data={step.output} title="Output" />
+          {mergedStepOutput !== undefined && mergedStepOutput !== null && (
+            <JsonViewer data={mergedStepOutput} title="Output" />
           )}
 
           {step.attempts && step.attempts.length > 1 && (

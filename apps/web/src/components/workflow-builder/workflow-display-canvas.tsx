@@ -3,7 +3,6 @@ import {
   useRecentResources,
   useSDK,
   useWorkflowByUriV2,
-  type WorkflowDefinition,
   type WorkflowRunData,
   type WorkflowStep,
 } from "@deco/sdk";
@@ -20,7 +19,7 @@ import { Spinner } from "@deco/ui/components/spinner.tsx";
 import Form from "@rjsf/shadcn";
 import validator from "@rjsf/validator-ajv8";
 import { useQuery } from "@tanstack/react-query";
-import { lazy, Suspense, useEffect, useMemo, useRef, useState } from "react";
+import { Suspense, useEffect, useMemo, useRef, useState } from "react";
 import { EmptyState } from "../common/empty-state.tsx";
 import { UserInfo } from "../common/table/table-cells.tsx";
 import { useResourceRoute } from "../resources-v2/route-context.tsx";
@@ -28,13 +27,14 @@ import { getStatusBadgeVariant } from "../workflows/utils.ts";
 import { WorkflowStepCard } from "../workflows/workflow-step-card.tsx";
 import {
   useCurrentRunUri,
+  useMergedSteps,
   useWorkflow,
   useWorkflowActions,
   useWorkflowUri,
 } from "../../stores/workflows/hooks.ts";
 import { WorkflowStoreProvider } from "../../stores/workflows/provider.tsx";
 
-const LazyHighlighter = lazy(() => import("../chat/lazy-highlighter.tsx"));
+// const LazyHighlighter = lazy(() => import("../chat/lazy-highlighter.tsx"));
 
 interface WorkflowDisplayCanvasProps {
   resourceUri: string;
@@ -70,85 +70,85 @@ export type MergedStep = Partial<WorkflowStep> &
     def?: WorkflowStep["def"];
   };
 
-function JsonViewer({ data, title, matchHeight = false }: JsonViewerProps) {
-  const [copied, setCopied] = useState(false);
+// function JsonViewer({ data, title, matchHeight = false }: JsonViewerProps) {
+//   const [copied, setCopied] = useState(false);
 
-  async function handleCopy() {
-    if (typeof navigator === "undefined" || !navigator.clipboard?.writeText) {
-      globalThis.window.alert("Clipboard API unavailable");
-      return;
-    }
+//   async function handleCopy() {
+//     if (typeof navigator === "undefined" || !navigator.clipboard?.writeText) {
+//       globalThis.window.alert("Clipboard API unavailable");
+//       return;
+//     }
 
-    const payload = JSON.stringify(data, null, 2);
-    try {
-      await navigator.clipboard.writeText(payload);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 1200);
-    } catch (error) {
-      console.error("Failed to copy data", error);
-    }
-  }
+//     const payload = JSON.stringify(data, null, 2);
+//     try {
+//       await navigator.clipboard.writeText(payload);
+//       setCopied(true);
+//       setTimeout(() => setCopied(false), 1200);
+//     } catch (error) {
+//       console.error("Failed to copy data", error);
+//     }
+//   }
 
-  if (data === null || data === undefined) {
-    return (
-      <div className="space-y-2">
-        <p className="font-mono text-sm text-muted-foreground uppercase">
-          {title}
-        </p>
-        <div className="text-xs text-muted-foreground italic p-2">
-          No {title.toLowerCase()}
-        </div>
-      </div>
-    );
-  }
+//   if (data === null || data === undefined) {
+//     return (
+//       <div className="space-y-2">
+//         <p className="font-mono text-sm text-muted-foreground uppercase">
+//           {title}
+//         </p>
+//         <div className="text-xs text-muted-foreground italic p-2">
+//           No {title.toLowerCase()}
+//         </div>
+//       </div>
+//     );
+//   }
 
-  const jsonString = JSON.stringify(data, null, 2);
+//   const jsonString = JSON.stringify(data, null, 2);
 
-  return (
-    <div
-      className={`space-y-2 min-w-0 w-full ${
-        matchHeight ? "h-full flex flex-col" : ""
-      }`}
-    >
-      <p className="font-mono text-sm text-muted-foreground uppercase">
-        {title}
-      </p>
-      <div
-        className={`relative bg-muted rounded-xl ${
-          matchHeight ? "min-h-[200px]" : ""
-        } max-h-[300px] overflow-auto w-full ${matchHeight ? "flex-1" : ""}`}
-      >
-        <div className="absolute right-2 top-2 z-10 flex items-center gap-1 bg-background rounded-xl shadow-sm">
-          <Button
-            size="icon"
-            variant="ghost"
-            onClick={handleCopy}
-            className="h-8 w-8"
-          >
-            <Icon name={copied ? "check" : "content_copy"} size={16} />
-          </Button>
-        </div>
-        <div
-          className={`overflow-x-auto w-full ${matchHeight ? "h-full" : ""}`}
-        >
-          <Suspense
-            fallback={
-              <pre className="p-3 text-xs font-mono whitespace-pre-wrap break-all">
-                {jsonString}
-              </pre>
-            }
-          >
-            <LazyHighlighter
-              language="json"
-              content={jsonString}
-              fillHeight={matchHeight}
-            />
-          </Suspense>
-        </div>
-      </div>
-    </div>
-  );
-}
+//   return (
+//     <div
+//       className={`space-y-2 min-w-0 w-full ${
+//         matchHeight ? "h-full flex flex-col" : ""
+//       }`}
+//     >
+//       <p className="font-mono text-sm text-muted-foreground uppercase">
+//         {title}
+//       </p>
+//       <div
+//         className={`relative bg-muted rounded-xl ${
+//           matchHeight ? "min-h-[200px]" : ""
+//         } max-h-[300px] overflow-auto w-full ${matchHeight ? "flex-1" : ""}`}
+//       >
+//         <div className="absolute right-2 top-2 z-10 flex items-center gap-1 bg-background rounded-xl shadow-sm">
+//           <Button
+//             size="icon"
+//             variant="ghost"
+//             onClick={handleCopy}
+//             className="h-8 w-8"
+//           >
+//             <Icon name={copied ? "check" : "content_copy"} size={16} />
+//           </Button>
+//         </div>
+//         <div
+//           className={`overflow-x-auto w-full ${matchHeight ? "h-full" : ""}`}
+//         >
+//           <Suspense
+//             fallback={
+//               <pre className="p-3 text-xs font-mono whitespace-pre-wrap break-all">
+//                 {jsonString}
+//               </pre>
+//             }
+//           >
+//             <LazyHighlighter
+//               language="json"
+//               content={jsonString}
+//               fillHeight={matchHeight}
+//             />
+//           </Suspense>
+//         </div>
+//       </div>
+//     </div>
+//   );
+// }
 
 export function WorkflowDisplay({ resourceUri }: WorkflowDisplayCanvasProps) {
   const { data: resource, isLoading: isLoadingWorkflow } =
@@ -178,7 +178,7 @@ export function WorkflowDisplay({ resourceUri }: WorkflowDisplayCanvasProps) {
   );
 }
 
-function useWorkflowRunQuery() {
+export function useWorkflowRunQuery() {
   const { connection } = useResourceRoute();
   const currentRunUri = useCurrentRunUri();
   const runQuery = useQuery({
@@ -257,23 +257,12 @@ export function Canvas() {
     return `${h}h ${m % 60}m ${s % 60}s`;
   }, [run?.data?.startTime, run?.data?.endTime]);
 
-  const input = useMemo(
-    () => run?.data?.workflowStatus?.params?.input,
-    [run?.data?.workflowStatus],
-  );
-  const output = useMemo(
-    () => run?.data?.finalResult,
-    [run?.data?.finalResult],
-  );
   const error = run?.data?.error;
   const status = run?.data?.status || "unknown";
   const badgeVariant = getStatusBadgeVariant(status);
   const startedBy = run?.data.workflowStatus?.params?.context?.startedBy;
 
   // Merge workflow definition steps with runtime steps
-
-  // Flag to know if we have an active or completed run
-  const hasRun = Boolean(run);
 
   return (
     <ScrollArea className="h-full w-full">
@@ -356,52 +345,12 @@ export function Canvas() {
           </div>
         </div>
 
-        {/* Input Form */}
-        <div className="border-b border-border py-4 px-4 md:py-8 md:px-8 lg:py-8 lg:px-16">
-          <div className="max-w-[1500px] mx-auto space-y-4">
-            <h2 className="text-lg font-medium">Input</h2>
-          </div>
-        </div>
-        <WorkflowStart />
-
-        {/* Output Section - only show if we have a run */}
-        {run && (
-          <div className="border-b border-border py-4 px-4 md:py-8 md:px-8 lg:py-8 lg:px-16">
-            <div className="max-w-[1500px] mx-auto space-y-4">
-              <h2 className="text-lg font-medium">Input & Output</h2>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-stretch">
-                <div className="min-w-0 flex">
-                  <JsonViewer data={input} title="Input" matchHeight />
-                </div>
-
-                <div className="min-w-0 flex">
-                  {status === "completed" || status === "success" ? (
-                    <JsonViewer data={output} title="Output" matchHeight />
-                  ) : (
-                    <div className="space-y-2 w-full">
-                      <p className="font-mono text-sm text-muted-foreground uppercase">
-                        Output
-                      </p>
-                      <div className="bg-muted rounded-xl min-h-[200px] max-h-[300px] flex items-center justify-center p-4">
-                        <div className="text-xs text-muted-foreground italic text-center">
-                          Output will be available when the workflow completes
-                        </div>
-                      </div>
-                    </div>
-                  )}
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
-
         {/* Steps Section - show definition steps before run, runtime steps after */}
         <div className="border-b border-border py-4 px-4 md:py-8 md:px-8 lg:py-8 lg:px-16">
           <div className="max-w-[1500px] mx-auto space-y-4">
             <h2 className="text-lg font-medium">Steps</h2>
 
-            <WorkflowStepsList hasRun={hasRun} />
+            <WorkflowStepsList />
           </div>
         </div>
       </div>
@@ -409,42 +358,9 @@ export function Canvas() {
   );
 }
 
-function WorkflowStepsList({ hasRun }: { hasRun: boolean }) {
-  const runQuery = useWorkflowRunQuery();
-  const run = runQuery.data;
-  const workflow = useWorkflow();
-  const steps = useMemo<MergedStep[]>(() => {
-    const runSteps = run?.data.workflowStatus?.steps;
-    const definitionSteps = (workflow as WorkflowDefinition)?.steps;
+function WorkflowStepsList() {
+  const steps = useMergedSteps();
 
-    // If no definition steps, return empty or just runtime steps
-    if (!definitionSteps || !Array.isArray(definitionSteps)) {
-      return (runSteps || []) as MergedStep[];
-    }
-
-    // If no run yet, return definition steps without runtime data
-    if (!runSteps || runSteps.length === 0) {
-      return definitionSteps as MergedStep[];
-    }
-
-    // Merge: for each definition step, use runtime data if available
-    return definitionSteps.map((defStep: WorkflowStep, idx: number) => {
-      const runtimeStep = runSteps[idx];
-
-      // If we have runtime data for this step, merge it with definition
-      if (runtimeStep) {
-        return {
-          ...defStep,
-          ...runtimeStep,
-          // Keep definition data in 'def' for reference
-          def: defStep.def || defStep,
-        } as MergedStep;
-      }
-
-      // Otherwise, return the definition step (pending)
-      return defStep as MergedStep;
-    });
-  }, [run?.data.workflowStatus?.steps, workflow]);
   if (!steps || steps.length === 0) {
     return (
       <div className="text-sm text-muted-foreground italic py-4">
@@ -459,7 +375,9 @@ function WorkflowStepsList({ hasRun }: { hasRun: boolean }) {
           return (
             <div key={idx}>
               <Suspense fallback={<Spinner />}>
-                <WorkflowStepCard step={step} index={idx} showStatus={hasRun} />
+                <WorkflowStepCard
+                  stepName={step.name || step.def?.name || `Step ${idx + 1}`}
+                />
               </Suspense>
             </div>
           );
@@ -469,28 +387,32 @@ function WorkflowStepsList({ hasRun }: { hasRun: boolean }) {
   );
 }
 
-function WorkflowStart() {
+export function StepInput({ step }: { step: MergedStep }) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { connection } = useResourceRoute();
-  const { setCurrentRunUri } = useWorkflowActions();
+  const { setStepOutput } = useWorkflowActions();
   const workflowUri = useWorkflowUri();
-  const workflow = useWorkflow();
+  const { locator } = useSDK();
 
   async function handleFormSubmit(data: Record<string, unknown>) {
     if (!connection || !workflowUri) return;
 
     try {
       setIsSubmitting(true);
-      const result = await callTool(connection, {
-        name: "DECO_WORKFLOW_START",
-        arguments: {
-          uri: workflowUri,
-          input: data,
+      const result = await callTool(
+        connection,
+        {
+          name: "DECO_WORKFLOW_RUN_STEP",
+          arguments: {
+            tool: step.def,
+            input: data,
+          },
         },
-      });
+        locator,
+      );
 
       const response = result.structuredContent as {
-        runId?: string;
+        result?: unknown;
         uri?: string;
         error?: string;
       };
@@ -499,8 +421,9 @@ function WorkflowStart() {
         throw new Error(response.error);
       }
 
-      if (response.uri) {
-        setCurrentRunUri(response.uri);
+      if (response.result) {
+        if (!step.name && !step.def?.name) return;
+        setStepOutput(step.name || step.def?.name!, response.result);
       }
     } catch (error) {
       console.error("Failed to start workflow", error);
@@ -514,19 +437,19 @@ function WorkflowStart() {
     }
   }
 
-  const firstStepInputSchema = useMemo(() => {
-    return workflow.steps?.[0]?.def?.inputSchema;
-  }, [workflow.steps]);
+  const stepInputSchema = useMemo(() => {
+    return step.def?.inputSchema;
+  }, [step]);
 
   return (
     <div className="bg-muted/30 rounded-xl p-6">
-      {firstStepInputSchema &&
-      typeof firstStepInputSchema === "object" &&
-      "properties" in firstStepInputSchema &&
-      firstStepInputSchema.properties &&
-      Object.keys(firstStepInputSchema.properties).length > 0 ? (
+      {stepInputSchema &&
+      typeof stepInputSchema === "object" &&
+      "properties" in stepInputSchema &&
+      stepInputSchema.properties &&
+      Object.keys(stepInputSchema.properties).length > 0 ? (
         <Form
-          schema={firstStepInputSchema}
+          schema={stepInputSchema}
           validator={validator}
           onSubmit={({ formData }) => handleFormSubmit(formData)}
           showErrorList={false}
@@ -548,7 +471,7 @@ function WorkflowStart() {
               ) : (
                 <>
                   <Icon name="play_arrow" size={18} />
-                  Run Workflow
+                  Run Step
                 </>
               )}
             </Button>
@@ -557,7 +480,7 @@ function WorkflowStart() {
       ) : (
         <div className="flex flex-col items-center justify-center py-8 text-center gap-4">
           <p className="text-sm text-muted-foreground">
-            This workflow does not require any input parameters.
+            This Step does not require any input parameters.
           </p>
           <Button
             disabled={isSubmitting}
@@ -573,7 +496,7 @@ function WorkflowStart() {
             ) : (
               <>
                 <Icon name="play_arrow" size={18} />
-                Run Workflow
+                Run Step
               </>
             )}
           </Button>

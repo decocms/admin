@@ -96,20 +96,6 @@ export function ViewDetail({ resourceUri }: ViewDetailProps) {
 
   return (
     <div className="h-full w-full flex flex-col">
-      {/* Header */}
-      <div className="border-b border-border py-4 px-4 md:py-8 md:px-8 lg:py-16 lg:px-16 shrink-0">
-        <div className="max-w-[1500px] mx-auto">
-          <div>
-            <h1 className="text-2xl font-medium">{effectiveView.name}</h1>
-            {effectiveView.description && (
-              <p className="text-sm text-muted-foreground mt-1">
-                {effectiveView.description}
-              </p>
-            )}
-          </div>
-        </div>
-      </div>
-
       {/* Preview Section - Full Container */}
       <div className="flex-1 overflow-hidden">
         {htmlValue ? (

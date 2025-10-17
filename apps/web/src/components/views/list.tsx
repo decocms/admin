@@ -287,10 +287,8 @@ function ViewsList({ searchTerm = "", viewMode = "cards" }: ViewsListProps) {
       )}
 
       {filteredViews.length > 0 && viewMode === "table" && (
-        <div className="overflow-x-auto -mx-16 px-16">
-          <div className="w-fit min-w-full max-w-[1500px] mx-auto">
-            <TableView views={filteredViews} onConfigure={handleViewClick} />
-          </div>
+        <div className="w-fit min-w-full">
+          <TableView views={filteredViews} onConfigure={handleViewClick} />
         </div>
       )}
 

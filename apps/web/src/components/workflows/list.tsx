@@ -198,13 +198,11 @@ function WorkflowRuns({
           ))}
         </div>
       ) : (
-        <div className="overflow-x-auto -mx-16 px-16">
-          <div className="w-fit min-w-full max-w-[1500px] mx-auto">
-            <WorkflowRunsTableView
-              runs={sortedAndFilteredRuns}
-              onClick={handleRunClick}
-            />
-          </div>
+        <div className="w-fit min-w-full">
+          <WorkflowRunsTableView
+            runs={sortedAndFilteredRuns}
+            onClick={handleRunClick}
+          />
         </div>
       )}
     </>

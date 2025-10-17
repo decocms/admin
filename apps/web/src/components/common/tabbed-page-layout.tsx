@@ -72,38 +72,47 @@ export function TabbedPageLayout({
 
   return (
     <DecopilotLayout value={decopilotContextValue}>
-      <div className="h-screen p-0 overflow-y-auto overflow-x-hidden">
-        <div className="py-16 px-16 space-y-8">
-          <div className="max-w-[1500px] mx-auto w-full space-y-8">
-            <ResourceHeader
-              title={title}
-              tabs={tabsWithHandlers}
-              activeTab={activeTab}
-              onTabChange={(tabId) => {
-                const tab = tabsWithHandlers.find((t) => t.id === tabId);
-                tab?.onClick?.();
-              }}
-              searchOpen={searchControls.searchOpen}
-              searchValue={searchControls.searchValue}
-              onSearchToggle={searchControls.onSearchToggle}
-              onSearchChange={searchControls.onSearchChange}
-              onSearchBlur={searchControls.onSearchBlur}
-              onSearchKeyDown={searchControls.onSearchKeyDown}
-              viewMode={viewMode}
-              onViewModeChange={setViewMode}
-            />
-            <Suspense
-              fallback={
-                <div className="flex items-center justify-center py-8">
-                  <Spinner />
-                </div>
-              }
-            >
-              <Component
-                searchTerm={searchControls.searchValue}
+      <div className="h-full flex flex-col overflow-hidden">
+        <div className="flex-1 overflow-auto">
+          {/* Header Section - sticky horizontally */}
+          <div className="sticky left-0 px-4 lg:px-6 xl:px-10 pt-12 pb-4 md:pb-6 lg:pb-8 z-10 bg-background">
+            <div className="max-w-[1600px] mx-auto w-full space-y-4 md:space-y-6 lg:space-y-8">
+              <ResourceHeader
+                title={title}
+                tabs={tabsWithHandlers}
+                activeTab={activeTab}
+                onTabChange={(tabId) => {
+                  const tab = tabsWithHandlers.find((t) => t.id === tabId);
+                  tab?.onClick?.();
+                }}
+                searchOpen={searchControls.searchOpen}
+                searchValue={searchControls.searchValue}
+                onSearchToggle={searchControls.onSearchToggle}
+                onSearchChange={searchControls.onSearchChange}
+                onSearchBlur={searchControls.onSearchBlur}
+                onSearchKeyDown={searchControls.onSearchKeyDown}
                 viewMode={viewMode}
+                onViewModeChange={setViewMode}
               />
-            </Suspense>
+            </div>
+          </div>
+
+          {/* Content Section */}
+          <div className="px-4 lg:px-6 xl:px-10">
+            <div className="max-w-[1600px] mx-auto w-full space-y-4 md:space-y-6 lg:space-y-8 pb-8">
+              <Suspense
+                fallback={
+                  <div className="flex items-center justify-center py-8">
+                    <Spinner />
+                  </div>
+                }
+              >
+                <Component
+                  searchTerm={searchControls.searchValue}
+                  viewMode={viewMode}
+                />
+              </Suspense>
+            </div>
           </div>
         </div>
       </div>

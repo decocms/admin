@@ -404,91 +404,374 @@ function ResourcesV2ListTab({
   }, [tabs]);
 
   return (
-    <div className="h-full p-0 overflow-y-auto">
-      <div className="py-4 px-4 md:py-8 md:px-8 lg:py-16 lg:px-16 space-y-4 md:space-y-6 lg:space-y-8">
-        <div className="max-w-[1500px] mx-auto w-full space-y-4 md:space-y-6 lg:space-y-8">
-          {headerSlot}
-          <ResourceHeader
-            title={title}
-            tabs={finalTabs}
-            activeTab={activeTab || "all"}
-            onTabChange={onTabChange}
-            searchOpen={searchOpen}
-            searchValue={q}
-            onSearchToggle={() => setSearchOpen(!searchOpen)}
-            onSearchChange={(value: string) => {
-              setSearchParams((prev) => {
-                const next = new URLSearchParams(prev);
-                if (value) next.set("q", value);
-                else next.delete("q");
-                return next;
-              });
-            }}
-            onSearchBlur={() => {
-              if (!q) {
-                setSearchOpen(false);
-              }
-            }}
-            onSearchKeyDown={(e: React.KeyboardEvent<HTMLInputElement>) => {
-              if (e.key === "Enter") {
-                listQuery.refetch();
-              }
-              if (e.key === "Escape") {
+    <div className="h-full flex flex-col overflow-hidden">
+      <div className="flex-1 overflow-auto">
+        {/* Header Section - sticky horizontally, doesn't scroll with content */}
+        <div className="sticky left-0 px-4 lg:px-6 xl:px-10 pt-12 pb-4 md:pb-6 lg:pb-8 z-10 bg-background">
+          <div className="max-w-[1600px] mx-auto w-full space-y-4 md:space-y-6 lg:space-y-8">
+            {headerSlot}
+            <ResourceHeader
+              title={title}
+              tabs={finalTabs}
+              activeTab={activeTab || "all"}
+              onTabChange={onTabChange}
+              searchOpen={searchOpen}
+              searchValue={q}
+              onSearchToggle={() => setSearchOpen(!searchOpen)}
+              onSearchChange={(value: string) => {
                 setSearchParams((prev) => {
                   const next = new URLSearchParams(prev);
-                  next.delete("q");
+                  if (value) next.set("q", value);
+                  else next.delete("q");
                   return next;
                 });
-                setSearchOpen(false);
-                (e.target as HTMLInputElement).blur();
-              }
-            }}
-            onRefresh={() => listQuery.refetch()}
-            onFilterClick={() => {
-              const newValue = !filterBarVisible;
-              setFilterBarVisible(newValue);
-              globalThis.localStorage?.setItem(
-                filterBarVisibilityKey,
-                String(newValue),
-              );
-            }}
-            viewMode={viewMode}
-            onViewModeChange={setViewMode}
-            sortKey={sortKey}
-            sortDirection={sortDirection}
-            onSort={handleSort}
-            filterBarVisible={filterBarVisible}
-            filters={filters}
-            onFiltersChange={setFilters}
-            availableUsers={availableUsers}
-            ctaButton={
-              capabilities.hasCreate ? (
-                resourceName === "document" ? (
-                  // Split button for documents with dropdown options
-                  <div className="w-full md:w-auto flex items-stretch rounded-xl overflow-hidden">
+              }}
+              onSearchBlur={() => {
+                if (!q) {
+                  setSearchOpen(false);
+                }
+              }}
+              onSearchKeyDown={(e: React.KeyboardEvent<HTMLInputElement>) => {
+                if (e.key === "Enter") {
+                  listQuery.refetch();
+                }
+                if (e.key === "Escape") {
+                  setSearchParams((prev) => {
+                    const next = new URLSearchParams(prev);
+                    next.delete("q");
+                    return next;
+                  });
+                  setSearchOpen(false);
+                  (e.target as HTMLInputElement).blur();
+                }
+              }}
+              onRefresh={() => listQuery.refetch()}
+              onFilterClick={() => {
+                const newValue = !filterBarVisible;
+                setFilterBarVisible(newValue);
+                globalThis.localStorage?.setItem(
+                  filterBarVisibilityKey,
+                  String(newValue),
+                );
+              }}
+              viewMode={viewMode}
+              onViewModeChange={setViewMode}
+              sortKey={sortKey}
+              sortDirection={sortDirection}
+              onSort={handleSort}
+              filterBarVisible={filterBarVisible}
+              filters={filters}
+              onFiltersChange={setFilters}
+              availableUsers={availableUsers}
+              ctaButton={
+                capabilities.hasCreate ? (
+                  resourceName === "document" ? (
+                    // Split button for documents with dropdown options
+                    <div className="w-full md:w-auto flex items-stretch rounded-xl overflow-hidden">
+                      <Button
+                        onClick={async () => {
+                          if (!integration) return;
+                          try {
+                            setMutating(true);
+
+                            const timestamp = new Date()
+                              .toISOString()
+                              .replace(/[:.]/g, "-");
+                            const data = {
+                              name: `Untitled-${timestamp}`,
+                              description: "",
+                              content: "",
+                            };
+
+                            const result = await callTool(
+                              integration.connection,
+                              {
+                                name: "DECO_RESOURCE_DOCUMENT_CREATE",
+                                arguments: { data },
+                              },
+                            );
+
+                            const uri =
+                              (result as { uri?: string })?.uri ||
+                              (result as { data?: { uri?: string } })?.data
+                                ?.uri ||
+                              (
+                                result as {
+                                  structuredContent?: { uri?: string };
+                                }
+                              )?.structuredContent?.uri ||
+                              (
+                                result as {
+                                  content?: Array<{ text?: string }>;
+                                }
+                              )?.content?.[0]?.text;
+
+                            if (!uri) {
+                              console.error("Create result:", result);
+                              throw new Error(
+                                "No URI returned from create operation",
+                              );
+                            }
+
+                            queryClient.invalidateQueries({
+                              queryKey: [
+                                "resources-v2-list",
+                                integrationId,
+                                resourceName,
+                              ],
+                            });
+
+                            navigateWorkspace(
+                              `rsc/${integrationId}/${resourceName}/${encodeURIComponent(uri)}`,
+                            );
+                          } catch (error) {
+                            console.error("Failed to create document:", error);
+                            toast.error(
+                              "Failed to create document. Please try again.",
+                            );
+                            setMutating(false);
+                          }
+                        }}
+                        variant="special"
+                        className="flex-1 h-9 rounded-none rounded-l-xl"
+                        disabled={mutating}
+                      >
+                        {mutating ? (
+                          <div className="w-4 h-4">
+                            <Spinner />
+                          </div>
+                        ) : (
+                          <Icon name="add" />
+                        )}
+                        New document
+                      </Button>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button
+                            variant="special"
+                            size="icon"
+                            className="h-9 w-10 rounded-none rounded-r-xl border-l border-white/20"
+                            disabled={mutating}
+                          >
+                            <Icon name="expand_more" size={20} />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end" className="w-64">
+                          <DropdownMenuItem
+                            className="cursor-pointer"
+                            onSelect={async () => {
+                              if (!integration) return;
+                              try {
+                                setMutating(true);
+
+                                const timestamp = new Date()
+                                  .toISOString()
+                                  .replace(/[:.]/g, "-");
+                                const data = {
+                                  name: `Untitled-${timestamp}`,
+                                  description: "",
+                                  content: "",
+                                };
+
+                                const result = await callTool(
+                                  integration.connection,
+                                  {
+                                    name: "DECO_RESOURCE_DOCUMENT_CREATE",
+                                    arguments: { data },
+                                  },
+                                );
+
+                                const uri =
+                                  (result as { uri?: string })?.uri ||
+                                  (result as { data?: { uri?: string } })?.data
+                                    ?.uri ||
+                                  (
+                                    result as {
+                                      structuredContent?: { uri?: string };
+                                    }
+                                  )?.structuredContent?.uri ||
+                                  (
+                                    result as {
+                                      content?: Array<{ text?: string }>;
+                                    }
+                                  )?.content?.[0]?.text;
+
+                                if (!uri) {
+                                  console.error("Create result:", result);
+                                  throw new Error(
+                                    "No URI returned from create operation",
+                                  );
+                                }
+
+                                queryClient.invalidateQueries({
+                                  queryKey: [
+                                    "resources-v2-list",
+                                    integrationId,
+                                    resourceName,
+                                  ],
+                                });
+
+                                navigateWorkspace(
+                                  `rsc/${integrationId}/${resourceName}/${encodeURIComponent(uri)}`,
+                                );
+                              } catch (error) {
+                                console.error(
+                                  "Failed to create document:",
+                                  error,
+                                );
+                                toast.error(
+                                  "Failed to create document. Please try again.",
+                                );
+                                setMutating(false);
+                              }
+                            }}
+                          >
+                            <Icon name="docs" size={18} className="mr-2" />
+                            <div className="flex-1">
+                              <div className="font-medium">Blank Document</div>
+                              <div className="text-xs text-muted-foreground">
+                                Start from scratch
+                              </div>
+                            </div>
+                          </DropdownMenuItem>
+                          <DropdownMenuSeparator />
+                          <DropdownMenuItem
+                            className="cursor-pointer"
+                            onSelect={async () => {
+                              if (!integration) return;
+                              try {
+                                setMutating(true);
+
+                                const timestamp = new Date()
+                                  .toISOString()
+                                  .replace(/[:.]/g, "-");
+                                const data = {
+                                  name: `AI App PRD - ${timestamp}`,
+                                  description:
+                                    "Product Requirements Document for an AI-native application on decocms.com platform. This document helps plan tools, agents, workflows, views, and databases.",
+                                  content: AI_APP_PRD_TEMPLATE,
+                                };
+
+                                const result = await callTool(
+                                  integration.connection,
+                                  {
+                                    name: "DECO_RESOURCE_DOCUMENT_CREATE",
+                                    arguments: { data },
+                                  },
+                                );
+
+                                const uri =
+                                  (result as { uri?: string })?.uri ||
+                                  (result as { data?: { uri?: string } })?.data
+                                    ?.uri ||
+                                  (
+                                    result as {
+                                      structuredContent?: { uri?: string };
+                                    }
+                                  )?.structuredContent?.uri ||
+                                  (
+                                    result as {
+                                      content?: Array<{ text?: string }>;
+                                    }
+                                  )?.content?.[0]?.text;
+
+                                if (!uri) {
+                                  console.error("Create result:", result);
+                                  throw new Error(
+                                    "No URI returned from create operation",
+                                  );
+                                }
+
+                                queryClient.invalidateQueries({
+                                  queryKey: [
+                                    "resources-v2-list",
+                                    integrationId,
+                                    resourceName,
+                                  ],
+                                });
+
+                                navigateWorkspace(
+                                  `rsc/${integrationId}/${resourceName}/${encodeURIComponent(uri)}`,
+                                );
+                              } catch (error) {
+                                console.error(
+                                  "Failed to create PRD document:",
+                                  error,
+                                );
+                                toast.error(
+                                  "Failed to create PRD document. Please try again.",
+                                );
+                                setMutating(false);
+                              }
+                            }}
+                          >
+                            <Icon
+                              name="rocket_launch"
+                              size={18}
+                              className="mr-2"
+                            />
+                            <div className="flex-1">
+                              <div className="font-medium">AI App PRD</div>
+                              <div className="text-xs text-muted-foreground">
+                                Plan tools, agents & workflows
+                              </div>
+                            </div>
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </div>
+                  ) : (
+                    // Regular button for other resources
                     <Button
                       onClick={async () => {
                         if (!integration) return;
                         try {
                           setMutating(true);
 
+                          // Generate unique name with timestamp
                           const timestamp = new Date()
                             .toISOString()
                             .replace(/[:.]/g, "-");
-                          const data = {
-                            name: `Untitled-${timestamp}`,
+                          const uniqueName = `Untitled-${timestamp}`;
+
+                          // Build data payload based on resource type
+                          const data: Record<string, unknown> = {
+                            name: uniqueName,
                             description: "",
-                            content: "",
                           };
+
+                          // Add resource-specific required fields
+                          if (resourceName === "workflow") {
+                            data.inputSchema = {};
+                            data.outputSchema = {};
+                            data.steps = [
+                              {
+                                def: {
+                                  name: "Start",
+                                  description: "Initial step",
+                                  execute:
+                                    "export default async function(input, ctx) { return {}; }",
+                                  inputSchema: {},
+                                  outputSchema: {},
+                                },
+                              },
+                            ];
+                          } else if (resourceName === "tool") {
+                            data.inputSchema = {};
+                            data.outputSchema = {};
+                            data.execute =
+                              "// Add your tool code here\nexport default function(input) {\n  return {};\n}";
+                          }
 
                           const result = await callTool(
                             integration.connection,
                             {
-                              name: "DECO_RESOURCE_DOCUMENT_CREATE",
+                              name: `DECO_RESOURCE_${(resourceName ?? "").toUpperCase()}_CREATE`,
                               arguments: { data },
                             },
                           );
 
+                          // Extract URI from response (can be at different levels)
                           const uri =
                             (result as { uri?: string })?.uri ||
                             (result as { data?: { uri?: string } })?.data
@@ -511,6 +794,7 @@ function ResourcesV2ListTab({
                             );
                           }
 
+                          // Invalidate list query so it refreshes when user navigates back
                           queryClient.invalidateQueries({
                             queryKey: [
                               "resources-v2-list",
@@ -519,19 +803,23 @@ function ResourcesV2ListTab({
                             ],
                           });
 
+                          // Navigate immediately - the route change will unmount this component
                           navigateWorkspace(
                             `rsc/${integrationId}/${resourceName}/${encodeURIComponent(uri)}`,
                           );
                         } catch (error) {
-                          console.error("Failed to create document:", error);
+                          console.error(
+                            `Failed to create ${resourceName || "resource"}:`,
+                            error,
+                          );
                           toast.error(
-                            "Failed to create document. Please try again.",
+                            `Failed to create ${resourceName || "resource"}. Please try again.`,
                           );
                           setMutating(false);
                         }
                       }}
                       variant="special"
-                      className="flex-1 h-9 rounded-none rounded-l-xl"
+                      className="h-9 rounded-xl w-full md:w-auto"
                       disabled={mutating}
                     >
                       {mutating ? (
@@ -541,411 +829,136 @@ function ResourcesV2ListTab({
                       ) : (
                         <Icon name="add" />
                       )}
-                      New document
+                      New {resourceName}
                     </Button>
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button
-                          variant="special"
-                          size="icon"
-                          className="h-9 w-10 rounded-none rounded-r-xl border-l border-white/20"
-                          disabled={mutating}
-                        >
-                          <Icon name="expand_more" size={20} />
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end" className="w-64">
-                        <DropdownMenuItem
-                          className="cursor-pointer"
-                          onSelect={async () => {
-                            if (!integration) return;
-                            try {
-                              setMutating(true);
-
-                              const timestamp = new Date()
-                                .toISOString()
-                                .replace(/[:.]/g, "-");
-                              const data = {
-                                name: `Untitled-${timestamp}`,
-                                description: "",
-                                content: "",
-                              };
-
-                              const result = await callTool(
-                                integration.connection,
-                                {
-                                  name: "DECO_RESOURCE_DOCUMENT_CREATE",
-                                  arguments: { data },
-                                },
-                              );
-
-                              const uri =
-                                (result as { uri?: string })?.uri ||
-                                (result as { data?: { uri?: string } })?.data
-                                  ?.uri ||
-                                (
-                                  result as {
-                                    structuredContent?: { uri?: string };
-                                  }
-                                )?.structuredContent?.uri ||
-                                (
-                                  result as {
-                                    content?: Array<{ text?: string }>;
-                                  }
-                                )?.content?.[0]?.text;
-
-                              if (!uri) {
-                                console.error("Create result:", result);
-                                throw new Error(
-                                  "No URI returned from create operation",
-                                );
-                              }
-
-                              queryClient.invalidateQueries({
-                                queryKey: [
-                                  "resources-v2-list",
-                                  integrationId,
-                                  resourceName,
-                                ],
-                              });
-
-                              navigateWorkspace(
-                                `rsc/${integrationId}/${resourceName}/${encodeURIComponent(uri)}`,
-                              );
-                            } catch (error) {
-                              console.error(
-                                "Failed to create document:",
-                                error,
-                              );
-                              toast.error(
-                                "Failed to create document. Please try again.",
-                              );
-                              setMutating(false);
-                            }
-                          }}
-                        >
-                          <Icon name="docs" size={18} className="mr-2" />
-                          <div className="flex-1">
-                            <div className="font-medium">Blank Document</div>
-                            <div className="text-xs text-muted-foreground">
-                              Start from scratch
-                            </div>
-                          </div>
-                        </DropdownMenuItem>
-                        <DropdownMenuSeparator />
-                        <DropdownMenuItem
-                          className="cursor-pointer"
-                          onSelect={async () => {
-                            if (!integration) return;
-                            try {
-                              setMutating(true);
-
-                              const timestamp = new Date()
-                                .toISOString()
-                                .replace(/[:.]/g, "-");
-                              const data = {
-                                name: `AI App PRD - ${timestamp}`,
-                                description:
-                                  "Product Requirements Document for an AI-native application on decocms.com platform. This document helps plan tools, agents, workflows, views, and databases.",
-                                content: AI_APP_PRD_TEMPLATE,
-                              };
-
-                              const result = await callTool(
-                                integration.connection,
-                                {
-                                  name: "DECO_RESOURCE_DOCUMENT_CREATE",
-                                  arguments: { data },
-                                },
-                              );
-
-                              const uri =
-                                (result as { uri?: string })?.uri ||
-                                (result as { data?: { uri?: string } })?.data
-                                  ?.uri ||
-                                (
-                                  result as {
-                                    structuredContent?: { uri?: string };
-                                  }
-                                )?.structuredContent?.uri ||
-                                (
-                                  result as {
-                                    content?: Array<{ text?: string }>;
-                                  }
-                                )?.content?.[0]?.text;
-
-                              if (!uri) {
-                                console.error("Create result:", result);
-                                throw new Error(
-                                  "No URI returned from create operation",
-                                );
-                              }
-
-                              queryClient.invalidateQueries({
-                                queryKey: [
-                                  "resources-v2-list",
-                                  integrationId,
-                                  resourceName,
-                                ],
-                              });
-
-                              navigateWorkspace(
-                                `rsc/${integrationId}/${resourceName}/${encodeURIComponent(uri)}`,
-                              );
-                            } catch (error) {
-                              console.error(
-                                "Failed to create PRD document:",
-                                error,
-                              );
-                              toast.error(
-                                "Failed to create PRD document. Please try again.",
-                              );
-                              setMutating(false);
-                            }
-                          }}
-                        >
-                          <Icon
-                            name="rocket_launch"
-                            size={18}
-                            className="mr-2"
-                          />
-                          <div className="flex-1">
-                            <div className="font-medium">AI App PRD</div>
-                            <div className="text-xs text-muted-foreground">
-                              Plan tools, agents & workflows
-                            </div>
-                          </div>
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  </div>
-                ) : (
-                  // Regular button for other resources
-                  <Button
-                    onClick={async () => {
-                      if (!integration) return;
-                      try {
-                        setMutating(true);
-
-                        // Generate unique name with timestamp
-                        const timestamp = new Date()
-                          .toISOString()
-                          .replace(/[:.]/g, "-");
-                        const uniqueName = `Untitled-${timestamp}`;
-
-                        // Build data payload based on resource type
-                        const data: Record<string, unknown> = {
-                          name: uniqueName,
-                          description: "",
-                        };
-
-                        // Add resource-specific required fields
-                        if (resourceName === "workflow") {
-                          data.inputSchema = {};
-                          data.outputSchema = {};
-                          data.steps = [
-                            {
-                              def: {
-                                name: "Start",
-                                description: "Initial step",
-                                execute:
-                                  "export default async function(input, ctx) { return {}; }",
-                                inputSchema: {},
-                                outputSchema: {},
-                              },
-                            },
-                          ];
-                        } else if (resourceName === "tool") {
-                          data.inputSchema = {};
-                          data.outputSchema = {};
-                          data.execute =
-                            "// Add your tool code here\nexport default function(input) {\n  return {};\n}";
-                        }
-
-                        const result = await callTool(integration.connection, {
-                          name: `DECO_RESOURCE_${(resourceName ?? "").toUpperCase()}_CREATE`,
-                          arguments: { data },
-                        });
-
-                        // Extract URI from response (can be at different levels)
-                        const uri =
-                          (result as { uri?: string })?.uri ||
-                          (result as { data?: { uri?: string } })?.data?.uri ||
-                          (
-                            result as {
-                              structuredContent?: { uri?: string };
-                            }
-                          )?.structuredContent?.uri ||
-                          (
-                            result as {
-                              content?: Array<{ text?: string }>;
-                            }
-                          )?.content?.[0]?.text;
-
-                        if (!uri) {
-                          console.error("Create result:", result);
-                          throw new Error(
-                            "No URI returned from create operation",
-                          );
-                        }
-
-                        // Invalidate list query so it refreshes when user navigates back
-                        queryClient.invalidateQueries({
-                          queryKey: [
-                            "resources-v2-list",
-                            integrationId,
-                            resourceName,
-                          ],
-                        });
-
-                        // Navigate immediately - the route change will unmount this component
-                        navigateWorkspace(
-                          `rsc/${integrationId}/${resourceName}/${encodeURIComponent(uri)}`,
-                        );
-                      } catch (error) {
-                        console.error(
-                          `Failed to create ${resourceName || "resource"}:`,
-                          error,
-                        );
-                        toast.error(
-                          `Failed to create ${resourceName || "resource"}. Please try again.`,
-                        );
-                        setMutating(false);
-                      }
-                    }}
-                    variant="special"
-                    className="h-9 rounded-xl w-full md:w-auto"
-                    disabled={mutating}
-                  >
-                    {mutating ? (
-                      <div className="w-4 h-4">
-                        <Spinner />
-                      </div>
-                    ) : (
-                      <Icon name="add" />
-                    )}
-                    New {resourceName}
-                  </Button>
-                )
-              ) : undefined
-            }
-          />
-
-          {error && (
-            <Card>
-              <CardContent className="p-4 text-destructive text-sm">
-                {error}
-              </CardContent>
-            </Card>
-          )}
-
-          {loading ? (
-            <div className="flex justify-center items-center h-full py-8">
-              <Spinner />
-            </div>
-          ) : sortedItems.length === 0 ? (
-            <EmptyState
-              icon="list"
-              title="No resources found"
-              description={`No ${resourceName} found for this integration.`}
+                  )
+                ) : undefined
+              }
             />
-          ) : viewMode === "cards" ? (
-            <div
-              className="grid gap-4"
-              style={{
-                gridTemplateColumns: "repeat(auto-fill, minmax(320px, 1fr))",
-              }}
-            >
-              {sortedItems.map((it) => (
-                <Card
-                  key={it.uri}
-                  className="group cursor-pointer hover:shadow-sm transition-shadow overflow-hidden bg-card border-0 min-h-48"
-                  onClick={() =>
-                    navigateWorkspace(
-                      `rsc/${integrationId}/${resourceName}/${encodeURIComponent(it.uri)}`,
-                    )
-                  }
-                >
-                  <div className="flex flex-col h-full">
-                    {/* Content Section */}
-                    <div className="p-5 flex flex-col gap-2 flex-1 relative">
-                      <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                              }}
-                              className="text-muted-foreground h-8 w-8"
-                            >
-                              <Icon name="more_horiz" className="w-4 h-4" />
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end">
-                            <DropdownMenuItem
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                navigateWorkspace(
-                                  `rsc/${integrationId}/${resourceName}/${encodeURIComponent(it.uri)}`,
-                                );
-                              }}
-                            >
-                              <Icon
-                                name="open_in_new"
-                                className="w-4 h-4 mr-2"
-                              />
-                              Open
-                            </DropdownMenuItem>
-                            {capabilities.hasDelete && (
+          </div>
+        </div>
+
+        {/* Content Section - can scroll horizontally */}
+        <div className="px-4 lg:px-6 xl:px-10">
+          <div className="max-w-[1600px] mx-auto w-full space-y-4 md:space-y-6 lg:space-y-8 pb-8">
+            {error && (
+              <Card>
+                <CardContent className="p-4 text-destructive text-sm">
+                  {error}
+                </CardContent>
+              </Card>
+            )}
+
+            {loading ? (
+              <div className="flex justify-center items-center h-full py-8">
+                <Spinner />
+              </div>
+            ) : sortedItems.length === 0 ? (
+              <EmptyState
+                icon="list"
+                title="No resources found"
+                description={`No ${resourceName} found for this integration.`}
+              />
+            ) : viewMode === "cards" ? (
+              <div
+                className="grid gap-4"
+                style={{
+                  gridTemplateColumns: "repeat(auto-fill, minmax(320px, 1fr))",
+                }}
+              >
+                {sortedItems.map((it) => (
+                  <Card
+                    key={it.uri}
+                    className="group cursor-pointer hover:shadow-sm transition-shadow overflow-hidden bg-card border-0 min-h-48"
+                    onClick={() =>
+                      navigateWorkspace(
+                        `rsc/${integrationId}/${resourceName}/${encodeURIComponent(it.uri)}`,
+                      )
+                    }
+                  >
+                    <div className="flex flex-col h-full">
+                      {/* Content Section */}
+                      <div className="p-5 flex flex-col gap-2 flex-1 relative">
+                        <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                }}
+                                className="text-muted-foreground h-8 w-8"
+                              >
+                                <Icon name="more_horiz" className="w-4 h-4" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
                               <DropdownMenuItem
                                 onClick={(e) => {
                                   e.stopPropagation();
-                                  onDeleteClick(it.uri);
+                                  navigateWorkspace(
+                                    `rsc/${integrationId}/${resourceName}/${encodeURIComponent(it.uri)}`,
+                                  );
                                 }}
-                                className="text-destructive focus:text-destructive"
                               >
-                                <Icon name="delete" className="w-4 h-4 mr-2" />
-                                Delete
+                                <Icon
+                                  name="open_in_new"
+                                  className="w-4 h-4 mr-2"
+                                />
+                                Open
                               </DropdownMenuItem>
-                            )}
-                          </DropdownMenuContent>
-                        </DropdownMenu>
+                              {capabilities.hasDelete && (
+                                <DropdownMenuItem
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    onDeleteClick(it.uri);
+                                  }}
+                                  className="text-destructive focus:text-destructive"
+                                >
+                                  <Icon
+                                    name="delete"
+                                    className="w-4 h-4 mr-2"
+                                  />
+                                  Delete
+                                </DropdownMenuItem>
+                              )}
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        </div>
+                        <h3 className="text-base font-medium text-foreground truncate pr-10">
+                          {it.data?.name ?? ""}
+                        </h3>
+                        <p className="text-sm text-muted-foreground line-clamp-2 leading-normal">
+                          {it.data?.description ?? ""}
+                        </p>
                       </div>
-                      <h3 className="text-base font-medium text-foreground truncate pr-10">
-                        {it.data?.name ?? ""}
-                      </h3>
-                      <p className="text-sm text-muted-foreground line-clamp-2 leading-normal">
-                        {it.data?.description ?? ""}
-                      </p>
-                    </div>
 
-                    {/* Footer Section */}
-                    <div className="border-t border-border px-5 py-3 flex items-center justify-between text-sm flex-shrink-0 flex-wrap gap-x-4 gap-y-1">
-                      <div className="flex items-center gap-1">
-                        <span className="text-muted-foreground">Updated</span>
-                        <span className="text-foreground">
-                          <TimeAgoCell value={it.updated_at} />
-                        </span>
-                      </div>
-                      <div className="flex items-center gap-1">
-                        <span className="text-muted-foreground">by</span>
-                        <UserInfo
-                          userId={it.updated_by}
-                          size="xs"
-                          showEmail={false}
-                          noTooltip
-                        />
+                      {/* Footer Section */}
+                      <div className="border-t border-border px-5 py-3 flex items-center justify-between text-sm flex-shrink-0 flex-wrap gap-x-4 gap-y-1">
+                        <div className="flex items-center gap-1">
+                          <span className="text-muted-foreground">Updated</span>
+                          <span className="text-foreground">
+                            <TimeAgoCell value={it.updated_at} />
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-1">
+                          <span className="text-muted-foreground">by</span>
+                          <UserInfo
+                            userId={it.updated_by}
+                            size="xs"
+                            showEmail={false}
+                            noTooltip
+                          />
+                        </div>
                       </div>
                     </div>
-                  </div>
-                </Card>
-              ))}
-            </div>
-          ) : null}
-          {viewMode === "table" && !loading && sortedItems.length > 0 && (
-            <div className="overflow-x-auto -mx-16 px-16">
-              <div className="w-fit min-w-full max-w-[1500px] mx-auto">
+                  </Card>
+                ))}
+              </div>
+            ) : null}
+            {viewMode === "table" && !loading && sortedItems.length > 0 && (
+              <div className="w-fit min-w-full">
                 <Table
                   columns={columns}
                   data={sortedItems}
@@ -959,8 +972,8 @@ function ResourcesV2ListTab({
                   }
                 />
               </div>
-            </div>
-          )}
+            )}
+          </div>
         </div>
       </div>
 

@@ -15,7 +15,7 @@ export function WorkflowStoreProvider({
   workflow: WorkflowDefinition;
 }) {
   const [store] = useState(() =>
-    createWorkflowStore({ workflowUri, workflow }),
+    createWorkflowStore({ workflowUri, workflow, stepOutputs: {} }),
   );
   return (
     <WorkflowStoreContext.Provider value={store}>

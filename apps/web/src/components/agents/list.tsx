@@ -479,155 +479,163 @@ function AgentsList() {
 
   return (
     <DecopilotLayout value={decopilotContextValue}>
-      <div className="h-full p-0 overflow-y-auto">
-        <div className="py-4 px-4 md:py-8 md:px-8 lg:py-16 lg:px-16 space-y-4 md:space-y-6 lg:space-y-8">
-          <div className="max-w-[1500px] mx-auto w-full space-y-4 md:space-y-6 lg:space-y-8">
-            <ResourceHeader
-              title="Agents"
-              tabs={mainTabs}
-              activeTab="agents"
-              searchOpen={searchOpen}
-              searchValue={filter}
-              onSearchToggle={() => setSearchOpen(!searchOpen)}
-              onSearchChange={(value: string) =>
-                dispatch({ type: "SET_FILTER", payload: value })
-              }
-              onSearchBlur={() => {
-                if (!filter) {
-                  setSearchOpen(false);
+      <div className="h-full flex flex-col overflow-hidden">
+        <div className="flex-1 overflow-auto">
+          {/* Header Section - sticky horizontally */}
+          <div className="sticky left-0 px-4 lg:px-6 xl:px-10 pt-12 pb-4 md:pb-6 lg:pb-8 z-10 bg-background">
+            <div className="max-w-[1600px] mx-auto w-full space-y-4 md:space-y-6 lg:space-y-8">
+              <ResourceHeader
+                title="Agents"
+                tabs={mainTabs}
+                activeTab="agents"
+                searchOpen={searchOpen}
+                searchValue={filter}
+                onSearchToggle={() => setSearchOpen(!searchOpen)}
+                onSearchChange={(value: string) =>
+                  dispatch({ type: "SET_FILTER", payload: value })
                 }
-              }}
-              onSearchKeyDown={(e: KeyboardEvent<HTMLInputElement>) => {
-                if (e.key === "Escape") {
-                  dispatch({ type: "SET_FILTER", payload: "" });
-                  setSearchOpen(false);
-                  (e.target as HTMLInputElement).blur();
+                onSearchBlur={() => {
+                  if (!filter) {
+                    setSearchOpen(false);
+                  }
+                }}
+                onSearchKeyDown={(e: KeyboardEvent<HTMLInputElement>) => {
+                  if (e.key === "Escape") {
+                    dispatch({ type: "SET_FILTER", payload: "" });
+                    setSearchOpen(false);
+                    (e.target as HTMLInputElement).blur();
+                  }
+                }}
+                viewMode={viewMode}
+                onViewModeChange={setViewMode}
+                ctaButton={
+                  <Button
+                    variant="special"
+                    className="h-9 rounded-xl w-full md:w-auto"
+                    onClick={handleCreate}
+                  >
+                    <Icon name="add" size={16} />
+                    New agent
+                  </Button>
                 }
-              }}
-              viewMode={viewMode}
-              onViewModeChange={setViewMode}
-              ctaButton={
-                <Button
-                  variant="special"
-                  className="h-9 rounded-xl w-full md:w-auto"
-                  onClick={handleCreate}
-                >
-                  <Icon name="add" size={16} />
-                  New agent
-                </Button>
-              }
-            />
+              />
 
-            {/* Filter buttons */}
-            <div className="flex items-center gap-1">
-              {(["active", ...VISIBILITIES] as TabId[]).map((id) => (
-                <Button
-                  key={id}
-                  onClick={() => setSelectedTab(id as TabId)}
-                  variant={selectedTab === id ? "secondary" : "ghost"}
-                  size="sm"
-                  className={`h-8 ${selectedTab === id ? "" : "text-muted-foreground"}`}
-                >
-                  <span className="flex items-center gap-1.5">
-                    {id === "active" ? (
-                      "Active"
-                    ) : id === "all" ? (
-                      "All"
-                    ) : id === "public" ? (
-                      <>
-                        <Icon name="public" className="w-4 h-4" /> Public
-                      </>
-                    ) : (
-                      <>
-                        <Icon name="groups" className="w-4 h-4" /> Team
-                      </>
-                    )}
-                  </span>
-                </Button>
-              ))}
+              {/* Filter buttons */}
+              <div className="flex items-center gap-1">
+                {(["active", ...VISIBILITIES] as TabId[]).map((id) => (
+                  <Button
+                    key={id}
+                    onClick={() => setSelectedTab(id as TabId)}
+                    variant={selectedTab === id ? "secondary" : "ghost"}
+                    size="sm"
+                    className={`h-8 ${selectedTab === id ? "" : "text-muted-foreground"}`}
+                  >
+                    <span className="flex items-center gap-1.5">
+                      {id === "active" ? (
+                        "Active"
+                      ) : id === "all" ? (
+                        "All"
+                      ) : id === "public" ? (
+                        <>
+                          <Icon name="public" className="w-4 h-4" /> Public
+                        </>
+                      ) : (
+                        <>
+                          <Icon name="groups" className="w-4 h-4" /> Team
+                        </>
+                      )}
+                    </span>
+                  </Button>
+                ))}
+              </div>
             </div>
+          </div>
 
-            {filteredAgents.length > 0 ? (
-              <>
-                {viewMode === "cards" && <CardsView agents={filteredAgents} />}
-                {viewMode === "table" && (
-                  <div className="overflow-x-auto -mx-16 px-16">
-                    <div className="w-fit min-w-full max-w-[1500px] mx-auto">
+          {/* Content Section */}
+          <div className="px-4 lg:px-6 xl:px-10">
+            <div className="max-w-[1600px] mx-auto w-full space-y-4 md:space-y-6 lg:space-y-8 pb-8">
+              {filteredAgents.length > 0 ? (
+                <>
+                  {viewMode === "cards" && (
+                    <CardsView agents={filteredAgents} />
+                  )}
+                  {viewMode === "table" && (
+                    <div className="w-fit min-w-full">
                       <TableView agents={filteredAgents} />
                     </div>
-                  </div>
-                )}
+                  )}
 
-                {selectedTab === "active" && (
-                  <div className="w-full text-center text-xs text-muted-foreground py-3">
-                    showing only agents used in the last 7 days. click
-                    <Button
-                      variant="link"
-                      className="px-1"
-                      onClick={() => setSelectedTab("all")}
-                    >
-                      All
-                    </Button>
-                    to see more
-                  </div>
-                )}
-              </>
-            ) : (
-              <>
-                {selectedTab === "active" ? (
-                  <EmptyState
-                    icon="history"
-                    title="No agents used in the last 7 days"
-                    description="Click All to see more."
-                    buttonProps={{
-                      children: "All",
-                      onClick: () => setSelectedTab("all"),
-                      variant: "outline",
-                    }}
-                  />
-                ) : (
-                  <EmptyState
-                    icon={
-                      (agents?.length ?? 0) === 0
-                        ? "robot_2"
-                        : selectedTab === "public" &&
-                            agentsByVisibility["public"].length === 0
-                          ? "public"
-                          : selectedTab === "workspace" &&
-                              agentsByVisibility["workspace"].length === 0
-                            ? "groups"
-                            : "search_off"
-                    }
-                    title={
-                      (agents?.length ?? 0) === 0
-                        ? "No agents yet"
-                        : selectedTab === "public" &&
-                            agentsByVisibility["public"].length === 0
-                          ? "No public agents available"
-                          : selectedTab === "workspace" &&
-                              agentsByVisibility["workspace"].length === 0
-                            ? "No team agents yet"
-                            : "No agents match your filter"
-                    }
-                    description={
-                      (agents?.length ?? 0) === 0
-                        ? "You haven't created any agents yet. Create one to get started."
-                        : selectedTab === "public" &&
-                            agentsByVisibility["public"].length === 0
-                          ? "Once agents are shared publicly, they'll appear here for anyone to explore and try out."
-                          : selectedTab === "workspace" &&
-                              agentsByVisibility["workspace"].length === 0
-                            ? "Agents shared with your team will show up here. Create one to start collaborating."
-                            : "Try adjusting your search. If you still can't find what you're looking for, you can create a new agent."
-                    }
-                    buttonProps={{
-                      children: "New agent",
-                      onClick: handleCreate,
-                    }}
-                  />
-                )}
-              </>
-            )}
+                  {selectedTab === "active" && (
+                    <div className="w-full text-center text-xs text-muted-foreground py-3">
+                      showing only agents used in the last 7 days. click
+                      <Button
+                        variant="link"
+                        className="px-1"
+                        onClick={() => setSelectedTab("all")}
+                      >
+                        All
+                      </Button>
+                      to see more
+                    </div>
+                  )}
+                </>
+              ) : (
+                <>
+                  {selectedTab === "active" ? (
+                    <EmptyState
+                      icon="history"
+                      title="No agents used in the last 7 days"
+                      description="Click All to see more."
+                      buttonProps={{
+                        children: "All",
+                        onClick: () => setSelectedTab("all"),
+                        variant: "outline",
+                      }}
+                    />
+                  ) : (
+                    <EmptyState
+                      icon={
+                        (agents?.length ?? 0) === 0
+                          ? "robot_2"
+                          : selectedTab === "public" &&
+                              agentsByVisibility["public"].length === 0
+                            ? "public"
+                            : selectedTab === "workspace" &&
+                                agentsByVisibility["workspace"].length === 0
+                              ? "groups"
+                              : "search_off"
+                      }
+                      title={
+                        (agents?.length ?? 0) === 0
+                          ? "No agents yet"
+                          : selectedTab === "public" &&
+                              agentsByVisibility["public"].length === 0
+                            ? "No public agents available"
+                            : selectedTab === "workspace" &&
+                                agentsByVisibility["workspace"].length === 0
+                              ? "No team agents yet"
+                              : "No agents match your filter"
+                      }
+                      description={
+                        (agents?.length ?? 0) === 0
+                          ? "You haven't created any agents yet. Create one to get started."
+                          : selectedTab === "public" &&
+                              agentsByVisibility["public"].length === 0
+                            ? "Once agents are shared publicly, they'll appear here for anyone to explore and try out."
+                            : selectedTab === "workspace" &&
+                                agentsByVisibility["workspace"].length === 0
+                              ? "Agents shared with your team will show up here. Create one to start collaborating."
+                              : "Try adjusting your search. If you still can't find what you're looking for, you can create a new agent."
+                      }
+                      buttonProps={{
+                        children: "New agent",
+                        onClick: handleCreate,
+                      }}
+                    />
+                  )}
+                </>
+              )}
+            </div>
           </div>
         </div>
       </div>

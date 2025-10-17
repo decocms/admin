@@ -33,6 +33,7 @@ import {
   useWorkflowUri,
 } from "../../stores/workflows/hooks.ts";
 import { WorkflowStoreProvider } from "../../stores/workflows/provider.tsx";
+import { DetailSection } from "../common/detail-section.tsx";
 
 // const LazyHighlighter = lazy(() => import("../chat/lazy-highlighter.tsx"));
 
@@ -268,91 +269,85 @@ export function Canvas() {
     <ScrollArea className="h-full w-full">
       <div className="flex flex-col">
         {/* Header */}
-        <div className="border-b border-border py-4 px-4 md:py-8 md:px-8 lg:py-16 lg:px-16">
-          <div className="max-w-[1500px] mx-auto space-y-4">
-            <div className="flex items-center justify-between gap-2 flex-wrap">
-              <div>
-                <h1 className="text-2xl font-medium">{workflow.name}</h1>
-                {workflow.description && (
-                  <p className="text-sm text-muted-foreground mt-1">
-                    {workflow.description}
-                  </p>
-                )}
-              </div>
-              {run && (
-                <Badge variant={badgeVariant} className="capitalize">
-                  {status}
-                </Badge>
+        <DetailSection>
+          <div className="flex items-center justify-between gap-2 flex-wrap">
+            <div>
+              <h1 className="text-2xl font-medium">{workflow.name}</h1>
+              {workflow.description && (
+                <p className="text-sm text-muted-foreground mt-1">
+                  {workflow.description}
+                </p>
               )}
             </div>
-
-            {/* Run metadata */}
             {run && (
-              <div className="flex items-center gap-4 flex-wrap text-sm">
-                <div className="flex items-center gap-2">
-                  <Icon
-                    name="calendar_month"
-                    size={16}
-                    className="text-muted-foreground"
-                  />
-                  <span className="font-mono text-sm uppercase">
-                    {run.data.startTime
-                      ? new Date(run.data.startTime).toLocaleString([], {
-                          month: "short",
-                          day: "numeric",
-                          year: "numeric",
-                          hour: "2-digit",
-                          minute: "2-digit",
-                        })
-                      : "-"}
-                  </span>
-                </div>
-
-                <div className="h-3 w-px bg-border" />
-
-                <div className="flex items-center gap-2">
-                  <Icon
-                    name="schedule"
-                    size={16}
-                    className="text-muted-foreground"
-                  />
-                  <span className="font-mono text-sm">{duration || "-"}</span>
-                </div>
-
-                <div className="h-3 w-px bg-border" />
-
-                {startedBy?.id && (
-                  <UserInfo
-                    userId={startedBy.id}
-                    size="sm"
-                    noTooltip
-                    showEmail={false}
-                  />
-                )}
-              </div>
-            )}
-
-            {/* Error Alert */}
-            {error && (
-              <Alert className="bg-destructive/5 border-none">
-                <Icon name="error" className="h-4 w-4 text-destructive" />
-                <AlertTitle className="text-destructive">Error</AlertTitle>
-                <AlertDescription className="text-destructive">
-                  {error}
-                </AlertDescription>
-              </Alert>
+              <Badge variant={badgeVariant} className="capitalize">
+                {status}
+              </Badge>
             )}
           </div>
-        </div>
+
+          {/* Run metadata */}
+          {run && (
+            <div className="flex items-center gap-4 flex-wrap text-sm">
+              <div className="flex items-center gap-2">
+                <Icon
+                  name="calendar_month"
+                  size={16}
+                  className="text-muted-foreground"
+                />
+                <span className="font-mono text-sm uppercase">
+                  {run.data.startTime
+                    ? new Date(run.data.startTime).toLocaleString([], {
+                        month: "short",
+                        day: "numeric",
+                        year: "numeric",
+                        hour: "2-digit",
+                        minute: "2-digit",
+                      })
+                    : "-"}
+                </span>
+              </div>
+
+              <div className="h-3 w-px bg-border" />
+
+              <div className="flex items-center gap-2">
+                <Icon
+                  name="schedule"
+                  size={16}
+                  className="text-muted-foreground"
+                />
+                <span className="font-mono text-sm">{duration || "-"}</span>
+              </div>
+
+              <div className="h-3 w-px bg-border" />
+
+              {startedBy?.id && (
+                <UserInfo
+                  userId={startedBy.id}
+                  size="sm"
+                  noTooltip
+                  showEmail={false}
+                />
+              )}
+            </div>
+          )}
+
+          {/* Error Alert */}
+          {error && (
+            <Alert className="bg-destructive/5 border-none">
+              <Icon name="error" className="h-4 w-4 text-destructive" />
+              <AlertTitle className="text-destructive">Error</AlertTitle>
+              <AlertDescription className="text-destructive">
+                {error}
+              </AlertDescription>
+            </Alert>
+          )}
+        </DetailSection>
 
         {/* Steps Section - show definition steps before run, runtime steps after */}
-        <div className="border-b border-border py-4 px-4 md:py-8 md:px-8 lg:py-8 lg:px-16">
-          <div className="max-w-[1500px] mx-auto space-y-4">
-            <h2 className="text-lg font-medium">Steps</h2>
-
-            <WorkflowStepsList />
-          </div>
-        </div>
+        <DetailSection title="Steps">
+          <WorkflowStepsList />
+        </DetailSection>
       </div>
     </ScrollArea>
   );

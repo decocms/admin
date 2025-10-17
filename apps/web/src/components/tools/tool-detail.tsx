@@ -28,6 +28,7 @@ import { useParams } from "react-router";
 import { z } from "zod";
 import { EmptyState } from "../common/empty-state.tsx";
 import { ToolCallResultV2 } from "@deco/sdk/hooks";
+import { DetailSection } from "../common/detail-section.tsx";
 
 const LazyHighlighter = lazy(() => import("../chat/lazy-highlighter.tsx"));
 
@@ -269,135 +270,104 @@ export function ToolDetail({ resourceUri }: ToolDisplayCanvasProps) {
     <ScrollArea className="h-full w-full">
       <div className="flex flex-col">
         {/* Header */}
-
-        <div className="px-4 lg:px-6 xl:px-10 py-4 md:py-6 lg:py-8 z-10 bg-background border-b border-border">
-          <div className="max-w-[1500px] mx-auto space-y-4">
-            <div className="flex items-center justify-between gap-2 flex-wrap">
-              <div>
-                <h1 className="text-2xl font-medium">{effectiveTool.name}</h1>
-                {effectiveTool.description && (
-                  <p className="text-sm text-muted-foreground mt-1">
-                    {effectiveTool.description}
-                  </p>
-                )}
-              </div>
+        <DetailSection>
+          <div className="flex items-center justify-between gap-2 flex-wrap">
+            <div>
+              <h1 className="text-2xl font-medium">{effectiveTool.name}</h1>
+              {effectiveTool.description && (
+                <p className="text-sm text-muted-foreground mt-1">
+                  {effectiveTool.description}
+                </p>
+              )}
             </div>
-
-            {/* Execution stats (show after execution) */}
-            {executionResult !== null &&
-            typeof executionStats.latency === "number" ? (
-              <div className="flex items-center gap-4 flex-wrap text-sm">
-                <div className="flex items-center gap-2">
-                  <Icon
-                    name="schedule"
-                    size={16}
-                    className="text-muted-foreground"
-                  />
-                  <span className="font-mono text-sm">
-                    {executionStats.latency}ms
-                  </span>
-                </div>
-
-                {executionStats.byteSize ? (
-                  <>
-                    <div className="h-3 w-px bg-border" />
-                    <div className="flex items-center gap-2">
-                      <Icon
-                        name="storage"
-                        size={16}
-                        className="text-muted-foreground"
-                      />
-                      <span className="font-mono text-sm">
-                        {executionStats.byteSize} bytes
-                      </span>
-                    </div>
-                  </>
-                ) : null}
-
-                {executionStats.estimatedTokens ? (
-                  <>
-                    <div className="h-3 w-px bg-border" />
-                    <div className="flex items-center gap-2">
-                      <Icon
-                        name="token"
-                        size={16}
-                        className="text-muted-foreground"
-                      />
-                      <span className="font-mono text-sm">
-                        ~{executionStats.estimatedTokens} tokens
-                      </span>
-                    </div>
-                  </>
-                ) : null}
-              </div>
-            ) : null}
-
-            {/* Error Alert */}
-            {executionResult?.error ? (
-              <Alert className="bg-destructive/5 border-none">
-                <Icon name="error" className="h-4 w-4 text-destructive" />
-                <AlertTitle className="text-destructive">Error</AlertTitle>
-                <AlertDescription className="text-destructive">
-                  {typeof executionResult.error === "string"
-                    ? executionResult.error
-                    : JSON.stringify(executionResult.error)}
-                </AlertDescription>
-              </Alert>
-            ) : null}
           </div>
-        </div>
+
+          {/* Execution stats (show after execution) */}
+          {executionResult !== null &&
+          typeof executionStats.latency === "number" ? (
+            <div className="flex items-center gap-4 flex-wrap text-sm">
+              <div className="flex items-center gap-2">
+                <Icon
+                  name="schedule"
+                  size={16}
+                  className="text-muted-foreground"
+                />
+                <span className="font-mono text-sm">
+                  {executionStats.latency}ms
+                </span>
+              </div>
+
+              {executionStats.byteSize ? (
+                <>
+                  <div className="h-3 w-px bg-border" />
+                  <div className="flex items-center gap-2">
+                    <Icon
+                      name="storage"
+                      size={16}
+                      className="text-muted-foreground"
+                    />
+                    <span className="font-mono text-sm">
+                      {executionStats.byteSize} bytes
+                    </span>
+                  </div>
+                </>
+              ) : null}
+
+              {executionStats.estimatedTokens ? (
+                <>
+                  <div className="h-3 w-px bg-border" />
+                  <div className="flex items-center gap-2">
+                    <Icon
+                      name="token"
+                      size={16}
+                      className="text-muted-foreground"
+                    />
+                    <span className="font-mono text-sm">
+                      ~{executionStats.estimatedTokens} tokens
+                    </span>
+                  </div>
+                </>
+              ) : null}
+            </div>
+          ) : null}
+
+          {/* Error Alert */}
+          {executionResult?.error ? (
+            <Alert className="bg-destructive/5 border-none">
+              <Icon name="error" className="h-4 w-4 text-destructive" />
+              <AlertTitle className="text-destructive">Error</AlertTitle>
+              <AlertDescription className="text-destructive">
+                {typeof executionResult.error === "string"
+                  ? executionResult.error
+                  : JSON.stringify(executionResult.error)}
+              </AlertDescription>
+            </Alert>
+          ) : null}
+        </DetailSection>
 
         {/* Input Form */}
-        <div className="px-4 lg:px-6 xl:px-10 py-4 md:py-6 lg:py-8 z-10 bg-background border-b border-border">
-          <div className="max-w-[1500px] mx-auto space-y-4">
-            <h2 className="text-lg font-medium">Input</h2>
-
-            <div className="bg-muted/30 rounded-xl p-6">
-              {effectiveTool.inputSchema &&
-              typeof effectiveTool.inputSchema === "object" &&
-              "properties" in effectiveTool.inputSchema &&
-              effectiveTool.inputSchema.properties &&
-              Object.keys(effectiveTool.inputSchema.properties).length > 0 ? (
-                <Form
-                  schema={effectiveTool.inputSchema}
-                  validator={validator}
-                  formData={formData}
-                  onChange={({ formData }) => setFormData(formData)}
-                  onSubmit={({ formData }) => handleFormSubmit(formData)}
-                  showErrorList={false}
-                  noHtml5Validate
-                  liveValidate={false}
-                >
-                  <div className="flex justify-end gap-2 mt-4">
-                    <Button
-                      type="submit"
-                      disabled={isExecuting}
-                      size="lg"
-                      className="min-w-[200px] flex items-center gap-2"
-                    >
-                      {isExecuting ? (
-                        <>
-                          <Spinner size="xs" />
-                          Executing...
-                        </>
-                      ) : (
-                        <>
-                          <Icon name="play_arrow" size={18} />
-                          Execute Tool
-                        </>
-                      )}
-                    </Button>
-                  </div>
-                </Form>
-              ) : (
-                <div className="flex flex-col items-center justify-center py-8 text-center gap-4">
-                  <p className="text-sm text-muted-foreground">
-                    This tool does not require any input parameters.
-                  </p>
+        <DetailSection title="Input">
+          <div className="bg-muted/30 rounded-xl p-6">
+            {effectiveTool.inputSchema &&
+            typeof effectiveTool.inputSchema === "object" &&
+            "properties" in effectiveTool.inputSchema &&
+            effectiveTool.inputSchema.properties &&
+            Object.keys(effectiveTool.inputSchema.properties).length > 0 ? (
+              <Form
+                schema={effectiveTool.inputSchema}
+                validator={validator}
+                formData={formData}
+                onChange={({ formData }) => setFormData(formData)}
+                onSubmit={({ formData }) => handleFormSubmit(formData)}
+                showErrorList={false}
+                noHtml5Validate
+                liveValidate={false}
+              >
+                <div className="flex justify-end gap-2 mt-4">
                   <Button
+                    type="submit"
                     disabled={isExecuting}
                     size="lg"
-                    onClick={() => handleFormSubmit({})}
                     className="min-w-[200px] flex items-center gap-2"
                   >
                     {isExecuting ? (
@@ -413,51 +383,71 @@ export function ToolDetail({ resourceUri }: ToolDisplayCanvasProps) {
                     )}
                   </Button>
                 </div>
-              )}
-            </div>
+              </Form>
+            ) : (
+              <div className="flex flex-col items-center justify-center py-8 text-center gap-4">
+                <p className="text-sm text-muted-foreground">
+                  This tool does not require any input parameters.
+                </p>
+                <Button
+                  disabled={isExecuting}
+                  size="lg"
+                  onClick={() => handleFormSubmit({})}
+                  className="min-w-[200px] flex items-center gap-2"
+                >
+                  {isExecuting ? (
+                    <>
+                      <Spinner size="xs" />
+                      Executing...
+                    </>
+                  ) : (
+                    <>
+                      <Icon name="play_arrow" size={18} />
+                      Execute Tool
+                    </>
+                  )}
+                </Button>
+              </div>
+            )}
           </div>
-        </div>
+        </DetailSection>
 
         {/* Result Section - only show if we have a result */}
         {executionResult && (
-          <div className="px-4 lg:px-6 xl:px-10 py-4 md:py-6 lg:py-8 z-10 bg-background border-b border-border">
-            <div className="max-w-[1500px] mx-auto space-y-4">
-              <h2 className="text-lg font-medium">Result</h2>
-
-              {/* Logs Section */}
-              {executionResult.logs && executionResult.logs.length > 0 && (
-                <div className="space-y-2">
-                  <p className="font-mono text-sm text-muted-foreground uppercase">
-                    Console Logs
-                  </p>
-                  <div className="bg-muted rounded-xl p-3 max-h-[200px] overflow-auto">
-                    {executionResult.logs.map((log, index) => (
-                      <div
-                        key={index}
-                        className={`text-xs font-mono ${
-                          log.type === "error"
-                            ? "text-destructive"
-                            : log.type === "warn"
-                              ? "text-yellow-600"
-                              : "text-muted-foreground"
-                        }`}
-                      >
-                        [{log.type.toUpperCase()}] {log.content}
-                      </div>
-                    ))}
-                  </div>
+          <DetailSection title="Result">
+            {/* Logs Section */}
+            {executionResult.logs && executionResult.logs.length > 0 && (
+              <div className="space-y-2">
+                <p className="font-mono text-sm text-muted-foreground uppercase">
+                  Console Logs
+                </p>
+                <div className="bg-muted rounded-xl p-3 max-h-[200px] overflow-auto">
+                  {executionResult.logs.map((log, index) => (
+                    <div
+                      key={index}
+                      className={`text-xs font-mono ${
+                        log.type === "error"
+                          ? "text-destructive"
+                          : log.type === "warn"
+                            ? "text-yellow-600"
+                            : "text-muted-foreground"
+                      }`}
+                    >
+                      [{log.type.toUpperCase()}] {log.content}
+                    </div>
+                  ))}
                 </div>
-              )}
+              </div>
+            )}
 
-              {/* Output */}
-              {!executionResult.error && (
-                <JsonViewer
-                  data={executionResult.result || executionResult}
-                  title="Output"
-                />
-              )}
-            </div>
-          </div>
+            {/* Output */}
+            {!executionResult.error && (
+              <JsonViewer
+                data={executionResult.result || executionResult}
+                title="Output"
+              />
+            )}
+          </DetailSection>
         )}
       </div>
     </ScrollArea>

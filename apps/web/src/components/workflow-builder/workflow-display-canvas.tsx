@@ -26,6 +26,7 @@ import { UserInfo } from "../common/table/table-cells.tsx";
 import { useResourceRoute } from "../resources-v2/route-context.tsx";
 import { getStatusBadgeVariant } from "../workflows/utils.ts";
 import { WorkflowStepCard } from "../workflows/workflow-step-card.tsx";
+import { DetailSection } from "../common/detail-section.tsx";
 
 const LazyHighlighter = lazy(() => import("../chat/lazy-highlighter.tsx"));
 
@@ -333,134 +334,104 @@ export function WorkflowDisplayCanvas({
     <ScrollArea className="h-full w-full">
       <div className="flex flex-col">
         {/* Header */}
-        <div className="px-4 lg:px-6 xl:px-10 py-4 md:py-6 lg:py-8 z-10 bg-background border-b border-border">
-          <div className="max-w-[1500px] mx-auto space-y-4">
-            <div className="flex items-center justify-between gap-2 flex-wrap">
-              <div>
-                <h1 className="text-2xl font-medium">{workflow.name}</h1>
-                {workflow.description && (
-                  <p className="text-sm text-muted-foreground mt-1">
-                    {workflow.description}
-                  </p>
-                )}
-              </div>
-              {run && (
-                <Badge variant={badgeVariant} className="capitalize">
-                  {status}
-                </Badge>
+        <DetailSection>
+          <div className="flex items-center justify-between gap-2 flex-wrap">
+            <div>
+              <h1 className="text-2xl font-medium">{workflow.name}</h1>
+              {workflow.description && (
+                <p className="text-sm text-muted-foreground mt-1">
+                  {workflow.description}
+                </p>
               )}
             </div>
-
-            {/* Run metadata */}
             {run && (
-              <div className="flex items-center gap-4 flex-wrap text-sm">
-                <div className="flex items-center gap-2">
-                  <Icon
-                    name="calendar_month"
-                    size={16}
-                    className="text-muted-foreground"
-                  />
-                  <span className="font-mono text-sm uppercase">
-                    {run.data.startTime
-                      ? new Date(run.data.startTime).toLocaleString([], {
-                          month: "short",
-                          day: "numeric",
-                          year: "numeric",
-                          hour: "2-digit",
-                          minute: "2-digit",
-                        })
-                      : "-"}
-                  </span>
-                </div>
-
-                <div className="h-3 w-px bg-border" />
-
-                <div className="flex items-center gap-2">
-                  <Icon
-                    name="schedule"
-                    size={16}
-                    className="text-muted-foreground"
-                  />
-                  <span className="font-mono text-sm">{duration || "-"}</span>
-                </div>
-
-                <div className="h-3 w-px bg-border" />
-
-                {startedBy?.id && (
-                  <UserInfo
-                    userId={startedBy.id}
-                    size="sm"
-                    noTooltip
-                    showEmail={false}
-                  />
-                )}
-              </div>
-            )}
-
-            {/* Error Alert */}
-            {error && (
-              <Alert className="bg-destructive/5 border-none">
-                <Icon name="error" className="h-4 w-4 text-destructive" />
-                <AlertTitle className="text-destructive">Error</AlertTitle>
-                <AlertDescription className="text-destructive">
-                  {error}
-                </AlertDescription>
-              </Alert>
+              <Badge variant={badgeVariant} className="capitalize">
+                {status}
+              </Badge>
             )}
           </div>
-        </div>
+
+          {/* Run metadata */}
+          {run && (
+            <div className="flex items-center gap-4 flex-wrap text-sm">
+              <div className="flex items-center gap-2">
+                <Icon
+                  name="calendar_month"
+                  size={16}
+                  className="text-muted-foreground"
+                />
+                <span className="font-mono text-sm uppercase">
+                  {run.data.startTime
+                    ? new Date(run.data.startTime).toLocaleString([], {
+                        month: "short",
+                        day: "numeric",
+                        year: "numeric",
+                        hour: "2-digit",
+                        minute: "2-digit",
+                      })
+                    : "-"}
+                </span>
+              </div>
+
+              <div className="h-3 w-px bg-border" />
+
+              <div className="flex items-center gap-2">
+                <Icon
+                  name="schedule"
+                  size={16}
+                  className="text-muted-foreground"
+                />
+                <span className="font-mono text-sm">{duration || "-"}</span>
+              </div>
+
+              <div className="h-3 w-px bg-border" />
+
+              {startedBy?.id && (
+                <UserInfo
+                  userId={startedBy.id}
+                  size="sm"
+                  noTooltip
+                  showEmail={false}
+                />
+              )}
+            </div>
+          )}
+
+          {/* Error Alert */}
+          {error && (
+            <Alert className="bg-destructive/5 border-none">
+              <Icon name="error" className="h-4 w-4 text-destructive" />
+              <AlertTitle className="text-destructive">Error</AlertTitle>
+              <AlertDescription className="text-destructive">
+                {error}
+              </AlertDescription>
+            </Alert>
+          )}
+        </DetailSection>
 
         {/* Input Form */}
-        <div className="px-4 lg:px-6 xl:px-10 py-4 md:py-6 lg:py-8 z-10 bg-background border-b border-border">
-          <div className="max-w-[1500px] mx-auto space-y-4">
-            <h2 className="text-lg font-medium">Input</h2>
-
-            <div className="bg-muted/30 rounded-xl p-6">
-              {firstStepInputSchema &&
-              typeof firstStepInputSchema === "object" &&
-              "properties" in firstStepInputSchema &&
-              firstStepInputSchema.properties &&
-              Object.keys(firstStepInputSchema.properties).length > 0 ? (
-                <Form
-                  schema={firstStepInputSchema}
-                  validator={validator}
-                  formData={formData}
-                  onChange={({ formData }) => setFormData(formData)}
-                  onSubmit={({ formData }) => handleFormSubmit(formData)}
-                  showErrorList={false}
-                  noHtml5Validate
-                  liveValidate={false}
-                >
-                  <div className="flex justify-end gap-2 mt-4">
-                    <Button
-                      type="submit"
-                      disabled={isSubmitting}
-                      size="lg"
-                      className="min-w-[200px] flex items-center gap-2"
-                    >
-                      {isSubmitting ? (
-                        <>
-                          <Spinner size="xs" />
-                          Running...
-                        </>
-                      ) : (
-                        <>
-                          <Icon name="play_arrow" size={18} />
-                          Run Workflow
-                        </>
-                      )}
-                    </Button>
-                  </div>
-                </Form>
-              ) : (
-                <div className="flex flex-col items-center justify-center py-8 text-center gap-4">
-                  <p className="text-sm text-muted-foreground">
-                    This workflow does not require any input parameters.
-                  </p>
+        <DetailSection title="Input">
+          <div className="bg-muted/30 rounded-xl p-6">
+            {firstStepInputSchema &&
+            typeof firstStepInputSchema === "object" &&
+            "properties" in firstStepInputSchema &&
+            firstStepInputSchema.properties &&
+            Object.keys(firstStepInputSchema.properties).length > 0 ? (
+              <Form
+                schema={firstStepInputSchema}
+                validator={validator}
+                formData={formData}
+                onChange={({ formData }) => setFormData(formData)}
+                onSubmit={({ formData }) => handleFormSubmit(formData)}
+                showErrorList={false}
+                noHtml5Validate
+                liveValidate={false}
+              >
+                <div className="flex justify-end gap-2 mt-4">
                   <Button
+                    type="submit"
                     disabled={isSubmitting}
                     size="lg"
-                    onClick={() => handleFormSubmit({})}
                     className="min-w-[200px] flex items-center gap-2"
                   >
                     {isSubmitting ? (
@@ -476,82 +447,96 @@ export function WorkflowDisplayCanvas({
                     )}
                   </Button>
                 </div>
-              )}
-            </div>
-          </div>
-        </div>
-
-        {/* Output Section - only show if we have a run */}
-        {run && (
-          <div className="px-4 lg:px-6 xl:px-10 py-4 md:py-6 lg:py-8 z-10 bg-background border-b border-border">
-            <div className="max-w-[1500px] mx-auto space-y-4">
-              <h2 className="text-lg font-medium">Input & Output</h2>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-stretch">
-                <div className="min-w-0 flex">
-                  <JsonViewer data={input} title="Input" matchHeight />
-                </div>
-
-                <div className="min-w-0 flex">
-                  {status === "completed" || status === "success" ? (
-                    <JsonViewer data={output} title="Output" matchHeight />
-                  ) : (
-                    <div className="space-y-2 w-full">
-                      <p className="font-mono text-sm text-muted-foreground uppercase">
-                        Output
-                      </p>
-                      <div className="bg-muted rounded-xl min-h-[200px] max-h-[300px] flex items-center justify-center p-4">
-                        <div className="text-xs text-muted-foreground italic text-center">
-                          Output will be available when the workflow completes
-                        </div>
-                      </div>
-                    </div>
-                  )}
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* Steps Section - show definition steps before run, runtime steps after */}
-        <div className="px-4 lg:px-6 xl:px-10 py-4 md:py-6 lg:py-8 z-10 bg-background border-b border-border">
-          <div className="max-w-[1500px] mx-auto space-y-4">
-            <h2 className="text-lg font-medium">Steps</h2>
-
-            {steps.length > 0 ? (
-              <div className="flex flex-col items-center">
-                <div className="w-full max-w-[700px] space-y-0">
-                  {steps.map((step, idx) => {
-                    const stableKey =
-                      (step as { id?: string }).id ||
-                      step.name ||
-                      `step-${idx}`;
-                    return (
-                      <div key={stableKey}>
-                        {idx > 0 && (
-                          <div className="h-10 w-full flex justify-center">
-                            <div className="w-px bg-border" />
-                          </div>
-                        )}
-                        <Suspense fallback={<Spinner />}>
-                          <WorkflowStepCard
-                            step={step}
-                            index={idx}
-                            showStatus={hasRun}
-                          />
-                        </Suspense>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
+              </Form>
             ) : (
-              <div className="text-sm text-muted-foreground italic py-4">
-                No steps available yet
+              <div className="flex flex-col items-center justify-center py-8 text-center gap-4">
+                <p className="text-sm text-muted-foreground">
+                  This workflow does not require any input parameters.
+                </p>
+                <Button
+                  disabled={isSubmitting}
+                  size="lg"
+                  onClick={() => handleFormSubmit({})}
+                  className="min-w-[200px] flex items-center gap-2"
+                >
+                  {isSubmitting ? (
+                    <>
+                      <Spinner size="xs" />
+                      Running...
+                    </>
+                  ) : (
+                    <>
+                      <Icon name="play_arrow" size={18} />
+                      Run Workflow
+                    </>
+                  )}
+                </Button>
               </div>
             )}
           </div>
-        </div>
+        </DetailSection>
+
+        {/* Output Section - only show if we have a run */}
+        {run && (
+          <DetailSection title="Input & Output">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-stretch">
+              <div className="min-w-0 flex">
+                <JsonViewer data={input} title="Input" matchHeight />
+              </div>
+
+              <div className="min-w-0 flex">
+                {status === "completed" || status === "success" ? (
+                  <JsonViewer data={output} title="Output" matchHeight />
+                ) : (
+                  <div className="space-y-2 w-full">
+                    <p className="font-mono text-sm text-muted-foreground uppercase">
+                      Output
+                    </p>
+                    <div className="bg-muted rounded-xl min-h-[200px] max-h-[300px] flex items-center justify-center p-4">
+                      <div className="text-xs text-muted-foreground italic text-center">
+                        Output will be available when the workflow completes
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          </DetailSection>
+        )}
+
+        {/* Steps Section - show definition steps before run, runtime steps after */}
+        <DetailSection title="Steps">
+          {steps.length > 0 ? (
+            <div className="flex flex-col items-center">
+              <div className="w-full max-w-[700px] space-y-0">
+                {steps.map((step, idx) => {
+                  const stableKey =
+                    (step as { id?: string }).id || step.name || `step-${idx}`;
+                  return (
+                    <div key={stableKey}>
+                      {idx > 0 && (
+                        <div className="h-10 w-full flex justify-center">
+                          <div className="w-px bg-border" />
+                        </div>
+                      )}
+                      <Suspense fallback={<Spinner />}>
+                        <WorkflowStepCard
+                          step={step}
+                          index={idx}
+                          showStatus={hasRun}
+                        />
+                      </Suspense>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          ) : (
+            <div className="text-sm text-muted-foreground italic py-4">
+              No steps available yet
+            </div>
+          )}
+        </DetailSection>
       </div>
     </ScrollArea>
   );

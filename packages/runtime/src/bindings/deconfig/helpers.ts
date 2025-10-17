@@ -52,7 +52,10 @@ export function getMetadataString(
   return typeof value === "string" ? value : undefined;
 }
 
-export const toAsyncIterator = <T>(emitter: EventSource): AsyncIterable<T> => {
+export const toAsyncIterator = <T>(
+  emitter: EventSource,
+  eventType: string = "message",
+): AsyncIterable<T> => {
   const queue: T[] = [];
   let done = false;
   let waitPromise: ((data?: T) => void) | null = null;
@@ -64,7 +67,7 @@ export const toAsyncIterator = <T>(emitter: EventSource): AsyncIterable<T> => {
     }
   };
 
-  const changeHandler = (data: MessageEvent) => {
+  const messageHandler = (data: MessageEvent) => {
     try {
       queue.push(JSON.parse(data.data));
     } catch {
@@ -79,7 +82,7 @@ export const toAsyncIterator = <T>(emitter: EventSource): AsyncIterable<T> => {
     triggerLoop();
   };
 
-  emitter.addEventListener("change", changeHandler);
+  emitter.addEventListener(eventType, messageHandler);
   emitter.addEventListener("error", errorHandler);
 
   return {
@@ -95,7 +98,7 @@ export const toAsyncIterator = <T>(emitter: EventSource): AsyncIterable<T> => {
           }
         }
       } finally {
-        emitter.removeEventListener("change", changeHandler);
+        emitter.removeEventListener(eventType, messageHandler);
         emitter.removeEventListener("error", errorHandler);
         emitter.close();
       }

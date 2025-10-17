@@ -33,6 +33,127 @@ const toolsMap = new Map<
 >();
 
 /**
+ * Creates a subscribe method for a resource that returns an async iterator
+ * yielding {uri, data} objects as resources are updated via SSE.
+ */
+function createSubscribeMethod(
+  resourceName: string,
+  options: CreateStubAPIOptions | undefined,
+  connection: MCPConnection,
+): (args: { id: string }) => AsyncIterableIterator<{
+  uri: string;
+  data: unknown;
+}> {
+  return async function* (args: { id: string }) {
+    // Step 1: Call DESCRIBE to get watch endpoint configuration and URI template
+    const describeMethodName = `DECO_RESOURCE_${resourceName}_DESCRIBE`;
+    const readMethodName = `DECO_RESOURCE_${resourceName}_READ`;
+
+    const debugId = options?.debugId?.();
+    const extraHeaders = debugId ? { "x-trace-debug-id": debugId } : undefined;
+
+    // Get describe information
+    const client = await createServerClient(
+      { connection },
+      undefined,
+      extraHeaders,
+    );
+
+    const describeResult = await client.callTool({
+      name: describeMethodName,
+      arguments: {},
+    });
+
+    if (describeResult.isError) {
+      throw new Error(
+        `Failed to describe resource ${resourceName}: ${JSON.stringify(
+          describeResult.content,
+        )}`,
+      );
+    }
+
+    const describeData = describeResult.structuredContent as {
+      uriTemplate?: string;
+      features?: {
+        watch?: {
+          pathname?: string;
+        };
+      };
+    };
+
+    const watchPathname = describeData?.features?.watch?.pathname;
+    const uriTemplate = describeData?.uriTemplate;
+
+    if (!watchPathname) {
+      throw new Error(
+        `Resource ${resourceName} does not support watch functionality`,
+      );
+    }
+
+    if (!uriTemplate) {
+      throw new Error(`Resource ${resourceName} does not provide uriTemplate`);
+    }
+
+    // Step 2: Construct URI from template by replacing * with id
+    const resourceUri = uriTemplate.replace("*", args.id);
+
+    // Step 3: Construct watch URL and create EventSource
+    // Build base URL from connection or options
+    let baseUrl: string;
+    if (
+      connection.type === "HTTP" ||
+      connection.type === "SSE" ||
+      connection.type === "Websocket"
+    ) {
+      baseUrl = connection.url;
+    } else {
+      baseUrl = options?.decoCmsApiUrl || "https://api.decocms.com";
+    }
+
+    const watchUrl = new URL(watchPathname, baseUrl);
+    watchUrl.searchParams.set("path-filter", resourceUri);
+
+    const eventSource = new EventSource(watchUrl.href);
+
+    // Step 4: Use toAsyncIterator to consume SSE events and enrich with READ data
+    const { toAsyncIterator } = await import("./bindings/deconfig/helpers.ts");
+
+    const eventStream = toAsyncIterator<{ uri: string }>(
+      eventSource,
+      "message",
+    );
+
+    // Iterate over SSE events and enrich with full data
+    for await (const event of eventStream) {
+      const uri = event.uri;
+
+      if (uri) {
+        // Call READ to get full resource data
+        const readClient = await createServerClient(
+          { connection },
+          undefined,
+          extraHeaders,
+        );
+
+        const readResult = await readClient.callTool({
+          name: readMethodName,
+          arguments: { uri },
+        });
+
+        if (readResult.isError) {
+          throw new Error(
+            `Failed to read resource ${uri}: ${JSON.stringify(readResult.content)}`,
+          );
+        }
+
+        const readData = readResult.structuredContent as { data: unknown };
+        yield { uri, data: readData.data };
+      }
+    }
+  };
+}
+
+/**
  * The base fetcher used to fetch the MCP from API.
  */
 export function createMCPClientProxy<T extends Record<string, unknown>>(
@@ -65,6 +186,16 @@ export function createMCPClientProxy<T extends Record<string, unknown>>(
       if (typeof name !== "string") {
         throw new Error("Name must be a string");
       }
+
+      // Check if this is a SUBSCRIBE method call
+      const subscribeMatch = String(name).match(
+        /^DECO_RESOURCE_(.+)_SUBSCRIBE$/,
+      );
+      if (subscribeMatch) {
+        const resourceName = subscribeMatch[1];
+        return createSubscribeMethod(resourceName, options, connection);
+      }
+
       async function callToolFn(args: unknown) {
         const debugId = options?.debugId?.();
         const extraHeaders = debugId

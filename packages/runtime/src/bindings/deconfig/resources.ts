@@ -545,7 +545,7 @@ const watcher = ({
   const it = toAsyncIterator<{
     path: string;
     metadata: { address: string };
-  }>(eventSource);
+  }>(eventSource, "change");
   const iterator = async function* () {
     for await (const event of it) {
       const { path } = event;
@@ -590,6 +590,7 @@ export const DeconfigResource = {
         status: 400,
       });
     }
+
     const url = new URL(req.url);
     const uri = url.searchParams.get("uri");
     if (!uri) {

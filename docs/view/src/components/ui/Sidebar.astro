@@ -50,7 +50,7 @@ function buildTree(docs: any[]): TreeNode[] {
 
   // Sort the tree for consistent ordering
   const sortTree = (nodes: TreeNode[]): TreeNode[] => {
-    const sorted = nodes.sort((a, b) => {
+    const sorted = nodes.filter((node) => node.name !== "bounties").sort((a, b) => {
       // First sort by type: files before folders
       if (a.type !== b.type) {
         return a.type === "file" ? -1 : 1;

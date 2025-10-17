@@ -223,6 +223,12 @@ export default function RichTextArea({
   useEffect(() => {
     if (!editor) return;
 
+    // Don't update content if the editor is focused (user is actively editing)
+    // This prevents cursor jumping while typing
+    if (editor.isFocused && hadUserInteraction.current) {
+      return;
+    }
+
     const processedValue = mentionToTag(
       sanitizeMarkdown(removeMarkdownCodeBlock(value)),
       true,
@@ -236,9 +242,19 @@ export default function RichTextArea({
       hadUserInteraction.current = false;
 
       try {
+        // Save cursor position before updating content
+        const { from, to } = editor.state.selection;
+        
         editor.commands.setContent(processedValue, false, {
           preserveWhitespace: "full",
         });
+        
+        // Restore cursor position after content update
+        // Only restore if positions are valid in the new document
+        const docSize = editor.state.doc.content.size;
+        if (from <= docSize && to <= docSize) {
+          editor.commands.setTextSelection({ from, to });
+        }
       } catch (error) {
         // If content setting still fails after sanitization, log and use empty content
         console.error(

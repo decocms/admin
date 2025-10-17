@@ -341,7 +341,7 @@ export class WorkflowRunner extends WorkflowEntrypoint<Bindings> {
     stepDef: {
       name?: string;
       execute?: string;
-      dependencies?: Array<{ integrationId: string }>;
+      dependencies?: Array<{ integrationId: string; toolNames?: string[] }>;
     },
     client: MCPClientStub<ProjectTools>,
     runtimeId: string,

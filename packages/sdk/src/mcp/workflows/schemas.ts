@@ -39,8 +39,9 @@ export const CodeStepDefinitionSchema = z.object({
         toolNames: z
           .array(z.string().min(1))
           .min(1)
+          .optional()
           .describe(
-            "List of tool names from this integration that will be used by this code step",
+            "List of tool names from this integration that will be used by this code step. If undefined, all tools from the integration are available.",
           ),
       }),
     )

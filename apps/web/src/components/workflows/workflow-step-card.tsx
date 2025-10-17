@@ -1,35 +1,13 @@
-import { useIntegrations } from "@deco/sdk";
 import { Badge } from "@deco/ui/components/badge.tsx";
 import { Icon } from "@deco/ui/components/icon.tsx";
 import { Suspense, lazy, useState } from "react";
-import { IntegrationIcon } from "../integrations/common.tsx";
 import { getStatusBadgeVariant } from "./utils.ts";
+import { MergedStep } from "../workflow-builder/workflow-display-canvas.tsx";
 
 const LazyHighlighter = lazy(() => import("../chat/lazy-highlighter.tsx"));
 
 interface WorkflowStepCardProps {
-  step: {
-    name?: string;
-    type?: string;
-    start?: string | null;
-    end?: string | null;
-    success?: boolean | null;
-    output?: unknown;
-    error?: { name?: string; message?: string } | null;
-    attempts?: Array<{
-      start?: string | null;
-      end?: string | null;
-      success?: boolean | null;
-      error?: { name?: string; message?: string } | null;
-    }>;
-    config?: unknown;
-    def?: {
-      name?: string;
-      description?: string;
-      type?: string;
-      integration?: string;
-    };
-  };
+  step: MergedStep;
   index: number;
   showStatus?: boolean;
 }
@@ -132,31 +110,23 @@ function StepError({ error }: { error: unknown }) {
   );
 }
 
+function getStepStatus(step: MergedStep) {
+  if (step.success === true) return "completed";
+  if (step.success === false) return "failed";
+  if (step.start && !step.end) return "running";
+  return "pending";
+}
+
 export function WorkflowStepCard({
   step,
   index,
   showStatus = true,
 }: WorkflowStepCardProps) {
-  const { data: integrations } = useIntegrations();
-
-  const stepStatus =
-    step.success === true
-      ? "completed"
-      : step.success === false
-        ? "failed"
-        : step.start && !step.end
-          ? "running"
-          : "pending";
+  const stepStatus = getStepStatus(step);
 
   // Get name and description - handle both runtime steps and definition steps
   const stepName = step.name || step.def?.name || `Step ${index + 1}`;
   const stepDescription = step.def?.description;
-  const stepType = step.type || step.def?.type;
-
-  // Get integration for tool_call steps
-  const integrationId =
-    step.def && "integration" in step.def ? step.def.integration : undefined;
-  const integration = integrations?.find((i) => i.id === integrationId);
 
   // Check if there's any content to show in the step body
   const hasContent =
@@ -177,21 +147,7 @@ export function WorkflowStepCard({
           <div className="flex items-start gap-3 flex-1 min-w-0">
             {/* Step Icon */}
             <div className="shrink-0 mt-0.5">
-              {stepType === "tool_call" && integration ? (
-                <IntegrationIcon
-                  icon={integration.icon}
-                  name={integration.name}
-                  size="sm"
-                />
-              ) : stepType === "code" ? (
-                <div className="h-8 w-8 rounded-lg bg-muted flex items-center justify-center">
-                  <Icon name="code" size={18} />
-                </div>
-              ) : (
-                <div className="h-8 w-8 rounded-lg bg-muted flex items-center justify-center">
-                  <Icon name="bolt" size={18} />
-                </div>
-              )}
+              <Icon name="code" size={18} />
             </div>
 
             {/* Step Title and Description */}

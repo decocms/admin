@@ -20,12 +20,18 @@ import { Spinner } from "@deco/ui/components/spinner.tsx";
 import Form from "@rjsf/shadcn";
 import validator from "@rjsf/validator-ajv8";
 import { useQuery } from "@tanstack/react-query";
-import { Suspense, lazy, useEffect, useMemo, useRef, useState } from "react";
+import { lazy, Suspense, useEffect, useMemo, useRef, useState } from "react";
 import { EmptyState } from "../common/empty-state.tsx";
 import { UserInfo } from "../common/table/table-cells.tsx";
 import { useResourceRoute } from "../resources-v2/route-context.tsx";
 import { getStatusBadgeVariant } from "../workflows/utils.ts";
 import { WorkflowStepCard } from "../workflows/workflow-step-card.tsx";
+import {
+  useWorkflow,
+  useWorkflowActions,
+  useWorkflowUri,
+} from "../../stores/workflows/hooks.ts";
+import { WorkflowStoreProvider } from "../../stores/workflows/provider.tsx";
 
 const LazyHighlighter = lazy(() => import("../chat/lazy-highlighter.tsx"));
 
@@ -43,7 +49,6 @@ interface JsonViewerProps {
 // Runtime step from workflowStatus.steps (Cloudflare workflow instance)
 interface RuntimeStep {
   name?: string;
-  type?: string;
   start?: string | null;
   end?: string | null;
   success?: boolean | null;
@@ -59,7 +64,7 @@ interface RuntimeStep {
 }
 
 // Merged step combines definition with runtime data
-type MergedStep = Partial<WorkflowStep> &
+export type MergedStep = Partial<WorkflowStep> &
   RuntimeStep & {
     def?: WorkflowStep["def"];
   };
@@ -100,13 +105,17 @@ function JsonViewer({ data, title, matchHeight = false }: JsonViewerProps) {
 
   return (
     <div
-      className={`space-y-2 min-w-0 w-full ${matchHeight ? "h-full flex flex-col" : ""}`}
+      className={`space-y-2 min-w-0 w-full ${
+        matchHeight ? "h-full flex flex-col" : ""
+      }`}
     >
       <p className="font-mono text-sm text-muted-foreground uppercase">
         {title}
       </p>
       <div
-        className={`relative bg-muted rounded-xl ${matchHeight ? "min-h-[200px]" : ""} max-h-[300px] overflow-auto w-full ${matchHeight ? "flex-1" : ""}`}
+        className={`relative bg-muted rounded-xl ${
+          matchHeight ? "min-h-[200px]" : ""
+        } max-h-[300px] overflow-auto w-full ${matchHeight ? "flex-1" : ""}`}
       >
         <div className="absolute right-2 top-2 z-10 flex items-center gap-1 bg-background rounded-xl shadow-sm">
           <Button
@@ -140,18 +149,46 @@ function JsonViewer({ data, title, matchHeight = false }: JsonViewerProps) {
   );
 }
 
+export function WorkflowDisplay({ resourceUri }: WorkflowDisplayCanvasProps) {
+  const { data: resource, isLoading: isLoadingWorkflow } =
+    useWorkflowByUriV2(resourceUri);
+  const workflow = resource?.data;
+  if (isLoadingWorkflow) {
+    return (
+      <div className="h-[calc(100vh-12rem)] flex items-center justify-center">
+        <Spinner />
+      </div>
+    );
+  }
+
+  if (!workflow) {
+    return (
+      <EmptyState
+        icon="error"
+        title="Workflow not found"
+        description="Could not load workflow"
+      />
+    );
+  }
+  return (
+    <WorkflowStoreProvider initialState={{ uri: resourceUri, workflow }}>
+      <Canvas resourceUri={resourceUri} />
+    </WorkflowStoreProvider>
+  );
+}
+
 /**
  * Interactive workflow canvas that shows a form for workflow input
  * and displays the run results below
  */
-export function WorkflowDisplayCanvas({
+export function Canvas({
   resourceUri,
   onRefresh: _onRefresh,
 }: WorkflowDisplayCanvasProps) {
   const { connection } = useResourceRoute();
-  const { data: resource, isLoading: isLoadingWorkflow } =
-    useWorkflowByUriV2(resourceUri);
-  const workflow = resource?.data;
+
+  const currentRunUri = useWorkflowUri();
+  const workflow = useWorkflow();
 
   // Track recent workflows (Resources v2 workflow detail)
   const { locator } = useSDK();
@@ -168,16 +205,13 @@ export function WorkflowDisplayCanvas({
           name: workflow.name || resourceUri,
           type: "workflow",
           icon: "flowchart",
-          path: `/${projectKey}/rsc/i:workflows-management/workflow/${encodeURIComponent(resourceUri)}`,
+          path: `/${projectKey}/rsc/i:workflows-management/workflow/${encodeURIComponent(
+            resourceUri,
+          )}`,
         });
       }, 0);
     }
   }, [workflow, resourceUri, projectKey, addRecent]);
-
-  // Form state for workflow input
-  const [formData, setFormData] = useState<Record<string, unknown>>({});
-  const [currentRunUri, setCurrentRunUri] = useState<string | null>(null);
-  const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Fetch run data if we have a run URI
   const runQuery = useQuery({
@@ -204,43 +238,6 @@ export function WorkflowDisplayCanvas({
   });
 
   const run = runQuery.data;
-
-  // Handle form submission - start workflow
-  async function handleFormSubmit(data: Record<string, unknown>) {
-    if (!connection || !resourceUri) return;
-
-    try {
-      setIsSubmitting(true);
-      const result = await callTool(connection, {
-        name: "DECO_WORKFLOW_START",
-        arguments: {
-          uri: resourceUri,
-          input: data,
-        },
-      });
-
-      const response = result.structuredContent as {
-        runId?: string;
-        uri?: string;
-        error?: string;
-      };
-
-      if (response.error) {
-        throw new Error(response.error);
-      }
-
-      if (response.uri) {
-        setCurrentRunUri(response.uri);
-      }
-    } catch (error) {
-      console.error("Failed to start workflow", error);
-      globalThis.window.alert(
-        `Failed to start workflow: ${error instanceof Error ? error.message : String(error)}`,
-      );
-    } finally {
-      setIsSubmitting(false);
-    }
-  }
 
   // Calculate duration
   const duration = useMemo(() => {
@@ -304,30 +301,8 @@ export function WorkflowDisplayCanvas({
     });
   }, [run?.data.workflowStatus?.steps, workflow]);
 
-  const firstStepInputSchema = useMemo(() => {
-    return workflow?.steps?.[0]?.def?.inputSchema;
-  }, [workflow?.steps]);
-
   // Flag to know if we have an active or completed run
   const hasRun = Boolean(run);
-
-  if (isLoadingWorkflow) {
-    return (
-      <div className="h-[calc(100vh-12rem)] flex items-center justify-center">
-        <Spinner />
-      </div>
-    );
-  }
-
-  if (!workflow) {
-    return (
-      <EmptyState
-        icon="error"
-        title="Workflow not found"
-        description="Could not load workflow"
-      />
-    );
-  }
 
   return (
     <ScrollArea className="h-full w-full">
@@ -414,72 +389,9 @@ export function WorkflowDisplayCanvas({
         <div className="border-b border-border py-4 px-4 md:py-8 md:px-8 lg:py-8 lg:px-16">
           <div className="max-w-[1500px] mx-auto space-y-4">
             <h2 className="text-lg font-medium">Input</h2>
-
-            <div className="bg-muted/30 rounded-xl p-6">
-              {firstStepInputSchema &&
-              typeof firstStepInputSchema === "object" &&
-              "properties" in firstStepInputSchema &&
-              firstStepInputSchema.properties &&
-              Object.keys(firstStepInputSchema.properties).length > 0 ? (
-                <Form
-                  schema={firstStepInputSchema}
-                  validator={validator}
-                  formData={formData}
-                  onChange={({ formData }) => setFormData(formData)}
-                  onSubmit={({ formData }) => handleFormSubmit(formData)}
-                  showErrorList={false}
-                  noHtml5Validate
-                  liveValidate={false}
-                >
-                  <div className="flex justify-end gap-2 mt-4">
-                    <Button
-                      type="submit"
-                      disabled={isSubmitting}
-                      size="lg"
-                      className="min-w-[200px] flex items-center gap-2"
-                    >
-                      {isSubmitting ? (
-                        <>
-                          <Spinner size="xs" />
-                          Running...
-                        </>
-                      ) : (
-                        <>
-                          <Icon name="play_arrow" size={18} />
-                          Run Workflow
-                        </>
-                      )}
-                    </Button>
-                  </div>
-                </Form>
-              ) : (
-                <div className="flex flex-col items-center justify-center py-8 text-center gap-4">
-                  <p className="text-sm text-muted-foreground">
-                    This workflow does not require any input parameters.
-                  </p>
-                  <Button
-                    disabled={isSubmitting}
-                    size="lg"
-                    onClick={() => handleFormSubmit({})}
-                    className="min-w-[200px] flex items-center gap-2"
-                  >
-                    {isSubmitting ? (
-                      <>
-                        <Spinner size="xs" />
-                        Running...
-                      </>
-                    ) : (
-                      <>
-                        <Icon name="play_arrow" size={18} />
-                        Run Workflow
-                      </>
-                    )}
-                  </Button>
-                </div>
-              )}
-            </div>
           </div>
         </div>
+        <WorkflowStart />
 
         {/* Output Section - only show if we have a run */}
         {run && (
@@ -518,41 +430,156 @@ export function WorkflowDisplayCanvas({
           <div className="max-w-[1500px] mx-auto space-y-4">
             <h2 className="text-lg font-medium">Steps</h2>
 
-            {steps.length > 0 ? (
-              <div className="flex flex-col items-center">
-                <div className="w-full max-w-[700px] space-y-0">
-                  {steps.map((step, idx) => {
-                    const stableKey =
-                      (step as { id?: string }).id ||
-                      step.name ||
-                      `step-${idx}`;
-                    return (
-                      <div key={stableKey}>
-                        {idx > 0 && (
-                          <div className="h-10 w-full flex justify-center">
-                            <div className="w-px bg-border" />
-                          </div>
-                        )}
-                        <Suspense fallback={<Spinner />}>
-                          <WorkflowStepCard
-                            step={step}
-                            index={idx}
-                            showStatus={hasRun}
-                          />
-                        </Suspense>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-            ) : (
-              <div className="text-sm text-muted-foreground italic py-4">
-                No steps available yet
-              </div>
-            )}
+            <WorkflowStepsList steps={steps} hasRun={hasRun} />
           </div>
         </div>
       </div>
     </ScrollArea>
+  );
+}
+
+function WorkflowStepsList({
+  steps,
+  hasRun,
+}: {
+  steps: MergedStep[];
+  hasRun: boolean;
+}) {
+  if (!steps || steps.length === 0) {
+    return (
+      <div className="text-sm text-muted-foreground italic py-4">
+        No steps available yet
+      </div>
+    );
+  }
+  return (
+    <div className="flex flex-col items-center">
+      <div className="w-full max-w-[700px] space-y-0">
+        {steps.map((step, idx) => {
+          return (
+            <div key={idx}>
+              <Suspense fallback={<Spinner />}>
+                <WorkflowStepCard step={step} index={idx} showStatus={hasRun} />
+              </Suspense>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+function WorkflowStart() {
+  const [formData, setFormData] = useState<Record<string, unknown>>({});
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const { connection } = useResourceRoute();
+  const { setUri } = useWorkflowActions();
+  const resourceUri = useWorkflowUri();
+  const workflow = useWorkflow();
+  async function handleFormSubmit(data: Record<string, unknown>) {
+    if (!connection || !resourceUri) return;
+
+    try {
+      setIsSubmitting(true);
+      const result = await callTool(connection, {
+        name: "DECO_WORKFLOW_START",
+        arguments: {
+          uri: resourceUri,
+          input: data,
+        },
+      });
+
+      const response = result.structuredContent as {
+        runId?: string;
+        uri?: string;
+        error?: string;
+      };
+
+      if (response.error) {
+        throw new Error(response.error);
+      }
+
+      if (response.uri) {
+        setUri(response.uri);
+      }
+    } catch (error) {
+      console.error("Failed to start workflow", error);
+      globalThis.window.alert(
+        `Failed to start workflow: ${
+          error instanceof Error ? error.message : String(error)
+        }`,
+      );
+    } finally {
+      setIsSubmitting(false);
+    }
+  }
+
+  const firstStepInputSchema = useMemo(() => {
+    return workflow.steps?.[0]?.def?.inputSchema;
+  }, [workflow.steps]);
+  return (
+    <div className="bg-muted/30 rounded-xl p-6">
+      {firstStepInputSchema &&
+      typeof firstStepInputSchema === "object" &&
+      "properties" in firstStepInputSchema &&
+      firstStepInputSchema.properties &&
+      Object.keys(firstStepInputSchema.properties).length > 0 ? (
+        <Form
+          schema={firstStepInputSchema}
+          validator={validator}
+          formData={formData}
+          onChange={({ formData }) => setFormData(formData)}
+          onSubmit={({ formData }) => handleFormSubmit(formData)}
+          showErrorList={false}
+          noHtml5Validate
+          liveValidate={false}
+        >
+          <div className="flex justify-end gap-2 mt-4">
+            <Button
+              type="submit"
+              disabled={isSubmitting}
+              size="lg"
+              className="min-w-[200px] flex items-center gap-2"
+            >
+              {isSubmitting ? (
+                <>
+                  <Spinner size="xs" />
+                  Running...
+                </>
+              ) : (
+                <>
+                  <Icon name="play_arrow" size={18} />
+                  Run Workflow
+                </>
+              )}
+            </Button>
+          </div>
+        </Form>
+      ) : (
+        <div className="flex flex-col items-center justify-center py-8 text-center gap-4">
+          <p className="text-sm text-muted-foreground">
+            This workflow does not require any input parameters.
+          </p>
+          <Button
+            disabled={isSubmitting}
+            size="lg"
+            onClick={() => handleFormSubmit({})}
+            className="min-w-[200px] flex items-center gap-2"
+          >
+            {isSubmitting ? (
+              <>
+                <Spinner size="xs" />
+                Running...
+              </>
+            ) : (
+              <>
+                <Icon name="play_arrow" size={18} />
+                Run Workflow
+              </>
+            )}
+          </Button>
+        </div>
+      )}
+    </div>
   );
 }

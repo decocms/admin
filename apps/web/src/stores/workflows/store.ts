@@ -3,34 +3,38 @@ import { create } from "zustand";
 import { persist } from "zustand/middleware";
 
 export interface State {
-  uri: string;
+  workflowUri: string;
+  currentRunUri: string | null;
   workflow: WorkflowDefinition;
 }
 
 export interface Actions {
-  setUri: (uri: string) => void;
+  setCurrentRunUri: (uri: string | null) => void;
 }
 
 export interface Store extends State {
   actions: Actions;
 }
 
-export const createWorkflowStore = (initialState: State) => {
+export const createWorkflowStore = (
+  initialState: Omit<State, "currentRunUri">,
+) => {
   // Create a unique storage key based on the workflow URI
-  const storageKey = `workflow-store-${initialState.uri}`;
+  const storageKey = `workflow-store-${initialState.workflowUri}`;
 
   return create<Store>()(
     persist(
       (set) => ({
         ...initialState,
+        currentRunUri: null,
         actions: {
-          setUri: (uri) => set({ uri }),
+          setCurrentRunUri: (uri) => set({ currentRunUri: uri }),
         },
       }),
       {
         name: storageKey,
         partialize: (state) => ({
-          uri: state.uri,
+          currentRunUri: state.currentRunUri,
         }),
       },
     ),

@@ -1,23 +1,28 @@
 import { StoreApi, useStore } from "zustand";
-import { createWorkflowStore, State, Store } from "./store";
+import { createWorkflowStore, type Store } from "./store";
 import { createContext, useContext, useState } from "react";
+import type { WorkflowDefinition } from "@deco/sdk";
 
 const WorkflowStoreContext = createContext<StoreApi<Store> | null>(null);
 
-export const WorkflowStoreProvider = ({
+export function WorkflowStoreProvider({
   children,
-  initialState,
+  workflowUri,
+  workflow,
 }: {
   children: React.ReactNode;
-  initialState: State;
-}) => {
-  const [store] = useState(() => createWorkflowStore(initialState));
+  workflowUri: string;
+  workflow: WorkflowDefinition;
+}) {
+  const [store] = useState(() =>
+    createWorkflowStore({ workflowUri, workflow }),
+  );
   return (
     <WorkflowStoreContext.Provider value={store}>
       {children}
     </WorkflowStoreContext.Provider>
   );
-};
+}
 
 export function useWorkflowStore<T>(selector: (state: Store) => T): T {
   const store = useContext(WorkflowStoreContext);

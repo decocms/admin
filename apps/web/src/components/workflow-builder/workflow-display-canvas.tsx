@@ -27,6 +27,7 @@ import { useResourceRoute } from "../resources-v2/route-context.tsx";
 import { getStatusBadgeVariant } from "../workflows/utils.ts";
 import { WorkflowStepCard } from "../workflows/workflow-step-card.tsx";
 import {
+  useCurrentRunUri,
   useWorkflow,
   useWorkflowActions,
   useWorkflowUri,
@@ -171,7 +172,7 @@ export function WorkflowDisplay({ resourceUri }: WorkflowDisplayCanvasProps) {
     );
   }
   return (
-    <WorkflowStoreProvider initialState={{ uri: resourceUri, workflow }}>
+    <WorkflowStoreProvider workflowUri={resourceUri} workflow={workflow}>
       <Canvas />
     </WorkflowStoreProvider>
   );
@@ -179,7 +180,7 @@ export function WorkflowDisplay({ resourceUri }: WorkflowDisplayCanvasProps) {
 
 function useWorkflowRunQuery() {
   const { connection } = useResourceRoute();
-  const currentRunUri = useWorkflowUri();
+  const currentRunUri = useCurrentRunUri();
   const runQuery = useQuery({
     queryKey: ["workflow-run-read", currentRunUri],
     enabled: Boolean(connection && currentRunUri),
@@ -469,21 +470,21 @@ function WorkflowStepsList({ hasRun }: { hasRun: boolean }) {
 }
 
 function WorkflowStart() {
-  const [formData, setFormData] = useState<Record<string, unknown>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { connection } = useResourceRoute();
-  const { setUri } = useWorkflowActions();
-  const resourceUri = useWorkflowUri();
+  const { setCurrentRunUri } = useWorkflowActions();
+  const workflowUri = useWorkflowUri();
   const workflow = useWorkflow();
+
   async function handleFormSubmit(data: Record<string, unknown>) {
-    if (!connection || !resourceUri) return;
+    if (!connection || !workflowUri) return;
 
     try {
       setIsSubmitting(true);
       const result = await callTool(connection, {
         name: "DECO_WORKFLOW_START",
         arguments: {
-          uri: resourceUri,
+          uri: workflowUri,
           input: data,
         },
       });
@@ -499,7 +500,7 @@ function WorkflowStart() {
       }
 
       if (response.uri) {
-        setUri(response.uri);
+        setCurrentRunUri(response.uri);
       }
     } catch (error) {
       console.error("Failed to start workflow", error);
@@ -516,6 +517,7 @@ function WorkflowStart() {
   const firstStepInputSchema = useMemo(() => {
     return workflow.steps?.[0]?.def?.inputSchema;
   }, [workflow.steps]);
+
   return (
     <div className="bg-muted/30 rounded-xl p-6">
       {firstStepInputSchema &&
@@ -526,8 +528,6 @@ function WorkflowStart() {
         <Form
           schema={firstStepInputSchema}
           validator={validator}
-          formData={formData}
-          onChange={({ formData }) => setFormData(formData)}
           onSubmit={({ formData }) => handleFormSubmit(formData)}
           showErrorList={false}
           noHtml5Validate

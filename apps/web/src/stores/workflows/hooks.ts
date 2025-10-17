@@ -1,16 +1,17 @@
 import { useWorkflowStore } from "./provider";
 
-export const useWorkflow = () => {
-  const workflow = useWorkflowStore((state) => state.workflow);
-  return workflow;
-};
+export function useWorkflow() {
+  return useWorkflowStore((state) => state.workflow);
+}
 
-export const useWorkflowUri = () => {
-  const uri = useWorkflowStore((state) => state.uri);
-  return uri;
-};
+export function useWorkflowUri() {
+  return useWorkflowStore((state) => state.workflowUri);
+}
 
-export const useWorkflowActions = () => {
-  const actions = useWorkflowStore((state) => state.actions);
-  return actions;
-};
+export function useCurrentRunUri() {
+  return useWorkflowStore((state) => state.currentRunUri);
+}
+
+export function useWorkflowActions() {
+  return useWorkflowStore((state) => state.actions);
+}

@@ -151,15 +151,21 @@ export const asEnv = (
     // Otherwise, add only the specified tools
     if (toolNames === undefined) {
       // Create a Proxy that dynamically creates tool callers for any accessed property
-      env[integrationId] = new Proxy({}, {
-        get(_target, toolName: string) {
-          return createToolCaller(integrationId, toolName);
+      env[integrationId] = new Proxy(
+        {},
+        {
+          get(_target, toolName: string) {
+            return createToolCaller(integrationId, toolName);
+          },
         },
-      });
+      );
     } else {
       // Add each specified tool to the integration namespace
       for (const toolName of toolNames) {
-        env[integrationId][toolName] = createToolCaller(integrationId, toolName);
+        env[integrationId][toolName] = createToolCaller(
+          integrationId,
+          toolName,
+        );
       }
     }
   }

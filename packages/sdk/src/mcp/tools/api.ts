@@ -274,7 +274,9 @@ export const ToolResourceV2 = DeconfigResourceV2.define({
           : [];
 
         // If toolNames is undefined, all tools from the integration are available (backward compatibility)
-        const toolsToValidate = dependency.toolNames ?? integrationTools.map((t: { name: string }) => t.name);
+        const toolsToValidate =
+          dependency.toolNames ??
+          integrationTools.map((t: { name: string }) => t.name);
 
         for (const toolName of toolsToValidate) {
           const tool = integrationTools.find(

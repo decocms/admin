@@ -550,9 +550,16 @@ app.post(`/deconfig/mcp`, createMCPHandlerFor(DECONFIG_TOOLS));
 app.get(`/:org/:project/deconfig/watch`, async (ctx) => {
   const appCtx = honoCtxToAppCtx(ctx);
   return await watchSSE(appCtx, {
-    branchName: ctx.req.query("branch"),
-    pathFilters: ctx.req.query("path-filter") ?? ctx.req.query("path-filters"),
-    fromCtime: +(ctx.req.query("from-ctime") ?? "1"),
+    branchName: ctx.req.query("branch") ?? ctx.req.query("branchName"),
+    pathFilters:
+      ctx.req.query("path-filter") ??
+      ctx.req.query("path-filters") ??
+      ctx.req.query("pathFilter"),
+    fromCtime: +(
+      ctx.req.query("from-ctime") ??
+      ctx.req.query("fromCtime") ??
+      "1"
+    ),
     watcherId: ctx.req.query("watcher-id"),
   });
 });

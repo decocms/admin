@@ -244,11 +244,11 @@ export default function RichTextArea({
       try {
         // Save cursor position before updating content
         const { from, to } = editor.state.selection;
-        
+
         editor.commands.setContent(processedValue, false, {
           preserveWhitespace: "full",
         });
-        
+
         // Restore cursor position after content update
         // Only restore if positions are valid in the new document
         const docSize = editor.state.doc.content.size;

@@ -262,7 +262,10 @@ export class WorkflowRunner extends WorkflowEntrypoint<Bindings> {
     appContext: AppContext,
     runtimeId: string,
   ): WorkflowStep {
+    assertHasWorkspace(appContext);
     const client = MCPClient.forContext(appContext);
+    const workspace = appContext.workspace.value;
+    const authorization = appContext.token;
 
     // The new schema structure has def containing the code definition
     const runnable: Runnable = async (input, state) => {
@@ -323,7 +326,14 @@ export class WorkflowRunner extends WorkflowEntrypoint<Bindings> {
         }
       }
 
-      return await this.runStepCode(stepInput, stepDef.def, client, runtimeId);
+      return await this.runStepCode(
+        stepInput,
+        stepDef.def,
+        client,
+        runtimeId,
+        workspace,
+        authorization,
+      );
     };
 
     return {
@@ -345,6 +355,8 @@ export class WorkflowRunner extends WorkflowEntrypoint<Bindings> {
     },
     client: MCPClientStub<ProjectTools>,
     runtimeId: string,
+    workspace: string,
+    authorization?: string,
   ): Promise<Rpc.Serializable<unknown>> {
     // Load and execute the code step function
     using stepEvaluation = await evalCodeAndReturnDefaultHandle(
@@ -359,15 +371,11 @@ export class WorkflowRunner extends WorkflowEntrypoint<Bindings> {
 
     // Create step context matching the new signature: (input, ctx)
     const stepContext = {
-      env: asEnv(
-        client,
-        // state.authorization
-        //   ? {
-        //       authorization: state.authorization,
-        //       workspace: state.workspace,
-        //     }
-        //   : undefined,
-      ),
+      env: asEnv(client, {
+        authorization: authorization,
+        workspace: workspace,
+        dependencies: stepDef.dependencies,
+      }),
     };
 
     // Call the function with (input, ctx) signature

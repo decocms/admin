@@ -261,11 +261,16 @@ export class WorkflowRunner extends WorkflowEntrypoint<Bindings> {
     stepDef: WorkflowStepDefinition,
     appContext: AppContext,
     runtimeId: string,
+    state?: Record<string, unknown>,
   ): WorkflowStep {
     assertHasWorkspace(appContext);
     const client = MCPClient.forContext(appContext);
-    const workspace = appContext.workspace.value;
-    const authorization = appContext.token;
+    const workspace =
+      typeof state?.workspace === "string" ? state.workspace : undefined;
+    const authorization =
+      typeof state?.authorization === "string"
+        ? state.authorization
+        : undefined;
 
     // The new schema structure has def containing the code definition
     const runnable: Runnable = async (input, state) => {
@@ -355,7 +360,7 @@ export class WorkflowRunner extends WorkflowEntrypoint<Bindings> {
     },
     client: MCPClientStub<ProjectTools>,
     runtimeId: string,
-    workspace: string,
+    workspace?: string,
     authorization?: string,
   ): Promise<Rpc.Serializable<unknown>> {
     // Load and execute the code step function
@@ -372,8 +377,8 @@ export class WorkflowRunner extends WorkflowEntrypoint<Bindings> {
     // Create step context matching the new signature: (input, ctx)
     const stepContext = {
       env: asEnv(client, {
-        authorization: authorization,
-        workspace: workspace,
+        authorization,
+        workspace,
         dependencies: stepDef.dependencies,
       }),
     };
@@ -416,7 +421,7 @@ export class WorkflowRunner extends WorkflowEntrypoint<Bindings> {
 
     // Convert step definitions to actual runnable steps
     const steps = stepDefinitions.map((stepDef) =>
-      this.convertStepDefinitionToStep(stepDef, appContext, runtimeId),
+      this.convertStepDefinitionToStep(stepDef, appContext, runtimeId, state),
     );
 
     const workflowState: WorkflowState = {

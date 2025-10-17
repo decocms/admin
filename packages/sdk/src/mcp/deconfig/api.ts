@@ -683,61 +683,6 @@ export const listFiles = createDeconfigTool({
   },
 });
 
-const subscribeTool = createDeconfigTool({
-  name: "SUBSCRIBE",
-  description:
-    "Subscribe to file changes with pathFilters for an existing watcher",
-  inputSchema: z.object({
-    branch: z.string().optional(),
-    watcherId: z.string(),
-    pathFilters: z.union([z.string(), z.array(z.string())]).optional(),
-    subscriptionId: z.string().optional(),
-  }),
-  outputSchema: z.object({
-    subscriptionId: z.string(),
-  }),
-  handler: async ({ branch, watcherId, pathFilters, subscriptionId }, c) => {
-    // Check LIST_FILES access as authorization
-    await assertWorkspaceResourceAccess(c, "LIST_FILES");
-
-    using branchRpc = await branchRpcFor(c, branch);
-
-    const resultSubscriptionId = await branchRpc.subscribe({
-      watcherId,
-      pathFilters,
-      subscriptionId,
-    });
-
-    return {
-      subscriptionId: resultSubscriptionId,
-    };
-  },
-});
-
-const unsubscribeTool = createDeconfigTool({
-  name: "UNSUBSCRIBE",
-  description: "Unsubscribe from a subscription by its ID",
-  inputSchema: z.object({
-    branch: z.string().optional(),
-    subscriptionId: z.string(),
-  }),
-  outputSchema: z.object({
-    ok: z.boolean(),
-  }),
-  handler: async ({ branch, subscriptionId }, c) => {
-    // Check LIST_FILES access as authorization
-    await assertWorkspaceResourceAccess(c, "LIST_FILES");
-
-    using branchRpc = await branchRpcFor(c, branch);
-
-    await branchRpc.unsubscribe(subscriptionId);
-
-    return {
-      ok: true,
-    };
-  },
-});
-
 export const oauthStart = createTool({
   name: "DECO_CHAT_OAUTH_START",
   description: "Start the OAuth flow for the contract app.",
@@ -784,10 +729,6 @@ export const DECONFIG_TOOLS = [
   readFile,
   deleteFile,
   listFiles,
-
-  // Subscriptions
-  subscribeTool,
-  unsubscribeTool,
 ] as const;
 
 /**

@@ -177,43 +177,9 @@ export function WorkflowDisplay({ resourceUri }: WorkflowDisplayCanvasProps) {
   );
 }
 
-/**
- * Interactive workflow canvas that shows a form for workflow input
- * and displays the run results below
- */
-export function Canvas({
-  resourceUri,
-  onRefresh: _onRefresh,
-}: WorkflowDisplayCanvasProps) {
+function useWorkflowRunQuery() {
   const { connection } = useResourceRoute();
-
   const currentRunUri = useWorkflowUri();
-  const workflow = useWorkflow();
-
-  // Track recent workflows (Resources v2 workflow detail)
-  const { locator } = useSDK();
-  const projectKey = typeof locator === "string" ? locator : undefined;
-  const { addRecent } = useRecentResources(projectKey);
-  const hasTrackedRecentRef = useRef(false);
-
-  useEffect(() => {
-    if (workflow && resourceUri && projectKey && !hasTrackedRecentRef.current) {
-      hasTrackedRecentRef.current = true;
-      setTimeout(() => {
-        addRecent({
-          id: resourceUri,
-          name: workflow.name || resourceUri,
-          type: "workflow",
-          icon: "flowchart",
-          path: `/${projectKey}/rsc/i:workflows-management/workflow/${encodeURIComponent(
-            resourceUri,
-          )}`,
-        });
-      }, 0);
-    }
-  }, [workflow, resourceUri, projectKey, addRecent]);
-
-  // Fetch run data if we have a run URI
   const runQuery = useQuery({
     queryKey: ["workflow-run-read", currentRunUri],
     enabled: Boolean(connection && currentRunUri),
@@ -236,6 +202,44 @@ export function Canvas({
       return 2000;
     },
   });
+  return runQuery;
+}
+
+/**
+ * Interactive workflow canvas that shows a form for workflow input
+ * and displays the run results below
+ */
+export function Canvas({
+  resourceUri,
+  onRefresh: _onRefresh,
+}: WorkflowDisplayCanvasProps) {
+  const workflow = useWorkflow();
+
+  // Track recent workflows (Resources v2 workflow detail)
+  const { locator } = useSDK();
+  const projectKey = typeof locator === "string" ? locator : undefined;
+  const { addRecent } = useRecentResources(projectKey);
+  const hasTrackedRecentRef = useRef(false);
+  const runQuery = useWorkflowRunQuery();
+
+  useEffect(() => {
+    if (workflow && resourceUri && projectKey && !hasTrackedRecentRef.current) {
+      hasTrackedRecentRef.current = true;
+      setTimeout(() => {
+        addRecent({
+          id: resourceUri,
+          name: workflow.name || resourceUri,
+          type: "workflow",
+          icon: "flowchart",
+          path: `/${projectKey}/rsc/i:workflows-management/workflow/${encodeURIComponent(
+            resourceUri,
+          )}`,
+        });
+      }, 0);
+    }
+  }, [workflow, resourceUri, projectKey, addRecent]);
+
+  // Fetch run data if we have a run URI
 
   const run = runQuery.data;
 
@@ -268,38 +272,6 @@ export function Canvas({
   const startedBy = run?.data.workflowStatus?.params?.context?.startedBy;
 
   // Merge workflow definition steps with runtime steps
-  const steps = useMemo<MergedStep[]>(() => {
-    const runSteps = run?.data.workflowStatus?.steps;
-    const definitionSteps = (workflow as WorkflowDefinition)?.steps;
-
-    // If no definition steps, return empty or just runtime steps
-    if (!definitionSteps || !Array.isArray(definitionSteps)) {
-      return (runSteps || []) as MergedStep[];
-    }
-
-    // If no run yet, return definition steps without runtime data
-    if (!runSteps || runSteps.length === 0) {
-      return definitionSteps as MergedStep[];
-    }
-
-    // Merge: for each definition step, use runtime data if available
-    return definitionSteps.map((defStep: WorkflowStep, idx: number) => {
-      const runtimeStep = runSteps[idx];
-
-      // If we have runtime data for this step, merge it with definition
-      if (runtimeStep) {
-        return {
-          ...defStep,
-          ...runtimeStep,
-          // Keep definition data in 'def' for reference
-          def: defStep.def || defStep,
-        } as MergedStep;
-      }
-
-      // Otherwise, return the definition step (pending)
-      return defStep as MergedStep;
-    });
-  }, [run?.data.workflowStatus?.steps, workflow]);
 
   // Flag to know if we have an active or completed run
   const hasRun = Boolean(run);
@@ -430,7 +402,7 @@ export function Canvas({
           <div className="max-w-[1500px] mx-auto space-y-4">
             <h2 className="text-lg font-medium">Steps</h2>
 
-            <WorkflowStepsList steps={steps} hasRun={hasRun} />
+            <WorkflowStepsList hasRun={hasRun} />
           </div>
         </div>
       </div>
@@ -438,13 +410,42 @@ export function Canvas({
   );
 }
 
-function WorkflowStepsList({
-  steps,
-  hasRun,
-}: {
-  steps: MergedStep[];
-  hasRun: boolean;
-}) {
+function WorkflowStepsList({ hasRun }: { hasRun: boolean }) {
+  const runQuery = useWorkflowRunQuery();
+  const run = runQuery.data;
+  const workflow = useWorkflow();
+  const steps = useMemo<MergedStep[]>(() => {
+    const runSteps = run?.data.workflowStatus?.steps;
+    const definitionSteps = (workflow as WorkflowDefinition)?.steps;
+
+    // If no definition steps, return empty or just runtime steps
+    if (!definitionSteps || !Array.isArray(definitionSteps)) {
+      return (runSteps || []) as MergedStep[];
+    }
+
+    // If no run yet, return definition steps without runtime data
+    if (!runSteps || runSteps.length === 0) {
+      return definitionSteps as MergedStep[];
+    }
+
+    // Merge: for each definition step, use runtime data if available
+    return definitionSteps.map((defStep: WorkflowStep, idx: number) => {
+      const runtimeStep = runSteps[idx];
+
+      // If we have runtime data for this step, merge it with definition
+      if (runtimeStep) {
+        return {
+          ...defStep,
+          ...runtimeStep,
+          // Keep definition data in 'def' for reference
+          def: defStep.def || defStep,
+        } as MergedStep;
+      }
+
+      // Otherwise, return the definition step (pending)
+      return defStep as MergedStep;
+    });
+  }, [run?.data.workflowStatus?.steps, workflow]);
   if (!steps || steps.length === 0) {
     return (
       <div className="text-sm text-muted-foreground italic py-4">

@@ -22,7 +22,7 @@ type SubscribeMethods<T> = {
     : never]: K extends `DECO_RESOURCE_${string}_READ`
     ? // deno-lint-ignore no-explicit-any
       T[K] extends (...args: any) => any
-      ? (args: { id: string }) => AsyncIterableIterator<{
+      ? (args: { id: string } | { uri: string }) => AsyncIterableIterator<{
           uri: string;
           data: ExtractReadData<Awaited<ReturnType<T[K]>>>;
         }>
@@ -94,7 +94,7 @@ function createSubscribeMethod(
   uri: string;
   data: unknown;
 }> {
-  return async function* (args: { id: string }) {
+  return async function* (args: { id: string } | { uri: string }) {
     // Step 1: Call DESCRIBE to get watch endpoint configuration and URI template
     const describeMethodName = `DECO_RESOURCE_${resourceName}_DESCRIBE`;
     const readMethodName = `DECO_RESOURCE_${resourceName}_READ`;
@@ -123,7 +123,8 @@ function createSubscribeMethod(
     }
 
     // Step 2: Construct URI from template by replacing * with id
-    const resourceUri = uriTemplate.replace("*", args.id);
+    const resourceUri =
+      "uri" in args ? args.uri : uriTemplate.replace("*", args.id);
 
     // Step 3: Construct watch URL and create EventSource
     const watchUrl = new URL(watchPathname, globalThis.location.origin);

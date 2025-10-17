@@ -46,28 +46,35 @@ export default function ActivitySettings() {
 
   return (
     <DecopilotLayout value={decopilotContextValue}>
-      <div className="h-screen flex flex-col overflow-hidden">
-        <div className="flex-shrink-0 pt-4 px-4 md:pt-8 md:px-8 lg:pt-16 lg:px-16 pb-4">
-          <div className="max-w-[1500px] mx-auto w-full">
-            <ResourceHeader
-              title="Threads"
-              tabs={mainTabs}
-              activeTab="threads"
-            />
+      <div className="h-full flex flex-col overflow-hidden">
+        <div className="flex-1 overflow-auto">
+          {/* Header Section - sticky horizontally */}
+          <div className="sticky left-0 px-4 lg:px-6 xl:px-10 pt-12 pb-4 md:pb-6 lg:pb-8 z-10 bg-background">
+            <div className="max-w-[1600px] mx-auto w-full">
+              <ResourceHeader
+                title="Threads"
+                tabs={mainTabs}
+                activeTab="threads"
+              />
+            </div>
           </div>
-        </div>
-        <div className="flex-1 min-h-0 px-4 md:px-8 lg:px-16 pb-4 md:pb-8 lg:pb-16">
-          <ErrorBoundary fallback={<ActivityErrorFallback />}>
-            <Suspense
-              fallback={
-                <div className="flex justify-center items-center h-full">
-                  <Spinner />
-                </div>
-              }
-            >
-              <AuditListContent />
-            </Suspense>
-          </ErrorBoundary>
+
+          {/* Content Section */}
+          <div className="px-4 lg:px-6 xl:px-10">
+            <div className="max-w-[1600px] mx-auto w-full pb-8">
+              <ErrorBoundary fallback={<ActivityErrorFallback />}>
+                <Suspense
+                  fallback={
+                    <div className="flex justify-center items-center h-full py-8">
+                      <Spinner />
+                    </div>
+                  }
+                >
+                  <AuditListContent />
+                </Suspense>
+              </ErrorBoundary>
+            </div>
+          </div>
         </div>
       </div>
     </DecopilotLayout>

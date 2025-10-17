@@ -124,10 +124,8 @@ function ListTriggersSuspended({
           }
         />
       ) : viewMode === "table" ? (
-        <div className="overflow-x-auto -mx-16 px-16">
-          <div className="w-fit min-w-full max-w-[1500px] mx-auto">
-            <TableView triggers={filteredTriggers} />
-          </div>
+        <div className="w-fit min-w-full">
+          <TableView triggers={filteredTriggers} />
         </div>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">

@@ -269,7 +269,8 @@ export function ToolDetail({ resourceUri }: ToolDisplayCanvasProps) {
     <ScrollArea className="h-full w-full">
       <div className="flex flex-col">
         {/* Header */}
-        <div className="border-b border-border py-4 px-4 md:py-8 md:px-8 lg:py-16 lg:px-16">
+
+        <div className="px-4 lg:px-6 xl:px-10 py-4 md:py-6 lg:py-8 z-10 bg-background border-b border-border">
           <div className="max-w-[1500px] mx-auto space-y-4">
             <div className="flex items-center justify-between gap-2 flex-wrap">
               <div>
@@ -347,7 +348,7 @@ export function ToolDetail({ resourceUri }: ToolDisplayCanvasProps) {
         </div>
 
         {/* Input Form */}
-        <div className="border-b border-border py-4 px-4 md:py-8 md:px-8 lg:py-8 lg:px-16">
+        <div className="px-4 lg:px-6 xl:px-10 py-4 md:py-6 lg:py-8 z-10 bg-background border-b border-border">
           <div className="max-w-[1500px] mx-auto space-y-4">
             <h2 className="text-lg font-medium">Input</h2>
 
@@ -419,7 +420,7 @@ export function ToolDetail({ resourceUri }: ToolDisplayCanvasProps) {
 
         {/* Result Section - only show if we have a result */}
         {executionResult && (
-          <div className="border-b border-border py-4 px-4 md:py-8 md:px-8 lg:py-8 lg:px-16">
+          <div className="px-4 lg:px-6 xl:px-10 py-4 md:py-6 lg:py-8 z-10 bg-background border-b border-border">
             <div className="max-w-[1500px] mx-auto space-y-4">
               <h2 className="text-lg font-medium">Result</h2>
 

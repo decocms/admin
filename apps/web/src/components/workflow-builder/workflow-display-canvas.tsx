@@ -172,7 +172,7 @@ export function WorkflowDisplay({ resourceUri }: WorkflowDisplayCanvasProps) {
   }
   return (
     <WorkflowStoreProvider initialState={{ uri: resourceUri, workflow }}>
-      <Canvas resourceUri={resourceUri} />
+      <Canvas />
     </WorkflowStoreProvider>
   );
 }
@@ -209,11 +209,9 @@ function useWorkflowRunQuery() {
  * Interactive workflow canvas that shows a form for workflow input
  * and displays the run results below
  */
-export function Canvas({
-  resourceUri,
-  onRefresh: _onRefresh,
-}: WorkflowDisplayCanvasProps) {
+export function Canvas() {
   const workflow = useWorkflow();
+  const resourceUri = useWorkflowUri();
 
   // Track recent workflows (Resources v2 workflow detail)
   const { locator } = useSDK();

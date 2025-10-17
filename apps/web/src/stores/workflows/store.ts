@@ -1,5 +1,6 @@
 import { WorkflowDefinition } from "@deco/sdk";
 import { create } from "zustand";
+import { persist } from "zustand/middleware";
 
 export interface State {
   uri: string;
@@ -15,10 +16,23 @@ export interface Store extends State {
 }
 
 export const createWorkflowStore = (initialState: State) => {
-  return create<Store>((set) => ({
-    ...initialState,
-    actions: {
-      setUri: (uri) => set({ ...initialState, uri }),
-    },
-  }));
+  // Create a unique storage key based on the workflow URI
+  const storageKey = `workflow-store-${initialState.uri}`;
+
+  return create<Store>()(
+    persist(
+      (set) => ({
+        ...initialState,
+        actions: {
+          setUri: (uri) => set({ uri }),
+        },
+      }),
+      {
+        name: storageKey,
+        partialize: (state) => ({
+          uri: state.uri,
+        }),
+      },
+    ),
+  );
 };

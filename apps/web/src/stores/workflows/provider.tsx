@@ -1,4 +1,4 @@
-import { StoreApi } from "zustand";
+import { StoreApi, useStore } from "zustand";
 import { createWorkflowStore, State, Store } from "./store";
 import { createContext, useContext, useState } from "react";
 
@@ -19,10 +19,12 @@ export const WorkflowStoreProvider = ({
   );
 };
 
-export const useWorkflowStore = () => {
+export function useWorkflowStore<T>(selector: (state: Store) => T): T {
   const store = useContext(WorkflowStoreContext);
   if (!store) {
-    throw new Error("Missing WorkflowStoreProvider");
+    throw new Error(
+      "Missing WorkflowStoreProvider - refresh the page. If the error persists, please contact support.",
+    );
   }
-  return store;
-};
+  return useStore(store, selector);
+}

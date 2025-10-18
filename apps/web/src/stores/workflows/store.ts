@@ -64,17 +64,20 @@ export const createWorkflowStore = (initialState: Pick<State, "workflow">) => {
               },
             })),
           setStepExecutionEnd: (stepName, success, error) =>
-            set((state) => ({
-              stepExecutions: {
-                ...state.stepExecutions,
-                [stepName]: {
-                  ...state.stepExecutions[stepName],
-                  end: new Date().toISOString(),
-                  success,
-                  error: error || null,
+            set((state) => {
+              const prev = state.stepExecutions[stepName] || {};
+              return {
+                stepExecutions: {
+                  ...state.stepExecutions,
+                  [stepName]: {
+                    ...prev,
+                    end: new Date().toISOString(),
+                    success,
+                    error: error || null,
+                  },
                 },
-              },
-            })),
+              };
+            }),
         },
       }),
       {

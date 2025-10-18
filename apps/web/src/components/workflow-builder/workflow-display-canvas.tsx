@@ -358,7 +358,6 @@ export function useWorkflowRunQuery(enabled: boolean = false) {
 function StartWorkflowButton() {
   const { mutateAsync, isPending } = useStartWorkflow();
   const workflowUri = useWorkflowUri();
-  const runQuery = useWorkflowRunQuery();
   const navigateWorkspace = useNavigateWorkspace();
   const firstStepInput = useWorkflowFirstStepInput();
   const handleStartWorkflow = async (
@@ -388,41 +387,23 @@ function StartWorkflowButton() {
     }
   };
 
-  // Get current status from the run data
-  const status = runQuery.data?.data?.status;
-
-  // Determine states based on status
-  const isRunning = status === "running";
-  const isCompleted = status === "completed" || status === "failed";
-
-  // Only show loading when:
-  // 1. We're actively starting a workflow (isPending)
-  // 2. The workflow is running (isRunning)
-  // 3. We're fetching a run that exists (hasRun && isLoading/isFetching)
-  const isLoading =
-    isPending || isRunning || runQuery.isLoading || runQuery.isFetching;
-
-  // Tooltip changes based on whether workflow has run before
-  const tooltip = isCompleted ? "Restart Workflow" : "Start Workflow";
-
-  // Icon: spinner when running, refresh when completed, play when not started
-  const icon = isLoading ? (
-    <Spinner size="xs" />
-  ) : isCompleted ? (
-    <Icon name="refresh" size={18} />
-  ) : (
-    <Icon name="play_arrow" size={18} />
-  );
-
   return (
     <Button
       type="button"
-      disabled={isLoading}
+      disabled={isPending}
       variant="special"
       onClick={handleStartWorkflow}
+      className="min-w-[200px] flex items-center gap-2"
     >
-      {icon}
-      {tooltip}
+      {isPending ? (
+        <>
+          <Spinner size="xs" /> Starting...
+        </>
+      ) : (
+        <>
+          <Icon name="play_arrow" size={18} /> Start Workflow
+        </>
+      )}
     </Button>
   );
 }

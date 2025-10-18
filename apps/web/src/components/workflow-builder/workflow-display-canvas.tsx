@@ -37,10 +37,7 @@ import {
 } from "../../stores/workflows/hooks.ts";
 import { WorkflowStoreProvider } from "../../stores/workflows/provider.tsx";
 import { DetailSection } from "../common/detail-section.tsx";
-import {
-  useCurrentRunUri,
-  useWorkflowRunsStoreActions,
-} from "../../stores/workflows/runs/store.ts";
+import { useNavigateWorkspace } from "../../hooks/use-navigate-workspace.ts";
 interface WorkflowDisplayCanvasProps {
   resourceUri: string;
   onRefresh?: () => Promise<void>;
@@ -215,7 +212,9 @@ export function WorkflowDisplay({ resourceUri }: WorkflowDisplayCanvasProps) {
   const { data: resource, isLoading: isLoadingWorkflow } =
     useWorkflowByUriV2(resourceUri);
   const workflow = resource?.data;
-  if (isLoadingWorkflow) {
+
+  // Only show loading on initial load, not on refetch
+  if (isLoadingWorkflow && !workflow) {
     return (
       <div className="h-[calc(100vh-12rem)] flex items-center justify-center">
         <Spinner />
@@ -232,31 +231,45 @@ export function WorkflowDisplay({ resourceUri }: WorkflowDisplayCanvasProps) {
       />
     );
   }
+
   return (
-    <WorkflowStoreProvider workflow={workflow}>
+    <WorkflowStoreProvider key={workflow.name} workflow={workflow}>
       <Canvas />
     </WorkflowStoreProvider>
   );
 }
 
-export function useWorkflowRunQuery(paramsUri?: string) {
-  const { connection } = useResourceRoute();
-  const currentRunUri = useCurrentRunUri();
-  const runUri = paramsUri || currentRunUri;
+export function useWorkflowRunQuery(enabled: boolean = false) {
+  const { connection, resourceUri } = useResourceRoute();
+  const runUri = resourceUri;
+
   const runQuery = useQuery({
     queryKey: ["workflow-run-read", runUri],
-    enabled: Boolean(connection && runUri),
+    enabled: Boolean(connection && runUri && enabled),
     queryFn: async () => {
-      const result = await callTool(connection!, {
+      if (!connection || !runUri) {
+        throw new Error("Connection and runUri are required");
+      }
+
+      const result = await callTool(connection, {
         name: "DECO_RESOURCE_WORKFLOW_RUN_READ",
-        arguments: { uri: runUri! },
+        arguments: { uri: runUri },
       });
-      return result.structuredContent as {
-        uri: string;
-        data: WorkflowRunData;
-        created_at?: string;
-        updated_at?: string;
-      };
+
+      const data = result.structuredContent as
+        | {
+            uri: string;
+            data: WorkflowRunData;
+            created_at?: string;
+            updated_at?: string;
+          }
+        | undefined;
+
+      if (!data) {
+        throw new Error("No data returned from workflow run query");
+      }
+
+      return data;
     },
     staleTime: 10_000,
     refetchInterval: (q) => {
@@ -265,51 +278,81 @@ export function useWorkflowRunQuery(paramsUri?: string) {
       return 2000;
     },
   });
+
   return runQuery;
 }
 
 function StartWorkflowButton() {
-  const { mutateAsync } = useStartWorkflow();
+  const { mutateAsync, isPending } = useStartWorkflow();
   const workflow = useWorkflow();
   const workflowUri = useWorkflowUri();
-  const initialInput = useStepInput(workflow.steps[0].def.name);
-  const { setCurrentRunUri } = useWorkflowRunsStoreActions();
-  const handleStartWorkflow = async () => {
-    await mutateAsync(
-      {
-        uri: workflowUri,
-        input: initialInput as Record<string, unknown>,
-      },
-      {
-        onSuccess: (data) => {
-          console.log(data);
-          if (data.uri) setCurrentRunUri(data.uri);
-        },
-      },
-    );
-  };
-  return (
-    <Button variant="special" onClick={handleStartWorkflow}>
-      <Icon name="play_arrow" size={18} />
-      Start Workflow
-    </Button>
-  );
-}
+  // Get the first step's name consistently with how StepInput component does it
+  const firstStepName = workflow.steps[0]?.def?.name || "";
+  const initialInput = useStepInput(firstStepName);
+  const runQuery = useWorkflowRunQuery();
+  const navigateWorkspace = useNavigateWorkspace();
+  const handleStartWorkflow = async (
+    e: React.MouseEvent<HTMLButtonElement>,
+  ) => {
+    // Prevent any default behavior that might cause page reload
+    e.preventDefault();
+    e.stopPropagation();
 
-function ClearWorkflowButton() {
-  const currentRunUri = useCurrentRunUri();
-  const { setCurrentRunUri } = useWorkflowRunsStoreActions();
-  const handleClearWorkflow = () => {
-    setCurrentRunUri(null);
+    try {
+      await mutateAsync(
+        {
+          uri: workflowUri,
+          input: initialInput as Record<string, unknown>,
+        },
+        {
+          onSuccess: (data) => {
+            if (!data.uri) return;
+            navigateWorkspace(
+              `/rsc/i:workflows-management/workflow_run/${encodeURIComponent(data.uri)}`,
+            );
+          },
+        },
+      );
+    } catch (error) {
+      console.error("Error starting workflow:", error);
+    }
   };
+
+  // Get current status from the run data
+  const status = runQuery.data?.data?.status;
+
+  // Determine states based on status
+  const isRunning = status === "running";
+  const isCompleted = status === "completed" || status === "failed";
+
+  // Only show loading when:
+  // 1. We're actively starting a workflow (isPending)
+  // 2. The workflow is running (isRunning)
+  // 3. We're fetching a run that exists (hasRun && isLoading/isFetching)
+  const isLoading =
+    isPending || isRunning || runQuery.isLoading || runQuery.isFetching;
+
+  // Tooltip changes based on whether workflow has run before
+  const tooltip = isCompleted ? "Restart Workflow" : "Start Workflow";
+
+  // Icon: spinner when running, refresh when completed, play when not started
+  const icon = isLoading ? (
+    <Spinner size="xs" />
+  ) : isCompleted ? (
+    <Icon name="refresh" size={18} />
+  ) : (
+    <Icon name="play_arrow" size={18} />
+  );
+
   return (
     <Button
-      disabled={!currentRunUri}
-      size="icon"
-      variant="ghost"
-      onClick={handleClearWorkflow}
+      type="button"
+      disabled={isLoading}
+      variant="special"
+      onClick={handleStartWorkflow}
     >
-      <Icon name="refresh" size={18} />
+      {icon}
+      {tooltip}
     </Button>
   );
 }
@@ -454,7 +497,6 @@ export function Canvas() {
             </div>
             <div className="flex items-center gap-2">
               <StartWorkflowButton />
-              <ClearWorkflowButton />
             </div>
           </div>
         </DetailSection>
@@ -486,7 +528,7 @@ function WorkflowStepsList() {
             <div key={idx}>
               <Suspense fallback={<Spinner />}>
                 <WorkflowStepCard
-                  stepName={step.name || step.def?.name || `Step ${idx + 1}`}
+                  stepName={step.def?.name || `Step ${idx + 1}`}
                   type="definition"
                 />
               </Suspense>
@@ -506,7 +548,8 @@ export function StepInput({ step }: { step: MergedStep }) {
   const { locator } = useSDK();
   const stepOutputs = useStepOutputs();
   const mergedSteps = useMergedSteps();
-  const stepName = step.name || step.def?.name || "";
+  // Always use def.name for consistency with StartWorkflowButton
+  const stepName = step.def?.name || "";
   const persistedInput = useStepInput(stepName);
   const stepInputs = useStepInputs();
 
@@ -593,8 +636,9 @@ export function StepInput({ step }: { step: MergedStep }) {
       }
 
       if (stepOutput !== undefined) {
-        if (!step.name && !step.def?.name) return;
-        setStepOutput(step.name || step.def?.name!, stepOutput);
+        if (!step.def?.name) return;
+        // Always use def.name for consistency
+        setStepOutput(step.def.name, stepOutput);
       }
     } catch (error) {
       console.error("Failed to run step", error);

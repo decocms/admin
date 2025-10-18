@@ -6,7 +6,6 @@ import {
   MergedStep,
   StepInput,
 } from "../workflow-builder/workflow-display-canvas.tsx";
-import { useWorkflowRunQuery } from "../workflow-builder/workflow-display-canvas.tsx";
 import { useMergedStep, useStepOutput } from "../../stores/workflows/hooks.ts";
 
 function deepParse(value: unknown, depth = 0): unknown {
@@ -148,15 +147,24 @@ function StepError({ error }: { error: unknown }) {
   );
 }
 
-function getStepStatus(step: MergedStep) {
-  const runQuery = useWorkflowRunQuery();
-  const run = runQuery.data;
-  if (run?.data.status === "completed") return "completed";
-  if (step.start && !step.end) return "running";
-  if (step.success === true) return "completed";
-  if (step.success === false) return "failed";
-  if (run?.data.status === "failed") return "failed";
+/**
+ * Derives the step status from runtime properties
+ */
+function deriveStepStatus(step: MergedStep): string | undefined {
+  if (!step.success && !step.error && !step.start && !step.end) return;
+  // If step has error, it failed
+  if (step.error) return "failed";
 
+  // If step has ended successfully
+  if (step.end && step.success === true) return "completed";
+
+  // If step has ended but not successfully
+  if (step.end && step.success === false) return "failed";
+
+  // If step has started but not ended, it's running
+  if (step.start && !step.end) return "running";
+
+  // Otherwise, it's pending
   return "pending";
 }
 interface WorkflowStepCardProps {
@@ -165,146 +173,224 @@ interface WorkflowStepCardProps {
   paramsUri?: string;
 }
 
-export function WorkflowStepCard({
+// Sub-components using composition pattern
+function StepIcon() {
+  return (
+    <div className="shrink-0 mt-0.5">
+      <div className="h-8 w-8 rounded-lg bg-muted flex items-center justify-center">
+        <Icon name="bolt" size={18} />
+      </div>
+    </div>
+  );
+}
+
+interface StepTitleProps {
+  stepName: string;
+  description?: string;
+}
+
+function StepTitle({ stepName, description }: StepTitleProps) {
+  return (
+    <div className="flex flex-col gap-1 flex-1 min-w-0">
+      <span className="font-medium text-base truncate">{String(stepName)}</span>
+      {description && (
+        <span className="text-sm text-muted-foreground">{description}</span>
+      )}
+    </div>
+  );
+}
+
+interface StepTimeInfoProps {
+  startTime?: string | null;
+  endTime?: string | null;
+}
+
+function StepTimeInfo({ startTime, endTime }: StepTimeInfoProps) {
+  if (!startTime && !endTime) return null;
+
+  return (
+    <div className="flex items-center gap-4 text-xs mt-1">
+      {startTime && (
+        <div className="flex items-center gap-1.5 text-muted-foreground">
+          <Icon name="play_arrow" size={14} />
+          <span className="font-mono uppercase">
+            {new Date(startTime).toLocaleTimeString([], {
+              hour: "2-digit",
+              minute: "2-digit",
+            })}
+          </span>
+        </div>
+      )}
+
+      {endTime && (
+        <div className="flex items-center gap-1.5 text-muted-foreground">
+          <Icon name="check" size={14} />
+          <span className="font-mono uppercase">
+            {new Date(endTime).toLocaleTimeString([], {
+              hour: "2-digit",
+              minute: "2-digit",
+            })}
+          </span>
+        </div>
+      )}
+    </div>
+  );
+}
+
+interface StepStatusBadgeProps {
+  status: string;
+}
+
+function StepStatusBadge({ status }: StepStatusBadgeProps) {
+  return (
+    <Badge
+      variant={getStatusBadgeVariant(status)}
+      className="capitalize text-xs shrink-0"
+    >
+      {status}
+    </Badge>
+  );
+}
+
+interface StepHeaderProps {
+  stepName: string;
+  description?: string;
+  status?: string;
+  startTime?: string | null;
+  endTime?: string | null;
+}
+
+function StepHeader({
   stepName,
-  type,
-  paramsUri,
-}: WorkflowStepCardProps) {
-  const step = useMergedStep(stepName, paramsUri);
-  const stepStatus = getStepStatus(step);
+  description,
+  status,
+  startTime,
+  endTime,
+}: StepHeaderProps) {
+  const isFailed = status === "failed";
+
+  return (
+    <div className={`p-4 space-y-2 ${isFailed ? "text-destructive" : ""}`}>
+      <div className="flex items-center justify-between gap-2">
+        <div className="flex items-start gap-3 flex-1 min-w-0">
+          <StepIcon />
+          <div className="flex flex-col gap-1 flex-1 min-w-0">
+            <StepTitle stepName={stepName} description={description} />
+            <StepTimeInfo startTime={startTime} endTime={endTime} />
+          </div>
+        </div>
+        {status && <StepStatusBadge status={status} />}
+      </div>
+    </div>
+  );
+}
+
+interface StepOutputProps {
+  output: unknown;
+}
+
+function StepOutput({ output }: StepOutputProps) {
+  if (output === undefined || output === null) return null;
+
+  return <JsonViewer data={output} title="Output" />;
+}
+
+interface StepAttemptsProps {
+  attempts: Array<{
+    success?: boolean;
+    error?: { message?: string };
+  }>;
+}
+
+function StepAttempts({ attempts }: StepAttemptsProps) {
+  if (!attempts || attempts.length <= 1) return null;
+
+  return (
+    <details className="text-xs">
+      <summary className="cursor-pointer font-medium text-muted-foreground hover:text-foreground">
+        {attempts.length} attempts
+      </summary>
+      <div className="mt-2 space-y-2 pl-4">
+        {attempts.map((attempt, attemptIdx) => (
+          <div key={attemptIdx} className="border-l-2 pl-2 py-1">
+            <div className="flex items-center gap-2">
+              <span>Attempt {attemptIdx + 1}</span>
+              {attempt.success ? (
+                <Icon name="check_circle" size={12} className="text-success" />
+              ) : (
+                <Icon name="error" size={12} className="text-destructive" />
+              )}
+            </div>
+            {attempt.error && (
+              <div className="text-destructive mt-1">
+                {String(attempt.error.message || "Error")}
+              </div>
+            )}
+          </div>
+        ))}
+      </div>
+    </details>
+  );
+}
+
+interface StepContentProps {
+  error?: { name?: string; message?: string } | null;
+  output?: unknown;
+  attempts?: Array<{
+    success?: boolean;
+    error?: { message?: string };
+  }>;
+}
+
+function StepContent({ error, output, attempts }: StepContentProps) {
+  const hasContent =
+    error ||
+    (output !== undefined && output !== null) ||
+    (attempts && attempts.length > 1);
+
+  if (!hasContent) return null;
+
+  return (
+    <div className="bg-background rounded-xl p-3 space-y-3">
+      <StepError error={error} />
+      <StepOutput output={output} />
+      <StepAttempts attempts={attempts || []} />
+    </div>
+  );
+}
+
+export function WorkflowStepCard({ stepName, type }: WorkflowStepCardProps) {
+  const step = useMergedStep(stepName);
+  const stepStatus = deriveStepStatus(step);
   const stepOutput = useStepOutput(stepName);
 
-  // Get name and description - handle both runtime steps and definition steps
-  const stepDescription = step.def?.description;
-
-  // Check if there's any content to show in the step body
-  const hasContent =
-    step.error ||
-    (step.config !== undefined && step.config !== null) ||
-    (step.output !== undefined && step.output !== null) ||
-    (step.attempts && step.attempts.length > 1) ||
-    (stepOutput !== undefined && stepOutput !== null);
-
   const mergedStepOutput = step.output || stepOutput;
+  const isFailed = stepStatus === "failed";
 
   return (
     <div
-      className={`rounded-xl p-0.5 ${stepStatus === "failed" ? "bg-destructive/10" : "bg-muted"}`}
+      className={`rounded-xl p-0.5 ${isFailed ? "bg-destructive/10" : "bg-muted"}`}
     >
-      {/* Step Header */}
-      <div
-        className={`p-4 space-y-2 ${stepStatus === "failed" ? "text-destructive" : ""}`}
-      >
-        <div className="flex items-center justify-between gap-2">
-          <div className="flex items-start gap-3 flex-1 min-w-0">
-            {/* Step Icon */}
-            <div className="shrink-0 mt-0.5">
-              <div className="h-8 w-8 rounded-lg bg-muted flex items-center justify-center">
-                <Icon name="bolt" size={18} />
-              </div>
-            </div>
-
-            {/* Step Title and Description */}
-            <div className="flex flex-col gap-1 flex-1 min-w-0">
-              <span className="font-medium text-base truncate">
-                {String(stepName)}
-              </span>
-              {stepDescription && (
-                <span className="text-sm text-muted-foreground">
-                  {stepDescription}
-                </span>
-              )}
-
-              {/* Time information */}
-              {(step.start || step.end) && (
-                <div className="flex items-center gap-4 text-xs mt-1">
-                  {step.start && (
-                    <div className="flex items-center gap-1.5 text-muted-foreground">
-                      <Icon name="play_arrow" size={14} />
-                      <span className="font-mono uppercase">
-                        {new Date(step.start).toLocaleTimeString([], {
-                          hour: "2-digit",
-                          minute: "2-digit",
-                        })}
-                      </span>
-                    </div>
-                  )}
-
-                  {step.end && (
-                    <div className="flex items-center gap-1.5 text-muted-foreground">
-                      <Icon name="check" size={14} />
-                      <span className="font-mono uppercase">
-                        {new Date(step.end).toLocaleTimeString([], {
-                          hour: "2-digit",
-                          minute: "2-digit",
-                        })}
-                      </span>
-                    </div>
-                  )}
-                </div>
-              )}
-            </div>
-          </div>
-          <Badge
-            variant={getStatusBadgeVariant(stepStatus)}
-            className="capitalize text-xs shrink-0"
-          >
-            {stepStatus}
-          </Badge>
-        </div>
-      </div>
+      <StepHeader
+        stepName={stepName}
+        description={step.def?.description}
+        status={stepStatus}
+        startTime={step.start}
+        endTime={step.end}
+      />
 
       {type === "definition" && <StepInput step={step} />}
 
-      {/* Step Content - only show if there's data */}
-      {hasContent && (
-        <div className="bg-background rounded-xl p-3 space-y-3">
-          <StepError error={step.error} />
-          {mergedStepOutput !== undefined && mergedStepOutput !== null && (
-            <JsonViewer data={mergedStepOutput} title="Output" />
-          )}
-
-          {step.attempts && step.attempts.length > 1 && (
-            <details className="text-xs">
-              <summary className="cursor-pointer font-medium text-muted-foreground hover:text-foreground">
-                {step.attempts.length} attempts
-              </summary>
-              <div className="mt-2 space-y-2 pl-4">
-                {(
-                  step.attempts as Array<{
-                    success?: boolean;
-                    error?: { message?: string };
-                  }>
-                ).map((attempt, attemptIdx) => (
-                  <div key={attemptIdx} className="border-l-2 pl-2 py-1">
-                    <div className="flex items-center gap-2">
-                      <span>Attempt {attemptIdx + 1}</span>
-                      {attempt.success ? (
-                        <Icon
-                          name="check_circle"
-                          size={12}
-                          className="text-success"
-                        />
-                      ) : (
-                        <Icon
-                          name="error"
-                          size={12}
-                          className="text-destructive"
-                        />
-                      )}
-                    </div>
-                    {attempt.error && (
-                      <div className="text-destructive mt-1">
-                        {String(attempt.error.message || "Error")}
-                      </div>
-                    )}
-                  </div>
-                ))}
-              </div>
-            </details>
-          )}
-        </div>
-      )}
+      <StepContent
+        error={step.error}
+        output={mergedStepOutput}
+        attempts={
+          step.attempts as Array<{
+            success?: boolean;
+            error?: { message?: string };
+          }>
+        }
+      />
     </div>
   );
 }

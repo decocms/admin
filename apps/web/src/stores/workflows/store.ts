@@ -17,7 +17,9 @@ export interface Store extends State {
   actions: Actions;
 }
 
-export const createWorkflowStore = (initialState: State) => {
+export const createWorkflowStore = (
+  initialState: Omit<State, "currentRunUri">,
+) => {
   // Create a unique storage key based on the workflow name
   const storageKey = `workflow-store-${initialState.workflow.name}`;
 
@@ -25,9 +27,8 @@ export const createWorkflowStore = (initialState: State) => {
     persist(
       (set) => ({
         ...initialState,
-        currentRunUri: null,
-        stepOutputs: {},
-        stepInputs: {},
+        stepOutputs: initialState.stepOutputs || {},
+        stepInputs: initialState.stepInputs || {},
         actions: {
           setStepOutput: (stepName, output) =>
             set((state) => ({

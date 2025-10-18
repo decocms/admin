@@ -1,4 +1,4 @@
-import { callTool, useWorkflowByUriV2, type WorkflowRunData } from "@deco/sdk";
+import { useWorkflowByUriV2 } from "@deco/sdk";
 import { Badge } from "@deco/ui/components/badge.tsx";
 import { Button } from "@deco/ui/components/button.tsx";
 import { Icon } from "@deco/ui/components/icon.tsx";
@@ -9,15 +9,14 @@ import {
   AlertDescription,
   AlertTitle,
 } from "@deco/ui/components/alert.tsx";
-import { useQuery } from "@tanstack/react-query";
 import { Suspense, lazy, useMemo, useState } from "react";
 import { EmptyState } from "../common/empty-state.tsx";
 import { UserInfo } from "../common/table/table-cells.tsx";
-import { useResourceRoute } from "../resources-v2/route-context.tsx";
 import { getStatusBadgeVariant } from "./utils.ts";
 import { WorkflowStepCard } from "./workflow-step-card.tsx";
 import { DetailSection } from "../common/detail-section.tsx";
 import { WorkflowStoreProvider } from "../../stores/workflows/provider.tsx";
+import { useWorkflowRunQuery } from "../workflow-builder/workflow-display-canvas.tsx";
 
 const LazyHighlighter = lazy(() => import("../chat/lazy-highlighter.tsx"));
 
@@ -110,30 +109,7 @@ function JsonViewer({
 }
 
 export function WorkflowRunDetail({ resourceUri }: WorkflowRunDetailProps) {
-  const { connection } = useResourceRoute();
-
-  const runQuery = useQuery({
-    queryKey: ["workflow-run-read", resourceUri],
-    enabled: Boolean(connection && resourceUri),
-    queryFn: async () => {
-      const result = await callTool(connection!, {
-        name: "DECO_RESOURCE_WORKFLOW_RUN_READ",
-        arguments: { uri: resourceUri },
-      });
-      return result.structuredContent as {
-        uri: string;
-        data: WorkflowRunData;
-        created_at?: string;
-        updated_at?: string;
-      };
-    },
-    staleTime: 10_000,
-    refetchInterval: (q) => {
-      const status = q.state.data?.data?.status;
-      if (status === "completed" || status === "failed") return false;
-      return 2000;
-    },
-  });
+  const runQuery = useWorkflowRunQuery(true);
 
   const workflowUri = runQuery.data?.data?.workflowURI;
 
@@ -200,8 +176,6 @@ export function WorkflowRunDetail({ resourceUri }: WorkflowRunDetailProps) {
 
   const startedBy = run.data.workflowStatus?.params?.context?.startedBy;
   const steps = run.data.workflowStatus?.steps || [];
-
-  console.log({ steps });
 
   return (
     <WorkflowStoreProvider workflow={workflow}>
@@ -304,22 +278,24 @@ export function WorkflowRunDetail({ resourceUri }: WorkflowRunDetailProps) {
             {steps.length > 0 ? (
               <div className="flex flex-col items-center">
                 <div className="w-full max-w-[700px] space-y-0">
-                  {workflow.steps.map((step, idx) => (
-                    <div key={idx}>
-                      {idx > 0 && (
-                        <div className="h-10 w-full flex justify-center">
-                          <div className="w-px bg-border" />
-                        </div>
-                      )}
-                      <Suspense fallback={<Spinner />}>
-                        <WorkflowStepCard
-                          stepName={step.def.name || `Step ${idx + 1}`}
-                          type="run"
-                          paramsUri={resourceUri}
-                        />
-                      </Suspense>
-                    </div>
-                  ))}
+                  {run.data.workflowStatus?.steps?.map((step, idx) => {
+                    return (
+                      <div key={idx}>
+                        {idx > 0 && (
+                          <div className="h-10 w-full flex justify-center">
+                            <div className="w-px bg-border" />
+                          </div>
+                        )}
+                        <Suspense fallback={<Spinner />}>
+                          <WorkflowStepCard
+                            stepName={step.name || `Step ${idx + 1}`}
+                            type="run"
+                            paramsUri={resourceUri}
+                          />
+                        </Suspense>
+                      </div>
+                    );
+                  })}
                 </div>
               </div>
             ) : (

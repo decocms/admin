@@ -15,7 +15,6 @@ import {
   createToolGroup,
   DeconfigClient,
   PROJECT_TOOLS,
-  runTool,
 } from "../index.ts";
 import { validate } from "../tools/utils.ts";
 import {
@@ -407,14 +406,17 @@ export function createWorkflowBindingImpl({
       }),
     ),
     handler: async ({ tool, input }, c) => {
-      const result = await runTool.handler({
+      const client = createMCPToolsStub({
+        tools: PROJECT_TOOLS,
+        context: c,
+      });
+
+      const result = await client.DECO_TOOL_RUN_TOOL({
         tool,
         input,
         authorization: c.cookie,
       });
-      console.log({
-        result,
-      });
+
       return { result: result, resolvedInput: input, tool };
     },
   });
@@ -449,8 +451,6 @@ export function createWorkflowBindingImpl({
 
       const { data: workflow } = await resourceWorkflowRead(workflowUri);
 
-      console.log({ workflow });
-
       if (!workflow) {
         return { success: false, error: "Workflow not found" };
       }
@@ -458,10 +458,7 @@ export function createWorkflowBindingImpl({
         ...workflow,
         steps: [...workflow.steps, step],
       };
-      console.log({ newWorkflow });
       await resourceWorkflowUpdate(workflowUri, newWorkflow);
-
-      console.log({ success: true });
 
       return { success: true };
     },

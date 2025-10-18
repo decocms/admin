@@ -27,6 +27,7 @@ import * as registryAPI from "./registry/api.ts";
 import type { CreateStubHandlerOptions, MCPClientStub } from "./stub.ts";
 import * as teamsAPI from "./teams/api.ts";
 import * as threadsAPI from "./threads/api.ts";
+import { runTool } from "./tools/api.ts";
 import * as triggersAPI from "./triggers/api.ts";
 import * as utilsAPI from "./utils/api.ts";
 import * as walletAPI from "./wallet/api.ts";
@@ -224,6 +225,7 @@ export const PROJECT_TOOLS = [
   // DECONFIG tools
   ...deconfigAPI.DECONFIG_TOOLS,
   // Tools
+  runTool,
 ] as const;
 
 export const AGENT_TOOLS = [

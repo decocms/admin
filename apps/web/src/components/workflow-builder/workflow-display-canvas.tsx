@@ -480,12 +480,7 @@ function WorkflowStepsList() {
 export function StepInput({ stepName }: { stepName: string }) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { connection } = useResourceRoute();
-  const {
-    setStepInput,
-    setStepOutput,
-    setStepExecutionStart,
-    setStepExecutionEnd,
-  } = useWorkflowActions();
+  const actions = useWorkflowActions();
   const workflowUri = useWorkflowUri();
   const { locator } = useSDK();
   const stepOutputs = useWorkflowStepOutputs();
@@ -512,7 +507,7 @@ export function StepInput({ stepName }: { stepName: string }) {
 
       try {
         setIsSubmitting(true);
-        setStepExecutionStart(stepName);
+        actions.setStepExecutionStart(stepName);
 
         // Resolve any @ references in the input data
         const { resolved, errors } = resolveAtRefsInInput(
@@ -531,7 +526,7 @@ export function StepInput({ stepName }: { stepName: string }) {
 
         // Save the resolved input data to the store
         // This is important for subsequent steps that reference @input.*
-        setStepInput(stepName, resolved);
+        actions.setStepInput(stepName, resolved);
 
         const result = await callTool(
           connection,
@@ -564,11 +559,11 @@ export function StepInput({ stepName }: { stepName: string }) {
         const outputKey = stepDefinition?.name ?? stepName;
 
         if (stepOutput !== undefined) {
-          setStepOutput(outputKey, stepOutput);
+          actions.setStepOutput(outputKey, stepOutput);
         }
 
         // Record successful execution
-        setStepExecutionEnd(stepName, true);
+        actions.setStepExecutionEnd(stepName, true);
         toast.success("Step executed successfully!");
       } catch (error) {
         console.error("Failed to run step", error);
@@ -578,7 +573,7 @@ export function StepInput({ stepName }: { stepName: string }) {
           error instanceof Error
             ? { name: error.name, message: error.message }
             : { name: "Error", message: String(error) };
-        setStepExecutionEnd(stepName, false, errorObj);
+        actions.setStepExecutionEnd(stepName, false, errorObj);
 
         toast.error(
           error instanceof Error ? error.message : "Failed to run step",
@@ -595,10 +590,6 @@ export function StepInput({ stepName }: { stepName: string }) {
       firstStepInput,
       stepDefinition,
       locator,
-      setStepInput,
-      setStepExecutionStart,
-      setStepExecutionEnd,
-      setStepOutput,
     ],
   );
 

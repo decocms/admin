@@ -34,6 +34,7 @@ const WORKFLOW_TOOLS = {
   START: "DECO_WORKFLOW_START" as const,
   RUN_STEP: "DECO_WORKFLOW_RUN_STEP" as const,
   CREATE_STEP: "DECO_WORKFLOW_CREATE_STEP" as const,
+  EDIT_STEP: "DECO_WORKFLOW_EDIT_STEP" as const,
 };
 
 // Helper functions

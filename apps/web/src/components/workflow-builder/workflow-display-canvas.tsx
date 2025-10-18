@@ -66,6 +66,53 @@ function parseAtRef(ref: `@${string}`): {
   return { type: "step", id, path };
 }
 
+/**
+ * Relaxes a JSON Schema to accept @references alongside the expected types.
+ * This allows form validation to pass when using @step.path or @input.path references.
+ */
+function relaxSchemaForAtRefs(
+  schema: Record<string, unknown>,
+  formData: Record<string, unknown>,
+): Record<string, unknown> {
+  if (!schema.properties || typeof schema.properties !== "object") {
+    return schema;
+  }
+
+  const relaxedSchema = { ...schema };
+  const relaxedProperties: Record<string, unknown> = {};
+
+  for (const [key, propSchema] of Object.entries(schema.properties)) {
+    const value = formData[key];
+
+    // If the value is an @ref, relax the schema to accept it
+    if (isAtRef(value)) {
+      const schema = propSchema as Record<string, unknown>;
+
+      // If the original type is already string, just allow the @ref pattern
+      if (schema.type === "string") {
+        relaxedProperties[key] = {
+          ...schema,
+          // Remove any pattern that might conflict with @refs
+          pattern: "^@",
+        };
+      } else {
+        // For non-string types (object, number, etc), use oneOf
+        relaxedProperties[key] = {
+          oneOf: [
+            { type: "string", pattern: "^@" }, // Allow @refs
+            propSchema, // Or the original type
+          ],
+        };
+      }
+    } else {
+      relaxedProperties[key] = propSchema;
+    }
+  }
+
+  relaxedSchema.properties = relaxedProperties;
+  return relaxedSchema;
+}
+
 function getValue(
   obj: Record<string, unknown> | unknown[] | unknown,
   path: string,
@@ -546,6 +593,22 @@ export function StepInput({ stepName }: { stepName: string }) {
     return stepDefinition?.inputSchema;
   }, [stepDefinition]);
 
+  // Relax schema to accept @refs alongside expected types
+  const relaxedSchema = useMemo(() => {
+    if (
+      !stepInputSchema ||
+      typeof stepInputSchema !== "object" ||
+      !stepInput ||
+      typeof stepInput !== "object"
+    ) {
+      return stepInputSchema;
+    }
+    return relaxSchemaForAtRefs(
+      stepInputSchema as Record<string, unknown>,
+      stepInput as Record<string, unknown>,
+    );
+  }, [stepInputSchema, stepInput]);
+
   function handleFormChange(data: { formData?: unknown }) {
     // Persist input changes to the store
     if (data.formData !== undefined) {
@@ -555,13 +618,13 @@ export function StepInput({ stepName }: { stepName: string }) {
 
   return (
     <div className="bg-muted/30 rounded-xl p-6">
-      {stepInputSchema &&
-      typeof stepInputSchema === "object" &&
-      "properties" in stepInputSchema &&
-      stepInputSchema.properties &&
-      Object.keys(stepInputSchema.properties).length > 0 ? (
+      {relaxedSchema &&
+      typeof relaxedSchema === "object" &&
+      "properties" in relaxedSchema &&
+      relaxedSchema.properties &&
+      Object.keys(relaxedSchema.properties).length > 0 ? (
         <Form
-          schema={stepInputSchema}
+          schema={relaxedSchema}
           validator={validator}
           formData={stepInput}
           onChange={handleFormChange}

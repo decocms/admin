@@ -110,7 +110,7 @@ export function WorkflowRunDetail(_: { resourceUri?: string } = {}) {
   const workflowUri = runQuery.data?.data?.workflowURI;
 
   const { data: workflowResource, isLoading: isLoadingWorkflow } =
-    useWorkflowByUriV2(workflowUri!);
+    useWorkflowByUriV2(workflowUri ?? "");
   const workflow = workflowResource?.data;
 
   const isLoading = runQuery.isLoading || (workflowUri && isLoadingWorkflow);

@@ -31,6 +31,7 @@ import {
 import { WorkflowStoreProvider } from "../../stores/workflows/provider.tsx";
 import { DetailSection } from "../common/detail-section.tsx";
 import { useNavigateWorkspace } from "../../hooks/use-navigate-workspace.ts";
+import { toast } from "@deco/ui/components/sonner.tsx";
 interface WorkflowDisplayCanvasProps {
   resourceUri: string;
   onRefresh?: () => Promise<void>;
@@ -383,7 +384,9 @@ function StartWorkflowButton() {
         },
       );
     } catch (error) {
-      console.error("Error starting workflow:", error);
+      toast.error(
+        error instanceof Error ? error.message : "Failed to start workflow",
+      );
     }
   };
 
@@ -575,10 +578,8 @@ export function StepInput({ stepName }: { stepName: string }) {
           : { name: "Error", message: String(error) };
       setStepExecutionEnd(stepName, false, errorObj);
 
-      globalThis.window.alert(
-        `Failed to run step: ${
-          error instanceof Error ? error.message : String(error)
-        }`,
+      toast.error(
+        error instanceof Error ? error.message : "Failed to run step",
       );
     } finally {
       setIsSubmitting(false);

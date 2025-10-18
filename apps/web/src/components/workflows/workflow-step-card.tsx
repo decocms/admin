@@ -443,7 +443,7 @@ function StepContent({ error, output, attempts }: StepContentProps) {
 export function WorkflowStepCard({ stepName, type }: WorkflowStepCardProps) {
   const stepOutput = useWorkflowStepOutput(stepName);
   const stepExecution = useWorkflowStepExecution(stepName);
-  const runData = useWorkflowRunQuery();
+  const runData = useWorkflowRunQuery(type === "runtime");
   const isInteractive = type === "definition";
 
   const runtimeStep = useMemo(() => {

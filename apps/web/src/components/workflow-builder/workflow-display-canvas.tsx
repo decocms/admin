@@ -482,6 +482,7 @@ export function StepInput({ stepName }: { stepName: string }) {
   const stepOutputs = useWorkflowStepOutputs();
   const stepInput = useWorkflowStepInput(stepName);
   const stepDefinition = useWorkflowStepDefinition(stepName);
+  const firstStepInput = useWorkflowFirstStepInput();
 
   async function handleFormSubmit(data: Record<string, unknown>) {
     if (!connection || !workflowUri) return;
@@ -490,14 +491,12 @@ export function StepInput({ stepName }: { stepName: string }) {
       setIsSubmitting(true);
       setStepExecutionStart(stepName);
 
-      // Get the first step's input to resolve @input.* references
-      // Use persisted input if available, otherwise fall back to the prop value
-
       // Resolve any @ references in the input data
+      // @input.* refs resolve against the workflow's first-step input
       const { resolved, errors } = resolveAtRefsInInput(
         data,
         stepOutputs,
-        stepInput,
+        firstStepInput,
       );
 
       // Show errors if any references couldn't be resolved

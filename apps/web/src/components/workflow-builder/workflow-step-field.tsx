@@ -31,6 +31,7 @@ import type {
 } from "react-hook-form";
 import { JsonTextField } from "../json-schema/components/json-text-field.tsx";
 import { ArrayField } from "../json-schema/components/array-field.tsx";
+import { formatPropertyName } from "../json-schema/utils/schema.ts";
 
 export interface AtRefOption {
   value: string;
@@ -52,13 +53,6 @@ interface WorkflowStepFieldProps<T extends FieldValues = FieldValues> {
 
 function isAtRef(value: unknown): value is `@${string}` {
   return typeof value === "string" && value.startsWith("@");
-}
-
-function formatPropertyName(name: string): string {
-  return name
-    .split(/[._-]/)
-    .map((word) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
-    .join(" ");
 }
 
 /**
@@ -274,7 +268,7 @@ export function WorkflowStepField<T extends FieldValues = FieldValues>({
 }
 
 interface ReferenceSelectProps {
-  value: string;
+  value?: string;
   onChange: (value: string) => void;
   options: AtRefOption[];
   disabled: boolean;
@@ -298,7 +292,11 @@ const ReferenceSelect = memo(function ReferenceSelect({
   );
 
   return (
-    <Select value={value} onValueChange={onChange} disabled={disabled}>
+    <Select
+      value={value ?? undefined}
+      onValueChange={onChange}
+      disabled={disabled}
+    >
       <SelectTrigger className="w-full">
         <SelectValue placeholder={placeholder}>
           {value && (

@@ -127,6 +127,12 @@ export const workflowExecutionKeys = {
    */
   status: (locator: ProjectLocator, workflowName: string, instanceId: string) =>
     ["workflow-status", locator, workflowName, instanceId] as const,
+
+  /**
+   * Key for reading a single workflow run by URI
+   * @example ["workflow-run-read", "rsc://i:workflows-management/workflow-run/run-123"]
+   */
+  read: (runUri: string) => ["workflow-run-read", runUri] as const,
 } as const;
 
 /**

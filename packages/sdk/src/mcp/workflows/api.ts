@@ -406,6 +406,8 @@ export function createWorkflowBindingImpl({
       }),
     ),
     handler: async ({ tool, input }, c) => {
+      assertHasWorkspace(c);
+      await assertWorkspaceResourceAccess(c);
       const client = createMCPToolsStub({
         tools: PROJECT_TOOLS,
         context: c,
@@ -417,7 +419,7 @@ export function createWorkflowBindingImpl({
         authorization: c.cookie,
       });
 
-      return { result: result, resolvedInput: input, tool };
+      return { result };
     },
   });
 

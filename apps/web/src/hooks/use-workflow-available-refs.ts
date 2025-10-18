@@ -61,6 +61,7 @@ function addInputRefsRecursive(
   seen: Set<string>,
   path = "input",
   depth = 0,
+  visited: WeakSet<object> = new WeakSet(),
 ): void {
   // Limit depth to avoid too many options
   if (depth >= 3) return;
@@ -82,12 +83,15 @@ function addInputRefsRecursive(
 
       // Recursively add nested refs
       if (value && typeof value === "object" && !Array.isArray(value)) {
+        if (visited.has(value as object)) continue;
+        visited.add(value as object);
         addInputRefsRecursive(
           value as Record<string, unknown>,
           refs,
           seen,
           fullPath,
           depth + 1,
+          visited,
         );
       }
     }
@@ -101,6 +105,7 @@ function addStepRefsRecursive(
   stepName: string,
   path = stepName,
   depth = 0,
+  visited: WeakSet<object> = new WeakSet(),
 ): void {
   // Limit depth to avoid too many options
   if (depth >= 3) return;
@@ -137,6 +142,8 @@ function addStepRefsRecursive(
 
       // Recursively add nested refs
       if (value && typeof value === "object" && !Array.isArray(value)) {
+        if (visited.has(value as object)) continue;
+        visited.add(value as object);
         addStepRefsRecursive(
           value as Record<string, unknown>,
           refs,
@@ -144,6 +151,7 @@ function addStepRefsRecursive(
           stepName,
           fullPath,
           depth + 1,
+          visited,
         );
       }
     }
@@ -169,6 +177,9 @@ export function useWorkflowAvailableRefs(stepName: string): AtRefOption[] {
         firstStepInput as Record<string, unknown>,
         refs,
         seen,
+        "input",
+        0,
+        new WeakSet(),
       );
     }
 
@@ -198,6 +209,9 @@ export function useWorkflowAvailableRefs(stepName: string): AtRefOption[] {
           refs,
           seen,
           prevStepName,
+          prevStepName,
+          0,
+          new WeakSet(),
         );
       }
     }

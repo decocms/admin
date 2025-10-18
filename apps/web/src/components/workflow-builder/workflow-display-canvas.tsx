@@ -4,6 +4,7 @@ import {
   useSDK,
   useStartWorkflow,
   useWorkflowByUriV2,
+  workflowExecutionKeys,
   type WorkflowRunData,
 } from "@deco/sdk";
 import { Button } from "@deco/ui/components/button.tsx";
@@ -63,8 +64,8 @@ function parseAtRef(ref: `@${string}`): {
   const refStr = ref.substring(1); // Remove @ prefix
 
   // Input reference: @input.path.to.value
-  if (refStr.startsWith("input")) {
-    const path = refStr.substring(6); // Remove 'input.'
+  if (refStr === "input" || refStr.startsWith("input.")) {
+    const path = refStr.startsWith("input.") ? refStr.substring(6) : "";
     return { type: "input", path };
   }
 
@@ -286,7 +287,7 @@ export function useWorkflowRunQuery(enabled: boolean = false) {
   const runUri = resourceUri;
 
   const runQuery = useQuery({
-    queryKey: ["workflow-run-read", runUri],
+    queryKey: workflowExecutionKeys.read(runUri || ""),
     enabled: Boolean(connection && runUri && enabled),
     queryFn: async () => {
       if (!connection || !runUri) {
@@ -479,12 +480,16 @@ function WorkflowStepsList() {
 export function StepInput({ stepName }: { stepName: string }) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { connection } = useResourceRoute();
-  const { setStepOutput, setStepExecutionStart, setStepExecutionEnd } =
-    useWorkflowActions();
+  const {
+    setStepInput,
+    setStepOutput,
+    setStepExecutionStart,
+    setStepExecutionEnd,
+  } = useWorkflowActions();
   const workflowUri = useWorkflowUri();
   const { locator } = useSDK();
   const stepOutputs = useWorkflowStepOutputs();
-  const stepInput = useWorkflowStepInput(stepName);
+  const currentStepInput = useWorkflowStepInput(stepName);
   const stepDefinition = useWorkflowStepDefinition(stepName);
   const firstStepInput = useWorkflowFirstStepInput();
 
@@ -497,7 +502,7 @@ export function StepInput({ stepName }: { stepName: string }) {
 
   // Initialize form with current step input
   const form = useForm<Record<string, unknown>>({
-    defaultValues: stepInput || {},
+    defaultValues: currentStepInput || {},
     mode: "onSubmit",
   });
 
@@ -523,6 +528,10 @@ export function StepInput({ stepName }: { stepName: string }) {
             .join("\n");
           throw new Error(`Failed to resolve references:\n${errorMessages}`);
         }
+
+        // Save the resolved input data to the store
+        // This is important for subsequent steps that reference @input.*
+        setStepInput(stepName, resolved);
 
         const result = await callTool(
           connection,
@@ -586,6 +595,7 @@ export function StepInput({ stepName }: { stepName: string }) {
       firstStepInput,
       stepDefinition,
       locator,
+      setStepInput,
       setStepExecutionStart,
       setStepExecutionEnd,
       setStepOutput,

@@ -86,12 +86,12 @@ function relaxSchemaForAtRefs(
 
     // If the value is an @ref, relax the schema to accept it
     if (isAtRef(value)) {
-      const schema = propSchema as Record<string, unknown>;
+      const propSchemaObj = propSchema as Record<string, unknown>;
 
       // If the original type is already string, just allow the @ref pattern
-      if (schema.type === "string") {
+      if (propSchemaObj.type === "string") {
         relaxedProperties[key] = {
-          ...schema,
+          ...propSchemaObj,
           // Remove any pattern that might conflict with @refs
           pattern: "^@",
         };
@@ -225,6 +225,60 @@ function resolveAtRefsInInput(
 
   const resolved = resolveValue(input);
   return { resolved, errors: errors.length > 0 ? errors : undefined };
+}
+
+/**
+ * Unwraps the nested MCP response structure to extract the actual tool output.
+ *
+ * MCP responses can have inconsistent nesting levels:
+ * - { result: value }
+ * - { result: { result: value } }
+ * - { structuredContent: { result: value } }
+ * - { structuredContent: { result: { result: value } } }
+ *
+ * This utility recursively unwraps these structures to find the deepest result value.
+ *
+ * @param response - The MCP response object from callTool
+ * @returns The unwrapped tool output value
+ * @throws Error if the response contains an error field
+ */
+function unwrapMCPResponse(response: unknown): unknown {
+  if (!response || typeof response !== "object") {
+    return response;
+  }
+
+  const resp = response as {
+    structuredContent?: unknown;
+    result?: unknown;
+    error?: string;
+    [key: string]: unknown;
+  };
+
+  // Check for error first
+  if (resp.error) {
+    throw new Error(resp.error);
+  }
+
+  // Try to unwrap nested structuredContent first
+  if (resp.structuredContent) {
+    return unwrapMCPResponse(resp.structuredContent);
+  }
+
+  // If there's a result field, check if it has nested results
+  if ("result" in resp) {
+    const result = resp.result;
+
+    // If result is an object with its own result field, unwrap it
+    if (result && typeof result === "object" && "result" in result) {
+      return unwrapMCPResponse(result);
+    }
+
+    // Otherwise return the result as-is
+    return result;
+  }
+
+  // No result or structuredContent found, return the original response
+  return response;
 }
 
 export function WorkflowDisplay({ resourceUri }: WorkflowDisplayCanvasProps) {
@@ -454,9 +508,9 @@ function WorkflowStepsList() {
   return (
     <div className="flex flex-col items-center">
       <div className="w-full max-w-[700px] space-y-8">
-        {stepNames.map((stepName, idx) => {
+        {stepNames.map((stepName) => {
           return (
-            <div key={idx}>
+            <div key={stepName}>
               <Suspense fallback={<Spinner />}>
                 <WorkflowStepCard stepName={stepName} type="definition" />
               </Suspense>
@@ -519,46 +573,8 @@ export function StepInput({ stepName }: { stepName: string }) {
         locator,
       );
 
-      // Handle nested structuredContent (MCP response wrapping)
-      const mcpResponse = result.structuredContent as {
-        structuredContent?: {
-          result?: {
-            result?: unknown;
-            [key: string]: unknown;
-          };
-          error?: string;
-        };
-        result?: unknown;
-        error?: string;
-      };
-
-      // Try to unwrap nested structuredContent first
-      const response = mcpResponse.structuredContent || mcpResponse;
-
-      if (response.error) {
-        throw new Error(response.error);
-      }
-
-      // Extract the actual tool output from nested result structure
-      let stepOutput: unknown;
-      if (typeof response.result === "object" && response.result !== null) {
-        const resultObj = response.result as { result?: unknown };
-        // Check if there's a nested result.result structure
-        if (typeof resultObj.result === "object" && resultObj.result !== null) {
-          const nestedResult = resultObj.result as { result?: unknown };
-          // Store the deepest result we can find
-          stepOutput =
-            nestedResult.result !== undefined
-              ? nestedResult.result
-              : resultObj.result;
-        } else {
-          // Store result.result if it exists, otherwise store result
-          stepOutput =
-            resultObj.result !== undefined ? resultObj.result : response.result;
-        }
-      } else {
-        stepOutput = response.result;
-      }
+      // Unwrap the MCP response to extract the actual step output
+      const stepOutput = unwrapMCPResponse(result.structuredContent);
 
       if (stepOutput !== undefined) {
         if (!stepDefinition?.name) return;
@@ -592,7 +608,27 @@ export function StepInput({ stepName }: { stepName: string }) {
     return stepDefinition?.inputSchema;
   }, [stepDefinition]);
 
+  // Track which fields contain @refs to avoid unnecessary schema recalculations
+  const atRefFields = useMemo(() => {
+    if (!stepInput || typeof stepInput !== "object") {
+      return new Set<string>();
+    }
+    const fields = new Set<string>();
+    for (const [key, value] of Object.entries(stepInput)) {
+      if (isAtRef(value)) {
+        fields.add(key);
+      }
+    }
+    return fields;
+  }, [stepInput]);
+
+  // Convert Set to sorted string for stable comparison
+  const atRefFieldsKey = useMemo(() => {
+    return Array.from(atRefFields).sort().join(",");
+  }, [atRefFields]);
+
   // Relax schema to accept @refs alongside expected types
+  // Only recalculates when the schema or the presence of @refs changes
   const relaxedSchema = useMemo(() => {
     if (
       !stepInputSchema ||
@@ -606,7 +642,7 @@ export function StepInput({ stepName }: { stepName: string }) {
       stepInputSchema as Record<string, unknown>,
       stepInput as Record<string, unknown>,
     );
-  }, [stepInputSchema, stepInput]);
+  }, [stepInputSchema, stepInput, atRefFieldsKey]);
 
   function handleFormChange(data: { formData?: unknown }) {
     // Persist input changes to the store

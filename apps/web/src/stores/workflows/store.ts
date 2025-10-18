@@ -3,26 +3,23 @@ import { create } from "zustand";
 import { persist } from "zustand/middleware";
 
 export interface State {
-  workflowUri: string;
-  currentRunUri: string | null;
   workflow: WorkflowDefinition;
   stepOutputs: Record<string, unknown>;
+  stepInputs: Record<string, unknown>;
 }
 
 export interface Actions {
-  setCurrentRunUri: (uri: string | null) => void;
   setStepOutput: (stepName: string, output: unknown) => void;
+  setStepInput: (stepName: string, input: unknown) => void;
 }
 
 export interface Store extends State {
   actions: Actions;
 }
 
-export const createWorkflowStore = (
-  initialState: Omit<State, "currentRunUri">,
-) => {
-  // Create a unique storage key based on the workflow URI
-  const storageKey = `workflow-store-${initialState.workflowUri}`;
+export const createWorkflowStore = (initialState: State) => {
+  // Create a unique storage key based on the workflow name
+  const storageKey = `workflow-store-${initialState.workflow.name}`;
 
   return create<Store>()(
     persist(
@@ -30,19 +27,23 @@ export const createWorkflowStore = (
         ...initialState,
         currentRunUri: null,
         stepOutputs: {},
+        stepInputs: {},
         actions: {
-          setCurrentRunUri: (uri) => set({ currentRunUri: uri }),
           setStepOutput: (stepName, output) =>
             set((state) => ({
               stepOutputs: { ...state.stepOutputs, [stepName]: output },
+            })),
+          setStepInput: (stepName, input) =>
+            set((state) => ({
+              stepInputs: { ...state.stepInputs, [stepName]: input },
             })),
         },
       }),
       {
         name: storageKey,
         partialize: (state) => ({
-          currentRunUri: state.currentRunUri,
           stepOutputs: state.stepOutputs,
+          stepInputs: state.stepInputs,
         }),
       },
     ),

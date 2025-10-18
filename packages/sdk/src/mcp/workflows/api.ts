@@ -467,7 +467,50 @@ export function createWorkflowBindingImpl({
     },
   });
 
-  return [decoWorkflowStart, decoWorkflowRunStep, decoWorkflowCreateStep];
+  const decoWorkflowReadStep = createTool({
+    name: "DECO_WORKFLOW_READ_STEP",
+    description: "Read a step in a workflow",
+    inputSchema: z.lazy(() =>
+      z.object({
+        workflowUri: z
+          .string()
+          .describe(
+            "The Resources 2.0 URI of the workflow to read the step from",
+          ),
+        stepName: z.string().describe("The name of the step to read"),
+      }),
+    ),
+    outputSchema: z.lazy(() =>
+      z.object({
+        step: WorkflowStepDefinitionSchema.describe("The step definition"),
+      }),
+    ),
+    handler: async ({ workflowUri, stepName }, c) => {
+      assertHasWorkspace(c);
+      await assertWorkspaceResourceAccess(c);
+
+      const { data: workflow } = await resourceWorkflowRead(workflowUri);
+
+      if (!workflow) {
+        throw new NotFoundError(`Workflow ${workflowUri} not found`);
+      }
+      const step = workflow.steps.find((s) => s.def.name === stepName);
+
+      if (!step) {
+        throw new NotFoundError(
+          `Step ${stepName} not found in workflow ${workflowUri}`,
+        );
+      }
+      return { step };
+    },
+  });
+
+  return [
+    decoWorkflowStart,
+    decoWorkflowRunStep,
+    decoWorkflowCreateStep,
+    decoWorkflowReadStep,
+  ];
 }
 
 const WORKFLOW_DETAIL_PROMPT = `
@@ -479,10 +522,11 @@ Use DECO_RESOURCE_WORKFLOW_RUN_READ with that URI to monitor execution status, v
 
 <STEP_CREATION>You can create new steps in the workflow using DECO_WORKFLOW_CREATE_STEP.</STEP_CREATION>
 <STEP_EXECUTION>You can run steps in the workflow using DECO_WORKFLOW_RUN_STEP.</STEP_EXECUTION>
+<STEP_READ>You can read steps in the workflow using DECO_WORKFLOW_READ_STEP. Use this to get the current definition of a step before updating it.</STEP_READ>
 <WORKFLOW_START>You can start the workflow using DECO_WORKFLOW_START.</WORKFLOW_START>
 <WORKFLOW_MONITOR>You can monitor the workflow execution using DECO_RESOURCE_WORKFLOW_RUN_READ.</WORKFLOW_MONITOR>
 <WORKFLOW_READ>You can read the workflow details using DECO_RESOURCE_WORKFLOW_READ.</WORKFLOW_READ>
-<WORKFLOW_UPDATE>You can update the workflow properties using DECO_RESOURCE_WORKFLOW_UPDATE.</WORKFLOW_UPDATE>
+<WORKFLOW_UPDATE>You can update the whole workflow using DECO_RESOURCE_WORKFLOW_UPDATE. Avoid using this if you are just updating a step in the workflow, or creating a new one.</WORKFLOW_UPDATE>
 <WORKFLOW_DELETE>You can delete the workflow using DECO_RESOURCE_WORKFLOW_DELETE.</WORKFLOW_DELETE>
 `;
 
@@ -512,6 +556,7 @@ export function createWorkflowViewsV2() {
       "DECO_WORKFLOW_START",
       "DECO_WORKFLOW_RUN_STEP",
       "DECO_WORKFLOW_CREATE_STEP",
+      "DECO_WORKFLOW_READ_STEP",
       "DECO_RESOURCE_WORKFLOW_RUN_READ",
     ],
     prompt: WORKFLOW_DETAIL_PROMPT,
@@ -613,6 +658,7 @@ export const workflowViews = impl(
                 "DECO_WORKFLOW_START",
                 "DECO_WORKFLOW_RUN_STEP",
                 "DECO_WORKFLOW_CREATE_STEP",
+                "DECO_WORKFLOW_READ_STEP",
                 "DECO_RESOURCE_WORKFLOW_RUN_READ",
                 "DECO_RESOURCE_WORKFLOW_UPDATE",
               ],

@@ -7,15 +7,13 @@ const WorkflowStoreContext = createContext<StoreApi<Store> | null>(null);
 
 export function WorkflowStoreProvider({
   children,
-  workflowUri,
   workflow,
 }: {
   children: React.ReactNode;
-  workflowUri: string;
   workflow: WorkflowDefinition;
 }) {
   const [store] = useState(() =>
-    createWorkflowStore({ workflowUri, workflow, stepOutputs: {} }),
+    createWorkflowStore({ workflow, stepOutputs: {}, stepInputs: {} }),
   );
   return (
     <WorkflowStoreContext.Provider value={store}>

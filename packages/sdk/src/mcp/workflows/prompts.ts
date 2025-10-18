@@ -194,39 +194,30 @@ return {
 6. **CRITICAL: Return value MUST match outputSchema exactly** - Include ALL properties defined in outputSchema, even if null/empty
 7. **Wrap tool calls in try/catch** - Always return an object with ALL outputSchema properties, use defaults on error`;
 
-export const WORKFLOW_UPDATE_PROMPT = `Update a workflow while maintaining sequential code step execution.
+export const WORKFLOW_UPDATE_PROMPT = `Update a workflow while maintaining sequential tool call execution.
 Only use this tool if you are updating multiple steps at once or properties of the workflow itself.
 
 ## Execution Pattern Reminder
 
 **Key Rules:**
-1. **All steps are code steps** - Each step exports async function with \`(input, ctx)\` signature
-2. **Each step receives previous step's output as input** - @refs are resolved before execution - just declare how each step input should access a previous step's output (example: \`@stepId.fieldName.subfield\`)
-3. **Steps call tools via ctx.env** - Integration tools accessed with bracket notation (example: \`ctx.env['i:ai-generation'].AI_GENERATE_OBJECT({ model: 'anthropic:claude-sonnet-4-5', messages: [{ role: 'user', content: 'Generate poem' }], schema: { type: 'object', properties: { poem: { type: 'string' } } }, temperature: 0.7 })\`)
-4. **Return data matching outputSchema** - Each step's return becomes next step's input (example: \`return { poem: 'Generated poem' }\`) - next step could use { input: { poem: '@poem-generation-step.poem' } }
-5. **Update dependencies** - Add \`{ integrationId }\` to dependencies array alongside used tool names if using ctx.env (example: \`[{ "integrationId": "i:ai-generation", "toolNames": ["AI_GENERATE_OBJECT"] }]\`)
-6. **Always use try/catch** - Return safe defaults for all properties on error (example: \`return { poem: '', error: String(error) }\`)
-7. **Test incrementally** - Use stopAfter to test each updated step (example: \`stopAfter: 'poem-generation-step'\`)
+1. **Each step receives previous step's output as input** - @refs are resolved before execution - just declare how each step input should access a previous step's output (example: \`@stepId.fieldName.subfield\`)
+2. **Steps call tools via ctx.env** - Integration tools accessed with bracket notation (example: \`ctx.env['i:ai-generation'].AI_GENERATE_OBJECT({ model: 'anthropic:claude-sonnet-4-5', messages: [{ role: 'user', content: 'Generate poem' }], schema: { type: 'object', properties: { poem: { type: 'string' } } }, temperature: 0.7 })\`)
+3. **Return data matching outputSchema** - Each step's return becomes next step's input (example: \`return { poem: 'Generated poem' }\`) - next step could use { input: { poem: '@poem-generation-step.poem' } }
+4. **Update dependencies** - Add \`{ integrationId }\` to dependencies array alongside used tool names if using ctx.env (example: \`[{ "integrationId": "i:ai-generation", "toolNames": ["AI_GENERATE_OBJECT"] }]\`)
+5. **Always use try/catch** - Return safe defaults for all properties on error (example: \`return { poem: '', error: String(error) }\`)
+6. **Test incrementally** - Use stopAfter to test each updated step (example: \`stopAfter: 'poem-generation-step'\`)
 
-## Code Step Execute API
+## Step Execute API
 
 \`\`\`javascript
 export default async function(input, ctx) {
-  // input: Already has @refs resolved - access fields directly
+  // input: Object matching step inputSchema
+  // ctx.env: Object to access integration tools
   
-  // ALWAYS wrap tool calls in try/catch
+  const poem = input.poem;
+  
   try {
-    const toolResult = await ctx.env['i:ai-generation'].AI_GENERATE_OBJECT({
-      model: 'anthropic:claude-sonnet-4-5',
-      messages: [{ role: 'user', content: \`Generate poem about \${input.cityName}\` }],
-      schema: { type: 'object', properties: { poem: { type: 'string' } } },
-      temperature: 0.7
-    });
-    
-    // CRITICAL: Return ALL properties from outputSchema
-    return { 
-      poem: toolResult.object?.poem || '',
-    };
+    const result = await ctx.env['i:ai-generation'].AI_GENERATE_OBJECT({
   } catch (error) {
     // On error, return ALL outputSchema properties with safe defaults
     return { 
@@ -248,7 +239,7 @@ export default async function(input, ctx) {
 1. **Use correct function signature** - \`async function(input, ctx)\` with input as first parameter
 2. **CRITICAL: Return ALL outputSchema properties** - Every property in outputSchema must be in the return statement
 3. **Match schemas** - Each step's outputSchema should match next step's inputSchema (or use @refs) - this is important for the workflow to be able to execute
-4. **Update @refs in step.input** - Use \`@stepId.fieldName\` format
+4. **Update @refs in step.input** - Use \`@stepId.fieldName\` format. This is the input that will be passed to the step.
 5. **Update dependencies** - Add \`{ integrationId, toolNames }\` to dependencies array if using ctx.env
 6. **Always use try/catch** - Return safe defaults for all properties on error
 7. **Test incrementally** - Use stopAfter to test each updated step
@@ -292,8 +283,8 @@ The Resources 2.0 URI of the workflow to execute (e.g., rsc://workflow/my-workfl
 ### input
 The input data passed to the workflow. This data:
 - Will be validated against the workflow's defined input schema
-- Is accessible to steps via @refs: \`@input.fieldName\` in step.input fields
-- Becomes the input to the first step (or is used by steps that reference it with @refs)
+- Is accessible to steps via @refs: \`@stepId.fieldName\` in step.input fields
+- Becomes the input to the first step of the workflow
 
 ### stopAfter (Optional)
 The name of the step where execution should halt. When specified:

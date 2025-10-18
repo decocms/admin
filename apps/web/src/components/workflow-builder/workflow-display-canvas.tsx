@@ -26,15 +26,17 @@ import { useResourceRoute } from "../resources-v2/route-context.tsx";
 import { getStatusBadgeVariant } from "../workflows/utils.ts";
 import { WorkflowStepCard } from "../workflows/workflow-step-card.tsx";
 import {
-  useCurrentRunUri,
   useMergedSteps,
   useStepOutputs,
   useWorkflow,
   useWorkflowActions,
   useWorkflowUri,
+  useStepInput,
+  useStepInputs,
 } from "../../stores/workflows/hooks.ts";
 import { WorkflowStoreProvider } from "../../stores/workflows/provider.tsx";
 import { DetailSection } from "../common/detail-section.tsx";
+import { useCurrentRunUri } from "../../stores/workflows/runs/store.ts";
 interface WorkflowDisplayCanvasProps {
   resourceUri: string;
   onRefresh?: () => Promise<void>;
@@ -99,15 +101,16 @@ function getValue(
 function resolveAtRef(
   ref: `@${string}`,
   stepOutputs: Record<string, unknown>,
-  globalInput?: unknown,
+  firstStepInput?: unknown,
 ): { value: unknown; error?: string } {
   try {
     const parsed = parseAtRef(ref);
 
     switch (parsed.type) {
       case "input": {
+        // Resolve @input.* to the first step's input
         const value = getValue(
-          (globalInput as Record<string, unknown>) || {},
+          (firstStepInput as Record<string, unknown>) || {},
           parsed.path || "",
         );
         if (value === undefined) {
@@ -147,14 +150,14 @@ function resolveAtRef(
 function resolveAtRefsInInput(
   input: unknown,
   stepOutputs: Record<string, unknown>,
-  globalInput?: unknown,
+  firstStepInput?: unknown,
 ): { resolved: unknown; errors?: Array<{ ref: string; error: string }> } {
   const errors: Array<{ ref: string; error: string }> = [];
 
   function resolveValue(value: unknown): unknown {
     // If it's an @ref, resolve it
     if (isAtRef(value)) {
-      const result = resolveAtRef(value, stepOutputs, globalInput);
+      const result = resolveAtRef(value, stepOutputs, firstStepInput);
       if (result.error) {
         errors.push({ ref: value, error: result.error });
       }
@@ -226,7 +229,7 @@ export function WorkflowDisplay({ resourceUri }: WorkflowDisplayCanvasProps) {
     );
   }
   return (
-    <WorkflowStoreProvider workflowUri={resourceUri} workflow={workflow}>
+    <WorkflowStoreProvider workflow={workflow}>
       <Canvas />
     </WorkflowStoreProvider>
   );
@@ -438,10 +441,14 @@ function WorkflowStepsList() {
 export function StepInput({ step }: { step: MergedStep }) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { connection } = useResourceRoute();
-  const { setStepOutput } = useWorkflowActions();
+  const { setStepOutput, setStepInput } = useWorkflowActions();
   const workflowUri = useWorkflowUri();
   const { locator } = useSDK();
   const stepOutputs = useStepOutputs();
+  const mergedSteps = useMergedSteps();
+  const stepName = step.name || step.def?.name || "";
+  const persistedInput = useStepInput(stepName);
+  const stepInputs = useStepInputs();
 
   async function handleFormSubmit(data: Record<string, unknown>) {
     if (!connection || !workflowUri) return;
@@ -449,8 +456,20 @@ export function StepInput({ step }: { step: MergedStep }) {
     try {
       setIsSubmitting(true);
 
+      // Get the first step's input to resolve @input.* references
+      // Use persisted input if available, otherwise fall back to the prop value
+      const firstStep = mergedSteps?.[0];
+      const firstStepName = firstStep?.name || firstStep?.def?.name;
+      const firstStepInput = firstStepName
+        ? (stepInputs[firstStepName] ?? firstStep?.input)
+        : firstStep?.input;
+
       // Resolve any @ references in the input data
-      const { resolved, errors } = resolveAtRefsInInput(data, stepOutputs);
+      const { resolved, errors } = resolveAtRefsInInput(
+        data,
+        stepOutputs,
+        firstStepInput,
+      );
 
       // Show errors if any references couldn't be resolved
       if (errors && errors.length > 0) {
@@ -533,6 +552,18 @@ export function StepInput({ step }: { step: MergedStep }) {
     return step.def?.inputSchema;
   }, [step]);
 
+  // Use persisted input if available, otherwise fall back to step.input
+  const formData = useMemo(() => {
+    return persistedInput !== undefined ? persistedInput : step.input;
+  }, [persistedInput, step.input]);
+
+  function handleFormChange(data: { formData?: unknown }) {
+    // Persist input changes to the store
+    if (data.formData !== undefined) {
+      setStepInput(stepName, data.formData);
+    }
+  }
+
   return (
     <div className="bg-muted/30 rounded-xl p-6">
       {stepInputSchema &&
@@ -543,8 +574,9 @@ export function StepInput({ step }: { step: MergedStep }) {
         <Form
           schema={stepInputSchema}
           validator={validator}
-          formData={step.input}
-          onSubmit={({ formData }) => handleFormSubmit(formData)}
+          formData={formData}
+          onChange={handleFormChange}
+          onSubmit={(data) => handleFormSubmit(data.formData || {})}
           showErrorList={false}
           noHtml5Validate
           liveValidate={false}

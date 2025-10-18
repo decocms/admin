@@ -17,13 +17,9 @@ export function useWorkflowStep(stepName: string) {
 }
 
 export function useWorkflowUri() {
-  return useWorkflowStore((state) => state.workflowUri);
+  const name = useWorkflowStore((state) => state.workflow.name);
+  return `rsc://i:workflows-management/workflow/${name}`;
 }
-
-export function useCurrentRunUri() {
-  return useWorkflowStore((state) => state.currentRunUri);
-}
-
 export function useWorkflowActions() {
   return useWorkflowStore((state) => state.actions);
 }
@@ -85,4 +81,12 @@ export function useStepOutput(stepName: string) {
 
 export function useStepOutputs() {
   return useWorkflowStore((state) => state.stepOutputs);
+}
+
+export function useStepInput(stepName: string) {
+  return useWorkflowStore((state) => state.stepInputs[stepName]);
+}
+
+export function useStepInputs() {
+  return useWorkflowStore((state) => state.stepInputs);
 }

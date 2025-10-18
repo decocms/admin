@@ -454,9 +454,21 @@ export function createWorkflowBindingImpl({
       if (!workflow) {
         return { success: false, error: "Workflow not found" };
       }
+      // prevent duplicate step names by appending timestamp if needed
+      let finalStep = step;
+      if (workflow.steps.some((s) => s.def.name === step.def.name)) {
+        const timestamp = Date.now();
+        finalStep = {
+          ...step,
+          def: {
+            ...step.def,
+            name: `${step.def.name}_${timestamp}`,
+          },
+        };
+      }
       const newWorkflow = {
         ...workflow,
-        steps: [...workflow.steps, step],
+        steps: [...workflow.steps, finalStep],
       };
       await resourceWorkflowUpdate(workflowUri, newWorkflow);
 

@@ -5,14 +5,7 @@ import {
   useStartWorkflow,
   useWorkflowByUriV2,
   type WorkflowRunData,
-  type WorkflowStep,
 } from "@deco/sdk";
-import {
-  Alert,
-  AlertDescription,
-  AlertTitle,
-} from "@deco/ui/components/alert.tsx";
-import { Badge } from "@deco/ui/components/badge.tsx";
 import { Button } from "@deco/ui/components/button.tsx";
 import { Icon } from "@deco/ui/components/icon.tsx";
 import { ScrollArea } from "@deco/ui/components/scroll-area.tsx";
@@ -22,18 +15,18 @@ import validator from "@rjsf/validator-ajv8";
 import { useQuery } from "@tanstack/react-query";
 import { Suspense, useEffect, useMemo, useRef, useState } from "react";
 import { EmptyState } from "../common/empty-state.tsx";
-import { UserInfo } from "../common/table/table-cells.tsx";
 import { useResourceRoute } from "../resources-v2/route-context.tsx";
-import { getStatusBadgeVariant } from "../workflows/utils.ts";
 import { WorkflowStepCard } from "../workflows/workflow-step-card.tsx";
 import {
-  useMergedSteps,
-  useStepOutputs,
-  useWorkflow,
   useWorkflowActions,
+  useWorkflowDescription,
+  useWorkflowFirstStepInput,
+  useWorkflowName,
+  useWorkflowStepDefinition,
+  useWorkflowStepInput,
+  useWorkflowStepNames,
+  useWorkflowStepOutputs,
   useWorkflowUri,
-  useStepInput,
-  useStepInputs,
 } from "../../stores/workflows/hooks.ts";
 import { WorkflowStoreProvider } from "../../stores/workflows/provider.tsx";
 import { DetailSection } from "../common/detail-section.tsx";
@@ -187,27 +180,6 @@ function resolveAtRefsInInput(
   return { resolved, errors: errors.length > 0 ? errors : undefined };
 }
 
-interface RuntimeStep {
-  name?: string;
-  start?: string | null;
-  end?: string | null;
-  success?: boolean | null;
-  output?: unknown;
-  error?: { name?: string; message?: string } | null;
-  attempts?: Array<{
-    start?: string | null;
-    end?: string | null;
-    success?: boolean | null;
-    error?: { name?: string; message?: string } | null;
-  }>;
-  config?: unknown;
-}
-
-export type MergedStep = Partial<WorkflowStep> &
-  RuntimeStep & {
-    def?: WorkflowStep["def"];
-  };
-
 export function WorkflowDisplay({ resourceUri }: WorkflowDisplayCanvasProps) {
   const { data: resource, isLoading: isLoadingWorkflow } =
     useWorkflowByUriV2(resourceUri);
@@ -284,13 +256,10 @@ export function useWorkflowRunQuery(enabled: boolean = false) {
 
 function StartWorkflowButton() {
   const { mutateAsync, isPending } = useStartWorkflow();
-  const workflow = useWorkflow();
   const workflowUri = useWorkflowUri();
-  // Get the first step's name consistently with how StepInput component does it
-  const firstStepName = workflow.steps[0]?.def?.name || "";
-  const initialInput = useStepInput(firstStepName);
   const runQuery = useWorkflowRunQuery();
   const navigateWorkspace = useNavigateWorkspace();
+  const firstStepInput = useWorkflowFirstStepInput();
   const handleStartWorkflow = async (
     e: React.MouseEvent<HTMLButtonElement>,
   ) => {
@@ -302,7 +271,7 @@ function StartWorkflowButton() {
       await mutateAsync(
         {
           uri: workflowUri,
-          input: initialInput as Record<string, unknown>,
+          input: firstStepInput as Record<string, unknown>,
         },
         {
           onSuccess: (data) => {
@@ -362,23 +331,27 @@ function StartWorkflowButton() {
  * and displays the run results below
  */
 export function Canvas() {
-  const workflow = useWorkflow();
   const resourceUri = useWorkflowUri();
-
+  const workflowName = useWorkflowName();
+  const workflowDescription = useWorkflowDescription();
   // Track recent workflows (Resources v2 workflow detail)
   const { locator } = useSDK();
   const projectKey = typeof locator === "string" ? locator : undefined;
   const { addRecent } = useRecentResources(projectKey);
   const hasTrackedRecentRef = useRef(false);
-  const runQuery = useWorkflowRunQuery();
 
   useEffect(() => {
-    if (workflow && resourceUri && projectKey && !hasTrackedRecentRef.current) {
+    if (
+      workflowName &&
+      resourceUri &&
+      projectKey &&
+      !hasTrackedRecentRef.current
+    ) {
       hasTrackedRecentRef.current = true;
       setTimeout(() => {
         addRecent({
           id: resourceUri,
-          name: workflow.name || resourceUri,
+          name: workflowName,
           type: "workflow",
           icon: "flowchart",
           path: `/${projectKey}/rsc/i:workflows-management/workflow/${encodeURIComponent(
@@ -387,33 +360,7 @@ export function Canvas() {
         });
       }, 0);
     }
-  }, [workflow, resourceUri, projectKey, addRecent]);
-
-  // Fetch run data if we have a run URI
-
-  const run = runQuery.data;
-
-  // Calculate duration
-  const duration = useMemo(() => {
-    const startTime = run?.data?.startTime;
-    const endTime = run?.data?.endTime;
-    if (!startTime) return null;
-    const ms = (endTime || Date.now()) - startTime;
-    if (ms < 0) return null;
-    const s = Math.floor(ms / 1000);
-    if (s < 60) return `${s}s`;
-    const m = Math.floor(s / 60);
-    if (m < 60) return `${m}m ${s % 60}s`;
-    const h = Math.floor(m / 60);
-    return `${h}h ${m % 60}m ${s % 60}s`;
-  }, [run?.data?.startTime, run?.data?.endTime]);
-
-  const error = run?.data?.error;
-  const status = run?.data?.status || "unknown";
-  const badgeVariant = getStatusBadgeVariant(status);
-  const startedBy = run?.data.workflowStatus?.params?.context?.startedBy;
-
-  // Merge workflow definition steps with runtime steps
+  }, [workflowName, resourceUri, projectKey, addRecent]);
 
   return (
     <ScrollArea className="h-full w-full">
@@ -424,76 +371,14 @@ export function Canvas() {
             <div>
               <div className="flex items-center justify-between gap-2 flex-wrap">
                 <div>
-                  <h1 className="text-2xl font-medium">{workflow.name}</h1>
-                  {workflow.description && (
+                  <h1 className="text-2xl font-medium">{workflowName}</h1>
+                  {workflowDescription && (
                     <p className="text-sm text-muted-foreground mt-1">
-                      {workflow.description}
+                      {workflowDescription}
                     </p>
                   )}
                 </div>
-                {run && (
-                  <Badge variant={badgeVariant} className="capitalize">
-                    {status}
-                  </Badge>
-                )}
               </div>
-
-              {/* Run metadata */}
-              {run && (
-                <div className="flex items-center gap-4 flex-wrap text-sm">
-                  <div className="flex items-center gap-2">
-                    <Icon
-                      name="calendar_month"
-                      size={16}
-                      className="text-muted-foreground"
-                    />
-                    <span className="font-mono text-sm uppercase">
-                      {run.data.startTime
-                        ? new Date(run.data.startTime).toLocaleString([], {
-                            month: "short",
-                            day: "numeric",
-                            year: "numeric",
-                            hour: "2-digit",
-                            minute: "2-digit",
-                          })
-                        : "-"}
-                    </span>
-                  </div>
-
-                  <div className="h-3 w-px bg-border" />
-
-                  <div className="flex items-center gap-2">
-                    <Icon
-                      name="schedule"
-                      size={16}
-                      className="text-muted-foreground"
-                    />
-                    <span className="font-mono text-sm">{duration || "-"}</span>
-                  </div>
-
-                  <div className="h-3 w-px bg-border" />
-
-                  {startedBy?.id && (
-                    <UserInfo
-                      userId={startedBy.id}
-                      size="sm"
-                      noTooltip
-                      showEmail={false}
-                    />
-                  )}
-                </div>
-              )}
-
-              {/* Error Alert */}
-              {error && (
-                <Alert className="bg-destructive/5 border-none">
-                  <Icon name="error" className="h-4 w-4 text-destructive" />
-                  <AlertTitle className="text-destructive">Error</AlertTitle>
-                  <AlertDescription className="text-destructive">
-                    {error}
-                  </AlertDescription>
-                </Alert>
-              )}
             </div>
             <div className="flex items-center gap-2">
               <StartWorkflowButton />
@@ -511,9 +396,8 @@ export function Canvas() {
 }
 
 function WorkflowStepsList() {
-  const steps = useMergedSteps();
-
-  if (!steps || steps.length === 0) {
+  const stepNames = useWorkflowStepNames();
+  if (!stepNames || stepNames.length === 0) {
     return (
       <div className="text-sm text-muted-foreground italic py-4">
         No steps available yet
@@ -523,14 +407,11 @@ function WorkflowStepsList() {
   return (
     <div className="flex flex-col items-center">
       <div className="w-full max-w-[700px] space-y-8">
-        {steps.map((step, idx) => {
+        {stepNames.map((stepName, idx) => {
           return (
             <div key={idx}>
               <Suspense fallback={<Spinner />}>
-                <WorkflowStepCard
-                  stepName={step.def?.name || `Step ${idx + 1}`}
-                  type="definition"
-                />
+                <WorkflowStepCard stepName={stepName} type="definition" />
               </Suspense>
             </div>
           );
@@ -540,38 +421,36 @@ function WorkflowStepsList() {
   );
 }
 
-export function StepInput({ step }: { step: MergedStep }) {
+export function StepInput({ stepName }: { stepName: string }) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { connection } = useResourceRoute();
-  const { setStepOutput, setStepInput } = useWorkflowActions();
+  const {
+    setStepOutput,
+    setStepInput,
+    setStepExecutionStart,
+    setStepExecutionEnd,
+  } = useWorkflowActions();
   const workflowUri = useWorkflowUri();
   const { locator } = useSDK();
-  const stepOutputs = useStepOutputs();
-  const mergedSteps = useMergedSteps();
-  // Always use def.name for consistency with StartWorkflowButton
-  const stepName = step.def?.name || "";
-  const persistedInput = useStepInput(stepName);
-  const stepInputs = useStepInputs();
+  const stepOutputs = useWorkflowStepOutputs();
+  const stepInput = useWorkflowStepInput(stepName);
+  const stepDefinition = useWorkflowStepDefinition(stepName);
 
   async function handleFormSubmit(data: Record<string, unknown>) {
     if (!connection || !workflowUri) return;
 
     try {
       setIsSubmitting(true);
+      setStepExecutionStart(stepName);
 
       // Get the first step's input to resolve @input.* references
       // Use persisted input if available, otherwise fall back to the prop value
-      const firstStep = mergedSteps?.[0];
-      const firstStepName = firstStep?.name || firstStep?.def?.name;
-      const firstStepInput = firstStepName
-        ? (stepInputs[firstStepName] ?? firstStep?.input)
-        : firstStep?.input;
 
       // Resolve any @ references in the input data
       const { resolved, errors } = resolveAtRefsInInput(
         data,
         stepOutputs,
-        firstStepInput,
+        stepInput,
       );
 
       // Show errors if any references couldn't be resolved
@@ -587,7 +466,7 @@ export function StepInput({ step }: { step: MergedStep }) {
         {
           name: "DECO_WORKFLOW_RUN_STEP",
           arguments: {
-            tool: step.def,
+            tool: stepDefinition,
             input: resolved,
           },
         },
@@ -636,12 +515,23 @@ export function StepInput({ step }: { step: MergedStep }) {
       }
 
       if (stepOutput !== undefined) {
-        if (!step.def?.name) return;
+        if (!stepDefinition?.name) return;
         // Always use def.name for consistency
-        setStepOutput(step.def.name, stepOutput);
+        setStepOutput(stepDefinition.name, stepOutput);
       }
+
+      // Record successful execution
+      setStepExecutionEnd(stepName, true);
     } catch (error) {
       console.error("Failed to run step", error);
+
+      // Record failed execution
+      const errorObj =
+        error instanceof Error
+          ? { name: error.name, message: error.message }
+          : { name: "Error", message: String(error) };
+      setStepExecutionEnd(stepName, false, errorObj);
+
       globalThis.window.alert(
         `Failed to run step: ${
           error instanceof Error ? error.message : String(error)
@@ -653,13 +543,8 @@ export function StepInput({ step }: { step: MergedStep }) {
   }
 
   const stepInputSchema = useMemo(() => {
-    return step.def?.inputSchema;
-  }, [step]);
-
-  // Use persisted input if available, otherwise fall back to step.input
-  const formData = useMemo(() => {
-    return persistedInput !== undefined ? persistedInput : step.input;
-  }, [persistedInput, step.input]);
+    return stepDefinition?.inputSchema;
+  }, [stepDefinition]);
 
   function handleFormChange(data: { formData?: unknown }) {
     // Persist input changes to the store
@@ -678,7 +563,7 @@ export function StepInput({ step }: { step: MergedStep }) {
         <Form
           schema={stepInputSchema}
           validator={validator}
-          formData={formData}
+          formData={stepInput}
           onChange={handleFormChange}
           onSubmit={(data) => handleFormSubmit(data.formData || {})}
           showErrorList={false}

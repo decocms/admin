@@ -12,10 +12,7 @@ export function WorkflowStoreProvider({
   children: React.ReactNode;
   workflow: WorkflowDefinition;
 }) {
-  // Initialize store only once per component instance
-  const [store] = useState(() =>
-    createWorkflowStore({ workflow, stepOutputs: {}, stepInputs: {} }),
-  );
+  const [store] = useState(() => createWorkflowStore({ workflow }));
 
   return (
     <WorkflowStoreContext.Provider value={store}>

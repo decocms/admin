@@ -1,12 +1,15 @@
 import { Badge } from "@deco/ui/components/badge.tsx";
 import { Icon } from "@deco/ui/components/icon.tsx";
-import { Suspense, lazy, useMemo, useState } from "react";
+import { Suspense, lazy, useMemo, useState, useSyncExternalStore } from "react";
 import { getStatusBadgeVariant } from "./utils.ts";
 import {
-  MergedStep,
   StepInput,
+  useWorkflowRunQuery,
 } from "../workflow-builder/workflow-display-canvas.tsx";
-import { useMergedStep, useStepOutput } from "../../stores/workflows/hooks.ts";
+import {
+  useWorkflowStepOutput,
+  useWorkflowStepExecution,
+} from "../../stores/workflows/hooks.ts";
 
 function deepParse(value: unknown, depth = 0): unknown {
   if (typeof value !== "string") {
@@ -148,29 +151,39 @@ function StepError({ error }: { error: unknown }) {
 }
 
 /**
- * Derives the step status from runtime properties
+ * Derives the step status from execution properties (works for both runtime and definition steps)
  */
-function deriveStepStatus(step: MergedStep): string | undefined {
-  if (!step.success && !step.error && !step.start && !step.end) return;
+function deriveStepStatus(execution: {
+  success?: boolean | null;
+  error?: { message?: string; name?: string } | null;
+  start?: string | null;
+  end?: string | null;
+}): string | undefined {
+  if (
+    !execution.success &&
+    !execution.error &&
+    !execution.start &&
+    !execution.end
+  )
+    return;
   // If step has error, it failed
-  if (step.error) return "failed";
+  if (execution.error) return "failed";
 
   // If step has ended successfully
-  if (step.end && step.success === true) return "completed";
+  if (execution.end && execution.success === true) return "completed";
 
   // If step has ended but not successfully
-  if (step.end && step.success === false) return "failed";
+  if (execution.end && execution.success === false) return "failed";
 
   // If step has started but not ended, it's running
-  if (step.start && !step.end) return "running";
+  if (execution.start && !execution.end) return "running";
 
   // Otherwise, it's pending
   return "pending";
 }
 interface WorkflowStepCardProps {
   stepName: string;
-  type: "run" | "definition";
-  paramsUri?: string;
+  type: "definition" | "runtime";
 }
 
 // Sub-components using composition pattern
@@ -200,27 +213,84 @@ function StepTitle({ stepName, description }: StepTitleProps) {
   );
 }
 
+interface StepDurationProps {
+  startTime?: string | null;
+  endTime?: string | null;
+  status?: string;
+}
+
+function formatDuration(milliseconds: number): string {
+  const ms = milliseconds % 1000;
+  const totalSeconds = Math.floor(milliseconds / 1000);
+  const seconds = totalSeconds % 60;
+  const totalMinutes = Math.floor(totalSeconds / 60);
+  const minutes = totalMinutes % 60;
+  const hours = Math.floor(totalMinutes / 60);
+
+  if (hours > 0) {
+    return `${hours}h ${minutes}m ${seconds}.${ms.toString().padStart(3, "0")}s`;
+  }
+  if (minutes > 0) {
+    return `${minutes}m ${seconds}.${ms.toString().padStart(3, "0")}s`;
+  }
+  return `${seconds}.${ms.toString().padStart(3, "0")}s`;
+}
+
+// Time subscription for useSyncExternalStore
+function subscribeToTime(callback: () => void) {
+  const interval = setInterval(callback, 50);
+  return () => clearInterval(interval);
+}
+
+function getTimeSnapshot() {
+  return Date.now();
+}
+
+function StepDuration({ startTime, endTime, status }: StepDurationProps) {
+  // Only subscribe to time updates when step is running
+  const shouldSubscribe = status === "running" && startTime && !endTime;
+
+  const currentTime = useSyncExternalStore(
+    shouldSubscribe ? subscribeToTime : () => () => {}, // No-op subscription when not needed
+    getTimeSnapshot,
+    getTimeSnapshot, // Server snapshot (same as client for time)
+  );
+
+  if (!startTime) return null;
+
+  const start = new Date(startTime).getTime();
+  const end = endTime ? new Date(endTime).getTime() : currentTime;
+  const duration = Math.max(0, end - start);
+
+  return (
+    <div className="flex items-center gap-1.5 text-muted-foreground">
+      <Icon name="schedule" size={14} />
+      <span className="font-mono text-xs">{formatDuration(duration)}</span>
+    </div>
+  );
+}
+
 interface StepTimeInfoProps {
   startTime?: string | null;
   endTime?: string | null;
+  status?: string;
 }
 
-function StepTimeInfo({ startTime, endTime }: StepTimeInfoProps) {
-  if (!startTime && !endTime) return null;
+function StepTimeInfo({ startTime, endTime, status }: StepTimeInfoProps) {
+  if (!startTime) return null;
 
   return (
     <div className="flex items-center gap-4 text-xs mt-1">
-      {startTime && (
-        <div className="flex items-center gap-1.5 text-muted-foreground">
-          <Icon name="play_arrow" size={14} />
-          <span className="font-mono uppercase">
-            {new Date(startTime).toLocaleTimeString([], {
-              hour: "2-digit",
-              minute: "2-digit",
-            })}
-          </span>
-        </div>
-      )}
+      <div className="flex items-center gap-1.5 text-muted-foreground">
+        <Icon name="play_arrow" size={14} />
+        <span className="font-mono uppercase">
+          {new Date(startTime).toLocaleTimeString([], {
+            hour: "2-digit",
+            minute: "2-digit",
+            second: "2-digit",
+          })}
+        </span>
+      </div>
 
       {endTime && (
         <div className="flex items-center gap-1.5 text-muted-foreground">
@@ -229,10 +299,13 @@ function StepTimeInfo({ startTime, endTime }: StepTimeInfoProps) {
             {new Date(endTime).toLocaleTimeString([], {
               hour: "2-digit",
               minute: "2-digit",
+              second: "2-digit",
             })}
           </span>
         </div>
       )}
+
+      <StepDuration startTime={startTime} endTime={endTime} status={status} />
     </div>
   );
 }
@@ -276,7 +349,11 @@ function StepHeader({
           <StepIcon />
           <div className="flex flex-col gap-1 flex-1 min-w-0">
             <StepTitle stepName={stepName} description={description} />
-            <StepTimeInfo startTime={startTime} endTime={endTime} />
+            <StepTimeInfo
+              startTime={startTime}
+              endTime={endTime}
+              status={status}
+            />
           </div>
         </div>
         {status && <StepStatusBadge status={status} />}
@@ -297,8 +374,10 @@ function StepOutput({ output }: StepOutputProps) {
 
 interface StepAttemptsProps {
   attempts: Array<{
-    success?: boolean;
-    error?: { message?: string };
+    success?: boolean | null;
+    error?: { message?: string; name?: string } | null;
+    start?: string | null;
+    end?: string | null;
   }>;
 }
 
@@ -337,8 +416,10 @@ interface StepContentProps {
   error?: { name?: string; message?: string } | null;
   output?: unknown;
   attempts?: Array<{
-    success?: boolean;
-    error?: { message?: string };
+    success?: boolean | null;
+    error?: { message?: string; name?: string } | null;
+    start?: string | null;
+    end?: string | null;
   }>;
 }
 
@@ -360,36 +441,64 @@ function StepContent({ error, output, attempts }: StepContentProps) {
 }
 
 export function WorkflowStepCard({ stepName, type }: WorkflowStepCardProps) {
-  const step = useMergedStep(stepName);
-  const stepStatus = deriveStepStatus(step);
-  const stepOutput = useStepOutput(stepName);
+  const stepOutput = useWorkflowStepOutput(stepName);
+  const stepExecution = useWorkflowStepExecution(stepName);
+  const runData = useWorkflowRunQuery();
+  const isInteractive = type === "definition";
 
-  const mergedStepOutput = step.output || stepOutput;
-  const isFailed = stepStatus === "failed";
+  const runtimeStep = useMemo(() => {
+    if (type === "runtime") {
+      return runData?.data?.data?.workflowStatus?.steps?.find(
+        (step) => step.name === stepName,
+      );
+    }
+    return undefined;
+  }, [runData?.data?.data?.workflowStatus?.steps, type, stepName]);
+
+  // Get execution data from either runtime or definition store
+  const execution = useMemo(() => {
+    if (type === "definition" && stepExecution) {
+      return stepExecution;
+    }
+    if (type === "runtime" && runtimeStep) {
+      return {
+        start: runtimeStep.start,
+        end: runtimeStep.end,
+        error: runtimeStep.error,
+        success: runtimeStep.success,
+      };
+    }
+    return undefined;
+  }, [type, stepExecution, runtimeStep]);
+
+  const output = useMemo(() => {
+    if (type === "definition") {
+      return stepOutput;
+    }
+    return runtimeStep?.output;
+  }, [stepOutput, runtimeStep, type]);
+
+  // Derive status for both definition and runtime steps
+  const status = useMemo(() => {
+    if (execution) {
+      return deriveStepStatus(execution);
+    }
+    return undefined;
+  }, [execution]);
 
   return (
-    <div
-      className={`rounded-xl p-0.5 ${isFailed ? "bg-destructive/10" : "bg-muted"}`}
-    >
+    <div className={`rounded-xl p-0.5 bg-muted`}>
       <StepHeader
         stepName={stepName}
-        description={step.def?.description}
-        status={stepStatus}
-        startTime={step.start}
-        endTime={step.end}
+        status={status}
+        startTime={execution?.start}
+        endTime={execution?.end}
       />
-
-      {type === "definition" && <StepInput step={step} />}
-
+      {isInteractive && <StepInput stepName={stepName} />}
       <StepContent
-        error={step.error}
-        output={mergedStepOutput}
-        attempts={
-          step.attempts as Array<{
-            success?: boolean;
-            error?: { message?: string };
-          }>
-        }
+        output={output}
+        error={execution?.error}
+        attempts={runtimeStep?.attempts}
       />
     </div>
   );

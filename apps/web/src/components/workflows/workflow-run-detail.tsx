@@ -20,10 +20,6 @@ import { useWorkflowRunQuery } from "../workflow-builder/workflow-display-canvas
 
 const LazyHighlighter = lazy(() => import("../chat/lazy-highlighter.tsx"));
 
-interface WorkflowRunDetailProps {
-  resourceUri: string;
-}
-
 function JsonViewer({
   data,
   title,
@@ -108,7 +104,7 @@ function JsonViewer({
   );
 }
 
-export function WorkflowRunDetail({ resourceUri }: WorkflowRunDetailProps) {
+export function WorkflowRunDetail() {
   const runQuery = useWorkflowRunQuery(true);
 
   const workflowUri = runQuery.data?.data?.workflowURI;
@@ -289,8 +285,7 @@ export function WorkflowRunDetail({ resourceUri }: WorkflowRunDetailProps) {
                         <Suspense fallback={<Spinner />}>
                           <WorkflowStepCard
                             stepName={step.name || `Step ${idx + 1}`}
-                            type="run"
-                            paramsUri={resourceUri}
+                            type="runtime"
                           />
                         </Suspense>
                       </div>

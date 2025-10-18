@@ -47,7 +47,7 @@ import {
   createServerTimings,
   type ServerTimingsBuilder,
 } from "@deco/sdk/timings";
-import { resolveMentions } from "@deco/sdk/utils";
+import { resolveMentions, unescapeHTML } from "@deco/sdk/utils";
 import { D1Store } from "@mastra/cloudflare-d1";
 import { convertMessages, MessageList } from "@mastra/core/agent";
 import type { LanguageModelUsage, UIMessage } from "ai";
@@ -972,6 +972,17 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
       throw new Error("Insufficient funds");
     }
 
+    // Decode HTML entities in user messages
+    const decodedPayload = payload.map((msg) => ({
+      ...msg,
+      parts: msg.parts?.map((part) =>
+        part.type === "text" && part.text
+          ? { ...part, text: unescapeHTML(part.text) }
+          : part,
+      ),
+    }));
+    payload = decodedPayload;
+
     const thread = {
       threadId: this._thread.threadId,
       resourceId: this._thread.resourceId,
@@ -1143,6 +1154,17 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
       });
       throw new Error("Insufficient funds");
     }
+
+    // Decode HTML entities in user messages
+    const decodedPayload = payload.map((msg) => ({
+      ...msg,
+      parts: msg.parts?.map((part) =>
+        part.type === "text" && part.text
+          ? { ...part, text: unescapeHTML(part.text) }
+          : part,
+      ),
+    }));
+    payload = decodedPayload;
 
     const thread = {
       threadId: options?.threadId ?? this._thread.threadId,
@@ -1325,6 +1347,17 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
     { threadId, resourceId } = {} as CompletionsOptions,
   ): Promise<Response> {
     try {
+      // Decode HTML entities in user messages
+      const decodedMessages = messages.map((msg) => ({
+        ...msg,
+        parts: msg.parts?.map((part) =>
+          part.type === "text" && part.text
+            ? { ...part, text: unescapeHTML(part.text) }
+            : part,
+        ),
+      }));
+      messages = decodedMessages;
+
       const tracer = (this as any).telemetry?.tracer;
       const timings = this.metadata?.timings ?? createServerTimings();
 

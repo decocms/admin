@@ -274,7 +274,7 @@ export function WorkflowRunDetail(_: { resourceUri?: string } = {}) {
             {steps.length > 0 ? (
               <div className="flex flex-col items-center">
                 <div className="w-full max-w-[700px] space-y-0">
-                  {run.data.workflowStatus?.steps?.map((step, idx) => {
+                  {steps?.map((step, idx) => {
                     return (
                       <div key={idx}>
                         {idx > 0 && (

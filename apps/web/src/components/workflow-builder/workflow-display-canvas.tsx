@@ -10,10 +10,15 @@ import { Button } from "@deco/ui/components/button.tsx";
 import { Icon } from "@deco/ui/components/icon.tsx";
 import { ScrollArea } from "@deco/ui/components/scroll-area.tsx";
 import { Spinner } from "@deco/ui/components/spinner.tsx";
-import Form from "@rjsf/shadcn";
-import validator from "@rjsf/validator-ajv8";
 import { useQuery } from "@tanstack/react-query";
-import { Suspense, useEffect, useMemo, useRef, useState } from "react";
+import {
+  Suspense,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import { EmptyState } from "../common/empty-state.tsx";
 import { useResourceRoute } from "../resources-v2/route-context.tsx";
 import { WorkflowStepCard } from "../workflows/workflow-step-card.tsx";
@@ -32,6 +37,14 @@ import { WorkflowStoreProvider } from "../../stores/workflows/provider.tsx";
 import { DetailSection } from "../common/detail-section.tsx";
 import { useNavigateWorkspace } from "../../hooks/use-navigate-workspace.ts";
 import { toast } from "@deco/ui/components/sonner.tsx";
+import { useForm } from "react-hook-form";
+import { Form } from "@deco/ui/components/form.tsx";
+import type { JSONSchema7 } from "json-schema";
+import {
+  WorkflowStepField,
+  NestedObjectField,
+} from "./workflow-step-field.tsx";
+import { useWorkflowAvailableRefs } from "../../hooks/use-workflow-available-refs.ts";
 interface WorkflowDisplayCanvasProps {
   resourceUri: string;
   onRefresh?: () => Promise<void>;
@@ -65,53 +78,6 @@ function parseAtRef(ref: `@${string}`): {
   }
 
   return { type: "step", id, path };
-}
-
-/**
- * Relaxes a JSON Schema to accept @references alongside the expected types.
- * This allows form validation to pass when using @step.path or @input.path references.
- */
-function relaxSchemaForAtRefs(
-  schema: Record<string, unknown>,
-  formData: Record<string, unknown>,
-): Record<string, unknown> {
-  if (!schema.properties || typeof schema.properties !== "object") {
-    return schema;
-  }
-
-  const relaxedSchema = { ...schema };
-  const relaxedProperties: Record<string, unknown> = {};
-
-  for (const [key, propSchema] of Object.entries(schema.properties)) {
-    const value = formData[key];
-
-    // If the value is an @ref, relax the schema to accept it
-    if (isAtRef(value)) {
-      const propSchemaObj = propSchema as Record<string, unknown>;
-
-      // If the original type is already string, just allow the @ref pattern
-      if (propSchemaObj.type === "string") {
-        relaxedProperties[key] = {
-          ...propSchemaObj,
-          // Remove any pattern that might conflict with @refs
-          pattern: "^@",
-        };
-      } else {
-        // For non-string types (object, number, etc), use oneOf
-        relaxedProperties[key] = {
-          oneOf: [
-            { type: "string", pattern: "^@" }, // Allow @refs
-            propSchema, // Or the original type
-          ],
-        };
-      }
-    } else {
-      relaxedProperties[key] = propSchema;
-    }
-  }
-
-  relaxedSchema.properties = relaxedProperties;
-  return relaxedSchema;
 }
 
 function getValue(
@@ -227,6 +193,8 @@ function resolveAtRefsInInput(
   const resolved = resolveValue(input);
   return { resolved, errors: errors.length > 0 ? errors : undefined };
 }
+
+// Reference resolution utilities moved to use-workflow-available-refs.ts hook
 
 /**
  * Unwraps the nested MCP response structure to extract the actual tool output.
@@ -356,39 +324,41 @@ export function useWorkflowRunQuery(enabled: boolean = false) {
   return runQuery;
 }
 
-function StartWorkflowButton() {
+const StartWorkflowButton = () => {
   const { mutateAsync, isPending } = useStartWorkflow();
   const workflowUri = useWorkflowUri();
   const navigateWorkspace = useNavigateWorkspace();
   const firstStepInput = useWorkflowFirstStepInput();
-  const handleStartWorkflow = async (
-    e: React.MouseEvent<HTMLButtonElement>,
-  ) => {
-    // Prevent any default behavior that might cause page reload
-    e.preventDefault();
-    e.stopPropagation();
 
-    try {
-      await mutateAsync(
-        {
-          uri: workflowUri,
-          input: firstStepInput as Record<string, unknown>,
-        },
-        {
-          onSuccess: (data) => {
-            if (!data.uri) return;
-            navigateWorkspace(
-              `/rsc/i:workflows-management/workflow_run/${encodeURIComponent(data.uri)}`,
-            );
+  const handleStartWorkflow = useCallback(
+    async (e: React.MouseEvent<HTMLButtonElement>) => {
+      // Prevent any default behavior that might cause page reload
+      e.preventDefault();
+      e.stopPropagation();
+
+      try {
+        await mutateAsync(
+          {
+            uri: workflowUri,
+            input: firstStepInput as Record<string, unknown>,
           },
-        },
-      );
-    } catch (error) {
-      toast.error(
-        error instanceof Error ? error.message : "Failed to start workflow",
-      );
-    }
-  };
+          {
+            onSuccess: (data) => {
+              if (!data.uri) return;
+              navigateWorkspace(
+                `/rsc/i:workflows-management/workflow_run/${encodeURIComponent(data.uri)}`,
+              );
+            },
+          },
+        );
+      } catch (error) {
+        toast.error(
+          error instanceof Error ? error.message : "Failed to start workflow",
+        );
+      }
+    },
+    [mutateAsync, workflowUri, firstStepInput, navigateWorkspace],
+  );
 
   return (
     <Button
@@ -409,7 +379,7 @@ function StartWorkflowButton() {
       )}
     </Button>
   );
-}
+};
 
 /**
  * Interactive workflow canvas that shows a form for workflow input
@@ -492,9 +462,9 @@ function WorkflowStepsList() {
   return (
     <div className="flex flex-col items-center">
       <div className="w-full max-w-[700px] space-y-8">
-        {stepNames.map((stepName) => {
+        {stepNames.map((stepName, index) => {
           return (
-            <div key={stepName}>
+            <div key={`${stepName}-${index}`}>
               <Suspense fallback={<Spinner />}>
                 <WorkflowStepCard stepName={stepName} type="definition" />
               </Suspense>
@@ -509,12 +479,8 @@ function WorkflowStepsList() {
 export function StepInput({ stepName }: { stepName: string }) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { connection } = useResourceRoute();
-  const {
-    setStepOutput,
-    setStepInput,
-    setStepExecutionStart,
-    setStepExecutionEnd,
-  } = useWorkflowActions();
+  const { setStepOutput, setStepExecutionStart, setStepExecutionEnd } =
+    useWorkflowActions();
   const workflowUri = useWorkflowUri();
   const { locator } = useSDK();
   const stepOutputs = useWorkflowStepOutputs();
@@ -522,160 +488,117 @@ export function StepInput({ stepName }: { stepName: string }) {
   const stepDefinition = useWorkflowStepDefinition(stepName);
   const firstStepInput = useWorkflowFirstStepInput();
 
-  async function handleFormSubmit(data: Record<string, unknown>) {
-    if (!connection || !workflowUri) return;
-
-    try {
-      setIsSubmitting(true);
-      setStepExecutionStart(stepName);
-
-      // Resolve any @ references in the input data
-      // @input.* refs resolve against the workflow's first-step input
-      const { resolved, errors } = resolveAtRefsInInput(
-        data,
-        stepOutputs,
-        firstStepInput,
-      );
-
-      // Show errors if any references couldn't be resolved
-      if (errors && errors.length > 0) {
-        const errorMessages = errors
-          .map((e) => `${e.ref}: ${e.error}`)
-          .join("\n");
-        throw new Error(`Failed to resolve references:\n${errorMessages}`);
-      }
-
-      const result = await callTool(
-        connection,
-        {
-          name: "DECO_WORKFLOW_RUN_STEP",
-          arguments: {
-            tool: stepDefinition,
-            input: resolved,
-          },
-        },
-        locator,
-      );
-
-      // Unwrap the MCP response to extract the actual step output
-      const stepOutput = unwrapMCPResponse(result.structuredContent);
-
-      if (stepOutput !== undefined) {
-        if (!stepDefinition?.name) return;
-        // Always use def.name for consistency
-        setStepOutput(stepDefinition.name, stepOutput);
-      }
-
-      // Record successful execution
-      setStepExecutionEnd(stepName, true);
-    } catch (error) {
-      console.error("Failed to run step", error);
-
-      // Record failed execution
-      const errorObj =
-        error instanceof Error
-          ? { name: error.name, message: error.message }
-          : { name: "Error", message: String(error) };
-      setStepExecutionEnd(stepName, false, errorObj);
-
-      toast.error(
-        error instanceof Error ? error.message : "Failed to run step",
-      );
-    } finally {
-      setIsSubmitting(false);
-    }
-  }
-
   const stepInputSchema = useMemo(() => {
-    return stepDefinition?.inputSchema;
+    return stepDefinition?.inputSchema as JSONSchema7 | undefined;
   }, [stepDefinition]);
 
-  // Track which fields contain @refs to avoid unnecessary schema recalculations
-  const atRefFields = useMemo(() => {
-    if (!stepInput || typeof stepInput !== "object") {
-      return new Set<string>();
-    }
-    const fields = new Set<string>();
-    for (const [key, value] of Object.entries(stepInput)) {
-      if (isAtRef(value)) {
-        fields.add(key);
+  // Use optimized hook for available refs
+  const availableRefs = useWorkflowAvailableRefs(stepName);
+
+  // Initialize form with current step input
+  const form = useForm<Record<string, unknown>>({
+    defaultValues: stepInput || {},
+    mode: "onSubmit",
+  });
+
+  const handleFormSubmit = useCallback(
+    async (data: Record<string, unknown>) => {
+      if (!connection || !workflowUri) return;
+
+      try {
+        setIsSubmitting(true);
+        setStepExecutionStart(stepName);
+
+        // Resolve any @ references in the input data
+        const { resolved, errors } = resolveAtRefsInInput(
+          data,
+          stepOutputs,
+          firstStepInput,
+        );
+
+        // Show errors if any references couldn't be resolved
+        if (errors && errors.length > 0) {
+          const errorMessages = errors
+            .map((e) => `${e.ref}: ${e.error}`)
+            .join("\n");
+          throw new Error(`Failed to resolve references:\n${errorMessages}`);
+        }
+
+        const result = await callTool(
+          connection,
+          {
+            name: "DECO_WORKFLOW_RUN_STEP",
+            arguments: {
+              tool: stepDefinition,
+              input: resolved,
+            },
+          },
+          locator,
+        );
+
+        // Unwrap the MCP response to extract the actual step output
+        const stepOutput = unwrapMCPResponse(result.structuredContent);
+
+        if (stepOutput !== undefined) {
+          if (!stepDefinition?.name) return;
+          setStepOutput(stepDefinition.name, stepOutput);
+        }
+
+        // Record successful execution
+        setStepExecutionEnd(stepName, true);
+        toast.success("Step executed successfully!");
+      } catch (error) {
+        console.error("Failed to run step", error);
+
+        // Record failed execution
+        const errorObj =
+          error instanceof Error
+            ? { name: error.name, message: error.message }
+            : { name: "Error", message: String(error) };
+        setStepExecutionEnd(stepName, false, errorObj);
+
+        toast.error(
+          error instanceof Error ? error.message : "Failed to run step",
+        );
+      } finally {
+        setIsSubmitting(false);
       }
-    }
-    return fields;
-  }, [stepInput]);
+    },
+    [
+      connection,
+      workflowUri,
+      stepName,
+      stepOutputs,
+      firstStepInput,
+      stepDefinition,
+      locator,
+      setStepExecutionStart,
+      setStepExecutionEnd,
+      setStepOutput,
+    ],
+  );
 
-  // Convert Set to sorted string for stable comparison
-  const atRefFieldsKey = useMemo(() => {
-    return Array.from(atRefFields).sort().join(",");
-  }, [atRefFields]);
+  // Check if schema has properties
+  const hasProperties =
+    stepInputSchema &&
+    typeof stepInputSchema === "object" &&
+    "properties" in stepInputSchema &&
+    stepInputSchema.properties &&
+    Object.keys(stepInputSchema.properties).length > 0;
 
-  // Relax schema to accept @refs alongside expected types
-  // Only recalculates when the schema or the presence of @refs changes
-  const relaxedSchema = useMemo(() => {
-    if (
-      !stepInputSchema ||
-      typeof stepInputSchema !== "object" ||
-      !stepInput ||
-      typeof stepInput !== "object"
-    ) {
-      return stepInputSchema;
-    }
-    return relaxSchemaForAtRefs(
-      stepInputSchema as Record<string, unknown>,
-      stepInput as Record<string, unknown>,
-    );
-  }, [stepInputSchema, stepInput, atRefFieldsKey]);
-
-  function handleFormChange(data: { formData?: unknown }) {
-    // Persist input changes to the store
-    if (data.formData !== undefined) {
-      setStepInput(stepName, data.formData);
-    }
-  }
-
-  return (
-    <div className="bg-muted/30 rounded-xl p-6">
-      {relaxedSchema &&
-      typeof relaxedSchema === "object" &&
-      "properties" in relaxedSchema &&
-      relaxedSchema.properties &&
-      Object.keys(relaxedSchema.properties).length > 0 ? (
-        <Form
-          schema={relaxedSchema}
-          validator={validator}
-          formData={stepInput}
-          onChange={handleFormChange}
-          onSubmit={(data) => handleFormSubmit(data.formData || {})}
-          showErrorList={false}
-          noHtml5Validate
-          liveValidate={false}
-        >
-          <div className="flex justify-end gap-2 mt-4">
-            <Button
-              type="submit"
-              disabled={isSubmitting}
-              size="lg"
-              className="min-w-[200px] flex items-center gap-2"
-            >
-              {isSubmitting ? (
-                <>
-                  <Spinner size="xs" />
-                  Running...
-                </>
-              ) : (
-                <>
-                  <Icon name="play_arrow" size={18} />
-                  Run Step
-                </>
-              )}
-            </Button>
+  if (!hasProperties) {
+    return (
+      <div className="bg-gradient-to-br from-muted/30 to-muted/10 rounded-xl p-8 border border-dashed">
+        <div className="flex flex-col items-center justify-center text-center gap-4">
+          <div className="rounded-full bg-primary/10 p-4">
+            <Icon name="check_circle" size={32} className="text-primary" />
           </div>
-        </Form>
-      ) : (
-        <div className="flex flex-col items-center justify-center py-8 text-center gap-4">
-          <p className="text-sm text-muted-foreground">
-            This Step does not require any input parameters.
-          </p>
+          <div>
+            <p className="text-sm font-medium mb-1">Ready to Execute</p>
+            <p className="text-xs text-muted-foreground">
+              This step does not require any input parameters
+            </p>
+          </div>
           <Button
             disabled={isSubmitting}
             size="lg"
@@ -695,7 +618,75 @@ export function StepInput({ stepName }: { stepName: string }) {
             )}
           </Button>
         </div>
-      )}
+      </div>
+    );
+  }
+
+  return (
+    <div className="bg-gradient-to-br from-muted/30 to-muted/10 rounded-xl p-6 border">
+      <Form {...form}>
+        <form
+          onSubmit={form.handleSubmit((data) =>
+            handleFormSubmit(data as Record<string, unknown>),
+          )}
+          className="space-y-6"
+        >
+          {Object.entries(stepInputSchema.properties!).map(
+            ([propName, propSchema]) => {
+              const isRequired =
+                stepInputSchema.required?.includes(propName) ?? false;
+              const schema = propSchema as JSONSchema7;
+
+              // Handle nested objects specially
+              if (schema.type === "object" && schema.properties) {
+                return (
+                  <NestedObjectField
+                    key={propName}
+                    name={propName}
+                    schema={schema}
+                    form={form}
+                    disabled={isSubmitting}
+                    availableRefs={availableRefs}
+                  />
+                );
+              }
+
+              return (
+                <WorkflowStepField
+                  key={propName}
+                  name={propName}
+                  schema={schema}
+                  form={form}
+                  isRequired={isRequired}
+                  disabled={isSubmitting}
+                  availableRefs={availableRefs}
+                />
+              );
+            },
+          )}
+
+          <div className="flex justify-end gap-2 pt-4 border-t">
+            <Button
+              type="submit"
+              disabled={isSubmitting}
+              size="lg"
+              className="min-w-[200px] flex items-center gap-2"
+            >
+              {isSubmitting ? (
+                <>
+                  <Spinner size="xs" />
+                  Running...
+                </>
+              ) : (
+                <>
+                  <Icon name="play_arrow" size={18} />
+                  Run Step
+                </>
+              )}
+            </Button>
+          </div>
+        </form>
+      </Form>
     </div>
   );
 }

@@ -1,15 +1,21 @@
 import { Badge } from "@deco/ui/components/badge.tsx";
 import { Icon } from "@deco/ui/components/icon.tsx";
-import { Suspense, lazy, useMemo, useState, useSyncExternalStore } from "react";
+import {
+  Suspense,
+  lazy,
+  memo,
+  useCallback,
+  useMemo,
+  useRef,
+  useState,
+  useSyncExternalStore,
+} from "react";
 import { getStatusBadgeVariant } from "./utils.ts";
 import {
   StepInput,
   useWorkflowRunQuery,
 } from "../workflow-builder/workflow-display-canvas.tsx";
-import {
-  useWorkflowStepOutput,
-  useWorkflowStepExecution,
-} from "../../stores/workflows/hooks.ts";
+import { useWorkflowStepData } from "../../stores/workflows/hooks.ts";
 
 function deepParse(value: unknown, depth = 0): unknown {
   if (typeof value !== "string") {
@@ -51,7 +57,7 @@ function deepParse(value: unknown, depth = 0): unknown {
 
 const LazyHighlighter = lazy(() => import("../chat/lazy-highlighter.tsx"));
 
-function JsonViewer({
+const JsonViewer = memo(function JsonViewer({
   data,
   title,
   matchHeight = false,
@@ -63,7 +69,7 @@ function JsonViewer({
   const [copied, setCopied] = useState(false);
   const parsedData = useMemo(() => deepParse(data), [data]);
 
-  async function handleCopy() {
+  const handleCopy = useCallback(async () => {
     if (typeof navigator === "undefined" || !navigator.clipboard?.writeText) {
       globalThis.window.alert("Clipboard API unavailable");
       return;
@@ -77,7 +83,7 @@ function JsonViewer({
     } catch (error) {
       console.error("Failed to copy data", error);
     }
-  }
+  }, [parsedData]);
 
   if (data === null || data === undefined) {
     return (
@@ -133,9 +139,9 @@ function JsonViewer({
       </div>
     </div>
   );
-}
+});
 
-function StepError({ error }: { error: unknown }) {
+const StepError = memo(function StepError({ error }: { error: unknown }) {
   if (!error) return null;
 
   const errorObj = error as { name?: string; message?: string };
@@ -148,7 +154,7 @@ function StepError({ error }: { error: unknown }) {
       </div>
     </div>
   );
-}
+});
 
 /**
  * Derives the step status from execution properties (works for both runtime and definition steps)
@@ -187,7 +193,7 @@ interface WorkflowStepCardProps {
 }
 
 // Sub-components using composition pattern
-function StepIcon() {
+const StepIcon = memo(function StepIcon() {
   return (
     <div className="shrink-0 mt-0.5">
       <div className="h-8 w-8 rounded-lg bg-muted flex items-center justify-center">
@@ -195,14 +201,17 @@ function StepIcon() {
       </div>
     </div>
   );
-}
+});
 
 interface StepTitleProps {
   stepName: string;
   description?: string;
 }
 
-function StepTitle({ stepName, description }: StepTitleProps) {
+const StepTitle = memo(function StepTitle({
+  stepName,
+  description,
+}: StepTitleProps) {
   return (
     <div className="flex flex-col gap-1 flex-1 min-w-0">
       <span className="font-medium text-base truncate">{String(stepName)}</span>
@@ -211,7 +220,7 @@ function StepTitle({ stepName, description }: StepTitleProps) {
       )}
     </div>
   );
-}
+});
 
 interface StepDurationProps {
   startTime?: string | null;
@@ -236,24 +245,37 @@ function formatDuration(milliseconds: number): string {
   return `${seconds}.${ms.toString().padStart(3, "0")}s`;
 }
 
-// Time subscription for useSyncExternalStore
-function subscribeToTime(callback: () => void) {
-  const interval = setInterval(callback, 50);
-  return () => clearInterval(interval);
-}
-
-function getTimeSnapshot() {
-  return Date.now();
-}
-
-function StepDuration({ startTime, endTime, status }: StepDurationProps) {
-  // Only subscribe to time updates when step is running
+const StepDuration = memo(function StepDuration({
+  startTime,
+  endTime,
+  status,
+}: StepDurationProps) {
   const shouldSubscribe = status === "running" && startTime && !endTime;
 
+  const timeRef = useRef(Date.now());
+
+  const subscribe = useCallback(
+    (callback: () => void) => {
+      if (!shouldSubscribe) return () => {};
+
+      const interval = setInterval(() => {
+        timeRef.current = Date.now();
+        callback();
+      }, 50);
+
+      return () => clearInterval(interval);
+    },
+    [shouldSubscribe],
+  );
+
+  const getSnapshot = useCallback(() => {
+    return shouldSubscribe ? timeRef.current : 0;
+  }, [shouldSubscribe]);
+
   const currentTime = useSyncExternalStore(
-    shouldSubscribe ? subscribeToTime : () => () => {}, // No-op subscription when not needed
-    getTimeSnapshot,
-    getTimeSnapshot, // Server snapshot (same as client for time)
+    subscribe,
+    getSnapshot,
+    getSnapshot, // Server snapshot (same as client for time)
   );
 
   if (!startTime) return null;
@@ -268,7 +290,7 @@ function StepDuration({ startTime, endTime, status }: StepDurationProps) {
       <span className="font-mono text-xs">{formatDuration(duration)}</span>
     </div>
   );
-}
+});
 
 interface StepTimeInfoProps {
   startTime?: string | null;
@@ -276,7 +298,11 @@ interface StepTimeInfoProps {
   status?: string;
 }
 
-function StepTimeInfo({ startTime, endTime, status }: StepTimeInfoProps) {
+const StepTimeInfo = memo(function StepTimeInfo({
+  startTime,
+  endTime,
+  status,
+}: StepTimeInfoProps) {
   if (!startTime) return null;
 
   return (
@@ -308,13 +334,15 @@ function StepTimeInfo({ startTime, endTime, status }: StepTimeInfoProps) {
       <StepDuration startTime={startTime} endTime={endTime} status={status} />
     </div>
   );
-}
+});
 
 interface StepStatusBadgeProps {
   status: string;
 }
 
-function StepStatusBadge({ status }: StepStatusBadgeProps) {
+const StepStatusBadge = memo(function StepStatusBadge({
+  status,
+}: StepStatusBadgeProps) {
   return (
     <Badge
       variant={getStatusBadgeVariant(status)}
@@ -323,7 +351,7 @@ function StepStatusBadge({ status }: StepStatusBadgeProps) {
       {status}
     </Badge>
   );
-}
+});
 
 interface StepHeaderProps {
   stepName: string;
@@ -333,7 +361,7 @@ interface StepHeaderProps {
   endTime?: string | null;
 }
 
-function StepHeader({
+const StepHeader = memo(function StepHeader({
   stepName,
   description,
   status,
@@ -360,17 +388,17 @@ function StepHeader({
       </div>
     </div>
   );
-}
+});
 
 interface StepOutputProps {
   output: unknown;
 }
 
-function StepOutput({ output }: StepOutputProps) {
+const StepOutput = memo(function StepOutput({ output }: StepOutputProps) {
   if (output === undefined || output === null) return null;
 
   return <JsonViewer data={output} title="Output" />;
-}
+});
 
 interface StepAttemptsProps {
   attempts: Array<{
@@ -381,7 +409,9 @@ interface StepAttemptsProps {
   }>;
 }
 
-function StepAttempts({ attempts }: StepAttemptsProps) {
+const StepAttempts = memo(function StepAttempts({
+  attempts,
+}: StepAttemptsProps) {
   if (!attempts || attempts.length <= 1) return null;
 
   return (
@@ -410,7 +440,7 @@ function StepAttempts({ attempts }: StepAttemptsProps) {
       </div>
     </details>
   );
-}
+});
 
 interface StepContentProps {
   error?: { name?: string; message?: string } | null;
@@ -423,7 +453,11 @@ interface StepContentProps {
   }>;
 }
 
-function StepContent({ error, output, attempts }: StepContentProps) {
+const StepContent = memo(function StepContent({
+  error,
+  output,
+  attempts,
+}: StepContentProps) {
   const hasContent =
     error ||
     (output !== undefined && output !== null) ||
@@ -438,11 +472,14 @@ function StepContent({ error, output, attempts }: StepContentProps) {
       <StepAttempts attempts={attempts || []} />
     </div>
   );
-}
+});
 
-export function WorkflowStepCard({ stepName, type }: WorkflowStepCardProps) {
-  const stepOutput = useWorkflowStepOutput(stepName);
-  const stepExecution = useWorkflowStepExecution(stepName);
+export const WorkflowStepCard = memo(function WorkflowStepCard({
+  stepName,
+  type,
+}: WorkflowStepCardProps) {
+  // Use optimized combined hook for definition steps
+  const stepData = useWorkflowStepData(stepName);
   const runData = useWorkflowRunQuery(type === "runtime");
   const isInteractive = type === "definition";
 
@@ -457,8 +494,8 @@ export function WorkflowStepCard({ stepName, type }: WorkflowStepCardProps) {
 
   // Get execution data from either runtime or definition store
   const execution = useMemo(() => {
-    if (type === "definition" && stepExecution) {
-      return stepExecution;
+    if (type === "definition" && stepData.execution) {
+      return stepData.execution;
     }
     if (type === "runtime" && runtimeStep) {
       return {
@@ -469,14 +506,14 @@ export function WorkflowStepCard({ stepName, type }: WorkflowStepCardProps) {
       };
     }
     return undefined;
-  }, [type, stepExecution, runtimeStep]);
+  }, [type, stepData.execution, runtimeStep]);
 
   const output = useMemo(() => {
     if (type === "definition") {
-      return stepOutput;
+      return stepData.output;
     }
     return runtimeStep?.output;
-  }, [stepOutput, runtimeStep, type]);
+  }, [stepData.output, runtimeStep, type]);
 
   // Derive status for both definition and runtime steps
   const status = useMemo(() => {
@@ -502,4 +539,4 @@ export function WorkflowStepCard({ stepName, type }: WorkflowStepCardProps) {
       />
     </div>
   );
-}
+});

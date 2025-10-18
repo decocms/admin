@@ -16,28 +16,34 @@ export function useWorkflowStepNames() {
 }
 
 export function useWorkflowStepInput(stepName: string) {
-  const step = useWorkflowStore((state) =>
-    state.workflow.steps.find((step) => step.def.name === stepName),
+  return useWorkflowStore(
+    useShallow((state) => {
+      const step = state.workflow.steps.find(
+        (step) => step.def.name === stepName,
+      );
+      const stepInput = state.stepInputs[stepName];
+      if (
+        stepInput !== undefined &&
+        typeof stepInput === "object" &&
+        stepInput !== null &&
+        Object.keys(stepInput).length > 0
+      ) {
+        return stepInput;
+      }
+      return step?.input;
+    }),
   );
-  const stepInput = useWorkflowStore((state) => state.stepInputs[stepName]);
-  if (
-    stepInput !== undefined &&
-    typeof stepInput === "object" &&
-    stepInput !== null &&
-    Object.keys(stepInput).length > 0
-  ) {
-    return stepInput;
-  }
-  return step?.input;
 }
 
 export function useWorkflowFirstStepInput() {
-  return useWorkflowStore((state) => {
-    const first = state.workflow.steps[0];
-    const name = first?.def.name;
-    const persisted = name ? state.stepInputs[name] : undefined;
-    return persisted !== undefined ? persisted : first?.input;
-  });
+  return useWorkflowStore(
+    useShallow((state) => {
+      const first = state.workflow.steps[0];
+      const name = first?.def.name;
+      const persisted = name ? state.stepInputs[name] : undefined;
+      return persisted !== undefined ? persisted : first?.input;
+    }),
+  );
 }
 
 export function useWorkflowStepOutput(stepName: string) {
@@ -64,5 +70,18 @@ export function useWorkflowActions() {
 }
 
 export function useWorkflowStepExecution(stepName: string) {
-  return useWorkflowStore((state) => state.stepExecutions[stepName]);
+  return useWorkflowStore(
+    useShallow((state) => state.stepExecutions[stepName]),
+  );
+}
+
+export function useWorkflowStepData(stepName: string) {
+  return useWorkflowStore(
+    useShallow((state) => ({
+      output: state.stepOutputs[stepName],
+      execution: state.stepExecutions[stepName],
+      definition: state.workflow.steps.find((s) => s.def.name === stepName)
+        ?.def,
+    })),
+  );
 }

@@ -32,9 +32,12 @@ export function useWorkflowStepInput(stepName: string) {
 }
 
 export function useWorkflowFirstStepInput() {
-  return useWorkflowStore(
-    (state) => state.stepInputs[state.workflow.steps[0].def.name],
-  );
+  return useWorkflowStore((state) => {
+    const first = state.workflow.steps[0];
+    const name = first?.def.name;
+    const persisted = name ? state.stepInputs[name] : undefined;
+    return persisted !== undefined ? persisted : first?.input;
+  });
 }
 
 export function useWorkflowStepOutput(stepName: string) {

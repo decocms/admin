@@ -104,7 +104,7 @@ function JsonViewer({
   );
 }
 
-export function WorkflowRunDetail({}: { resourceUri: string }) {
+export function WorkflowRunDetail(_: { resourceUri?: string } = {}) {
   const runQuery = useWorkflowRunQuery(true);
 
   const workflowUri = runQuery.data?.data?.workflowURI;

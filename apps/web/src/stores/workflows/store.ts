@@ -42,6 +42,7 @@ export const createWorkflowStore = (
         name: storageKey,
         partialize: (state) => ({
           currentRunUri: state.currentRunUri,
+          stepOutputs: state.stepOutputs,
         }),
       },
     ),

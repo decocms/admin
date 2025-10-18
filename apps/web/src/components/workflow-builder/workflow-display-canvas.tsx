@@ -28,27 +28,161 @@ import { WorkflowStepCard } from "../workflows/workflow-step-card.tsx";
 import {
   useCurrentRunUri,
   useMergedSteps,
+  useStepOutputs,
   useWorkflow,
   useWorkflowActions,
   useWorkflowUri,
 } from "../../stores/workflows/hooks.ts";
 import { WorkflowStoreProvider } from "../../stores/workflows/provider.tsx";
 import { DetailSection } from "../common/detail-section.tsx";
-
-// const LazyHighlighter = lazy(() => import("../chat/lazy-highlighter.tsx"));
-
 interface WorkflowDisplayCanvasProps {
   resourceUri: string;
   onRefresh?: () => Promise<void>;
 }
 
-interface JsonViewerProps {
-  data: unknown;
-  title: string;
-  matchHeight?: boolean;
+// Reference resolution utilities
+function isAtRef(value: unknown): value is `@${string}` {
+  return typeof value === "string" && value.startsWith("@");
 }
 
-// Runtime step from workflowStatus.steps (Cloudflare workflow instance)
+function parseAtRef(ref: `@${string}`): {
+  type: "step" | "input";
+  id?: string;
+  path?: string;
+} {
+  const refStr = ref.substring(1); // Remove @ prefix
+
+  // Input reference: @input.path.to.value
+  if (refStr.startsWith("input")) {
+    const path = refStr.substring(6); // Remove 'input.'
+    return { type: "input", path };
+  }
+
+  // Step reference: @stepId.path.to.value
+  const [id, ...pathParts] = refStr.split(".");
+
+  // If path starts with 'output.', remove it since stepResults already contains the output
+  let path = pathParts.join(".");
+  if (path.startsWith("output.")) {
+    path = path.substring(7); // Remove 'output.'
+  }
+
+  return { type: "step", id, path };
+}
+
+function getValue(
+  obj: Record<string, unknown> | unknown[] | unknown,
+  path: string,
+): unknown {
+  if (!path) return obj;
+
+  const keys = path.split(".");
+  let current: unknown = obj;
+
+  for (const key of keys) {
+    if (current === null || current === undefined) {
+      return undefined;
+    }
+    if (typeof current === "object" && !Array.isArray(current)) {
+      current = (current as Record<string, unknown>)[key];
+    } else if (Array.isArray(current)) {
+      const index = parseInt(key, 10);
+      current = isNaN(index) ? undefined : current[index];
+    } else {
+      return undefined;
+    }
+  }
+
+  return current;
+}
+
+function resolveAtRef(
+  ref: `@${string}`,
+  stepOutputs: Record<string, unknown>,
+  globalInput?: unknown,
+): { value: unknown; error?: string } {
+  try {
+    const parsed = parseAtRef(ref);
+
+    switch (parsed.type) {
+      case "input": {
+        const value = getValue(
+          (globalInput as Record<string, unknown>) || {},
+          parsed.path || "",
+        );
+        if (value === undefined) {
+          return { value: null, error: `Input path not found: ${parsed.path}` };
+        }
+        return { value };
+      }
+
+      case "step": {
+        const identifier = parsed.id || "";
+        const stepResult = stepOutputs[identifier];
+
+        if (stepResult === undefined) {
+          return {
+            value: null,
+            error: `Step not found or not executed: ${identifier}`,
+          };
+        }
+        const value = getValue(stepResult, parsed.path || "");
+        if (value === undefined) {
+          return {
+            value: null,
+            error: `Path not found in step result: ${parsed.path}`,
+          };
+        }
+        return { value };
+      }
+
+      default:
+        return { value: null, error: `Unknown reference type: ${ref}` };
+    }
+  } catch (error) {
+    return { value: null, error: `Failed to resolve ${ref}: ${String(error)}` };
+  }
+}
+
+function resolveAtRefsInInput(
+  input: unknown,
+  stepOutputs: Record<string, unknown>,
+  globalInput?: unknown,
+): { resolved: unknown; errors?: Array<{ ref: string; error: string }> } {
+  const errors: Array<{ ref: string; error: string }> = [];
+
+  function resolveValue(value: unknown): unknown {
+    // If it's an @ref, resolve it
+    if (isAtRef(value)) {
+      const result = resolveAtRef(value, stepOutputs, globalInput);
+      if (result.error) {
+        errors.push({ ref: value, error: result.error });
+      }
+      return result.value;
+    }
+
+    // If it's an array, resolve each element
+    if (Array.isArray(value)) {
+      return value.map((v) => resolveValue(v));
+    }
+
+    // If it's an object, resolve each property
+    if (value !== null && typeof value === "object") {
+      const resolvedObj: Record<string, unknown> = {};
+      for (const [key, val] of Object.entries(value)) {
+        resolvedObj[key] = resolveValue(val);
+      }
+      return resolvedObj;
+    }
+
+    // Primitive value, return as-is
+    return value;
+  }
+
+  const resolved = resolveValue(input);
+  return { resolved, errors: errors.length > 0 ? errors : undefined };
+}
+
 interface RuntimeStep {
   name?: string;
   start?: string | null;
@@ -65,91 +199,10 @@ interface RuntimeStep {
   config?: unknown;
 }
 
-// Merged step combines definition with runtime data
 export type MergedStep = Partial<WorkflowStep> &
   RuntimeStep & {
     def?: WorkflowStep["def"];
   };
-
-// function JsonViewer({ data, title, matchHeight = false }: JsonViewerProps) {
-//   const [copied, setCopied] = useState(false);
-
-//   async function handleCopy() {
-//     if (typeof navigator === "undefined" || !navigator.clipboard?.writeText) {
-//       globalThis.window.alert("Clipboard API unavailable");
-//       return;
-//     }
-
-//     const payload = JSON.stringify(data, null, 2);
-//     try {
-//       await navigator.clipboard.writeText(payload);
-//       setCopied(true);
-//       setTimeout(() => setCopied(false), 1200);
-//     } catch (error) {
-//       console.error("Failed to copy data", error);
-//     }
-//   }
-
-//   if (data === null || data === undefined) {
-//     return (
-//       <div className="space-y-2">
-//         <p className="font-mono text-sm text-muted-foreground uppercase">
-//           {title}
-//         </p>
-//         <div className="text-xs text-muted-foreground italic p-2">
-//           No {title.toLowerCase()}
-//         </div>
-//       </div>
-//     );
-//   }
-
-//   const jsonString = JSON.stringify(data, null, 2);
-
-//   return (
-//     <div
-//       className={`space-y-2 min-w-0 w-full ${
-//         matchHeight ? "h-full flex flex-col" : ""
-//       }`}
-//     >
-//       <p className="font-mono text-sm text-muted-foreground uppercase">
-//         {title}
-//       </p>
-//       <div
-//         className={`relative bg-muted rounded-xl ${
-//           matchHeight ? "min-h-[200px]" : ""
-//         } max-h-[300px] overflow-auto w-full ${matchHeight ? "flex-1" : ""}`}
-//       >
-//         <div className="absolute right-2 top-2 z-10 flex items-center gap-1 bg-background rounded-xl shadow-sm">
-//           <Button
-//             size="icon"
-//             variant="ghost"
-//             onClick={handleCopy}
-//             className="h-8 w-8"
-//           >
-//             <Icon name={copied ? "check" : "content_copy"} size={16} />
-//           </Button>
-//         </div>
-//         <div
-//           className={`overflow-x-auto w-full ${matchHeight ? "h-full" : ""}`}
-//         >
-//           <Suspense
-//             fallback={
-//               <pre className="p-3 text-xs font-mono whitespace-pre-wrap break-all">
-//                 {jsonString}
-//               </pre>
-//             }
-//           >
-//             <LazyHighlighter
-//               language="json"
-//               content={jsonString}
-//               fillHeight={matchHeight}
-//             />
-//           </Suspense>
-//         </div>
-//       </div>
-//     </div>
-//   );
-// }
 
 export function WorkflowDisplay({ resourceUri }: WorkflowDisplayCanvasProps) {
   const { data: resource, isLoading: isLoadingWorkflow } =
@@ -388,42 +441,86 @@ export function StepInput({ step }: { step: MergedStep }) {
   const { setStepOutput } = useWorkflowActions();
   const workflowUri = useWorkflowUri();
   const { locator } = useSDK();
+  const stepOutputs = useStepOutputs();
 
   async function handleFormSubmit(data: Record<string, unknown>) {
     if (!connection || !workflowUri) return;
 
     try {
       setIsSubmitting(true);
+
+      // Resolve any @ references in the input data
+      const { resolved, errors } = resolveAtRefsInInput(data, stepOutputs);
+
+      // Show errors if any references couldn't be resolved
+      if (errors && errors.length > 0) {
+        const errorMessages = errors
+          .map((e) => `${e.ref}: ${e.error}`)
+          .join("\n");
+        throw new Error(`Failed to resolve references:\n${errorMessages}`);
+      }
+
       const result = await callTool(
         connection,
         {
           name: "DECO_WORKFLOW_RUN_STEP",
           arguments: {
             tool: step.def,
-            input: data,
+            input: resolved,
           },
         },
         locator,
       );
 
-      const response = result.structuredContent as {
+      // Handle nested structuredContent (MCP response wrapping)
+      const mcpResponse = result.structuredContent as {
+        structuredContent?: {
+          result?: {
+            result?: unknown;
+            [key: string]: unknown;
+          };
+          error?: string;
+        };
         result?: unknown;
-        uri?: string;
         error?: string;
       };
+
+      // Try to unwrap nested structuredContent first
+      const response = mcpResponse.structuredContent || mcpResponse;
 
       if (response.error) {
         throw new Error(response.error);
       }
 
-      if (response.result) {
+      // Extract the actual tool output from nested result structure
+      let stepOutput: unknown;
+      if (typeof response.result === "object" && response.result !== null) {
+        const resultObj = response.result as { result?: unknown };
+        // Check if there's a nested result.result structure
+        if (typeof resultObj.result === "object" && resultObj.result !== null) {
+          const nestedResult = resultObj.result as { result?: unknown };
+          // Store the deepest result we can find
+          stepOutput =
+            nestedResult.result !== undefined
+              ? nestedResult.result
+              : resultObj.result;
+        } else {
+          // Store result.result if it exists, otherwise store result
+          stepOutput =
+            resultObj.result !== undefined ? resultObj.result : response.result;
+        }
+      } else {
+        stepOutput = response.result;
+      }
+
+      if (stepOutput !== undefined) {
         if (!step.name && !step.def?.name) return;
-        setStepOutput(step.name || step.def?.name!, response.result);
+        setStepOutput(step.name || step.def?.name!, stepOutput);
       }
     } catch (error) {
-      console.error("Failed to start workflow", error);
+      console.error("Failed to run step", error);
       globalThis.window.alert(
-        `Failed to start workflow: ${
+        `Failed to run step: ${
           error instanceof Error ? error.message : String(error)
         }`,
       );
@@ -446,6 +543,7 @@ export function StepInput({ step }: { step: MergedStep }) {
         <Form
           schema={stepInputSchema}
           validator={validator}
+          formData={step.input}
           onSubmit={({ formData }) => handleFormSubmit(formData)}
           showErrorList={false}
           noHtml5Validate

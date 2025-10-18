@@ -257,6 +257,10 @@ export interface WorkflowBindingImplOptions {
   resourceWorkflowRead: (
     uri: string,
   ) => Promise<{ data: z.infer<typeof WorkflowDefinitionSchema> }>;
+  resourceWorkflowUpdate: (
+    uri: string,
+    data: z.infer<typeof WorkflowDefinitionSchema>,
+  ) => Promise<{ data: z.infer<typeof WorkflowDefinitionSchema> }>;
 }
 
 /**
@@ -265,6 +269,7 @@ export interface WorkflowBindingImplOptions {
  */
 export function createWorkflowBindingImpl({
   resourceWorkflowRead,
+  resourceWorkflowUpdate,
 }: WorkflowBindingImplOptions) {
   const decoWorkflowStart = createTool({
     name: "DECO_WORKFLOW_START",
@@ -414,8 +419,72 @@ export function createWorkflowBindingImpl({
     },
   });
 
-  return [decoWorkflowStart, decoWorkflowRunStep];
+  const decoWorkflowCreateStep = createTool({
+    name: "DECO_WORKFLOW_CREATE_STEP",
+    description: "Create a new step in a workflow",
+    inputSchema: z.lazy(() =>
+      z.object({
+        workflowUri: z
+          .string()
+          .describe(
+            "The Resources 2.0 URI of the workflow to create the step in",
+          ),
+        step: WorkflowStepDefinitionSchema.omit({ output: true }),
+      }),
+    ),
+    outputSchema: z.lazy(() =>
+      z.object({
+        success: z
+          .boolean()
+          .describe("Whether the step was created successfully"),
+        error: z
+          .string()
+          .optional()
+          .describe("Error message if the step creation failed"),
+      }),
+    ),
+    handler: async ({ workflowUri, step }, c) => {
+      assertHasWorkspace(c);
+      await assertWorkspaceResourceAccess(c);
+
+      const { data: workflow } = await resourceWorkflowRead(workflowUri);
+
+      console.log({ workflow });
+
+      if (!workflow) {
+        return { success: false, error: "Workflow not found" };
+      }
+      const newWorkflow = {
+        ...workflow,
+        steps: [...workflow.steps, step],
+      };
+      console.log({ newWorkflow });
+      await resourceWorkflowUpdate(workflowUri, newWorkflow);
+
+      console.log({ success: true });
+
+      return { success: true };
+    },
+  });
+
+  return [decoWorkflowStart, decoWorkflowRunStep, decoWorkflowCreateStep];
 }
+
+const WORKFLOW_DETAIL_PROMPT = `
+You are a workflow orchestrator.
+Your goal is to understand the user's enquires and help them manage and test their workflow.
+You can read the workflow details, update its properties, run steps in the workflow, start the workflow and monitor the workflow execution. 
+When you start a workflow using DECO_WORKFLOW_START, it returns a workflow_run URI.
+Use DECO_RESOURCE_WORKFLOW_RUN_READ with that URI to monitor execution status, view step results, and retrieve logs. 
+
+<STEP_CREATION>You can create new steps in the workflow using DECO_WORKFLOW_CREATE_STEP.</STEP_CREATION>
+<STEP_EXECUTION>You can run steps in the workflow using DECO_WORKFLOW_RUN_STEP.</STEP_EXECUTION>
+<WORKFLOW_START>You can start the workflow using DECO_WORKFLOW_START.</WORKFLOW_START>
+<WORKFLOW_MONITOR>You can monitor the workflow execution using DECO_RESOURCE_WORKFLOW_RUN_READ.</WORKFLOW_MONITOR>
+<WORKFLOW_READ>You can read the workflow details using DECO_RESOURCE_WORKFLOW_READ.</WORKFLOW_READ>
+<WORKFLOW_UPDATE>You can update the workflow properties using DECO_RESOURCE_WORKFLOW_UPDATE.</WORKFLOW_UPDATE>
+<WORKFLOW_DELETE>You can delete the workflow using DECO_RESOURCE_WORKFLOW_DELETE.</WORKFLOW_DELETE>
+`;
 
 /**
  * Creates Views 2.0 implementation for workflow views
@@ -442,10 +511,10 @@ export function createWorkflowViewsV2() {
       "DECO_RESOURCE_WORKFLOW_DELETE",
       "DECO_WORKFLOW_START",
       "DECO_WORKFLOW_RUN_STEP",
+      "DECO_WORKFLOW_CREATE_STEP",
       "DECO_RESOURCE_WORKFLOW_RUN_READ",
     ],
-    prompt:
-      "You are a workflow editing specialist helping the user manage a workflow. You can read the workflow details, update its properties, start workflows, and monitor their execution. When you start a workflow using DECO_WORKFLOW_START, it returns a workflow_run URI. Use DECO_RESOURCE_WORKFLOW_RUN_READ with that URI to monitor execution status, view step results, and retrieve logs. Always confirm actions before executing them. A good strategy is to test each step one at a time in isolation and check how they affect the overall workflow.",
+    prompt: WORKFLOW_DETAIL_PROMPT,
     handler: (input, _c) => {
       const url = createDetailViewUrl(
         "workflow",
@@ -543,6 +612,7 @@ export const workflowViews = impl(
               tools: [
                 "DECO_WORKFLOW_START",
                 "DECO_WORKFLOW_RUN_STEP",
+                "DECO_WORKFLOW_CREATE_STEP",
                 "DECO_RESOURCE_WORKFLOW_RUN_READ",
                 "DECO_RESOURCE_WORKFLOW_UPDATE",
               ],

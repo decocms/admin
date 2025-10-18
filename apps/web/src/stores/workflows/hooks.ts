@@ -82,3 +82,7 @@ export function useMergedStep(stepName: string) {
 export function useStepOutput(stepName: string) {
   return useWorkflowStore((state) => state.stepOutputs[stepName]);
 }
+
+export function useStepOutputs() {
+  return useWorkflowStore((state) => state.stepOutputs);
+}

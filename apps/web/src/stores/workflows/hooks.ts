@@ -21,8 +21,9 @@ export function useWorkflowStepInput(stepName: string) {
   );
   const stepInput = useWorkflowStore((state) => state.stepInputs[stepName]);
   if (
-    stepInput &&
+    stepInput !== undefined &&
     typeof stepInput === "object" &&
+    stepInput !== null &&
     Object.keys(stepInput).length > 0
   ) {
     return stepInput;

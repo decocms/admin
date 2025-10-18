@@ -536,12 +536,26 @@ export function StepInput({ stepName }: { stepName: string }) {
           locator,
         );
 
+        if (result.error) {
+          throw new Error(
+            `Tool execution failed: ${typeof result.error === "string" ? result.error : JSON.stringify(result.error)}`,
+          );
+        }
+
+        if (result.isError) {
+          const errorMessage =
+            (Array.isArray(result.content) && result.content[0]?.text) ||
+            "Unknown error";
+          throw new Error(`Tool execution failed: ${errorMessage}`);
+        }
+
         // Unwrap the MCP response to extract the actual step output
         const stepOutput = unwrapMCPResponse(result.structuredContent);
 
+        const outputKey = stepDefinition?.name ?? stepName;
+
         if (stepOutput !== undefined) {
-          if (!stepDefinition?.name) return;
-          setStepOutput(stepDefinition.name, stepOutput);
+          setStepOutput(outputKey, stepOutput);
         }
 
         // Record successful execution

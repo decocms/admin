@@ -24,19 +24,17 @@ function deepParse(value: unknown, depth = 0): unknown {
 
   // Try to parse the string as JSON
   try {
+    if (depth > 8) return value;
     const parsed = JSON.parse(value);
-    // If successful, recursively parse the result in case it's nested
     return deepParse(parsed, depth + 1);
   } catch (_err) {
     // If parsing fails, check if it looks like truncated JSON
     const trimmed = value.trim();
-    if (trimmed.startsWith("{") && !trimmed.endsWith("}")) {
+    const withoutTruncation = trimmed.replace(/\s*\[truncated output]$/i, "");
+    if (withoutTruncation.startsWith("{") && !withoutTruncation.endsWith("}")) {
       // Truncated JSON object - try to fix it
       try {
-        // Close any open strings and objects
-        let fixed = trimmed;
-        // If ends with [truncated output], remove it
-        // Add closing quote if string is open
+        let fixed = withoutTruncation;
         const quoteCount = (fixed.match(/"/g) || []).length;
         if (quoteCount % 2 !== 0) {
           fixed += '"';
@@ -47,6 +45,15 @@ function deepParse(value: unknown, depth = 0): unknown {
         return parsed;
       } catch {
         // If fix didn't work, return as string
+        return value;
+      }
+    }
+    if (withoutTruncation.startsWith("[") && !withoutTruncation.endsWith("]")) {
+      try {
+        const fixed = withoutTruncation;
+        const parsed = JSON.parse(fixed + "]");
+        return parsed;
+      } catch {
         return value;
       }
     }

@@ -1,3 +1,4 @@
+import { useShallow } from "zustand/react/shallow";
 import { useWorkflowStore } from "./provider";
 
 export function useWorkflowName() {
@@ -9,8 +10,8 @@ export function useWorkflowDescription() {
 }
 
 export function useWorkflowStepNames() {
-  return useWorkflowStore((state) =>
-    state.workflow.steps.map((step) => step.def.name),
+  return useWorkflowStore(
+    useShallow((state) => state.workflow.steps.map((step) => step.def.name)),
   );
 }
 
@@ -47,7 +48,7 @@ export function useWorkflowStepDefinition(stepName: string) {
 }
 
 export function useWorkflowStepOutputs() {
-  return useWorkflowStore((state) => state.stepOutputs);
+  return useWorkflowStore(useShallow((state) => state.stepOutputs));
 }
 export function useWorkflowUri() {
   const name = useWorkflowStore((state) => state.workflow.name);
@@ -55,7 +56,7 @@ export function useWorkflowUri() {
 }
 
 export function useWorkflowActions() {
-  return useWorkflowStore((state) => state.actions);
+  return useWorkflowStore(useShallow((state) => state.actions));
 }
 
 export function useWorkflowStepExecution(stepName: string) {

@@ -22,3 +22,7 @@ const createRunStore = create<Store>((set) => ({
 export const useCurrentRunUri = () => {
   return createRunStore((state) => state.currentRunUri);
 };
+
+export const useWorkflowRunsStoreActions = () => {
+  return createRunStore((state) => state.actions);
+};

@@ -2,6 +2,7 @@ import {
   callTool,
   useRecentResources,
   useSDK,
+  useStartWorkflow,
   useWorkflowByUriV2,
   type WorkflowRunData,
   type WorkflowStep,
@@ -19,7 +20,13 @@ import { Spinner } from "@deco/ui/components/spinner.tsx";
 import Form from "@rjsf/shadcn";
 import validator from "@rjsf/validator-ajv8";
 import { useQuery } from "@tanstack/react-query";
-import { Suspense, useEffect, useMemo, useRef, useState } from "react";
+import {
+  Suspense,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import { EmptyState } from "../common/empty-state.tsx";
 import { UserInfo } from "../common/table/table-cells.tsx";
 import { useResourceRoute } from "../resources-v2/route-context.tsx";
@@ -36,7 +43,10 @@ import {
 } from "../../stores/workflows/hooks.ts";
 import { WorkflowStoreProvider } from "../../stores/workflows/provider.tsx";
 import { DetailSection } from "../common/detail-section.tsx";
-import { useCurrentRunUri } from "../../stores/workflows/runs/store.ts";
+import {
+  useCurrentRunUri,
+  useWorkflowRunsStoreActions,
+} from "../../stores/workflows/runs/store.ts";
 interface WorkflowDisplayCanvasProps {
   resourceUri: string;
   onRefresh?: () => Promise<void>;
@@ -263,6 +273,52 @@ export function useWorkflowRunQuery() {
   return runQuery;
 }
 
+function StartWorkflowButton() {
+  const { mutateAsync } = useStartWorkflow();
+  const workflow = useWorkflow();
+  const workflowUri = useWorkflowUri();
+  const initialInput = useStepInput(workflow.steps[0].def.name);
+  const { setCurrentRunUri } = useWorkflowRunsStoreActions();
+  const handleStartWorkflow = async () => {
+    await mutateAsync(
+      {
+        uri: workflowUri,
+        input: initialInput as Record<string, unknown>,
+      },
+      {
+        onSuccess: (data) => {
+          console.log(data);
+          if (data.uri) setCurrentRunUri(data.uri);
+        },
+      },
+    );
+  };
+  return (
+    <Button variant="special" onClick={handleStartWorkflow}>
+      <Icon name="play_arrow" size={18} />
+      Start Workflow
+    </Button>
+  );
+}
+
+function ClearWorkflowButton() {
+  const currentRunUri = useCurrentRunUri();
+  const { setCurrentRunUri } = useWorkflowRunsStoreActions();
+  const handleClearWorkflow = () => {
+    setCurrentRunUri(null);
+  };
+  return (
+    <Button
+      disabled={!currentRunUri}
+      size="icon"
+      variant="ghost"
+      onClick={handleClearWorkflow}
+    >
+      <Icon name="refresh" size={18} />
+    </Button>
+  );
+}
+
 /**
  * Interactive workflow canvas that shows a form for workflow input
  * and displays the run results below
@@ -326,78 +382,86 @@ export function Canvas() {
       <div className="flex flex-col">
         {/* Header */}
         <DetailSection>
-          <div className="flex items-center justify-between gap-2 flex-wrap">
+          <div className="flex items-center justify-between">
             <div>
-              <h1 className="text-2xl font-medium">{workflow.name}</h1>
-              {workflow.description && (
-                <p className="text-sm text-muted-foreground mt-1">
-                  {workflow.description}
-                </p>
+              <div className="flex items-center justify-between gap-2 flex-wrap">
+                <div>
+                  <h1 className="text-2xl font-medium">{workflow.name}</h1>
+                  {workflow.description && (
+                    <p className="text-sm text-muted-foreground mt-1">
+                      {workflow.description}
+                    </p>
+                  )}
+                </div>
+                {run && (
+                  <Badge variant={badgeVariant} className="capitalize">
+                    {status}
+                  </Badge>
+                )}
+              </div>
+
+              {/* Run metadata */}
+              {run && (
+                <div className="flex items-center gap-4 flex-wrap text-sm">
+                  <div className="flex items-center gap-2">
+                    <Icon
+                      name="calendar_month"
+                      size={16}
+                      className="text-muted-foreground"
+                    />
+                    <span className="font-mono text-sm uppercase">
+                      {run.data.startTime
+                        ? new Date(run.data.startTime).toLocaleString([], {
+                            month: "short",
+                            day: "numeric",
+                            year: "numeric",
+                            hour: "2-digit",
+                            minute: "2-digit",
+                          })
+                        : "-"}
+                    </span>
+                  </div>
+
+                  <div className="h-3 w-px bg-border" />
+
+                  <div className="flex items-center gap-2">
+                    <Icon
+                      name="schedule"
+                      size={16}
+                      className="text-muted-foreground"
+                    />
+                    <span className="font-mono text-sm">{duration || "-"}</span>
+                  </div>
+
+                  <div className="h-3 w-px bg-border" />
+
+                  {startedBy?.id && (
+                    <UserInfo
+                      userId={startedBy.id}
+                      size="sm"
+                      noTooltip
+                      showEmail={false}
+                    />
+                  )}
+                </div>
+              )}
+
+              {/* Error Alert */}
+              {error && (
+                <Alert className="bg-destructive/5 border-none">
+                  <Icon name="error" className="h-4 w-4 text-destructive" />
+                  <AlertTitle className="text-destructive">Error</AlertTitle>
+                  <AlertDescription className="text-destructive">
+                    {error}
+                  </AlertDescription>
+                </Alert>
               )}
             </div>
-            {run && (
-              <Badge variant={badgeVariant} className="capitalize">
-                {status}
-              </Badge>
-            )}
+            <div className="flex items-center gap-2">
+              <StartWorkflowButton />
+              <ClearWorkflowButton />
+            </div>
           </div>
-
-          {/* Run metadata */}
-          {run && (
-            <div className="flex items-center gap-4 flex-wrap text-sm">
-              <div className="flex items-center gap-2">
-                <Icon
-                  name="calendar_month"
-                  size={16}
-                  className="text-muted-foreground"
-                />
-                <span className="font-mono text-sm uppercase">
-                  {run.data.startTime
-                    ? new Date(run.data.startTime).toLocaleString([], {
-                        month: "short",
-                        day: "numeric",
-                        year: "numeric",
-                        hour: "2-digit",
-                        minute: "2-digit",
-                      })
-                    : "-"}
-                </span>
-              </div>
-
-              <div className="h-3 w-px bg-border" />
-
-              <div className="flex items-center gap-2">
-                <Icon
-                  name="schedule"
-                  size={16}
-                  className="text-muted-foreground"
-                />
-                <span className="font-mono text-sm">{duration || "-"}</span>
-              </div>
-
-              <div className="h-3 w-px bg-border" />
-
-              {startedBy?.id && (
-                <UserInfo
-                  userId={startedBy.id}
-                  size="sm"
-                  noTooltip
-                  showEmail={false}
-                />
-              )}
-            </div>
-          )}
-
-          {/* Error Alert */}
-          {error && (
-            <Alert className="bg-destructive/5 border-none">
-              <Icon name="error" className="h-4 w-4 text-destructive" />
-              <AlertTitle className="text-destructive">Error</AlertTitle>
-              <AlertDescription className="text-destructive">
-                {error}
-              </AlertDescription>
-            </Alert>
-          )}
         </DetailSection>
 
         {/* Steps Section - show definition steps before run, runtime steps after */}
@@ -421,7 +485,7 @@ function WorkflowStepsList() {
   }
   return (
     <div className="flex flex-col items-center">
-      <div className="w-full max-w-[700px] space-y-0">
+      <div className="w-full max-w-[700px] space-y-8">
         {steps.map((step, idx) => {
           return (
             <div key={idx}>

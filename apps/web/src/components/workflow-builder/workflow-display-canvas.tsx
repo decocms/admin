@@ -20,13 +20,7 @@ import { Spinner } from "@deco/ui/components/spinner.tsx";
 import Form from "@rjsf/shadcn";
 import validator from "@rjsf/validator-ajv8";
 import { useQuery } from "@tanstack/react-query";
-import {
-  Suspense,
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-} from "react";
+import { Suspense, useEffect, useMemo, useRef, useState } from "react";
 import { EmptyState } from "../common/empty-state.tsx";
 import { UserInfo } from "../common/table/table-cells.tsx";
 import { useResourceRoute } from "../resources-v2/route-context.tsx";
@@ -245,16 +239,17 @@ export function WorkflowDisplay({ resourceUri }: WorkflowDisplayCanvasProps) {
   );
 }
 
-export function useWorkflowRunQuery() {
+export function useWorkflowRunQuery(paramsUri?: string) {
   const { connection } = useResourceRoute();
   const currentRunUri = useCurrentRunUri();
+  const runUri = paramsUri || currentRunUri;
   const runQuery = useQuery({
-    queryKey: ["workflow-run-read", currentRunUri],
-    enabled: Boolean(connection && currentRunUri),
+    queryKey: ["workflow-run-read", runUri],
+    enabled: Boolean(connection && runUri),
     queryFn: async () => {
       const result = await callTool(connection!, {
         name: "DECO_RESOURCE_WORKFLOW_RUN_READ",
-        arguments: { uri: currentRunUri! },
+        arguments: { uri: runUri! },
       });
       return result.structuredContent as {
         uri: string;
@@ -492,6 +487,7 @@ function WorkflowStepsList() {
               <Suspense fallback={<Spinner />}>
                 <WorkflowStepCard
                   stepName={step.name || step.def?.name || `Step ${idx + 1}`}
+                  type="definition"
                 />
               </Suspense>
             </div>

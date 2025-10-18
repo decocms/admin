@@ -1,6 +1,6 @@
 import { Badge } from "@deco/ui/components/badge.tsx";
 import { Icon } from "@deco/ui/components/icon.tsx";
-import { Suspense, lazy, useState } from "react";
+import { Suspense, lazy, useMemo, useState } from "react";
 import { getStatusBadgeVariant } from "./utils.ts";
 import {
   MergedStep,
@@ -9,11 +9,45 @@ import {
 import { useWorkflowRunQuery } from "../workflow-builder/workflow-display-canvas.tsx";
 import { useMergedStep, useStepOutput } from "../../stores/workflows/hooks.ts";
 
-const LazyHighlighter = lazy(() => import("../chat/lazy-highlighter.tsx"));
+function deepParse(value: unknown, depth = 0): unknown {
+  if (typeof value !== "string") {
+    return value;
+  }
 
-interface WorkflowStepCardProps {
-  stepName: string;
+  // Try to parse the string as JSON
+  try {
+    const parsed = JSON.parse(value);
+    // If successful, recursively parse the result in case it's nested
+    return deepParse(parsed, depth + 1);
+  } catch (_err) {
+    // If parsing fails, check if it looks like truncated JSON
+    const trimmed = value.trim();
+    if (trimmed.startsWith("{") && !trimmed.endsWith("}")) {
+      // Truncated JSON object - try to fix it
+      try {
+        // Close any open strings and objects
+        let fixed = trimmed;
+        // If ends with [truncated output], remove it
+        // Add closing quote if string is open
+        const quoteCount = (fixed.match(/"/g) || []).length;
+        if (quoteCount % 2 !== 0) {
+          fixed += '"';
+        }
+        // Add closing brace
+        fixed += "}";
+        const parsed = JSON.parse(fixed);
+        return parsed;
+      } catch {
+        // If fix didn't work, return as string
+        return value;
+      }
+    }
+    // Not truncated JSON or couldn't fix, return as string
+    return value;
+  }
 }
+
+const LazyHighlighter = lazy(() => import("../chat/lazy-highlighter.tsx"));
 
 function JsonViewer({
   data,
@@ -25,6 +59,7 @@ function JsonViewer({
   matchHeight?: boolean;
 }) {
   const [copied, setCopied] = useState(false);
+  const parsedData = useMemo(() => deepParse(data), [data]);
 
   async function handleCopy() {
     if (typeof navigator === "undefined" || !navigator.clipboard?.writeText) {
@@ -32,7 +67,7 @@ function JsonViewer({
       return;
     }
 
-    const payload = JSON.stringify(data, null, 2);
+    const payload = JSON.stringify(parsedData, null, 2);
     try {
       await navigator.clipboard.writeText(payload);
       setCopied(true);
@@ -55,7 +90,7 @@ function JsonViewer({
     );
   }
 
-  const jsonString = JSON.stringify(data, null, 2);
+  const jsonString = JSON.stringify(parsedData, null, 2);
 
   return (
     <div
@@ -124,9 +159,18 @@ function getStepStatus(step: MergedStep) {
 
   return "pending";
 }
+interface WorkflowStepCardProps {
+  stepName: string;
+  type: "run" | "definition";
+  paramsUri?: string;
+}
 
-export function WorkflowStepCard({ stepName }: WorkflowStepCardProps) {
-  const step = useMergedStep(stepName);
+export function WorkflowStepCard({
+  stepName,
+  type,
+  paramsUri,
+}: WorkflowStepCardProps) {
+  const step = useMergedStep(stepName, paramsUri);
   const stepStatus = getStepStatus(step);
   const stepOutput = useStepOutput(stepName);
 
@@ -155,7 +199,9 @@ export function WorkflowStepCard({ stepName }: WorkflowStepCardProps) {
           <div className="flex items-start gap-3 flex-1 min-w-0">
             {/* Step Icon */}
             <div className="shrink-0 mt-0.5">
-              <Icon name="code" size={18} />
+              <div className="h-8 w-8 rounded-lg bg-muted flex items-center justify-center">
+                <Icon name="bolt" size={18} />
+              </div>
             </div>
 
             {/* Step Title and Description */}
@@ -208,17 +254,12 @@ export function WorkflowStepCard({ stepName }: WorkflowStepCardProps) {
         </div>
       </div>
 
-      <StepInput step={step} />
+      {type === "definition" && <StepInput step={step} />}
 
       {/* Step Content - only show if there's data */}
       {hasContent && (
         <div className="bg-background rounded-xl p-3 space-y-3">
           <StepError error={step.error} />
-
-          {step.config !== undefined && step.config !== null && (
-            <JsonViewer data={step.config} title="Config" />
-          )}
-
           {mergedStepOutput !== undefined && mergedStepOutput !== null && (
             <JsonViewer data={mergedStepOutput} title="Output" />
           )}

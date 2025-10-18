@@ -24,14 +24,15 @@ export function useWorkflowActions() {
   return useWorkflowStore((state) => state.actions);
 }
 
-export function useMergedSteps() {
-  const runQuery = useWorkflowRunQuery();
+export function useMergedSteps(paramsUri?: string) {
+  const runQuery = useWorkflowRunQuery(paramsUri);
   const run = runQuery.data;
   const workflow = useWorkflow();
 
   const steps = useMemo<MergedStep[]>(() => {
     const runSteps = run?.data.workflowStatus?.steps;
     const definitionSteps = workflow.steps;
+    console.log({ runSteps, definitionSteps });
 
     // If no definition steps, return empty or just runtime steps
     if (!definitionSteps || !Array.isArray(definitionSteps)) {
@@ -64,8 +65,9 @@ export function useMergedSteps() {
   return steps;
 }
 
-export function useMergedStep(stepName: string) {
-  const steps = useMergedSteps();
+export function useMergedStep(stepName: string, paramsUri?: string) {
+  const steps = useMergedSteps(paramsUri);
+  console.log({ stepName, steps });
   const step = steps.find(
     (step) => step.name === stepName || step.def?.name === stepName,
   );

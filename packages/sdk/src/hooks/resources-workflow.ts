@@ -167,6 +167,7 @@ export const useWorkflow = (workflowUri: string) => {
     retry: (failureCount, error) =>
       error instanceof InternalServerError && failureCount < 2,
     staleTime: 5 * 60 * 1000,
+    enabled: Boolean(workflowUri),
   });
 
   // Listen for resource updates and auto-invalidate

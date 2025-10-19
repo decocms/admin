@@ -15,7 +15,6 @@ import {
   Navigate,
   useLocation,
   useRouteError,
-  Outlet,
 } from "react-router";
 import { EmptyState } from "./components/common/empty-state.tsx";
 import { useWorkspaceLink } from "./hooks/use-navigate-workspace.ts";
@@ -100,9 +99,9 @@ const ProjectHome = lazy(() =>
   })),
 );
 
-// const PageviewTrackerLayout = lazy(
-//   () => import("./components/analytics/pageview-tracker.tsx"),
-// );
+const PageviewTrackerLayout = lazy(
+  () => import("./components/analytics/pageview-tracker.tsx"),
+);
 
 const Login = lazy(() => import("./components/login/index.tsx"));
 
@@ -362,7 +361,7 @@ function ErrorFallback() {
 const router = createBrowserRouter([
   {
     errorElement: <ErrorFallback />,
-    Component: () => <Outlet />,
+    Component: PageviewTrackerLayout,
     children: [
       {
         path: "/",

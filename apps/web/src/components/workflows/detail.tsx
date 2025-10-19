@@ -10,7 +10,6 @@ import { useParams } from "react-router";
 import { DecopilotLayout } from "../layout/decopilot-layout.tsx";
 import { WorkflowFlowVisualization } from "./workflow-flow-visualization.tsx";
 import { useResourceWatch } from "../../hooks/use-resource-watch.ts";
-import { WorkflowWatchIndicator } from "../workflow-builder/workflow-watch-indicator.tsx";
 
 function tryParseJson(str: unknown): unknown {
   if (typeof str !== "string") {
@@ -566,9 +565,6 @@ function WorkflowDetailContent() {
                     >
                       {status}
                     </Badge>
-                    <WorkflowWatchIndicator
-                      resourceUri={`workflow://${workflowName}/instances/${instanceId}`}
-                    />
                     <Icon
                       name="timer"
                       size={12}

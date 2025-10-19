@@ -3,7 +3,9 @@ import {
   startTransition,
   Suspense,
   useCallback,
+  useContext,
   useDeferredValue,
+  useLayoutEffect,
   useMemo,
   useRef,
   useState,
@@ -17,6 +19,7 @@ import {
   useWorkflowStepNames,
   useWorkflowStepOutputs,
   useWorkflowUri,
+  type Store,
 } from "../../stores/workflows";
 import { useVirtualizer } from "@tanstack/react-virtual";
 import { useResourceRoute } from "../resources-v2/route-context";
@@ -32,11 +35,13 @@ import { toast } from "@deco/ui/components/sonner.tsx";
 import { WorkflowStepCard } from "../workflows/workflow-step-card";
 import { resolveAtRefsInInput, unwrapMCPResponse } from "./utils";
 import { NestedObjectField, WorkflowStepField } from "./workflow-step-field";
+import { WorkflowStoreContext } from "../../stores/workflows/provider";
 
 export const WorkflowStepsList = memo(function WorkflowStepsList() {
   const stepNames = useWorkflowStepNames();
   const deferredStepNames = useDeferredValue(stepNames);
   const parentRef = useRef<HTMLDivElement>(null);
+  const store = useContext(WorkflowStoreContext);
 
   const virtualizer = useVirtualizer({
     count: deferredStepNames.length,
@@ -44,6 +49,33 @@ export const WorkflowStepsList = memo(function WorkflowStepsList() {
     estimateSize: () => 380,
     overscan: 2,
   });
+
+  useLayoutEffect(() => {
+    if (!store || !parentRef.current) return;
+
+    let previousCount = store.getState().workflow.steps.length;
+
+    const unsubscribe = store.subscribe((state: Store) => {
+      const currentCount = state.workflow.steps.length;
+
+      if (currentCount > previousCount && currentCount > 0) {
+        requestAnimationFrame(() => {
+          requestAnimationFrame(() => {
+            if (!parentRef.current) return;
+
+            parentRef.current.scrollTo({
+              top: parentRef.current.scrollHeight,
+              behavior: "smooth",
+            });
+          });
+        });
+      }
+
+      previousCount = currentCount;
+    });
+
+    return unsubscribe;
+  }, [store]);
 
   if (!deferredStepNames || deferredStepNames.length === 0) {
     return (

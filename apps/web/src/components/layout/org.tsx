@@ -33,7 +33,15 @@ export function BaseRouteLayout({ children }: { children: ReactNode }) {
   return (
     <SDKProvider locator={Locator.from({ org, project: "default" })}>
       {children}
-      <Toaster />
+      <Toaster
+        position="bottom-left"
+        toastOptions={{
+          className: "max-w-sm text-sm",
+          style: {
+            padding: "12px 16px",
+          },
+        }}
+      />
     </SDKProvider>
   );
 }

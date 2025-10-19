@@ -225,8 +225,8 @@ export const Canvas = memo(function Canvas() {
 
       currentToastIdRef.current = toast.warning(
         isDirty
-          ? "Workflow updated externally. Accepting will discard your changes."
-          : "A newer version of this workflow is available.",
+          ? "Workflow updated externally. Accepting will discard changes."
+          : "Workflow updated externally.",
         {
           duration: Number.POSITIVE_INFINITY, // Keep until dismissed
           action: {

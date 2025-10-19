@@ -5,6 +5,7 @@ import {
   useCallback,
   useContext,
   useDeferredValue,
+  useEffect,
   useLayoutEffect,
   useMemo,
   useRef,
@@ -172,12 +173,18 @@ export const WorkflowStepInput = memo(
       }
 
       return cleaned;
-    }, [stepName]);
+    }, [currentStepInput, isFirstStep]);
 
     const form = useForm<Record<string, unknown>>({
       defaultValues: initialValues,
       mode: "onBlur",
     });
+
+    // Sync React Hook Form's internal state when initialValues change
+    // This ensures the form resets to new defaults when step input or position changes
+    useEffect(() => {
+      form.reset(initialValues);
+    }, [initialValues, form]);
 
     const handleBlur = useCallback(() => {
       startTransition(() => {
@@ -190,7 +197,14 @@ export const WorkflowStepInput = memo(
 
     const handleFormSubmit = useCallback(
       async (data: Record<string, unknown>) => {
-        if (!connection || !workflowUri) return;
+        if (!connection || !workflowUri) {
+          toast.error("Connection is not ready. Please try again in a moment.");
+          return;
+        }
+        if (!stepDefinition) {
+          toast.error("Step definition is not available yet.");
+          return;
+        }
 
         try {
           setIsSubmitting(true);

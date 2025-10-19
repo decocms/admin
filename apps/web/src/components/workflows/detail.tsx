@@ -461,10 +461,13 @@ function WorkflowDetailContent() {
 
   // Initialize resource watch for this instance
   // Workflows are stored in deconfig at /src/workflows/{name}.json
+  const watchEnabled = Boolean(workflowName && instanceId);
   useResourceWatch({
-    resourceUri: `workflow://${workflowName}/instances/${instanceId}`,
-    pathFilter: `/src/workflows/${workflowName}.json`,
-    enabled: true,
+    resourceUri: watchEnabled
+      ? `workflow://${workflowName}/instances/${instanceId}`
+      : "",
+    pathFilter: watchEnabled ? `/src/workflows/${workflowName}.json` : "",
+    enabled: watchEnabled,
   });
 
   // Track as recently opened when workflow is loaded (only once)

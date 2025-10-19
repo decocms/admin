@@ -60,10 +60,21 @@ export const createStepManagementSlice: StateCreator<
     },
 
     reorderSteps: (fromIndex, toIndex) => {
+      const steps = get().workflow.steps;
+
+      // Clamp indices to valid ranges
+      const clampedFrom = Math.max(0, Math.min(fromIndex, steps.length - 1));
+      const clampedTo = Math.max(0, Math.min(toIndex, steps.length));
+
+      // No-op if indices are equal
+      if (clampedFrom === clampedTo) {
+        return;
+      }
+
       set((state) => {
         const newSteps = [...state.workflow.steps];
-        const [movedStep] = newSteps.splice(fromIndex, 1);
-        newSteps.splice(toIndex, 0, movedStep);
+        const [movedStep] = newSteps.splice(clampedFrom, 1);
+        newSteps.splice(clampedTo, 0, movedStep);
 
         return {
           workflow: {
@@ -73,6 +84,7 @@ export const createStepManagementSlice: StateCreator<
           isDirty: true,
         };
       });
+
       console.log(
         `[WF Store:#${instanceId}] reorderSteps(${fromIndex}→${toIndex})`,
       );

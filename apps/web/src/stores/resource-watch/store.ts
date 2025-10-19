@@ -1,6 +1,9 @@
 import { create } from "zustand";
 import { useShallow } from "zustand/react/shallow";
 
+// Maximum number of events to keep in memory per connection
+const MAX_EVENTS = 100;
+
 export interface WatchEvent {
   type: "add" | "modify" | "delete";
   path: string;
@@ -48,10 +51,19 @@ const useResourceWatchStore = create<ResourceWatchStore>()((set) => ({
           error: null,
         };
 
+        // Cap events array to MAX_EVENTS, keeping only the most recent
+        const updatedEvents = [...conn.events, event].slice(-MAX_EVENTS);
+
+        // Ensure lastCtime is monotonic (always increases, never goes backwards)
+        const updatedLastCtime = Math.max(
+          conn.lastCtime ?? -Infinity,
+          event.ctime,
+        );
+
         connections.set(resourceUri, {
           ...conn,
-          events: [...conn.events, event],
-          lastCtime: event.ctime,
+          events: updatedEvents,
+          lastCtime: updatedLastCtime,
           error: null,
         });
 

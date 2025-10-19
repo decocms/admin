@@ -1,10 +1,11 @@
 import { useQuery } from "@tanstack/react-query";
 import { useSDK } from "@deco/sdk";
-import { useMemo, useRef } from "react";
+import { useMemo, useRef, useEffect } from "react";
 import {
   useResourceWatchActions,
   useConnectionLastCtime,
 } from "../stores/resource-watch/index.ts";
+import { Buffer } from "node:buffer";
 
 interface WatchEvent {
   type: "add" | "modify" | "delete";
@@ -23,15 +24,17 @@ interface UseResourceWatchOptions {
 
 function parseSSEChunk(chunk: string): WatchEvent | null {
   const lines = chunk.trim().split("\n");
-  let data: string | null = null;
+  const dataLines: string[] = [];
 
   for (const line of lines) {
     if (line.startsWith("data: ")) {
-      data = line.substring(6);
+      dataLines.push(line.substring(6));
     }
   }
 
-  if (!data) return null;
+  if (dataLines.length === 0) return null;
+
+  const data = dataLines.join("\n");
 
   try {
     const fileChangeEvent = JSON.parse(data) as {
@@ -60,6 +63,11 @@ function parseSSEChunk(chunk: string): WatchEvent | null {
 }
 
 function getAuthToken(): string | null {
+  // Guard against SSR - only run in browser
+  if (typeof document === "undefined" || typeof window === "undefined") {
+    return null;
+  }
+
   const cookies = document.cookie.split(";");
   const tokenChunks: Array<{ index: number; value: string }> = [];
 
@@ -92,7 +100,17 @@ function extractAccessToken(encodedToken: string): string | null {
       ? encodedToken.substring(7)
       : encodedToken;
 
-    const jsonString = atob(base64Data);
+    // SSR-safe base64 decoding
+    let jsonString: string;
+    if (typeof globalThis.atob !== "undefined") {
+      jsonString = globalThis.atob(base64Data);
+    } else if (typeof Buffer !== "undefined") {
+      jsonString = Buffer.from(base64Data, "base64").toString("utf-8");
+    } else {
+      console.error("[ResourceWatch] No base64 decoder available");
+      return null;
+    }
+
     const sessionData = JSON.parse(jsonString) as { access_token?: string };
     return sessionData.access_token || null;
   } catch (error) {
@@ -147,7 +165,7 @@ export function useResourceWatch({
   }, [locator, pathFilter, lastCtime, enabled, watcherId, token]);
 
   const query = useQuery({
-    queryKey: ["resource-watch", resourceUri, pathFilter],
+    queryKey: ["resource-watch", resourceUri, pathFilter, watchUrl],
     enabled: Boolean(watchUrl && enabled),
     queryFn: async ({ signal }) => {
       if (!watchUrl) throw new Error("Watch URL not available");
@@ -230,14 +248,17 @@ export function useResourceWatch({
     retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000),
   });
 
-  if (query.isError) {
-    const errorMsg =
-      query.error instanceof Error
-        ? query.error.message
-        : "Watch connection failed";
-    console.error("[ResourceWatch] Connection error:", errorMsg);
-    setError(resourceUri, errorMsg);
-  }
+  // Handle errors in useEffect to avoid side effects during render
+  useEffect(() => {
+    if (query.isError) {
+      const errorMsg =
+        query.error instanceof Error
+          ? query.error.message
+          : "Watch connection failed";
+      console.error("[ResourceWatch] Connection error:", errorMsg);
+      setError(resourceUri, errorMsg);
+    }
+  }, [query.isError, query.error, resourceUri, setError]);
 
   return query;
 }

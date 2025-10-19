@@ -1,7 +1,19 @@
-import { WorkflowDefinition } from "@deco/sdk";
-import { create } from "zustand";
-import { persist } from "zustand/middleware";
+import { createStore } from "zustand/vanilla";
+import {
+  createWorkflowSlice,
+  type WorkflowSlice,
+} from "./slices/workflow-slice";
+import { createSyncSlice, type SyncSlice } from "./slices/sync-slice";
+import {
+  createStepExecutionSlice,
+  type StepExecutionSlice,
+} from "./slices/step-execution-slice";
+import {
+  createStepManagementSlice,
+  type StepManagementSlice,
+} from "./slices/step-management-slice";
 
+// Re-export types needed by slices
 export interface StepExecution {
   start?: string;
   end?: string;
@@ -9,84 +21,65 @@ export interface StepExecution {
   success?: boolean;
 }
 
-export interface State {
-  workflow: WorkflowDefinition;
-  stepOutputs: Record<string, unknown>;
-  stepInputs: Record<string, unknown>;
-  stepExecutions: Record<string, StepExecution>;
-}
+// Combine all slice types into the main Store type
+export type Store = WorkflowSlice &
+  SyncSlice &
+  StepExecutionSlice &
+  StepManagementSlice;
 
-export interface Actions {
-  setStepOutput: (stepName: string, output: unknown) => void;
-  setStepInput: (stepName: string, input: unknown) => void;
-  setStepExecutionStart: (stepName: string) => void;
-  setStepExecutionEnd: (
-    stepName: string,
-    success: boolean,
-    error?: { name?: string; message?: string },
-  ) => void;
-}
+// Keep State and Actions types for backward compatibility
+export type State = Pick<
+  Store,
+  | "workflow"
+  | "isDirty"
+  | "lastServerVersion"
+  | "pendingServerUpdate"
+  | "stepOutputs"
+  | "stepInputs"
+  | "stepExecutions"
+>;
 
-export interface Store extends State {
-  actions: Actions;
-}
+export type Actions = Pick<
+  Store,
+  | "handleExternalUpdate"
+  | "acceptPendingUpdate"
+  | "dismissPendingUpdate"
+  | "markClean"
+  | "addStep"
+  | "updateStep"
+  | "removeStep"
+  | "reorderSteps"
+  | "updateWorkflow"
+  | "setStepOutput"
+  | "setStepInput"
+  | "setStepExecutionStart"
+  | "setStepExecutionEnd"
+>;
 
-export const createWorkflowStore = (initialState: Pick<State, "workflow">) => {
-  // Create a unique storage key based on the workflow name
-  const storageKey = `workflow-store-${initialState.workflow.name}`;
+export const createWorkflowStore = (
+  initialState: Pick<State, "workflow">,
+  debugLabel?: string,
+) => {
+  const instanceId = Math.random().toString(36).slice(2, 8);
+  const label = debugLabel || "unknown";
 
-  return create<Store>()(
-    persist(
-      (set) => ({
-        ...initialState,
-        stepOutputs: {},
-        stepInputs: {},
-        stepExecutions: {},
-        actions: {
-          setStepOutput: (stepName, output) =>
-            set((state) => ({
-              stepOutputs: { ...state.stepOutputs, [stepName]: output },
-            })),
-          setStepInput: (stepName, input) =>
-            set((state) => ({
-              stepInputs: { ...state.stepInputs, [stepName]: input },
-            })),
-          setStepExecutionStart: (stepName) =>
-            set((state) => ({
-              stepExecutions: {
-                ...state.stepExecutions,
-                [stepName]: {
-                  start: new Date().toISOString(),
-                  end: undefined,
-                  error: null,
-                  success: undefined,
-                },
-              },
-            })),
-          setStepExecutionEnd: (stepName, success, error) =>
-            set((state) => {
-              const prev = state.stepExecutions[stepName] || {};
-              return {
-                stepExecutions: {
-                  ...state.stepExecutions,
-                  [stepName]: {
-                    ...prev,
-                    end: new Date().toISOString(),
-                    success,
-                    error: error || null,
-                  },
-                },
-              };
-            }),
-        },
-      }),
-      {
-        name: storageKey,
-        partialize: (state) => ({
-          stepOutputs: state.stepOutputs,
-          stepInputs: state.stepInputs,
-        }),
-      },
-    ),
+  console.log(
+    `[WF Store:#${instanceId}] create from=${label} → name=${initialState.workflow.name} steps=${initialState.workflow.steps.length}`,
   );
+
+  return createStore<Store>()((set, get, api) => ({
+    // Initialize workflow slice
+    ...createWorkflowSlice(set, get, api),
+    workflow: initialState.workflow,
+
+    // Initialize sync slice with server version
+    ...createSyncSlice(set, get, api),
+    lastServerVersion: initialState.workflow,
+
+    // Initialize step execution slice
+    ...createStepExecutionSlice(set, get, api),
+
+    // Initialize step management slice
+    ...createStepManagementSlice(set, get, api),
+  }));
 };

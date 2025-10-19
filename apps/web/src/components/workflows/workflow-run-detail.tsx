@@ -1,4 +1,9 @@
-import { useWorkflowByUriV2 } from "@deco/sdk";
+import {
+  callTool,
+  useWorkflowByUriV2,
+  workflowExecutionKeys,
+  WorkflowRunData,
+} from "@deco/sdk";
 import { Badge } from "@deco/ui/components/badge.tsx";
 import { Button } from "@deco/ui/components/button.tsx";
 import { Icon } from "@deco/ui/components/icon.tsx";
@@ -16,7 +21,8 @@ import { getStatusBadgeVariant } from "./utils.ts";
 import { WorkflowStepCard } from "./workflow-step-card.tsx";
 import { DetailSection } from "../common/detail-section.tsx";
 import { WorkflowStoreProvider } from "../../stores/workflows/provider.tsx";
-import { useWorkflowRunQuery } from "../workflow-builder/workflow-display-canvas.tsx";
+import { useQuery } from "@tanstack/react-query";
+import { useResourceRoute } from "../resources-v2/route-context.tsx";
 
 const LazyHighlighter = lazy(() => import("../chat/lazy-highlighter.tsx"));
 
@@ -104,6 +110,49 @@ function JsonViewer({
   );
 }
 
+export function useWorkflowRunQuery(enabled: boolean = false) {
+  const { connection, resourceUri } = useResourceRoute();
+  const runUri = resourceUri;
+
+  const runQuery = useQuery({
+    queryKey: workflowExecutionKeys.read(runUri || ""),
+    enabled: Boolean(connection && runUri && enabled),
+    queryFn: async () => {
+      if (!connection || !runUri) {
+        throw new Error("Connection and runUri are required");
+      }
+
+      const result = await callTool(connection, {
+        name: "DECO_RESOURCE_WORKFLOW_RUN_READ",
+        arguments: { uri: runUri },
+      });
+
+      const data = result.structuredContent as
+        | {
+            uri: string;
+            data: WorkflowRunData;
+            created_at?: string;
+            updated_at?: string;
+          }
+        | undefined;
+
+      if (!data) {
+        throw new Error("No data returned from workflow run query");
+      }
+
+      return data;
+    },
+    staleTime: 10_000,
+    refetchInterval: (q) => {
+      const status = q.state.data?.data?.status;
+      if (status === "completed" || status === "failed") return false;
+      return 2000;
+    },
+  });
+
+  return runQuery;
+}
+
 export function WorkflowRunDetail(_: { resourceUri?: string } = {}) {
   const runQuery = useWorkflowRunQuery(true);
 
@@ -174,7 +223,7 @@ export function WorkflowRunDetail(_: { resourceUri?: string } = {}) {
   const steps = run.data.workflowStatus?.steps || [];
 
   return (
-    <WorkflowStoreProvider workflow={workflow}>
+    <WorkflowStoreProvider key={workflow.name} workflow={workflow}>
       <ScrollArea className="h-full w-full">
         <div className="flex flex-col">
           {/* Header with status and metadata */}

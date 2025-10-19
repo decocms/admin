@@ -1,9 +1,5 @@
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useEffect } from "react";
-import {
-  addResourceUpdateListener,
-  notifyResourceUpdate,
-} from "../broadcast.ts";
+import { useMutation, useQuery } from "@tanstack/react-query";
+import { notifyResourceUpdate } from "../broadcast.ts";
 import { WellKnownMcpGroups, formatIntegrationId } from "../crud/groups.ts";
 import { InternalServerError } from "../errors.ts";
 import { MCPClient } from "../fetcher.ts";
@@ -13,11 +9,7 @@ import {
   WorkflowDefinition,
   WorkflowDefinitionSchema,
 } from "../mcp/workflows/schemas.ts";
-import {
-  parseIntegrationId,
-  resourceKeys,
-  resourceListKeys,
-} from "./query-keys.ts";
+import { resourceKeys } from "./query-keys.ts";
 import { useSDK } from "./store.tsx";
 
 // Resources V2 tool names for workflow
@@ -158,9 +150,17 @@ export function runStep(
   // deno-lint-ignore no-explicit-any
   return client[WORKFLOW_TOOLS.RUN_STEP](params as any, { signal });
 }
+/**
+ * Hook to fetch a workflow by URI
+ *
+ * ✅ Clean query hook - no hidden side effects
+ * ✅ Callers control their own invalidation strategy via file watcher
+ *
+ * Note: Broadcast listener removed to prevent double invalidations
+ * File watcher in Canvas component is the single source of change detection
+ */
 export const useWorkflow = (workflowUri: string) => {
   const { locator } = useSDK();
-  const queryClient = useQueryClient();
 
   const query = useQuery({
     queryKey: resourceKeys.workflow(locator, workflowUri),
@@ -170,31 +170,6 @@ export const useWorkflow = (workflowUri: string) => {
     staleTime: 5 * 60 * 1000,
     enabled: Boolean(workflowUri),
   });
-
-  // Listen for resource updates and auto-invalidate
-  useEffect(() => {
-    const cleanup = addResourceUpdateListener((message) => {
-      if (
-        message.type === "RESOURCE_UPDATED" &&
-        message.resourceUri === workflowUri
-      ) {
-        // Invalidate this specific workflow query
-        queryClient.invalidateQueries({
-          queryKey: resourceKeys.workflow(locator, workflowUri),
-          refetchType: "all",
-        });
-
-        // Also invalidate the workflow list
-        const parsedIntegrationId = parseIntegrationId(workflowUri);
-        queryClient.invalidateQueries({
-          queryKey: resourceListKeys.workflows(locator, parsedIntegrationId),
-          refetchType: "all",
-        });
-      }
-    });
-
-    return cleanup;
-  }, [workflowUri, locator, queryClient]);
 
   return query;
 };

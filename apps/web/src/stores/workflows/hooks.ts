@@ -2,6 +2,7 @@ import { useMemo } from "react";
 import { useShallow } from "zustand/react/shallow";
 import { useWorkflowStore } from "./provider";
 
+// Primitive selectors - no shallow needed
 export function useWorkflowName() {
   return useWorkflowStore((state) => state.workflow.name);
 }
@@ -10,12 +11,42 @@ export function useWorkflowDescription() {
   return useWorkflowStore((state) => state.workflow.description);
 }
 
+export function useIsDirty() {
+  return useWorkflowStore((state) => state.isDirty);
+}
+
+export function useWorkflowStepCount() {
+  return useWorkflowStore((state) => state.workflow.steps.length);
+}
+
+// Array/Object selectors - use shallow
 export function useWorkflowStepNames() {
   return useWorkflowStore(
     useShallow((state) => state.workflow.steps.map((step) => step.def.name)),
   );
 }
 
+export function useWorkflowSteps() {
+  return useWorkflowStore(useShallow((state) => state.workflow.steps));
+}
+
+export function useWorkflow() {
+  return useWorkflowStore(useShallow((state) => state.workflow));
+}
+
+export function useWorkflowStepOutputs() {
+  return useWorkflowStore(useShallow((state) => state.stepOutputs));
+}
+
+export function usePendingServerUpdate() {
+  return useWorkflowStore(useShallow((state) => state.pendingServerUpdate));
+}
+
+export function useLastServerVersion() {
+  return useWorkflowStore(useShallow((state) => state.lastServerVersion));
+}
+
+// Computed selectors with memoization
 export function useWorkflowStepInput(stepName: string) {
   return useWorkflowStore(
     useShallow((state) => {
@@ -53,21 +84,16 @@ export function useWorkflowStepOutput(stepName: string) {
 
 export function useWorkflowStepDefinition(stepName: string) {
   return useWorkflowStore(
-    (state) =>
-      state.workflow.steps.find((step) => step.def.name === stepName)?.def,
+    useShallow(
+      (state) =>
+        state.workflow.steps.find((step) => step.def.name === stepName)?.def,
+    ),
   );
 }
 
-export function useWorkflowStepOutputs() {
-  return useWorkflowStore(useShallow((state) => state.stepOutputs));
-}
 export function useWorkflowUri() {
   const name = useWorkflowStore((state) => state.workflow.name);
-  return `rsc://i:workflows-management/workflow/${name}`;
-}
-
-export function useWorkflowActions() {
-  return useWorkflowStore(useShallow((state) => state.actions));
+  return useMemo(() => `rsc://i:workflows-management/workflow/${name}`, [name]);
 }
 
 export function useWorkflowStepExecution(stepName: string) {
@@ -76,17 +102,27 @@ export function useWorkflowStepExecution(stepName: string) {
   );
 }
 
+// Memoized complex selector
 export function useWorkflowStepData(stepName: string) {
-  return useWorkflowStore(
-    useShallow((state) => ({
-      output: state.stepOutputs[stepName],
-      execution: state.stepExecutions[stepName],
-      definition: state.workflow.steps.find((s) => s.def.name === stepName)
-        ?.def,
-    })),
+  const selector = useMemo(
+    () =>
+      (state: {
+        stepOutputs: Record<string, unknown>;
+        stepExecutions: Record<string, unknown>;
+        workflow: { steps: Array<{ def: { name: string } }> };
+      }) => ({
+        output: state.stepOutputs[stepName],
+        execution: state.stepExecutions[stepName],
+        definition: state.workflow.steps.find((s) => s.def.name === stepName)
+          ?.def,
+      }),
+    [stepName],
   );
+
+  return useWorkflowStore(useShallow(selector));
 }
 
+// Helper functions
 function hasValidValue(value: unknown): boolean {
   // References are not valid for first step
   if (typeof value === "string" && value.startsWith("@")) {
@@ -164,4 +200,29 @@ export function useHasFirstStepInput() {
 
     return false;
   }, [firstStepData]);
+}
+
+// All actions grouped in one hook for convenience
+export function useWorkflowActions() {
+  return useWorkflowStore(
+    useShallow((state) => ({
+      // Sync actions
+      handleExternalUpdate: state.handleExternalUpdate,
+      acceptPendingUpdate: state.acceptPendingUpdate,
+      dismissPendingUpdate: state.dismissPendingUpdate,
+      markClean: state.markClean,
+      // Step management actions
+      addStep: state.addStep,
+      updateStep: state.updateStep,
+      removeStep: state.removeStep,
+      reorderSteps: state.reorderSteps,
+      // Workflow actions
+      updateWorkflow: state.updateWorkflow,
+      // Step execution actions
+      setStepOutput: state.setStepOutput,
+      setStepInput: state.setStepInput,
+      setStepExecutionStart: state.setStepExecutionStart,
+      setStepExecutionEnd: state.setStepExecutionEnd,
+    })),
+  );
 }

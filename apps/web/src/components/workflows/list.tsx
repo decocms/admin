@@ -1,14 +1,17 @@
-import { useRecentWorkflowRuns, useWorkflowRuns } from "@deco/sdk";
+import { useRecentWorkflowRuns, useWorkflowRuns, useSDK } from "@deco/sdk";
 import { Badge } from "@deco/ui/components/badge.tsx";
 import { Card, CardContent } from "@deco/ui/components/card.tsx";
 import { Icon } from "@deco/ui/components/icon.tsx";
-import { useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { useSearchParams } from "react-router";
+import { useQueryClient } from "@tanstack/react-query";
 import { useNavigateWorkspace } from "../../hooks/use-navigate-workspace.ts";
 import { formatToolName } from "../chat/utils/format-tool-name.ts";
 import { EmptyState } from "../common/empty-state.tsx";
 import { Table, type TableColumn } from "../common/table/index.tsx";
 import type { WorkflowRun } from "./types.ts";
+import type { WatchEvent } from "../../stores/resource-watch/index.ts";
+import { useResourceWatch } from "../../hooks/use-resource-watch.ts";
 import {
   formatStatus,
   getStatusBadgeVariant,
@@ -111,13 +114,39 @@ interface WorkflowRunsProps {
   viewMode?: "cards" | "table";
 }
 
-function WorkflowRuns({
+function WorkflowRunsContent({
   searchTerm = "",
   viewMode = "cards",
 }: WorkflowRunsProps) {
   const [_searchParams, _setSearchParams] = useSearchParams();
   const [selectedWorkflow, _setSelectedWorkflow] = useState<string>("all");
   const navigateWorkspace = useNavigateWorkspace();
+  const { locator } = useSDK();
+  const queryClient = useQueryClient();
+
+  useResourceWatch({
+    resourceUri: "workflow-runs://all",
+    pathFilter: "/src/workflows/",
+    enabled: true,
+    skipHistorical: true,
+    onNewEvent: useCallback(
+      (event: WatchEvent) => {
+        if (!locator) return;
+        console.log(
+          "[WorkflowRuns] Workflow definition changed, refreshing runs list",
+          event,
+        );
+
+        queryClient.invalidateQueries({
+          queryKey: ["workflow-runs", locator],
+        });
+        queryClient.invalidateQueries({
+          queryKey: ["recent-workflow-runs", locator],
+        });
+      },
+      [locator, queryClient],
+    ),
+  });
 
   // Get workflow runs - either filtered by workflow name or all recent runs
   const {
@@ -209,4 +238,6 @@ function WorkflowRuns({
   );
 }
 
-export default WorkflowRuns;
+export default function WorkflowRuns(props: WorkflowRunsProps) {
+  return <WorkflowRunsContent {...props} />;
+}

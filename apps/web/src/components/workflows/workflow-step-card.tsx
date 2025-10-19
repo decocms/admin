@@ -11,11 +11,9 @@ import {
   useSyncExternalStore,
 } from "react";
 import { getStatusBadgeVariant } from "./utils.ts";
-import {
-  StepInput,
-  useWorkflowRunQuery,
-} from "../workflow-builder/workflow-display-canvas.tsx";
 import { useWorkflowStepData } from "../../stores/workflows/hooks.ts";
+import { useWorkflowRunQuery } from "./workflow-run-detail.tsx";
+import { WorkflowStepInput } from "../workflow-builder/steps.tsx";
 
 function deepParse(value: unknown, depth = 0): unknown {
   if (typeof value !== "string") {
@@ -481,69 +479,76 @@ const StepContent = memo(function StepContent({
   );
 });
 
-export const WorkflowStepCard = memo(function WorkflowStepCard({
-  stepName,
-  type,
-}: WorkflowStepCardProps) {
-  // Use optimized combined hook for definition steps
-  const stepData = useWorkflowStepData(stepName);
-  const runData = useWorkflowRunQuery(type === "runtime");
-  const isInteractive = type === "definition";
+export const WorkflowStepCard = memo(
+  function WorkflowStepCard({ stepName, type }: WorkflowStepCardProps) {
+    const stepData = useWorkflowStepData(stepName);
+    const runData = useWorkflowRunQuery(type === "runtime");
+    const isInteractive = type === "definition";
 
-  const runtimeStep = useMemo(() => {
-    if (type === "runtime") {
-      return runData?.data?.data?.workflowStatus?.steps?.find(
-        (step) => step.name === stepName,
-      );
-    }
-    return undefined;
-  }, [runData?.data?.data?.workflowStatus?.steps, type, stepName]);
+    const runtimeStep = useMemo(() => {
+      if (type === "runtime") {
+        return runData?.data?.data?.workflowStatus?.steps?.find(
+          (step) => step.name === stepName,
+        );
+      }
+      return undefined;
+    }, [runData?.data?.data?.workflowStatus?.steps, type, stepName]);
 
-  // Get execution data from either runtime or definition store
-  const execution = useMemo(() => {
-    if (type === "definition" && stepData.execution) {
-      return stepData.execution;
-    }
-    if (type === "runtime" && runtimeStep) {
-      return {
-        start: runtimeStep.start,
-        end: runtimeStep.end,
-        error: runtimeStep.error,
-        success: runtimeStep.success,
-      };
-    }
-    return undefined;
-  }, [type, stepData.execution, runtimeStep]);
+    const execution = useMemo<
+      | {
+          start?: string | null;
+          end?: string | null;
+          error?: { name?: string; message?: string } | null;
+          success?: boolean;
+        }
+      | undefined
+    >(() => {
+      if (type === "definition" && stepData.execution) {
+        return stepData.execution;
+      }
+      if (type === "runtime" && runtimeStep) {
+        return {
+          start: runtimeStep.start,
+          end: runtimeStep.end,
+          error: runtimeStep.error,
+          success: runtimeStep.success,
+        };
+      }
+      return undefined;
+    }, [type, stepData.execution, runtimeStep]);
 
-  const output = useMemo(() => {
-    if (type === "definition") {
-      return stepData.output;
-    }
-    return runtimeStep?.output;
-  }, [stepData.output, runtimeStep, type]);
+    const output = useMemo(() => {
+      if (type === "definition") {
+        return stepData.output;
+      }
+      return runtimeStep?.output;
+    }, [stepData.output, runtimeStep, type]);
 
-  // Derive status for both definition and runtime steps
-  const status = useMemo(() => {
-    if (execution) {
-      return deriveStepStatus(execution);
-    }
-    return undefined;
-  }, [execution]);
+    const status = useMemo(() => {
+      if (execution) {
+        return deriveStepStatus(execution);
+      }
+      return undefined;
+    }, [execution]);
 
-  return (
-    <div className={`rounded-xl p-0.5 bg-muted`}>
-      <StepHeader
-        stepName={stepName}
-        status={status}
-        startTime={execution?.start}
-        endTime={execution?.end}
-      />
-      {isInteractive && <StepInput stepName={stepName} />}
-      <StepContent
-        output={output}
-        error={execution?.error}
-        attempts={runtimeStep?.attempts}
-      />
-    </div>
-  );
-});
+    return (
+      <div className={`rounded-xl p-0.5 bg-muted`}>
+        <StepHeader
+          stepName={stepName}
+          status={status}
+          startTime={execution ? execution.start : undefined}
+          endTime={execution ? execution.end : undefined}
+        />
+        {isInteractive && <WorkflowStepInput stepName={stepName} />}
+        <StepContent
+          output={output}
+          error={execution ? execution.error : undefined}
+          attempts={runtimeStep?.attempts}
+        />
+      </div>
+    );
+  },
+  (prevProps, nextProps) =>
+    prevProps.stepName === nextProps.stepName &&
+    prevProps.type === nextProps.type,
+);

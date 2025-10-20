@@ -246,9 +246,14 @@ function ResourcesV2ListTab({
 
   const pathFilter = resourceName ? resourcePathMap[resourceName] : undefined;
 
-  // Use a simple resourceUri with no special characters (no ://, no /, etc.)
-  // to avoid URL encoding issues in the watcher-id parameter
-  const watchResourceUri = resourceName ? `${resourceName}-list-all` : "";
+  // Build a per-integration, URL-safe resource key for the watch store and watcher-id
+  const watchResourceUri =
+    integrationId && resourceName
+      ? `${integrationId}-${resourceName}-list-all`.replace(
+          /[^a-zA-Z0-9-_]/g,
+          "-",
+        )
+      : "";
 
   useResourceWatch({
     resourceUri: watchResourceUri,

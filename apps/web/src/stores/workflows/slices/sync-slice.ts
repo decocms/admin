@@ -6,9 +6,11 @@ export interface SyncSlice {
   isDirty: boolean;
   lastServerVersion: WorkflowDefinition | null;
   pendingServerUpdate: WorkflowDefinition | null;
+  lastModifiedStepName: string | null;
   handleExternalUpdate: (serverWorkflow: WorkflowDefinition) => {
     applied: boolean;
     reason: string;
+    modifiedStepName?: string;
   };
   acceptPendingUpdate: () => void;
   dismissPendingUpdate: () => void;
@@ -25,76 +27,65 @@ export const createSyncSlice: StateCreator<Store, [], [], SyncSlice> = (
     isDirty: false,
     lastServerVersion: null,
     pendingServerUpdate: null,
+    lastModifiedStepName: null,
 
     handleExternalUpdate: (serverWorkflow) => {
       const state = get();
 
-      const onlyStepsLengthChanged =
+      // Detect which step was modified (if only one)
+      let modifiedStepName: string | undefined;
+      if (
+        state.workflow.steps.length === serverWorkflow.steps.length &&
         state.workflow.name === serverWorkflow.name &&
-        state.workflow.description === serverWorkflow.description &&
-        state.workflow.steps.length !== serverWorkflow.steps.length;
+        state.workflow.description === serverWorkflow.description
+      ) {
+        // Same count, check which step differs
+        const changedSteps = serverWorkflow.steps.filter((newStep, idx) => {
+          const oldStep = state.workflow.steps[idx];
+          return (
+            oldStep &&
+            oldStep.def.name === newStep.def.name &&
+            JSON.stringify(oldStep) !== JSON.stringify(newStep)
+          );
+        });
 
-      console.log(
-        `[WF Store:#${instanceId}] handleExternalUpdate → isDirty=${state.isDirty} currentSteps=${state.workflow.steps.length} serverSteps=${serverWorkflow.steps.length} onlyLengthChanged=${onlyStepsLengthChanged}`,
-      );
+        if (changedSteps.length === 1) {
+          modifiedStepName = changedSteps[0].def.name;
+        }
+      }
 
-      if (!state.isDirty && onlyStepsLengthChanged) {
+      // Simple rule: auto-apply if not dirty, queue if dirty
+      if (!state.isDirty) {
         set(
           {
             workflow: serverWorkflow,
             lastServerVersion: serverWorkflow,
             pendingServerUpdate: null,
+            lastModifiedStepName: modifiedStepName || null,
           },
           false,
-        );
-
-        console.log(
-          `[WF Store:#${instanceId}] applied:auto → steps=${serverWorkflow.steps.length}`,
         );
 
         return {
           applied: true,
-          reason: "Auto-updated: steps array length changed, no local edits",
+          reason: "Auto-applied: no local unsaved changes",
+          modifiedStepName,
         };
       }
 
-      if (state.isDirty || !onlyStepsLengthChanged) {
-        set(
-          {
-            pendingServerUpdate: serverWorkflow,
-            lastServerVersion: serverWorkflow,
-          },
-          false,
-        );
-
-        console.log(
-          `[WF Store:#${instanceId}] queued:pending → pending=${Boolean(serverWorkflow)}`,
-        );
-
-        return {
-          applied: false,
-          reason: state.isDirty
-            ? "User has unsaved changes"
-            : "Changes beyond steps array length",
-        };
-      }
-
+      // Store has unsaved changes, queue for user confirmation
       set(
         {
-          workflow: serverWorkflow,
+          pendingServerUpdate: serverWorkflow,
           lastServerVersion: serverWorkflow,
-          pendingServerUpdate: null,
+          lastModifiedStepName: null,
         },
         false,
       );
 
-      console.log(
-        `[WF Store:#${instanceId}] applied:default → steps=${serverWorkflow.steps.length}`,
-      );
-
       return {
-        applied: true,
-        reason: "No conflicts detected",
+        applied: false,
+        reason: "User has unsaved changes",
       };
     },
 

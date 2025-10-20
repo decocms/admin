@@ -15,11 +15,28 @@ export function useWorkflowSync(
   useEffect(() => {
     if (!serverWorkflow || !storeRef.current) return;
 
+    // Create a comprehensive hash that includes step definitions
+    // This ensures any change to step properties triggers a sync
     const currentHash = JSON.stringify({
       name: serverWorkflow.name,
       description: serverWorkflow.description,
-      stepsCount: serverWorkflow.steps.length,
-      stepNames: serverWorkflow.steps.map((s) => s.def.name),
+      steps: serverWorkflow.steps.map((s) => ({
+        name: s.def.name,
+        title: s.def.title,
+        description: s.def.description,
+        // Hash the execute code length and first 100 chars to detect changes
+        // without including huge code blocks in the hash
+        executePreview: s.def.execute?.substring(0, 100),
+        executeLength: s.def.execute?.length,
+        // Include input/output schemas if present
+        hasInputSchema: !!s.def.inputSchema,
+        hasOutputSchema: !!s.def.outputSchema,
+        // Include dependencies
+        dependencies: s.def.dependencies?.map((d) => ({
+          integrationId: d.integrationId,
+          toolNames: d.toolNames,
+        })),
+      })),
     });
 
     // Skip the very first sync when store is initialized with the same data

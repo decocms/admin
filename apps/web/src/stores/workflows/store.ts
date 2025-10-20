@@ -34,6 +34,7 @@ export type State = Pick<
   | "isDirty"
   | "lastServerVersion"
   | "pendingServerUpdate"
+  | "lastModifiedStepName"
   | "stepOutputs"
   | "stepInputs"
   | "stepExecutions"

@@ -36,13 +36,46 @@ export const createStepManagementSlice: StateCreator<
       set((state) => ({
         workflow: {
           ...state.workflow,
-          steps: state.workflow.steps.map((s) =>
-            s.def.name === stepName ? { ...s, ...updates } : s,
-          ),
+          steps: state.workflow.steps.map((s) => {
+            if (s.def.name !== stepName) return s;
+
+            // If def is being updated, deep-merge it and protect the name
+            const newDef = updates.def
+              ? {
+                  ...s.def,
+                  ...updates.def,
+                  // Always preserve the original name unless explicitly renamed
+                  // This prevents accidental orphaning
+                  name: updates.def.name || s.def.name,
+                }
+              : s.def;
+
+            // Build the updated step
+            const updatedStep: WorkflowStep = {
+              ...s,
+              ...updates,
+              def: newDef,
+            };
+
+            // If name actually changed, clear broken input references
+            if (newDef.name !== stepName) {
+              console.warn(
+                `[WF Store:#${instanceId}] Step renamed: ${stepName} → ${newDef.name}. Clearing input to avoid broken references.`,
+              );
+              updatedStep.input = undefined;
+            }
+
+            return updatedStep;
+          }),
         },
         isDirty: true,
       }));
-      console.log(`[WF Store:#${instanceId}] updateStep(${stepName})`);
+
+      const newName = updates.def?.name;
+      const renamed = newName && newName !== stepName;
+      console.log(
+        `[WF Store:#${instanceId}] updateStep(${stepName}${renamed ? ` → ${newName}` : ""})`,
+      );
     },
 
     removeStep: (stepName) => {

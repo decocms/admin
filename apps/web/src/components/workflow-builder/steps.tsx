@@ -51,6 +51,7 @@ export const WorkflowStepsList = memo(function WorkflowStepsList() {
     overscan: 2,
   });
 
+  // Auto-scroll when steps are added
   useLayoutEffect(() => {
     if (!store || !parentRef.current) return;
 
@@ -60,12 +61,13 @@ export const WorkflowStepsList = memo(function WorkflowStepsList() {
       const currentCount = state.workflow.steps.length;
 
       if (currentCount > previousCount && currentCount > 0) {
+        const lastStepIndex = currentCount - 1;
+        // Wait for virtualizer to measure the new item
         requestAnimationFrame(() => {
           requestAnimationFrame(() => {
-            if (!parentRef.current) return;
-
-            parentRef.current.scrollTo({
-              top: parentRef.current.scrollHeight,
+            // Use virtualizer to scroll to the newly added step
+            virtualizer.scrollToIndex(lastStepIndex, {
+              align: "end", // Show entire step including bottom
               behavior: "smooth",
             });
           });
@@ -76,7 +78,7 @@ export const WorkflowStepsList = memo(function WorkflowStepsList() {
     });
 
     return unsubscribe;
-  }, [store]);
+  }, [store, virtualizer]);
 
   if (!deferredStepNames || deferredStepNames.length === 0) {
     return (

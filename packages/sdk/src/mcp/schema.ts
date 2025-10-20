@@ -732,7 +732,7 @@ create index IF not exists idx_channels_workspace on public.deco_chat_channels u
 export const channels = pgTable(
   "deco_chat_channels",
   {
-    id: uuid("id").defaultRandom().notNull(),
+    id: uuid("id").primaryKey().defaultRandom(),
     discriminator: text("discriminator").notNull(),
     integration_id: uuid("integration_id")
       .notNull()

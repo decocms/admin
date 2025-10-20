@@ -253,7 +253,7 @@ export const ToggleDecopilotButton = () => {
 export const TopbarControls = () => {
   const location = useLocation();
   const isProjectContext = useIsProjectContext();
-  const isAgentDetailPage = location.pathname.match(/\/agent\/[^\/]+\/[^\/]+$/);
+  const isAgentDetailPage = location.pathname.match(/\/agent\/[^/]+\/[^/]+$/);
 
   if (!isProjectContext) {
     return null;

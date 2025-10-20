@@ -10,7 +10,7 @@
     "@mastra/core": "^0.20.2",
     "@modelcontextprotocol/sdk": "^1.19.1",
     "bidc": "0.0.3",
-    "drizzle-orm": "1.0.0-beta.1-ac4ce44",
+    "drizzle-orm": "^0.44.5",
     "jose": "^6.0.11",
     "mime-db": "1.52.0",
     "zod": "^3.25.76",

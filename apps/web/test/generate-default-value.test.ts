@@ -180,7 +180,7 @@ test("generateDefaultValue - nested objects", () => {
     required: ["user"],
   };
 
-  // deno-lint-ignore no-explicit-any
+  // oxlint-disable-next-line no-explicit-any
   const result = generateDefaultValue(nestedSchema) as Record<string, any>;
 
   // Check nested structure

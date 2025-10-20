@@ -57,7 +57,7 @@ export function getWorkflowByUri(
   uri: string,
   signal?: AbortSignal,
 ): Promise<WorkflowReadResult> {
-  // deno-lint-ignore no-explicit-any
+  // oxlint-disable-next-line no-explicit-any
   const client = workspaceResourceClient(locator) as any;
   return client[RESOURCE_WORKFLOW.READ](
     { uri },
@@ -73,7 +73,7 @@ export function upsertWorkflow(
   const client = workspaceResourceClient(locator);
 
   // Try update by URI first, fallback to create on not found
-  // deno-lint-ignore no-explicit-any
+  // oxlint-disable-next-line no-explicit-any
   return (client as any)
     [RESOURCE_WORKFLOW.UPDATE](
       {
@@ -87,7 +87,7 @@ export function upsertWorkflow(
       { signal },
     )
     .catch(() =>
-      // deno-lint-ignore no-explicit-any
+      // oxlint-disable-next-line no-explicit-any
       (client as any)[RESOURCE_WORKFLOW.CREATE](
         {
           data: {
@@ -106,7 +106,7 @@ export function deleteWorkflow(
   name: string,
   signal?: AbortSignal,
 ) {
-  // deno-lint-ignore no-explicit-any
+  // oxlint-disable-next-line no-explicit-any
   const client = workspaceResourceClient(locator) as any;
   return client[RESOURCE_WORKFLOW.DELETE](
     {
@@ -134,9 +134,9 @@ export function startWorkflow(
   params: WorkflowStartParamsV2,
   signal?: AbortSignal,
 ) {
-  // deno-lint-ignore no-explicit-any
+  // oxlint-disable-next-line no-explicit-any
   const client = workspaceResourceClient(locator) as any;
-  // deno-lint-ignore no-explicit-any
+  // oxlint-disable-next-line no-explicit-any
   return client[WORKFLOW_TOOLS.START](params as any, { signal });
 }
 
@@ -145,9 +145,9 @@ export function runStep(
   params: WorkflowRunStepParams,
   signal?: AbortSignal,
 ) {
-  // deno-lint-ignore no-explicit-any
+  // oxlint-disable-next-line no-explicit-any
   const client = workspaceResourceClient(locator) as any;
-  // deno-lint-ignore no-explicit-any
+  // oxlint-disable-next-line no-explicit-any
   return client[WORKFLOW_TOOLS.RUN_STEP](params as any, { signal });
 }
 /**

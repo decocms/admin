@@ -33,13 +33,13 @@ if (!fs.existsSync(decoCli)) {
   try {
     // Try to resolve deco-cli package
     decoCli = require.resolve("deco-cli/dist/cli.js");
-  } catch (error) {
+  } catch {
     // Fallback: try to find deco-cli binary
     try {
       const decoCliPkg = require.resolve("deco-cli/package.json");
       const decoCliDir = path.dirname(decoCliPkg);
       decoCli = path.join(decoCliDir, "dist", "cli.js");
-    } catch (fallbackError) {
+    } catch {
       console.error(
         "❌ deco-cli not found. Please ensure deco-cli is installed.",
       );

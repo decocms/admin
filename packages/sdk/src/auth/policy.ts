@@ -329,7 +329,7 @@ export class PolicyClient {
     if (params.roleId === BASE_ROLES_ID.OWNER) {
       if (params.action === "revoke") {
         // Check if this would remove the last owner
-        const { count } = await await this.db
+        const { count } = await this.db
           .from("members")
           .select(
             `
@@ -670,7 +670,7 @@ export class AuthorizationClient {
 
     const matched =
       matchFn?.handler?.(
-        // deno-lint-ignore no-explicit-any
+        // oxlint-disable-next-line no-explicit-any
         matchFn?.schema.parse(statement.matchCondition!) as unknown as any,
         ctx,
       ) ?? true;

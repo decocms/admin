@@ -141,7 +141,7 @@ export function InternalResourceListWithIntegration({
           hasCreate: Boolean(res?.hasCreate),
           hasDelete: Boolean(res?.hasDelete),
         });
-      } catch (_) {
+      } catch {
         // ignore; default capabilities remain false
       }
     })();
@@ -182,7 +182,7 @@ export function InternalResourceListWithIntegration({
           targetUrl,
         )}`,
       );
-    } catch (_) {
+    } catch {
       // fallback: internal detail
       const targetViewName = `${name.toUpperCase()}_DETAIL`;
       const targetUrl = `internal://resource/detail?name=${encodeURIComponent(

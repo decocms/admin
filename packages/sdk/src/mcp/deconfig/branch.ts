@@ -49,7 +49,7 @@ export interface FileMetadata {
   /** Blob address where the file content is stored */
   address: BlobAddress;
   /** User-defined metadata (arbitrary key-value pairs) */
-  // deno-lint-ignore no-explicit-any
+  // oxlint-disable-next-line no-explicit-any
   metadata: Record<string, any>;
   /** Size of the file content in bytes */
   sizeInBytes: number;
@@ -1450,7 +1450,7 @@ export class Branch extends DurableObject<DeconfigEnv> {
     const diffs: DiffEntry[] = [];
 
     for (const path of allPaths) {
-      // deno-lint-ignore no-explicit-any
+      // oxlint-disable-next-line no-explicit-any
       const aMeta = otherTree[path] as any as FileMetadata; // desired
       const bMeta = thisTree[path] as FileMetadata; // current
 

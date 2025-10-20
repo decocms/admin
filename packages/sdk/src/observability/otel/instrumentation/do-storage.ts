@@ -1,4 +1,3 @@
-// deno-lint-ignore-file no-explicit-any ban-types
 import {
   type Attributes,
   SpanKind,

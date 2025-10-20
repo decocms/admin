@@ -16,7 +16,7 @@ export function LanguageSelector({ locale, className }: LanguageSelectorProps) {
     const newLocale = event.target.value;
     // Navigate to the new locale URL
     const currentPath = globalThis.location.pathname;
-    const pathWithoutLocale = currentPath.replace(/^\/[^\/]+/, "");
+    const pathWithoutLocale = currentPath.replace(/^\/[^/]+/, "");
     globalThis.location.href = `/${newLocale}${pathWithoutLocale}`;
   };
 

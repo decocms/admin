@@ -143,7 +143,7 @@ test("generateDefaultValues - nested objects", () => {
     required: ["user"],
   };
 
-  // deno-lint-ignore no-explicit-any
+  // oxlint-disable-next-line no-explicit-any
   const result = generateDefaultValues(nestedSchema) as any;
 
   // Check nested structure
@@ -191,7 +191,7 @@ test("generateDefaultValues - nested objects with formData", () => {
 
   const result = generateDefaultValues(nestedSchema, formData) as Record<
     string,
-    // deno-lint-ignore no-explicit-any
+    // oxlint-disable-next-line no-explicit-any
     any
   >;
 

@@ -579,7 +579,7 @@ export const SPEAK = createInnateTool({
   outputSchema: SpeakOutputSchema,
   execute: (agent, env) => async (context) => {
     let s3Client: S3Client | null = null;
-    // deno-lint-ignore no-explicit-any
+    // oxlint-disable-next-line no-explicit-any
     let readableStream: any = null;
 
     try {
@@ -672,7 +672,7 @@ export const SPEAK = createInnateTool({
 
 // Helper function to process audio stream with memory efficiency
 async function processAudioStream(
-  // deno-lint-ignore no-explicit-any
+  // oxlint-disable-next-line no-explicit-any
   readableStream: any,
   s3Client: S3Client,
   bucketName: string,
@@ -834,7 +834,7 @@ async function uploadWithRetry(
 
 // Helper function to cleanup resources
 function cleanupResources(
-  // deno-lint-ignore no-explicit-any
+  // oxlint-disable-next-line no-explicit-any
   readableStream: any,
   s3Client: S3Client | null,
 ): void {

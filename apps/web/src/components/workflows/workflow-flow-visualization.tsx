@@ -1,4 +1,4 @@
-// deno-lint-ignore-file no-explicit-any
+/* oxlint-disable no-explicit-any */
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   addEdge,

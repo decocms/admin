@@ -72,7 +72,7 @@ export interface InviteAPIData {
 }
 
 const isRole = (
-  // deno-lint-ignore no-explicit-any
+  // oxlint-disable-next-line no-explicit-any
   r: any,
 ): r is Role => Boolean(r);
 
@@ -87,7 +87,7 @@ export interface DbMember {
     email: string;
     metadata: {
       id: string | null;
-      // deno-lint-ignore no-explicit-any
+      // oxlint-disable-next-line no-explicit-any
       raw_user_meta_data: any;
     };
   };

@@ -10,7 +10,7 @@ import { DEFAULT_MODEL } from "../constants.ts";
 export const updateAgent = async (locator: ProjectLocator, agent: Agent) => {
   const agentRoot = `/${locator}/Agents/${agent.id}`;
 
-  // deno-lint-ignore no-explicit-any
+  // oxlint-disable-next-line no-explicit-any
   const agentStub = stub<any>("AIAgent").new(agentRoot);
 
   await agentStub.configure(agent);

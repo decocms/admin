@@ -1,4 +1,4 @@
-// deno-lint-ignore-file no-explicit-any
+/* oxlint-disable no-explicit-any */
 export * from "./src/actors.ts";
 export { WorkspaceDatabase } from "./src/durable-objects/workspace-database.ts";
 // DECONFIG DurableObjects (re-exported from SDK)

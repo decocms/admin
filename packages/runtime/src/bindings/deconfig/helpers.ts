@@ -25,7 +25,7 @@ export const ResourceUri = {
     return `rsc://${integrationId}/${resourceName}/${resourceId}`;
   },
   unwind: (uri: string) => {
-    const match = uri.match(/^rsc:\/\/[^\/]+\/([^\/]+)\/(.+)$/);
+    const match = uri.match(/^rsc:\/\/[^/]+\/([^/]+)\/(.+)$/);
     if (!match) {
       throw new Error("Invalid Resources 2.0 URI format");
     }

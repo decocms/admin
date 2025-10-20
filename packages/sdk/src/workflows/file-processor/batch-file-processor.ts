@@ -198,7 +198,7 @@ async function updateAssetRecord(
     newDocIds: string[];
     filename: string | undefined;
     path: string | undefined;
-    // deno-lint-ignore no-explicit-any
+    // oxlint-disable-next-line no-explicit-any
     fileMetadata: Record<string, any>;
     totalChunkCount: number;
   },

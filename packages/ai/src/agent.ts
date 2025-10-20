@@ -1,4 +1,4 @@
-// deno-lint-ignore-file no-explicit-any
+/* oxlint-disable no-explicit-any */
 
 // NOTE:
 // Do not use private class fields or methods prefixed with '#'.
@@ -240,6 +240,8 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
     const { org, project } = Locator.parse(this.locator);
     const principalContext: PrincipalExecutionContext = {
       params: {},
+      // TODO(@viktormarinho): Remove the !
+      // eslint-disable-next-line @typescript-eslint/no-non-null-asserted-optional-chain
       user: metadata?.user!,
       isLocal: metadata?.user == null,
       cookie: metadata?.userCookie ?? undefined,

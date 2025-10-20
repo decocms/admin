@@ -1,4 +1,4 @@
-// deno-lint-ignore-file no-explicit-any
+/* oxlint-disable no-explicit-any */
 import { type DefaultEnv, type RequestContext, withBindings } from "./index.ts";
 import {
   type AppContext,
@@ -55,7 +55,7 @@ export const Workflow = (
   {
     constructor(
       // @ts-ignore: This is a workaround to fix the type error
-      // deno-lint-ignore ban-types
+      // oxlint-disable-next-line ban-types
       public override ctx: DurableObjectState<{}>,
       public override env: DefaultEnv,
     ) {

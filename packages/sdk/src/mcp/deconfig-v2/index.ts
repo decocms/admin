@@ -74,7 +74,7 @@ const buildFilePath = (directory: string, resourceId: string) => {
 
 const extractResourceId = (uri: string) => {
   // Extract ID from Resources 2.0 URI format: rsc://integrationId/resourceName/resource-id
-  const match = uri.match(/^rsc:\/\/[^\/]+\/[^\/]+\/(.+)$/);
+  const match = uri.match(/^rsc:\/\/[^/]+\/[^/]+\/(.+)$/);
   if (!match) {
     throw new UserInputError("Invalid Resources 2.0 URI format");
   }

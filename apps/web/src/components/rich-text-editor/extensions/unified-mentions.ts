@@ -16,9 +16,9 @@ interface UnifiedMentionsOptions {
     connection: unknown,
     args: { name: string; arguments: Record<string, unknown> },
   ) => Promise<unknown>;
-  // deno-lint-ignore no-explicit-any
+  // oxlint-disable-next-line no-explicit-any
   MentionNode: React.ComponentType<any>;
-  // deno-lint-ignore no-explicit-any
+  // oxlint-disable-next-line no-explicit-any
   MentionDropdown: React.ComponentType<any>;
 }
 

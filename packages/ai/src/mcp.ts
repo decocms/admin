@@ -1,4 +1,4 @@
-// deno-lint-ignore-file no-explicit-any
+/* oxlint-disable no-explicit-any */
 import {
   CallToolResultSchema,
   type DecoConnection,
@@ -47,9 +47,7 @@ export const patchApiDecoChatTokenHTTPConnection = (
 ) => {
   return {
     ...connection,
-    headers: {
-      ...(cookie ? { cookie } : {}),
-    },
+    headers: cookie ? { cookie } : {},
   };
 };
 

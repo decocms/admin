@@ -85,7 +85,7 @@ export function createViewRenderer<
  * View implementation options for creating view implementations
  */
 export interface ViewImplementationOptions {
-  // deno-lint-ignore no-explicit-any
+  // oxlint-disable-next-line no-explicit-any
   renderers: ViewRenderer<any>[];
 }
 

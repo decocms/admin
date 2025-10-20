@@ -162,7 +162,7 @@ const ensureStateIsWellFormed = async (state: unknown) => {
             id: prop.value,
           }),
         ).then((integration) => {
-          // deno-lint-ignore no-explicit-any
+          // oxlint-disable-next-line no-explicit-any
           (prop as any)["__type"] = integration.appName; // ensure it's a binding object
         }),
       );
@@ -382,7 +382,7 @@ export const updateApiKey = createTool({
     assertHasWorkspace(c);
     await assertWorkspaceResourceAccess(c);
 
-    // deno-lint-ignore no-explicit-any
+    // oxlint-disable-next-line no-explicit-any
     const updateData: Record<string, any> = {};
     if (name !== undefined) updateData.name = name;
     if (enabled !== undefined) updateData.enabled = enabled;
@@ -520,6 +520,8 @@ export const checkAccess = createTool({
     assertHasWorkspace(c);
     c.resourceAccess.grant(); // this is public because it uses the current key from context
 
+    // TODO(@mcandeia): remove this ignore
+    // eslint-disable-next-line eslint/no-unused-vars
     let user = c.user;
     if (key) {
       const fromJWT = await userFromJWT(

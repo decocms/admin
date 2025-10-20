@@ -1,4 +1,4 @@
-// deno-lint-ignore-file no-explicit-any
+/* oxlint-disable no-explicit-any */
 import { createExportTraceServiceRequest } from "@opentelemetry/otlp-transformer";
 import {
   type ExportServiceError,

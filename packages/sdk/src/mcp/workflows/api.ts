@@ -83,13 +83,6 @@ interface WorkflowInstanceParams {
 }
 
 /**
- * Extended Cloudflare instance detail with typed params
- */
-interface CFInstanceWithParams extends CFInstanceGetResponse {
-  params: WorkflowInstanceParams;
-}
-
-/**
  * Legacy WorkflowResource for backward compatibility
  * This is the old DeconfigResource implementation
  */
@@ -746,11 +739,11 @@ function isCFInstance(value: unknown): value is CFInstanceListResponse {
   return (
     typeof value === "object" &&
     value != null &&
-    // deno-lint-ignore no-explicit-any
+    // oxlint-disable-next-line no-explicit-any
     typeof (value as any).id === "string" &&
-    // deno-lint-ignore no-explicit-any
+    // oxlint-disable-next-line no-explicit-any
     (typeof (value as any).created_on === "string" ||
-      // deno-lint-ignore no-explicit-any
+      // oxlint-disable-next-line no-explicit-any
       typeof (value as any).modified_on === "string")
   );
 }

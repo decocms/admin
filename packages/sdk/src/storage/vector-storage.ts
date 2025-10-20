@@ -4,7 +4,7 @@ import type { Client } from "./supabase/client.ts";
  * Vector storage using Supabase pgvector
  */
 export class VectorStorage {
-  // deno-lint-ignore no-explicit-any
+  // oxlint-disable-next-line no-explicit-any
   private supabase: any;
 
   constructor(supabase: Client) {

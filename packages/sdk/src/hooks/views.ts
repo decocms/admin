@@ -45,7 +45,7 @@ export function getViewByUri(
   uri: string,
   signal?: AbortSignal,
 ): Promise<ViewReadResult> {
-  // deno-lint-ignore no-explicit-any
+  // oxlint-disable-next-line no-explicit-any
   const client = workspaceResourceClient(locator) as any;
   return client[RESOURCE_VIEW.READ](
     { uri },
@@ -67,7 +67,7 @@ export function updateViewV2(
   params: Partial<ViewUpsertParamsV2>,
   signal?: AbortSignal,
 ): Promise<ViewReadResult> {
-  // deno-lint-ignore no-explicit-any
+  // oxlint-disable-next-line no-explicit-any
   const client = workspaceResourceClient(locator) as any;
   return client[RESOURCE_VIEW.UPDATE](
     {
@@ -83,7 +83,7 @@ export function deleteViewV2(
   uri: string,
   signal?: AbortSignal,
 ): Promise<void> {
-  // deno-lint-ignore no-explicit-any
+  // oxlint-disable-next-line no-explicit-any
   const client = workspaceResourceClient(locator) as any;
   return client[RESOURCE_VIEW.DELETE]({ uri }, { signal }) as Promise<void>;
 }

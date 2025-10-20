@@ -60,7 +60,7 @@ export const stubFor = (env: Bindings) => {
     c: Constructor,
   ): StubFactory<InstanceType<Constructor>> => {
     return runtime instanceof ActorCfRuntime
-      ? // deno-lint-ignore no-explicit-any
+      ? // oxlint-disable-next-line no-explicit-any
         runtime.stub(c, env as any)
       : actors.stub(c.name);
   };

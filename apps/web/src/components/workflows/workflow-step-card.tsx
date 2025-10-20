@@ -25,7 +25,7 @@ function deepParse(value: unknown, depth = 0): unknown {
     if (depth > 8) return value;
     const parsed = JSON.parse(value);
     return deepParse(parsed, depth + 1);
-  } catch (_err) {
+  } catch {
     // If parsing fails, check if it looks like truncated JSON
     const trimmed = value.trim();
     const withoutTruncation = trimmed.replace(/\s*\[truncated output]$/i, "");

@@ -51,7 +51,7 @@ const preSelectTeam = (teams: Team[], workspace_hint: string | undefined) => {
       if (globalThis.self !== globalThis.top) {
         return globalThis.top?.location.href;
       }
-    } catch (_) {
+    } catch {
       return null;
     }
     return null;

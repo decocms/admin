@@ -122,7 +122,7 @@ function JsonViewer({ data, title }: JsonViewerProps) {
  * Interactive tool display that shows tool details with execution capability
  */
 export function ToolDetail({ resourceUri }: ToolDisplayCanvasProps) {
-  const { data: resource, isLoading: isLoading } = useToolByUriV2(resourceUri);
+  const { data: resource, isLoading } = useToolByUriV2(resourceUri);
   const effectiveTool = resource?.data;
   const { locator } = useSDK();
   const projectKey = typeof locator === "string" ? locator : undefined;

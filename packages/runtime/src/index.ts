@@ -1,4 +1,4 @@
-// deno-lint-ignore-file no-explicit-any
+/* oxlint-disable no-explicit-any */
 import type { ExecutionContext } from "@cloudflare/workers-types";
 import { decodeJwt } from "jose";
 import type { z } from "zod";

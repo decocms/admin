@@ -40,7 +40,7 @@ type URLPatternParams<URL extends string> =
                   }
                 : URL extends `/${string}/${infer rest}`
                   ? URLPatternParams<`/${rest}`>
-                  : // deno-lint-ignore ban-types
+                  : // oxlint-disable-next-line ban-types
                     {};
 export type ClientOf<T> = {
   [key in keyof T &
@@ -152,7 +152,7 @@ export const createHttpClient = <T>({
     },
   });
 };
-// deno-lint-ignore no-explicit-any
+// oxlint-disable-next-line no-explicit-any
 export const nullOnNotFound = (error: any) => {
   if (error.status === 404) {
     return null;

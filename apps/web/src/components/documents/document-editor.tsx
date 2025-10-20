@@ -158,7 +158,7 @@ export function DocumentEditor({
 
   // Wrap MentionNode with integration avatar support
   const MentionNodeWithAvatar = useCallback(
-    // deno-lint-ignore no-explicit-any
+    // oxlint-disable-next-line no-explicit-any
     (props: any) => (
       <MentionNode
         {...props}
@@ -171,7 +171,7 @@ export function DocumentEditor({
 
   // Wrap MentionDropdown with integration avatar support
   const MentionDropdownWithAvatar = useCallback(
-    // deno-lint-ignore no-explicit-any
+    // oxlint-disable-next-line no-explicit-any
     (props: any) => (
       <MentionDropdown {...props} IntegrationAvatar={IntegrationAvatar} />
     ),

@@ -1,4 +1,3 @@
-// deno-lint-ignore-file
 import { and, eq, ilike, isNull } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/postgres-js";
 import process from "node:process";
@@ -116,7 +115,7 @@ async function migrateShared<TableName extends string>({
     name: TableName;
     dialect: "pg";
     schema: undefined;
-    // deno-lint-ignore no-explicit-any
+    // oxlint-disable-next-line no-explicit-any
     columns: any;
   }>;
 }): Promise<boolean> {
@@ -221,7 +220,7 @@ async function migrateUser<TableName extends string>({
     name: TableName;
     dialect: "pg";
     schema: undefined;
-    // deno-lint-ignore no-explicit-any
+    // oxlint-disable-next-line no-explicit-any
     columns: any;
   }>;
 }): Promise<boolean> {
@@ -404,7 +403,7 @@ async function addProjectIdToEntity<
     name: TableName;
     dialect: "pg";
     schema: undefined;
-    // deno-lint-ignore no-explicit-any
+    // oxlint-disable-next-line no-explicit-any
     columns: any;
   }>;
   items: T[];

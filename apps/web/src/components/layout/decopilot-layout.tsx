@@ -35,7 +35,7 @@ export function DecopilotLayout({
 }: PropsWithChildren<{ value: DecopilotContextValue }>) {
   const { open: decopilotOpen } = useDecopilotOpen();
   const location = useLocation();
-  const isAgentDetailPage = location.pathname.match(/\/agent\/[^\/]+\/[^\/]+$/);
+  const isAgentDetailPage = location.pathname.match(/\/agent\/[^/]+\/[^/]+$/);
 
   return (
     <DecopilotProvider value={value}>

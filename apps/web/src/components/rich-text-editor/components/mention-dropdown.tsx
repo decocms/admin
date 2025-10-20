@@ -21,7 +21,7 @@ interface MentionDropdownProps {
   editor: unknown;
   isLoading?: boolean;
   pendingCategories?: string[]; // keys: `${integrationId}:${resourceType}`
-  // deno-lint-ignore no-explicit-any
+  // oxlint-disable-next-line no-explicit-any
   IntegrationAvatar?: React.ComponentType<any>;
 }
 

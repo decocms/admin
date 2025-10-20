@@ -53,7 +53,7 @@ export const callTool = (
   const client = locator ? MCPClient.forLocator(locator) : MCPClient;
   return client.INTEGRATIONS_CALL_TOOL({
     ...("id" in connection ? { id: connection.id } : { connection }),
-    // deno-lint-ignore no-explicit-any
+    // oxlint-disable-next-line no-explicit-any
     params: toolCallArgs as any,
   });
 };
@@ -64,11 +64,11 @@ export function useTools(connection: MCPConnection, ignoreCache?: boolean) {
     queryKey: [
       "tools",
       connection.type,
-      // deno-lint-ignore no-explicit-any
+      // oxlint-disable-next-line no-explicit-any
       (connection as any).url ||
-        // deno-lint-ignore no-explicit-any
+        // oxlint-disable-next-line no-explicit-any
         (connection as any).tenant ||
-        // deno-lint-ignore no-explicit-any
+        // oxlint-disable-next-line no-explicit-any
         (connection as any).name,
       ignoreCache,
     ],

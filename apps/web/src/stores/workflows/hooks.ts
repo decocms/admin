@@ -141,7 +141,7 @@ function hasValidValue(value: unknown): boolean {
 
   // For arrays, check if they have at least one valid element
   if (Array.isArray(value)) {
-    return value.length > 0 && value.some(hasValidValue);
+    return value.some(hasValidValue);
   }
 
   // Other values are valid

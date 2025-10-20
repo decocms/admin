@@ -150,7 +150,7 @@ export const honoCtxToAppCtx = (c: Context<AppEnv>): AppContext => {
 
 const mapMCPErrorToHTTPExceptionOrThrow = (err: Error) => {
   if ("code" in err) {
-    // deno-lint-ignore no-explicit-any
+    // oxlint-disable-next-line no-explicit-any
     const cause = (err as any as { detail?: unknown }).detail;
     const status = (err.code as ContentfulStatusCode | undefined) ?? 500;
     const message = err.message ?? "Internal server error";
@@ -472,9 +472,7 @@ const createMcpServerProxyForIntegration = async (
         policies: [{ statements }],
       });
     },
-    headers: {
-      ...(callerApp ? { "x-caller-app": callerApp } : {}),
-    },
+    headers: callerApp ? { "x-caller-app": callerApp } : {},
     tools: integration.tools
       ? { tools: integration.tools as ListToolsResult["tools"] }
       : undefined,

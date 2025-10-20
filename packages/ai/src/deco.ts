@@ -1,4 +1,4 @@
-// deno-lint-ignore-file no-explicit-any
+/* oxlint-disable no-explicit-any */
 import type { JSONSchema7 } from "@ai-sdk/provider";
 
 export interface Tool {
@@ -123,9 +123,10 @@ export const getTools = (schemas?: any): Tool[] => {
     func = func as RootSchema;
     if (!func.$ref || func.$ref === RESOLVABLE_DEFINITION) return;
     const funcDefinition = schemas.definitions[idFromDefinition(func.$ref)];
-    const resolveType = (
-      funcDefinition.properties?.__resolveType as { default: string }
-    ).default;
+    const resolveType =
+      // TODO(@mcandeia): remove this ignore
+      // eslint-disable-next-line eslint/no-unsafe-optional-chaining
+      (funcDefinition.properties?.__resolveType as { default: string }).default;
 
     const getInputSchemaId = () => {
       if ("inputSchema" in func) {

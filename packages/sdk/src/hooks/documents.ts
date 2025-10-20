@@ -60,7 +60,7 @@ export function getDocumentByUri(
   uri: string,
   signal?: AbortSignal,
 ): Promise<DocumentReadResult> {
-  // deno-lint-ignore no-explicit-any
+  // oxlint-disable-next-line no-explicit-any
   const client = workspaceResourceClient(locator) as any;
   return client[RESOURCE_DOCUMENT.READ](
     { uri },
@@ -80,7 +80,7 @@ export function upsertDocumentV2(
   params: DocumentUpsertParamsV2,
   signal?: AbortSignal,
 ): Promise<DocumentReadResult> {
-  // deno-lint-ignore no-explicit-any
+  // oxlint-disable-next-line no-explicit-any
   const client = workspaceResourceClient(locator) as any;
   return client[RESOURCE_DOCUMENT.CREATE](
     {
@@ -96,7 +96,7 @@ export function updateDocumentV2(
   params: Partial<DocumentUpsertParamsV2>,
   signal?: AbortSignal,
 ): Promise<DocumentReadResult> {
-  // deno-lint-ignore no-explicit-any
+  // oxlint-disable-next-line no-explicit-any
   const client = workspaceResourceClient(locator) as any;
   return client[RESOURCE_DOCUMENT.UPDATE](
     {
@@ -112,7 +112,7 @@ export function deleteDocumentV2(
   uri: string,
   signal?: AbortSignal,
 ): Promise<void> {
-  // deno-lint-ignore no-explicit-any
+  // oxlint-disable-next-line no-explicit-any
   const client = workspaceResourceClient(locator) as any;
   return client[RESOURCE_DOCUMENT.DELETE]({ uri }, { signal }) as Promise<void>;
 }
@@ -289,7 +289,7 @@ export function useDocuments(input?: {
     ),
     queryFn: async ({ signal }) => {
       try {
-        // deno-lint-ignore no-explicit-any
+        // oxlint-disable-next-line no-explicit-any
         const client = workspaceResourceClient(locator) as any;
         const result = (await client[RESOURCE_DOCUMENT.SEARCH](
           {

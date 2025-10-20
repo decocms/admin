@@ -55,7 +55,7 @@ export const AudioButton: React.FC<AudioButtonProps> = ({ onMessage }) => {
         if (recognition) {
           try {
             recognition.stop();
-          } catch (_e) {
+          } catch {
             // Ignore errors when stopping recognition during cleanup
           }
         }

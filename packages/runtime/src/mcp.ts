@@ -1,4 +1,4 @@
-// deno-lint-ignore-file no-explicit-any
+/* oxlint-disable no-explicit-any */
 import { env } from "cloudflare:workers";
 import { z } from "zod";
 import type { MCPConnection } from "./connection.ts";

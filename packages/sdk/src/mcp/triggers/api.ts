@@ -442,7 +442,7 @@ export const activateTrigger = createTool({
         success: true,
         message: "Trigger activated successfully",
       };
-    } catch (_) {
+    } catch {
       return {
         success: false,
         message: "Failed to activate trigger",
@@ -507,7 +507,7 @@ export const deactivateTrigger = createTool({
         success: true,
         message: "Trigger deactivated successfully",
       };
-    } catch (_) {
+    } catch {
       return {
         success: false,
         message: "Failed to deactivate trigger",

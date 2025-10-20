@@ -93,7 +93,7 @@ export default {
         new Request(req.url, {
           method: req.method,
           headers: reqHeaders,
-          body: req.body,
+          ...(req.body ? { body: req.body } : {}),
           redirect: req.redirect,
         }),
       );

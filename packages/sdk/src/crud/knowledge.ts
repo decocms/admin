@@ -28,7 +28,7 @@ interface KnowledgeAddFileParams extends FromWorkspace, ForConnection {
 
 export const knowledgeAddFile = ({
   fileUrl,
-  locator: locator,
+  locator,
   metadata,
   path,
   filename,
@@ -44,7 +44,7 @@ export const knowledgeAddFile = ({
 interface KnowledgeListFilesParams extends FromWorkspace, ForConnection {}
 
 export const knowledgeListFiles = ({
-  locator: locator,
+  locator,
   connection,
 }: KnowledgeListFilesParams) =>
   getClientFor(locator, connection)
@@ -56,7 +56,7 @@ interface KnowledgeDeleteFileParams extends FromWorkspace, ForConnection {
 }
 
 export const knowledgeDeleteFile = ({
-  locator: locator,
+  locator,
   connection,
   fileUrl,
 }: KnowledgeDeleteFileParams) =>
@@ -66,10 +66,7 @@ interface CreateKnowledgeParams extends FromWorkspace {
   name: string;
 }
 
-export const createKnowledge = ({
-  locator: locator,
-  name,
-}: CreateKnowledgeParams) =>
+export const createKnowledge = ({ locator, name }: CreateKnowledgeParams) =>
   MCPClient.forLocator(locator).KNOWLEDGE_BASE_CREATE({
     name,
   });

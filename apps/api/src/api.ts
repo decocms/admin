@@ -472,7 +472,7 @@ const createMcpServerProxyForIntegration = async (
         policies: [{ statements }],
       });
     },
-    headers: (callerApp ? { "x-caller-app": callerApp } : {}),
+    headers: callerApp ? { "x-caller-app": callerApp } : {},
     tools: integration.tools
       ? { tools: integration.tools as ListToolsResult["tools"] }
       : undefined,

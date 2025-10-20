@@ -3,7 +3,7 @@ import type { Edge, Node } from "@xyflow/react";
 import { useStartWorkflow, useUpsertWorkflow } from "./resources-workflow.ts";
 import type {
   WorkflowDefinition as Workflow,
-  WorkflowStep as WorkflowStep,
+  WorkflowStep,
 } from "../mcp/workflows/schemas.ts";
 import { buildWorkflowUri } from "./resources-workflow.ts";
 

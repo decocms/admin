@@ -520,6 +520,8 @@ export const checkAccess = createTool({
     assertHasWorkspace(c);
     c.resourceAccess.grant(); // this is public because it uses the current key from context
 
+    // TODO(@mcandeia): remove this ignore
+    // eslint-disable-next-line eslint/no-unused-vars
     let user = c.user;
     if (key) {
       const fromJWT = await userFromJWT(

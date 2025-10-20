@@ -86,7 +86,7 @@ export function ToolCallForm({
       try {
         // Convert form data to JSON string when switching to raw mode
         setPayload(JSON.stringify(form.getValues(), null, 2));
-      } catch (_err) {
+      } catch {
         setPayload("{}");
       }
     } else {
@@ -94,7 +94,7 @@ export function ToolCallForm({
         // Parse JSON and update form when switching to form mode
         const parsedPayload = JSON.parse(payload || "{}");
         form.reset(parsedPayload);
-      } catch (_err) {
+      } catch {
         // If JSON is invalid, show error but don't switch modes
         setError(
           "Invalid JSON payload. Please fix before switching to form mode.",

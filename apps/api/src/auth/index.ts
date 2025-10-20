@@ -120,7 +120,7 @@ export const createMagicLinkEmail = async (ctx: AppContext) => {
       },
     });
     return { email };
-  } catch (_) {
+  } catch {
     return { error: "" };
   }
 };
@@ -202,7 +202,7 @@ appLogin.all("/magiclink", async (ctx: AppContext) => {
       },
     });
     return ctx.json({ email });
-  } catch (_) {
+  } catch {
     return ctx.json({ error: "" }, 400);
   }
 });

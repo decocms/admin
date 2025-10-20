@@ -108,7 +108,7 @@ export const readWranglerConfig = async (cwd?: string) => {
   try {
     const config = await fs.readFile(configPath, "utf-8");
     return parse(config) as WranglerConfig;
-  } catch (_error) {
+  } catch {
     return {};
   }
 };
@@ -309,7 +309,7 @@ export const getAppUUID = (
     const combined = `${workspace}-${app}`;
     const hash = md5Hash(combined);
     return hash.slice(0, 8); // Use first 8 characters for shorter, readable UUID
-  } catch (_error) {
+  } catch {
     // Fallback to random UUID if hash generation fails
     console.warn(
       "Could not generate hash for UUID, using random fallback:",

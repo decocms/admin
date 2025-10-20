@@ -1,0 +1,9 @@
+{
+  "rules": {
+    "no-unused-expressions": "off"
+  },
+  "ignorePatterns": [
+    "scripts/migrate-project-entity-table.ts",
+    "packages/sdk/src/observability/otel/*"
+  ]
+}

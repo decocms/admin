@@ -21,19 +21,6 @@ interface MessageAttachment {
   name?: string;
 }
 
-interface ToolInvocation {
-  toolCallId: string;
-  toolName: string;
-  state:
-    | "input-streaming"
-    | "input-available"
-    | "output-available"
-    | "output-error";
-  input?: unknown;
-  output?: unknown;
-  errorText?: string;
-}
-
 interface ImagePart {
   type: "image";
   image: string;

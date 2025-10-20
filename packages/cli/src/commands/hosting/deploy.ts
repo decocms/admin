@@ -143,7 +143,7 @@ export const deploy = async ({
         wranglerConfigStatus = `${configFile} ✅ (found in ${configPath})`;
         found = true;
         break;
-      } catch (_) {
+      } catch {
         // not found, try next
       }
     }

@@ -83,13 +83,6 @@ interface WorkflowInstanceParams {
 }
 
 /**
- * Extended Cloudflare instance detail with typed params
- */
-interface CFInstanceWithParams extends CFInstanceGetResponse {
-  params: WorkflowInstanceParams;
-}
-
-/**
  * Legacy WorkflowResource for backward compatibility
  * This is the old DeconfigResource implementation
  */

@@ -83,7 +83,7 @@ export async function readSession(): Promise<SessionData | null> {
     const sessionPath = getSessionPath();
     const content = await fs.readFile(sessionPath, "utf-8");
     return SessionSchema.safeParse(JSON.parse(content)).data ?? null;
-  } catch (_error) {
+  } catch {
     return null;
   }
 }
@@ -94,7 +94,7 @@ export async function deleteSession() {
 
   try {
     await fs.unlink(sessionPath);
-  } catch (_error) {
+  } catch {
     console.warn("Session file not found");
   }
 

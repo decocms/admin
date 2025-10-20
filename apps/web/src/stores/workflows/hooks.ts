@@ -210,12 +210,10 @@ export function useWorkflowActions() {
       handleExternalUpdate: state.handleExternalUpdate,
       acceptPendingUpdate: state.acceptPendingUpdate,
       dismissPendingUpdate: state.dismissPendingUpdate,
-      markClean: state.markClean,
       // Step management actions
       addStep: state.addStep,
       updateStep: state.updateStep,
       removeStep: state.removeStep,
-      reorderSteps: state.reorderSteps,
       // Workflow actions
       updateWorkflow: state.updateWorkflow,
       // Step execution actions

@@ -6,7 +6,6 @@ export interface StepManagementSlice {
   addStep: (step: WorkflowStep) => void;
   updateStep: (stepName: string, updates: Partial<WorkflowStep>) => void;
   removeStep: (stepName: string) => void;
-  reorderSteps: (fromIndex: number, toIndex: number) => void;
 }
 
 export const createStepManagementSlice: StateCreator<
@@ -14,7 +13,7 @@ export const createStepManagementSlice: StateCreator<
   [],
   [],
   StepManagementSlice
-> = (set, get) => {
+> = (set) => {
   const instanceId = Math.random().toString(36).slice(2, 8);
 
   return {
@@ -26,10 +25,6 @@ export const createStepManagementSlice: StateCreator<
         },
         isDirty: true,
       }));
-      const s = get();
-      console.log(
-        `[WF Store:#${instanceId}] addStep → steps=${s.workflow.steps.length}`,
-      );
     },
 
     updateStep: (stepName, updates) => {
@@ -70,12 +65,6 @@ export const createStepManagementSlice: StateCreator<
         },
         isDirty: true,
       }));
-
-      const newName = updates.def?.name;
-      const renamed = newName && newName !== stepName;
-      console.log(
-        `[WF Store:#${instanceId}] updateStep(${stepName}${renamed ? ` → ${newName}` : ""})`,
-      );
     },
 
     removeStep: (stepName) => {
@@ -86,41 +75,6 @@ export const createStepManagementSlice: StateCreator<
         },
         isDirty: true,
       }));
-      const s = get();
-      console.log(
-        `[WF Store:#${instanceId}] removeStep(${stepName}) → steps=${s.workflow.steps.length}`,
-      );
-    },
-
-    reorderSteps: (fromIndex, toIndex) => {
-      const steps = get().workflow.steps;
-
-      // Clamp indices to valid ranges
-      const clampedFrom = Math.max(0, Math.min(fromIndex, steps.length - 1));
-      const clampedTo = Math.max(0, Math.min(toIndex, steps.length));
-
-      // No-op if indices are equal
-      if (clampedFrom === clampedTo) {
-        return;
-      }
-
-      set((state) => {
-        const newSteps = [...state.workflow.steps];
-        const [movedStep] = newSteps.splice(clampedFrom, 1);
-        newSteps.splice(clampedTo, 0, movedStep);
-
-        return {
-          workflow: {
-            ...state.workflow,
-            steps: newSteps,
-          },
-          isDirty: true,
-        };
-      });
-
-      console.log(
-        `[WF Store:#${instanceId}] reorderSteps(${fromIndex}→${toIndex})`,
-      );
     },
   };
 };

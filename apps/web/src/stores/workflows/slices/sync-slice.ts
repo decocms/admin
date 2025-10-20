@@ -14,15 +14,12 @@ export interface SyncSlice {
   };
   acceptPendingUpdate: () => void;
   dismissPendingUpdate: () => void;
-  markClean: () => void;
 }
 
 export const createSyncSlice: StateCreator<Store, [], [], SyncSlice> = (
   set,
   get,
 ) => {
-  const instanceId = Math.random().toString(36).slice(2, 8);
-
   return {
     isDirty: false,
     lastServerVersion: null,
@@ -100,23 +97,10 @@ export const createSyncSlice: StateCreator<Store, [], [], SyncSlice> = (
         isDirty: false,
         pendingServerUpdate: null,
       });
-
-      console.log(
-        `[WF Store:#${instanceId}] acceptPendingUpdate → steps=${pendingServerUpdate.steps.length}`,
-      );
     },
 
     dismissPendingUpdate: () => {
       set({ pendingServerUpdate: null });
-      console.log(`[WF Store:#${instanceId}] dismissPendingUpdate`);
-    },
-
-    markClean: () => {
-      set({
-        isDirty: false,
-        lastServerVersion: get().workflow,
-      });
-      console.log(`[WF Store:#${instanceId}] markClean`);
     },
   };
 };

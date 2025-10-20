@@ -58,7 +58,7 @@ export function WorkflowDisplay({ resourceUri }: WorkflowDisplayCanvasProps) {
       return storeRef.current;
     }
 
-    const s = createWorkflowStore({ workflow }, "WorkflowDisplay");
+    const s = createWorkflowStore({ workflow });
     storeRef.current = s;
     lastWorkflowNameRef.current = workflow.name;
 

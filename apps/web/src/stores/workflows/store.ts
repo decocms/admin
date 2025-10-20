@@ -45,11 +45,9 @@ export type Actions = Pick<
   | "handleExternalUpdate"
   | "acceptPendingUpdate"
   | "dismissPendingUpdate"
-  | "markClean"
   | "addStep"
   | "updateStep"
   | "removeStep"
-  | "reorderSteps"
   | "updateWorkflow"
   | "setStepOutput"
   | "setStepInput"
@@ -57,17 +55,7 @@ export type Actions = Pick<
   | "setStepExecutionEnd"
 >;
 
-export const createWorkflowStore = (
-  initialState: Pick<State, "workflow">,
-  debugLabel?: string,
-) => {
-  const instanceId = Math.random().toString(36).slice(2, 8);
-  const label = debugLabel || "unknown";
-
-  console.log(
-    `[WF Store:#${instanceId}] create from=${label} → name=${initialState.workflow.name} steps=${initialState.workflow.steps.length}`,
-  );
-
+export const createWorkflowStore = (initialState: Pick<State, "workflow">) => {
   return createStore<Store>()((set, get, api) => ({
     // Initialize workflow slice
     ...createWorkflowSlice(set, get, api),

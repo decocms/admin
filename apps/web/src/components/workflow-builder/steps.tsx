@@ -62,13 +62,17 @@ export const WorkflowStepsList = memo(function WorkflowStepsList() {
 
       if (currentCount > previousCount && currentCount > 0) {
         const lastStepIndex = currentCount - 1;
+
         // Wait for virtualizer to measure the new item
+        // Using more RAF frames to ensure measurement is complete
         requestAnimationFrame(() => {
           requestAnimationFrame(() => {
-            // Use virtualizer to scroll to the newly added step
-            virtualizer.scrollToIndex(lastStepIndex, {
-              align: "end", // Show entire step including bottom
-              behavior: "smooth",
+            requestAnimationFrame(() => {
+              // Use 'auto' behavior instead of 'smooth' for dynamic sizing
+              virtualizer.scrollToIndex(lastStepIndex, {
+                align: "end",
+                behavior: "auto", // ✅ Changed from "smooth" to "auto"
+              });
             });
           });
         });

@@ -2,8 +2,12 @@
   "rules": {
     "no-unused-expressions": "off",
     "no-explicit-any": "warn",
+    "enforce-kebab-case-file-names/kebab-case": "warn",
     "ban-types": "warn"
   },
+  "jsPlugins": [
+    "./plugins/enforce-kebab-case-file-names.js"
+  ],
   "ignorePatterns": [
     "scripts/migrate-project-entity-table.ts",
     "packages/sdk/src/observability/otel/*",

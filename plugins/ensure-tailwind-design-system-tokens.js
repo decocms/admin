@@ -1,3 +1,8 @@
+/**
+ * @viktormarinho: This plugin is not working on the current
+ * experimental js plugin support of oxlint. It will probably
+ * be fixed soon, though. Disabled for now.
+ */
 const BANNED_CLASS_NAMES_CONTAIN_VALUES = [
   "50",
   "100",
@@ -22,7 +27,7 @@ const CATEGORIES = [
 ];
 
 // Helper function to check if a class uses design system tokens
-function isValidDesignSystemToken(className: string): boolean {
+function isValidDesignSystemToken(className) {
   const withoutPrefix = className.split(":").at(-1);
 
   if (!withoutPrefix) {
@@ -44,10 +49,6 @@ function handleLiteral({
   context,
   value,
   range,
-}: {
-  context: Deno.lint.RuleContext;
-  value: string;
-  range: Deno.lint.Range;
 }) {
   const classes = value.split(" ");
   for (const className of classes) {
@@ -61,8 +62,10 @@ function handleLiteral({
 }
 
 // Create the lint rule
-const ensureTailwindDesignSystemTokens: Deno.lint.Plugin = {
-  name: "ensure-tailwind-design-system-tokens",
+const ensureTailwindDesignSystemTokens = {
+  meta: {
+    name: "ensure-tailwind-design-system-tokens",
+  },
   rules: {
     "ensure-tailwind-design-system-tokens": {
       create(context) {

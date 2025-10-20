@@ -65,37 +65,6 @@ export const useWorkflowRuns = (
   };
 };
 
-/**
- * Hook to get recent workflow runs from any workflow
- */
-export const useRecentWorkflowRuns = (page = 1, per_page = 25) => {
-  const { locator } = useSDK();
-
-  const { data, refetch, isRefetching } = useSuspenseQuery({
-    queryKey: ["recent-workflow-runs", locator, page, per_page],
-    queryFn: async ({ signal }) => {
-      const result = await listWorkflowRuns(
-        locator,
-        page,
-        per_page,
-        undefined,
-        signal,
-      );
-      return result;
-    },
-    retry: (failureCount, error) =>
-      error instanceof InternalServerError && failureCount < 2,
-    // Cache for 2 minutes since this shows recent activity
-    staleTime: 2 * 60 * 1000,
-  });
-
-  return {
-    data,
-    refetch,
-    isRefetching,
-  };
-};
-
 export const useWorkflowStatus = (workflowName: string, instanceId: string) => {
   const { locator } = useSDK();
   return useSuspenseQuery({

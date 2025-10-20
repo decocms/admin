@@ -1,9 +1,8 @@
-import { useRecentWorkflowRuns, useWorkflowRuns, useSDK } from "@deco/sdk";
+import { useWorkflowRuns, useSDK, workflowExecutionKeys } from "@deco/sdk";
 import { Badge } from "@deco/ui/components/badge.tsx";
 import { Card, CardContent } from "@deco/ui/components/card.tsx";
 import { Icon } from "@deco/ui/components/icon.tsx";
 import { useCallback, useMemo, useState } from "react";
-import { useSearchParams } from "react-router";
 import { useQueryClient } from "@tanstack/react-query";
 import { useNavigateWorkspace } from "../../hooks/use-navigate-workspace.ts";
 import { formatToolName } from "../chat/utils/format-tool-name.ts";
@@ -118,8 +117,6 @@ function WorkflowRunsContent({
   searchTerm = "",
   viewMode = "cards",
 }: WorkflowRunsProps) {
-  const [_searchParams, _setSearchParams] = useSearchParams();
-  const [selectedWorkflow, _setSelectedWorkflow] = useState<string>("all");
   const navigateWorkspace = useNavigateWorkspace();
   const { locator } = useSDK();
   const queryClient = useQueryClient();
@@ -138,10 +135,10 @@ function WorkflowRunsContent({
         );
 
         queryClient.invalidateQueries({
-          queryKey: ["workflow-runs", locator],
+          queryKey: workflowExecutionKeys.allRuns(locator),
         });
         queryClient.invalidateQueries({
-          queryKey: ["recent-workflow-runs", locator],
+          queryKey: workflowExecutionKeys.allRecentRuns(locator),
         });
       },
       [locator, queryClient],
@@ -153,9 +150,7 @@ function WorkflowRunsContent({
     data,
     refetch: _refetch,
     isRefetching: _isRefetching,
-  } = selectedWorkflow !== "all"
-    ? useWorkflowRuns(selectedWorkflow, 1, 25)
-    : useRecentWorkflowRuns(1, 25);
+  } = useWorkflowRuns("all", 1, 25);
 
   const runs = data?.runs || [];
 

@@ -115,11 +115,24 @@ export const workflowExecutionKeys = {
   ) => ["workflow-runs", locator, workflowName, page, perPage] as const,
 
   /**
+   * Base key for all workflow runs queries (useful for invalidation)
+   * @example ["workflow-runs", locator]
+   */
+  allRuns: (locator: ProjectLocator) => ["workflow-runs", locator] as const,
+
+  /**
    * Key for recent workflow runs across all workflows
    * @example ["recent-workflow-runs", locator, 1, 20]
    */
   recentRuns: (locator: ProjectLocator, page?: number, perPage?: number) =>
     ["recent-workflow-runs", locator, page, perPage] as const,
+
+  /**
+   * Base key for all recent workflow runs queries (useful for invalidation)
+   * @example ["recent-workflow-runs", locator]
+   */
+  allRecentRuns: (locator: ProjectLocator) =>
+    ["recent-workflow-runs", locator] as const,
 
   /**
    * Key for workflow status query

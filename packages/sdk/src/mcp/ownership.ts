@@ -5,6 +5,9 @@ import { projects, organizations } from "./schema.ts";
 import { eq, or, and } from "drizzle-orm";
 import { getProjectIdFromContext } from "./projects/util.ts";
 
+/**
+ * We only use workspace on the queries for default and personal projects.
+ */
 export function shouldOmitWorkspace(ctx: Pick<AppContext, "locator">) {
   assertHasLocator(ctx);
   return (

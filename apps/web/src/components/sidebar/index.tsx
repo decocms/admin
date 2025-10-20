@@ -494,10 +494,6 @@ function WorkspaceViews() {
               <Link
                 to={href}
                 onClick={(e) => {
-                  trackEvent("sidebar_navigation_click", {
-                    item: displayTitle,
-                  });
-
                   // Reload if already on current page (client-side)
                   if (location.pathname === href) {
                     e.preventDefault();
@@ -505,6 +501,9 @@ function WorkspaceViews() {
                     return;
                   }
 
+                  trackEvent("sidebar_navigation_click", {
+                    item: displayTitle,
+                  });
                   isMobile && toggleSidebar();
                 }}
               >
@@ -569,7 +568,14 @@ function WorkspaceViews() {
                     <Link
                       to={href}
                       className="group/item relative"
-                      onClick={() => {
+                      onClick={(e) => {
+                        // Reload if already on current page (client-side)
+                        if (location.pathname === href) {
+                          e.preventDefault();
+                          navigate(0);
+                          return;
+                        }
+
                         trackEvent("sidebar_navigation_click", {
                           item: view.title,
                         });
@@ -736,10 +742,6 @@ function WorkspaceViews() {
                               to={href}
                               className="group/item relative"
                               onClick={(e) => {
-                                trackEvent("sidebar_navigation_click", {
-                                  item: view.title,
-                                });
-
                                 // Reload if already on current page (client-side)
                                 if (location.pathname === href) {
                                   e.preventDefault();
@@ -747,6 +749,9 @@ function WorkspaceViews() {
                                   return;
                                 }
 
+                                trackEvent("sidebar_navigation_click", {
+                                  item: view.title,
+                                });
                                 isMobile && toggleSidebar();
                               }}
                             >
@@ -811,7 +816,14 @@ function WorkspaceViews() {
                       <Link
                         to={href}
                         className="group/item relative"
-                        onClick={() => {
+                        onClick={(e) => {
+                          // Reload if already on current page (client-side)
+                          if (location.pathname === href) {
+                            e.preventDefault();
+                            navigate(0);
+                            return;
+                          }
+
                           trackEvent("sidebar_navigation_click", {
                             item: resource.title,
                           });
@@ -941,7 +953,14 @@ function WorkspaceViews() {
                     <Link
                       to={resource.path}
                       className="group/item relative"
-                      onClick={() => {
+                      onClick={(e) => {
+                        // Reload if already on current page (client-side)
+                        if (location.pathname === resource.path) {
+                          e.preventDefault();
+                          navigate(0);
+                          return;
+                        }
+
                         trackEvent("sidebar_navigation_click", {
                           item: resource.name,
                           type: "pinned-resource",
@@ -1008,7 +1027,14 @@ function WorkspaceViews() {
                     <Link
                       to={resource.path}
                       className="group/item relative"
-                      onClick={() => {
+                      onClick={(e) => {
+                        // Reload if already on current page (client-side)
+                        if (location.pathname === resource.path) {
+                          e.preventDefault();
+                          navigate(0);
+                          return;
+                        }
+
                         trackEvent("sidebar_navigation_click", {
                           item: resource.name,
                           type: "recent-resource",

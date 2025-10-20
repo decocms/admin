@@ -49,7 +49,7 @@ export async function filterByWorkspaceOrProjectId<TableName extends string>({
     name: TableName;
     dialect: "pg";
     schema: undefined;
-    // deno-lint-ignore no-explicit-any
+    // oxlint-disable-next-line no-explicit-any
     columns: any;
   }>;
   ctx: Pick<AppContext, "workspace" | "locator">;

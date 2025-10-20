@@ -138,7 +138,7 @@ async function batchUpsertVectorContent(
       vectors: embeddings,
       metadata: itemsWithIds.map((item) => ({
         id: item.docId,
-        metadata: { ...(item.metadata ?? {}), content: item.content },
+        metadata: { ...item.metadata, content: item.content },
       })),
     });
   } catch (e) {

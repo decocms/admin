@@ -21,23 +21,23 @@ _deco_completion() {
     local completions
     
     # Call the deco CLI completion command
-    completions=\$(deco completion call-tool --current="\$cur" --previous="\$prev" --line="\$line" 2>/dev/null)
+    completions=$(deco completion call-tool --current="$cur" --previous="$prev" --line="$line" 2>/dev/null)
     
-    if [[ \$? -eq 0 && -n "\$completions" ]]; then
-      COMPREPLY=(\$(compgen -W "\$completions" -- "\$cur"))
+    if [[ $? -eq 0 && -n "$completions" ]]; then
+      COMPREPLY=($(compgen -W "$completions" -- "$cur"))
       return 0
     fi
   fi
 
   # Default completion for other commands
-  case \$prev in
+  case $prev in
     -w|--workspace)
       # Complete workspace names (could be enhanced to fetch from config)
       return 0
       ;;
     *)
       # Complete with available subcommands and options
-      COMPREPLY=(\$(compgen -W "login logout whoami configure hosting dev add call-tool upgrade update link gen create" -- "\$cur"))
+      COMPREPLY=($(compgen -W "login logout whoami configure hosting dev add call-tool upgrade update link gen create" -- "$cur"))
       ;;
   esac
 }
@@ -106,32 +106,32 @@ _deco_call_tool() {
 
 _deco_integrations() {
   local integrations
-  integrations=(\$(deco completion call-tool --current="\$PREFIX" --previous="-i" --line="\$BUFFER" 2>/dev/null))
+  integrations=($(deco completion call-tool --current="$PREFIX" --previous="-i" --line="$BUFFER" 2>/dev/null))
   _describe 'integrations' integrations
 }
 
 _deco_tools() {
   local tools integration
   # Extract integration from command line
-  if [[ "\$words" == *"-i"* ]]; then
+  if [[ "$words" == *"-i"* ]]; then
     local i_index=\${words[(i)-i]}
     if (( i_index < \${#words} )); then
       integration=\${words[i_index+1]}
     fi
-  elif [[ "\$words" == *"--integration"* ]]; then
+  elif [[ "$words" == *"--integration"* ]]; then
     local int_index=\${words[(i)--integration]}
     if (( int_index < \${#words} )); then
       integration=\${words[int_index+1]}
     fi
   fi
   
-  if [[ -n "\$integration" ]]; then
-    tools=(\$(deco completion call-tool --current="\$PREFIX" --previous="" --line="\$BUFFER" 2>/dev/null))
+  if [[ -n "$integration" ]]; then
+    tools=($(deco completion call-tool --current="$PREFIX" --previous="" --line="$BUFFER" 2>/dev/null))
     _describe 'tools' tools
   fi
 }
 
-_deco "\$@"
+_deco "$@"
 `;
 }
 

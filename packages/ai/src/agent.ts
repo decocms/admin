@@ -616,7 +616,7 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
     const response = await this._runWithContext(async () => {
       return await next({
         ...opts,
-        metadata: { ...(opts?.metadata ?? {}), timings },
+        metadata: { ...opts?.metadata, timings },
       });
     });
     methodTiming.end();

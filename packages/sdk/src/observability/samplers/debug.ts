@@ -78,7 +78,7 @@ export class DebugSampler implements Sampler {
         const correlationId = crypto.randomUUID();
         setCorrelationId(req.headers, correlationId);
         sampleDecision.attributes = {
-          ...(sampleDecision.attributes ?? {}),
+          ...sampleDecision.attributes,
           "trace.debug.id": correlationId,
         };
       }

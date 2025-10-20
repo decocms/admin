@@ -220,8 +220,8 @@ export function AgentProvider({
   // Merge additionalTools into serverAgent tools_set
   const mergedToolsSet = useMemo<Agent["tools_set"]>(() => {
     return {
-      ...(serverAgent.tools_set ?? {}),
-      ...(additionalTools ?? {}),
+      ...serverAgent.tools_set,
+      ...additionalTools,
     };
   }, [serverAgent.tools_set, additionalTools]);
 

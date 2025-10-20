@@ -44,7 +44,7 @@ export const DetailViewRenderInputSchema = z.object({
   resource: z
     .string()
     .regex(
-      /^rsc:\/\/[^\/]+\/[^\/]+\/.+$/,
+      /^rsc:\/\/[^/]+\/[^/]+\/.+$/,
       "Invalid resource URI format. Expected format: rsc://integration/resource/resource-id",
     )
     .describe("URI of the resource to render in the view"),

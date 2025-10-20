@@ -50,7 +50,7 @@ export function parseResourceUri(uri: string): {
 } | null {
   try {
     const validated = ResourceUriSchema.parse(uri);
-    const match = validated.match(/^rsc:\/\/([^\/]+)\/([^\/]+)\/(.+)$/);
+    const match = validated.match(/^rsc:\/\/([^/]+)\/([^/]+)\/(.+)$/);
 
     if (!match) {
       return null;

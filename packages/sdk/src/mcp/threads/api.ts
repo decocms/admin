@@ -330,7 +330,7 @@ export const updateThreadMetadata = createTool({
     const result = await store.updateThread({
       id: threadId,
       title: (currentThread.title ?? "Untitled") as string,
-      metadata: { ...(currentThread.metadata ?? {}), ...metadata },
+      metadata: { ...currentThread.metadata, ...metadata },
     });
 
     if (!result) {

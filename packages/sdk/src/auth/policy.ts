@@ -329,7 +329,7 @@ export class PolicyClient {
     if (params.roleId === BASE_ROLES_ID.OWNER) {
       if (params.action === "revoke") {
         // Check if this would remove the last owner
-        const { count } = await await this.db
+        const { count } = await this.db
           .from("members")
           .select(
             `

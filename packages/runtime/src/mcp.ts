@@ -164,6 +164,6 @@ export function createMCPFetchStub<TDefinition extends readonly ToolBinder[]>(
   options?: CreateStubAPIOptions,
 ): MCPClientFetchStub<TDefinition> {
   return createMCPClientProxy<MCPClientFetchStub<TDefinition>>({
-    ...(options ?? {}),
+    ...options,
   });
 }

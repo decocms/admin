@@ -19,7 +19,7 @@ import { z } from "zod";
 export const ResourceUriSchema = z
   .string()
   .regex(
-    /^rsc:\/\/[^\/]+\/[^\/]+\/.+$/,
+    /^rsc:\/\/[^/]+\/[^/]+\/.+$/,
     "Invalid resource URI format. Expected format: rsc://workspace/project/resource-id",
   );
 

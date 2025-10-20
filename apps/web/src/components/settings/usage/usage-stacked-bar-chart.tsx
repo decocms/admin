@@ -225,7 +225,7 @@ const createStackBuilder = <T extends BaseTransaction>({
       cost: data.cost,
       color: color(key),
       type: getType(),
-      ...(data.additionalData ?? {}),
+      ...data.additionalData,
     }));
 
     const totalPeriodCost = Array.from(costs.values()).reduce(

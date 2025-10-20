@@ -51,7 +51,7 @@ export function generateViewHTML(
   // Merge custom import map with defaults
   const finalImportMap = {
     ...DEFAULT_IMPORT_MAP,
-    ...(importmap || {}),
+    ...importmap,
   };
 
   return `<!DOCTYPE html>

@@ -12,7 +12,7 @@ import { models, projects, organizations } from "../schema";
 
 export interface LLMVault {
   readApiKey(modelId: string): Promise<{ model: string; apiKey: string }>;
-  updateApiKey(modelId: string, apiKey: string): Promise<void>;
+  updateApiKey(modelId: string, apiKey: string | null): Promise<void>;
 }
 
 export class SupabaseLLMVault implements LLMVault {

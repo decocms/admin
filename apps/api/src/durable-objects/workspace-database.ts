@@ -16,7 +16,7 @@ export class WorkspaceDatabase
 
   constructor(
     // @ts-ignore: This is a workaround to fix the type error
-    // deno-lint-ignore ban-types
+    // oxlint-disable-next-line ban-types
     protected override ctx: DurableObjectState<{}>,
     protected override env: Bindings,
   ) {

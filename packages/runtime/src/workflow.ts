@@ -55,7 +55,7 @@ export const Workflow = (
   {
     constructor(
       // @ts-ignore: This is a workaround to fix the type error
-      // deno-lint-ignore ban-types
+      // oxlint-disable-next-line ban-types
       public override ctx: DurableObjectState<{}>,
       public override env: DefaultEnv,
     ) {

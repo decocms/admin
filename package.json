@@ -27,33 +27,6 @@
     "apps/*",
     "packages/*"
   ],
-  "compilerOptions": {
-    "experimentalDecorators": true,
-    "lib": [
-      "deno.window",
-      "dom",
-      "esnext",
-      "deno.ns",
-      "deno.unstable",
-      "dom.iterable"
-    ],
-    "jsx": "react-jsx",
-    "jsxImportSource": "react"
-  },
-  "exclude": [
-    ".github/",
-    "**/.wrangler",
-    "apps/web/public/**",
-    "packages/runtime/src/cf-imports.ts",
-    "packages/create-deco/index.js",
-    "docs/server/**",
-    "docs/view/**"
-  ],
-  "lock": false,
-  "unstable": [
-    "kv",
-    "raw-imports"
-  ],
   "devDependencies": {
     "@biomejs/biome": "2.2.5",
     "@types/node": "^24.6.2",
@@ -70,11 +43,5 @@
   },
   "engines": {
     "node": ">=24.0.0"
-  },
-  "lint": {
-    "plugins": [
-      "./plugins/ensure-tailwind-design-system-tokens.ts",
-      "./plugins/enforce-kebab-case-file-names.ts"
-    ]
   }
 }

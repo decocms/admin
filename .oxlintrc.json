@@ -6,6 +6,7 @@
     "docs/*"
   ],
   "rules": {
+    "unicorn/no-useless-fallback-in-spread": "off",
     "no-unused-expressions": "off",
     "no-explicit-any": "warn",
     "enforce-kebab-case-file-names/kebab-case": "warn",

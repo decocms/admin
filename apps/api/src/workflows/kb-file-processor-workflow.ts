@@ -17,9 +17,6 @@ interface Env extends Record<string, unknown> {
   OPENAI_API_KEY: string;
   SUPABASE_URL: string;
   SUPABASE_SERVER_TOKEN: string;
-  TURSO_ADMIN_TOKEN: string;
-  TURSO_ORGANIZATION: string;
-  TURSO_GROUP_DATABASE_TOKEN: string;
   VECTOR_BATCH_SIZE?: string;
   // Add other workflow bindings here if needed
   KB_FILE_PROCESSOR: Workflow;

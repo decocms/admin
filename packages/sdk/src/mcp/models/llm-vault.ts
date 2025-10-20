@@ -26,7 +26,11 @@ export class SupabaseLLMVault implements LLMVault {
 
   constructor(c: AppContext) {
     const encryptionKey = c.envVars.LLMS_ENCRYPTION_KEY;
-    if (encryptionKey.length !== 32) {
+    if (
+      !encryptionKey ||
+      typeof encryptionKey !== "string" ||
+      encryptionKey.length !== 32
+    ) {
       throw new Error("Encryption key must be 32 characters long for AES-256");
     }
     this.encryptionKey = Buffer.from(encryptionKey);

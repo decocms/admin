@@ -481,7 +481,10 @@ export const publishApp = createTool({
       connection,
       c,
       true,
-    ).catch(() => ({ tools: [] }));
+    ).catch((e) => {
+      console.error(e);
+      return { tools: [] };
+    });
 
     // Get current tools for this app to calculate diff
     const { data: currentTools, error: currentToolsError } = await c.db

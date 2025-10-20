@@ -48,7 +48,7 @@ export function VoucherDialog() {
               id="voucher"
               value={voucher}
               onChange={(e) => {
-                const value = e.target.value.toLowerCase().replace(/[^a-f0-9\-_]/g, '');
+                const value = e.target.value.toLowerCase().replace(/[^a-f0-9\-_]/g, "");
                 setVoucher(value);
               }}
               placeholder="Enter your voucher code"

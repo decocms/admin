@@ -5,7 +5,6 @@ import {
   useResourceWatchActions,
   useConnectionLastCtime,
 } from "../stores/resource-watch/index.ts";
-import { Buffer } from "node:buffer";
 
 interface WatchEvent {
   type: "add" | "modify" | "delete";
@@ -100,17 +99,7 @@ function extractAccessToken(encodedToken: string): string | null {
       ? encodedToken.substring(7)
       : encodedToken;
 
-    // SSR-safe base64 decoding
-    let jsonString: string;
-    if (typeof globalThis.atob !== "undefined") {
-      jsonString = globalThis.atob(base64Data);
-    } else if (typeof Buffer !== "undefined") {
-      jsonString = Buffer.from(base64Data, "base64").toString("utf-8");
-    } else {
-      console.error("[ResourceWatch] No base64 decoder available");
-      return null;
-    }
-
+    const jsonString = globalThis.atob(base64Data);
     const sessionData = JSON.parse(jsonString) as { access_token?: string };
     return sessionData.access_token || null;
   } catch (error) {

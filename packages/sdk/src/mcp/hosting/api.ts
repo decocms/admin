@@ -28,7 +28,6 @@ import { HOSTING_APP_DEPLOY_PROMPT } from "./hosting-app-deploy-prompt.ts";
 import {
   getProjectIdFromContext,
   workspaceOrProjectIdConditions,
-  buildWorkspaceOrProjectIdConditions,
 } from "../projects/util.ts";
 
 const SCRIPT_FILE_NAME = "script.mjs";
@@ -1313,8 +1312,7 @@ export async function promoteDeployment(
   },
 ): Promise<void> {
   assertHasWorkspace(c);
-  const workspace = c.workspace.value;
-  const projectId = await getProjectIdFromContext(c);
+  const ownershipConditions = await workspaceOrProjectIdConditions(c);
 
   // Verify the deployment exists and belongs to this workspace
   const { data: deployment, error: deploymentError } = await c.db
@@ -1330,7 +1328,7 @@ export async function promoteDeployment(
       )
     `)
     .eq("id", deploymentId)
-    .or(buildWorkspaceOrProjectIdConditions(workspace, projectId), {
+    .or(ownershipConditions, {
       foreignTable: "deco_chat_hosting_apps",
     })
     .single();

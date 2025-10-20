@@ -707,3 +707,52 @@ export const models = pgTable("models", {
   description: text("description"),
   project_id: uuid("project_id").references(() => projects.id),
 });
+
+/**
+ * create table public.deco_chat_channels (
+  id uuid not null default gen_random_uuid (),
+  discriminator text not null,
+  integration_id uuid not null,
+  workspace text null,
+  created_at timestamp with time zone not null default now(),
+  updated_at timestamp with time zone not null default now(),
+  deleted_at timestamp with time zone null,
+  active boolean not null default true,
+  name text null,
+  project_id uuid null,
+  constraint deco_chat_channels_pkey primary key (id),
+  constraint unique_discriminator_integration unique (discriminator, integration_id),
+  constraint deco_chat_channels_integration_id_fkey foreign KEY (integration_id) references deco_chat_integrations (id),
+  constraint fk_deco_chat_channels_project_id foreign KEY (project_id) references deco_chat_projects (id) on delete set null
+) TABLESPACE pg_default;
+
+create index IF not exists idx_channels_workspace on public.deco_chat_channels using btree (workspace) TABLESPACE pg_default;
+ */
+
+export const channels = pgTable(
+  "deco_chat_channels",
+  {
+    id: uuid("id").defaultRandom().notNull(),
+    discriminator: text("discriminator").notNull(),
+    integration_id: uuid("integration_id")
+      .notNull()
+      .references(() => integrations.id),
+    workspace: text("workspace"),
+    created_at: timestamp("created_at", { mode: "string" })
+      .notNull()
+      .defaultNow(),
+    updated_at: timestamp("updated_at", { mode: "string" })
+      .notNull()
+      .defaultNow(),
+    deleted_at: timestamp("deleted_at", { mode: "string" }),
+    active: boolean("active").notNull().default(true),
+    name: text("name"),
+    project_id: uuid("project_id").references(() => projects.id),
+  },
+  (table) => [
+    uniqueIndex("unique_discriminator_integration").on(
+      table.discriminator,
+      table.integration_id,
+    ),
+  ],
+);

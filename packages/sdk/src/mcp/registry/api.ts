@@ -10,8 +10,8 @@ import {
 } from "../assertions.ts";
 import { type AppContext, createToolGroup } from "../context.ts";
 import {
-  buildWorkspaceOrProjectIdConditions,
   getProjectIdFromContext,
+  workspaceOrProjectIdConditions,
 } from "../projects/util.ts";
 import { registryApps, registryScopes, registryTools } from "../schema.ts";
 import { RegistryAppSchema, RegistryScopeSchema } from "./schemas.ts";
@@ -144,17 +144,21 @@ export const listRegistryScopes = createTool({
 const MAX_SCOPES_PER_WORKSPACE = 5;
 async function ensureScope({
   scopeName,
-  workspace,
-  projectId,
-  db,
+  ctx,
 }: {
   scopeName: string;
-  workspace: string;
-  projectId: string | null;
-  db: AppContext["db"];
+  ctx: AppContext;
 }): Promise<string> {
+  assertHasWorkspace(ctx);
+  const workspace = ctx.workspace.value;
+  const projectId = await getProjectIdFromContext(ctx);
+  const ownershipConditions = await workspaceOrProjectIdConditions(
+    ctx,
+    projectId,
+  );
+
   // First, try to find existing scope
-  const { data: existingScope, error: findError } = await db
+  const { data: existingScope, error: findError } = await ctx.db
     .from(DECO_CHAT_REGISTRY_SCOPES_TABLE)
     .select("id, workspace, project_id")
     .eq("scope_name", scopeName)
@@ -176,10 +180,10 @@ async function ensureScope({
   }
 
   // Check scope limit before creating new scope
-  const { data: existingScopes, error: countError } = await db
+  const { data: existingScopes, error: countError } = await ctx.db
     .from(DECO_CHAT_REGISTRY_SCOPES_TABLE)
     .select("id", { count: "exact" })
-    .or(buildWorkspaceOrProjectIdConditions(workspace, projectId));
+    .or(ownershipConditions);
 
   if (countError) throw countError;
 
@@ -191,7 +195,7 @@ async function ensureScope({
   }
 
   // Create new scope (automatic claiming) if it doesn't exist
-  const { data: newScope, error: createError } = await db
+  const { data: newScope, error: createError } = await ctx.db
     .from(DECO_CHAT_REGISTRY_SCOPES_TABLE)
     .insert({
       scope_name: scopeName,
@@ -431,9 +435,7 @@ export const publishApp = createTool({
     // Ensure scope exists (automatically claim if needed)
     const scopeId = await ensureScope({
       scopeName,
-      workspace,
-      projectId,
-      db: c.db,
+      ctx: c,
     });
 
     const now = new Date().toISOString();

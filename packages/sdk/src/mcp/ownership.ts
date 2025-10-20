@@ -5,6 +5,13 @@ import { projects, organizations } from "./schema.ts";
 import { eq, or, and } from "drizzle-orm";
 import { getProjectIdFromContext } from "./projects/util.ts";
 
+export function shouldOmitWorkspace(ctx: Pick<AppContext, "locator">) {
+  assertHasLocator(ctx);
+  return (
+    ctx.locator.project === "default" || ctx.locator.project === "personal"
+  );
+}
+
 export function filterByWorkspaceOrLocator<TableName extends string>({
   table,
   ctx,
@@ -27,7 +34,7 @@ export function filterByWorkspaceOrLocator<TableName extends string>({
     eq(organizations.slug, locator.org),
   );
 
-  if (locator.project !== "default" && locator.project !== "personal") {
+  if (shouldOmitWorkspace(ctx)) {
     return locatorCondition;
   }
 
@@ -60,10 +67,9 @@ export async function filterByWorkspaceOrProjectId<TableName extends string>({
   const actualProjectId =
     projectId ?? (await getProjectIdFromContext(ctx as AppContext));
   const workspace = ctx.workspace.value;
-  const { locator } = ctx;
 
   // For non-default/personal projects, only filter by project_id
-  if (locator.project !== "default" && locator.project !== "personal") {
+  if (shouldOmitWorkspace(ctx)) {
     return actualProjectId ? eq(table.project_id, actualProjectId) : undefined;
   }
 

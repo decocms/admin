@@ -6,6 +6,13 @@ import {
   useConnectionLastCtime,
 } from "../stores/resource-watch/index.ts";
 
+const WATCH_URL = "https://api.decocms.com";
+const DEV_MODE = import.meta.env.DEV;
+
+// ============================================================================
+// Types
+// ============================================================================
+
 interface WatchEvent {
   type: "add" | "modify" | "delete";
   path: string;
@@ -21,42 +28,37 @@ interface UseResourceWatchOptions {
   skipHistorical?: boolean;
 }
 
-function parseSSEChunk(chunk: string): WatchEvent | null {
-  const lines = chunk.trim().split("\n");
-  const dataLines: string[] = [];
+interface SSEFileChangeEvent {
+  type: "added" | "modified" | "deleted";
+  path: string;
+  metadata?: Record<string, unknown>;
+  timestamp: number;
+  patchId: number;
+}
 
-  for (const line of lines) {
-    if (line.startsWith("data: ")) {
-      dataLines.push(line.substring(6));
-    }
-  }
+interface StreamProcessorConfig {
+  resourceUri: string;
+  reader: ReadableStreamDefaultReader<Uint8Array>;
+  signal: AbortSignal;
+  onEvent: (event: WatchEvent) => void;
+  onConnected: (connected: boolean) => void;
+}
 
-  if (dataLines.length === 0) return null;
+// ============================================================================
+// Authentication Utilities
+// ============================================================================
 
-  const data = dataLines.join("\n");
-
+function extractAccessToken(encodedToken: string): string | null {
   try {
-    const fileChangeEvent = JSON.parse(data) as {
-      type: "added" | "modified" | "deleted";
-      path: string;
-      metadata?: Record<string, unknown>;
-      timestamp: number;
-      patchId: number;
-    };
+    const base64Data = encodedToken.startsWith("base64-")
+      ? encodedToken.substring(7)
+      : encodedToken;
 
-    return {
-      type:
-        fileChangeEvent.type === "added"
-          ? "add"
-          : fileChangeEvent.type === "modified"
-            ? "modify"
-            : "delete",
-      path: fileChangeEvent.path,
-      metadata: fileChangeEvent.metadata,
-      ctime: fileChangeEvent.timestamp,
-    };
+    const jsonString = globalThis.atob(base64Data);
+    const sessionData = JSON.parse(jsonString) as { access_token?: string };
+    return sessionData.access_token || null;
   } catch (error) {
-    console.error("[ResourceWatch] Failed to parse SSE data:", error, data);
+    console.error("[ResourceWatch] Failed to extract access token:", error);
     return null;
   }
 }
@@ -93,20 +95,136 @@ function getAuthToken(): string | null {
   return null;
 }
 
-function extractAccessToken(encodedToken: string): string | null {
-  try {
-    const base64Data = encodedToken.startsWith("base64-")
-      ? encodedToken.substring(7)
-      : encodedToken;
+// ============================================================================
+// SSE Processing Utilities
+// ============================================================================
 
-    const jsonString = globalThis.atob(base64Data);
-    const sessionData = JSON.parse(jsonString) as { access_token?: string };
-    return sessionData.access_token || null;
+function mapEventType(type: SSEFileChangeEvent["type"]): WatchEvent["type"] {
+  switch (type) {
+    case "added":
+      return "add";
+    case "modified":
+      return "modify";
+    case "deleted":
+      return "delete";
+  }
+}
+
+function parseSSEChunk(chunk: string): WatchEvent | null {
+  const lines = chunk.trim().split("\n");
+  const dataLines: string[] = [];
+
+  for (const line of lines) {
+    if (line.startsWith("data: ")) {
+      dataLines.push(line.substring(6));
+    }
+  }
+
+  if (dataLines.length === 0) return null;
+
+  const data = dataLines.join("\n");
+
+  try {
+    const fileChangeEvent = JSON.parse(data) as SSEFileChangeEvent;
+
+    return {
+      type: mapEventType(fileChangeEvent.type),
+      path: fileChangeEvent.path,
+      metadata: fileChangeEvent.metadata,
+      ctime: fileChangeEvent.timestamp,
+    };
   } catch (error) {
-    console.error("[ResourceWatch] Failed to extract access token:", error);
+    console.error("[ResourceWatch] Failed to parse SSE data:", error, data);
     return null;
   }
 }
+
+async function processSSEStream(config: StreamProcessorConfig): Promise<void> {
+  const { reader, onEvent, onConnected } = config;
+  const decoder = new TextDecoder();
+  let buffer = "";
+
+  try {
+    while (true) {
+      const { done, value } = await reader.read();
+
+      if (done) {
+        onConnected(false);
+        break;
+      }
+
+      const decoded = decoder.decode(value, { stream: true });
+      buffer += decoded;
+
+      const messages = buffer.split("\n\n");
+      buffer = messages.pop() || "";
+
+      for (const message of messages) {
+        if (!message.trim()) continue;
+
+        const event = parseSSEChunk(message);
+        if (event) {
+          onEvent(event);
+        }
+      }
+    }
+  } catch (error) {
+    if (error instanceof Error && error.name === "AbortError") {
+      onConnected(false);
+      return;
+    }
+    throw error;
+  }
+}
+
+// ============================================================================
+// URL Building Utilities
+// ============================================================================
+
+function generateWatcherId(resourceUri: string): string {
+  const timestamp = Date.now();
+  const random1 = Math.random().toString(36).slice(2, 11);
+  const random2 = Math.random().toString(36).slice(2, 11);
+  const random3 = performance.now().toString(36).replace(".", "");
+  return `resource-watch-${resourceUri}-${timestamp}-${random1}-${random2}-${random3}`;
+}
+
+function buildWatchUrl(
+  locator: string,
+  pathFilter: string | undefined,
+  fromCtime: number | null,
+): string {
+  const baseUrl = `/${locator}`;
+  const url = new URL(`${baseUrl}/deconfig/watch`, WATCH_URL);
+
+  if (pathFilter) {
+    url.searchParams.set("path-filter", pathFilter);
+  }
+
+  url.searchParams.set("branch", "main");
+  url.searchParams.set("from-ctime", fromCtime ? String(fromCtime + 1) : "1");
+
+  return url.toString();
+}
+
+// ============================================================================
+// Event Processing Utilities
+// ============================================================================
+
+function shouldNotifyEvent(
+  event: WatchEvent,
+  connectionStartTime: number,
+  skipHistorical: boolean,
+): boolean {
+  if (!skipHistorical) return true;
+
+  const isHistoricalEvent = event.ctime < connectionStartTime;
+  return !isHistoricalEvent;
+}
+
+// ============================================================================
+// Main Hook
+// ============================================================================
 
 export function useResourceWatch({
   resourceUri,
@@ -120,49 +238,48 @@ export function useResourceWatch({
   const lastCtime = useConnectionLastCtime(resourceUri);
   const token = getAuthToken();
 
-  const watcherId = useMemo(
-    () =>
-      `resource-watch-${resourceUri}-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`,
-    [resourceUri],
-  );
+  // Capture initial lastCtime to keep URL stable for connection lifecycle
+  const initialLastCtimeRef = useRef<number | null>(null);
+  if (initialLastCtimeRef.current === null) {
+    initialLastCtimeRef.current = lastCtime;
+  }
 
-  const isInitialLoadRef = useRef(true);
+  // Track connection start time to distinguish historical vs new events
+  const connectionStartTimeRef = useRef<number | null>(null);
 
+  // Build watch URL with stable parameters
   const watchUrl = useMemo(() => {
     if (!locator || !enabled || !token) {
       return null;
     }
 
-    const baseUrl = `/${locator}`;
-    const url = new URL(`${baseUrl}/deconfig/watch`, "https://api.decocms.com");
+    return buildWatchUrl(locator, pathFilter, initialLastCtimeRef.current);
+  }, [locator, pathFilter, enabled, token]);
 
-    if (pathFilter) {
-      url.searchParams.set("path-filter", pathFilter);
-    }
-
-    url.searchParams.set("branch", "main");
-
-    if (lastCtime) {
-      url.searchParams.set("from-ctime", String(lastCtime + 1));
-    } else {
-      url.searchParams.set("from-ctime", "1");
-    }
-
-    url.searchParams.set("watcher-id", watcherId);
-
-    return url.toString();
-  }, [locator, pathFilter, lastCtime, enabled, watcherId, token]);
-
+  // Set up React Query for SSE connection management
   const query = useQuery({
-    queryKey: ["resource-watch", resourceUri, pathFilter, watchUrl],
+    queryKey: ["resource-watch", resourceUri, pathFilter] as const,
     enabled: Boolean(watchUrl && enabled),
+    gcTime: 0,
+    staleTime: 0,
+    retry: 3,
+    retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000),
     queryFn: async ({ signal }) => {
       if (!watchUrl) throw new Error("Watch URL not available");
+
+      const watcherId = generateWatcherId(resourceUri);
+      const fullUrl = `${watchUrl}&watcher-id=${encodeURIComponent(watcherId)}`;
+
+      connectionStartTimeRef.current = Date.now();
+
+      if (DEV_MODE) {
+        console.log(`[ResourceWatch] Starting watch with ID: ${watcherId}`);
+      }
 
       setConnected(resourceUri, false);
       setError(resourceUri, null);
 
-      const response = await fetch(watchUrl, {
+      const response = await fetch(fullUrl, {
         signal,
         headers: {
           Authorization: `Bearer ${token}`,
@@ -183,58 +300,30 @@ export function useResourceWatch({
       setConnected(resourceUri, true);
 
       const reader = response.body.getReader();
-      const decoder = new TextDecoder();
-      let buffer = "";
 
-      try {
-        while (true) {
-          const { done, value } = await reader.read();
+      await processSSEStream({
+        resourceUri,
+        reader,
+        signal,
+        onConnected: (connected) => setConnected(resourceUri, connected),
+        onEvent: (event) => {
+          addEvent(resourceUri, event);
 
-          if (done) {
-            setConnected(resourceUri, false);
-            break;
+          const connectionStartTime = connectionStartTimeRef.current || 0;
+          const shouldNotify = shouldNotifyEvent(
+            event,
+            connectionStartTime,
+            skipHistorical,
+          );
+
+          if (onNewEvent && shouldNotify) {
+            onNewEvent(event);
           }
-
-          const decoded = decoder.decode(value, { stream: true });
-          buffer += decoded;
-
-          const messages = buffer.split("\n\n");
-          buffer = messages.pop() || "";
-
-          for (const message of messages) {
-            if (!message.trim()) continue;
-
-            const event = parseSSEChunk(message);
-            if (event) {
-              addEvent(resourceUri, event);
-
-              if (
-                onNewEvent &&
-                (!skipHistorical || !isInitialLoadRef.current)
-              ) {
-                onNewEvent(event);
-              }
-            }
-          }
-
-          if (isInitialLoadRef.current && messages.length > 0) {
-            isInitialLoadRef.current = false;
-          }
-        }
-      } catch (error) {
-        if (error instanceof Error && error.name === "AbortError") {
-          setConnected(resourceUri, false);
-          return;
-        }
-        throw error;
-      }
+        },
+      });
 
       return null;
     },
-    staleTime: Number.POSITIVE_INFINITY,
-    gcTime: Number.POSITIVE_INFINITY,
-    retry: 3,
-    retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000),
   });
 
   // Handle errors in useEffect to avoid side effects during render
@@ -248,6 +337,16 @@ export function useResourceWatch({
       setError(resourceUri, errorMsg);
     }
   }, [query.isError, query.error, resourceUri, setError]);
+
+  // Log connection lifecycle in development
+  useEffect(() => {
+    if (DEV_MODE && enabled) {
+      console.log(`[ResourceWatch] Initialized watcher for ${resourceUri}`);
+      return () => {
+        console.log(`[ResourceWatch] Cleaning up watcher for ${resourceUri}`);
+      };
+    }
+  }, [resourceUri, enabled]);
 
   return query;
 }

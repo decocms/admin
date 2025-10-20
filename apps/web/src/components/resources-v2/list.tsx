@@ -30,7 +30,13 @@ import { Spinner } from "@deco/ui/components/spinner.tsx";
 import { toast } from "@deco/ui/components/sonner.tsx";
 import { useViewMode } from "@deco/ui/hooks/use-view-mode.ts";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { useDeferredValue, useMemo, useState, type ReactNode } from "react";
+import {
+  useDeferredValue,
+  useMemo,
+  useState,
+  useCallback,
+  type ReactNode,
+} from "react";
 import { useParams, useSearchParams } from "react-router";
 import { z } from "zod";
 import { useNavigateWorkspace } from "../../hooks/use-navigate-workspace.ts";
@@ -44,6 +50,8 @@ import type { TabItem } from "./resource-header.tsx";
 import { DecopilotLayout } from "../layout/decopilot-layout.tsx";
 import { ResourceHeader } from "./resource-header.tsx";
 import { ResourceRouteProvider } from "./route-context.tsx";
+import { useResourceWatch } from "../../hooks/use-resource-watch.ts";
+import type { WatchEvent } from "../../stores/resource-watch/index.ts";
 
 // Base resource data schema that all resources extend
 const BaseResourceDataSchema = z.object({
@@ -225,6 +233,36 @@ function ResourcesV2ListTab({
       };
       return result?.structuredContent?.items ?? [];
     },
+  });
+
+  // Watch for file changes to auto-refresh the list
+  // Map resource names to their deconfig paths
+  const resourcePathMap: Record<string, string> = {
+    workflow: "/src/workflows/",
+    tool: "/src/tools/",
+    document: "/src/documents/",
+    view: "/src/views/",
+  };
+
+  const pathFilter = resourceName ? resourcePathMap[resourceName] : undefined;
+
+  // Use a simple resourceUri with no special characters (no ://, no /, etc.)
+  // to avoid URL encoding issues in the watcher-id parameter
+  const watchResourceUri = resourceName ? `${resourceName}-list-all` : "";
+
+  useResourceWatch({
+    resourceUri: watchResourceUri,
+    pathFilter,
+    enabled: Boolean(pathFilter && integrationId && watchResourceUri),
+    skipHistorical: true,
+    onNewEvent: useCallback(
+      (_event: WatchEvent) => {
+        queryClient.invalidateQueries({
+          queryKey: ["resources-v2-list", integrationId, resourceName],
+        });
+      },
+      [integrationId, resourceName, queryClient],
+    ),
   });
 
   const items = listQuery.data ?? [];

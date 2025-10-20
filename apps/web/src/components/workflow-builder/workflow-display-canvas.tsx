@@ -10,7 +10,6 @@ import {
   useRef,
   memo,
   startTransition,
-  useLayoutEffect,
 } from "react";
 import { EmptyState } from "../common/empty-state.tsx";
 import {
@@ -54,6 +53,7 @@ export function WorkflowDisplay({ resourceUri }: WorkflowDisplayCanvasProps) {
   const store = useMemo(() => {
     if (!workflow) return null;
 
+    // Only recreate store when workflow name changes (identity check)
     if (storeRef.current && lastWorkflowNameRef.current === workflow.name) {
       return storeRef.current;
     }
@@ -69,7 +69,7 @@ export function WorkflowDisplay({ resourceUri }: WorkflowDisplayCanvasProps) {
       );
     }
     return s;
-  }, [workflowName, workflow]);
+  }, [workflowName]); // Only depend on workflowName (primitive), not workflow object
 
   if (isLoadingWorkflow && !workflow) {
     return (
@@ -199,7 +199,7 @@ export const Canvas = memo(function Canvas() {
   });
 
   // Subscribe to pendingServerUpdate changes and show toast
-  useLayoutEffect(() => {
+  useEffect(() => {
     let previousPendingUpdate = store.getState().pendingServerUpdate;
 
     const unsubscribe = store.subscribe((state: Store) => {

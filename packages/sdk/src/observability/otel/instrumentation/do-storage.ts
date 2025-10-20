@@ -1,4 +1,3 @@
-/* oxlint-disable no-explicit-any */ ban - types;
 import {
   type Attributes,
   SpanKind,

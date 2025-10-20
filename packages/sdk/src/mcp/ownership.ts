@@ -80,8 +80,14 @@ export async function filterByWorkspaceOrProjectId<TableName extends string>({
   }
 
   // For default/personal projects, allow both workspace and project_id
-  return or(
+  const filter = or(
     eq(table.workspace, workspace),
     actualProjectId ? eq(table.project_id, actualProjectId) : undefined,
   );
+
+  if (!filter) {
+    throw new Error("Cannot resolve workspace/project scope for API key");
+  }
+
+  return filter;
 }

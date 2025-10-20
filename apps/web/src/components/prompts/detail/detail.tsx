@@ -2,20 +2,21 @@ import {
   type Prompt,
   PromptValidationSchema,
   useAgentData,
+  useAgentRoot,
   usePrompt,
   useUpdatePrompt,
   WELL_KNOWN_AGENT_IDS,
 } from "@deco/sdk";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useForm } from "react-hook-form";
 import { useBlocker, useParams } from "react-router";
 import { trackEvent } from "../../../hooks/analytics.ts";
-import { AgentProvider } from "../../agent/provider.tsx";
+import { useToolCallListener } from "../../../hooks/use-tool-call-listener.ts";
+import { AgenticChatProvider } from "../../chat/provider.tsx";
+import { useSetThreadContextEffect } from "../../decopilot/thread-context-provider.tsx";
 import { Context } from "./context.ts";
 import { PromptDetail } from "./form.tsx";
-import { type DecopilotContextValue } from "../../decopilot/context.tsx";
-import { DecopilotLayout } from "../../layout/decopilot-layout.tsx";
 
 export default function Page() {
   const agentId = WELL_KNOWN_AGENT_IDS.promptAgent;
@@ -112,24 +113,49 @@ export default function Page() {
   // via AgentProvider in the new architecture. The prompt ID context should be
   // passed via chat overrides instead of modifying cached agent data.
 
-  const decopilotContextValue: DecopilotContextValue = {
-    additionalTools: {
-      "i:prompt-management": ["PROMPTS_GET", "PROMPTS_UPDATE"],
-    },
-    rules: [`You are editing the prompt with id: ${promptId}.`],
-    onToolCall: (toolCall) => {
-      if (toolCall.toolName === "PROMPTS_UPDATE") {
-        refetchPrompt();
-      }
-    },
-  };
+  const agentRoot = useAgentRoot(agentId);
+
+  // Set up thread context with rules and tools
+  const threadContextItems = useMemo(
+    () => [
+      {
+        id: crypto.randomUUID(),
+        type: "rule" as const,
+        text: `You are editing the prompt with id: ${promptId}.`,
+      },
+      {
+        id: crypto.randomUUID(),
+        type: "toolset" as const,
+        integrationId: "i:prompt-management",
+        enabledTools: ["PROMPTS_GET", "PROMPTS_UPDATE"],
+      },
+    ],
+    [promptId],
+  );
+
+  useSetThreadContextEffect(threadContextItems);
+
+  // Listen for tool calls to refresh data
+  useToolCallListener((toolCall) => {
+    if (toolCall.toolName === "PROMPTS_UPDATE") {
+      refetchPrompt();
+    }
+  });
+
+  if (!_agent) {
+    return null;
+  }
 
   return (
-    <DecopilotLayout value={decopilotContextValue}>
-      <AgentProvider
+    <>
+      <AgenticChatProvider
         agentId={agentId}
         threadId={threadId}
-        uiOptions={{ showEditAgent: false }}
+        agent={_agent}
+        agentRoot={agentRoot}
+        uiOptions={{
+          showEditAgent: false,
+        }}
       >
         <Context.Provider
           value={{
@@ -147,7 +173,7 @@ export default function Page() {
         >
           <PromptDetail />
         </Context.Provider>
-      </AgentProvider>
-    </DecopilotLayout>
+      </AgenticChatProvider>
+    </>
   );
 }

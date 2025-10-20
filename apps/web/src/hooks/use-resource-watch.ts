@@ -1,9 +1,9 @@
+import { DECO_CMS_API_URL, useSDK } from "@deco/sdk";
 import { useQuery } from "@tanstack/react-query";
-import { useSDK, DECO_CMS_API_URL, DEV_MODE } from "@deco/sdk";
-import { useMemo, useRef, useEffect } from "react";
+import { useEffect, useMemo, useRef } from "react";
 import {
-  useResourceWatchActions,
   useConnectionLastCtime,
+  useResourceWatchActions,
   WatchEvent,
 } from "../stores/resource-watch/index.ts";
 
@@ -190,10 +190,6 @@ export function useResourceWatch({
 
       connectionStartTimeRef.current = Date.now();
 
-      if (DEV_MODE) {
-        console.log(`[ResourceWatch] Starting watch with ID: ${watcherId}`);
-      }
-
       setConnected(resourceUri, false);
       setError(resourceUri, null);
 
@@ -252,16 +248,6 @@ export function useResourceWatch({
       setError(resourceUri, errorMsg);
     }
   }, [query.isError, query.error, resourceUri, setError]);
-
-  // Log connection lifecycle in development
-  useEffect(() => {
-    if (DEV_MODE && enabled) {
-      console.log(`[ResourceWatch] Initialized watcher for ${resourceUri}`);
-      return () => {
-        console.log(`[ResourceWatch] Cleaning up watcher for ${resourceUri}`);
-      };
-    }
-  }, [resourceUri, enabled]);
 
   return query;
 }

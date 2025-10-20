@@ -4,7 +4,7 @@ import { Icon } from "@deco/ui/components/icon.tsx";
 import { Spinner } from "@deco/ui/components/spinner.tsx";
 import { useViewMode } from "@deco/ui/hooks/use-view-mode.ts";
 import { Button } from "@deco/ui/components/button.tsx";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import {
   useNavigateWorkspace,
   useWorkspaceLink,
@@ -18,8 +18,7 @@ import { type GroupedApp, useGroupedApps } from "./apps.ts";
 import { Header } from "./breadcrumb.tsx";
 import { SelectConnectionDialog } from "./select-connection-dialog.tsx";
 import { Link } from "react-router";
-import { type DecopilotContextValue } from "../decopilot/context.tsx";
-import { DecopilotLayout } from "../layout/decopilot-layout.tsx";
+import { useSetThreadContextEffect } from "../decopilot/thread-context-provider.tsx";
 
 function AppCard({
   app,
@@ -176,48 +175,69 @@ export default function InstalledAppsList() {
     navigateWorkspace(`/apps/${app.id}`);
   };
 
-  const decopilotContextValue: DecopilotContextValue = {
-    additionalTools: {},
-  };
+  // Set integration management tools into thread context
+  const threadContextItems = useMemo(() => {
+    const integrationId = "i:integration-management";
+
+    return [
+      {
+        id: crypto.randomUUID(),
+        type: "rule" as const,
+        text: `The user is managing their installed integrations and MCP apps. Help them explore, configure, and manage their installed apps by actively using integration management tools. When the user asks about their integrations or wants to manage them, prefer to demonstrate the available tools in action.`,
+      },
+      {
+        id: crypto.randomUUID(),
+        type: "toolset" as const,
+        integrationId,
+        enabledTools: [
+          "INTEGRATIONS_LIST",
+          "INTEGRATIONS_GET",
+          "INTEGRATIONS_CREATE",
+          "INTEGRATIONS_UPDATE",
+          "INTEGRATIONS_DELETE",
+        ],
+      },
+    ];
+  }, []);
+
+  useSetThreadContextEffect(threadContextItems);
 
   return (
-    <DecopilotLayout value={decopilotContextValue}>
-      <div className="flex flex-col gap-4 h-full py-4">
-        <div className="px-4 overflow-x-auto">
-          <Header
-            query={filter}
-            setQuery={setFilter}
-            viewMode={viewMode}
-            setViewMode={setViewMode}
-            actionsRight={
-              <Button asChild variant="special">
-                <Link to={workspaceLink(`/store`)}>Store</Link>
-              </Button>
+    <div className="flex flex-col gap-4 h-full py-4">
+      <div className="px-4 overflow-x-auto">
+        <Header
+          query={filter}
+          setQuery={setFilter}
+          viewMode={viewMode}
+          setViewMode={setViewMode}
+          actionsRight={
+            <Button asChild variant="special">
+              <Link to={workspaceLink(`/store`)}>Store</Link>
+            </Button>
+          }
+        />
+      </div>
+
+      <div className="flex-1 min-h-0 px-4 overflow-x-auto">
+        {!apps ? (
+          <div className="flex h-48 items-center justify-center">
+            <Spinner size="lg" />
+          </div>
+        ) : apps.length === 0 ? (
+          <EmptyState
+            icon="linked_services"
+            title="No connected integrations yet"
+            description="Connect services to expand what your agents can do."
+            buttonComponent={
+              <SelectConnectionDialog forceTab="new-connection" />
             }
           />
-        </div>
-
-        <div className="flex-1 min-h-0 px-4 overflow-x-auto">
-          {!apps ? (
-            <div className="flex h-48 items-center justify-center">
-              <Spinner size="lg" />
-            </div>
-          ) : apps.length === 0 ? (
-            <EmptyState
-              icon="linked_services"
-              title="No connected integrations yet"
-              description="Connect services to expand what your agents can do."
-              buttonComponent={
-                <SelectConnectionDialog forceTab="new-connection" />
-              }
-            />
-          ) : viewMode === "cards" ? (
-            <CardsView apps={apps} onClick={navigateToApp} />
-          ) : (
-            <TableView apps={apps} onClick={navigateToApp} />
-          )}
-        </div>
+        ) : viewMode === "cards" ? (
+          <CardsView apps={apps} onClick={navigateToApp} />
+        ) : (
+          <TableView apps={apps} onClick={navigateToApp} />
+        )}
       </div>
-    </DecopilotLayout>
+    </div>
   );
 }

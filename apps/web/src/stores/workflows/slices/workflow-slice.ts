@@ -13,6 +13,7 @@ export const createWorkflowSlice: StateCreator<Store, [], [], WorkflowSlice> = (
 ) => ({
   workflow: {} as WorkflowDefinition,
   workflowUri: "",
+
   updateWorkflow: (workflow) =>
     set(() => ({
       workflow,

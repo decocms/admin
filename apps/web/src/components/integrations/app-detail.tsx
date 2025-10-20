@@ -72,8 +72,6 @@ import {
   useUIInstallIntegration,
 } from "./select-connection-dialog.tsx";
 import { ConnectionTabs } from "./tabs/connection-tabs.tsx";
-import { type DecopilotContextValue } from "../decopilot/context.tsx";
-import { DecopilotLayout } from "../layout/decopilot-layout.tsx";
 
 function ConnectionInstanceActions({
   onDelete,
@@ -832,48 +830,42 @@ export default function AppDetail() {
   const { setDeletingId, deletingId, isDeletionPending, performDelete } =
     useRemoveConnection();
 
-  const decopilotContextValue: DecopilotContextValue = {
-    additionalTools: {},
-  };
-
   return (
-    <DecopilotLayout value={decopilotContextValue}>
-      <div className="flex flex-col gap-6 p-6 h-full">
-        <div className="w-full flex flex-col gap-4 border-b pb-6">
-          <ConfigureConnectionInstanceForm
-            appKey={appKey}
-            key={selectedIntegration?.id}
-            instance={selectedIntegration}
-            defaultConnection={data.info?.connection}
-            setDeletingId={setDeletingId}
-            selectedIntegration={selectedIntegration}
-            setSelectedIntegrationId={setSelectedIntegrationId}
-            data={data}
-            setOauthCompletionDialog={setOauthCompletionDialog}
-            oauthCompletionDialog={oauthCompletionDialog}
-          />
+    <div className="flex flex-col gap-6 p-6 h-full">
+      <div className="w-full flex flex-col gap-4 border-b pb-6">
+        <ConfigureConnectionInstanceForm
+          appKey={appKey}
+          key={selectedIntegration?.id}
+          instance={selectedIntegration}
+          defaultConnection={data.info?.connection}
+          setDeletingId={setDeletingId}
+          selectedIntegration={selectedIntegration}
+          setSelectedIntegrationId={setSelectedIntegrationId}
+          data={data}
+          setOauthCompletionDialog={setOauthCompletionDialog}
+          oauthCompletionDialog={oauthCompletionDialog}
+        />
 
-          {deletingId && (
-            <RemoveConnectionAlert
-              open={deletingId !== null}
-              onOpenChange={() => setDeletingId(null)}
-              isDeleting={isDeletionPending}
-              onDelete={(arg) => {
-                performDelete(arg);
-                if (data.info.provider === "custom") {
-                  navigateWorkspace("/store");
-                }
-              }}
-            />
-          )}
-        </div>
-        <div className="flex-grow w-full min-h-0">
-          <ConnectionTabs
-            data={data}
-            selectedIntegrationId={selectedIntegrationId}
+        {deletingId && (
+          <RemoveConnectionAlert
+            open={deletingId !== null}
+            onOpenChange={() => setDeletingId(null)}
+            isDeleting={isDeletionPending}
+            onDelete={(arg) => {
+              performDelete(arg);
+              if (data.info.provider === "custom") {
+                navigateWorkspace("/store");
+              }
+            }}
           />
-        </div>
+        )}
       </div>
-    </DecopilotLayout>
+      <div className="flex-grow w-full min-h-0">
+        <ConnectionTabs
+          data={data}
+          selectedIntegrationId={selectedIntegrationId}
+        />
+      </div>
+    </div>
   );
 }

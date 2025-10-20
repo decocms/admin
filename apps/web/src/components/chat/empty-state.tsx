@@ -5,10 +5,12 @@ import { Suspense } from "react";
 import { ErrorBoundary } from "../../error-boundary.tsx";
 import { useFocusChat } from "../agents/hooks.ts";
 import { AgentAvatar } from "../common/avatar/agent.tsx";
-import { useAgent } from "../agent/provider.tsx";
+import { useAgenticChat } from "../chat/provider.tsx";
 
 export function EmptyState() {
-  const { agentId } = useAgent();
+  const {
+    metadata: { agentId },
+  } = useAgenticChat();
 
   if (agentId === WELL_KNOWN_AGENT_IDS.teamAgent) {
     return (
@@ -56,7 +58,11 @@ EmptyState.Skeleton = () => {
 };
 
 EmptyState.UI = () => {
-  const { agentId, agent, uiOptions } = useAgent();
+  const {
+    metadata: { agentId },
+    agent,
+    uiOptions,
+  } = useAgenticChat();
   const editAgent = useFocusChat();
 
   return (

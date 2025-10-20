@@ -22,50 +22,217 @@ import {
   TooltipTrigger,
 } from "@deco/ui/components/tooltip.tsx";
 import { cn } from "@deco/ui/lib/utils.ts";
-import { memo, useCallback, useMemo, useState } from "react";
+import { memo, useCallback, useEffect, useMemo, useState } from "react";
 import { useAgentSettingsToolsSet } from "../../hooks/use-agent-settings-tools-set.ts";
 import type { UploadedFile } from "../../hooks/use-file-upload.ts";
 import { useUserPreferences } from "../../hooks/use-user-preferences.ts";
-import { useAgent } from "../agent/provider.tsx";
+import { formatToolName } from "../chat/utils/format-tool-name.ts";
+import { useThreadContext } from "../decopilot/thread-context-provider.tsx";
 import { IntegrationIcon } from "../integrations/common.tsx";
-import { SelectConnectionDialog } from "../integrations/select-connection-dialog.tsx";
-import { formatToolName } from "./utils/format-tool-name.ts";
-// Rules now derived from the agent context
+import type {
+  FileContextItem,
+  ResourceContextItem,
+  RuleContextItem,
+  ToolsetContextItem,
+} from "./types.ts";
 
 interface ContextResourcesProps {
-  uploadedFiles: UploadedFile[];
-  isDragging: boolean;
-  fileInputRef: React.RefObject<HTMLInputElement | null>;
-  handleFileChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
-  removeFile: (index: number) => void;
-  openFileDialog: () => void;
-  enableFileUpload: boolean;
+  uploadedFiles?: UploadedFile[];
+  isDragging?: boolean;
+  removeFile?: (index: number) => void;
+  enableFileUpload?: boolean;
   rightNode?: React.ReactNode;
 }
 
+// Helper to get file icon based on file type
+function getFileIcon(fileName: string): string {
+  const ext = fileName.split(".").pop()?.toLowerCase();
+
+  switch (ext) {
+    case "pdf":
+      return "picture_as_pdf";
+    case "doc":
+    case "docx":
+      return "description";
+    case "xls":
+    case "xlsx":
+      return "table_chart";
+    case "ppt":
+    case "pptx":
+      return "slideshow";
+    case "zip":
+    case "rar":
+    case "7z":
+      return "folder_zip";
+    case "txt":
+      return "text_snippet";
+    case "csv":
+      return "grid_on";
+    default:
+      return "insert_drive_file";
+  }
+}
+
+// Helper to check if file is an image
+function isImageFile(file: File): boolean {
+  return file.type.startsWith("image/");
+}
+
+// Helper to format file size
+function formatFileSize(bytes: number): string {
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+}
+
+// File Preview Card Component
+interface FilePreviewCardProps {
+  file: File;
+  status: "uploading" | "done" | "error";
+  onRemove: () => void;
+}
+
+function FilePreviewCard({ file, status, onRemove }: FilePreviewCardProps) {
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const isImage = isImageFile(file);
+
+  useEffect(() => {
+    if (isImage) {
+      const url = URL.createObjectURL(file);
+      setPreviewUrl(url);
+      return () => URL.revokeObjectURL(url);
+    }
+  }, [file, isImage]);
+
+  return (
+    <div className="relative group">
+      <Tooltip delayDuration={300}>
+        <TooltipTrigger asChild>
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            className={cn(
+              "gap-1.5",
+              status === "uploading" && "opacity-60",
+              status === "error" && "border-destructive text-destructive",
+            )}
+          >
+            {status === "uploading" && <Spinner size="xs" />}
+            {status === "done" && (
+              <Icon
+                name="check_circle"
+                className="h-3.5 w-3.5 text-green-600 dark:text-green-500"
+              />
+            )}
+            {status === "error" && (
+              <Icon name="error" className="h-3.5 w-3.5" />
+            )}
+            <Icon name={getFileIcon(file.name)} className="h-4 w-4" />
+            <span className="max-w-[100px] truncate text-xs">{file.name}</span>
+            <span className="text-xs text-muted-foreground">
+              {formatFileSize(file.size)}
+            </span>
+          </Button>
+        </TooltipTrigger>
+        <TooltipContent side="top" className="p-2 max-w-xs">
+          <div className="space-y-2">
+            {/* Preview */}
+            {isImage && previewUrl ? (
+              <div className="relative w-48 h-48 rounded overflow-hidden bg-muted">
+                <img
+                  src={previewUrl}
+                  alt={file.name}
+                  className="w-full h-full object-contain"
+                />
+              </div>
+            ) : (
+              <div className="flex items-center justify-center w-48 h-32 rounded bg-muted">
+                <Icon
+                  name={getFileIcon(file.name)}
+                  className="h-12 w-12 text-muted-foreground"
+                />
+              </div>
+            )}
+            {/* File Details */}
+            <div className="space-y-1">
+              <p className="text-sm font-medium break-all">{file.name}</p>
+              <p className="text-xs text-muted-foreground">
+                {formatFileSize(file.size)} • {file.type || "Unknown type"}
+              </p>
+            </div>
+          </div>
+        </TooltipContent>
+      </Tooltip>
+
+      {/* Remove Button */}
+      <Button
+        type="button"
+        variant="ghost"
+        size="icon"
+        className="absolute p-0 m-0 -top-2 -right-2 h-5 w-5 rounded-full opacity-0 group-hover:opacity-100 transition-opacity bg-background border shadow-sm"
+        onClick={onRemove}
+      >
+        <Icon name="close" size={12} />
+      </Button>
+    </div>
+  );
+}
+
 export function ContextResources({
-  uploadedFiles,
-  isDragging,
-  fileInputRef,
-  handleFileChange,
+  uploadedFiles = [],
   removeFile,
-  openFileDialog,
-  enableFileUpload,
   rightNode,
 }: ContextResourcesProps) {
-  const { agent, rules, setRules } = useAgent();
+  // Read context from ThreadContextProvider instead of contextItems
+  const threadContextResult = (() => {
+    try {
+      return useThreadContext();
+    } catch {
+      // ThreadContext not available (e.g., in standalone usage)
+      return null;
+    }
+  })();
+
   const { data: integrations = [] } = useIntegrations();
   const { data: agents = [] } = useAgents();
   const { data: models } = useModels({
     excludeDisabled: true,
   });
   const { preferences } = useUserPreferences();
-  const { disableAllTools, enableAllTools, setIntegrationTools } =
-    useAgentSettingsToolsSet();
+  const { disableAllTools, setIntegrationTools } = useAgentSettingsToolsSet();
 
   const selectedModel =
     models.find((m: Model) => m.id === preferences.defaultModel) ||
     DEFAULT_MODEL;
+
+  // Get context items directly from thread context
+  const contextItems = threadContextResult?.contextItems || [];
+
+  // Filter context items by type
+  const ruleItems = useMemo<RuleContextItem[]>(() => {
+    return contextItems.filter(
+      (item): item is RuleContextItem => item.type === "rule",
+    );
+  }, [contextItems]);
+
+  const toolsetItems = useMemo<ToolsetContextItem[]>(() => {
+    return contextItems.filter(
+      (item): item is ToolsetContextItem => item.type === "toolset",
+    );
+  }, [contextItems]);
+
+  const fileItems = useMemo<FileContextItem[]>(() => {
+    return contextItems.filter(
+      (item): item is FileContextItem => item.type === "file",
+    );
+  }, [contextItems]);
+
+  const resourceItems = useMemo<ResourceContextItem[]>(() => {
+    return contextItems.filter(
+      (item): item is ResourceContextItem => item.type === "resource",
+    );
+  }, [contextItems]);
 
   const getAcceptedFileTypes = () => {
     const acceptTypes: string[] = [];
@@ -79,14 +246,13 @@ export function ContextResources({
   };
 
   const integrationsWithTools = useMemo(() => {
-    if (!agent?.tools_set) return [];
-
-    return Object.entries(agent.tools_set)
-      .map(([integrationId, enabledTools]) => {
-        const integration = integrations.find((i) => i.id === integrationId);
+    return toolsetItems
+      .map((item) => {
+        const integration = integrations.find(
+          (i) => i.id === item.integrationId,
+        );
         if (!integration) return null;
 
-        // Apply better display names to the integration
         const integrationWithBetterName = applyDisplayNameToIntegration(
           integration,
           agents,
@@ -94,17 +260,16 @@ export function ContextResources({
 
         return {
           integration: integrationWithBetterName,
-          enabledTools: Array.isArray(enabledTools) ? enabledTools : [],
-          integrationId,
+          enabledTools: item.enabledTools,
+          integrationId: item.integrationId,
+          contextItemId: item.id,
         };
       })
       .filter((x) => !!x);
-  }, [agent?.tools_set, integrations, agents]);
+  }, [toolsetItems, integrations, agents]);
 
-  // Get total tools for each integration
   const integrationsWithTotalTools = useMemo(() => {
     return integrationsWithTools.map((item) => {
-      // Use integration.tools?.length for total tools count, handle nullable field
       const totalTools =
         (item.integration as Integration).tools?.length ||
         item.enabledTools.length;
@@ -116,305 +281,320 @@ export function ContextResources({
   }, [integrationsWithTools]);
 
   const handleRemoveIntegration = useCallback(
-    (integrationId: string) => {
-      if (!agent) return;
-
+    (integrationId: string, contextItemId: string) => {
       try {
-        // Use the disableAllTools function from useAgentSettingsToolsSet
+        if (!threadContextResult?.removeContextItem) return;
+
+        // Remove the context item
+        threadContextResult.removeContextItem(contextItemId);
+
+        // Also disable in agent settings
         disableAllTools(integrationId);
       } catch (error) {
         console.error("Failed to remove integration:", error);
-        // You could add a toast notification here if needed
       }
     },
-    [agent, disableAllTools],
+    [disableAllTools, threadContextResult],
   );
 
   const handleToggleTool = useCallback(
-    (integrationId: string, toolName: string, isEnabled: boolean) => {
-      if (!agent) return;
-
+    (
+      integrationId: string,
+      toolName: string,
+      isEnabled: boolean,
+      contextItemId: string,
+    ) => {
       try {
-        const currentTools = agent.tools_set?.[integrationId] || [];
+        if (!threadContextResult?.updateContextItem) return;
+
+        // Find the context item to get current tools
+        const contextItem = contextItems.find(
+          (item) => item.id === contextItemId,
+        ) as ToolsetContextItem | undefined;
+        if (!contextItem) return;
+
+        const currentTools = contextItem.enabledTools || [];
         let newTools: string[];
 
         if (isEnabled) {
-          // Remove tool
           newTools = currentTools.filter((tool) => tool !== toolName);
         } else {
-          // Add tool
           newTools = [...currentTools, toolName];
         }
 
-        // Use setIntegrationTools to update the tools for this integration
+        // Update context item
+        threadContextResult.updateContextItem(contextItemId, {
+          enabledTools: newTools,
+        });
+
+        // Also update agent settings
         setIntegrationTools(integrationId, newTools);
       } catch (error) {
         console.error("Failed to toggle tool:", error);
       }
     },
-    [agent, setIntegrationTools],
+    [threadContextResult, contextItems, setIntegrationTools],
   );
 
-  const handleAddIntegration = useCallback(
-    (integration: Integration) => {
-      // Use the enableAllTools function from useAgentSettingsToolsSet
-      enableAllTools(integration.id);
-    },
-    [enableAllTools],
-  );
-
-  // Convert rules to persistedRules format for display
-  const persistedRules = useMemo(
-    () =>
-      rules.map((text: string, idx: number) => ({
-        id: `agent-rule-${idx}`,
-        text,
-      })),
-    [rules],
-  );
-
-  const removeRule = useCallback(
+  const handleRemoveRule = useCallback(
     (id: string) => {
-      const ruleIndex = parseInt(id.replace("agent-rule-", ""));
-      const newRules = rules.filter(
-        (_: string, idx: number) => idx !== ruleIndex,
-      );
-      setRules(newRules);
+      if (!threadContextResult?.removeContextItem) return;
+      threadContextResult.removeContextItem(id);
     },
-    [rules, setRules],
+    [threadContextResult],
   );
+
+  const handleToggleRule = useCallback(
+    (index: number, currentlyEnabled: boolean) => {
+      if (!threadContextResult?.removeContextItem) return;
+
+      if (currentlyEnabled) {
+        // Find the rule item at this index and remove it
+        const ruleItem = ruleItems[index];
+        if (ruleItem) {
+          threadContextResult.removeContextItem(ruleItem.id);
+        }
+      } else {
+        // This shouldn't happen in the current implementation
+        // because we only show rules that are already enabled
+        console.warn("Cannot enable a rule that doesn't exist");
+      }
+    },
+    [threadContextResult, ruleItems],
+  );
+
+  const handleRemoveAllRules = useCallback(() => {
+    if (!threadContextResult?.removeContextItem) return;
+    // Remove all rule context items
+    ruleItems.forEach((item) => {
+      threadContextResult.removeContextItem(item.id);
+    });
+  }, [threadContextResult, ruleItems]);
+
+  const handleRemoveFile = useCallback((id: string) => {
+    // Files are not managed by thread context
+    console.warn("File removal not implemented for thread context");
+  }, []);
 
   return (
-    <div className="w-full mx-auto">
-      <FileDropOverlay display={isDragging} />
+    <div className="w-full mx-auto relative">
       <div className="flex justify-between items-end gap-2 mb-4 overflow-visible">
         <div className="flex flex-wrap gap-2 overflow-visible">
-          {/* rules now rendered after add button below */}
-          {/* File Upload Button */}
-          {enableFileUpload && (
-            <>
-              <input
-                type="file"
-                ref={fileInputRef}
-                onChange={handleFileChange}
-                multiple
-                className="hidden"
-                accept={getAcceptedFileTypes()}
-              />
-              {(selectedModel.capabilities.includes("file-upload") ||
-                selectedModel.capabilities.includes("image-upload")) && (
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="icon"
-                  title="Upload files"
-                  onClick={openFileDialog}
-                >
-                  <Icon name="file_upload" />
-                </Button>
-              )}
-            </>
+          {/* Display Rules */}
+          {ruleItems.length > 0 && (
+            <RulesDisplay
+              rules={ruleItems}
+              onRemove={handleRemoveAllRules}
+              onToggleRule={handleToggleRule}
+            />
           )}
-          <SelectConnectionDialog
-            onSelect={handleAddIntegration}
-            trigger={
-              <Button
-                type="button"
-                variant="outline"
-                size="icon"
-                title="Add integrations"
-              >
-                <Icon name="add" />
-              </Button>
-            }
-          />
 
-          {persistedRules.map((rule) => (
-            <div key={rule.id} className="relative group">
+          {/* Display Files from context */}
+          {fileItems.map((fileItem) => (
+            <div key={fileItem.id} className="relative group">
               <Tooltip>
                 <TooltipTrigger asChild>
                   <Button
                     type="button"
                     variant="outline"
-                    size="icon"
-                    title="View rule"
+                    size="sm"
+                    className="gap-1"
                   >
-                    <Icon name="rule" />
+                    {fileItem.status === "uploading" && <Spinner size="xs" />}
+                    {fileItem.status === "success" && (
+                      <Icon name="check" className="h-3 w-3" />
+                    )}
+                    {fileItem.status === "error" && (
+                      <Icon name="error" className="h-3 w-3 text-destructive" />
+                    )}
+                    <span className="max-w-[100px] truncate">
+                      {fileItem.file.name}
+                    </span>
                   </Button>
                 </TooltipTrigger>
-                <TooltipContent className="max-w-xs break-words">
-                  {rule.text.length > 160
-                    ? `${rule.text.slice(0, 160)}…`
-                    : rule.text}
+                <TooltipContent>
+                  {fileItem.file.name} ({(fileItem.file.size / 1024).toFixed(1)}{" "}
+                  KB)
                 </TooltipContent>
               </Tooltip>
               <Button
                 type="button"
                 variant="ghost"
                 size="icon"
-                onClick={() => removeRule(rule.id)}
-                className="absolute -top-1 -right-1 h-4 w-4 opacity-0 group-hover:opacity-100 transition-opacity rounded-full shadow-sm bg-primary text-primary-foreground hover:bg-primary/50 hover:text-sidebar"
-                title="Remove rule"
+                className="absolute -top-2 -right-2 h-5 w-5 rounded-full opacity-0 group-hover:opacity-100 transition-opacity bg-background border shadow-sm"
+                onClick={() => handleRemoveFile(fileItem.id)}
               >
-                <Icon name="close" size={10} />
+                <Icon name="close" size={12} />
               </Button>
             </div>
           ))}
 
-          {/* Integration Items */}
-          {integrationsWithTotalTools.map(
-            ({ integration, enabledTools, integrationId, totalTools }) => (
-              <IntegrationResourceItemWrapper
-                key={integrationId}
-                integration={integration}
-                enabledTools={enabledTools}
-                totalTools={totalTools}
-                integrationId={integrationId}
-                onRemove={handleRemoveIntegration}
-                onToggleTool={handleToggleTool}
-              />
-            ),
-          )}
-
-          {/* File Preview Items */}
-          {uploadedFiles.map((uf, index) => (
-            <FilePreviewItem
-              key={uf.file.name + uf.file.size}
-              uploadedFile={uf}
-              removeFile={() => removeFile(index)}
+          {/* Display uploaded files from props (used by chat-input) */}
+          {uploadedFiles.map((fileItem, index) => (
+            <FilePreviewCard
+              key={`uploaded-${index}`}
+              file={fileItem.file}
+              status={fileItem.status}
+              onRemove={() => removeFile?.(index)}
             />
+          ))}
+
+          {/* Display Integration Toolsets */}
+          {integrationsWithTotalTools.map((item) => (
+            <IntegrationToolsetDisplay
+              key={item.contextItemId}
+              integration={item.integration}
+              enabledTools={item.enabledTools}
+              totalTools={item.totalTools}
+              integrationId={item.integrationId}
+              contextItemId={item.contextItemId}
+              onRemove={handleRemoveIntegration}
+              onToggleTool={handleToggleTool}
+            />
+          ))}
+
+          {/* Display Resources */}
+          {resourceItems.map((resource) => (
+            <div key={resource.id} className="relative group">
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    className="gap-1"
+                  >
+                    {resource.icon && (
+                      <Icon name={resource.icon} className="h-3 w-3" />
+                    )}
+                    <span className="max-w-[100px] truncate">
+                      {resource.name || resource.uri.split("/").pop()}
+                    </span>
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  {resource.resourceType}: {resource.uri}
+                </TooltipContent>
+              </Tooltip>
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                className="absolute -top-2 -right-2 h-5 w-5 rounded-full opacity-0 group-hover:opacity-100 transition-opacity bg-background border shadow-sm"
+                onClick={() => {
+                  console.warn(
+                    "Resource removal not implemented for thread context",
+                  );
+                }}
+              >
+                <Icon name="close" size={12} />
+              </Button>
+            </div>
           ))}
         </div>
 
-        {rightNode}
+        {rightNode && <div className="flex-shrink-0">{rightNode}</div>}
       </div>
     </div>
   );
 }
 
-interface IntegrationResourceItemWrapperProps {
+interface IntegrationToolsetDisplayProps {
   integration: Integration;
   enabledTools: string[];
   totalTools: number;
   integrationId: string;
-  onRemove: (integrationId: string) => void;
+  contextItemId: string;
+  onRemove: (integrationId: string, contextItemId: string) => void;
   onToggleTool: (
     integrationId: string,
     toolName: string,
     isEnabled: boolean,
+    contextItemId: string,
   ) => void;
 }
 
-function IntegrationResourceItemWrapper({
+const IntegrationToolsetDisplay = memo(function IntegrationToolsetDisplay({
   integration,
   enabledTools,
   totalTools,
   integrationId,
+  contextItemId,
   onRemove,
   onToggleTool,
-}: IntegrationResourceItemWrapperProps) {
-  const handleRemove = useCallback(
-    () => onRemove(integrationId),
-    [onRemove, integrationId],
-  );
-  const handleToggleTool = useCallback(
-    (toolName: string, isEnabled: boolean) =>
-      onToggleTool(integrationId, toolName, isEnabled),
-    [onToggleTool, integrationId],
-  );
+}: IntegrationToolsetDisplayProps) {
+  const [open, setOpen] = useState(false);
 
   return (
-    <IntegrationResourceItem
-      integration={integration}
-      enabledTools={enabledTools}
-      totalTools={totalTools}
-      onRemove={handleRemove}
-      onToggleTool={handleToggleTool}
-    />
-  );
-}
-
-interface IntegrationResourceItemProps {
-  integration: Integration;
-  enabledTools: string[];
-  totalTools: number;
-  onRemove: () => void;
-  onToggleTool: (toolName: string, isEnabled: boolean) => void;
-}
-
-const IntegrationResourceItem = memo(function IntegrationResourceItem({
-  integration,
-  enabledTools,
-  totalTools,
-  onRemove,
-  onToggleTool,
-}: IntegrationResourceItemProps) {
-  const [isRemoving, setIsRemoving] = useState(false);
-
-  return (
-    <div className="relative group flex items-center gap-1.5 px-1.5 py-1 bg-muted/50 rounded-xl border border-border h-10">
-      <Popover>
+    <div className="relative group">
+      <Popover open={open} onOpenChange={setOpen}>
         <PopoverTrigger asChild>
-          <div className="flex items-center gap-1.5 cursor-pointer hover:bg-muted/50 rounded p-1 flex-1">
-            <div className="flex items-center justify-center size-6 rounded overflow-hidden bg-muted flex-shrink-0">
-              <IntegrationIcon
-                icon={integration.icon}
-                name={integration.name}
-                className="h-6 w-6"
-              />
-            </div>
-            <div className="flex flex-col min-w-0 flex-1">
-              <div className="text-xs font-medium truncate leading-tight">
-                {integration.name}
-              </div>
-              <div className="text-xs text-muted-foreground leading-tight">
-                {enabledTools.length}/{totalTools}
-              </div>
-            </div>
-          </div>
+          <Button type="button" variant="outline" size="sm" className="gap-1.5">
+            <IntegrationIcon
+              icon={integration.icon}
+              name={integration.name}
+              size="xs"
+            />
+            <span>{integration.name}</span>
+            <span className="text-xs text-muted-foreground">
+              {enabledTools.length}/{totalTools}
+            </span>
+          </Button>
         </PopoverTrigger>
-        <PopoverContent className="w-64 p-3" align="start" side="top">
-          <div className="space-y-2">
-            <div className="font-medium text-sm">{integration.name}</div>
-            <div className="text-xs text-muted-foreground">
-              {enabledTools.length} of {totalTools} tools enabled
-            </div>
-            {(integration as Integration).tools && (
-              <div className="space-y-1">
-                <div className="text-xs font-medium">Tools:</div>
-                <div className="space-y-1 max-h-64 overflow-y-auto">
-                  {(integration as Integration).tools!.map(
-                    (tool, index: number) => {
-                      const isEnabled = enabledTools.includes(tool.name);
-                      return (
-                        <div
-                          key={index}
-                          className="flex items-center justify-between text-xs px-2 py-1 bg-muted rounded hover:bg-muted/80"
-                        >
-                          <div className="flex-1 min-w-0">
-                            <div className="font-medium truncate">
-                              {formatToolName(tool.name)}
-                            </div>
-                            {tool.description && (
-                              <div className="text-muted-foreground text-xs truncate">
-                                {tool.description}
-                              </div>
-                            )}
-                          </div>
-                          <Checkbox
-                            checked={isEnabled}
-                            onCheckedChange={() =>
-                              onToggleTool(tool.name, isEnabled)
-                            }
-                            className="ml-2 flex-shrink-0"
-                          />
-                        </div>
-                      );
-                    },
-                  )}
+        <PopoverContent className="w-80" align="start">
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <IntegrationIcon
+                  icon={integration.icon}
+                  name={integration.name}
+                  size="base"
+                />
+                <div>
+                  <h4 className="font-medium text-sm">{integration.name}</h4>
+                  <p className="text-xs text-muted-foreground">
+                    {enabledTools.length} of {totalTools} tools enabled
+                  </p>
                 </div>
               </div>
-            )}
+            </div>
+
+            <div className="border-t pt-3">
+              <div className="space-y-2 max-h-[300px] overflow-y-auto">
+                {integration.tools?.map((tool) => {
+                  const isEnabled = enabledTools.includes(tool.name);
+                  return (
+                    <div
+                      key={tool.name}
+                      className="flex items-start gap-2 p-2 rounded-md hover:bg-muted/50 transition-colors"
+                    >
+                      <Checkbox
+                        checked={isEnabled}
+                        onCheckedChange={() =>
+                          onToggleTool(
+                            integrationId,
+                            tool.name,
+                            isEnabled,
+                            contextItemId,
+                          )
+                        }
+                        className="mt-0.5"
+                      />
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium">
+                          {formatToolName(tool.name)}
+                        </p>
+                        {tool.description && (
+                          <p className="text-xs text-muted-foreground line-clamp-2">
+                            {tool.description}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
           </div>
         </PopoverContent>
       </Popover>
@@ -423,103 +603,90 @@ const IntegrationResourceItem = memo(function IntegrationResourceItem({
         type="button"
         variant="ghost"
         size="icon"
-        onClick={async () => {
-          setIsRemoving(true);
-          try {
-            await onRemove();
-          } finally {
-            setIsRemoving(false);
-          }
-        }}
-        disabled={isRemoving}
-        className="absolute -top-1 -right-1 h-4 w-4 opacity-0 group-hover:opacity-100 transition-opacity rounded-full shadow-sm bg-primary text-primary-foreground hover:bg-primary/50 hover:text-sidebar flex-shrink-0"
-        title={`Remove ${integration.name} integration`}
+        className="absolute -top-2 -right-2 h-5 w-5 rounded-full opacity-0 group-hover:opacity-100 transition-opacity bg-background border shadow-sm"
+        onClick={() => onRemove(integrationId, contextItemId)}
       >
-        {isRemoving ? <Spinner size="xs" /> : <Icon name="close" size={10} />}
+        <Icon name="close" size={12} />
       </Button>
     </div>
   );
 });
 
-function FileDropOverlay({ display }: { display: boolean }) {
-  if (!display) {
-    return null;
-  }
-
-  return (
-    <div className="relative">
-      <div
-        className={cn(
-          "absolute bottom-2 left-0 right-0 z-50",
-          "flex flex-col items-center justify-center gap-2",
-          "pointer-events-none animate-fade-in",
-          "p-8 shadow-2xl rounded-2xl border border-border bg-background/95",
-        )}
-      >
-        <Icon name="upload" size={48} className="text-foreground" />
-        <span className="text-lg font-semibold text-foreground">
-          Drop files to upload
-        </span>
-        <span className="text-sm text-muted-foreground">
-          (Max 5 files, images or PDFs)
-        </span>
-      </div>
-    </div>
-  );
+interface RulesDisplayProps {
+  rules: RuleContextItem[];
+  onRemove: () => void;
+  onToggleRule: (index: number, currentlyEnabled: boolean) => void;
 }
 
-interface FilePreviewItemProps {
-  uploadedFile: UploadedFile;
-  removeFile: () => void;
-}
-
-function FilePreviewItem({ uploadedFile, removeFile }: FilePreviewItemProps) {
-  const { file, status, error, url } = uploadedFile;
+const RulesDisplay = memo(function RulesDisplay({
+  rules,
+  onRemove,
+  onToggleRule,
+}: RulesDisplayProps) {
+  const [open, setOpen] = useState(false);
 
   return (
-    <div className="relative group flex items-center gap-1.5 px-1.5 py-1 bg-muted/50 rounded-xl border border-border h-10">
-      <div className="flex items-center justify-center size-6 rounded overflow-hidden bg-muted flex-shrink-0">
-        {status === "uploading" ? (
-          <Spinner size="xs" />
-        ) : status === "error" ? (
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Icon name="error" size={16} className="text-destructive" />
-            </TooltipTrigger>
-            <TooltipContent className="flex flex-col items-center">
-              Error uploading file {error?.toString()}
-            </TooltipContent>
-          </Tooltip>
-        ) : (
-          <>
-            {file.type.startsWith("image/") && url ? (
-              <img src={url} className="h-full w-full object-cover" />
-            ) : (
-              <Icon name="draft" size={16} />
-            )}
-          </>
-        )}
-      </div>
+    <div className="relative group">
+      <Popover open={open} onOpenChange={setOpen}>
+        <PopoverTrigger asChild>
+          <Button type="button" variant="outline" size="sm" className="gap-1.5">
+            <Icon name="rule" className="h-4 w-4" />
+            <span className="text-xs text-muted-foreground">
+              {rules.length}
+            </span>
+          </Button>
+        </PopoverTrigger>
+        <PopoverContent className="w-96" align="start">
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Icon name="rule" className="h-5 w-5" />
+                <div>
+                  <h4 className="font-medium text-sm">Context Rules</h4>
+                  <p className="text-xs text-muted-foreground">
+                    {rules.length} {rules.length === 1 ? "rule" : "rules"}{" "}
+                    active
+                  </p>
+                </div>
+              </div>
+            </div>
 
-      <div className="flex flex-col min-w-0 flex-1">
-        <div className="text-xs font-medium truncate leading-tight">
-          {file.name}
-        </div>
-        <div className="text-xs text-muted-foreground leading-tight">
-          {(file.size / 1024).toFixed(1)}KB
-        </div>
-      </div>
+            <div className="border-t pt-3">
+              <div className="space-y-2 max-h-[400px] overflow-y-auto">
+                {rules.map((rule, index) => {
+                  return (
+                    <div
+                      key={rule.id}
+                      className="flex items-start gap-2 p-2 rounded-md hover:bg-muted/50 transition-colors"
+                    >
+                      <Checkbox
+                        checked={true}
+                        onCheckedChange={() => onToggleRule(index, true)}
+                        className="mt-0.5 flex-shrink-0"
+                      />
+                      <div className="flex-1 min-w-0">
+                        <p className="text-xs text-muted-foreground break-words whitespace-pre-wrap line-clamp-6">
+                          {rule.text}
+                        </p>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+        </PopoverContent>
+      </Popover>
 
       <Button
         type="button"
         variant="ghost"
         size="icon"
-        className="absolute -top-1 -right-1 h-4 w-4 opacity-0 group-hover:opacity-100 transition-opacity rounded-full shadow-sm bg-primary text-primary-foreground hover:bg-primary/50 hover:text-sidebar flex-shrink-0"
-        onClick={removeFile}
-        title="Remove file"
+        className="absolute -top-2 -right-2 h-5 w-5 rounded-full opacity-0 group-hover:opacity-100 transition-opacity bg-background border shadow-sm"
+        onClick={onRemove}
       >
-        <Icon name="close" size={10} />
+        <Icon name="close" size={12} />
       </Button>
     </div>
   );
-}
+});

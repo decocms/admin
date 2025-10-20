@@ -36,6 +36,7 @@ import type { JSONSchema7 } from "json-schema";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useForm } from "react-hook-form";
 import { formatToolName } from "../../chat/utils/format-tool-name.ts";
+import { useSetThreadContextEffect } from "../../decopilot/thread-context-provider.tsx";
 import JSONSchemaForm from "../../json-schema/index.tsx";
 import { generateDefaultValues } from "../../json-schema/utils/generate-default-values.ts";
 import { useCurrentTeam } from "../../sidebar/team-selector.tsx";
@@ -775,6 +776,36 @@ export function ConnectionTabs({
       t.name.toLowerCase().startsWith("deco_chat_workflows"),
     );
   }, [isLoadingTools, toolsData.tools]);
+
+  // Set tools into thread context
+  const threadContextItems = useMemo(() => {
+    if (!selectedIntegration?.id || !toolsData?.tools || isLoadingTools) {
+      return [];
+    }
+
+    const integrationName = selectedIntegration.name || "this integration";
+
+    return [
+      {
+        id: crypto.randomUUID(),
+        type: "rule" as const,
+        text: `The user is currently testing the ${integrationName} MCP integration. Help them explore and test the available tools by actively using them to accomplish their requests. When the user asks questions or makes requests, prefer to demonstrate the tools in action rather than just explaining them.`,
+      },
+      {
+        id: crypto.randomUUID(),
+        type: "toolset" as const,
+        integrationId: selectedIntegration.id,
+        enabledTools: toolsData.tools.map((tool) => tool.name),
+      },
+    ];
+  }, [
+    selectedIntegration?.id,
+    selectedIntegration?.name,
+    toolsData?.tools,
+    isLoadingTools,
+  ]);
+
+  useSetThreadContextEffect(threadContextItems);
 
   return (
     <Tabs

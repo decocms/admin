@@ -1,10 +1,14 @@
+import type { Agent } from "@deco/sdk";
 import {
   NotFoundError,
   WELL_KNOWN_AGENTS,
   useAgentData,
+  useAgentRoot,
   useFile,
   useRecentResources,
   useSDK,
+  useThreadMessages,
+  useUpdateAgent,
 } from "@deco/sdk";
 import { Button } from "@deco/ui/components/button.tsx";
 import { Icon } from "@deco/ui/components/icon.tsx";
@@ -28,6 +32,7 @@ import {
 } from "@deco/ui/components/tabs.tsx";
 import { useIsMobile } from "@deco/ui/hooks/use-mobile.ts";
 import { cn } from "@deco/ui/lib/utils.ts";
+import { useQueryClient } from "@tanstack/react-query";
 import {
   Suspense,
   createContext,
@@ -38,23 +43,26 @@ import {
   useState,
 } from "react";
 import { useLocation, useParams } from "react-router";
+import { toast } from "sonner";
 import { useDocumentMetadata } from "../../hooks/use-document-metadata.ts";
+import { useUserPreferences } from "../../hooks/use-user-preferences.ts";
 import { isFilePath } from "../../utils/path.ts";
 import { useFocusChat } from "../agents/hooks.ts";
 import { ChatInput } from "../chat/chat-input.tsx";
 import { ChatMessages } from "../chat/chat-messages.tsx";
+import {
+  AgenticChatProvider,
+  useAgenticChat,
+  useAgenticChatForm,
+} from "../chat/provider.tsx";
 import { AgentAvatar } from "../common/avatar/agent.tsx";
-import { useDecopilotContext } from "../decopilot/context.tsx";
+import { useSetThreadContextEffect } from "../decopilot/thread-context-provider.tsx";
 import { useDecopilotThread } from "../decopilot/thread-context.tsx";
-import { useAppAdditionalTools } from "../decopilot/use-app-additional-tools.ts";
-import { DecopilotLayout } from "../layout/decopilot-layout.tsx";
 import AdvancedTab from "../settings/advanced.tsx";
 import AgentProfileTab from "../settings/agent-profile.tsx";
 import ToolsAndKnowledgeTab from "../settings/integrations.tsx";
 import { AgentTriggers } from "../triggers/agent-triggers.tsx";
-import { AgentProvider, useAgent } from "./provider.tsx";
 import Threads from "./threads.tsx";
-import { useQueryClient } from "@tanstack/react-query";
 
 interface Props {
   agentId?: string;
@@ -107,7 +115,12 @@ function ThreadsButton() {
 
 // Unified chat interface that works for both agent and decopilot modes
 function UnifiedChat() {
-  const { agentId, chat, agent, hasUnsavedChanges: hasChanges } = useAgent();
+  const {
+    metadata: { agentId },
+    chat,
+    agent,
+    isDirty: hasChanges,
+  } = useAgenticChat();
   const client = useQueryClient();
   const { locator } = useSDK();
   const { messages } = chat;
@@ -166,21 +179,25 @@ function UnifiedChat() {
 }
 
 function ActionButtons() {
-  const {
-    form,
-    hasUnsavedChanges: hasChanges,
-    handleSubmit,
-    agent,
-  } = useAgent();
+  const { isDirty: hasChanges, saveAgent, agent } = useAgenticChat();
+  const form = useAgenticChatForm();
+
+  const handleSubmit = form.handleSubmit(async () => {
+    await saveAgent();
+  });
 
   const isWellKnownAgent = Boolean(
     WELL_KNOWN_AGENTS[agent.id as keyof typeof WELL_KNOWN_AGENTS],
   );
 
+  if (!form) {
+    return null;
+  }
+
   const numberOfChanges = Object.keys(form.formState.dirtyFields).length;
 
   function discardChanges() {
-    form.reset();
+    form?.reset();
   }
 
   return (
@@ -311,12 +328,9 @@ function ChatWithProvider({
     chatMode === "decopilot" &&
     threadState.initialMessage &&
     threadState.autoSend;
-  const appAdditionalTools = useAppAdditionalTools();
-  const {
-    additionalTools: contextTools,
-    rules: contextRules,
-    onToolCall,
-  } = useDecopilotContext();
+
+  // Note: contextTools and contextRules are now managed via ThreadContextProvider
+  // onToolCall is replaced by useToolCallListener hook
 
   // Determine which agent and threadId to use based on mode
   const chatAgentId =
@@ -334,19 +348,68 @@ function ChatWithProvider({
     return { rules };
   }, [chatMode, editingAgent]);
 
-  // Merge additional tools for decopilot mode
-  const allAdditionalTools =
-    chatMode === "decopilot"
-      ? { ...appAdditionalTools, ...contextTools }
-      : undefined;
+  // Memoize context items for thread context
+  const threadContextItems = useMemo(() => {
+    const items = [];
 
-  // Merge rules for decopilot mode
-  const allRules =
-    chatMode === "decopilot"
-      ? [...(decopilotContextValue.rules || []), ...(contextRules || [])]
-      : undefined;
+    if (chatMode !== "decopilot") {
+      // In agent chat mode, add the agent's toolset
+      const agentToolSet = editingAgent?.tools_set ?? {};
+
+      items.push(
+        ...Object.entries(agentToolSet).map(([integrationId, tools]) => ({
+          type: "toolset" as const,
+          integrationId,
+          enabledTools: tools,
+          id: crypto.randomUUID(),
+        })),
+      );
+
+      return items;
+    }
+
+    // In decopilot mode, add rules about agent editing
+    if (decopilotContextValue.rules) {
+      items.push(
+        ...decopilotContextValue.rules.map((text) => ({
+          type: "rule" as const,
+          text,
+          id: crypto.randomUUID(),
+        })),
+      );
+    }
+
+    return items;
+  }, [chatMode, editingAgent?.tools_set, decopilotContextValue.rules]);
+
+  // Set context items in thread context
+  useSetThreadContextEffect(threadContextItems);
 
   if (!chatAgentId) return null;
+
+  const updateAgentMutation = useUpdateAgent();
+  const { data: serverAgent } = useAgentData(agentId);
+  const { data: decopilotAgent } = useAgentData(
+    WELL_KNOWN_AGENTS.decopilotAgent.id,
+  );
+
+  // Fetch required data for providers
+  const agentRoot = useAgentRoot(agentId);
+  const decopilotRoot = useAgentRoot(WELL_KNOWN_AGENTS.decopilotAgent.id);
+  const { preferences } = useUserPreferences();
+  const { data: { messages: agentThreadMessages } = { messages: [] } } =
+    useThreadMessages(threadId, {
+      enabled: chatMode === "agent",
+    });
+  const { data: { messages: decopilotThreadMessages } = { messages: [] } } =
+    useThreadMessages(effectiveDecopilotThreadId, {
+      enabled: chatMode === "decopilot",
+    });
+
+  const handleSaveAgent = async (agent: Agent) => {
+    await updateAgentMutation.mutateAsync(agent);
+    toast.success("Agent updated successfully");
+  };
 
   // Render both providers but only show the active one
   // This way both chats maintain their state
@@ -354,48 +417,66 @@ function ChatWithProvider({
     <div className="h-full w-full">
       {/* Agent chat - hidden when in decopilot mode */}
       <div className={chatMode === "agent" ? "block h-full" : "hidden"}>
-        <AgentProvider
-          key={`agent-${agentId}-${threadId}`}
-          agentId={agentId}
-          threadId={threadId}
-          uiOptions={{
-            showThreadTools: false,
-            showEditAgent: false,
-            showModelSelector: false,
-            showThreadMessages: true,
-            showAgentVisibility: false,
-          }}
-        >
-          <UnifiedChat />
-        </AgentProvider>
+        {serverAgent && (
+          <Suspense fallback={null}>
+            <AgenticChatProvider
+              key={`agent-${agentId}-${threadId}`}
+              agentId={agentId}
+              threadId={threadId}
+              agent={serverAgent}
+              agentRoot={agentRoot}
+              model={preferences.defaultModel}
+              useOpenRouter={preferences.useOpenRouter}
+              sendReasoning={preferences.sendReasoning}
+              initialMessages={agentThreadMessages}
+              onSave={handleSaveAgent}
+              uiOptions={{
+                showThreadTools: false,
+                showEditAgent: false,
+                showModelSelector: false,
+                showThreadMessages: true,
+                showAgentVisibility: false,
+              }}
+            >
+              <UnifiedChat />
+            </AgenticChatProvider>
+          </Suspense>
+        )}
       </div>
 
       {/* Decopilot chat - hidden when in agent mode */}
       <div className={chatMode === "decopilot" ? "block h-full" : "hidden"}>
-        <AgentProvider
-          key={effectiveDecopilotThreadId}
-          agentId={WELL_KNOWN_AGENTS.decopilotAgent.id}
-          threadId={effectiveDecopilotThreadId}
-          initialInput={
-            shouldUseInitialInput
-              ? (threadState.initialMessage ?? undefined)
-              : undefined
-          }
-          autoSend={shouldUseInitialInput ? threadState.autoSend : false}
-          onAutoSendComplete={clearThreadState}
-          additionalTools={allAdditionalTools}
-          initialRules={allRules}
-          onToolCall={onToolCall}
-          uiOptions={{
-            showThreadTools: false,
-            showEditAgent: false,
-            showModelSelector: true,
-            showThreadMessages: false,
-            showAgentVisibility: false,
-          }}
-        >
-          <UnifiedChat />
-        </AgentProvider>
+        {decopilotAgent && (
+          <Suspense fallback={null}>
+            <AgenticChatProvider
+              key={effectiveDecopilotThreadId}
+              agentId={WELL_KNOWN_AGENTS.decopilotAgent.id}
+              threadId={effectiveDecopilotThreadId}
+              agent={decopilotAgent}
+              agentRoot={decopilotRoot}
+              model={preferences.defaultModel}
+              useOpenRouter={preferences.useOpenRouter}
+              sendReasoning={preferences.sendReasoning}
+              initialMessages={decopilotThreadMessages}
+              initialInput={
+                shouldUseInitialInput
+                  ? (threadState.initialMessage ?? undefined)
+                  : undefined
+              }
+              autoSend={shouldUseInitialInput ? threadState.autoSend : false}
+              onAutoSendComplete={clearThreadState}
+              uiOptions={{
+                showThreadTools: false,
+                showEditAgent: false,
+                showModelSelector: true,
+                showThreadMessages: false,
+                showAgentVisibility: false,
+              }}
+            >
+              <UnifiedChat />
+            </AgenticChatProvider>
+          </Suspense>
+        )}
       </div>
     </div>
   );
@@ -440,6 +521,10 @@ function ResponsiveLayout({
 function FormProvider(props: Props & { agentId: string; threadId: string }) {
   const { agentId, threadId } = props;
   const { data: agent } = useAgentData(agentId);
+  const agentRoot = useAgentRoot(agentId);
+  const { preferences } = useUserPreferences();
+  const { data: { messages: threadMessages } = { messages: [] } } =
+    useThreadMessages(threadId, { enabled: true });
   const { data: resolvedAvatar } = useFile(
     agent?.avatar && isFilePath(agent.avatar) ? agent.avatar : "",
   );
@@ -531,24 +616,42 @@ function FormProvider(props: Props & { agentId: string; threadId: string }) {
     socialImage: agent?.avatar,
   });
 
+  if (!agent) {
+    return null;
+  }
+
+  const updateAgentMutation = useUpdateAgent();
+  const handleSaveAgent = async (agentData: Agent) => {
+    await updateAgentMutation.mutateAsync(agentData);
+    toast.success("Agent updated successfully");
+  };
+
   return (
-    <DecopilotLayout value={decopilotContextValue}>
-      <PreviewContext.Provider
-        value={{ showPreview, togglePreview, isMobile, chatMode, setChatMode }}
+    <PreviewContext.Provider
+      value={{ showPreview, togglePreview, isMobile, chatMode, setChatMode }}
+    >
+      <AgenticChatProvider
+        agentId={agentId}
+        threadId={threadId}
+        agent={agent}
+        agentRoot={agentRoot}
+        model={preferences.defaultModel}
+        useOpenRouter={preferences.useOpenRouter}
+        sendReasoning={preferences.sendReasoning}
+        initialMessages={threadMessages}
+        onSave={handleSaveAgent}
+        uiOptions={{
+          showThreadTools: false,
+          showEditAgent: false,
+          showModelSelector: false,
+          showThreadMessages: true,
+          showAgentVisibility: false,
+          showContextResources: true,
+        }}
       >
-        <AgentProvider
-          agentId={agentId}
-          threadId={threadId}
-          uiOptions={{
-            showThreadTools: false,
-            showEditAgent: false,
-            showModelSelector: false,
-          }}
-        >
-          <ResponsiveLayout agentId={agentId} threadId={threadId} />
-        </AgentProvider>
-      </PreviewContext.Provider>
-    </DecopilotLayout>
+        <ResponsiveLayout agentId={agentId} threadId={threadId} />
+      </AgenticChatProvider>
+    </PreviewContext.Provider>
   );
 }
 

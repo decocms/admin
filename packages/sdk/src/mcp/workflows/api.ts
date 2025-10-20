@@ -374,6 +374,7 @@ export function createWorkflowBindingImpl({
         const runUri = `rsc://i:workflows-management/workflow_run/${encodeURIComponent(runId)}`;
         return { runId, uri: runUri };
       } catch (error) {
+        console.error(error);
         return {
           error: `Workflow start failed: ${inspect(error)}`,
         };

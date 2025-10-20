@@ -4,11 +4,13 @@ import {
   useThread,
   useThreadMessages,
   useUpdateThreadTitle,
+  useAgentData,
+  useAgentRoot,
   type ThreadDetails,
 } from "@deco/sdk";
 import type { UIMessage } from "@ai-sdk/react";
 import { ThreadDetailPanel } from "./thread-detail-panel.tsx";
-import { AgentProvider } from "../agent/provider.tsx";
+import { AgenticChatProvider } from "../chat/provider.tsx";
 import { MainChat } from "../agent/chat.tsx";
 import { threadCache } from "../../utils/thread-cache.ts";
 
@@ -96,7 +98,7 @@ function ThreadMessagesWithCache({ threadId }: { threadId: string }) {
   );
 }
 
-// Renders cached data instantly - NO HOOKS that could trigger Suspense
+// Renders cached data instantly - hooks needed for agent data
 function CachedThreadMessages({
   threadId: _threadId,
   cachedData,
@@ -107,14 +109,20 @@ function CachedThreadMessages({
     messages: { messages: UIMessage[] };
   };
 }) {
+  const agentId =
+    cachedData.threadDetail.metadata?.agentId ?? cachedData.threadDetail.id;
+  const { data: agent } = useAgentData(agentId);
+  const agentRoot = useAgentRoot(agentId);
+
+  if (!agent) return null;
+
   return (
     <div className="flex flex-1 min-h-0 flex-col overflow-hidden h-full">
-      <AgentProvider
-        agentId={
-          cachedData.threadDetail.metadata?.agentId ??
-          cachedData.threadDetail.id
-        }
+      <AgenticChatProvider
+        agentId={agentId}
         threadId={cachedData.threadDetail.id}
+        agent={agent}
+        agentRoot={agentRoot}
         uiOptions={{
           showThreadTools: false,
           showModelSelector: false,
@@ -122,8 +130,8 @@ function CachedThreadMessages({
           showAgentVisibility: false,
           showEditAgent: false,
           showContextResources: false,
+          readOnly: true,
         }}
-        readOnly
         initialMessages={cachedData.messages.messages}
       >
         <MainChat
@@ -132,7 +140,7 @@ function CachedThreadMessages({
           className="flex-1 min-h-0 h-full"
           contentClassName="flex flex-col min-w-0"
         />
-      </AgentProvider>
+      </AgenticChatProvider>
     </div>
   );
 }
@@ -207,11 +215,19 @@ function ThreadMessages({ threadId }: { threadId: string }) {
     );
   }
 
+  const agentId = threadDetail.metadata?.agentId ?? threadDetail.id;
+  const { data: agent } = useAgentData(agentId);
+  const agentRoot = useAgentRoot(agentId);
+
+  if (!agent) return null;
+
   return (
     <div className="flex flex-1 min-h-0 flex-col overflow-hidden h-full">
-      <AgentProvider
-        agentId={threadDetail.metadata?.agentId ?? threadDetail.id}
+      <AgenticChatProvider
+        agentId={agentId}
         threadId={threadDetail.id}
+        agent={agent}
+        agentRoot={agentRoot}
         uiOptions={{
           showThreadTools: false,
           showModelSelector: false,
@@ -219,8 +235,8 @@ function ThreadMessages({ threadId }: { threadId: string }) {
           showAgentVisibility: false,
           showEditAgent: false,
           showContextResources: false,
+          readOnly: true,
         }}
-        readOnly
         initialMessages={messages.messages}
       >
         <MainChat
@@ -229,7 +245,7 @@ function ThreadMessages({ threadId }: { threadId: string }) {
           className="flex-1 min-h-0 h-full"
           contentClassName="flex flex-col min-w-0"
         />
-      </AgentProvider>
+      </AgenticChatProvider>
     </div>
   );
 }

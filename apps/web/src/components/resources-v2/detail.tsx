@@ -6,10 +6,9 @@ import { createContext, useContext, useMemo } from "react";
 import { useParams } from "react-router";
 import { z } from "zod";
 import { EmptyState } from "../common/empty-state.tsx";
-import { type DecopilotContextValue } from "../decopilot/context.tsx";
-import { DecopilotLayout } from "../layout/decopilot-layout.tsx";
 import { ReactViewRenderer } from "../views/react-view-registry.tsx";
 import { ResourceRouteProvider } from "./route-context.tsx";
+import { useSetThreadContextEffect } from "../decopilot/thread-context-provider.tsx";
 
 // Base resource data schema that all resources extend
 const BaseResourceDataSchema = z.object({
@@ -166,10 +165,13 @@ function ResourcesV2Detail() {
   const readResponse = resourceReadQuery.data;
   const viewResponse = viewQuery.data as ViewResponse | undefined;
 
-  // Prepare decopilot context value for resource detail
-  const decopilotContextValue = useMemo((): DecopilotContextValue => {
-    if (!integrationId || !readResponse?.data) return {};
+  // Prepare thread context for resource detail
+  const threadContextItems = useMemo(() => {
+    if (!integrationId || !readResponse?.data) return [];
 
+    const contextItems = [];
+
+    // Add rule context items
     const rules: string[] = [
       `The current resource URI is: ${decodedUri ?? ""}. You can use resource tools to read, search, and work on this resource.`,
       `The current resource data is: ${JSON.stringify(readResponse?.data, null, 2)}. This contains the actual resource information that you can reference when helping the user.`,
@@ -177,63 +179,64 @@ function ResourcesV2Detail() {
       ...(viewResponse?.rules ?? []),
     ];
 
-    // Combine base tools with view-specific tools
+    contextItems.push(
+      ...rules.map((text) => ({
+        id: crypto.randomUUID(),
+        type: "rule" as const,
+        text,
+      })),
+    );
+
+    // Add toolset context item
     const allTools = viewResponse?.tools ?? [];
+    if (allTools.length > 0) {
+      contextItems.push({
+        id: crypto.randomUUID(),
+        type: "toolset" as const,
+        integrationId,
+        enabledTools: allTools,
+      });
+    }
 
-    return {
-      additionalTools:
-        allTools.length > 0
-          ? {
-              [integrationId]: allTools,
-            }
-          : undefined,
-      rules,
-    };
-  }, [
-    integrationId,
-    resourceName,
-    readResponse?.data,
-    tools,
-    viewResponse,
-    decodedUri,
-  ]);
+    return contextItems;
+  }, [integrationId, readResponse?.data, viewResponse, decodedUri]);
 
-  // Always render the layout to keep chat panel visible
+  // Inject context into the thread
+  useSetThreadContextEffect(threadContextItems);
+
   return (
-    <DecopilotLayout value={decopilotContextValue}>
-      <ResourceRouteProvider
-        integrationId={integrationId}
-        resourceName={resourceName}
-        resourceUri={decodedUri}
-        connection={integration?.connection}
-      >
-        <ResourceDetailContext.Provider value={readResponse}>
-          {isLoading ? (
-            <div className="h-[calc(100vh-12rem)] flex items-center justify-center">
-              <Spinner />
-            </div>
-          ) : readError ? (
-            <EmptyState
-              icon="error"
-              title="Failed to load resource"
-              description="An error occurred while loading the resource"
-            />
-          ) : !viewRenderTool ? (
-            <EmptyState
-              icon="view_carousel"
-              title="No view render tool available"
-              description="This integration doesn't have a view render tool."
-            />
-          ) : (
-            <ResourcesV2DetailTab
-              viewData={viewQuery.data}
-              viewIsLoading={viewQuery.isLoading}
-              viewError={viewQuery.error}
-            />
-          )}
-        </ResourceDetailContext.Provider>
-      </ResourceRouteProvider>
-    </DecopilotLayout>
+    <ResourceRouteProvider
+      integrationId={integrationId}
+      resourceName={resourceName}
+      resourceUri={decodedUri}
+      connection={integration?.connection}
+    >
+      <ResourceDetailContext.Provider value={readResponse}>
+        {isLoading ? (
+          <div className="h-[calc(100vh-12rem)] flex items-center justify-center">
+            <Spinner />
+          </div>
+        ) : readError ? (
+          <EmptyState
+            icon="error"
+            title="Failed to load resource"
+            description="An error occurred while loading the resource"
+          />
+        ) : !viewRenderTool ? (
+          <EmptyState
+            icon="view_carousel"
+            title="No view render tool available"
+            description="This integration doesn't have a view render tool."
+          />
+        ) : (
+          <ResourcesV2DetailTab
+            viewData={viewQuery.data}
+            viewIsLoading={viewQuery.isLoading}
+            viewError={viewQuery.error}
+          />
+        )}
+      </ResourceDetailContext.Provider>
+    </ResourceRouteProvider>
   );
 }
 

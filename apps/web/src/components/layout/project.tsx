@@ -12,8 +12,13 @@ import {
   BreadcrumbPage,
   BreadcrumbSeparator,
 } from "@deco/ui/components/breadcrumb.tsx";
-import { Button } from "@deco/ui/components/button.tsx";
 import { ButtonGroup } from "@deco/ui/components/button-group.tsx";
+import { Button } from "@deco/ui/components/button.tsx";
+import {
+  ResizableHandle,
+  ResizablePanel,
+  ResizablePanelGroup,
+} from "@deco/ui/components/resizable.tsx";
 import {
   SidebarInset,
   SidebarLayout,
@@ -33,9 +38,13 @@ import {
 import { useLocalStorage } from "../../hooks/use-local-storage.ts";
 import { useWorkspaceLink } from "../../hooks/use-navigate-workspace.ts";
 import { useUser } from "../../hooks/use-user.ts";
+import { MainChatSkeleton } from "../agent/chat.tsx";
 import { AgentAvatar } from "../common/avatar/agent.tsx";
 import RegisterActivity from "../common/register-activity.tsx";
+import { DecopilotChat } from "../decopilot/index.tsx";
+import { ThreadContextProvider } from "../decopilot/thread-context-provider.tsx";
 import { DecopilotThreadProvider } from "../decopilot/thread-context.tsx";
+import { ThreadManagerProvider } from "../decopilot/thread-manager-context.tsx";
 import { ProfileModalProvider, useProfileModal } from "../profile-modal.tsx";
 import { ProjectSidebar } from "../sidebar/index.tsx";
 import { WithWorkspaceTheme } from "../theme.tsx";
@@ -76,6 +85,9 @@ export function ProjectLayout() {
       defaultValue: true,
     });
   const [sidebarOpen, setSidebarOpen] = useState(defaultSidebarOpen);
+  const { open: decopilotOpen } = useDecopilotOpen();
+  const location = useLocation();
+  const isAgentDetailPage = location.pathname.match(/\/agent\/[^\/]+\/[^\/]+$/);
 
   const { org, project } = useParams();
 
@@ -90,71 +102,92 @@ export function ProjectLayout() {
   return (
     <BaseRouteLayout>
       <WithWorkspaceTheme>
-        <DecopilotThreadProvider>
-          <ProfileModalProvider
-            profileOpen={profileOpen}
-            setProfileOpen={setProfileOpen}
-            openProfileModal={openProfileModal}
-            closeProfileModal={closeProfileModal}
-            handlePhoneSaved={handlePhoneSaved}
-          >
-            <SidebarProvider
-              open={sidebarOpen}
-              onOpenChange={(open) => {
-                setDefaultSidebarOpen(open);
-                setSidebarOpen(open);
-              }}
-            >
-              <div className="flex flex-col h-full">
-                <TopbarLayout
-                  breadcrumb={[
-                    {
-                      label: (
-                        <Suspense fallback={<BreadcrumbOrgSwitcher.Skeleton />}>
-                          <BreadcrumbOrgSwitcher />
-                        </Suspense>
-                      ),
-                    },
-                    {
-                      label: (
-                        <Suspense
-                          fallback={<BreadcrumbProjectSwitcher.Skeleton />}
-                        >
-                          <BreadcrumbProjectSwitcher />
-                        </Suspense>
-                      ),
-                      link: `/${org}/${project}`,
-                    },
-                  ]}
+        <ThreadManagerProvider>
+          <ThreadContextProvider>
+            <DecopilotThreadProvider>
+              <ProfileModalProvider
+                profileOpen={profileOpen}
+                setProfileOpen={setProfileOpen}
+                openProfileModal={openProfileModal}
+                closeProfileModal={closeProfileModal}
+                handlePhoneSaved={handlePhoneSaved}
+              >
+                <SidebarProvider
+                  open={sidebarOpen}
+                  onOpenChange={(open) => {
+                    setDefaultSidebarOpen(open);
+                    setSidebarOpen(open);
+                  }}
                 >
-                  <SidebarLayout
-                    className="h-full bg-sidebar"
-                    style={
-                      {
-                        "--sidebar-width": "13rem",
-                        "--sidebar-width-mobile": "11rem",
-                      } as Record<string, string>
-                    }
-                  >
-                    <ProjectSidebar />
-                    <SidebarInset className="h-[calc(100vh-48px)] flex-col bg-sidebar">
-                      <Suspense
-                        fallback={
-                          <div className="h-[calc(100vh-48px)] w-full grid place-items-center">
-                            <Spinner />
-                          </div>
+                  <div className="flex flex-col h-full">
+                    <TopbarLayout
+                      breadcrumb={[
+                        {
+                          label: (
+                            <Suspense
+                              fallback={<BreadcrumbOrgSwitcher.Skeleton />}
+                            >
+                              <BreadcrumbOrgSwitcher />
+                            </Suspense>
+                          ),
+                        },
+                        {
+                          label: (
+                            <Suspense
+                              fallback={<BreadcrumbProjectSwitcher.Skeleton />}
+                            >
+                              <BreadcrumbProjectSwitcher />
+                            </Suspense>
+                          ),
+                          link: `/${org}/${project}`,
+                        },
+                      ]}
+                    >
+                      <SidebarLayout
+                        className="h-full bg-sidebar"
+                        style={
+                          {
+                            "--sidebar-width": "13rem",
+                            "--sidebar-width-mobile": "11rem",
+                          } as Record<string, string>
                         }
                       >
-                        <Outlet />
-                      </Suspense>
-                    </SidebarInset>
-                  </SidebarLayout>
-                </TopbarLayout>
-                <RegisterActivity orgSlug={org} projectSlug={project} />
-              </div>
-            </SidebarProvider>
-          </ProfileModalProvider>
-        </DecopilotThreadProvider>
+                        <ProjectSidebar />
+                        <SidebarInset className="h-[calc(100vh-48px)] flex-col bg-sidebar">
+                          <ResizablePanelGroup direction="horizontal">
+                            <ResizablePanel>
+                              <Suspense
+                                fallback={
+                                  <div className="h-[calc(100vh-48px)] w-full grid place-items-center">
+                                    <Spinner />
+                                  </div>
+                                }
+                              >
+                                <Outlet />
+                              </Suspense>
+                            </ResizablePanel>
+                            {/* Don't show DecopilotChat panel on agent detail pages - they handle chat mode switching internally */}
+                            {decopilotOpen && !isAgentDetailPage && (
+                              <>
+                                <ResizableHandle withHandle />
+                                <ResizablePanel defaultSize={30}>
+                                  <Suspense fallback={<MainChatSkeleton />}>
+                                    <DecopilotChat />
+                                  </Suspense>
+                                </ResizablePanel>
+                              </>
+                            )}
+                          </ResizablePanelGroup>
+                        </SidebarInset>
+                      </SidebarLayout>
+                    </TopbarLayout>
+                    <RegisterActivity orgSlug={org} projectSlug={project} />
+                  </div>
+                </SidebarProvider>
+              </ProfileModalProvider>
+            </DecopilotThreadProvider>
+          </ThreadContextProvider>
+        </ThreadManagerProvider>
       </WithWorkspaceTheme>
     </BaseRouteLayout>
   );

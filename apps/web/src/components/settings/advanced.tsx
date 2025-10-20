@@ -29,7 +29,7 @@ import {
 import { cn } from "@deco/ui/lib/utils.ts";
 import { useState } from "react";
 import { getPublicChatLink } from "../agent/chats.tsx";
-import { useAgenticChat, useAgenticChatForm } from "../chat/provider.tsx";
+import { useAgenticChat } from "../chat/provider.tsx";
 import { useCurrentTeam } from "../sidebar/team-selector.tsx";
 import { Channels } from "./channels.tsx";
 
@@ -71,8 +71,7 @@ function CopyLinkButton({
 }
 
 function AdvancedTab() {
-  const { agent, saveAgent } = useAgenticChat();
-  const form = useAgenticChatForm();
+  const { agent, saveAgent, form } = useAgenticChat();
 
   const handleSubmit = form.handleSubmit(async () => {
     await saveAgent();

@@ -50,11 +50,7 @@ import { isFilePath } from "../../utils/path.ts";
 import { useFocusChat } from "../agents/hooks.ts";
 import { ChatInput } from "../chat/chat-input.tsx";
 import { ChatMessages } from "../chat/chat-messages.tsx";
-import {
-  AgenticChatProvider,
-  useAgenticChat,
-  useAgenticChatForm,
-} from "../chat/provider.tsx";
+import { AgenticChatProvider, useAgenticChat } from "../chat/provider.tsx";
 import { AgentAvatar } from "../common/avatar/agent.tsx";
 import { useSetThreadContextEffect } from "../decopilot/thread-context-provider.tsx";
 import { useDecopilotThread } from "../decopilot/thread-context.tsx";
@@ -179,8 +175,7 @@ function UnifiedChat() {
 }
 
 function ActionButtons() {
-  const { isDirty: hasChanges, saveAgent, agent } = useAgenticChat();
-  const form = useAgenticChatForm();
+  const { isDirty: hasChanges, saveAgent, agent, form } = useAgenticChat();
 
   const handleSubmit = form.handleSubmit(async () => {
     await saveAgent();
@@ -588,20 +583,6 @@ function FormProvider(props: Props & { agentId: string; threadId: string }) {
   useEffect(() => {
     setChatMode(urlChatMode);
   }, [urlChatMode]);
-
-  // Prepare decopilot context value for the agent being edited (left panel)
-  const decopilotContextValue = useMemo(() => {
-    if (!agent) return {};
-
-    const rules: string[] = [
-      `You are helping with agent editing and configuration. The current agent is "${agent.name}". Focus on operations related to agent configuration, tool management, knowledge base integration, and agent optimization.`,
-      `When working with this agent (${agent.name}), prioritize operations that help users configure the agent's behavior, manage its tools and integrations, optimize its performance, and understand its capabilities. Consider the agent's current configuration and settings when providing assistance.`,
-    ];
-
-    return {
-      rules,
-    };
-  }, [agent]);
 
   useDocumentMetadata({
     title: agent ? `${agent.name} | deco CMS` : undefined,

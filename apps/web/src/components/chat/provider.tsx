@@ -84,6 +84,9 @@ export interface AgenticChatContextValue {
   saveAgent: () => Promise<void>;
   resetAgent: () => void;
 
+  // Form state (for settings components)
+  form: UseFormReturn<Agent>;
+
   // Chat state
   chat: ReturnType<typeof useChat>;
   finishReason: LanguageModelV2FinishReason | null;
@@ -516,6 +519,9 @@ export function AgenticChatProvider({
     saveAgent,
     resetAgent,
 
+    // Form state
+    form: form as UseFormReturn<Agent>,
+
     // Chat state
     chat,
     finishReason,
@@ -576,9 +582,7 @@ export function AgenticChatProvider({
       </AlertDialog>
 
       <AgenticChatContext.Provider value={contextValue}>
-        <AgenticChatFormContext.Provider value={form}>
-          {children}
-        </AgenticChatFormContext.Provider>
+        {children}
       </AgenticChatContext.Provider>
     </>
   );
@@ -589,26 +593,6 @@ export function useAgenticChat() {
   const context = useContext(AgenticChatContext);
   if (!context) {
     throw new Error("useAgenticChat must be used within AgenticChatProvider");
-  }
-  return context;
-}
-
-// Internal context for form access (used by settings components)
-// biome-ignore lint: any is required here for form compatibility
-const AgenticChatFormContext = createContext<UseFormReturn<
-  any,
-  any,
-  any
-> | null>(null);
-
-// Internal hook for accessing the form (used by settings components only)
-// @internal - This is for internal use by settings components that need React Hook Form integration
-export function useAgenticChatForm() {
-  const context = useContext(AgenticChatFormContext);
-  if (!context) {
-    throw new Error(
-      "useAgenticChatForm must be used within AgenticChatProvider",
-    );
   }
   return context;
 }

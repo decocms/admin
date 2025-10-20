@@ -344,7 +344,7 @@ export function createUnifiedMentions(options: UnifiedMentionsOptions) {
           if (popup?.[0]) {
             try {
               popup[0].destroy();
-            } catch (e) {
+            } catch {
               // Ignore errors if already destroyed
             }
             popup = null;
@@ -354,7 +354,7 @@ export function createUnifiedMentions(options: UnifiedMentionsOptions) {
           if (component) {
             try {
               component.destroy();
-            } catch (e) {
+            } catch {
               // Ignore errors if already destroyed
             }
             component = null;

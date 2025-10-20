@@ -5,7 +5,12 @@ import { MentionNode } from "../rich-text-editor/extensions/mention-node.tsx";
 import { MentionDropdown } from "../rich-text-editor/components/mention-dropdown.tsx";
 import type { MentionItem } from "../rich-text-editor/types.ts";
 import Placeholder from "@tiptap/extension-placeholder";
-import { EditorContent, type Extensions, useEditor } from "@tiptap/react";
+import {
+  EditorContent,
+  type Extensions,
+  useEditor,
+  type ReactNodeViewProps,
+} from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import { useEffect, useImperativeHandle, useMemo, forwardRef } from "react";
 import { Markdown } from "tiptap-markdown";
@@ -149,8 +154,9 @@ export const RichTextArea = forwardRef<RichTextAreaHandle, RichTextAreaProps>(
 
     // Create wrapper for MentionNode - use a ref to ensure stable function reference
     const MentionNodeWithAvatar = useMemo(() => {
-      // deno-lint-ignore no-explicit-any
-      return function MentionNodeWrapper(props: any) {
+      return function MentionNodeWrapper(
+        props: ReactNodeViewProps<HTMLSpanElement>,
+      ) {
         return (
           <MentionNode
             {...props}
@@ -163,8 +169,13 @@ export const RichTextArea = forwardRef<RichTextAreaHandle, RichTextAreaProps>(
 
     // Create wrapper for MentionDropdown - use a ref to ensure stable function reference
     const MentionDropdownWithAvatar = useMemo(() => {
-      // deno-lint-ignore no-explicit-any
-      return function MentionDropdownWrapper(props: any) {
+      return function MentionDropdownWrapper(props: {
+        items: MentionItem[];
+        command: (item: MentionItem) => void;
+        editor: unknown;
+        isLoading?: boolean;
+        pendingCategories?: string[];
+      }) {
         const wrappedCommand = (item: MentionItem) => {
           // Handle tool selection - add to agent's toolset
           if (item.type === "tool") {

@@ -1,11 +1,8 @@
 import {
-  DEFAULT_MODEL,
   applyDisplayNameToIntegration,
   useAgents,
   useIntegrations,
-  useModels,
   type Integration,
-  type Model,
 } from "@deco/sdk";
 import { Button } from "@deco/ui/components/button.tsx";
 import { Checkbox } from "@deco/ui/components/checkbox.tsx";
@@ -25,7 +22,6 @@ import { cn } from "@deco/ui/lib/utils.ts";
 import { memo, useCallback, useEffect, useMemo, useState } from "react";
 import { useAgentSettingsToolsSet } from "../../hooks/use-agent-settings-tools-set.ts";
 import type { UploadedFile } from "../../hooks/use-file-upload.ts";
-import { useUserPreferences } from "../../hooks/use-user-preferences.ts";
 import { formatToolName } from "../chat/utils/format-tool-name.ts";
 import { useThreadContext } from "../decopilot/thread-context-provider.tsx";
 import { IntegrationIcon } from "../integrations/common.tsx";
@@ -196,15 +192,7 @@ export function ContextResources({
 
   const { data: integrations = [] } = useIntegrations();
   const { data: agents = [] } = useAgents();
-  const { data: models } = useModels({
-    excludeDisabled: true,
-  });
-  const { preferences } = useUserPreferences();
   const { disableAllTools, setIntegrationTools } = useAgentSettingsToolsSet();
-
-  const selectedModel =
-    models.find((m: Model) => m.id === preferences.defaultModel) ||
-    DEFAULT_MODEL;
 
   // Get context items directly from thread context
   const contextItems = threadContextResult?.contextItems || [];
@@ -233,17 +221,6 @@ export function ContextResources({
       (item): item is ResourceContextItem => item.type === "resource",
     );
   }, [contextItems]);
-
-  const getAcceptedFileTypes = () => {
-    const acceptTypes: string[] = [];
-    if (selectedModel.capabilities.includes("image-upload")) {
-      acceptTypes.push("image/jpeg", "image/png", "image/gif", "image/webp");
-    }
-    if (selectedModel.capabilities.includes("file-upload")) {
-      acceptTypes.push("text/*", "application/pdf");
-    }
-    return acceptTypes.join(",");
-  };
 
   const integrationsWithTools = useMemo(() => {
     return toolsetItems
@@ -336,14 +313,6 @@ export function ContextResources({
     [threadContextResult, contextItems, setIntegrationTools],
   );
 
-  const handleRemoveRule = useCallback(
-    (id: string) => {
-      if (!threadContextResult?.removeContextItem) return;
-      threadContextResult.removeContextItem(id);
-    },
-    [threadContextResult],
-  );
-
   const handleToggleRule = useCallback(
     (index: number, currentlyEnabled: boolean) => {
       if (!threadContextResult?.removeContextItem) return;
@@ -371,7 +340,7 @@ export function ContextResources({
     });
   }, [threadContextResult, ruleItems]);
 
-  const handleRemoveFile = useCallback((id: string) => {
+  const handleRemoveFile = useCallback((_id: string) => {
     // Files are not managed by thread context
     console.warn("File removal not implemented for thread context");
   }, []);

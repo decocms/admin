@@ -3,15 +3,10 @@ import {
   useCallback,
   useContext,
   useEffect,
-  useMemo,
   useReducer,
   type ReactNode,
 } from "react";
-import type {
-  ContextItem,
-  RuleContextItem,
-  ToolsetContextItem,
-} from "../chat/types.ts";
+import type { ContextItem } from "../chat/types.ts";
 
 /**
  * Context for managing context items for threads.

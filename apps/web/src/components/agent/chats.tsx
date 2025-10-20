@@ -50,26 +50,15 @@ export const getPublicChatLink = (
 function Page() {
   const [params] = useSearchParams();
 
-  const { agentId, workspace, threadId, toolsets } = useMemo(() => {
+  const { agentId, workspace, threadId } = useMemo(() => {
     const workspace = params.get("workspace") as ProjectLocator | null;
     const agentId = params.get("agentId");
     const threadId = params.get("threadId") ?? crypto.randomUUID();
-    const toolsets = params.getAll("toolsets").map((toolset) => {
-      const [mcpUrl, connectionType = "HTTP"] = toolset.split(",");
-
-      return {
-        connection: {
-          type: connectionType as "HTTP" | "SSE",
-          url: mcpUrl,
-        },
-        filters: [],
-      };
-    });
     if (!workspace || !agentId) {
       throw new Error("Missing required params, workspace, agentId, threadId");
     }
 
-    return { workspace, agentId, threadId, toolsets };
+    return { workspace, agentId, threadId };
   }, [params]);
 
   const chatKey = useMemo(() => `${agentId}-${threadId}`, [agentId, threadId]);

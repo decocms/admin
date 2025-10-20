@@ -87,7 +87,7 @@ export function ProjectLayout() {
   const [sidebarOpen, setSidebarOpen] = useState(defaultSidebarOpen);
   const { open: decopilotOpen } = useDecopilotOpen();
   const location = useLocation();
-  const isAgentDetailPage = location.pathname.match(/\/agent\/[^\/]+\/[^\/]+$/);
+  const isAgentDetailPage = location.pathname.match(/\/agent\/[^/]+\/[^/]+$/);
 
   const { org, project } = useParams();
 

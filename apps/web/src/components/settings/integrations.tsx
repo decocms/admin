@@ -19,7 +19,7 @@ import {
   useAgentKnowledgeIntegration,
   useUploadAgentKnowledgeFiles,
 } from "../agent/hooks/use-agent-knowledge.ts";
-import { useAgenticChat, useAgenticChatForm } from "../chat/provider.tsx";
+import { useAgenticChat } from "../chat/provider.tsx";
 import {
   AddFileToKnowledgeButton,
   KnowledgeBaseFileList,
@@ -359,8 +359,7 @@ function MultiAgent() {
 }
 
 function ToolsAndKnowledgeTab() {
-  const { saveAgent } = useAgenticChat();
-  const form = useAgenticChatForm();
+  const { saveAgent, form } = useAgenticChat();
 
   const handleSubmit = form.handleSubmit(async () => {
     await saveAgent();

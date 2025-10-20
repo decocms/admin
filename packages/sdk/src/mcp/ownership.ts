@@ -8,7 +8,7 @@ import { getProjectIdFromContext } from "./projects/util.ts";
 export function shouldOmitWorkspace(ctx: Pick<AppContext, "locator">) {
   assertHasLocator(ctx);
   return (
-    ctx.locator.project === "default" || ctx.locator.project === "personal"
+    ctx.locator.project !== "default" && ctx.locator.project !== "personal"
   );
 }
 

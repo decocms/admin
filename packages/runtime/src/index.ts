@@ -209,7 +209,7 @@ const AUTH_START_ENDPOINT = "/oauth/start";
 const AUTH_LOGOUT_ENDPOINT = "/oauth/logout";
 const AUTHENTICATED = (user?: unknown, workspace?: string) => () => {
   return {
-    ...(user as User),
+    ...((user as User) ?? {}),
     workspace,
   } as User;
 };

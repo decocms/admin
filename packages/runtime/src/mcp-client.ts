@@ -83,7 +83,7 @@ export const createTransport = (
 
   const headers: Record<string, string> = {
     ...authHeaders,
-    ...extraHeaders,
+    ...(extraHeaders ?? {}),
     ...("headers" in connection ? connection.headers || {} : {}),
   };
 

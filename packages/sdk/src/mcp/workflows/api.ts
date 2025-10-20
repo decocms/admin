@@ -184,36 +184,40 @@ export const WorkflowResourceV2 = DeconfigResourceV2.define({
             );
           }
 
-          // Check if all specified tools exist in the integration
-          const integrationTools = Array.isArray(integration.tools)
-            ? integration.tools
-            : [];
+          /**
+           * TODO: @gimenes
+           * In the future, the agent will be able to fetch tools on demand, so we don't need to
+           * throw the avialable tools here, shrinking the number of tokens used by llms.
+           */
+          const availableTools =
+            integration.tools?.map(
+              (t: {
+                name: string;
+                description?: string;
+                inputSchema?: Record<string, unknown>;
+                outputSchema?: Record<string, unknown>;
+              }) => ({
+                name: t.name,
+                description: t.description || "No description available",
+                inputSchema: t.inputSchema || {},
+                outputSchema: t.outputSchema || {},
+              }),
+            ) ?? [];
 
-          // If toolNames is undefined, all tools from the integration are available (backward compatibility)
-          const toolsToValidate =
-            dependency.toolNames ??
-            integrationTools.map((t: { name: string }) => t.name);
+          const toolsToValidate = dependency.toolNames ?? [];
+
+          if (toolsToValidate.length === 0) {
+            throw new Error(
+              `Code step '${codeDef.name}': Dependency validation failed. You need to provide at least one tool name for the integration ${dependency.integrationId}. If you don't want to use any tools from this integration, remove it from the dependencies array. Available tools: ${JSON.stringify(availableTools, null, 2)}`,
+            );
+          }
 
           for (const toolName of toolsToValidate) {
-            const tool = integrationTools.find(
+            const tool = availableTools.find(
               (t: { name: string }) => t.name === toolName,
             );
 
             if (!tool) {
-              const availableTools = integrationTools.map(
-                (t: {
-                  name: string;
-                  description?: string;
-                  inputSchema?: Record<string, unknown>;
-                  outputSchema?: Record<string, unknown>;
-                }) => ({
-                  name: t.name,
-                  description: t.description || "No description available",
-                  inputSchema: t.inputSchema || {},
-                  outputSchema: t.outputSchema || {},
-                }),
-              );
-
               throw new Error(
                 `Code step '${codeDef.name}': Dependency validation failed. Tool '${toolName}' not found in integration '${integration.name}' (${dependency.integrationId}).\n\nAvailable tools in this integration:\n${JSON.stringify(availableTools, null, 2)}`,
               );

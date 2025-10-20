@@ -45,11 +45,7 @@ function isValidDesignSystemToken(className) {
   return !BANNED_CLASS_NAMES_CONTAIN_VALUES.includes(value);
 }
 
-function handleLiteral({
-  context,
-  value,
-  range,
-}) {
+function handleLiteral({ context, value, range }) {
   const classes = value.split(" ");
   for (const className of classes) {
     if (!isValidDesignSystemToken(className)) {

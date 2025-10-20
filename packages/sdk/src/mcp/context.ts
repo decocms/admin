@@ -2,7 +2,6 @@
 import type { ActorConstructor, StubFactory } from "@deco/actors";
 import type { AIAgent, Trigger } from "@deco/ai/actors";
 import type { Client } from "@deco/sdk/storage";
-import { createClient } from "@libsql/client/web";
 import type { ToolAnnotations } from "@modelcontextprotocol/sdk/types.d.ts";
 import * as api from "@opentelemetry/api";
 import { createServerClient } from "@supabase/ssr";
@@ -26,13 +25,16 @@ import { ProjectLocator } from "../locator.ts";
 import { trace } from "../observability/index.ts";
 import { createPosthogServerClient, PosthogServerClient } from "../posthog.ts";
 import { WorkflowRunnerProps } from "../workflows/workflow-runner.ts";
-import { type WithTool } from "./assertions.ts";
+import {
+  assertHasLocator,
+  assertHasWorkspace,
+  type WithTool,
+} from "./assertions.ts";
 import { type ResourceAccess } from "./auth/index.ts";
 import { DatatabasesRunSqlInput, QueryResult } from "./databases/api.ts";
 import { Blobs } from "./deconfig/blobs.ts";
 import { Branch } from "./deconfig/branch.ts";
 import { addGroup, type GroupIntegration } from "./groups.ts";
-import { generateUUIDv5, toAlphanumericId } from "./slugify.ts";
 
 import { contextStorage } from "../fetch.ts";
 import { strProp } from "../utils/fns.ts";
@@ -46,29 +48,6 @@ export interface JWTPrincipal extends JWTPayload {
 
 export type Principal = UserPrincipal | JWTPrincipal;
 
-const TURSO_GROUP = "deco-agents-v2";
-
-const createSQLClientFor = async (
-  workspace: string,
-  organization: string,
-  authToken: string,
-) => {
-  const memoryId = toAlphanumericId(`${workspace}/default`);
-  const uniqueDbName = await generateUUIDv5(`${memoryId}-${TURSO_GROUP}`);
-
-  return createClient({
-    url: `libsql://${uniqueDbName}-${organization}.turso.io`,
-    authToken: authToken,
-  });
-};
-
-export interface TursoOptions {
-  type: "turso";
-  TURSO_GROUP_DATABASE_TOKEN: string;
-  TURSO_ORGANIZATION: string;
-  workspace: string;
-}
-
 export interface SQLIteOptions {
   type: "sqlite";
   workspaceDO: WorkspaceDO;
@@ -78,7 +57,6 @@ export interface SQLIteOptions {
 const wrapIWorkspaceDB = (
   db: IWorkspaceDB,
   workspace?: string,
-  turso?: boolean,
 ): IWorkspaceDB => {
   return {
     ...db,
@@ -90,7 +68,6 @@ const wrapIWorkspaceDB = (
           attributes: {
             "db.sql.query": sql,
             workspace,
-            turso,
           },
         },
         api.context.active(),
@@ -107,67 +84,34 @@ const wrapIWorkspaceDB = (
 };
 
 const DECO_DATABASE_APP_NAME = "@deco/database";
-const createWorkspaceDB = async (
-  options: Pick<AppContext, "workspaceDO"> & {
-    user?: AppContext["user"];
-    workspace: Pick<NonNullable<AppContext["workspace"]>, "value">;
-    envVars: Pick<EnvVars, "TURSO_GROUP_DATABASE_TOKEN" | "TURSO_ORGANIZATION">;
-  },
-  turso?: boolean,
-): Promise<IWorkspaceDB> => {
-  const {
-    workspace,
-    workspaceDO,
-    envVars: { TURSO_GROUP_DATABASE_TOKEN, TURSO_ORGANIZATION },
-  } = options;
-  const shouldUseSQLite = turso !== true;
+const createWorkspaceDB = async (ctx: AppContext): Promise<IWorkspaceDB> => {
+  assertHasWorkspace(ctx);
+  assertHasLocator(ctx);
+  const { workspaceDO, workspace, locator, user } = ctx;
 
-  if (shouldUseSQLite) {
-    const integrationId = strProp(options.user, "integrationId");
-    const appName = strProp(options.user, "appName");
-    const dbId =
-      integrationId && appName && appName === DECO_DATABASE_APP_NAME
-        ? integrationId
-        : undefined;
-    const uniqueDbName = dbId ? `${dbId}-${workspace.value}` : workspace.value;
-    return workspaceDO.get(
-      workspaceDO.idFromName(uniqueDbName),
-    ) as IWorkspaceDB;
-  }
+  const useLegacyWorkspace =
+    locator.project === "default" || locator.project === "personal";
+  const projectDiscriminator = useLegacyWorkspace
+    ? workspace.value
+    : locator.value;
 
-  const client = await createSQLClientFor(
-    workspace.value,
-    TURSO_ORGANIZATION,
-    TURSO_GROUP_DATABASE_TOKEN,
-  );
+  const integrationId = strProp(user, "integrationId");
+  const appName = strProp(user, "appName");
+  const dbId =
+    integrationId && appName && appName === DECO_DATABASE_APP_NAME
+      ? integrationId
+      : undefined;
+  const uniqueDbName = dbId
+    ? `${dbId}-${projectDiscriminator}`
+    : projectDiscriminator;
 
-  return {
-    exec: async (args) => {
-      const result = await client.execute({
-        sql: args.sql,
-        args: args.params,
-      });
-
-      return {
-        result: [{ results: result.rows }],
-        [Symbol.dispose]: () => {},
-      };
-    },
-  };
+  return workspaceDO.get(workspaceDO.idFromName(uniqueDbName)) as IWorkspaceDB;
 };
 
-export const workspaceDB = async (
-  options: Pick<AppContext, "workspaceDO"> & {
-    user?: AppContext["user"];
-    workspace: Pick<NonNullable<AppContext["workspace"]>, "value">;
-    envVars: Pick<EnvVars, "TURSO_GROUP_DATABASE_TOKEN" | "TURSO_ORGANIZATION">;
-  },
-  turso?: boolean,
-): Promise<IWorkspaceDB> => {
+export const workspaceDB = async (ctx: AppContext): Promise<IWorkspaceDB> => {
   return wrapIWorkspaceDB(
-    await createWorkspaceDB(options, turso),
-    options.workspace.value,
-    turso,
+    await createWorkspaceDB(ctx),
+    ctx.locator?.value ?? ctx.workspace?.value,
   );
 };
 

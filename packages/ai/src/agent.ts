@@ -511,12 +511,8 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
    */
   private _initializeMemoryStore() {
     const doInit = async () => {
-      const db = await workspaceDB({
-        workspaceDO: this.context.workspaceDO,
-        workspace: { value: this.workspace },
-        // @ts-expect-error - this is a valid field
-        envVars: this.env,
-      });
+      const ctx = this._createAppContext(this.metadata);
+      const db = await workspaceDB(ctx);
 
       // Create D1Client adapter for IWorkspaceDB
       const d1Store = new D1Store({

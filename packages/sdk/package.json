@@ -11,7 +11,6 @@
     "@deco/ai": "^1.0.0",
     "@deco/cf-sandbox": "workspace:*",
     "@deco/workers-runtime": "^0.1.0",
-    "@libsql/client": "^0.15.10",
     "@mastra/cloudflare-d1": "^0.13.4",
     "@mastra/core": "^0.20.2",
     "@microlabs/otel-cf-workers": "^1.0.0-rc.49",

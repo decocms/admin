@@ -14,7 +14,6 @@
     "@deco/ai": "^1.0.0",
     "@deco/mcp": "npm:@jsr/deco__mcp@0.5.5",
     "@deco/sdk": "^0.1.1",
-    "@libsql/client": "^0.15.4",
     "@modelcontextprotocol/sdk": "^1.19.1",
     "@supabase/ssr": "0.6.1",
     "@supabase/supabase-js": "2.49.4",

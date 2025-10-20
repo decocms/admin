@@ -214,7 +214,6 @@ export const PROJECT_TOOLS = [
   apiKeysAPI.disableApiKey,
   apiKeysAPI.validateApiKey,
   databasesAPI.runSql,
-  databasesAPI.migrate,
   databasesAPI.getMeta,
   databasesAPI.recovery,
   databasesAPI.viewBinding,

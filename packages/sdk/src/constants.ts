@@ -39,6 +39,8 @@ export const DECO_CMS_API_URL = isDecoChat
     ? "http://localhost:3001"
     : "https://api.decocms.com";
 
+export const DEV_MODE = import.meta.env?.DEV ?? false;
+
 export const AUTH_PORT_CLI = 3457;
 export const AUTH_URL_CLI = `http://localhost:${AUTH_PORT_CLI}`;
 

@@ -31,6 +31,7 @@ export type Store = WorkflowSlice &
 export type State = Pick<
   Store,
   | "workflow"
+  | "workflowUri"
   | "isDirty"
   | "lastServerVersion"
   | "pendingServerUpdate"
@@ -55,11 +56,14 @@ export type Actions = Pick<
   | "setStepExecutionEnd"
 >;
 
-export const createWorkflowStore = (initialState: Pick<State, "workflow">) => {
+export const createWorkflowStore = (
+  initialState: Pick<State, "workflow" | "workflowUri">,
+) => {
   return createStore<Store>()((set, get, api) => ({
     // Initialize workflow slice
     ...createWorkflowSlice(set, get, api),
     workflow: initialState.workflow,
+    workflowUri: initialState.workflowUri,
 
     // Initialize sync slice with server version
     ...createSyncSlice(set, get, api),

@@ -58,7 +58,7 @@ export function WorkflowDisplay({ resourceUri }: WorkflowDisplayCanvasProps) {
       return storeRef.current;
     }
 
-    const s = createWorkflowStore({ workflow });
+    const s = createWorkflowStore({ workflow, workflowUri: resourceUri });
     storeRef.current = s;
     lastWorkflowNameRef.current = workflow.name;
 
@@ -154,7 +154,8 @@ const StartWorkflowButton = memo(function StartWorkflowButton() {
         </>
       ) : (
         <>
-          <Icon name="play_arrow" size={18} /> Start Workflow
+          <Icon name="play_arrow" size={18} />
+          Start Workflow
         </>
       )}
     </Button>

@@ -156,10 +156,10 @@ export function useWorkflowRunQuery(enabled: boolean = false) {
 export function WorkflowRunDetail(_: { resourceUri?: string } = {}) {
   const runQuery = useWorkflowRunQuery(true);
 
-  const workflowUri = runQuery.data?.data?.workflowURI;
+  const workflowUri = runQuery.data?.data?.workflowURI ?? "";
 
   const { data: workflowResource, isLoading: isLoadingWorkflow } =
-    useWorkflowByUriV2(workflowUri ?? "");
+    useWorkflowByUriV2(workflowUri);
   const workflow = workflowResource?.data;
 
   const isLoading = runQuery.isLoading || (workflowUri && isLoadingWorkflow);
@@ -223,7 +223,11 @@ export function WorkflowRunDetail(_: { resourceUri?: string } = {}) {
   const steps = run.data.workflowStatus?.steps || [];
 
   return (
-    <WorkflowStoreProvider key={workflow.name} workflow={workflow}>
+    <WorkflowStoreProvider
+      key={workflow.name}
+      workflow={workflow}
+      workflowUri={workflowUri}
+    >
       <ScrollArea className="h-full w-full">
         <div className="flex flex-col">
           {/* Header with status and metadata */}

@@ -92,8 +92,7 @@ export function useWorkflowStepDefinition(stepName: string) {
 }
 
 export function useWorkflowUri() {
-  const name = useWorkflowStore((state) => state.workflow.name);
-  return useMemo(() => `rsc://i:workflows-management/workflow/${name}`, [name]);
+  return useWorkflowStore((state) => state.workflowUri);
 }
 
 export function useWorkflowStepExecution(stepName: string) {

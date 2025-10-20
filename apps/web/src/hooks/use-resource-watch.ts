@@ -1,14 +1,11 @@
 import { useQuery } from "@tanstack/react-query";
-import { useSDK } from "@deco/sdk";
+import { useSDK, DECO_CMS_API_URL, DEV_MODE } from "@deco/sdk";
 import { useMemo, useRef, useEffect } from "react";
 import {
   useResourceWatchActions,
   useConnectionLastCtime,
   WatchEvent,
 } from "../stores/resource-watch/index.ts";
-
-const WATCH_URL = "https://api.decocms.com";
-const DEV_MODE = import.meta.env.DEV;
 
 interface UseResourceWatchOptions {
   resourceUri: string;
@@ -125,8 +122,7 @@ function buildWatchUrl(
   pathFilter: string | undefined,
   fromCtime: number | null,
 ): string {
-  const baseUrl = `/${locator}`;
-  const url = new URL(`${baseUrl}/deconfig/watch`, WATCH_URL);
+  const url = new URL(`/${locator}/deconfig/watch`, DECO_CMS_API_URL);
 
   if (pathFilter) {
     url.searchParams.set("path-filter", pathFilter);

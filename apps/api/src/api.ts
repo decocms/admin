@@ -720,7 +720,13 @@ app.all(
   createMCPHandlerFor(async (ctx) => {
     const group = getGroupByAppName(ctx.req.param("group"));
     const tools = await projectTools(ctx);
-    return tools.filter((tool) => tool.group === group);
+
+    const found = tools.filter((tool) => tool.group === group);
+    if (found.length > 0) {
+      return found;
+    }
+
+    return GLOBAL_TOOLS.filter((tool) => tool.group === group);
   }),
 );
 

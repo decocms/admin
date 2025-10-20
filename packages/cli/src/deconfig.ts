@@ -1,3 +1,12 @@
+#!/usr/bin/env node
+
 import { deconfig } from "./commands.js";
 
-deconfig.parse();
+(async () => {
+  try {
+    await deconfig.parseAsync();
+  } catch (error) {
+    console.error(error);
+    process.exit(1);
+  }
+})();

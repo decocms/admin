@@ -1,3 +1,12 @@
+#!/usr/bin/env node
+
 import { program } from "./commands.js";
 
-program.parse();
+(async () => {
+  try {
+    await program.parseAsync();
+  } catch (error) {
+    console.error(error);
+    process.exit(1);
+  }
+})();

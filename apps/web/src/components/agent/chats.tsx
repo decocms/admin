@@ -55,7 +55,7 @@ function Page() {
     const agentId = params.get("agentId");
     const threadId = params.get("threadId") ?? crypto.randomUUID();
     if (!workspace || !agentId) {
-      throw new Error("Missing required params, workspace, agentId, threadId");
+      throw new Error("Missing required params: workspace, agentId");
     }
 
     return { workspace, agentId, threadId };

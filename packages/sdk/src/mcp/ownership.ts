@@ -86,7 +86,7 @@ export async function filterByWorkspaceOrProjectId<TableName extends string>({
   );
 
   if (!filter) {
-    throw new Error("Cannot resolve workspace/project scope for API key");
+    throw new Error("Cannot resolve workspace/project scope");
   }
 
   return filter;

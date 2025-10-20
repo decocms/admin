@@ -11,7 +11,7 @@ export function isAwaitable<T>(v: T | Promise<T>): v is Promise<T> {
 
 export const mapObjKeys = <T, R>(
   obj: T,
-  // deno-lint-ignore no-explicit-any
+  // oxlint-disable-next-line no-explicit-any
   mapper: (value: T[keyof T], key: keyof T) => any,
 ): R => {
   const entries = Object.entries(obj ?? {}) as Entries<T>;

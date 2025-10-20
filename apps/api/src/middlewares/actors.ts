@@ -19,7 +19,7 @@ export const withActorsMiddleware: Handler<AppEnv> = async (ctx, next) => {
   ctx.set("immutableRes", true);
   startTime(ctx, "actor");
   return await actorsMiddleware(
-    // deno-lint-ignore no-explicit-any
+    // oxlint-disable-next-line no-explicit-any
     ctx as any,
     next,
   ).finally(() => endTime(ctx, "actor"));

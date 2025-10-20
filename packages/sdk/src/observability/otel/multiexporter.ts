@@ -1,4 +1,4 @@
-// deno-lint-ignore-file no-explicit-any
+/* oxlint-disable no-explicit-any */
 import type { SpanExporter } from "@opentelemetry/sdk-trace-base";
 import { type ExportResult, ExportResultCode } from "@opentelemetry/core";
 

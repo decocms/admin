@@ -17,7 +17,7 @@ import PostalMime from "postal-mime";
 
 const readContent = async (message: ForwardableEmailMessage) => {
   // Parse the MIME message to extract structured content
-  // deno-lint-ignore no-explicit-any
+  // oxlint-disable-next-line no-explicit-any
   const email = await PostalMime.parse(message.raw as any);
 
   // Return the text content, fallback to HTML if text is not available
@@ -34,7 +34,7 @@ export function email(
       c: Constructor,
     ) => StubFactory<InstanceType<Constructor>> = (c) => {
       return runtime instanceof ActorCfRuntime
-        ? // deno-lint-ignore no-explicit-any
+        ? // oxlint-disable-next-line no-explicit-any
           runtime.stub(c, env as any)
         : actors.stub(c.name);
     };

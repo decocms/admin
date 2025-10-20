@@ -20,7 +20,7 @@ type SubscribeMethods<T> = {
   [K in keyof T as K extends `DECO_RESOURCE_${string}_READ`
     ? SubscribeMethodName<ExtractResourceName<K>>
     : never]: K extends `DECO_RESOURCE_${string}_READ`
-    ? // deno-lint-ignore no-explicit-any
+    ? // oxlint-disable-next-line no-explicit-any
       T[K] extends (...args: any) => any
       ? (args: { id: string } | { uri: string }) => AsyncIterableIterator<{
           uri: string;
@@ -31,7 +31,7 @@ type SubscribeMethods<T> = {
 };
 
 export type MCPClient<T> = {
-  // deno-lint-ignore no-explicit-any
+  // oxlint-disable-next-line no-explicit-any
   [K in keyof T]: T[K] extends (...args: any) => any
     ? (
         args: Parameters<T[K]>[0],

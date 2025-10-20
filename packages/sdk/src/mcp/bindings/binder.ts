@@ -1,4 +1,4 @@
-// deno-lint-ignore-file no-explicit-any
+/* oxlint-disable no-explicit-any */
 import type { z } from "zod";
 import type { MCPConnection } from "../../models/mcp.ts";
 import {

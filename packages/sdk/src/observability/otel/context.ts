@@ -1,4 +1,3 @@
-// deno-lint-ignore-file
 /*
  * Copyright The OpenTelemetry Authors
  *

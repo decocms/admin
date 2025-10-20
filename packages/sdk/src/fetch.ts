@@ -1,4 +1,4 @@
-// deno-lint-ignore-file no-explicit-any
+/* oxlint-disable no-explicit-any */
 import { AsyncLocalStorage } from "node:async_hooks";
 import postgres from "postgres";
 

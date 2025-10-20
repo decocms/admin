@@ -5,7 +5,7 @@ interface GetProviderOptionsParams {
 }
 
 export function getProviderOptions({ budgetTokens }: GetProviderOptionsParams) {
-  // deno-lint-ignore no-explicit-any
+  // oxlint-disable-next-line no-explicit-any
   const opts: Record<string, any> = {};
 
   if (budgetTokens > DEFAULT_MIN_THINKING_TOKENS) {

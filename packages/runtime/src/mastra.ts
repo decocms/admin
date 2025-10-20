@@ -1,4 +1,4 @@
-// deno-lint-ignore-file no-explicit-any ban-types
+/* oxlint-disable no-explicit-any */ ban - types;
 import { HttpServerTransport } from "@deco/mcp/http";
 import {
   createTool as mastraCreateTool,

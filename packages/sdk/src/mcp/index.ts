@@ -240,14 +240,14 @@ export type GlobalTools = typeof GLOBAL_TOOLS;
 export type ProjectTools = typeof PROJECT_TOOLS;
 export type ToolLike<
   TName extends string = string,
-  // deno-lint-ignore no-explicit-any
+  // oxlint-disable-next-line no-explicit-any
   TInput = any,
   TReturn extends object | null | boolean = object,
 > = Tool<TName, TInput, TReturn>;
 
 export type ToolBinder<
   TName extends string | RegExp = string,
-  // deno-lint-ignore no-explicit-any
+  // oxlint-disable-next-line no-explicit-any
   TInput = any,
   TReturn extends object | null | boolean = object,
 > = Pick<ToolLike<string, TInput, TReturn>, "inputSchema" | "outputSchema"> & {

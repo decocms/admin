@@ -1,4 +1,4 @@
-// deno-lint-ignore-file no-explicit-any
+/* oxlint-disable no-explicit-any */
 import z, { type ZodObject } from "zod";
 
 export function jsonSchemaPropertiesToTSTypes(value: any): z.ZodTypeAny {

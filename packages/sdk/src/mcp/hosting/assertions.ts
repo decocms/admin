@@ -1,4 +1,4 @@
-// deno-lint-ignore-file no-explicit-any
+/* oxlint-disable no-explicit-any */
 import { MCPConnection } from "@deco/sdk";
 import { AppContext } from "../context.ts";
 import { listToolsByConnectionType } from "@deco/ai/mcp";

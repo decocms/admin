@@ -26,7 +26,7 @@ export interface JsonSchemaFormProps<
   form: UseFormReturn<T>;
   disabled?: boolean;
   onSubmit: (e: FormEvent) => Promise<void> | void;
-  // deno-lint-ignore no-explicit-any
+  // oxlint-disable-next-line no-explicit-any
   error?: any;
   submitButton?: ReactNode;
 }

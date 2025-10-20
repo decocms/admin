@@ -68,7 +68,7 @@ export function TypeSelectField<T extends FieldValues = FieldValues>({
   const integrationState = useIntegrationInstallState(typeValue);
 
   const selectedOption = options.find(
-    // deno-lint-ignore no-explicit-any
+    // oxlint-disable-next-line no-explicit-any
     (option: OptionItem) => option.value === form.getValues(name as any)?.value,
   );
 
@@ -129,7 +129,7 @@ export function TypeSelectField<T extends FieldValues = FieldValues>({
       }
     }
     await refetchOptionsPromise;
-    // deno-lint-ignore no-explicit-any
+    // oxlint-disable-next-line no-explicit-any
     form.setValue(name as FieldPath<T>, { value: connection.id } as any);
     setInstallingIntegration(null);
   };

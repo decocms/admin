@@ -64,7 +64,7 @@ export function getToolByUri(
   uri: string,
   signal?: AbortSignal,
 ): Promise<ToolReadResult> {
-  // deno-lint-ignore no-explicit-any
+  // oxlint-disable-next-line no-explicit-any
   const client = workspaceResourceClient(locator) as any;
   return client[RESOURCE_TOOL.READ](
     { uri },
@@ -89,7 +89,7 @@ export function upsertToolV2(
   params: ToolUpsertParamsV2,
   signal?: AbortSignal,
 ): Promise<ToolReadResult> {
-  // deno-lint-ignore no-explicit-any
+  // oxlint-disable-next-line no-explicit-any
   const client = workspaceResourceClient(locator) as any;
   return client[RESOURCE_TOOL.CREATE](
     {
@@ -105,7 +105,7 @@ export function updateToolV2(
   params: Partial<ToolUpsertParamsV2>,
   signal?: AbortSignal,
 ): Promise<ToolReadResult> {
-  // deno-lint-ignore no-explicit-any
+  // oxlint-disable-next-line no-explicit-any
   const client = workspaceResourceClient(locator) as any;
   return client[RESOURCE_TOOL.UPDATE](
     {
@@ -121,7 +121,7 @@ export function deleteToolV2(
   uri: string,
   signal?: AbortSignal,
 ): Promise<void> {
-  // deno-lint-ignore no-explicit-any
+  // oxlint-disable-next-line no-explicit-any
   const client = workspaceResourceClient(locator) as any;
   return client[RESOURCE_TOOL.DELETE]({ uri }, { signal }) as Promise<void>;
 }
@@ -287,7 +287,7 @@ export function callToolV2(
   params: ToolCallParamsV2,
   signal?: AbortSignal,
 ): Promise<ToolCallResultV2> {
-  // deno-lint-ignore no-explicit-any
+  // oxlint-disable-next-line no-explicit-any
   const client = workspaceResourceClient(locator) as any;
   return client[TOOL_TOOLS.CALL](params, {
     signal,

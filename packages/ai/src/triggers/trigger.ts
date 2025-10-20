@@ -1,4 +1,4 @@
-// deno-lint-ignore-file no-explicit-any
+/* oxlint-disable no-explicit-any */
 
 // NOTE:
 // Do not use private class fields or methods prefixed with '#'.

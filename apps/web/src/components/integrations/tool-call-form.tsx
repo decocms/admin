@@ -76,7 +76,7 @@ export function ToolCallForm({
   const form = useForm<Record<string, SchemaType>>({
     defaultValues: generateDefaultValues(tool.inputSchema as JSONSchema7),
     // The type is correct, somehow it fails on ajv
-    // deno-lint-ignore no-explicit-any
+    // oxlint-disable-next-line no-explicit-any
     resolver: ajvResolver(tool.inputSchema as any),
   });
 

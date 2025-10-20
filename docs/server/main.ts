@@ -1,4 +1,3 @@
-// deno-lint-ignore-file require-await
 import { withRuntime } from "@deco/workers-runtime";
 import {
   createStepFromTool,

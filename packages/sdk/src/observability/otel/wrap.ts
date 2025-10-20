@@ -1,4 +1,4 @@
-// deno-lint-ignore-file no-explicit-any
+/* oxlint-disable no-explicit-any */
 const unwrapSymbol = Symbol("unwrap");
 
 type Wrapped<T> = { [unwrapSymbol]: T } & T;

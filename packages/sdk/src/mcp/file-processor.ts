@@ -195,7 +195,7 @@ export class FileProcessor {
   /**
    * Recursively process an object to chunk long string properties
    */
-  // deno-lint-ignore no-explicit-any
+  // oxlint-disable-next-line no-explicit-any
   private chunkLongStringsInObject(json: any): string {
     const parts: string[] = [];
 

@@ -1,9 +1,12 @@
 {
   "rules": {
-    "no-unused-expressions": "off"
+    "no-unused-expressions": "off",
+    "no-explicit-any": "warn",
+    "ban-types": "warn"
   },
   "ignorePatterns": [
     "scripts/migrate-project-entity-table.ts",
-    "packages/sdk/src/observability/otel/*"
+    "packages/sdk/src/observability/otel/*",
+    "docs/*"
   ]
 }

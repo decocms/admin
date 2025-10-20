@@ -1,4 +1,4 @@
-// deno-lint-ignore-file no-explicit-any
+/* oxlint-disable no-explicit-any */
 import type { ToolExecutionContext as _ToolExecutionContext } from "@mastra/core";
 import { convertJsonSchemaToZod } from "zod-from-json-schema";
 import { MCPConnection } from "./connection.ts";

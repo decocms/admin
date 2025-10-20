@@ -548,7 +548,7 @@ export const deployFiles = createTool({
       const wranglerConfig: WranglerConfig = wranglerFile
         ? (parseToml(
             filesRecord[wranglerFile]?.content,
-            // deno-lint-ignore no-explicit-any
+            // oxlint-disable-next-line no-explicit-any
           ) as any as WranglerConfig)
         : ({ name: _appSlug } as WranglerConfig);
 

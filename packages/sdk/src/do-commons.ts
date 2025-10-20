@@ -1,6 +1,6 @@
 // Durable Object sometimes gets reset during a deploy, so we need to retry
 // the operation if it fails.
-// deno-lint-ignore no-explicit-any
+// oxlint-disable-next-line no-explicit-any
 export const doRetryable = <T, TArgs extends any[] = any[]>(
   fn: (...args: TArgs) => Promise<T>,
   maxRetries = 3,

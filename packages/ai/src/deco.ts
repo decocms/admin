@@ -1,4 +1,4 @@
-// deno-lint-ignore-file no-explicit-any
+/* oxlint-disable no-explicit-any */
 import type { JSONSchema7 } from "@ai-sdk/provider";
 
 export interface Tool {

@@ -1,4 +1,4 @@
-// deno-lint-ignore-file no-explicit-any
+/* oxlint-disable no-explicit-any */
 import { type DefaultEnv, type RequestContext, withBindings } from "./index.ts";
 import {
   type AppContext,

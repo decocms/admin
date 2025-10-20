@@ -241,7 +241,7 @@ export const useUpdateThreadTitle = () => {
         applyTitleToThreadDetail(title);
       }
     },
-    // deno-lint-ignore no-explicit-any
+    // oxlint-disable-next-line no-explicit-any
     onError: (_: any, __: UpdateThreadTitleParams, context: any) => {
       // If the mutation fails, restore all previous queries data
       if (context?.previousQueriesData) {

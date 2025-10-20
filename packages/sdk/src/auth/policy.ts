@@ -670,7 +670,7 @@ export class AuthorizationClient {
 
     const matched =
       matchFn?.handler?.(
-        // deno-lint-ignore no-explicit-any
+        // oxlint-disable-next-line no-explicit-any
         matchFn?.schema.parse(statement.matchCondition!) as unknown as any,
         ctx,
       ) ?? true;

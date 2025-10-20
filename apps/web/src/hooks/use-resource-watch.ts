@@ -4,21 +4,11 @@ import { useMemo, useRef, useEffect } from "react";
 import {
   useResourceWatchActions,
   useConnectionLastCtime,
+  WatchEvent,
 } from "../stores/resource-watch/index.ts";
 
 const WATCH_URL = "https://api.decocms.com";
 const DEV_MODE = import.meta.env.DEV;
-
-// ============================================================================
-// Types
-// ============================================================================
-
-interface WatchEvent {
-  type: "add" | "modify" | "delete";
-  path: string;
-  metadata?: Record<string, unknown>;
-  ctime: number;
-}
 
 interface UseResourceWatchOptions {
   resourceUri: string;
@@ -43,10 +33,6 @@ interface StreamProcessorConfig {
   onEvent: (event: WatchEvent) => void;
   onConnected: (connected: boolean) => void;
 }
-
-// ============================================================================
-// Authentication Utilities
-// ============================================================================
 
 function extractAccessToken(encodedToken: string): string | null {
   try {
@@ -94,10 +80,6 @@ function getAuthToken(): string | null {
 
   return null;
 }
-
-// ============================================================================
-// SSE Processing Utilities
-// ============================================================================
 
 function mapEventType(type: SSEFileChangeEvent["type"]): WatchEvent["type"] {
   switch (type) {
@@ -177,10 +159,6 @@ async function processSSEStream(config: StreamProcessorConfig): Promise<void> {
   }
 }
 
-// ============================================================================
-// URL Building Utilities
-// ============================================================================
-
 function generateWatcherId(resourceUri: string): string {
   const timestamp = Date.now();
   const random1 = Math.random().toString(36).slice(2, 11);
@@ -207,10 +185,6 @@ function buildWatchUrl(
   return url.toString();
 }
 
-// ============================================================================
-// Event Processing Utilities
-// ============================================================================
-
 function shouldNotifyEvent(
   event: WatchEvent,
   connectionStartTime: number,
@@ -221,10 +195,6 @@ function shouldNotifyEvent(
   const isHistoricalEvent = event.ctime < connectionStartTime;
   return !isHistoricalEvent;
 }
-
-// ============================================================================
-// Main Hook
-// ============================================================================
 
 export function useResourceWatch({
   resourceUri,

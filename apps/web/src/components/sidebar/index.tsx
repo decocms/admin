@@ -52,7 +52,13 @@ import {
 } from "@deco/ui/components/sidebar.tsx";
 import { Skeleton } from "@deco/ui/components/skeleton.tsx";
 import { type ReactNode, Suspense, useMemo, useState } from "react";
-import { Link, useMatch, useNavigate, useParams } from "react-router";
+import {
+  Link,
+  useLocation,
+  useMatch,
+  useNavigate,
+  useParams,
+} from "react-router";
 import { trackEvent } from "../../hooks/analytics.ts";
 import {
   useNavigateWorkspace,
@@ -196,6 +202,7 @@ function WorkspaceViews() {
   const removeViewMutation = useRemoveView();
   const navigateWorkspace = useNavigateWorkspace();
   const navigate = useNavigate();
+  const location = useLocation();
   const [addViewsDialogState, setAddViewsDialogState] = useState<{
     open: boolean;
     integration?: Integration;
@@ -486,10 +493,18 @@ function WorkspaceViews() {
             <SidebarMenuButton asChild>
               <Link
                 to={href}
-                onClick={() => {
+                onClick={(e) => {
                   trackEvent("sidebar_navigation_click", {
                     item: displayTitle,
                   });
+
+                  // Reload if already on current page (client-side)
+                  if (location.pathname === href) {
+                    e.preventDefault();
+                    navigate(0);
+                    return;
+                  }
+
                   isMobile && toggleSidebar();
                 }}
               >
@@ -720,10 +735,18 @@ function WorkspaceViews() {
                             <Link
                               to={href}
                               className="group/item relative"
-                              onClick={() => {
+                              onClick={(e) => {
                                 trackEvent("sidebar_navigation_click", {
                                   item: view.title,
                                 });
+
+                                // Reload if already on current page (client-side)
+                                if (location.pathname === href) {
+                                  e.preventDefault();
+                                  navigate(0);
+                                  return;
+                                }
+
                                 isMobile && toggleSidebar();
                               }}
                             >

@@ -181,21 +181,12 @@ export function ContextResources({
   rightNode,
 }: ContextResourcesProps) {
   // Read context from ThreadContextProvider instead of contextItems
-  const threadContextResult = (() => {
-    try {
-      return useThreadContext();
-    } catch {
-      // ThreadContext not available (e.g., in standalone usage)
-      return null;
-    }
-  })();
+  const { contextItems, removeContextItem, updateContextItem } =
+    useThreadContext();
 
   const { data: integrations = [] } = useIntegrations();
   const { data: agents = [] } = useAgents();
   const { disableAllTools, setIntegrationTools } = useAgentSettingsToolsSet();
-
-  // Get context items directly from thread context
-  const contextItems = threadContextResult?.contextItems || [];
 
   // Filter context items by type
   const ruleItems = useMemo<RuleContextItem[]>(() => {
@@ -260,10 +251,8 @@ export function ContextResources({
   const handleRemoveIntegration = useCallback(
     (integrationId: string, contextItemId: string) => {
       try {
-        if (!threadContextResult?.removeContextItem) return;
-
         // Remove the context item
-        threadContextResult.removeContextItem(contextItemId);
+        removeContextItem(contextItemId);
 
         // Also disable in agent settings
         disableAllTools(integrationId);
@@ -271,7 +260,7 @@ export function ContextResources({
         console.error("Failed to remove integration:", error);
       }
     },
-    [disableAllTools, threadContextResult],
+    [disableAllTools, removeContextItem],
   );
 
   const handleToggleTool = useCallback(
@@ -282,8 +271,6 @@ export function ContextResources({
       contextItemId: string,
     ) => {
       try {
-        if (!threadContextResult?.updateContextItem) return;
-
         // Find the context item to get current tools
         const contextItem = contextItems.find(
           (item) => item.id === contextItemId,
@@ -300,7 +287,7 @@ export function ContextResources({
         }
 
         // Update context item
-        threadContextResult.updateContextItem(contextItemId, {
+        updateContextItem(contextItemId, {
           enabledTools: newTools,
         });
 
@@ -310,18 +297,16 @@ export function ContextResources({
         console.error("Failed to toggle tool:", error);
       }
     },
-    [threadContextResult, contextItems, setIntegrationTools],
+    [updateContextItem, contextItems, setIntegrationTools],
   );
 
   const handleToggleRule = useCallback(
     (index: number, currentlyEnabled: boolean) => {
-      if (!threadContextResult?.removeContextItem) return;
-
       if (currentlyEnabled) {
         // Find the rule item at this index and remove it
         const ruleItem = ruleItems[index];
         if (ruleItem) {
-          threadContextResult.removeContextItem(ruleItem.id);
+          removeContextItem(ruleItem.id);
         }
       } else {
         // This shouldn't happen in the current implementation
@@ -329,16 +314,15 @@ export function ContextResources({
         console.warn("Cannot enable a rule that doesn't exist");
       }
     },
-    [threadContextResult, ruleItems],
+    [removeContextItem, ruleItems],
   );
 
   const handleRemoveAllRules = useCallback(() => {
-    if (!threadContextResult?.removeContextItem) return;
     // Remove all rule context items
     ruleItems.forEach((item) => {
-      threadContextResult.removeContextItem(item.id);
+      removeContextItem(item.id);
     });
-  }, [threadContextResult, ruleItems]);
+  }, [removeContextItem, ruleItems]);
 
   const handleRemoveFile = useCallback((_id: string) => {
     // Files are not managed by thread context

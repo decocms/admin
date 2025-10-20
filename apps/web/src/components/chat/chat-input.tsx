@@ -61,17 +61,7 @@ export function ChatInput({
   const enableFileUpload = true;
 
   // Read from ThreadContextProvider
-  const threadContextResult = (() => {
-    try {
-      return useThreadContext();
-    } catch {
-      return null;
-    }
-  })();
-
-  // Get context items and management methods from thread context
-  const contextItems = threadContextResult?.contextItems || [];
-  const addContextItem = threadContextResult?.addContextItem;
+  const { contextItems, addContextItem } = useThreadContext();
 
   // Check if there are any context resources to display
   const hasContextResources = useMemo(() => {

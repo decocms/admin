@@ -174,7 +174,7 @@ export function AgenticChatProvider({
   uiOptions,
   children,
 }: PropsWithChildren<AgenticChatProviderProps>) {
-  const threadContextResult = useThreadContext();
+  const { contextItems: threadContextItems } = useThreadContext();
   const triggerToolCallListeners = useTriggerToolCallListeners();
 
   const [state, dispatch] = useReducer(chatStateReducer, {
@@ -377,7 +377,7 @@ export function AgenticChatProvider({
 
       // Handle programmatic message send with metadata
       // Extract rules and tools from context items
-      const contextItems = threadContextResult?.contextItems || [];
+      const contextItems = threadContextItems;
 
       // Extract rules from context items and convert to UIMessages for context (not persisted to thread)
       const rulesFromContextItems = contextItems
@@ -458,7 +458,7 @@ export function AgenticChatProvider({
       threadId,
       agentId,
       setIsLoading,
-      threadContextResult?.contextItems,
+      threadContextItems,
     ],
   );
 

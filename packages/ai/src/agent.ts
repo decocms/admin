@@ -97,8 +97,6 @@ export interface Env {
   GATEWAY_ID: string;
   ACCOUNT_ID: string;
   CF_ACCOUNT_ID: string;
-  TURSO_ORGANIZATION: string;
-  TURSO_ADMIN_TOKEN: string;
   AWS_ACCESS_KEY_ID: string;
   AWS_SECRET_ACCESS_KEY: string;
   AWS_REGION: string;

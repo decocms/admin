@@ -75,8 +75,5 @@
       "./plugins/ensure-tailwind-design-system-tokens.ts",
       "./plugins/enforce-kebab-case-file-names.ts"
     ]
-  },
-  "dependencies": {
-    "@tanstack/react-virtual": "^3.13.12"
   }
 }

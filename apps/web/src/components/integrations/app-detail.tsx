@@ -853,7 +853,7 @@ export default function AppDetail() {
             isDeleting={isDeletionPending}
             onDelete={(arg) => {
               performDelete(arg);
-              if (data.info.provider === "custom") {
+              if (data.info?.provider === "custom") {
                 navigateWorkspace("/store");
               }
             }}

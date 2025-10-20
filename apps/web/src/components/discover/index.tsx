@@ -183,11 +183,18 @@ const Discover = () => {
               const key = getConnectionAppKey(item as Integration);
               const appKey = AppKeys.build(key);
               return (
-                <a
+                <button
+                  key={item.appName}
+                  type="button"
                   onClick={() => {
                     navigateWorkspace(`/apps/${appKey}`);
                   }}
-                  key={item.appName}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" || e.key === " ") {
+                      e.preventDefault();
+                      navigateWorkspace(`/apps/${appKey}`);
+                    }
+                  }}
                   className="relative rounded-xl cursor-pointer overflow-hidden"
                 >
                   <img
@@ -210,12 +217,12 @@ const Discover = () => {
                     <p className="text-sm text-white">{item.description}</p>
                   </div>
                   <Button
-                    className="absolute bottom-6 right-6 hover:bg-primary-light!"
+                    className="absolute bottom-6 right-6 !hover:bg-primary-light"
                     variant="special"
                   >
                     See app
                   </Button>
-                </a>
+                </button>
               );
             })}
 

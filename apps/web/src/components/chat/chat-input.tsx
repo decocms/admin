@@ -248,7 +248,6 @@ export function ChatInput({
               {uiOptions.showContextResources && hasContextResources && (
                 <ContextResources
                   uploadedFiles={uploadedFiles}
-                  isDragging={isDragging}
                   removeFile={removeFile}
                   enableFileUpload={enableFileUpload}
                 />

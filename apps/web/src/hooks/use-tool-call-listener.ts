@@ -1,4 +1,5 @@
 import { useEffect, useRef } from "react";
+import type { MutableRefObject } from "react";
 
 /**
  * Hook to listen for tool calls and execute callbacks.
@@ -46,9 +47,11 @@ export function useTriggerToolCallListeners() {
   };
 }
 
+type ToolCallCallback = (toolCall: { toolName: string }) => void;
+
 declare global {
-  var __toolCallListeners: Map<
-    string,
-    React.MutableRefObject<(toolCall: { toolName: string }) => void>
-  >;
+  // eslint-disable-next-line no-var
+  var __toolCallListeners:
+    | Map<string, MutableRefObject<ToolCallCallback>>
+    | undefined;
 }

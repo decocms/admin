@@ -96,7 +96,7 @@ export interface AgenticChatContextValue {
 
   // Chat methods
   sendMessage: (message?: UIMessage) => Promise<void>;
-  retry: (context?: string[]) => void;
+  retry: (context?: string[]) => Promise<void>;
 
   // UI options
   uiOptions: UiOptions;
@@ -320,6 +320,8 @@ export function AgenticChatProvider({
     },
     onError: (error) => {
       console.error("Chat error:", error);
+      setIsLoading(false);
+      setFinishReason(null);
     },
     onToolCall: ({ toolCall }) => {
       // Trigger all registered tool call listeners

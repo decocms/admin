@@ -318,10 +318,20 @@ export function ContextResources({
     });
   }, [removeContextItem, ruleItems]);
 
-  const handleRemoveFile = useCallback((_id: string) => {
-    // Files are not managed by thread context
-    console.warn("File removal not implemented for thread context");
-  }, []);
+  const handleRemoveFile = useCallback(
+    (id: string) => {
+      try {
+        if (!removeContextItem) {
+          console.warn("removeContextItem is not available");
+          return;
+        }
+        removeContextItem(id);
+      } catch (error) {
+        console.warn("Failed to remove file:", error);
+      }
+    },
+    [removeContextItem],
+  );
 
   return (
     <div className="w-full mx-auto relative">

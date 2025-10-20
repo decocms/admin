@@ -54,6 +54,11 @@ export const WorkflowEnvSchema = z.object({
   OPENAI_API_KEY: z.string().min(1, "OpenAI API key is required"),
   SUPABASE_URL: z.string().url("Invalid Supabase URL"),
   SUPABASE_SERVER_TOKEN: z.string().min(1, "Supabase server token is required"),
+  TURSO_ADMIN_TOKEN: z.string().min(1, "Turso admin token is required"),
+  TURSO_ORGANIZATION: z.string().min(1, "Turso organization is required"),
+  TURSO_GROUP_DATABASE_TOKEN: z
+    .string()
+    .min(1, "Turso group database token is required"),
   VECTOR_BATCH_SIZE: z.string().optional(),
   WORKSPACE_DB: z.any().optional(),
 });

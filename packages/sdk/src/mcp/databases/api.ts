@@ -6,6 +6,7 @@ import { WellKnownMcpGroups } from "../groups.ts";
 import { listViewsSchema } from "../bindings/views.ts";
 
 export { getWorkspaceD1Database } from "./d1.ts";
+export { migrate } from "./migration.ts";
 
 const Timings = z.object({
   sql_duration_ms: z.number().optional(),
@@ -47,16 +48,23 @@ export type DatatabasesRunSqlInput = z.infer<
 export const getMeta = createDatabaseTool({
   name: "DATABASES_GET_META",
   description: "Run a SQL query against the workspace database",
-  inputSchema: z.lazy(() => z.object({})),
+  inputSchema: z.lazy(() =>
+    z.object({
+      _legacy: z
+        .boolean()
+        .optional()
+        .describe("If true, the query will be run against the legacy database"),
+    }),
+  ),
   outputSchema: z.lazy(() =>
     z.object({
       bytes: z.number().optional(),
     }),
   ),
-  handler: async (_, c) => {
+  handler: async ({ _legacy }, c) => {
     assertHasWorkspace(c);
     await assertWorkspaceResourceAccess(c, "DATABASES_RUN_SQL");
-    const db = await workspaceDB(c);
+    const db = await workspaceDB(c, _legacy);
     const dbMeta = await db.meta?.();
     dbMeta?.[Symbol.dispose]();
     return { bytes: dbMeta?.size };
@@ -78,13 +86,18 @@ const CREATED: Map<string, boolean> = new Map();
 export const runSql = createDatabaseTool({
   name: "DATABASES_RUN_SQL",
   description: "Run a SQL query against the workspace database",
-  inputSchema: DatatabasesRunSqlInputSchema,
+  inputSchema: DatatabasesRunSqlInputSchema.extend({
+    _legacy: z
+      .boolean()
+      .optional()
+      .describe("If true, the query will be run against the legacy database"),
+  }),
   outputSchema: z.lazy(() =>
     z.object({
       result: z.array(QueryResult),
     }),
   ),
-  handler: async ({ sql, params }, c) => {
+  handler: async ({ sql, params, _legacy }, c) => {
     assertHasWorkspace(c);
     await assertWorkspaceResourceAccess(c);
     const sqlKey = `${sql}:${c.workspace.value}`;
@@ -93,7 +106,7 @@ export const runSql = createDatabaseTool({
     if (isMastraCreateTableSql && CREATED.has(sqlKey)) {
       return { result: [] };
     }
-    const db = await workspaceDB(c);
+    const db = await workspaceDB(c, _legacy);
     using responseDO = await db.exec({
       sql,
       params,
@@ -109,6 +122,10 @@ export const recovery = createDatabaseTool({
   inputSchema: z.lazy(() =>
     z.object({
       date: z.string().describe("The date to recover to"),
+      _legacy: z
+        .boolean()
+        .optional()
+        .describe("If true, the query will be run against the legacy database"),
     }),
   ),
   outputSchema: z.lazy(() =>
@@ -116,10 +133,10 @@ export const recovery = createDatabaseTool({
       success: z.boolean(),
     }),
   ),
-  handler: async ({ date }, c) => {
+  handler: async ({ date, _legacy }, c) => {
     assertHasWorkspace(c);
     await assertWorkspaceResourceAccess(c, "DATABASES_RUN_SQL");
-    const db = await workspaceDB(c);
+    const db = await workspaceDB(c, _legacy);
     using _ = await db.recovery?.(new Date(date));
     return { success: true };
   },

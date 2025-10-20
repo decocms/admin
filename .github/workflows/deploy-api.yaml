@@ -35,6 +35,9 @@ jobs:
           secrets: |
             SUPABASE_URL
             SUPABASE_SERVER_TOKEN
+            TURSO_ORGANIZATION
+            TURSO_GROUP_DATABASE_TOKEN
+            TURSO_ADMIN_TOKEN
             CF_ACCOUNT_ID
             CF_API_TOKEN
             CF_ZONE_ID
@@ -66,6 +69,9 @@ jobs:
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_SERVER_TOKEN: ${{ secrets.SUPABASE_SERVER_TOKEN }}
+          TURSO_ORGANIZATION: ${{ secrets.TURSO_ORGANIZATION }}
+          TURSO_GROUP_DATABASE_TOKEN: ${{ secrets.TURSO_GROUP_DATABASE_TOKEN }}
+          TURSO_ADMIN_TOKEN: ${{ secrets.TURSO_ADMIN_TOKEN }}
           OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
           CF_API_TOKEN: ${{ secrets.CF_API_TOKEN }}
           CF_ACCOUNT_ID: ${{ secrets.CF_ACCOUNT_ID }}

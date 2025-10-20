@@ -15,6 +15,7 @@ import { type AppContext, createToolGroup } from "../context.ts";
 import { convertFromDatabase } from "../integrations/api.ts";
 import {
   getProjectIdFromContext,
+  buildWorkspaceOrProjectIdConditions,
   workspaceOrProjectIdConditions,
 } from "../projects/util.ts";
 
@@ -103,17 +104,13 @@ export const createChannel = createTool({
     assertHasLocator(c);
     await assertWorkspaceResourceAccess(c);
     const projectId = await getProjectIdFromContext(c);
-    const ownershipConditions = await workspaceOrProjectIdConditions(
-      c,
-      projectId,
-    );
     const workspace = c.workspace.value;
 
     const integrationIdWithoutPrefix = integrationId.replace("i:", "");
     const { data: integration, error: integrationError } = await c.db
       .from("deco_chat_integrations")
       .select("*")
-      .or(ownershipConditions)
+      .or(buildWorkspaceOrProjectIdConditions(workspace, projectId))
       .eq("id", integrationIdWithoutPrefix)
       .maybeSingle();
     if (integrationError) {

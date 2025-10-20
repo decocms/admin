@@ -55,6 +55,7 @@ import {
 } from "../index.ts";
 import { filterByWorkspaceOrLocator } from "../ownership.ts";
 import {
+  buildWorkspaceOrProjectIdConditions,
   getProjectIdFromContext,
   workspaceOrProjectIdConditions,
 } from "../projects/util.ts";
@@ -440,22 +441,18 @@ export const listIntegrations = createIntegrationManagementTool({
 
     await assertWorkspaceResourceAccess(c);
     const projectId = await getProjectIdFromContext(c);
-    const ownershipConditions = await workspaceOrProjectIdConditions(
-      c,
-      projectId,
-    );
 
     const [integrationsData, agentsData] = await Promise.all([
       // Query integrations with all necessary joins
       c.db
         .from("deco_chat_integrations")
         .select(SELECT_INTEGRATION_QUERY)
-        .or(ownershipConditions),
+        .or(buildWorkspaceOrProjectIdConditions(workspace, projectId)),
       // Query agents
       c.db
         .from("deco_chat_agents")
         .select("*")
-        .or(ownershipConditions),
+        .or(buildWorkspaceOrProjectIdConditions(workspace, projectId)),
     ]);
     const roles =
       c.workspace.root === "users" || typeof c.user?.id !== "string"

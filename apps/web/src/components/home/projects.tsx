@@ -386,7 +386,10 @@ function CreateProject({ org, disabled }: { org: string; disabled?: boolean }) {
               value={title}
               onChange={(e) => {
                 setTitle(e.target.value);
-                handleSlugChange(e.target.value);
+                // Auto-generate slug from title if slug is empty
+                if (!slug) {
+                  handleSlugChange(e.target.value);
+                }
               }}
               placeholder="My Awesome Project"
               disabled={createProjectMutation.isPending}
@@ -472,7 +475,7 @@ function OrgProjectListContent() {
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
             />
-            <CreateProject org={org ?? ""} />
+            <CreateProject org={org ?? ""} disabled />
           </div>
         </div>
         <div className="@container overflow-y-auto flex-1 pb-28">

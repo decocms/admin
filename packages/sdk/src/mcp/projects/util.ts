@@ -1,8 +1,7 @@
 import { and, eq } from "drizzle-orm";
-import { assertHasLocator, assertHasWorkspace } from "../assertions";
+import { assertHasWorkspace } from "../assertions";
 import { AppContext } from "../context";
 import { organizations, projects } from "../schema";
-import { shouldOmitWorkspace } from "../ownership";
 
 export async function getProjectIdFromContext(
   c: AppContext,
@@ -42,23 +41,14 @@ export async function getOrgIdFromContext(
   return org?.id ?? null;
 }
 
-export function buildWorkspaceOrProjectIdConditions({
-  workspace,
-  projectId,
-}: {
-  workspace: string | null;
-  projectId: string | null;
-}): string {
-  const orConditions = [];
-
-  if (workspace !== null) {
-    orConditions.push(`workspace.eq.${workspace}`);
-  }
-
+export function buildWorkspaceOrProjectIdConditions(
+  workspace: string,
+  projectId: string | null,
+): string {
+  const orConditions = [`workspace.eq.${workspace}`];
   if (projectId !== null) {
     orConditions.push(`project_id.eq.${projectId}`);
   }
-
   return orConditions.join(",");
 }
 
@@ -71,16 +61,8 @@ export function buildWorkspaceOrProjectIdConditions({
  */
 export async function workspaceOrProjectIdConditions(
   c: AppContext,
-  projectId?: string | null,
 ): Promise<string> {
   assertHasWorkspace(c);
-  assertHasLocator(c);
-
-  const actualProjectId = projectId ?? (await getProjectIdFromContext(c));
-  const omitWorkspace = shouldOmitWorkspace(c);
-
-  return buildWorkspaceOrProjectIdConditions({
-    workspace: omitWorkspace ? null : c.workspace.value,
-    projectId: actualProjectId,
-  });
+  const projectId = await getProjectIdFromContext(c);
+  return buildWorkspaceOrProjectIdConditions(c.workspace.value, projectId);
 }

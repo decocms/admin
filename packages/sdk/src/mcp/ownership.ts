@@ -73,7 +73,10 @@ export async function filterByWorkspaceOrProjectId<TableName extends string>({
 
   // For non-default/personal projects, only filter by project_id
   if (shouldOmitWorkspace(ctx)) {
-    return actualProjectId ? eq(table.project_id, actualProjectId) : undefined;
+    if (!actualProjectId) {
+      throw new Error("Project ID is required");
+    }
+    return eq(table.project_id, actualProjectId);
   }
 
   // For default/personal projects, allow both workspace and project_id

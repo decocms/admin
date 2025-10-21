@@ -9,6 +9,7 @@ import { format } from "date-fns";
 import { useMemo } from "react";
 import { useParams } from "react-router";
 import { useUser } from "../../../hooks/use-user.ts";
+import { timeAgo } from "../../../utils/time-ago.ts";
 import { IntegrationIcon } from "../../integrations/common.tsx";
 import { AgentAvatar } from "../avatar/agent.tsx";
 import { UserAvatar } from "../avatar/user.tsx";
@@ -319,30 +320,6 @@ function ActivityStatusCell({
   lastActivity,
   className = "",
 }: ActivityStatusCellProps) {
-  // Helper function to format relative time
-  function formatRelativeTime(date: Date): string {
-    const now = new Date();
-    const diffInMs = now.getTime() - date.getTime();
-    const diffInMinutes = Math.floor(diffInMs / (1000 * 60));
-    const diffInHours = Math.floor(diffInMs / (1000 * 60 * 60));
-    const diffInDays = Math.floor(diffInMs / (1000 * 60 * 60 * 24));
-    const diffInMonths = Math.floor(diffInMs / (1000 * 60 * 60 * 24 * 30));
-    const diffInYears = Math.floor(diffInMs / (1000 * 60 * 60 * 24 * 365));
-
-    if (diffInMinutes < 1) return "Active";
-    if (diffInMinutes < 60) return `${diffInMinutes} min ago`;
-    if (diffInHours < 24) {
-      return `${diffInHours} hour${diffInHours === 1 ? "" : "s"} ago`;
-    }
-    if (diffInDays < 30) {
-      return `${diffInDays} day${diffInDays === 1 ? "" : "s"} ago`;
-    }
-    if (diffInMonths < 12) {
-      return `${diffInMonths} month${diffInMonths === 1 ? "" : "s"} ago`;
-    }
-    return `${diffInYears} year${diffInYears === 1 ? "" : "s"} ago`;
-  }
-
   if (!lastActivity) {
     return <span className={`text-muted-foreground ${className}`}>Never</span>;
   }
@@ -350,8 +327,13 @@ function ActivityStatusCell({
   const activityDate =
     typeof lastActivity === "string" ? new Date(lastActivity) : lastActivity;
 
-  const relativeTime = formatRelativeTime(activityDate);
-  const isActive = relativeTime === "Active";
+  const now = new Date();
+  const elapsed = now.getTime() - activityDate.getTime();
+  const isActive = elapsed < 60000; // Less than 1 minute
+
+  const relativeTime = isActive
+    ? "Active"
+    : timeAgo(activityDate, { format: "medium" });
 
   return (
     <div className={`flex items-center gap-2 ${className}`}>
@@ -371,45 +353,12 @@ interface TimeAgoCellProps {
 }
 
 function TimeAgoCell({ value, className = "" }: TimeAgoCellProps) {
-  // Helper function to format relative time
-  function formatRelativeTime(date: Date): string {
-    const now = new Date();
-    const diffInMs = now.getTime() - date.getTime();
-    const diffInSeconds = Math.floor(diffInMs / 1000);
-    const diffInMinutes = Math.floor(diffInMs / (1000 * 60));
-    const diffInHours = Math.floor(diffInMs / (1000 * 60 * 60));
-    const diffInDays = Math.floor(diffInMs / (1000 * 60 * 60 * 24));
-    const diffInWeeks = Math.floor(diffInDays / 7);
-    const diffInMonths = Math.floor(diffInDays / 30);
-    const diffInYears = Math.floor(diffInDays / 365);
-
-    if (diffInSeconds < 60) {
-      return diffInSeconds <= 1 ? "1s ago" : `${diffInSeconds}s ago`;
-    }
-    if (diffInMinutes < 60) {
-      return diffInMinutes === 1 ? "1m ago" : `${diffInMinutes}m ago`;
-    }
-    if (diffInHours < 24) {
-      return diffInHours === 1 ? "1h ago" : `${diffInHours}h ago`;
-    }
-    if (diffInDays < 7) {
-      return diffInDays === 1 ? "1d ago" : `${diffInDays}d ago`;
-    }
-    if (diffInWeeks < 4) {
-      return diffInWeeks === 1 ? "1w ago" : `${diffInWeeks}w ago`;
-    }
-    if (diffInMonths < 12) {
-      return diffInMonths === 1 ? "1mo ago" : `${diffInMonths}mo ago`;
-    }
-    return diffInYears === 1 ? "1y ago" : `${diffInYears}y ago`;
-  }
-
   if (!value) {
     return <span className={className}>-</span>;
   }
 
   const dateObj = typeof value === "string" ? new Date(value) : value;
-  const relativeTime = formatRelativeTime(dateObj);
+  const relativeTime = timeAgo(dateObj, { format: "medium" });
 
   return (
     <span className={`text-sm text-foreground ${className}`}>

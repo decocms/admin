@@ -4,7 +4,6 @@ import {
   useAgentRoot,
   useThreadMessages,
 } from "@deco/sdk";
-import { Button } from "@deco/ui/components/button.tsx";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -17,6 +16,7 @@ import { Skeleton } from "@deco/ui/components/skeleton.tsx";
 import { Suspense, useMemo } from "react";
 import { useLocation } from "react-router";
 import { useUserPreferences } from "../../hooks/use-user-preferences.ts";
+import { timeAgo } from "../../utils/time-ago.ts";
 import { MainChat, MainChatSkeleton } from "../agent/chat.tsx";
 import { AgenticChatProvider } from "../chat/provider.tsx";
 import { useDecopilotThread } from "./thread-context.tsx";
@@ -51,21 +51,6 @@ function ThreadItem({
 }) {
   // Try to fetch thread, but don't throw if it doesn't exist yet
   const { data: messages } = useThreadMessages(threadId);
-
-  function formatThreadDate(timestamp: number) {
-    const date = new Date(timestamp);
-    const now = new Date();
-    const diffMs = now.getTime() - date.getTime();
-    const diffMins = Math.floor(diffMs / 60000);
-    const diffHours = Math.floor(diffMs / 3600000);
-    const diffDays = Math.floor(diffMs / 86400000);
-
-    if (diffMins < 1) return "Just now";
-    if (diffMins < 60) return `${diffMins}m ago`;
-    if (diffHours < 24) return `${diffHours}h ago`;
-    if (diffDays < 7) return `${diffDays}d ago`;
-    return date.toLocaleDateString();
-  }
 
   // Generate a title from the first message if available
   const displayTitle = useMemo(() => {
@@ -103,7 +88,11 @@ function ThreadItem({
         <span className="text-sm truncate">{displayTitle}</span>
       </div>
       <span className="text-xs text-muted-foreground shrink-0 ml-2">
-        {formatThreadDate(timestamp)}
+        {timeAgo(timestamp, {
+          format: "short",
+          maxDays: 7,
+          fallbackFormat: (date) => date.toLocaleDateString(),
+        })}
       </span>
     </DropdownMenuItem>
   );

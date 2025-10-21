@@ -41,7 +41,7 @@ export const useThreadMessages = (
   return useSuspenseQuery({
     queryKey: KEYS.THREAD_MESSAGES(locator, threadId),
     queryFn: ({ signal }) =>
-      shouldFetch
+      shouldFetch !== false
         ? getThreadMessages(locator, threadId, { signal })
         : { messages: [] },
     staleTime: 0,

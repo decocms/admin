@@ -5,7 +5,6 @@ import {
   useCallback,
   useContext,
   useDeferredValue,
-  useEffect,
   useLayoutEffect,
   useMemo,
   useRef,
@@ -161,36 +160,32 @@ export const WorkflowStepInput = memo(
       const input = currentStepInput || {};
       const cleaned: Record<string, unknown> = {};
 
-      if (isFirstStep) {
-        for (const [key, value] of Object.entries(
-          input as Record<string, unknown>,
-        )) {
+      const schemaProperties = stepInputSchema?.properties || {};
+
+      for (const key of Object.keys(schemaProperties)) {
+        const value = (input as Record<string, unknown>)[key];
+
+        if (isFirstStep) {
+          // Skip @ references in first step
           if (typeof value === "string" && value.startsWith("@")) {
+            cleaned[key] = "";
             continue;
           }
-          cleaned[key] = value ?? "";
         }
-      } else {
-        for (const [key, value] of Object.entries(
-          input as Record<string, unknown>,
-        )) {
-          cleaned[key] = value ?? "";
-        }
+
+        cleaned[key] = value ?? "";
       }
 
       return cleaned;
-    }, [currentStepInput, isFirstStep]);
+    }, [currentStepInput, isFirstStep, stepInputSchema]);
 
     const form = useForm<Record<string, unknown>>({
-      defaultValues: initialValues,
+      values: initialValues, // Use 'values' for controlled mode instead of 'defaultValues'
       mode: "onBlur",
+      resetOptions: {
+        keepDirtyValues: false,
+      },
     });
-
-    // Sync React Hook Form's internal state when initialValues change
-    // This ensures the form resets to new defaults when step input or position changes
-    useEffect(() => {
-      form.reset(initialValues);
-    }, [initialValues, form]);
 
     const handleBlur = useCallback(() => {
       startTransition(() => {

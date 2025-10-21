@@ -309,11 +309,7 @@ const ReferenceSelect = memo(function ReferenceSelect({
   );
 
   return (
-    <Select
-      value={value ?? undefined}
-      onValueChange={onChange}
-      disabled={disabled}
-    >
+    <Select value={value || ""} onValueChange={onChange} disabled={disabled}>
       <SelectTrigger className="w-full">
         <SelectValue placeholder={placeholder}>
           {value && (
@@ -396,7 +392,7 @@ function ManualInputComponent<T extends FieldValues>({
       if (schema.enum) {
         return (
           <Select
-            value={field.value}
+            value={field.value || ""}
             onValueChange={field.onChange}
             disabled={disabled}
           >
@@ -434,6 +430,7 @@ function ManualInputComponent<T extends FieldValues>({
       return (
         <Input
           {...field}
+          value={field.value ?? ""}
           disabled={disabled}
           placeholder={`Enter ${schema.title?.toLowerCase() || "value"}...`}
         />
@@ -445,6 +442,7 @@ function ManualInputComponent<T extends FieldValues>({
       return (
         <Input
           {...field}
+          value={field.value ?? ""}
           type="number"
           disabled={disabled}
           onChange={handleNumberChange}

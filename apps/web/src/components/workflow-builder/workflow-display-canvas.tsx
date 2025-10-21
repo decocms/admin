@@ -176,7 +176,6 @@ export const Canvas = memo(function Canvas() {
   const { addRecent } = useRecentResources(projectKey);
   const hasTrackedRecentRef = useRef(false);
   const store = useContext(WorkflowStoreContext);
-  const currentToastIdRef = useRef<string | number | null>(null);
 
   if (!store) {
     throw new Error("Canvas must be used within WorkflowStoreContext");
@@ -198,65 +197,6 @@ export const Canvas = memo(function Canvas() {
     skipHistorical: true,
     onNewEvent: handleWorkflowUpdate,
   });
-
-  // Subscribe to pendingServerUpdate changes and show toast
-  useEffect(() => {
-    let previousPendingUpdate = store.getState().pendingServerUpdate;
-
-    const unsubscribe = store.subscribe((state: Store) => {
-      const currentPendingUpdate = state.pendingServerUpdate;
-
-      // Only react if pendingServerUpdate actually changed
-      if (currentPendingUpdate === previousPendingUpdate) {
-        return;
-      }
-
-      previousPendingUpdate = currentPendingUpdate;
-
-      // Dismiss any existing toast before showing a new one
-      if (currentToastIdRef.current !== null) {
-        toast.dismiss(currentToastIdRef.current);
-        currentToastIdRef.current = null;
-      }
-
-      if (!currentPendingUpdate) return;
-
-      const isDirty = state.isDirty;
-      const { acceptPendingUpdate, dismissPendingUpdate } = state;
-
-      currentToastIdRef.current = toast.warning(
-        isDirty
-          ? "Workflow updated externally. Accepting will discard changes."
-          : "Workflow updated externally.",
-        {
-          duration: Number.POSITIVE_INFINITY, // Keep until dismissed
-          action: {
-            label: isDirty ? "Update & Discard" : "Update",
-            onClick: () => {
-              startTransition(() => {
-                acceptPendingUpdate();
-              });
-            },
-          },
-          cancel: {
-            label: "Dismiss",
-            onClick: () => {
-              startTransition(() => {
-                dismissPendingUpdate();
-              });
-            },
-          },
-        },
-      );
-    });
-
-    return () => {
-      unsubscribe();
-      if (currentToastIdRef.current !== null) {
-        toast.dismiss(currentToastIdRef.current);
-      }
-    };
-  }, [store]);
 
   useEffect(() => {
     if (

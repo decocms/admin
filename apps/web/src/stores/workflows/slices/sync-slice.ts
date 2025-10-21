@@ -1,6 +1,7 @@
 import type { WorkflowDefinition } from "@deco/sdk";
 import type { StateCreator } from "zustand";
 import type { Store } from "../store";
+import { toast } from "@deco/ui/components/sonner.tsx";
 
 export interface SyncSlice {
   isDirty: boolean;
@@ -78,6 +79,22 @@ export const createSyncSlice: StateCreator<Store, [], [], SyncSlice> = (
           lastModifiedStepName: null,
         },
         false,
+      );
+
+      toast.warning(
+        state.isDirty
+          ? "Workflow updated externally. Accepting will discard changes."
+          : "Workflow updated externally.",
+        {
+          action: {
+            label: state.isDirty ? "Update & Discard" : "Update",
+            onClick: () => get().acceptPendingUpdate(),
+          },
+          cancel: {
+            label: "Dismiss",
+            onClick: () => get().dismissPendingUpdate(),
+          },
+        },
       );
 
       return {

@@ -44,12 +44,12 @@ import { useThreadContext } from "../decopilot/thread-context-provider.tsx";
 import { IMAGE_REGEXP, openPreviewPanel } from "../chat/utils/preview.ts";
 
 interface UiOptions {
-  showThreadTools: boolean;
   showModelSelector: boolean;
   showThreadMessages: boolean;
   showAgentVisibility: boolean;
   showEditAgent: boolean;
   showContextResources: boolean;
+  showAddIntegration: boolean;
   readOnly: boolean;
 }
 
@@ -115,12 +115,12 @@ export interface AgenticChatContextValue {
 }
 
 const DEFAULT_UI_OPTIONS: UiOptions = {
-  showThreadTools: true,
   showModelSelector: true,
   showThreadMessages: true,
   showAgentVisibility: true,
   showEditAgent: true,
   showContextResources: true,
+  showAddIntegration: true,
   readOnly: false,
 };
 

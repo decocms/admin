@@ -225,9 +225,9 @@ function Page(props: Props) {
         sendReasoning={preferences.sendReasoning}
         initialMessages={threadMessages}
         uiOptions={{
-          showThreadTools: isTeamAgent,
           showThreadMessages: props.showThreadMessages ?? true,
           showModelSelector: true,
+          showAddIntegration: isTeamAgent,
           showAgentVisibility: false,
           showEditAgent: false,
           showContextResources: true,

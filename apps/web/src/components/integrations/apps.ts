@@ -164,10 +164,20 @@ function groupConnections(integrations: Integration[]) {
   return grouped;
 }
 
-export function useRefetchIntegrationsOnNotification() {
-  const { refetch: refetchIntegrations } = useIntegrations();
+export function useRefetchIntegrationsOnNotification({
+  shouldFetch,
+}: {
+  shouldFetch?: boolean;
+} = {}) {
+  const { refetch: refetchIntegrations } = useIntegrations({
+    shouldFetch,
+  });
 
   useEffect(() => {
+    if (shouldFetch === false) {
+      return;
+    }
+
     const handleMessage = (message: IntegrationMessage) => {
       if (message.type === "INTEGRATION_UPDATED") {
         refetchIntegrations();
@@ -176,7 +186,7 @@ export function useRefetchIntegrationsOnNotification() {
 
     const cleanup = addIntegrationUpdateListener(handleMessage);
     return cleanup;
-  }, [refetchIntegrations]);
+  }, [refetchIntegrations, shouldFetch]);
 }
 
 const isAgentIntegration = (integration: Integration) =>

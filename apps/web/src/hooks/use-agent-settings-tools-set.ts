@@ -4,14 +4,23 @@ import { useAgenticChat } from "../components/chat/provider.tsx";
 import { useRefetchIntegrationsOnNotification } from "../components/integrations/apps.ts";
 
 export function useAgentSettingsToolsSet() {
-  const { agent, form } = useAgenticChat();
-  const { data: _installedIntegrations } = useIntegrations();
-  const installedIntegrations = _installedIntegrations.filter(
+  const { agent, form, uiOptions } = useAgenticChat();
+
+  // Skip integration fetching if showAddIntegration is false
+  const shouldFetchIntegrations = uiOptions.showAddIntegration;
+
+  const integrations = useIntegrations({
+    shouldFetch: shouldFetchIntegrations,
+  });
+
+  const installedIntegrations = (integrations.data ?? []).filter(
     (i) => !i.id.includes(agent.id),
   );
   const toolsSet = form.watch("tools_set");
 
-  useRefetchIntegrationsOnNotification();
+  useRefetchIntegrationsOnNotification({
+    shouldFetch: shouldFetchIntegrations,
+  });
 
   const enableAllTools = useCallback(
     (integrationId: string) => {

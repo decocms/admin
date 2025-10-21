@@ -353,18 +353,20 @@ export function ChatInput({
       </form>
 
       {/* Separate SelectConnectionDialog to avoid mounting/unmounting on dropdown open */}
-      <SelectConnectionDialog
-        title="Add context"
-        onSelect={handleAddIntegration}
-        trigger={
-          <button
-            ref={selectDialogTriggerRef}
-            type="button"
-            className="hidden"
-            aria-hidden="true"
-          />
-        }
-      />
+      {uiOptions.showAddIntegration && (
+        <SelectConnectionDialog
+          title="Add context"
+          onSelect={handleAddIntegration}
+          trigger={
+            <button
+              ref={selectDialogTriggerRef}
+              type="button"
+              className="hidden"
+              aria-hidden="true"
+            />
+          }
+        />
+      )}
     </div>
   );
 }

@@ -420,7 +420,6 @@ function ChatWithProvider({
               initialMessages={agentThreadMessages}
               onSave={handleSaveAgent}
               uiOptions={{
-                showThreadTools: false,
                 showEditAgent: false,
                 showModelSelector: false,
                 showThreadMessages: true,
@@ -455,7 +454,6 @@ function ChatWithProvider({
               autoSend={shouldUseInitialInput ? threadState.autoSend : false}
               onAutoSendComplete={clearThreadState}
               uiOptions={{
-                showThreadTools: false,
                 showEditAgent: false,
                 showModelSelector: true,
                 showThreadMessages: false,
@@ -612,7 +610,6 @@ function FormProvider(props: Props & { agentId: string; threadId: string }) {
         initialMessages={threadMessages}
         onSave={handleSaveAgent}
         uiOptions={{
-          showThreadTools: false,
           showEditAgent: false,
           showModelSelector: false,
           showThreadMessages: true,

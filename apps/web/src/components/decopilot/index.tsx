@@ -79,7 +79,6 @@ export function DecopilotChat() {
             autoSend={threadState.autoSend}
             onAutoSendComplete={clearThreadState}
             uiOptions={{
-              showThreadTools: true,
               showModelSelector: true,
               showThreadMessages: true,
               showAgentVisibility: false,

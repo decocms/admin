@@ -66,6 +66,7 @@ function Page() {
 
   return (
     <ErrorBoundary
+      shouldCatch={(e) => e instanceof UnauthorizedError}
       fallback={
         <EmptyState
           icon="robot_2"
@@ -80,7 +81,6 @@ function Page() {
           }}
         />
       }
-      shouldCatch={(e) => e instanceof UnauthorizedError}
     >
       <Suspense
         // This make the react render fallback when changin agent+threadid, instead of hang the whole navigation while the subtree isn't changed
@@ -133,12 +133,12 @@ function ChatProviderWrapper({
       sendReasoning={preferences.sendReasoning}
       initialMessages={threadMessages}
       uiOptions={{
-        showThreadTools: false,
         showModelSelector: false,
         showThreadMessages: false,
         showAgentVisibility: false,
         showEditAgent: false,
         showContextResources: false,
+        showAddIntegration: false,
       }}
     >
       <SidebarProvider>

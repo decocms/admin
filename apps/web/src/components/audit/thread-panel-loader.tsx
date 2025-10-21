@@ -128,7 +128,6 @@ function ThreadMessages({ threadId }: { threadId: string }) {
       agent={agent}
       agentRoot={agentRoot}
       uiOptions={{
-        showThreadTools: false,
         showModelSelector: false,
         showThreadMessages: true,
         showAgentVisibility: false,

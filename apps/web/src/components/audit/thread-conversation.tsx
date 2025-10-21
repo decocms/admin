@@ -124,7 +124,6 @@ function CachedThreadMessages({
         agent={agent}
         agentRoot={agentRoot}
         uiOptions={{
-          showThreadTools: false,
           showModelSelector: false,
           showThreadMessages: false,
           showAgentVisibility: false,
@@ -229,7 +228,6 @@ function ThreadMessages({ threadId }: { threadId: string }) {
         agent={agent}
         agentRoot={agentRoot}
         uiOptions={{
-          showThreadTools: false,
           showModelSelector: false,
           showThreadMessages: false,
           showAgentVisibility: false,

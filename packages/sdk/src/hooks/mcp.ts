@@ -14,11 +14,11 @@ import {
 } from "../crud/mcp.ts";
 import { InternalServerError } from "../errors.ts";
 import { MCPClient } from "../fetcher.ts";
+import { ProjectLocator } from "../locator.ts";
 import type { Agent, Binder, Integration } from "../models/index.ts";
 import { applyDisplayNameToIntegration } from "../utils/integration-display-name.ts";
 import { KEYS } from "./api.ts";
 import { useSDK } from "./store.tsx";
-import { ProjectLocator } from "../locator.ts";
 
 export const useCreateIntegration = () => {
   const client = useQueryClient();
@@ -138,7 +138,11 @@ export const useBindingIntegrations = (binder: Binder) => {
 };
 
 /** Hook for listing all MCPs */
-export const useIntegrations = ({ isPublic }: { isPublic?: boolean } = {}) => {
+export const useIntegrations = ({
+  shouldFetch,
+}: {
+  shouldFetch?: boolean;
+} = {}) => {
   const { locator } = useSDK();
   const client = useQueryClient();
 
@@ -146,7 +150,7 @@ export const useIntegrations = ({ isPublic }: { isPublic?: boolean } = {}) => {
     queryKey: KEYS.INTEGRATION(locator),
 
     queryFn: async ({ signal }) => {
-      if (isPublic) {
+      if (shouldFetch === false) {
         return [];
       }
       const items = await listIntegrations(locator, {}, signal);

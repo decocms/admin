@@ -91,9 +91,10 @@ export const RichTextArea = forwardRef<RichTextAreaHandle, RichTextAreaProps>(
     },
     ref,
   ) {
-    const { agent } = useAgenticChat();
-    const isPublic = agent?.visibility === "PUBLIC";
-    const { data: integrations = [] } = useIntegrations({ isPublic });
+    const { uiOptions } = useAgenticChat();
+    const { data: integrations = [] } = useIntegrations({
+      shouldFetch: uiOptions.showAddIntegration,
+    });
 
     // Flatten tools from all integrations
     const tools: Tool[] = useMemo(() => {

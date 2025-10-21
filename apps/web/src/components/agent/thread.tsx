@@ -36,7 +36,6 @@ function ThreadView({ agentId, threadId }: Props) {
       sendReasoning={preferences.sendReasoning}
       initialMessages={threadMessages}
       uiOptions={{
-        showThreadTools: false,
         showThreadMessages: true,
         readOnly: true,
         showModelSelector: false,

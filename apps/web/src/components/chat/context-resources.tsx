@@ -48,18 +48,29 @@ const RESOURCE_ITEM_CLASSES =
 // Reusable remove button component
 interface RemoveButtonProps {
   onClick: () => void;
+  ariaLabel?: string;
+  title?: string;
 }
 
-function RemoveButton({ onClick }: RemoveButtonProps) {
+function RemoveButton({
+  onClick,
+  ariaLabel = "Remove",
+  title,
+}: RemoveButtonProps) {
   return (
     <Button
       type="button"
       variant="ghost"
       size="icon"
-      className="absolute p-0 m-0 -top-2 -right-2 h-5 w-5 rounded-full opacity-0 group-hover:opacity-100 transition-opacity bg-background border shadow-sm"
-      onClick={onClick}
+      className="absolute p-0 m-0 -top-2 -right-2 h-5 w-5 rounded-full opacity-0 group-hover:opacity-100 focus-visible:opacity-100 group-focus-within:opacity-100 transition-opacity bg-background border shadow-sm"
+      onClick={(e) => {
+        e.stopPropagation();
+        onClick();
+      }}
+      aria-label={ariaLabel}
+      title={title ?? ariaLabel}
     >
-      <Icon name="close" size={12} />
+      <Icon name="close" size={12} aria-hidden="true" />
     </Button>
   );
 }
@@ -130,7 +141,7 @@ function FilePreviewCard({ file, status, onRemove }: FilePreviewCardProps) {
               status === "error" && "border-destructive text-destructive",
             )}
           >
-            {status === "uploading" && <Spinner size="xs" />}
+            {status === "uploading" && <Spinner size="sm" />}
             {status === "error" && <Icon name="error" className="size-7" />}
             {isImage && previewUrl ? (
               <div className="size-7 rounded-lg overflow-hidden flex-shrink-0">
@@ -377,7 +388,7 @@ export function ContextResources({
                     variant="ghost"
                     className={RESOURCE_ITEM_CLASSES}
                   >
-                    {fileItem.status === "uploading" && <Spinner size="xs" />}
+                    {fileItem.status === "uploading" && <Spinner size="sm" />}
                     {fileItem.status === "success" && (
                       <Icon name="check" className="size-7" />
                     )}
@@ -445,11 +456,8 @@ export function ContextResources({
                 </TooltipContent>
               </Tooltip>
               <RemoveButton
-                onClick={() => {
-                  console.warn(
-                    "Resource removal not implemented for thread context",
-                  );
-                }}
+                ariaLabel={`Remove resource ${resource.name ?? resource.uri}`}
+                onClick={() => removeContextItem(resource.id)}
               />
             </div>
           ))}

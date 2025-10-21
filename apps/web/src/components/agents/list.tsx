@@ -504,72 +504,75 @@ function AgentsList() {
   }, [navigateWorkspace]);
 
   return (
-    <div className="h-full p-0 overflow-y-auto">
-      <div className="max-w-[1600px] px-4 lg:px-6 xl:px-10 w-full mx-auto pt-12 space-y-4 md:space-y-6 lg:space-y-8">
-        <div className="max-w-[1500px] mx-auto w-full space-y-4 md:space-y-6 lg:space-y-8">
-          <ResourceHeader
-            title="Agents"
-            tabs={mainTabs}
-            activeTab="agents"
-            searchOpen={searchOpen}
-            searchValue={filter}
-            onSearchToggle={() => setSearchOpen(!searchOpen)}
-            onSearchChange={(value: string) =>
-              dispatch({ type: "SET_FILTER", payload: value })
-            }
-            onSearchBlur={() => {
-              if (!filter) {
-                setSearchOpen(false);
+    <div className="h-full flex flex-col overflow-hidden">
+      <div className="flex-1 overflow-auto">
+        {/* Header Section - sticky horizontally */}
+        <div className="sticky left-0 px-4 lg:px-6 xl:px-10 pt-12 pb-4 md:pb-6 lg:pb-8 z-10 bg-background">
+          <div className="max-w-[1600px] mx-auto w-full space-y-4 md:space-y-6 lg:space-y-8">
+            <ResourceHeader
+              title="Agents"
+              tabs={mainTabs}
+              activeTab="agents"
+              searchOpen={searchOpen}
+              searchValue={filter}
+              onSearchToggle={() => setSearchOpen(!searchOpen)}
+              onSearchChange={(value: string) =>
+                dispatch({ type: "SET_FILTER", payload: value })
               }
-            }}
-            onSearchKeyDown={(e: KeyboardEvent<HTMLInputElement>) => {
-              if (e.key === "Escape") {
-                dispatch({ type: "SET_FILTER", payload: "" });
-                setSearchOpen(false);
-                (e.target as HTMLInputElement).blur();
+              onSearchBlur={() => {
+                if (!filter) {
+                  setSearchOpen(false);
+                }
+              }}
+              onSearchKeyDown={(e: KeyboardEvent<HTMLInputElement>) => {
+                if (e.key === "Escape") {
+                  dispatch({ type: "SET_FILTER", payload: "" });
+                  setSearchOpen(false);
+                  (e.target as HTMLInputElement).blur();
+                }
+              }}
+              viewMode={viewMode}
+              onViewModeChange={setViewMode}
+              ctaButton={
+                <Button
+                  variant="special"
+                  className="h-9 rounded-xl w-full md:w-auto"
+                  onClick={handleCreate}
+                >
+                  <Icon name="add" size={16} />
+                  New agent
+                </Button>
               }
-            }}
-            viewMode={viewMode}
-            onViewModeChange={setViewMode}
-            ctaButton={
-              <Button
-                variant="special"
-                className="h-9 rounded-xl w-full md:w-auto"
-                onClick={handleCreate}
-              >
-                <Icon name="add" size={16} />
-                New agent
-              </Button>
-            }
-          />
+            />
 
-          {/* Filter buttons */}
-          <div className="flex items-center gap-1">
-            {(["active", ...VISIBILITIES] as TabId[]).map((id) => (
-              <Button
-                key={id}
-                onClick={() => setSelectedTab(id as TabId)}
-                variant={selectedTab === id ? "secondary" : "ghost"}
-                size="sm"
-                className={`h-8 ${selectedTab === id ? "" : "text-muted-foreground"}`}
-              >
-                <span className="flex items-center gap-1.5">
-                  {id === "active" ? (
-                    "Active"
-                  ) : id === "all" ? (
-                    "All"
-                  ) : id === "public" ? (
-                    <>
-                      <Icon name="public" className="w-4 h-4" /> Public
-                    </>
-                  ) : (
-                    <>
-                      <Icon name="groups" className="w-4 h-4" /> Team
-                    </>
-                  )}
-                </span>
-              </Button>
-            ))}
+            {/* Filter buttons */}
+            <div className="flex items-center gap-1">
+              {(["active", ...VISIBILITIES] as TabId[]).map((id) => (
+                <Button
+                  key={id}
+                  onClick={() => setSelectedTab(id as TabId)}
+                  variant={selectedTab === id ? "secondary" : "ghost"}
+                  size="sm"
+                  className={`h-8 ${selectedTab === id ? "" : "text-muted-foreground"}`}
+                >
+                  <span className="flex items-center gap-1.5">
+                    {id === "active" ? (
+                      "Active"
+                    ) : id === "all" ? (
+                      "All"
+                    ) : id === "public" ? (
+                      <>
+                        <Icon name="public" className="w-4 h-4" /> Public
+                      </>
+                    ) : (
+                      <>
+                        <Icon name="groups" className="w-4 h-4" /> Team
+                      </>
+                    )}
+                  </span>
+                </Button>
+              ))}
+            </div>
           </div>
         </div>
 

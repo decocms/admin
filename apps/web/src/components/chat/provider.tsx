@@ -361,7 +361,7 @@ export function AgenticChatProvider({
 
   // Track unsaved changes for UI
   const hasUnsavedChanges = form.formState.isDirty;
-  
+
   // Don't block navigation for well-known agents (they create new agents on save)
   const isWellKnownAgent = Boolean(
     WELL_KNOWN_AGENTS[agentId as keyof typeof WELL_KNOWN_AGENTS],

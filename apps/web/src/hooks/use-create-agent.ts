@@ -19,7 +19,7 @@ export const useCreateAgent = () => {
     updateThreadMessages(createdAgent.id);
     // Replace history when creating from well-known agent to avoid back button going to template
     const isFromWellKnown = eventName === "agent_create_from_well_known";
-    focusEditAgent(createdAgent.id, crypto.randomUUID(), { 
+    focusEditAgent(createdAgent.id, crypto.randomUUID(), {
       history: false,
       replace: isFromWellKnown,
     });

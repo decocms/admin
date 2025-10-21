@@ -6,7 +6,7 @@ interface State {
   locator: ProjectLocator;
 }
 
-const client = new QueryClient({
+export const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
       retry: 1,
@@ -20,7 +20,9 @@ const client = new QueryClient({
 const Context = createContext<State | null>(null);
 
 export function DecoQueryClientProvider({ children }: PropsWithChildren) {
-  return <QueryClientProvider client={client}>{children}</QueryClientProvider>;
+  return (
+    <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
+  );
 }
 
 export function SDKProvider({ children, ...props }: PropsWithChildren<State>) {

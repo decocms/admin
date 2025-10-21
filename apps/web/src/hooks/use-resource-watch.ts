@@ -1,6 +1,6 @@
 import { DECO_CMS_API_URL, useSDK } from "@deco/sdk";
 import { useQuery } from "@tanstack/react-query";
-import { useEffect, useMemo, useRef } from "react";
+import { useMemo, useRef } from "react";
 import {
   useConnectionLastCtime,
   useResourceWatchActions,
@@ -236,18 +236,6 @@ export function useResourceWatch({
       return null;
     },
   });
-
-  // Handle errors in useEffect to avoid side effects during render
-  useEffect(() => {
-    if (query.isError) {
-      const errorMsg =
-        query.error instanceof Error
-          ? query.error.message
-          : "Watch connection failed";
-      console.error("[ResourceWatch] Connection error:", errorMsg);
-      setError(resourceUri, errorMsg);
-    }
-  }, [query.isError, query.error, resourceUri, setError]);
 
   return query;
 }

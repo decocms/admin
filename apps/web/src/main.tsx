@@ -19,6 +19,23 @@ import {
 import { EmptyState } from "./components/common/empty-state.tsx";
 import { useWorkspaceLink } from "./hooks/use-navigate-workspace.ts";
 import { OrgsLayout } from "./components/layout/org.tsx";
+import { queryClient } from "@deco/sdk";
+import { createResourceWatchStore } from "./stores/resource-watch/store.ts";
+
+const cache = queryClient.getQueryCache();
+const originalOnError = cache.config.onError;
+
+cache.config.onError = (error, query) => {
+  originalOnError?.(error, query);
+
+  if (query.queryKey[0] === "resource-watch") {
+    const resourceUri = query.queryKey[1] as string;
+    const errorMsg =
+      error instanceof Error ? error.message : "Watch connection failed";
+    console.error("[ResourceWatch] Connection error:", errorMsg);
+    createResourceWatchStore.getState().actions.setError(resourceUri, errorMsg);
+  }
+};
 
 const DECO_ASCII_LOGO = `
 ..................................................

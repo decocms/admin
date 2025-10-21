@@ -35,7 +35,7 @@ interface ResourceWatchStore extends State {
 }
 
 // ✅ Use type hints for empty Map to prevent TypeScript inference issues
-const useResourceWatchStore = create<ResourceWatchStore>()((set) => ({
+export const createResourceWatchStore = create<ResourceWatchStore>()((set) => ({
   connections: new Map([] as [string, WatchConnection][]),
 
   actions: {
@@ -125,17 +125,17 @@ const useResourceWatchStore = create<ResourceWatchStore>()((set) => ({
 
 // ✅ Export atomic selectors only, never the store directly
 export function useResourceWatchActions() {
-  return useResourceWatchStore((state) => state.actions);
+  return createResourceWatchStore((state) => state.actions);
 }
 
 export function useConnectionLastCtime(resourceUri: string) {
-  return useResourceWatchStore(
+  return createResourceWatchStore(
     (s) => s.connections.get(resourceUri)?.lastCtime ?? null,
   );
 }
 
 export function useConnectionStatus(resourceUri: string) {
-  return useResourceWatchStore(
+  return createResourceWatchStore(
     useShallow((s) => {
       const conn = s.connections.get(resourceUri);
       return {
@@ -149,7 +149,7 @@ export function useConnectionStatus(resourceUri: string) {
 
 // ✅ Allow access outside React for special cases
 export function getConnection(resourceUri: string): WatchConnection {
-  const conn = useResourceWatchStore.getState().connections.get(resourceUri);
+  const conn = createResourceWatchStore.getState().connections.get(resourceUri);
   return (
     conn || {
       resourceUri,

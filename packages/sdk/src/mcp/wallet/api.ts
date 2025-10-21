@@ -515,7 +515,7 @@ export const redeemWalletVoucher = createTool({
   description: "Redeem a voucher for the current tenant's wallet",
   inputSchema: z.lazy(() =>
     z.object({
-      voucher: z.string(),
+      voucher: z.string().regex(/^[a-f0-9\-]+-\d+_?\d*$/, "Invalid voucher format"),
     }),
   ),
   outputSchema: z.lazy(() =>

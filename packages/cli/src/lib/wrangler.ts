@@ -1,10 +1,6 @@
 import { dirname, join } from "path";
 import { promises as fs } from "fs";
-import {
-  getConfig,
-  getConfigFilePath,
-  readWranglerConfig,
-} from "./config.js";
+import { getConfig, getConfigFilePath, readWranglerConfig } from "./config.js";
 import { readSession } from "./session.js";
 import process from "node:process";
 import { Buffer } from "node:buffer";

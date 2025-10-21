@@ -28,13 +28,24 @@ const originalOnError = cache.config.onError;
 cache.config.onError = (error, query) => {
   originalOnError?.(error, query);
 
-  if (query.queryKey[0] === "resource-watch") {
-    const resourceUri = query.queryKey[1] as string;
-    const errorMsg =
-      error instanceof Error ? error.message : "Watch connection failed";
-    console.error("[ResourceWatch] Connection error:", errorMsg);
-    createResourceWatchStore.getState().actions.setError(resourceUri, errorMsg);
+  // Validate query key structure for resource-watch
+  if (!Array.isArray(query.queryKey) || query.queryKey.length < 2) {
+    return;
   }
+
+  if (query.queryKey[0] !== "resource-watch") {
+    return;
+  }
+
+  if (typeof query.queryKey[1] !== "string") {
+    return;
+  }
+
+  const resourceUri = query.queryKey[1];
+  const errorMsg =
+    error instanceof Error ? error.message : "Watch connection failed";
+  console.error("[ResourceWatch] Connection error:", errorMsg);
+  createResourceWatchStore.getState().actions.setError(resourceUri, errorMsg);
 };
 
 const DECO_ASCII_LOGO = `

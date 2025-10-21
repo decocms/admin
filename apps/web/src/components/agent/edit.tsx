@@ -1,4 +1,3 @@
-import type { Agent } from "@deco/sdk";
 import {
   NotFoundError,
   WELL_KNOWN_AGENTS,
@@ -8,7 +7,6 @@ import {
   useRecentResources,
   useSDK,
   useThreadMessages,
-  useUpdateAgent,
 } from "@deco/sdk";
 import { Button } from "@deco/ui/components/button.tsx";
 import { Icon } from "@deco/ui/components/icon.tsx";
@@ -43,8 +41,8 @@ import {
   useState,
 } from "react";
 import { useLocation, useParams } from "react-router";
-import { toast } from "sonner";
 import { useDocumentMetadata } from "../../hooks/use-document-metadata.ts";
+import { useSaveAgent } from "../../hooks/use-save-agent.ts";
 import { useUserPreferences } from "../../hooks/use-user-preferences.ts";
 import { isFilePath } from "../../utils/path.ts";
 import { useFocusChat } from "../agents/hooks.ts";
@@ -382,7 +380,7 @@ function ChatWithProvider({
 
   if (!chatAgentId) return null;
 
-  const updateAgentMutation = useUpdateAgent();
+  const handleSaveAgent = useSaveAgent();
   const { data: serverAgent } = useAgentData(agentId);
   const { data: decopilotAgent } = useAgentData(
     WELL_KNOWN_AGENTS.decopilotAgent.id,
@@ -400,11 +398,6 @@ function ChatWithProvider({
     useThreadMessages(effectiveDecopilotThreadId, {
       enabled: chatMode === "decopilot",
     });
-
-  const handleSaveAgent = async (agent: Agent) => {
-    await updateAgentMutation.mutateAsync(agent);
-    toast.success("Agent updated successfully");
-  };
 
   // Render both providers but only show the active one
   // This way both chats maintain their state
@@ -601,11 +594,7 @@ function FormProvider(props: Props & { agentId: string; threadId: string }) {
     return null;
   }
 
-  const updateAgentMutation = useUpdateAgent();
-  const handleSaveAgent = async (agentData: Agent) => {
-    await updateAgentMutation.mutateAsync(agentData);
-    toast.success("Agent updated successfully");
-  };
+  const handleSaveAgent = useSaveAgent();
 
   return (
     <PreviewContext.Provider

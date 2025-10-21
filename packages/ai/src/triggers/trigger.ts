@@ -12,7 +12,7 @@
 // are not enforced at runtime in JavaScript and are not preserved in the transpiled output.
 import type { ActorState } from "@deco/actors";
 import { Actor } from "@deco/actors";
-import { Locator } from "@deco/sdk";
+import { Locator, ProjectLocator } from "@deco/sdk";
 import { WELL_KNOWN_AGENT_IDS } from "@deco/sdk/constants";
 import { contextStorage } from "@deco/sdk/fetch";
 import { Hosts } from "@deco/sdk/hosts";
@@ -29,7 +29,6 @@ import {
 } from "@deco/sdk/mcp";
 import type { Callbacks } from "@deco/sdk/mcp/binder";
 import type { CallTool } from "@deco/sdk/models";
-import { getTwoFirstSegments, type Workspace } from "@deco/sdk/path";
 import type { Json } from "@deco/sdk/storage";
 import { getRuntimeKey } from "hono/adapter";
 import { AIAgent } from "../agent.ts";
@@ -124,7 +123,7 @@ export class Trigger {
 
   protected data: TriggerData | null = null;
   protected hooks: TriggerHooks<TriggerData> | null = null;
-  protected workspace: Workspace;
+  public locator: ProjectLocator;
   protected context: BindingsContext;
   private branch: string = "main"; // TODO(@mcandeia) for now only main branch is supported
   private env: any;
@@ -134,7 +133,7 @@ export class Trigger {
     protected actorEnv: any,
   ) {
     this.context = toBindingsContext(this.actorEnv);
-    this.workspace = getTwoFirstSegments(this.state.id);
+    this.locator = Locator.asFirstTwoSegmentsOf(this.state.id);
 
     this.mcpClient = this._createMCPClient();
 
@@ -164,6 +163,10 @@ export class Trigger {
     });
   }
 
+  public get workspace() {
+    return Locator.adaptToRootSlug(this.locator);
+  }
+
   public get agentId(): string {
     // Only certain trigger types have agentId
     if (this.data && "agentId" in this.data) {
@@ -174,7 +177,7 @@ export class Trigger {
 
   private _createContext(): AppContext {
     const workspace = fromWorkspaceString(this.workspace, this.branch);
-    const { org, project } = Locator.parse(this.workspace);
+    const { org, project } = Locator.parse(this.locator);
     const locatorValue = Locator.from({ org, project });
     const principalContext: PrincipalExecutionContext = {
       params: {},

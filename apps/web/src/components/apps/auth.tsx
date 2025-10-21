@@ -1,6 +1,7 @@
 import {
   type Integration,
   Locator,
+  type Project,
   type RegistryApp,
   RegistryAppNotFoundError,
   SDKProvider,
@@ -9,14 +10,18 @@ import {
   useIntegrations,
   useRegistryApp,
 } from "@deco/sdk";
-import { useMarketplaceIntegrations, useOrganizations } from "@deco/sdk/hooks";
+import {
+  useMarketplaceIntegrations,
+  useOrganizations,
+  useProjects,
+} from "@deco/sdk/hooks";
 import { Button } from "@deco/ui/components/button.tsx";
 import { Combobox } from "@deco/ui/components/combobox.tsx";
 import { Icon } from "@deco/ui/components/icon.tsx";
 import { Spinner } from "@deco/ui/components/spinner.tsx";
 import { cn } from "@deco/ui/lib/utils.ts";
 import { Check, ChevronsUpDown } from "lucide-react";
-import { Suspense, useMemo, useRef, useState } from "react";
+import { Suspense, useEffect, useMemo, useRef, useState } from "react";
 import { UseFormReturn } from "react-hook-form";
 import { ErrorBoundary } from "../../error-boundary.tsx";
 import {
@@ -82,12 +87,14 @@ const preSelectTeam = (teams: Team[], workspace_hint: string | undefined) => {
 
 const useAppIntegrations = (appName: string) => {
   const { data: allIntegrations } = useIntegrations();
-  return allIntegrations?.filter((integration) => {
-    if ("appName" in integration) {
-      return integration.appName === appName;
-    }
-    return false;
-  });
+  return (
+    allIntegrations?.filter((integration) => {
+      if ("appName" in integration) {
+        return integration.appName === appName;
+      }
+      return false;
+    }) ?? []
+  );
 };
 
 const NoAppFound = ({ client_id }: { client_id: string }) => {
@@ -169,7 +176,7 @@ const SelectOrganization = ({
 
         <div className="flex flex-col items-start gap-2 w-full">
           <p className="text-sm text-foreground">
-            Select a project to use this app
+            Select an organization to use this app
           </p>
           <div className="w-full">
             <Combobox
@@ -181,6 +188,115 @@ const SelectOrganization = ({
               value={selectedOrg?.slug ?? ""}
               onChange={(value) =>
                 setSelectedOrg(orgs.find((team) => team.slug === value) ?? null)
+              }
+              placeholder="Select an organization"
+              width="w-full"
+              triggerClassName="!h-16"
+              contentClassName="w-full"
+              renderTrigger={(selectedOption) => (
+                <div className="flex items-center justify-between w-full h-16 px-3 py-2 border border-input bg-background rounded-md text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50">
+                  <div className="flex items-center gap-3">
+                    {selectedOption ? (
+                      <>
+                        <Avatar
+                          url={selectedOption.avatarUrl as string}
+                          fallback={selectedOption.label}
+                          size="sm"
+                          shape="square"
+                          objectFit="contain"
+                        />
+                        <span>{selectedOption.label}</span>
+                      </>
+                    ) : (
+                      <span className="text-muted-foreground">
+                        Select an organization
+                      </span>
+                    )}
+                  </div>
+                  <ChevronsUpDown className="opacity-50" />
+                </div>
+              )}
+              renderItem={(option, isSelected) => (
+                <div className="flex items-center gap-3 h-12">
+                  <Avatar
+                    url={option.avatarUrl as string}
+                    fallback={option.label}
+                    size="sm"
+                    shape="square"
+                    objectFit="contain"
+                  />
+                  <span>{option.label}</span>
+                  <Check
+                    className={cn(
+                      "ml-auto",
+                      isSelected ? "opacity-100" : "opacity-0",
+                    )}
+                  />
+                </div>
+              )}
+            />
+          </div>
+        </div>
+
+        <Button
+          className="w-full"
+          disabled={!selectedOrg}
+          onClick={() => setOrg(selectedOrg)}
+        >
+          Continue
+        </Button>
+      </div>
+    </div>
+  );
+};
+
+const SelectProject = ({
+  registryApp,
+  projects,
+  setProjectSlug,
+  onBack,
+}: {
+  registryApp: RegistryApp;
+  projects: Project[];
+  setProjectSlug: (slug: string) => void;
+  onBack: () => void;
+}) => {
+  const [selectedProject, setSelectedProject] = useState<Project | null>(null);
+
+  return (
+    <div className="flex flex-col items-center justify-center h-screen">
+      <div className="text-center flex flex-col gap-10 w-96">
+        <div className="flex flex-col gap-4">
+          <div className="flex items-center justify-center">
+            <Avatar
+              shape="square"
+              size="xl"
+              objectFit="contain"
+              url={registryApp.icon}
+              fallback={registryApp.friendlyName ?? registryApp.name}
+            />
+          </div>
+          <h1 className="text-xl font-semibold">
+            Authorize {registryApp.friendlyName ?? registryApp.name}
+          </h1>
+        </div>
+
+        <div className="flex flex-col items-start gap-2 w-full">
+          <p className="text-sm text-foreground">
+            Select a project to use this app
+          </p>
+          <div className="w-full">
+            <Combobox
+              options={projects.map((project) => ({
+                value: project.slug,
+                label: project.title,
+                avatarUrl: project.avatar_url,
+              }))}
+              value={selectedProject?.slug ?? ""}
+              onChange={(value) =>
+                setSelectedProject(
+                  projects.find((p) => p.slug === value) ?? null,
+                )
               }
               placeholder="Select a project"
               width="w-full"
@@ -231,13 +347,20 @@ const SelectOrganization = ({
           </div>
         </div>
 
-        <Button
-          className="w-full"
-          disabled={!selectedOrg}
-          onClick={() => setOrg(selectedOrg)}
-        >
-          Continue
-        </Button>
+        <div className="flex gap-2 w-full">
+          <Button variant="outline" className="w-1/2" onClick={onBack}>
+            Back
+          </Button>
+          <Button
+            className="w-1/2"
+            disabled={!selectedProject}
+            onClick={() =>
+              selectedProject && setProjectSlug(selectedProject.slug)
+            }
+          >
+            Continue
+          </Button>
+        </div>
       </div>
     </div>
   );
@@ -366,7 +489,19 @@ const InlineInstallation = ({
   }, [marketplace, integrationName]);
 
   if (!integration) {
-    return null;
+    return (
+      <div className="flex flex-col items-center justify-center my-auto h-full py-8">
+        <Icon name="error" size={48} className="text-destructive" />
+        <div className="text-center space-y-2">
+          <h3 className="text-lg font-semibold">Integration not found</h3>
+          <p className="text-sm text-muted-foreground max-w-md">
+            The app <span className="font-semibold">{integrationName}</span>{" "}
+            could not be found in the marketplace. Please make sure it has been
+            published and is available.
+          </p>
+        </div>
+      </div>
+    );
   }
 
   return (
@@ -598,6 +733,51 @@ const SelectProjectAppInstance = ({
   );
 };
 
+function ProjectSelectionFlow({
+  org,
+  registryApp,
+  onBack,
+  onProjectSelected,
+}: {
+  org: Team;
+  registryApp: RegistryApp;
+  onBack: () => void;
+  onProjectSelected: (projectSlug: string) => void;
+}) {
+  const projects = useProjects({ org: org.slug });
+
+  // Auto-select and proceed if only 1 project
+  useEffect(() => {
+    if (projects.length === 1) {
+      onProjectSelected(projects[0].slug);
+    }
+  }, [projects, onProjectSelected]);
+
+  // No projects found
+  if (projects.length === 0) {
+    return <NoProjectFound />;
+  }
+
+  // Loading state while auto-selecting single project
+  if (projects.length === 1) {
+    return (
+      <div className="flex items-center justify-center h-screen">
+        <Spinner />
+      </div>
+    );
+  }
+
+  // Show selector if multiple projects
+  return (
+    <SelectProject
+      registryApp={registryApp}
+      projects={projects}
+      setProjectSlug={onProjectSelected}
+      onBack={onBack}
+    />
+  );
+}
+
 function AppsOAuth({
   client_id,
   redirect_uri,
@@ -609,6 +789,9 @@ function AppsOAuth({
   const [org, setOrg] = useState<Team | null>(() =>
     preSelectTeam(orgs, workspace_hint),
   );
+  const [selectedProjectSlug, setSelectedProjectSlug] = useState<string | null>(
+    null,
+  );
 
   const selectedOrgSlug = useMemo(() => {
     if (!org) {
@@ -616,8 +799,6 @@ function AppsOAuth({
     }
     return org.slug;
   }, [org]);
-
-  const selectedProject = "default";
 
   if (!orgs || orgs.length === 0 || !registryApp) {
     return <NoProjectFound />;
@@ -633,9 +814,28 @@ function AppsOAuth({
     );
   }
 
+  if (!selectedProjectSlug) {
+    return (
+      <Suspense
+        fallback={
+          <div className="flex items-center justify-center h-screen">
+            <Spinner />
+          </div>
+        }
+      >
+        <ProjectSelectionFlow
+          org={org}
+          registryApp={registryApp}
+          onBack={() => setOrg(null)}
+          onProjectSelected={setSelectedProjectSlug}
+        />
+      </Suspense>
+    );
+  }
+
   const workspace = Locator.from({
     org: selectedOrgSlug,
-    project: selectedProject,
+    project: selectedProjectSlug,
   });
 
   return (
@@ -643,8 +843,8 @@ function AppsOAuth({
       <SelectProjectAppInstance
         app={registryApp}
         org={org}
-        project={selectedProject}
-        selectAnotherProject={() => setOrg(null)}
+        project={selectedProjectSlug}
+        selectAnotherProject={() => setSelectedProjectSlug(null)}
         clientId={client_id}
         redirectUri={redirect_uri}
         state={state}

@@ -19,7 +19,7 @@ function ThreadView({ agentId, threadId }: Props) {
   const agentRoot = useAgentRoot(agentId);
   const { preferences } = useUserPreferences();
   const { data: { messages: threadMessages } = { messages: [] } } =
-    useThreadMessages(threadId, { enabled: true });
+    useThreadMessages(threadId, { shouldFetch: true });
 
   if (!agent) {
     return <div>Loading...</div>;

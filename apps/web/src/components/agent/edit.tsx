@@ -391,11 +391,11 @@ function ChatWithProvider({
   const { preferences } = useUserPreferences();
   const { data: { messages: agentThreadMessages } = { messages: [] } } =
     useThreadMessages(threadId, {
-      enabled: chatMode === "agent",
+      shouldFetch: chatMode === "agent",
     });
   const { data: { messages: decopilotThreadMessages } = { messages: [] } } =
     useThreadMessages(effectiveDecopilotThreadId, {
-      enabled: chatMode === "decopilot",
+      shouldFetch: chatMode === "decopilot",
     });
 
   const handleSaveAgent = useSaveAgent();
@@ -511,7 +511,7 @@ function FormProvider(props: Props & { agentId: string; threadId: string }) {
   const agentRoot = useAgentRoot(agentId);
   const { preferences } = useUserPreferences();
   const { data: { messages: threadMessages } = { messages: [] } } =
-    useThreadMessages(threadId, { enabled: true });
+    useThreadMessages(threadId, { shouldFetch: true });
   const { data: resolvedAvatar } = useFile(
     agent?.avatar && isFilePath(agent.avatar) ? agent.avatar : "",
   );

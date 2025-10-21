@@ -33,11 +33,17 @@ export const useThread = (threadId: string) => {
 };
 
 /** Hook for fetching messages from a thread */
-export const useThreadMessages = (threadId: string) => {
+export const useThreadMessages = (
+  threadId: string,
+  { shouldFetch }: { shouldFetch?: boolean } = {},
+) => {
   const { locator } = useSDK();
   return useSuspenseQuery({
     queryKey: KEYS.THREAD_MESSAGES(locator, threadId),
-    queryFn: ({ signal }) => getThreadMessages(locator, threadId, { signal }),
+    queryFn: ({ signal }) =>
+      shouldFetch
+        ? getThreadMessages(locator, threadId, { signal })
+        : { messages: [] },
     staleTime: 0,
     gcTime: 0,
   });

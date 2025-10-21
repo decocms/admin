@@ -170,7 +170,7 @@ function Page(props: Props) {
   const { preferences } = useUserPreferences();
   const { data: { messages: threadMessages } = { messages: [] } } =
     useThreadMessages(threadId, {
-      enabled: props.showThreadMessages ?? true,
+      shouldFetch: props.showThreadMessages ?? true,
     });
 
   // Prepare thread context for agent chat

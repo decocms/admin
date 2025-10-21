@@ -112,7 +112,7 @@ function ChatProviderWrapper({
   const agentRoot = useAgentRoot(agentId);
   const { preferences } = useUserPreferences();
   const { data: { messages: threadMessages } = { messages: [] } } =
-    useThreadMessages(threadId, { enabled: false });
+    useThreadMessages(threadId, { shouldFetch: false });
 
   if (!agent) {
     return (

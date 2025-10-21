@@ -148,7 +148,7 @@ function CachedThreadMessages({
 function ThreadMessages({ threadId }: { threadId: string }) {
   const { data: threadDetail } = useThread(threadId);
   const title = useMemo(() => threadDetail?.title ?? "", [threadDetail?.title]);
-  const { data: messages } = useThreadMessages(threadId, { enabled: true });
+  const { data: messages } = useThreadMessages(threadId, { shouldFetch: true });
   const updateThreadTitle = useUpdateThreadTitle();
 
   // Cache the data after it loads

@@ -130,62 +130,55 @@ function ThreadSelector() {
   }
 
   return (
-    <div className="flex items-center gap-2">
-      <Button
-        variant="ghost"
-        size="sm"
-        onClick={handleNewThread}
-        className="h-7 gap-1.5"
-      >
-        <Icon name="add" size={14} />
-        <span className="text-xs">New Thread</span>
-      </Button>
-
-      {allThreads.length > 1 && (
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="ghost" size="sm" className="h-7 gap-1.5">
-              <Icon name="forum" size={14} />
-              <span className="text-xs">
-                {allThreads.length}{" "}
-                {allThreads.length === 1 ? "thread" : "threads"}
-              </span>
-              <Icon name="expand_more" size={12} />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="start" className="w-80">
-            {allThreads.map((thread) => (
-              <Suspense key={thread.id} fallback={<ThreadItemSkeleton />}>
-                <ThreadItem
-                  threadId={thread.id}
-                  isActive={thread.id === currentThread?.id}
-                  onClick={() => handleSwitchThread(thread.id)}
-                  timestamp={thread.createdAt}
-                />
-              </Suspense>
-            ))}
-            {allThreads.length > 0 && (
-              <>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem
-                  onClick={handleNewThread}
-                  className="flex items-center gap-2"
-                >
-                  <Icon name="add" size={14} />
-                  <span className="text-sm">New Thread</span>
-                </DropdownMenuItem>
-              </>
-            )}
-          </DropdownMenuContent>
-        </DropdownMenu>
-      )}
+    <div className="flex items-center gap-1.5">
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <button
+            type="button"
+            className="flex h-6 items-center gap-2 px-0 rounded-lg hover:bg-transparent transition-colors group cursor-pointer focus-visible:outline-none"
+          >
+            <span className="text-sm text-muted-foreground group-hover:text-foreground transition-colors">
+              New chat
+            </span>
+            <Icon
+              name="expand_more"
+              size={16}
+              className="text-muted-foreground group-hover:text-foreground transition-colors"
+            />
+          </button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="start" className="w-64">
+          {allThreads.map((thread) => (
+            <Suspense key={thread.id} fallback={<ThreadItemSkeleton />}>
+              <ThreadItem
+                threadId={thread.id}
+                isActive={thread.id === currentThread?.id}
+                onClick={() => handleSwitchThread(thread.id)}
+                timestamp={thread.createdAt}
+              />
+            </Suspense>
+          ))}
+          {allThreads.length > 0 && (
+            <>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem
+                onClick={handleNewThread}
+                className="flex items-center gap-2"
+              >
+                <Icon name="add" size={14} />
+                <span className="text-sm">New Thread</span>
+              </DropdownMenuItem>
+            </>
+          )}
+        </DropdownMenuContent>
+      </DropdownMenu>
     </div>
   );
 }
 
 export function DecopilotChat() {
   const { threadState, clearThreadState } = useDecopilotThread();
-  const { getThreadForRoute } = useThreadManager();
+  const { getThreadForRoute, createNewThread } = useThreadManager();
   const { pathname } = useLocation();
 
   // Get the thread for the current route
@@ -202,14 +195,13 @@ export function DecopilotChat() {
   if (!currentThread || !agent) {
     return (
       <div className="flex h-full w-full flex-col">
-        <div className="flex h-10 items-center justify-between gap-3 border-b border-border px-3">
-          <div className="flex items-center gap-3">
+        <div className="flex h-10 items-center gap-2 border-b border-border px-2">
+          <div className="flex items-center gap-2">
             <img
               src={WELL_KNOWN_AGENTS.decopilotAgent.avatar}
               alt={WELL_KNOWN_AGENTS.decopilotAgent.name}
               className="size-5 rounded-md border border-border"
             />
-            <span className="text-sm font-medium">decochat</span>
           </div>
         </div>
         <MainChatSkeleton />
@@ -220,16 +212,31 @@ export function DecopilotChat() {
   return (
     <div className="flex h-full w-full flex-col">
       {/* Header with agent info and thread controls */}
-      <div className="flex h-10 items-center justify-between gap-3 border-b border-border px-3">
-        <div className="flex items-center gap-3">
+      <div className="flex h-10 items-center gap-2 border-b border-border px-2">
+        <div className="flex items-center gap-2">
           <img
             src={WELL_KNOWN_AGENTS.decopilotAgent.avatar}
             alt={WELL_KNOWN_AGENTS.decopilotAgent.name}
             className="size-5 rounded-md border border-border"
           />
-          <span className="text-sm font-medium">decochat</span>
+          <span className="text-sm">decochat</span>
+          <span className="text-sm text-muted-foreground">/</span>
+          <ThreadSelector />
         </div>
-        <ThreadSelector />
+        <div className="flex flex-1 items-center justify-end gap-1">
+          <button
+            type="button"
+            onClick={() => createNewThread(pathname)}
+            className="flex size-6 items-center justify-center rounded-full p-1 hover:bg-transparent transition-colors group cursor-pointer"
+            title="New thread"
+          >
+            <Icon
+              name="add"
+              size={16}
+              className="text-muted-foreground group-hover:text-foreground transition-colors"
+            />
+          </button>
+        </div>
       </div>
 
       {/* Single chat instance for current route */}

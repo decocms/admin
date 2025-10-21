@@ -26,6 +26,31 @@ export const NO_DROP_TARGET = "no-drop-target";
 
 const agentId = WELL_KNOWN_AGENTS.decopilotAgent.id;
 
+/**
+ * Custom hook to generate a thread title from the first message
+ */
+function useThreadTitle(
+  threadId: string | undefined,
+  fallback: string = "New chat",
+) {
+  const { data: messages } = useThreadMessages(threadId ?? "no-thread");
+
+  return useMemo(() => {
+    if (!messages?.messages || messages.messages.length === 0) {
+      return fallback;
+    }
+
+    const firstMessage = messages.messages[0];
+    const textPart = firstMessage?.parts?.find((p) => p.type === "text");
+
+    if (textPart && "text" in textPart && textPart.text) {
+      return textPart.text.trim();
+    }
+
+    return fallback;
+  }, [messages?.messages, fallback]);
+}
+
 function ThreadItemSkeleton() {
   return (
     <DropdownMenuItem disabled className="flex items-center justify-between">
@@ -49,26 +74,7 @@ function ThreadItem({
   onClick: () => void;
   timestamp: number;
 }) {
-  // Try to fetch thread, but don't throw if it doesn't exist yet
-  const { data: messages } = useThreadMessages(threadId);
-
-  // Generate a title from the first message if available
-  const displayTitle = useMemo(() => {
-    if (!messages?.messages || messages.messages.length === 0) {
-      return "New Thread";
-    }
-
-    const firstMessage = messages.messages[0];
-    const textPart = firstMessage?.parts?.find((p) => p.type === "text");
-
-    if (textPart && "text" in textPart && textPart.text) {
-      // Take first 50 characters of the first message as title
-      const text = textPart.text.trim();
-      return text.length > 50 ? `${text.substring(0, 50)}...` : text;
-    }
-
-    return "New Thread";
-  }, [messages]);
+  const displayTitle = useThreadTitle(threadId, "New Thread");
 
   return (
     <DropdownMenuItem
@@ -109,6 +115,7 @@ function ThreadSelector() {
 
   const allThreads = getAllThreadsForRoute(pathname);
   const currentThread = getThreadForRoute(pathname);
+  const currentThreadTitle = useThreadTitle(currentThread?.id);
 
   function handleNewThread() {
     createNewThread(pathname);
@@ -126,8 +133,8 @@ function ThreadSelector() {
             type="button"
             className="flex h-6 items-center gap-2 px-0 rounded-lg hover:bg-transparent transition-colors group cursor-pointer focus-visible:outline-none"
           >
-            <span className="text-sm text-muted-foreground group-hover:text-foreground transition-colors">
-              New chat
+            <span className="text-sm text-muted-foreground group-hover:text-foreground transition-colors max-w-[200px] truncate">
+              {currentThreadTitle}
             </span>
             <Icon
               name="expand_more"

@@ -1,4 +1,3 @@
-import type { Agent } from "@deco/sdk";
 import {
   NotFoundError,
   WELL_KNOWN_AGENTS,
@@ -42,7 +41,6 @@ import {
   useState,
 } from "react";
 import { useLocation, useParams } from "react-router";
-import { toast } from "sonner";
 import { useDocumentMetadata } from "../../hooks/use-document-metadata.ts";
 import { useSaveAgent } from "../../hooks/use-save-agent.ts";
 import { useUserPreferences } from "../../hooks/use-user-preferences.ts";

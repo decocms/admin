@@ -138,7 +138,7 @@ export const PROJECT_TOOLS = [
   threadsAPI.updateThreadTitle,
   threadsAPI.updateThreadMetadata,
   hostingAPI.listApps,
-  hostingAPI.deployFiles,
+  hostingAPI.hostingAppDeploy,
   hostingAPI.deleteApp,
   hostingAPI.getAppInfo,
   hostingAPI.listAppDeployments,

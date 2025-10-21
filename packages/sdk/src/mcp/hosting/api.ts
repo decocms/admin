@@ -453,7 +453,7 @@ const splitFiles = (
 };
 
 // Update the schema in deployFiles
-export const deployFiles = createTool({
+export const hostingAppDeploy = createTool({
   name: "HOSTING_APP_DEPLOY",
   description: HOSTING_APP_DEPLOY_PROMPT,
   inputSchema: z.lazy(() =>

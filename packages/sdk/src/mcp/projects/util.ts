@@ -79,8 +79,14 @@ export async function workspaceOrProjectIdConditions(
   const actualProjectId = projectId ?? (await getProjectIdFromContext(c));
   const omitWorkspace = shouldOmitWorkspace(c);
 
-  return buildWorkspaceOrProjectIdConditions({
+  const conditions = buildWorkspaceOrProjectIdConditions({
     workspace: omitWorkspace ? null : c.workspace.value,
     projectId: actualProjectId,
   });
+
+  if (conditions.length === 0) {
+    throw new Error("Cannot resolve workspace/project scope");
+  }
+
+  return conditions;
 }

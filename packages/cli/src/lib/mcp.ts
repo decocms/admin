@@ -2,6 +2,7 @@ import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { StreamableHTTPClientTransport } from "@modelcontextprotocol/sdk/client/streamableHttp.js";
 import { DECO_CMS_API_LOCAL, DECO_CMS_API_PROD } from "./constants.js";
 import { getRequestAuthHeaders } from "./session.js";
+import { getLocal } from "./config.js";
 
 interface Options {
   workspace?: string;
@@ -46,7 +47,7 @@ export const createWorkspaceClient = async ({
   const client = new Client({ name: "deco-chat-cli", version: "1.0.0" });
   const { headers, url } = await workspaceClientParams({
     workspace,
-    local,
+    local: local ?? getLocal(),
     integrationId,
   });
 

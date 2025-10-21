@@ -14,11 +14,15 @@ export type ProjectLocator = `${string}/${string}`;
 const adaptFromRootSlug = (locator: ProjectLocator): ProjectLocator => {
   const [org, project] = locator.split("/");
   if (org === "shared") {
+    console.warn(
+      `Deprecated locator usage detected: ${org}/${project}, adapting to default project`,
+    );
     return Locator.from({ org: project, project: "default" });
   }
   // Known issue: Old workspace /users/$userId format to Locator conversion is not supported.
   // this function only adapts it for /shared teams which are most cases.
   if (org === "users") {
+    console.error(`Deprecated locator usage detected: ${org}/${project}`);
     return locator;
   }
   return locator;
@@ -39,7 +43,7 @@ export const Locator = {
     }
 
     if (org === "shared" || org === "users") {
-      console.warn(`Deprecated locator usage detected: ${org}/${project}`);
+      return adaptFromRootSlug(`${org}/${project}`);
     }
 
     return `${org}/${project}` as ProjectLocator;
@@ -51,7 +55,7 @@ export const Locator = {
       );
       locator = locator.slice(1) as ProjectLocator;
     }
-    const [org, project] = locator.split("/");
+    const [org, project] = adaptFromRootSlug(locator).split("/");
     if (org === "shared" || org === "users") {
       console.warn(`Deprecated locator usage detected: ${org}/${project}`);
     }

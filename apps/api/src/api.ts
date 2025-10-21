@@ -84,19 +84,32 @@ export const app = new Hono<AppEnv>();
 const contextToPrincipalExecutionContext = (
   c: Context<AppEnv>,
 ): PrincipalExecutionContext => {
-  let org = c.req.param("org") ?? c.req.param("root") ?? c.req.query("org");
-  let project =
+  let inputOrg =
+    c.req.param("org") ?? c.req.param("root") ?? c.req.query("org");
+  let inputProject =
     c.req.param("project") ?? c.req.param("slug") ?? c.req.query("project");
+
   const user = c.get("user");
   const userAud =
     user && typeof user === "object" && "aud" in user ? user.aud : undefined;
+
   // set org and project based on user aud
-  if (!org && !project && typeof userAud === "string") {
+  if (!inputOrg && !inputProject && typeof userAud === "string") {
     const parsed = Locator.parse(userAud as ProjectLocator);
-    org = parsed.org;
-    project = parsed.project;
+    inputOrg = parsed.org;
+    inputProject = parsed.project;
   }
-  const locator = org && project ? Locator.from({ org, project }) : undefined;
+
+  const locator =
+    inputOrg && inputProject
+      ? Locator.from({ org: inputOrg, project: inputProject })
+      : undefined;
+  // Only use input org/project after parsing the locator,
+  // ensuring that old clients accessing with /root/slug format
+  // are adapted to the new locator format
+  const structuredLocator = locator ? Locator.parse(locator) : undefined;
+  const org = structuredLocator?.org as string;
+  const project = structuredLocator?.project as string;
 
   const uid = user?.id as string | undefined;
 

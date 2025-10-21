@@ -10,6 +10,9 @@ const createHTTPTool = createToolGroup("HTTP", {
   workspace: false,
 });
 
+// Maximum size for binary responses (10MB)
+const MAX_BINARY_SIZE = 10 * 1024 * 1024;
+
 // Fetch tool schema
 const FetchInputSchema = z.object({
   url: z.string().describe("The URL to fetch content from"),
@@ -23,10 +26,10 @@ const FetchInputSchema = z.object({
     .describe("Optional headers to include with the request"),
   body: z.any().optional().describe("Optional body to send with the request"),
   responseType: z
-    .enum(["text", "json"] as const)
+    .enum(["text", "json", "binary"] as const)
     .default("text")
     .describe(
-      "How to parse the response body: 'text' returns the raw text, 'json' parses and returns JSON",
+      "How to parse the response body: 'text' returns raw text, 'json' parses and returns JSON, 'binary' returns base64-encoded data",
     ),
   timeout: z
     .number()
@@ -40,14 +43,36 @@ const FetchInputSchema = z.object({
 const FetchOutputSchema = z.object({
   body: z
     .union([z.string(), z.any()])
-    .describe("The response body (string for text, parsed object for JSON)"),
+    .describe(
+      "The response body (string for text, parsed object for JSON, base64-encoded string for binary)",
+    ),
   status: z.number().describe("The HTTP status code of the response"),
   statusText: z.string().describe("The HTTP status text of the response"),
   headers: z.record(z.string(), z.string()).describe("The response headers"),
   ok: z
     .boolean()
     .describe("Whether the request was successful (status in 200-299 range)"),
+  contentType: z
+    .string()
+    .optional()
+    .describe("The Content-Type header value (included for binary responses)"),
+  size: z
+    .number()
+    .optional()
+    .describe("The size of the binary response in bytes (included for binary responses)"),
 });
+
+/**
+ * Helper function to convert ArrayBuffer to base64
+ */
+function arrayBufferToBase64(buffer: ArrayBuffer): string {
+  const bytes = new Uint8Array(buffer);
+  let binary = "";
+  for (let i = 0; i < bytes.byteLength; i++) {
+    binary += String.fromCharCode(bytes[i]);
+  }
+  return btoa(binary);
+}
 
 /**
  * HTTP_FETCH
@@ -60,7 +85,7 @@ export const httpFetch = createHTTPTool({
   description:
     "Make HTTP requests to any URL. Supports multiple HTTP methods (GET, POST, PUT, DELETE, PATCH, HEAD), " +
     "custom headers, request body, and response parsing. Use this when you need to fetch data from external APIs " +
-    "or make HTTP calls that don't have a specific integration available. Supports both text and JSON response parsing.",
+    "or make HTTP calls that don't have a specific integration available. Supports text, JSON, and binary (base64-encoded) response parsing.",
   inputSchema: FetchInputSchema,
   outputSchema: FetchOutputSchema,
   handler: async (
@@ -89,6 +114,21 @@ export const httpFetch = createHTTPTool({
 
       // Parse response body based on responseType
       let responseBody: string | unknown;
+      let contentType: string | undefined;
+      let size: number | undefined;
+
+      // Get content type to help with auto-detection
+      const responseContentType = response.headers.get("content-type") || "";
+
+      // Helper function to check if content is binary
+      const isBinaryContent = () =>
+        responseContentType.startsWith("video/") ||
+        responseContentType.startsWith("audio/") ||
+        responseContentType.startsWith("image/") ||
+        responseContentType === "application/octet-stream" ||
+        responseContentType.startsWith("application/pdf") ||
+        responseContentType.startsWith("application/zip");
+
       if (responseType === "json") {
         try {
           responseBody = await response.json();
@@ -103,7 +143,33 @@ export const httpFetch = createHTTPTool({
             }`,
           );
         }
+      } else if (responseType === "binary" || isBinaryContent()) {
+        // Handle as binary when explicitly requested OR when content-type indicates binary data
+        // Get content length from headers for validation
+        const contentLength = response.headers.get("content-length");
+        if (contentLength) {
+          const expectedSize = Number.parseInt(contentLength, 10);
+          if (expectedSize > MAX_BINARY_SIZE) {
+            throw new Error(
+              `Binary response size (${expectedSize} bytes) exceeds maximum allowed size (${MAX_BINARY_SIZE} bytes)`,
+            );
+          }
+        }
+
+        const arrayBuffer = await response.arrayBuffer();
+        size = arrayBuffer.byteLength;
+
+        // Validate actual size
+        if (size > MAX_BINARY_SIZE) {
+          throw new Error(
+            `Binary response size (${size} bytes) exceeds maximum allowed size (${MAX_BINARY_SIZE} bytes)`,
+          );
+        }
+
+        responseBody = arrayBufferToBase64(arrayBuffer);
+        contentType = responseContentType || undefined;
       } else {
+        // Default to text for text-based content
         responseBody = await response.text();
       }
 
@@ -118,6 +184,8 @@ export const httpFetch = createHTTPTool({
         statusText: response.statusText,
         headers: responseHeaders,
         ok: response.ok,
+        ...(contentType && { contentType }),
+        ...(size !== undefined && { size }),
       };
     } catch (error) {
       if (error instanceof Error && error.name === "AbortError") {

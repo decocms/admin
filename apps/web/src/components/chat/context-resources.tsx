@@ -41,6 +41,29 @@ interface ContextResourcesProps {
   rightNode?: React.ReactNode;
 }
 
+// Shared styling for all resource items
+const RESOURCE_ITEM_CLASSES =
+  "bg-muted pl-0.5 py-0.5 pr-2 h-8 gap-1.5 hover:bg-muted/80 rounded-lg";
+
+// Reusable remove button component
+interface RemoveButtonProps {
+  onClick: () => void;
+}
+
+function RemoveButton({ onClick }: RemoveButtonProps) {
+  return (
+    <Button
+      type="button"
+      variant="ghost"
+      size="icon"
+      className="absolute p-0 m-0 -top-2 -right-2 h-5 w-5 rounded-full opacity-0 group-hover:opacity-100 transition-opacity bg-background border shadow-sm"
+      onClick={onClick}
+    >
+      <Icon name="close" size={12} />
+    </Button>
+  );
+}
+
 // Helper to get file icon based on file type
 function getFileIcon(fileName: string): string {
   const ext = fileName.split(".").pop()?.toLowerCase();
@@ -95,30 +118,37 @@ function FilePreviewCard({ file, status, onRemove }: FilePreviewCardProps) {
   }, [file, isImage]);
 
   return (
-    <div className="relative group">
+    <div className="relative group h-8">
       <Tooltip delayDuration={300}>
         <TooltipTrigger asChild>
           <Button
             type="button"
-            variant="outline"
-            size="sm"
+            variant="ghost"
             className={cn(
-              "gap-1.5",
+              RESOURCE_ITEM_CLASSES,
               status === "uploading" && "opacity-60",
               status === "error" && "border-destructive text-destructive",
             )}
           >
             {status === "uploading" && <Spinner size="xs" />}
-            {status === "done" && (
-              <Icon
-                name="check_circle"
-                className="h-3.5 w-3.5 text-green-600 dark:text-green-500"
-              />
+            {status === "error" && <Icon name="error" className="size-7" />}
+            {isImage && previewUrl ? (
+              <div className="size-7 rounded-lg overflow-hidden flex-shrink-0">
+                <img
+                  src={previewUrl}
+                  alt={file.name}
+                  className="w-full h-full object-cover"
+                />
+              </div>
+            ) : (
+              <div className="size-7 rounded-lg overflow-hidden flex-shrink-0 flex items-center justify-center bg-background">
+                <Icon
+                  name={getFileIcon(file.name)}
+                  size={16}
+                  className="text-muted-foreground"
+                />
+              </div>
             )}
-            {status === "error" && (
-              <Icon name="error" className="h-3.5 w-3.5" />
-            )}
-            <Icon name={getFileIcon(file.name)} className="h-4 w-4" />
             <span className="max-w-[100px] truncate text-xs">{file.name}</span>
             <span className="text-xs text-muted-foreground">
               {formatFileSize(file.size)}
@@ -146,7 +176,7 @@ function FilePreviewCard({ file, status, onRemove }: FilePreviewCardProps) {
             )}
             {/* File Details */}
             <div className="space-y-1">
-              <p className="text-sm font-medium break-all">{file.name}</p>
+              <p className="text-xs font-medium break-all">{file.name}</p>
               <p className="text-xs text-muted-foreground">
                 {formatFileSize(file.size)} • {file.type || "Unknown type"}
               </p>
@@ -155,16 +185,7 @@ function FilePreviewCard({ file, status, onRemove }: FilePreviewCardProps) {
         </TooltipContent>
       </Tooltip>
 
-      {/* Remove Button */}
-      <Button
-        type="button"
-        variant="ghost"
-        size="icon"
-        className="absolute p-0 m-0 -top-2 -right-2 h-5 w-5 rounded-full opacity-0 group-hover:opacity-100 transition-opacity bg-background border shadow-sm"
-        onClick={onRemove}
-      >
-        <Icon name="close" size={12} />
-      </Button>
+      <RemoveButton onClick={onRemove} />
     </div>
   );
 }
@@ -335,8 +356,8 @@ export function ContextResources({
 
   return (
     <div className="w-full mx-auto relative">
-      <div className="flex justify-between items-end gap-2 mb-4 overflow-visible">
-        <div className="flex flex-wrap gap-2 overflow-visible">
+      <div className="flex justify-between items-end gap-2 overflow-visible">
+        <div className="flex flex-wrap gap-1.5 overflow-visible">
           {/* Display Rules */}
           {ruleItems.length > 0 && (
             <RulesDisplay
@@ -348,23 +369,22 @@ export function ContextResources({
 
           {/* Display Files from context */}
           {fileItems.map((fileItem) => (
-            <div key={fileItem.id} className="relative group">
+            <div key={fileItem.id} className="relative group h-8">
               <Tooltip>
                 <TooltipTrigger asChild>
                   <Button
                     type="button"
-                    variant="outline"
-                    size="sm"
-                    className="gap-1"
+                    variant="ghost"
+                    className={RESOURCE_ITEM_CLASSES}
                   >
                     {fileItem.status === "uploading" && <Spinner size="xs" />}
                     {fileItem.status === "success" && (
-                      <Icon name="check" className="h-3 w-3" />
+                      <Icon name="check" className="size-7" />
                     )}
                     {fileItem.status === "error" && (
-                      <Icon name="error" className="h-3 w-3 text-destructive" />
+                      <Icon name="error" className="size-7 text-destructive" />
                     )}
-                    <span className="max-w-[100px] truncate">
+                    <span className="max-w-[100px] truncate text-xs">
                       {fileItem.file.name}
                     </span>
                   </Button>
@@ -374,15 +394,7 @@ export function ContextResources({
                   KB)
                 </TooltipContent>
               </Tooltip>
-              <Button
-                type="button"
-                variant="ghost"
-                size="icon"
-                className="absolute -top-2 -right-2 h-5 w-5 rounded-full opacity-0 group-hover:opacity-100 transition-opacity bg-background border shadow-sm"
-                onClick={() => handleRemoveFile(fileItem.id)}
-              >
-                <Icon name="close" size={12} />
-              </Button>
+              <RemoveButton onClick={() => handleRemoveFile(fileItem.id)} />
             </div>
           ))}
 
@@ -412,19 +424,18 @@ export function ContextResources({
 
           {/* Display Resources */}
           {resourceItems.map((resource) => (
-            <div key={resource.id} className="relative group">
+            <div key={resource.id} className="relative group h-8">
               <Tooltip>
                 <TooltipTrigger asChild>
                   <Button
                     type="button"
-                    variant="outline"
-                    size="sm"
-                    className="gap-1"
+                    variant="ghost"
+                    className={RESOURCE_ITEM_CLASSES}
                   >
                     {resource.icon && (
-                      <Icon name={resource.icon} className="h-3 w-3" />
+                      <Icon name={resource.icon} className="size-7" />
                     )}
-                    <span className="max-w-[100px] truncate">
+                    <span className="max-w-[100px] text-xs truncate">
                       {resource.name || resource.uri.split("/").pop()}
                     </span>
                   </Button>
@@ -433,19 +444,13 @@ export function ContextResources({
                   {resource.resourceType}: {resource.uri}
                 </TooltipContent>
               </Tooltip>
-              <Button
-                type="button"
-                variant="ghost"
-                size="icon"
-                className="absolute -top-2 -right-2 h-5 w-5 rounded-full opacity-0 group-hover:opacity-100 transition-opacity bg-background border shadow-sm"
+              <RemoveButton
                 onClick={() => {
                   console.warn(
                     "Resource removal not implemented for thread context",
                   );
                 }}
-              >
-                <Icon name="close" size={12} />
-              </Button>
+              />
             </div>
           ))}
         </div>
@@ -483,16 +488,20 @@ const IntegrationToolsetDisplay = memo(function IntegrationToolsetDisplay({
   const [open, setOpen] = useState(false);
 
   return (
-    <div className="relative group">
+    <div className="relative group h-8">
       <Popover open={open} onOpenChange={setOpen}>
         <PopoverTrigger asChild>
-          <Button type="button" variant="outline" size="sm" className="gap-1.5">
+          <Button
+            type="button"
+            variant="ghost"
+            className={RESOURCE_ITEM_CLASSES}
+          >
             <IntegrationIcon
               icon={integration.icon}
               name={integration.name}
-              size="xs"
+              className="size-7 rounded-lg"
             />
-            <span>{integration.name}</span>
+            <span className="text-xs">{integration.name}</span>
             <span className="text-xs text-muted-foreground">
               {enabledTools.length}/{totalTools}
             </span>
@@ -508,7 +517,7 @@ const IntegrationToolsetDisplay = memo(function IntegrationToolsetDisplay({
                   size="base"
                 />
                 <div>
-                  <h4 className="font-medium text-sm">{integration.name}</h4>
+                  <h4 className="font-medium text-xs">{integration.name}</h4>
                   <p className="text-xs text-muted-foreground">
                     {enabledTools.length} of {totalTools} tools enabled
                   </p>
@@ -538,7 +547,7 @@ const IntegrationToolsetDisplay = memo(function IntegrationToolsetDisplay({
                         className="mt-0.5"
                       />
                       <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium">
+                        <p className="text-xs font-medium">
                           {formatToolName(tool.name)}
                         </p>
                         {tool.description && (
@@ -556,15 +565,7 @@ const IntegrationToolsetDisplay = memo(function IntegrationToolsetDisplay({
         </PopoverContent>
       </Popover>
 
-      <Button
-        type="button"
-        variant="ghost"
-        size="icon"
-        className="absolute -top-2 -right-2 h-5 w-5 rounded-full opacity-0 group-hover:opacity-100 transition-opacity bg-background border shadow-sm"
-        onClick={() => onRemove(integrationId, contextItemId)}
-      >
-        <Icon name="close" size={12} />
-      </Button>
+      <RemoveButton onClick={() => onRemove(integrationId, contextItemId)} />
     </div>
   );
 });
@@ -583,11 +584,17 @@ const RulesDisplay = memo(function RulesDisplay({
   const [open, setOpen] = useState(false);
 
   return (
-    <div className="relative group">
+    <div className="relative group h-8">
       <Popover open={open} onOpenChange={setOpen}>
         <PopoverTrigger asChild>
-          <Button type="button" variant="outline" size="sm" className="gap-1.5">
-            <Icon name="rule" className="h-4 w-4" />
+          <Button
+            type="button"
+            variant="ghost"
+            className={RESOURCE_ITEM_CLASSES}
+          >
+            <div className="size-7 rounded-lg overflow-hidden flex-shrink-0 flex items-center justify-center">
+              <Icon name="rule" size={16} />
+            </div>
             <span className="text-xs text-muted-foreground">
               {rules.length}
             </span>
@@ -635,15 +642,7 @@ const RulesDisplay = memo(function RulesDisplay({
         </PopoverContent>
       </Popover>
 
-      <Button
-        type="button"
-        variant="ghost"
-        size="icon"
-        className="absolute -top-2 -right-2 h-5 w-5 rounded-full opacity-0 group-hover:opacity-100 transition-opacity bg-background border shadow-sm"
-        onClick={onRemove}
-      >
-        <Icon name="close" size={12} />
-      </Button>
+      <RemoveButton onClick={onRemove} />
     </div>
   );
 });

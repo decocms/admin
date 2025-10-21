@@ -5,6 +5,7 @@ import { useNavigateWorkspace } from "../../hooks/use-navigate-workspace.ts";
 interface AgentNavigationOptions {
   message?: string;
   history?: boolean;
+  replace?: boolean;
 }
 
 const getChatPath = (agentId: string, threadId: string): string =>
@@ -36,7 +37,7 @@ export const useFocusChat = () => {
       }
 
       // Navigate to the agent page
-      navigateWorkspace(url);
+      navigateWorkspace(url, options?.replace ? { replace: true } : undefined);
     },
     [navigateWorkspace, updateMessages],
   );

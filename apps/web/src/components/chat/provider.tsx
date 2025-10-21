@@ -6,6 +6,7 @@ import {
   DECO_CMS_API_URL,
   dispatchMessages,
   getTraceDebugId,
+  WELL_KNOWN_AGENTS,
   type Agent,
   type MessageMetadata,
 } from "@deco/sdk";
@@ -358,8 +359,15 @@ export function AgenticChatProvider({
     },
   });
 
+  // Track unsaved changes for UI
   const hasUnsavedChanges = form.formState.isDirty;
-  const blocked = useBlocker(hasUnsavedChanges);
+  
+  // Don't block navigation for well-known agents (they create new agents on save)
+  const isWellKnownAgent = Boolean(
+    WELL_KNOWN_AGENTS[agentId as keyof typeof WELL_KNOWN_AGENTS],
+  );
+  const shouldBlockNavigation = hasUnsavedChanges && !isWellKnownAgent;
+  const blocked = useBlocker(shouldBlockNavigation);
 
   // Wrap sendMessage to enrich request metadata with all configuration
   const wrappedSendMessage = useCallback(

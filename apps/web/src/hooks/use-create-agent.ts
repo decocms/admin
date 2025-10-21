@@ -17,7 +17,12 @@ export const useCreateAgent = () => {
   ) => {
     const createdAgent = await createAgent.mutateAsync(agent);
     updateThreadMessages(createdAgent.id);
-    focusEditAgent(createdAgent.id, crypto.randomUUID(), { history: false });
+    // Replace history when creating from well-known agent to avoid back button going to template
+    const isFromWellKnown = eventName === "agent_create_from_well_known";
+    focusEditAgent(createdAgent.id, crypto.randomUUID(), { 
+      history: false,
+      replace: isFromWellKnown,
+    });
     trackEvent(eventName || "agent_create", {
       success: true,
       data: agent,

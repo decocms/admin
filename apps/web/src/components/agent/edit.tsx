@@ -1,5 +1,6 @@
 import type { Agent } from "@deco/sdk";
 import {
+  DEFAULT_MODEL,
   NotFoundError,
   WELL_KNOWN_AGENTS,
   useAgentData,
@@ -44,6 +45,7 @@ import {
 } from "react";
 import { useLocation, useParams } from "react-router";
 import { toast } from "sonner";
+import { useCreateAgent } from "../../hooks/use-create-agent.ts";
 import { useDocumentMetadata } from "../../hooks/use-document-metadata.ts";
 import { useUserPreferences } from "../../hooks/use-user-preferences.ts";
 import { isFilePath } from "../../utils/path.ts";
@@ -401,7 +403,30 @@ function ChatWithProvider({
       enabled: chatMode === "decopilot",
     });
 
+  const createAgent = useCreateAgent();
+
   const handleSaveAgent = async (agent: Agent) => {
+    // Check if this is a well-known agent being saved for the first time
+    const isWellKnownAgent = Boolean(
+      WELL_KNOWN_AGENTS[agent.id as keyof typeof WELL_KNOWN_AGENTS],
+    );
+
+    if (isWellKnownAgent) {
+      // Generate a new UUID and create a new agent instead of updating
+      const id = crypto.randomUUID();
+      const newAgent = {
+        ...agent,
+        id,
+        model: agent.model ?? DEFAULT_MODEL.id,
+      };
+      await createAgent(newAgent, {
+        eventName: "agent_create_from_well_known",
+      });
+      toast.success("Agent created successfully");
+      return;
+    }
+
+    // Normal update flow for custom agents
     await updateAgentMutation.mutateAsync(agent);
     toast.success("Agent updated successfully");
   };
@@ -602,7 +627,30 @@ function FormProvider(props: Props & { agentId: string; threadId: string }) {
   }
 
   const updateAgentMutation = useUpdateAgent();
+  const createAgent = useCreateAgent();
+
   const handleSaveAgent = async (agentData: Agent) => {
+    // Check if this is a well-known agent being saved for the first time
+    const isWellKnownAgent = Boolean(
+      WELL_KNOWN_AGENTS[agentData.id as keyof typeof WELL_KNOWN_AGENTS],
+    );
+
+    if (isWellKnownAgent) {
+      // Generate a new UUID and create a new agent instead of updating
+      const id = crypto.randomUUID();
+      const newAgent = {
+        ...agentData,
+        id,
+        model: agentData.model ?? DEFAULT_MODEL.id,
+      };
+      await createAgent(newAgent, {
+        eventName: "agent_create_from_well_known",
+      });
+      toast.success("Agent created successfully");
+      return;
+    }
+
+    // Normal update flow for custom agents
     await updateAgentMutation.mutateAsync(agentData);
     toast.success("Agent updated successfully");
   };

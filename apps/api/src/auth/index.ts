@@ -161,6 +161,7 @@ appLogin.all("/oauth", async (ctx: AppContext) => {
     provider,
     options: {
       redirectTo: redirectTo.toString(),
+      ...(provider === "azure" ? { scopes: "openid profile email" } : {}),
     },
   };
 

@@ -59,7 +59,9 @@ const FetchOutputSchema = z.object({
   size: z
     .number()
     .optional()
-    .describe("The size of the binary response in bytes (included for binary responses)"),
+    .describe(
+      "The size of the binary response in bytes (included for binary responses)",
+    ),
 });
 
 /**
@@ -143,8 +145,11 @@ export const httpFetch = createHTTPTool({
             }`,
           );
         }
-      } else if (responseType === "binary" || isBinaryContent()) {
-        // Handle as binary when explicitly requested OR when content-type indicates binary data
+      } else if (
+        responseType === "binary" ||
+        (responseType === "text" && isBinaryContent())
+      ) {
+        // Handle as binary when explicitly requested OR when content-type indicates binary data (and user hasn't explicitly chosen json)
         // Get content length from headers for validation
         const contentLength = response.headers.get("content-length");
         if (contentLength) {

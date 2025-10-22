@@ -177,6 +177,20 @@ export function createSlashCommands(config: SlashCommandsConfig = {}) {
                         .run();
                     },
                   },
+                  {
+                    icon: "table_chart",
+                    id: "table",
+                    type: "option",
+                    label: "Table",
+                    handle: ({ editor, range }) => {
+                      editor
+                        .chain()
+                        .focus()
+                        .deleteRange(range)
+                        .insertTable({ rows: 3, cols: 3, withHeaderRow: true })
+                        .run();
+                    },
+                  },
                 ],
               });
             }

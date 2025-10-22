@@ -7,6 +7,10 @@ import Color from "@tiptap/extension-color";
 import Highlight from "@tiptap/extension-highlight";
 import Link from "@tiptap/extension-link";
 import Placeholder from "@tiptap/extension-placeholder";
+import { Table } from "@tiptap/extension-table";
+import { TableCell } from "@tiptap/extension-table-cell";
+import { TableHeader } from "@tiptap/extension-table-header";
+import { TableRow } from "@tiptap/extension-table-row";
 import TaskItem from "@tiptap/extension-task-item";
 import TaskList from "@tiptap/extension-task-list";
 import TextAlign from "@tiptap/extension-text-align";
@@ -220,6 +224,20 @@ export function DocumentEditor({
       Highlight.configure({
         multicolor: true,
       }),
+      Table.configure({
+        resizable: true,
+        allowTableNodeSelection: true,
+        HTMLAttributes: {
+          class: "table-auto border-collapse w-full",
+        },
+      }),
+      TableRow,
+      TableHeader,
+      TableCell.configure({
+        HTMLAttributes: {
+          class: "",
+        },
+      }),
       createSlashCommands({
         includeFormatting: true,
       }),
@@ -405,6 +423,91 @@ export function DocumentEditor({
           color: var(--muted-foreground);
           pointer-events: none;
           user-select: none;
+        }
+
+        /* Table styles */
+        .ProseMirror table {
+          border-collapse: separate;
+          border-spacing: 0;
+          table-layout: fixed;
+          width: 100%;
+          margin: 1rem 0;
+          overflow: hidden;
+          border: 0.5px solid var(--border);
+          border-radius: 0 !important;
+        }
+
+        .ProseMirror td,
+        .ProseMirror th {
+          min-width: 1em;
+          border: 0.5px solid var(--border);
+          padding: 0.375rem 0.5rem;
+          vertical-align: middle;
+          box-sizing: border-box;
+          position: relative;
+          border-radius: 0 !important;
+        }
+
+        .ProseMirror th {
+          font-weight: 600;
+          text-align: left;
+          background-color: color-mix(in srgb, var(--accent) 80%, transparent);
+        }
+
+        /* Remove margins from content inside table cells */
+        .ProseMirror td > *,
+        .ProseMirror th > * {
+          margin: 0 !important;
+        }
+
+        .ProseMirror td p,
+        .ProseMirror th p {
+          margin: 0 !important;
+        }
+
+        .ProseMirror .selectedCell:after {
+          z-index: 2;
+          position: absolute;
+          content: "";
+          left: 0;
+          right: 0;
+          top: 0;
+          bottom: 0;
+          background: color-mix(in srgb, var(--accent) 20%, transparent);
+          pointer-events: none;
+        }
+
+        /* Table cell selection */
+        .ProseMirror td.selectedCell,
+        .ProseMirror th.selectedCell {
+          background: color-mix(in srgb, var(--primary-light) 15%, transparent);
+          border-color: var(--primary-light);
+          color: var(--primary-dark);
+        }
+
+        /* Improve cell selection behavior */
+        .ProseMirror table * {
+          user-select: text;
+        }
+
+        .ProseMirror td,
+        .ProseMirror th {
+          cursor: text;
+        }
+
+        .ProseMirror .column-resize-handle {
+          position: absolute;
+          right: -2px;
+          top: 0;
+          bottom: -2px;
+          width: 4px;
+          background-color: var(--primary);
+          pointer-events: none;
+        }
+
+        .ProseMirror.resize-cursor {
+          cursor: ew-resize;
+          cursor: col-resize;
         }
       `}</style>
       <DocumentBubbleMenu editor={editor} />

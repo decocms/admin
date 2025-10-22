@@ -128,6 +128,8 @@ export function DocumentBubbleMenu({ editor }: BubbleMenuProps) {
 
   if (!editor) return null;
 
+  const isInTable = editor.isActive("table");
+
   const getCurrentFormat = () => {
     const active = FORMATTING_OPTIONS.find((opt) => opt.isActive(editor));
     return active || FORMATTING_OPTIONS[0];
@@ -413,6 +415,124 @@ export function DocumentBubbleMenu({ editor }: BubbleMenuProps) {
           </button>
         </PopoverContent>
       </Popover>
+
+      {/* Table Controls - Show only when in a table */}
+      {isInTable && (
+        <>
+          <div className="h-6 w-px bg-border mx-0.5" />
+
+          {/* Table Actions Popover */}
+          <Popover
+            open={openPopover === "table"}
+            onOpenChange={(open) => setOpenPopover(open ? "table" : null)}
+          >
+            <PopoverTrigger asChild>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="gap-1 h-7 px-1.5 shrink-0"
+                onMouseDown={(e) => e.preventDefault()}
+              >
+                <Icon
+                  name="table_chart"
+                  size={16}
+                  className="text-muted-foreground"
+                />
+                <Icon
+                  name="expand_more"
+                  size={16}
+                  className="text-muted-foreground"
+                />
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent
+              align="start"
+              className="w-52 p-1"
+              style={{ zIndex: 99 }}
+            >
+              <button
+                type="button"
+                onClick={() => {
+                  editor.chain().focus().addColumnBefore().run();
+                  setOpenPopover(null);
+                }}
+                className="w-full flex items-center gap-2 px-2 py-1.5 text-sm rounded-md hover:bg-muted transition-colors text-left"
+              >
+                <Icon name="first_page" size={16} />
+                <span>Insert Column Left</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  editor.chain().focus().addColumnAfter().run();
+                  setOpenPopover(null);
+                }}
+                className="w-full flex items-center gap-2 px-2 py-1.5 text-sm rounded-md hover:bg-muted transition-colors text-left"
+              >
+                <Icon name="last_page" size={16} />
+                <span>Insert Column Right</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  editor.chain().focus().deleteColumn().run();
+                  setOpenPopover(null);
+                }}
+                className="w-full flex items-center gap-2 px-2 py-1.5 text-sm rounded-md hover:bg-muted transition-colors text-left"
+              >
+                <Icon name="view_week" size={16} />
+                <span>Delete Column</span>
+              </button>
+              <Separator className="my-1" />
+              <button
+                type="button"
+                onClick={() => {
+                  editor.chain().focus().addRowBefore().run();
+                  setOpenPopover(null);
+                }}
+                className="w-full flex items-center gap-2 px-2 py-1.5 text-sm rounded-md hover:bg-muted transition-colors text-left"
+              >
+                <Icon name="keyboard_arrow_up" size={16} />
+                <span>Insert Row Above</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  editor.chain().focus().addRowAfter().run();
+                  setOpenPopover(null);
+                }}
+                className="w-full flex items-center gap-2 px-2 py-1.5 text-sm rounded-md hover:bg-muted transition-colors text-left"
+              >
+                <Icon name="keyboard_arrow_down" size={16} />
+                <span>Insert Row Below</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  editor.chain().focus().deleteRow().run();
+                  setOpenPopover(null);
+                }}
+                className="w-full flex items-center gap-2 px-2 py-1.5 text-sm rounded-md hover:bg-muted transition-colors text-left"
+              >
+                <Icon name="table_rows" size={16} />
+                <span>Delete Row</span>
+              </button>
+              <Separator className="my-1" />
+              <button
+                type="button"
+                onClick={() => {
+                  editor.chain().focus().deleteTable().run();
+                  setOpenPopover(null);
+                }}
+                className="w-full flex items-center gap-2 px-2 py-1.5 text-sm rounded-md hover:bg-destructive/10 transition-colors text-left text-destructive"
+              >
+                <Icon name="delete_forever" size={16} />
+                <span>Delete Table</span>
+              </button>
+            </PopoverContent>
+          </Popover>
+        </>
+      )}
     </TiptapBubbleMenu>
   );
 }

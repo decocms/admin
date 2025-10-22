@@ -1,6 +1,9 @@
 import { useMemo } from "react";
 import { useWorkflowStore } from "./provider";
 
+// Stable empty array to prevent reference instability in selectors
+const EMPTY_VIEWS: readonly string[] = [];
+
 // Primitive selectors - use Object.is for strict equality
 export function useWorkflowName() {
   return useWorkflowStore((state) => state.workflow.name, Object.is);
@@ -104,7 +107,7 @@ export function useWorkflowStepData(stepName: string) {
         output: state.stepOutputs[stepName],
         views:
           state.workflow.steps.find((s) => s.def.name === stepName)?.views ??
-          [],
+          EMPTY_VIEWS,
         execution: state.stepExecutions[stepName],
         definition: state.workflow.steps.find((s) => s.def.name === stepName)
           ?.def,

@@ -522,6 +522,31 @@ export function AgenticChatProvider({
     wrappedSendMessage,
   ]);
 
+  // Listen for external sendMessage events from other parts of the UI
+  useEffect(() => {
+    function handleSendMessage(event: Event) {
+      const customEvent = event as CustomEvent<{
+        message: string;
+        context?: Record<string, unknown>;
+      }>;
+
+      const { message } = customEvent.detail;
+
+      if (typeof message === "string" && message.trim()) {
+        wrappedSendMessage({
+          role: "user",
+          id: crypto.randomUUID(),
+          parts: [{ type: "text", text: message }],
+        });
+      }
+    }
+
+    window.addEventListener("decopilot:sendMessage", handleSendMessage);
+    return () => {
+      window.removeEventListener("decopilot:sendMessage", handleSendMessage);
+    };
+  }, [wrappedSendMessage]);
+
   const contextValue: AgenticChatContextValue = {
     agent: agent as Agent,
     isDirty: hasUnsavedChanges,

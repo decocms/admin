@@ -26,6 +26,171 @@ function escapeScriptTags(code: string): string {
 }
 
 /**
+ * Creates the View SDK with tool calling and AI fixing capabilities
+ * This function will be stringified and injected into the iframe
+ *
+ * @param apiBase - API base URL
+ * @param ws - Workspace/organization name
+ * @param proj - Project name
+ */
+function createSDK(apiBase: string, ws: string, proj: string) {
+  // Global SDK functions
+  // @ts-ignore - This function will be stringified and run in the iframe context
+  window.callTool = async function (params: {
+    toolName: string;
+    input: Record<string, unknown>;
+  }) {
+    if (!params || typeof params !== "object") {
+      throw new Error(
+        "callTool Error: Expected an object parameter.\n\n" +
+          "Usage:\n" +
+          "  await callTool({\n" +
+          '    toolName: "TOOL_NAME",\n' +
+          "    input: { }\n" +
+          "  });",
+      );
+    }
+
+    const { toolName, input } = params;
+
+    if (!toolName || typeof toolName !== "string") {
+      throw new Error(
+        'callTool Error: "toolName" is required and must be a string.',
+      );
+    }
+
+    if (
+      input === undefined ||
+      input === null ||
+      typeof input !== "object" ||
+      Array.isArray(input)
+    ) {
+      throw new Error(
+        'callTool Error: "input" is required and must be an object.',
+      );
+    }
+
+    try {
+      const response = await fetch(
+        apiBase + "/" + ws + "/" + proj + "/tools/call/" + toolName,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          credentials: "include",
+          body: JSON.stringify(input),
+        },
+      );
+
+      if (!response.ok) {
+        throw new Error("HTTP error! status: " + response.status);
+      }
+
+      const data = (await response.json()) as { data?: unknown } | unknown;
+      return (data as { data?: unknown })?.data || data;
+    } catch (error) {
+      console.error("Tool call error:", error);
+      throw error;
+    }
+  };
+
+  // @ts-ignore - This function will be stringified and run in the iframe context
+  window.fixWithAI = function (
+    message: string,
+    context?: Record<string, unknown>,
+  ) {
+    if (typeof message !== "string") {
+      console.error("fixWithAI: message must be a string");
+      return;
+    }
+
+    window.parent.postMessage(
+      {
+        type: "FIX_WITH_AI",
+        payload: {
+          message: message,
+          context: context || {},
+          timestamp: new Date().toISOString(),
+        },
+      },
+      "*",
+    );
+  };
+
+  // Catch runtime errors using window.onerror
+  window.onerror = function (message, source, lineno, colno, error) {
+    const errorData = {
+      message: error?.message || String(message),
+      timestamp: new Date().toISOString(),
+      source: source,
+      line: lineno,
+      column: colno,
+      stack: error?.stack,
+      name: error?.name || "Error",
+    };
+
+    // Notify parent window
+    window.top?.postMessage(
+      {
+        type: "RUNTIME_ERROR",
+        payload: errorData,
+      },
+      "*",
+    );
+
+    // Return false to allow default error handling
+    return false;
+  };
+
+  // Catch errors on elements (e.g., image load failures, script errors)
+  window.addEventListener("error", function (event) {
+    // Ignore if it's already handled by window.onerror
+    if (event.error) {
+      return;
+    }
+
+    const errorData = {
+      message: event.message || "Resource failed to load",
+      timestamp: new Date().toISOString(),
+      target: event.target?.toString() || "Unknown",
+      type: event.type,
+    };
+
+    // Notify parent window
+    window.top?.postMessage(
+      {
+        type: "RESOURCE_ERROR",
+        payload: errorData,
+      },
+      "*",
+    );
+  });
+
+  // Catch unhandled promise rejections
+  window.addEventListener("unhandledrejection", function (event) {
+    const error = event.reason;
+    const errorData = {
+      message: error instanceof Error ? error.message : String(error),
+      timestamp: new Date().toISOString(),
+      stack: error instanceof Error ? error.stack : undefined,
+      name: error instanceof Error ? error.name : "UnhandledRejection",
+      reason: error,
+    };
+
+    // Notify parent window
+    window.top?.postMessage(
+      {
+        type: "UNHANDLED_REJECTION",
+        payload: errorData,
+      },
+      "*",
+    );
+
+    // Prevent default console error
+    event.preventDefault();
+  });
+}
+
+/**
  * Generates complete HTML document from React component code
  *
  * @param code - The React component code (must define `export const App = () => {}`)
@@ -88,99 +253,9 @@ ${JSON.stringify({ imports: finalImportMap }, null, 4)}
 <body>
   <div id="root"></div>
   
+  <!-- View SDK -->
   <script>
-    /**
-     * Global tool calling function
-     * 
-     * Calls a tool from the tools-management module
-     * 
-     * @param {Object} params - Tool call parameters
-     * @param {string} params.toolName - Name of the tool to call (required)
-     * @param {Object} params.input - Input parameters for the tool (required, can be empty object)
-     * @returns {Promise<any>} Tool execution result
-     * 
-     * @example
-     * const result = await callTool({
-     *   toolName: 'INTEGRATIONS_LIST',
-     *   input: {}
-     * });
-     */
-    window.callTool = async function(params) {
-      // Validate params structure
-      if (!params || typeof params !== 'object') {
-        throw new Error(
-          'callTool Error: Expected an object parameter.\\n\\n' +
-          'Usage:\\n' +
-          '  await callTool({\\n' +
-          '    toolName: "TOOL_NAME",  // Required: string\\n' +
-          '    input: { }              // Required: object (can be empty)\\n' +
-          '  });\\n\\n' +
-          'Example:\\n' +
-          '  const result = await callTool({\\n' +
-          '    toolName: "INTEGRATIONS_LIST",\\n' +
-          '    input: {}\\n' +
-          '  });'
-        );
-      }
-
-      const { toolName, input } = params;
-
-      // Validate toolName
-      if (!toolName || typeof toolName !== 'string') {
-        throw new Error(
-          'callTool Error: "toolName" is required and must be a string.\\n\\n' +
-          'Current value: ' + JSON.stringify(toolName) + '\\n\\n' +
-          'Usage:\\n' +
-          '  await callTool({\\n' +
-          '    toolName: "TOOL_NAME",  // Regular tool name or resource URI\\n' +
-          '    input: { }              // Required: object\\n' +
-          '  });\\n\\n' +
-          'Examples:\\n' +
-          '  - Regular tool: "INTEGRATIONS_LIST"\\n' +
-          '  - Resource tool: "rsc://tools-management/tool/TOOL_SEARCH"\\n\\n' +
-          'Both types are called the same way.'
-        );
-      }
-
-      // Validate input
-      if (input === undefined || input === null || typeof input !== 'object' || Array.isArray(input)) {
-        throw new Error(
-          'callTool Error: "input" is required and must be an object (not an array).\\n\\n' +
-          'Current value: ' + JSON.stringify(input) + '\\n\\n' +
-          'Usage:\\n' +
-          '  await callTool({\\n' +
-          '    toolName: "' + toolName + '",\\n' +
-          '    input: { }  // Required: object (can be empty)\\n' +
-          '  });\\n\\n' +
-          'If the tool requires no parameters, pass an empty object: input: {}'
-        );
-      }
-
-      try {
-        // Call tool endpoint directly (works for both regular and resource tools)
-        const response = await fetch(
-          \`${apiBase}/${ws}/${proj}/tools/call/\${toolName}\`,
-          {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            credentials: 'include',
-            body: JSON.stringify(input),
-          }
-        );
-        
-        if (!response.ok) {
-          throw new Error(\`HTTP error! status: \${response.status}\`);
-        }
-        
-        const data = await response.json();
-        return data?.data || data;
-      } catch (error) {
-        console.error('Tool call error:', error);
-        throw error;
-      }
-    };
+    (${createSDK.toString()})('${apiBase}', '${ws}', '${proj}');
   </script>
   
   <!-- User's React component - visible for debugging -->
@@ -192,49 +267,59 @@ ${escapedCode}
     import { createElement } from 'react';
     import { createRoot } from 'react-dom/client';
     
-    // Error display helper
+    // Error display helper for module loading errors
     const showError = (error) => {
-      console.error('View rendering error:', error);
+      console.error('View loading error:', error);
       const userCode = document.getElementById('user-code')?.textContent || 'Code not available';
-      document.getElementById('root').innerHTML = \`
-        <div style="padding: 20px; color: #dc2626; font-family: monospace;">
-          <h2>View Rendering Error</h2>
-          <pre style="background: #fee; padding: 10px; border-radius: 4px; overflow: auto;"><code>\${error.message}</code></pre>
-          <details style="margin-top: 10px;">
-            <summary style="cursor: pointer; color: #2563eb;">View Source Code</summary>
-            <pre style="background: #f3f4f6; padding: 10px; border-radius: 4px; overflow: auto; margin-top: 10px;"><code>\${userCode}</code></pre>
-          </details>
-        </div>
-      \`;
+      
+      const errorHtml = '<div class="p-5 text-red-600 font-sans max-w-3xl mx-auto">' +
+        '<div class="bg-red-50 border-2 border-red-600 rounded-lg p-4 mb-4">' +
+        '<h2 class="m-0 mb-2 text-red-900 text-lg font-bold">⚠️ View Loading Error</h2>' +
+        '<p class="m-0 text-red-900 font-mono text-sm">' + error.message + '</p>' +
+        '</div>' +
+        '<details class="mb-4">' +
+        '<summary class="cursor-pointer font-bold mb-2 text-sm">Error Details</summary>' +
+        '<pre class="bg-gray-100 p-3 rounded overflow-auto text-xs"><code>' + (error.stack || 'No stack trace available') + '</code></pre>' +
+        '</details>' +
+        '<details class="mb-4">' +
+        '<summary class="cursor-pointer font-bold mb-2 text-sm">View Source Code</summary>' +
+        '<pre class="bg-gray-100 p-3 rounded overflow-auto text-xs"><code>' + userCode + '</code></pre>' +
+        '</details>' +
+        '<button ' +
+        'onclick="window.fixWithAI(' + 
+        "'The view failed to load with this error:\\\\n\\\\n' + " + JSON.stringify(error.message) + ", { errorType: 'loading_error' })" +
+        '" ' +
+        'class="bg-gradient-to-br from-indigo-500 to-purple-600 text-white border-none px-6 py-3 rounded-md text-sm font-semibold cursor-pointer shadow-md transition-all duration-200 hover:-translate-y-0.5 hover:shadow-lg mt-4"' +
+        '>' +
+        '✨ Fix with AI' +
+        '</button>' +
+        '</div>';
+      
+      document.getElementById('root').innerHTML = errorHtml;
     };
     
     try {
-      // Get the user's code from the template
+      // Compile user's code
       const userCode = document.getElementById('user-code').textContent;
-      
-      // Transform with Babel using automatic JSX runtime
       const transformedCode = Babel.transform(userCode, {
         presets: [['react', { runtime: 'automatic', importSource: 'react' }]],
         filename: 'view.jsx',
       }).code;
 
-      // Create a blob URL from the transformed code
       const blob = new Blob([transformedCode], { type: 'text/javascript' });
       const blobUrl = URL.createObjectURL(blob);
-      
-      // Dynamically import the module from the blob URL
       const module = await import(blobUrl);
       const App = module.App || module.default;
+      URL.revokeObjectURL(blobUrl);
       
       if (!App) {
         throw new Error('App component not found. Please define: export const App = () => { ... }');
       }
       
-      createRoot(document.getElementById('root'))
-        .render(createElement(App, {}, null));
-      
-      // Clean up the blob URL after import
-      URL.revokeObjectURL(blobUrl);
+      // Render App wrapped in ErrorBoundary
+      createRoot(document.getElementById('root')).render(
+        createElement(App, {}, null)
+      );
     } catch (error) {
       showError(error);
     }

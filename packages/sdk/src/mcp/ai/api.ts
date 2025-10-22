@@ -354,7 +354,7 @@ const convertMessages = (
     }
 
     // Convert to structured content with text and image/file parts
-    const contentParts: Array<any> = [];
+    const contentParts = [];
 
     // Add text part if content is not empty
     if (msg.content) {

@@ -399,11 +399,13 @@ const convertMessages = (
   const assistantMessages = converted.filter(
     (message) => message.role === "assistant",
   );
-  return new MessageList({})
+  return new MessageList({
+    generateMessageId: () => Math.random().toString(36).substring(2, 15),
+  })
     .add(assistantMessages, "response")
     .add(userMessages, "user")
-    .addSystem(systemMessages, "system")
-    .get.all.aiV5.model();
+    .addSystem(systemMessages)
+    .get.all.aiV5.prompt();
 };
 
 export const aiGenerateObject = createTool({

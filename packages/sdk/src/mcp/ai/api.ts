@@ -392,20 +392,26 @@ const convertMessages = (
     } as ModelMessage;
   });
 
-  const systemMessages = converted.filter(
-    (message) => message.role === "system",
-  );
-  const userMessages = converted.filter((message) => message.role === "user");
-  const assistantMessages = converted.filter(
-    (message) => message.role === "assistant",
-  );
-  return new MessageList({
+  const messageList = new MessageList({
     generateMessageId: () => Math.random().toString(36).substring(2, 15),
-  })
-    .add(assistantMessages, "response")
-    .add(userMessages, "user")
-    .addSystem(systemMessages)
-    .get.all.aiV5.prompt();
+  });
+
+  // Preserve chronological order by iterating messages sequentially
+  for (const message of converted) {
+    switch (message.role) {
+      case "user":
+        messageList.add(message, "user");
+        break;
+      case "assistant":
+        messageList.add(message, "response");
+        break;
+      case "system":
+        messageList.addSystem(message);
+        break;
+    }
+  }
+
+  return messageList.get.all.aiV5.prompt();
 };
 
 export const aiGenerateObject = createTool({

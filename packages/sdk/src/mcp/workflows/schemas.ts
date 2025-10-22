@@ -64,6 +64,10 @@ export const WorkflowStepDefinitionSchema = z.object({
     .record(z.unknown())
     .optional()
     .describe("Execution output of the step (if it has been run)"),
+  views: z
+    .array(z.string())
+    .optional()
+    .describe("List of URIs of View Resources that this step can render."),
 });
 
 export const WorkflowDefinitionSchema = z.object({

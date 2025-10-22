@@ -338,20 +338,72 @@ export const aiGenerate = createTool({
 });
 
 const convertMessages = (
-  messages: z.infer<typeof baseMessageSchema>[number][],
+  messages: z.infer<typeof baseMessageSchema>,
 ): ModelMessage[] => {
-  const systemMessages = messages.filter(
+  // Convert experimental_attachments to proper content structure
+  const converted = messages.map((msg) => {
+    // If there are no attachments, just return the message as-is
+    if (
+      !msg.experimental_attachments ||
+      msg.experimental_attachments.length === 0
+    ) {
+      return {
+        role: msg.role,
+        content: msg.content,
+      } as ModelMessage;
+    }
+
+    // Convert to structured content with text and image/file parts
+    const contentParts: Array<any> = [];
+
+    // Add text part if content is not empty
+    if (msg.content) {
+      contentParts.push({
+        type: "text",
+        text: msg.content,
+      });
+    }
+
+    // Convert attachments to image or file parts
+    for (const attachment of msg.experimental_attachments) {
+      const contentType = attachment.contentType?.toLowerCase();
+
+      // Check if it's an image
+      if (contentType?.startsWith("image/")) {
+        contentParts.push({
+          type: "image",
+          image: attachment.url,
+          mimeType: attachment.contentType,
+        });
+      } else {
+        // Treat as file
+        contentParts.push({
+          type: "file",
+          data: attachment.url,
+          mimeType: attachment.contentType || "application/octet-stream",
+          ...(attachment.name && { filename: attachment.name }),
+        });
+      }
+    }
+
+    return {
+      role: msg.role,
+      content: contentParts,
+    } as ModelMessage;
+  });
+
+  const systemMessages = converted.filter(
     (message) => message.role === "system",
   );
-  const userMessages = messages.filter((message) => message.role === "user");
-  const assistantMessages = messages.filter(
+  const userMessages = converted.filter((message) => message.role === "user");
+  const assistantMessages = converted.filter(
     (message) => message.role === "assistant",
   );
   return new MessageList({})
     .add(assistantMessages, "response")
     .add(userMessages, "user")
     .addSystem(systemMessages, "system")
-    .get.all.prompt();
+    .get.all.aiV5.model();
 };
 
 export const aiGenerateObject = createTool({

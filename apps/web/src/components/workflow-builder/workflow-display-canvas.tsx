@@ -181,8 +181,19 @@ export const Canvas = memo(function Canvas() {
     throw new Error("Canvas must be used within WorkflowStoreContext");
   }
 
+  // Extract workflow ID from resourceUri (e.g., "Untitled-2025-10-22T17-27-32-475Z")
+  const workflowId = useMemo(() => {
+    const parts = resourceUri.split("/");
+    return parts[parts.length - 1];
+  }, [resourceUri]);
+
   const handleWorkflowUpdate = useCallback(() => {
     if (!locator) return;
+
+    if (import.meta.env.DEV) {
+      console.log("[Canvas] Watch event received, invalidating workflow query");
+    }
+
     startTransition(() => {
       queryClient.invalidateQueries({
         queryKey: resourceKeys.workflow(locator, resourceUri),
@@ -192,7 +203,7 @@ export const Canvas = memo(function Canvas() {
 
   useResourceWatch({
     resourceUri: resourceUri,
-    pathFilter: `/src/workflows/${workflowName}.json`,
+    pathFilter: `/src/workflows/${workflowId}.json`,
     enabled: true,
     skipHistorical: true,
     onNewEvent: handleWorkflowUpdate,

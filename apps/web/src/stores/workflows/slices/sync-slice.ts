@@ -7,11 +7,9 @@ export interface SyncSlice {
   isDirty: boolean;
   lastServerVersion: WorkflowDefinition | null;
   pendingServerUpdate: WorkflowDefinition | null;
-  lastModifiedStepName: string | null;
   handleExternalUpdate: (serverWorkflow: WorkflowDefinition) => {
     applied: boolean;
     reason: string;
-    modifiedStepName?: string;
   };
   acceptPendingUpdate: () => void;
   dismissPendingUpdate: () => void;
@@ -25,41 +23,17 @@ export const createSyncSlice: StateCreator<Store, [], [], SyncSlice> = (
     isDirty: false,
     lastServerVersion: null,
     pendingServerUpdate: null,
-    lastModifiedStepName: null,
 
     handleExternalUpdate: (serverWorkflow) => {
       const state = get();
 
-      // Detect which step was modified (if only one)
-      let modifiedStepName: string | undefined;
-      if (
-        state.workflow.steps.length === serverWorkflow.steps.length &&
-        state.workflow.name === serverWorkflow.name &&
-        state.workflow.description === serverWorkflow.description
-      ) {
-        // Same count, check which step differs
-        const changedSteps = serverWorkflow.steps.filter((newStep, idx) => {
-          const oldStep = state.workflow.steps[idx];
-          return (
-            oldStep &&
-            oldStep.def.name === newStep.def.name &&
-            JSON.stringify(oldStep) !== JSON.stringify(newStep)
-          );
-        });
-
-        if (changedSteps.length === 1) {
-          modifiedStepName = changedSteps[0].def.name;
-        }
-      }
-
-      // Simple rule: auto-apply if not dirty, queue if dirty
+      // If not dirty: auto-update the UI with the entire workflow from server
       if (!state.isDirty) {
         set(
           {
             workflow: serverWorkflow,
             lastServerVersion: serverWorkflow,
             pendingServerUpdate: null,
-            lastModifiedStepName: modifiedStepName || null,
           },
           false,
         );
@@ -67,27 +41,23 @@ export const createSyncSlice: StateCreator<Store, [], [], SyncSlice> = (
         return {
           applied: true,
           reason: "Auto-applied: no local unsaved changes",
-          modifiedStepName,
         };
       }
 
-      // Store has unsaved changes, queue for user confirmation
+      // If dirty: queue for user confirmation before updating
       set(
         {
           pendingServerUpdate: serverWorkflow,
           lastServerVersion: serverWorkflow,
-          lastModifiedStepName: null,
         },
         false,
       );
 
       toast.warning(
-        state.isDirty
-          ? "Workflow updated externally. Accepting will discard changes."
-          : "Workflow updated externally.",
+        "Workflow updated externally. Accepting will discard your changes.",
         {
           action: {
-            label: state.isDirty ? "Update & Discard" : "Update",
+            label: "Accept & Discard",
             onClick: () => get().acceptPendingUpdate(),
           },
           cancel: {
@@ -108,6 +78,7 @@ export const createSyncSlice: StateCreator<Store, [], [], SyncSlice> = (
       const { pendingServerUpdate } = state;
       if (!pendingServerUpdate) return;
 
+      // Update the entire workflow and steps from server
       set({
         workflow: pendingServerUpdate,
         lastServerVersion: pendingServerUpdate,

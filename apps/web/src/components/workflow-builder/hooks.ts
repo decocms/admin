@@ -15,7 +15,7 @@ export function useWorkflowSync(
   useEffect(() => {
     if (!serverWorkflow || !storeRef.current) return;
 
-    // Create a comprehensive hash that includes step definitions
+    // Create a comprehensive hash that includes step definitions and inputs
     // This ensures any change to step properties triggers a sync
     const currentHash = JSON.stringify({
       name: serverWorkflow.name,
@@ -36,6 +36,8 @@ export function useWorkflowSync(
           integrationId: d.integrationId,
           toolNames: d.toolNames,
         })),
+        // Include step input mappings (e.g., "@input.name" or "@previous-step.output")
+        input: s.input,
       })),
     });
 

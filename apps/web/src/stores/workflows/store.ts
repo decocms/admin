@@ -12,6 +12,7 @@ import {
   createStepManagementSlice,
   type StepManagementSlice,
 } from "./slices/step-management-slice";
+import { createJSONStorage, persist } from "zustand/middleware";
 
 // Re-export types needed by slices
 export interface StepExecution {
@@ -35,7 +36,6 @@ export type State = Pick<
   | "isDirty"
   | "lastServerVersion"
   | "pendingServerUpdate"
-  | "lastModifiedStepName"
   | "stepOutputs"
   | "stepInputs"
   | "stepExecutions"
@@ -59,20 +59,33 @@ export type Actions = Pick<
 export const createWorkflowStore = (
   initialState: Pick<State, "workflow" | "workflowUri">,
 ) => {
-  return createStore<Store>()((set, get, api) => ({
-    // Initialize workflow slice
-    ...createWorkflowSlice(set, get, api),
-    workflow: initialState.workflow,
-    workflowUri: initialState.workflowUri,
+  return createStore<Store>()(
+    persist(
+      (set, get, api) => ({
+        // Initialize workflow slice
+        ...createWorkflowSlice(set, get, api),
+        workflow: initialState.workflow,
+        workflowUri: initialState.workflowUri,
 
-    // Initialize sync slice with server version
-    ...createSyncSlice(set, get, api),
-    lastServerVersion: initialState.workflow,
+        // Initialize sync slice with server version
+        ...createSyncSlice(set, get, api),
+        lastServerVersion: initialState.workflow,
 
-    // Initialize step execution slice
-    ...createStepExecutionSlice(set, get, api),
+        // Initialize step execution slice
+        ...createStepExecutionSlice(set, get, api),
 
-    // Initialize step management slice
-    ...createStepManagementSlice(set, get, api),
-  }));
+        // Initialize step management slice
+        ...createStepManagementSlice(set, get, api),
+      }),
+      {
+        name: `workflow-store-${initialState.workflowUri}`,
+        storage: createJSONStorage(() => localStorage),
+        partialize: (state) => ({
+          stepInputs: state.stepInputs,
+          stepOutputs: state.stepOutputs,
+          stepExecutions: state.stepExecutions,
+        }),
+      },
+    ),
+  );
 };

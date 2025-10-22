@@ -1,8 +1,9 @@
-import { useStore } from "zustand";
+import { useStoreWithEqualityFn } from "zustand/traditional";
 import type { StoreApi } from "zustand";
 import { createWorkflowStore, type Store } from "./store";
 import { createContext, useContext, useState } from "react";
 import type { WorkflowDefinition } from "@deco/sdk";
+import { shallow } from "zustand/vanilla/shallow";
 
 export const WorkflowStoreContext = createContext<StoreApi<Store> | null>(null);
 
@@ -26,12 +27,15 @@ export function WorkflowStoreProvider({
   );
 }
 
-export function useWorkflowStore<T>(selector: (state: Store) => T): T {
+export function useWorkflowStore<T>(
+  selector: (state: Store) => T,
+  equalityFn?: (a: T, b: T) => boolean,
+): T {
   const store = useContext(WorkflowStoreContext);
   if (!store) {
     throw new Error(
       "Missing WorkflowStoreProvider - refresh the page. If the error persists, please contact support.",
     );
   }
-  return useStore(store, selector);
+  return useStoreWithEqualityFn(store, selector, equalityFn ?? shallow);
 }

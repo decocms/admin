@@ -2,9 +2,9 @@ import { useMemo } from "react";
 import { useWorkflowStore } from "./provider";
 
 // Stable empty array to prevent reference instability in selectors
-const EMPTY_VIEWS: readonly string[] = [];
+export const EMPTY_VIEWS: readonly string[] = [];
 
-// Primitive selectors - use Object.is for strict equality
+// Primitive selectors - no shallow needed
 export function useWorkflowName() {
   return useWorkflowStore((state) => state.workflow.name, Object.is);
 }
@@ -103,8 +103,12 @@ export function useWorkflowStepData(stepName: string) {
         stepOutputs: Record<string, unknown>;
         stepExecutions: Record<string, unknown>;
         workflow: { steps: Array<{ def: { name: string }; views?: string[] }> };
+        workflow: { steps: Array<{ def: { name: string }; views?: string[] }> };
       }) => ({
         output: state.stepOutputs[stepName],
+        views:
+          state.workflow.steps.find((s) => s.def.name === stepName)?.views ??
+          EMPTY_VIEWS,
         views:
           state.workflow.steps.find((s) => s.def.name === stepName)?.views ??
           EMPTY_VIEWS,

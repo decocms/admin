@@ -5,6 +5,7 @@ import {
   useCallback,
   useMemo,
   useRef,
+  useState,
   useSyncExternalStore,
 } from "react";
 import { getStatusBadgeVariant } from "./utils.ts";
@@ -12,6 +13,18 @@ import { useWorkflowStepData } from "../../stores/workflows/hooks.ts";
 import { useWorkflowRunQuery } from "./workflow-run-detail.tsx";
 import { WorkflowStepInput } from "../workflow-builder/steps.tsx";
 import { JsonViewer } from "../chat/json-viewer.tsx";
+import ViewDetail from "../views/view-detail.tsx";
+import { EMPTY_VIEWS } from "../../stores/workflows/hooks.ts";
+import { Button } from "@deco/ui/components/button.tsx";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@deco/ui/components/dialog.tsx";
+import { useViewByUriV2 } from "@deco/sdk";
 
 function deepParse(value: unknown, depth = 0): unknown {
   if (typeof value !== "string") {
@@ -307,24 +320,138 @@ const StepHeader = memo(function StepHeader({
   );
 });
 
-interface StepOutputProps {
-  output: unknown;
+interface ViewDialogTriggerProps {
+  resourceUri: string;
 }
 
-const StepOutput = memo(function StepOutput({ output }: StepOutputProps) {
+function ViewDialogTrigger({ resourceUri }: ViewDialogTriggerProps) {
+  const { data: resource, isLoading, error } = useViewByUriV2(resourceUri);
+  const viewData = resource?.data;
+
+  // Use view name, fallback to extracting from URI
+  const viewName = useMemo(() => {
+    if (viewData?.name) return viewData.name;
+
+    // Extract name from URI as fallback: rsc://integration-id/resource-type/view-name
+    try {
+      const parts = resourceUri.replace("rsc://", "").split("/");
+      const lastPart = parts[parts.length - 1];
+      // Clean up the name: replace dashes with spaces, remove timestamp suffix
+      return lastPart
+        .replace(/-\d{4}-\d{2}-\d{2}T[\d-]+Z$/, "") // Remove timestamp
+        .replace(/^Untitled$/, "Untitled View")
+        .replace(/-/g, " ")
+        .replace(/\b\w/g, (c) => c.toUpperCase()); // Capitalize words
+    } catch {
+      return "View";
+    }
+  }, [viewData?.name, resourceUri]);
+
+  if (isLoading) {
+    return (
+      <Badge variant="outline" className="cursor-wait">
+        <Icon name="hourglass_empty" size={12} className="mr-1 animate-pulse" />
+        Loading...
+      </Badge>
+    );
+  }
+
+  // Show view even if there's an error, just with fallback name
+  const displayName = viewName || "View";
+  const hasError = !!error || !viewData;
+
+  return (
+    <Dialog>
+      <DialogTrigger asChild>
+        <button
+          type="button"
+          className={`inline-flex items-center justify-center rounded-md px-2.5 py-0.5 text-xs font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 ${
+            hasError
+              ? "border border-input bg-background hover:bg-muted"
+              : "bg-secondary text-secondary-foreground hover:bg-secondary/80"
+          }`}
+        >
+          <Icon
+            name={hasError ? "warning" : "visibility"}
+            size={12}
+            className="mr-1"
+          />
+          {displayName}
+        </button>
+      </DialogTrigger>
+      <DialogContent className="max-w-7xl w-[95vw] h-[95vh] flex flex-col p-0 gap-0">
+        <DialogHeader className="px-6 py-4 border-b shrink-0">
+          <DialogTitle className="flex items-center gap-2 text-lg">
+            <Icon name="view_list" size={20} className="text-primary" />
+            {displayName}
+          </DialogTitle>
+          <DialogDescription className="text-xs text-muted-foreground">
+            Interactive view preview
+          </DialogDescription>
+        </DialogHeader>
+        <div className="flex-1 overflow-auto bg-muted/30">
+          <ViewDetail resourceUri={resourceUri} />
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+interface StepOutputProps {
+  output: unknown;
+  views?: readonly string[];
+}
+
+function StepOutput({ output, views = EMPTY_VIEWS }: StepOutputProps) {
+  const [displayMode, setDisplayMode] = useState<"view" | "json">("view");
+
   if (output === undefined || output === null) return null;
 
   const parsedOutput = useMemo(() => deepParse(output), [output]);
+  const hasViews = views.length > 0;
 
   return (
-    <div className="space-y-2 min-w-0 w-full">
-      <p className="font-mono text-sm text-muted-foreground uppercase">
-        Output
-      </p>
-      <JsonViewer data={parsedOutput} maxHeight="300px" defaultView="tree" />
+    <div className="space-y-3 min-w-0 w-full">
+      <div className="flex items-center justify-between">
+        <p className="font-mono text-sm text-muted-foreground uppercase">
+          Output
+        </p>
+        {hasViews && (
+          <div className="flex gap-1 border rounded-md p-0.5">
+            <Button
+              variant={displayMode === "view" ? "secondary" : "ghost"}
+              size="sm"
+              onClick={() => setDisplayMode("view")}
+              className="h-7 px-2 text-xs"
+            >
+              <Icon name="view_list" size={14} className="mr-1" />
+              Views
+            </Button>
+            <Button
+              variant={displayMode === "json" ? "secondary" : "ghost"}
+              size="sm"
+              onClick={() => setDisplayMode("json")}
+              className="h-7 px-2 text-xs"
+            >
+              <Icon name="code" size={14} className="mr-1" />
+              JSON
+            </Button>
+          </div>
+        )}
+      </div>
+
+      {hasViews && displayMode === "view" ? (
+        <div className="flex flex-wrap gap-2">
+          {views.map((view) => (
+            <ViewDialogTrigger key={view} resourceUri={view} />
+          ))}
+        </div>
+      ) : (
+        <JsonViewer data={parsedOutput} maxHeight="400px" defaultView="tree" />
+      )}
     </div>
   );
-});
+}
 
 interface StepAttemptsProps {
   attempts: Array<{
@@ -377,12 +504,14 @@ interface StepContentProps {
     start?: string | null;
     end?: string | null;
   }>;
+  views?: readonly string[];
 }
 
 const StepContent = memo(function StepContent({
   error,
   output,
   attempts,
+  views,
 }: StepContentProps) {
   const hasContent =
     error ||
@@ -394,7 +523,7 @@ const StepContent = memo(function StepContent({
   return (
     <div className="bg-background rounded-xl p-3 space-y-3">
       <StepError error={error} />
-      <StepOutput output={output} />
+      <StepOutput output={output} views={views} />
       <StepAttempts attempts={attempts || []} />
     </div>
   );
@@ -463,6 +592,7 @@ export const WorkflowStepCard = memo(
         {isInteractive && <WorkflowStepInput stepName={stepName} />}
         <StepContent
           output={output}
+          views={stepData.views}
           error={execution ? execution.error : undefined}
           attempts={runtimeStep?.attempts}
         />

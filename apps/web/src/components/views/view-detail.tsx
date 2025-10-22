@@ -131,7 +131,7 @@ export function ViewDetail({ resourceUri }: ViewDetailProps) {
 
   if (isLoading) {
     return (
-      <div className="h-[calc(100vh-12rem)] flex items-center justify-center">
+      <div className="h-full flex items-center justify-center">
         <Spinner />
       </div>
     );
@@ -148,17 +148,17 @@ export function ViewDetail({ resourceUri }: ViewDetailProps) {
   }
 
   return (
-    <div className="h-full w-full flex flex-col">
+    <div className="h-full w-full flex flex-col bg-white">
       {/* Preview Section - Full Container */}
       <div className="flex-1 overflow-hidden relative">
         {htmlValue ? (
           <PreviewIframe
             srcDoc={htmlValue}
             title="View Preview"
-            className="w-full h-full border-0"
+            className="w-full h-full border-0 rounded-lg"
           />
         ) : (
-          <div className="flex items-center justify-center h-full">
+          <div className="flex items-center justify-center h-full p-8">
             <div className="text-center">
               <Icon
                 name="visibility_off"

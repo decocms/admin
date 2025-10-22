@@ -6,8 +6,6 @@ import {
 } from "@deco/sdk";
 import { Icon } from "@deco/ui/components/icon.tsx";
 import { Spinner } from "@deco/ui/components/spinner.tsx";
-import { Button } from "@deco/ui/components/button.tsx";
-import { Badge } from "@deco/ui/components/badge.tsx";
 import { useMemo, useEffect, useRef, useState } from "react";
 import { useParams } from "react-router";
 import { EmptyState } from "../common/empty-state.tsx";
@@ -109,19 +107,28 @@ export function ViewDetail({ resourceUri }: ViewDetailProps) {
       // Handle Runtime Error messages
       if (event.data.type === "RUNTIME_ERROR") {
         const errorData = event.data.payload as RuntimeError;
-        setRuntimeErrors((prev) => [...prev, { ...errorData, type: "Runtime Error" }]);
+        setRuntimeErrors((prev) => [
+          ...prev,
+          { ...errorData, type: "Runtime Error" },
+        ]);
       }
 
       // Handle Resource Error messages
       if (event.data.type === "RESOURCE_ERROR") {
         const errorData = event.data.payload as RuntimeError;
-        setRuntimeErrors((prev) => [...prev, { ...errorData, type: "Resource Error" }]);
+        setRuntimeErrors((prev) => [
+          ...prev,
+          { ...errorData, type: "Resource Error" },
+        ]);
       }
 
       // Handle Unhandled Promise Rejection messages
       if (event.data.type === "UNHANDLED_REJECTION") {
         const errorData = event.data.payload as RuntimeError;
-        setRuntimeErrors((prev) => [...prev, { ...errorData, type: "Unhandled Rejection" }]);
+        setRuntimeErrors((prev) => [
+          ...prev,
+          { ...errorData, type: "Unhandled Rejection" },
+        ]);
       }
     }
 
@@ -132,7 +139,44 @@ export function ViewDetail({ resourceUri }: ViewDetailProps) {
   // Reset runtime errors when view changes
   useEffect(() => {
     setRuntimeErrors([]);
+    // Clear error banner in chat when view changes
+    window.dispatchEvent(new CustomEvent("decopilot:clearError"));
   }, [resourceUri]);
+
+  // Show error banner in chat when errors occur
+  useEffect(() => {
+    if (runtimeErrors.length > 0) {
+      const errorSummary = runtimeErrors
+        .map((error, index) => {
+          const location = error.source
+            ? `\n  Source: ${error.source}:${error.line}:${error.column}`
+            : "";
+          const stack = error.stack ? `\n  Stack: ${error.stack}` : "";
+          return `${index + 1}. [${error.type || error.name}] ${error.message}${location}${stack}`;
+        })
+        .join("\n\n");
+
+      const fullMessage = `The view "${effectiveView?.name || "unknown"}" is encountering ${runtimeErrors.length} runtime error${runtimeErrors.length > 1 ? "s" : ""}:\n\n${errorSummary}\n\nPlease help fix these errors in the view code.`;
+
+      // Dispatch error event to show banner in chat
+      window.dispatchEvent(
+        new CustomEvent("decopilot:showError", {
+          detail: {
+            message: fullMessage,
+            displayMessage: "App error found",
+            errorCount: runtimeErrors.length,
+            context: {
+              errorType: "runtime_errors",
+              viewUri: resourceUri,
+              viewName: effectiveView?.name,
+              errorCount: runtimeErrors.length,
+              errors: runtimeErrors,
+            },
+          },
+        }),
+      );
+    }
+  }, [runtimeErrors, resourceUri, effectiveView?.name]);
 
   // Generate HTML from React code on the client side
   const htmlValue = useMemo(() => {
@@ -151,43 +195,6 @@ export function ViewDetail({ resourceUri }: ViewDetailProps) {
       return null;
     }
   }, [effectiveView?.code, effectiveView?.importmap, org, project]);
-
-  // Handle fix errors button click
-  function handleFixErrors() {
-    if (runtimeErrors.length === 0) return;
-
-    // Format errors into a readable message
-    const errorSummary = runtimeErrors
-      .map((error, index) => {
-        const location = error.source
-          ? `\n  Source: ${error.source}:${error.line}:${error.column}`
-          : "";
-        const stack = error.stack ? `\n  Stack: ${error.stack}` : "";
-        return `${index + 1}. [${error.type || error.name}] ${error.message}${location}${stack}`;
-      })
-      .join("\n\n");
-
-    const message = `The view "${effectiveView?.name || "unknown"}" is encountering ${runtimeErrors.length} runtime error${runtimeErrors.length > 1 ? "s" : ""}:\n\n${errorSummary}\n\nPlease help fix these errors in the view code.`;
-
-    // Open the decopilot chat panel
-    setDecopilotOpen(true);
-
-    // Send message to chat
-    window.dispatchEvent(
-      new CustomEvent("decopilot:sendMessage", {
-        detail: {
-          message,
-          context: {
-            errorType: "runtime_errors",
-            viewUri: resourceUri,
-            viewName: effectiveView?.name,
-            errorCount: runtimeErrors.length,
-            errors: runtimeErrors,
-          },
-        },
-      }),
-    );
-  }
 
   if (isLoading) {
     return (
@@ -229,27 +236,6 @@ export function ViewDetail({ resourceUri }: ViewDetailProps) {
                 No React code to preview
               </p>
             </div>
-          </div>
-        )}
-
-        {/* Error Fix Button - Fixed Position */}
-        {runtimeErrors.length > 0 && (
-          <div className="absolute bottom-4 right-4">
-            <Button
-              onClick={handleFixErrors}
-              variant="destructive"
-              size="lg"
-              className="shadow-lg relative"
-            >
-              <Icon name="bug_report" className="mr-2" size={20} />
-              Fix Errors with AI
-              <Badge
-                variant="secondary"
-                className="ml-2 bg-white text-destructive hover:bg-white"
-              >
-                {runtimeErrors.length}
-              </Badge>
-            </Button>
           </div>
         )}
       </div>

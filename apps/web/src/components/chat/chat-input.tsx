@@ -30,6 +30,7 @@ import { SelectConnectionDialog } from "../integrations/select-connection-dialog
 import { AudioButton } from "./audio-button.tsx";
 import { ModelSelector } from "./model-selector.tsx";
 import { RichTextArea, type RichTextAreaHandle } from "./rich-text.tsx";
+import { ErrorBanner } from "./error-banner.tsx";
 
 export function ChatInput({
   disabled,
@@ -47,6 +48,12 @@ export function ChatInput({
   const richTextRef = useRef<RichTextAreaHandle>(null);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const selectDialogTriggerRef = useRef<HTMLButtonElement>(null);
+  const [runtimeError, setRuntimeError] = useState<{
+    message: string;
+    displayMessage?: string;
+    errorCount?: number;
+    context?: Record<string, unknown>;
+  } | null>(null);
 
   const {
     uploadedFiles,
@@ -90,6 +97,36 @@ export function ChatInput({
     },
     [setPreferences, preferences],
   );
+
+  // Listen for runtime error events from views
+  useEffect(() => {
+    function handleRuntimeError(event: Event) {
+      const customEvent = event as CustomEvent<{
+        message: string;
+        displayMessage?: string;
+        errorCount?: number;
+        context?: Record<string, unknown>;
+      }>;
+
+      const { message, displayMessage, errorCount, context } =
+        customEvent.detail;
+
+      if (typeof message === "string" && message.trim()) {
+        setRuntimeError({ message, displayMessage, errorCount, context });
+      }
+    }
+
+    function handleClearError() {
+      setRuntimeError(null);
+    }
+
+    window.addEventListener("decopilot:showError", handleRuntimeError);
+    window.addEventListener("decopilot:clearError", handleClearError);
+    return () => {
+      window.removeEventListener("decopilot:showError", handleRuntimeError);
+      window.removeEventListener("decopilot:clearError", handleClearError);
+    };
+  }, []);
 
   // Auto-focus when loading state changes from true to false
   useEffect(() => {
@@ -148,6 +185,27 @@ export function ChatInput({
     openFileDialog();
   }, [openFileDialog]);
 
+  const handleFixError = useCallback(() => {
+    if (!runtimeError) return;
+
+    // Send the error message to chat
+    window.dispatchEvent(
+      new CustomEvent("decopilot:sendMessage", {
+        detail: {
+          message: runtimeError.message,
+          context: runtimeError.context,
+        },
+      }),
+    );
+
+    // Clear the error banner after sending
+    setRuntimeError(null);
+  }, [runtimeError]);
+
+  const handleDismissError = useCallback(() => {
+    setRuntimeError(null);
+  }, []);
+
   const onSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
 
@@ -195,7 +253,17 @@ export function ChatInput({
   };
 
   return (
-    <div className="w-full mx-auto relative">
+    <div className="w-full mx-auto relative flex flex-col pb-2.5 pt-0 px-0">
+      {/* Error Banner */}
+      {runtimeError && (
+        <ErrorBanner
+          message={runtimeError.displayMessage || "App error found"}
+          errorCount={runtimeError.errorCount}
+          onFix={handleFixError}
+          onDismiss={handleDismissError}
+        />
+      )}
+
       {/* Hidden file input for file uploads */}
       <input
         type="file"

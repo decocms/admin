@@ -68,7 +68,7 @@ export function ErrorBanner({
             className="relative shrink-0 size-5 flex items-center justify-center hover:opacity-70 transition-opacity"
             aria-label="Dismiss error"
           >
-            <Icon name="close" size={20} className="text-neutral-500" />
+            <Icon name="close" size={20} className="text-muted-foreground" />
           </button>
         )}
       </div>

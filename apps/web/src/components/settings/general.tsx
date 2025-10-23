@@ -46,8 +46,6 @@ interface GeneralSettingsFormValues {
   teamName: string;
   teamSlug: string;
   workspaceEmailDomain: boolean;
-  teamSystemPrompt: string;
-  personalSystemPrompt: string;
   avatar: string;
   themeVariables: Record<string, string | undefined>;
 }
@@ -59,8 +57,6 @@ const generalSettingsSchema = z.object({
       "Team slug can only contain letters, numbers, dashes, underscores, and dots.",
   }),
   workspaceEmailDomain: z.boolean(),
-  teamSystemPrompt: z.string(),
-  personalSystemPrompt: z.string(),
   avatar: z.string(),
   themeVariables: z.record(z.string(), z.string().optional()),
 });
@@ -310,8 +306,6 @@ export function GeneralSettings() {
       teamName: currentTeamName,
       teamSlug: currentTeamSlug,
       workspaceEmailDomain: true,
-      teamSystemPrompt: "",
-      personalSystemPrompt: "",
       avatar: currentTeamTheme?.picture || "",
       themeVariables: currentTeamTheme?.variables ?? {},
     },
@@ -516,53 +510,6 @@ export function GeneralSettings() {
                           />
                         </FormControl>
                         <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  <FormField
-                    control={form.control}
-                    name="teamSystemPrompt"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Team System Prompt</FormLabel>
-                        <FormControl>
-                          <Textarea
-                            {...field}
-                            placeholder="This prompt is added at the start of all agent messages for your team. Use it to set tone, context, or rules."
-                            rows={6}
-                            disabled
-                            readOnly={isReadOnly}
-                          />
-                        </FormControl>
-                        <FormDescription>
-                          This prompt is added at the start of all agent
-                          messages for your team. Use it to set tone, context,
-                          or rules.
-                        </FormDescription>
-                      </FormItem>
-                    )}
-                  />
-                  <Separator />
-                  <FormField
-                    control={form.control}
-                    name="personalSystemPrompt"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Personal System Prompt</FormLabel>
-                        <FormControl>
-                          <Textarea
-                            {...field}
-                            placeholder="This prompt is added at the end of agent messages just for you. Use it to personalize style or add your own context."
-                            rows={6}
-                            disabled
-                            readOnly={isReadOnly}
-                          />
-                        </FormControl>
-                        <FormDescription>
-                          This prompt is added at the end of agent messages just
-                          for you. Use it to personalize style or add your own
-                          context.
-                        </FormDescription>
                       </FormItem>
                     )}
                   />

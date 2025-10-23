@@ -50,7 +50,7 @@ export function getInviteEmailTemplate({
         <table style="width: 100%; background-color: #eff1f1; border-radius: 15px;" cellpadding="0" cellspacing="0" border="0">
           <tr>
             <td style="padding: 24px; text-align: center;">
-              <img src="https://e.hypermatic.com/a2c697bae8735119d7d3c4babdae6e40.png" alt="Logo" class="logo" style="width: 200px; height: auto;">
+              <img src="https://assets.decocache.com/decocms/618c6d89-c62c-4319-9cef-940a1ce51262/logo-deco.png" alt="Logo" class="logo" style="width: 200px; height: auto;">
             </td>
           </tr>
         </table>

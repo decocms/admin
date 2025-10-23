@@ -812,6 +812,8 @@ const createSelfTools = async (ctx: Context) => {
       handler: async (input) => {
         // Execute the tool without JSON schema validation (already validated by MCP layer via Zod schema)
         return await State.run(appCtx, async () => {
+          await assertWorkspaceResourceAccess(appCtx, "DECO_TOOL_CALL_TOOL");
+
           const contextWithTool = {
             ...appCtx,
             tool: { name: toolData.name },

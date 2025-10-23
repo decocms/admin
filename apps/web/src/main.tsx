@@ -177,6 +177,12 @@ const MagicLink = lazy(() =>
   wrapWithUILoadingFallback(import("./components/login/magic-link.tsx")),
 );
 
+const MagicLinkCallback = lazy(() =>
+  wrapWithUILoadingFallback(
+    import("./components/login/magic-link-callback.tsx"),
+  ),
+);
+
 const Members = lazy(() =>
   wrapWithUILoadingFallback(import("./components/settings/members/index.tsx")),
 );
@@ -438,6 +444,10 @@ const router = createBrowserRouter([
       {
         path: "/login/magiclink",
         Component: MagicLink,
+      },
+      {
+        path: "/login/magiclink/callback",
+        Component: MagicLinkCallback,
       },
       {
         path: "/sales-deck",

@@ -193,10 +193,8 @@ appLogin.all("/magiclink", async (ctx: AppContext) => {
     const redirectTo = cli
       ? AUTH_URL_CLI
       : url.host.includes("localhost")
-        ? "http://localhost:3001/"
-        : url.host.includes("deco.chat")
-          ? "https://api.deco.chat/"
-          : "https://api.decocms.com/";
+        ? "http://localhost:3000/"
+        : "https://admin.decocms.com/";
 
     await db.auth.signInWithOtp({
       email,

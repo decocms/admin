@@ -261,7 +261,7 @@ function WorkspaceViews() {
     setDraggedItem(index);
     // Store the item ID to track it as it moves
     draggedItemIdRef.current = itemId || null;
-    
+
     e.dataTransfer.effectAllowed = "move";
     e.dataTransfer.setData("text/plain", itemId || "");
 
@@ -279,12 +279,12 @@ function WorkspaceViews() {
     e.dataTransfer.dropEffect = "move";
 
     if (draggedItemIdRef.current === null) return;
-    
+
     // Find current position of the dragged item
     const currentDraggedIndex = allPinnedItems.findIndex(
-      (item) => item.id === draggedItemIdRef.current
+      (item) => item.id === draggedItemIdRef.current,
     );
-    
+
     if (currentDraggedIndex === -1) return;
     if (currentDraggedIndex === index) return;
 
@@ -717,49 +717,49 @@ function WorkspaceViews() {
           onDragLeave={isDragMode ? handleDragLeave : undefined}
           onDrop={isDragMode ? (e) => handleDrop(e, index) : undefined}
           onDragEnd={isDragMode ? handleDragEnd : undefined}
-            className={
-              isDragMode
-                ? `cursor-grab active:cursor-grabbing transition-all duration-150
+          className={
+            isDragMode
+              ? `cursor-grab active:cursor-grabbing transition-all duration-150
                    ${draggedItem !== null && draggedItemIdRef.current === item.id ? "opacity-50" : ""}`
-                : ""
-            }
-          >
-            <WithActive to={href}>
-              {({ isActive }) => (
-                <SidebarMenuButton
-                  asChild
-                  isActive={isActive}
-                  className="w-full pr-2"
+              : ""
+          }
+        >
+          <WithActive to={href}>
+            {({ isActive }) => (
+              <SidebarMenuButton
+                asChild
+                isActive={isActive}
+                className="w-full pr-2"
+              >
+                <Link
+                  to={href}
+                  className="group/item relative"
+                  onClick={(e) => {
+                    if (isDragMode) {
+                      e.preventDefault();
+                      return;
+                    }
+                    trackEvent("sidebar_navigation_click", {
+                      item: displayTitle,
+                    });
+                    isMobile && toggleSidebar();
+                  }}
                 >
-                  <Link
-                    to={href}
-                    className="group/item relative"
-                    onClick={(e) => {
-                      if (isDragMode) {
-                        e.preventDefault();
-                        return;
-                      }
-                      trackEvent("sidebar_navigation_click", {
-                        item: displayTitle,
-                      });
-                      isMobile && toggleSidebar();
-                    }}
-                  >
-                    {isDragMode && (
-                      <Icon
-                        name="drag_indicator"
-                        size={16}
-                        className="text-muted-foreground shrink-0"
-                      />
-                    )}
+                  {isDragMode && (
                     <Icon
-                      name={view.icon}
-                      size={20}
-                      className="text-muted-foreground/75 shrink-0"
+                      name="drag_indicator"
+                      size={16}
+                      className="text-muted-foreground shrink-0"
                     />
-                    <span className="truncate flex-1 min-w-0 group-hover/item:pr-8">
-                      {displayTitle}
-                    </span>
+                  )}
+                  <Icon
+                    name={view.icon}
+                    size={20}
+                    className="text-muted-foreground/75 shrink-0"
+                  />
+                  <span className="truncate flex-1 min-w-0 group-hover/item:pr-8">
+                    {displayTitle}
+                  </span>
                   {view.badge && (
                     <Badge variant="secondary" className="text-xs">
                       {view.badge}
@@ -814,7 +814,7 @@ function WorkspaceViews() {
               onDragEnd={isDragMode ? handleDragEnd : undefined}
               className={
                 isDragMode
-                ? `cursor-grab active:cursor-grabbing transition-all duration-150
+                  ? `cursor-grab active:cursor-grabbing transition-all duration-150
                         ${draggedItemIdRef.current === item.id ? "opacity-50" : ""}`
                   : ""
               }
@@ -1104,7 +1104,7 @@ function WorkspaceViews() {
           onDragEnd={isDragMode ? handleDragEnd : undefined}
           className={
             isDragMode
-                ? `cursor-grab active:cursor-grabbing transition-all duration-150
+              ? `cursor-grab active:cursor-grabbing transition-all duration-150
                         ${draggedItemIdRef.current === item.id ? "opacity-50" : ""}`
               : ""
           }
@@ -1269,7 +1269,7 @@ function WorkspaceViews() {
           onDragEnd={isDragMode ? handleDragEnd : undefined}
           className={
             isDragMode
-                ? `cursor-grab active:cursor-grabbing transition-all duration-150
+              ? `cursor-grab active:cursor-grabbing transition-all duration-150
                         ${draggedItemIdRef.current === item.id ? "opacity-50" : ""}`
               : ""
           }

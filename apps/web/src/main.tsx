@@ -79,6 +79,11 @@ console.log(
   "font-size: 14px; font-weight: 600; text-decoration: underline; color: #9be000;",
 );
 
+// Request notification permission for task completion alerts
+if ("Notification" in window && Notification.permission === "default") {
+  Notification.requestPermission();
+}
+
 type LazyComp<P> = Promise<{
   default: React.ComponentType<P>;
 }>;

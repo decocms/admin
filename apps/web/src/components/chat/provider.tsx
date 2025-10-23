@@ -439,14 +439,63 @@ export function AgenticChatProvider({
       const isCancelled =
         result.isAbort || result.isDisconnect || result.isError;
 
+      if (isCancelled) {
+        return;
+      }
+
       // Only set finish reason if it's one we care about displaying
-      if (
-        !isCancelled &&
-        (finishReason === "length" || finishReason === "tool-calls")
-      ) {
+      if (finishReason === "length" || finishReason === "tool-calls") {
         setFinishReason(finishReason);
       } else {
         setFinishReason(null);
+      }
+
+      // Send notification if user is not viewing the app
+      if (
+        "Notification" in window &&
+        Notification.permission === "granted" &&
+        !document.hasFocus()
+      ) {
+        // Get the last user message to show what they asked about
+        const lastUserMessage = chat.messages.findLast(
+          (msg) => msg.role === "user",
+        );
+
+        let userPrompt = "your task";
+        if (lastUserMessage) {
+          const messageText =
+            "content" in lastUserMessage &&
+            typeof lastUserMessage.content === "string"
+              ? lastUserMessage.content
+              : (lastUserMessage.parts
+                  ?.map((p) => (p.type === "text" ? p.text : ""))
+                  .join(" ") ?? "");
+
+          // Truncate to first 60 characters for notification
+          userPrompt =
+            messageText.length > 60
+              ? `"${messageText.substring(0, 60)}..."`
+              : `"${messageText}"`;
+        }
+
+        const notification = new Notification("Task Finished", {
+          body: `${userPrompt} is complete.`,
+          icon: "/favicon.ico",
+          tag: `chat-${threadId}`,
+          requireInteraction: false,
+        });
+
+        // Play notification sound
+        const audio = new Audio("/notification.mp3");
+        audio.play().catch((error) => {
+          console.warn("Failed to play notification sound:", error);
+        });
+
+        // Focus the window when notification is clicked
+        notification.onclick = () => {
+          window.focus();
+          notification.close();
+        };
       }
 
       // Broadcast resource updates when assistant message completes

@@ -14,7 +14,11 @@ async function readSecret(secretName: string) {
   return version.payload.data.toString();
 }
 
-export async function downloadSecretToFile(secretName: string, filePath: string, transform?: (secret: string) => string) {
+export async function downloadSecretToFile(
+  secretName: string,
+  filePath: string,
+  transform?: (secret: string) => string,
+) {
   const secret = await readSecret(secretName);
   writeFileSync(filePath, transform ? transform(secret) : secret);
   console.log(`✅ Wrote ${secretName} → ${filePath}`);

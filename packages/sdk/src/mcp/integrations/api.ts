@@ -1,8 +1,8 @@
 import {
   createServerClient as createMcpServerClient,
+  isApiDecoChatMCPConnection as shouldPatchDecoChatMCPConnection,
   listToolsByConnectionType,
   patchApiDecoChatTokenHTTPConnection,
-  isApiDecoChatMCPConnection as shouldPatchDecoChatMCPConnection,
 } from "@deco/ai/mcp";
 import { CallToolRequestSchema } from "@modelcontextprotocol/sdk/types.js";
 import { and, eq, getTableColumns, or } from "drizzle-orm";
@@ -243,7 +243,15 @@ async function listToolsAndSortByName(
       ),
     };
   } else {
-    result = await listToolsByConnectionType(connection, c, ignoreCache);
+    // Patch connection with cookie for API-based integrations
+    let patchedConnection = connection;
+    if (shouldPatchDecoChatMCPConnection(connection)) {
+      patchedConnection = patchApiDecoChatTokenHTTPConnection(
+        connection,
+        c.cookie,
+      );
+    }
+    result = await listToolsByConnectionType(patchedConnection, c, ignoreCache);
   }
 
   // Sort tools by name for consistent UI
@@ -357,6 +365,23 @@ const virtualIntegrationsFor = (
     created_at: new Date().toISOString(),
   };
 
+  // Create a virtual Self integration for custom tools and workflows
+  const { projectPath } = projectUrlFromLocator(locator);
+  const parsedLocator = Locator.parse(locator);
+  const selfIntegration = {
+    id: formatId("i", WellKnownMcpGroups.Self),
+    name: `${parsedLocator.project} MCP`,
+    description: `Tools and workflows of the project ${parsedLocator.project} from ${parsedLocator.org}`,
+    connection: {
+      type: "HTTP",
+      url: new URL(`${projectPath}/self/mcp`, DECO_CMS_API_URL).href,
+      // Don't include token - use cookie-based auth for API connections
+    },
+    icon: "https://assets.decocache.com/mcp/81d602bb-45e2-4361-b52a-23379520a34d/sandbox.png",
+    workspace: Locator.adaptToRootSlug(locator),
+    created_at: new Date().toISOString(),
+  };
+
   const integrationGroups = Object.entries(getGroups()).map(
     ([group, { name, description, icon, workspace }]) => {
       const url =
@@ -383,6 +408,7 @@ const virtualIntegrationsFor = (
   return [
     userManagementIntegration,
     workspaceManagementIntegration,
+    selfIntegration,
     ...integrationGroups,
     contractsIntegration,
     ...knowledgeBases.map((kb) => {
@@ -715,6 +741,19 @@ export const getIntegration = createIntegrationManagementTool({
       [],
       c.token,
     );
+
+    // Handle self integration - don't return tools
+    if (id === formatId("i", WellKnownMcpGroups.Self)) {
+      const selfIntegration = virtualIntegrations.find(
+        (i) => i.id === formatId("i", WellKnownMcpGroups.Self),
+      );
+      if (selfIntegration) {
+        return {
+          ...IntegrationSchema.parse(selfIntegration),
+          tools: null, // Don't return tools for self integration
+        };
+      }
+    }
 
     if (virtualIntegrations.some((i) => i.id === id)) {
       const baseIntegration = IntegrationSchema.parse({

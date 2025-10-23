@@ -73,6 +73,7 @@
     "./mcp/slugify": "./src/mcp/slugify.ts",
     "./mcp/groups": "./src/mcp/groups.ts",
     "./mcp/wallet": "./src/mcp/wallet/index.ts",
+    "./mcp/tools/api": "./src/mcp/tools/api.ts",
     "./fetch": "./src/fetch.ts",
     "./hooks": "./src/hooks/index.ts",
     "./hooks/profile": "./src/hooks/profile.ts",

@@ -37,9 +37,10 @@ export interface ToolBindingImplOptions {
 }
 
 /**
- * Common tool execution logic shared between different tool implementations
+ * Execute tool code without validation
+ * This is useful when you want to skip JSON schema validation (e.g., when validation is done at the MCP layer)
  */
-async function executeToolWithValidation(
+export async function executeTool(
   tool: z.infer<typeof ToolDefinitionSchema>,
   input: Record<string, unknown>,
   context: WithTool<AppContext>,
@@ -50,20 +51,11 @@ async function executeToolWithValidation(
 
   const runtimeId = context.locator?.value ?? "default";
   const client = MCPClient.forContext(context);
-  // missing authorization from input
   const env = asEnv(client, {
     authorization: authorization,
     workspace: context.workspace.value,
     dependencies: tool.dependencies,
   });
-
-  // Validate input against the tool's input schema
-  const inputValidation = validate(input, tool.inputSchema);
-  if (!inputValidation.valid) {
-    return {
-      error: `Input validation failed: ${inspect(inputValidation)}`,
-    };
-  }
 
   // Use the inlined function code
   using evaluation = await evalCodeAndReturnDefaultHandle(
@@ -83,21 +75,47 @@ async function executeToolWithValidation(
     );
 
     const callResult = ctx.dump(ctx.unwrapResult(callHandle));
-
-    // Validate output against the tool's output schema
-    const outputValidation = validate(callResult, tool.outputSchema);
-
-    if (!outputValidation.valid) {
-      return {
-        error: `Output validation failed: ${inspect(outputValidation)}`,
-        logs: guestConsole.logs,
-      };
-    }
-
     return { result: callResult, logs: guestConsole.logs };
   } catch (error) {
     return { error: inspect(error), logs: guestConsole.logs };
   }
+}
+
+/**
+ * Execute tool with input/output JSON schema validation
+ */
+export async function executeToolWithValidation(
+  tool: z.infer<typeof ToolDefinitionSchema>,
+  input: Record<string, unknown>,
+  context: WithTool<AppContext>,
+  authorization?: string,
+) {
+  // Validate input against the tool's input schema
+  const inputValidation = validate(input, tool.inputSchema);
+  if (!inputValidation.valid) {
+    return {
+      error: `Input validation failed: ${inspect(inputValidation)}`,
+    };
+  }
+
+  // Execute the tool
+  const result = await executeTool(tool, input, context, authorization);
+
+  // If there was an error during execution, return it as-is
+  if (result.error) {
+    return result;
+  }
+
+  // Validate output against the tool's output schema
+  const outputValidation = validate(result.result, tool.outputSchema);
+  if (!outputValidation.valid) {
+    return {
+      error: `Output validation failed: ${inspect(outputValidation)}`,
+      logs: result.logs,
+    };
+  }
+
+  return result;
 }
 
 /**

@@ -281,11 +281,6 @@ export const WorkflowStepInput = memo(
 
           // Send error to chat provider for AI assistance
           appendRuntimeError(error, workflowUri, `Workflow Step: ${stepName}`);
-
-          // Still show toast for immediate user feedback
-          toast.error(
-            error instanceof Error ? error.message : "Failed to run step",
-          );
         } finally {
           setIsSubmitting(false);
         }

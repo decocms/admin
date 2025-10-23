@@ -1,7 +1,7 @@
-import { and, eq, ilike, isNull } from "drizzle-orm";
+import { eq, isNull } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/postgres-js";
 import process from "node:process";
-import { relations } from "../packages/sdk/src/mcp/relations.ts";
+import { relations } from "../../packages/sdk/src/mcp/relations.ts";
 import {
   integrations,
   memberRoles,
@@ -9,9 +9,9 @@ import {
   organizations,
   profiles,
   projects,
-} from "../packages/sdk/src/mcp/schema.ts";
-import { WELL_KNOWN_PLANS } from "../packages/sdk/src/plan.ts";
-import { PgTableWithColumns } from "drizzle-orm/pg-core";
+} from "../../packages/sdk/src/mcp/schema.ts";
+import { WELL_KNOWN_PLANS } from "../../packages/sdk/src/plan.ts";
+import type { PgTableWithColumns } from "drizzle-orm/pg-core";
 
 const orgsWithProblem = new Map<string, any>();
 

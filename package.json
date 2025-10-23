@@ -15,6 +15,9 @@
     "docs:deploy": "cd docs && npm run deploy",
     "build": "PWD=$PWD/apps/web npm run build",
     "ui": "npx shadcn@latest add -c ./packages/ui",
+    "download-secrets": "bun run --cwd scripts download-secrets",
+    "ci:download-secrets": "bun run --cwd scripts ci:download-secrets",
+    "ci:publish-default-apps": "bun run --cwd scripts ci:publish-default-apps",
     "clean": "rm -f deno.lock package-lock.json bun.lock && rm -rf node_modules apps/*/node_modules packages/*/node_modules",
     "db:repair": "supabase migration repair --status reverted",
     "db:migration": "supabase migration up --linked --include-all",
@@ -24,7 +27,8 @@
   },
   "workspaces": [
     "apps/*",
-    "packages/*"
+    "packages/*",
+    "scripts"
   ],
   "devDependencies": {
     "@biomejs/biome": "2.2.5",

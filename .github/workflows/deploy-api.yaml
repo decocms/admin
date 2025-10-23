@@ -96,7 +96,7 @@ jobs:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
       - name: Publish Apps
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-        run: bun run ./scripts/publish.ts
+        run: bun run ci:publish-default-apps
         env:
           DECO_TOKEN: ${{ secrets.DECO_TOKEN }}
           PROJECT: /deco/default

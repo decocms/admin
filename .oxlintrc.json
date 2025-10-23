@@ -1,7 +1,7 @@
 {
   "jsPlugins": ["./plugins/enforce-kebab-case-file-names.js"],
   "ignorePatterns": [
-    "scripts/migrate-project-entity-table.ts",
+    "scripts/migrations/migrate-project-entity-table.ts",
     "packages/sdk/src/observability/otel/*",
     "docs/*"
   ],

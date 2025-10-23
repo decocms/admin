@@ -1,0 +1,17 @@
+{
+  "name": "scripts",
+  "private": true,
+  "devDependencies": {
+    "@google-cloud/secret-manager": "^6.1.1",
+    "@types/bun": "latest",
+    "drizzle-orm": "1.0.0-beta.1-ac4ce44"
+  },
+  "peerDependencies": {
+    "typescript": "^5"
+  },
+  "scripts": {
+    "download-secrets": "bun run secrets/gsm-download-secrets.ts",
+    "ci:download-secrets": "bun run ci/gsm-download-to-secret-json.ts",
+    "ci:publish-default-apps": "bun run ci/publish-default-apps.ts"
+  }
+}

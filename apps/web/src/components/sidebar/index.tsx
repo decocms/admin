@@ -243,7 +243,9 @@ function WorkspaceViews() {
 
   // Drag and drop state for pinned items
   const [draggedItem, setDraggedItem] = useState<number | null>(null);
+  const [dragOverItem, setDragOverItem] = useState<number | null>(null);
   const [isDragMode, setIsDragMode] = useState(false);
+  const draggedItemIdRef = useRef<string | null>(null);
 
   // Unified pinned items order stored in localStorage
   const [pinnedOrder, setPinnedOrder] = useState<string[]>(() => {
@@ -255,9 +257,13 @@ function WorkspaceViews() {
   const handleDragStart = (e: React.DragEvent, index: number) => {
     e.stopPropagation();
 
+    const itemId = allPinnedItems[index]?.id;
     setDraggedItem(index);
+    // Store the item ID to track it as it moves
+    draggedItemIdRef.current = itemId || null;
+    
     e.dataTransfer.effectAllowed = "move";
-    e.dataTransfer.setData("text/plain", index.toString());
+    e.dataTransfer.setData("text/plain", itemId || "");
 
     // Use the current element as drag image with better offset
     // Position it so the cursor is at the left edge, vertically centered
@@ -272,47 +278,47 @@ function WorkspaceViews() {
     e.preventDefault();
     e.dataTransfer.dropEffect = "move";
 
-    if (draggedItem === null) return;
-    if (draggedItem === index) return;
+    if (draggedItemIdRef.current === null) return;
+    
+    // Find current position of the dragged item
+    const currentDraggedIndex = allPinnedItems.findIndex(
+      (item) => item.id === draggedItemIdRef.current
+    );
+    
+    if (currentDraggedIndex === -1) return;
+    if (currentDraggedIndex === index) return;
 
-    // Live reorder: swap items as we drag over them
+    // Live swap: reorder items as we drag over them
     setPinnedOrder((prev) => {
       const newOrder = [...prev];
-      const [removed] = newOrder.splice(draggedItem, 1);
+      const [removed] = newOrder.splice(currentDraggedIndex, 1);
       newOrder.splice(index, 0, removed);
       return newOrder;
     });
-
-    // Update the dragged item index to the new position
-    setDraggedItem(index);
   };
 
   const handleDragLeave = () => {
-    // Not needed with live reordering
+    // Not needed for swap behavior
   };
 
   const handleDrop = (e: React.DragEvent, dropIndex: number) => {
     e.preventDefault();
     e.stopPropagation();
 
-    // Save the final order to localStorage
+    // Just save to localStorage (order already updated during dragOver)
     localStorage.setItem(
       `pinned-order-${org}-${project}`,
       JSON.stringify(pinnedOrder),
     );
 
     setDraggedItem(null);
+    setDragOverItem(null);
   };
 
   const handleDragEnd = () => {
-    // Save the final order to localStorage in case drop wasn't called
-    if (draggedItem !== null) {
-      localStorage.setItem(
-        `pinned-order-${org}-${project}`,
-        JSON.stringify(pinnedOrder),
-      );
-    }
     setDraggedItem(null);
+    setDragOverItem(null);
+    draggedItemIdRef.current = null;
   };
 
   // Command palette
@@ -649,8 +655,8 @@ function WorkspaceViews() {
             onDragEnd={isDragMode ? handleDragEnd : undefined}
             className={
               isDragMode
-                ? `cursor-grab active:cursor-grabbing transition-all
-                   ${draggedItem === index ? "opacity-50" : ""}`
+                ? `cursor-grab active:cursor-grabbing transition-all duration-150
+                   ${draggedItem !== null && draggedItemIdRef.current === item.id ? "opacity-50" : ""}`
                 : ""
             }
           >
@@ -711,49 +717,49 @@ function WorkspaceViews() {
           onDragLeave={isDragMode ? handleDragLeave : undefined}
           onDrop={isDragMode ? (e) => handleDrop(e, index) : undefined}
           onDragEnd={isDragMode ? handleDragEnd : undefined}
-          className={
-            isDragMode
-              ? `cursor-grab active:cursor-grabbing transition-all
-                 ${draggedItem === index ? "opacity-50" : ""}`
-              : ""
-          }
-        >
-          <WithActive to={href}>
-            {({ isActive }) => (
-              <SidebarMenuButton
-                asChild
-                isActive={isActive}
-                className="w-full pr-2"
-              >
-                <Link
-                  to={href}
-                  className="group/item relative"
-                  onClick={(e) => {
-                    if (isDragMode) {
-                      e.preventDefault();
-                      return;
-                    }
-                    trackEvent("sidebar_navigation_click", {
-                      item: displayTitle,
-                    });
-                    isMobile && toggleSidebar();
-                  }}
+            className={
+              isDragMode
+                ? `cursor-grab active:cursor-grabbing transition-all duration-150
+                   ${draggedItem !== null && draggedItemIdRef.current === item.id ? "opacity-50" : ""}`
+                : ""
+            }
+          >
+            <WithActive to={href}>
+              {({ isActive }) => (
+                <SidebarMenuButton
+                  asChild
+                  isActive={isActive}
+                  className="w-full pr-2"
                 >
-                  {isDragMode && (
+                  <Link
+                    to={href}
+                    className="group/item relative"
+                    onClick={(e) => {
+                      if (isDragMode) {
+                        e.preventDefault();
+                        return;
+                      }
+                      trackEvent("sidebar_navigation_click", {
+                        item: displayTitle,
+                      });
+                      isMobile && toggleSidebar();
+                    }}
+                  >
+                    {isDragMode && (
+                      <Icon
+                        name="drag_indicator"
+                        size={16}
+                        className="text-muted-foreground shrink-0"
+                      />
+                    )}
                     <Icon
-                      name="drag_indicator"
-                      size={16}
-                      className="text-muted-foreground shrink-0"
+                      name={view.icon}
+                      size={20}
+                      className="text-muted-foreground/75 shrink-0"
                     />
-                  )}
-                  <Icon
-                    name={view.icon}
-                    size={20}
-                    className="text-muted-foreground/75 shrink-0"
-                  />
-                  <span className="truncate flex-1 min-w-0 group-hover/item:pr-8">
-                    {displayTitle}
-                  </span>
+                    <span className="truncate flex-1 min-w-0 group-hover/item:pr-8">
+                      {displayTitle}
+                    </span>
                   {view.badge && (
                     <Badge variant="secondary" className="text-xs">
                       {view.badge}
@@ -808,8 +814,8 @@ function WorkspaceViews() {
               onDragEnd={isDragMode ? handleDragEnd : undefined}
               className={
                 isDragMode
-                  ? `cursor-grab active:cursor-grabbing transition-all
-                 ${draggedItem === index ? "opacity-50" : ""}`
+                ? `cursor-grab active:cursor-grabbing transition-all duration-150
+                        ${draggedItemIdRef.current === item.id ? "opacity-50" : ""}`
                   : ""
               }
             >
@@ -890,8 +896,8 @@ function WorkspaceViews() {
             onDragEnd={isDragMode ? handleDragEnd : undefined}
             className={
               isDragMode
-                ? `cursor-grab active:cursor-grabbing transition-all
-                   ${draggedItem === index ? "opacity-50" : ""}`
+                ? `cursor-grab active:cursor-grabbing transition-all duration-150
+                        ${draggedItemIdRef.current === item.id ? "opacity-50" : ""}`
                 : ""
             }
           >
@@ -1014,8 +1020,8 @@ function WorkspaceViews() {
             onDragEnd={isDragMode ? handleDragEnd : undefined}
             className={
               isDragMode
-                ? `cursor-grab active:cursor-grabbing transition-all
-                   ${draggedItem === index ? "opacity-50" : ""}`
+                ? `cursor-grab active:cursor-grabbing transition-all duration-150
+                        ${draggedItemIdRef.current === item.id ? "opacity-50" : ""}`
                 : ""
             }
           >
@@ -1098,8 +1104,8 @@ function WorkspaceViews() {
           onDragEnd={isDragMode ? handleDragEnd : undefined}
           className={
             isDragMode
-              ? `cursor-grab active:cursor-grabbing transition-all
-                 ${draggedItem === index ? "opacity-50" : ""}`
+                ? `cursor-grab active:cursor-grabbing transition-all duration-150
+                        ${draggedItemIdRef.current === item.id ? "opacity-50" : ""}`
               : ""
           }
         >
@@ -1263,8 +1269,8 @@ function WorkspaceViews() {
           onDragEnd={isDragMode ? handleDragEnd : undefined}
           className={
             isDragMode
-              ? `cursor-grab active:cursor-grabbing transition-all
-                 ${draggedItem === index ? "opacity-50" : ""}`
+                ? `cursor-grab active:cursor-grabbing transition-all duration-150
+                        ${draggedItemIdRef.current === item.id ? "opacity-50" : ""}`
               : ""
           }
         >
@@ -1427,7 +1433,7 @@ function WorkspaceViews() {
 
       {/* SECTION 2: PINNED */}
       <SidebarMenuItem>
-        <div className="px-2 py-1 text-xs font-medium text-muted-foreground flex items-center justify-between">
+        <div className="px-2 py-0 text-xs font-medium text-muted-foreground flex items-center justify-between">
           <span>Pinned</span>
           <button
             onClick={() => setIsDragMode(!isDragMode)}
@@ -1499,8 +1505,8 @@ function WorkspaceViews() {
                 onDragEnd={isDragMode ? handleDragEnd : undefined}
                 className={
                   isDragMode
-                    ? `cursor-grab active:cursor-grabbing transition-all
-                     ${draggedItem === allPinnedItems.findIndex((i) => i.id === `native:::${item.title}`) ? "opacity-50" : ""}
+                    ? `cursor-grab active:cursor-grabbing transition-all duration-150
+                     ${draggedItem !== null && draggedItemIdRef.current === `native:::${item.title}` ? "opacity-50" : ""}
 `
                     : ""
                 }
@@ -1591,8 +1597,8 @@ function WorkspaceViews() {
               onDragEnd={isDragMode ? handleDragEnd : undefined}
               className={
                 isDragMode
-                  ? `cursor-grab active:cursor-grabbing transition-all
-                   ${draggedItem === allPinnedItems.findIndex((i) => i.id === view.id) ? "opacity-50" : ""}
+                  ? `cursor-grab active:cursor-grabbing transition-all duration-150
+                    ${draggedItem !== null && draggedItemIdRef.current === view.id ? "opacity-50" : ""}
 `
                   : ""
               }
@@ -1707,8 +1713,8 @@ function WorkspaceViews() {
                 onDragEnd={isDragMode ? handleDragEnd : undefined}
                 className={
                   isDragMode
-                    ? `cursor-grab active:cursor-grabbing transition-all
-                     ${draggedItem === allPinnedItems.findIndex((i) => i.id === `integration:::${integrationId}`) ? "opacity-50" : ""}
+                    ? `cursor-grab active:cursor-grabbing transition-all duration-150
+                      ${draggedItem !== null && draggedItemIdRef.current === `integration:::${integrationId}` ? "opacity-50" : ""}
 `
                     : ""
                 }
@@ -1859,8 +1865,8 @@ function WorkspaceViews() {
               onDragEnd={isDragMode ? handleDragEnd : undefined}
               className={
                 isDragMode
-                  ? `cursor-grab active:cursor-grabbing transition-all
-                   ${draggedItem === allPinnedItems.findIndex((i) => i.id === `integration:::${integrationId}`) ? "opacity-50" : ""}`
+                  ? `cursor-grab active:cursor-grabbing transition-all duration-150
+                   ${draggedItem !== null && draggedItemIdRef.current === `integration:::${integrationId}` ? "opacity-50" : ""}`
                   : ""
               }
             >
@@ -2052,8 +2058,8 @@ function WorkspaceViews() {
                   onDragEnd={isDragMode ? handleDragEnd : undefined}
                   className={
                     isDragMode
-                      ? `cursor-grab active:cursor-grabbing transition-all
-                       ${draggedItem === allPinnedItems.findIndex((i) => i.id === `integration-resource:::${integrationId}`) ? "opacity-50" : ""}
+                      ? `cursor-grab active:cursor-grabbing transition-all duration-150
+                        ${draggedItem !== null && draggedItemIdRef.current === `integration-resource:::${integrationId}` ? "opacity-50" : ""}
 `
                       : ""
                   }
@@ -2163,8 +2169,8 @@ function WorkspaceViews() {
                 onDragEnd={isDragMode ? handleDragEnd : undefined}
                 className={
                   isDragMode
-                    ? `cursor-grab active:cursor-grabbing transition-all
-                     ${draggedItem === allPinnedItems.findIndex((i) => i.id === `integration-resource:::${integrationId}`) ? "opacity-50" : ""}`
+                    ? `cursor-grab active:cursor-grabbing transition-all duration-150
+                     ${draggedItem !== null && draggedItemIdRef.current === `integration-resource:::${integrationId}` ? "opacity-50" : ""}`
                     : ""
                 }
               >
@@ -2302,8 +2308,8 @@ function WorkspaceViews() {
               onDragEnd={isDragMode ? handleDragEnd : undefined}
               className={
                 isDragMode
-                  ? `cursor-grab active:cursor-grabbing transition-all
-                     ${draggedItem === allPinnedItems.findIndex((i) => i.id === `pinned:::${resource.id}`) ? "opacity-50" : ""}
+                  ? `cursor-grab active:cursor-grabbing transition-all duration-150
+                      ${draggedItem !== null && draggedItemIdRef.current === `pinned:::${resource.id}` ? "opacity-50" : ""}
 `
                   : ""
               }

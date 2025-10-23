@@ -62,17 +62,20 @@ export interface RuntimeError {
 
 export interface RuntimeErrorEntry {
   message: string;
+  name: string;
+  stack?: string;
   timestamp: string;
+  type?: string;
+  // Resource context
+  resourceUri?: string;
+  resourceName?: string;
+  // Error source location (for view errors)
   source?: string;
   line?: number;
   column?: number;
-  stack?: string;
-  name: string;
-  type?: string;
+  // Additional context
   target?: string;
   reason?: unknown;
-  viewUri?: string;
-  viewName?: string;
 }
 
 export interface AgenticChatProviderProps {
@@ -126,7 +129,11 @@ export interface AgenticChatContextValue {
   runtimeError: RuntimeError | null;
   runtimeErrorEntries: RuntimeErrorEntry[];
   showError: (error: RuntimeError) => void;
-  appendError: (error: RuntimeErrorEntry) => void;
+  appendError: (
+    error: Error | unknown | RuntimeErrorEntry,
+    resourceUri?: string,
+    resourceName?: string,
+  ) => void;
   clearError: () => void;
 
   // UI options
@@ -215,10 +222,40 @@ export function sendTextMessage(
   );
 }
 
-export function appendRuntimeError(error: RuntimeErrorEntry) {
+export function appendRuntimeError(
+  error: Error | unknown | RuntimeErrorEntry,
+  resourceUri?: string,
+  resourceName?: string,
+) {
+  // If it's already a RuntimeErrorEntry, use it directly
+  if (
+    error &&
+    typeof error === "object" &&
+    "message" in error &&
+    "timestamp" in error
+  ) {
+    window.dispatchEvent(
+      new CustomEvent("decopilot:appendError", {
+        detail: error,
+      }),
+    );
+    return;
+  }
+
+  // Otherwise, create a RuntimeErrorEntry from the error
+  const isError = error instanceof Error;
+  const runtimeError: RuntimeErrorEntry = {
+    message: isError ? error.message : String(error),
+    name: isError ? error.name : "Error",
+    stack: isError ? error.stack : undefined,
+    timestamp: new Date().toISOString(),
+    resourceUri,
+    resourceName,
+  };
+
   window.dispatchEvent(
     new CustomEvent("decopilot:appendError", {
-      detail: error,
+      detail: runtimeError,
     }),
   );
 }
@@ -276,9 +313,41 @@ export function AgenticChatProvider({
     dispatch({ type: "SET_RUNTIME_ERROR", runtimeError: error });
   }, []);
 
-  const appendError = useCallback((error: RuntimeErrorEntry) => {
-    dispatch({ type: "APPEND_RUNTIME_ERROR", error });
-  }, []);
+  const appendError = useCallback(
+    (
+      error: Error | unknown | RuntimeErrorEntry,
+      resourceUri?: string,
+      resourceName?: string,
+    ) => {
+      // If it's already a RuntimeErrorEntry, use it directly
+      if (
+        error &&
+        typeof error === "object" &&
+        "message" in error &&
+        "timestamp" in error
+      ) {
+        dispatch({
+          type: "APPEND_RUNTIME_ERROR",
+          error: error as RuntimeErrorEntry,
+        });
+        return;
+      }
+
+      // Otherwise, create a RuntimeErrorEntry from the error
+      const isError = error instanceof Error;
+      const runtimeError: RuntimeErrorEntry = {
+        message: isError ? error.message : String(error),
+        name: isError ? error.name : "Error",
+        stack: isError ? error.stack : undefined,
+        timestamp: new Date().toISOString(),
+        resourceUri,
+        resourceName,
+      };
+
+      dispatch({ type: "APPEND_RUNTIME_ERROR", error: runtimeError });
+    },
+    [],
+  );
 
   const clearError = useCallback(() => {
     dispatch({ type: "CLEAR_RUNTIME_ERRORS" });
@@ -623,8 +692,8 @@ export function AgenticChatProvider({
     if (runtimeErrorEntries.length > 0) {
       // Get context from the first error entry
       const firstError = runtimeErrorEntries[0];
-      const viewUri = firstError.viewUri;
-      const viewName = firstError.viewName || "unknown";
+      const resourceUri = firstError.resourceUri;
+      const resourceName = firstError.resourceName || "unknown";
 
       // Format all errors into a summary
       const errorSummary = runtimeErrorEntries
@@ -637,7 +706,7 @@ export function AgenticChatProvider({
         })
         .join("\n\n");
 
-      const fullMessage = `The view "${viewName}" is encountering ${runtimeErrorEntries.length} runtime error${runtimeErrorEntries.length > 1 ? "s" : ""}:\n\n${errorSummary}\n\nPlease help fix these errors in the view code.`;
+      const fullMessage = `The resource "${resourceName}" is encountering ${runtimeErrorEntries.length} error${runtimeErrorEntries.length > 1 ? "s" : ""}:\n\n${errorSummary}\n\nPlease help fix ${runtimeErrorEntries.length > 1 ? "these errors" : "this error"}.`;
 
       const formattedError = {
         message: fullMessage,
@@ -645,8 +714,8 @@ export function AgenticChatProvider({
         errorCount: runtimeErrorEntries.length,
         context: {
           errorType: "runtime_errors",
-          viewUri,
-          viewName,
+          resourceUri,
+          resourceName,
           errorCount: runtimeErrorEntries.length,
           errors: runtimeErrorEntries,
         },

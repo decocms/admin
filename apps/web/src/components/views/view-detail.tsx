@@ -74,34 +74,31 @@ export function ViewDetail({ resourceUri }: ViewDetailProps) {
       // Handle Runtime Error messages
       if (event.data.type === "RUNTIME_ERROR") {
         const errorData = event.data.payload as RuntimeErrorEntry;
-        appendRuntimeError({
-          ...errorData,
-          type: "Runtime Error",
-          viewUri: resourceUri,
-          viewName: effectiveView?.name,
-        });
+        appendRuntimeError(
+          { ...errorData, type: "Runtime Error" },
+          resourceUri,
+          effectiveView?.name,
+        );
       }
 
       // Handle Resource Error messages
       if (event.data.type === "RESOURCE_ERROR") {
         const errorData = event.data.payload as RuntimeErrorEntry;
-        appendRuntimeError({
-          ...errorData,
-          type: "Resource Error",
-          viewUri: resourceUri,
-          viewName: effectiveView?.name,
-        });
+        appendRuntimeError(
+          { ...errorData, type: "Resource Error" },
+          resourceUri,
+          effectiveView?.name,
+        );
       }
 
       // Handle Unhandled Promise Rejection messages
       if (event.data.type === "UNHANDLED_REJECTION") {
         const errorData = event.data.payload as RuntimeErrorEntry;
-        appendRuntimeError({
-          ...errorData,
-          type: "Unhandled Rejection",
-          viewUri: resourceUri,
-          viewName: effectiveView?.name,
-        });
+        appendRuntimeError(
+          { ...errorData, type: "Unhandled Rejection" },
+          resourceUri,
+          effectiveView?.name,
+        );
       }
     }
 

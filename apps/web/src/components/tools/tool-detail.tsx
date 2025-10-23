@@ -20,6 +20,7 @@ import validator from "@rjsf/validator-ajv8";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useParams } from "react-router";
 import { z } from "zod";
+import { appendRuntimeError, clearRuntimeError } from "../chat/provider.tsx";
 import { JsonViewer } from "../chat/json-viewer.tsx";
 import { DetailSection } from "../common/detail-section.tsx";
 import { EmptyState } from "../common/empty-state.tsx";
@@ -87,6 +88,11 @@ export function ToolDetail({ resourceUri }: ToolDisplayCanvasProps) {
     addRecent,
   ]);
 
+  // Clear errors when tool changes
+  useEffect(() => {
+    clearRuntimeError();
+  }, [resourceUri]);
+
   // Tool execution state
   const [executionResult, setExecutionResult] =
     useState<ToolCallResultV2 | null>(null);
@@ -150,18 +156,35 @@ export function ToolDetail({ resourceUri }: ToolDisplayCanvasProps) {
         const resultText = JSON.stringify(result);
         const resultTokens = estimateTokens(resultText);
 
+        if (result.error) {
+          throw new Error(
+            typeof result.error === "string"
+              ? result.error
+              : JSON.stringify(result.error),
+          );
+        }
+
         setExecutionResult(result);
         setExecutionStats({
           latency: Math.round(latency),
           byteSize: inputByteSize + resultByteSize,
           estimatedTokens: inputTokens + resultTokens,
         });
+
+        // Clear any previous errors on successful execution
+        clearRuntimeError();
       } catch (error) {
         console.error("Tool execution failed:", error);
+
+        const errorMessage =
+          error instanceof Error ? error.message : "Unknown error occurred";
+
         setExecutionResult({
-          error:
-            error instanceof Error ? error.message : "Unknown error occurred",
+          error: errorMessage,
         });
+
+        // Send error to chat provider for AI assistance
+        appendRuntimeError(error, resourceUri, effectiveTool.name);
       } finally {
         setIsExecuting(false);
       }

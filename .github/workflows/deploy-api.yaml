@@ -23,8 +23,25 @@ jobs:
 
       - name: Install dependencies
         working-directory: ./apps/api
-        run: |
-          bun install
+        run: bun install
+
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v2
+        with:
+          credentials_json: ${{ secrets.GCP_SERVICE_ACCOUNT_KEY }}
+      
+      - name: Download secrets to .secrets.json
+        run: bun run ci:download-secrets
+        env:
+          # this env is available for gcloud auth inside your script if needed
+          GOOGLE_APPLICATION_CREDENTIALS: /tmp/gcp-key.json
+      
+      - name: Upload secrets to Cloudflare in bulk
+        working-directory: ./apps/api
+        run: npx wrangler secret bulk .secrets.json
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CF_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CF_ACCOUNT_ID }}
 
       - name: Publish
         uses: cloudflare/wrangler-action@v3
@@ -32,69 +49,9 @@ jobs:
           apiToken: ${{ secrets.CF_API_TOKEN }}
           accountId: ${{ secrets.CF_ACCOUNT_ID }}
           workingDirectory: "./apps/api"
-          secrets: |
-            SUPABASE_URL
-            SUPABASE_SERVER_TOKEN
-            CF_ACCOUNT_ID
-            CF_API_TOKEN
-            CF_ZONE_ID
-            CF_DISPATCH_NAMESPACE
-            CF_R2_ACCESS_KEY_ID
-            CF_R2_SECRET_ACCESS_KEY
-            RESEND_API_KEY
-            OPENROUTER_API_KEY
-            WALLET_API_KEY
-            ANTHROPIC_API_KEY
-            OPENAI_API_KEY
-            DEEPSEEK_API_KEY
-            GOOGLE_API_KEY
-            OTEL_EXPORTER_OTLP_ENDPOINT
-            OTEL_EXPORTER_OTLP_HEADERS
-            AWS_ACCESS_KEY_ID
-            AWS_SECRET_ACCESS_KEY
-            AWS_REGION
-            DECO_CHAT_DATA_BUCKET_NAME
-            STRIPE_SECRET_KEY
-            STRIPE_WEBHOOK_SECRET
-            CURRENCY_API_KEY
-            LLMS_ENCRYPTION_KEY
-            DECO_CHAT_API_JWT_PUBLIC_KEY
-            DECO_CHAT_API_JWT_PRIVATE_KEY
-            POSTHOG_API_KEY
-            POSTHOG_API_HOST
-            DATABASE_URL
-        env:
-          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
-          SUPABASE_SERVER_TOKEN: ${{ secrets.SUPABASE_SERVER_TOKEN }}
-          OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
-          CF_API_TOKEN: ${{ secrets.CF_API_TOKEN }}
-          CF_ACCOUNT_ID: ${{ secrets.CF_ACCOUNT_ID }}
-          CF_ZONE_ID: ${{ secrets.CF_ZONE_ID }}
-          CF_DISPATCH_NAMESPACE: "deco-chat-prod"
-          CF_R2_ACCESS_KEY_ID: ${{ secrets.CF_R2_ACCESS_KEY_ID }}
-          CF_R2_SECRET_ACCESS_KEY: ${{ secrets.CF_R2_SECRET_ACCESS_KEY }}
-          WALLET_API_KEY: ${{ secrets.WALLET_API_KEY }}
-          RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
-          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
-          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
-          DEEPSEEK_API_KEY: ${{ secrets.DEEPSEEK_API_KEY }}
-          GOOGLE_API_KEY: ${{ secrets.GOOGLE_API_KEY }}
-          OTEL_EXPORTER_OTLP_ENDPOINT: ${{ secrets.OTEL_EXPORTER_OTLP_ENDPOINT }}
-          OTEL_EXPORTER_OTLP_HEADERS: ${{ secrets.OTEL_EXPORTER_OTLP_HEADERS }}
-          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          AWS_REGION: ${{ secrets.AWS_REGION }}
-          DECO_CHAT_DATA_BUCKET_NAME: ${{ secrets.DECO_CHAT_DATA_BUCKET_NAME }}
-          STRIPE_SECRET_KEY: ${{ secrets.STRIPE_SECRET_KEY }}
-          STRIPE_WEBHOOK_SECRET: ${{ secrets.STRIPE_WEBHOOK_SECRET }}
-          CURRENCY_API_KEY: ${{ secrets.CURRENCY_API_KEY }}
-          DECO_CHAT_API_JWT_PUBLIC_KEY: ${{ secrets.DECO_CHAT_API_JWT_PUBLIC_KEY }}
-          DECO_CHAT_API_JWT_PRIVATE_KEY: ${{ secrets.DECO_CHAT_API_JWT_PRIVATE_KEY }}
-          LLMS_ENCRYPTION_KEY: ${{ secrets.LLMS_ENCRYPTION_KEY }}
-          POSTHOG_API_KEY: ${{ secrets.POSTHOG_API_KEY }}
-          POSTHOG_API_HOST: ${{ secrets.POSTHOG_API_HOST }}
-          DATABASE_URL: ${{ secrets.DATABASE_URL }}
-      - name: Publish Apps
+          command: publish
+
+      - name: Publish default apps
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         run: bun run ci:publish-default-apps
         env:

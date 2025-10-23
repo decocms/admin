@@ -910,6 +910,8 @@ const createSelfTools = async (ctx: Context) => {
         uri: z.string(),
       }),
       handler: async (input: unknown) => {
+        await assertWorkspaceResourceAccess(appCtx, "DECO_TOOL_CALL_TOOL");
+
         // Use DECO_WORKFLOW_START to start the workflow
         return await State.run(appCtx, async () => {
           const workflowBinding = createWorkflowBindingImpl({

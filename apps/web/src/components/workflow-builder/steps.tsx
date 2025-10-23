@@ -36,6 +36,7 @@ import { WorkflowStepCard } from "../workflows/workflow-step-card";
 import { resolveAtRefsInInput, unwrapMCPResponse } from "./utils";
 import { NestedObjectField, WorkflowStepField } from "./workflow-step-field";
 import { WorkflowStoreContext } from "../../stores/workflows/provider";
+import { appendRuntimeError, clearRuntimeError } from "../chat/provider.tsx";
 
 export const WorkflowStepsList = memo(function WorkflowStepsList() {
   const stepNames = useWorkflowStepNames();
@@ -211,6 +212,9 @@ export const WorkflowStepInput = memo(
           setIsSubmitting(true);
           actions.setStepExecutionStart(stepName);
 
+          // Clear any previous errors when starting execution
+          clearRuntimeError();
+
           const { resolved, errors } = resolveAtRefsInInput(
             data,
             stepOutputs,
@@ -238,9 +242,14 @@ export const WorkflowStepInput = memo(
             locator,
           );
 
-          if (result.error) {
+          const error =
+            result?.error ||
+            (result?.structuredContent as { result?: { error?: unknown } })
+              ?.result?.error;
+
+          if (error) {
             throw new Error(
-              `Tool execution failed: ${typeof result.error === "string" ? result.error : JSON.stringify(result.error)}`,
+              `Tool execution failed: ${typeof error === "string" ? error : JSON.stringify(error)}`,
             );
           }
 
@@ -270,6 +279,10 @@ export const WorkflowStepInput = memo(
               : { name: "Error", message: String(error) };
           actions.setStepExecutionEnd(stepName, false, errorObj);
 
+          // Send error to chat provider for AI assistance
+          appendRuntimeError(error, workflowUri, `Workflow Step: ${stepName}`);
+
+          // Still show toast for immediate user feedback
           toast.error(
             error instanceof Error ? error.message : "Failed to run step",
           );

@@ -26,7 +26,7 @@ function escapeScriptTags(code: string): string {
 }
 
 /**
- * Creates the View SDK with tool calling and AI fixing capabilities
+ * Creates the View SDK with tool calling and error tracking capabilities
  * This function will be stringified and injected into the iframe
  *
  * @param apiBase - API base URL
@@ -91,29 +91,6 @@ function createSDK(apiBase: string, ws: string, proj: string) {
       console.error("Tool call error:", error);
       throw error;
     }
-  };
-
-  // @ts-ignore - This function will be stringified and run in the iframe context
-  window.fixWithAI = function (
-    message: string,
-    context?: Record<string, unknown>,
-  ) {
-    if (typeof message !== "string") {
-      console.error("fixWithAI: message must be a string");
-      return;
-    }
-
-    window.parent.postMessage(
-      {
-        type: "FIX_WITH_AI",
-        payload: {
-          message: message,
-          context: context || {},
-          timestamp: new Date().toISOString(),
-        },
-      },
-      "*",
-    );
   };
 
   // Catch runtime errors using window.onerror
@@ -225,6 +202,11 @@ export function generateViewHTML(
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>DECO View</title>
+
+  <!-- View SDK -->
+  <script>
+    (${createSDK.toString()})('${apiBase}', '${ws}', '${proj}');
+  </script>
   
   <!-- Import Maps for Module Resolution -->
   <script type="importmap">
@@ -253,10 +235,7 @@ ${JSON.stringify({ imports: finalImportMap }, null, 4)}
 <body>
   <div id="root"></div>
   
-  <!-- View SDK -->
-  <script>
-    (${createSDK.toString()})('${apiBase}', '${ws}', '${proj}');
-  </script>
+  
   
   <!-- User's React component - visible for debugging -->
   <script type="text/template" id="user-code">
@@ -285,14 +264,6 @@ ${escapedCode}
         '<summary class="cursor-pointer font-bold mb-2 text-sm">View Source Code</summary>' +
         '<pre class="bg-gray-100 p-3 rounded overflow-auto text-xs"><code>' + userCode + '</code></pre>' +
         '</details>' +
-        '<button ' +
-        'onclick="window.fixWithAI(' + 
-        "'The view failed to load with this error:\\\\n\\\\n' + " + JSON.stringify(error.message) + ", { errorType: 'loading_error' })" +
-        '" ' +
-        'class="bg-gradient-to-br from-indigo-500 to-purple-600 text-white border-none px-6 py-3 rounded-md text-sm font-semibold cursor-pointer shadow-md transition-all duration-200 hover:-translate-y-0.5 hover:shadow-lg mt-4"' +
-        '>' +
-        '✨ Fix with AI' +
-        '</button>' +
         '</div>';
       
       document.getElementById('root').innerHTML = errorHtml;

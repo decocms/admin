@@ -40,8 +40,8 @@ import { z } from "zod";
 import { trackEvent } from "../../hooks/analytics.ts";
 import { useTriggerToolCallListeners } from "../../hooks/use-tool-call-listener.ts";
 import { notifyResourceUpdate } from "../../lib/broadcast-channels.ts";
-import { useThreadContext } from "../decopilot/thread-context-provider.tsx";
 import { IMAGE_REGEXP, openPreviewPanel } from "../chat/utils/preview.ts";
+import { useThreadContext } from "../decopilot/thread-context-provider.tsx";
 
 interface UiOptions {
   showModelSelector: boolean;
@@ -51,6 +51,28 @@ interface UiOptions {
   showContextResources: boolean;
   showAddIntegration: boolean;
   readOnly: boolean;
+}
+
+export interface RuntimeError {
+  message: string;
+  displayMessage?: string;
+  errorCount?: number;
+  context?: Record<string, unknown>;
+}
+
+export interface RuntimeErrorEntry {
+  message: string;
+  timestamp: string;
+  source?: string;
+  line?: number;
+  column?: number;
+  stack?: string;
+  name: string;
+  type?: string;
+  target?: string;
+  reason?: unknown;
+  viewUri?: string;
+  viewName?: string;
 }
 
 export interface AgenticChatProviderProps {
@@ -97,7 +119,15 @@ export interface AgenticChatContextValue {
 
   // Chat methods
   sendMessage: (message?: UIMessage) => Promise<void>;
+  sendTextMessage: (text: string, context?: Record<string, unknown>) => void;
   retry: (context?: string[]) => Promise<void>;
+
+  // Runtime error state
+  runtimeError: RuntimeError | null;
+  runtimeErrorEntries: RuntimeErrorEntry[];
+  showError: (error: RuntimeError) => void;
+  appendError: (error: RuntimeErrorEntry) => void;
+  clearError: () => void;
 
   // UI options
   uiOptions: UiOptions;
@@ -129,6 +159,8 @@ interface ChatState {
   finishReason: LanguageModelV2FinishReason | null;
   isLoading: boolean;
   input: string;
+  runtimeError: RuntimeError | null;
+  runtimeErrorEntries: RuntimeErrorEntry[];
 }
 
 type ChatStateAction =
@@ -137,7 +169,10 @@ type ChatStateAction =
       finishReason: LanguageModelV2FinishReason | null;
     }
   | { type: "SET_IS_LOADING"; isLoading: boolean }
-  | { type: "SET_INPUT"; input: string };
+  | { type: "SET_INPUT"; input: string }
+  | { type: "SET_RUNTIME_ERROR"; runtimeError: RuntimeError | null }
+  | { type: "APPEND_RUNTIME_ERROR"; error: RuntimeErrorEntry }
+  | { type: "CLEAR_RUNTIME_ERRORS" };
 
 function chatStateReducer(
   state: ChatState,
@@ -150,6 +185,15 @@ function chatStateReducer(
       return { ...state, isLoading: action.isLoading };
     case "SET_INPUT":
       return { ...state, input: action.input };
+    case "SET_RUNTIME_ERROR":
+      return { ...state, runtimeError: action.runtimeError };
+    case "APPEND_RUNTIME_ERROR":
+      return {
+        ...state,
+        runtimeErrorEntries: [...state.runtimeErrorEntries, action.error],
+      };
+    case "CLEAR_RUNTIME_ERRORS":
+      return { ...state, runtimeErrorEntries: [], runtimeError: null };
     default:
       return state;
   }
@@ -158,6 +202,30 @@ function chatStateReducer(
 export const AgenticChatContext = createContext<AgenticChatContextValue | null>(
   null,
 );
+
+// Standalone functions that dispatch events for components outside the provider
+export function sendTextMessage(
+  text: string,
+  context?: Record<string, unknown>,
+) {
+  window.dispatchEvent(
+    new CustomEvent("decopilot:sendTextMessage", {
+      detail: { text, context },
+    }),
+  );
+}
+
+export function appendRuntimeError(error: RuntimeErrorEntry) {
+  window.dispatchEvent(
+    new CustomEvent("decopilot:appendError", {
+      detail: error,
+    }),
+  );
+}
+
+export function clearRuntimeError() {
+  window.dispatchEvent(new CustomEvent("decopilot:clearError"));
+}
 
 export function AgenticChatProvider({
   agentId,
@@ -182,9 +250,12 @@ export function AgenticChatProvider({
     finishReason: null,
     isLoading: false,
     input: initialInput || "",
+    runtimeError: null,
+    runtimeErrorEntries: [],
   });
 
-  const { finishReason, isLoading, input } = state;
+  const { finishReason, isLoading, input, runtimeError, runtimeErrorEntries } =
+    state;
 
   const setIsLoading = useCallback((value: boolean) => {
     dispatch({ type: "SET_IS_LOADING", isLoading: value });
@@ -199,6 +270,18 @@ export function AgenticChatProvider({
 
   const setInput = useCallback((value: string) => {
     dispatch({ type: "SET_INPUT", input: value });
+  }, []);
+
+  const showError = useCallback((error: RuntimeError) => {
+    dispatch({ type: "SET_RUNTIME_ERROR", runtimeError: error });
+  }, []);
+
+  const appendError = useCallback((error: RuntimeErrorEntry) => {
+    dispatch({ type: "APPEND_RUNTIME_ERROR", error });
+  }, []);
+
+  const clearError = useCallback(() => {
+    dispatch({ type: "CLEAR_RUNTIME_ERRORS" });
   }, []);
 
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -504,6 +587,19 @@ export function AgenticChatProvider({
     [chat.messages, wrappedSendMessage, agentId, threadId],
   );
 
+  const sendTextMessage = useCallback(
+    (text: string) => {
+      if (typeof text === "string" && text.trim()) {
+        wrappedSendMessage({
+          role: "user",
+          id: crypto.randomUUID(),
+          parts: [{ type: "text", text }],
+        });
+      }
+    },
+    [wrappedSendMessage],
+  );
+
   // Auto-send initialInput when autoSend is true
   useEffect(() => {
     if (autoSend && input && chat.messages.length === 0) {
@@ -522,30 +618,102 @@ export function AgenticChatProvider({
     wrappedSendMessage,
   ]);
 
-  // Listen for external sendMessage events from other parts of the UI
+  // Format runtime error entries into a single error message
   useEffect(() => {
-    function handleSendMessage(event: Event) {
+    if (runtimeErrorEntries.length > 0) {
+      // Get context from the first error entry
+      const firstError = runtimeErrorEntries[0];
+      const viewUri = firstError.viewUri;
+      const viewName = firstError.viewName || "unknown";
+
+      // Format all errors into a summary
+      const errorSummary = runtimeErrorEntries
+        .map((error, index) => {
+          const location = error.source
+            ? `\n  Source: ${error.source}:${error.line}:${error.column}`
+            : "";
+          const stack = error.stack ? `\n  Stack: ${error.stack}` : "";
+          return `${index + 1}. [${error.type || error.name}] ${error.message}${location}${stack}`;
+        })
+        .join("\n\n");
+
+      const fullMessage = `The view "${viewName}" is encountering ${runtimeErrorEntries.length} runtime error${runtimeErrorEntries.length > 1 ? "s" : ""}:\n\n${errorSummary}\n\nPlease help fix these errors in the view code.`;
+
+      const formattedError = {
+        message: fullMessage,
+        displayMessage: "App error found",
+        errorCount: runtimeErrorEntries.length,
+        context: {
+          errorType: "runtime_errors",
+          viewUri,
+          viewName,
+          errorCount: runtimeErrorEntries.length,
+          errors: runtimeErrorEntries,
+        },
+      };
+
+      // Dispatch directly to avoid dependency loop with showError
+      dispatch({ type: "SET_RUNTIME_ERROR", runtimeError: formattedError });
+    } else {
+      // Clear error if no entries remain
+      dispatch({ type: "SET_RUNTIME_ERROR", runtimeError: null });
+    }
+  }, [runtimeErrorEntries]);
+
+  // Listen for events from components outside the provider
+  useEffect(() => {
+    function handleSendTextMessage(event: Event) {
       const customEvent = event as CustomEvent<{
-        message: string;
+        text: string;
         context?: Record<string, unknown>;
       }>;
 
-      const { message } = customEvent.detail;
+      const { text } = customEvent.detail;
 
-      if (typeof message === "string" && message.trim()) {
+      if (typeof text === "string" && text.trim()) {
         wrappedSendMessage({
           role: "user",
           id: crypto.randomUUID(),
-          parts: [{ type: "text", text: message }],
+          parts: [{ type: "text", text }],
         });
       }
     }
 
-    window.addEventListener("decopilot:sendMessage", handleSendMessage);
+    function handleAppendError(event: Event) {
+      const customEvent = event as CustomEvent<RuntimeErrorEntry>;
+      appendError(customEvent.detail);
+    }
+
+    function handleClearError() {
+      clearError();
+    }
+
+    function handleShowError(event: Event) {
+      const customEvent = event as CustomEvent<RuntimeError>;
+
+      const { message, displayMessage, errorCount, context } =
+        customEvent.detail;
+
+      if (typeof message === "string" && message.trim()) {
+        showError({ message, displayMessage, errorCount, context });
+      }
+    }
+
+    window.addEventListener("decopilot:sendTextMessage", handleSendTextMessage);
+    window.addEventListener("decopilot:appendError", handleAppendError);
+    window.addEventListener("decopilot:clearError", handleClearError);
+    window.addEventListener("decopilot:showError", handleShowError);
+
     return () => {
-      window.removeEventListener("decopilot:sendMessage", handleSendMessage);
+      window.removeEventListener(
+        "decopilot:sendTextMessage",
+        handleSendTextMessage,
+      );
+      window.removeEventListener("decopilot:appendError", handleAppendError);
+      window.removeEventListener("decopilot:clearError", handleClearError);
+      window.removeEventListener("decopilot:showError", handleShowError);
     };
-  }, [wrappedSendMessage]);
+  }, [showError, clearError, appendError, wrappedSendMessage]);
 
   const contextValue: AgenticChatContextValue = {
     agent: agent as Agent,
@@ -566,7 +734,15 @@ export function AgenticChatProvider({
 
     // Chat methods
     sendMessage: wrappedSendMessage,
+    sendTextMessage,
     retry: handleRetry,
+
+    // Runtime error state
+    runtimeError,
+    runtimeErrorEntries,
+    showError,
+    appendError,
+    clearError,
 
     // UI options
     uiOptions: mergedUiOptions,

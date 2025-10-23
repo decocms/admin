@@ -1,33 +1,24 @@
 import {
   DECO_CMS_API_URL,
-  useViewByUriV2,
-  useSDK,
   useRecentResources,
+  useSDK,
+  useViewByUriV2,
 } from "@deco/sdk";
 import { Icon } from "@deco/ui/components/icon.tsx";
 import { Spinner } from "@deco/ui/components/spinner.tsx";
-import { useMemo, useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef } from "react";
 import { useParams } from "react-router";
-import { EmptyState } from "../common/empty-state.tsx";
-import { PreviewIframe } from "../agent/preview.tsx";
 import { generateViewHTML } from "../../utils/view-template.ts";
-import { useDecopilotOpen } from "../layout/decopilot-layout.tsx";
+import { PreviewIframe } from "../agent/preview.tsx";
+import {
+  appendRuntimeError,
+  clearRuntimeError,
+  type RuntimeErrorEntry,
+} from "../chat/provider.tsx";
+import { EmptyState } from "../common/empty-state.tsx";
 
 interface ViewDetailProps {
   resourceUri: string;
-}
-
-interface RuntimeError {
-  message: string;
-  timestamp: string;
-  source?: string;
-  line?: number;
-  column?: number;
-  stack?: string;
-  name: string;
-  type?: string;
-  target?: string;
-  reason?: unknown;
 }
 
 /**
@@ -42,10 +33,6 @@ export function ViewDetail({ resourceUri }: ViewDetailProps) {
   const projectKey = typeof locator === "string" ? locator : undefined;
   const { addRecent } = useRecentResources(projectKey);
   const hasTrackedRecentRef = useRef(false);
-  const { setOpen: setDecopilotOpen } = useDecopilotOpen();
-
-  // Track runtime errors from iframe
-  const [runtimeErrors, setRuntimeErrors] = useState<RuntimeError[]>([]);
 
   // Track as recently opened when view is loaded (only once)
   useEffect(() => {
@@ -84,99 +71,48 @@ export function ViewDetail({ resourceUri }: ViewDetailProps) {
         return;
       }
 
-      // Handle Fix with AI messages
-      if (event.data.type === "FIX_WITH_AI") {
-        const { message, context } = event.data.payload || {};
-
-        if (typeof message !== "string") {
-          console.error("Invalid FIX_WITH_AI message:", event.data);
-          return;
-        }
-
-        // Open the decopilot chat panel
-        setDecopilotOpen(true);
-
-        // Dispatch custom event for the chat provider to handle
-        window.dispatchEvent(
-          new CustomEvent("decopilot:sendMessage", {
-            detail: { message, context },
-          }),
-        );
-      }
-
       // Handle Runtime Error messages
       if (event.data.type === "RUNTIME_ERROR") {
-        const errorData = event.data.payload as RuntimeError;
-        setRuntimeErrors((prev) => [
-          ...prev,
-          { ...errorData, type: "Runtime Error" },
-        ]);
+        const errorData = event.data.payload as RuntimeErrorEntry;
+        appendRuntimeError({
+          ...errorData,
+          type: "Runtime Error",
+          viewUri: resourceUri,
+          viewName: effectiveView?.name,
+        });
       }
 
       // Handle Resource Error messages
       if (event.data.type === "RESOURCE_ERROR") {
-        const errorData = event.data.payload as RuntimeError;
-        setRuntimeErrors((prev) => [
-          ...prev,
-          { ...errorData, type: "Resource Error" },
-        ]);
+        const errorData = event.data.payload as RuntimeErrorEntry;
+        appendRuntimeError({
+          ...errorData,
+          type: "Resource Error",
+          viewUri: resourceUri,
+          viewName: effectiveView?.name,
+        });
       }
 
       // Handle Unhandled Promise Rejection messages
       if (event.data.type === "UNHANDLED_REJECTION") {
-        const errorData = event.data.payload as RuntimeError;
-        setRuntimeErrors((prev) => [
-          ...prev,
-          { ...errorData, type: "Unhandled Rejection" },
-        ]);
+        const errorData = event.data.payload as RuntimeErrorEntry;
+        appendRuntimeError({
+          ...errorData,
+          type: "Unhandled Rejection",
+          viewUri: resourceUri,
+          viewName: effectiveView?.name,
+        });
       }
     }
 
     window.addEventListener("message", handleMessage);
     return () => window.removeEventListener("message", handleMessage);
-  }, [setDecopilotOpen]);
+  }, [resourceUri, effectiveView?.name]);
 
-  // Reset runtime errors when view changes
+  // Clear errors when view changes
   useEffect(() => {
-    setRuntimeErrors([]);
-    // Clear error banner in chat when view changes
-    window.dispatchEvent(new CustomEvent("decopilot:clearError"));
+    clearRuntimeError();
   }, [resourceUri]);
-
-  // Show error banner in chat when errors occur
-  useEffect(() => {
-    if (runtimeErrors.length > 0) {
-      const errorSummary = runtimeErrors
-        .map((error, index) => {
-          const location = error.source
-            ? `\n  Source: ${error.source}:${error.line}:${error.column}`
-            : "";
-          const stack = error.stack ? `\n  Stack: ${error.stack}` : "";
-          return `${index + 1}. [${error.type || error.name}] ${error.message}${location}${stack}`;
-        })
-        .join("\n\n");
-
-      const fullMessage = `The view "${effectiveView?.name || "unknown"}" is encountering ${runtimeErrors.length} runtime error${runtimeErrors.length > 1 ? "s" : ""}:\n\n${errorSummary}\n\nPlease help fix these errors in the view code.`;
-
-      // Dispatch error event to show banner in chat
-      window.dispatchEvent(
-        new CustomEvent("decopilot:showError", {
-          detail: {
-            message: fullMessage,
-            displayMessage: "App error found",
-            errorCount: runtimeErrors.length,
-            context: {
-              errorType: "runtime_errors",
-              viewUri: resourceUri,
-              viewName: effectiveView?.name,
-              errorCount: runtimeErrors.length,
-              errors: runtimeErrors,
-            },
-          },
-        }),
-      );
-    }
-  }, [runtimeErrors, resourceUri, effectiveView?.name]);
 
   // Generate HTML from React code on the client side
   const htmlValue = useMemo(() => {

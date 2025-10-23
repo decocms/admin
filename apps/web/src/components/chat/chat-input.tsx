@@ -23,14 +23,14 @@ import { useAgentSettingsToolsSet } from "../../hooks/use-agent-settings-tools-s
 import { useFileUpload } from "../../hooks/use-file-upload.ts";
 import { useUserPreferences } from "../../hooks/use-user-preferences.ts";
 import { ContextResources } from "../chat/context-resources.tsx";
-import { useAgenticChat } from "./provider.tsx";
 import { useThreadContext } from "../decopilot/thread-context-provider.tsx";
-import type { ToolsetContextItem } from "./types.ts";
 import { SelectConnectionDialog } from "../integrations/select-connection-dialog.tsx";
 import { AudioButton } from "./audio-button.tsx";
-import { ModelSelector } from "./model-selector.tsx";
-import { RichTextArea, type RichTextAreaHandle } from "./rich-text.tsx";
 import { ErrorBanner } from "./error-banner.tsx";
+import { ModelSelector } from "./model-selector.tsx";
+import { useAgenticChat } from "./provider.tsx";
+import { RichTextArea, type RichTextAreaHandle } from "./rich-text.tsx";
+import type { ToolsetContextItem } from "./types.ts";
 
 export function ChatInput({
   disabled,
@@ -39,8 +39,18 @@ export function ChatInput({
   disabled?: boolean;
   rightNode?: ReactNode;
 } = {}) {
-  const { chat, input, setInput, agent, sendMessage, isLoading, uiOptions } =
-    useAgenticChat();
+  const {
+    chat,
+    input,
+    setInput,
+    agent,
+    sendMessage,
+    sendTextMessage,
+    isLoading,
+    uiOptions,
+    runtimeError,
+    clearError,
+  } = useAgenticChat();
   const { stop } = chat;
   const { preferences, setPreferences } = useUserPreferences();
   const { enableAllTools } = useAgentSettingsToolsSet();
@@ -48,12 +58,6 @@ export function ChatInput({
   const richTextRef = useRef<RichTextAreaHandle>(null);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const selectDialogTriggerRef = useRef<HTMLButtonElement>(null);
-  const [runtimeError, setRuntimeError] = useState<{
-    message: string;
-    displayMessage?: string;
-    errorCount?: number;
-    context?: Record<string, unknown>;
-  } | null>(null);
 
   const {
     uploadedFiles,
@@ -97,36 +101,6 @@ export function ChatInput({
     },
     [setPreferences, preferences],
   );
-
-  // Listen for runtime error events from views
-  useEffect(() => {
-    function handleRuntimeError(event: Event) {
-      const customEvent = event as CustomEvent<{
-        message: string;
-        displayMessage?: string;
-        errorCount?: number;
-        context?: Record<string, unknown>;
-      }>;
-
-      const { message, displayMessage, errorCount, context } =
-        customEvent.detail;
-
-      if (typeof message === "string" && message.trim()) {
-        setRuntimeError({ message, displayMessage, errorCount, context });
-      }
-    }
-
-    function handleClearError() {
-      setRuntimeError(null);
-    }
-
-    window.addEventListener("decopilot:showError", handleRuntimeError);
-    window.addEventListener("decopilot:clearError", handleClearError);
-    return () => {
-      window.removeEventListener("decopilot:showError", handleRuntimeError);
-      window.removeEventListener("decopilot:clearError", handleClearError);
-    };
-  }, []);
 
   // Auto-focus when loading state changes from true to false
   useEffect(() => {
@@ -189,22 +163,15 @@ export function ChatInput({
     if (!runtimeError) return;
 
     // Send the error message to chat
-    window.dispatchEvent(
-      new CustomEvent("decopilot:sendMessage", {
-        detail: {
-          message: runtimeError.message,
-          context: runtimeError.context,
-        },
-      }),
-    );
+    sendTextMessage(runtimeError.message, runtimeError.context);
 
     // Clear the error banner after sending
-    setRuntimeError(null);
-  }, [runtimeError]);
+    clearError();
+  }, [runtimeError, clearError, sendTextMessage]);
 
   const handleDismissError = useCallback(() => {
-    setRuntimeError(null);
-  }, []);
+    clearError();
+  }, [clearError]);
 
   const onSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();

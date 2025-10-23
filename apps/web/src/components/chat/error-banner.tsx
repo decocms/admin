@@ -51,7 +51,7 @@ export function ErrorBanner({
             size="sm"
             className="bg-background border-input h-8 px-3 py-2 shrink-0 gap-2"
           >
-            Try to fix
+            Fix in chat
             {errorCount !== undefined && errorCount > 0 && (
               <span className="font-mono text-xs text-muted-foreground">
                 {errorCount}

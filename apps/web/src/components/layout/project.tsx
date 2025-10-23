@@ -155,7 +155,7 @@ export function ProjectLayout() {
                         <ProjectSidebar />
                         <SidebarInset className="h-[calc(100vh-48px)] flex-col bg-sidebar">
                           <ResizablePanelGroup direction="horizontal">
-                            <ResizablePanel>
+                            <ResizablePanel className="bg-background">
                               <Suspense
                                 fallback={
                                   <div className="h-[calc(100vh-48px)] w-full grid place-items-center">

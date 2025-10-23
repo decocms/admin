@@ -107,7 +107,7 @@ export function OrgsLayout() {
                   <OrgsSidebar />
                   <SidebarInset className="h-full flex-col bg-sidebar">
                     <ResizablePanelGroup direction="horizontal">
-                      <ResizablePanel>
+                      <ResizablePanel className="bg-background">
                         {/* Topbar height is 48px */}
                         <ScrollArea className="h-[calc(100vh-48px)]">
                           <Suspense

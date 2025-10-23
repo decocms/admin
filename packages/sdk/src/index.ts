@@ -67,6 +67,8 @@ export * from "./hooks/workflow-step-generator.ts";
 export * from "./hooks/workflows.ts";
 export * from "./hooks/use-recent-resources.ts";
 export * from "./hooks/use-pinned-resources.ts";
+export * from "./hooks/use-unpinned-native-views.ts";
+export * from "./hooks/use-track-native-view-visit.ts";
 export {
   WorkflowDefinitionSchema,
   WorkflowStepDefinitionSchema,

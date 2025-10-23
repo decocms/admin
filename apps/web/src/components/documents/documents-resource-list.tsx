@@ -4,6 +4,8 @@ import { useNavigateWorkspace } from "../../hooks/use-navigate-workspace.ts";
 import { useDecopilotOpen } from "../layout/decopilot-layout.tsx";
 import { ResourcesV2List } from "../resources-v2/list.tsx";
 import { useHideLegacyFeatures } from "../../hooks/use-hide-legacy-features.ts";
+import { useTrackNativeViewVisit, useSDK, type View } from "@deco/sdk";
+import { useCurrentTeam } from "../sidebar/team-selector.tsx";
 
 /**
  * Documents resource list component that renders the ResourcesV2List
@@ -19,6 +21,27 @@ export function DocumentsResourceList({
   const navigateWorkspace = useNavigateWorkspace();
   const { setOpen: setDecopilotOpen } = useDecopilotOpen();
   const { showLegacyFeature } = useHideLegacyFeatures();
+  const { locator } = useSDK();
+  const projectKey = typeof locator === "string" ? locator : undefined;
+  const team = useCurrentTeam();
+
+  // Find the Documents view ID
+  const documentsViewId = useMemo(() => {
+    const views = (team?.views ?? []) as View[];
+    const legacyTitleMap: Record<string, string> = { Prompts: "Documents" };
+    const canonicalTitle = (title: string) => legacyTitleMap[title] ?? title;
+    const view = views.find((v) => canonicalTitle(v.title) === "Documents");
+    return view?.id;
+  }, [team?.views]);
+
+  // Track visit to Documents page for recents (only if unpinned)
+  useTrackNativeViewVisit({
+    viewId: documentsViewId || "documents-fallback",
+    viewTitle: "Documents",
+    viewIcon: "docs",
+    viewPath: `/${projectKey}/documents`,
+    projectKey,
+  });
 
   // Automatically open Decopilot if openDecopilot query param is present
   useEffect(() => {

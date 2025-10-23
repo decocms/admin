@@ -8,6 +8,7 @@ import {
   useRecentResources,
   useRemoveResource,
   useRemoveView,
+  useUnpinnedNativeViews,
   useUpsertDocument,
   View,
   AI_APP_PRD_TEMPLATE,
@@ -51,7 +52,15 @@ import {
   useSidebar,
 } from "@deco/ui/components/sidebar.tsx";
 import { Skeleton } from "@deco/ui/components/skeleton.tsx";
-import { type ReactNode, Suspense, useMemo, useState } from "react";
+import {
+  type ReactNode,
+  Suspense,
+  useMemo,
+  useState,
+  type DragEvent,
+  useEffect,
+  useRef,
+} from "react";
 import {
   Link,
   useLocation,
@@ -223,7 +232,88 @@ function WorkspaceViews() {
     pinnedResources: _pinnedResources,
     togglePin: _togglePin,
     isPinned: _isPinned,
+    reorderPinnedResources: _reorderPinnedResources,
   } = usePinnedResources(projectKey);
+
+  const {
+    unpinView: _unpinNativeView,
+    pinView: _pinNativeView,
+    isViewUnpinned: _isNativeViewUnpinned,
+  } = useUnpinnedNativeViews(projectKey);
+
+  // Drag and drop state for pinned items
+  const [draggedItem, setDraggedItem] = useState<number | null>(null);
+  const [isDragMode, setIsDragMode] = useState(false);
+
+  // Unified pinned items order stored in localStorage
+  const [pinnedOrder, setPinnedOrder] = useState<string[]>(() => {
+    if (typeof window === "undefined") return [];
+    const stored = localStorage.getItem(`pinned-order-${org}-${project}`);
+    return stored ? JSON.parse(stored) : [];
+  });
+
+  const handleDragStart = (e: React.DragEvent, index: number) => {
+    e.stopPropagation();
+
+    setDraggedItem(index);
+    e.dataTransfer.effectAllowed = "move";
+    e.dataTransfer.setData("text/plain", index.toString());
+
+    // Use the current element as drag image with better offset
+    // Position it so the cursor is at the left edge, vertically centered
+    if (e.currentTarget instanceof HTMLElement) {
+      const offsetX = 20; // Small offset from left edge (where drag handle is)
+      const offsetY = e.currentTarget.offsetHeight / 2; // Vertically centered
+      e.dataTransfer.setDragImage(e.currentTarget, offsetX, offsetY);
+    }
+  };
+
+  const handleDragOver = (e: React.DragEvent, index: number) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = "move";
+
+    if (draggedItem === null) return;
+    if (draggedItem === index) return;
+
+    // Live reorder: swap items as we drag over them
+    setPinnedOrder((prev) => {
+      const newOrder = [...prev];
+      const [removed] = newOrder.splice(draggedItem, 1);
+      newOrder.splice(index, 0, removed);
+      return newOrder;
+    });
+
+    // Update the dragged item index to the new position
+    setDraggedItem(index);
+  };
+
+  const handleDragLeave = () => {
+    // Not needed with live reordering
+  };
+
+  const handleDrop = (e: React.DragEvent, dropIndex: number) => {
+    e.preventDefault();
+    e.stopPropagation();
+
+    // Save the final order to localStorage
+    localStorage.setItem(
+      `pinned-order-${org}-${project}`,
+      JSON.stringify(pinnedOrder),
+    );
+
+    setDraggedItem(null);
+  };
+
+  const handleDragEnd = () => {
+    // Save the final order to localStorage in case drop wasn't called
+    if (draggedItem !== null) {
+      localStorage.setItem(
+        `pinned-order-${org}-${project}`,
+        JSON.stringify(pinnedOrder),
+      );
+    }
+    setDraggedItem(null);
+  };
 
   // Command palette
   const commandPalette = useCommandPalette();
@@ -391,6 +481,7 @@ function WorkspaceViews() {
     .map((title) => {
       if (title === "Files") {
         return {
+          id: "native:::files",
           title: "Files",
           icon: "folder",
           onClick: () => setFilesModalOpen(true),
@@ -408,15 +499,869 @@ function WorkspaceViews() {
       ): item is
         | (View & { comingSoon: boolean })
         | {
+            id: string;
             title: string;
             icon: string;
             onClick: () => void;
             comingSoon: boolean;
           } => item !== null,
+    )
+    // Filter out unpinned native views
+    .filter((item) => {
+      if ("onClick" in item && item.id) {
+        return !_isNativeViewUnpinned(item.id);
+      }
+      if ("id" in item && item.id) {
+        return !_isNativeViewUnpinned(item.id);
+      }
+      return true;
+    });
+
+  // Create unified list of all pinned items for drag-and-drop
+  const allPinnedItems = useMemo(() => {
+    const items: Array<{
+      id: string;
+      type: "native" | "integration" | "resource";
+      data: any;
+    }> = [];
+
+    // Add native views (Documents, Agents, etc.)
+    resourceItems.forEach((item) => {
+      if ("onClick" in item && item.comingSoon) {
+        items.push({
+          id: `native:::${item.title}`,
+          type: "native",
+          data: item,
+        });
+      } else {
+        items.push({ id: (item as View).id, type: "native", data: item });
+      }
+    });
+
+    // Add integration views (Site, Database)
+    Object.entries(fromIntegration).forEach(([integrationId, views]) => {
+      items.push({
+        id: `integration:::${integrationId}`,
+        type: "integration",
+        data: { integrationId, views },
+      });
+    });
+
+    // Add resources from integrations
+    Object.entries(fromIntegrationResources).forEach(
+      ([integrationId, resources]) => {
+        items.push({
+          id: `integration-resource:::${integrationId}`,
+          type: "integration",
+          data: { integrationId, resources, isResource: true },
+        });
+      },
     );
 
+    // Add pinned resources
+    _pinnedResources.forEach((resource) => {
+      items.push({
+        id: `pinned:::${resource.id}`,
+        type: "resource",
+        data: resource,
+      });
+    });
+
+    // Apply custom order if it exists
+    if (pinnedOrder.length > 0) {
+      const ordered = [];
+      const itemsMap = new Map(items.map((item) => [item.id, item]));
+
+      // Add items in stored order
+      for (const id of pinnedOrder) {
+        if (itemsMap.has(id)) {
+          ordered.push(itemsMap.get(id)!);
+          itemsMap.delete(id);
+        }
+      }
+
+      // Add any new items that aren't in the order yet
+      ordered.push(...Array.from(itemsMap.values()));
+
+      return ordered;
+    }
+
+    return items;
+  }, [
+    resourceItems,
+    fromIntegration,
+    fromIntegrationResources,
+    _pinnedResources,
+    pinnedOrder,
+  ]);
+
+  // Update pinnedOrder when items change
+  useEffect(() => {
+    const currentIds = allPinnedItems.map((item) => item.id);
+    const currentIdsSet = new Set(currentIds);
+    const storedIdsSet = new Set(pinnedOrder);
+
+    // Check if items were added or removed
+    const hasChanges =
+      currentIds.length !== pinnedOrder.length ||
+      currentIds.some((id) => !storedIdsSet.has(id)) ||
+      pinnedOrder.some((id) => !currentIdsSet.has(id));
+
+    if (hasChanges) {
+      // Merge: keep existing order, add new items at the end
+      const newOrder = [...pinnedOrder.filter((id) => currentIdsSet.has(id))];
+      currentIds.forEach((id) => {
+        if (!storedIdsSet.has(id)) {
+          newOrder.push(id);
+        }
+      });
+
+      setPinnedOrder(newOrder);
+      localStorage.setItem(
+        `pinned-order-${org}-${project}`,
+        JSON.stringify(newOrder),
+      );
+    }
+  }, [allPinnedItems, pinnedOrder, org, project]);
+
+  // Render a pinned item based on its type
+  const renderPinnedItem = (
+    item: (typeof allPinnedItems)[0],
+    index: number,
+  ) => {
+    if (item.type === "native") {
+      const nativeItem = item.data;
+      if ("onClick" in nativeItem && nativeItem.comingSoon) {
+        // Files button
+        const filesViewId = "native:::files";
+        return (
+          <SidebarMenuItem
+            key={item.id}
+            draggable={isDragMode}
+            onDragStart={
+              isDragMode ? (e) => handleDragStart(e, index) : undefined
+            }
+            onDragOver={
+              isDragMode ? (e) => handleDragOver(e, index) : undefined
+            }
+            onDragLeave={isDragMode ? handleDragLeave : undefined}
+            onDrop={isDragMode ? (e) => handleDrop(e, index) : undefined}
+            onDragEnd={isDragMode ? handleDragEnd : undefined}
+            className={
+              isDragMode
+                ? `cursor-grab active:cursor-grabbing transition-all
+                   ${draggedItem === index ? "opacity-50" : ""}`
+                : ""
+            }
+          >
+            <SidebarMenuButton
+              className="cursor-pointer group/item relative w-full pr-2"
+              onClick={isDragMode ? undefined : nativeItem.onClick}
+            >
+              {isDragMode && (
+                <Icon
+                  name="drag_indicator"
+                  size={16}
+                  className="text-muted-foreground shrink-0"
+                />
+              )}
+              <Icon
+                name={nativeItem.icon}
+                size={20}
+                className="text-muted-foreground/75 shrink-0"
+              />
+              <span className="truncate flex-1 min-w-0 group-hover/item:pr-8">
+                {nativeItem.title}
+              </span>
+              <Badge
+                variant="secondary"
+                className="text-xs group-hover/item:opacity-0 transition-opacity"
+              >
+                Soon
+              </Badge>
+              <Icon
+                name="unpin"
+                size={18}
+                className="text-muted-foreground opacity-0 group-hover/item:opacity-50 hover:opacity-100 cursor-pointer absolute right-1 top-1/2 -translate-y-1/2"
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  _unpinNativeView(filesViewId);
+                  trackEvent("sidebar_unpin_native_view", {
+                    view: nativeItem.title,
+                  });
+                }}
+              />
+            </SidebarMenuButton>
+          </SidebarMenuItem>
+        );
+      }
+      // Regular native view (Documents, Agents, etc.)
+      const view = nativeItem as View;
+      const href = buildViewHrefFromView(view);
+      const displayTitle = canonicalTitle(view.title);
+      return (
+        <SidebarMenuItem
+          key={item.id}
+          draggable={isDragMode}
+          onDragStart={
+            isDragMode ? (e) => handleDragStart(e, index) : undefined
+          }
+          onDragOver={isDragMode ? (e) => handleDragOver(e, index) : undefined}
+          onDragLeave={isDragMode ? handleDragLeave : undefined}
+          onDrop={isDragMode ? (e) => handleDrop(e, index) : undefined}
+          onDragEnd={isDragMode ? handleDragEnd : undefined}
+          className={
+            isDragMode
+              ? `cursor-grab active:cursor-grabbing transition-all
+                 ${draggedItem === index ? "opacity-50" : ""}`
+              : ""
+          }
+        >
+          <WithActive to={href}>
+            {({ isActive }) => (
+              <SidebarMenuButton
+                asChild
+                isActive={isActive}
+                className="w-full pr-2"
+              >
+                <Link
+                  to={href}
+                  className="group/item relative"
+                  onClick={(e) => {
+                    if (isDragMode) {
+                      e.preventDefault();
+                      return;
+                    }
+                    trackEvent("sidebar_navigation_click", {
+                      item: displayTitle,
+                    });
+                    isMobile && toggleSidebar();
+                  }}
+                >
+                  {isDragMode && (
+                    <Icon
+                      name="drag_indicator"
+                      size={16}
+                      className="text-muted-foreground shrink-0"
+                    />
+                  )}
+                  <Icon
+                    name={view.icon}
+                    size={20}
+                    className="text-muted-foreground/75 shrink-0"
+                  />
+                  <span className="truncate flex-1 min-w-0 group-hover/item:pr-8">
+                    {displayTitle}
+                  </span>
+                  {view.badge && (
+                    <Badge variant="secondary" className="text-xs">
+                      {view.badge}
+                    </Badge>
+                  )}
+                  <Icon
+                    name="unpin"
+                    size={18}
+                    className="text-muted-foreground opacity-0 group-hover/item:opacity-50 hover:opacity-100 cursor-pointer absolute right-1 top-1/2 -translate-y-1/2"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      _unpinNativeView(view.id);
+                      trackEvent("sidebar_unpin_native_view", {
+                        view: displayTitle,
+                      });
+                    }}
+                  />
+                </Link>
+              </SidebarMenuButton>
+            )}
+          </WithActive>
+        </SidebarMenuItem>
+      );
+    }
+
+    // Integration type - render the integration (could be single view or collapsible)
+    if (item.type === "integration") {
+      const { integrationId, views, isResource, resources } = item.data;
+      const integration = integrationMap.get(integrationId);
+
+      if (isResource) {
+        // This is an integration resource section
+        const isSingleResource = resources.length === 1;
+
+        if (isSingleResource) {
+          const [resource] = resources;
+          const href = buildResourceHrefFromResource(resource);
+
+          return (
+            <SidebarMenuItem
+              key={item.id}
+              draggable={isDragMode}
+              onDragStart={
+                isDragMode ? (e) => handleDragStart(e, index) : undefined
+              }
+              onDragOver={
+                isDragMode ? (e) => handleDragOver(e, index) : undefined
+              }
+              onDragLeave={isDragMode ? handleDragLeave : undefined}
+              onDrop={isDragMode ? (e) => handleDrop(e, index) : undefined}
+              onDragEnd={isDragMode ? handleDragEnd : undefined}
+              className={
+                isDragMode
+                  ? `cursor-grab active:cursor-grabbing transition-all
+                 ${draggedItem === index ? "opacity-50" : ""}`
+                  : ""
+              }
+            >
+              <WithActive to={href}>
+                {({ isActive }) => (
+                  <SidebarMenuButton
+                    asChild
+                    isActive={isActive}
+                    className="w-full pr-8"
+                  >
+                    <Link
+                      to={href}
+                      className="group/item relative"
+                      onClick={(e) => {
+                        if (isDragMode) {
+                          e.preventDefault();
+                          return;
+                        }
+                        if (location.pathname === href) {
+                          e.preventDefault();
+                          navigate(0);
+                          return;
+                        }
+                        trackEvent("sidebar_navigation_click", {
+                          item: resource.title,
+                        });
+                        isMobile && toggleSidebar();
+                      }}
+                    >
+                      {isDragMode && (
+                        <Icon
+                          name="drag_indicator"
+                          size={16}
+                          className="text-muted-foreground shrink-0"
+                        />
+                      )}
+                      <div className="relative">
+                        <IntegrationAvatar
+                          size="xs"
+                          url={integration?.icon}
+                          fallback={integration?.name}
+                          className="!w-[18px] !h-[18px] !rounded-md"
+                        />
+                      </div>
+                      <span className="truncate group-hover/item:pr-8">
+                        {resource.title ?? integration?.name ?? "Resource"}
+                      </span>
+                      <Icon
+                        name="remove"
+                        size={18}
+                        className="text-muted-foreground opacity-0 group-hover/item:opacity-50 hover:opacity-100 cursor-pointer absolute right-1 top-1/2 -translate-y-1/2"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          handleRemoveResource({ resourceId: resource.id });
+                        }}
+                      />
+                    </Link>
+                  </SidebarMenuButton>
+                )}
+              </WithActive>
+            </SidebarMenuItem>
+          );
+        }
+        // Multiple resources - render collapsible
+        return (
+          <SidebarMenuItem
+            key={item.id}
+            draggable={isDragMode}
+            onDragStart={
+              isDragMode ? (e) => handleDragStart(e, index) : undefined
+            }
+            onDragOver={
+              isDragMode ? (e) => handleDragOver(e, index) : undefined
+            }
+            onDragLeave={isDragMode ? handleDragLeave : undefined}
+            onDrop={isDragMode ? (e) => handleDrop(e, index) : undefined}
+            onDragEnd={isDragMode ? handleDragEnd : undefined}
+            className={
+              isDragMode
+                ? `cursor-grab active:cursor-grabbing transition-all
+                   ${draggedItem === index ? "opacity-50" : ""}`
+                : ""
+            }
+          >
+            <Collapsible
+              asChild
+              defaultOpen={false}
+              className="group/collapsible"
+            >
+              <div className="group/integration-header relative">
+                <CollapsibleTrigger asChild>
+                  <SidebarMenuButton
+                    className="w-full pr-8"
+                    onClick={(e) => {
+                      if (isDragMode) {
+                        e.preventDefault();
+                        e.stopPropagation();
+                      }
+                    }}
+                  >
+                    {isDragMode && (
+                      <Icon
+                        name="drag_indicator"
+                        size={16}
+                        className="text-muted-foreground shrink-0"
+                      />
+                    )}
+                    <div className="relative">
+                      <IntegrationAvatar
+                        size="xs"
+                        url={integration?.icon}
+                        fallback={integration?.name}
+                        className="!w-[18px] !h-[18px] !rounded-md"
+                      />
+                    </div>
+                    <span className="truncate">
+                      {integration?.name ?? "Resources"}
+                    </span>
+                    <Icon
+                      name="chevron_right"
+                      size={18}
+                      className="ml-auto transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90 text-muted-foreground/75"
+                    />
+                  </SidebarMenuButton>
+                </CollapsibleTrigger>
+                <CollapsibleContent>
+                  <SidebarMenuSub>
+                    {resources.map((resource: any) => {
+                      const href = buildResourceHrefFromResource(resource);
+
+                      return (
+                        <SidebarMenuSubItem key={resource.id}>
+                          <SidebarMenuSubButton asChild>
+                            <Link
+                              to={href}
+                              className="group/item relative"
+                              onClick={() => {
+                                if (isDragMode) {
+                                  return;
+                                }
+                                trackEvent("sidebar_navigation_click", {
+                                  item: resource.title,
+                                });
+                                isMobile && toggleSidebar();
+                              }}
+                            >
+                              <Icon
+                                name="folder"
+                                size={18}
+                                className="text-muted-foreground/75"
+                              />
+                              <span className="truncate group-hover/item:pr-8">
+                                {resource.title}
+                              </span>
+                              {!isDragMode && (
+                                <Icon
+                                  name="remove"
+                                  size={18}
+                                  className="text-muted-foreground opacity-0 group-hover/item:opacity-50 hover:opacity-100 cursor-pointer absolute right-1 top-1/2 -translate-y-1/2"
+                                  onClick={(e) => {
+                                    e.preventDefault();
+                                    e.stopPropagation();
+                                    handleRemoveResource({
+                                      resourceId: resource.id,
+                                    });
+                                  }}
+                                />
+                              )}
+                            </Link>
+                          </SidebarMenuSubButton>
+                        </SidebarMenuSubItem>
+                      );
+                    })}
+                  </SidebarMenuSub>
+                </CollapsibleContent>
+              </div>
+            </Collapsible>
+          </SidebarMenuItem>
+        );
+      }
+
+      // Integration view section (Site, Database)
+      const isSingleView = views.length === 1;
+
+      if (isSingleView) {
+        const [view] = views;
+        const href = buildViewHrefFromView(view as View);
+
+        return (
+          <SidebarMenuItem
+            key={item.id}
+            draggable={isDragMode}
+            onDragStart={
+              isDragMode ? (e) => handleDragStart(e, index) : undefined
+            }
+            onDragOver={
+              isDragMode ? (e) => handleDragOver(e, index) : undefined
+            }
+            onDragLeave={isDragMode ? handleDragLeave : undefined}
+            onDrop={isDragMode ? (e) => handleDrop(e, index) : undefined}
+            onDragEnd={isDragMode ? handleDragEnd : undefined}
+            className={
+              isDragMode
+                ? `cursor-grab active:cursor-grabbing transition-all
+                   ${draggedItem === index ? "opacity-50" : ""}`
+                : ""
+            }
+          >
+            <WithActive to={href}>
+              {({ isActive }) => (
+                <SidebarMenuButton
+                  asChild
+                  isActive={isActive}
+                  className="w-full pr-2!"
+                >
+                  <Link
+                    to={href}
+                    className="group/item relative"
+                    onClick={(e) => {
+                      if (isDragMode) {
+                        e.preventDefault();
+                        return;
+                      }
+                      trackEvent("sidebar_navigation_click", {
+                        item: view.title,
+                      });
+                      isMobile && toggleSidebar();
+                    }}
+                  >
+                    {isDragMode && (
+                      <Icon
+                        name="drag_indicator"
+                        size={16}
+                        className="text-muted-foreground shrink-0"
+                      />
+                    )}
+                    <div className="relative">
+                      <IntegrationAvatar
+                        size="xs"
+                        url={integration?.icon}
+                        fallback={integration?.name}
+                        className="!w-[22px] !h-[22px] !rounded-md"
+                      />
+                    </div>
+                    <span
+                      className={
+                        view.type === "custom"
+                          ? "truncate group-hover/item:pr-8"
+                          : "truncate"
+                      }
+                    >
+                      {view.title ?? integration?.name ?? "Custom"}
+                    </span>
+                    {view.type === "custom" && (
+                      <Icon
+                        name="unpin"
+                        size={18}
+                        className="text-muted-foreground opacity-0 group-hover/item:opacity-50 hover:opacity-100 cursor-pointer absolute right-1 top-1/2 -translate-y-1/2"
+                        onClick={(event) => {
+                          event.preventDefault();
+                          event.stopPropagation();
+                          handleRemoveView(view);
+                        }}
+                      />
+                    )}
+                  </Link>
+                </SidebarMenuButton>
+              )}
+            </WithActive>
+          </SidebarMenuItem>
+        );
+      }
+
+      // Multiple views - render collapsible (Site with Pages/Assets)
+      return (
+        <SidebarMenuItem
+          key={item.id}
+          draggable={isDragMode}
+          onDragStart={
+            isDragMode ? (e) => handleDragStart(e, index) : undefined
+          }
+          onDragOver={isDragMode ? (e) => handleDragOver(e, index) : undefined}
+          onDragLeave={isDragMode ? handleDragLeave : undefined}
+          onDrop={isDragMode ? (e) => handleDrop(e, index) : undefined}
+          onDragEnd={isDragMode ? handleDragEnd : undefined}
+          className={
+            isDragMode
+              ? `cursor-grab active:cursor-grabbing transition-all
+                 ${draggedItem === index ? "opacity-50" : ""}`
+              : ""
+          }
+        >
+          <Collapsible
+            asChild
+            defaultOpen={false}
+            className="group/collapsible"
+          >
+            <div className="group/integration-header relative">
+              <CollapsibleTrigger asChild>
+                <SidebarMenuButton
+                  className="w-full pr-2!"
+                  onClick={(e) => {
+                    if (isDragMode) {
+                      e.preventDefault();
+                      e.stopPropagation();
+                    }
+                  }}
+                >
+                  {isDragMode && (
+                    <Icon
+                      name="drag_indicator"
+                      size={16}
+                      className="text-muted-foreground shrink-0"
+                    />
+                  )}
+                  <div className="relative">
+                    <IntegrationAvatar
+                      size="xs"
+                      url={integration?.icon}
+                      fallback={integration?.name}
+                      className="!w-[22px] !h-[22px] !rounded-md"
+                    />
+                    {integration &&
+                      integrationId !== "custom" &&
+                      !isDragMode && (
+                        <SidebarMenuAction
+                          asChild
+                          className="absolute inset-0 hidden items-center justify-center rounded-md border border-border/80 bg-background/95 shadow-sm transition-opacity group-hover/integration-header:flex"
+                          onClick={(event) => {
+                            event.preventDefault();
+                            event.stopPropagation();
+                            setAddViewsDialogState({
+                              open: true,
+                              integration,
+                            });
+                          }}
+                          aria-label={`Add view to ${
+                            integration?.name ?? "integration"
+                          }`}
+                          showOnHover
+                        >
+                          <span
+                            role="button"
+                            tabIndex={0}
+                            className="flex h-full w-full items-center justify-center"
+                            onKeyDown={(event) => {
+                              if (event.key === "Enter" || event.key === " ") {
+                                event.preventDefault();
+                                event.stopPropagation();
+                                setAddViewsDialogState({
+                                  open: true,
+                                  integration,
+                                });
+                              }
+                            }}
+                          >
+                            <Icon
+                              name="add"
+                              size={14}
+                              className="text-muted-foreground"
+                            />
+                          </span>
+                        </SidebarMenuAction>
+                      )}
+                  </div>
+                  <span className="truncate">
+                    {integration?.name ?? "Custom"}
+                  </span>
+                  <Icon
+                    name="chevron_right"
+                    size={18}
+                    className="ml-auto transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90 text-muted-foreground/75"
+                  />
+                </SidebarMenuButton>
+              </CollapsibleTrigger>
+              <CollapsibleContent>
+                <SidebarMenuSub>
+                  {views.map((view: View) => {
+                    const href = buildViewHrefFromView(view as View);
+
+                    return (
+                      <SidebarMenuSubItem key={view.id}>
+                        <SidebarMenuSubButton asChild>
+                          <Link
+                            to={href}
+                            className="group/item relative"
+                            onClick={(e) => {
+                              if (isDragMode) {
+                                e.preventDefault();
+                                return;
+                              }
+                              trackEvent("sidebar_navigation_click", {
+                                item: view.title,
+                              });
+                              isMobile && toggleSidebar();
+                            }}
+                          >
+                            <Icon
+                              name={view.icon}
+                              size={18}
+                              className="text-muted-foreground/75"
+                            />
+                            <span
+                              className={
+                                view.type === "custom"
+                                  ? "truncate group-hover/item:pr-8"
+                                  : "truncate"
+                              }
+                            >
+                              {view.title}
+                            </span>
+                            {view.type === "custom" && !isDragMode && (
+                              <Icon
+                                name="unpin"
+                                size={18}
+                                className="text-muted-foreground opacity-0 group-hover/item:opacity-50 hover:opacity-100 cursor-pointer absolute right-1 top-1/2 -translate-y-1/2"
+                                onClick={(event) => {
+                                  event.preventDefault();
+                                  event.stopPropagation();
+                                  handleRemoveView(view);
+                                }}
+                              />
+                            )}
+                          </Link>
+                        </SidebarMenuSubButton>
+                      </SidebarMenuSubItem>
+                    );
+                  })}
+                </SidebarMenuSub>
+              </CollapsibleContent>
+            </div>
+          </Collapsible>
+        </SidebarMenuItem>
+      );
+    }
+
+    // Pinned resource
+    if (item.type === "resource") {
+      const resource = item.data;
+      return (
+        <SidebarMenuItem
+          key={item.id}
+          draggable={isDragMode}
+          onDragStart={
+            isDragMode ? (e) => handleDragStart(e, index) : undefined
+          }
+          onDragOver={isDragMode ? (e) => handleDragOver(e, index) : undefined}
+          onDragLeave={isDragMode ? handleDragLeave : undefined}
+          onDrop={isDragMode ? (e) => handleDrop(e, index) : undefined}
+          onDragEnd={isDragMode ? handleDragEnd : undefined}
+          className={
+            isDragMode
+              ? `cursor-grab active:cursor-grabbing transition-all
+                 ${draggedItem === index ? "opacity-50" : ""}`
+              : ""
+          }
+        >
+          <WithActive to={resource.path}>
+            {({ isActive }) => (
+              <SidebarMenuButton
+                asChild={!isDragMode}
+                isActive={isActive}
+                className="w-full pr-2"
+              >
+                {isDragMode ? (
+                  <div className="group/item relative flex items-center gap-2">
+                    <Icon
+                      name="drag_indicator"
+                      size={16}
+                      className="text-muted-foreground shrink-0"
+                    />
+                    {resource.type === "agent" ? (
+                      <AgentAvatar
+                        size="xs"
+                        url={resource.icon}
+                        fallback={resource.name}
+                        className="!w-[20px] !h-[20px] shrink-0"
+                      />
+                    ) : resource.icon ? (
+                      <Icon
+                        name={resource.icon}
+                        size={20}
+                        className="text-muted-foreground/75 shrink-0"
+                      />
+                    ) : null}
+                    <span className="truncate flex-1 min-w-0">
+                      {resource.name}
+                    </span>
+                  </div>
+                ) : (
+                  <Link
+                    to={resource.path}
+                    className="group/item relative"
+                    onClick={(e) => {
+                      trackEvent("sidebar_navigation_click", {
+                        item: resource.name,
+                        type: "pinned-resource",
+                      });
+                      isMobile && toggleSidebar();
+                    }}
+                  >
+                    {resource.type === "agent" ? (
+                      <AgentAvatar
+                        size="xs"
+                        url={resource.icon}
+                        fallback={resource.name}
+                        className="!w-[20px] !h-[20px] shrink-0"
+                      />
+                    ) : resource.icon ? (
+                      <Icon
+                        name={resource.icon}
+                        size={20}
+                        className="text-muted-foreground/75 shrink-0"
+                      />
+                    ) : null}
+                    <span className="truncate flex-1 min-w-0 group-hover/item:pr-8">
+                      {resource.name}
+                    </span>
+                    <Icon
+                      name="unpin"
+                      size={18}
+                      className="text-muted-foreground opacity-0 group-hover/item:opacity-50 hover:opacity-100 cursor-pointer absolute right-1 top-1/2 -translate-y-1/2"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        _togglePin(resource);
+                      }}
+                    />
+                  </Link>
+                )}
+              </SidebarMenuButton>
+            )}
+          </WithActive>
+        </SidebarMenuItem>
+      );
+    }
+
+    return null;
+  };
+
   // Filter out pinned items from recents and limit to 5 initially
-  const _filteredRecents = _recents.filter((recent) => !_isPinned(recent.id));
+  const _filteredRecents = _recents.filter((recent) => {
+    // Filter out pinned resource instances
+    if (_isPinned(recent.id)) return false;
+
+    // Filter out native views that are currently pinned (not unpinned)
+    if (recent.type === "view" && !_isNativeViewUnpinned(recent.id))
+      return false;
+
+    return true;
+  });
   const _displayedRecents = _showAllRecents
     ? _filteredRecents
     : _filteredRecents.slice(0, 5);
@@ -457,75 +1402,6 @@ function WorkspaceViews() {
         </SidebarMenuButton>
       </SidebarMenuItem>
 
-      <SidebarSeparator className="my-2 -ml-1" />
-
-      {/* SECTION 2: RESOURCES (Main Resource Types) */}
-      {resourceItems.map((item) => {
-        if ("onClick" in item && item.comingSoon) {
-          // Files button (coming soon)
-          return (
-            <SidebarMenuItem key={item.title}>
-              <SidebarMenuButton
-                className="cursor-pointer"
-                onClick={item.onClick}
-              >
-                <Icon
-                  name={item.icon}
-                  size={20}
-                  className="text-muted-foreground/75"
-                />
-                <span className="truncate">{item.title}</span>
-                <Badge variant="secondary" className="ml-auto text-xs">
-                  Soon
-                </Badge>
-              </SidebarMenuButton>
-            </SidebarMenuItem>
-          );
-        }
-
-        // Regular resource type buttons
-        const view = item as View;
-        const href = buildViewHrefFromView(view);
-        const displayTitle = canonicalTitle(view.title);
-
-        return (
-          <SidebarMenuItem key={view.title}>
-            <SidebarMenuButton asChild>
-              <Link
-                to={href}
-                onClick={(e) => {
-                  // Reload if already on current page (client-side)
-                  if (location.pathname === href) {
-                    e.preventDefault();
-                    navigate(0);
-                    return;
-                  }
-
-                  trackEvent("sidebar_navigation_click", {
-                    item: displayTitle,
-                  });
-                  isMobile && toggleSidebar();
-                }}
-              >
-                <Icon
-                  name={view.icon}
-                  size={20}
-                  className="text-muted-foreground/75"
-                />
-                <span className="truncate">{displayTitle}</span>
-                {view.badge && (
-                  <Badge variant="secondary" className="ml-auto text-xs">
-                    {view.badge}
-                  </Badge>
-                )}
-              </Link>
-            </SidebarMenuButton>
-          </SidebarMenuItem>
-        );
-      })}
-
-      <SidebarSeparator className="my-2 -ml-1" />
-
       {/* Manage Apps button */}
       <SidebarMenuItem>
         <SidebarMenuButton
@@ -533,7 +1409,7 @@ function WorkspaceViews() {
           onClick={() => {
             navigateWorkspace("/apps");
             trackEvent("sidebar_navigation_click", {
-              item: "Manage Apps",
+              item: "Apps",
             });
             isMobile && toggleSidebar();
           }}
@@ -543,45 +1419,466 @@ function WorkspaceViews() {
             size={20}
             className="text-muted-foreground/75"
           />
-          <span className="truncate">Manage apps</span>
+          <span className="truncate">Apps</span>
         </SidebarMenuButton>
       </SidebarMenuItem>
 
-      {/* SECTION 3: VIEWS PINNED FROM APPS */}
-      {Object.entries(fromIntegration).map(([integrationId, views]) => {
-        const integration = integrationMap.get(integrationId);
-        const isSingleView = views.length === 1;
+      <SidebarSeparator className="my-2 -ml-1" />
 
-        if (isSingleView) {
-          const [view] = views;
-          const href = buildViewHrefFromView(view as View);
+      {/* SECTION 2: PINNED */}
+      <SidebarMenuItem>
+        <div className="px-2 py-1 text-xs font-medium text-muted-foreground flex items-center justify-between">
+          <span>Pinned</span>
+          <button
+            onClick={() => setIsDragMode(!isDragMode)}
+            className="p-1 hover:bg-accent rounded transition-colors"
+            title={
+              isDragMode
+                ? "Click to exit drag mode"
+                : "Click to reorder pinned items"
+            }
+          >
+            <Icon
+              name={isDragMode ? "lock_open" : "lock"}
+              size={14}
+              className={
+                isDragMode
+                  ? "text-primary"
+                  : "text-muted-foreground hover:text-foreground"
+              }
+            />
+          </button>
+        </div>
+      </SidebarMenuItem>
+
+      {/* Render all pinned items in custom order */}
+      {allPinnedItems.map((item, index) => renderPinnedItem(item, index))}
+
+      {/* OLD CODE - Keep for reference but commented out */}
+      {false &&
+        resourceItems.map((item) => {
+          if ("onClick" in item && item.comingSoon) {
+            // Files button (coming soon) - we need a fake view ID for unpinning
+            const filesViewId = "native:::files";
+
+            return (
+              <SidebarMenuItem
+                key={item.title}
+                draggable={isDragMode}
+                onDragStart={
+                  isDragMode
+                    ? (e) => {
+                        const itemIndex = allPinnedItems.findIndex(
+                          (i) => i.id === `native:::${item.title}`,
+                        );
+                        handleDragStart(e, itemIndex);
+                      }
+                    : undefined
+                }
+                onDragOver={
+                  isDragMode
+                    ? (e) => {
+                        const itemIndex = allPinnedItems.findIndex(
+                          (i) => i.id === `native:::${item.title}`,
+                        );
+                        handleDragOver(e, itemIndex);
+                      }
+                    : undefined
+                }
+                onDragLeave={isDragMode ? handleDragLeave : undefined}
+                onDrop={
+                  isDragMode
+                    ? (e) => {
+                        const itemIndex = allPinnedItems.findIndex(
+                          (i) => i.id === `native:::${item.title}`,
+                        );
+                        handleDrop(e, itemIndex);
+                      }
+                    : undefined
+                }
+                onDragEnd={isDragMode ? handleDragEnd : undefined}
+                className={
+                  isDragMode
+                    ? `cursor-grab active:cursor-grabbing transition-all
+                     ${draggedItem === allPinnedItems.findIndex((i) => i.id === `native:::${item.title}`) ? "opacity-50" : ""}
+`
+                    : ""
+                }
+              >
+                <SidebarMenuButton
+                  className="cursor-pointer group/item relative w-full pr-2"
+                  onClick={isDragMode ? undefined : item.onClick}
+                >
+                  {isDragMode && (
+                    <Icon
+                      name="drag_indicator"
+                      size={16}
+                      className="text-muted-foreground shrink-0"
+                    />
+                  )}
+                  <Icon
+                    name={item.icon}
+                    size={20}
+                    className="text-muted-foreground/75 shrink-0"
+                  />
+                  <span className="truncate flex-1 min-w-0 group-hover/item:pr-8">
+                    {item.title}
+                  </span>
+                  <Badge
+                    variant="secondary"
+                    className="text-xs group-hover/item:opacity-0 transition-opacity"
+                  >
+                    Soon
+                  </Badge>
+                  <Icon
+                    name="unpin"
+                    size={18}
+                    className="text-muted-foreground opacity-0 group-hover/item:opacity-50 hover:opacity-100 cursor-pointer absolute right-1 top-1/2 -translate-y-1/2"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      _unpinNativeView(filesViewId);
+                      trackEvent("sidebar_unpin_native_view", {
+                        view: item.title,
+                      });
+                    }}
+                  />
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+            );
+          }
+
+          // Regular resource type buttons - now with unpin capability
+          const view = item as View;
+          const href = buildViewHrefFromView(view);
+          const displayTitle = canonicalTitle(view.title);
 
           return (
-            <SidebarMenuItem key={integrationId}>
+            <SidebarMenuItem
+              key={view.title}
+              draggable={isDragMode}
+              onDragStart={
+                isDragMode
+                  ? (e) => {
+                      const itemIndex = allPinnedItems.findIndex(
+                        (i) => i.id === view.id,
+                      );
+                      handleDragStart(e, itemIndex);
+                    }
+                  : undefined
+              }
+              onDragOver={
+                isDragMode
+                  ? (e) => {
+                      const itemIndex = allPinnedItems.findIndex(
+                        (i) => i.id === view.id,
+                      );
+                      handleDragOver(e, itemIndex);
+                    }
+                  : undefined
+              }
+              onDragLeave={isDragMode ? handleDragLeave : undefined}
+              onDrop={
+                isDragMode
+                  ? (e) => {
+                      const itemIndex = allPinnedItems.findIndex(
+                        (i) => i.id === view.id,
+                      );
+                      handleDrop(e, itemIndex);
+                    }
+                  : undefined
+              }
+              onDragEnd={isDragMode ? handleDragEnd : undefined}
+              className={
+                isDragMode
+                  ? `cursor-grab active:cursor-grabbing transition-all
+                   ${draggedItem === allPinnedItems.findIndex((i) => i.id === view.id) ? "opacity-50" : ""}
+`
+                  : ""
+              }
+            >
               <WithActive to={href}>
                 {({ isActive }) => (
                   <SidebarMenuButton
                     asChild
                     isActive={isActive}
-                    className="w-full pr-2!"
+                    className="w-full pr-2"
                   >
                     <Link
                       to={href}
                       className="group/item relative"
                       onClick={(e) => {
-                        // Reload if already on current page (client-side)
-                        if (location.pathname === href) {
+                        if (isDragMode) {
                           e.preventDefault();
-                          navigate(0);
                           return;
                         }
-
                         trackEvent("sidebar_navigation_click", {
-                          item: view.title,
+                          item: displayTitle,
                         });
                         isMobile && toggleSidebar();
                       }}
                     >
+                      {isDragMode && (
+                        <Icon
+                          name="drag_indicator"
+                          size={16}
+                          className="text-muted-foreground/50 shrink-0"
+                        />
+                      )}
+                      <Icon
+                        name={view.icon}
+                        size={20}
+                        className="text-muted-foreground/75 shrink-0"
+                      />
+                      <span className="truncate flex-1 min-w-0 group-hover/item:pr-8">
+                        {displayTitle}
+                      </span>
+                      {view.badge && (
+                        <Badge variant="secondary" className="text-xs">
+                          {view.badge}
+                        </Badge>
+                      )}
+                      <Icon
+                        name="unpin"
+                        size={18}
+                        className="text-muted-foreground opacity-0 group-hover/item:opacity-50 hover:opacity-100 cursor-pointer absolute right-1 top-1/2 -translate-y-1/2"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          _unpinNativeView(view.id);
+                          trackEvent("sidebar_unpin_native_view", {
+                            view: displayTitle,
+                          });
+                        }}
+                      />
+                    </Link>
+                  </SidebarMenuButton>
+                )}
+              </WithActive>
+            </SidebarMenuItem>
+          );
+        })}
+
+      {/* OLD: Views from integrations - now handled by unified rendering above */}
+      {false &&
+        Object.entries(fromIntegration).map(([integrationId, views]) => {
+          const integration = integrationMap.get(integrationId);
+          const isSingleView = views.length === 1;
+
+          if (isSingleView) {
+            const [view] = views;
+            const href = buildViewHrefFromView(view as View);
+
+            return (
+              <SidebarMenuItem
+                key={integrationId}
+                draggable={isDragMode}
+                onDragStart={
+                  isDragMode
+                    ? (e) => {
+                        const itemIndex = allPinnedItems.findIndex(
+                          (i) => i.id === `integration:::${integrationId}`,
+                        );
+                        handleDragStart(e, itemIndex);
+                      }
+                    : undefined
+                }
+                onDragOver={
+                  isDragMode
+                    ? (e) => {
+                        const itemIndex = allPinnedItems.findIndex(
+                          (i) => i.id === `integration:::${integrationId}`,
+                        );
+                        handleDragOver(e, itemIndex);
+                      }
+                    : undefined
+                }
+                onDragLeave={isDragMode ? handleDragLeave : undefined}
+                onDrop={
+                  isDragMode
+                    ? (e) => {
+                        const itemIndex = allPinnedItems.findIndex(
+                          (i) => i.id === `integration:::${integrationId}`,
+                        );
+                        handleDrop(e, itemIndex);
+                      }
+                    : undefined
+                }
+                onDragEnd={isDragMode ? handleDragEnd : undefined}
+                className={
+                  isDragMode
+                    ? `cursor-grab active:cursor-grabbing transition-all
+                     ${draggedItem === allPinnedItems.findIndex((i) => i.id === `integration:::${integrationId}`) ? "opacity-50" : ""}
+`
+                    : ""
+                }
+              >
+                <WithActive to={href}>
+                  {({ isActive }) => (
+                    <SidebarMenuButton
+                      asChild
+                      isActive={isActive}
+                      className="w-full pr-2!"
+                    >
+                      <Link
+                        to={href}
+                        className="group/item relative"
+                        onClick={(e) => {
+                          if (isDragMode) {
+                            e.preventDefault();
+                            return;
+                          }
+                          trackEvent("sidebar_navigation_click", {
+                            item: view.title,
+                          });
+                          isMobile && toggleSidebar();
+                        }}
+                      >
+                        {isDragMode && (
+                          <Icon
+                            name="drag_indicator"
+                            size={16}
+                            className="text-muted-foreground shrink-0"
+                          />
+                        )}
+                        <div className="relative">
+                          <IntegrationAvatar
+                            size="xs"
+                            url={integration?.icon}
+                            fallback={integration?.name}
+                            className="!w-[22px] !h-[22px] !rounded-md"
+                          />
+                          {integration && integrationId !== "custom" && (
+                            <SidebarMenuAction
+                              asChild
+                              className="absolute inset-0 hidden items-center justify-center rounded-md border border-border/80 bg-background/95 shadow-sm transition-opacity group-hover/item:flex"
+                              onClick={(event) => {
+                                event.preventDefault();
+                                event.stopPropagation();
+                                setAddViewsDialogState({
+                                  open: true,
+                                  integration,
+                                });
+                              }}
+                              aria-label={`Add view to ${
+                                integration?.name ?? "integration"
+                              }`}
+                              showOnHover
+                            >
+                              <span
+                                role="button"
+                                tabIndex={0}
+                                className="flex h-full w-full items-center justify-center"
+                                onKeyDown={(event) => {
+                                  if (
+                                    event.key === "Enter" ||
+                                    event.key === " "
+                                  ) {
+                                    event.preventDefault();
+                                    event.stopPropagation();
+                                    setAddViewsDialogState({
+                                      open: true,
+                                      integration,
+                                    });
+                                  }
+                                }}
+                              >
+                                <Icon
+                                  name="add"
+                                  size={14}
+                                  className="text-muted-foreground"
+                                />
+                              </span>
+                            </SidebarMenuAction>
+                          )}
+                        </div>
+                        <span
+                          className={
+                            view.type === "custom"
+                              ? "truncate group-hover/item:pr-8"
+                              : "truncate"
+                          }
+                        >
+                          {view.title ?? integration?.name ?? "Custom"}
+                        </span>
+                        {view.type === "custom" && (
+                          <Icon
+                            name="unpin"
+                            size={18}
+                            className="text-muted-foreground opacity-0 group-hover/item:opacity-50 hover:opacity-100 cursor-pointer absolute right-1 top-1/2 -translate-y-1/2"
+                            onClick={(event) => {
+                              event.preventDefault();
+                              event.stopPropagation();
+                              handleRemoveView(view);
+                            }}
+                          />
+                        )}
+                      </Link>
+                    </SidebarMenuButton>
+                  )}
+                </WithActive>
+              </SidebarMenuItem>
+            );
+          }
+
+          return (
+            <SidebarMenuItem
+              key={integrationId}
+              draggable={isDragMode}
+              onDragStart={
+                isDragMode
+                  ? (e) => {
+                      const itemIndex = allPinnedItems.findIndex(
+                        (i) => i.id === `integration:::${integrationId}`,
+                      );
+                      handleDragStart(e, itemIndex);
+                    }
+                  : undefined
+              }
+              onDragOver={
+                isDragMode
+                  ? (e) => {
+                      const itemIndex = allPinnedItems.findIndex(
+                        (i) => i.id === `integration:::${integrationId}`,
+                      );
+                      handleDragOver(e, itemIndex);
+                    }
+                  : undefined
+              }
+              onDragLeave={isDragMode ? handleDragLeave : undefined}
+              onDrop={
+                isDragMode
+                  ? (e) => {
+                      const itemIndex = allPinnedItems.findIndex(
+                        (i) => i.id === `integration:::${integrationId}`,
+                      );
+                      handleDrop(e, itemIndex);
+                    }
+                  : undefined
+              }
+              onDragEnd={isDragMode ? handleDragEnd : undefined}
+              className={
+                isDragMode
+                  ? `cursor-grab active:cursor-grabbing transition-all
+                   ${draggedItem === allPinnedItems.findIndex((i) => i.id === `integration:::${integrationId}`) ? "opacity-50" : ""}`
+                  : ""
+              }
+            >
+              <Collapsible
+                asChild
+                defaultOpen={false}
+                className="group/collapsible"
+              >
+                <div className="group/integration-header relative">
+                  <CollapsibleTrigger asChild>
+                    <SidebarMenuButton className="w-full pr-2!">
+                      {isDragMode && (
+                        <Icon
+                          name="drag_indicator"
+                          size={16}
+                          className="text-muted-foreground/50 shrink-0"
+                        />
+                      )}
                       <div className="relative">
                         <IntegrationAvatar
                           size="xs"
@@ -592,7 +1889,7 @@ function WorkspaceViews() {
                         {integration && integrationId !== "custom" && (
                           <SidebarMenuAction
                             asChild
-                            className="absolute inset-0 hidden items-center justify-center rounded-md border border-border/80 bg-background/95 shadow-sm transition-opacity group-hover/item:flex"
+                            className="absolute inset-0 hidden items-center justify-center rounded-md border border-border/80 bg-background/95 shadow-sm transition-opacity group-hover/integration-header:flex"
                             onClick={(event) => {
                               event.preventDefault();
                               event.stopPropagation();
@@ -633,252 +1930,8 @@ function WorkspaceViews() {
                           </SidebarMenuAction>
                         )}
                       </div>
-                      <span
-                        className={
-                          view.type === "custom"
-                            ? "truncate group-hover/item:pr-8"
-                            : "truncate"
-                        }
-                      >
-                        {view.title ?? integration?.name ?? "Custom"}
-                      </span>
-                      {view.type === "custom" && (
-                        <Icon
-                          name="unpin"
-                          size={18}
-                          className="text-muted-foreground opacity-0 group-hover/item:opacity-50 hover:opacity-100 cursor-pointer absolute right-1 top-1/2 -translate-y-1/2"
-                          onClick={(event) => {
-                            event.preventDefault();
-                            event.stopPropagation();
-                            handleRemoveView(view);
-                          }}
-                        />
-                      )}
-                    </Link>
-                  </SidebarMenuButton>
-                )}
-              </WithActive>
-            </SidebarMenuItem>
-          );
-        }
-
-        return (
-          <SidebarMenuItem key={integrationId}>
-            <Collapsible
-              asChild
-              defaultOpen={false}
-              className="group/collapsible"
-            >
-              <div className="group/integration-header relative">
-                <CollapsibleTrigger asChild>
-                  <SidebarMenuButton className="w-full pr-2!">
-                    <div className="relative">
-                      <IntegrationAvatar
-                        size="xs"
-                        url={integration?.icon}
-                        fallback={integration?.name}
-                        className="!w-[22px] !h-[22px] !rounded-md"
-                      />
-                      {integration && integrationId !== "custom" && (
-                        <SidebarMenuAction
-                          asChild
-                          className="absolute inset-0 hidden items-center justify-center rounded-md border border-border/80 bg-background/95 shadow-sm transition-opacity group-hover/integration-header:flex"
-                          onClick={(event) => {
-                            event.preventDefault();
-                            event.stopPropagation();
-                            setAddViewsDialogState({
-                              open: true,
-                              integration,
-                            });
-                          }}
-                          aria-label={`Add view to ${
-                            integration?.name ?? "integration"
-                          }`}
-                          showOnHover
-                        >
-                          <span
-                            role="button"
-                            tabIndex={0}
-                            className="flex h-full w-full items-center justify-center"
-                            onKeyDown={(event) => {
-                              if (event.key === "Enter" || event.key === " ") {
-                                event.preventDefault();
-                                event.stopPropagation();
-                                setAddViewsDialogState({
-                                  open: true,
-                                  integration,
-                                });
-                              }
-                            }}
-                          >
-                            <Icon
-                              name="add"
-                              size={14}
-                              className="text-muted-foreground"
-                            />
-                          </span>
-                        </SidebarMenuAction>
-                      )}
-                    </div>
-                    <span className="truncate">
-                      {integration?.name ?? "Custom"}
-                    </span>
-                    <Icon
-                      name="chevron_right"
-                      size={18}
-                      className="ml-auto transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90 text-muted-foreground/75"
-                    />
-                  </SidebarMenuButton>
-                </CollapsibleTrigger>
-                <CollapsibleContent>
-                  <SidebarMenuSub>
-                    {views.map((view: View) => {
-                      const href = buildViewHrefFromView(view as View);
-
-                      return (
-                        <SidebarMenuSubItem key={view.id}>
-                          <SidebarMenuSubButton asChild>
-                            <Link
-                              to={href}
-                              className="group/item relative"
-                              onClick={(e) => {
-                                // Reload if already on current page (client-side)
-                                if (location.pathname === href) {
-                                  e.preventDefault();
-                                  navigate(0);
-                                  return;
-                                }
-
-                                trackEvent("sidebar_navigation_click", {
-                                  item: view.title,
-                                });
-                                isMobile && toggleSidebar();
-                              }}
-                            >
-                              <Icon
-                                name={view.icon}
-                                size={18}
-                                className="text-muted-foreground/75"
-                              />
-                              <span
-                                className={
-                                  view.type === "custom"
-                                    ? "truncate group-hover/item:pr-8"
-                                    : "truncate"
-                                }
-                              >
-                                {view.title}
-                              </span>
-                              {view.type === "custom" && (
-                                <Icon
-                                  name="unpin"
-                                  size={18}
-                                  className="text-muted-foreground opacity-0 group-hover/item:opacity-50 hover:opacity-100 cursor-pointer absolute right-1 top-1/2 -translate-y-1/2"
-                                  onClick={(event) => {
-                                    event.preventDefault();
-                                    event.stopPropagation();
-                                    handleRemoveView(view);
-                                  }}
-                                />
-                              )}
-                            </Link>
-                          </SidebarMenuSubButton>
-                        </SidebarMenuSubItem>
-                      );
-                    })}
-                  </SidebarMenuSub>
-                </CollapsibleContent>
-              </div>
-            </Collapsible>
-          </SidebarMenuItem>
-        );
-      })}
-
-      {/* Resources from integrations (existing logic) */}
-      {Object.entries(fromIntegrationResources).map(
-        ([integrationId, resources]) => {
-          const integration = integrationMap.get(integrationId);
-          const isSingleResource = resources.length === 1;
-
-          if (isSingleResource) {
-            const [resource] = resources;
-            const href = buildResourceHrefFromResource(resource);
-
-            return (
-              <SidebarMenuItem key={`resource-${integrationId}`}>
-                <WithActive to={href}>
-                  {({ isActive }) => (
-                    <SidebarMenuButton
-                      asChild
-                      isActive={isActive}
-                      className="w-full pr-8"
-                    >
-                      <Link
-                        to={href}
-                        className="group/item relative"
-                        onClick={(e) => {
-                          // Reload if already on current page (client-side)
-                          if (location.pathname === href) {
-                            e.preventDefault();
-                            navigate(0);
-                            return;
-                          }
-
-                          trackEvent("sidebar_navigation_click", {
-                            item: resource.title,
-                          });
-                          isMobile && toggleSidebar();
-                        }}
-                      >
-                        <div className="relative">
-                          <IntegrationAvatar
-                            size="xs"
-                            url={integration?.icon}
-                            fallback={integration?.name}
-                            className="!w-[18px] !h-[18px] !rounded-md"
-                          />
-                        </div>
-                        <span className="truncate group-hover/item:pr-8">
-                          {resource.title ?? integration?.name ?? "Resource"}
-                        </span>
-                        <Icon
-                          name="remove"
-                          size={18}
-                          className="text-muted-foreground opacity-0 group-hover/item:opacity-50 hover:opacity-100 cursor-pointer absolute right-1 top-1/2 -translate-y-1/2"
-                          onClick={(e) => {
-                            e.preventDefault();
-                            e.stopPropagation();
-                            handleRemoveResource({ resourceId: resource.id });
-                          }}
-                        />
-                      </Link>
-                    </SidebarMenuButton>
-                  )}
-                </WithActive>
-              </SidebarMenuItem>
-            );
-          }
-
-          return (
-            <SidebarMenuItem key={`resource-${integrationId}`}>
-              <Collapsible
-                asChild
-                defaultOpen={false}
-                className="group/collapsible"
-              >
-                <div className="group/integration-header relative">
-                  <CollapsibleTrigger asChild>
-                    <SidebarMenuButton className="w-full pr-8">
-                      <div className="relative">
-                        <IntegrationAvatar
-                          size="xs"
-                          url={integration?.icon}
-                          fallback={integration?.name}
-                          className="!w-[18px] !h-[18px] !rounded-md"
-                        />
-                      </div>
                       <span className="truncate">
-                        {integration?.name ?? "Resources"}
+                        {integration?.name ?? "Custom"}
                       </span>
                       <Icon
                         name="chevron_right"
@@ -889,42 +1942,48 @@ function WorkspaceViews() {
                   </CollapsibleTrigger>
                   <CollapsibleContent>
                     <SidebarMenuSub>
-                      {resources.map((resource) => {
-                        const href = buildResourceHrefFromResource(resource);
+                      {views.map((view: View) => {
+                        const href = buildViewHrefFromView(view as View);
 
                         return (
-                          <SidebarMenuSubItem key={resource.id}>
+                          <SidebarMenuSubItem key={view.id}>
                             <SidebarMenuSubButton asChild>
                               <Link
                                 to={href}
                                 className="group/item relative"
-                                onClick={() => {
+                                onClick={(e) => {
                                   trackEvent("sidebar_navigation_click", {
-                                    item: resource.title,
+                                    item: view.title,
                                   });
                                   isMobile && toggleSidebar();
                                 }}
                               >
                                 <Icon
-                                  name="folder"
+                                  name={view.icon}
                                   size={18}
                                   className="text-muted-foreground/75"
                                 />
-                                <span className="truncate group-hover/item:pr-8">
-                                  {resource.title}
+                                <span
+                                  className={
+                                    view.type === "custom"
+                                      ? "truncate group-hover/item:pr-8"
+                                      : "truncate"
+                                  }
+                                >
+                                  {view.title}
                                 </span>
-                                <Icon
-                                  name="remove"
-                                  size={18}
-                                  className="text-muted-foreground opacity-0 group-hover/item:opacity-50 hover:opacity-100 cursor-pointer absolute right-1 top-1/2 -translate-y-1/2"
-                                  onClick={(e) => {
-                                    e.preventDefault();
-                                    e.stopPropagation();
-                                    handleRemoveResource({
-                                      resourceId: resource.id,
-                                    });
-                                  }}
-                                />
+                                {view.type === "custom" && (
+                                  <Icon
+                                    name="unpin"
+                                    size={18}
+                                    className="text-muted-foreground opacity-0 group-hover/item:opacity-50 hover:opacity-100 cursor-pointer absolute right-1 top-1/2 -translate-y-1/2"
+                                    onClick={(event) => {
+                                      event.preventDefault();
+                                      event.stopPropagation();
+                                      handleRemoveView(view);
+                                    }}
+                                  />
+                                )}
                               </Link>
                             </SidebarMenuSubButton>
                           </SidebarMenuSubItem>
@@ -936,66 +1995,392 @@ function WorkspaceViews() {
               </Collapsible>
             </SidebarMenuItem>
           );
-        },
-      )}
-      {/* Pinned Resource Instances */}
-      {_pinnedResources.length > 0 && (
+        })}
+
+      {/* OLD: Resources from integrations - now handled by unified rendering above */}
+      {false &&
+        Object.entries(fromIntegrationResources).map(
+          ([integrationId, resources]) => {
+            const integration = integrationMap.get(integrationId);
+            const isSingleResource = resources.length === 1;
+
+            if (isSingleResource) {
+              const [resource] = resources;
+              const href = buildResourceHrefFromResource(resource);
+
+              return (
+                <SidebarMenuItem
+                  key={`resource-${integrationId}`}
+                  draggable={isDragMode}
+                  onDragStart={
+                    isDragMode
+                      ? (e) => {
+                          const itemIndex = allPinnedItems.findIndex(
+                            (i) =>
+                              i.id ===
+                              `integration-resource:::${integrationId}`,
+                          );
+                          handleDragStart(e, itemIndex);
+                        }
+                      : undefined
+                  }
+                  onDragOver={
+                    isDragMode
+                      ? (e) => {
+                          const itemIndex = allPinnedItems.findIndex(
+                            (i) =>
+                              i.id ===
+                              `integration-resource:::${integrationId}`,
+                          );
+                          handleDragOver(e, itemIndex);
+                        }
+                      : undefined
+                  }
+                  onDragLeave={isDragMode ? handleDragLeave : undefined}
+                  onDrop={
+                    isDragMode
+                      ? (e) => {
+                          const itemIndex = allPinnedItems.findIndex(
+                            (i) =>
+                              i.id ===
+                              `integration-resource:::${integrationId}`,
+                          );
+                          handleDrop(e, itemIndex);
+                        }
+                      : undefined
+                  }
+                  onDragEnd={isDragMode ? handleDragEnd : undefined}
+                  className={
+                    isDragMode
+                      ? `cursor-grab active:cursor-grabbing transition-all
+                       ${draggedItem === allPinnedItems.findIndex((i) => i.id === `integration-resource:::${integrationId}`) ? "opacity-50" : ""}
+`
+                      : ""
+                  }
+                >
+                  <WithActive to={href}>
+                    {({ isActive }) => (
+                      <SidebarMenuButton
+                        asChild
+                        isActive={isActive}
+                        className="w-full pr-8"
+                      >
+                        <Link
+                          to={href}
+                          className="group/item relative"
+                          onClick={(e) => {
+                            if (isDragMode) {
+                              e.preventDefault();
+                              return;
+                            }
+                            // Reload if already on current page (client-side)
+                            if (location.pathname === href) {
+                              e.preventDefault();
+                              navigate(0);
+                              return;
+                            }
+
+                            trackEvent("sidebar_navigation_click", {
+                              item: resource.title,
+                            });
+                            isMobile && toggleSidebar();
+                          }}
+                        >
+                          {isDragMode && (
+                            <Icon
+                              name="drag_indicator"
+                              size={16}
+                              className="text-muted-foreground/50 shrink-0"
+                            />
+                          )}
+                          <div className="relative">
+                            <IntegrationAvatar
+                              size="xs"
+                              url={integration?.icon}
+                              fallback={integration?.name}
+                              className="!w-[18px] !h-[18px] !rounded-md"
+                            />
+                          </div>
+                          <span className="truncate group-hover/item:pr-8">
+                            {resource.title ?? integration?.name ?? "Resource"}
+                          </span>
+                          <Icon
+                            name="remove"
+                            size={18}
+                            className="text-muted-foreground opacity-0 group-hover/item:opacity-50 hover:opacity-100 cursor-pointer absolute right-1 top-1/2 -translate-y-1/2"
+                            onClick={(e) => {
+                              e.preventDefault();
+                              e.stopPropagation();
+                              handleRemoveResource({ resourceId: resource.id });
+                            }}
+                          />
+                        </Link>
+                      </SidebarMenuButton>
+                    )}
+                  </WithActive>
+                </SidebarMenuItem>
+              );
+            }
+
+            return (
+              <SidebarMenuItem
+                key={`resource-${integrationId}`}
+                draggable={isDragMode}
+                onDragStart={
+                  isDragMode
+                    ? (e) => {
+                        const itemIndex = allPinnedItems.findIndex(
+                          (i) =>
+                            i.id === `integration-resource:::${integrationId}`,
+                        );
+                        handleDragStart(e, itemIndex);
+                      }
+                    : undefined
+                }
+                onDragOver={
+                  isDragMode
+                    ? (e) => {
+                        const itemIndex = allPinnedItems.findIndex(
+                          (i) =>
+                            i.id === `integration-resource:::${integrationId}`,
+                        );
+                        handleDragOver(e, itemIndex);
+                      }
+                    : undefined
+                }
+                onDragLeave={isDragMode ? handleDragLeave : undefined}
+                onDrop={
+                  isDragMode
+                    ? (e) => {
+                        const itemIndex = allPinnedItems.findIndex(
+                          (i) =>
+                            i.id === `integration-resource:::${integrationId}`,
+                        );
+                        handleDrop(e, itemIndex);
+                      }
+                    : undefined
+                }
+                onDragEnd={isDragMode ? handleDragEnd : undefined}
+                className={
+                  isDragMode
+                    ? `cursor-grab active:cursor-grabbing transition-all
+                     ${draggedItem === allPinnedItems.findIndex((i) => i.id === `integration-resource:::${integrationId}`) ? "opacity-50" : ""}`
+                    : ""
+                }
+              >
+                <Collapsible
+                  asChild
+                  defaultOpen={false}
+                  className="group/collapsible"
+                >
+                  <div className="group/integration-header relative">
+                    <CollapsibleTrigger asChild>
+                      <SidebarMenuButton
+                        className="w-full pr-8"
+                        onClick={(e) => {
+                          if (isDragMode) {
+                            e.preventDefault();
+                            e.stopPropagation();
+                          }
+                        }}
+                      >
+                        {isDragMode && (
+                          <Icon
+                            name="drag_indicator"
+                            size={16}
+                            className="text-muted-foreground shrink-0"
+                          />
+                        )}
+                        <div className="relative">
+                          <IntegrationAvatar
+                            size="xs"
+                            url={integration?.icon}
+                            fallback={integration?.name}
+                            className="!w-[18px] !h-[18px] !rounded-md"
+                          />
+                        </div>
+                        <span className="truncate">
+                          {integration?.name ?? "Resources"}
+                        </span>
+                        <Icon
+                          name="chevron_right"
+                          size={18}
+                          className="ml-auto transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90 text-muted-foreground/75"
+                        />
+                      </SidebarMenuButton>
+                    </CollapsibleTrigger>
+                    <CollapsibleContent>
+                      <SidebarMenuSub>
+                        {resources.map((resource) => {
+                          const href = buildResourceHrefFromResource(resource);
+
+                          return (
+                            <SidebarMenuSubItem key={resource.id}>
+                              <SidebarMenuSubButton asChild>
+                                <Link
+                                  to={href}
+                                  className="group/item relative"
+                                  onClick={() => {
+                                    trackEvent("sidebar_navigation_click", {
+                                      item: resource.title,
+                                    });
+                                    isMobile && toggleSidebar();
+                                  }}
+                                >
+                                  <Icon
+                                    name="folder"
+                                    size={18}
+                                    className="text-muted-foreground/75"
+                                  />
+                                  <span className="truncate group-hover/item:pr-8">
+                                    {resource.title}
+                                  </span>
+                                  <Icon
+                                    name="remove"
+                                    size={18}
+                                    className="text-muted-foreground opacity-0 group-hover/item:opacity-50 hover:opacity-100 cursor-pointer absolute right-1 top-1/2 -translate-y-1/2"
+                                    onClick={(e) => {
+                                      e.preventDefault();
+                                      e.stopPropagation();
+                                      handleRemoveResource({
+                                        resourceId: resource.id,
+                                      });
+                                    }}
+                                  />
+                                </Link>
+                              </SidebarMenuSubButton>
+                            </SidebarMenuSubItem>
+                          );
+                        })}
+                      </SidebarMenuSub>
+                    </CollapsibleContent>
+                  </div>
+                </Collapsible>
+              </SidebarMenuItem>
+            );
+          },
+        )}
+
+      {/* OLD: Pinned Resource Instances - now handled by unified rendering above */}
+      {false && _pinnedResources.length > 0 && (
         <>
-          {_pinnedResources.map((resource) => (
-            <SidebarMenuItem key={`pinned-${resource.id}`}>
+          {_pinnedResources.map((resource, _index) => (
+            <SidebarMenuItem
+              key={`pinned-${resource.id}`}
+              draggable={isDragMode}
+              onDragStart={
+                isDragMode
+                  ? (e) => {
+                      const itemIndex = allPinnedItems.findIndex(
+                        (i) => i.id === `pinned:::${resource.id}`,
+                      );
+                      handleDragStart(e, itemIndex);
+                    }
+                  : undefined
+              }
+              onDragOver={
+                isDragMode
+                  ? (e) => {
+                      const itemIndex = allPinnedItems.findIndex(
+                        (i) => i.id === `pinned:::${resource.id}`,
+                      );
+                      handleDragOver(e, itemIndex);
+                    }
+                  : undefined
+              }
+              onDragLeave={isDragMode ? handleDragLeave : undefined}
+              onDrop={
+                isDragMode
+                  ? (e) => {
+                      const itemIndex = allPinnedItems.findIndex(
+                        (i) => i.id === `pinned:::${resource.id}`,
+                      );
+                      handleDrop(e, itemIndex);
+                    }
+                  : undefined
+              }
+              onDragEnd={isDragMode ? handleDragEnd : undefined}
+              className={
+                isDragMode
+                  ? `cursor-grab active:cursor-grabbing transition-all
+                     ${draggedItem === allPinnedItems.findIndex((i) => i.id === `pinned:::${resource.id}`) ? "opacity-50" : ""}
+`
+                  : ""
+              }
+            >
               <WithActive to={resource.path}>
                 {({ isActive }) => (
                   <SidebarMenuButton
-                    asChild
+                    asChild={!isDragMode}
                     isActive={isActive}
                     className="w-full pr-2"
                   >
-                    <Link
-                      to={resource.path}
-                      className="group/item relative"
-                      onClick={(e) => {
-                        // Reload if already on current page (client-side)
-                        if (location.pathname === resource.path) {
-                          e.preventDefault();
-                          navigate(0);
-                          return;
-                        }
-
-                        trackEvent("sidebar_navigation_click", {
-                          item: resource.name,
-                          type: "pinned-resource",
-                        });
-                        isMobile && toggleSidebar();
-                      }}
-                    >
-                      {resource.type === "agent" ? (
-                        <AgentAvatar
-                          size="xs"
-                          url={resource.icon}
-                          fallback={resource.name}
-                          className="!w-[20px] !h-[20px] shrink-0"
-                        />
-                      ) : resource.icon ? (
+                    {isDragMode ? (
+                      <div className="group/item relative flex items-center gap-2">
                         <Icon
-                          name={resource.icon}
-                          size={20}
-                          className="text-muted-foreground/75 shrink-0"
+                          name="drag_indicator"
+                          size={16}
+                          className="text-muted-foreground shrink-0"
                         />
-                      ) : null}
-                      <span className="truncate flex-1 min-w-0 group-hover/item:pr-8">
-                        {resource.name}
-                      </span>
-                      <Icon
-                        name="unpin"
-                        size={18}
-                        className="text-muted-foreground opacity-0 group-hover/item:opacity-50 hover:opacity-100 cursor-pointer absolute right-1 top-1/2 -translate-y-1/2"
+                        {resource.type === "agent" ? (
+                          <AgentAvatar
+                            size="xs"
+                            url={resource.icon}
+                            fallback={resource.name}
+                            className="!w-[20px] !h-[20px] shrink-0"
+                          />
+                        ) : resource.icon ? (
+                          <Icon
+                            name={resource.icon}
+                            size={20}
+                            className="text-muted-foreground/75 shrink-0"
+                          />
+                        ) : null}
+                        <span className="truncate flex-1 min-w-0">
+                          {resource.name}
+                        </span>
+                      </div>
+                    ) : (
+                      <Link
+                        to={resource.path}
+                        className="group/item relative"
                         onClick={(e) => {
-                          e.preventDefault();
-                          e.stopPropagation();
-                          _togglePin(resource);
+                          trackEvent("sidebar_navigation_click", {
+                            item: resource.name,
+                            type: "pinned-resource",
+                          });
+                          isMobile && toggleSidebar();
                         }}
-                      />
-                    </Link>
+                      >
+                        {resource.type === "agent" ? (
+                          <AgentAvatar
+                            size="xs"
+                            url={resource.icon}
+                            fallback={resource.name}
+                            className="!w-[20px] !h-[20px] shrink-0"
+                          />
+                        ) : resource.icon ? (
+                          <Icon
+                            name={resource.icon}
+                            size={20}
+                            className="text-muted-foreground/75 shrink-0"
+                          />
+                        ) : null}
+                        <span className="truncate flex-1 min-w-0 group-hover/item:pr-8">
+                          {resource.name}
+                        </span>
+                        <Icon
+                          name="unpin"
+                          size={18}
+                          className="text-muted-foreground opacity-0 group-hover/item:opacity-50 hover:opacity-100 cursor-pointer absolute right-1 top-1/2 -translate-y-1/2"
+                          onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            _togglePin(resource);
+                          }}
+                        />
+                      </Link>
+                    )}
                   </SidebarMenuButton>
                 )}
               </WithActive>
@@ -1028,13 +2413,6 @@ function WorkspaceViews() {
                       to={resource.path}
                       className="group/item relative"
                       onClick={(e) => {
-                        // Reload if already on current page (client-side)
-                        if (location.pathname === resource.path) {
-                          e.preventDefault();
-                          navigate(0);
-                          return;
-                        }
-
                         trackEvent("sidebar_navigation_click", {
                           item: resource.name,
                           type: "recent-resource",
@@ -1077,14 +2455,32 @@ function WorkspaceViews() {
                           onClick={(e) => {
                             e.preventDefault();
                             e.stopPropagation();
-                            _togglePin({
-                              id: resource.id,
-                              name: resource.name,
-                              type: resource.type,
-                              integration_id: resource.integration_id,
-                              icon: resource.icon,
-                              path: resource.path,
-                            });
+
+                            // Check if this is a native view
+                            const isNativeView =
+                              resource.type === "view" &&
+                              mcpItems.some((item) => item.id === resource.id);
+
+                            if (isNativeView) {
+                              // For native views, just unmark as unpinned
+                              _pinNativeView(resource.id);
+                              trackEvent(
+                                "sidebar_pin_native_view_from_recents",
+                                {
+                                  view: resource.name,
+                                },
+                              );
+                            } else {
+                              // For regular resources, use the toggle pin
+                              _togglePin({
+                                id: resource.id,
+                                name: resource.name,
+                                type: resource.type,
+                                integration_id: resource.integration_id,
+                                icon: resource.icon,
+                                path: resource.path,
+                              });
+                            }
                           }}
                         />
                       </div>
@@ -1095,7 +2491,7 @@ function WorkspaceViews() {
             </SidebarMenuItem>
           ))}
 
-          {/* Show All / Show Recent toggle */}
+          {/* Show All / Show Less toggle */}
           {_hasMoreRecents && (
             <SidebarMenuItem>
               <SidebarMenuButton
@@ -1107,7 +2503,7 @@ function WorkspaceViews() {
                   size={16}
                   className="text-muted-foreground/75"
                 />
-                <span>{_showAllRecents ? "Show recent" : "Show all"}</span>
+                <span>{_showAllRecents ? "Show less" : "Show all"}</span>
               </SidebarMenuButton>
             </SidebarMenuItem>
           )}

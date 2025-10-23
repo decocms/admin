@@ -1,10 +1,11 @@
-import type { Agent } from "@deco/sdk";
+import type { Agent, View } from "@deco/sdk";
 import {
   AgentWithActivity,
   useAgents,
   useRemoveAgent,
   useSDK,
   WELL_KNOWN_AGENT_IDS,
+  useTrackNativeViewVisit,
 } from "@deco/sdk";
 import {
   AlertDialog,
@@ -42,6 +43,7 @@ import { DateTimeCell, UserInfo } from "../common/table/table-cells.tsx";
 import { useSetThreadContextEffect } from "../decopilot/thread-context-provider.tsx";
 import { ResourceHeader } from "../resources-v2/resource-header.tsx";
 import { useFocusChat } from "./hooks.ts";
+import { useCurrentTeam } from "../sidebar/team-selector.tsx";
 
 export const useDuplicateAgent = (agent: Agent | null) => {
   const [duplicating, setDuplicating] = useState(false);
@@ -399,6 +401,25 @@ function AgentsList() {
       },
     },
   );
+
+  // Track visit to Agents page for recents (only if unpinned)
+  const { locator } = useSDK();
+  const projectKey = typeof locator === "string" ? locator : undefined;
+  const team = useCurrentTeam();
+
+  const agentsViewId = useMemo(() => {
+    const views = (team?.views ?? []) as View[];
+    const view = views.find((v) => v.title === "Agents");
+    return view?.id;
+  }, [team?.views]);
+
+  useTrackNativeViewVisit({
+    viewId: agentsViewId || "agents-fallback",
+    viewTitle: "Agents",
+    viewIcon: "robot_2",
+    viewPath: `/${projectKey}/agents`,
+    projectKey,
+  });
 
   const agentsByVisibility = useMemo(() => {
     const initial: Record<

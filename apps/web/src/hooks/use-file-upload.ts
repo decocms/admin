@@ -154,14 +154,21 @@ export function useFileUpload(options: UseFileUploadOptions = {}) {
       setIsDragging(false);
       skip = false;
       const dragEvent = e as unknown as DragEvent;
-      handleFileDrop(dragEvent);
+      // Only handle if there are files being dragged
+      if (dragEvent.dataTransfer?.files?.length) {
+        handleFileDrop(dragEvent);
+      }
     }
     function handleDragOver(e: Event) {
       if (skip) {
         return;
       }
-      e.preventDefault();
-      setIsDragging(true);
+      const dragEvent = e as unknown as DragEvent;
+      // Only prevent default if files are being dragged
+      if (dragEvent.dataTransfer?.types?.includes("Files")) {
+        e.preventDefault();
+        setIsDragging(true);
+      }
     }
     function handleDragEnd() {
       skip = false;

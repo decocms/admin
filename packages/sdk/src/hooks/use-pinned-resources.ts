@@ -145,6 +145,18 @@ export function usePinnedResources(projectKey?: string) {
     [isPinned, pin, unpin],
   );
 
+  const reorderPinnedResources = useCallback(
+    (startIndex: number, endIndex: number) => {
+      setPinnedResources((prev) => {
+        const result = Array.from(prev);
+        const [removed] = result.splice(startIndex, 1);
+        result.splice(endIndex, 0, removed);
+        return result;
+      });
+    },
+    [setPinnedResources],
+  );
+
   return {
     pinnedResources,
     isPinned,
@@ -152,6 +164,7 @@ export function usePinnedResources(projectKey?: string) {
     pin,
     unpin,
     updatePinnedResource,
+    reorderPinnedResources,
     isLoading: false,
   };
 }

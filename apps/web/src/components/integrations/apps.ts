@@ -38,6 +38,7 @@ export interface GroupedApp {
   connection?: MCPConnection;
   verified?: boolean;
   friendlyName?: string;
+  isNative?: boolean;
 }
 
 export interface AppKey {
@@ -95,6 +96,80 @@ export function isWellKnownApp(appKey: string): boolean {
     WELL_KNOWN_KNOWLEDGE_BASE_APP_KEY === appKey
   );
 }
+
+// Native apps that are always available
+export const NATIVE_APPS: GroupedApp[] = [
+  {
+    id: "native:::documents",
+    name: "Documents",
+    icon: "icon://docs",
+    description: "Create and manage documents with AI assistance",
+    instances: 1,
+    provider: "native",
+    usedBy: [],
+    isNative: true,
+  },
+  {
+    id: "native:::agents",
+    name: "Agents",
+    icon: "icon://robot_2",
+    description: "Create AI agents with specialized capabilities",
+    instances: 1,
+    provider: "native",
+    usedBy: [],
+    isNative: true,
+  },
+  {
+    id: "native:::workflows",
+    name: "Workflows",
+    icon: "icon://flowchart",
+    description: "Build and automate workflows",
+    instances: 1,
+    provider: "native",
+    usedBy: [],
+    isNative: true,
+  },
+  {
+    id: "native:::tools",
+    name: "Tools",
+    icon: "icon://build",
+    description: "Manage and configure your tools",
+    instances: 1,
+    provider: "native",
+    usedBy: [],
+    isNative: true,
+  },
+  {
+    id: "native:::views",
+    name: "Views",
+    icon: "icon://web",
+    description: "Custom views and pages",
+    instances: 1,
+    provider: "native",
+    usedBy: [],
+    isNative: true,
+  },
+  {
+    id: "native:::files",
+    name: "Files",
+    icon: "icon://folder",
+    description: "Manage and organize your files",
+    instances: 1,
+    provider: "native",
+    usedBy: [],
+    isNative: true,
+  },
+];
+
+// Map native app names to their canonical titles for view matching
+export const NATIVE_APP_NAME_MAP: Record<string, string> = {
+  "native:::documents": "Documents",
+  "native:::agents": "Agents",
+  "native:::workflows": "Workflows",
+  "native:::tools": "Tools",
+  "native:::views": "Views",
+  "native:::files": "Files",
+};
 
 export function getConnectionAppKey(connection: Integration): AppKey {
   try {
@@ -264,8 +339,13 @@ export function useGroupedApps({ filter }: { filter: string }) {
       });
     }
 
-    return apps;
-  }, [installedIntegrations, filter]);
+    // Add native apps at the beginning (filtered by search term)
+    const filteredNativeApps = NATIVE_APPS.filter((app) =>
+      app.name.toLowerCase().includes(filter.toLowerCase()),
+    );
+
+    return [...filteredNativeApps, ...apps];
+  }, [installedIntegrations, filter, marketplace]);
 
   return groupedApps;
 }

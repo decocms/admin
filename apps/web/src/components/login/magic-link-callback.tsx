@@ -9,7 +9,6 @@ function MagicLinkCallback() {
   const [searchParams] = useSearchParams();
   const [isRedirecting, setIsRedirecting] = useState(false);
 
-  // Supabase sends token_hash (snake_case) in the email URL
   const tokenHash =
     searchParams.get("token_hash") || searchParams.get("tokenHash");
   const type = searchParams.get("type");
@@ -22,8 +21,6 @@ function MagicLinkCallback() {
 
     setIsRedirecting(true);
 
-    // Build the API callback URL with the query parameters
-    // API expects tokenHash in camelCase
     const apiUrl = new URL("/auth/callback/magiclink", DECO_CMS_API_URL);
     apiUrl.searchParams.set("tokenHash", tokenHash);
     apiUrl.searchParams.set("type", type);
@@ -31,7 +28,6 @@ function MagicLinkCallback() {
       apiUrl.searchParams.set("next", next);
     }
 
-    // Redirect to the API endpoint
     globalThis.location.href = apiUrl.toString();
   };
 

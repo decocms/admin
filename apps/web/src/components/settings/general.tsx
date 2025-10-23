@@ -1,4 +1,12 @@
-import { useDeleteTeam, useSDK, useUpdateTeam, useWriteFile } from "@deco/sdk";
+import {
+  DEFAULT_THEME,
+  THEME_VARIABLES,
+  useDeleteTeam,
+  useSDK,
+  useUpdateTeam,
+  useWriteFile,
+  type ThemeVariable,
+} from "@deco/sdk";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -20,25 +28,24 @@ import {
   FormLabel,
   FormMessage,
 } from "@deco/ui/components/form.tsx";
+import { Icon } from "@deco/ui/components/icon.tsx";
 import { Input } from "@deco/ui/components/input.tsx";
 import { ScrollArea } from "@deco/ui/components/scroll-area.tsx";
+import { toast } from "@deco/ui/components/sonner.tsx";
 import { Spinner } from "@deco/ui/components/spinner.tsx";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { useEffect, useMemo, useRef, useState } from "react";
-import { useForm } from "react-hook-form";
-import { z } from "zod";
-import { Avatar } from "../common/avatar/index.tsx";
-import { useCurrentTeam } from "../sidebar/team-selector.tsx";
-import { Icon } from "@deco/ui/components/icon.tsx";
-import { DEFAULT_THEME, THEME_VARIABLES, type ThemeVariable } from "@deco/sdk";
 import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
 } from "@deco/ui/components/tooltip.tsx";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { useForm } from "react-hook-form";
+import { z } from "zod";
+import { Avatar } from "../common/avatar/index.tsx";
+import { useCurrentTeam } from "../sidebar/team-selector.tsx";
 import { clearThemeCache } from "../theme.tsx";
-import { toast } from "@deco/ui/components/sonner.tsx";
 
 interface GeneralSettingsFormValues {
   teamName: string;

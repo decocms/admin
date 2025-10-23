@@ -53,6 +53,7 @@ import {
 } from "@deco/ui/components/sidebar.tsx";
 import { Skeleton } from "@deco/ui/components/skeleton.tsx";
 import {
+  MouseEventHandler,
   type ReactNode,
   Suspense,
   useEffect,
@@ -242,7 +243,6 @@ function WorkspaceViews() {
 
   // Drag and drop state for pinned items
   const [draggedItem, setDraggedItem] = useState<number | null>(null);
-  const [_dragOverItem, setDragOverItem] = useState<number | null>(null);
   const [isDragMode, setIsDragMode] = useState(false);
   const draggedItemIdRef = useRef<string | null>(null);
 
@@ -304,7 +304,7 @@ function WorkspaceViews() {
     // Not needed for swap behavior
   };
 
-  const handleDrop = (e: React.DragEvent, _dropIndex: number) => {
+  const handleDrop = (e: React.DragEvent) => {
     e.preventDefault();
     e.stopPropagation();
 
@@ -321,12 +321,10 @@ function WorkspaceViews() {
     }
 
     setDraggedItem(null);
-    setDragOverItem(null);
   };
 
   const handleDragEnd = () => {
     setDraggedItem(null);
-    setDragOverItem(null);
     draggedItemIdRef.current = null;
   };
 
@@ -621,9 +619,7 @@ function WorkspaceViews() {
       ? (e: React.DragEvent) => handleDragOver(e, index)
       : undefined,
     onDragLeave: isDragMode ? handleDragLeave : undefined,
-    onDrop: isDragMode
-      ? (e: React.DragEvent) => handleDrop(e, index)
-      : undefined,
+    onDrop: isDragMode ? (e: React.DragEvent) => handleDrop(e) : undefined,
     onDragEnd: isDragMode ? handleDragEnd : undefined,
     className: isDragMode
       ? `cursor-grab active:cursor-grabbing transition-all duration-150 ${
@@ -697,7 +693,7 @@ function WorkspaceViews() {
     item: (typeof allPinnedItems)[0],
     index: number,
   ) => {
-    const nativeItem = item.data;
+    const nativeItem = item.data as Record<string, unknown>;
     if ("onClick" in nativeItem && nativeItem.comingSoon) {
       // Files button
       const filesViewId = "native:::files";
@@ -705,7 +701,11 @@ function WorkspaceViews() {
         <SidebarMenuItem key={item.id} {...getDragProps(index, item.id)}>
           <SidebarMenuButton
             className="cursor-pointer group/item relative w-full pr-2"
-            onClick={isDragMode ? undefined : nativeItem.onClick}
+            onClick={
+              isDragMode
+                ? undefined
+                : (nativeItem.onClick as MouseEventHandler<HTMLButtonElement>)
+            }
           >
             {isDragMode && (
               <Icon
@@ -715,12 +715,12 @@ function WorkspaceViews() {
               />
             )}
             <Icon
-              name={nativeItem.icon}
+              name={nativeItem.icon as string}
               size={20}
               className="text-muted-foreground/75 shrink-0"
             />
             <span className="truncate flex-1 min-w-0 group-hover/item:pr-8">
-              {nativeItem.title}
+              {nativeItem.title as string}
             </span>
             <Badge
               variant="secondary"
@@ -746,7 +746,7 @@ function WorkspaceViews() {
       );
     }
     // Regular native view (Documents, Agents, etc.)
-    const view = nativeItem as View;
+    const view = nativeItem as unknown as View;
     const href = buildViewHrefFromView(view);
     const displayTitle = canonicalTitle(view.title);
     return (
@@ -840,7 +840,7 @@ function WorkspaceViews() {
               isDragMode ? (e) => handleDragOver(e, index) : undefined
             }
             onDragLeave={isDragMode ? handleDragLeave : undefined}
-            onDrop={isDragMode ? (e) => handleDrop(e, index) : undefined}
+            onDrop={isDragMode ? (e) => handleDrop(e) : undefined}
             onDragEnd={isDragMode ? handleDragEnd : undefined}
             className={
               isDragMode
@@ -920,7 +920,7 @@ function WorkspaceViews() {
           }
           onDragOver={isDragMode ? (e) => handleDragOver(e, index) : undefined}
           onDragLeave={isDragMode ? handleDragLeave : undefined}
-          onDrop={isDragMode ? (e) => handleDrop(e, index) : undefined}
+          onDrop={isDragMode ? (e) => handleDrop(e) : undefined}
           onDragEnd={isDragMode ? handleDragEnd : undefined}
           className={
             isDragMode
@@ -1049,7 +1049,7 @@ function WorkspaceViews() {
           }
           onDragOver={isDragMode ? (e) => handleDragOver(e, index) : undefined}
           onDragLeave={isDragMode ? handleDragLeave : undefined}
-          onDrop={isDragMode ? (e) => handleDrop(e, index) : undefined}
+          onDrop={isDragMode ? (e) => handleDrop(e) : undefined}
           onDragEnd={isDragMode ? handleDragEnd : undefined}
           className={
             isDragMode
@@ -1131,7 +1131,7 @@ function WorkspaceViews() {
         onDragStart={isDragMode ? (e) => handleDragStart(e, index) : undefined}
         onDragOver={isDragMode ? (e) => handleDragOver(e, index) : undefined}
         onDragLeave={isDragMode ? handleDragLeave : undefined}
-        onDrop={isDragMode ? (e) => handleDrop(e, index) : undefined}
+        onDrop={isDragMode ? (e) => handleDrop(e) : undefined}
         onDragEnd={isDragMode ? handleDragEnd : undefined}
         className={
           isDragMode
@@ -1283,7 +1283,8 @@ function WorkspaceViews() {
     item: (typeof allPinnedItems)[0],
     index: number,
   ) => {
-    const resource = item.data;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const resource = item.data as any;
     return (
       <SidebarMenuItem
         key={item.id}
@@ -1291,7 +1292,7 @@ function WorkspaceViews() {
         onDragStart={isDragMode ? (e) => handleDragStart(e, index) : undefined}
         onDragOver={isDragMode ? (e) => handleDragOver(e, index) : undefined}
         onDragLeave={isDragMode ? handleDragLeave : undefined}
-        onDrop={isDragMode ? (e) => handleDrop(e, index) : undefined}
+        onDrop={isDragMode ? (e) => handleDrop(e) : undefined}
         onDragEnd={isDragMode ? handleDragEnd : undefined}
         className={
           isDragMode

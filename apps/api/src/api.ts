@@ -29,15 +29,15 @@ import {
   createWorkflowRunsResourceV2Implementation,
   createWorkflowViewsV2,
   DECONFIG_TOOLS,
-  documentViews as legacyDocumentViews,
   EMAIL_TOOLS,
-  viewViews as legacyViewViews,
   getIntegration,
   getPresignedReadUrl_WITHOUT_CHECKING_AUTHORIZATION,
   getRegistryApp,
   getWorkspaceBucketName,
   GLOBAL_TOOLS,
   type IntegrationWithTools,
+  documentViews as legacyDocumentViews,
+  viewViews as legacyViewViews,
   workflowViews as legacyWorkflowViews,
   ListToolsMiddleware,
   PrincipalExecutionContext,
@@ -50,12 +50,12 @@ import {
   watchSSE,
   withMCPAuthorization,
   withMCPErrorHandling,
+  WithTool,
   WorkflowBindingImplOptions,
   wrapToolFn,
 } from "@deco/sdk/mcp";
-import { convertJsonSchemaToZod } from "zod-from-json-schema";
-import { executeTool } from "@deco/sdk/mcp/tools/api";
 import { getApps, getGroupByAppName } from "@deco/sdk/mcp/groups";
+import { executeTool } from "@deco/sdk/mcp/tools/api";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import {
   CallToolRequestSchema,
@@ -71,6 +71,7 @@ import { endTime, startTime } from "hono/timing";
 import type { ContentfulStatusCode } from "hono/utils/http-status";
 import { studio } from "outerbase-browsable-do-enforced";
 import { z } from "zod";
+import { convertJsonSchemaToZod } from "zod-from-json-schema";
 import { ROUTES as loginRoutes } from "./auth/index.ts";
 import { withActorsStubMiddleware } from "./middlewares/actors-stub.ts";
 import { withActorsMiddleware } from "./middlewares/actors.ts";
@@ -781,7 +782,7 @@ const createSelfTools = async (ctx: Context) => {
           data: unknown;
         }>;
       }
-    ).items.map(async (toolUri: unknown) => {
+    ).items.map(async (toolUri) => {
       const fullTool = await State.run(
         appCtx,
         async () =>
@@ -795,6 +796,7 @@ const createSelfTools = async (ctx: Context) => {
 
   // 3. Transform custom tools into executable tools
   const customTools = toolsWithFullData.map((toolResult: unknown) => {
+    // @ts-expect-error - Typings not really working, but this is fine
     const toolData = toolResult.data;
 
     // Convert JSON Schema to Zod for proper UI rendering
@@ -824,7 +826,7 @@ const createSelfTools = async (ctx: Context) => {
           const { result } = await executeTool(
             toolData,
             input,
-            contextWithTool,
+            contextWithTool as WithTool<AppContext>,
             appCtx.token,
           );
 
@@ -864,7 +866,7 @@ const createSelfTools = async (ctx: Context) => {
           data: unknown;
         }>;
       }
-    ).items.map(async (workflowUri: unknown) => {
+    ).items.map(async (workflowUri) => {
       const fullWorkflow = await State.run(
         appCtx,
         async () =>
@@ -878,6 +880,7 @@ const createSelfTools = async (ctx: Context) => {
 
   // 6. Create workflow start tools (similar to packages/runtime/src/mastra.ts:416-442)
   const workflowTools = workflowsWithFullData.map((workflowResult: unknown) => {
+    // @ts-expect-error - Typings not really working, but this is fine
     const workflow = workflowResult.data;
 
     // Convert the first step's inputSchema from JSON Schema to Zod
@@ -908,15 +911,17 @@ const createSelfTools = async (ctx: Context) => {
         // Use DECO_WORKFLOW_START to start the workflow
         return await State.run(appCtx, async () => {
           const workflowBinding = createWorkflowBindingImpl({
-            resourceWorkflowRead: ((uri: string) =>
+            // @ts-expect-error - Typings not really working, but this is fine
+            resourceWorkflowRead: (uri: string) =>
               State.run(
                 appCtx,
                 async () =>
                   await workflowsResourceClient.DECO_RESOURCE_WORKFLOW_READ({
                     uri,
                   }),
-              )) as unknown,
-            resourceWorkflowUpdate: ((uri: string, data: unknown) =>
+              ),
+            // @ts-expect-error - Typings not really working, but this is fine
+            resourceWorkflowUpdate: (uri: string, data: unknown) =>
               State.run(
                 appCtx,
                 async () =>
@@ -924,7 +929,7 @@ const createSelfTools = async (ctx: Context) => {
                     uri,
                     data,
                   }),
-              )) as unknown,
+              ),
           });
 
           const startTool = workflowBinding.find(
@@ -934,7 +939,9 @@ const createSelfTools = async (ctx: Context) => {
             throw new Error("DECO_WORKFLOW_START tool not found");
           }
           return await startTool.handler({
+            // @ts-expect-error - Typings not really working, but this is fine
             uri: workflowResult.uri,
+            // @ts-expect-error - Typings not really working, but this is fine
             input: input,
           });
         });

@@ -55,7 +55,6 @@ function AppCard({
   const projectKey = org && project ? `${org}/${project}` : undefined;
   const { pinView, unpinView, isViewUnpinned } =
     useUnpinnedNativeViews(projectKey);
-  const workspaceLink = useWorkspaceLink();
 
   // Use actual view ID for checking pinned status
   // For Files (and other coming-soon features), use the app.id since they don't have real views

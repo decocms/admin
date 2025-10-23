@@ -440,6 +440,7 @@ export function AgenticChatProvider({
         result.isAbort || result.isDisconnect || result.isError;
 
       if (isCancelled) {
+        setFinishReason(null);
         return;
       }
 

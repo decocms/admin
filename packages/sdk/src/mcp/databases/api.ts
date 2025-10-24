@@ -1,6 +1,10 @@
 import z from "zod";
 import { workspaceDB } from "../context.ts";
-import { assertHasLocator, assertHasWorkspace, assertWorkspaceResourceAccess } from "../index.ts";
+import {
+  assertHasLocator,
+  assertHasWorkspace,
+  assertWorkspaceResourceAccess,
+} from "../index.ts";
 import { createDatabaseTool } from "./tool.ts";
 import { WellKnownMcpGroups } from "../groups.ts";
 import { listViewsSchema } from "../bindings/views.ts";

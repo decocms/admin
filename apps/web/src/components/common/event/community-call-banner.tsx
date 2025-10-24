@@ -1,11 +1,16 @@
 import { EventBanner } from "../event-banner";
 
-// Community call URLs
-const COMMUNITY_CALL_URL = "https://decocms.com/discord"; // Discord link for all states
+// Event URLs
+const COMMUNITY_CALL_URL = "https://decocms.com/discord";
+const WORKSHOP_URL = "https://luma.com/e2qlb9j4";
 
 // Banner decoration images
 const LEFT_BACKGROUND_IMAGE = "/img/banner-decoration-2.svg";
 const RIGHT_BACKGROUND_IMAGE = "/img/banner-decoration-1.svg";
+
+// Workshop Build in Public event - October 29, 2025, 5PM-7PM BRT
+const WORKSHOP_START_DATE = new Date(2025, 9, 29, 17, 0, 0, 0); // Month is 0-indexed (9 = October)
+const WORKSHOP_END_DATE = new Date(2025, 9, 29, 19, 0, 0, 0);
 
 function getNextFridayAt2PM(now: Date = new Date()): {
   startDate: Date;
@@ -57,6 +62,39 @@ const {
 } = getNextFridayAt2PM();
 
 export function CommunityCallBanner() {
+  const now = new Date();
+
+  // If workshop hasn't ended yet, show workshop banner
+  if (now < WORKSHOP_END_DATE) {
+    return (
+      <EventBanner
+        startDate={WORKSHOP_START_DATE}
+        endDate={WORKSHOP_END_DATE}
+        upcoming={{
+          subtitle: "WORKSHOP BUILD IN PUBLIC",
+          title: "Watch us build an E-commerce Healthcheck Agent live",
+          buttonText: "Register now!",
+          buttonAction: WORKSHOP_URL,
+        }}
+        active={{
+          subtitle: "BUILD IN PUBLIC | LIVE NOW",
+          title: "Watch us build an E-commerce Healthcheck Agent live now.",
+          buttonText: "WATCH NOW!",
+          buttonAction: WORKSHOP_URL,
+        }}
+        past={{
+          subtitle: "WORKSHOP BUILD IN PUBLIC",
+          title: "Watch us build an E-commerce Healthcheck Agent live",
+          buttonText: "Register now!",
+          buttonAction: WORKSHOP_URL,
+        }}
+        leftBackgroundImage={LEFT_BACKGROUND_IMAGE}
+        rightBackgroundImage={RIGHT_BACKGROUND_IMAGE}
+      />
+    );
+  }
+
+  // After workshop ends, show regular Community Call banner
   return (
     <EventBanner
       startDate={COMMUNITY_CALL_START_DATE}

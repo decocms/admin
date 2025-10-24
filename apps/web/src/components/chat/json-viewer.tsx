@@ -62,11 +62,15 @@ const TreeNode = memo(function TreeNode({
     return (
       <div
         style={{ paddingLeft: `${indent}px` }}
-        className="flex items-start gap-2 py-1 text-sm leading-normal"
+        className="flex items-start gap-2 py-1 text-sm leading-normal min-w-0"
       >
         <div className="w-4 shrink-0" />
-        {nodeKey && <span className="text-[#82AAFF] shrink-0">{nodeKey}:</span>}
-        <span className="text-[#546E7A] break-all">[Max Depth Reached]</span>
+        <span className="min-w-0 flex-1 wrap-anywhere">
+          {nodeKey && (
+            <span className="text-[#82AAFF] shrink-0">{nodeKey}: </span>
+          )}
+          <span className="text-[#546E7A]">[Max Depth Reached]</span>
+        </span>
       </div>
     );
   }
@@ -76,21 +80,25 @@ const TreeNode = memo(function TreeNode({
     return (
       <div
         style={{ paddingLeft: `${indent}px` }}
-        className="flex items-start gap-2 py-1 text-sm leading-normal"
+        className="flex items-start gap-2 py-1 text-sm leading-normal min-w-0"
       >
         <div className="w-4 shrink-0" />
-        {nodeKey && <span className="text-[#82AAFF] shrink-0">{nodeKey}:</span>}
-        {value === null ? (
-          <span className="text-[#C792EA] break-all">null</span>
-        ) : typeof value === "boolean" ? (
-          <span className="text-[#C792EA] break-all">{value.toString()}</span>
-        ) : typeof value === "number" ? (
-          <span className="text-[#F78C6C] break-all">{value}</span>
-        ) : typeof value === "string" ? (
-          <span className="text-[#C3E88D] break-all">{value}</span>
-        ) : (
-          <span className="text-[#EEFFFF] break-all">{String(value)}</span>
-        )}
+        <span className="min-w-0 flex-1 wrap-anywhere">
+          {nodeKey && (
+            <span className="text-[#82AAFF] shrink-0">{nodeKey}: </span>
+          )}
+          {value === null ? (
+            <span className="text-[#C792EA]">null</span>
+          ) : typeof value === "boolean" ? (
+            <span className="text-[#C792EA]">{value.toString()}</span>
+          ) : typeof value === "number" ? (
+            <span className="text-[#F78C6C]">{value}</span>
+          ) : typeof value === "string" ? (
+            <span className="text-[#C3E88D]">{value}</span>
+          ) : (
+            <span className="text-[#EEFFFF]">{String(value)}</span>
+          )}
+        </span>
       </div>
     );
   }
@@ -105,7 +113,7 @@ const TreeNode = memo(function TreeNode({
           setIsOpen(!isOpen);
         }}
         style={{ paddingLeft: `${indent}px` }}
-        className="flex items-start gap-2 py-1 w-full text-left hover:bg-white/5 transition-colors rounded leading-normal"
+        className="flex items-start gap-2 py-1 w-full text-left hover:bg-white/5 transition-colors rounded leading-normal min-w-0"
       >
         <Icon
           name="chevron_right"
@@ -114,13 +122,17 @@ const TreeNode = memo(function TreeNode({
             isOpen && "rotate-90",
           )}
         />
-        {nodeKey && <span className="text-[#82AAFF] shrink-0">{nodeKey}</span>}
-        <span className="text-[#546E7A]">
-          {valueType}{" "}
-          {count !== null && (
-            <span className="text-[#89DDFF]">{`{${count}}`}</span>
+        <div className="min-w-0 flex-1 wrap-anywhere">
+          {nodeKey && (
+            <span className="text-[#82AAFF] shrink-0">{nodeKey}: </span>
           )}
-        </span>
+          <span className="text-[#546E7A]">
+            {valueType}{" "}
+            {count !== null && (
+              <span className="text-[#89DDFF]">{`{${count}}`}</span>
+            )}
+          </span>
+        </div>
       </button>
       {isOpen && (
         <div>
@@ -136,7 +148,7 @@ const TreeNode = memo(function TreeNode({
 function JsonTreeView({ data }: { data: unknown }) {
   return (
     <div
-      className="p-4 text-sm rounded-lg min-w-0 overflow-hidden"
+      className="p-4 text-sm overflow-auto rounded-lg h-full"
       style={{ background: "#263238" }}
     >
       <TreeNode value={data} level={0} />
@@ -170,9 +182,15 @@ export function JsonViewer({
     navigator.clipboard.writeText(jsonString);
   };
 
+  const isFullHeight = maxHeight === "100%";
+
   return (
     <div
-      className={cn("relative min-w-0 overflow-hidden grid", className)}
+      className={cn(
+        "relative min-w-0 flex flex-col",
+        isFullHeight ? "h-full" : "max-h-[500px]",
+        className,
+      )}
       onMouseEnter={() => setShowButtons(true)}
       onMouseLeave={() => setShowButtons(false)}
       onFocus={() => setShowButtons(true)}
@@ -217,15 +235,20 @@ export function JsonViewer({
         </div>
       )}
       <div
-        className="overflow-x-auto overflow-y-auto min-w-0"
-        style={{ maxHeight }}
+        className={cn(
+          "overflow-x-auto min-w-0",
+          isFullHeight ? "h-full w-full" : "overflow-y-auto flex-1",
+        )}
         onClick={(e) => e.stopPropagation()}
       >
         {viewMode === "code" ? (
           <ErrorBoundary
             fallback={
               <pre
-                className="p-4 text-xs whitespace-pre-wrap break-all rounded-lg m-0"
+                className={cn(
+                  "p-4 text-xs whitespace-pre-wrap break-all rounded-lg m-0",
+                  isFullHeight && "h-full",
+                )}
                 style={{ background: "#263238", color: "#EEFFFF" }}
               >
                 <code className="select-text cursor-auto">
@@ -237,7 +260,10 @@ export function JsonViewer({
             <Suspense
               fallback={
                 <pre
-                  className="p-4 text-xs whitespace-pre-wrap break-all rounded-lg m-0"
+                  className={cn(
+                    "p-4 text-xs whitespace-pre-wrap break-all rounded-lg m-0",
+                    isFullHeight && "h-full",
+                  )}
                   style={{ background: "#263238", color: "#EEFFFF" }}
                 >
                   <code className="select-text cursor-auto">
@@ -246,7 +272,11 @@ export function JsonViewer({
                 </pre>
               }
             >
-              <LazyHighlighter language="json" content={jsonString || "{}"} />
+              <LazyHighlighter
+                language="json"
+                content={jsonString || "{}"}
+                fillHeight={isFullHeight}
+              />
             </Suspense>
           </ErrorBoundary>
         ) : (

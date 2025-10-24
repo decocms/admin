@@ -161,7 +161,7 @@ function JsonTreeNode({
 
   const renderKey = () => {
     if (!keyName) return null;
-    return <span className="text-foreground font-medium">"{keyName}":</span>;
+    return <span className="text-foreground font-medium">"{keyName}": </span>;
   };
 
   const indentLevel = level * 16;
@@ -169,12 +169,14 @@ function JsonTreeNode({
   if (!isExpandable(data)) {
     return (
       <div
-        className="flex items-start gap-2 py-1 font-mono text-sm"
+        className="flex items-start gap-2 py-1 font-mono text-sm min-w-0"
         style={{ paddingLeft: `${indentLevel}px` }}
       >
-        <span className="w-4"></span> {/* Space for expand icon */}
-        {renderKey()}
-        {renderPrimitive(data)}
+        <span className="w-4 shrink-0"></span> {/* Space for expand icon */}
+        <span className="min-w-0 flex-1 wrap-anywhere">
+          {renderKey()}
+          {renderPrimitive(data)}
+        </span>
       </div>
     );
   }
@@ -189,16 +191,22 @@ function JsonTreeNode({
   return (
     <div className="font-mono text-sm">
       <div
-        className="flex items-center gap-2 py-1 cursor-pointer hover:bg-muted/30 rounded"
+        className="flex items-center gap-2 py-1 cursor-pointer hover:bg-muted/30 rounded min-w-0"
         style={{ paddingLeft: `${indentLevel}px` }}
         onClick={(e) => {
           e.stopPropagation();
           setIsExpanded(!isExpanded);
         }}
       >
-        <Icon name={isExpanded ? "expand_more" : "chevron_right"} size={16} />
-        {renderKey()}
-        <span className={getTypeColor(data)}>{getValuePreview(data)}</span>
+        <Icon
+          name={isExpanded ? "expand_more" : "chevron_right"}
+          size={16}
+          className="shrink-0"
+        />
+        <div className="min-w-0 flex-1 wrap-anywhere">
+          {renderKey()}
+          <span className={getTypeColor(data)}>{getValuePreview(data)}</span>
+        </div>
       </div>
 
       {isExpanded && (
@@ -235,7 +243,7 @@ export function JsonTreeViewer({
       >
         <ExpandableString
           value={parsed}
-          className="whitespace-pre-wrap break-words font-mono text-current"
+          className="whitespace-pre-wrap wrap-anywhere font-mono text-current"
           isQuoted
         />
       </div>
@@ -249,7 +257,7 @@ export function JsonTreeViewer({
         className={compact ? "text-sm" : "bg-muted rounded p-3 text-sm"}
         onClick={(e) => e.stopPropagation()}
       >
-        <pre className="whitespace-pre-wrap break-words font-mono text-current">
+        <pre className="whitespace-pre-wrap wrap-anywhere font-mono text-current">
           {parsed === null ? "null" : "undefined"}
         </pre>
       </div>
@@ -263,7 +271,7 @@ export function JsonTreeViewer({
         className={compact ? "text-sm" : "bg-muted rounded p-3 text-sm"}
         onClick={(e) => e.stopPropagation()}
       >
-        <pre className="whitespace-pre-wrap break-words font-mono text-current">
+        <pre className="whitespace-pre-wrap wrap-anywhere font-mono text-current">
           {String(parsed)}
         </pre>
       </div>
@@ -273,7 +281,11 @@ export function JsonTreeViewer({
   // Handle objects and arrays
   return (
     <div
-      className={compact ? "max-h-64 overflow-y-auto" : "bg-muted rounded p-3"}
+      className={
+        compact
+          ? "max-h-64 overflow-auto"
+          : "bg-muted rounded p-3 overflow-x-auto"
+      }
       onClick={(e) => e.stopPropagation()}
     >
       <JsonTreeNode data={parsed} />

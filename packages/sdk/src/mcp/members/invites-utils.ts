@@ -1,3 +1,4 @@
+import { DECO_CMS_WEB_URL } from "../../constants.ts";
 import { NotFoundError } from "../../errors.ts";
 import type { Plan, PlanWithTeamMetadata } from "../../plan.ts";
 import type { Client } from "../../storage/index.ts";
@@ -18,6 +19,7 @@ export interface EmailBodyProps {
 }
 
 export function generateEmailBody({
+  inviteId,
   teamName,
   inviter,
   roles,
@@ -46,6 +48,8 @@ export function generateEmailBody({
     cleanInviter,
     cleanTeamName,
     formattedRoles,
+    inviteId,
+    adminUrl: DECO_CMS_WEB_URL,
   });
 
   return emailHTML;

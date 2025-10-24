@@ -33,3 +33,6 @@ jobs:
 
       - name: Run test
         run: bun run test
+
+      - name: Run knip
+        run: bun run knip

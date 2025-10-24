@@ -12,15 +12,19 @@
         "ajv-formats",
         "ajv"
       ]
+    },
+    "packages/runtime": {
+      "ignoreFiles": [
+        // Used on CI, not detected by knip atm
+        "scripts/generate-json-schema.ts"
+      ]
+    },
+    "packages/sdk": {
+      // TODO: Check if we really need this observability folder
+      "ignore": [
+        "src/observability/**/*"
+      ]
     }
-    // "apps/api": {
-    //   "entry": ["main.ts"],
-    //   "project": ["src/**/*.ts", "main.ts"]
-    // },
-    // "packages/*": {
-    //   "entry": ["src/index.ts"],
-    //   "project": ["src/**/*.ts"]
-    // }
   },
   "ignore": [
     "**/*.d.ts",

@@ -218,6 +218,10 @@ const InvitesList = lazy(() =>
   wrapWithUILoadingFallback(import("./components/invites/index.tsx")),
 );
 
+const InviteDetail = lazy(() =>
+  wrapWithUILoadingFallback(import("./components/invites/detail.tsx")),
+);
+
 const SalesDeck = lazy(() =>
   wrapWithUILoadingFallback(import("./components/sales-deck/deck.tsx")),
 );
@@ -440,7 +444,10 @@ const router = createBrowserRouter([
       {
         path: "/invites",
         Component: HomeLayout,
-        children: [{ index: true, Component: InvitesList }],
+        children: [
+          { index: true, Component: InvitesList },
+          { path: ":id", Component: InviteDetail },
+        ],
       },
       {
         path: "/login",

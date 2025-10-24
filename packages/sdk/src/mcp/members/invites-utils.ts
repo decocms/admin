@@ -18,6 +18,7 @@ export interface EmailBodyProps {
 }
 
 export function generateEmailBody({
+  inviteId,
   teamName,
   inviter,
   roles,
@@ -46,6 +47,7 @@ export function generateEmailBody({
     cleanInviter,
     cleanTeamName,
     formattedRoles,
+    inviteId,
   });
 
   return emailHTML;
@@ -74,6 +76,23 @@ export async function sendInviteEmail(
     roles,
   };
   const { RESEND_API_KEY } = getEnv(c);
+
+  // 🔍 TEST: Log invite details for local testing
+  console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+  console.log("📧 Invite Email Sent!");
+  console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+  console.log("Invite ID:", id);
+  console.log("Team:", team_name);
+  console.log("To:", invited_email);
+  console.log("From:", inviter);
+  console.log("Roles:", roles.join(", "));
+  console.log("");
+  console.log("🔗 Test URL (localhost):");
+  console.log(`   http://localhost:5173/invites/${id}`);
+  console.log("");
+  console.log("🔗 Production URL:");
+  console.log(`   https://admin.decocms.com/invites/${id}`);
+  console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
 
   const res = await fetch("https://api.resend.com/emails", {
     method: "POST",

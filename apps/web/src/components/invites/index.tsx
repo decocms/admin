@@ -10,10 +10,9 @@ import {
 import { Button } from "@deco/ui/components/button.tsx";
 import { Spinner } from "@deco/ui/components/spinner.tsx";
 import { Icon } from "@deco/ui/components/icon.tsx";
-import { Card, CardContent } from "@deco/ui/components/card.tsx";
+import { Card } from "@deco/ui/components/card.tsx";
 import { Badge } from "@deco/ui/components/badge.tsx";
 import { timeAgo } from "../../utils/time-ago.ts";
-import { ListPageHeader } from "../common/list-page-header.tsx";
 import { Table, type TableColumn } from "../common/table/index.tsx";
 import { EmptyState } from "../common/empty-state.tsx";
 import { useViewMode } from "@deco/ui/hooks/use-view-mode.ts";
@@ -35,109 +34,129 @@ function InviteCard({
   isAnyLoading: boolean;
 }) {
   return (
-    <Card className="overflow-hidden border rounded-xl hover:shadow-md transition-shadow">
-      <CardContent className="p-6 flex flex-col gap-4">
-        <div className="flex items-start justify-between">
-          <div className="flex flex-col gap-2">
-            <h3 className="text-lg font-semibold text-foreground">
-              {invite.teamName}
-            </h3>
-            <div className="flex gap-1 flex-wrap">
-              {invite.roles.map((role) => (
-                <Badge key={role.id} variant="outline" className="text-xs">
-                  {role.name.charAt(0).toUpperCase() + role.name.slice(1)}
-                </Badge>
-              ))}
+    <Card className="group cursor-default hover:shadow-sm transition-shadow overflow-hidden bg-card border-0 min-h-48">
+      <div className="flex flex-col h-full">
+        {/* Content Section */}
+        <div className="p-5 flex flex-col gap-3 flex-1">
+          <h3 className="text-base font-medium text-foreground">
+            {invite.teamName}
+          </h3>
+
+          <div className="flex gap-1 flex-wrap">
+            {invite.roles.map((role) => (
+              <Badge key={role.id} variant="secondary" className="text-xs">
+                {role.name.charAt(0).toUpperCase() + role.name.slice(1)}
+              </Badge>
+            ))}
+          </div>
+
+          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+            <div className="relative w-5 h-5 rounded-full overflow-hidden bg-muted">
+              <img
+                src={`https://ui-avatars.com/api/?name=${encodeURIComponent(
+                  invite.inviter.name || invite.inviter.email || "Unknown",
+                )}&size=20`}
+                alt="Inviter avatar"
+                className="w-full h-full object-cover"
+              />
             </div>
+            <span className="text-sm">
+              {invite.inviter.name || invite.inviter.email || "Unknown"}
+            </span>
           </div>
         </div>
 
-        <div className="flex items-center gap-2 text-sm text-muted-foreground">
-          <div className="relative w-6 h-6 rounded-full overflow-hidden bg-muted">
-            <img
-              src={`https://ui-avatars.com/api/?name=${encodeURIComponent(
-                invite.inviter.name || invite.inviter.email || "Unknown",
-              )}`}
-              alt="Inviter avatar"
-              className="w-full h-full object-cover"
-            />
-          </div>
-          <span>
-            Invited by{" "}
-            {invite.inviter.name || invite.inviter.email || "Unknown"}
-          </span>
-        </div>
-
-        <div className="flex items-center justify-between">
+        {/* Footer Section */}
+        <div className="border-t border-border px-5 py-3 flex items-center justify-between shrink-0">
           <span className="text-sm text-muted-foreground">
             {timeAgo(invite.createdAt)}
           </span>
 
           <div className="flex gap-2">
             <Button
-              onClick={() => onAccept(invite.id)}
-              disabled={isAnyLoading}
-              size="sm"
-              className="h-8"
-            >
-              {isAcceptLoading ? (
-                <Spinner size="xs" />
-              ) : (
-                <Icon name="check" className="mr-1" size={14} />
-              )}
-              Accept
-            </Button>
-            <Button
               onClick={() => onReject(invite.id)}
               disabled={isAnyLoading}
-              variant="outline"
+              variant="ghost"
               size="sm"
               className="h-8"
             >
               {isRejectLoading ? (
                 <Spinner size="xs" />
               ) : (
-                <Icon name="close" className="mr-1" size={14} />
+                <>
+                  <Icon name="close" className="mr-1.5" size={16} />
+                  Decline
+                </>
               )}
-              Reject
+            </Button>
+            <Button
+              onClick={() => onAccept(invite.id)}
+              disabled={isAnyLoading}
+              variant="special"
+              size="sm"
+              className="h-8"
+            >
+              {isAcceptLoading ? (
+                <Spinner size="xs" />
+              ) : (
+                <>
+                  <Icon name="check" className="mr-1.5" size={16} />
+                  Accept
+                </>
+              )}
             </Button>
           </div>
         </div>
-      </CardContent>
+      </div>
     </Card>
   );
 }
 
 function InvitesListSkeleton() {
   return (
-    <div className="flex flex-col gap-4 h-full p-4">
-      <div className="grid gap-4 grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
-        {Array.from({ length: 6 }).map((_, index) => (
-          <Card key={index} className="overflow-hidden border rounded-xl">
-            <CardContent className="p-6 flex flex-col gap-4">
-              <div className="flex items-start justify-between">
-                <div className="flex flex-col gap-2 flex-1">
-                  <div className="h-6 bg-muted rounded animate-pulse w-3/4"></div>
-                  <div className="flex gap-1">
-                    <div className="h-5 bg-muted rounded animate-pulse w-16"></div>
-                    <div className="h-5 bg-muted rounded animate-pulse w-20"></div>
+    <div className="h-full flex flex-col overflow-hidden">
+      <div className="flex-1 overflow-auto">
+        <div className="sticky left-0 px-4 lg:px-6 xl:px-10 pt-12 pb-4 md:pb-6 lg:pb-8 z-10 bg-background">
+          <div className="max-w-[1600px] mx-auto w-full">
+            <div className="h-8 bg-muted rounded animate-pulse w-64 mb-6"></div>
+          </div>
+        </div>
+        <div className="px-4 lg:px-6 xl:px-10">
+          <div className="max-w-[1600px] mx-auto w-full pb-8">
+            <div
+              className="grid gap-4"
+              style={{
+                gridTemplateColumns: "repeat(auto-fill, minmax(320px, 1fr))",
+              }}
+            >
+              {Array.from({ length: 6 }).map((_, index) => (
+                <Card
+                  key={index}
+                  className="overflow-hidden bg-card border-0 min-h-48"
+                >
+                  <div className="p-5 flex flex-col gap-3 flex-1">
+                    <div className="h-6 bg-muted rounded animate-pulse w-3/4"></div>
+                    <div className="flex gap-1">
+                      <div className="h-5 bg-muted rounded animate-pulse w-16"></div>
+                      <div className="h-5 bg-muted rounded animate-pulse w-20"></div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <div className="w-5 h-5 bg-muted rounded-full animate-pulse"></div>
+                      <div className="h-4 bg-muted rounded animate-pulse w-32"></div>
+                    </div>
                   </div>
-                </div>
-              </div>
-              <div className="flex items-center gap-2">
-                <div className="w-6 h-6 bg-muted rounded-full animate-pulse"></div>
-                <div className="h-4 bg-muted rounded animate-pulse w-32"></div>
-              </div>
-              <div className="flex items-center justify-between">
-                <div className="h-4 bg-muted rounded animate-pulse w-20"></div>
-                <div className="flex gap-2">
-                  <div className="h-8 bg-muted rounded animate-pulse w-16"></div>
-                  <div className="h-8 bg-muted rounded animate-pulse w-16"></div>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        ))}
+                  <div className="border-t border-border px-5 py-3 flex items-center justify-between">
+                    <div className="h-4 bg-muted rounded animate-pulse w-20"></div>
+                    <div className="flex gap-2">
+                      <div className="h-8 bg-muted rounded animate-pulse w-20"></div>
+                      <div className="h-8 bg-muted rounded animate-pulse w-16"></div>
+                    </div>
+                  </div>
+                </Card>
+              ))}
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   );
@@ -145,21 +164,22 @@ function InvitesListSkeleton() {
 
 function InvitesListEmpty() {
   return (
-    <div className="flex flex-col gap-4 h-full p-4">
-      <ListPageHeader
-        input={{
-          placeholder: "Search invitations",
-          value: "",
-          onChange: () => {},
-          disabled: true,
-        }}
-      />
-      <div className="flex-1 min-h-0 flex items-center justify-center">
-        <EmptyState
-          icon="mail"
-          title="No Invitations"
-          description="You don't have any pending team invitations."
-        />
+    <div className="h-full flex flex-col overflow-hidden">
+      <div className="flex-1 overflow-auto">
+        <div className="sticky left-0 px-4 lg:px-6 xl:px-10 pt-12 pb-4 md:pb-6 lg:pb-8 z-10 bg-background">
+          <div className="max-w-[1600px] mx-auto w-full">
+            <h1 className="text-2xl font-semibold">Team Invitations</h1>
+          </div>
+        </div>
+        <div className="px-4 lg:px-6 xl:px-10">
+          <div className="max-w-[1600px] mx-auto w-full pb-8 flex items-center justify-center min-h-96">
+            <EmptyState
+              icon="move_to_inbox"
+              title="No Invitations"
+              description="You don't have any pending team invitations."
+            />
+          </div>
+        </div>
       </div>
     </div>
   );
@@ -177,6 +197,18 @@ function InvitesListContent() {
     Record<string, "accept" | "reject" | null>
   >({});
   const [viewMode, setViewMode] = useViewMode("invites");
+
+  // 🔍 LOG INVITE IDs FOR TESTING
+  if (invites.length > 0) {
+    console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+    console.log("📧 Your Invites - Test URLs:");
+    console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+    invites.forEach((invite) => {
+      console.log(`\nTeam: ${invite.teamName}`);
+      console.log(`  🔗 http://localhost:5173/invites/${invite.id}`);
+    });
+    console.log("\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+  }
 
   const filteredInvites =
     search.trim().length > 0
@@ -208,7 +240,7 @@ function InvitesListContent() {
         throw new Error("Failed to accept invitation. Please try again.");
       }
 
-      navigate(`/${org}/default`);
+      navigate(`/${org}`);
     } catch (error) {
       console.error("Accept invitation error:", error);
       toast.error(
@@ -269,38 +301,70 @@ function InvitesListContent() {
   });
 
   return (
-    <div className="flex flex-col gap-4 h-full p-4">
-      <ListPageHeader
-        input={{
-          placeholder: "Search invitations",
-          value: search,
-          onChange: (e) => setSearch(e.target.value),
-        }}
-        view={{
-          viewMode,
-          onChange: setViewMode,
-        }}
-      />
+    <div className="h-full flex flex-col overflow-hidden">
+      <div className="flex-1 overflow-auto">
+        {/* Header Section */}
+        <div className="sticky left-0 px-4 lg:px-6 xl:px-10 pt-12 pb-4 md:pb-6 lg:pb-8 z-10 bg-background">
+          <div className="max-w-[1600px] mx-auto w-full">
+            <div className="flex items-center justify-between mb-6">
+              <h1 className="text-2xl font-semibold">Team Invitations</h1>
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="w-9 h-9"
+                  onClick={() =>
+                    setViewMode(viewMode === "cards" ? "table" : "cards")
+                  }
+                >
+                  <Icon
+                    name={viewMode === "cards" ? "table_rows" : "grid_view"}
+                    size={20}
+                    className="text-muted-foreground"
+                  />
+                </Button>
+              </div>
+            </div>
 
-      <div className="flex-1 min-h-0 overflow-x-auto">
-        {viewMode === "table" ? (
-          <TableView
-            invites={sortedInvites}
-            onAccept={handleAccept}
-            onReject={handleReject}
-            loadingStates={loadingStates}
-            sortKey={sortKey}
-            sortDirection={sortDirection}
-            onSort={handleSort}
-          />
-        ) : (
-          <CardsView
-            invites={sortedInvites}
-            onAccept={handleAccept}
-            onReject={handleReject}
-            loadingStates={loadingStates}
-          />
-        )}
+            {search && (
+              <div className="mb-4">
+                <input
+                  type="text"
+                  placeholder="Search invitations"
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  className="w-full max-w-md px-4 py-2 rounded-lg border border-border bg-background text-sm"
+                />
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Content Section */}
+        <div className="px-4 lg:px-6 xl:px-10">
+          <div className="max-w-[1600px] mx-auto w-full pb-8">
+            {viewMode === "table" ? (
+              <div className="w-fit min-w-full">
+                <TableView
+                  invites={sortedInvites}
+                  onAccept={handleAccept}
+                  onReject={handleReject}
+                  loadingStates={loadingStates}
+                  sortKey={sortKey}
+                  sortDirection={sortDirection}
+                  onSort={handleSort}
+                />
+              </div>
+            ) : (
+              <CardsView
+                invites={sortedInvites}
+                onAccept={handleAccept}
+                onReject={handleReject}
+                loadingStates={loadingStates}
+              />
+            )}
+          </div>
+        </div>
       </div>
     </div>
   );
@@ -375,31 +439,36 @@ function TableView({
         return (
           <div className="flex gap-2" onClick={(e) => e.stopPropagation()}>
             <Button
-              onClick={() => onAccept(invite.id)}
-              disabled={isAnyLoading}
-              size="sm"
-              className="h-8"
-            >
-              {isAcceptLoading ? (
-                <Spinner size="xs" />
-              ) : (
-                <Icon name="check" className="mr-1" size={14} />
-              )}
-              Accept
-            </Button>
-            <Button
               onClick={() => onReject(invite.id)}
               disabled={isAnyLoading}
-              variant="outline"
+              variant="ghost"
               size="sm"
               className="h-8"
             >
               {isRejectLoading ? (
                 <Spinner size="xs" />
               ) : (
-                <Icon name="close" className="mr-1" size={14} />
+                <>
+                  <Icon name="close" className="mr-1.5" size={16} />
+                  Decline
+                </>
               )}
-              Reject
+            </Button>
+            <Button
+              onClick={() => onAccept(invite.id)}
+              disabled={isAnyLoading}
+              variant="special"
+              size="sm"
+              className="h-8"
+            >
+              {isAcceptLoading ? (
+                <Spinner size="xs" />
+              ) : (
+                <>
+                  <Icon name="check" className="mr-1.5" size={16} />
+                  Accept
+                </>
+              )}
             </Button>
           </div>
         );
@@ -430,7 +499,12 @@ function CardsView({
   loadingStates: Record<string, "accept" | "reject" | null>;
 }) {
   return (
-    <div className="grid gap-4 grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
+    <div
+      className="grid gap-4"
+      style={{
+        gridTemplateColumns: "repeat(auto-fill, minmax(320px, 1fr))",
+      }}
+    >
       {invites.map((invite) => {
         const loading = loadingStates[invite.id];
         const isAcceptLoading = loading === "accept";

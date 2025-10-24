@@ -605,8 +605,16 @@ export const inviteTeamMembers = createTool({
 
     await Promise.all(requestPromises || []);
 
+    // Return invite IDs for frontend testing
+    const inviteIds =
+      inviteResult.data?.map((invite) => ({
+        id: invite.id,
+        email: invite.invited_email,
+      })) || [];
+
     return {
       message: `Invite sent to their home screen. Ask them to log in at https://admin.decocms.com`,
+      invites: inviteIds,
     };
   },
 });

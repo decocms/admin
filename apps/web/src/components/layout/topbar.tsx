@@ -14,6 +14,7 @@ import { ErrorBoundary } from "../../error-boundary.tsx";
 import { ReportIssueButton } from "../common/report-issue-button.tsx";
 import { LoggedUser, LoggedUserAvatarTrigger } from "../sidebar/footer";
 import { DefaultBreadcrumb, TopbarControls } from "./project";
+import { InboxPopover } from "./inbox-popover.tsx";
 
 interface BreadcrumbItem {
   label: string | React.ReactNode;
@@ -89,6 +90,9 @@ export function Topbar({ breadcrumb }: { breadcrumb: BreadcrumbItem[] }) {
       </div>
       <div className="flex items-center gap-2">
         <LinkButton />
+        <Suspense fallback={null}>
+          <InboxPopover />
+        </Suspense>
         <ReportIssueButton />
         <Suspense fallback={null}>
           <TopbarControls />

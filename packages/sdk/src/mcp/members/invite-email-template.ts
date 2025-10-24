@@ -2,12 +2,14 @@ interface InviteEmailTemplateProps {
   cleanInviter: string;
   cleanTeamName: string;
   formattedRoles: string;
+  inviteId: string;
 }
 
 export function getInviteEmailTemplate({
   cleanInviter,
   cleanTeamName,
   formattedRoles,
+  inviteId,
 }: InviteEmailTemplateProps): string {
   return `
 <!DOCTYPE html>
@@ -83,7 +85,7 @@ export function getInviteEmailTemplate({
                 <table cellpadding="0" cellspacing="0" border="0">
                   <tr>
                     <td style="text-align: center;">
-                      <a href="https://admin.decocms.com/invites" class="button" style="display: inline-block; background-color: #d0ec1a; color: #07401a; font-size: 16px; font-weight: 400; text-decoration: none; padding: 18px 32px; border-radius: 16px; min-width: 155px; text-align: center;">
+                      <a href="https://admin.decocms.com/invites/${inviteId}" class="button" style="display: inline-block; background-color: #d0ec1a; color: #07401a; font-size: 16px; font-weight: 400; text-decoration: none; padding: 18px 32px; border-radius: 16px; min-width: 155px; text-align: center;">
                         Accept invite
                       </a>
                     </td>

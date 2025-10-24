@@ -1015,7 +1015,11 @@ app.all("/:org/:project/:integrationId/studio", async (c) => {
   });
 
   const locator = Locator.from({ org, project });
-  const id = Locator.adaptToRootSlug(locator, uid);
+  const useLegacyWorkspace =
+    project === "default" || project === "personal" || org === "users";
+  const id = useLegacyWorkspace
+    ? Locator.adaptToRootSlug(locator, uid)
+    : locator;
 
   // The DO id can be overridden by the client, both on the URL
   // for GET requests and on the body "id" property for POST requests

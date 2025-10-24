@@ -1,0 +1,38 @@
+{
+  "$schema": "https://unpkg.com/knip@5/schema.json",
+  "workspaces": {
+    ".": {
+      "entry": ["scripts/**/*.ts"],
+      "project": ["scripts/**/*.ts"]
+    },
+    "apps/web": {
+      "entry": ["src/main.tsx", "vite.config.ts"],
+      "project": ["src/**/*.{ts,tsx}", "vite.config.ts"],
+      "ignore": [],
+      "ignoreDependencies": [
+        // @hookform/resolvers have this as optional peer dependency
+        "ajv-errors"
+      ]
+    },
+    // "apps/api": {
+    //   "entry": ["main.ts"],
+    //   "project": ["src/**/*.ts", "main.ts"]
+    // },
+    // "packages/*": {
+    //   "entry": ["src/index.ts"],
+    //   "project": ["src/**/*.ts"]
+    // }
+  },
+  "ignore": [
+    "**/*.d.ts",
+    "**/*.test.ts",
+    "**/*.test.tsx",
+    "**/test/**",
+    "**/dist/**",
+    "**/node_modules/**"
+  ],
+  "ignoreDependencies": [
+    "@types/*"
+  ]
+}
+

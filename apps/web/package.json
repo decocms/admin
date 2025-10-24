@@ -39,6 +39,7 @@
     "@tiptap/suggestion": "^2.14.0",
     "@xyflow/react": "^12.8.2",
     "ai": "^5.0.61",
+    "ajv-errors": "^3.0.0",
     "bidc": "^0.0.3",
     "class-variance-authority": "^0.7.1",
     "cronstrue": "^2.59.0",

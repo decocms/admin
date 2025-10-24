@@ -7,7 +7,6 @@ import { Button } from "@deco/ui/components/button.tsx";
 import { Icon } from "@deco/ui/components/icon.tsx";
 import { Input } from "@deco/ui/components/input.tsx";
 import { useMemo, useState } from "react";
-import { useCreateCustomApp } from "../../hooks/use-create-custom-connection.ts";
 import { useNavigateWorkspace } from "../../hooks/use-navigate-workspace.ts";
 import { IntegrationAvatar } from "../common/avatar/integration.tsx";
 import { AppKeys, getConnectionAppKey } from "../integrations/apps.ts";
@@ -99,7 +98,6 @@ const Discover = () => {
   const [search, setSearch] = useState("");
   const { data: integrations } = useMarketplaceIntegrations();
   const navigateWorkspace = useNavigateWorkspace();
-  const createCustomConnection = useCreateCustomApp();
 
   const featuredIntegrations = integrations?.integrations.filter(
     (integration) => FEATURED.includes(integration.name),
@@ -165,9 +163,6 @@ const Discover = () => {
               </div>
             )}
           </div>
-          <Button variant="outline" onClick={createCustomConnection}>
-            Create Custom App
-          </Button>
         </div>
       </div>
 

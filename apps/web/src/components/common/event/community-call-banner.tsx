@@ -63,7 +63,7 @@ const {
 
 export function CommunityCallBanner() {
   const now = new Date();
-  
+
   // If workshop hasn't ended yet, show workshop banner
   if (now < WORKSHOP_END_DATE) {
     return (
@@ -93,7 +93,7 @@ export function CommunityCallBanner() {
       />
     );
   }
-  
+
   // After workshop ends, show regular Community Call banner
   return (
     <EventBanner

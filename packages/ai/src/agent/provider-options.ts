@@ -20,7 +20,7 @@ export function getProviderOptions({ budgetTokens }: GetProviderOptionsParams) {
   // Prefer Cerebras and Groq when using Openrouter OSS models
   opts.openrouter = {
     provider: {
-      order: ["groq", "cerebras"],
+      order: ["cerebras", "groq"],
     },
   };
 

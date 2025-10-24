@@ -83,6 +83,7 @@ import type {
   Thread,
   ThreadQueryOptions,
 } from "./types.ts";
+import { getProviderOptions } from "./agent/provider-options.ts";
 
 const ANONYMOUS_INSTRUCTIONS =
   "You should help users to configure yourself. Users should give you your name, instructions, and optionally a model (leave it default if the user don't mention it, don't force they to set it). This is your only task for now. Tell the user that you are ready to configure yourself when you have all the information.";
@@ -1095,6 +1096,8 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
     // Preprocess schema to ensure all properties are required
     const processedSchema = this._preprocessSchema(schema);
 
+    const maxOutputTokens = this._maxOutputTokens(options?.maxTokens);
+
     // Use AI SDK 5's generateObject for structured data generation
     const result = await generateObject({
       model: llm,
@@ -1104,7 +1107,10 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
       mode: "json",
       maxRetries: 1,
       temperature: this._temperature(options?.temperature),
-      maxOutputTokens: this._maxOutputTokens(options?.maxTokens),
+      maxOutputTokens,
+      providerOptions: getProviderOptions({
+        budgetTokens: Math.floor(maxOutputTokens * 0.4),
+      }),
     });
 
     // Add result to MessageList using Mastra-compatible format
@@ -1280,13 +1286,18 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
     // Convert toolsets to AI SDK 5 tools format
     const tools = this._convertToolsToAISDKFormat(toolsets);
 
+    const maxOutputTokens = this._maxOutputTokens(options?.maxTokens);
+
     // Use AI SDK 5's generateText
     const result = await generateText({
+      providerOptions: getProviderOptions({
+        budgetTokens: Math.floor(maxOutputTokens * 0.4),
+      }),
       model: llm,
       messages: allMessages,
       tools,
       temperature: this._temperature(options?.temperature),
-      maxOutputTokens: this._maxOutputTokens(options?.maxTokens),
+      maxOutputTokens,
       system: processedInstructions ?? agentOverrides.instructions,
       stopWhen: [stepCountIs(this._maxSteps(options?.maxSteps))],
     });
@@ -1529,6 +1540,8 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
         ...messageList.get.all.aiV5.model(),
       ];
 
+      const maxOutputTokens = this._maxOutputTokens(options.maxTokens);
+
       const stream = streamText({
         experimental_telemetry: {
           recordInputs: true,
@@ -1536,11 +1549,14 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
           isEnabled: true,
           tracer,
         },
+        providerOptions: getProviderOptions({
+          budgetTokens: Math.floor(maxOutputTokens * 0.4),
+        }),
         model: llm,
         messages: allMessages,
         tools: allTools,
         temperature: this._temperature(options.temperature),
-        maxOutputTokens: this._maxOutputTokens(options.maxTokens),
+        maxOutputTokens,
         system: processedInstructions,
         stopWhen: [stepCountIs(maxSteps)],
         onChunk: endTtfbSpan,

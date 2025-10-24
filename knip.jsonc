@@ -6,11 +6,8 @@
       "project": ["scripts/**/*.ts"]
     },
     "apps/web": {
-      "entry": ["src/main.tsx", "vite.config.ts"],
-      "project": ["src/**/*.{ts,tsx}", "vite.config.ts"],
-      "ignore": [],
       "ignoreDependencies": [
-        // @hookform/resolvers have this as optional peer dependency
+        // @hookform/resolvers have ajv deps as optional peer dependencies
         "ajv-errors",
         "ajv-formats",
         "ajv"

@@ -31,7 +31,8 @@ function LazyHighlighter({
         display: "block",
         wordBreak: "break-word",
         overflowWrap: "break-word",
-        ...(fillHeight ? { height: "100%", minHeight: "100%" } : {}),
+        height: fillHeight ? "100%" : undefined,
+        minHeight: fillHeight ? "100%" : undefined,
       }}
       codeTagProps={{
         className: "font-mono",

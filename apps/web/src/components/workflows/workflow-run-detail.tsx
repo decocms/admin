@@ -5,7 +5,6 @@ import {
   WorkflowRunData,
 } from "@deco/sdk";
 import { Badge } from "@deco/ui/components/badge.tsx";
-import { Button } from "@deco/ui/components/button.tsx";
 import { Icon } from "@deco/ui/components/icon.tsx";
 import { ScrollArea } from "@deco/ui/components/scroll-area.tsx";
 import { Spinner } from "@deco/ui/components/spinner.tsx";
@@ -14,7 +13,7 @@ import {
   AlertDescription,
   AlertTitle,
 } from "@deco/ui/components/alert.tsx";
-import { Suspense, lazy, useMemo, useState } from "react";
+import { Suspense, useMemo } from "react";
 import { EmptyState } from "../common/empty-state.tsx";
 import { UserInfo } from "../common/table/table-cells.tsx";
 import { getStatusBadgeVariant } from "./utils.ts";
@@ -23,10 +22,10 @@ import { DetailSection } from "../common/detail-section.tsx";
 import { WorkflowStoreProvider } from "../../stores/workflows/provider.tsx";
 import { useQuery } from "@tanstack/react-query";
 import { useResourceRoute } from "../resources-v2/route-context.tsx";
+import { JsonViewer } from "../chat/json-viewer.tsx";
+import { cn } from "@deco/ui/lib/utils.ts";
 
-const LazyHighlighter = lazy(() => import("../chat/lazy-highlighter.tsx"));
-
-function JsonViewer({
+function JsonViewerWithTitle({
   data,
   title,
   matchHeight = false,
@@ -35,24 +34,6 @@ function JsonViewer({
   title: string;
   matchHeight?: boolean;
 }) {
-  const [copied, setCopied] = useState(false);
-
-  async function handleCopy() {
-    if (typeof navigator === "undefined" || !navigator.clipboard?.writeText) {
-      globalThis.window.alert("Clipboard API unavailable");
-      return;
-    }
-
-    const payload = JSON.stringify(data, null, 2);
-    try {
-      await navigator.clipboard.writeText(payload);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 1200);
-    } catch (error) {
-      console.error("Failed to copy workflow run data", error);
-    }
-  }
-
   if (data === null || data === undefined) {
     return (
       <div className="space-y-2">
@@ -66,8 +47,6 @@ function JsonViewer({
     );
   }
 
-  const jsonString = JSON.stringify(data, null, 2);
-
   return (
     <div
       className={`space-y-2 min-w-0 w-full ${matchHeight ? "h-full flex flex-col" : ""}`}
@@ -76,34 +55,13 @@ function JsonViewer({
         {title}
       </p>
       <div
-        className={`relative bg-muted rounded-xl ${matchHeight ? "min-h-[200px]" : ""} max-h-[300px] overflow-auto w-full ${matchHeight ? "flex-1" : ""}`}
+        className={cn(
+          "relative bg-muted rounded-xl overflow-auto w-full max-h-[300px]",
+          matchHeight ? "flex-1 min-h-[200px]" : "min-h-[200px]",
+        )}
       >
-        <div className="absolute right-2 top-2 z-10 flex items-center gap-1 bg-background rounded-xl shadow-sm">
-          <Button
-            size="icon"
-            variant="ghost"
-            onClick={handleCopy}
-            className="h-8 w-8"
-          >
-            <Icon name={copied ? "check" : "content_copy"} size={16} />
-          </Button>
-        </div>
-        <div
-          className={`overflow-x-auto w-full ${matchHeight ? "h-full" : ""}`}
-        >
-          <Suspense
-            fallback={
-              <pre className="p-3 text-xs font-mono whitespace-pre-wrap break-all">
-                {jsonString}
-              </pre>
-            }
-          >
-            <LazyHighlighter
-              language="json"
-              content={jsonString}
-              fillHeight={matchHeight}
-            />
-          </Suspense>
+        <div className={matchHeight ? "h-full w-full" : ""}>
+          <JsonViewer data={data} maxHeight={matchHeight ? "100%" : "300px"} />
         </div>
       </div>
     </div>
@@ -299,19 +257,23 @@ export function WorkflowRunDetail(_: { resourceUri?: string } = {}) {
           {/* Input / Output */}
           <DetailSection title="Input & Output">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-stretch">
-              <div className="min-w-0 flex">
-                <JsonViewer data={input} title="Input" matchHeight />
+              <div className="min-w-0 flex h-full">
+                <JsonViewerWithTitle data={input} title="Input" matchHeight />
               </div>
 
-              <div className="min-w-0 flex">
+              <div className="min-w-0 flex h-full">
                 {status === "completed" || status === "success" ? (
-                  <JsonViewer data={output} title="Output" matchHeight />
+                  <JsonViewerWithTitle
+                    data={output}
+                    title="Output"
+                    matchHeight
+                  />
                 ) : (
-                  <div className="space-y-2 w-full">
+                  <div className="space-y-2 w-full h-full flex flex-col">
                     <p className="font-mono text-sm text-muted-foreground uppercase">
                       Output
                     </p>
-                    <div className="bg-muted rounded-xl min-h-[200px] max-h-[300px] flex items-center justify-center p-4">
+                    <div className="bg-muted rounded-xl flex-1 flex items-center justify-center p-4">
                       <div className="text-xs text-muted-foreground italic text-center">
                         Output will be available when the workflow completes
                       </div>

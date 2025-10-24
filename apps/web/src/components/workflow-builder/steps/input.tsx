@@ -70,54 +70,52 @@ export const WorkflowStepInput = memo(
     }, [form, stepName, actions]);
 
     return (
-      <div className="rounded-xl p-4 bg-white shadow-xs">
-        <Form {...form}>
-          <form
-            onSubmit={form.handleSubmit((data) => {
-              if (data && typeof data === "object") {
-                runStep(data as Record<string, unknown>);
-              }
-            })}
-            onBlur={handleBlur}
-            className="space-y-6"
-          >
-            {Object.entries(stepInputSchema.properties!).map(
-              ([propName, propSchema]) => {
-                const isRequired =
-                  stepInputSchema.required?.includes(propName) ?? false;
-                const schema = propSchema as JSONSchema7;
+      <Form {...form}>
+        <form
+          onSubmit={form.handleSubmit((data) => {
+            if (data && typeof data === "object") {
+              runStep(data as Record<string, unknown>);
+            }
+          })}
+          onBlur={handleBlur}
+          className="flex flex-col gap-5 min-w-0 overflow-hidden"
+        >
+          {Object.entries(stepInputSchema.properties!).map(
+            ([propName, propSchema]) => {
+              const isRequired =
+                stepInputSchema.required?.includes(propName) ?? false;
+              const schema = propSchema as JSONSchema7;
 
-                if (schema.type === "object" && schema.properties) {
-                  return (
-                    <NestedObjectField
-                      key={propName}
-                      name={propName}
-                      schema={schema}
-                      form={form}
-                      disabled={isSubmitting}
-                      availableRefs={availableRefs}
-                      isFirstStep={isFirstStep}
-                    />
-                  );
-                }
-
+              if (schema.type === "object" && schema.properties) {
                 return (
-                  <WorkflowStepField
+                  <NestedObjectField
                     key={propName}
                     name={propName}
                     schema={schema}
                     form={form}
-                    isRequired={isRequired}
                     disabled={isSubmitting}
                     availableRefs={availableRefs}
                     isFirstStep={isFirstStep}
                   />
                 );
-              },
-            )}
-          </form>
-        </Form>
-      </div>
+              }
+
+              return (
+                <WorkflowStepField
+                  key={propName}
+                  name={propName}
+                  schema={schema}
+                  form={form}
+                  isRequired={isRequired}
+                  disabled={isSubmitting}
+                  availableRefs={availableRefs}
+                  isFirstStep={isFirstStep}
+                />
+              );
+            },
+          )}
+        </form>
+      </Form>
     );
   },
   (prevProps, nextProps) => prevProps.stepName === nextProps.stepName,

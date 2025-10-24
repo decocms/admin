@@ -6,7 +6,8 @@ import { StepError } from "./error.tsx";
 import { StepOutput } from "./output.tsx";
 import { StepHeader } from "./header.tsx";
 import { StepAttempts } from "./attempts.tsx";
-import { StepTimeInfo } from "../../workflows/workflow-step-card.tsx";
+import { StepToolsUsed } from "./tools-used.tsx";
+import { StepFooter } from "./footer.tsx";
 
 /**
  * Derives the step status from execution properties (works for both runtime and definition steps)
@@ -65,18 +66,27 @@ export const WorkflowDefinitionStepCard = memo(
     }, [execution]);
 
     return (
-      <div className={`rounded-xl p-1 bg-[#fafafa] shadow-xs`}>
+      <div className="rounded-xl p-1 bg-card shadow-xs min-w-0">
         <StepHeader stepName={stepName} />
-        <WorkflowStepInput stepName={stepName} />
-        <StepContent
-          output={stepData.output}
-          views={stepData.views}
-          error={execution?.error}
-        />
-        <StepTimeInfo
+        <div className="bg-background rounded-xl shadow-xs overflow-hidden min-w-0">
+          <div className="border-b border-base-border bg-background p-4 space-y-3 min-w-0 overflow-hidden">
+            <p className="font-mono text-sm text-muted-foreground uppercase leading-5">
+              Inputs
+            </p>
+            <WorkflowStepInput stepName={stepName} />
+          </div>
+          <StepContent
+            stepName={stepName}
+            output={stepData.output}
+            views={stepData.views}
+            error={execution?.error}
+          />
+        </div>
+        <StepFooter
           startTime={execution?.start}
           endTime={execution?.end}
           status={status}
+          cost={undefined}
         />
       </div>
     );
@@ -128,18 +138,28 @@ export const WorkflowRunStepCard = memo(
     }, [execution]);
 
     return (
-      <div className={`rounded-xl p-1 bg-[#fafafa] shadow-xs`}>
-        <StepHeader stepName={stepName} status={status} />
-        <StepContent
-          output={output}
-          views={stepData.views}
-          error={execution ? execution.error : undefined}
-          attempts={runtimeStep?.attempts}
-        />
-        <StepTimeInfo
+      <div className="rounded-xl p-1 bg-card shadow-xs min-w-0">
+        <StepHeader type="runtime" stepName={stepName} status={status} />
+        <div className="bg-background rounded-xl shadow-xs overflow-hidden min-w-0">
+          <StepContent
+            stepName={stepName}
+            output={output}
+            views={stepData.views}
+            error={execution ? execution.error : undefined}
+            attempts={runtimeStep?.attempts}
+          />
+        </div>
+        <StepFooter
           startTime={execution?.start}
           endTime={execution?.end}
           status={status}
+          cost={
+            runtimeStep &&
+            typeof runtimeStep === "object" &&
+            "cost" in runtimeStep
+              ? (runtimeStep.cost as number)
+              : undefined
+          }
         />
       </div>
     );
@@ -148,6 +168,7 @@ export const WorkflowRunStepCard = memo(
 );
 
 interface StepContentProps {
+  stepName: string;
   error?: { name?: string; message?: string } | null;
   output?: unknown;
   attempts?: Array<{
@@ -160,6 +181,7 @@ interface StepContentProps {
 }
 
 const StepContent = memo(function StepContent({
+  stepName,
   error,
   output,
   attempts,
@@ -173,10 +195,11 @@ const StepContent = memo(function StepContent({
   if (!hasContent) return null;
 
   return (
-    <div className="bg-background rounded-xl p-3 space-y-3">
+    <>
+      <StepToolsUsed stepName={stepName} />
       <StepError error={error} />
       <StepOutput output={output} views={views} />
       <StepAttempts attempts={attempts || []} />
-    </div>
+    </>
   );
 });

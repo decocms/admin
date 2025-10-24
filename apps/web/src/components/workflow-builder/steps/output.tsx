@@ -64,32 +64,40 @@ export function StepOutput({ output, views = EMPTY_VIEWS }: StepOutputProps) {
   const hasViews = views.length > 0;
 
   return (
-    <div className="space-y-3 min-w-0 w-full">
-      <div className="flex items-center justify-between">
-        <p className="font-mono text-sm text-muted-foreground uppercase">
-          Output
+    <div
+      className="px-4 pt-4 pb-2 flex flex-col gap-2 relative min-w-0 overflow-hidden"
+      style={{
+        backgroundImage: hasViews
+          ? "linear-gradient(90deg, rgba(245, 245, 245, 0.5) 0%, rgba(245, 245, 245, 0.5) 100%), linear-gradient(90deg, rgb(255, 255, 255) 0%, rgb(255, 255, 255) 100%)"
+          : undefined,
+        backgroundColor: hasViews ? undefined : "#ffffff",
+      }}
+    >
+      <div className="flex flex-col gap-2">
+        <p className="font-mono text-sm text-muted-foreground uppercase leading-5">
+          Execution Result
         </p>
+      </div>
+
+      <div className="flex items-center gap-0 px-0">
+        <Button
+          variant={displayMode === "json" ? "default" : "ghost"}
+          size="sm"
+          onClick={() => setDisplayMode("json")}
+          className="h-8 px-2.5 text-sm rounded-xl font-medium"
+        >
+          JSON
+        </Button>
         {hasViews && (
-          <div className="flex gap-1 border rounded-md p-0.5">
-            <Button
-              variant={displayMode === "view" ? "secondary" : "ghost"}
-              size="sm"
-              onClick={() => setDisplayMode("view")}
-              className="h-7 px-2 text-xs"
-            >
-              <Icon name="view_list" size={14} className="mr-1" />
-              Views
-            </Button>
-            <Button
-              variant={displayMode === "json" ? "secondary" : "ghost"}
-              size="sm"
-              onClick={() => setDisplayMode("json")}
-              className="h-7 px-2 text-xs"
-            >
-              <Icon name="code" size={14} className="mr-1" />
-              JSON
-            </Button>
-          </div>
+          <Button
+            variant={displayMode === "view" ? "default" : "ghost"}
+            size="sm"
+            onClick={() => setDisplayMode("view")}
+            className="h-8 px-2.5 py-2.5 text-sm rounded-xl gap-2 font-medium"
+          >
+            Create view
+            <Icon name="add" size={16} />
+          </Button>
         )}
       </div>
 
@@ -100,7 +108,13 @@ export function StepOutput({ output, views = EMPTY_VIEWS }: StepOutputProps) {
           ))}
         </div>
       ) : (
-        <JsonViewer data={parsedOutput} maxHeight="400px" defaultView="tree" />
+        <div className="min-w-0 overflow-hidden">
+          <JsonViewer
+            data={parsedOutput}
+            maxHeight="400px"
+            defaultView="tree"
+          />
+        </div>
       )}
     </div>
   );

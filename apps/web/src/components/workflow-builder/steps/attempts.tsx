@@ -16,13 +16,16 @@ export const StepAttempts = memo(function StepAttempts({
   if (!attempts || attempts.length <= 1) return null;
 
   return (
-    <details className="text-xs">
+    <details className="text-xs min-w-0 overflow-hidden">
       <summary className="cursor-pointer font-medium text-muted-foreground hover:text-foreground">
         {attempts.length} attempts
       </summary>
-      <div className="mt-2 space-y-2 pl-4">
+      <div className="mt-2 space-y-2 pl-4 min-w-0 overflow-hidden">
         {attempts.map((attempt, attemptIdx) => (
-          <div key={attemptIdx} className="border-l-2 pl-2 py-1">
+          <div
+            key={attemptIdx}
+            className="border-l-2 pl-2 py-1 min-w-0 overflow-hidden"
+          >
             <div className="flex items-center gap-2">
               <span>Attempt {attemptIdx + 1}</span>
               {attempt.success ? (
@@ -32,7 +35,7 @@ export const StepAttempts = memo(function StepAttempts({
               )}
             </div>
             {attempt.error && (
-              <div className="text-destructive mt-1">
+              <div className="text-destructive mt-1 break-all">
                 {String(attempt.error.message || "Error")}
               </div>
             )}

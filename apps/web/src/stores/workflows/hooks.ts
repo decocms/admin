@@ -4,7 +4,7 @@ import { useWorkflowStore } from "./provider";
 // Stable empty array to prevent reference instability in selectors
 export const EMPTY_VIEWS: readonly string[] = [];
 
-// Primitive selectors - no shallow needed
+// Primitive selectors - use Object.is for exact equality
 export function useWorkflowName() {
   return useWorkflowStore((state) => state.workflow.name, Object.is);
 }
@@ -85,6 +85,19 @@ export function useWorkflowStepDefinition(stepName: string) {
     (state) =>
       state.workflow.steps.find((step) => step.def.name === stepName)?.def,
   );
+}
+
+export function useStepTools(stepName: string) {
+  return useWorkflowStore((state) => {
+    const step = state.workflow.steps.find((s) => s.def.name === stepName);
+    return step?.def.dependencies?.flatMap(
+      (dep) =>
+        dep.toolNames?.map((toolName) => ({
+          name: toolName,
+          integration: { name: dep.integrationId, icon: undefined },
+        })) ?? [],
+    );
+  });
 }
 
 export function useWorkflowUri() {
@@ -220,7 +233,7 @@ export function useHasFirstStepInput() {
   }, [firstStepData]);
 }
 
-// All actions grouped in one hook for convenience
+// All actions grouped in one hook (actions are stable, but return object needs shallow)
 export function useWorkflowActions() {
   return useWorkflowStore((state) => ({
     // Sync actions

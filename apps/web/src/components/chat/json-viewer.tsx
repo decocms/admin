@@ -64,11 +64,9 @@ const TreeNode = memo(function TreeNode({
         style={{ paddingLeft: `${indent}px` }}
         className="flex items-start gap-2 py-1 text-sm leading-normal"
       >
-        <div className="w-4 flex-shrink-0" />
-        {nodeKey && (
-          <span className="text-[#82AAFF] flex-shrink-0">{nodeKey}:</span>
-        )}
-        <span className="text-[#546E7A] break-words">[Max Depth Reached]</span>
+        <div className="w-4 shrink-0" />
+        {nodeKey && <span className="text-[#82AAFF] shrink-0">{nodeKey}:</span>}
+        <span className="text-[#546E7A] break-all">[Max Depth Reached]</span>
       </div>
     );
   }
@@ -80,20 +78,18 @@ const TreeNode = memo(function TreeNode({
         style={{ paddingLeft: `${indent}px` }}
         className="flex items-start gap-2 py-1 text-sm leading-normal"
       >
-        <div className="w-4 flex-shrink-0" />
-        {nodeKey && (
-          <span className="text-[#82AAFF] flex-shrink-0">{nodeKey}:</span>
-        )}
+        <div className="w-4 shrink-0" />
+        {nodeKey && <span className="text-[#82AAFF] shrink-0">{nodeKey}:</span>}
         {value === null ? (
-          <span className="text-[#C792EA] break-words">null</span>
+          <span className="text-[#C792EA] break-all">null</span>
         ) : typeof value === "boolean" ? (
-          <span className="text-[#C792EA] break-words">{value.toString()}</span>
+          <span className="text-[#C792EA] break-all">{value.toString()}</span>
         ) : typeof value === "number" ? (
-          <span className="text-[#F78C6C] break-words">{value}</span>
+          <span className="text-[#F78C6C] break-all">{value}</span>
         ) : typeof value === "string" ? (
-          <span className="text-[#C3E88D] break-words">{value}</span>
+          <span className="text-[#C3E88D] break-all">{value}</span>
         ) : (
-          <span className="text-[#EEFFFF] break-words">{String(value)}</span>
+          <span className="text-[#EEFFFF] break-all">{String(value)}</span>
         )}
       </div>
     );
@@ -114,13 +110,11 @@ const TreeNode = memo(function TreeNode({
         <Icon
           name="chevron_right"
           className={cn(
-            "w-4 h-4 text-[#546E7A] transition-transform flex-shrink-0 mt-0.5",
+            "w-4 h-4 text-[#546E7A] transition-transform shrink-0 mt-0.5",
             isOpen && "rotate-90",
           )}
         />
-        {nodeKey && (
-          <span className="text-[#82AAFF] flex-shrink-0">{nodeKey}</span>
-        )}
+        {nodeKey && <span className="text-[#82AAFF] shrink-0">{nodeKey}</span>}
         <span className="text-[#546E7A]">
           {valueType}{" "}
           {count !== null && (
@@ -142,7 +136,7 @@ const TreeNode = memo(function TreeNode({
 function JsonTreeView({ data }: { data: unknown }) {
   return (
     <div
-      className="p-4 text-sm overflow-auto rounded-lg max-h-[500px]"
+      className="p-4 text-sm rounded-lg min-w-0 overflow-hidden"
       style={{ background: "#263238" }}
     >
       <TreeNode value={data} level={0} />
@@ -178,7 +172,7 @@ export function JsonViewer({
 
   return (
     <div
-      className={cn("relative min-w-0 grid", className)}
+      className={cn("relative min-w-0 overflow-hidden grid", className)}
       onMouseEnter={() => setShowButtons(true)}
       onMouseLeave={() => setShowButtons(false)}
       onFocus={() => setShowButtons(true)}

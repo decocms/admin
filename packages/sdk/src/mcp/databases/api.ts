@@ -1,6 +1,6 @@
 import z from "zod";
 import { workspaceDB } from "../context.ts";
-import { assertHasWorkspace, assertWorkspaceResourceAccess } from "../index.ts";
+import { assertHasLocator, assertHasWorkspace, assertWorkspaceResourceAccess } from "../index.ts";
 import { createDatabaseTool } from "./tool.ts";
 import { WellKnownMcpGroups } from "../groups.ts";
 import { listViewsSchema } from "../bindings/views.ts";
@@ -135,7 +135,7 @@ export const viewBinding = createDatabaseTool({
     // It's ok to grant access to this tool.
     // To open the studio the user will be checked for resource access.
     c.resourceAccess.grant();
-    assertHasWorkspace(c);
+    assertHasLocator(c);
     const integrationId =
       c.user &&
       typeof c.user === "object" &&
@@ -152,7 +152,7 @@ export const viewBinding = createDatabaseTool({
               ? "Database"
               : `Database (${integrationId})`,
           icon: "database",
-          url: `https://api.decocms.com/${c.workspace.root}/${c.workspace.slug}/${integrationId}/studio`,
+          url: `https://api.decocms.com/${c.locator.org}/${c.locator.project}/${integrationId}/studio`,
         },
       ],
     };

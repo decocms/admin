@@ -19,6 +19,7 @@ import { useUserPreferences } from "../../hooks/use-user-preferences.ts";
 import { timeAgo } from "../../utils/time-ago.ts";
 import { MainChat, MainChatSkeleton } from "../agent/chat.tsx";
 import { AgenticChatProvider } from "../chat/provider.tsx";
+import { useDecopilotOpen } from "../layout/decopilot-layout.tsx";
 import { useDecopilotThread } from "./thread-context.tsx";
 import { useThreadManager } from "./thread-manager-context.tsx";
 
@@ -178,6 +179,7 @@ export function DecopilotChat() {
   const { threadState, clearThreadState } = useDecopilotThread();
   const { getThreadForRoute, createNewThread } = useThreadManager();
   const { pathname } = useLocation();
+  const { setOpen } = useDecopilotOpen();
 
   // Get the thread for the current route
   const currentThread = getThreadForRoute(pathname);
@@ -232,6 +234,18 @@ export function DecopilotChat() {
           >
             <Icon
               name="add"
+              size={16}
+              className="text-muted-foreground group-hover:text-foreground transition-colors"
+            />
+          </button>
+          <button
+            type="button"
+            onClick={() => setOpen(false)}
+            className="flex size-6 items-center justify-center rounded-full p-1 hover:bg-transparent transition-colors group cursor-pointer"
+            title="Close chat"
+          >
+            <Icon
+              name="close"
               size={16}
               className="text-muted-foreground group-hover:text-foreground transition-colors"
             />

@@ -23,7 +23,7 @@ function deriveStepStatus(execution: {
   end?: string | null;
 }): string | undefined {
   if (
-    !execution.success &&
+    execution.success == null &&
     !execution.error &&
     !execution.start &&
     !execution.end
@@ -72,7 +72,7 @@ export const WorkflowDefinitionStepCard = memo(
 
     return (
       <div className="rounded-xl p-1 bg-card shadow-xs min-w-0">
-        <StepHeader stepName={stepName} />
+        <StepHeader stepName={stepName} status={status} />
         <div className="bg-background rounded-xl shadow-xs overflow-hidden min-w-0">
           {isExecuteEditorOpen && <StepExecuteEditor stepName={stepName} />}
           <div className="border-b border-base-border bg-background p-4 space-y-3 min-w-0 overflow-hidden">

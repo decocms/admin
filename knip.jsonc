@@ -21,9 +21,7 @@
     },
     "packages/sdk": {
       // TODO: Check if we really need this observability folder
-      "ignore": [
-        "src/observability/**/*"
-      ]
+      "ignore": ["src/observability/**/*"]
     }
   },
   "ignore": [

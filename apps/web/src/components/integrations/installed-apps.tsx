@@ -39,6 +39,7 @@ import { useSetThreadContextEffect } from "../decopilot/thread-context-provider.
 import { useUnpinnedNativeViews, View } from "@deco/sdk";
 import { trackEvent } from "../../hooks/analytics.ts";
 import { useCurrentTeam } from "../sidebar/team-selector.tsx";
+import { AddCustomAppDialog } from "./add-custom-app-dialog.tsx";
 
 function AppCard({
   app,
@@ -112,7 +113,7 @@ function AppCard({
             url={app.icon}
             fallback={app.name}
             size="base"
-            className="flex-shrink-0"
+            className="shrink-0"
           />
 
           <div className="flex flex-col gap-0 min-w-0">
@@ -297,6 +298,7 @@ export default function InstalledAppsList() {
   const [viewMode, setViewMode] = useViewMode("integrations");
   const [filter, setFilter] = useState<string>("");
   const [filesModalOpen, setFilesModalOpen] = useState(false);
+  const [addCustomAppOpen, setAddCustomAppOpen] = useState(false);
   const workspaceLink = useWorkspaceLink();
   const navigateWorkspace = useNavigateWorkspace();
   const team = useCurrentTeam();
@@ -367,9 +369,17 @@ export default function InstalledAppsList() {
           viewMode={viewMode}
           setViewMode={setViewMode}
           actionsRight={
-            <Button asChild variant="special">
-              <Link to={workspaceLink(`/store`)}>Store</Link>
-            </Button>
+            <div className="flex items-center gap-2">
+              <Button
+                variant="outline"
+                onClick={() => setAddCustomAppOpen(true)}
+              >
+                Add custom
+              </Button>
+              <Button asChild variant="special">
+                <Link to={workspaceLink(`/store`)}>Store</Link>
+              </Button>
+            </div>
           }
         />
       </div>
@@ -409,7 +419,7 @@ export default function InstalledAppsList() {
           </DialogHeader>
           <div className="py-6">
             <div className="flex items-center justify-center mb-6">
-              <div className="w-16 h-16 rounded-xl bg-gradient-to-br from-primary/20 to-primary/10 flex items-center justify-center border border-primary/30">
+              <div className="w-16 h-16 rounded-xl bg-linear-to-br from-primary/20 to-primary/10 flex items-center justify-center border border-primary/30">
                 <Icon name="folder_open" size={32} className="text-primary" />
               </div>
             </div>
@@ -435,6 +445,12 @@ export default function InstalledAppsList() {
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Add Custom App Dialog */}
+      <AddCustomAppDialog
+        open={addCustomAppOpen}
+        onOpenChange={setAddCustomAppOpen}
+      />
     </div>
   );
 }

@@ -127,9 +127,11 @@ const WorkflowStepFieldComponent = function <
   isFirstStep,
 }: WorkflowStepFieldProps<T>) {
   const currentValue = form.watch(name as FieldPath<T>);
-  const disableReferenceMode = isFirstStep;
+  // First steps can use @input.* references but not @step.* references
+  // This is handled by availableRefs filtering in the parent component
+  const disableReferenceMode = false;
 
-  // For first step, never allow reference mode; otherwise check if value is a reference
+  // Check if value is a reference
   const [isRefMode, setIsRefMode] = useState(
     !disableReferenceMode && isAtRef(currentValue),
   );

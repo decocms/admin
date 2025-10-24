@@ -38,19 +38,13 @@ export const WorkflowStepInput = memo(
       for (const key of Object.keys(schemaProperties)) {
         const value = (input as Record<string, unknown>)[key];
 
-        if (isFirstStep) {
-          // Skip @ references in first step
-          if (typeof value === "string" && value.startsWith("@")) {
-            cleaned[key] = "";
-            continue;
-          }
-        }
-
+        // Keep the value as is (including @ references)
+        // The WorkflowStepField component will handle reference mode display
         cleaned[key] = value ?? "";
       }
 
       return cleaned;
-    }, [currentStepInput, isFirstStep, stepInputSchema]);
+    }, [currentStepInput, stepInputSchema]);
 
     const form = useForm<Record<string, unknown>>({
       values: initialValues,
@@ -69,6 +63,11 @@ export const WorkflowStepInput = memo(
       });
     }, [form, stepName, actions]);
 
+    // Early return if schema or properties are not available
+    if (!stepInputSchema?.properties) {
+      return null;
+    }
+
     return (
       <Form {...form}>
         <form
@@ -80,13 +79,26 @@ export const WorkflowStepInput = memo(
           onBlur={handleBlur}
           className="flex flex-col gap-5 min-w-0 overflow-hidden"
         >
-          {Object.entries(stepInputSchema.properties!).map(
+          {Object.entries(stepInputSchema.properties).map(
             ([propName, propSchema]) => {
               const isRequired =
                 stepInputSchema.required?.includes(propName) ?? false;
               const schema = propSchema as JSONSchema7;
 
-              if (schema.type === "object" && schema.properties) {
+              // Check if the current value is a reference
+              const currentValue = (
+                currentStepInput as Record<string, unknown>
+              )?.[propName];
+              const isReferenceValue =
+                typeof currentValue === "string" &&
+                currentValue.startsWith("@");
+
+              // If it's an object with properties AND not a reference, render as nested object
+              if (
+                schema.type === "object" &&
+                schema.properties &&
+                !isReferenceValue
+              ) {
                 return (
                   <NestedObjectField
                     key={propName}
@@ -100,6 +112,7 @@ export const WorkflowStepInput = memo(
                 );
               }
 
+              // Otherwise render as a regular field (which handles references)
               return (
                 <WorkflowStepField
                   key={propName}

@@ -1,6 +1,5 @@
 import { EMPTY_VIEWS } from "../../../stores/workflows/hooks.ts";
 import { Button } from "@deco/ui/components/button.tsx";
-import { Icon } from "@deco/ui/components/icon.tsx";
 import { useMemo, useState } from "react";
 import { JsonViewer } from "../../chat/json-viewer";
 import { ViewDialogTrigger } from "../../workflows/workflow-step-card";
@@ -79,7 +78,7 @@ export function StepOutput({ output, views = EMPTY_VIEWS }: StepOutputProps) {
         </p>
       </div>
 
-      <div className="flex items-center gap-0 px-0">
+      <div className="flex items-center gap-3 px-0">
         <Button
           variant={displayMode === "json" ? "default" : "ghost"}
           size="sm"
@@ -88,34 +87,16 @@ export function StepOutput({ output, views = EMPTY_VIEWS }: StepOutputProps) {
         >
           JSON
         </Button>
-        {hasViews && (
-          <Button
-            variant={displayMode === "view" ? "default" : "ghost"}
-            size="sm"
-            onClick={() => setDisplayMode("view")}
-            className="h-8 px-2.5 py-2.5 text-sm rounded-xl gap-2 font-medium"
-          >
-            Create view
-            <Icon name="add" size={16} />
-          </Button>
-        )}
-      </div>
-
-      {hasViews && displayMode === "view" ? (
         <div className="flex flex-wrap gap-2">
           {views.map((view) => (
             <ViewDialogTrigger key={view} resourceUri={view} output={output} />
           ))}
         </div>
-      ) : (
-        <div className="min-w-0 overflow-hidden">
-          <JsonViewer
-            data={parsedOutput}
-            maxHeight="400px"
-            defaultView="tree"
-          />
-        </div>
-      )}
+      </div>
+
+      <div className="min-w-0 overflow-hidden">
+        <JsonViewer data={parsedOutput} maxHeight="400px" defaultView="tree" />
+      </div>
     </div>
   );
 }

@@ -48,6 +48,7 @@ export function WorkflowDisplay({ resourceUri }: WorkflowDisplayCanvasProps) {
     storeRef,
   );
   const workflow = resource?.data;
+  console.log({ workflow });
   const workflowName = workflow?.name;
 
   const store = useMemo(() => {

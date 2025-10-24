@@ -90,7 +90,12 @@ export function DocumentEditor({
 
   // Extend Integration type to include tools
   type IntegrationWithTools = Integration & {
-    tools?: Array<{ name: string; description?: string }>;
+    tools?: Array<{
+      name: string;
+      description?: string;
+      inputSchema?: Record<string, unknown>;
+      outputSchema?: Record<string, unknown>;
+    }>;
   };
 
   // Tool interface for flattened tools
@@ -98,6 +103,8 @@ export function DocumentEditor({
     id: string;
     name: string;
     description?: string;
+    inputSchema?: Record<string, unknown>;
+    outputSchema?: Record<string, unknown>;
     integration: {
       id: string;
       name: string;
@@ -118,10 +125,17 @@ export function DocumentEditor({
       )
       .flatMap((integration) =>
         integration.tools!.map(
-          (tool: { name: string; description?: string }) => ({
+          (tool: {
+            name: string;
+            description?: string;
+            inputSchema?: Record<string, unknown>;
+            outputSchema?: Record<string, unknown>;
+          }) => ({
             id: `${integration.id}-${tool.name}`,
             name: tool.name,
             description: tool.description,
+            inputSchema: tool.inputSchema,
+            outputSchema: tool.outputSchema,
             integration: {
               id: integration.id,
               name: integration.name,

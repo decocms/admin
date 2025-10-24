@@ -138,6 +138,125 @@ const removeNonSerializableFields = (obj: any) => {
   return newObj;
 };
 
+/**
+ * Strips input and output schema attributes from tool mentions in messages
+ * to avoid persisting large schema JSON in storage
+ */
+const stripMentionSchemas = (messages: any[]): any[] => {
+  console.log(
+    "🔧 stripMentionSchemas called with",
+    messages.length,
+    "messages",
+  );
+
+  return messages.map((msg, idx) => {
+    console.log(`  Message ${idx}: role=${msg.role}`);
+
+    // Handle different message formats:
+    // 1. msg.content.parts (v2 format with {format: 2, parts: [...], content: "string"})
+    // 2. msg.parts (direct parts array)
+    // 3. msg.content (array format from AI SDK)
+    let contentArray: any[] | undefined;
+    let isNestedFormat = false;
+
+    if (
+      msg.content &&
+      typeof msg.content === "object" &&
+      !Array.isArray(msg.content) &&
+      msg.content.parts
+    ) {
+      console.log(`    Using msg.content.parts (v2 format)`);
+      contentArray = msg.content.parts;
+      isNestedFormat = true;
+    } else if (Array.isArray(msg.content)) {
+      console.log(`    Using msg.content (array)`);
+      contentArray = msg.content;
+    } else if (msg.parts) {
+      console.log(`    Using msg.parts`);
+      contentArray = msg.parts;
+    } else {
+      console.log(`    Skipping (no processable content)`);
+      return msg;
+    }
+
+    if (!contentArray) return msg;
+
+    const processedContent = contentArray.map((part: any, partIdx: number) => {
+      console.log(
+        `    Part ${partIdx}: type=${part.type}, has text?`,
+        !!part.text,
+      );
+
+      if (part.type !== "text" || !part.text) return part;
+
+      const originalText = part.text;
+      console.log(`    Part ${partIdx} text length:`, originalText.length);
+
+      // Debug: check what we're actually dealing with
+      if (originalText.includes("data-input-schema")) {
+        console.log("🔍 Found data-input-schema in text!");
+        console.log("Sample (first 300 chars):", originalText.slice(0, 300));
+
+        // Try to find where the attribute starts
+        const attrStart = originalText.indexOf("data-input-schema");
+        if (attrStart !== -1) {
+          console.log(
+            "Context around attribute:",
+            originalText.slice(Math.max(0, attrStart - 20), attrStart + 100),
+          );
+        }
+      }
+
+      // Remove data-input-schema and data-output-schema attributes from mention spans
+      // These schemas contain unescaped quotes (malformed HTML), so we use lazy matching
+      // Match everything until the schema closing pattern: #"}" (schema URL ends with #, then closes)
+      let cleanedText = originalText
+        .replace(/\s+data-input-schema=".+?#"\}"/g, "")
+        .replace(/\s+data-output-schema=".+?#"\}"/g, "");
+
+      // Debug: log if we actually cleaned something
+      if (originalText !== cleanedText) {
+        console.log("✅ Successfully stripped schemas!");
+        console.log("  Original length:", originalText.length);
+        console.log("  Cleaned length:", cleanedText.length);
+        console.log(
+          "  Removed:",
+          originalText.length - cleanedText.length,
+          "characters",
+        );
+      } else if (originalText.includes("data-input-schema")) {
+        console.log("❌ Found schemas but failed to strip them");
+      }
+
+      return {
+        ...part,
+        text: cleanedText,
+      };
+    });
+
+    // Reconstruct message based on the format we found
+    if (isNestedFormat) {
+      return {
+        ...msg,
+        content: {
+          ...msg.content,
+          parts: processedContent,
+        },
+      };
+    } else if (Array.isArray(msg.content)) {
+      return {
+        ...msg,
+        content: processedContent,
+      };
+    } else {
+      return {
+        ...msg,
+        parts: processedContent,
+      };
+    }
+  });
+};
+
 const assertConfiguration: (
   config: Configuration | undefined,
 ) => asserts config is Configuration = (config) => {
@@ -1072,10 +1191,10 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
     messageList.add(threadMessages, "memory");
     messageList.add(payload, "user");
 
-    // Save new messages to storage
+    // Save new messages to storage (strip schemas to avoid bloat)
     await store.saveMessages({
       format: "v2",
-      messages: messageList.get.input.v2(),
+      messages: stripMentionSchemas(messageList.get.input.v2()),
     });
 
     // Get all messages in AI SDK format
@@ -1119,7 +1238,7 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
 
     await store.saveMessages({
       format: "v2",
-      messages: messageList.get.response.v2(),
+      messages: stripMentionSchemas(messageList.get.response.v2()),
     });
 
     assertConfiguration(this._configuration);
@@ -1256,10 +1375,10 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
     messageList.add(threadMessages, "memory");
     messageList.add(payload, "user");
 
-    // Save new messages to storage
+    // Save new messages to storage (strip schemas to avoid bloat)
     await store.saveMessages({
       format: "v2",
-      messages: messageList.get.input.v2(),
+      messages: stripMentionSchemas(messageList.get.input.v2()),
     });
 
     // Get all messages in AI SDK format
@@ -1296,7 +1415,7 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
 
     await store.saveMessages({
       format: "v2",
-      messages: messageList.get.response.v2(),
+      messages: stripMentionSchemas(messageList.get.response.v2()),
     });
 
     assertConfiguration(this._configuration);
@@ -1518,7 +1637,7 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
 
       const threadQueue: Promise<unknown> = store.saveMessages({
         format: "v2",
-        messages: messageList.get.input.v2(),
+        messages: stripMentionSchemas(messageList.get.input.v2()),
       });
 
       // Convert toolsets to AI SDK 5 tools format
@@ -1528,6 +1647,8 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
         ...convertToModelMessages(contextMessages),
         ...messageList.get.all.aiV5.model(),
       ];
+
+      console.log("allMessages", JSON.stringify(allMessages, null, 2));
 
       const stream = streamText({
         experimental_telemetry: {
@@ -1569,7 +1690,7 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
 
             return store
               .saveMessages({
-                messages: messageList.get.response.v2(),
+                messages: stripMentionSchemas(messageList.get.response.v2()),
                 format: "v2",
               })
               .then(() => {

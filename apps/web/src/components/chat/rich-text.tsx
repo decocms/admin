@@ -109,10 +109,17 @@ export const RichTextArea = forwardRef<RichTextAreaHandle, RichTextAreaProps>(
         )
         .flatMap((integration) =>
           integration.tools!.map(
-            (tool: { name: string; description?: string }) => ({
+            (tool: {
+              name: string;
+              description?: string;
+              inputSchema?: Record<string, unknown>;
+              outputSchema?: Record<string, unknown>;
+            }) => ({
               id: `${integration.id}-${tool.name}`,
               name: tool.name,
               description: tool.description,
+              inputSchema: tool.inputSchema,
+              outputSchema: tool.outputSchema,
               integration: {
                 id: integration.id,
                 name: integration.name,

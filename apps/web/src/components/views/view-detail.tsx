@@ -4,7 +4,6 @@ import {
   useSDK,
   useViewByUriV2,
 } from "@deco/sdk";
-import { Form } from "@deco/ui/components/form.tsx";
 import { Icon } from "@deco/ui/components/icon.tsx";
 import { Spinner } from "@deco/ui/components/spinner.tsx";
 import type { JSONSchema7 } from "json-schema";
@@ -19,7 +18,7 @@ import {
   type RuntimeErrorEntry,
 } from "../chat/provider.tsx";
 import { EmptyState } from "../common/empty-state.tsx";
-import JsonSchemaForm, { ajvResolver } from "../json-schema/index.tsx";
+import { ajvResolver } from "../json-schema/index.tsx";
 import { generateDefaultValues } from "../json-schema/utils/generate-default-values.ts";
 
 interface ViewDetailProps {
@@ -211,32 +210,6 @@ export function ViewDetail({ resourceUri, data }: ViewDetailProps) {
 
   return (
     <div className="h-full w-full flex bg-white">
-      {/* Form Section - Show only if inputSchema exists */}
-      {inputSchema && (
-        <div className="w-96 shrink-0 border-r border-border overflow-y-auto">
-          <div className="p-6 space-y-4">
-            <div className="space-y-2">
-              <h2 className="text-lg font-semibold text-foreground">
-                Input Data
-              </h2>
-              <p className="text-sm text-muted-foreground">
-                Configure the input data for this view
-              </p>
-            </div>
-            <Form {...form}>
-              <JsonSchemaForm
-                schema={inputSchema}
-                form={form}
-                onSubmit={(e) => {
-                  e.preventDefault();
-                  // Form submission is handled automatically via watch
-                }}
-              />
-            </Form>
-          </div>
-        </div>
-      )}
-
       {/* Preview Section - Takes remaining space */}
       <div className="flex-1 overflow-hidden relative">
         {htmlValue ? (

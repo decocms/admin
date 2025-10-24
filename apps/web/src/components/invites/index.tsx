@@ -198,18 +198,6 @@ function InvitesListContent() {
   >({});
   const [viewMode, setViewMode] = useViewMode("invites");
 
-  // 🔍 LOG INVITE IDs FOR TESTING
-  if (invites.length > 0) {
-    console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
-    console.log("📧 Your Invites - Test URLs:");
-    console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
-    invites.forEach((invite) => {
-      console.log(`\nTeam: ${invite.teamName}`);
-      console.log(`  🔗 http://localhost:5173/invites/${invite.id}`);
-    });
-    console.log("\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
-  }
-
   const filteredInvites =
     search.trim().length > 0
       ? invites.filter(
@@ -326,17 +314,15 @@ function InvitesListContent() {
               </div>
             </div>
 
-            {search && (
-              <div className="mb-4">
-                <input
-                  type="text"
-                  placeholder="Search invitations"
-                  value={search}
-                  onChange={(e) => setSearch(e.target.value)}
-                  className="w-full max-w-md px-4 py-2 rounded-lg border border-border bg-background text-sm"
-                />
-              </div>
-            )}
+            <div className="mb-4">
+              <input
+                type="text"
+                placeholder="Search invitations"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                className="w-full max-w-md px-4 py-2 rounded-lg border border-border bg-background text-sm"
+              />
+            </div>
           </div>
         </div>
 

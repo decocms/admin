@@ -101,7 +101,8 @@ export const getTeamRoles = (
  * Invite new members to a team
  * @param teamId - The ID of the team to invite members to
  * @param invitees - Array of invitees with email and roles
- * @returns Response message from the API and invite IDs
+ * @param signal - Optional AbortSignal to cancel the request
+ * @returns Response message from the API and invite identifiers and emails
  */
 export const inviteTeamMembers = (
   teamId: number,
@@ -110,14 +111,18 @@ export const inviteTeamMembers = (
     roles: Array<{ id: number; name: string }>;
   }>,
   locator: ProjectLocator,
+  signal?: AbortSignal,
 ): Promise<{
   message: string;
   invites?: Array<{ id: string; email: string }>;
 }> =>
-  MCPClient.forLocator(locator).TEAM_MEMBERS_INVITE({
-    teamId: teamId.toString(),
-    invitees,
-  });
+  MCPClient.forLocator(locator).TEAM_MEMBERS_INVITE(
+    {
+      teamId: teamId.toString(),
+      invitees,
+    },
+    { signal },
+  );
 
 /**
  * Remove a member from a team

@@ -1,5 +1,4 @@
 import { memo } from "react";
-import { Icon } from "@deco/ui/components/icon.tsx";
 import { useStepTools } from "../../../stores/workflows/hooks.ts";
 
 interface StepToolsUsedProps {
@@ -22,7 +21,7 @@ export const StepToolsUsed = memo(function StepToolsUsed({
         {tools.map((tool, idx) => (
           <div
             key={idx}
-            className="bg-secondary border border-base-border flex items-center gap-1 px-1 py-0.5 rounded-lg shrink-0"
+            className="bg-secondary border border-base-border flex items-center gap-1.5 px-2 py-0.5 rounded-lg shrink-0"
           >
             {tool.integration?.icon && (
               <div className="size-4 rounded-md bg-background border border-border/10 flex items-center justify-center overflow-hidden shrink-0">
@@ -36,11 +35,6 @@ export const StepToolsUsed = memo(function StepToolsUsed({
             <span className="text-sm text-foreground font-normal leading-5 overflow-hidden text-ellipsis whitespace-nowrap">
               {tool.name}
             </span>
-            <Icon
-              name="close"
-              size={14}
-              className="text-muted-foreground shrink-0"
-            />
           </div>
         ))}
       </div>

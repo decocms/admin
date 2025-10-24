@@ -61,6 +61,9 @@ export type Actions = Pick<
   | "openExecuteEditor"
   | "closeExecuteEditor"
   | "toggleExecuteEditor"
+  | "setExecuteDraft"
+  | "clearExecuteDraft"
+  | "hasExecuteDraft"
 >;
 
 export const createWorkflowStore = (

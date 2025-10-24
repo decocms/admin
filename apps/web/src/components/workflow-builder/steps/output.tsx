@@ -1,6 +1,6 @@
 import { EMPTY_VIEWS } from "../../../stores/workflows/hooks.ts";
 import { Button } from "@deco/ui/components/button.tsx";
-import { useMemo, useState } from "react";
+import { useMemo } from "react";
 import { JsonViewer } from "../../chat/json-viewer";
 import { ViewDialogTrigger } from "../../workflows/workflow-step-card";
 
@@ -55,8 +55,6 @@ interface StepOutputProps {
 }
 
 export function StepOutput({ output, views = EMPTY_VIEWS }: StepOutputProps) {
-  const [displayMode, setDisplayMode] = useState<"view" | "json">("view");
-
   if (output === undefined || output === null) return null;
 
   const parsedOutput = useMemo(() => deepParse(output), [output]);
@@ -80,9 +78,8 @@ export function StepOutput({ output, views = EMPTY_VIEWS }: StepOutputProps) {
 
       <div className="flex items-center gap-3 px-0">
         <Button
-          variant={displayMode === "json" ? "default" : "ghost"}
+          variant="default"
           size="sm"
-          onClick={() => setDisplayMode("json")}
           className="h-8 px-2.5 text-sm rounded-xl font-medium"
         >
           JSON

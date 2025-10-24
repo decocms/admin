@@ -143,15 +143,7 @@ const removeNonSerializableFields = (obj: any) => {
  * to avoid persisting large schema JSON in storage
  */
 const stripMentionSchemas = (messages: any[]): any[] => {
-  console.log(
-    "🔧 stripMentionSchemas called with",
-    messages.length,
-    "messages",
-  );
-
-  return messages.map((msg, idx) => {
-    console.log(`  Message ${idx}: role=${msg.role}`);
-
+  return messages.map((msg) => {
     // Handle different message formats:
     // 1. msg.content.parts (v2 format with {format: 2, parts: [...], content: "string"})
     // 2. msg.parts (direct parts array)
@@ -165,47 +157,22 @@ const stripMentionSchemas = (messages: any[]): any[] => {
       !Array.isArray(msg.content) &&
       msg.content.parts
     ) {
-      console.log(`    Using msg.content.parts (v2 format)`);
       contentArray = msg.content.parts;
       isNestedFormat = true;
     } else if (Array.isArray(msg.content)) {
-      console.log(`    Using msg.content (array)`);
       contentArray = msg.content;
     } else if (msg.parts) {
-      console.log(`    Using msg.parts`);
       contentArray = msg.parts;
     } else {
-      console.log(`    Skipping (no processable content)`);
       return msg;
     }
 
     if (!contentArray) return msg;
 
-    const processedContent = contentArray.map((part: any, partIdx: number) => {
-      console.log(
-        `    Part ${partIdx}: type=${part.type}, has text?`,
-        !!part.text,
-      );
-
+    const processedContent = contentArray.map((part: any) => {
       if (part.type !== "text" || !part.text) return part;
 
       const originalText = part.text;
-      console.log(`    Part ${partIdx} text length:`, originalText.length);
-
-      // Debug: check what we're actually dealing with
-      if (originalText.includes("data-input-schema")) {
-        console.log("🔍 Found data-input-schema in text!");
-        console.log("Sample (first 300 chars):", originalText.slice(0, 300));
-
-        // Try to find where the attribute starts
-        const attrStart = originalText.indexOf("data-input-schema");
-        if (attrStart !== -1) {
-          console.log(
-            "Context around attribute:",
-            originalText.slice(Math.max(0, attrStart - 20), attrStart + 100),
-          );
-        }
-      }
 
       // Remove data-input-schema and data-output-schema attributes from mention spans
       // These schemas contain unescaped quotes (malformed HTML), so we use lazy matching
@@ -213,20 +180,6 @@ const stripMentionSchemas = (messages: any[]): any[] => {
       let cleanedText = originalText
         .replace(/\s+data-input-schema=".+?#"\}"/g, "")
         .replace(/\s+data-output-schema=".+?#"\}"/g, "");
-
-      // Debug: log if we actually cleaned something
-      if (originalText !== cleanedText) {
-        console.log("✅ Successfully stripped schemas!");
-        console.log("  Original length:", originalText.length);
-        console.log("  Cleaned length:", cleanedText.length);
-        console.log(
-          "  Removed:",
-          originalText.length - cleanedText.length,
-          "characters",
-        );
-      } else if (originalText.includes("data-input-schema")) {
-        console.log("❌ Found schemas but failed to strip them");
-      }
 
       return {
         ...part,
@@ -1647,8 +1600,6 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
         ...convertToModelMessages(contextMessages),
         ...messageList.get.all.aiV5.model(),
       ];
-
-      console.log("allMessages", JSON.stringify(allMessages, null, 2));
 
       const stream = streamText({
         experimental_telemetry: {

@@ -208,13 +208,33 @@ export function generateViewHTML(
   <script>
     window.viewData = {};
     
-    // Listen for data from parent window
+    // Compute expected origin from document.referrer
+    const expectedOrigin = (() => {
+      try {
+        if (document.referrer) {
+          return new URL(document.referrer).origin;
+        }
+      } catch (e) {
+        console.warn('Failed to parse document.referrer:', e);
+      }
+      // Fallback to configured trusted origin (current window origin as fallback)
+      return window.location.origin;
+    })();
+    
+    // Listen for data from parent window with origin and source validation
     window.addEventListener('message', function(event) {
-      if (event.data && event.data.type === 'VIEW_DATA') {
+      // Validate message type, source, and origin before processing
+      if (
+        event.data && 
+        event.data.type === 'VIEW_DATA' &&
+        event.source === window.parent &&
+        event.origin === expectedOrigin
+      ) {
         window.viewData = event.data.payload;
         // Dispatch custom event so React can re-render with new props
         window.dispatchEvent(new CustomEvent('viewDataUpdated', { detail: event.data.payload }));
       }
+      // Silently ignore messages that don't meet validation criteria
     });
   </script>
 

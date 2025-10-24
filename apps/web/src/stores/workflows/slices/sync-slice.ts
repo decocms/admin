@@ -50,16 +50,54 @@ function detectWorkflowChanges(
     hasOtherChanges = true;
   }
 
-  // Compare each step
-  for (
-    let i = 0;
-    i < Math.min(current.steps.length, incoming.steps.length);
-    i++
-  ) {
-    const currentStep = current.steps[i];
-    const incomingStep = incoming.steps[i];
-    const stepName = currentStep.def.name;
+  // Build maps keyed by step.def.name for reorder-safe comparison
+  const currentStepsMap = new Map<string, (typeof current.steps)[0]>();
+  const incomingStepsMap = new Map<string, (typeof incoming.steps)[0]>();
 
+  // Populate current steps map, skip steps without names
+  for (const step of current.steps) {
+    if (!step.def?.name) {
+      console.warn("Skipping step without name in current workflow:", step);
+      hasOtherChanges = true; // Undefined names indicate structural issues
+      continue;
+    }
+    currentStepsMap.set(step.def.name, step);
+  }
+
+  // Populate incoming steps map, skip steps without names
+  for (const step of incoming.steps) {
+    if (!step.def?.name) {
+      console.warn("Skipping step without name in incoming workflow:", step);
+      hasOtherChanges = true;
+      continue;
+    }
+    incomingStepsMap.set(step.def.name, step);
+  }
+
+  // Get union of all step names
+  const allStepNames = new Set([
+    ...currentStepsMap.keys(),
+    ...incomingStepsMap.keys(),
+  ]);
+
+  // Compare each step by name (reorder-safe)
+  for (const stepName of allStepNames) {
+    const currentStep = currentStepsMap.get(stepName);
+    const incomingStep = incomingStepsMap.get(stepName);
+
+    // Step was removed
+    if (!incomingStep) {
+      hasOtherChanges = true;
+      continue;
+    }
+
+    // Step was added
+    if (!currentStep) {
+      hasOtherChanges = true;
+      continue;
+    }
+
+    // Both exist, compare them
     // Check views changes
     const currentViews = JSON.stringify(currentStep.views ?? []);
     const incomingViews = JSON.stringify(incomingStep.views ?? []);

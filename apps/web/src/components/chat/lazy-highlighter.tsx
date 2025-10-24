@@ -25,12 +25,12 @@ function LazyHighlighter({
         borderRadius: "0.5rem",
         background: "#263238",
         position: "relative",
-        overflowX: "auto",
+        overflowX: "hidden",
         overflowY: "visible",
         width: "100%",
         maxWidth: "100%",
         display: "block",
-        wordBreak: "break-all",
+        wordBreak: "break-word",
         overflowWrap: "break-word",
         ...(fillHeight ? { height: "100%", minHeight: "100%" } : {}),
       }}
@@ -41,12 +41,12 @@ function LazyHighlighter({
         textAlign: "right",
         userSelect: "none",
         fontSize: "14px",
-        fontFamily: "'CommitMono', monospace",
+        fontFamily: "'CommitMono', 'Roboto Mono', monospace",
       }}
       codeTagProps={{
         className: "font-mono",
         style: {
-          wordBreak: "break-all",
+          wordBreak: "break-word",
           overflowWrap: "break-word",
           whiteSpace: "pre-wrap",
           fontSize: "14px",

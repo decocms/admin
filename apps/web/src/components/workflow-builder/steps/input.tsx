@@ -14,6 +14,7 @@ import {
   WorkflowStepField,
 } from "../workflow-step-field.tsx";
 import { useStepRunner } from "./use-step-runner";
+import { generateDefaultValue } from "../../json-schema/utils/generate-default-value.ts";
 
 export const WorkflowStepInput = memo(
   function StepInput({ stepName }: { stepName: string }) {
@@ -40,7 +41,13 @@ export const WorkflowStepInput = memo(
 
         // Keep the value as is (including @ references)
         // The WorkflowStepField component will handle reference mode display
-        cleaned[key] = value ?? "";
+        if (value !== null && value !== undefined) {
+          cleaned[key] = value;
+        } else {
+          // Generate type-appropriate default based on schema
+          const propertySchema = schemaProperties[key] as JSONSchema7;
+          cleaned[key] = generateDefaultValue(propertySchema);
+        }
       }
 
       return cleaned;

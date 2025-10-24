@@ -10,7 +10,9 @@ interface StepFooterProps {
 
 function formatTime(timestamp: string | null | undefined): string {
   if (!timestamp) return "-";
-  return new Date(timestamp).toLocaleTimeString([], {
+  const date = new Date(timestamp);
+  if (Number.isNaN(date.getTime())) return "-";
+  return date.toLocaleTimeString([], {
     hour: "2-digit",
     minute: "2-digit",
     second: "2-digit",
@@ -76,9 +78,19 @@ export const StepFooter = memo(function StepFooter({
   if (!startTime && !endTime && !cost) return null;
 
   // Calculate duration in real-time (directly in render, NOT in useMemo!)
-  const start = startTime ? new Date(startTime).getTime() : 0;
-  const end = endTime ? new Date(endTime).getTime() : currentTime;
-  const duration = startTime ? Math.max(0, end - start) : null;
+  let duration: number | null = null;
+  if (startTime) {
+    const start = new Date(startTime).getTime();
+    if (endTime) {
+      // If endTime exists, use it
+      const end = new Date(endTime).getTime();
+      duration = Math.max(0, end - start);
+    } else if (shouldSubscribe) {
+      // If no endTime but step is running, use currentTime for live duration
+      duration = Math.max(0, currentTime - start);
+    }
+    // Otherwise duration remains null (shows "-")
+  }
 
   return (
     <div className="px-4 pt-2 pb-1 flex items-center gap-3 text-xs text-muted-foreground font-mono leading-none min-w-0 overflow-x-auto">

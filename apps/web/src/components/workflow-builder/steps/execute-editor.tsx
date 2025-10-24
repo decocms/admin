@@ -1,7 +1,8 @@
-import { memo, useCallback, useState, useEffect } from "react";
+import { memo, useCallback } from "react";
 import {
   useWorkflowStepDefinition,
   useWorkflowActions,
+  useExecuteDraft,
 } from "../../../stores/workflows/hooks.ts";
 import { Textarea } from "@deco/ui/components/textarea.tsx";
 import { Button } from "@deco/ui/components/button.tsx";
@@ -16,23 +17,21 @@ export const StepExecuteEditor = memo(function StepExecuteEditor({
   stepName,
 }: StepExecuteEditorProps) {
   const stepDefinition = useWorkflowStepDefinition(stepName);
-  const { updateStep } = useWorkflowActions();
-  const [executeCode, setExecuteCode] = useState(stepDefinition?.execute || "");
-  const [isDirty, setIsDirty] = useState(false);
+  const draft = useExecuteDraft(stepName);
+  const { updateStep, setExecuteDraft, clearExecuteDraft } =
+    useWorkflowActions();
 
-  // Sync with store when step definition changes
-  useEffect(() => {
-    if (stepDefinition?.execute !== executeCode && !isDirty) {
-      setExecuteCode(stepDefinition?.execute || "");
-    }
-  }, [stepDefinition?.execute, executeCode, isDirty]);
+  // Current value = draft OR saved value
+  const currentValue = draft ?? stepDefinition?.execute ?? "";
+
+  // isDirty = draft exists and differs from saved value
+  const isDirty = draft !== undefined && draft !== stepDefinition?.execute;
 
   const handleChange = useCallback(
     (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-      setExecuteCode(e.target.value);
-      setIsDirty(true);
+      setExecuteDraft(stepName, e.target.value);
     },
-    [],
+    [stepName, setExecuteDraft],
   );
 
   const handleSave = useCallback(() => {
@@ -44,18 +43,17 @@ export const StepExecuteEditor = memo(function StepExecuteEditor({
     updateStep(stepName, {
       def: {
         ...stepDefinition,
-        execute: executeCode,
+        execute: currentValue,
       },
     });
 
-    setIsDirty(false);
+    clearExecuteDraft(stepName);
     toast.success("Execute code updated");
-  }, [stepDefinition, stepName, executeCode, updateStep]);
+  }, [stepDefinition, stepName, currentValue, updateStep, clearExecuteDraft]);
 
   const handleReset = useCallback(() => {
-    setExecuteCode(stepDefinition?.execute || "");
-    setIsDirty(false);
-  }, [stepDefinition?.execute]);
+    clearExecuteDraft(stepName);
+  }, [stepName, clearExecuteDraft]);
 
   if (!stepDefinition) {
     return null;
@@ -93,7 +91,7 @@ export const StepExecuteEditor = memo(function StepExecuteEditor({
       </div>
       <div className="relative">
         <Textarea
-          value={executeCode}
+          value={currentValue}
           onChange={handleChange}
           className="font-mono text-xs min-h-[300px] resize-y"
           placeholder="Export a default async function..."

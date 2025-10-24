@@ -245,6 +245,17 @@ export function useIsExecuteEditorOpen(stepName: string) {
   );
 }
 
+export function useExecuteDraft(stepName: string) {
+  return useWorkflowStore((state) => state.executeDrafts[stepName], Object.is);
+}
+
+export function useHasExecuteDraft(stepName: string) {
+  return useWorkflowStore(
+    (state) => stepName in state.executeDrafts,
+    Object.is,
+  );
+}
+
 // All actions grouped in one hook (actions are stable, but return object needs shallow)
 export function useWorkflowActions() {
   return useWorkflowStore((state) => ({
@@ -269,5 +280,8 @@ export function useWorkflowActions() {
     openExecuteEditor: state.openExecuteEditor,
     closeExecuteEditor: state.closeExecuteEditor,
     toggleExecuteEditor: state.toggleExecuteEditor,
+    setExecuteDraft: state.setExecuteDraft,
+    clearExecuteDraft: state.clearExecuteDraft,
+    hasExecuteDraft: state.hasExecuteDraft,
   }));
 }

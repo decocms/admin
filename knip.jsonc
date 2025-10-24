@@ -11,7 +11,9 @@
       "ignore": [],
       "ignoreDependencies": [
         // @hookform/resolvers have this as optional peer dependency
-        "ajv-errors"
+        "ajv-errors",
+        "ajv-formats",
+        "ajv"
       ]
     },
     // "apps/api": {

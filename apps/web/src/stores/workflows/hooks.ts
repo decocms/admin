@@ -233,6 +233,18 @@ export function useHasFirstStepInput() {
   }, [firstStepData]);
 }
 
+// UI state selectors
+export function useExecuteEditorStepName() {
+  return useWorkflowStore((state) => state.executeEditorStepName, Object.is);
+}
+
+export function useIsExecuteEditorOpen(stepName: string) {
+  return useWorkflowStore(
+    (state) => state.executeEditorStepName === stepName,
+    Object.is,
+  );
+}
+
 // All actions grouped in one hook (actions are stable, but return object needs shallow)
 export function useWorkflowActions() {
   return useWorkflowStore((state) => ({
@@ -240,6 +252,7 @@ export function useWorkflowActions() {
     handleExternalUpdate: state.handleExternalUpdate,
     acceptPendingUpdate: state.acceptPendingUpdate,
     dismissPendingUpdate: state.dismissPendingUpdate,
+    resetAndResync: state.resetAndResync,
     // Step management actions
     addStep: state.addStep,
     updateStep: state.updateStep,
@@ -252,5 +265,9 @@ export function useWorkflowActions() {
     setStepExecutionStart: state.setStepExecutionStart,
     setStepExecutionEnd: state.setStepExecutionEnd,
     runStep: state.runStep,
+    // UI actions
+    openExecuteEditor: state.openExecuteEditor,
+    closeExecuteEditor: state.closeExecuteEditor,
+    toggleExecuteEditor: state.toggleExecuteEditor,
   }));
 }

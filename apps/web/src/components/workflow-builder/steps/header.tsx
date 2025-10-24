@@ -4,8 +4,13 @@ import { cn } from "@deco/ui/lib/utils.ts";
 import { memo, useCallback } from "react";
 import { StepTitle } from "./title";
 import { useStepRunner } from "./use-step-runner";
-import { useWorkflowStepInput } from "../../../stores/workflows/hooks.ts";
+import {
+  useWorkflowStepInput,
+  useIsExecuteEditorOpen,
+} from "../../../stores/workflows/hooks.ts";
+import { useWorkflowStore } from "../../../stores/workflows/provider.tsx";
 import { Spinner } from "@deco/ui/components/spinner.tsx";
+import type { Store } from "../../../stores/workflows/store.ts";
 
 interface StepHeaderProps {
   stepName: string;
@@ -24,12 +29,25 @@ export const StepHeader = memo(function StepHeader({
   const isRunning = status === "running";
   const { runStep, isSubmitting } = useStepRunner(stepName);
   const currentInput = useWorkflowStepInput(stepName);
+  const isExecuteEditorOpen = useIsExecuteEditorOpen(stepName);
+
+  // Directly access the toggle action from the store
+  const toggleExecuteEditor = useWorkflowStore(
+    (state: Store) => state.toggleExecuteEditor,
+    Object.is,
+  );
 
   const handleRunStep = useCallback(async () => {
     if (currentInput && typeof currentInput === "object") {
       await runStep(currentInput as Record<string, unknown>);
     }
   }, [runStep, currentInput]);
+
+  const handleToggleExecuteEditor = useCallback(() => {
+    if (toggleExecuteEditor) {
+      toggleExecuteEditor(stepName);
+    }
+  }, [toggleExecuteEditor, stepName]);
 
   return (
     <div
@@ -44,41 +62,28 @@ export const StepHeader = memo(function StepHeader({
           <div className="flex items-center gap-2 w-full">
             <StepTitle stepName={stepName} description={description} />
             {type === "definition" ? (
-              <>
-                {/* <div className="flex items-center gap-0 shrink-0">
-            <Button
-              type="button"
-              variant="ghost"
-              size="icon"
-              className="size-8 rounded-xl p-0"
-            >
-              <Icon
-                name="more_horiz"
-                size={20}
-                className="text-muted-foreground"
-              />
-            </Button>
-            <Button
-              type="button"
-              variant="ghost"
-              size="icon"
-              className="size-8 rounded-xl p-0"
-            >
-              <Icon
-                name="open_in_full"
-                size={20}
-                className="text-muted-foreground"
-              />
-            </Button>
-            <Button
-              type="button"
-              variant="ghost"
-              size="icon"
-              className="size-8 rounded-xl p-0"
-            >
-              <Icon name="code" size={20} className="text-muted-foreground" />
-            </Button>
-          </div> */}
+              <div className="flex items-center gap-2 shrink-0">
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  className={cn(
+                    "size-8 rounded-xl p-0",
+                    isExecuteEditorOpen && "bg-accent text-accent-foreground",
+                  )}
+                  onClick={handleToggleExecuteEditor}
+                  title="View/Edit Execute Code"
+                >
+                  <Icon
+                    name="code"
+                    size={20}
+                    className={
+                      isExecuteEditorOpen
+                        ? "text-foreground"
+                        : "text-muted-foreground"
+                    }
+                  />
+                </Button>
                 <Button
                   type="button"
                   variant="outline"
@@ -98,7 +103,7 @@ export const StepHeader = memo(function StepHeader({
                     </>
                   )}
                 </Button>
-              </>
+              </div>
             ) : null}
           </div>
         </div>

@@ -33,6 +33,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { resourceKeys } from "@deco/sdk";
 import { useWorkflowSync } from "./hooks.ts";
 import { WorkflowStepsList } from "./steps/list.tsx";
+import { ResetWorkflowButton } from "./reset-workflow-button.tsx";
 
 interface WorkflowDisplayCanvasProps {
   resourceUri: string;
@@ -251,6 +252,7 @@ export const Canvas = memo(function Canvas() {
             </div>
           </div>
           <div className="flex items-center gap-2">
+            <ResetWorkflowButton />
             <StartWorkflowButton />
           </div>
         </div>

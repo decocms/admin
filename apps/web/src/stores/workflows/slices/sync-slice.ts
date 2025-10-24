@@ -13,6 +13,7 @@ export interface SyncSlice {
   };
   acceptPendingUpdate: () => void;
   dismissPendingUpdate: () => void;
+  resetAndResync: () => void;
 }
 
 interface WorkflowChanges {
@@ -118,6 +119,7 @@ function detectWorkflowChanges(
 export const createSyncSlice: StateCreator<Store, [], [], SyncSlice> = (
   set,
   get,
+  api,
 ) => {
   return {
     isDirty: false,
@@ -277,6 +279,22 @@ export const createSyncSlice: StateCreator<Store, [], [], SyncSlice> = (
 
       toast.info("Keeping local version", {
         description: "External changes were dismissed",
+      });
+    },
+
+    resetAndResync: () => {
+      const state = get();
+      const { workflowUri } = state;
+
+      // Clear localStorage for this workflow
+      const storageKey = `workflow-store-${encodeURIComponent(workflowUri).slice(0, 200)}`;
+      localStorage.removeItem(storageKey);
+
+      // Reset to initial state using Zustand's built-in method
+      set(api.getInitialState());
+
+      toast.success("Store reset", {
+        description: "Cleared local changes and synced with server",
       });
     },
   };

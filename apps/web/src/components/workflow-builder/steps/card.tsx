@@ -1,4 +1,7 @@
-import { useWorkflowStepData } from "../../../stores/workflows/hooks.ts";
+import {
+  useWorkflowStepData,
+  useIsExecuteEditorOpen,
+} from "../../../stores/workflows/hooks.ts";
 import { memo, useMemo } from "react";
 import { useWorkflowRunQuery } from "../../workflows/workflow-run-detail.tsx";
 import { WorkflowStepInput } from "./input";
@@ -8,6 +11,7 @@ import { StepHeader } from "./header.tsx";
 import { StepAttempts } from "./attempts.tsx";
 import { StepToolsUsed } from "./tools-used.tsx";
 import { StepFooter } from "./footer.tsx";
+import { StepExecuteEditor } from "./execute-editor.tsx";
 
 /**
  * Derives the step status from execution properties (works for both runtime and definition steps)
@@ -48,6 +52,7 @@ interface WorkflowStepCardProps {
 export const WorkflowDefinitionStepCard = memo(
   function WorkflowDefinitionStepCard({ stepName }: WorkflowStepCardProps) {
     const stepData = useWorkflowStepData(stepName);
+    const isExecuteEditorOpen = useIsExecuteEditorOpen(stepName);
 
     const execution = stepData.execution as
       | {
@@ -69,6 +74,7 @@ export const WorkflowDefinitionStepCard = memo(
       <div className="rounded-xl p-1 bg-card shadow-xs min-w-0">
         <StepHeader stepName={stepName} />
         <div className="bg-background rounded-xl shadow-xs overflow-hidden min-w-0">
+          {isExecuteEditorOpen && <StepExecuteEditor stepName={stepName} />}
           <div className="border-b border-base-border bg-background p-4 space-y-3 min-w-0 overflow-hidden">
             <p className="font-mono text-sm text-muted-foreground uppercase leading-5">
               Inputs

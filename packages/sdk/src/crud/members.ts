@@ -114,7 +114,6 @@ export const inviteTeamMembers = (
   signal?: AbortSignal,
 ): Promise<{
   message: string;
-  invites?: Array<{ id: string; email: string }>;
 }> =>
   MCPClient.forLocator(locator).TEAM_MEMBERS_INVITE(
     {

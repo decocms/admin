@@ -488,6 +488,10 @@ const router = createBrowserRouter([
             Component: () => <Navigate to="../workflows/triggers" replace />,
           },
           { path: "trigger/:id", Component: TriggerDetails },
+          {
+            path: "database",
+            Component: lazy(() => import("./components/database/studio.tsx")),
+          },
           { path: "views", Component: ViewsListPage },
           { path: "views/legacy", Component: ViewsLegacyPage },
           { path: "views/:integrationId/:viewName", Component: ViewDetail },

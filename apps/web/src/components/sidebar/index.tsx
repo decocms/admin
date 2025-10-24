@@ -455,7 +455,14 @@ function WorkspaceViews() {
     return workspaceLink(path ?? "/");
   }
 
-  const wellKnownItems = ["Tools", "Views", "Workflows", "Documents", "Agents"];
+  const wellKnownItems = [
+    "Tools",
+    "Views",
+    "Database",
+    "Workflows",
+    "Documents",
+    "Agents",
+  ];
   const legacyTitleMap: Record<string, string> = {
     Prompts: "Documents",
   };
@@ -488,6 +495,7 @@ function WorkspaceViews() {
     "Workflows",
     "Tools",
     "Views",
+    "Database",
     "Files",
   ];
   const resourceItems = resourceTypeOrder

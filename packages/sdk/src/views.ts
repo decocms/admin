@@ -38,6 +38,15 @@ export const DEFAULT_VIEWS: View[] = [
     },
   },
   {
+    id: "database",
+    title: "Database",
+    icon: "database",
+    type: "default",
+    metadata: {
+      path: "/database",
+    },
+  },
+  {
     id: "workflows",
     title: "Workflows",
     icon: "flowchart",

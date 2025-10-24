@@ -1,0 +1,36 @@
+{
+  "$schema": "https://unpkg.com/knip@5/schema.json",
+  "workspaces": {
+    ".": {
+      "entry": ["scripts/**/*.ts"],
+      "project": ["scripts/**/*.ts"]
+    },
+    "apps/web": {
+      "ignoreDependencies": [
+        // @hookform/resolvers have ajv deps as optional peer dependencies
+        "ajv-errors",
+        "ajv-formats",
+        "ajv"
+      ]
+    },
+    "packages/runtime": {
+      "ignoreFiles": [
+        // Used on CI, not detected by knip atm
+        "scripts/generate-json-schema.ts"
+      ]
+    },
+    "packages/sdk": {
+      // TODO: Check if we really need this observability folder
+      "ignore": ["src/observability/**/*"]
+    }
+  },
+  "ignore": [
+    "**/*.d.ts",
+    "**/*.test.ts",
+    "**/*.test.tsx",
+    "**/test/**",
+    "**/dist/**",
+    "**/node_modules/**"
+  ],
+  "ignoreDependencies": ["@types/*"]
+}

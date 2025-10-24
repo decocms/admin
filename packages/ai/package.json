@@ -46,7 +46,6 @@
     "./tools": "./src/tools.ts",
     "./agent": "./src/agent.ts",
     "./agent/llm": "./src/agent/llm.ts",
-    "./agent/ai-message": "./src/agent/ai-message.ts",
     "./triggers": "./src/triggers/services.ts",
     "./capybaras": "./src/capybaras.ts"
   },

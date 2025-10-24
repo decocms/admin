@@ -20,6 +20,7 @@
   "exports": {
     ".": "./src/index.ts",
     "./proxy": "./src/proxy.ts",
+    "./admin": "./src/admin.ts",
     "./client": "./src/client.ts",
     "./mastra": "./src/mastra.ts",
     "./drizzle": "./src/drizzle.ts",

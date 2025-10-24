@@ -32,7 +32,7 @@ import { useResourceWatch } from "../../hooks/use-resource-watch.ts";
 import { useQueryClient } from "@tanstack/react-query";
 import { resourceKeys } from "@deco/sdk";
 import { useWorkflowSync } from "./hooks.ts";
-import { WorkflowStepsList } from "./steps.tsx";
+import { WorkflowStepsList } from "./steps/list.tsx";
 
 interface WorkflowDisplayCanvasProps {
   resourceUri: string;

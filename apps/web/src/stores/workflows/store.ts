@@ -54,6 +54,7 @@ export type Actions = Pick<
   | "setStepInput"
   | "setStepExecutionStart"
   | "setStepExecutionEnd"
+  | "runStep"
 >;
 
 export const createWorkflowStore = (

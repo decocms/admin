@@ -170,7 +170,8 @@ function createSDK(apiBase: string, ws: string, proj: string) {
 /**
  * Generates complete HTML document from React component code
  *
- * @param code - The React component code (must define `export const App = () => {}`)
+ * @param code - The React component code (must define `export const App = (props) => {}`).
+ *               The App component will receive input data as props when passed from the parent window.
  * @param apiBase - The API base URL for tool calls (e.g., 'http://localhost:3001' or 'https://api.decocms.com')
  * @param workspace - The organization/workspace name (from route params)
  * @param project - The project name (from route params)
@@ -202,6 +203,20 @@ export function generateViewHTML(
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>DECO View</title>
+
+  <!-- Initialize view data (will be populated by parent window via postMessage) -->
+  <script>
+    window.viewData = {};
+    
+    // Listen for data from parent window
+    window.addEventListener('message', function(event) {
+      if (event.data && event.data.type === 'VIEW_DATA') {
+        window.viewData = event.data.payload;
+        // Dispatch custom event so React can re-render with new props
+        window.dispatchEvent(new CustomEvent('viewDataUpdated', { detail: event.data.payload }));
+      }
+    });
+  </script>
 
   <!-- View SDK -->
   <script>
@@ -269,6 +284,20 @@ ${escapedCode}
       document.getElementById('root').innerHTML = errorHtml;
     };
     
+    // Global root instance for re-rendering
+    let rootInstance = null;
+    
+    // Render function that can be called multiple times
+    const renderApp = (App) => {
+      if (!rootInstance) {
+        rootInstance = createRoot(document.getElementById('root'));
+      }
+      // Pass window.viewData as props to the App component
+      rootInstance.render(
+        createElement(App, window.viewData || {}, null)
+      );
+    };
+    
     try {
       // Compile user's code
       const userCode = document.getElementById('user-code').textContent;
@@ -287,10 +316,13 @@ ${escapedCode}
         throw new Error('App component not found. Please define: export const App = () => { ... }');
       }
       
-      // Render App wrapped in ErrorBoundary
-      createRoot(document.getElementById('root')).render(
-        createElement(App, {}, null)
-      );
+      // Initial render with current viewData
+      renderApp(App);
+      
+      // Re-render when viewData updates
+      window.addEventListener('viewDataUpdated', () => {
+        renderApp(App);
+      });
     } catch (error) {
       showError(error);
     }

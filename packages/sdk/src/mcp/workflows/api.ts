@@ -477,7 +477,8 @@ export function createWorkflowBindingImpl({
 
   const decoWorkflowEditStep = createTool({
     name: "DECO_WORKFLOW_EDIT_STEP",
-    description: "Edit a step in a workflow",
+    description:
+      "Edit specific fields of a step in a workflow. Only the provided fields will be updated, all other fields remain unchanged.",
     inputSchema: z.lazy(() =>
       z.object({
         workflowUri: z
@@ -485,7 +486,41 @@ export function createWorkflowBindingImpl({
           .describe(
             "The Resources 2.0 URI of the workflow to edit the step in",
           ),
-        step: WorkflowStepDefinitionSchema.omit({ output: true }),
+        stepName: z.string().describe("The unique name of the step to edit"),
+        updates: z
+          .object({
+            def: z
+              .object({
+                title: z.string().optional(),
+                description: z.string().optional(),
+                inputSchema: z.object({}).passthrough().optional(),
+                outputSchema: z.object({}).passthrough().optional(),
+                execute: z.string().optional(),
+                dependencies: z
+                  .array(
+                    z.object({
+                      integrationId: z.string().min(1),
+                      toolNames: z.array(z.string().min(1)).optional(),
+                    }),
+                  )
+                  .optional(),
+              })
+              .optional()
+              .describe(
+                "Partial updates to the step definition. Only provided fields will be updated.",
+              ),
+            input: z
+              .record(z.unknown())
+              .optional()
+              .describe("Update the step input configuration"),
+            views: z
+              .array(z.string())
+              .optional()
+              .describe("Update the list of view URIs"),
+          })
+          .describe(
+            "Object containing the fields to update. Only provided fields will be changed.",
+          ),
       }),
     ),
     outputSchema: z.lazy(() =>
@@ -499,7 +534,7 @@ export function createWorkflowBindingImpl({
           .describe("Error message if the step editing failed"),
       }),
     ),
-    handler: async ({ workflowUri, step }, c) => {
+    handler: async ({ workflowUri, stepName, updates }, c) => {
       try {
         assertHasWorkspace(c);
         await assertWorkspaceResourceAccess(c);
@@ -511,21 +546,34 @@ export function createWorkflowBindingImpl({
         }
 
         const stepIndex = workflow.steps.findIndex(
-          (s) => s.def.name === step.def.name,
+          (s) => s.def.name === stepName,
         );
         if (stepIndex === -1) {
           return { success: false, error: "Step not found" };
         }
+
+        const existingStep = workflow.steps[stepIndex];
+
+        // Deep merge the updates with existing step
         const updatedStep = {
-          ...step,
-          output: {},
+          ...existingStep,
+          ...(updates.def && {
+            def: {
+              ...existingStep.def,
+              ...updates.def,
+            },
+          }),
+          ...(updates.input !== undefined && { input: updates.input }),
+          ...(updates.views !== undefined && { views: updates.views }),
         };
+
         const updatedWorkflow = {
           ...workflow,
           steps: workflow.steps.map((s, index) =>
             index === stepIndex ? updatedStep : s,
           ),
         };
+
         await resourceWorkflowUpdate(workflowUri, updatedWorkflow);
 
         return { success: true };

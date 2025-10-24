@@ -18,11 +18,11 @@ import { Suspense, lazy, useMemo, useState } from "react";
 import { EmptyState } from "../common/empty-state.tsx";
 import { UserInfo } from "../common/table/table-cells.tsx";
 import { getStatusBadgeVariant } from "./utils.ts";
-import { WorkflowStepCard } from "./workflow-step-card.tsx";
 import { DetailSection } from "../common/detail-section.tsx";
 import { WorkflowStoreProvider } from "../../stores/workflows/provider.tsx";
 import { useQuery } from "@tanstack/react-query";
 import { useResourceRoute } from "../resources-v2/route-context.tsx";
+import { WorkflowRunStepCard } from "../workflow-builder/steps/card.tsx";
 
 const LazyHighlighter = lazy(() => import("../chat/lazy-highlighter.tsx"));
 
@@ -336,9 +336,8 @@ export function WorkflowRunDetail(_: { resourceUri?: string } = {}) {
                           </div>
                         )}
                         <Suspense fallback={<Spinner />}>
-                          <WorkflowStepCard
+                          <WorkflowRunStepCard
                             stepName={step.name || `Step ${idx + 1}`}
-                            type="runtime"
                           />
                         </Suspense>
                       </div>

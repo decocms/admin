@@ -103,12 +103,8 @@ export function useWorkflowStepData(stepName: string) {
         stepOutputs: Record<string, unknown>;
         stepExecutions: Record<string, unknown>;
         workflow: { steps: Array<{ def: { name: string }; views?: string[] }> };
-        workflow: { steps: Array<{ def: { name: string }; views?: string[] }> };
       }) => ({
         output: state.stepOutputs[stepName],
-        views:
-          state.workflow.steps.find((s) => s.def.name === stepName)?.views ??
-          EMPTY_VIEWS,
         views:
           state.workflow.steps.find((s) => s.def.name === stepName)?.views ??
           EMPTY_VIEWS,
@@ -242,5 +238,6 @@ export function useWorkflowActions() {
     setStepInput: state.setStepInput,
     setStepExecutionStart: state.setStepExecutionStart,
     setStepExecutionEnd: state.setStepExecutionEnd,
+    runStep: state.runStep,
   }));
 }

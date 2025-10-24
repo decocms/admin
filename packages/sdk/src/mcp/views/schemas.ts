@@ -4,14 +4,30 @@ import { z } from "zod";
  * View Definition Schema
  *
  * This schema defines the structure for views using Resources 2.0
- * Views are React components that are rendered in an iframe with a standardized template
+ * Views are React components that are rendered in an iframe with a standardized template.
+ *
+ * Views can receive input data via props (e.g., from workflow steps, external sources, or direct calls).
+ * The optional inputSchema defines the expected shape of this data using JSON Schema format.
  */
 export const ViewDefinitionSchema = z.object({
   name: z.string().min(1).describe("The name/title of the view"),
   description: z.string().describe("A brief description of the view's purpose"),
+  inputSchema: z
+    .object({})
+    .passthrough()
+    .optional()
+    .describe(
+      "Optional JSON Schema (draft-07) defining the expected input data structure. " +
+        "When provided, this schema documents what props the view expects to receive. " +
+        "Useful for: 1) Documenting the view's data contract, 2) Type validation in workflows, " +
+        "3) Auto-generating forms or input UIs. Example: { type: 'object', properties: { userId: { type: 'string' }, metrics: { type: 'array' } }, required: ['userId'] }",
+    ),
   code: z
     .string()
-    .default(`export const App = () => {
+    .default(`export const App = (props) => {
+  // Props contain any input data passed to this view (e.g., from a workflow step output)
+  // Access your data via: props.yourDataKey
+  
   return (
     <div className="w-full min-h-screen h-full flex items-center justify-center bg-gradient-to-br from-gray-50 to-gray-100">
       <div className="text-center max-w-2xl px-8 space-y-6">
@@ -53,17 +69,28 @@ export const ViewDefinitionSchema = z.object({
               </li>
             </ul>
           </div>
+          
+          {Object.keys(props).length > 0 && (
+            <div className="text-left space-y-2 pt-4 border-t border-gray-200">
+              <p className="text-sm text-gray-700">
+                <span className="font-semibold">📦 Received Data:</span>
+              </p>
+              <pre className="text-xs bg-gray-50 p-3 rounded border border-gray-200 overflow-auto text-left">
+                {JSON.stringify(props, null, 2)}
+              </pre>
+            </div>
+          )}
         </div>
         
         <p className="text-sm text-gray-500">
-          This view has access to Tailwind CSS v4 and React 19
+          This view has access to Tailwind CSS v4, React 19, and can receive input via props
         </p>
       </div>
     </div>
   );
 };`)
     .describe(
-      "The React component code for the view. Must define 'export const App = () => { ... }'. Import React hooks from 'react'. The code will be rendered using React 19.2.0, has access to Tailwind CSS v4, and can call tools via the global callTool() function.",
+      "The React component code for the view. Must define 'export const App = (props) => { ... }'. The App component receives input data as props. Import React hooks from 'react'. The code will be rendered using React 19.2.0, has access to Tailwind CSS v4, and can call tools via the global callTool() function.",
     ),
   importmap: z
     .record(z.string(), z.string())

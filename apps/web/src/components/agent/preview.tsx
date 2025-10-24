@@ -4,6 +4,7 @@ import { Icon } from "@deco/ui/components/icon.tsx";
 import {
   type DetailedHTMLProps,
   type IframeHTMLAttributes,
+  forwardRef,
   useState,
 } from "react";
 import { useParams } from "react-router";
@@ -98,24 +99,27 @@ export function IFrameMessageHandler({ id }: { id: string }) {
   );
 }
 
-export function PreviewIframe(props: Props) {
-  // Generate a unique ID based on src or a random identifier for srcDoc
-  const id = `preview-iframe-${props.src || props.srcDoc?.substring(0, 20) || Math.random().toString(36)}`;
+export const PreviewIframe = forwardRef<HTMLIFrameElement, Props>(
+  function PreviewIframe(props, ref) {
+    // Generate a unique ID based on src or a random identifier for srcDoc
+    const id = `preview-iframe-${props.src || props.srcDoc?.substring(0, 20) || Math.random().toString(36)}`;
 
-  return (
-    <>
-      <IFrameMessageHandler id={id} />
-      <iframe
-        id={id}
-        allow={ALLOWANCES}
-        allowFullScreen
-        sandbox="allow-scripts allow-same-origin allow-popups allow-forms allow-downloads"
-        className="w-full h-full"
-        {...props}
-      />
-    </>
-  );
-}
+    return (
+      <>
+        <IFrameMessageHandler id={id} />
+        <iframe
+          ref={ref}
+          id={id}
+          allow={ALLOWANCES}
+          allowFullScreen
+          sandbox="allow-scripts allow-same-origin allow-popups allow-forms allow-downloads"
+          className="w-full h-full"
+          {...props}
+        />
+      </>
+    );
+  },
+);
 
 function Preview(props: Props) {
   const isImageLike = props.src && IMAGE_REGEXP.test(props.src);

@@ -4,9 +4,12 @@ import {
   useSDK,
   useViewByUriV2,
 } from "@deco/sdk";
+import { Form } from "@deco/ui/components/form.tsx";
 import { Icon } from "@deco/ui/components/icon.tsx";
 import { Spinner } from "@deco/ui/components/spinner.tsx";
+import type { JSONSchema7 } from "json-schema";
 import { useEffect, useMemo, useRef } from "react";
+import { useForm } from "react-hook-form";
 import { useParams } from "react-router";
 import { generateViewHTML } from "../../utils/view-template.ts";
 import { PreviewIframe } from "../agent/preview.tsx";
@@ -16,16 +19,21 @@ import {
   type RuntimeErrorEntry,
 } from "../chat/provider.tsx";
 import { EmptyState } from "../common/empty-state.tsx";
+import JsonSchemaForm, { ajvResolver } from "../json-schema/index.tsx";
+import { generateDefaultValues } from "../json-schema/utils/generate-default-values.ts";
 
 interface ViewDetailProps {
   resourceUri: string;
+  data?: unknown;
 }
 
 /**
  * View detail view with full-screen HTML preview
  * Displays the view HTML content in an iframe
+ * @param resourceUri - The resource URI of the view to display
+ * @param data - Optional data to inject into window.viewData for the view to access
  */
-export function ViewDetail({ resourceUri }: ViewDetailProps) {
+export function ViewDetail({ resourceUri, data }: ViewDetailProps) {
   const { org, project } = useParams<{ org: string; project: string }>();
   const { data: resource, isLoading } = useViewByUriV2(resourceUri);
   const effectiveView = resource?.data;
@@ -33,6 +41,27 @@ export function ViewDetail({ resourceUri }: ViewDetailProps) {
   const projectKey = typeof locator === "string" ? locator : undefined;
   const { addRecent } = useRecentResources(projectKey);
   const hasTrackedRecentRef = useRef(false);
+
+  // Initialize form if view has inputSchema
+  const inputSchema = effectiveView?.inputSchema as JSONSchema7 | undefined;
+  const defaultValues = useMemo(() => {
+    if (!inputSchema) return {};
+    return generateDefaultValues(inputSchema);
+  }, [inputSchema]);
+
+  const form = useForm({
+    // oxlint-disable-next-line no-explicit-any
+    resolver: inputSchema ? ajvResolver(inputSchema as any) : undefined,
+    defaultValues,
+    mode: "onChange",
+  });
+
+  // Watch form values and pass to view
+  const formValues = form.watch();
+  const viewData = useMemo(() => {
+    // If data prop is provided, use it; otherwise use form values
+    return data ?? (inputSchema ? formValues : undefined);
+  }, [data, formValues, inputSchema]);
 
   // Track as recently opened when view is loaded (only once)
   useEffect(() => {
@@ -129,6 +158,39 @@ export function ViewDetail({ resourceUri }: ViewDetailProps) {
     }
   }, [effectiveView?.code, effectiveView?.importmap, org, project]);
 
+  // Reference to iframe element for postMessage
+  const iframeRef = useRef<HTMLIFrameElement>(null);
+
+  // Send data to iframe when it loads or when data changes
+  useEffect(() => {
+    if (!iframeRef.current || viewData === undefined) return;
+
+    const iframe = iframeRef.current;
+
+    // Wait for iframe to load before sending data
+    const sendData = () => {
+      iframe.contentWindow?.postMessage(
+        {
+          type: "VIEW_DATA",
+          payload: viewData,
+        },
+        "*",
+      );
+    };
+
+    // If iframe is already loaded, send immediately
+    if (iframe.contentWindow) {
+      sendData();
+    }
+
+    // Also listen for load event in case it hasn't loaded yet
+    iframe.addEventListener("load", sendData);
+
+    return () => {
+      iframe.removeEventListener("load", sendData);
+    };
+  }, [viewData]);
+
   if (isLoading) {
     return (
       <div className="h-full flex items-center justify-center">
@@ -148,14 +210,41 @@ export function ViewDetail({ resourceUri }: ViewDetailProps) {
   }
 
   return (
-    <div className="h-full w-full flex flex-col bg-white">
-      {/* Preview Section - Full Container */}
+    <div className="h-full w-full flex bg-white">
+      {/* Form Section - Show only if inputSchema exists */}
+      {inputSchema && (
+        <div className="w-96 shrink-0 border-r border-border overflow-y-auto">
+          <div className="p-6 space-y-4">
+            <div className="space-y-2">
+              <h2 className="text-lg font-semibold text-foreground">
+                Input Data
+              </h2>
+              <p className="text-sm text-muted-foreground">
+                Configure the input data for this view
+              </p>
+            </div>
+            <Form {...form}>
+              <JsonSchemaForm
+                schema={inputSchema}
+                form={form}
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  // Form submission is handled automatically via watch
+                }}
+              />
+            </Form>
+          </div>
+        </div>
+      )}
+
+      {/* Preview Section - Takes remaining space */}
       <div className="flex-1 overflow-hidden relative">
         {htmlValue ? (
           <PreviewIframe
+            ref={iframeRef}
             srcDoc={htmlValue}
             title="View Preview"
-            className="w-full h-full border-0 rounded-lg"
+            className="w-full h-full border-0"
           />
         ) : (
           <div className="flex items-center justify-center h-full p-8">

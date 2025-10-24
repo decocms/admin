@@ -19,13 +19,15 @@ export const VIEW_READ_PROMPT = `Read a view's content and metadata.
 Returns:
 - View metadata (name, description, icon, tags)
 - React component code (code field)
+- Input schema (inputSchema field, optional) - JSON Schema defining expected input data structure
 - Creation and modification timestamps
 
-The code contains only the React component definition (e.g., \`export const App = () => { ... }\`).
+The code contains only the React component definition (e.g., \`export const App = (props) => { ... }\`).
 
 The frontend will automatically wrap this code in a complete HTML template with:
 - React-compatible runtime with automatic JSX transform
 - Tailwind CSS v4 design tokens
+- **Input data as props** - The App component receives any input data (e.g., workflow step output) as props
 - Global \`callTool(params)\` function for invoking tools
   - Takes an object with \`toolName\` (string) and \`input\` (object) properties
   - Supports both regular tools (e.g., \`"INTEGRATIONS_LIST"\`) and resource tools (URIs like \`"rsc://integration/tool/NAME"\`)
@@ -45,24 +47,103 @@ Views consist of:
 - **name**: A clear, descriptive title for the view
 - **description** (optional): A brief summary of the view's purpose
 - **code**: React component code that defines the App component
+- **inputSchema** (optional): JSON Schema (draft-07) defining expected input data structure
 - **icon** (optional): URL to an icon image for the view
 - **tags** (optional): Array of strings for categorization
 - **importmap** (optional): Custom import map for additional modules (defaults to React 19.2.0)
+
+## Input Schema (Props Definition)
+
+Views can receive input data via props. The **inputSchema** field lets you define what data your view expects using JSON Schema format.
+
+**When to use inputSchema:**
+- ✅ View receives data from workflow steps
+- ✅ View is called with specific parameters from other views or tools
+- ✅ You want to document the expected props structure
+- ✅ Enable type validation in workflows
+- ✅ Help AI assistants understand your view's data requirements
+
+**Input Schema Example:**
+
+\`\`\`json
+{
+  "inputSchema": {
+    "type": "object",
+    "properties": {
+      "userId": {
+        "type": "string",
+        "description": "The ID of the user to display"
+      },
+      "metrics": {
+        "type": "array",
+        "description": "Array of metric objects to display",
+        "items": {
+          "type": "object",
+          "properties": {
+            "label": { "type": "string" },
+            "value": { "type": "number" }
+          }
+        }
+      },
+      "showDetails": {
+        "type": "boolean",
+        "description": "Whether to show detailed information",
+        "default": false
+      }
+    },
+    "required": ["userId"]
+  }
+}
+\`\`\`
+
+**Accessing input data in your component:**
+
+\`\`\`jsx
+export const App = (props) => {
+  // Props are automatically typed based on inputSchema
+  const { userId, metrics = [], showDetails = false } = props;
+  
+  return (
+    <div className="p-6">
+      <h1 className="text-2xl font-bold">User: {userId}</h1>
+      {showDetails && (
+        <div className="mt-4">
+          {metrics.map((metric, i) => (
+            <div key={i} className="mb-2">
+              <span className="font-semibold">{metric.label}:</span> {metric.value}
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+};
+\`\`\`
+
+**Notes:**
+- If no inputSchema is provided, the view can still receive props but they won't be validated
+- Use JSON Schema draft-07 specification
+- Props are passed via iframe postMessage when the view is rendered
+- Default values can be defined in the schema and accessed in the component
 
 ## React Component Guidelines
 
 **You only need to write the React component code. The system provides:**
 - ✅ React-compatible runtime with automatic JSX transform (no \`import React\` needed)
 - ✅ Tailwind CSS v4 design tokens (already available)
+- ✅ **Input data as props** (e.g., from workflow step output, passed via iframe postMessage)
 - ✅ Global \`callTool({ toolName, input })\` function (supports regular and resource tools - always available)
 - ✅ Import maps for React modules
 
-**Your code must define an App component and import React hooks:**
+**Your code must define an App component that receives props:**
 
 \`\`\`jsx
 import { useState } from 'react';
 
-export const App = () => {
+export const App = (props) => {
+  // Access any input data passed to the view via props
+  // For example, from a workflow step: props.stepOutput, props.data, etc.
+  
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(false);
   
@@ -84,6 +165,13 @@ export const App = () => {
   return (
     <div className="p-6">
       <h1 className="text-2xl font-bold mb-4">My View</h1>
+      {/* Display input data if provided */}
+      {Object.keys(props).length > 0 && (
+        <div className="mb-4 p-4 bg-gray-50 rounded border">
+          <h2 className="font-semibold mb-2">Input Data:</h2>
+          <pre className="text-xs">{JSON.stringify(props, null, 2)}</pre>
+        </div>
+      )}
       <button 
         onClick={fetchData}
         className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
@@ -239,34 +327,124 @@ Use Tailwind utility classes directly in your JSX:
 ## Best Practices
 
 1. **Import hooks** - Always import React hooks you need: \`import { useState, useEffect } from 'react'\`
-2. **Define App component** - Always define \`export const App = () => { ... }\`
-3. **Use Tailwind classes** - Leverage Tailwind CSS for styling instead of custom CSS
-4. **Handle loading states** - Show feedback when calling tools
-5. **Error handling** - Use try/catch when calling tools
-6. **Clear naming** - Make view titles descriptive and searchable
-7. **Add descriptions** - Help others understand the view's purpose
-8. **Tag appropriately** - Use tags for easier discovery and organization
-9. **Keep it simple** - Focus on the component logic, not boilerplate
+2. **Define App component** - Always define \`export const App = (props) => { ... }\`
+3. **Access props data** - Use props to access any input data passed to the view (e.g., from workflow steps)
+4. **Define inputSchema** - When your view expects specific props, define an inputSchema to document the data contract
+5. **Use Tailwind classes** - Leverage Tailwind CSS for styling instead of custom CSS
+6. **Handle loading states** - Show feedback when calling tools
+7. **Error handling** - Use try/catch when calling tools
+8. **Provide defaults** - Handle missing or undefined props gracefully with default values
+9. **Clear naming** - Make view titles descriptive and searchable
+10. **Add descriptions** - Help others understand the view's purpose
+11. **Tag appropriately** - Use tags for easier discovery and organization
+12. **Keep it simple** - Focus on the component logic, not boilerplate
 
 ## Common Use Cases
+
+**View with Input Schema (Workflow Integration):**
+\`\`\`json
+{
+  "name": "User Profile Display",
+  "description": "Displays user profile information from workflow data",
+  "inputSchema": {
+    "type": "object",
+    "properties": {
+      "user": {
+        "type": "object",
+        "description": "User data object",
+        "properties": {
+          "id": { "type": "string" },
+          "name": { "type": "string" },
+          "email": { "type": "string" },
+          "role": { "type": "string" }
+        },
+        "required": ["id", "name", "email"]
+      },
+      "showActions": {
+        "type": "boolean",
+        "description": "Whether to show action buttons",
+        "default": false
+      }
+    },
+    "required": ["user"]
+  },
+  "code": "..."
+}
+\`\`\`
+
+\`\`\`jsx
+import { useState } from 'react';
+
+export const App = (props) => {
+  const { user, showActions = false } = props;
+  const [isEditing, setIsEditing] = useState(false);
+  
+  if (!user) {
+    return (
+      <div className="p-6 text-center text-gray-500">
+        No user data provided
+      </div>
+    );
+  }
+  
+  return (
+    <div className="p-6 max-w-2xl mx-auto">
+      <div className="bg-white rounded-lg shadow p-6 space-y-4">
+        <div className="flex items-center justify-between">
+          <h1 className="text-2xl font-bold">{user.name}</h1>
+          <span className="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm">
+            {user.role}
+          </span>
+        </div>
+        
+        <div className="space-y-2">
+          <p className="text-gray-600">
+            <span className="font-semibold">Email:</span> {user.email}
+          </p>
+          <p className="text-gray-600">
+            <span className="font-semibold">ID:</span> {user.id}
+          </p>
+        </div>
+        
+        {showActions && (
+          <div className="flex gap-2 pt-4 border-t">
+            <button
+              onClick={() => setIsEditing(!isEditing)}
+              className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
+            >
+              {isEditing ? 'Cancel' : 'Edit'}
+            </button>
+            <button className="px-4 py-2 bg-gray-200 text-gray-800 rounded hover:bg-gray-300">
+              Delete
+            </button>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
+\`\`\`
 
 **Dashboard View:**
 \`\`\`jsx
 import { useState, useEffect } from 'react';
 
-export const App = () => {
-  const [metrics, setMetrics] = useState(null);
+export const App = (props) => {
+  // Use props.metrics if provided, otherwise fetch from API
+  const [metrics, setMetrics] = useState(props.metrics || null);
   
   useEffect(() => {
-    const loadMetrics = async () => {
-      const data = await callTool({
-        toolName: 'GET_METRICS',
-        input: {}
-      });
-      setMetrics(data);
-    };
-    loadMetrics();
-  }, []);
+    if (!props.metrics) {
+      const loadMetrics = async () => {
+        const data = await callTool({
+          toolName: 'GET_METRICS',
+          input: {}
+        });
+        setMetrics(data);
+      };
+      loadMetrics();
+    }
+  }, [props.metrics]);
   
   return (
     <div className="p-6 space-y-4">
@@ -288,8 +466,9 @@ export const App = () => {
 \`\`\`jsx
 import { useState } from 'react';
 
-export const App = () => {
-  const [formData, setFormData] = useState({ name: '', email: '' });
+export const App = (props) => {
+  // Pre-populate form with props.initialData if provided
+  const [formData, setFormData] = useState(props.initialData || { name: '', email: '' });
   const [result, setResult] = useState(null);
   
   const handleSubmit = async (e) => {
@@ -337,6 +516,7 @@ You can update any of the following:
 - **name**: Change the view title
 - **description**: Update the view's summary
 - **code**: Modify the React component code
+- **inputSchema**: Add, modify, or remove the input schema (JSON Schema defining expected props)
 - **icon**: Change the icon URL
 - **tags**: Add, remove, or change tags
 - **importmap**: Add or modify custom module imports
@@ -344,11 +524,12 @@ You can update any of the following:
 ## Update Guidelines
 
 1. **Preserve imports** - Ensure necessary React hooks are imported from 'react'
-2. **Preserve App component** - Always keep the \`export const App = () => { ... }\` definition
-3. **Update incrementally** - Make focused changes rather than rewriting everything
-4. **Test changes** - Verify the component renders correctly after updates
-5. **Use Tailwind classes** - Leverage Tailwind CSS for styling
-6. **Manage tags thoughtfully** - Add relevant tags, remove outdated ones
+2. **Preserve App component** - Always keep the \`export const App = (props) => { ... }\` definition
+3. **Handle props** - Ensure the component properly receives and uses props if input data is needed
+4. **Update incrementally** - Make focused changes rather than rewriting everything
+5. **Test changes** - Verify the component renders correctly after updates
+6. **Use Tailwind classes** - Leverage Tailwind CSS for styling
+7. **Manage tags thoughtfully** - Add relevant tags, remove outdated ones
 
 ## Common Update Patterns
 

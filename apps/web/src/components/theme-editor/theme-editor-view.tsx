@@ -215,6 +215,14 @@ export function ThemeEditorView() {
         "--secondary",
         "--secondary-foreground",
       ],
+      Sidebar: [
+        "--sidebar",
+        "--sidebar-foreground",
+        "--sidebar-accent",
+        "--sidebar-accent-foreground",
+        "--sidebar-border",
+        "--sidebar-ring",
+      ],
       "Cards & Surfaces": [
         "--card",
         "--card-foreground",
@@ -228,14 +236,6 @@ export function ThemeEditorView() {
         "--success-foreground",
         "--warning",
         "--warning-foreground",
-      ],
-      Sidebar: [
-        "--sidebar",
-        "--sidebar-foreground",
-        "--sidebar-accent",
-        "--sidebar-accent-foreground",
-        "--sidebar-border",
-        "--sidebar-ring",
       ],
       Advanced: [
         "--popover",

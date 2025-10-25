@@ -100,6 +100,15 @@ export const DEFAULT_VIEWS: View[] = [
       path: "/theme-editor",
     },
   },
+  {
+    id: "browser-rendering",
+    title: "Browser",
+    icon: "camera",
+    type: "default",
+    metadata: {
+      path: "/browser-rendering",
+    },
+  },
 ];
 
 export const viewMetadataSchema = z.discriminatedUnion("type", [

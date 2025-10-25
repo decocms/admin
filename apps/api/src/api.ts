@@ -66,7 +66,6 @@ import { type Context, Hono } from "hono";
 import { env, getRuntimeKey } from "hono/adapter";
 import { cors } from "hono/cors";
 import { HTTPException } from "hono/http-exception";
-import { logger } from "hono/logger";
 import { endTime, startTime } from "hono/timing";
 import type { ContentfulStatusCode } from "hono/utils/http-status";
 import { studio } from "outerbase-browsable-do-enforced";
@@ -269,6 +268,20 @@ const createMCPHandlerFor = (
       c.req.raw,
     );
     endTime(c, "mcp-handle-message");
+
+    // Add CORS headers since HttpServerTransport bypasses Hono middleware
+    const origin = c.req.header("origin") || "*";
+    res.headers.set("Access-Control-Allow-Origin", origin);
+    res.headers.set("Access-Control-Allow-Credentials", "true");
+    res.headers.set("Access-Control-Allow-Methods", "HEAD, GET, POST, PUT, DELETE, PATCH, OPTIONS");
+    res.headers.set(
+      "Access-Control-Allow-Headers",
+      "Content-Type, Authorization, Cookie, Accept, cache-control, pragma, x-trace-debug-id, x-deno-isolate-instance-id, mcp-protocol-version"
+    );
+    res.headers.set(
+      "Access-Control-Expose-Headers",
+      "Content-Type, Authorization, Set-Cookie, x-trace-debug-id"
+    );
 
     return res;
   };
@@ -537,8 +550,20 @@ const createMcpServerProxy = (c: Context) => {
   );
 };
 
-// Add logger middleware
-app.use(logger());
+// Add custom logger middleware that shows tool names
+app.use(async (c, next) => {
+  const { method, path } = c.req;
+  const toolName = c.req.query("tool");
+  const toolSuffix = toolName ? ` \x1b[36m[Tool: ${toolName}]\x1b[0m` : "";
+  
+  console.log(`<-- ${method} ${path}${toolSuffix}`);
+  
+  const start = Date.now();
+  await next();
+  const ms = Date.now() - start;
+  
+  console.log(`--> ${method} ${path} ${c.res.status} ${ms}ms${toolSuffix}`);
+});
 
 // Enable CORS for all routes on api.decocms.com and localhost
 app.use(

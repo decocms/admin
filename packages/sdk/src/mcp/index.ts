@@ -3,6 +3,7 @@ import * as agentAPI from "./agent/api.ts";
 import * as agentsAPI from "./agents/api.ts";
 import * as aiAPI from "./ai/api.ts";
 import * as apiKeysAPI from "./api-keys/api.ts";
+import * as browserRenderingAPI from "./browser-rendering/api.ts";
 import * as channelsAPI from "./channels/api.ts";
 import { type AppContext, State, type Tool } from "./context.ts";
 import {
@@ -186,6 +187,13 @@ export const PROJECT_TOOLS = [
   fsAPI.readFileMetadata,
   fsAPI.writeFile,
   fsAPI.deleteFile,
+  // Browser Rendering tools
+  browserRenderingAPI.browserScreenshot,
+  browserRenderingAPI.browserPdf,
+  browserRenderingAPI.browserHtml,
+  browserRenderingAPI.browserScrape,
+  browserRenderingAPI.listScreenshots,
+  browserRenderingAPI.deleteScreenshot,
   // Theme tools (workspace-level)
   themeAPI.getOrgTheme,
   themeAPI.updateOrgTheme,

@@ -3,6 +3,7 @@ export const WellKnownMcpGroups = {
   Agent: "agent-management",
   AgentSetup: "agent-setup",
   APIKeys: "api-keys-management",
+  BrowserRendering: "browser-rendering",
   Channel: "channel-management",
   Contracts: "contracts-management",
   Databases: "databases-management",

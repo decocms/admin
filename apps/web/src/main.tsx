@@ -446,6 +446,13 @@ const router = createBrowserRouter([
                 "./components/theme-editor/theme-editor-resource-list.tsx"
               ).then((m) => ({ Component: m.ThemeEditorResourceList })),
           },
+          {
+            path: "browser-rendering",
+            lazy: () =>
+              import(
+                "./components/browser-rendering/browser-rendering-resource-list.tsx"
+              ).then((m) => ({ Component: m.BrowserRenderingResourceList })),
+          },
         ],
       },
       {
@@ -519,6 +526,13 @@ const router = createBrowserRouter([
               import(
                 "./components/theme-editor/theme-editor-resource-list.tsx"
               ).then((m) => ({ Component: m.ThemeEditorResourceList })),
+          },
+          {
+            path: "browser-rendering",
+            lazy: () =>
+              import(
+                "./components/browser-rendering/browser-rendering-resource-list.tsx"
+              ).then((m) => ({ Component: m.BrowserRenderingResourceList })),
           },
           {
             path: "workflow-runs",

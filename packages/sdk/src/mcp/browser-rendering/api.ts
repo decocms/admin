@@ -110,15 +110,24 @@ Examples:
     if (screenshotOptions) requestBody.screenshotOptions = screenshotOptions;
     if (gotoOptions) requestBody.gotoOptions = gotoOptions;
 
+    // Helper to build auth headers – supports API Token or Global API Key
+    const buildAuthHeaders = () => {
+      const headers: Record<string, string> = { "Content-Type": "application/json" };
+      if (env.CF_API_TOKEN) {
+        headers["Authorization"] = `Bearer ${env.CF_API_TOKEN}`;
+      } else if (env.CF_API_KEY && env.CF_API_EMAIL) {
+        headers["X-Auth-Key"] = env.CF_API_KEY;
+        headers["X-Auth-Email"] = env.CF_API_EMAIL;
+      }
+      return headers;
+    };
+
     // Call Cloudflare Browser Rendering API
     const response = await fetch(
       `https://api.cloudflare.com/client/v4/accounts/${env.CF_ACCOUNT_ID}/browser-rendering/screenshot`,
       {
         method: "POST",
-        headers: {
-          "Authorization": `Bearer ${env.CF_API_TOKEN}`,
-          "Content-Type": "application/json",
-        },
+        headers: buildAuthHeaders(),
         body: JSON.stringify(requestBody),
       }
     );
@@ -126,13 +135,34 @@ Examples:
     if (!response.ok) {
       const errorText = await response.text();
       if (response.status === 401) {
-        throw new Error(
-          `Cloudflare authentication failed. Please verify:\n` +
-          `1. CF_ACCOUNT_ID and CF_API_TOKEN are set in .dev.vars\n` +
-          `2. Browser Rendering is enabled on your Cloudflare account\n` +
-          `3. Your API token has the correct permissions\n` +
-          `Error: ${errorText}`
-        );
+        // Try to verify token to give actionable diagnostics
+        try {
+          const verify = await fetch(
+            "https://api.cloudflare.com/client/v4/user/tokens/verify",
+            { method: "GET", headers: buildAuthHeaders() },
+          );
+          const verifyJson = await verify.json().catch(() => undefined);
+          const scopes = verifyJson?.result?.policies
+            ?.flatMap((p: any) => p?.permission_groups?.map((g: any) => g?.name))
+            ?.filter(Boolean);
+          throw new Error(
+            `Cloudflare authentication failed. Please verify:\n` +
+            `1. CF_ACCOUNT_ID matches the token's account\n` +
+            `2. Browser Rendering is enabled on your account\n` +
+            `3. Token must include permissions for Browser Rendering (Workers Browser Rendering)\n` +
+            `4. Alternatively set CF_API_KEY and CF_API_EMAIL (global key)\n` +
+            `Token verify: ${JSON.stringify({ success: verifyJson?.success, scopes }, null, 2)}\n` +
+            `Original error: ${errorText}`,
+          );
+        } catch {
+          throw new Error(
+            `Cloudflare authentication failed. Please verify:\n` +
+            `1. CF_ACCOUNT_ID and CF_API_TOKEN are set in .dev.vars\n` +
+            `2. Browser Rendering is enabled on your Cloudflare account\n` +
+            `3. Your API token has the correct permissions\n` +
+            `Original error: ${errorText}`,
+          );
+        }
       }
       throw new Error(`Cloudflare Browser Rendering API error: ${response.status} - ${errorText}`);
     }

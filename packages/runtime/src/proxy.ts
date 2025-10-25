@@ -88,14 +88,15 @@ export function createMCPClientProxy<T extends Record<string, unknown>>(
             ? { "x-trace-debug-id": debugId }
             : undefined;
           
-          // Add tool name to URL for better logging
+          // Add tool name to URL path for better logging and CDN filtering
           const connectionWithTool = {
             ...connection,
             url: (() => {
               const baseUrl = "url" in connection ? connection.url : "";
               if (!baseUrl) return baseUrl;
               const url = new URL(baseUrl);
-              url.searchParams.set("tool", String(name));
+              // Change from ?tool=NAME to /tool/NAME for easier CDN filtering
+              url.pathname = url.pathname.replace(/\/$/, "") + `/tool/${String(name)}`;
               return url.href;
             })(),
           };

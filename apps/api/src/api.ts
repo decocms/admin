@@ -551,22 +551,11 @@ const createMcpServerProxy = (c: Context) => {
   );
 };
 
-// Custom logger that matches wrangler format but shows query strings
+// Simplified logger with fixed minimum column widths
 app.use(async (c, next) => {
   const { method } = c.req;
   const url = new URL(c.req.url);
   const pathname = url.pathname;
-  const searchParams = url.searchParams;
-  
-  // Special formatting for ?tool= query strings
-  let formattedPath = pathname;
-  if (searchParams.has("tool")) {
-    const toolName = searchParams.get("tool");
-    // \x1b[96m = light blue (cyan bright), \x1b[1m = bold
-    formattedPath = `${pathname}\x1b[96m?tool=\x1b[1m${toolName}\x1b[0m`;
-  } else if (url.search) {
-    formattedPath = pathname + url.search;
-  }
   
   const start = Date.now();
   await next();
@@ -575,44 +564,46 @@ app.use(async (c, next) => {
   // Color codes for status
   const status = c.res.status;
   let statusColor = "\x1b[0m"; // default
-  let statusText = String(status);
   let statusSuffix = "";
   if (status >= 200 && status < 300) {
     statusColor = "\x1b[32m"; // green
-    statusText = String(status);
     statusSuffix = " OK";
   } else if (status >= 300 && status < 400) {
     statusColor = "\x1b[36m"; // cyan
-    statusText = String(status);
   } else if (status >= 400 && status < 500) {
     statusColor = "\x1b[33m"; // yellow
-    statusText = String(status);
   } else if (status >= 500) {
     statusColor = "\x1b[31m"; // red
-    statusText = String(status);
   }
   
   // Check for cache status header (set by middleware)
-  const cacheStatus = c.get("cacheStatus");
+  // @ts-expect-error - custom context property set by user middleware
+  const cacheStatus: string | undefined = c.get("cacheStatus");
   let cacheIndicator = "";
-  if (cacheStatus) {
-    const [prefix, status] = cacheStatus.split(":");
-    let statusColor = "\x1b[0m"; // default
-    if (status === "hit") {
-      statusColor = "\x1b[32m"; // green
-    } else if (status === "miss") {
-      statusColor = "\x1b[31m"; // red
-    } else if (status === "dedup") {
-      statusColor = "\x1b[33m"; // yellow
-    }
-    // [auth: in grey, status in color
-    cacheIndicator = ` \x1b[90m[${prefix}:\x1b[0m${statusColor}${status}\x1b[90m]\x1b[0m`;
+  if (cacheStatus && typeof cacheStatus === "string") {
+    const [prefix, s] = cacheStatus.split(":");
+    let color = "\x1b[0m";
+    if (s === "hit") color = "\x1b[32m";
+    else if (s === "miss") color = "\x1b[31m";
+    else if (s === "dedup") color = "\x1b[33m";
+    cacheIndicator = ` \x1b[90m[${prefix}:\x1b[0m${color}${s}\x1b[90m]\x1b[0m`;
   }
-  
-  // Match wrangler format: [api] POST /path?tool=NAME 200 OK (123ms) [cache-hit]
-  // \x1b[1m = bold, \x1b[0m = reset, \x1b[90m = grey, \x1b[96m = light blue, \x1b[32m = green
-  // Only status code is bold, not the "OK"
-  console.log(`\x1b[32m[api]\x1b[0m \x1b[1m${method}\x1b[0m ${formattedPath} ${statusColor}\x1b[1m${statusText}\x1b[0m${statusSuffix} \x1b[90m(${ms}ms)\x1b[0m${cacheIndicator}`);
+
+  // Simple formatting with fixed widths - no complex alignment
+  // Format: [api] METHOD /path 200 OK (123ms) [auth:hit]
+  // Special highlighting for /tool/ paths
+  const toolMatch = pathname.match(/\/tool\/([^/]+)$/);
+  let formattedPath = pathname;
+  if (toolMatch) {
+    const basePath = pathname.replace(/\/tool\/[^/]+$/, "");
+    const toolName = toolMatch[1];
+    formattedPath = `${basePath}\x1b[96m/tool/\x1b[1m${toolName}\x1b[0m`;
+  }
+
+  // Log immediately with consistent formatting
+  console.log(
+    `\x1b[32m[api]\x1b[0m \x1b[1m${method}\x1b[0m ${formattedPath} ${statusColor}\x1b[1m${status}\x1b[0m${statusColor}${statusSuffix}\x1b[0m \x1b[90m(${ms}ms)\x1b[0m${cacheIndicator}`,
+  );
 });
 
 // Enable CORS for all routes on api.decocms.com and localhost
@@ -658,7 +649,12 @@ app.use(async (c, next) => {
 app.use(withActorsMiddleware);
 
 app.post(`/contracts/mcp`, createMCPHandlerFor(CONTRACTS_TOOLS));
+// Handle /contracts/mcp/tool/:toolName for CDN filtering
+app.post(`/contracts/mcp/tool/:toolName`, createMCPHandlerFor(CONTRACTS_TOOLS));
+
 app.post(`/deconfig/mcp`, createMCPHandlerFor(DECONFIG_TOOLS));
+// Handle /deconfig/mcp/tool/:toolName for CDN filtering
+app.post(`/deconfig/mcp/tool/:toolName`, createMCPHandlerFor(DECONFIG_TOOLS));
 app.get(`/:org/:project/deconfig/watch`, async (ctx) => {
   const appCtx = honoCtxToAppCtx(ctx);
   return await watchSSE(appCtx, {
@@ -677,6 +673,8 @@ app.get(`/:org/:project/deconfig/watch`, async (ctx) => {
 });
 
 app.all("/mcp", createMCPHandlerFor(GLOBAL_TOOLS));
+// Handle /mcp/tool/:toolName for CDN filtering
+app.all("/mcp/tool/:toolName", createMCPHandlerFor(GLOBAL_TOOLS));
 
 app.get("/mcp/groups", (ctx) => {
   return ctx.json(getApps());
@@ -1032,8 +1030,12 @@ const createSelfTools = async (ctx: Context) => {
 };
 
 app.all("/:org/:project/mcp", createMCPHandlerFor(projectTools));
+// Handle /:org/:project/mcp/tool/:toolName for CDN filtering
+app.all("/:org/:project/mcp/tool/:toolName", createMCPHandlerFor(projectTools));
 
 app.all("/:org/:project/agents/:agentId/mcp", createMCPHandlerFor(AGENT_TOOLS));
+// Handle /:org/:project/agents/:agentId/mcp/tool/:toolName for CDN filtering
+app.all("/:org/:project/agents/:agentId/mcp/tool/:toolName", createMCPHandlerFor(AGENT_TOOLS));
 
 // Tool call endpoint handlers
 app.post("/tools/call/:tool", createToolCallHandlerFor(GLOBAL_TOOLS));
@@ -1047,10 +1049,23 @@ app.post(
   `/:org/:project/${WellKnownMcpGroups.Email}/mcp`,
   createMCPHandlerFor(EMAIL_TOOLS),
 );
+// Handle /:org/:project/email/mcp/tool/:toolName for CDN filtering
+app.post(
+  `/:org/:project/${WellKnownMcpGroups.Email}/mcp/tool/:toolName`,
+  createMCPHandlerFor(EMAIL_TOOLS),
+);
 
 app.post("/:org/:project/self/mcp", createMCPHandlerFor(createSelfTools));
+// Handle /:org/:project/self/mcp/tool/:toolName for CDN filtering
+app.post("/:org/:project/self/mcp/tool/:toolName", createMCPHandlerFor(createSelfTools));
 
 app.post("/:org/:project/:integrationId/mcp", async (c) => {
+  const mcpServerProxy = await createMcpServerProxy(c);
+
+  return mcpServerProxy.fetch(c.req.raw);
+});
+// Handle /:org/:project/:integrationId/mcp/tool/:toolName for CDN filtering
+app.post("/:org/:project/:integrationId/mcp/tool/:toolName", async (c) => {
   const mcpServerProxy = await createMcpServerProxy(c);
 
   return mcpServerProxy.fetch(c.req.raw);
@@ -1061,8 +1076,20 @@ app.post("/:org/:project/:branch/:integrationId/mcp", async (c) => {
 
   return mcpServerProxy.fetch(c.req.raw);
 });
+// Handle /:org/:project/:branch/:integrationId/mcp/tool/:toolName for CDN filtering
+app.post("/:org/:project/:branch/:integrationId/mcp/tool/:toolName", async (c) => {
+  const mcpServerProxy = await createMcpServerProxy(c);
+
+  return mcpServerProxy.fetch(c.req.raw);
+});
 
 app.post("/apps/mcp", async (c) => {
+  const mcpServerProxy = await createMcpServerProxyForAppName(c);
+
+  return mcpServerProxy.fetch(c.req.raw);
+});
+// Handle /apps/mcp/tool/:toolName for CDN filtering
+app.post("/apps/mcp/tool/:toolName", async (c) => {
   const mcpServerProxy = await createMcpServerProxyForAppName(c);
 
   return mcpServerProxy.fetch(c.req.raw);

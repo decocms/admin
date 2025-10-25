@@ -197,7 +197,7 @@ function ConfigureConnectionInstanceForm({
   const [isEditing, setIsEditing] = useState(false);
 
   // @ts-ignore: @TODO: @tlgimenes will fix this
-  const tools = useTools(selectedIntegration?.connection ?? {}, true);
+  const tools = useTools(selectedIntegration?.connection ?? {}, true, true); // enabled=true, ignoreCache=true
 
   const form = useForm<Integration>({
     defaultValues: {

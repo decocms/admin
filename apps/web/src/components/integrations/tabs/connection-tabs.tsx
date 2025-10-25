@@ -344,7 +344,7 @@ function ToolsInspector({
   const connection =
     selectedIntegration?.connection || data?.info?.connection || {};
 
-  const tools = useTools(connection as MCPConnection, true);
+  const tools = useTools(connection as MCPConnection, true, true); // enabled=true, ignoreCache=true
 
   useEffect(() => {
     if (selectedConnectionId) {

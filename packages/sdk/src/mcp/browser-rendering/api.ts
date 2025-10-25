@@ -461,62 +461,8 @@ export const listScreenshots = createTool({
     
     const { prefix = "browser-rendering/screenshots/", limit } = props;
     
-    console.log("[BROWSER_SCREENSHOTS_LIST] Starting list with prefix:", prefix);
-    
     // Just return empty for now - directory doesn't exist yet
     return { screenshots: [] };
-
-    // Filter only image files (not metadata files)
-    const screenshotFiles = items
-      .filter(item => !item.Key?.endsWith(".meta.json") && (item.Key?.endsWith(".png") || item.Key?.endsWith(".jpeg")))
-      .sort((a, b) => {
-        const timeA = a.LastModified ? new Date(a.LastModified).getTime() : 0;
-        const timeB = b.LastModified ? new Date(b.LastModified).getTime() : 0;
-        return timeB - timeA; // Most recent first
-      })
-      .slice(0, limit);
-
-    const Hosts = await import("../../hosts.ts").then(m => m.Hosts);
-    const locator = c.workspace?.value;
-
-    // Fetch metadata for each screenshot
-    const screenshots = await Promise.all(
-      screenshotFiles.map(async (item) => {
-        const path = item.Key!;
-        const publicUrl = `https://${Hosts.API_LEGACY}/files/${locator}/${path}`;
-        
-        // Try to fetch metadata file
-        const metadataPath = path.replace(/\.(png|jpeg)$/, ".meta.json");
-        let metadata;
-        try {
-          const { url: metadataUrl } = await MCPClient.forContext(c).FS_READ({
-            path: metadataPath,
-            expiresIn: 60,
-          });
-          const metadataResponse = await fetch(metadataUrl);
-          if (metadataResponse.ok) {
-            metadata = await metadataResponse.json();
-          }
-        } catch {
-          // Metadata file doesn't exist or couldn't be read
-        }
-
-        return {
-          path,
-          url: publicUrl,
-          metadata: metadata ? {
-            sourceUrl: metadata.sourceUrl,
-            dimensions: metadata.dimensions,
-            capturedAt: metadata.capturedAt,
-            format: metadata.format,
-          } : undefined,
-          lastModified: item.LastModified || new Date().toISOString(),
-          size: item.Size || 0,
-        };
-      })
-    );
-
-    return { screenshots };
   },
 });
 

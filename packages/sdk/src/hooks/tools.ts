@@ -58,9 +58,14 @@ export const callTool = (
   });
 };
 
-export function useTools(connection: MCPConnection, ignoreCache?: boolean) {
+export function useTools(
+  connection: MCPConnection,
+  enabled?: boolean,
+  ignoreCache?: boolean,
+) {
   const response = useQuery({
     retry: false,
+    enabled: enabled !== false, // Default to true, but allow disabling
     queryKey: [
       "tools",
       connection.type,

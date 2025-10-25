@@ -495,7 +495,11 @@ const IntegrationToolsetDisplay = memo(function IntegrationToolsetDisplay({
   onToggleTool,
 }: IntegrationToolsetDisplayProps) {
   const [open, setOpen] = useState(false);
-  const { data: toolsData, isLoading } = useTools(integration.connection);
+  // Only fetch tools when popover is opened, not eagerly on render
+  const { data: toolsData, isLoading } = useTools(
+    integration.connection,
+    open, // Only fetch when open
+  );
 
   const tools = toolsData?.tools || [];
   const actualTotalTools = tools.length || totalTools;

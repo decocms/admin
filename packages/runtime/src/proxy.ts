@@ -32,6 +32,14 @@ const toolsMap = new Map<
   >
 >();
 
+// In-flight request deduplication cache
+const inflightCalls = new Map<string, Promise<any>>();
+
+// Generate cache key for deduplication
+const getCacheKey = (toolName: string, args: unknown): string => {
+  return `${toolName}:${JSON.stringify(args)}`;
+};
+
 /**
  * The base fetcher used to fetch the MCP from API.
  */
@@ -66,40 +74,70 @@ export function createMCPClientProxy<T extends Record<string, unknown>>(
         throw new Error("Name must be a string");
       }
       async function callToolFn(args: unknown) {
-        const debugId = options?.debugId?.();
-        const extraHeaders = debugId
-          ? { "x-trace-debug-id": debugId }
-          : undefined;
-        
-        // Add tool name to URL for better logging
-        const connectionWithTool = {
-          ...connection,
-          url: (() => {
-            const url = new URL(connection.url);
-            url.searchParams.set("tool", String(name));
-            return url.href;
-          })(),
-        };
-        
-        const client = await createServerClient(
-          { connection: connectionWithTool },
-          undefined,
-          extraHeaders,
-        );
+        // Check for in-flight request with same tool name and args
+        const cacheKey = getCacheKey(String(name), args);
+        const existingCall = inflightCalls.get(cacheKey);
+        if (existingCall) {
+          return existingCall;
+        }
 
-        const { structuredContent, isError, content } = await client.callTool(
-          {
-            name: String(name),
-            arguments: args as Record<string, unknown>,
-          },
-          undefined,
-          {
-            timeout: 3000000,
-          },
-        );
+        // Create new request
+        const requestPromise = (async () => {
+          const debugId = options?.debugId?.();
+          const extraHeaders = debugId
+            ? { "x-trace-debug-id": debugId }
+            : undefined;
+          
+          // Add tool name to URL for better logging
+          const connectionWithTool = {
+            ...connection,
+            url: (() => {
+              const baseUrl = "url" in connection ? connection.url : "";
+              if (!baseUrl) return baseUrl;
+              const url = new URL(baseUrl);
+              url.searchParams.set("tool", String(name));
+              return url.href;
+            })(),
+          };
+          
+          const client = await createServerClient(
+            { connection: connectionWithTool },
+            undefined,
+            extraHeaders,
+          );
+
+          const { structuredContent, isError, content } = await client.callTool(
+            {
+              name: String(name),
+              arguments: args as Record<string, unknown>,
+            },
+            undefined,
+            {
+              timeout: 3000000,
+            },
+          );
+
+          return { structuredContent, isError, content };
+        })();
+
+        // Store in cache
+        inflightCalls.set(cacheKey, requestPromise);
+
+        // Clean up after request completes
+        try {
+          const result = await requestPromise;
+          return result;
+        } finally {
+          inflightCalls.delete(cacheKey);
+        }
+      }
+
+      // Main tool call wrapper
+      async function mainToolCall(args: unknown) {
+        const callResult = await callToolFn(args);
+        const { structuredContent, isError, content } = callResult;
 
         if (isError) {
-          // @ts-expect-error - content is not typed
           const maybeErrorMessage = content?.[0]?.text;
           const error =
             typeof maybeErrorMessage === "string"
@@ -157,11 +195,11 @@ export function createMCPClientProxy<T extends Record<string, unknown>>(
           return;
         }
       }
-      callToolFn.asTool = async () => {
+      mainToolCall.asTool = async () => {
         const tools = (await listToolsOnce()) ?? [];
-        const tool = tools.find((t) => t.name === name);
+        const tool = tools.find((t) => t.name === String(name));
         if (!tool) {
-          throw new Error(`Tool ${name} not found`);
+          throw new Error(`Tool ${String(name)} not found`);
         }
 
         return {
@@ -174,11 +212,11 @@ export function createMCPClientProxy<T extends Record<string, unknown>>(
             ? convertJsonSchemaToZod(tool.outputSchema)
             : undefined,
           execute: (input: any) => {
-            return callToolFn(input.context);
+            return mainToolCall(input.context);
           },
         };
       };
-      return callToolFn;
+      return mainToolCall;
     },
   });
 }

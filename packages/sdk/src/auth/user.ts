@@ -51,23 +51,32 @@ export async function getUserBySupabaseCookie(
     return undefined;
   }
   
-  if (sessionToken && cache.has(sessionToken)) {
-    console.log(`[AUTH] ✓ Cache HIT for ${url.pathname}`);
-    return cache.get(sessionToken);
-  }
-  if (accessToken && cache.has(accessToken)) {
-    console.log(`[AUTH] ✓ Cache HIT for ${url.pathname}`);
-    return cache.get(accessToken);
-  }
+      if (sessionToken && cache.has(sessionToken)) {
+        const principal = cache.get(sessionToken);
+        // Add cache status for logging
+        if (principal) {
+          (principal as any)._cacheStatus = "hit";
+        }
+        return principal;
+      }
+      if (accessToken && cache.has(accessToken)) {
+        const principal = cache.get(accessToken);
+        // Add cache status for logging
+        if (principal) {
+          (principal as any)._cacheStatus = "hit";
+        }
+        return principal;
+      }
   
   // Check if there's already an in-flight request for this token
   if (cacheKey && inflightRequests.has(cacheKey)) {
-    console.log(`[AUTH] ⏳ Waiting for in-flight request for ${url.pathname}`);
-    return inflightRequests.get(cacheKey);
+    const principal = await inflightRequests.get(cacheKey);
+    // Mark as deduplicated for logging
+    if (principal) {
+      (principal as any)._cacheStatus = "dedup";
+    }
+    return principal;
   }
-  
-  // Log when we're about to call Supabase (causing rate limits)
-  console.log(`[AUTH] ✗ Cache MISS for ${url.pathname} - calling Supabase`);
   
   // Create promise for this auth request and track it to prevent duplicates
   const authPromise = (async () => {
@@ -140,6 +149,8 @@ export async function getUserBySupabaseCookie(
       cache.set(cacheToken, user, { ttl: cachettl });
     }
 
+    // Mark as cache miss for logging
+    (user as any)._cacheStatus = "miss";
     return user;
   })();
   

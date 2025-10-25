@@ -1,3 +1,4 @@
+
 import { createServerClient } from "@deco/ai/mcp";
 import { HttpServerTransport } from "@deco/mcp/http";
 import {
@@ -550,19 +551,57 @@ const createMcpServerProxy = (c: Context) => {
   );
 };
 
-// Add custom logger middleware that shows tool names
+// Custom logger that matches wrangler format but shows query strings
 app.use(async (c, next) => {
-  const { method, path } = c.req;
-  const toolName = c.req.query("tool");
-  const toolSuffix = toolName ? ` \x1b[36m[Tool: ${toolName}]\x1b[0m` : "";
+  const { method } = c.req;
+  const url = new URL(c.req.url);
+  const pathname = url.pathname;
+  const searchParams = url.searchParams;
   
-  console.log(`<-- ${method} ${path}${toolSuffix}`);
+  // Special formatting for ?tool= query strings
+  let formattedPath = pathname;
+  if (searchParams.has("tool")) {
+    const toolName = searchParams.get("tool");
+    // \x1b[96m = light blue (cyan bright), \x1b[1m = bold
+    formattedPath = `${pathname}\x1b[96m?tool=\x1b[1m${toolName}\x1b[0m`;
+  } else if (url.search) {
+    formattedPath = pathname + url.search;
+  }
   
   const start = Date.now();
   await next();
   const ms = Date.now() - start;
   
-  console.log(`--> ${method} ${path} ${c.res.status} ${ms}ms${toolSuffix}`);
+  // Color codes for status
+  const status = c.res.status;
+  let statusColor = "\x1b[0m"; // default
+  let statusText = String(status);
+  let statusSuffix = "";
+  if (status >= 200 && status < 300) {
+    statusColor = "\x1b[32m"; // green
+    statusText = String(status);
+    statusSuffix = " OK";
+  } else if (status >= 300 && status < 400) {
+    statusColor = "\x1b[36m"; // cyan
+    statusText = String(status);
+  } else if (status >= 400 && status < 500) {
+    statusColor = "\x1b[33m"; // yellow
+    statusText = String(status);
+  } else if (status >= 500) {
+    statusColor = "\x1b[31m"; // red
+    statusText = String(status);
+  }
+  
+  // Check for cache status header (set by middleware)
+  const cacheStatus = c.get("cacheStatus");
+  const cacheIndicator = cacheStatus 
+    ? ` \x1b[35m[${cacheStatus}]\x1b[0m` // magenta for cache status
+    : "";
+  
+  // Match wrangler format: [api] POST /path?tool=NAME 200 OK (123ms) [cache-hit]
+  // \x1b[1m = bold, \x1b[0m = reset, \x1b[90m = grey, \x1b[96m = light blue, \x1b[32m = green
+  // Only status code is bold, not the "OK"
+  console.log(`\x1b[32m[api]\x1b[0m \x1b[1m${method}\x1b[0m ${formattedPath} ${statusColor}\x1b[1m${statusText}\x1b[0m${statusSuffix} \x1b[90m(${ms}ms)\x1b[0m${cacheIndicator}`);
 });
 
 // Enable CORS for all routes on api.decocms.com and localhost

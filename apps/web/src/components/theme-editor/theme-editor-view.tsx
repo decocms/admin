@@ -55,19 +55,23 @@ interface ThemeVariableInputProps {
     value: string;
     isDefault: boolean;
     defaultValue: string;
+    previousValue?: string;
   };
   onChange: (value: string) => void;
+  onUndo?: () => void;
 }
 
-function ThemeVariableInput({ variable, onChange }: ThemeVariableInputProps) {
+function ThemeVariableInput({ variable, onChange, onUndo }: ThemeVariableInputProps) {
   return (
     <div className="flex flex-col gap-2">
       <ColorPicker
         value={variable.value}
         defaultValue={variable.defaultValue}
         isDefault={variable.isDefault}
+        hasPreviousValue={!!variable.previousValue}
         onChange={onChange}
         onReset={() => onChange("")}
+        onUndo={onUndo}
       />
       <div className="flex items-center justify-between gap-1">
         <div className="text-xs font-medium capitalize leading-tight">
@@ -91,9 +95,11 @@ interface ThemeFormProps {
       value: string;
       isDefault: boolean;
       defaultValue: string;
+      previousValue?: string;
     }>;
   }>;
   handleVariableChange: (key: ThemeVariable, value: string) => void;
+  handleVariableUndo: (key: ThemeVariable) => void;
   onSubmit: (data: ThemeEditorFormValues) => Promise<void>;
   isUpdating: boolean;
   form: ReturnType<typeof useForm<ThemeEditorFormValues>>;
@@ -104,6 +110,7 @@ interface ThemeFormProps {
 function ThemeForm({
   colorGroups,
   handleVariableChange,
+  handleVariableUndo,
   onSubmit,
   isUpdating,
   form,
@@ -129,6 +136,7 @@ function ThemeForm({
                   onChange={(value) =>
                     handleVariableChange(variable.key, value)
                   }
+                  onUndo={() => handleVariableUndo(variable.key)}
                 />
               ))}
             </div>
@@ -163,11 +171,16 @@ export function ThemeEditorView() {
     },
   });
 
+  // Track previous values for undo functionality
+  const previousValuesRef = useRef<Record<string, string>>({});
+
   // Update form when theme changes
   useEffect(() => {
     form.reset({
       themeVariables: currentTheme?.variables ?? {},
     });
+    // Reset previous values when theme changes
+    previousValuesRef.current = {};
   }, [currentTheme, form]);
 
   const variables = useMemo(() => {
@@ -177,6 +190,7 @@ export function ThemeEditorView() {
       value: String(formValues[key] || ""),
       isDefault: !formValues[key],
       defaultValue: DEFAULT_THEME.variables?.[key] || "",
+      previousValue: previousValuesRef.current[key],
     }));
   }, [form.watch("themeVariables")]);
 
@@ -308,6 +322,13 @@ export function ThemeEditorView() {
 
   const handleVariableChange = useCallback(
     (key: ThemeVariable, newValue: string) => {
+      // Store the current value as previous before changing
+      const currentValues = form.getValues("themeVariables");
+      const currentValue = currentValues[key];
+      if (currentValue) {
+        previousValuesRef.current[key] = currentValue;
+      }
+
       // Immediately apply to CSS for instant visual feedback
       if (newValue) {
         document.documentElement.style.setProperty(key, newValue);
@@ -331,6 +352,28 @@ export function ThemeEditorView() {
         };
         form.setValue("themeVariables", updatedValues, { shouldDirty: true });
       }, 100);
+    },
+    [form],
+  );
+
+  const handleVariableUndo = useCallback(
+    (key: ThemeVariable) => {
+      const previousValue = previousValuesRef.current[key];
+      if (previousValue) {
+        // Apply the previous value
+        document.documentElement.style.setProperty(key, previousValue);
+        
+        // Update form
+        const currentValues = form.getValues("themeVariables");
+        const updatedValues = {
+          ...currentValues,
+          [key]: previousValue,
+        };
+        form.setValue("themeVariables", updatedValues, { shouldDirty: true });
+        
+        // Clear the previous value after undo
+        delete previousValuesRef.current[key];
+      }
     },
     [form],
   );
@@ -606,6 +649,7 @@ export function ThemeEditorView() {
                     <ThemeForm
                       colorGroups={colorGroups}
                       handleVariableChange={handleVariableChange}
+                      handleVariableUndo={handleVariableUndo}
                       onSubmit={onSubmit}
                       isUpdating={isUpdating}
                       form={form}

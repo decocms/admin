@@ -12,8 +12,10 @@ interface ColorPickerProps {
   value: string;
   defaultValue: string;
   isDefault: boolean;
+  hasPreviousValue: boolean;
   onChange: (value: string) => void;
   onReset: () => void;
+  onUndo?: () => void;
 }
 
 function parseColorToHex(color: string): string {
@@ -29,8 +31,10 @@ export function ColorPicker({
   value,
   defaultValue,
   isDefault,
+  hasPreviousValue,
   onChange,
   onReset,
+  onUndo,
 }: ColorPickerProps) {
   const displayValue = value || defaultValue;
   const hexColor = parseColorToHex(displayValue);
@@ -77,28 +81,54 @@ export function ColorPicker({
           className="absolute opacity-0 pointer-events-none"
         />
 
-        {/* Reset button - top right */}
-        {!isDefault && (
-          <TooltipProvider>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <button
-                  type="button"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    onReset();
-                  }}
-                  className="absolute top-2 right-2 h-6 w-6 rounded-md bg-background/95 backdrop-blur-sm border border-border/50 flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-background transition-all shadow-sm opacity-0 group-hover:opacity-100"
-                >
-                  <Icon name="close" size={14} />
-                </button>
-              </TooltipTrigger>
-              <TooltipContent>
-                <p>Reset to default</p>
-              </TooltipContent>
-            </Tooltip>
-          </TooltipProvider>
-        )}
+        {/* Top right buttons */}
+        <div className="absolute top-2 right-2 flex gap-1">
+          {/* Undo button */}
+          {hasPreviousValue && onUndo && (
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onUndo();
+                    }}
+                    className="h-6 w-6 rounded-md bg-background/95 backdrop-blur-sm border border-border/50 flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-background transition-all shadow-sm opacity-0 group-hover:opacity-100"
+                  >
+                    <Icon name="undo" size={14} />
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Undo to previous</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          )}
+          
+          {/* Reset button */}
+          {!isDefault && (
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onReset();
+                    }}
+                    className="h-6 w-6 rounded-md bg-background/95 backdrop-blur-sm border border-border/50 flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-background transition-all shadow-sm opacity-0 group-hover:opacity-100"
+                  >
+                    <Icon name="close" size={14} />
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Reset to default</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          )}
+        </div>
       </div>
     </div>
   );

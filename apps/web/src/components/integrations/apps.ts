@@ -159,6 +159,26 @@ export const NATIVE_APPS: GroupedApp[] = [
     usedBy: [],
     isNative: true,
   },
+  {
+    id: "native:::theme-editor",
+    name: "Theme",
+    icon: "icon://palette",
+    description: "Customize your workspace colors and branding",
+    instances: 1,
+    provider: "native",
+    usedBy: [],
+    isNative: true,
+  },
+  {
+    id: "native:::browser-rendering",
+    name: "Browser",
+    icon: "icon://camera",
+    description: "Capture screenshots, generate PDFs, and scrape websites",
+    instances: 1,
+    provider: "native",
+    usedBy: [],
+    isNative: true,
+  },
 ];
 
 // Map native app names to their canonical titles for view matching
@@ -169,6 +189,8 @@ export const NATIVE_APP_NAME_MAP: Record<string, string> = {
   "native:::tools": "Tools",
   "native:::views": "Views",
   "native:::files": "Files",
+  "native:::theme-editor": "Theme",
+  "native:::browser-rendering": "Browser",
 };
 
 export function getConnectionAppKey(connection: Integration): AppKey {

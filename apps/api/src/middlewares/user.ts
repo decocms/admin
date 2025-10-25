@@ -12,6 +12,11 @@ export const setUserMiddleware: MiddlewareHandler<AppEnv> = async (
   const user = await getUser(ctx);
   if (user) {
     ctx.set("user", user);
+    // Pass cache status for logging
+    const cacheStatus = (user as any)._cacheStatus;
+    if (cacheStatus) {
+      ctx.set("cacheStatus", `auth:${cacheStatus}`);
+    }
   }
 
   endTime(ctx, "get-user");

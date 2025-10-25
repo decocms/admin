@@ -439,6 +439,20 @@ const router = createBrowserRouter([
             path: "settings",
             Component: OrgSettings,
           },
+          {
+            path: "theme-editor",
+            lazy: () =>
+              import(
+                "./components/theme-editor/theme-editor-resource-list.tsx"
+              ).then((m) => ({ Component: m.ThemeEditorResourceList })),
+          },
+          {
+            path: "browser-rendering",
+            lazy: () =>
+              import(
+                "./components/browser-rendering/browser-rendering-resource-list.tsx"
+              ).then((m) => ({ Component: m.BrowserRenderingResourceList })),
+          },
         ],
       },
       {
@@ -506,6 +520,20 @@ const router = createBrowserRouter([
           { path: "documents", Component: DocumentsListPage },
           { path: "documents/prompts", Component: PromptsLegacyPage },
           { path: "documents/:id", Component: DocumentEdit },
+          {
+            path: "theme-editor",
+            lazy: () =>
+              import(
+                "./components/theme-editor/theme-editor-resource-list.tsx"
+              ).then((m) => ({ Component: m.ThemeEditorResourceList })),
+          },
+          {
+            path: "browser-rendering",
+            lazy: () =>
+              import(
+                "./components/browser-rendering/browser-rendering-resource-list.tsx"
+              ).then((m) => ({ Component: m.BrowserRenderingResourceList })),
+          },
           {
             path: "workflow-runs",
             Component: () => <Navigate to="../workflows/runs-legacy" replace />,

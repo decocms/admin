@@ -66,7 +66,6 @@ import { type Context, Hono } from "hono";
 import { env, getRuntimeKey } from "hono/adapter";
 import { cors } from "hono/cors";
 import { HTTPException } from "hono/http-exception";
-import { logger } from "hono/logger";
 import { endTime, startTime } from "hono/timing";
 import type { ContentfulStatusCode } from "hono/utils/http-status";
 import { studio } from "outerbase-browsable-do-enforced";
@@ -269,6 +268,23 @@ const createMCPHandlerFor = (
       c.req.raw,
     );
     endTime(c, "mcp-handle-message");
+
+    // Add CORS headers since HttpServerTransport bypasses Hono middleware
+    const origin = c.req.header("origin") || "*";
+    res.headers.set("Access-Control-Allow-Origin", origin);
+    res.headers.set("Access-Control-Allow-Credentials", "true");
+    res.headers.set(
+      "Access-Control-Allow-Methods",
+      "HEAD, GET, POST, PUT, DELETE, PATCH, OPTIONS",
+    );
+    res.headers.set(
+      "Access-Control-Allow-Headers",
+      "Content-Type, Authorization, Cookie, Accept, cache-control, pragma, x-trace-debug-id, x-deno-isolate-instance-id, mcp-protocol-version",
+    );
+    res.headers.set(
+      "Access-Control-Expose-Headers",
+      "Content-Type, Authorization, Set-Cookie, x-trace-debug-id",
+    );
 
     return res;
   };
@@ -537,8 +553,60 @@ const createMcpServerProxy = (c: Context) => {
   );
 };
 
-// Add logger middleware
-app.use(logger());
+// Simplified logger with fixed minimum column widths
+app.use(async (c, next) => {
+  const { method } = c.req;
+  const url = new URL(c.req.url);
+  const pathname = url.pathname;
+
+  const start = Date.now();
+  await next();
+  const ms = Date.now() - start;
+
+  // Color codes for status
+  const status = c.res.status;
+  let statusColor = "\x1b[0m"; // default
+  let statusSuffix = "";
+  if (status >= 200 && status < 300) {
+    statusColor = "\x1b[32m"; // green
+    statusSuffix = " OK";
+  } else if (status >= 300 && status < 400) {
+    statusColor = "\x1b[36m"; // cyan
+  } else if (status >= 400 && status < 500) {
+    statusColor = "\x1b[33m"; // yellow
+  } else if (status >= 500) {
+    statusColor = "\x1b[31m"; // red
+  }
+
+  // Check for cache status header (set by middleware)
+  // @ts-expect-error - custom context property set by user middleware
+  const cacheStatus: string | undefined = c.get("cacheStatus");
+  let cacheIndicator = "";
+  if (cacheStatus && typeof cacheStatus === "string") {
+    const [prefix, s] = cacheStatus.split(":");
+    let color = "\x1b[0m";
+    if (s === "hit") color = "\x1b[32m";
+    else if (s === "miss") color = "\x1b[31m";
+    else if (s === "dedup") color = "\x1b[33m";
+    cacheIndicator = ` \x1b[90m[${prefix}:\x1b[0m${color}${s}\x1b[90m]\x1b[0m`;
+  }
+
+  // Simple formatting with fixed widths - no complex alignment
+  // Format: [api] METHOD /path 200 OK (123ms) [auth:hit]
+  // Special highlighting for /tool/ paths
+  const toolMatch = pathname.match(/\/tool\/([^/]+)$/);
+  let formattedPath = pathname;
+  if (toolMatch) {
+    const basePath = pathname.replace(/\/tool\/[^/]+$/, "");
+    const toolName = toolMatch[1];
+    formattedPath = `${basePath}\x1b[96m/tool/\x1b[1m${toolName}\x1b[0m`;
+  }
+
+  // Log immediately with consistent formatting
+  console.log(
+    `\x1b[32m[api]\x1b[0m \x1b[1m${method}\x1b[0m ${formattedPath} ${statusColor}\x1b[1m${status}\x1b[0m${statusColor}${statusSuffix}\x1b[0m \x1b[90m(${ms}ms)\x1b[0m${cacheIndicator}`,
+  );
+});
 
 // Enable CORS for all routes on api.decocms.com and localhost
 app.use(
@@ -583,7 +651,12 @@ app.use(async (c, next) => {
 app.use(withActorsMiddleware);
 
 app.post(`/contracts/mcp`, createMCPHandlerFor(CONTRACTS_TOOLS));
+// Handle /contracts/mcp/tool/:toolName for CDN filtering
+app.post(`/contracts/mcp/tool/:toolName`, createMCPHandlerFor(CONTRACTS_TOOLS));
+
 app.post(`/deconfig/mcp`, createMCPHandlerFor(DECONFIG_TOOLS));
+// Handle /deconfig/mcp/tool/:toolName for CDN filtering
+app.post(`/deconfig/mcp/tool/:toolName`, createMCPHandlerFor(DECONFIG_TOOLS));
 app.get(`/:org/:project/deconfig/watch`, async (ctx) => {
   const appCtx = honoCtxToAppCtx(ctx);
   return await watchSSE(appCtx, {
@@ -602,6 +675,8 @@ app.get(`/:org/:project/deconfig/watch`, async (ctx) => {
 });
 
 app.all("/mcp", createMCPHandlerFor(GLOBAL_TOOLS));
+// Handle /mcp/tool/:toolName for CDN filtering
+app.all("/mcp/tool/:toolName", createMCPHandlerFor(GLOBAL_TOOLS));
 
 app.get("/mcp/groups", (ctx) => {
   return ctx.json(getApps());
@@ -957,8 +1032,15 @@ const createSelfTools = async (ctx: Context) => {
 };
 
 app.all("/:org/:project/mcp", createMCPHandlerFor(projectTools));
+// Handle /:org/:project/mcp/tool/:toolName for CDN filtering
+app.all("/:org/:project/mcp/tool/:toolName", createMCPHandlerFor(projectTools));
 
 app.all("/:org/:project/agents/:agentId/mcp", createMCPHandlerFor(AGENT_TOOLS));
+// Handle /:org/:project/agents/:agentId/mcp/tool/:toolName for CDN filtering
+app.all(
+  "/:org/:project/agents/:agentId/mcp/tool/:toolName",
+  createMCPHandlerFor(AGENT_TOOLS),
+);
 
 // Tool call endpoint handlers
 app.post("/tools/call/:tool", createToolCallHandlerFor(GLOBAL_TOOLS));
@@ -972,10 +1054,26 @@ app.post(
   `/:org/:project/${WellKnownMcpGroups.Email}/mcp`,
   createMCPHandlerFor(EMAIL_TOOLS),
 );
+// Handle /:org/:project/email/mcp/tool/:toolName for CDN filtering
+app.post(
+  `/:org/:project/${WellKnownMcpGroups.Email}/mcp/tool/:toolName`,
+  createMCPHandlerFor(EMAIL_TOOLS),
+);
 
 app.post("/:org/:project/self/mcp", createMCPHandlerFor(createSelfTools));
+// Handle /:org/:project/self/mcp/tool/:toolName for CDN filtering
+app.post(
+  "/:org/:project/self/mcp/tool/:toolName",
+  createMCPHandlerFor(createSelfTools),
+);
 
 app.post("/:org/:project/:integrationId/mcp", async (c) => {
+  const mcpServerProxy = await createMcpServerProxy(c);
+
+  return mcpServerProxy.fetch(c.req.raw);
+});
+// Handle /:org/:project/:integrationId/mcp/tool/:toolName for CDN filtering
+app.post("/:org/:project/:integrationId/mcp/tool/:toolName", async (c) => {
   const mcpServerProxy = await createMcpServerProxy(c);
 
   return mcpServerProxy.fetch(c.req.raw);
@@ -986,8 +1084,23 @@ app.post("/:org/:project/:branch/:integrationId/mcp", async (c) => {
 
   return mcpServerProxy.fetch(c.req.raw);
 });
+// Handle /:org/:project/:branch/:integrationId/mcp/tool/:toolName for CDN filtering
+app.post(
+  "/:org/:project/:branch/:integrationId/mcp/tool/:toolName",
+  async (c) => {
+    const mcpServerProxy = await createMcpServerProxy(c);
+
+    return mcpServerProxy.fetch(c.req.raw);
+  },
+);
 
 app.post("/apps/mcp", async (c) => {
+  const mcpServerProxy = await createMcpServerProxyForAppName(c);
+
+  return mcpServerProxy.fetch(c.req.raw);
+});
+// Handle /apps/mcp/tool/:toolName for CDN filtering
+app.post("/apps/mcp/tool/:toolName", async (c) => {
   const mcpServerProxy = await createMcpServerProxyForAppName(c);
 
   return mcpServerProxy.fetch(c.req.raw);

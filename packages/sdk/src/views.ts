@@ -91,6 +91,24 @@ export const DEFAULT_VIEWS: View[] = [
       path: "/activity",
     },
   },
+  {
+    id: "theme-editor",
+    title: "Theme",
+    icon: "palette",
+    type: "default",
+    metadata: {
+      path: "/theme-editor",
+    },
+  },
+  {
+    id: "browser-rendering",
+    title: "Browser",
+    icon: "camera",
+    type: "default",
+    metadata: {
+      path: "/browser-rendering",
+    },
+  },
 ];
 
 export const viewMetadataSchema = z.discriminatedUnion("type", [

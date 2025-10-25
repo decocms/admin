@@ -364,6 +364,251 @@ export function AgentList() {
 }
 ```
 
+### Real-Time State Management
+
+**Immediate DOM Updates with Debounced State:**
+
+For features that manipulate CSS or DOM directly (like theme editors, live previews):
+
+```tsx
+// ✅ Good - Immediate visual feedback with debounced persistence
+export function ThemeEditor() {
+  const form = useForm();
+  const debounceTimerRef = useRef<number>();
+  const previousValuesRef = useRef<Record<string, string>>({});
+
+  const handleChange = (key: string, value: string) => {
+    // 1. Store previous value for undo functionality
+    const current = form.getValues(key);
+    if (current) {
+      previousValuesRef.current[key] = current;
+    }
+
+    // 2. Apply immediately to DOM for instant visual feedback
+    document.documentElement.style.setProperty(key, value);
+
+    // 3. Debounce form state update to reduce re-renders
+    if (debounceTimerRef.current) {
+      clearTimeout(debounceTimerRef.current);
+    }
+    
+    debounceTimerRef.current = window.setTimeout(() => {
+      form.setValue(key, value, { shouldDirty: true });
+    }, 100);
+  };
+
+  const handleUndo = (key: string) => {
+    const previousValue = previousValuesRef.current[key];
+    if (previousValue) {
+      document.documentElement.style.setProperty(key, previousValue);
+      form.setValue(key, previousValue);
+      delete previousValuesRef.current[key];
+    }
+  };
+
+  return (
+    <div>
+      <Input onChange={(e) => handleChange("--primary", e.target.value)} />
+      <Button onClick={() => handleUndo("--primary")}>Undo</Button>
+    </div>
+  );
+}
+
+// ❌ Bad - Every keystroke triggers full re-render
+export function BadThemeEditor() {
+  const [value, setValue] = useState("");
+  
+  return (
+    <Input 
+      value={value}
+      onChange={(e) => {
+        setValue(e.target.value);  // Triggers re-render
+        document.documentElement.style.setProperty("--primary", e.target.value);
+      }}
+    />
+  );
+}
+```
+
+**Cross-Component Communication:**
+
+Use custom events for coordinating updates across unrelated components:
+
+```tsx
+// Component A - Dispatch after mutation
+export function SettingsForm() {
+  const updateMutation = useUpdateSettings();
+
+  const handleSave = async () => {
+    await updateMutation.mutateAsync(data);
+    
+    // Notify other components of the update
+    window.dispatchEvent(new CustomEvent("settings-updated"));
+  };
+
+  return <button onClick={handleSave}>Save</button>;
+}
+
+// Component B - Listen and react
+export function SettingsPreview() {
+  const queryClient = useQueryClient();
+
+  useEffect(() => {
+    const handleUpdate = () => {
+      // Invalidate and refetch
+      queryClient.invalidateQueries({ queryKey: ["settings"] });
+      
+      // Or force immediate refetch
+      queryClient.refetchQueries({ queryKey: ["settings"] });
+    };
+    
+    window.addEventListener("settings-updated", handleUpdate);
+    return () => {
+      window.removeEventListener("settings-updated", handleUpdate);
+    };
+  }, [queryClient]);
+
+  return <div>Preview updates automatically</div>;
+}
+```
+
+**Undo/Redo Pattern:**
+
+Implement single-level undo that reverts to the **saved state**, not the -1 change:
+
+```tsx
+export function ThemeEditor() {
+  const { data: currentTheme } = useTheme();
+  const form = useForm();
+  const previousValuesRef = useRef<Record<string, string>>({});
+
+  // Reset previous values when saved theme changes
+  useEffect(() => {
+    form.reset({ themeVariables: currentTheme?.variables ?? {} });
+    previousValuesRef.current = {};
+  }, [currentTheme, form]);
+
+  const handleChange = (key: string, newValue: string) => {
+    // Store the ORIGINAL saved value only once
+    // This way undo always reverts to the saved state, not the -1 change
+    if (!(key in previousValuesRef.current)) {
+      const savedValue = currentTheme?.variables?.[key];
+      if (savedValue) {
+        previousValuesRef.current[key] = savedValue;
+      }
+    }
+
+    // Apply immediately to DOM
+    document.documentElement.style.setProperty(key, newValue);
+    
+    // Debounce form update
+    if (debounceTimerRef.current) {
+      clearTimeout(debounceTimerRef.current);
+    }
+    debounceTimerRef.current = window.setTimeout(() => {
+      form.setValue(key, newValue, { shouldDirty: true });
+    }, 100);
+  };
+
+  const handleUndo = (key: string) => {
+    const savedValue = previousValuesRef.current[key];
+    if (savedValue) {
+      // Revert to the saved theme value
+      document.documentElement.style.setProperty(key, savedValue);
+      form.setValue(key, savedValue);
+      delete previousValuesRef.current[key];
+    }
+  };
+
+  return (
+    <div>
+      <ColorPicker
+        value={form.watch(key)}
+        onChange={(val) => handleChange(key, val)}
+        onUndo={() => handleUndo(key)}
+        hasPreviousValue={!!(key in previousValuesRef.current)}
+      />
+    </div>
+  );
+}
+
+// ❌ Bad - Undo only goes back one step, not to saved state
+export function BadUndo({ value, onChange }: Props) {
+  const previousValueRef = useRef<string>();
+
+  const handleChange = (newValue: string) => {
+    previousValueRef.current = value; // Overwrites on every change!
+    onChange(newValue);
+  };
+
+  // This only undoes the last change, not all changes since last save
+}
+```
+
+### AI Chat Context Integration
+
+**Injecting Context into AI Threads:**
+
+Use `useSetThreadContextEffect` to provide rules and tools to AI chat:
+
+```tsx
+import { useSetThreadContextEffect } from "../decopilot/thread-context-provider.tsx";
+
+export function FeatureEditor() {
+  // ✅ Good - Explicit union type for TypeScript
+  const threadContextItems = useMemo<Array<
+    { id: string; type: "rule"; text: string } | 
+    { id: string; type: "toolset"; integrationId: string; enabledTools: string[] }
+  >>(() => {
+    const rules = [
+      `You are helping configure feature settings.`,
+      `Use FEATURE_UPDATE to modify settings.`,
+      `Do NOT pass orgId - it will be auto-determined from context.`,
+    ];
+
+    const contextItems: Array<
+      { id: string; type: "rule"; text: string } | 
+      { id: string; type: "toolset"; integrationId: string; enabledTools: string[] }
+    > = rules.map((text) => ({
+      id: crypto.randomUUID(),
+      type: "rule" as const,
+      text,
+    }));
+
+    // Add feature management toolset
+    contextItems.push({
+      id: crypto.randomUUID(),
+      type: "toolset" as const,
+      integrationId: "i:feature-management",  // Virtual integration ID
+      enabledTools: ["FEATURE_GET", "FEATURE_UPDATE"],
+    });
+
+    // Add HTTP fetch for external data
+    contextItems.push({
+      id: crypto.randomUUID(),
+      type: "toolset" as const,
+      integrationId: "i:http",
+      enabledTools: ["HTTP_FETCH"],
+    });
+
+    return contextItems;
+  }, []);
+
+  // Inject into current thread
+  useSetThreadContextEffect(threadContextItems);
+
+  return <div>Feature editor UI</div>;
+}
+
+// ❌ Bad - TypeScript can't infer the union type correctly
+const items = useMemo(() => {
+  const rules = [/* ... */].map(text => ({ type: "rule", text }));
+  rules.push({ type: "toolset", integrationId: "i:...", enabledTools: [] });
+  // Type error: string[] not assignable to expected type
+  return rules;
+}, []);
+```
+
 **Extract Logic into Components Instead of Inline Functions:**
 ```tsx
 // ❌ Bad - Using immediately invoked function expressions (IIFEs) in JSX

@@ -474,38 +474,74 @@ export function SettingsPreview() {
 
 **Undo/Redo Pattern:**
 
-Implement single-level undo for user-friendly editing:
+Implement single-level undo that reverts to the **saved state**, not the -1 change:
 
 ```tsx
-export function ColorPicker({ value, onChange }: ColorPickerProps) {
-  const previousValueRef = useRef<string>();
-  const [hasPrevious, setHasPrevious] = useState(false);
+export function ThemeEditor() {
+  const { data: currentTheme } = useTheme();
+  const form = useForm();
+  const previousValuesRef = useRef<Record<string, string>>({});
 
-  const handleChange = (newValue: string) => {
-    // Store current before changing
-    previousValueRef.current = value;
-    setHasPrevious(true);
-    onChange(newValue);
+  // Reset previous values when saved theme changes
+  useEffect(() => {
+    form.reset({ themeVariables: currentTheme?.variables ?? {} });
+    previousValuesRef.current = {};
+  }, [currentTheme, form]);
+
+  const handleChange = (key: string, newValue: string) => {
+    // Store the ORIGINAL saved value only once
+    // This way undo always reverts to the saved state, not the -1 change
+    if (!(key in previousValuesRef.current)) {
+      const savedValue = currentTheme?.variables?.[key];
+      if (savedValue) {
+        previousValuesRef.current[key] = savedValue;
+      }
+    }
+
+    // Apply immediately to DOM
+    document.documentElement.style.setProperty(key, newValue);
+    
+    // Debounce form update
+    if (debounceTimerRef.current) {
+      clearTimeout(debounceTimerRef.current);
+    }
+    debounceTimerRef.current = window.setTimeout(() => {
+      form.setValue(key, newValue, { shouldDirty: true });
+    }, 100);
   };
 
-  const handleUndo = () => {
-    if (previousValueRef.current) {
-      onChange(previousValueRef.current);
-      previousValueRef.current = undefined;
-      setHasPrevious(false);
+  const handleUndo = (key: string) => {
+    const savedValue = previousValuesRef.current[key];
+    if (savedValue) {
+      // Revert to the saved theme value
+      document.documentElement.style.setProperty(key, savedValue);
+      form.setValue(key, savedValue);
+      delete previousValuesRef.current[key];
     }
   };
 
   return (
     <div>
-      <Input value={value} onChange={(e) => handleChange(e.target.value)} />
-      {hasPrevious && (
-        <button onClick={handleUndo}>
-          <Icon name="undo" />
-        </button>
-      )}
+      <ColorPicker
+        value={form.watch(key)}
+        onChange={(val) => handleChange(key, val)}
+        onUndo={() => handleUndo(key)}
+        hasPreviousValue={!!(key in previousValuesRef.current)}
+      />
     </div>
   );
+}
+
+// ❌ Bad - Undo only goes back one step, not to saved state
+export function BadUndo({ value, onChange }: Props) {
+  const previousValueRef = useRef<string>();
+
+  const handleChange = (newValue: string) => {
+    previousValueRef.current = value; // Overwrites on every change!
+    onChange(newValue);
+  };
+
+  // This only undoes the last change, not all changes since last save
 }
 ```
 

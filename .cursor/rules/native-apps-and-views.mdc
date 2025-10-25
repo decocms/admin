@@ -553,25 +553,50 @@ debounceTimerRef.current = window.setTimeout(() => {
 
 ### Undo Functionality
 
-Track previous states for user-friendly undo:
+**CRITICAL**: Undo should revert to the **saved state**, not the -1 change:
 
 ```typescript
 const previousValuesRef = useRef<Record<string, string>>({});
 
+// Reset previous values when saved data changes
+useEffect(() => {
+  form.reset({ variables: currentData?.variables ?? {} });
+  previousValuesRef.current = {};
+}, [currentData, form]);
+
 const handleChange = (key: string, value: string) => {
-  const current = form.getValues(key);
-  if (current) {
-    previousValuesRef.current[key] = current;
+  // Store the ORIGINAL saved value only once
+  // This way undo always reverts to the saved state, not the -1 change
+  if (!(key in previousValuesRef.current)) {
+    const savedValue = currentData?.variables?.[key];
+    if (savedValue) {
+      previousValuesRef.current[key] = savedValue;
+    }
   }
-  form.setValue(key, value);
+  
+  // Apply immediately to DOM
+  document.documentElement.style.setProperty(key, value);
+  
+  // Debounce form update
+  debounceTimerRef.current = window.setTimeout(() => {
+    form.setValue(key, value, { shouldDirty: true });
+  }, 100);
 };
 
 const handleUndo = (key: string) => {
-  const previous = previousValuesRef.current[key];
-  if (previous) {
-    form.setValue(key, previous);
+  const savedValue = previousValuesRef.current[key];
+  if (savedValue) {
+    // Revert to the saved value from database
+    document.documentElement.style.setProperty(key, savedValue);
+    form.setValue(key, savedValue);
     delete previousValuesRef.current[key];
   }
+};
+
+// ❌ BAD: This only undoes the last change, not all changes since last save
+const handleChangeBad = (key: string, value: string) => {
+  previousValuesRef.current[key] = form.getValues(key); // Overwrites on every change!
+  form.setValue(key, value);
 };
 ```
 

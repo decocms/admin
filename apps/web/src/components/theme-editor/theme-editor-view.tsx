@@ -326,11 +326,13 @@ export function ThemeEditorView() {
 
   const handleVariableChange = useCallback(
     (key: ThemeVariable, newValue: string) => {
-      // Store the current value as previous before changing
-      const currentValues = form.getValues("themeVariables");
-      const currentValue = currentValues[key];
-      if (currentValue) {
-        previousValuesRef.current[key] = currentValue;
+      // Store the ORIGINAL saved value from currentTheme only once
+      // This way undo always goes back to the saved theme, not the -1 change
+      if (!(key in previousValuesRef.current)) {
+        const savedValue = currentTheme?.variables?.[key];
+        if (savedValue) {
+          previousValuesRef.current[key] = savedValue;
+        }
       }
 
       // Immediately apply to CSS for instant visual feedback
@@ -357,25 +359,25 @@ export function ThemeEditorView() {
         form.setValue("themeVariables", updatedValues, { shouldDirty: true });
       }, 100);
     },
-    [form],
+    [form, currentTheme],
   );
 
   const handleVariableUndo = useCallback(
     (key: ThemeVariable) => {
-      const previousValue = previousValuesRef.current[key];
-      if (previousValue) {
-        // Apply the previous value
-        document.documentElement.style.setProperty(key, previousValue);
+      const savedValue = previousValuesRef.current[key];
+      if (savedValue) {
+        // Revert to the saved theme value from database
+        document.documentElement.style.setProperty(key, savedValue);
 
         // Update form
         const currentValues = form.getValues("themeVariables");
         const updatedValues = {
           ...currentValues,
-          [key]: previousValue,
+          [key]: savedValue,
         };
         form.setValue("themeVariables", updatedValues, { shouldDirty: true });
 
-        // Clear the previous value after undo
+        // Clear the saved value after undo
         delete previousValuesRef.current[key];
       }
     },

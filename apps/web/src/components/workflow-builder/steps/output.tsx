@@ -1,5 +1,4 @@
 import { EMPTY_VIEWS } from "../../../stores/workflows/hooks.ts";
-import { Button } from "@deco/ui/components/button.tsx";
 import { useMemo } from "react";
 import { JsonViewer } from "../../chat/json-viewer";
 import { ViewDialogTrigger } from "../../workflows/workflow-step-card";
@@ -77,23 +76,10 @@ export function StepOutput({ output, views = EMPTY_VIEWS }: StepOutputProps) {
       </div>
 
       {hasViews && (
-        <div className="flex items-center gap-3 px-0">
-          <Button
-            variant="default"
-            size="sm"
-            className="h-8 px-2.5 text-sm rounded-xl font-medium"
-          >
-            JSON
-          </Button>
-          <div className="flex flex-wrap gap-2">
-            {views.map((view) => (
-              <ViewDialogTrigger
-                key={view}
-                resourceUri={view}
-                output={output}
-              />
-            ))}
-          </div>
+        <div className="flex flex-wrap items-center gap-3 px-0">
+          {views.map((view) => (
+            <ViewDialogTrigger key={view} resourceUri={view} output={output} />
+          ))}
         </div>
       )}
 

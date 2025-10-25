@@ -149,6 +149,7 @@ export function ViewDetail({ resourceUri, data }: ViewDetailProps) {
         DECO_CMS_API_URL,
         org,
         project,
+        window.location.origin, // Pass current admin app origin as trusted origin
         effectiveView.importmap,
       );
     } catch (error) {

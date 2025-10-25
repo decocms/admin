@@ -140,76 +140,215 @@ const removeNonSerializableFields = (obj: any) => {
 };
 
 /**
+ * Type definitions for message structures
+ */
+interface MessagePart {
+  type: string;
+  text?: string;
+  [key: string]: unknown;
+}
+
+interface MessageContent {
+  format?: number;
+  parts?: MessagePart[];
+  content?: string;
+}
+
+interface Message {
+  role: string;
+  content?: MessagePart[] | MessageContent;
+  parts?: MessagePart[];
+  [key: string]: unknown;
+}
+
+/**
+ * Message format detection result
+ */
+interface MessageFormatInfo {
+  contentArray: MessagePart[];
+  isNestedFormat: boolean;
+  hasContent: boolean;
+}
+
+/**
+ * Safely strips schema attributes from HTML text content
+ * Uses a more robust approach than regex to handle malformed HTML
+ */
+function stripSchemaAttributes(text: string): string {
+  if (!text || typeof text !== "string") {
+    return text;
+  }
+
+  try {
+    // More robust pattern matching that handles various quote styles and escaping
+    // Matches data-input-schema and data-output-schema attributes with their values
+    const schemaPatterns = [
+      // Handle double quotes with escaped content
+      /\s+data-input-schema="[^"]*(?:\\.[^"]*)*"/g,
+      /\s+data-output-schema="[^"]*(?:\\.[^"]*)*"/g,
+      // Handle single quotes
+      /\s+data-input-schema='[^']*(?:\\.[^']*)*'/g,
+      /\s+data-output-schema='[^']*(?:\\.[^']*)*'/g,
+      // Handle unquoted values (fallback)
+      /\s+data-input-schema=[^\s>]+/g,
+      /\s+data-output-schema=[^\s>]+/g,
+    ];
+
+    let cleanedText = text;
+    for (const pattern of schemaPatterns) {
+      cleanedText = cleanedText.replace(pattern, "");
+    }
+
+    return cleanedText;
+  } catch (error) {
+    console.warn("Error stripping schema attributes:", error);
+    // Return original text if processing fails
+    return text;
+  }
+}
+
+/**
+ * Detects the message format and extracts the content array
+ */
+function detectMessageFormat(msg: Message): MessageFormatInfo {
+  // Format 1: msg.content.parts (v2 format with {format: 2, parts: [...], content: "string"})
+  if (
+    msg.content &&
+    typeof msg.content === "object" &&
+    !Array.isArray(msg.content) &&
+    "parts" in msg.content &&
+    Array.isArray(msg.content.parts)
+  ) {
+    return {
+      contentArray: msg.content.parts,
+      isNestedFormat: true,
+      hasContent: true,
+    };
+  }
+
+  // Format 2: msg.content (array format from AI SDK)
+  if (Array.isArray(msg.content)) {
+    return {
+      contentArray: msg.content,
+      isNestedFormat: false,
+      hasContent: true,
+    };
+  }
+
+  // Format 3: msg.parts (direct parts array)
+  if (Array.isArray(msg.parts)) {
+    return {
+      contentArray: msg.parts,
+      isNestedFormat: false,
+      hasContent: false,
+    };
+  }
+
+  // No recognizable format
+  return {
+    contentArray: [],
+    isNestedFormat: false,
+    hasContent: false,
+  };
+}
+
+/**
+ * Processes a single message part to strip schema attributes
+ */
+function processMessagePart(part: MessagePart): MessagePart {
+  if (!part || typeof part !== "object") {
+    return part;
+  }
+
+  if (part.type !== "text" || typeof part.text !== "string") {
+    return part;
+  }
+
+  const cleanedText = stripSchemaAttributes(part.text);
+
+  return {
+    ...part,
+    text: cleanedText,
+  };
+}
+
+/**
+ * Reconstructs a message based on its detected format
+ */
+function reconstructMessage(
+  msg: Message,
+  processedContent: MessagePart[],
+  formatInfo: MessageFormatInfo,
+): Message {
+  if (formatInfo.isNestedFormat) {
+    return {
+      ...msg,
+      content: {
+        ...(msg.content as MessageContent),
+        parts: processedContent,
+      },
+    };
+  }
+
+  if (formatInfo.hasContent) {
+    return {
+      ...msg,
+      content: processedContent,
+    };
+  }
+
+  return {
+    ...msg,
+    parts: processedContent,
+  };
+}
+
+/**
  * Strips input and output schema attributes from tool mentions in messages
  * to avoid persisting large schema JSON in storage
+ *
+ * Handles three message formats:
+ * 1. msg.content.parts (v2 format with {format: 2, parts: [...], content: "string"})
+ * 2. msg.parts (direct parts array)
+ * 3. msg.content (array format from AI SDK)
+ *
+ * @param messages Array of messages in any supported format
+ * @returns Array of messages with schema attributes stripped
  */
-const stripMentionSchemas = (messages: any[]): any[] => {
-  return messages.map((msg) => {
-    // Handle different message formats:
-    // 1. msg.content.parts (v2 format with {format: 2, parts: [...], content: "string"})
-    // 2. msg.parts (direct parts array)
-    // 3. msg.content (array format from AI SDK)
-    let contentArray: any[] | undefined;
-    let isNestedFormat = false;
+function stripMentionSchemas(messages: any[]): any[] {
+  if (!Array.isArray(messages)) {
+    console.warn("stripMentionSchemas: Expected array of messages");
+    return [];
+  }
 
-    if (
-      msg.content &&
-      typeof msg.content === "object" &&
-      !Array.isArray(msg.content) &&
-      msg.content.parts
-    ) {
-      contentArray = msg.content.parts;
-      isNestedFormat = true;
-    } else if (Array.isArray(msg.content)) {
-      contentArray = msg.content;
-    } else if (msg.parts) {
-      contentArray = msg.parts;
-    } else {
+  return messages.map((msg) => {
+    try {
+      // Validate message structure
+      if (!msg || typeof msg !== "object") {
+        console.warn("stripMentionSchemas: Invalid message structure");
+        return msg;
+      }
+
+      // Detect message format
+      const formatInfo = detectMessageFormat(msg as Message);
+
+      // If no content array found, return original message
+      if (formatInfo.contentArray.length === 0) {
+        return msg;
+      }
+
+      // Process each part in the content array
+      const processedContent = formatInfo.contentArray.map(processMessagePart);
+
+      // Reconstruct message based on detected format
+      return reconstructMessage(msg as Message, processedContent, formatInfo);
+    } catch (error) {
+      console.error("Error processing message in stripMentionSchemas:", error);
+      // Return original message if processing fails
       return msg;
     }
-
-    if (!contentArray) return msg;
-
-    const processedContent = contentArray.map((part: any) => {
-      if (part.type !== "text" || !part.text) return part;
-
-      const originalText = part.text;
-
-      // Remove data-input-schema and data-output-schema attributes from mention spans
-      // These schemas contain unescaped quotes (malformed HTML), so we use lazy matching
-      // Match everything until the schema closing pattern: #"}" (schema URL ends with #, then closes)
-      let cleanedText = originalText
-        .replace(/\s+data-input-schema=".+?#"\}"/g, "")
-        .replace(/\s+data-output-schema=".+?#"\}"/g, "");
-
-      return {
-        ...part,
-        text: cleanedText,
-      };
-    });
-
-    // Reconstruct message based on the format we found
-    if (isNestedFormat) {
-      return {
-        ...msg,
-        content: {
-          ...msg.content,
-          parts: processedContent,
-        },
-      };
-    } else if (Array.isArray(msg.content)) {
-      return {
-        ...msg,
-        content: processedContent,
-      };
-    } else {
-      return {
-        ...msg,
-        parts: processedContent,
-      };
-    }
   });
-};
+}
 
 const assertConfiguration: (
   config: Configuration | undefined,

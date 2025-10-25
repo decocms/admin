@@ -172,9 +172,11 @@ export const useUpsertWorkflow = () => {
       return result;
     },
     onSuccess: (data) => {
-      // Notify about the resource update
+      // Broadcast workflow upsert to other tabs/components for consistency
+      // with other resource types (agents, tools, etc.) and to ensure
+      // all listeners react to workflow changes
       if (data.uri) {
-        // notifyResourceUpdate(data.uri);
+        notifyResourceUpdate(data.uri);
       }
     },
   });

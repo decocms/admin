@@ -105,7 +105,7 @@ export function ColorPicker({
               </Tooltip>
             </TooltipProvider>
           )}
-          
+
           {/* Reset button */}
           {!isDefault && (
             <TooltipProvider>

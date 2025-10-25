@@ -61,7 +61,11 @@ interface ThemeVariableInputProps {
   onUndo?: () => void;
 }
 
-function ThemeVariableInput({ variable, onChange, onUndo }: ThemeVariableInputProps) {
+function ThemeVariableInput({
+  variable,
+  onChange,
+  onUndo,
+}: ThemeVariableInputProps) {
   return (
     <div className="flex flex-col gap-2">
       <ColorPicker
@@ -362,7 +366,7 @@ export function ThemeEditorView() {
       if (previousValue) {
         // Apply the previous value
         document.documentElement.style.setProperty(key, previousValue);
-        
+
         // Update form
         const currentValues = form.getValues("themeVariables");
         const updatedValues = {
@@ -370,7 +374,7 @@ export function ThemeEditorView() {
           [key]: previousValue,
         };
         form.setValue("themeVariables", updatedValues, { shouldDirty: true });
-        
+
         // Clear the previous value after undo
         delete previousValuesRef.current[key];
       }

@@ -40,6 +40,7 @@ import { ColorPicker } from "./color-picker.tsx";
 import { useSetThreadContextEffect } from "../decopilot/thread-context-provider.tsx";
 import { PresetSelector } from "./preset-selector.tsx";
 import type { ThemePreset } from "./theme-presets.ts";
+import { lighten, darken } from "../../utils/color-utils.ts";
 
 interface ThemeEditorFormValues {
   themeVariables: Record<string, string | undefined>;
@@ -417,77 +418,6 @@ export function ThemeEditorView() {
       DEFAULT_THEME.variables?.["--primary-light"] || "#d0ec1a";
     const defaultPrimaryDark =
       DEFAULT_THEME.variables?.["--primary-dark"] || "#07401a";
-
-    function clamp(value: number, min: number, max: number): number {
-      return Math.max(min, Math.min(max, value));
-    }
-
-    function toHex(n: number): string {
-      const clamped = clamp(Math.round(n), 0, 255);
-      return clamped.toString(16).padStart(2, "0");
-    }
-
-    function adjustHexTowards(hex: string, target: 0 | 255, t: number): string {
-      const clean = hex.replace("#", "");
-      if (clean.length !== 6) return hex;
-      const r = parseInt(clean.slice(0, 2), 16);
-      const g = parseInt(clean.slice(2, 4), 16);
-      const b = parseInt(clean.slice(4, 6), 16);
-      const newR = r + (target - r) * t;
-      const newG = g + (target - g) * t;
-      const newB = b + (target - b) * t;
-      return `#${toHex(newR)}${toHex(newG)}${toHex(newB)}`;
-    }
-
-    function parseOklch(
-      color: string,
-    ): { l: number; c: number; h: number; percent: boolean } | null {
-      const m = color.match(
-        /oklch\(\s*([0-9.]+)(%?)\s+([0-9.]+)\s+([0-9.]+)\s*\)/i,
-      );
-      if (!m) return null;
-      const lRaw = parseFloat(m[1]);
-      const percent = m[2] === "%";
-      const l = percent ? lRaw / 100 : lRaw;
-      const c = parseFloat(m[3]);
-      const h = parseFloat(m[4]);
-      return { l, c, h, percent };
-    }
-
-    function formatOklch({
-      l,
-      c,
-      h,
-      percent,
-    }: {
-      l: number;
-      c: number;
-      h: number;
-      percent: boolean;
-    }): string {
-      const lOut = percent
-        ? `${clamp(l * 100, 0, 100).toFixed(1)}%`
-        : l.toFixed(3);
-      return `oklch(${lOut} ${c} ${h})`;
-    }
-
-    function lighten(color: string, t = 0.28): string {
-      if (color.startsWith("#")) return adjustHexTowards(color, 255, t);
-      const parsed = parseOklch(color);
-      if (parsed) {
-        return formatOklch({ ...parsed, l: clamp(parsed.l + t, 0, 1) });
-      }
-      return color;
-    }
-
-    function darken(color: string, t = 0.28): string {
-      if (color.startsWith("#")) return adjustHexTowards(color, 0, t);
-      const parsed = parseOklch(color);
-      if (parsed) {
-        return formatOklch({ ...parsed, l: clamp(parsed.l - t, 0, 1) });
-      }
-      return color;
-    }
 
     const withDerived: Record<string, string> = { ...presetVariables };
     const primary = withDerived["--primary"];

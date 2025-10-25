@@ -567,22 +567,23 @@ export const listIntegrations = createIntegrationManagementTool({
 
         // Skip eager tool fetching for agents - they'll be fetched on-demand when needed
         // This prevents 12+ MCP calls on every page load
-        const tools = isVirtual && !isAgentIntegration
-          ? await listToolsAndSortByName(
-              { connection, appName, ignoreCache: false },
-              c,
-            )
-              .then((r) => r?.tools ?? null)
-              .catch(() => {
-                console.error(
-                  "Error listing tools for virtual integration",
-                  connection,
-                );
-                return null;
-              })
-          : dbRecord
-            ? extractToolsFromRegistry(dbRecord)
-            : null;
+        const tools =
+          isVirtual && !isAgentIntegration
+            ? await listToolsAndSortByName(
+                { connection, appName, ignoreCache: false },
+                c,
+              )
+                .then((r) => r?.tools ?? null)
+                .catch(() => {
+                  console.error(
+                    "Error listing tools for virtual integration",
+                    connection,
+                  );
+                  return null;
+                })
+            : dbRecord
+              ? extractToolsFromRegistry(dbRecord)
+              : null;
 
         return {
           ...integration,

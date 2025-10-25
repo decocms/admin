@@ -43,31 +43,31 @@ export async function getUserBySupabaseCookie(
   const jwtIssuer = await JwtIssuer.forKeyPair(keyPair);
   const accessToken = parseAuthorizationToken(request);
   const sessionToken = getSessionToken(request);
-  
+
   const url = new URL(request.url);
   const cacheKey = sessionToken || accessToken;
 
   if (!sessionToken && !accessToken) {
     return undefined;
   }
-  
-      if (sessionToken && cache.has(sessionToken)) {
-        const principal = cache.get(sessionToken);
-        // Add cache status for logging
-        if (principal) {
-          (principal as any)._cacheStatus = "hit";
-        }
-        return principal;
-      }
-      if (accessToken && cache.has(accessToken)) {
-        const principal = cache.get(accessToken);
-        // Add cache status for logging
-        if (principal) {
-          (principal as any)._cacheStatus = "hit";
-        }
-        return principal;
-      }
-  
+
+  if (sessionToken && cache.has(sessionToken)) {
+    const principal = cache.get(sessionToken);
+    // Add cache status for logging
+    if (principal) {
+      (principal as any)._cacheStatus = "hit";
+    }
+    return principal;
+  }
+  if (accessToken && cache.has(accessToken)) {
+    const principal = cache.get(accessToken);
+    // Add cache status for logging
+    if (principal) {
+      (principal as any)._cacheStatus = "hit";
+    }
+    return principal;
+  }
+
   // Check if there's already an in-flight request for this token
   if (cacheKey && inflightRequests.has(cacheKey)) {
     const principal = await inflightRequests.get(cacheKey);
@@ -77,14 +77,14 @@ export async function getUserBySupabaseCookie(
     }
     return principal;
   }
-  
+
   // Create promise for this auth request and track it to prevent duplicates
   const authPromise = (async () => {
     const { supabase } =
       typeof supabaseServerToken === "string"
         ? createSupabaseSessionClient(request, supabaseServerToken)
         : { supabase: supabaseServerToken };
-    
+
     let getUserResult;
     try {
       getUserResult = await supabase.auth.getUser(accessToken);
@@ -98,14 +98,16 @@ export async function getUserBySupabaseCookie(
       });
       throw error;
     }
-    
+
     const [{ data: _user }, [jwt, key]] = await Promise.all([
       Promise.resolve(getUserResult),
       jwtIssuer.verify(sessionToken).then((jwt) => {
         if (!jwt && accessToken) {
           return jwtIssuer
             .verify(accessToken)
-            .then((jwt) => [jwt, accessToken] as [JwtPayloadWithClaims, string]);
+            .then(
+              (jwt) => [jwt, accessToken] as [JwtPayloadWithClaims, string],
+            );
         }
         return [jwt, sessionToken] as [JwtPayloadWithClaims, string];
       }),
@@ -118,21 +120,24 @@ export async function getUserBySupabaseCookie(
       }
       return jwt;
     }
-  let cachettl = undefined;
-  if (sessionToken) {
-    try {
-      const { data: session } = await supabase.auth.getSession();
-      cachettl = session?.session?.expires_at;
-    } catch (error: any) {
-      console.error(`[AUTH] ❌ Supabase getSession error for ${url.pathname}:`, {
-        error: error?.message || String(error),
-        status: error?.status,
-        code: error?.code,
-        url: url.href,
-      });
-      throw error;
+    let cachettl = undefined;
+    if (sessionToken) {
+      try {
+        const { data: session } = await supabase.auth.getSession();
+        cachettl = session?.session?.expires_at;
+      } catch (error: any) {
+        console.error(
+          `[AUTH] ❌ Supabase getSession error for ${url.pathname}:`,
+          {
+            error: error?.message || String(error),
+            status: error?.status,
+            code: error?.code,
+            url: url.href,
+          },
+        );
+        throw error;
+      }
     }
-  }
     if (accessToken) {
       try {
         const decoded = decodeJwt(accessToken) as {
@@ -153,12 +158,12 @@ export async function getUserBySupabaseCookie(
     (user as any)._cacheStatus = "miss";
     return user;
   })();
-  
+
   // Track this request
   if (cacheKey) {
     inflightRequests.set(cacheKey, authPromise);
   }
-  
+
   // Clean up when done
   try {
     const result = await authPromise;

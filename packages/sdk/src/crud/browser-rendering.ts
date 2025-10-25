@@ -187,4 +187,3 @@ export const deleteScreenshot = async (
   );
   return result.success;
 };
-

@@ -17,7 +17,7 @@ import { useSDK } from "./store.tsx";
 
 // Query Keys
 export const BROWSER_RENDERING_KEYS = {
-  screenshots: (locator?: string, prefix?: string) => 
+  screenshots: (locator?: string, prefix?: string) =>
     ["browser-rendering", "screenshots", locator, prefix] as const,
 };
 
@@ -115,4 +115,3 @@ export function useDeleteScreenshot() {
     },
   });
 }
-

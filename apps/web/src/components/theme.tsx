@@ -198,22 +198,23 @@ export function WithWorkspaceTheme({
 
   // Use the object from the query directly so the reference is stable
   const variables = theme?.variables;
-  const appliedVariablesJsonRef = useRef<string>("");
 
   // Apply theme variables to document root so portal content can access them
   // Only re-apply when the theme actually changes to avoid fighting with the editor's live updates
-  useEffect(() => {
-    const root = document.documentElement;
-    const nextJson = JSON.stringify(variables ?? {});
-    if (appliedVariablesJsonRef.current === nextJson) return;
-    appliedVariablesJsonRef.current = nextJson;
+  // useMemo creates a stable reference that only changes when the actual values change
+  const variablesSnapshot = useMemo(
+    () => (variables ? JSON.stringify(variables) : "{}"),
+    [variables],
+  );
 
-    if (variables) {
-      Object.entries(variables).forEach(([key, value]) => {
-        if (value) root.style.setProperty(key, value as string);
-      });
-    }
-  }, [variables]);
+  useEffect(() => {
+    if (!variables) return;
+
+    const root = document.documentElement;
+    Object.entries(variables).forEach(([key, value]) => {
+      if (value) root.style.setProperty(key, value as string);
+    });
+  }, [variablesSnapshot]); // Only re-run when the stringified version changes
 
   return (
     <>

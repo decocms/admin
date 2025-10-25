@@ -1,5 +1,8 @@
 import { useMemo, useState } from "react";
-import { useDeleteScreenshot, useScreenshots } from "@deco/sdk/hooks/browser-rendering";
+import {
+  useDeleteScreenshot,
+  useScreenshots,
+} from "@deco/sdk/hooks/browser-rendering";
 import { Button } from "@deco/ui/components/button.tsx";
 import { Card, CardContent } from "@deco/ui/components/card.tsx";
 import { Input } from "@deco/ui/components/input.tsx";
@@ -27,10 +30,17 @@ type DateFilter = "all" | "today" | "week" | "month";
 export function BrowserRenderingView() {
   const [searchTerm, setSearchTerm] = useState("");
   const [dateFilter, setDateFilter] = useState<DateFilter>("all");
-  const [selectedScreenshot, setSelectedScreenshot] = useState<string | null>(null);
+  const [selectedScreenshot, setSelectedScreenshot] = useState<string | null>(
+    null,
+  );
 
   // Load screenshots
-  const { data: screenshots, isLoading, refetch, error } = useScreenshots({
+  const {
+    data: screenshots,
+    isLoading,
+    refetch,
+    error,
+  } = useScreenshots({
     prefix: getDatePrefix(dateFilter),
     limit: 100,
   });
@@ -43,10 +53,17 @@ export function BrowserRenderingView() {
   const deleteMutation = useDeleteScreenshot();
 
   // AI Chat Context Integration
-  const threadContextItems = useMemo<Array<
-    { id: string; type: "rule"; text: string } | 
-    { id: string; type: "toolset"; integrationId: string; enabledTools: string[] }
-  >>(() => {
+  const threadContextItems = useMemo<
+    Array<
+      | { id: string; type: "rule"; text: string }
+      | {
+          id: string;
+          type: "toolset";
+          integrationId: string;
+          enabledTools: string[];
+        }
+    >
+  >(() => {
     const rules = [
       `You are helping the user capture screenshots, generate PDFs, and scrape websites using Cloudflare Browser Rendering.`,
       `Use BROWSER_SCREENSHOT to capture screenshots of websites. You can provide a URL or custom HTML.`,
@@ -62,8 +79,13 @@ export function BrowserRenderingView() {
     ];
 
     const contextItems: Array<
-      { id: string; type: "rule"; text: string } | 
-      { id: string; type: "toolset"; integrationId: string; enabledTools: string[] }
+      | { id: string; type: "rule"; text: string }
+      | {
+          id: string;
+          type: "toolset";
+          integrationId: string;
+          enabledTools: string[];
+        }
     > = rules.map((text) => ({
       id: crypto.randomUUID(),
       type: "rule" as const,
@@ -107,7 +129,7 @@ export function BrowserRenderingView() {
     return screenshots.filter(
       (screenshot) =>
         screenshot.metadata?.sourceUrl?.toLowerCase().includes(lowerSearch) ||
-        screenshot.path.toLowerCase().includes(lowerSearch)
+        screenshot.path.toLowerCase().includes(lowerSearch),
     );
   }, [screenshots, searchTerm]);
 
@@ -119,7 +141,7 @@ export function BrowserRenderingView() {
       toast.success("Screenshot deleted successfully");
     } catch (error) {
       toast.error(
-        error instanceof Error ? error.message : "Failed to delete screenshot"
+        error instanceof Error ? error.message : "Failed to delete screenshot",
       );
     }
   };
@@ -135,11 +157,7 @@ export function BrowserRenderingView() {
               Capture screenshots, generate PDFs, and scrape websites
             </p>
           </div>
-          <Button
-            onClick={() => refetch()}
-            variant="outline"
-            size="sm"
-          >
+          <Button onClick={() => refetch()} variant="outline" size="sm">
             <Icon name="refresh" className="w-4 h-4 mr-2" />
             Refresh
           </Button>
@@ -169,7 +187,8 @@ export function BrowserRenderingView() {
           </Select>
           {screenshots && (
             <Badge variant="secondary" className="ml-auto">
-              {filteredScreenshots.length} screenshot{filteredScreenshots.length !== 1 ? "s" : ""}
+              {filteredScreenshots.length} screenshot
+              {filteredScreenshots.length !== 1 ? "s" : ""}
             </Badge>
           )}
         </div>
@@ -187,7 +206,10 @@ export function BrowserRenderingView() {
           </div>
         ) : filteredScreenshots.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-full text-center p-8">
-            <Icon name="camera" className="w-16 h-16 text-muted-foreground mb-4" />
+            <Icon
+              name="camera"
+              className="w-16 h-16 text-muted-foreground mb-4"
+            />
             <h3 className="text-lg font-semibold mb-2">No screenshots yet</h3>
             <p className="text-muted-foreground text-sm max-w-md mb-4">
               Use AI chat to capture screenshots, or use the MCP tools directly
@@ -219,7 +241,10 @@ export function BrowserRenderingView() {
                 <CardContent className="p-3">
                   <div className="space-y-2">
                     {screenshot.metadata?.sourceUrl && (
-                      <p className="text-xs text-muted-foreground truncate" title={screenshot.metadata.sourceUrl}>
+                      <p
+                        className="text-xs text-muted-foreground truncate"
+                        title={screenshot.metadata.sourceUrl}
+                      >
                         {screenshot.metadata.sourceUrl}
                       </p>
                     )}
@@ -229,7 +254,8 @@ export function BrowserRenderingView() {
                       </span>
                       {screenshot.metadata?.dimensions && (
                         <span className="text-muted-foreground">
-                          {screenshot.metadata.dimensions.width}×{screenshot.metadata.dimensions.height}
+                          {screenshot.metadata.dimensions.width}×
+                          {screenshot.metadata.dimensions.height}
                         </span>
                       )}
                     </div>
@@ -267,7 +293,10 @@ export function BrowserRenderingView() {
       </div>
 
       {/* Lightbox Dialog */}
-      <Dialog open={!!selectedScreenshot} onOpenChange={() => setSelectedScreenshot(null)}>
+      <Dialog
+        open={!!selectedScreenshot}
+        onOpenChange={() => setSelectedScreenshot(null)}
+      >
         <DialogContent className="max-w-6xl max-h-[90vh]">
           <DialogHeader>
             <DialogTitle>Screenshot</DialogTitle>
@@ -309,4 +338,3 @@ function getDatePrefix(filter: DateFilter): string {
       return "browser-rendering/screenshots/";
   }
 }
-

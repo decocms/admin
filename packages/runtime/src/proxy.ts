@@ -40,6 +40,22 @@ const getCacheKey = (toolName: string, args: unknown): string => {
   return `${toolName}:${JSON.stringify(args)}`;
 };
 
+// Add tool name to URL path for better logging and CDN filtering
+function addToolNameToUrl(connection: any, toolName: string): any {
+  if (!("url" in connection) || !connection.url) {
+    return connection;
+  }
+
+  const url = new URL(connection.url);
+  // Change from ?tool=NAME to /tool/NAME for easier CDN filtering
+  url.pathname = url.pathname.replace(/\/$/, "") + `/tool/${toolName}`;
+
+  return {
+    ...connection,
+    url: url.href,
+  };
+}
+
 /**
  * The base fetcher used to fetch the MCP from API.
  */
@@ -87,20 +103,10 @@ export function createMCPClientProxy<T extends Record<string, unknown>>(
           const extraHeaders = debugId
             ? { "x-trace-debug-id": debugId }
             : undefined;
-          
+
           // Add tool name to URL path for better logging and CDN filtering
-          const connectionWithTool = {
-            ...connection,
-            url: (() => {
-              const baseUrl = "url" in connection ? connection.url : "";
-              if (!baseUrl) return baseUrl;
-              const url = new URL(baseUrl);
-              // Change from ?tool=NAME to /tool/NAME for easier CDN filtering
-              url.pathname = url.pathname.replace(/\/$/, "") + `/tool/${String(name)}`;
-              return url.href;
-            })(),
-          };
-          
+          const connectionWithTool = addToolNameToUrl(connection, String(name));
+
           const client = await createServerClient(
             { connection: connectionWithTool },
             undefined,
@@ -108,16 +114,17 @@ export function createMCPClientProxy<T extends Record<string, unknown>>(
           );
 
           try {
-            const { structuredContent, isError, content } = await client.callTool(
-              {
-                name: String(name),
-                arguments: args as Record<string, unknown>,
-              },
-              undefined,
-              {
-                timeout: 3000000,
-              },
-            );
+            const { structuredContent, isError, content } =
+              await client.callTool(
+                {
+                  name: String(name),
+                  arguments: args as Record<string, unknown>,
+                },
+                undefined,
+                {
+                  timeout: 3000000,
+                },
+              );
 
             return { structuredContent, isError, content };
           } finally {

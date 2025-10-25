@@ -1,4 +1,3 @@
-
 import { createServerClient } from "@deco/ai/mcp";
 import { HttpServerTransport } from "@deco/mcp/http";
 import {
@@ -274,14 +273,17 @@ const createMCPHandlerFor = (
     const origin = c.req.header("origin") || "*";
     res.headers.set("Access-Control-Allow-Origin", origin);
     res.headers.set("Access-Control-Allow-Credentials", "true");
-    res.headers.set("Access-Control-Allow-Methods", "HEAD, GET, POST, PUT, DELETE, PATCH, OPTIONS");
+    res.headers.set(
+      "Access-Control-Allow-Methods",
+      "HEAD, GET, POST, PUT, DELETE, PATCH, OPTIONS",
+    );
     res.headers.set(
       "Access-Control-Allow-Headers",
-      "Content-Type, Authorization, Cookie, Accept, cache-control, pragma, x-trace-debug-id, x-deno-isolate-instance-id, mcp-protocol-version"
+      "Content-Type, Authorization, Cookie, Accept, cache-control, pragma, x-trace-debug-id, x-deno-isolate-instance-id, mcp-protocol-version",
     );
     res.headers.set(
       "Access-Control-Expose-Headers",
-      "Content-Type, Authorization, Set-Cookie, x-trace-debug-id"
+      "Content-Type, Authorization, Set-Cookie, x-trace-debug-id",
     );
 
     return res;
@@ -556,11 +558,11 @@ app.use(async (c, next) => {
   const { method } = c.req;
   const url = new URL(c.req.url);
   const pathname = url.pathname;
-  
+
   const start = Date.now();
   await next();
   const ms = Date.now() - start;
-  
+
   // Color codes for status
   const status = c.res.status;
   let statusColor = "\x1b[0m"; // default
@@ -575,7 +577,7 @@ app.use(async (c, next) => {
   } else if (status >= 500) {
     statusColor = "\x1b[31m"; // red
   }
-  
+
   // Check for cache status header (set by middleware)
   // @ts-expect-error - custom context property set by user middleware
   const cacheStatus: string | undefined = c.get("cacheStatus");
@@ -1035,7 +1037,10 @@ app.all("/:org/:project/mcp/tool/:toolName", createMCPHandlerFor(projectTools));
 
 app.all("/:org/:project/agents/:agentId/mcp", createMCPHandlerFor(AGENT_TOOLS));
 // Handle /:org/:project/agents/:agentId/mcp/tool/:toolName for CDN filtering
-app.all("/:org/:project/agents/:agentId/mcp/tool/:toolName", createMCPHandlerFor(AGENT_TOOLS));
+app.all(
+  "/:org/:project/agents/:agentId/mcp/tool/:toolName",
+  createMCPHandlerFor(AGENT_TOOLS),
+);
 
 // Tool call endpoint handlers
 app.post("/tools/call/:tool", createToolCallHandlerFor(GLOBAL_TOOLS));
@@ -1057,7 +1062,10 @@ app.post(
 
 app.post("/:org/:project/self/mcp", createMCPHandlerFor(createSelfTools));
 // Handle /:org/:project/self/mcp/tool/:toolName for CDN filtering
-app.post("/:org/:project/self/mcp/tool/:toolName", createMCPHandlerFor(createSelfTools));
+app.post(
+  "/:org/:project/self/mcp/tool/:toolName",
+  createMCPHandlerFor(createSelfTools),
+);
 
 app.post("/:org/:project/:integrationId/mcp", async (c) => {
   const mcpServerProxy = await createMcpServerProxy(c);
@@ -1077,11 +1085,14 @@ app.post("/:org/:project/:branch/:integrationId/mcp", async (c) => {
   return mcpServerProxy.fetch(c.req.raw);
 });
 // Handle /:org/:project/:branch/:integrationId/mcp/tool/:toolName for CDN filtering
-app.post("/:org/:project/:branch/:integrationId/mcp/tool/:toolName", async (c) => {
-  const mcpServerProxy = await createMcpServerProxy(c);
+app.post(
+  "/:org/:project/:branch/:integrationId/mcp/tool/:toolName",
+  async (c) => {
+    const mcpServerProxy = await createMcpServerProxy(c);
 
-  return mcpServerProxy.fetch(c.req.raw);
-});
+    return mcpServerProxy.fetch(c.req.raw);
+  },
+);
 
 app.post("/apps/mcp", async (c) => {
   const mcpServerProxy = await createMcpServerProxyForAppName(c);

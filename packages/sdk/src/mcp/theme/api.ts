@@ -355,16 +355,8 @@ export const updateOrgTheme = createTool({
     theme: enhancedThemeSchema,
   }),
   handler: async (props, c) => {
-    console.log(
-      "[THEME_UPDATE_ORG] Context locator:",
-      JSON.stringify(c.locator),
-    );
-    console.log("[THEME_UPDATE_ORG] Props orgId:", props.orgId);
-
     // Get orgId from context if not provided
     const orgId = props.orgId ?? (await getOrgIdFromContext(c));
-
-    console.log("[THEME_UPDATE_ORG] Resolved orgId:", orgId);
 
     if (!orgId) {
       throw new Error(
@@ -378,12 +370,8 @@ export const updateOrgTheme = createTool({
       throw new Error("No organization slug in context");
     }
 
-    console.log("[THEME_UPDATE_ORG] Using orgSlug for permissions:", orgSlug);
-
     // Use TEAMS_UPDATE permission since updating org theme is part of team management
     await assertTeamResourceAccess("TEAMS_UPDATE", orgSlug, c);
-
-    console.log("[THEME_UPDATE_ORG] Updating org theme for orgId:", orgId);
 
     // Get current theme to merge
     const currentResult = await c.drizzle
@@ -397,16 +385,7 @@ export const updateOrgTheme = createTool({
     }
 
     const currentTheme = currentResult[0].theme as Json | null;
-    console.log(
-      "[THEME_UPDATE_ORG] Current theme:",
-      JSON.stringify(currentTheme),
-    );
-
     const mergedTheme = mergeThemes(currentTheme, props.theme);
-    console.log(
-      "[THEME_UPDATE_ORG] Merged theme:",
-      JSON.stringify(mergedTheme),
-    );
 
     // Update the organization and return the updated record
     const updatedResult = await c.drizzle
@@ -414,11 +393,6 @@ export const updateOrgTheme = createTool({
       .set({ theme: mergedTheme as Json })
       .where(eq(organizations.id, orgId))
       .returning({ theme: organizations.theme });
-
-    console.log(
-      "[THEME_UPDATE_ORG] Database update result:",
-      JSON.stringify(updatedResult),
-    );
 
     if (!updatedResult || updatedResult.length === 0) {
       throw new Error("Failed to update organization theme");

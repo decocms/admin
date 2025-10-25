@@ -59,9 +59,7 @@ function parseOklch(color: string): OklchColor | null {
  * Format OKLCH components back to string
  */
 function formatOklch({ l, c, h, percent }: OklchColor): string {
-  const lOut = percent
-    ? `${clamp(l * 100, 0, 100).toFixed(1)}%`
-    : l.toFixed(3);
+  const lOut = percent ? `${clamp(l * 100, 0, 100).toFixed(1)}%` : l.toFixed(3);
   return `oklch(${lOut} ${c} ${h})`;
 }
 
@@ -96,4 +94,3 @@ export function darken(color: string, amount = 0.28): string {
 
   return color;
 }
-

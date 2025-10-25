@@ -14,6 +14,8 @@ export interface SyncSlice {
   acceptPendingUpdate: () => void;
   dismissPendingUpdate: () => void;
   resetAndResync: () => void;
+  getWorkflowToSave: () => WorkflowDefinition;
+  handleSaveSuccess: (savedWorkflow: WorkflowDefinition) => void;
 }
 
 interface WorkflowChanges {
@@ -167,6 +169,27 @@ export const createSyncSlice: StateCreator<Store, [], [], SyncSlice> = (
     handleExternalUpdate: (serverWorkflow) => {
       const state = get();
       const currentWorkflow = state.workflow;
+
+      // Check if server workflow matches our current workflow (we just saved it)
+      const workflowsMatch =
+        JSON.stringify(currentWorkflow) === JSON.stringify(serverWorkflow);
+
+      if (workflowsMatch) {
+        set(
+          {
+            workflow: serverWorkflow,
+            lastServerVersion: serverWorkflow,
+            pendingServerUpdate: null,
+            isDirty: false, // Safe to reset since server confirmed our changes
+          },
+          false,
+        );
+
+        return {
+          applied: true,
+          reason: "Auto-applied: matches current state",
+        };
+      }
 
       // If not dirty: auto-update the UI with the entire workflow from server
       if (!state.isDirty) {
@@ -322,17 +345,79 @@ export const createSyncSlice: StateCreator<Store, [], [], SyncSlice> = (
 
     resetAndResync: () => {
       const state = get();
-      const { workflowUri } = state;
+      const { workflowUri, lastServerVersion } = state;
 
       // Clear localStorage for this workflow
       const storageKey = `workflow-store-${encodeURIComponent(workflowUri).slice(0, 200)}`;
       localStorage.removeItem(storageKey);
 
-      // Reset to initial state using Zustand's built-in method
-      set(api.getInitialState());
+      // Reset to last server version instead of initial state
+      // This ensures we reset to the saved state, not empty state
+      if (lastServerVersion) {
+        set({
+          workflow: lastServerVersion,
+          isDirty: false,
+          pendingServerUpdate: null,
+          stepInputs: {},
+          stepOutputs: {},
+          stepExecutions: {},
+          executeDrafts: {},
+          executeEditorStepName: null,
+        });
 
-      toast.success("Store reset", {
-        description: "Cleared local changes and synced with server",
+        toast.success("Store reset", {
+          description: "Cleared local changes and synced with server",
+        });
+      } else {
+        // Fallback to initial state if no server version available
+        set(api.getInitialState());
+
+        toast.success("Store reset", {
+          description: "Reset to initial state",
+        });
+      }
+    },
+
+    getWorkflowToSave: () => {
+      const state = get();
+      const { workflow, executeDrafts } = state;
+      const draftStepNames = Object.keys(executeDrafts);
+
+      if (draftStepNames.length === 0) {
+        return workflow;
+      }
+
+      return {
+        ...workflow,
+        steps: workflow.steps.map((step) => {
+          const draftExecute = executeDrafts[step.def.name];
+          if (draftExecute !== undefined) {
+            return {
+              ...step,
+              def: {
+                ...step.def,
+                execute: draftExecute,
+              },
+            };
+          }
+          return step;
+        }),
+      };
+    },
+
+    handleSaveSuccess: (savedWorkflow) => {
+      const state = get();
+      const draftStepNames = Object.keys(state.executeDrafts);
+
+      // Clear all execute drafts
+      for (const stepName of draftStepNames) {
+        state.clearExecuteDraft(stepName);
+      }
+
+      // Update state with saved workflow
+      set({
+        workflow: savedWorkflow,
+        lastServerVersion: savedWorkflow,
       });
     },
   };

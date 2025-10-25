@@ -256,6 +256,10 @@ export function useHasExecuteDraft(stepName: string) {
   );
 }
 
+export function useDirtySteps() {
+  return useWorkflowStore((state) => Object.keys(state.executeDrafts));
+}
+
 // All actions grouped in one hook (actions are stable, but return object needs shallow)
 export function useWorkflowActions() {
   return useWorkflowStore((state) => ({
@@ -264,6 +268,8 @@ export function useWorkflowActions() {
     acceptPendingUpdate: state.acceptPendingUpdate,
     dismissPendingUpdate: state.dismissPendingUpdate,
     resetAndResync: state.resetAndResync,
+    getWorkflowToSave: state.getWorkflowToSave,
+    handleSaveSuccess: state.handleSaveSuccess,
     // Step management actions
     addStep: state.addStep,
     updateStep: state.updateStep,
@@ -276,12 +282,21 @@ export function useWorkflowActions() {
     setStepExecutionStart: state.setStepExecutionStart,
     setStepExecutionEnd: state.setStepExecutionEnd,
     runStep: state.runStep,
-    // UI actions
+    // Step editing actions
     openExecuteEditor: state.openExecuteEditor,
     closeExecuteEditor: state.closeExecuteEditor,
     toggleExecuteEditor: state.toggleExecuteEditor,
     setExecuteDraft: state.setExecuteDraft,
     clearExecuteDraft: state.clearExecuteDraft,
     hasExecuteDraft: state.hasExecuteDraft,
+    getDirtySteps: state.getDirtySteps,
   }));
+}
+
+export function useGetWorkflowToSave() {
+  return useWorkflowStore((state) => state.getWorkflowToSave, Object.is);
+}
+
+export function useHandleSaveSuccess() {
+  return useWorkflowStore((state) => state.handleSaveSuccess, Object.is);
 }

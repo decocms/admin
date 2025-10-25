@@ -7,6 +7,7 @@ import { useStepRunner } from "./use-step-runner";
 import {
   useWorkflowStepInput,
   useIsExecuteEditorOpen,
+  useWorkflowStepOutputs,
 } from "../../../stores/workflows/hooks.ts";
 import { useWorkflowStore } from "../../../stores/workflows/provider.tsx";
 import { Spinner } from "@deco/ui/components/spinner.tsx";
@@ -30,6 +31,9 @@ export const StepHeader = memo(function StepHeader({
   const { runStep, isSubmitting } = useStepRunner(stepName);
   const currentInput = useWorkflowStepInput(stepName);
   const isExecuteEditorOpen = useIsExecuteEditorOpen(stepName);
+  const stepOutputs = useWorkflowStepOutputs();
+
+  const didRun = stepOutputs[stepName] !== undefined;
 
   // Directly access the toggle action from the store
   const toggleExecuteEditor = useWorkflowStore(
@@ -99,7 +103,9 @@ export const StepHeader = memo(function StepHeader({
                   ) : (
                     <>
                       <Icon name="play_arrow" size={11} />
-                      <span className="text-sm leading-5">Re-run</span>
+                      <span className="text-sm leading-5">
+                        {didRun ? "Re-run" : "Run step"}
+                      </span>
                     </>
                   )}
                 </Button>

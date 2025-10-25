@@ -40,6 +40,11 @@ export const StepExecuteEditor = memo(function StepExecuteEditor({
       return;
     }
 
+    console.log("=== EXECUTE EDITOR SAVE ===");
+    console.log("Step:", stepName);
+    console.log("Old execute:", stepDefinition.execute?.substring(0, 100));
+    console.log("New execute:", currentValue.substring(0, 100));
+
     updateStep(stepName, {
       def: {
         ...stepDefinition,

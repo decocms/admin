@@ -76,20 +76,26 @@ export function StepOutput({ output, views = EMPTY_VIEWS }: StepOutputProps) {
         </p>
       </div>
 
-      <div className="flex items-center gap-3 px-0">
-        <Button
-          variant="default"
-          size="sm"
-          className="h-8 px-2.5 text-sm rounded-xl font-medium"
-        >
-          JSON
-        </Button>
-        <div className="flex flex-wrap gap-2">
-          {views.map((view) => (
-            <ViewDialogTrigger key={view} resourceUri={view} output={output} />
-          ))}
+      {hasViews && (
+        <div className="flex items-center gap-3 px-0">
+          <Button
+            variant="default"
+            size="sm"
+            className="h-8 px-2.5 text-sm rounded-xl font-medium"
+          >
+            JSON
+          </Button>
+          <div className="flex flex-wrap gap-2">
+            {views.map((view) => (
+              <ViewDialogTrigger
+                key={view}
+                resourceUri={view}
+                output={output}
+              />
+            ))}
+          </div>
         </div>
-      </div>
+      )}
 
       <div className="min-w-0 overflow-hidden">
         <JsonViewer data={parsedOutput} maxHeight="400px" defaultView="tree" />

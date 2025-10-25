@@ -174,7 +174,7 @@ export const useUpsertWorkflow = () => {
     onSuccess: (data) => {
       // Notify about the resource update
       if (data.uri) {
-        notifyResourceUpdate(data.uri);
+        // notifyResourceUpdate(data.uri);
       }
     },
   });

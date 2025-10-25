@@ -29,4 +29,5 @@ export {
   useWorkflowStepCount,
   useWorkflow,
   useWorkflowActions,
+  useDirtySteps,
 } from "./hooks";

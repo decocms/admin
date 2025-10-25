@@ -12,7 +12,10 @@ import {
   createStepManagementSlice,
   type StepManagementSlice,
 } from "./slices/step-management-slice";
-import { createUISlice, type UISlice } from "./slices/ui-slice";
+import {
+  createStepEditingSlice,
+  type StepEditingSlice,
+} from "./slices/step-editing-slice";
 import { createJSONStorage, persist } from "zustand/middleware";
 
 // Re-export types needed by slices
@@ -28,7 +31,7 @@ export type Store = WorkflowSlice &
   SyncSlice &
   StepExecutionSlice &
   StepManagementSlice &
-  UISlice;
+  StepEditingSlice;
 
 // Keep State and Actions types for backward compatibility
 export type State = Pick<
@@ -49,6 +52,8 @@ export type Actions = Pick<
   | "acceptPendingUpdate"
   | "dismissPendingUpdate"
   | "resetAndResync"
+  | "getWorkflowToSave"
+  | "handleSaveSuccess"
   | "addStep"
   | "updateStep"
   | "removeStep"
@@ -64,6 +69,7 @@ export type Actions = Pick<
   | "setExecuteDraft"
   | "clearExecuteDraft"
   | "hasExecuteDraft"
+  | "getDirtySteps"
 >;
 
 export const createWorkflowStore = (
@@ -87,8 +93,8 @@ export const createWorkflowStore = (
         // Initialize step management slice
         ...createStepManagementSlice(set, get, api),
 
-        // Initialize UI slice
-        ...createUISlice(set, get, api),
+        // Initialize step editing slice
+        ...createStepEditingSlice(set, get, api),
       }),
       {
         name: `workflow-store-${encodeURIComponent(initialState.workflowUri).slice(0, 200)}`,

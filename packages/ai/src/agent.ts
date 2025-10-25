@@ -180,28 +180,19 @@ function stripSchemaAttributes(text: string): string {
   }
 
   try {
-    // More robust pattern matching that handles various quote styles and escaping
-    // Matches data-input-schema and data-output-schema attributes with their values
-    const schemaPatterns = [
-      // Handle double quotes with escaped content
-      /\s+data-input-schema="[^"]*(?:\\.[^"]*)*"/g,
-      /\s+data-output-schema="[^"]*(?:\\.[^"]*)*"/g,
-      // Handle single quotes
-      /\s+data-input-schema='[^']*(?:\\.[^']*)*'/g,
-      /\s+data-output-schema='[^']*(?:\\.[^']*)*'/g,
-      // Handle unquoted values (fallback)
-      /\s+data-input-schema=[^\s>]+/g,
-      /\s+data-output-schema=[^\s>]+/g,
-    ];
-
     let cleanedText = text;
-    for (const pattern of schemaPatterns) {
-      cleanedText = cleanedText.replace(pattern, "");
-    }
+
+    // Remove data-input-schema - use lazy matching to find the closing }"
+    // Pattern: data-input-schema=" followed by anything (lazy) until we hit }"
+    // [\s\S] matches any character including newlines, *? is lazy/non-greedy
+    // This handles nested braces in the JSON schema
+    cleanedText = cleanedText.replace(/\s+data-input-schema="[\s\S]*?}"/g, "");
+    // Remove data-output-schema - same approach
+    cleanedText = cleanedText.replace(/\s+data-output-schema="[\s\S]*?}"/g, "");
 
     return cleanedText;
   } catch (error) {
-    console.warn("Error stripping schema attributes:", error);
+    console.error("[stripSchemaAttributes] Error:", error);
     // Return original text if processing fails
     return text;
   }
@@ -325,7 +316,6 @@ function stripMentionSchemas(messages: any[]): any[] {
     try {
       // Validate message structure
       if (!msg || typeof msg !== "object") {
-        console.warn("stripMentionSchemas: Invalid message structure");
         return msg;
       }
 
@@ -338,12 +328,19 @@ function stripMentionSchemas(messages: any[]): any[] {
       }
 
       // Process each part in the content array
-      const processedContent = formatInfo.contentArray.map(processMessagePart);
+      const processedContent = formatInfo.contentArray.map((part) => {
+        const processed = processMessagePart(part);
+        return processed;
+      });
 
       // Reconstruct message based on detected format
-      return reconstructMessage(msg as Message, processedContent, formatInfo);
-    } catch (error) {
-      console.error("Error processing message in stripMentionSchemas:", error);
+      const reconstructed = reconstructMessage(
+        msg as Message,
+        processedContent,
+        formatInfo,
+      );
+      return reconstructed;
+    } catch {
       // Return original message if processing fails
       return msg;
     }

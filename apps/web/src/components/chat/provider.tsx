@@ -650,8 +650,6 @@ export function AgenticChatProvider({
         agentId: agentId,
       });
 
-      console.log("sendMessage", { JSON: JSON.stringify(message) });
-
       // Send message with metadata in options
       return chat.sendMessage?.(message, { metadata }) ?? Promise.resolve();
     },

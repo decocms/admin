@@ -200,18 +200,18 @@ export const callTool = createIntegrationManagementTool({
         },
       );
 
-      await client.close();
-
       return result;
     } catch (error) {
       console.error(
         "Failed to call tool:",
         error instanceof Error ? error.message : "Unknown error",
       );
-      await client.close();
       return {
         error: error instanceof Error ? error.message : "Unknown error",
       };
+    } finally {
+      // Always dispose of the client to avoid RPC leaks
+      await client.close();
     }
   },
 });

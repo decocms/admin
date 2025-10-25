@@ -594,9 +594,20 @@ app.use(async (c, next) => {
   
   // Check for cache status header (set by middleware)
   const cacheStatus = c.get("cacheStatus");
-  const cacheIndicator = cacheStatus 
-    ? ` \x1b[35m[${cacheStatus}]\x1b[0m` // magenta for cache status
-    : "";
+  let cacheIndicator = "";
+  if (cacheStatus) {
+    const [prefix, status] = cacheStatus.split(":");
+    let statusColor = "\x1b[0m"; // default
+    if (status === "hit") {
+      statusColor = "\x1b[32m"; // green
+    } else if (status === "miss") {
+      statusColor = "\x1b[31m"; // red
+    } else if (status === "dedup") {
+      statusColor = "\x1b[33m"; // yellow
+    }
+    // [auth: in grey, status in color
+    cacheIndicator = ` \x1b[90m[${prefix}:\x1b[0m${statusColor}${status}\x1b[90m]\x1b[0m`;
+  }
   
   // Match wrangler format: [api] POST /path?tool=NAME 200 OK (123ms) [cache-hit]
   // \x1b[1m = bold, \x1b[0m = reset, \x1b[90m = grey, \x1b[96m = light blue, \x1b[32m = green

@@ -106,18 +106,23 @@ export function createMCPClientProxy<T extends Record<string, unknown>>(
             extraHeaders,
           );
 
-          const { structuredContent, isError, content } = await client.callTool(
-            {
-              name: String(name),
-              arguments: args as Record<string, unknown>,
-            },
-            undefined,
-            {
-              timeout: 3000000,
-            },
-          );
+          try {
+            const { structuredContent, isError, content } = await client.callTool(
+              {
+                name: String(name),
+                arguments: args as Record<string, unknown>,
+              },
+              undefined,
+              {
+                timeout: 3000000,
+              },
+            );
 
-          return { structuredContent, isError, content };
+            return { structuredContent, isError, content };
+          } finally {
+            // Properly dispose of the MCP client to avoid RPC leaks
+            await client.close();
+          }
         })();
 
         // Store in cache
@@ -168,14 +173,19 @@ export function createMCPClientProxy<T extends Record<string, unknown>>(
 
       const listToolsFn = async () => {
         const client = await createServerClient({ connection });
-        const { tools } = await client.listTools();
+        try {
+          const { tools } = await client.listTools();
 
-        return tools as {
-          name: string;
-          inputSchema: any;
-          outputSchema?: any;
-          description: string;
-        }[];
+          return tools as {
+            name: string;
+            inputSchema: any;
+            outputSchema?: any;
+            description: string;
+          }[];
+        } finally {
+          // Properly dispose of the MCP client to avoid RPC leaks
+          await client.close();
+        }
       };
 
       async function listToolsOnce() {

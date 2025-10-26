@@ -41,6 +41,7 @@ const CUSTOM_UI_TOOLS = new Set([
   "HOSTING_APP_DEPLOY",
   "RENDER",
   "GENERATE_IMAGE",
+  "BROWSER_SCREENSHOT",
 ]);
 
 // Helper to extract toolName from ToolUIPart (handles both static and dynamic tools)
@@ -370,10 +371,87 @@ function GenerateImageToolUI({ part }: { part: ToolUIPart }) {
   );
 }
 
+function BrowserScreenshotToolUI({ part }: { part: ToolUIPart }) {
+  const state = part.state;
+  const url =
+    typeof part.input === "object" && part.input && "url" in part.input
+      ? part.input.url
+      : null;
+
+  // Extract image URL from output.structuredContent.image
+  const image =
+    part.output &&
+    typeof part.output === "object" &&
+    "structuredContent" in part.output &&
+    part.output.structuredContent &&
+    typeof part.output.structuredContent === "object" &&
+    "image" in part.output.structuredContent &&
+    typeof part.output.structuredContent.image === "string"
+      ? part.output.structuredContent.image
+      : null;
+
+  const isCapturing =
+    state === "input-streaming" || state === "input-available";
+  const isCaptured = state === "output-available" && image;
+  const hasError = state === "output-error";
+
+  if (hasError) {
+    return (
+      <div className="space-y-3 p-4 border border-destructive/20 rounded-lg bg-destructive/5 w-full max-w-full overflow-hidden">
+        <div className="flex items-center gap-2 text-destructive">
+          <Icon name="close" className="h-4 w-4" />
+          <span className="font-medium">Failed to capture screenshot</span>
+        </div>
+        {url && (
+          <p className="text-sm text-muted-foreground break-all">URL: {url}</p>
+        )}
+      </div>
+    );
+  }
+
+  if (isCapturing) {
+    return (
+      <div className="space-y-3 p-4 border border-border rounded-lg bg-muted/20 w-full max-w-full overflow-hidden">
+        <div className="flex items-center gap-2">
+          <Icon name="photo_camera" className="h-4 w-4 animate-pulse" />
+          <span className="font-medium bg-gradient-to-r from-foreground via-foreground/50 to-foreground bg-[length:200%_100%] animate-shimmer bg-clip-text text-transparent">
+            Capturing screenshot...
+          </span>
+        </div>
+        {url && (
+          <p className="text-sm text-muted-foreground break-all">URL: {url}</p>
+        )}
+      </div>
+    );
+  }
+
+  if (isCaptured) {
+    return (
+      <div className="space-y-3 w-full max-w-full overflow-hidden">
+        {url && (
+          <p className="text-sm text-muted-foreground break-all">
+            Captured from: {url}
+          </p>
+        )}
+        <div className="rounded-lg overflow-hidden border border-border">
+          <img
+            src={image}
+            alt={url || "Screenshot"}
+            className="w-full max-h-[400px] object-cover"
+          />
+        </div>
+      </div>
+    );
+  }
+
+  return null;
+}
+
 function CustomToolUI({ part }: { part: ToolUIPart }) {
   const result = (part.output ?? {}) as Record<string, unknown>;
   const toolName = useToolName(part);
 
+  // Handle tools that need custom UI for all states (including loading)
   if (toolName === "HOSTING_APP_DEPLOY") {
     const toolLike: HostingAppToolLike = {
       toolCallId: part.toolCallId,
@@ -384,12 +462,18 @@ function CustomToolUI({ part }: { part: ToolUIPart }) {
     return <HostingAppDeploy tool={toolLike} />;
   }
 
+  if (toolName === "BROWSER_SCREENSHOT") {
+    return <BrowserScreenshotToolUI part={part} />;
+  }
+
+  if (toolName === "GENERATE_IMAGE") {
+    return <GenerateImageToolUI part={part} />;
+  }
+
+  // For other tools, only show output when available
   if (part.state !== "output-available" || !part.output) return null;
 
   switch (toolName) {
-    case "GENERATE_IMAGE": {
-      return <GenerateImageToolUI part={part} />;
-    }
     case "RENDER": {
       return (
         <Preview

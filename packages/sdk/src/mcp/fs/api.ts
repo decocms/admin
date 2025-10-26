@@ -51,33 +51,24 @@ export const ensureBucketExists = async (c: AppContext, bucketName: string) => {
   const { cf } = c;
   const env = getEnv(c);
 
-  console.log("[ensureBucketExists] Checking bucket:", bucketName);
-
   try {
     await cf.r2.buckets.get(bucketName, {
       account_id: env.CF_ACCOUNT_ID,
     });
-
-    console.log("[ensureBucketExists] Bucket exists");
 
     // We can remove this after some time. This is for ensuring
     // existing buckets have the correct cors configuration.
     await ensureBucketCorsConfiguration(c, bucketName);
   } catch (error) {
     if ((error as unknown as { status: number })?.status !== 404) {
-      console.error("[ensureBucketExists] Error checking bucket:", error);
       throw error;
     }
-
-    console.log("[ensureBucketExists] Bucket does not exist, creating...");
 
     // Create bucket
     await cf.r2.buckets.create({
       name: bucketName,
       account_id: env.CF_ACCOUNT_ID,
     });
-
-    console.log("[ensureBucketExists] Bucket created successfully");
 
     await ensureBucketCorsConfiguration(c, bucketName);
   }
@@ -143,18 +134,12 @@ export const listFiles = createTool({
   ),
   handler: async ({ prefix }, c) => {
     assertHasWorkspace(c);
-    await assertWorkspaceResourceAccess(c);
-    c.resourceAccess.grant();
-
     const bucketName = getWorkspaceBucketName(c.workspace.value);
 
-    console.log("[FS_LIST] Workspace:", c.workspace.value);
-    console.log("[FS_LIST] Bucket name:", bucketName);
-    console.log("[FS_LIST] Prefix:", prefix);
-
-    await ensureBucketExists(c, bucketName);
-
-    console.log("[FS_LIST] Bucket exists, attempting to list...");
+    await Promise.all([
+      ensureBucketExists(c, bucketName),
+      assertWorkspaceResourceAccess(c),
+    ]);
 
     const s3Client = getS3Client(c);
     const listCommand = new ListObjectsCommand({
@@ -163,11 +148,6 @@ export const listFiles = createTool({
     });
 
     const response = await s3Client.send(listCommand);
-    console.log(
-      "[FS_LIST] Success! Found",
-      response.Contents?.length || 0,
-      "items",
-    );
     return { items: response.Contents || [] };
   },
 });
@@ -191,11 +171,12 @@ export const readFile = createTool({
   ),
   handler: async ({ path, expiresIn = 180 }, c) => {
     assertHasWorkspace(c);
-    await assertWorkspaceResourceAccess(c);
-    c.resourceAccess.grant();
-
     const bucketName = getWorkspaceBucketName(c.workspace.value);
-    await ensureBucketExists(c, bucketName);
+
+    await Promise.all([
+      ensureBucketExists(c, bucketName),
+      assertWorkspaceResourceAccess(c),
+    ]);
 
     const s3Client = getS3Client(c);
     const getCommand = new GetObjectCommand({
@@ -219,11 +200,12 @@ export const readFileMetadata = createTool({
   ),
   handler: async ({ path }, c) => {
     assertHasWorkspace(c);
-    await assertWorkspaceResourceAccess(c);
-    c.resourceAccess.grant();
-
     const bucketName = getWorkspaceBucketName(c.workspace.value);
-    await ensureBucketExists(c, bucketName);
+
+    await Promise.all([
+      ensureBucketExists(c, bucketName),
+      assertWorkspaceResourceAccess(c),
+    ]);
 
     const s3Client = getS3Client(c);
     const getCommand = new GetObjectCommand({
@@ -264,12 +246,14 @@ export const writeFile = createTool({
     }),
   ),
   handler: async ({ path, expiresIn = 60, contentType, metadata }, c) => {
-    assertHasWorkspace(c);
     await assertWorkspaceResourceAccess(c);
-    c.resourceAccess.grant();
-
+    assertHasWorkspace(c);
     const bucketName = getWorkspaceBucketName(c.workspace.value);
-    await ensureBucketExists(c, bucketName);
+
+    await Promise.all([
+      ensureBucketExists(c, bucketName),
+      assertWorkspaceResourceAccess(c),
+    ]);
 
     const s3Client = getS3Client(c);
     const putCommand = new PutObjectCommand({
@@ -294,11 +278,11 @@ export const deleteFile = createTool({
   inputSchema: z.lazy(() => z.object({ path: z.string() })),
   handler: async ({ path }, c) => {
     assertHasWorkspace(c);
-    await assertWorkspaceResourceAccess(c);
-    c.resourceAccess.grant();
-
     const bucketName = getWorkspaceBucketName(c.workspace.value);
+
     await ensureBucketExists(c, bucketName);
+
+    await assertWorkspaceResourceAccess(c);
 
     const s3Client = getS3Client(c);
     const deleteCommand = new DeleteObjectCommand({

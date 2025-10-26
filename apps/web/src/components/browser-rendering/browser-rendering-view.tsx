@@ -1,5 +1,6 @@
 import { useDeferredValue, useMemo, useState } from "react";
 import {
+  useCaptureScreenshot,
   useDeleteScreenshot,
   useScreenshots,
 } from "@deco/sdk/hooks/browser-rendering";
@@ -35,6 +36,7 @@ export function BrowserRenderingView() {
   const [selectedScreenshot, setSelectedScreenshot] = useState<string | null>(
     null,
   );
+  const [captureUrl, setCaptureUrl] = useState("");
 
   // Load screenshots
   const {
@@ -48,6 +50,7 @@ export function BrowserRenderingView() {
   });
 
   const deleteMutation = useDeleteScreenshot();
+  const captureMutation = useCaptureScreenshot();
 
   // AI Chat Context Integration
   const threadContextItems = useMemo<
@@ -142,6 +145,34 @@ export function BrowserRenderingView() {
     }
   };
 
+  const handleCapture = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    if (!captureUrl.trim()) {
+      toast.error("Please enter a URL");
+      return;
+    }
+
+    // Basic URL validation
+    try {
+      new URL(captureUrl);
+    } catch {
+      toast.error("Please enter a valid URL (including https://)");
+      return;
+    }
+
+    try {
+      await captureMutation.mutateAsync({ url: captureUrl });
+      toast.success("Screenshot captured successfully!");
+      setCaptureUrl("");
+    } catch (error) {
+      console.error("Screenshot capture error:", error);
+      toast.error(
+        error instanceof Error ? error.message : "Failed to capture screenshot",
+      );
+    }
+  };
+
   return (
     <div className="flex flex-col h-full">
       {/* Header */}
@@ -158,6 +189,37 @@ export function BrowserRenderingView() {
             Refresh
           </Button>
         </div>
+
+        {/* Quick Capture Form */}
+        <Card className="mb-4">
+          <CardContent className="pt-6">
+            <form onSubmit={handleCapture} className="flex gap-2">
+              <Input
+                placeholder="https://example.com"
+                value={captureUrl}
+                onChange={(e) => setCaptureUrl(e.target.value)}
+                className="flex-1"
+                disabled={captureMutation.isPending}
+              />
+              <Button type="submit" disabled={captureMutation.isPending}>
+                {captureMutation.isPending ? (
+                  <>
+                    <Icon
+                      name="hourglass_empty"
+                      className="w-4 h-4 mr-2 animate-spin"
+                    />
+                    Capturing...
+                  </>
+                ) : (
+                  <>
+                    <Icon name="camera" className="w-4 h-4 mr-2" />
+                    Capture Screenshot
+                  </>
+                )}
+              </Button>
+            </form>
+          </CardContent>
+        </Card>
 
         {/* Filters */}
         <div className="flex gap-3 flex-wrap">

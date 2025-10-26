@@ -1,6 +1,8 @@
 import { z } from "zod";
 import { createToolGroup, getEnv } from "../context.ts";
 import type { AppContext } from "../context.ts";
+import { assertHasUser, assertWorkspaceResourceAccess } from "../assertions.ts";
+import { writeFile, listFiles, deleteFile } from "../fs/api.ts";
 
 export const createTool = createToolGroup("BrowserRendering", {
   name: "Browser Rendering",
@@ -56,11 +58,13 @@ function getDateBasedPath(type: "screenshots" | "pdfs"): string {
 }
 
 // Helper to build Cloudflare auth headers
-function buildCloudflareAuthHeaders(env: ReturnType<typeof getEnv>): Record<string, string> {
+function buildCloudflareAuthHeaders(
+  env: ReturnType<typeof getEnv>,
+): Record<string, string> {
   const headers: Record<string, string> = {
     "Content-Type": "application/json",
   };
-  
+
   // Prefer dedicated browser rendering token if available
   if (env.CF_API_BROWSER_RENDERING) {
     headers["Authorization"] = `Bearer ${env.CF_API_BROWSER_RENDERING}`;
@@ -121,15 +125,12 @@ Examples:
   }),
   // @ts-expect-error - Return type mismatch with dimensions being optional
   handler: async (props, c: AppContext) => {
+    await assertWorkspaceResourceAccess(c);
     c.resourceAccess.grant();
 
     const env = getEnv(c);
     const { url, html, selector, viewport, screenshotOptions, gotoOptions } =
       props;
-
-    // Debug: Log what we received
-    console.log('[BROWSER_SCREENSHOT] Received props:', JSON.stringify(props, null, 2));
-    console.log('[BROWSER_SCREENSHOT] Destructured - url:', url, 'html:', html);
 
     // Manual validation since MCP layer might not enforce Zod refine rules
     if (!url && !html) {
@@ -161,7 +162,7 @@ Examples:
     } else if (html) {
       requestBody.html = html;
     }
-    
+
     // Add optional fields
     if (selector) requestBody.selector = selector;
     if (viewport) requestBody.viewport = viewport;
@@ -169,13 +170,17 @@ Examples:
     if (gotoOptions) requestBody.gotoOptions = gotoOptions;
 
     // Debug log to see what's being sent
-    console.log('[BROWSER_SCREENSHOT] Request body:', JSON.stringify(requestBody, null, 2));
+    console.log(
+      "[BROWSER_SCREENSHOT] Request body:",
+      JSON.stringify(requestBody, null, 2),
+    );
 
     // Call Cloudflare Browser Rendering API with timeout
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 30000); // 30s timeout
 
     try {
+      console.log("[BROWSER_SCREENSHOT] Calling Cloudflare API...");
       const response = await fetch(
         `https://api.cloudflare.com/client/v4/accounts/${env.CF_ACCOUNT_ID}/browser-rendering/screenshot`,
         {
@@ -185,6 +190,8 @@ Examples:
           signal: controller.signal,
         },
       );
+
+      console.log("[BROWSER_SCREENSHOT] Got response:", response.status);
 
       if (!response.ok) {
         const errorText = await response.text();
@@ -228,7 +235,16 @@ Examples:
       }
 
       const imageBuffer = await response.arrayBuffer();
+      console.log(
+        "[BROWSER_SCREENSHOT] Got image buffer, size:",
+        imageBuffer.byteLength,
+        "bytes",
+      );
       const imageType = screenshotOptions?.type || "png";
+
+      // Convert to base64 for inline display
+      const base64Image = Buffer.from(imageBuffer).toString("base64");
+      const dataUrl = `data:image/${imageType};base64,${base64Image}`;
 
       // Generate date-based path
       const datePath = getDateBasedPath("screenshots");
@@ -238,71 +254,130 @@ Examples:
       const storagePath = `${datePath}/${filename}`;
       const metadataPath = `${datePath}/${timestamp}-${uuid}.meta.json`;
 
-      // Upload screenshot to R2 via FS_WRITE
-      const MCPClient = await import("../../fetcher.ts").then(
-        (m) => m.MCPClient,
-      );
-      // @ts-expect-error - MCPClient type inference issue with forContext
-      const { url: uploadUrl } = await MCPClient.forContext(c).FS_WRITE({
-        path: storagePath,
-        contentType: `image/${imageType}`,
-      });
+      console.log("[BROWSER_SCREENSHOT] Saving to storage path:", storagePath);
 
-      await fetch(uploadUrl, {
-        method: "PUT",
-        body: imageBuffer,
-        headers: {
-          "Content-Type": `image/${imageType}`,
-        },
-      });
+      // Upload screenshot to R2 via native FS_WRITE tool
+      try {
+        // Call the native FS tool handler directly
+        const writeResult = await writeFile.handler({
+          path: storagePath,
+          contentType: `image/${imageType}`,
+        });
 
-      // Create metadata
-      const dimensions = viewport
-        ? { width: viewport.width, height: viewport.height }
-        : undefined;
-      const metadata = {
-        sourceUrl: url,
-        dimensions,
-        capturedAt: new Date().toISOString(),
-        format: imageType,
-        options: requestBody,
-        userId: c.user?.id,
-      };
+        console.log("[BROWSER_SCREENSHOT] FS_WRITE result:", writeResult);
 
-      // Store metadata as JSON file
-      // @ts-expect-error - MCPClient type inference issue with forContext
-      const { url: metadataUploadUrl } = await MCPClient.forContext(c).FS_WRITE(
-        {
+        if (!writeResult?.url) {
+          throw new Error("FS_WRITE did not return an upload URL");
+        }
+
+        const uploadResponse = await fetch(writeResult.url, {
+          method: "PUT",
+          body: imageBuffer,
+          headers: {
+            "Content-Type": `image/${imageType}`,
+          },
+        });
+
+        console.log(
+          "[BROWSER_SCREENSHOT] Upload response status:",
+          uploadResponse.status,
+        );
+
+        if (!uploadResponse.ok) {
+          throw new Error(
+            `Failed to upload screenshot: ${uploadResponse.statusText}`,
+          );
+        }
+
+        // Create metadata
+        const dimensions = viewport
+          ? { width: viewport.width, height: viewport.height }
+          : undefined;
+        const metadata = {
+          sourceUrl: url,
+          dimensions,
+          capturedAt: new Date().toISOString(),
+          format: imageType,
+          options: requestBody,
+          userId: c.user?.id,
+        };
+
+        // Store metadata as JSON file
+        const metadataWriteResult = await writeFile.handler({
           path: metadataPath,
           contentType: "application/json",
-        },
-      );
+        });
 
-      await fetch(metadataUploadUrl, {
-        method: "PUT",
-        body: JSON.stringify(metadata, null, 2),
-        headers: {
-          "Content-Type": "application/json",
-        },
-      });
+        if (metadataWriteResult?.url) {
+          await fetch(metadataWriteResult.url, {
+            method: "PUT",
+            body: JSON.stringify(metadata, null, 2),
+            headers: {
+              "Content-Type": "application/json",
+            },
+          });
+        }
 
-      // Construct public URL
-      const Hosts = await import("../../hosts.ts").then((m) => m.Hosts);
-      const locator = c.workspace?.value;
-      const publicUrl = `https://${Hosts.API_LEGACY}/files/${locator}/${storagePath}`;
+        // Construct public URL
+        const Hosts = await import("../../hosts.ts").then((m) => m.Hosts);
+        const locator = c.workspace?.value;
+        const publicUrl = `https://${Hosts.API_LEGACY}/files/${locator}/${storagePath}`;
 
-      return {
-        screenshot: {
-          url: publicUrl,
-          path: storagePath,
-          metadata: {
-            sourceUrl: url,
-            dimensions,
-            capturedAt: new Date().toISOString(),
-            format: imageType,
+        console.log("[BROWSER_SCREENSHOT] Public URL:", publicUrl);
+
+        // Return with MCP content format for chat display
+        return {
+          content: [
+            {
+              type: "image",
+              data: dataUrl,
+              mimeType: `image/${imageType}`,
+            },
+            {
+              type: "text",
+              text: `Screenshot captured successfully!\nURL: ${url}\nSaved to: ${storagePath}\nView: ${publicUrl}`,
+            },
+          ],
+          screenshot: {
+            url: publicUrl,
+            path: storagePath,
+            metadata: {
+              sourceUrl: url,
+              dimensions,
+              capturedAt: new Date().toISOString(),
+              format: imageType,
+            },
           },
-        },
-      };
+        };
+      } catch (error) {
+        console.error("[BROWSER_SCREENSHOT] Storage error:", error);
+        // Even if storage fails, return the image
+        return {
+          content: [
+            {
+              type: "image",
+              data: dataUrl,
+              mimeType: `image/${imageType}`,
+            },
+            {
+              type: "text",
+              text: `Screenshot captured from ${url}\n\n⚠️ Note: Failed to save to storage: ${error instanceof Error ? error.message : String(error)}`,
+            },
+          ],
+          screenshot: {
+            url: dataUrl,
+            path: "",
+            metadata: {
+              sourceUrl: url,
+              dimensions: viewport
+                ? { width: viewport.width, height: viewport.height }
+                : undefined,
+              capturedAt: new Date().toISOString(),
+              format: imageType,
+            },
+          },
+        };
+      }
     } finally {
       clearTimeout(timeoutId);
     }
@@ -341,6 +416,7 @@ Examples:
     }),
   }),
   handler: async (props, c: AppContext) => {
+    await assertWorkspaceResourceAccess(c);
     c.resourceAccess.grant();
 
     const env = getEnv(c);
@@ -469,6 +545,7 @@ Example: { "url": "https://example.com" }`,
     }),
   }),
   handler: async (props, c: AppContext) => {
+    await assertWorkspaceResourceAccess(c);
     c.resourceAccess.grant();
 
     const env = getEnv(c);
@@ -524,6 +601,7 @@ Example: { "url": "https://example.com", "selectors": { "title": "h1", "price": 
     }),
   }),
   handler: async (props, c: AppContext) => {
+    await assertWorkspaceResourceAccess(c);
     c.resourceAccess.grant();
 
     const env = getEnv(c);
@@ -599,13 +677,56 @@ export const listScreenshots = createTool({
       }),
     ),
   }),
-  handler: async (_props, c: AppContext) => {
+  handler: async (props, c: AppContext) => {
+    await assertWorkspaceResourceAccess(c);
     c.resourceAccess.grant();
 
-    // TODO: Implement screenshot listing once filesystem storage is set up
-    // Should use FS_LIST to enumerate screenshots in the browser-rendering directory
-    // and parse metadata from .meta.json files
-    return { screenshots: [] };
+    const { prefix, limit = 100 } = props;
+    const searchPrefix = prefix || "browser-rendering/screenshots/";
+
+    console.log(
+      "[BROWSER_SCREENSHOTS_LIST] Starting with prefix:",
+      searchPrefix,
+    );
+
+    try {
+      // Use native FS_LIST tool
+      const listResult = await listFiles.handler({ prefix: searchPrefix });
+
+      console.log("[BROWSER_SCREENSHOTS_LIST] FS_LIST returned:", listResult);
+
+      // Filter for image files only
+      const imageFiles = (listResult.items || []).filter((item) => {
+        const key = item.key;
+        return key.match(/\.(png|jpeg|jpg)$/i) && !key.endsWith(".meta.json");
+      });
+
+      console.log(
+        "[BROWSER_SCREENSHOTS_LIST] Filtered image files:",
+        imageFiles.length,
+      );
+
+      // Convert to screenshot objects
+      const Hosts = await import("../../hosts.ts").then((m) => m.Hosts);
+      const locator = c.workspace?.value;
+
+      const screenshots = imageFiles.slice(0, limit).map((item) => ({
+        path: item.key,
+        url: `https://${Hosts.API_LEGACY}/files/${locator}/${item.key}`,
+        lastModified: item.lastModified || new Date().toISOString(),
+        size: item.size || 0,
+      }));
+
+      console.log(
+        "[BROWSER_SCREENSHOTS_LIST] Returning screenshots:",
+        screenshots.length,
+      );
+
+      return { screenshots };
+    } catch (error) {
+      console.error("[BROWSER_SCREENSHOTS_LIST] Error:", error);
+      throw error;
+    }
   },
 });
 
@@ -620,28 +741,32 @@ export const deleteScreenshot = createTool({
     success: z.boolean(),
   }),
   handler: async (props, c: AppContext) => {
-    c.resourceAccess.grant();
-
     const { path } = props;
 
-    // Validate path is in browser-rendering directory
+    // 1. Validate path is in browser-rendering directory
     if (!path.startsWith("browser-rendering/")) {
       throw new Error("Invalid path: must be in browser-rendering directory");
     }
 
-    const MCPClient = await import("../../fetcher.ts").then((m) => m.MCPClient);
+    // 2. Ensure user is authenticated
+    assertHasUser(c);
 
-    // Delete the screenshot file
-    // @ts-expect-error - MCPClient type inference issue with forContext
-    await MCPClient.forContext(c).FS_DELETE({ path });
+    // 3. For now, rely on workspace resource access for authorization
+    // TODO: In the future, read metadata to check ownership
+    await assertWorkspaceResourceAccess(c);
 
-    // Delete metadata file if it exists
+    // 4. Authorization successful - grant resource access
+    c.resourceAccess.grant();
+
+    // 5. Delete the screenshot file using native FS tool
+    await deleteFile.handler({ path });
+
+    // 6. Delete metadata file if it exists
     const metadataPath = path.replace(/\.(png|jpeg|pdf)$/, ".meta.json");
     try {
-      // @ts-expect-error - MCPClient type inference issue with forContext
-      await MCPClient.forContext(c).FS_DELETE({ path: metadataPath });
+      await deleteFile.handler({ path: metadataPath });
     } catch {
-      // Metadata file might not exist, that's okay
+      // Metadata file might not exist or already deleted, that's okay
     }
 
     return { success: true };

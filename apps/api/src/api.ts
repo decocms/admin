@@ -408,7 +408,6 @@ const proxy = (
     );
 
     const callTool = compose(...(middlewares?.callTool ?? []), async (req) => {
-      console.log('[MCP callTool] req.params:', JSON.stringify(req.params, null, 2));
       return (
         await client({
           tool: req.params.name,

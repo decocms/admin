@@ -38,17 +38,14 @@ const inflightCalls = new Map<string, Promise<any>>();
 // Default timeout for tool calls (3 minutes)
 const DEFAULT_TOOL_TIMEOUT = 180_000;
 
-// Periodic cleanup interval (every 5 minutes)
-const CLEANUP_INTERVAL = 300_000;
-
 // Maximum age for stale entries (10 minutes)
 const MAX_ENTRY_AGE = 600_000;
 
 // Track entry creation times for cleanup
 const entryTimestamps = new Map<string, number>();
 
-// Periodic cleanup of stale in-flight calls to prevent memory leaks
-setInterval(() => {
+// Cleanup stale in-flight calls inline (can't use setInterval in CF Workers global scope)
+function cleanupStaleEntries() {
   const now = Date.now();
   for (const [key, timestamp] of entryTimestamps.entries()) {
     if (now - timestamp > MAX_ENTRY_AGE) {
@@ -56,7 +53,7 @@ setInterval(() => {
       entryTimestamps.delete(key);
     }
   }
-}, CLEANUP_INTERVAL);
+}
 
 // Wrap a promise with a timeout
 function withTimeout<T>(promise: Promise<T>, timeoutMs: number): Promise<T> {
@@ -126,6 +123,9 @@ export function createMCPClientProxy<T extends Record<string, unknown>>(
         throw new Error("Name must be a string");
       }
       async function callToolFn(args: unknown) {
+        // Opportunistic cleanup of stale entries on each call
+        cleanupStaleEntries();
+
         // Check for in-flight request with same tool name and args
         const cacheKey = getCacheKey(String(name), args);
         const existingCall = inflightCalls.get(cacheKey);

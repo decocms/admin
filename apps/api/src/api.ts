@@ -654,13 +654,14 @@ app.use(async (c, next) => {
 
 app.use(withActorsMiddleware);
 
-app.post(`/contracts/mcp`, createMCPHandlerFor(CONTRACTS_TOOLS));
-// Handle /contracts/mcp/tool/:toolName for CDN filtering
-app.post(`/contracts/mcp/tool/:toolName`, createMCPHandlerFor(CONTRACTS_TOOLS));
+// Create handlers once and reuse them for multiple routes to reduce heap allocation
+const contractsMcpHandler = createMCPHandlerFor(CONTRACTS_TOOLS);
+app.post(`/contracts/mcp`, contractsMcpHandler);
+app.post(`/contracts/mcp/tool/:toolName`, contractsMcpHandler);
 
-app.post(`/deconfig/mcp`, createMCPHandlerFor(DECONFIG_TOOLS));
-// Handle /deconfig/mcp/tool/:toolName for CDN filtering
-app.post(`/deconfig/mcp/tool/:toolName`, createMCPHandlerFor(DECONFIG_TOOLS));
+const deconfigMcpHandler = createMCPHandlerFor(DECONFIG_TOOLS);
+app.post(`/deconfig/mcp`, deconfigMcpHandler);
+app.post(`/deconfig/mcp/tool/:toolName`, deconfigMcpHandler);
 app.get(`/:org/:project/deconfig/watch`, async (ctx) => {
   const appCtx = honoCtxToAppCtx(ctx);
   return await watchSSE(appCtx, {
@@ -678,9 +679,9 @@ app.get(`/:org/:project/deconfig/watch`, async (ctx) => {
   });
 });
 
-app.all("/mcp", createMCPHandlerFor(GLOBAL_TOOLS));
-// Handle /mcp/tool/:toolName for CDN filtering
-app.all("/mcp/tool/:toolName", createMCPHandlerFor(GLOBAL_TOOLS));
+const globalMcpHandler = createMCPHandlerFor(GLOBAL_TOOLS);
+app.all("/mcp", globalMcpHandler);
+app.all("/mcp/tool/:toolName", globalMcpHandler);
 
 app.get("/mcp/groups", (ctx) => {
   return ctx.json(getApps());
@@ -1035,41 +1036,31 @@ const createSelfTools = async (ctx: Context) => {
   return [...customTools, ...workflowTools];
 };
 
-app.all("/:org/:project/mcp", createMCPHandlerFor(projectTools));
-// Handle /:org/:project/mcp/tool/:toolName for CDN filtering
-app.all("/:org/:project/mcp/tool/:toolName", createMCPHandlerFor(projectTools));
+const projectMcpHandler = createMCPHandlerFor(projectTools);
+app.all("/:org/:project/mcp", projectMcpHandler);
+app.all("/:org/:project/mcp/tool/:toolName", projectMcpHandler);
 
-app.all("/:org/:project/agents/:agentId/mcp", createMCPHandlerFor(AGENT_TOOLS));
-// Handle /:org/:project/agents/:agentId/mcp/tool/:toolName for CDN filtering
-app.all(
-  "/:org/:project/agents/:agentId/mcp/tool/:toolName",
-  createMCPHandlerFor(AGENT_TOOLS),
-);
+const agentMcpHandler = createMCPHandlerFor(AGENT_TOOLS);
+app.all("/:org/:project/agents/:agentId/mcp", agentMcpHandler);
+app.all("/:org/:project/agents/:agentId/mcp/tool/:toolName", agentMcpHandler);
 
 // Tool call endpoint handlers
-app.post("/tools/call/:tool", createToolCallHandlerFor(GLOBAL_TOOLS));
+const globalToolCallHandler = createToolCallHandlerFor(GLOBAL_TOOLS);
+app.post("/tools/call/:tool", globalToolCallHandler);
 
-app.post(
-  "/:org/:project/tools/call/:tool",
-  createToolCallHandlerFor(projectTools),
-);
+const projectToolCallHandler = createToolCallHandlerFor(projectTools);
+app.post("/:org/:project/tools/call/:tool", projectToolCallHandler);
 
-app.post(
-  `/:org/:project/${WellKnownMcpGroups.Email}/mcp`,
-  createMCPHandlerFor(EMAIL_TOOLS),
-);
-// Handle /:org/:project/email/mcp/tool/:toolName for CDN filtering
+const emailMcpHandler = createMCPHandlerFor(EMAIL_TOOLS);
+app.post(`/:org/:project/${WellKnownMcpGroups.Email}/mcp`, emailMcpHandler);
 app.post(
   `/:org/:project/${WellKnownMcpGroups.Email}/mcp/tool/:toolName`,
-  createMCPHandlerFor(EMAIL_TOOLS),
+  emailMcpHandler,
 );
 
-app.post("/:org/:project/self/mcp", createMCPHandlerFor(createSelfTools));
-// Handle /:org/:project/self/mcp/tool/:toolName for CDN filtering
-app.post(
-  "/:org/:project/self/mcp/tool/:toolName",
-  createMCPHandlerFor(createSelfTools),
-);
+const selfMcpHandler = createMCPHandlerFor(createSelfTools);
+app.post("/:org/:project/self/mcp", selfMcpHandler);
+app.post("/:org/:project/self/mcp/tool/:toolName", selfMcpHandler);
 
 app.post("/:org/:project/:integrationId/mcp", async (c) => {
   const mcpServerProxy = await createMcpServerProxy(c);

@@ -1,127 +1,200 @@
 // ingest-docs-pinecone.ts
-// Reindex EVERYTHING from the DOCS_DIR directory into a Pinecone index with integrated embedding.
-// - Chunking: LangChain RecursiveCharacterTextSplitter
-// - Embedding: Pinecone automatically generates via integrated embedding
-// - Upsert: uses upsertRecords() sending text + metadata
+// Upload files from DOCS_DIR directly to a Pinecone Assistant.
+// Pinecone Assistant handles chunking and embedding automatically.
 //
-// ENV obrigatórios:
+// ENV required:
 //   PINECONE_API_KEY
-//   PINECONE_INDEX_NAME 
+//   PINECONE_ASSISTANT_NAME
 // Optional ENV:
-//   NAMESPACE=docs
 //   DOCS_DIR=docs
-//   EXTENSIONS=.md,.mdx,.txt
-//   MAX_FILE_MB=2
-//   CHUNK_SIZE=2800
-//   CHUNK_OVERLAP=300
-//   BATCH_SIZE=500
-//   DELETE_ALL=false    
+//   EXTENSIONS=.md,.txt,.pdf,.docx,.json (Pinecone Assistant supported types)
+//   MAX_FILE_MB=10
+//   DELETE_ALL=false
+//   UPLOAD_DELAY_MS=500 (delay between uploads to avoid rate limits)
+//   MAX_RETRIES=3
+//   CONVERT_MDX=true (convert .mdx files to .md before upload)
 //
 // Execution:
-//   npx tsx scripts/ingest-docs-pinecone.ts
+//   npx tsx -r dotenv/config scripts/ingest-docs-pinecone.ts
 
 import { Pinecone } from "@pinecone-database/pinecone";
 import fg from "fast-glob";
 import fs from "node:fs/promises";
 import path from "node:path";
-import { RecursiveCharacterTextSplitter } from "@langchain/textsplitters";
 
-// Tipo para upsertRecords com integrated embedding
-type TextRecord = {
-  _id: string;
-  text: string;
-  path: string;
-  [key: string]: unknown;
-};
 
 const PINECONE_API_KEY = process.env.PINECONE_API_KEY!;
-const PINECONE_INDEX_NAME = process.env.PINECONE_INDEX_NAME!;
+const PINECONE_ASSISTANT_NAME = process.env.PINECONE_ASSISTANT_NAME!;
 
 if (!PINECONE_API_KEY) throw new Error("Define PINECONE_API_KEY");
-if (!PINECONE_INDEX_NAME) throw new Error("Define PINECONE_INDEX_NAME (index name)");
+if (!PINECONE_ASSISTANT_NAME) throw new Error("Define PINECONE_ASSISTANT_NAME (assistant name)");
 
-const NAMESPACE = process.env.NAMESPACE || "docs";
 const DOCS_DIR = process.env.DOCS_DIR || "docs";
-const EXTENSIONS = (process.env.EXTENSIONS || ".md,.mdx,.txt")
+const EXTENSIONS = (process.env.EXTENSIONS || ".md,.txt,.pdf,.docx,.json")
   .split(",")
   .map((s) => s.trim().toLowerCase())
   .filter(Boolean);
 
-const MAX_FILE_MB = Number(process.env.MAX_FILE_MB || "2");
-const CHUNK_SIZE = Number(process.env.CHUNK_SIZE || "2800");
-const CHUNK_OVERLAP = Number(process.env.CHUNK_OVERLAP || "300");
-const BATCH_SIZE = Number(process.env.BATCH_SIZE || "500");
-const DELETE_ALL = String(process.env.DELETE_ALL || "true").toLowerCase() === "true";
+const MAX_FILE_MB = Number(process.env.MAX_FILE_MB || "10");
+const DELETE_ALL = String(process.env.DELETE_ALL || "false").toLowerCase() === "true";
+const UPLOAD_DELAY_MS = Number(process.env.UPLOAD_DELAY_MS || "2000");
+const MAX_RETRIES = Number(process.env.MAX_RETRIES || "3");
+const CONVERT_MDX = String(process.env.CONVERT_MDX || "true").toLowerCase() === "true";
 
 const bytesLimit = MAX_FILE_MB * 1024 * 1024;
 
+const SEARCH_EXTENSIONS = CONVERT_MDX
+  ? [...EXTENSIONS, ".mdx"]
+  : EXTENSIONS;
+
 function shouldKeep(file: string): boolean {
   const ext = path.extname(file).toLowerCase();
-  return EXTENSIONS.includes(ext);
+  return SEARCH_EXTENSIONS.includes(ext);
 }
 
-async function readIfSmall(file: string): Promise<string | null> {
+async function checkFileSize(file: string): Promise<boolean> {
   try {
     const stat = await fs.stat(file);
     if (stat.size > bytesLimit) {
-      console.warn(`Skip por tamanho (${(stat.size / 1024 / 1024).toFixed(2)}MB): ${file}`);
-      return null;
+      console.warn(`Skip due to size (${(stat.size / 1024 / 1024).toFixed(2)}MB): ${file}`);
+      return false;
     }
-    const raw = await fs.readFile(file, "utf8");
-    if (!raw.trim()) return null;
-    return raw;
+    if (stat.size === 0) {
+      console.warn(`Skip empty file: ${file}`);
+      return false;
+    }
+    return true;
   } catch {
-    return null;
+    return false;
   }
 }
 
-const splitter = new RecursiveCharacterTextSplitter({
-  chunkSize: CHUNK_SIZE,
-  chunkOverlap: CHUNK_OVERLAP,
-});
+function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+async function uploadWithRetry(
+  assistant: any,
+  file: string,
+  normalizedPath: string,
+  retries = MAX_RETRIES
+): Promise<boolean> {
+  const isMdx = file.toLowerCase().endsWith(".mdx");
+  let uploadPath = file;
+  let tempFile: string | null = null;
+
+  if (isMdx && CONVERT_MDX) {
+    tempFile = file.replace(/\.mdx$/i, ".md");
+    try {
+      await fs.copyFile(file, tempFile);
+      uploadPath = tempFile;
+    } catch (error) {
+      console.error(`❌ Error creating temporary copy of ${normalizedPath}:`, error);
+      return false;
+    }
+  }
+
+  try {
+    for (let attempt = 1; attempt <= retries; attempt++) {
+      try {
+        await assistant.uploadFile({
+          path: uploadPath,
+          metadata: {
+            source_path: normalizedPath,
+            upload_date: new Date().toISOString(),
+          },
+        });
+        return true;
+      } catch (error: any) {
+        const isRateLimit = error?.status === 429 || error?.message?.includes("Too many");
+        const isInvalidType = error?.message?.includes("Invalid file type");
+
+        if (isInvalidType) {
+          console.error(`❌ Unsupported file type: ${normalizedPath}`);
+          return false;
+        }
+
+        if (isRateLimit && attempt < retries) {
+          const backoffMs = UPLOAD_DELAY_MS * Math.pow(2, attempt - 1);
+          console.warn(`⚠️  Rate limit reached. Waiting ${backoffMs}ms before retry (${attempt}/${retries})...`);
+          await sleep(backoffMs);
+          continue;
+        }
+
+        console.error(`❌ Error uploading ${normalizedPath}:`, error.message || error);
+        return false;
+      }
+    }
+    return false;
+  } finally {
+    if (tempFile) {
+      try {
+        await fs.unlink(tempFile);
+      } catch {
+      }
+    }
+  }
+}
 
 async function main() {
   const pc = new Pinecone({ apiKey: PINECONE_API_KEY });
-  const index = pc.Index(PINECONE_INDEX_NAME);
-
-  if (DELETE_ALL) {
-    console.log(`Cleaning namespace "${NAMESPACE}"...`);
-    await index.namespace(NAMESPACE).deleteAll();
-  }
+  const assistant = pc.assistant(PINECONE_ASSISTANT_NAME);
 
   const pattern = [`${DOCS_DIR.replaceAll(path.sep, "/")}/**/*`];
   const files = await fg(pattern, { onlyFiles: true, dot: false });
 
   const picked = files.filter(shouldKeep);
-  console.log(`Files candidates: ${picked.length} (exts: ${EXTENSIONS.join(", ")})`);
+  const extsList = CONVERT_MDX ? [...EXTENSIONS, ".mdx (→ .md)"].join(", ") : EXTENSIONS.join(", ");
+  console.log(`Candidate files: ${picked.length} (exts: ${extsList})`);
 
-  const records: TextRecord[] = [];
+  if (DELETE_ALL) {
+    console.log(`\nDeleting existing files with matching names...`);
+    const existingFilesResponse = await assistant.listFiles();
+    const existingFiles = existingFilesResponse.files || [];
 
-  for (const file of picked) {
-    const text = await readIfSmall(file);
-    if (!text) continue;
+    const localPaths = new Set(
+      picked.map((file) => file.replaceAll(path.sep, "/"))
+    );
+
+    let deleted = 0;
+    for (const file of existingFiles) {
+      const sourcePath = file.metadata?.source_path;
+      if (sourcePath && localPaths.has(sourcePath)) {
+        await assistant.deleteFile(file.id);
+        console.log(`Deleted: ${file.name} (${sourcePath})`);
+        deleted++;
+      }
+    }
+    console.log(`Deleted ${deleted} existing file(s).\n`);
+  }
+
+  let uploaded = 0;
+  let skipped = 0;
+
+  for (let i = 0; i < picked.length; i++) {
+    const file = picked[i];
+    const isValid = await checkFileSize(file);
+    if (!isValid) {
+      skipped++;
+      continue;
+    }
 
     const normalizedPath = file.replaceAll(path.sep, "/");
-    const docs = await splitter.createDocuments([text], [{ path: normalizedPath }]);
 
-    docs.forEach((d, i) => {
-      records.push({
-        _id: `${normalizedPath}#chunk=${i}`,
-        text: d.pageContent,
-        path: normalizedPath,
-      });
-    });
+    const success = await uploadWithRetry(assistant, file, normalizedPath);
+    if (success) {
+      uploaded++;
+      console.log(`[${uploaded}/${picked.length}] Uploaded: ${normalizedPath}`);
+    } else {
+      skipped++;
+    }
+
+    if (i < picked.length - 1) {
+      await sleep(UPLOAD_DELAY_MS);
+    }
   }
 
-  console.log(`Total chunks: ${records.length}`);
-
-  for (let i = 0; i < records.length; i += BATCH_SIZE) {
-    const batch = records.slice(i, i + BATCH_SIZE);
-    await index.namespace(NAMESPACE).upsertRecords(batch);
-    console.log(`Upserted ${Math.min(i + BATCH_SIZE, records.length)}/${records.length}`);
-  }
-
-  console.log(`Completed. Namespace: ${NAMESPACE}. Files: ${picked.length}. Chunks: ${records.length}`);
+  console.log(`\nCompleted. Assistant: ${PINECONE_ASSISTANT_NAME}. Uploaded: ${uploaded}. Skipped: ${skipped}.`);
 }
 
 main().catch((e) => {

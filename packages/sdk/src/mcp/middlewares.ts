@@ -103,6 +103,7 @@ export const withMCPErrorHandling = <
   toolName: string,
 ) =>
   wrapToolFn(async (props: TInput) => {
+    console.log(`[withMCPErrorHandling] ${toolName} received props:`, JSON.stringify(props, null, 2));
     try {
       const result = await f(props);
 

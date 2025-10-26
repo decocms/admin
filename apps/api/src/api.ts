@@ -229,18 +229,29 @@ const createMCPHandlerFor = (
           ? tool.outputSchema.schema
           : tool.outputSchema;
 
+      // Unwrap ZodEffects (from .refine(), .transform(), etc.) to get the base schema
+      const unwrapSchema = (schema: z.ZodTypeAny): z.ZodTypeAny => {
+        if (schema instanceof z.ZodEffects) {
+          return unwrapSchema(schema.innerType());
+        }
+        return schema;
+      };
+
+      const baseInputSchema = unwrapSchema(evalInputSchema);
+      const baseOutputSchema = unwrapSchema(evalOutputSchema);
+
       server.registerTool(
         tool.name,
         {
           annotations: tool.annotations,
           description: tool.description,
           inputSchema:
-            "shape" in evalInputSchema
-              ? (evalInputSchema.shape as z.ZodRawShape)
+            "shape" in baseInputSchema
+              ? (baseInputSchema.shape as z.ZodRawShape)
               : z.object({}).shape,
           outputSchema:
-            evalOutputSchema && "shape" in evalOutputSchema
-              ? (evalOutputSchema.shape as z.ZodRawShape)
+            baseOutputSchema && "shape" in baseOutputSchema
+              ? (baseOutputSchema.shape as z.ZodRawShape)
               : z.object({}).shape,
         },
         // @ts-expect-error: zod shape is not typed
@@ -397,6 +408,7 @@ const proxy = (
     );
 
     const callTool = compose(...(middlewares?.callTool ?? []), async (req) => {
+      console.log('[MCP callTool] req.params:', JSON.stringify(req.params, null, 2));
       return (
         await client({
           tool: req.params.name,

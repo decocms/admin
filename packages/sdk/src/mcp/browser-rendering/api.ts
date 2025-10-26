@@ -55,6 +55,22 @@ function getDateBasedPath(type: "screenshots" | "pdfs"): string {
   return `browser-rendering/${type}/${year}/${month}/${day}`;
 }
 
+// Helper to build Cloudflare auth headers
+function buildCloudflareAuthHeaders(env: ReturnType<typeof getEnv>): Record<string, string> {
+  const headers: Record<string, string> = {
+    "Content-Type": "application/json",
+  };
+  
+  // Prefer dedicated browser rendering token if available
+  if (env.CF_API_BROWSER_RENDERING) {
+    headers["Authorization"] = `Bearer ${env.CF_API_BROWSER_RENDERING}`;
+  } else if (env.CF_API_TOKEN) {
+    // Fall back to general CF_API_TOKEN
+    headers["Authorization"] = `Bearer ${env.CF_API_TOKEN}`;
+  }
+  return headers;
+}
+
 // BROWSER_SCREENSHOT tool
 export const browserScreenshot = createTool({
   name: "BROWSER_SCREENSHOT",
@@ -82,6 +98,9 @@ Examples:
     })
     .refine((data) => data.url || data.html, {
       message: "Either url or html must be provided",
+    })
+    .refine((data) => !(data.url && data.html), {
+      message: "Cannot provide both url and html - choose one",
     }),
   outputSchema: z.object({
     screenshot: z.object({
@@ -108,6 +127,18 @@ Examples:
     const { url, html, selector, viewport, screenshotOptions, gotoOptions } =
       props;
 
+    // Debug: Log what we received
+    console.log('[BROWSER_SCREENSHOT] Received props:', JSON.stringify(props, null, 2));
+    console.log('[BROWSER_SCREENSHOT] Destructured - url:', url, 'html:', html);
+
+    // Manual validation since MCP layer might not enforce Zod refine rules
+    if (!url && !html) {
+      throw new Error("Either 'url' or 'html' must be provided");
+    }
+    if (url && html) {
+      throw new Error("Cannot provide both 'url' and 'html' - choose one");
+    }
+
     // Validate required credentials
     if (!env.CF_ACCOUNT_ID) {
       throw new Error(
@@ -121,35 +152,24 @@ Examples:
     }
 
     // Build request body for Cloudflare Browser Rendering API
+    // Only include the field that was actually provided (not both)
     const requestBody: Record<string, unknown> = {};
 
-    if (url) requestBody.url = url;
-    if (html) requestBody.html = html;
+    // Add url OR html (mutually exclusive per Cloudflare API requirements)
+    if (url) {
+      requestBody.url = url;
+    } else if (html) {
+      requestBody.html = html;
+    }
+    
+    // Add optional fields
     if (selector) requestBody.selector = selector;
     if (viewport) requestBody.viewport = viewport;
     if (screenshotOptions) requestBody.screenshotOptions = screenshotOptions;
     if (gotoOptions) requestBody.gotoOptions = gotoOptions;
 
-    // Helper to build auth headers – supports API Token or Global API Key
-    const buildAuthHeaders = () => {
-      const headers: Record<string, string> = {
-        "Content-Type": "application/json",
-      };
-      if (env.CF_API_TOKEN) {
-        headers["Authorization"] = `Bearer ${env.CF_API_TOKEN}`;
-      } else if (
-        // @ts-expect-error - CF_API_KEY/CF_API_EMAIL not in env type
-        env.CF_API_KEY &&
-        // @ts-expect-error - CF_API_KEY/CF_API_EMAIL not in env type
-        env.CF_API_EMAIL
-      ) {
-        // @ts-expect-error - CF_API_KEY/CF_API_EMAIL not in env type
-        headers["X-Auth-Key"] = env.CF_API_KEY;
-        // @ts-expect-error - CF_API_KEY/CF_API_EMAIL not in env type
-        headers["X-Auth-Email"] = env.CF_API_EMAIL;
-      }
-      return headers;
-    };
+    // Debug log to see what's being sent
+    console.log('[BROWSER_SCREENSHOT] Request body:', JSON.stringify(requestBody, null, 2));
 
     // Call Cloudflare Browser Rendering API with timeout
     const controller = new AbortController();
@@ -160,7 +180,7 @@ Examples:
         `https://api.cloudflare.com/client/v4/accounts/${env.CF_ACCOUNT_ID}/browser-rendering/screenshot`,
         {
           method: "POST",
-          headers: buildAuthHeaders(),
+          headers: buildCloudflareAuthHeaders(env),
           body: JSON.stringify(requestBody),
           signal: controller.signal,
         },
@@ -173,7 +193,7 @@ Examples:
           try {
             const verify = await fetch(
               "https://api.cloudflare.com/client/v4/user/tokens/verify",
-              { method: "GET", headers: buildAuthHeaders() },
+              { method: "GET", headers: buildCloudflareAuthHeaders(env) },
             );
             const verifyJson = await verify.json().catch(() => undefined);
             // @ts-expect-error - verifyJson shape not strictly typed
@@ -306,6 +326,9 @@ Examples:
     })
     .refine((data) => data.url || data.html, {
       message: "Either url or html must be provided",
+    })
+    .refine((data) => !(data.url && data.html), {
+      message: "Cannot provide both url and html - choose one",
     }),
   outputSchema: z.object({
     pdf: z.object({
@@ -323,9 +346,21 @@ Examples:
     const env = getEnv(c);
     const { url, html, viewport, gotoOptions } = props;
 
+    // Manual validation
+    if (!url && !html) {
+      throw new Error("Either 'url' or 'html' must be provided");
+    }
+    if (url && html) {
+      throw new Error("Cannot provide both 'url' and 'html' - choose one");
+    }
+
+    // Build request body - url OR html (mutually exclusive)
     const requestBody: Record<string, unknown> = {};
-    if (url) requestBody.url = url;
-    if (html) requestBody.html = html;
+    if (url) {
+      requestBody.url = url;
+    } else if (html) {
+      requestBody.html = html;
+    }
     if (viewport) requestBody.viewport = viewport;
     if (gotoOptions) requestBody.gotoOptions = gotoOptions;
 
@@ -338,10 +373,7 @@ Examples:
         `https://api.cloudflare.com/client/v4/accounts/${env.CF_ACCOUNT_ID}/browser-rendering/pdf`,
         {
           method: "POST",
-          headers: {
-            Authorization: `Bearer ${env.CF_API_TOKEN}`,
-            "Content-Type": "application/json",
-          },
+          headers: buildCloudflareAuthHeaders(env),
           body: JSON.stringify(requestBody),
           signal: controller.signal,
         },
@@ -449,10 +481,7 @@ Example: { "url": "https://example.com" }`,
       `https://api.cloudflare.com/client/v4/accounts/${env.CF_ACCOUNT_ID}/browser-rendering/content`,
       {
         method: "POST",
-        headers: {
-          Authorization: `Bearer ${env.CF_API_TOKEN}`,
-          "Content-Type": "application/json",
-        },
+        headers: buildCloudflareAuthHeaders(env),
         body: JSON.stringify(requestBody),
       },
     );
@@ -507,10 +536,7 @@ Example: { "url": "https://example.com", "selectors": { "title": "h1", "price": 
       `https://api.cloudflare.com/client/v4/accounts/${env.CF_ACCOUNT_ID}/browser-rendering/scrape`,
       {
         method: "POST",
-        headers: {
-          Authorization: `Bearer ${env.CF_API_TOKEN}`,
-          "Content-Type": "application/json",
-        },
+        headers: buildCloudflareAuthHeaders(env),
         body: JSON.stringify(requestBody),
       },
     );

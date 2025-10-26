@@ -220,6 +220,7 @@ const envSchema = z.object({
   CF_DISPATCH_NAMESPACE: z.string().readonly(),
   CF_ACCOUNT_ID: z.string().readonly(),
   CF_API_TOKEN: z.string().readonly(),
+  CF_API_BROWSER_RENDERING: z.string().optional().readonly(),
   CF_ZONE_ID: z.string().optional().readonly(),
   CF_R2_ACCESS_KEY_ID: z.any().optional().readonly(),
   CF_R2_SECRET_ACCESS_KEY: z.any().optional().readonly(),

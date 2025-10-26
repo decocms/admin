@@ -35,6 +35,42 @@ const toolsMap = new Map<
 // In-flight request deduplication cache
 const inflightCalls = new Map<string, Promise<any>>();
 
+// Default timeout for tool calls (3 minutes)
+const DEFAULT_TOOL_TIMEOUT = 180_000;
+
+// Periodic cleanup interval (every 5 minutes)
+const CLEANUP_INTERVAL = 300_000;
+
+// Maximum age for stale entries (10 minutes)
+const MAX_ENTRY_AGE = 600_000;
+
+// Track entry creation times for cleanup
+const entryTimestamps = new Map<string, number>();
+
+// Periodic cleanup of stale in-flight calls to prevent memory leaks
+setInterval(() => {
+  const now = Date.now();
+  for (const [key, timestamp] of entryTimestamps.entries()) {
+    if (now - timestamp > MAX_ENTRY_AGE) {
+      inflightCalls.delete(key);
+      entryTimestamps.delete(key);
+    }
+  }
+}, CLEANUP_INTERVAL);
+
+// Wrap a promise with a timeout
+function withTimeout<T>(promise: Promise<T>, timeoutMs: number): Promise<T> {
+  return Promise.race([
+    promise,
+    new Promise<T>((_, reject) =>
+      setTimeout(
+        () => reject(new Error(`Request timed out after ${timeoutMs}ms`)),
+        timeoutMs,
+      ),
+    ),
+  ]);
+}
+
 // Generate cache key for deduplication
 const getCacheKey = (toolName: string, args: unknown): string => {
   return `${toolName}:${JSON.stringify(args)}`;
@@ -97,44 +133,51 @@ export function createMCPClientProxy<T extends Record<string, unknown>>(
           return existingCall;
         }
 
-        // Create new request
-        const requestPromise = (async () => {
-          const debugId = options?.debugId?.();
-          const extraHeaders = debugId
-            ? { "x-trace-debug-id": debugId }
-            : undefined;
+        // Create new request with timeout
+        const requestPromise = withTimeout(
+          (async () => {
+            const debugId = options?.debugId?.();
+            const extraHeaders = debugId
+              ? { "x-trace-debug-id": debugId }
+              : undefined;
 
-          // Add tool name to URL path for better logging and CDN filtering
-          const connectionWithTool = addToolNameToUrl(connection, String(name));
+            // Add tool name to URL path for better logging and CDN filtering
+            const connectionWithTool = addToolNameToUrl(
+              connection,
+              String(name),
+            );
 
-          const client = await createServerClient(
-            { connection: connectionWithTool },
-            undefined,
-            extraHeaders,
-          );
+            const client = await createServerClient(
+              { connection: connectionWithTool },
+              undefined,
+              extraHeaders,
+            );
 
-          try {
-            const { structuredContent, isError, content } =
-              await client.callTool(
-                {
-                  name: String(name),
-                  arguments: args as Record<string, unknown>,
-                },
-                undefined,
-                {
-                  timeout: 3000000,
-                },
-              );
+            try {
+              const { structuredContent, isError, content } =
+                await client.callTool(
+                  {
+                    name: String(name),
+                    arguments: args as Record<string, unknown>,
+                  },
+                  undefined,
+                  {
+                    timeout: 3000000,
+                  },
+                );
 
-            return { structuredContent, isError, content };
-          } finally {
-            // Properly dispose of the MCP client to avoid RPC leaks
-            await client.close();
-          }
-        })();
+              return { structuredContent, isError, content };
+            } finally {
+              // Properly dispose of the MCP client to avoid RPC leaks
+              await client.close();
+            }
+          })(),
+          DEFAULT_TOOL_TIMEOUT,
+        );
 
-        // Store in cache
+        // Store in cache with timestamp
         inflightCalls.set(cacheKey, requestPromise);
+        entryTimestamps.set(cacheKey, Date.now());
 
         // Clean up after request completes
         try {
@@ -142,6 +185,7 @@ export function createMCPClientProxy<T extends Record<string, unknown>>(
           return result;
         } finally {
           inflightCalls.delete(cacheKey);
+          entryTimestamps.delete(cacheKey);
         }
       }
 

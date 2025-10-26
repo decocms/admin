@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useDeferredValue, useMemo, useState } from "react";
 import {
   useDeleteScreenshot,
   useScreenshots,
@@ -29,6 +29,8 @@ type DateFilter = "all" | "today" | "week" | "month";
 
 export function BrowserRenderingView() {
   const [searchTerm, setSearchTerm] = useState("");
+  // Use useDeferredValue to keep search input responsive during filtering
+  const deferredSearchTerm = useDeferredValue(searchTerm);
   const [dateFilter, setDateFilter] = useState<DateFilter>("all");
   const [selectedScreenshot, setSelectedScreenshot] = useState<string | null>(
     null,
@@ -36,19 +38,14 @@ export function BrowserRenderingView() {
 
   // Load screenshots
   const {
-    data: screenshots,
+    data: screenshots = [],
     isLoading,
+    isError,
     refetch,
-    error,
   } = useScreenshots({
     prefix: getDatePrefix(dateFilter),
     limit: 100,
   });
-
-  // Show error state
-  if (error) {
-    console.error("Failed to load screenshots:", error);
-  }
 
   const deleteMutation = useDeleteScreenshot();
 
@@ -120,18 +117,17 @@ export function BrowserRenderingView() {
   // Inject context into AI thread
   useSetThreadContextEffect(threadContextItems);
 
-  // Filter screenshots by search term
+  // Filter screenshots by search term (use deferred value for performance)
   const filteredScreenshots = useMemo(() => {
-    if (!screenshots) return [];
-    if (!searchTerm) return screenshots;
+    if (!deferredSearchTerm) return screenshots;
 
-    const lowerSearch = searchTerm.toLowerCase();
+    const lowerSearch = deferredSearchTerm.toLowerCase();
     return screenshots.filter(
       (screenshot) =>
         screenshot.metadata?.sourceUrl?.toLowerCase().includes(lowerSearch) ||
         screenshot.path.toLowerCase().includes(lowerSearch),
     );
-  }, [screenshots, searchTerm]);
+  }, [screenshots, deferredSearchTerm]);
 
   const handleDelete = async (path: string) => {
     if (!confirm("Are you sure you want to delete this screenshot?")) return;
@@ -204,15 +200,35 @@ export function BrowserRenderingView() {
               </Card>
             ))}
           </div>
+        ) : isError ? (
+          <div className="flex flex-col items-center justify-center h-full text-center p-8">
+            <Icon name="error" className="w-16 h-16 text-destructive mb-4" />
+            <h3 className="text-lg font-semibold mb-2">
+              Failed to load screenshots
+            </h3>
+            <p className="text-muted-foreground text-sm max-w-md mb-4">
+              There was an error loading your screenshots. Please try again.
+            </p>
+            <Button variant="outline" onClick={() => refetch()}>
+              <Icon name="refresh" className="w-4 h-4 mr-2" />
+              Retry
+            </Button>
+          </div>
         ) : filteredScreenshots.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-full text-center p-8">
             <Icon
               name="camera"
               className="w-16 h-16 text-muted-foreground mb-4"
             />
-            <h3 className="text-lg font-semibold mb-2">No screenshots yet</h3>
+            <h3 className="text-lg font-semibold mb-2">
+              {screenshots.length === 0
+                ? "No screenshots yet"
+                : "No matches found"}
+            </h3>
             <p className="text-muted-foreground text-sm max-w-md mb-4">
-              Use AI chat to capture screenshots, or use the MCP tools directly
+              {screenshots.length === 0
+                ? "Use AI chat to capture screenshots, or use the MCP tools directly"
+                : "Try adjusting your search or date filter"}
             </p>
             <Button variant="outline" onClick={() => refetch()}>
               <Icon name="refresh" className="w-4 h-4 mr-2" />
@@ -232,7 +248,7 @@ export function BrowserRenderingView() {
                 >
                   <img
                     src={screenshot.url}
-                    alt="Screenshot"
+                    alt={screenshot.metadata?.sourceUrl || "Screenshot"}
                     className="w-full h-full object-cover"
                     loading="lazy"
                   />
@@ -303,11 +319,7 @@ export function BrowserRenderingView() {
           </DialogHeader>
           <div className="relative w-full h-full overflow-auto">
             {selectedScreenshot && (
-              <img
-                src={selectedScreenshot}
-                alt="Screenshot"
-                className="w-full h-auto"
-              />
+              <img src={selectedScreenshot} alt="" className="w-full h-auto" />
             )}
           </div>
         </DialogContent>

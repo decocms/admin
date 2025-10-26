@@ -10,15 +10,20 @@ import {
   type DeleteScreenshotInput,
   type FetchHtmlInput,
   type GeneratePdfInput,
-  type ListScreenshotsInput,
   type ScrapeWebsiteInput,
 } from "../crud/browser-rendering.ts";
 import { useSDK } from "./store.tsx";
 
-// Query Keys
+// Query Keys - centralized for consistent cache management
 export const BROWSER_RENDERING_KEYS = {
-  screenshots: (locator?: string, prefix?: string) =>
-    ["browser-rendering", "screenshots", locator, prefix] as const,
+  screenshotsRoot: (locator?: string) =>
+    ["browser-rendering", "screenshots", locator] as const,
+  screenshots: (locator?: string, opts?: { prefix?: string; limit?: number }) =>
+    [
+      ...BROWSER_RENDERING_KEYS.screenshotsRoot(locator),
+      opts?.prefix,
+      opts?.limit,
+    ] as const,
 };
 
 // Hooks
@@ -26,7 +31,7 @@ export function useScreenshots(options?: { prefix?: string; limit?: number }) {
   const { locator } = useSDK();
 
   return useQuery({
-    queryKey: BROWSER_RENDERING_KEYS.screenshots(locator, options?.prefix),
+    queryKey: BROWSER_RENDERING_KEYS.screenshots(locator, options),
     queryFn: async () => {
       if (!locator) throw new Error("No locator available");
       try {
@@ -57,9 +62,9 @@ export function useCaptureScreenshot() {
       return captureScreenshot({ ...input, locator });
     },
     onSuccess: () => {
-      // Invalidate all screenshot queries
+      // Invalidate all screenshot queries for this locator
       client.invalidateQueries({
-        queryKey: ["browser-rendering", "screenshots", locator],
+        queryKey: BROWSER_RENDERING_KEYS.screenshotsRoot(locator),
       });
     },
   });
@@ -108,9 +113,9 @@ export function useDeleteScreenshot() {
       return deleteScreenshot({ ...input, locator });
     },
     onSuccess: () => {
-      // Invalidate all screenshot queries
+      // Invalidate all screenshot queries for this locator
       client.invalidateQueries({
-        queryKey: ["browser-rendering", "screenshots", locator],
+        queryKey: BROWSER_RENDERING_KEYS.screenshotsRoot(locator),
       });
     },
   });

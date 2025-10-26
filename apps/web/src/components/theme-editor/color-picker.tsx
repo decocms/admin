@@ -47,10 +47,12 @@ export function ColorPicker({
 
   return (
     <div className="relative group">
-      {/* Full background color card - clickable */}
-      <div
+      {/* Full background color card - clickable button for accessibility */}
+      <button
+        type="button"
         onClick={handleCardClick}
-        className="h-32 rounded-lg border-2 border-border shadow-sm cursor-pointer transition-all hover:border-primary/50 hover:shadow-md overflow-hidden"
+        aria-label={`Color swatch for ${displayValue}`}
+        className="w-full h-32 rounded-lg border-2 border-border shadow-sm cursor-pointer transition-all hover:border-primary/50 hover:shadow-md overflow-hidden"
         style={{
           backgroundColor: displayValue,
         }}
@@ -65,12 +67,13 @@ export function ColorPicker({
             value={value}
             onChange={(e) => onChange(e.target.value)}
             onClick={(e) => e.stopPropagation()}
+            aria-label="Color value"
             className="font-mono text-xs bg-background/95 backdrop-blur-sm border-border/50 shadow-lg"
             placeholder={defaultValue || "Using default theme"}
           />
         </div>
 
-        {/* Hidden color picker input */}
+        {/* Hidden color picker input - programmatic only */}
         <input
           ref={colorInputRef}
           type="color"
@@ -78,7 +81,9 @@ export function ColorPicker({
           onChange={(e) => {
             onChange(e.target.value);
           }}
+          tabIndex={-1}
           className="absolute opacity-0 pointer-events-none"
+          aria-hidden="true"
         />
 
         {/* Top right buttons */}
@@ -94,6 +99,7 @@ export function ColorPicker({
                       e.stopPropagation();
                       onUndo();
                     }}
+                    aria-label="Undo to previous value"
                     className="h-6 w-6 rounded-md bg-background/95 backdrop-blur-sm border border-border/50 flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-background transition-all shadow-sm opacity-0 group-hover:opacity-100"
                   >
                     <Icon name="undo" size={14} />
@@ -117,6 +123,7 @@ export function ColorPicker({
                       e.stopPropagation();
                       onReset();
                     }}
+                    aria-label="Reset to default"
                     className="h-6 w-6 rounded-md bg-background/95 backdrop-blur-sm border border-border/50 flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-background transition-all shadow-sm opacity-0 group-hover:opacity-100"
                   >
                     <Icon name="close" size={14} />
@@ -129,7 +136,7 @@ export function ColorPicker({
             </TooltipProvider>
           )}
         </div>
-      </div>
+      </button>
     </div>
   );
 }

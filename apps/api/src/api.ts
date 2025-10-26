@@ -83,6 +83,13 @@ import { handleTrigger } from "./webhooks/trigger.ts";
 
 export const app = new Hono<AppEnv>();
 
+// Shared CORS configuration constants
+const CORS_METHODS = "HEAD, GET, POST, PUT, DELETE, PATCH, OPTIONS";
+const CORS_ALLOW_HEADERS =
+  "Content-Type, Authorization, Cookie, Accept, cache-control, pragma, x-trace-debug-id, x-deno-isolate-instance-id, mcp-protocol-version";
+const CORS_EXPOSE_HEADERS =
+  "Content-Type, Authorization, Set-Cookie, x-trace-debug-id";
+
 const contextToPrincipalExecutionContext = (
   c: Context<AppEnv>,
 ): PrincipalExecutionContext => {
@@ -270,21 +277,18 @@ const createMCPHandlerFor = (
     endTime(c, "mcp-handle-message");
 
     // Add CORS headers since HttpServerTransport bypasses Hono middleware
-    const origin = c.req.header("origin") || "*";
-    res.headers.set("Access-Control-Allow-Origin", origin);
-    res.headers.set("Access-Control-Allow-Credentials", "true");
-    res.headers.set(
-      "Access-Control-Allow-Methods",
-      "HEAD, GET, POST, PUT, DELETE, PATCH, OPTIONS",
-    );
-    res.headers.set(
-      "Access-Control-Allow-Headers",
-      "Content-Type, Authorization, Cookie, Accept, cache-control, pragma, x-trace-debug-id, x-deno-isolate-instance-id, mcp-protocol-version",
-    );
-    res.headers.set(
-      "Access-Control-Expose-Headers",
-      "Content-Type, Authorization, Set-Cookie, x-trace-debug-id",
-    );
+    // CORS with credentials requires echoing the specific origin, not "*"
+    const origin = c.req.header("origin");
+    if (origin) {
+      res.headers.set("Access-Control-Allow-Origin", origin);
+      res.headers.set("Access-Control-Allow-Credentials", "true");
+    } else {
+      // No origin header - can use wildcard but no credentials
+      res.headers.set("Access-Control-Allow-Origin", "*");
+    }
+    res.headers.set("Access-Control-Allow-Methods", CORS_METHODS);
+    res.headers.set("Access-Control-Allow-Headers", CORS_ALLOW_HEADERS);
+    res.headers.set("Access-Control-Expose-Headers", CORS_EXPOSE_HEADERS);
 
     return res;
   };

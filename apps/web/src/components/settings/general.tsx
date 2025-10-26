@@ -1,4 +1,4 @@
-import { useDeleteTeam, useSDK, useUpdateTeam, useWriteFile } from "@deco/sdk";
+import { useDeleteTeam, useUpdateTeam, useWriteFile } from "@deco/sdk";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -137,11 +137,12 @@ export function GeneralSettings() {
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Cleanup object URL when component unmounts or when localAvatarUrl changes
+  // Cleanup object URL on unmount or when it changes
   useEffect(() => {
+    const currentUrl = localAvatarUrl;
     return () => {
-      if (localAvatarUrl) {
-        URL.revokeObjectURL(localAvatarUrl);
+      if (currentUrl) {
+        URL.revokeObjectURL(currentUrl);
       }
     };
   }, [localAvatarUrl]);

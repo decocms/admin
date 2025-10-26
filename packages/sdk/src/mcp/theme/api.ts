@@ -1,13 +1,7 @@
 import { z } from "zod";
 import type { Json } from "../../storage/index.ts";
 import type { Theme } from "../../theme.ts";
-import {
-  assertHasLocator,
-  assertHasWorkspace,
-  assertTeamResourceAccess,
-  assertWorkspaceResourceAccess,
-} from "../assertions.ts";
-import type { AppContext } from "../context.ts";
+import { assertTeamResourceAccess } from "../assertions.ts";
 import { createToolGroup } from "../context.ts";
 import { mergeThemes } from "../teams/merge-theme.ts";
 import { organizations } from "../schema.ts";
@@ -191,7 +185,7 @@ export const createTool = createToolGroup("Theme", {
   icon: "https://assets.decocache.com/mcp/42dcf0d2-5a2f-4d50-87a6-0e9ebaeae9b5/Agent-Setup.png",
 });
 
-const THEME_FILE_PATH = "/theme.json";
+const _THEME_FILE_PATH = "/theme.json"; // Reserved for future filesystem-based storage
 
 // Project-level theme tools disabled until project themes are fully implemented
 /* 
@@ -323,6 +317,7 @@ export const getOrgTheme = createTool({
 
     // Use TEAMS_GET permission since reading org theme is part of team info
     await assertTeamResourceAccess("TEAMS_GET", orgSlug, c);
+    c.resourceAccess.grant();
 
     const result = await c.drizzle
       .select({ theme: organizations.theme })
@@ -372,6 +367,7 @@ export const updateOrgTheme = createTool({
 
     // Use TEAMS_UPDATE permission since updating org theme is part of team management
     await assertTeamResourceAccess("TEAMS_UPDATE", orgSlug, c);
+    c.resourceAccess.grant();
 
     // Get current theme to merge
     const currentResult = await c.drizzle

@@ -1,4 +1,3 @@
-import { Button } from "@deco/ui/components/button.tsx";
 import { THEME_PRESETS, type ThemePreset } from "./theme-presets.ts";
 import { cn } from "@deco/ui/lib/utils.ts";
 
@@ -27,6 +26,9 @@ export function PresetSelector({
               key={preset.id}
               type="button"
               onClick={() => onSelectPreset(preset)}
+              aria-pressed={selectedPresetId === preset.id}
+              aria-label={`Apply ${preset.name} preset`}
+              title={preset.name}
               className={cn(
                 "flex flex-col items-center gap-2 p-3 rounded-lg border-2 transition-all hover:border-primary/50 hover:bg-accent/5 min-w-[120px]",
                 selectedPresetId === preset.id && "border-primary bg-primary/5",

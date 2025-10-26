@@ -1,5 +1,5 @@
 import { useMemo, useState, useEffect, useCallback, useRef } from "react";
-import { useForm } from "react-hook-form";
+import { useForm, useWatch } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import {
@@ -43,12 +43,35 @@ import type { ThemePreset } from "./theme-presets.ts";
 import { lighten, darken } from "../../utils/color-utils.ts";
 
 interface ThemeEditorFormValues {
-  themeVariables: Record<string, string | undefined>;
+  themeVariables?: Partial<Record<ThemeVariable, string>>;
 }
 
+// Create enum for strict validation
+const ThemeVariableEnum = z.enum([...THEME_VARIABLES] as [
+  ThemeVariable,
+  ...ThemeVariable[],
+]);
+
 const themeEditorSchema = z.object({
-  themeVariables: z.record(z.string(), z.string().optional()),
+  themeVariables: z.record(ThemeVariableEnum, z.string()).optional(),
 });
+
+// AI context rules for theme editing
+const THEME_EDITOR_AI_RULES = [
+  "You are helping the user customize their organization workspace theme. The Theme Editor allows editing organization-level themes that apply to all projects.",
+  `Available theme variables and their purposes:
+- Brand Colors: Primary brand color (--primary), its foreground text (--primary-foreground), and variants (--primary-light, --primary-dark) for gradients and emphasis
+- Base Colors: Main background (--background) and text color (--foreground) - the foundation of the entire theme
+- Interactive Elements: Secondary actions (--secondary), accent highlights (--accent), and their respective text colors
+- Cards & Surfaces: Card backgrounds (--card), borders (--border), and input field borders (--input)
+- Feedback Colors: Destructive/error (--destructive), success (--success), warning (--warning) states with their text colors
+- Sidebar: All sidebar-related colors including background, text, accent, borders, and focus rings
+- Advanced: Popovers, muted text, and splash screen colors`,
+  'Colors should be in OKLCH format (preferred) like "oklch(0.5 0.2 180)" or hex format like "#ff0000". OKLCH provides better color manipulation and perception.',
+  "Use THEME_UPDATE_ORG to update the organization-level theme. Do NOT pass orgId - it will be automatically determined from the current workspace context.",
+  'To update a theme, only pass the "theme" parameter with the variables you want to change. Example: { "theme": { "variables": { "--primary": "oklch(0.65 0.18 200)" } } }',
+  "When suggesting theme changes, consider: contrast ratios for accessibility, color harmony, and the relationship between background/foreground pairs.",
+];
 
 interface ThemeVariableInputProps {
   variable: {
@@ -117,9 +140,9 @@ function ThemeForm({
   handleVariableChange,
   handleVariableUndo,
   onSubmit,
-  isUpdating,
+  isUpdating: _isUpdating,
   form,
-  saveButtonText,
+  saveButtonText: _saveButtonText,
   extraActions,
 }: ThemeFormProps) {
   return (
@@ -159,8 +182,13 @@ export function ThemeEditorView() {
   const team = useCurrentTeam();
   const [selectedPresetId, setSelectedPresetId] = useState<string>();
 
+  // Fix orgId derivation - team.id might be string
+  const orgId = useMemo(() => {
+    const parsed = Number(team?.id);
+    return Number.isFinite(parsed) ? parsed : undefined;
+  }, [team?.id]);
+
   // Fetch org theme
-  const orgId = typeof team?.id === "number" ? team.id : undefined;
   const { data: orgTheme, isLoading } = useOrgTheme(orgId);
 
   // Mutation
@@ -184,20 +212,36 @@ export function ThemeEditorView() {
     form.reset({
       themeVariables: currentTheme?.variables ?? {},
     });
-    // Reset previous values when theme changes
+    // IMPORTANT: Only reset undo history when theme changes from external source (save/refetch)
+    // NOT when user is actively editing
     previousValuesRef.current = {};
   }, [currentTheme, form]);
 
+  // Cleanup debounce timer on unmount
+  const debounceTimerRef = useRef<number | undefined>(undefined);
+  useEffect(() => {
+    return () => {
+      if (debounceTimerRef.current) {
+        clearTimeout(debounceTimerRef.current);
+      }
+    };
+  }, []);
+
+  // Use useWatch instead of form.watch in dependencies
+  const themeVariables = useWatch({
+    control: form.control,
+    name: "themeVariables",
+  });
+
   const variables = useMemo(() => {
-    const formValues = form.watch("themeVariables");
     return THEME_VARIABLES.map((key) => ({
       key,
-      value: String(formValues[key] || ""),
-      isDefault: !formValues[key],
+      value: String(themeVariables?.[key] || ""),
+      isDefault: !themeVariables?.[key],
       defaultValue: DEFAULT_THEME.variables?.[key] || "",
       previousValue: previousValuesRef.current[key],
     }));
-  }, [form.watch("themeVariables")]);
+  }, [themeVariables]);
 
   // Organize variables into semantic groups - prioritized by importance
   const colorGroups = useMemo(() => {
@@ -265,22 +309,6 @@ export function ThemeEditorView() {
         }
     >
   >(() => {
-    const rules = [
-      `You are helping the user customize their organization workspace theme. The Theme Editor allows editing organization-level themes that apply to all projects.`,
-      `Available theme variables and their purposes:
-- Brand Colors: Primary brand color (--primary), its foreground text (--primary-foreground), and variants (--primary-light, --primary-dark) for gradients and emphasis
-- Base Colors: Main background (--background) and text color (--foreground) - the foundation of the entire theme
-- Interactive Elements: Secondary actions (--secondary), accent highlights (--accent), and their respective text colors
-- Cards & Surfaces: Card backgrounds (--card), borders (--border), and input field borders (--input)
-- Feedback Colors: Destructive/error (--destructive), success (--success), warning (--warning) states with their text colors
-- Sidebar: All sidebar-related colors including background, text, accent, borders, and focus rings
-- Advanced: Popovers, muted text, and splash screen colors`,
-      `Colors should be in OKLCH format (preferred) like "oklch(0.5 0.2 180)" or hex format like "#ff0000". OKLCH provides better color manipulation and perception.`,
-      `Use THEME_UPDATE_ORG to update the organization-level theme. Do NOT pass orgId - it will be automatically determined from the current workspace context.`,
-      `To update a theme, only pass the "theme" parameter with the variables you want to change. Example: { "theme": { "variables": { "--primary": "oklch(0.65 0.18 200)" } } }`,
-      `When suggesting theme changes, consider: contrast ratios for accessibility, color harmony, and the relationship between background/foreground pairs.`,
-    ];
-
     const contextItems: Array<
       | { id: string; type: "rule"; text: string }
       | {
@@ -289,7 +317,7 @@ export function ThemeEditorView() {
           integrationId: string;
           enabledTools: string[];
         }
-    > = rules.map((text) => ({
+    > = THEME_EDITOR_AI_RULES.map((text) => ({
       id: crypto.randomUUID(),
       type: "rule" as const,
       text,
@@ -317,13 +345,9 @@ export function ThemeEditorView() {
   useSetThreadContextEffect(threadContextItems);
 
   const hasChanges = useMemo(() => {
-    const formValues = form.watch("themeVariables");
     const currentValues = currentTheme?.variables || {};
-    return JSON.stringify(formValues) !== JSON.stringify(currentValues);
-  }, [form.watch("themeVariables"), currentTheme]);
-
-  // Debounce timer ref
-  const debounceTimerRef = useRef<number | undefined>(undefined);
+    return JSON.stringify(themeVariables) !== JSON.stringify(currentValues);
+  }, [themeVariables, currentTheme]);
 
   const handleVariableChange = useCallback(
     (key: ThemeVariable, newValue: string) => {
@@ -392,8 +416,22 @@ export function ThemeEditorView() {
         return;
       }
 
+      // Sanitize: filter to only valid ThemeVariable keys with non-empty string values
+      const entries = Object.entries(data.themeVariables ?? {}).filter(
+        (entry): entry is [ThemeVariable, string] => {
+          const [key, value] = entry;
+          return (
+            (THEME_VARIABLES as readonly string[]).includes(key) &&
+            typeof value === "string" &&
+            value.length > 0
+          );
+        },
+      );
+
       const theme: Theme = {
-        variables: data.themeVariables as Record<ThemeVariable, string>,
+        variables: Object.fromEntries(entries) as Partial<
+          Record<ThemeVariable, string>
+        >,
       };
 
       await updateOrgThemeMutation.mutateAsync({ orgId, theme });
@@ -464,6 +502,10 @@ export function ThemeEditorView() {
     form.reset({
       themeVariables: baseline,
     });
+
+    // Clear undo history on explicit reset
+    previousValuesRef.current = {};
+
     setSelectedPresetId(undefined);
     toast.success("Changes reset");
   }

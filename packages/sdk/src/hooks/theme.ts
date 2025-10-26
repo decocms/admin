@@ -6,7 +6,6 @@ import {
   updateOrgTheme,
   // type GetProjectThemeInput, // Disabled until project themes are fully implemented
   // type UpdateProjectThemeInput, // Disabled until project themes are fully implemented
-  type GetOrgThemeInput,
   type UpdateOrgThemeInput,
 } from "../crud/theme.ts";
 import { KEYS } from "./api.ts";
@@ -46,12 +45,12 @@ export function useUpdateProjectTheme() {
 
 export function useOrgTheme(orgId?: number) {
   const { locator } = useSDK();
+  const enabled = !!orgId && !!locator;
 
   return useQuery({
     queryKey: ["org-theme", orgId],
-    queryFn: () =>
-      orgId && locator ? getOrgThemeDirectly({ locator, orgId }) : null,
-    enabled: !!orgId && !!locator,
+    queryFn: () => getOrgThemeDirectly({ locator, orgId: orgId! }),
+    enabled,
   });
 }
 

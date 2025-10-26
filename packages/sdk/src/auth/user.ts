@@ -55,7 +55,7 @@ export async function getUserBySupabaseCookie(
     const principal = cache.get(sessionToken);
     // Add cache status for logging
     if (principal) {
-      (principal as any)._cacheStatus = "hit";
+      (principal as unknown as { _cacheStatus?: string })._cacheStatus = "hit";
     }
     return principal;
   }
@@ -63,7 +63,7 @@ export async function getUserBySupabaseCookie(
     const principal = cache.get(accessToken);
     // Add cache status for logging
     if (principal) {
-      (principal as any)._cacheStatus = "hit";
+      (principal as unknown as { _cacheStatus?: string })._cacheStatus = "hit";
     }
     return principal;
   }
@@ -73,7 +73,8 @@ export async function getUserBySupabaseCookie(
     const principal = await inflightRequests.get(cacheKey);
     // Mark as deduplicated for logging
     if (principal) {
-      (principal as any)._cacheStatus = "dedup";
+      (principal as unknown as { _cacheStatus?: string })._cacheStatus =
+        "dedup";
     }
     return principal;
   }
@@ -88,12 +89,13 @@ export async function getUserBySupabaseCookie(
     let getUserResult;
     try {
       getUserResult = await supabase.auth.getUser(accessToken);
-    } catch (error: any) {
+    } catch (error: unknown) {
       // Log which endpoint caused the rate limit error
+      const err = error as { message?: string; status?: number; code?: string };
       console.error(`[AUTH] ❌ Supabase error for ${url.pathname}:`, {
-        error: error?.message || String(error),
-        status: error?.status,
-        code: error?.code,
+        error: err?.message || String(error),
+        status: err?.status,
+        code: err?.code,
         url: url.href,
       });
       throw error;
@@ -125,13 +127,18 @@ export async function getUserBySupabaseCookie(
       try {
         const { data: session } = await supabase.auth.getSession();
         cachettl = session?.session?.expires_at;
-      } catch (error: any) {
+      } catch (error: unknown) {
+        const err = error as {
+          message?: string;
+          status?: number;
+          code?: string;
+        };
         console.error(
           `[AUTH] ❌ Supabase getSession error for ${url.pathname}:`,
           {
-            error: error?.message || String(error),
-            status: error?.status,
-            code: error?.code,
+            error: err?.message || String(error),
+            status: err?.status,
+            code: err?.code,
             url: url.href,
           },
         );
@@ -155,7 +162,7 @@ export async function getUserBySupabaseCookie(
     }
 
     // Mark as cache miss for logging
-    (user as any)._cacheStatus = "miss";
+    (user as unknown as { _cacheStatus?: string })._cacheStatus = "miss";
     return user;
   })();
 

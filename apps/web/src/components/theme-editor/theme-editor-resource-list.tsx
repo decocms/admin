@@ -1,5 +1,4 @@
 import { useMemo } from "react";
-import { useParams } from "react-router";
 import { useTrackNativeViewVisit, useSDK, type View } from "@deco/sdk";
 import { useCurrentTeam } from "../sidebar/team-selector.tsx";
 import { ThemeEditorView } from "./theme-editor-view.tsx";

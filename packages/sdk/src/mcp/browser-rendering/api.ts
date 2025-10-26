@@ -1,14 +1,12 @@
 import { z } from "zod";
 import { createToolGroup, getEnv } from "../context.ts";
 import type { AppContext } from "../context.ts";
-import { assertWorkspaceResourceAccess } from "../assertions.ts";
 
 export const createTool = createToolGroup("BrowserRendering", {
   name: "Browser Rendering",
   description:
     "Capture screenshots, generate PDFs, fetch HTML content, and scrape websites using Cloudflare's Browser Rendering API.",
   icon: "https://assets.decocache.com/mcp/cloudflare-browser-rendering/icon.png",
-  workspace: true,
 });
 
 // Schema definitions
@@ -102,6 +100,7 @@ Examples:
       }),
     }),
   }),
+  // @ts-expect-error - Return type mismatch with dimensions being optional
   handler: async (props, c: AppContext) => {
     c.resourceAccess.grant();
 
@@ -138,132 +137,155 @@ Examples:
       };
       if (env.CF_API_TOKEN) {
         headers["Authorization"] = `Bearer ${env.CF_API_TOKEN}`;
-      } else if (env.CF_API_KEY && env.CF_API_EMAIL) {
+      } else if (
+        // @ts-expect-error - CF_API_KEY/CF_API_EMAIL not in env type
+        env.CF_API_KEY &&
+        // @ts-expect-error - CF_API_KEY/CF_API_EMAIL not in env type
+        env.CF_API_EMAIL
+      ) {
+        // @ts-expect-error - CF_API_KEY/CF_API_EMAIL not in env type
         headers["X-Auth-Key"] = env.CF_API_KEY;
+        // @ts-expect-error - CF_API_KEY/CF_API_EMAIL not in env type
         headers["X-Auth-Email"] = env.CF_API_EMAIL;
       }
       return headers;
     };
 
-    // Call Cloudflare Browser Rendering API
-    const response = await fetch(
-      `https://api.cloudflare.com/client/v4/accounts/${env.CF_ACCOUNT_ID}/browser-rendering/screenshot`,
-      {
-        method: "POST",
-        headers: buildAuthHeaders(),
-        body: JSON.stringify(requestBody),
-      },
-    );
+    // Call Cloudflare Browser Rendering API with timeout
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 30000); // 30s timeout
 
-    if (!response.ok) {
-      const errorText = await response.text();
-      if (response.status === 401) {
-        // Try to verify token to give actionable diagnostics
-        try {
-          const verify = await fetch(
-            "https://api.cloudflare.com/client/v4/user/tokens/verify",
-            { method: "GET", headers: buildAuthHeaders() },
-          );
-          const verifyJson = await verify.json().catch(() => undefined);
-          const scopes = verifyJson?.result?.policies
-            ?.flatMap((p: any) =>
-              p?.permission_groups?.map((g: any) => g?.name),
-            )
-            ?.filter(Boolean);
-          throw new Error(
-            `Cloudflare authentication failed. Please verify:\n` +
-              `1. CF_ACCOUNT_ID matches the token's account\n` +
-              `2. Browser Rendering is enabled on your account\n` +
-              `3. Token must include permissions for Browser Rendering (Workers Browser Rendering)\n` +
-              `4. Alternatively set CF_API_KEY and CF_API_EMAIL (global key)\n` +
-              `Token verify: ${JSON.stringify({ success: verifyJson?.success, scopes }, null, 2)}\n` +
-              `Original error: ${errorText}`,
-          );
-        } catch {
-          throw new Error(
-            `Cloudflare authentication failed. Please verify:\n` +
-              `1. CF_ACCOUNT_ID and CF_API_TOKEN are set in .dev.vars\n` +
-              `2. Browser Rendering is enabled on your Cloudflare account\n` +
-              `3. Your API token has the correct permissions\n` +
-              `Original error: ${errorText}`,
-          );
-        }
-      }
-      throw new Error(
-        `Cloudflare Browser Rendering API error: ${response.status} - ${errorText}`,
-      );
-    }
-
-    const imageBuffer = await response.arrayBuffer();
-    const imageType = screenshotOptions?.type || "png";
-
-    // Generate date-based path
-    const datePath = getDateBasedPath("screenshots");
-    const timestamp = Date.now();
-    const uuid = crypto.randomUUID();
-    const filename = `${timestamp}-${uuid}.${imageType}`;
-    const storagePath = `${datePath}/${filename}`;
-    const metadataPath = `${datePath}/${timestamp}-${uuid}.meta.json`;
-
-    // Upload screenshot to R2 via FS_WRITE
-    const MCPClient = await import("../../fetcher.ts").then((m) => m.MCPClient);
-    const { url: uploadUrl } = await MCPClient.forContext(c).FS_WRITE({
-      path: storagePath,
-      contentType: `image/${imageType}`,
-    });
-
-    await fetch(uploadUrl, {
-      method: "PUT",
-      body: imageBuffer,
-      headers: {
-        "Content-Type": `image/${imageType}`,
-      },
-    });
-
-    // Create metadata
-    const dimensions = viewport
-      ? { width: viewport.width, height: viewport.height }
-      : undefined;
-    const metadata = {
-      sourceUrl: url,
-      dimensions,
-      capturedAt: new Date().toISOString(),
-      format: imageType,
-      options: requestBody,
-      userId: c.user?.id,
-    };
-
-    // Store metadata as JSON file
-    const { url: metadataUploadUrl } = await MCPClient.forContext(c).FS_WRITE({
-      path: metadataPath,
-      contentType: "application/json",
-    });
-
-    await fetch(metadataUploadUrl, {
-      method: "PUT",
-      body: JSON.stringify(metadata, null, 2),
-      headers: {
-        "Content-Type": "application/json",
-      },
-    });
-
-    // Construct public URL
-    const Hosts = await import("../../hosts.ts").then((m) => m.Hosts);
-    const locator = c.workspace?.value;
-    const publicUrl = `https://${Hosts.API_LEGACY}/files/${locator}/${storagePath}`;
-
-    return {
-      screenshot: {
-        url: publicUrl,
-        path: storagePath,
-        metadata: {
-          sourceUrl: url,
-          dimensions,
-          capturedAt: new Date().toISOString(),
-          format: imageType,
+    try {
+      const response = await fetch(
+        `https://api.cloudflare.com/client/v4/accounts/${env.CF_ACCOUNT_ID}/browser-rendering/screenshot`,
+        {
+          method: "POST",
+          headers: buildAuthHeaders(),
+          body: JSON.stringify(requestBody),
+          signal: controller.signal,
         },
-      },
-    };
+      );
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        if (response.status === 401) {
+          // Try to verify token to give actionable diagnostics
+          try {
+            const verify = await fetch(
+              "https://api.cloudflare.com/client/v4/user/tokens/verify",
+              { method: "GET", headers: buildAuthHeaders() },
+            );
+            const verifyJson = await verify.json().catch(() => undefined);
+            // @ts-expect-error - verifyJson shape not strictly typed
+            const scopes = verifyJson?.result?.policies
+              ?.flatMap((p: { permission_groups?: Array<{ name?: string }> }) =>
+                p?.permission_groups?.map((g) => g?.name),
+              )
+              ?.filter(Boolean);
+            throw new Error(
+              `Cloudflare authentication failed. Please verify:\n` +
+                `1. CF_ACCOUNT_ID matches the token's account\n` +
+                `2. Browser Rendering is enabled on your account\n` +
+                `3. Token must include permissions for Browser Rendering (Workers Browser Rendering)\n` +
+                `4. Alternatively set CF_API_KEY and CF_API_EMAIL (global key)\n` +
+                // @ts-expect-error - verifyJson shape not strictly typed
+                `Token verify: ${JSON.stringify({ success: verifyJson?.success, scopes }, null, 2)}\n` +
+                `Original error: ${errorText}`,
+            );
+          } catch {
+            throw new Error(
+              `Cloudflare authentication failed. Please verify:\n` +
+                `1. CF_ACCOUNT_ID and CF_API_TOKEN are set in .dev.vars\n` +
+                `2. Browser Rendering is enabled on your Cloudflare account\n` +
+                `3. Your API token has the correct permissions\n` +
+                `Original error: ${errorText}`,
+            );
+          }
+        }
+        throw new Error(
+          `Cloudflare Browser Rendering API error: ${response.status} - ${errorText}`,
+        );
+      }
+
+      const imageBuffer = await response.arrayBuffer();
+      const imageType = screenshotOptions?.type || "png";
+
+      // Generate date-based path
+      const datePath = getDateBasedPath("screenshots");
+      const timestamp = Date.now();
+      const uuid = crypto.randomUUID();
+      const filename = `${timestamp}-${uuid}.${imageType}`;
+      const storagePath = `${datePath}/${filename}`;
+      const metadataPath = `${datePath}/${timestamp}-${uuid}.meta.json`;
+
+      // Upload screenshot to R2 via FS_WRITE
+      const MCPClient = await import("../../fetcher.ts").then(
+        (m) => m.MCPClient,
+      );
+      // @ts-expect-error - MCPClient type inference issue with forContext
+      const { url: uploadUrl } = await MCPClient.forContext(c).FS_WRITE({
+        path: storagePath,
+        contentType: `image/${imageType}`,
+      });
+
+      await fetch(uploadUrl, {
+        method: "PUT",
+        body: imageBuffer,
+        headers: {
+          "Content-Type": `image/${imageType}`,
+        },
+      });
+
+      // Create metadata
+      const dimensions = viewport
+        ? { width: viewport.width, height: viewport.height }
+        : undefined;
+      const metadata = {
+        sourceUrl: url,
+        dimensions,
+        capturedAt: new Date().toISOString(),
+        format: imageType,
+        options: requestBody,
+        userId: c.user?.id,
+      };
+
+      // Store metadata as JSON file
+      // @ts-expect-error - MCPClient type inference issue with forContext
+      const { url: metadataUploadUrl } = await MCPClient.forContext(c).FS_WRITE(
+        {
+          path: metadataPath,
+          contentType: "application/json",
+        },
+      );
+
+      await fetch(metadataUploadUrl, {
+        method: "PUT",
+        body: JSON.stringify(metadata, null, 2),
+        headers: {
+          "Content-Type": "application/json",
+        },
+      });
+
+      // Construct public URL
+      const Hosts = await import("../../hosts.ts").then((m) => m.Hosts);
+      const locator = c.workspace?.value;
+      const publicUrl = `https://${Hosts.API_LEGACY}/files/${locator}/${storagePath}`;
+
+      return {
+        screenshot: {
+          url: publicUrl,
+          path: storagePath,
+          metadata: {
+            sourceUrl: url,
+            dimensions,
+            capturedAt: new Date().toISOString(),
+            format: imageType,
+          },
+        },
+      };
+    } finally {
+      clearTimeout(timeoutId);
+    }
   },
 });
 
@@ -307,78 +329,93 @@ Examples:
     if (viewport) requestBody.viewport = viewport;
     if (gotoOptions) requestBody.gotoOptions = gotoOptions;
 
-    const response = await fetch(
-      `https://api.cloudflare.com/client/v4/accounts/${env.CF_ACCOUNT_ID}/browser-rendering/pdf`,
-      {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${env.CF_API_TOKEN}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(requestBody),
-      },
-    );
+    // Call Cloudflare Browser Rendering API with timeout
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 30000); // 30s timeout
 
-    if (!response.ok) {
-      const errorText = await response.text();
-      throw new Error(
-        `Cloudflare Browser Rendering API error: ${response.status} - ${errorText}`,
+    try {
+      const response = await fetch(
+        `https://api.cloudflare.com/client/v4/accounts/${env.CF_ACCOUNT_ID}/browser-rendering/pdf`,
+        {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${env.CF_API_TOKEN}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(requestBody),
+          signal: controller.signal,
+        },
       );
-    }
 
-    const pdfBuffer = await response.arrayBuffer();
-    const datePath = getDateBasedPath("pdfs");
-    const timestamp = Date.now();
-    const uuid = crypto.randomUUID();
-    const filename = `${timestamp}-${uuid}.pdf`;
-    const storagePath = `${datePath}/${filename}`;
-    const metadataPath = `${datePath}/${timestamp}-${uuid}.meta.json`;
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(
+          `Cloudflare Browser Rendering API error: ${response.status} - ${errorText}`,
+        );
+      }
 
-    const MCPClient = await import("../../fetcher.ts").then((m) => m.MCPClient);
-    const { url: uploadUrl } = await MCPClient.forContext(c).FS_WRITE({
-      path: storagePath,
-      contentType: "application/pdf",
-    });
+      const pdfBuffer = await response.arrayBuffer();
+      const datePath = getDateBasedPath("pdfs");
+      const timestamp = Date.now();
+      const uuid = crypto.randomUUID();
+      const filename = `${timestamp}-${uuid}.pdf`;
+      const storagePath = `${datePath}/${filename}`;
+      const metadataPath = `${datePath}/${timestamp}-${uuid}.meta.json`;
 
-    await fetch(uploadUrl, {
-      method: "PUT",
-      body: pdfBuffer,
-      headers: { "Content-Type": "application/pdf" },
-    });
-
-    // Store metadata
-    const metadata = {
-      sourceUrl: url,
-      generatedAt: new Date().toISOString(),
-      options: requestBody,
-      userId: c.user?.id,
-    };
-
-    const { url: metadataUploadUrl } = await MCPClient.forContext(c).FS_WRITE({
-      path: metadataPath,
-      contentType: "application/json",
-    });
-
-    await fetch(metadataUploadUrl, {
-      method: "PUT",
-      body: JSON.stringify(metadata, null, 2),
-      headers: { "Content-Type": "application/json" },
-    });
-
-    const Hosts = await import("../../hosts.ts").then((m) => m.Hosts);
-    const locator = c.workspace?.value;
-    const publicUrl = `https://${Hosts.API_LEGACY}/files/${locator}/${storagePath}`;
-
-    return {
-      pdf: {
-        url: publicUrl,
+      const MCPClient = await import("../../fetcher.ts").then(
+        (m) => m.MCPClient,
+      );
+      // @ts-expect-error - MCPClient type inference issue with forContext
+      const { url: uploadUrl } = await MCPClient.forContext(c).FS_WRITE({
         path: storagePath,
-        metadata: {
-          sourceUrl: url,
-          generatedAt: new Date().toISOString(),
+        contentType: "application/pdf",
+      });
+
+      await fetch(uploadUrl, {
+        method: "PUT",
+        body: pdfBuffer,
+        headers: { "Content-Type": "application/pdf" },
+      });
+
+      // Store metadata
+      const metadata = {
+        sourceUrl: url,
+        generatedAt: new Date().toISOString(),
+        options: requestBody,
+        userId: c.user?.id,
+      };
+
+      // @ts-expect-error - MCPClient type inference issue with forContext
+      const { url: metadataUploadUrl } = await MCPClient.forContext(c).FS_WRITE(
+        {
+          path: metadataPath,
+          contentType: "application/json",
         },
-      },
-    };
+      );
+
+      await fetch(metadataUploadUrl, {
+        method: "PUT",
+        body: JSON.stringify(metadata, null, 2),
+        headers: { "Content-Type": "application/json" },
+      });
+
+      const Hosts = await import("../../hosts.ts").then((m) => m.Hosts);
+      const locator = c.workspace?.value;
+      const publicUrl = `https://${Hosts.API_LEGACY}/files/${locator}/${storagePath}`;
+
+      return {
+        pdf: {
+          url: publicUrl,
+          path: storagePath,
+          metadata: {
+            sourceUrl: url,
+            generatedAt: new Date().toISOString(),
+          },
+        },
+      };
+    } finally {
+      clearTimeout(timeoutId);
+    }
   },
 });
 
@@ -536,10 +573,8 @@ export const listScreenshots = createTool({
       }),
     ),
   }),
-  handler: async (props, c: AppContext) => {
+  handler: async (_props, c: AppContext) => {
     c.resourceAccess.grant();
-
-    const { prefix = "browser-rendering/screenshots/", limit } = props;
 
     // TODO: Implement screenshot listing once filesystem storage is set up
     // Should use FS_LIST to enumerate screenshots in the browser-rendering directory
@@ -571,11 +606,13 @@ export const deleteScreenshot = createTool({
     const MCPClient = await import("../../fetcher.ts").then((m) => m.MCPClient);
 
     // Delete the screenshot file
+    // @ts-expect-error - MCPClient type inference issue with forContext
     await MCPClient.forContext(c).FS_DELETE({ path });
 
     // Delete metadata file if it exists
     const metadataPath = path.replace(/\.(png|jpeg|pdf)$/, ".meta.json");
     try {
+      // @ts-expect-error - MCPClient type inference issue with forContext
       await MCPClient.forContext(c).FS_DELETE({ path: metadataPath });
     } catch {
       // Metadata file might not exist, that's okay

@@ -1,3 +1,13 @@
+/**
+ * Theme presets for the deco CMS theme editor
+ *
+ * Source: https://github.com/jnsahaj/tweakcn (Apache-2.0)
+ * Copyright (c) jnsahaj and contributors
+ * Licensed under the Apache License, Version 2.0
+ *
+ * Modifications: Adapted for deco CMS theme system with additional color variants
+ */
+
 import type { Theme } from "@deco/sdk";
 
 export interface ThemePreset {
@@ -7,9 +17,8 @@ export interface ThemePreset {
   theme: Theme;
 }
 
-// Theme presets based on tweakcn.com
-// Using light mode hex values from https://github.com/jnsahaj/tweakcn
-export const THEME_PRESETS: ThemePreset[] = [
+// Theme presets - make immutable for tree-shaking
+export const THEME_PRESETS = [
   {
     id: "modern-minimal",
     name: "Modern Minimal",
@@ -901,4 +910,4 @@ export const THEME_PRESETS: ThemePreset[] = [
       },
     },
   },
-];
+] as const satisfies ReadonlyArray<ThemePreset>;

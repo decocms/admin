@@ -11,7 +11,7 @@ routes = [
 ]
 
 [vars]
-VITE_USE_LOCAL_BACKEND = true
+VITE_USE_LOCAL_BACKEND = false
 
 [observability]
 enabled = true

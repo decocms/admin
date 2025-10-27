@@ -230,7 +230,7 @@ export function PresetSelector({
 }: PresetSelectorProps) {
   return (
     <div className="w-full overflow-x-auto">
-      <div className="flex gap-4 w-fit py-2 max-w-2xl">
+      <div className="flex gap-4 w-fit p-2 max-w-2xl">
         {THEME_PRESETS.map((preset) => (
           <PresetCard
             key={preset.id}

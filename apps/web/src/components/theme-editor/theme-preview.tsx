@@ -76,24 +76,24 @@ export function ThemePreview() {
           <CardTitle className="text-sm font-medium">Alerts</CardTitle>
         </CardHeader>
         <CardContent className="p-0 space-y-4">
-          <Alert>
+          <Alert variant="info" className="items-center">
             <Icon name="info" className="h-4 w-4" />
             <AlertTitle>Info</AlertTitle>
             <AlertDescription>
               This is an informational message
             </AlertDescription>
           </Alert>
-          <Alert variant="default">
+          <Alert variant="success" className="items-center">
             <Icon name="check_circle" className="h-4 w-4" />
             <AlertTitle>Success</AlertTitle>
             <AlertDescription>Your changes have been saved</AlertDescription>
           </Alert>
-          <Alert variant="warning">
+          <Alert variant="warning" className="items-center">
             <Icon name="warning" className="h-4 w-4" />
             <AlertTitle>Warning</AlertTitle>
             <AlertDescription>Please review before proceeding</AlertDescription>
           </Alert>
-          <Alert variant="destructive">
+          <Alert variant="destructive" className="items-center">
             <Icon name="error" className="h-4 w-4" />
             <AlertTitle>Error</AlertTitle>
             <AlertDescription>

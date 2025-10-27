@@ -1,7 +1,7 @@
 import {
-  AI_APP_PRD_TEMPLATE,
   findPinnedView,
   Integration,
+  type PinnedResource,
   Resource,
   useConnectionViews,
   useIntegrations,
@@ -12,6 +12,7 @@ import {
   useUnpinnedNativeViews,
   useUpsertDocument,
   View,
+  AI_APP_PRD_TEMPLATE,
 } from "@deco/sdk";
 import { Badge } from "@deco/ui/components/badge.tsx";
 import { Button } from "@deco/ui/components/button.tsx";
@@ -53,13 +54,12 @@ import {
 } from "@deco/ui/components/sidebar.tsx";
 import { Skeleton } from "@deco/ui/components/skeleton.tsx";
 import {
-  MouseEventHandler,
   type ReactNode,
   Suspense,
-  useEffect,
   useMemo,
-  useRef,
   useState,
+  useEffect,
+  useRef,
 } from "react";
 import {
   Link,
@@ -73,17 +73,25 @@ import {
   useNavigateWorkspace,
   useWorkspaceLink,
 } from "../../hooks/use-navigate-workspace.ts";
-import { useFocusTeamAgent } from "../agents/list.tsx";
-import { AgentAvatar } from "../common/avatar/agent.tsx";
 import { IntegrationAvatar } from "../common/avatar/integration.tsx";
+import { AgentAvatar } from "../common/avatar/agent.tsx";
+import { TogglePin } from "../views/list.tsx";
+import { SidebarFooter } from "./footer.tsx";
+import { useCurrentTeam } from "./team-selector.tsx";
+import { useFocusTeamAgent } from "../agents/list.tsx";
 import { SearchComingSoonModal } from "../modals/search-coming-soon-modal.tsx";
 import {
   CommandPalette,
   useCommandPalette,
 } from "../search/command-palette.tsx";
-import { TogglePin } from "../views/list.tsx";
-import { SidebarFooter } from "./footer.tsx";
-import { useCurrentTeam } from "./team-selector.tsx";
+
+// Helper to get display name from resource (handles both Resource and PinnedResource types)
+function getResourceDisplayName(
+  resource: { title?: string; name?: string },
+  fallback = "Resource",
+): string {
+  return resource.title || resource.name || fallback;
+}
 
 const WithActive = ({
   children,
@@ -243,6 +251,7 @@ function WorkspaceViews() {
 
   // Drag and drop state for pinned items
   const [draggedItem, setDraggedItem] = useState<number | null>(null);
+  const [_dragOverItem, setDragOverItem] = useState<number | null>(null);
   const [isDragMode, setIsDragMode] = useState(false);
   const draggedItemIdRef = useRef<string | null>(null);
 
@@ -304,7 +313,7 @@ function WorkspaceViews() {
     // Not needed for swap behavior
   };
 
-  const handleDrop = (e: React.DragEvent) => {
+  const handleDrop = (e: React.DragEvent, _dropIndex: number) => {
     e.preventDefault();
     e.stopPropagation();
 
@@ -321,10 +330,12 @@ function WorkspaceViews() {
     }
 
     setDraggedItem(null);
+    setDragOverItem(null);
   };
 
   const handleDragEnd = () => {
     setDraggedItem(null);
+    setDragOverItem(null);
     draggedItemIdRef.current = null;
   };
 
@@ -458,10 +469,11 @@ function WorkspaceViews() {
   const wellKnownItems = [
     "Tools",
     "Views",
-    "Database",
     "Workflows",
     "Documents",
     "Agents",
+    "Theme",
+    "Browser",
   ];
   const legacyTitleMap: Record<string, string> = {
     Prompts: "Documents",
@@ -495,8 +507,9 @@ function WorkspaceViews() {
     "Workflows",
     "Tools",
     "Views",
-    "Database",
     "Files",
+    "Theme",
+    "Browser",
   ];
   const resourceItems = resourceTypeOrder
     .map((title) => {
@@ -543,8 +556,22 @@ function WorkspaceViews() {
     const items: Array<{
       id: string;
       type: "native" | "integration" | "resource";
-      // oxlint-disable-next-line no-explicit-any
-      data: any;
+      data:
+        | View
+        | PinnedResource
+        | { integrationId: string; views: View[] }
+        | {
+            integrationId: string;
+            resources: PinnedResource[];
+            isResource: true;
+          }
+        | {
+            id: string;
+            title: string;
+            icon: string;
+            onClick: () => void;
+            comingSoon: boolean;
+          };
     }> = [];
 
     // Add native views (Documents, Agents, etc.)
@@ -575,7 +602,11 @@ function WorkspaceViews() {
         items.push({
           id: `integration-resource:::${integrationId}`,
           type: "integration",
-          data: { integrationId, resources, isResource: true },
+          data: {
+            integrationId,
+            resources: resources as unknown as PinnedResource[],
+            isResource: true,
+          },
         });
       },
     );
@@ -627,7 +658,9 @@ function WorkspaceViews() {
       ? (e: React.DragEvent) => handleDragOver(e, index)
       : undefined,
     onDragLeave: isDragMode ? handleDragLeave : undefined,
-    onDrop: isDragMode ? (e: React.DragEvent) => handleDrop(e) : undefined,
+    onDrop: isDragMode
+      ? (e: React.DragEvent) => handleDrop(e, index)
+      : undefined,
     onDragEnd: isDragMode ? handleDragEnd : undefined,
     className: isDragMode
       ? `cursor-grab active:cursor-grabbing transition-all duration-150 ${
@@ -701,18 +734,16 @@ function WorkspaceViews() {
     item: (typeof allPinnedItems)[0],
     index: number,
   ) => {
-    const nativeItem = item.data as Record<string, unknown>;
+    const nativeItem = item.data;
     if ("onClick" in nativeItem && nativeItem.comingSoon) {
-      // Files button
+      // Files button (coming soon)
       const filesViewId = "native:::files";
       return (
         <SidebarMenuItem key={item.id} {...getDragProps(index, item.id)}>
           <SidebarMenuButton
             className="cursor-pointer group/item relative w-full pr-2"
             onClick={
-              isDragMode
-                ? undefined
-                : (nativeItem.onClick as MouseEventHandler<HTMLButtonElement>)
+              isDragMode ? undefined : (nativeItem.onClick as () => void)
             }
           >
             {isDragMode && (
@@ -723,12 +754,12 @@ function WorkspaceViews() {
               />
             )}
             <Icon
-              name={nativeItem.icon as string}
+              name={(nativeItem as { icon: string }).icon}
               size={20}
               className="text-muted-foreground/75 shrink-0"
             />
             <span className="truncate flex-1 min-w-0 group-hover/item:pr-8">
-              {nativeItem.title as string}
+              {(nativeItem as { title: string }).title}
             </span>
             <Badge
               variant="secondary"
@@ -745,7 +776,7 @@ function WorkspaceViews() {
                 e.stopPropagation();
                 _unpinNativeView(filesViewId);
                 trackEvent("sidebar_unpin_native_view", {
-                  view: nativeItem.title,
+                  view: (nativeItem as { title: string }).title,
                 });
               }}
             />
@@ -754,7 +785,7 @@ function WorkspaceViews() {
       );
     }
     // Regular native view (Documents, Agents, etc.)
-    const view = nativeItem as unknown as View;
+    const view = nativeItem as View;
     const href = buildViewHrefFromView(view);
     const displayTitle = canonicalTitle(view.title);
     return (
@@ -826,16 +857,31 @@ function WorkspaceViews() {
     item: (typeof allPinnedItems)[0],
     index: number,
   ) => {
-    const { integrationId, views, isResource, resources } = item.data;
+    const data = item.data;
+
+    // Type guard to check if this is integration data
+    if (!("integrationId" in data)) {
+      return null;
+    }
+
+    const { integrationId, views, isResource, resources } = data as {
+      integrationId: string;
+      views?: View[];
+      isResource?: boolean;
+      resources?: PinnedResource[];
+    };
     const integration = integrationMap.get(integrationId);
 
-    if (isResource) {
+    if (isResource && resources) {
       // This is an integration resource section
       const isSingleResource = resources.length === 1;
 
       if (isSingleResource) {
         const [resource] = resources;
-        const href = buildResourceHrefFromResource(resource);
+        const href = buildResourceHrefFromResource({
+          ...resource,
+          integration_id: integrationId,
+        } as { integration_id: string; name: string });
 
         return (
           <SidebarMenuItem
@@ -848,7 +894,7 @@ function WorkspaceViews() {
               isDragMode ? (e) => handleDragOver(e, index) : undefined
             }
             onDragLeave={isDragMode ? handleDragLeave : undefined}
-            onDrop={isDragMode ? (e) => handleDrop(e) : undefined}
+            onDrop={isDragMode ? (e) => handleDrop(e, index) : undefined}
             onDragEnd={isDragMode ? handleDragEnd : undefined}
             className={
               isDragMode
@@ -878,7 +924,9 @@ function WorkspaceViews() {
                         return;
                       }
                       trackEvent("sidebar_navigation_click", {
-                        item: resource.title,
+                        item: getResourceDisplayName(
+                          resource as { title?: string; name?: string },
+                        ),
                       });
                       isMobile && toggleSidebar();
                     }}
@@ -899,7 +947,10 @@ function WorkspaceViews() {
                       />
                     </div>
                     <span className="truncate group-hover/item:pr-8">
-                      {resource.title ?? integration?.name ?? "Resource"}
+                      {getResourceDisplayName(
+                        resource as { title?: string; name?: string },
+                        integration?.name,
+                      )}
                     </span>
                     <Icon
                       name="remove"
@@ -928,7 +979,7 @@ function WorkspaceViews() {
           }
           onDragOver={isDragMode ? (e) => handleDragOver(e, index) : undefined}
           onDragLeave={isDragMode ? handleDragLeave : undefined}
-          onDrop={isDragMode ? (e) => handleDrop(e) : undefined}
+          onDrop={isDragMode ? (e) => handleDrop(e, index) : undefined}
           onDragEnd={isDragMode ? handleDragEnd : undefined}
           className={
             isDragMode
@@ -980,59 +1031,59 @@ function WorkspaceViews() {
               </CollapsibleTrigger>
               <CollapsibleContent>
                 <SidebarMenuSub>
-                  {resources.map(
-                    (resource: {
-                      id: string;
-                      title: string;
-                      integration_id: string;
-                      name: string;
-                    }) => {
-                      const href = buildResourceHrefFromResource(resource);
+                  {resources.map((resource: PinnedResource) => {
+                    const href = buildResourceHrefFromResource({
+                      ...resource,
+                      integration_id: integrationId,
+                    } as { integration_id: string; name: string });
 
-                      return (
-                        <SidebarMenuSubItem key={resource.id}>
-                          <SidebarMenuSubButton asChild>
-                            <Link
-                              to={href}
-                              className="group/item relative"
-                              onClick={() => {
-                                if (isDragMode) {
-                                  return;
-                                }
-                                trackEvent("sidebar_navigation_click", {
-                                  item: resource.title,
-                                });
-                                isMobile && toggleSidebar();
-                              }}
-                            >
-                              <Icon
-                                name="folder"
-                                size={18}
-                                className="text-muted-foreground/75"
-                              />
-                              <span className="truncate group-hover/item:pr-8">
-                                {resource.title}
-                              </span>
-                              {!isDragMode && (
-                                <Icon
-                                  name="remove"
-                                  size={18}
-                                  className="text-muted-foreground opacity-0 group-hover/item:opacity-50 hover:opacity-100 cursor-pointer absolute right-1 top-1/2 -translate-y-1/2"
-                                  onClick={(e) => {
-                                    e.preventDefault();
-                                    e.stopPropagation();
-                                    handleRemoveResource({
-                                      resourceId: resource.id,
-                                    });
-                                  }}
-                                />
+                    return (
+                      <SidebarMenuSubItem key={resource.id}>
+                        <SidebarMenuSubButton asChild>
+                          <Link
+                            to={href}
+                            className="group/item relative"
+                            onClick={() => {
+                              if (isDragMode) {
+                                return;
+                              }
+                              trackEvent("sidebar_navigation_click", {
+                                item: getResourceDisplayName(
+                                  resource as { title?: string; name?: string },
+                                ),
+                              });
+                              isMobile && toggleSidebar();
+                            }}
+                          >
+                            <Icon
+                              name="folder"
+                              size={18}
+                              className="text-muted-foreground/75"
+                            />
+                            <span className="truncate group-hover/item:pr-8">
+                              {getResourceDisplayName(
+                                resource as { title?: string; name?: string },
                               )}
-                            </Link>
-                          </SidebarMenuSubButton>
-                        </SidebarMenuSubItem>
-                      );
-                    },
-                  )}
+                            </span>
+                            {!isDragMode && (
+                              <Icon
+                                name="remove"
+                                size={18}
+                                className="text-muted-foreground opacity-0 group-hover/item:opacity-50 hover:opacity-100 cursor-pointer absolute right-1 top-1/2 -translate-y-1/2"
+                                onClick={(e) => {
+                                  e.preventDefault();
+                                  e.stopPropagation();
+                                  handleRemoveResource({
+                                    resourceId: resource.id,
+                                  });
+                                }}
+                              />
+                            )}
+                          </Link>
+                        </SidebarMenuSubButton>
+                      </SidebarMenuSubItem>
+                    );
+                  })}
                 </SidebarMenuSub>
               </CollapsibleContent>
             </div>
@@ -1042,6 +1093,8 @@ function WorkspaceViews() {
     }
 
     // Integration view section (Site, Database)
+    if (!views) return null;
+
     const isSingleView = views.length === 1;
 
     if (isSingleView) {
@@ -1057,7 +1110,7 @@ function WorkspaceViews() {
           }
           onDragOver={isDragMode ? (e) => handleDragOver(e, index) : undefined}
           onDragLeave={isDragMode ? handleDragLeave : undefined}
-          onDrop={isDragMode ? (e) => handleDrop(e) : undefined}
+          onDrop={isDragMode ? (e) => handleDrop(e, index) : undefined}
           onDragEnd={isDragMode ? handleDragEnd : undefined}
           className={
             isDragMode
@@ -1139,7 +1192,7 @@ function WorkspaceViews() {
         onDragStart={isDragMode ? (e) => handleDragStart(e, index) : undefined}
         onDragOver={isDragMode ? (e) => handleDragOver(e, index) : undefined}
         onDragLeave={isDragMode ? handleDragLeave : undefined}
-        onDrop={isDragMode ? (e) => handleDrop(e) : undefined}
+        onDrop={isDragMode ? (e) => handleDrop(e, index) : undefined}
         onDragEnd={isDragMode ? handleDragEnd : undefined}
         className={
           isDragMode
@@ -1291,8 +1344,7 @@ function WorkspaceViews() {
     item: (typeof allPinnedItems)[0],
     index: number,
   ) => {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const resource = item.data as any;
+    const resource = item.data as PinnedResource;
     return (
       <SidebarMenuItem
         key={item.id}
@@ -1300,7 +1352,7 @@ function WorkspaceViews() {
         onDragStart={isDragMode ? (e) => handleDragStart(e, index) : undefined}
         onDragOver={isDragMode ? (e) => handleDragOver(e, index) : undefined}
         onDragLeave={isDragMode ? handleDragLeave : undefined}
-        onDrop={isDragMode ? (e) => handleDrop(e) : undefined}
+        onDrop={isDragMode ? (e) => handleDrop(e, index) : undefined}
         onDragEnd={isDragMode ? handleDragEnd : undefined}
         className={
           isDragMode

@@ -2,9 +2,8 @@
  * Very ugly code but the animation looks good.
  * Take the time to refactor this someday.
  */
-import type { CSSProperties } from "react";
 import { type ThemeVariable, useSDK, useWorkspaceTheme } from "@deco/sdk";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import gsap from "gsap";
 
 /**
@@ -15,23 +14,53 @@ const THEME_CACHE_KEY = (workspace: string) =>
   `workspace_theme_cache_${workspace}`;
 
 export const clearThemeCache = (workspace: string) => {
-  localStorage.removeItem(THEME_CACHE_KEY(workspace));
+  if (typeof window !== "undefined" && window.localStorage) {
+    try {
+      localStorage.removeItem(THEME_CACHE_KEY(workspace));
+    } catch {
+      // Silently fail if localStorage is not available
+    }
+  }
 };
 
 export const useTheme = () => {
   const { locator } = useSDK();
   const { data: theme, isLoading: isQueryLoading } = useWorkspaceTheme();
+
+  // SSR safety: guard localStorage access
   const [cachedTheme, setCachedTheme] = useState(() => {
-    const cached = localStorage.getItem(THEME_CACHE_KEY(locator));
-    return cached ? JSON.parse(cached) : null;
+    if (typeof window === "undefined" || !window.localStorage) return null;
+    try {
+      const cached = localStorage.getItem(THEME_CACHE_KEY(locator));
+      return cached ? JSON.parse(cached) : null;
+    } catch {
+      return null;
+    }
   });
 
   useEffect(() => {
-    if (theme) {
-      localStorage.setItem(THEME_CACHE_KEY(locator), JSON.stringify(theme));
-      setCachedTheme(theme);
+    if (theme && typeof window !== "undefined" && window.localStorage) {
+      try {
+        localStorage.setItem(THEME_CACHE_KEY(locator), JSON.stringify(theme));
+        setCachedTheme(theme);
+      } catch {
+        // Silently fail if localStorage is not available
+      }
     }
-  }, [theme]);
+  }, [theme, locator]);
+
+  // Listen for manual theme updates
+  useEffect(() => {
+    const handleThemeUpdate = () => {
+      clearThemeCache(locator);
+      setCachedTheme(null);
+    };
+
+    window.addEventListener("theme-updated", handleThemeUpdate);
+    return () => {
+      window.removeEventListener("theme-updated", handleThemeUpdate);
+    };
+  }, [locator]);
 
   return {
     data: cachedTheme || theme,
@@ -67,7 +96,12 @@ export function WithWorkspaceTheme({
   );
   const { locator } = useSDK();
   const [showSplash, setShowSplash] = useState(() => {
-    return !localStorage.getItem(THEME_CACHE_KEY(locator));
+    if (typeof window === "undefined" || !window.localStorage) return false;
+    try {
+      return !localStorage.getItem(THEME_CACHE_KEY(locator));
+    } catch {
+      return false;
+    }
   });
 
   useEffect(() => {
@@ -174,46 +208,65 @@ export function WithWorkspaceTheme({
 
   // No matter what, we want to close the splash screen after max 4.5 seconds
   useEffect(() => {
-    setTimeout(() => {
+    if (!showSplash) return;
+
+    const timeoutId = setTimeout(() => {
       forceCloseSplashPromise.current.resolve();
     }, 4_500);
 
     forceCloseSplashPromise.current.promise.then(() => {
       animateCloseSplash();
     });
+
+    return () => {
+      clearTimeout(timeoutId);
+    };
   }, [showSplash]);
 
-  const variables = {
-    ...theme?.variables,
-  };
+  // Use the object from the query directly so the reference is stable
+  const variables = theme?.variables;
 
   // Apply theme variables to document root so portal content can access them
-  useEffect(() => {
-    const root = document.documentElement;
-    if (variables) {
-      Object.entries(variables).forEach(([key, value]) => {
-        if (value) {
-          root.style.setProperty(key, value as string);
-        }
-      });
-    }
+  // Track previously applied keys to remove stale variables
+  const appliedKeysRef = useRef<Set<string>>(new Set());
 
-    // Cleanup function to remove custom properties when component unmounts
-    return () => {
-      if (variables) {
-        Object.keys(variables).forEach((key) => {
-          root.style.removeProperty(key);
-        });
+  // Only re-apply when the theme actually changes to avoid fighting with the editor's live updates
+  // useMemo creates a stable reference that only changes when the actual values change
+  const variablesSnapshot = useMemo(
+    () => (variables ? JSON.stringify(variables) : "{}"),
+    [variables],
+  );
+
+  useEffect(() => {
+    if (!variables) return;
+
+    const root = document.documentElement;
+    const newKeys = new Set<string>();
+
+    // Apply new/updated variables
+    Object.entries(variables).forEach(([key, value]) => {
+      if (value) {
+        root.style.setProperty(key, value as string);
+        newKeys.add(key);
       }
-    };
-  }, [variables]);
+    });
+
+    // Remove properties that are no longer in the theme
+    appliedKeysRef.current.forEach((key) => {
+      if (!newKeys.has(key)) {
+        root.style.removeProperty(key);
+      }
+    });
+
+    appliedKeysRef.current = newKeys;
+  }, [variablesSnapshot]); // Only re-run when the stringified version changes
 
   return (
     <>
       {showSplash && (
         <div
           ref={splashScreenRef}
-          className="fixed inset-0 flex items-center justify-center z-50 bg-white"
+          className="fixed inset-0 flex items-center justify-center z-50 bg-background"
         >
           <div
             ref={circleRef}
@@ -246,9 +299,7 @@ export function WithWorkspaceTheme({
           </div>
         </div>
       )}
-      <div className="h-full w-full" style={variables as CSSProperties}>
-        {children}
-      </div>
+      <div className="h-full w-full">{children}</div>
     </>
   );
 }

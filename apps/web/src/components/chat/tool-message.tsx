@@ -370,10 +370,13 @@ function GenerateImageToolUI({ part }: { part: ToolUIPart }) {
   );
 }
 
+// BrowserScreenshotToolUI removed for this branch
+
 function CustomToolUI({ part }: { part: ToolUIPart }) {
   const result = (part.output ?? {}) as Record<string, unknown>;
   const toolName = useToolName(part);
 
+  // Handle tools that need custom UI for all states (including loading)
   if (toolName === "HOSTING_APP_DEPLOY") {
     const toolLike: HostingAppToolLike = {
       toolCallId: part.toolCallId,
@@ -384,12 +387,16 @@ function CustomToolUI({ part }: { part: ToolUIPart }) {
     return <HostingAppDeploy tool={toolLike} />;
   }
 
+  // BROWSER_SCREENSHOT UI removed
+
+  if (toolName === "GENERATE_IMAGE") {
+    return <GenerateImageToolUI part={part} />;
+  }
+
+  // For other tools, only show output when available
   if (part.state !== "output-available" || !part.output) return null;
 
   switch (toolName) {
-    case "GENERATE_IMAGE": {
-      return <GenerateImageToolUI part={part} />;
-    }
     case "RENDER": {
       return (
         <Preview

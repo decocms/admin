@@ -308,22 +308,102 @@ const result = await db.from("agents").insert(agent);
 React Query updates cache and triggers re-renders
 ```
 
-## 6. Best Practices
+## 6. Virtual Integrations
+
+### Tool Groups as Integrations
+Tool groups automatically become virtual integrations accessible via `i:{group-name}`:
+
+```typescript
+// Tool group definition
+export const createTool = createToolGroup("Theme", {
+  name: "Theme Management",
+  description: "Manage organization-level themes.",
+  icon: "https://assets.decocache.com/mcp/.../theme.png",
+});
+
+// Becomes virtual integration: i:theme-management
+// Accessible in frontend via:
+const { data: tools } = useTools(integration.connection);
+```
+
+### Virtual Integration URL Construction
+```typescript
+// Backend: packages/sdk/src/mcp/integrations/api.ts
+const virtualIntegrationsFor = (group: string, workspace: boolean, apiUrl: string) => {
+  const url = workspace 
+    ? new URL(`${apiUrl}/${locator}/mcp?group=${group}`)
+    : new URL(`${apiUrl}/mcp?group=${group}`);
+  
+  return {
+    id: `i:${group}`,
+    connection: { type: "HTTP", url: url.href },
+    // ...
+  };
+};
+```
+
+## 7. Environment Variables
+
+### Frontend vs Backend
+Critical difference between Vite and Cloudflare Workers:
+
+```typescript
+// ❌ WRONG - import.meta.env doesn't exist in Cloudflare Workers
+const apiUrl = import.meta.env.VITE_API_URL;
+
+// ✅ Frontend (Vite) - Use import.meta.env
+const apiUrl = import.meta.env.VITE_API_URL;
+
+// ✅ Backend (Workers) - Use getEnv(ctx)
+const apiUrl = getEnv(ctx).VITE_API_URL;
+```
+
+### Configuration Files
+```typescript
+// Frontend: apps/web/.env
+VITE_USE_LOCAL_BACKEND=true
+
+// Backend: apps/api/wrangler.toml
+[vars]
+VITE_USE_LOCAL_BACKEND = true
+```
+
+### Dynamic API URL Resolution
+```typescript
+// packages/sdk/src/mcp/context.ts
+export const DECO_CMS_API = (ctx: AppContext, isDecoChat: boolean) =>
+  getEnv(ctx).VITE_USE_LOCAL_BACKEND === "true"
+    ? "http://localhost:3001"
+    : isDecoChat
+      ? "https://api.deco.chat"
+      : "https://api.decocms.com";
+
+// Usage in API handlers
+const getApiUrl = (c: AppContext): string => {
+  return DECO_CMS_API(c, false);
+};
+```
+
+## 8. Best Practices
 
 ### Tool Development
 - Always use Zod schemas for input/output validation
 - Call `context.resourceAccess.grant()` after authorization checks
 - Use descriptive tool names following the pattern `{RESOURCE}_{ACTION}`
 - Group related tools by functionality
+- Return objects, not nullable primitives (MCP requirement)
+- Use slug-based authorization for team resources
 
 ### Frontend Integration
 - Use consistent query keys from `KEYS` object
 - Implement optimistic updates for better UX
 - Handle loading and error states appropriately
 - Use `useSuspenseQuery` for critical data
+- Include `locator` in all scoped API calls
 
 ### Authorization
 - Always check workspace/team access before operations
+- Use **org slugs** for team resource access, not IDs
 - Use least-privilege principle for API keys
 - Implement proper error handling for forbidden operations
 - Log authorization failures for debugging

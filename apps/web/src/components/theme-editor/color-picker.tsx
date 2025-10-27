@@ -47,10 +47,17 @@ export function ColorPicker({
 
   return (
     <div className="relative group">
-      {/* Full background color card - clickable button for accessibility */}
-      <button
-        type="button"
+      {/* Full background color card - clickable for color picker */}
+      <div
         onClick={handleCardClick}
+        role="button"
+        tabIndex={0}
+        onKeyDown={(e) => {
+          if (e.key === "Enter" || e.key === " ") {
+            e.preventDefault();
+            handleCardClick();
+          }
+        }}
         aria-label={`Color swatch for ${displayValue}`}
         className="w-full h-32 rounded-lg border-2 border-border shadow-sm cursor-pointer transition-all hover:border-primary/50 hover:shadow-md overflow-hidden"
         style={{
@@ -136,7 +143,7 @@ export function ColorPicker({
             </TooltipProvider>
           )}
         </div>
-      </button>
+      </div>
     </div>
   );
 }

@@ -92,7 +92,9 @@ const CountdownBox = ({ value, label }: { value: string; label: string }) => (
 );
 
 const Separator = () => (
-  <span className="text-sm @min-xl:text-lg font-semibold text-neutral-300">:</span>
+  <span className="text-sm @min-xl:text-lg font-semibold text-neutral-300">
+    :
+  </span>
 );
 
 export function EventBanner({

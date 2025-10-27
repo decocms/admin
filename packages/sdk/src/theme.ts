@@ -38,10 +38,7 @@ export const COLOR_VARIABLES = [
   "--splash",
 ] as const;
 
-export const LAYOUT_VARIABLES = [
-  "--radius",
-  "--spacing",
-] as const;
+export const LAYOUT_VARIABLES = ["--radius", "--spacing"] as const;
 
 export const SHADOW_VARIABLES = [
   "--shadow-x",

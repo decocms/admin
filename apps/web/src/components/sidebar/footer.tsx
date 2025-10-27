@@ -388,11 +388,13 @@ const PlanColors = {
     sprite: "text-brand-green-light",
   },
   [WELL_KNOWN_PLANS.GROWTH]: {
-    background: "bg-brand-yellow-light/30 hover:bg-brand-yellow-light/50 text-brand-yellow-dark",
+    background:
+      "bg-brand-yellow-light/30 hover:bg-brand-yellow-light/50 text-brand-yellow-dark",
     sprite: "text-brand-yellow-light",
   },
   [WELL_KNOWN_PLANS.SCALE]: {
-    background: "bg-brand-purple-light/30 hover:bg-brand-purple-light/50 text-brand-purple-dark",
+    background:
+      "bg-brand-purple-light/30 hover:bg-brand-purple-light/50 text-brand-purple-dark",
     sprite: "text-brand-purple-light",
   },
 };
@@ -432,7 +434,9 @@ function TeamPlanAndBalance() {
       </div>
       <div className="z-20 flex items-center justify-between px-2 h-9 rounded-xl w-full text-sm bg-sidebar">
         <span className="text-sidebar-foreground">Team Balance</span>
-        <span className="text-sidebar-foreground font-semibold">{account.balance}</span>
+        <span className="text-sidebar-foreground font-semibold">
+          {account.balance}
+        </span>
       </div>
     </Link>
   );

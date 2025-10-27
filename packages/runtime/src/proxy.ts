@@ -70,7 +70,7 @@ export function createMCPClientProxy<T extends Record<string, unknown>>(
         const extraHeaders = debugId
           ? { "x-trace-debug-id": debugId }
           : undefined;
-        
+
         const client = await createServerClient(
           { connection },
           undefined,
@@ -124,7 +124,7 @@ export function createMCPClientProxy<T extends Record<string, unknown>>(
 
       const listToolsFn = async () => {
         const client = await createServerClient({ connection });
-        
+
         try {
           const { tools } = await client.listTools();
 

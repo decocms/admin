@@ -82,7 +82,8 @@ export function createMCPClientProxy<T extends Record<string, unknown>>(
             const baseUrl = "url" in connection ? connection.url : "";
             if (!baseUrl) return baseUrl;
             const url = new URL(baseUrl);
-            url.pathname = url.pathname.replace(/\/$/, "") + `/tool/${String(name)}`;
+            url.pathname =
+              url.pathname.replace(/\/$/, "") + `/tool/${String(name)}`;
             return url.href;
           })(),
         };

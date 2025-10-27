@@ -75,8 +75,20 @@ export function createMCPClientProxy<T extends Record<string, unknown>>(
           ? { "x-trace-debug-id": debugId }
           : undefined;
 
+        // Add tool name to URL path for better logging and CDN filtering
+        const connectionWithTool = {
+          ...connection,
+          url: (() => {
+            const baseUrl = "url" in connection ? connection.url : "";
+            if (!baseUrl) return baseUrl;
+            const url = new URL(baseUrl);
+            url.pathname = url.pathname.replace(/\/$/, "") + `/tool/${String(name)}`;
+            return url.href;
+          })(),
+        };
+
         const client = await createServerClient(
-          { connection },
+          { connection: connectionWithTool },
           undefined,
           extraHeaders,
         );

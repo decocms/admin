@@ -65,7 +65,6 @@ import {
 import { type Context, Hono } from "hono";
 import { env, getRuntimeKey } from "hono/adapter";
 import { HTTPException } from "hono/http-exception";
-import { logger } from "hono/logger";
 import { cors } from "hono/cors";
 import { endTime, startTime } from "hono/timing";
 import type { ContentfulStatusCode } from "hono/utils/http-status";
@@ -548,7 +547,7 @@ const createMcpServerProxy = (c: Context) => {
   );
 };
 
-// Simplified logger with fixed minimum column widths
+// Simple logger with tool information highlighted
 app.use(async (c, next) => {
   const { method } = c.req;
   const url = new URL(c.req.url);
@@ -602,9 +601,6 @@ app.use(async (c, next) => {
     `\x1b[32m[api]\x1b[0m \x1b[1m${method}\x1b[0m ${formattedPath} ${statusColor}\x1b[1m${status}\x1b[0m${statusColor}${statusSuffix}\x1b[0m \x1b[90m(${ms}ms)\x1b[0m${cacheIndicator}`,
   );
 });
-
-// Add logger middleware
-app.use(logger());
 
 // Enable CORS for all routes on api.decocms.com and localhost
 app.use(

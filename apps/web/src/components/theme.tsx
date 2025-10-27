@@ -55,11 +55,7 @@ export const useTheme = () => {
   };
 };
 
-export function WithWorkspaceTheme({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+export function WithOrgTheme({ children }: { children: React.ReactNode }) {
   const { data: theme } = useTheme();
   const loadedLogo = theme?.picture ?? "/img/deco-logo.svg";
   const loadedBackground =

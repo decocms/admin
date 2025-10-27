@@ -47,7 +47,7 @@ import { DecopilotThreadProvider } from "../decopilot/thread-context.tsx";
 import { ThreadManagerProvider } from "../decopilot/thread-manager-context.tsx";
 import { ProfileModalProvider, useProfileModal } from "../profile-modal.tsx";
 import { ProjectSidebar } from "../sidebar/index.tsx";
-import { WithWorkspaceTheme } from "../theme.tsx";
+import { WithOrgTheme } from "../theme.tsx";
 import { useDecopilotOpen } from "./decopilot-layout.tsx";
 import { TopbarLayout } from "./home.tsx";
 import { BreadcrumbOrgSwitcher } from "./org-project-switcher.tsx";
@@ -101,7 +101,7 @@ export function ProjectLayout() {
 
   return (
     <BaseRouteLayout>
-      <WithWorkspaceTheme>
+      <WithOrgTheme>
         <ThreadManagerProvider>
           <ThreadContextProvider>
             <DecopilotThreadProvider>
@@ -188,7 +188,7 @@ export function ProjectLayout() {
             </DecopilotThreadProvider>
           </ThreadContextProvider>
         </ThreadManagerProvider>
-      </WithWorkspaceTheme>
+      </WithOrgTheme>
     </BaseRouteLayout>
   );
 }

@@ -10,42 +10,25 @@ import gsap from "gsap";
  * Kind of a stale cache for the theme so we don't show the splash screen
  * every time the user opens a workspace.
  */
-const THEME_CACHE_KEY = (workspace: string) =>
-  `workspace_theme_cache_${workspace}`;
+const THEME_CACHE_KEY = (locator: string) => `workspace_theme_cache_${locator}`;
 
-export const clearThemeCache = (workspace: string) => {
-  if (typeof window !== "undefined" && window.localStorage) {
-    try {
-      localStorage.removeItem(THEME_CACHE_KEY(workspace));
-    } catch {
-      // Silently fail if localStorage is not available
-    }
-  }
+export const clearThemeCache = (locator: string) => {
+  localStorage.removeItem(THEME_CACHE_KEY(locator));
 };
 
 export const useTheme = () => {
   const { locator } = useSDK();
   const { data: theme, isLoading: isQueryLoading } = useWorkspaceTheme();
 
-  // SSR safety: guard localStorage access
   const [cachedTheme, setCachedTheme] = useState(() => {
-    if (typeof window === "undefined" || !window.localStorage) return null;
-    try {
-      const cached = localStorage.getItem(THEME_CACHE_KEY(locator));
-      return cached ? JSON.parse(cached) : null;
-    } catch {
-      return null;
-    }
+    const cached = localStorage.getItem(THEME_CACHE_KEY(locator));
+    return cached ? JSON.parse(cached) : null;
   });
 
   useEffect(() => {
-    if (theme && typeof window !== "undefined" && window.localStorage) {
-      try {
-        localStorage.setItem(THEME_CACHE_KEY(locator), JSON.stringify(theme));
-        setCachedTheme(theme);
-      } catch {
-        // Silently fail if localStorage is not available
-      }
+    if (theme) {
+      localStorage.setItem(THEME_CACHE_KEY(locator), JSON.stringify(theme));
+      setCachedTheme(theme);
     }
   }, [theme, locator]);
 
@@ -96,12 +79,7 @@ export function WithWorkspaceTheme({
   );
   const { locator } = useSDK();
   const [showSplash, setShowSplash] = useState(() => {
-    if (typeof window === "undefined" || !window.localStorage) return false;
-    try {
-      return !localStorage.getItem(THEME_CACHE_KEY(locator));
-    } catch {
-      return false;
-    }
+    return !localStorage.getItem(THEME_CACHE_KEY(locator));
   });
 
   useEffect(() => {

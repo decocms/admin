@@ -91,7 +91,7 @@ export const sanitizeTeamName = (name: string): string => {
 export const getAvatarFromTheme = (
   theme: Json,
   createSignedUrl: (path: string) => Promise<string>,
-): Promise<string | null> => {
+): Promise<string | undefined> => {
   if (
     theme !== null &&
     typeof theme === "object" &&
@@ -101,10 +101,10 @@ export const getAvatarFromTheme = (
     const picture = theme.picture as string;
     return createSignedUrl(picture).catch((error) => {
       console.error("Error getting avatar from theme", error);
-      return null;
+      return undefined;
     });
   }
-  return Promise.resolve(null);
+  return Promise.resolve(undefined);
 };
 
 export const removeNameAccents = (name: string): string => {
@@ -678,12 +678,17 @@ export const listTeams = createTool({
   },
 });
 
-export const getWorkspaceTheme = createTool({
-  name: "TEAMS_GET_THEME",
-  description: "Get the theme for a workspace",
+export const getOrgTheme = createTool({
+  name: "GET_ORG_THEME",
+  description: "Get the theme for an organization",
   inputSchema: z.lazy(() =>
     z.object({
       slug: z.string(),
+    }),
+  ),
+  outputSchema: z.lazy(() =>
+    z.object({
+      theme: enhancedThemeSchema.nullable(),
     }),
   ),
   handler: async (props, c) => {

@@ -87,7 +87,7 @@ export const GLOBAL_TOOLS = [
   teamsAPI.updateTeamRole,
   teamsAPI.deleteTeamRole,
   teamsAPI.getTeamRole,
-  teamsAPI.getWorkspaceTheme,
+  teamsAPI.getOrgTheme,
   teamsAPI.listProjects,
   teamsAPI.createProject,
   teamsAPI.updateProject,
@@ -114,6 +114,7 @@ export const GLOBAL_TOOLS = [
 
 // Tools tied to an specific workspace
 export const PROJECT_TOOLS = [
+  themeAPI.updateOrgTheme,
   teamsAPI.addView,
   teamsAPI.removeView,
   membersAPI.inviteTeamMembers,
@@ -186,9 +187,6 @@ export const PROJECT_TOOLS = [
   fsAPI.readFileMetadata,
   fsAPI.writeFile,
   fsAPI.deleteFile,
-  // Theme tools (workspace-level)
-  themeAPI.getOrgTheme,
-  themeAPI.updateOrgTheme,
   modelsAPI.createModel,
   modelsAPI.deleteModel,
   modelsAPI.listModels,

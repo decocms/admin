@@ -1,12 +1,12 @@
 import { z } from "zod";
 import type { Json } from "../../storage/index.ts";
 import type { Theme } from "../../theme.ts";
-import { assertTeamResourceAccess } from "../assertions.ts";
+import { assertHasLocator, assertTeamResourceAccess } from "../assertions.ts";
 import { createToolGroup } from "../context.ts";
 import { mergeThemes } from "../teams/merge-theme.ts";
 import { organizations } from "../schema.ts";
 import { eq } from "drizzle-orm";
-import { getOrgIdFromContext } from "../projects/util.ts";
+import { Locator } from "../../locator.ts";
 
 // Enhanced theme schema with detailed context for AI tools
 export const themeVariablesSchema = z.lazy(() =>
@@ -187,94 +187,32 @@ export const createTool = createToolGroup("Theme", {
   icon: "https://assets.decocache.com/mcp/42dcf0d2-5a2f-4d50-87a6-0e9ebaeae9b5/Agent-Setup.png",
 });
 
-export const getOrgTheme = createTool({
-  name: "THEME_GET_ORG",
-  description:
-    "Get the organization-level theme from database. Uses current workspace organization if orgId not provided.",
-  inputSchema: z.object({
-    orgId: z
-      .number()
-      .optional()
-      .describe(
-        "Organization ID to get theme from. Defaults to current workspace organization.",
-      ),
-  }),
-  outputSchema: z.object({
-    theme: enhancedThemeSchema.nullable(),
-  }),
-  handler: async (props, c) => {
-    // Get orgId from context if not provided
-    const orgId = props.orgId ?? (await getOrgIdFromContext(c));
-
-    if (!orgId) {
-      throw new Error("No organization context available");
-    }
-
-    // Use org slug for permission check (authorization expects slug, not ID)
-    const orgSlug = c.locator?.org;
-    if (!orgSlug) {
-      throw new Error("No organization slug in context");
-    }
-
-    // Use TEAMS_GET permission since reading org theme is part of team info
-    await assertTeamResourceAccess("TEAMS_GET", orgSlug, c);
-    c.resourceAccess.grant();
-
-    const result = await c.drizzle
-      .select({ theme: organizations.theme })
-      .from(organizations)
-      .where(eq(organizations.id, orgId))
-      .limit(1);
-
-    if (!result || result.length === 0) {
-      return { theme: null };
-    }
-
-    return { theme: (result[0].theme as Theme) || null };
-  },
-});
-
 export const updateOrgTheme = createTool({
-  name: "THEME_UPDATE_ORG",
+  name: "UPDATE_ORG_THEME",
   description:
-    "Update the organization-level theme in database. Merges with existing theme. Uses current workspace organization if orgId not provided.",
+    "Update the organization-level theme in database. Merges with existing theme. Uses current organization in context.",
   inputSchema: z.object({
-    orgId: z
-      .number()
-      .optional()
-      .describe(
-        "Organization ID to update theme for. Defaults to current workspace organization.",
-      ),
     theme: enhancedThemeSchema.describe("Theme configuration to apply"),
   }),
   outputSchema: z.object({
     theme: enhancedThemeSchema,
   }),
   handler: async (props, c) => {
-    // Get orgId from context if not provided
-    const orgId = props.orgId ?? (await getOrgIdFromContext(c));
+    assertHasLocator(c);
 
-    if (!orgId) {
-      throw new Error(
-        `No organization context available. Locator: ${JSON.stringify(c.locator)}`,
-      );
-    }
-
-    // Use org slug for permission check (authorization expects slug, not ID)
-    const orgSlug = c.locator?.org;
-    if (!orgSlug) {
+    const { org } = Locator.parse(c.locator.value);
+    if (!org || org === "shared" || org === "users") {
       throw new Error("No organization slug in context");
     }
 
     // Use TEAMS_UPDATE permission since updating org theme is part of team management
-    await assertTeamResourceAccess("TEAMS_UPDATE", orgSlug, c);
-    c.resourceAccess.grant();
+    await assertTeamResourceAccess("TEAMS_UPDATE", org, c);
 
     // Get current theme to merge
     const currentResult = await c.drizzle
       .select({ theme: organizations.theme })
       .from(organizations)
-      .where(eq(organizations.id, orgId))
+      .where(eq(organizations.slug, org))
       .limit(1);
 
     if (!currentResult || currentResult.length === 0) {
@@ -288,7 +226,7 @@ export const updateOrgTheme = createTool({
     const updatedResult = await c.drizzle
       .update(organizations)
       .set({ theme: mergedTheme as Json })
-      .where(eq(organizations.id, orgId))
+      .where(eq(organizations.slug, org))
       .returning({ theme: organizations.theme });
 
     if (!updatedResult || updatedResult.length === 0) {

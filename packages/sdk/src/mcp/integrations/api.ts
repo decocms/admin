@@ -116,7 +116,10 @@ export const parseId = (id: string) => {
   };
 };
 
-const formatId = (type: "i" | "a", uuid: string) => `${type}:${uuid}`;
+const formatId = (type: "i" | "a", uuid: string) => {
+  // Account for already formatted ids
+  return uuid.startsWith(`${type}:`) ? uuid : `${type}:${uuid}`;
+};
 
 const agentAsIntegrationFor =
   (workspace: string, token?: string) =>
@@ -626,7 +629,6 @@ export const getIntegration = createIntegrationManagementTool({
     ) {
       const parsed = IntegrationSchema.parse({
         ...toKbIntegration(uuid, c.locator.value, c.token),
-        // Use raw uuid for KB integration id to avoid double prefixing ("i:i:")
         id: formatId(type, uuid),
       });
       return {

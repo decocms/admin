@@ -163,7 +163,7 @@ export const NATIVE_APPS: GroupedApp[] = [
     id: "native:::theme-editor",
     name: "Theme",
     icon: "icon://palette",
-    description: "Customize your workspace colors and branding",
+    description: "Customize your organization's colors and branding",
     instances: 1,
     provider: "native",
     usedBy: [],

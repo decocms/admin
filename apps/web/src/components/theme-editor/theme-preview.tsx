@@ -97,7 +97,7 @@ export function ThemePreview() {
             <Icon name="error" className="h-4 w-4" />
             <AlertTitle>Error</AlertTitle>
             <AlertDescription>
-              Something went wrong with your request
+              Something went wrong
             </AlertDescription>
           </Alert>
         </CardContent>

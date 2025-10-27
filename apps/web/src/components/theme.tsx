@@ -233,6 +233,15 @@ export function WithOrgTheme({ children }: { children: React.ReactNode }) {
     });
 
     appliedKeysRef.current = newKeys;
+
+    // Cleanup function to remove all applied CSS variables when component unmounts
+    return () => {
+      const root = document.documentElement;
+      appliedKeysRef.current.forEach((key) => {
+        root.style.removeProperty(key);
+      });
+      appliedKeysRef.current.clear();
+    };
   }, [variablesSnapshot]); // Only re-run when the stringified version changes
 
   return (

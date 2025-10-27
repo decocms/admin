@@ -67,7 +67,7 @@ export function ChatError() {
               className="bg-background hover:bg-background/80 shadow-none border border-input py-3 px-4 h-10"
               asChild
             >
-              <Link to={orgLink("/monitor/billing?add_credits")}>
+              <Link to={orgLink("/billing?add_credits")}>
                 <Icon name="wallet" className="mr-2" />
                 Add credits
               </Link>

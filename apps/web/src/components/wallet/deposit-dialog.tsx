@@ -19,7 +19,7 @@ import {
   usePlan,
   useSDK,
 } from "@deco/sdk";
-import { useWorkspaceLink } from "../../hooks/use-navigate-workspace.ts";
+import { useOrgLink } from "../../hooks/use-navigate-workspace.ts";
 import { useSearchParams } from "react-router";
 
 const MINIMUM_AMOUNT = 200; // $2.00 in cents
@@ -68,7 +68,7 @@ function useDepositDialog() {
 
 export function DepositDialog() {
   const { locator } = useSDK();
-  const workspaceLink = useWorkspaceLink();
+  const orgLink = useOrgLink();
   const plan = usePlan();
   const { isOpen, setIsOpen } = useDepositDialog();
 
@@ -77,11 +77,11 @@ export function DepositDialog() {
       createWalletCheckoutSession({
         locator: locator,
         amountUSDCents: amountInCents,
-        successUrl: `${location.origin}${workspaceLink(
-          "/monitor/billing?deposit_success=true",
+        successUrl: `${location.origin}${orgLink(
+          "/billing?deposit_success=true",
         )}`,
-        cancelUrl: `${location.origin}${workspaceLink(
-          "/monitor/billing?deposit_success=false",
+        cancelUrl: `${location.origin}${orgLink(
+          "/billing?deposit_success=false",
         )}`,
       }),
   });

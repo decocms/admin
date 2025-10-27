@@ -2,15 +2,6 @@ import { MCPClient } from "../fetcher.ts";
 import type { ProjectLocator } from "../locator.ts";
 import type { Theme } from "../theme.ts";
 
-export interface GetProjectThemeInput {
-  projectId?: string;
-}
-
-export interface UpdateProjectThemeInput {
-  projectId?: string;
-  theme: Theme;
-}
-
 export interface GetOrgThemeInput {
   locator: ProjectLocator;
   orgId: number;
@@ -21,21 +12,6 @@ export interface UpdateOrgThemeInput {
   orgId: number;
   theme: Theme;
 }
-
-// Project theme tools disabled until fully implemented
-/*
-export const getProjectTheme = (
-  input: GetProjectThemeInput,
-  init?: RequestInit,
-): Promise<Theme | null> =>
-  MCPClient.THEME_GET_PROJECT(input, init) as Promise<Theme | null>;
-
-export const updateProjectTheme = (
-  input: UpdateProjectThemeInput,
-  init?: RequestInit,
-): Promise<Theme> =>
-  MCPClient.THEME_UPDATE_PROJECT(input, init) as Promise<Theme>;
-*/
 
 export const getOrgThemeDirectly = async (
   input: GetOrgThemeInput,

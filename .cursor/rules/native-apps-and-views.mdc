@@ -30,7 +30,7 @@ export const createTool = createToolGroup("{Feature}", {
   name: "{Feature} Management",
   description: "Manage {feature} settings and configuration.",
   icon: "https://assets.decocache.com/mcp/{uuid}/{feature}.png",
-  // workspace: true  // Only if this is workspace-scoped, omit for org-level
+  // workspace: true  // Only if this is project-scoped, omit for org-level
 });
 ```
 

@@ -89,7 +89,13 @@ interface OptionCardProps {
   preview?: React.ReactNode;
 }
 
-function OptionCard({ label, value, isActive, onClick, preview }: OptionCardProps) {
+function OptionCard({
+  label,
+  value,
+  isActive,
+  onClick,
+  preview,
+}: OptionCardProps) {
   return (
     <button
       type="button"
@@ -547,16 +553,20 @@ export function ThemeEditorView() {
                         { label: "Medium", value: "0.5rem" },
                         { label: "Rounded", value: "0.75rem" },
                       ].map((option) => {
-                        const currentRadius = themeVariables?.["--radius"] || DEFAULT_THEME.variables?.["--radius"];
+                        const currentRadius =
+                          themeVariables?.["--radius"] ||
+                          DEFAULT_THEME.variables?.["--radius"];
                         return (
                           <OptionCard
                             key={option.value}
                             label={option.label}
                             value={option.value}
                             isActive={currentRadius === option.value}
-                            onClick={() => handleVariableChange("--radius", option.value)}
+                            onClick={() =>
+                              handleVariableChange("--radius", option.value)
+                            }
                             preview={
-                              <div 
+                              <div
                                 className="w-12 h-12 bg-primary"
                                 style={{ borderRadius: option.value }}
                               />
@@ -576,21 +586,25 @@ export function ThemeEditorView() {
                         { label: "Default", value: "0.25rem" },
                         { label: "Comfortable", value: "0.3rem" },
                       ].map((option) => {
-                        const currentSpacing = themeVariables?.["--spacing"] || DEFAULT_THEME.variables?.["--spacing"];
+                        const currentSpacing =
+                          themeVariables?.["--spacing"] ||
+                          DEFAULT_THEME.variables?.["--spacing"];
                         return (
                           <OptionCard
                             key={option.value}
                             label={option.label}
                             value={option.value}
                             isActive={currentSpacing === option.value}
-                            onClick={() => handleVariableChange("--spacing", option.value)}
+                            onClick={() =>
+                              handleVariableChange("--spacing", option.value)
+                            }
                             preview={
                               <div className="flex gap-1 items-center justify-center">
-                                <div 
+                                <div
                                   className="w-3 h-10 bg-primary"
                                   style={{ marginRight: option.value }}
                                 />
-                                <div 
+                                <div
                                   className="w-3 h-10 bg-primary"
                                   style={{ marginRight: option.value }}
                                 />

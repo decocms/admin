@@ -472,7 +472,7 @@ export function ThemeEditorView() {
                 <div className="flex flex-col gap-2">
                   <h1 className="text-2xl font-medium">Theme Editor</h1>
                   <p className="text-base text-muted-foreground">
-                    Customize your workspace colors and branding
+                    Customize your colors and branding
                   </p>
                 </div>
                 {hasChanges && (

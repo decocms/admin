@@ -514,13 +514,6 @@ const router = createBrowserRouter([
           { path: "documents/prompts", Component: PromptsLegacyPage },
           { path: "documents/:id", Component: DocumentEdit },
           {
-            path: "theme-editor",
-            lazy: () =>
-              import(
-                "./components/theme-editor/theme-editor-resource-list.tsx"
-              ).then((m) => ({ Component: m.ThemeEditorResourceList })),
-          },
-          {
             path: "workflow-runs",
             Component: () => <Navigate to="../workflows/runs-legacy" replace />,
           },

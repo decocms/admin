@@ -1,6 +1,4 @@
 import tailwindcss from "@tailwindcss/vite";
-// Using @vitejs/plugin-react instead of react-swc for better compatibility with theme editor's
-// live CSS variable manipulation. SWC's Fast Refresh can interfere with direct DOM updates.
 import react from "@vitejs/plugin-react";
 import { defineConfig, type PluginOption } from "vite";
 import { VitePWA } from "vite-plugin-pwa";

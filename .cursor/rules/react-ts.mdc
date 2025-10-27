@@ -377,6 +377,15 @@ export function ThemeEditor() {
   const debounceTimerRef = useRef<number>();
   const previousValuesRef = useRef<Record<string, string>>({});
 
+  // Clean up debounce timer on unmount
+  useEffect(() => {
+    return () => {
+      if (debounceTimerRef.current) {
+        clearTimeout(debounceTimerRef.current);
+      }
+    };
+  }, []);
+
   const handleChange = (key: string, value: string) => {
     // 1. Store previous value for undo functionality
     const current = form.getValues(key);
@@ -480,6 +489,7 @@ Implement single-level undo that reverts to the **saved state**, not the -1 chan
 export function ThemeEditor() {
   const { data: currentTheme } = useTheme();
   const form = useForm();
+  const debounceTimerRef = useRef<number>();
   const previousValuesRef = useRef<Record<string, string>>({});
 
   // Reset previous values when saved theme changes
@@ -487,6 +497,15 @@ export function ThemeEditor() {
     form.reset({ themeVariables: currentTheme?.variables ?? {} });
     previousValuesRef.current = {};
   }, [currentTheme, form]);
+
+  // Clean up debounce timer on unmount
+  useEffect(() => {
+    return () => {
+      if (debounceTimerRef.current) {
+        clearTimeout(debounceTimerRef.current);
+      }
+    };
+  }, []);
 
   const handleChange = (key: string, newValue: string) => {
     // Store the ORIGINAL saved value only once

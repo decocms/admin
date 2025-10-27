@@ -110,16 +110,22 @@ Add to appropriate tool collection:
 ```typescript
 // packages/sdk/src/mcp/index.ts
 
-// For project-scoped features
+// Project-scoped tools
 export const PROJECT_TOOLS = [
-  // ...
+  // ... existing tools
+  
+  // Project-scoped features
   featureAPI.getSetting,
   featureAPI.updateSetting,
+  
+  // Org-level features that need project context
+  featureAPI.getOrgSetting,
+  featureAPI.updateOrgSetting,
 ] as const;
 
-// For org-level features (if tools need project context)
-export const PROJECT_TOOLS = [
-  // ...
+// OR for org-level tools (if they don't need project context)
+export const ORG_TOOLS = [
+  // ... existing tools
   featureAPI.getOrgSetting,
   featureAPI.updateOrgSetting,
 ] as const;
@@ -505,17 +511,39 @@ return (
 For features that manipulate CSS or DOM:
 
 ```typescript
-// Store current value before changing
-const currentValue = form.getValues("setting");
-previousValueRef.current = currentValue;
+export function SettingsEditor() {
+  const form = useForm();
+  const debounceTimerRef = useRef<number>();
+  const previousValueRef = useRef<string>();
 
-// Apply immediately to DOM
-document.documentElement.style.setProperty("--custom-var", newValue);
+  // Clean up debounce timer on unmount
+  useEffect(() => {
+    return () => {
+      if (debounceTimerRef.current) {
+        clearTimeout(debounceTimerRef.current);
+      }
+    };
+  }, []);
 
-// Debounce form update
-debounceTimerRef.current = window.setTimeout(() => {
-  form.setValue("setting", newValue, { shouldDirty: true });
-}, 100);
+  const handleChange = (key: string, newValue: string) => {
+    // Store current value before changing
+    const currentValue = form.getValues(key);
+    previousValueRef.current = currentValue;
+
+    // Apply immediately to DOM
+    document.documentElement.style.setProperty("--custom-var", newValue);
+
+    // Debounce form update
+    if (debounceTimerRef.current) {
+      clearTimeout(debounceTimerRef.current);
+    }
+    debounceTimerRef.current = window.setTimeout(() => {
+      form.setValue(key, newValue, { shouldDirty: true });
+    }, 100);
+  };
+
+  return <Input onChange={(e) => handleChange("setting", e.target.value)} />;
+}
 ```
 
 ### Undo Functionality
@@ -523,48 +551,77 @@ debounceTimerRef.current = window.setTimeout(() => {
 **CRITICAL**: Undo should revert to the **saved state**, not the -1 change:
 
 ```typescript
-const previousValuesRef = useRef<Record<string, string>>({});
+export function ThemeEditor() {
+  const { data: currentData } = useTheme();
+  const form = useForm();
+  const debounceTimerRef = useRef<number>();
+  const previousValuesRef = useRef<Record<string, string>>({});
 
-// Reset previous values when saved data changes
-useEffect(() => {
-  form.reset({ variables: currentData?.variables ?? {} });
-  previousValuesRef.current = {};
-}, [currentData, form]);
+  // Reset previous values when saved data changes
+  useEffect(() => {
+    form.reset({ variables: currentData?.variables ?? {} });
+    previousValuesRef.current = {};
+  }, [currentData, form]);
 
-const handleChange = (key: string, value: string) => {
-  // Store the ORIGINAL saved value only once
-  // This way undo always reverts to the saved state, not the -1 change
-  if (!(key in previousValuesRef.current)) {
-    const savedValue = currentData?.variables?.[key];
-    if (savedValue) {
-      previousValuesRef.current[key] = savedValue;
+  // Clean up debounce timer on unmount
+  useEffect(() => {
+    return () => {
+      if (debounceTimerRef.current) {
+        clearTimeout(debounceTimerRef.current);
+      }
+    };
+  }, []);
+
+  const handleChange = (key: string, value: string) => {
+    // Store the ORIGINAL saved value only once
+    // This way undo always reverts to the saved state, not the -1 change
+    if (!(key in previousValuesRef.current)) {
+      const savedValue = currentData?.variables?.[key];
+      if (savedValue) {
+        previousValuesRef.current[key] = savedValue;
+      }
     }
-  }
-  
-  // Apply immediately to DOM
-  document.documentElement.style.setProperty(key, value);
-  
-  // Debounce form update
-  debounceTimerRef.current = window.setTimeout(() => {
-    form.setValue(key, value, { shouldDirty: true });
-  }, 100);
-};
+    
+    // Apply immediately to DOM
+    document.documentElement.style.setProperty(key, value);
+    
+    // Debounce form update
+    if (debounceTimerRef.current) {
+      clearTimeout(debounceTimerRef.current);
+    }
+    debounceTimerRef.current = window.setTimeout(() => {
+      form.setValue(key, value, { shouldDirty: true });
+    }, 100);
+  };
 
-const handleUndo = (key: string) => {
-  const savedValue = previousValuesRef.current[key];
-  if (savedValue) {
-    // Revert to the saved value from database
-    document.documentElement.style.setProperty(key, savedValue);
-    form.setValue(key, savedValue);
-    delete previousValuesRef.current[key];
-  }
-};
+  const handleUndo = (key: string) => {
+    const savedValue = previousValuesRef.current[key];
+    if (savedValue) {
+      // Revert to the saved value from database
+      document.documentElement.style.setProperty(key, savedValue);
+      form.setValue(key, savedValue);
+      delete previousValuesRef.current[key];
+    }
+  };
+
+  return (
+    <ColorPicker
+      value={form.watch(key)}
+      onChange={(val) => handleChange(key, val)}
+      onUndo={() => handleUndo(key)}
+    />
+  );
+}
 
 // ❌ BAD: This only undoes the last change, not all changes since last save
-const handleChangeBad = (key: string, value: string) => {
-  previousValuesRef.current[key] = form.getValues(key); // Overwrites on every change!
-  form.setValue(key, value);
-};
+export function BadUndo() {
+  const previousValuesRef = useRef<Record<string, string>>({});
+  
+  const handleChangeBad = (key: string, value: string) => {
+    previousValuesRef.current[key] = form.getValues(key); // Overwrites on every change!
+    form.setValue(key, value);
+  };
+}
 ```
 
 ### Permission Checks

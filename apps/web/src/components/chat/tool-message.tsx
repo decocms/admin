@@ -370,8 +370,6 @@ function GenerateImageToolUI({ part }: { part: ToolUIPart }) {
   );
 }
 
-// BrowserScreenshotToolUI removed for this branch
-
 function CustomToolUI({ part }: { part: ToolUIPart }) {
   const result = (part.output ?? {}) as Record<string, unknown>;
   const toolName = useToolName(part);
@@ -386,8 +384,6 @@ function CustomToolUI({ part }: { part: ToolUIPart }) {
     };
     return <HostingAppDeploy tool={toolLike} />;
   }
-
-  // BROWSER_SCREENSHOT UI removed
 
   if (toolName === "GENERATE_IMAGE") {
     return <GenerateImageToolUI part={part} />;

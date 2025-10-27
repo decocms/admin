@@ -462,6 +462,7 @@ function WorkspaceViews() {
     "Workflows",
     "Documents",
     "Agents",
+    "Browser",
   ];
   const legacyTitleMap: Record<string, string> = {
     Prompts: "Documents",
@@ -497,6 +498,7 @@ function WorkspaceViews() {
     "Views",
     "Database",
     "Files",
+    "Browser",
   ];
   const resourceItems = resourceTypeOrder
     .map((title) => {
@@ -507,6 +509,16 @@ function WorkspaceViews() {
           icon: "folder",
           onClick: () => setFilesModalOpen(true),
           comingSoon: true,
+        };
+      }
+      if (title === "Browser") {
+        // Always use the explicit route for Browser
+        return {
+          id: "native:::browser-rendering",
+          title: "Browser",
+          icon: "camera",
+          metadata: { path: "/browser-rendering" },
+          comingSoon: false,
         };
       }
       const item = mcpItems.find(

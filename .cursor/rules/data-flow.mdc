@@ -326,22 +326,6 @@ export const createTool = createToolGroup("Theme", {
 const { data: tools } = useTools(integration.connection);
 ```
 
-### Virtual Integration URL Construction
-```typescript
-// Backend: packages/sdk/src/mcp/integrations/api.ts
-const virtualIntegrationsFor = (group: string, workspace: boolean, apiUrl: string) => {
-  const url = workspace 
-    ? new URL(`${apiUrl}/${locator}/mcp?group=${group}`)
-    : new URL(`${apiUrl}/mcp?group=${group}`);
-  
-  return {
-    id: `i:${group}`,
-    connection: { type: "HTTP", url: url.href },
-    // ...
-  };
-};
-```
-
 ## 7. Best Practices
 
 ### Tool Development

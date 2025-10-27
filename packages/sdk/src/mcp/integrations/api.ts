@@ -562,28 +562,22 @@ export const listIntegrations = createIntegrationManagementTool({
           connection.type === "HTTP" &&
           connection.url.startsWith(DECO_CMS_API_URL);
 
-        // Check if this is an agent integration (starts with "a:")
-        const isAgentIntegration = integration.id.startsWith("a:");
-
-        // Skip eager tool fetching for agents - they'll be fetched on-demand when needed
-        // This prevents 12+ MCP calls on every page load
-        const tools =
-          isVirtual && !isAgentIntegration
-            ? await listToolsAndSortByName(
-                { connection, appName, ignoreCache: false },
-                c,
-              )
-                .then((r) => r?.tools ?? null)
-                .catch(() => {
-                  console.error(
-                    "Error listing tools for virtual integration",
-                    connection,
-                  );
-                  return null;
-                })
-            : dbRecord
-              ? extractToolsFromRegistry(dbRecord)
-              : null;
+        const tools = isVirtual
+          ? await listToolsAndSortByName(
+              { connection, appName, ignoreCache: false },
+              c,
+            )
+              .then((r) => r?.tools ?? null)
+              .catch(() => {
+                console.error(
+                  "Error listing tools for virtual integration",
+                  connection,
+                );
+                return null;
+              })
+          : dbRecord
+            ? extractToolsFromRegistry(dbRecord)
+            : null;
 
         return {
           ...integration,

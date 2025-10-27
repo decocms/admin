@@ -101,8 +101,7 @@ export function createMCPClientProxy<T extends Record<string, unknown>>(
                 : null;
 
             const throwableError =
-              error?.code &&
-              typeof options?.getErrorByStatusCode === "function"
+              error?.code && typeof options?.getErrorByStatusCode === "function"
                 ? options.getErrorByStatusCode(
                     error.code,
                     error.message,

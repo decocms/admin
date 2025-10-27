@@ -83,7 +83,7 @@ export function ThemePreview() {
               This is an informational message
             </AlertDescription>
           </Alert>
-          <Alert variant="success">
+          <Alert variant="default">
             <Icon name="check_circle" className="h-4 w-4" />
             <AlertTitle>Success</AlertTitle>
             <AlertDescription>Your changes have been saved</AlertDescription>

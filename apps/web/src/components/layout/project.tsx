@@ -226,7 +226,7 @@ function AgentChatModeSwitch() {
     <ButtonGroup>
       <Button
         size="sm"
-        variant={currentMode === "agent" ? "special" : "outline"}
+        variant={currentMode === "agent" ? "default" : "outline"}
         onClick={() => handleModeChange("agent")}
         className="flex items-center gap-1.5"
       >
@@ -242,7 +242,7 @@ function AgentChatModeSwitch() {
       </Button>
       <Button
         size="sm"
-        variant={currentMode === "decopilot" ? "special" : "outline"}
+        variant={currentMode === "decopilot" ? "default" : "outline"}
         onClick={() => handleModeChange("decopilot")}
         className="flex items-center gap-1.5"
       >

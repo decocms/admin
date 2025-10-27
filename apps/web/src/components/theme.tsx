@@ -2,7 +2,7 @@
  * Very ugly code but the animation looks good.
  * Take the time to refactor this someday.
  */
-import { type ThemeVariable, useSDK, useWorkspaceTheme } from "@deco/sdk";
+import { type ThemeVariable, useSDK, useOrgTheme } from "@deco/sdk";
 import { useEffect, useMemo, useRef, useState } from "react";
 import gsap from "gsap";
 
@@ -18,7 +18,7 @@ export const clearThemeCache = (locator: string) => {
 
 export const useTheme = () => {
   const { locator } = useSDK();
-  const { data: theme, isLoading: isQueryLoading } = useWorkspaceTheme();
+  const { data: theme, isLoading: isQueryLoading } = useOrgTheme();
 
   const [cachedTheme, setCachedTheme] = useState(() => {
     const cached = localStorage.getItem(THEME_CACHE_KEY(locator));

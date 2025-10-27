@@ -205,12 +205,12 @@ export function useDeleteTeam() {
   });
 }
 
-export function useWorkspaceTheme() {
+export function useOrgTheme() {
   const { locator } = useSDK();
   const { org } = Locator.parse(locator);
 
   return useQuery({
-    queryKey: KEYS.TEAM_THEME(org),
+    queryKey: KEYS.ORG_THEME(org),
     queryFn: async () => {
       const data = await getOrgTheme(org);
       const theme = data?.theme ?? {};

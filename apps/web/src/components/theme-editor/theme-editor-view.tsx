@@ -228,7 +228,7 @@ export function ThemeEditorView() {
   }, [team?.id]);
 
   // Fetch org theme
-  const { data: orgTheme, isLoading } = useOrgTheme(orgId);
+  const { data: orgTheme, isLoading } = useOrgTheme();
 
   // Mutation
   const updateOrgThemeMutation = useUpdateOrgTheme();
@@ -398,7 +398,7 @@ export function ThemeEditorView() {
         >,
       };
 
-      await updateOrgThemeMutation.mutateAsync({ orgId, theme });
+      await updateOrgThemeMutation.mutateAsync(theme);
       toast.success("Organization theme updated successfully");
 
       // Dispatch custom event for immediate UI update

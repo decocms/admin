@@ -361,7 +361,7 @@ export function ChatInput({
                           }
                         : undefined
                     }
-                    variant={canSubmit || isLoading ? "special" : "ghost"}
+                    variant={canSubmit || isLoading ? "default" : "ghost"}
                     size="icon"
                     disabled={!canSubmit && !isLoading}
                     className={cn(

@@ -802,7 +802,7 @@ export function TriggerModal({
                     onOpenChange?.(false);
                     navigateWorkspace("/agents");
                   },
-                  variant: "special",
+                  variant: "default",
                   className: "mt-2",
                   children: (
                     <>

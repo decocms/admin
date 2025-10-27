@@ -6,7 +6,6 @@ import {
 
 export class HTTPClientTransport extends StreamableHTTPClientTransport {
   constructor(url: URL, opts?: StreamableHTTPClientTransportOptions) {
-    // Add tool name to URL if this is a tools/call
     super(url, opts);
   }
 

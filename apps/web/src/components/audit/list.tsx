@@ -275,6 +275,20 @@ export function AuditListContent({
     }
   }, [selectedThreadId, threads]);
 
+  useEffect(() => {
+    if (!selectedThreadFilter || threads.length === 0) {
+      return;
+    }
+
+    const filteredThread = threads.find(
+      (thread) => thread.id === selectedThreadFilter,
+    );
+
+    if (filteredThread && selectedThreadId !== filteredThread.id) {
+      setSelectedThreadId(filteredThread.id);
+    }
+  }, [selectedThreadFilter, threads, selectedThreadId]);
+
   function handlePageSizeChange(value: number) {
     setPageSize(value);
 

@@ -84,7 +84,14 @@ export const listThreads = createTool({
     }),
   ),
   handler: async (
-    { limit = 10, agentId, orderBy = "createdAt_desc", cursor, resourceId, threadId },
+    {
+      limit = 10,
+      agentId,
+      orderBy = "createdAt_desc",
+      cursor,
+      resourceId,
+      threadId,
+    },
     c,
   ) => {
     assertHasWorkspace(c);

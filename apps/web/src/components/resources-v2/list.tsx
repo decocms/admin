@@ -111,7 +111,7 @@ function ResourcesV2ListTab({
   const deferredQ = useDeferredValue(q);
 
   const connection = integration?.connection;
-  const toolsQuery = useTools(connection!, true, false); // enabled=true, ignoreCache=false
+  const toolsQuery = useTools(connection!, false);
   const capabilities = useMemo(() => {
     const tools: Array<{ name: string }> = toolsQuery?.data?.tools ?? [];
     const has = (suffix: string) =>
@@ -1103,7 +1103,7 @@ export function ResourcesV2List({
 
   // Fetch tools for the integration
   const connection = integration?.connection;
-  const toolsQuery = useTools(connection!, true, false); // enabled=true, ignoreCache=false
+  const toolsQuery = useTools(connection!, false);
   const tools = toolsQuery?.data?.tools ?? [];
 
   // Prepare thread context items for resource list

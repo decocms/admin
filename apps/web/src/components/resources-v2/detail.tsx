@@ -104,7 +104,7 @@ function ResourcesV2Detail() {
   });
 
   // Get tools for the integration
-  const toolsQuery = useTools(integration!.connection, true, false); // enabled=true, ignoreCache=false
+  const toolsQuery = useTools(integration!.connection, false);
   const tools = toolsQuery?.data?.tools ?? [];
 
   // Find the single view render tool for the current resource

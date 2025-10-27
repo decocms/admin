@@ -58,14 +58,9 @@ export const callTool = (
   });
 };
 
-export function useTools(
-  connection: MCPConnection,
-  enabled?: boolean,
-  ignoreCache?: boolean,
-) {
+export function useTools(connection: MCPConnection, ignoreCache?: boolean) {
   const response = useQuery({
     retry: false,
-    enabled: enabled !== false, // Default to true, but allow disabling
     queryKey: [
       "tools",
       connection.type,
@@ -78,11 +73,6 @@ export function useTools(
       ignoreCache,
     ],
     queryFn: ({ signal }) => listTools(connection, { signal }, ignoreCache),
-    // Aggressive caching to prevent rate limit issues
-    staleTime: 5 * 60 * 1000, // 5 minutes - data stays fresh
-    gcTime: 10 * 60 * 1000, // 10 minutes - keep in cache
-    refetchOnWindowFocus: false, // Don't refetch on window focus
-    refetchOnMount: false, // Don't refetch on remount if data exists
   });
 
   return {

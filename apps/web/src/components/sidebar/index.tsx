@@ -473,7 +473,6 @@ function WorkspaceViews() {
     "Documents",
     "Agents",
     "Theme",
-    "Browser",
   ];
   const legacyTitleMap: Record<string, string> = {
     Prompts: "Documents",
@@ -509,7 +508,6 @@ function WorkspaceViews() {
     "Views",
     "Files",
     "Theme",
-    "Browser",
   ];
   const resourceItems = resourceTypeOrder
     .map((title) => {

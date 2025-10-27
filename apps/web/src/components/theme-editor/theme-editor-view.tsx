@@ -11,36 +11,16 @@ import {
   type Theme,
 } from "@deco/sdk";
 import { Button } from "@deco/ui/components/button.tsx";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@deco/ui/components/card.tsx";
 import { Form } from "@deco/ui/components/form.tsx";
-import {
-  Tabs,
-  TabsContent,
-  TabsList,
-  TabsTrigger,
-} from "@deco/ui/components/tabs.tsx";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@deco/ui/components/tooltip.tsx";
 import { Spinner } from "@deco/ui/components/spinner.tsx";
 import { toast } from "@deco/ui/components/sonner.tsx";
-import { Icon } from "@deco/ui/components/icon.tsx";
 import { useCurrentTeam } from "../sidebar/team-selector.tsx";
 import { ThemePreview } from "./theme-preview.tsx";
-import { ColorPicker } from "./color-picker.tsx";
 import { useSetThreadContextEffect } from "../decopilot/thread-context-provider.tsx";
 import { PresetSelector } from "./preset-selector.tsx";
 import type { ThemePreset } from "./theme-presets.ts";
-import { LayoutVariantSelector } from "./layout-variant-selector.tsx";
+import { DetailSection } from "../common/detail-section.tsx";
+import { ColorPicker } from "./color-picker.tsx";
 
 interface ThemeEditorFormValues {
   themeVariables?: Partial<Record<ThemeVariable, string>>;
@@ -74,165 +54,138 @@ const THEME_EDITOR_AI_RULES = [
   "When suggesting theme changes, consider: contrast ratios for accessibility, color harmony, and the relationship between background/foreground pairs.",
 ];
 
-interface ThemeVariableInputProps {
+interface ColorCardProps {
   variable: {
     key: ThemeVariable;
     value: string;
     isDefault: boolean;
     defaultValue: string;
-    previousValue?: string;
   };
   onChange: (value: string) => void;
-  onUndo?: () => void;
+  label: string;
 }
 
-function ThemeVariableInput({
-  variable,
-  onChange,
-  onUndo,
-}: ThemeVariableInputProps) {
+function ColorCard({ variable, onChange, label }: ColorCardProps) {
+  const displayValue = variable.value || variable.defaultValue;
+
   return (
-    <div className="flex flex-col gap-2">
-      <ColorPicker
-        value={variable.value}
-        defaultValue={variable.defaultValue}
-        isDefault={variable.isDefault}
-        hasPreviousValue={!!variable.previousValue}
-        onChange={onChange}
-        onReset={() => onChange("")}
-        onUndo={onUndo}
-      />
-      <div className="flex items-center justify-between gap-1">
-        <div className="text-xs font-medium capitalize leading-tight">
-          {variable.key.replace("--", "").replace(/-/g, " ")}
-        </div>
-        {variable.isDefault && (
-          <div className="text-[10px] text-muted-foreground bg-muted px-1.5 py-0.5 rounded font-medium shrink-0">
-            Default
-          </div>
-        )}
+    <div className="flex flex-col gap-2.5">
+      <div
+        className="aspect-square w-full border border-border rounded-xl p-2 flex items-end justify-center"
+        style={{ backgroundColor: displayValue }}
+      >
+        <ColorPicker value={displayValue} onChange={onChange} />
       </div>
+      <p className="text-base font-medium">{label}</p>
     </div>
   );
 }
 
-// Layout variant options
-// Note: These values represent the base (rounded-md), all other sizes scale proportionally
-const RADIUS_OPTIONS = [
-  { label: "Tight", value: "0rem", description: "Sharp corners" },
-  { label: "Default", value: "0.375rem", description: "Balanced (Tailwind)" },
-  { label: "Relaxed", value: "0.5rem", description: "Soft corners" },
+// Color group definitions with proper labels
+const COLOR_GROUP_CONFIGS = [
+  {
+    title: "Primary Theme Colors",
+    description: "Customize your workspace colors and branding",
+    colors: [
+      { key: "--background" as ThemeVariable, label: "Background" },
+      { key: "--foreground" as ThemeVariable, label: "Foreground" },
+      { key: "--primary" as ThemeVariable, label: "Primary" },
+      {
+        key: "--primary-foreground" as ThemeVariable,
+        label: "Primary Foreground",
+      },
+    ],
+  },
+  {
+    title: "Secondary & Accent Colors",
+    description: "Customize your workspace colors and branding",
+    colors: [
+      { key: "--secondary" as ThemeVariable, label: "Secondary" },
+      {
+        key: "--secondary-foreground" as ThemeVariable,
+        label: "Secondary Foreground",
+      },
+      { key: "--accent" as ThemeVariable, label: "Accent" },
+      {
+        key: "--accent-foreground" as ThemeVariable,
+        label: "Accent Foreground",
+      },
+    ],
+  },
+  {
+    title: "UI Component Colors",
+    description: "Customize your workspace colors and branding",
+    colors: [
+      { key: "--card" as ThemeVariable, label: "Card" },
+      { key: "--card-foreground" as ThemeVariable, label: "Card Foreground" },
+      { key: "--popover" as ThemeVariable, label: "Popover" },
+      {
+        key: "--popover-foreground" as ThemeVariable,
+        label: "Popover Foreground",
+      },
+      { key: "--muted" as ThemeVariable, label: "Muted" },
+      { key: "--muted-foreground" as ThemeVariable, label: "Muted Foreground" },
+    ],
+  },
+  {
+    title: "Utility & Form Colors",
+    description: "Customize your workspace colors and branding",
+    colors: [
+      { key: "--border" as ThemeVariable, label: "Border" },
+      { key: "--input" as ThemeVariable, label: "Input" },
+      { key: "--ring" as ThemeVariable, label: "Ring" },
+    ],
+  },
+  {
+    title: "Status & Feedback Colors",
+    description: "Customize your workspace colors and branding",
+    colors: [
+      { key: "--destructive" as ThemeVariable, label: "Destructive" },
+      {
+        key: "--destructive-foreground" as ThemeVariable,
+        label: "Destructive Foreground",
+      },
+      { key: "--success" as ThemeVariable, label: "Success" },
+      {
+        key: "--success-foreground" as ThemeVariable,
+        label: "Success Foreground",
+      },
+      { key: "--warning" as ThemeVariable, label: "Warning" },
+      {
+        key: "--warning-foreground" as ThemeVariable,
+        label: "Warning Foreground",
+      },
+    ],
+  },
+  {
+    title: "Chart & Visualization Colors",
+    description: "Customize your workspace colors and branding",
+    colors: [
+      { key: "--chart-1" as ThemeVariable, label: "Chart 01" },
+      { key: "--chart-2" as ThemeVariable, label: "Chart 02" },
+      { key: "--chart-3" as ThemeVariable, label: "Chart 03" },
+      { key: "--chart-4" as ThemeVariable, label: "Chart 04" },
+      { key: "--chart-5" as ThemeVariable, label: "Chart 05" },
+    ],
+  },
+  {
+    title: "Sidebar & Navigation Colors",
+    description: "Customize your workspace colors and branding",
+    colors: [
+      { key: "--sidebar" as ThemeVariable, label: "Sidebar" },
+      {
+        key: "--sidebar-foreground" as ThemeVariable,
+        label: "Sidebar Foreground",
+      },
+      { key: "--sidebar-accent" as ThemeVariable, label: "Sidebar Accent" },
+      {
+        key: "--sidebar-accent-foreground" as ThemeVariable,
+        label: "Sidebar Accent Foreground",
+      },
+      { key: "--sidebar-border" as ThemeVariable, label: "Sidebar Border" },
+    ],
+  },
 ];
-
-const SPACING_OPTIONS = [
-  { label: "Compact", value: "0.215rem", description: "Dense layout" },
-  { label: "Default", value: "0.25rem", description: "Balanced" },
-  { label: "Comfortable", value: "0.3rem", description: "Spacious" },
-];
-
-interface ThemeFormProps {
-  colorGroups: Array<{
-    name: string;
-    variables: Array<{
-      key: ThemeVariable;
-      value: string;
-      isDefault: boolean;
-      defaultValue: string;
-      previousValue?: string;
-    }>;
-  }>;
-  handleVariableChange: (key: ThemeVariable, value: string) => void;
-  handleVariableUndo: (key: ThemeVariable) => void;
-  onSubmit: (data: ThemeEditorFormValues) => Promise<void>;
-  isUpdating: boolean;
-  form: ReturnType<typeof useForm<ThemeEditorFormValues>>;
-  saveButtonText: string;
-  extraActions?: React.ReactNode;
-}
-
-function ThemeForm({
-  colorGroups,
-  handleVariableChange,
-  handleVariableUndo,
-  onSubmit,
-  isUpdating: _isUpdating,
-  form,
-  saveButtonText: _saveButtonText,
-  extraActions,
-}: ThemeFormProps) {
-  const themeVariables = useWatch({
-    control: form.control,
-    name: "themeVariables",
-  });
-
-  const currentRadius =
-    themeVariables?.["--radius"] ||
-    DEFAULT_THEME.variables?.["--radius"] ||
-    "0.625rem";
-  const currentSpacing =
-    themeVariables?.["--spacing"] ||
-    DEFAULT_THEME.variables?.["--spacing"] ||
-    "0.25rem";
-
-  return (
-    <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
-        {/* Layout Variants Section */}
-        <div className="space-y-4">
-          <div className="flex items-center gap-2 pb-1 px-4">
-            <h3 className="text-lg font-semibold text-foreground">
-              Layout & Spacing
-            </h3>
-            <div className="flex-1 h-px bg-border" />
-          </div>
-          <div className="grid grid-cols-2 gap-6 px-4">
-            <LayoutVariantSelector
-              label="Border Radius"
-              description="Corner roundness of UI elements"
-              value={currentRadius}
-              options={RADIUS_OPTIONS}
-              onChange={(value) => handleVariableChange("--radius", value)}
-            />
-            <LayoutVariantSelector
-              label="Spacing"
-              description="Base spacing between elements"
-              value={currentSpacing}
-              options={SPACING_OPTIONS}
-              onChange={(value) => handleVariableChange("--spacing", value)}
-            />
-          </div>
-        </div>
-
-        {/* Color Groups */}
-        {colorGroups.map((group) => (
-          <div key={group.name} className="space-y-4">
-            <div className="flex items-center gap-2 pb-1 px-4">
-              <h3 className="text-lg font-semibold text-foreground">
-                {group.name}
-              </h3>
-              <div className="flex-1 h-px bg-border" />
-            </div>
-            <div className="grid grid-cols-6 gap-3 px-4">
-              {group.variables.map((variable) => (
-                <ThemeVariableInput
-                  key={variable.key}
-                  variable={variable}
-                  onChange={(value) =>
-                    handleVariableChange(variable.key, value)
-                  }
-                  onUndo={() => handleVariableUndo(variable.key)}
-                />
-              ))}
-            </div>
-          </div>
-        ))}
-        {extraActions && (
-          <div className="flex gap-3 pt-4 border-t px-4">{extraActions}</div>
-        )}
-      </form>
-    </Form>
-  );
-}
 
 export function ThemeEditorView() {
   const team = useCurrentTeam();
@@ -289,66 +242,16 @@ export function ThemeEditorView() {
     name: "themeVariables",
   });
 
-  const variables = useMemo(() => {
-    return THEME_VARIABLES.map((key) => ({
+  // Helper to get variable value with fallback
+  const getVariableValue = useCallback(
+    (key: ThemeVariable) => ({
       key,
       value: String(themeVariables?.[key] || ""),
       isDefault: !themeVariables?.[key],
       defaultValue: DEFAULT_THEME.variables?.[key] || "",
-      previousValue: previousValuesRef.current[key],
-    }));
-  }, [themeVariables]);
-
-  // Organize variables into semantic groups - prioritized by importance
-  const colorGroups = useMemo(() => {
-    const groupMap: Record<string, ThemeVariable[]> = {
-      "Brand Colors": [
-        "--primary",
-        "--primary-foreground",
-        "--background",
-        "--foreground",
-      ],
-      "Interactive Elements": [
-        "--accent",
-        "--accent-foreground",
-        "--secondary",
-        "--secondary-foreground",
-      ],
-      Sidebar: [
-        "--sidebar",
-        "--sidebar-foreground",
-        "--sidebar-accent",
-        "--sidebar-accent-foreground",
-        "--sidebar-border",
-        "--sidebar-ring",
-      ],
-      "Cards & Surfaces": [
-        "--card",
-        "--card-foreground",
-        "--border",
-        "--input",
-      ],
-      "Feedback Colors": [
-        "--destructive",
-        "--destructive-foreground",
-        "--success",
-        "--success-foreground",
-        "--warning",
-        "--warning-foreground",
-      ],
-      Advanced: [
-        "--popover",
-        "--popover-foreground",
-        "--muted",
-        "--muted-foreground",
-      ],
-    };
-
-    return Object.entries(groupMap).map(([groupName, keys]) => ({
-      name: groupName,
-      variables: variables.filter((v) => keys.includes(v.key)),
-    }));
-  }, [variables]);
+    }),
+    [themeVariables],
+  );
 
   // Thread context for AI assistance with theme editing
   const threadContextItems = useMemo<
@@ -440,28 +343,6 @@ export function ThemeEditorView() {
     [form, currentTheme],
   );
 
-  const handleVariableUndo = useCallback(
-    (key: ThemeVariable) => {
-      const savedValue = previousValuesRef.current[key];
-      if (savedValue) {
-        // Revert to the saved theme value from database
-        document.documentElement.style.setProperty(key, savedValue);
-
-        // Update form
-        const currentValues = form.getValues("themeVariables");
-        const updatedValues = {
-          ...currentValues,
-          [key]: savedValue,
-        };
-        form.setValue("themeVariables", updatedValues, { shouldDirty: true });
-
-        // Clear the saved value after undo
-        delete previousValuesRef.current[key];
-      }
-    },
-    [form],
-  );
-
   async function onSubmit(data: ThemeEditorFormValues) {
     try {
       if (!orgId) {
@@ -551,126 +432,109 @@ export function ThemeEditorView() {
   }
 
   return (
-    <div className="h-full flex flex-col">
-      {/* Header with action buttons */}
-      <div className="border-b border-border px-8 py-4">
-        <div className="max-w-5xl mx-auto flex items-center justify-between">
-          <div>
-            <h1 className="text-2xl font-semibold tracking-tight">
-              Theme Editor
-            </h1>
-            <p className="text-sm text-muted-foreground mt-1">
-              Customize your workspace colors and branding
-            </p>
-          </div>
-          <div className="flex items-center gap-2">
-            {hasChanges && (
-              <>
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={handleReset}
-                  disabled={isUpdating}
-                  className="h-9 px-4 rounded-xl"
-                >
-                  <Icon name="undo" className="mr-2" size={16} />
-                  Reset
-                </Button>
-                <Button
-                  type="button"
-                  onClick={() => form.handleSubmit(onSubmit)()}
-                  disabled={isUpdating}
-                  className="h-9 px-4 rounded-xl"
-                >
-                  {isUpdating ? (
-                    <>
-                      <div className="mr-2">
-                        <Spinner />
+    <div className="h-full flex flex-col overflow-hidden">
+      <div className="flex-1 overflow-auto">
+        <Form {...form}>
+          <form onSubmit={form.handleSubmit(onSubmit)}>
+            {/* Header Section */}
+            <DetailSection>
+              <div className="flex items-center justify-between">
+                <div className="flex flex-col gap-2">
+                  <h1 className="text-2xl font-medium">Theme Editor</h1>
+                  <p className="text-base text-muted-foreground">
+                    Customize your workspace colors and branding
+                  </p>
+                </div>
+                {hasChanges && (
+                  <div className="flex items-center gap-2">
+                    <Button
+                      type="button"
+                      variant="secondary"
+                      onClick={handleReset}
+                      disabled={isUpdating}
+                      className="h-9 px-3 rounded-xl"
+                    >
+                      Reset
+                    </Button>
+                    <Button
+                      type="submit"
+                      disabled={isUpdating}
+                      className="h-9 px-3 rounded-xl"
+                    >
+                      {isUpdating ? (
+                        <>
+                          <div className="mr-2">
+                            <Spinner />
+                          </div>
+                          Saving...
+                        </>
+                      ) : (
+                        "Save theme"
+                      )}
+                    </Button>
+                  </div>
+                )}
+              </div>
+            </DetailSection>
+
+            {/* Theme Presets Section */}
+            <DetailSection
+              title="Theme Presets"
+              titleSize="h2"
+              className="pr-0!"
+            >
+              <div className="space-y-4">
+                <p className="text-base text-muted-foreground">
+                  Customize your workspace colors and branding
+                </p>
+                <PresetSelector
+                  onSelectPreset={handleSelectPreset}
+                  selectedPresetId={selectedPresetId}
+                />
+              </div>
+            </DetailSection>
+
+            {/* Preview Theme Section */}
+            <DetailSection title="Preview theme" titleSize="h2">
+              <div className="space-y-4">
+                <p className="text-base text-muted-foreground">
+                  See how your theme looks
+                </p>
+                <div>
+                  <ThemePreview />
+                </div>
+              </div>
+            </DetailSection>
+
+            {/* Customize Section with Color Groups */}
+            <DetailSection title="Customize" titleSize="h2">
+              <div className="space-y-4">
+                <p className="text-base text-muted-foreground">
+                  Customize your workspace colors and branding
+                </p>
+                <div className="space-y-10">
+                  {COLOR_GROUP_CONFIGS.map((group) => (
+                    <div key={group.title} className="space-y-2">
+                      <h3 className="text-lg font-medium">{group.title}</h3>
+                      <div className="grid grid-cols-[repeat(auto-fill,minmax(160px,1fr))] gap-4">
+                        {group.colors.map((color) => (
+                          <ColorCard
+                            key={color.key}
+                            variable={getVariableValue(color.key)}
+                            onChange={(value) =>
+                              handleVariableChange(color.key, value)
+                            }
+                            label={color.label}
+                          />
+                        ))}
                       </div>
-                      Saving...
-                    </>
-                  ) : (
-                    <>
-                      <Icon name="save" className="mr-2" size={16} />
-                      Save
-                    </>
-                  )}
-                </Button>
-              </>
-            )}
-          </div>
-        </div>
-      </div>
-
-      <div className="flex-1 overflow-auto p-4">
-        <div className="max-w-5xl mx-auto space-y-6">
-          <TooltipProvider>
-            <Tabs value="org" className="space-y-4">
-              <TabsList className="grid w-full max-w-md grid-cols-2">
-                <TabsTrigger value="org" className="gap-2">
-                  <Icon name="corporate_fare" size={18} />
-                  Organization Theme
-                </TabsTrigger>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <div className="flex-1">
-                      <TabsTrigger
-                        value="project"
-                        disabled
-                        className="gap-2 w-full cursor-not-allowed opacity-50"
-                      >
-                        <Icon name="folder" size={18} />
-                        Project Theme
-                      </TabsTrigger>
                     </div>
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    <p>Coming soon</p>
-                  </TooltipContent>
-                </Tooltip>
-              </TabsList>
-
-              <TabsContent value="org" className="space-y-4">
-                <Card className="border-2">
-                  <CardContent className="p-4">
-                    <PresetSelector
-                      onSelectPreset={handleSelectPreset}
-                      selectedPresetId={selectedPresetId}
-                    />
-                  </CardContent>
-                </Card>
-
-                <Card className="border-2 p-4">
-                  <CardHeader className="p-0">
-                    <CardTitle className="text-base font-semibold">
-                      Theme Preview
-                    </CardTitle>
-                    <CardDescription className="text-xs">
-                      See how your theme looks
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent className="pt-0 pb-3">
-                    <ThemePreview />
-                  </CardContent>
-                </Card>
-
-                <Card className="border-2">
-                  <CardContent className="p-4">
-                    <ThemeForm
-                      colorGroups={colorGroups}
-                      handleVariableChange={handleVariableChange}
-                      handleVariableUndo={handleVariableUndo}
-                      onSubmit={onSubmit}
-                      isUpdating={isUpdating}
-                      form={form}
-                      saveButtonText="Save Organization Theme"
-                    />
-                  </CardContent>
-                </Card>
-              </TabsContent>
-            </Tabs>
-          </TooltipProvider>
-        </div>
+                  ))}
+                </div>
+              </div>
+            </DetailSection>
+          </form>
+        </Form>
       </div>
     </div>
   );

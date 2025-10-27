@@ -28,7 +28,9 @@ export function DetailSection({
     <div
       className={`px-4 lg:px-6 xl:px-10 py-4 md:py-6 lg:py-8 z-10 bg-background border-b border-border ${className}`}
     >
-      <div className={`max-w-[1500px] mx-auto space-y-4 ${contentClassName}`}>
+      <div
+        className={`max-w-[1500px] mx-auto flex flex-col gap-2 ${contentClassName}`}
+      >
         {title && (
           <>
             {titleSize === "h1" ? (

@@ -2,7 +2,6 @@ import { Button } from "@deco/ui/components/button.tsx";
 import {
   Card,
   CardContent,
-  CardDescription,
   CardHeader,
   CardTitle,
 } from "@deco/ui/components/card.tsx";
@@ -13,73 +12,96 @@ import {
   AlertTitle,
 } from "@deco/ui/components/alert.tsx";
 import { Icon } from "@deco/ui/components/icon.tsx";
+import { Input } from "@deco/ui/components/input.tsx";
+import { Switch } from "@deco/ui/components/switch.tsx";
+import { Progress } from "@deco/ui/components/progress.tsx";
 
 export function ThemePreview() {
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-      <div className="space-y-2">
-        <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
-          Buttons
-        </h4>
-        <div className="flex gap-2 flex-col">
-          <Button size="sm" className="w-full">
-            Primary
-          </Button>
-          <Button size="sm" variant="secondary" className="w-full">
+    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 w-full max-w-full overflow-hidden">
+      {/* Buttons Card */}
+      <Card className="p-4 gap-2 min-w-0">
+        <CardHeader className="p-0">
+          <CardTitle className="text-sm font-medium">Buttons</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          <Button className="w-full">Primary</Button>
+          <Button className="w-full" variant="secondary">
             Secondary
           </Button>
-          <Button size="sm" variant="destructive" className="w-full">
+          <Button className="w-full" variant="destructive">
             Destructive
           </Button>
-        </div>
-      </div>
+          <Button className="w-full" variant="outline">
+            Outline
+          </Button>
+        </CardContent>
+      </Card>
 
-      <div className="space-y-2">
-        <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
-          Badges
-        </h4>
-        <div className="flex gap-2 flex-wrap">
-          <Badge>Default</Badge>
-          <Badge variant="secondary">Secondary</Badge>
-          <Badge variant="destructive">Destructive</Badge>
-        </div>
-      </div>
+      {/* Elements Card */}
+      <Card className="p-4 gap-2 min-w-0">
+        <CardHeader className="p-0">
+          <CardTitle className="text-sm font-medium">Elements</CardTitle>
+        </CardHeader>
+        <CardContent className="p-0 space-y-5">
+          <div className="flex flex-wrap gap-2">
+            <Badge>Default</Badge>
+            <Badge variant="secondary">Secondary</Badge>
+            <Badge variant="destructive">Destructive</Badge>
+            <Badge variant="outline">Outline</Badge>
+          </div>
+          <div className="space-y-3">
+            <Progress value={60} className="h-2" />
+            <Progress value={30} className="h-2" />
+          </div>
+          <div className="flex items-center justify-between gap-4">
+            <span className="text-sm text-muted-foreground">
+              Enable notifications
+            </span>
+            <Switch />
+          </div>
+          <div className="flex items-center justify-between gap-4">
+            <span className="text-sm text-muted-foreground">
+              Enable dark mode
+            </span>
+            <Switch />
+          </div>
+          <Input placeholder="Input field..." />
+        </CardContent>
+      </Card>
 
-      <div className="space-y-2">
-        <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
-          Card
-        </h4>
-        <Card className="shadow-sm">
-          <CardHeader className="pt-4 pb-0">
-            <CardTitle className="text-md">Card Title</CardTitle>
-            <CardDescription className="text-xs">
-              Card description
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="px-6 pb-6 pt-0">
-            <p className="text-xs">Card content</p>
-          </CardContent>
-        </Card>
-      </div>
-
-      <div className="space-y-2">
-        <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
-          Alerts
-        </h4>
-        <div className="space-y-2">
-          <Alert className="py-2 px-3">
-            <Icon name="info" className="h-3 w-3" />
-            <AlertTitle className="text-xs leading-none">Info</AlertTitle>
-            <AlertDescription className="text-xs">Info alert</AlertDescription>
+      {/* Alerts Card */}
+      <Card className="p-4 gap-2 min-w-0">
+        <CardHeader className="p-0">
+          <CardTitle className="text-sm font-medium">Alerts</CardTitle>
+        </CardHeader>
+        <CardContent className="p-0 space-y-4">
+          <Alert>
+            <Icon name="info" className="h-4 w-4" />
+            <AlertTitle>Info</AlertTitle>
+            <AlertDescription>
+              This is an informational message
+            </AlertDescription>
           </Alert>
-
-          <Alert variant="destructive" className="py-2 px-3">
-            <Icon name="error" className="h-3 w-3" />
-            <AlertTitle className="text-xs leading-none">Error</AlertTitle>
-            <AlertDescription className="text-xs">Error alert</AlertDescription>
+          <Alert variant="success">
+            <Icon name="check_circle" className="h-4 w-4" />
+            <AlertTitle>Success</AlertTitle>
+            <AlertDescription>Your changes have been saved</AlertDescription>
           </Alert>
-        </div>
-      </div>
+          <Alert variant="warning">
+            <Icon name="warning" className="h-4 w-4" />
+            <AlertTitle>Warning</AlertTitle>
+            <AlertDescription>Please review before proceeding</AlertDescription>
+          </Alert>
+          <Alert variant="destructive">
+            <Icon name="error" className="h-4 w-4" />
+            <AlertTitle>Error</AlertTitle>
+            <AlertDescription>
+              Something went wrong with your request
+            </AlertDescription>
+          </Alert>
+        </CardContent>
+      </Card>
     </div>
   );
 }

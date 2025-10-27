@@ -559,6 +559,14 @@ export const listIntegrations = createIntegrationManagementTool({
     // Add tools to each integration
     const result = await Promise.all(
       baseResult.map(async (integration) => {
+        // Self integration doesn't expose tools via list - tools are dynamically provided by the project
+        if (integration.id === formatId("i", WellKnownMcpGroups.Self)) {
+          return {
+            ...integration,
+            tools: null,
+          };
+        }
+
         // Find the corresponding database record to extract tools
         const dbRecord = filteredIntegrations.find(
           (dbIntegration) => formatId("i", dbIntegration.id) === integration.id,
@@ -576,10 +584,11 @@ export const listIntegrations = createIntegrationManagementTool({
               c,
             )
               .then((r) => r?.tools ?? null)
-              .catch(() => {
+              .catch((error) => {
                 console.error(
                   "Error listing tools for virtual integration",
                   connection,
+                  error,
                 );
                 return null;
               })

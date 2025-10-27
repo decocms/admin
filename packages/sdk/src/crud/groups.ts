@@ -66,7 +66,7 @@ export const WellKnownAppNames = {
   "tools-management": "tools",
   http: "http",
   "workflows-management": "workflows",
-  "theme-management": "theme",
+  // Note: "theme-management" is not included as it's a native feature, not a registry app
 } satisfies Partial<WellKnownMcpGroupRecord>;
 
 export type WellKnownMcpGroup = keyof typeof WellKnownMcpGroups;

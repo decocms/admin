@@ -48,6 +48,7 @@ import { Skeleton } from "@deco/ui/components/skeleton.tsx";
 const CURSOR_PAGINATION_SEARCH_PARAM = "after";
 const AGENT_FILTER_SEARCH_PARAM = "agent";
 const USER_FILTER_SEARCH_PARAM = "user";
+const THREAD_FILTER_SEARCH_PARAM = "thread";
 const SORT_SEARCH_PARAM = "sort";
 
 const DEFAULT_PAGE_SIZE = 20;
@@ -90,6 +91,9 @@ export function AuditListContent({
       searchParams.get(USER_FILTER_SEARCH_PARAM) ??
       undefined,
   );
+  const [selectedThreadFilter, setSelectedThreadFilter] = useState<
+    string | undefined
+  >(searchParams.get(THREAD_FILTER_SEARCH_PARAM) ?? undefined);
   const [pageSize, setPageSize] = useState<number>(() => {
     const fromFilter = filters?.limit;
     if (
@@ -155,6 +159,12 @@ export function AuditListContent({
       }
     }
   }, [searchParams, filters?.orderBy]);
+
+  useEffect(() => {
+    const threadParam = searchParams.get(THREAD_FILTER_SEARCH_PARAM);
+    setSelectedThreadFilter(threadParam ?? undefined);
+  }, [searchParams]);
+
   const [selectedThreadId, setSelectedThreadId] = useState<string | null>(null);
 
   const { data: customAgents = [] } = useAgents();
@@ -190,6 +200,7 @@ export function AuditListContent({
       resourceId:
         filters?.resourceId ??
         (selectedUser === "unknown" ? "__unknown__" : selectedUser),
+      threadId: selectedThreadFilter,
       orderBy: filters?.orderBy ?? sort,
       cursor: filters?.cursor ?? currentCursor,
       limit: filters?.limit ?? pageSize,
@@ -202,6 +213,7 @@ export function AuditListContent({
       filters?.limit,
       selectedAgent,
       selectedUser,
+      selectedThreadFilter,
       sort,
       currentCursor,
       pageSize,

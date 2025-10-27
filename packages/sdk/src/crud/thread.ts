@@ -5,6 +5,7 @@ import { ProjectLocator } from "../locator.ts";
 export interface ThreadFilterOptions {
   agentId?: string;
   resourceId?: string;
+  threadId?: string;
   orderBy?:
     | "createdAt_desc"
     | "createdAt_asc"

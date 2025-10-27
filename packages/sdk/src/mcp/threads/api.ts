@@ -70,6 +70,7 @@ export const listThreads = createTool({
       limit: z.number().min(1).max(100).default(10).optional(),
       agentId: z.string().optional(),
       resourceId: z.string().optional(),
+      threadId: z.string().optional(),
       orderBy: z
         .enum([
           "createdAt_desc",
@@ -83,7 +84,7 @@ export const listThreads = createTool({
     }),
   ),
   handler: async (
-    { limit = 10, agentId, orderBy = "createdAt_desc", cursor, resourceId },
+    { limit = 10, agentId, orderBy = "createdAt_desc", cursor, resourceId, threadId },
     c,
   ) => {
     assertHasWorkspace(c);
@@ -105,6 +106,10 @@ export const listThreads = createTool({
     if (resourceId) {
       whereClauses.push("resourceId = ?");
       args.push(resourceId);
+    }
+    if (threadId) {
+      whereClauses.push("id = ?");
+      args.push(threadId);
     }
 
     let cursorWhereClauseIdx: number | undefined = undefined;

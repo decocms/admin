@@ -32,8 +32,6 @@ const toolsMap = new Map<
   >
 >();
 
-// Note: Keep this file minimal; advanced caching/timeouts can be explored later
-
 /**
  * The base fetcher used to fetch the MCP from API.
  */
@@ -59,8 +57,6 @@ export function createMCPClientProxy<T extends Record<string, unknown>>(
     ).href,
   };
 
-  // No in-flight dedup or timeouts by default to keep behavior simple
-
   return new Proxy<T>({} as T, {
     get(_, name) {
       if (name === "toJSON") {
@@ -74,87 +70,63 @@ export function createMCPClientProxy<T extends Record<string, unknown>>(
         const extraHeaders = debugId
           ? { "x-trace-debug-id": debugId }
           : undefined;
-
-        // Add tool name to URL path for better logging and CDN filtering
-        const connectionWithTool = {
-          ...connection,
-          url: (() => {
-            const baseUrl = "url" in connection ? connection.url : "";
-            if (!baseUrl) return baseUrl;
-            const url = new URL(baseUrl);
-            url.pathname =
-              url.pathname.replace(/\/$/, "") + `/tool/${String(name)}`;
-            return url.href;
-          })(),
-        };
-
         const client = await createServerClient(
-          { connection: connectionWithTool },
+          { connection },
           undefined,
           extraHeaders,
         );
 
-        try {
-          const { structuredContent, isError, content } = await client.callTool(
-            {
-              name: String(name),
-              arguments: args as Record<string, unknown>,
-            },
-            undefined,
-            {
-              timeout: 3000000,
-            },
-          );
+        const { structuredContent, isError, content } = await client.callTool(
+          {
+            name: String(name),
+            arguments: args as Record<string, unknown>,
+          },
+          undefined,
+          {
+            timeout: 3000000,
+          },
+        );
 
-          if (isError) {
-            const maybeErrorMessage = (content as any)?.[0]?.text;
-            const error =
-              typeof maybeErrorMessage === "string"
-                ? safeParse(maybeErrorMessage)
-                : null;
+        if (isError) {
+          // @ts-expect-error - content is not typed
+          const maybeErrorMessage = content?.[0]?.text;
+          const error =
+            typeof maybeErrorMessage === "string"
+              ? safeParse(maybeErrorMessage)
+              : null;
 
-            const throwableError =
-              error?.code && typeof options?.getErrorByStatusCode === "function"
-                ? options.getErrorByStatusCode(
-                    error.code,
-                    error.message,
-                    error.traceId,
-                  )
-                : null;
+          const throwableError =
+            error?.code && typeof options?.getErrorByStatusCode === "function"
+              ? options.getErrorByStatusCode(
+                  error.code,
+                  error.message,
+                  error.traceId,
+                )
+              : null;
 
-            if (throwableError) {
-              throw throwableError;
-            }
-
-            throw new Error(
-              `Tool ${String(name)} returned an error: ${JSON.stringify(
-                structuredContent ?? content,
-              )}`,
-            );
+          if (throwableError) {
+            throw throwableError;
           }
 
-          return structuredContent;
-        } finally {
-          // Properly dispose of the MCP client to avoid RPC leaks
-          await client.close();
+          throw new Error(
+            `Tool ${String(name)} returned an error: ${JSON.stringify(
+              structuredContent ?? content,
+            )}`,
+          );
         }
+        return structuredContent;
       }
 
       const listToolsFn = async () => {
         const client = await createServerClient({ connection });
-        try {
-          const { tools } = await client.listTools();
+        const { tools } = await client.listTools();
 
-          return tools as {
-            name: string;
-            inputSchema: any;
-            outputSchema?: any;
-            description: string;
-          }[];
-        } finally {
-          // Properly dispose of the MCP client to avoid RPC leaks
-          await client.close();
-        }
+        return tools as {
+          name: string;
+          inputSchema: any;
+          outputSchema?: any;
+          description: string;
+        }[];
       };
 
       async function listToolsOnce() {
@@ -176,9 +148,9 @@ export function createMCPClientProxy<T extends Record<string, unknown>>(
       }
       callToolFn.asTool = async () => {
         const tools = (await listToolsOnce()) ?? [];
-        const tool = tools.find((t) => t.name === String(name));
+        const tool = tools.find((t) => t.name === name);
         if (!tool) {
-          throw new Error(`Tool ${String(name)} not found`);
+          throw new Error(`Tool ${name} not found`);
         }
 
         return {

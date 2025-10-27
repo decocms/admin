@@ -644,7 +644,6 @@ app.use(async (c, next) => {
 
 app.use(withActorsMiddleware);
 
-// Create handlers once and reuse them for multiple routes to reduce heap allocation
 const contractsMcpHandler = createMCPHandlerFor(CONTRACTS_TOOLS);
 app.post(`/contracts/mcp`, contractsMcpHandler);
 app.post(`/contracts/mcp/tool/:toolName`, contractsMcpHandler);
